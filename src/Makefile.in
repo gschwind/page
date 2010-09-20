@@ -34,7 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = tabwm$(EXEEXT) query_tree$(EXEEXT)
+bin_PROGRAMS = page$(EXEEXT) query_tree$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -46,22 +46,22 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_page_OBJECTS = page-main.$(OBJEXT) \
+	page-gtk_xwindow_handler.$(OBJEXT) page-page.$(OBJEXT)
+page_OBJECTS = $(am_page_OBJECTS)
+am__DEPENDENCIES_1 =
+page_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+page_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(page_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_query_tree_OBJECTS = query_tree-query_tree.$(OBJEXT)
 query_tree_OBJECTS = $(am_query_tree_OBJECTS)
-am__DEPENDENCIES_1 =
 query_tree_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 query_tree_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(query_tree_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_tabwm_OBJECTS = tabwm-tabwm.$(OBJEXT) \
-	tabwm-gtk_xwindow_handler.$(OBJEXT)
-tabwm_OBJECTS = $(am_tabwm_OBJECTS)
-tabwm_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-tabwm_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(tabwm_CXXFLAGS) $(CXXFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -75,8 +75,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(query_tree_SOURCES) $(tabwm_SOURCES)
-DIST_SOURCES = $(query_tree_SOURCES) $(tabwm_SOURCES)
+SOURCES = $(page_SOURCES) $(query_tree_SOURCES)
+DIST_SOURCES = $(page_SOURCES) $(query_tree_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -207,9 +207,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-tabwm_SOURCES = tabwm.cc gtk_xwindow_handler.cc
-tabwm_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
-tabwm_CXXFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
+page_SOURCES = main.cc gtk_xwindow_handler.cc page.cc
+page_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
+page_CXXFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 query_tree_SOURCES = query_tree.cc
 query_tree_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 query_tree_CXXFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
@@ -290,12 +290,12 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+page$(EXEEXT): $(page_OBJECTS) $(page_DEPENDENCIES) 
+	@rm -f page$(EXEEXT)
+	$(page_LINK) $(page_OBJECTS) $(page_LDADD) $(LIBS)
 query_tree$(EXEEXT): $(query_tree_OBJECTS) $(query_tree_DEPENDENCIES) 
 	@rm -f query_tree$(EXEEXT)
 	$(query_tree_LINK) $(query_tree_OBJECTS) $(query_tree_LDADD) $(LIBS)
-tabwm$(EXEEXT): $(tabwm_OBJECTS) $(tabwm_DEPENDENCIES) 
-	@rm -f tabwm$(EXEEXT)
-	$(tabwm_LINK) $(tabwm_OBJECTS) $(tabwm_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -303,9 +303,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_xwindow_handler.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/query_tree-query_tree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tabwm-gtk_xwindow_handler.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tabwm-tabwm.Po@am__quote@
 
 .cc.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -328,6 +329,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
+page-main.o: main.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-main.o -MD -MP -MF $(DEPDIR)/page-main.Tpo -c -o page-main.o `test -f 'main.cc' || echo '$(srcdir)/'`main.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-main.Tpo $(DEPDIR)/page-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cc' object='page-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-main.o `test -f 'main.cc' || echo '$(srcdir)/'`main.cc
+
+page-main.obj: main.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-main.obj -MD -MP -MF $(DEPDIR)/page-main.Tpo -c -o page-main.obj `if test -f 'main.cc'; then $(CYGPATH_W) 'main.cc'; else $(CYGPATH_W) '$(srcdir)/main.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-main.Tpo $(DEPDIR)/page-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cc' object='page-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-main.obj `if test -f 'main.cc'; then $(CYGPATH_W) 'main.cc'; else $(CYGPATH_W) '$(srcdir)/main.cc'; fi`
+
+page-gtk_xwindow_handler.o: gtk_xwindow_handler.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-gtk_xwindow_handler.o -MD -MP -MF $(DEPDIR)/page-gtk_xwindow_handler.Tpo -c -o page-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.cc' || echo '$(srcdir)/'`gtk_xwindow_handler.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_xwindow_handler.Tpo $(DEPDIR)/page-gtk_xwindow_handler.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gtk_xwindow_handler.cc' object='page-gtk_xwindow_handler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.cc' || echo '$(srcdir)/'`gtk_xwindow_handler.cc
+
+page-gtk_xwindow_handler.obj: gtk_xwindow_handler.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-gtk_xwindow_handler.obj -MD -MP -MF $(DEPDIR)/page-gtk_xwindow_handler.Tpo -c -o page-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.cc'; then $(CYGPATH_W) 'gtk_xwindow_handler.cc'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_xwindow_handler.Tpo $(DEPDIR)/page-gtk_xwindow_handler.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gtk_xwindow_handler.cc' object='page-gtk_xwindow_handler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.cc'; then $(CYGPATH_W) 'gtk_xwindow_handler.cc'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.cc'; fi`
+
+page-page.o: page.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-page.o -MD -MP -MF $(DEPDIR)/page-page.Tpo -c -o page-page.o `test -f 'page.cc' || echo '$(srcdir)/'`page.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-page.Tpo $(DEPDIR)/page-page.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='page.cc' object='page-page.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-page.o `test -f 'page.cc' || echo '$(srcdir)/'`page.cc
+
+page-page.obj: page.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -MT page-page.obj -MD -MP -MF $(DEPDIR)/page-page.Tpo -c -o page-page.obj `if test -f 'page.cc'; then $(CYGPATH_W) 'page.cc'; else $(CYGPATH_W) '$(srcdir)/page.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page-page.Tpo $(DEPDIR)/page-page.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='page.cc' object='page-page.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CXXFLAGS) $(CXXFLAGS) -c -o page-page.obj `if test -f 'page.cc'; then $(CYGPATH_W) 'page.cc'; else $(CYGPATH_W) '$(srcdir)/page.cc'; fi`
+
 query_tree-query_tree.o: query_tree.cc
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(query_tree_CXXFLAGS) $(CXXFLAGS) -MT query_tree-query_tree.o -MD -MP -MF $(DEPDIR)/query_tree-query_tree.Tpo -c -o query_tree-query_tree.o `test -f 'query_tree.cc' || echo '$(srcdir)/'`query_tree.cc
 @am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/query_tree-query_tree.Tpo $(DEPDIR)/query_tree-query_tree.Po
@@ -341,34 +384,6 @@ query_tree-query_tree.obj: query_tree.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='query_tree.cc' object='query_tree-query_tree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(query_tree_CXXFLAGS) $(CXXFLAGS) -c -o query_tree-query_tree.obj `if test -f 'query_tree.cc'; then $(CYGPATH_W) 'query_tree.cc'; else $(CYGPATH_W) '$(srcdir)/query_tree.cc'; fi`
-
-tabwm-tabwm.o: tabwm.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -MT tabwm-tabwm.o -MD -MP -MF $(DEPDIR)/tabwm-tabwm.Tpo -c -o tabwm-tabwm.o `test -f 'tabwm.cc' || echo '$(srcdir)/'`tabwm.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/tabwm-tabwm.Tpo $(DEPDIR)/tabwm-tabwm.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tabwm.cc' object='tabwm-tabwm.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -c -o tabwm-tabwm.o `test -f 'tabwm.cc' || echo '$(srcdir)/'`tabwm.cc
-
-tabwm-tabwm.obj: tabwm.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -MT tabwm-tabwm.obj -MD -MP -MF $(DEPDIR)/tabwm-tabwm.Tpo -c -o tabwm-tabwm.obj `if test -f 'tabwm.cc'; then $(CYGPATH_W) 'tabwm.cc'; else $(CYGPATH_W) '$(srcdir)/tabwm.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/tabwm-tabwm.Tpo $(DEPDIR)/tabwm-tabwm.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='tabwm.cc' object='tabwm-tabwm.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -c -o tabwm-tabwm.obj `if test -f 'tabwm.cc'; then $(CYGPATH_W) 'tabwm.cc'; else $(CYGPATH_W) '$(srcdir)/tabwm.cc'; fi`
-
-tabwm-gtk_xwindow_handler.o: gtk_xwindow_handler.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -MT tabwm-gtk_xwindow_handler.o -MD -MP -MF $(DEPDIR)/tabwm-gtk_xwindow_handler.Tpo -c -o tabwm-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.cc' || echo '$(srcdir)/'`gtk_xwindow_handler.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/tabwm-gtk_xwindow_handler.Tpo $(DEPDIR)/tabwm-gtk_xwindow_handler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gtk_xwindow_handler.cc' object='tabwm-gtk_xwindow_handler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -c -o tabwm-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.cc' || echo '$(srcdir)/'`gtk_xwindow_handler.cc
-
-tabwm-gtk_xwindow_handler.obj: gtk_xwindow_handler.cc
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -MT tabwm-gtk_xwindow_handler.obj -MD -MP -MF $(DEPDIR)/tabwm-gtk_xwindow_handler.Tpo -c -o tabwm-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.cc'; then $(CYGPATH_W) 'gtk_xwindow_handler.cc'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.cc'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/tabwm-gtk_xwindow_handler.Tpo $(DEPDIR)/tabwm-gtk_xwindow_handler.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='gtk_xwindow_handler.cc' object='tabwm-gtk_xwindow_handler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tabwm_CXXFLAGS) $(CXXFLAGS) -c -o tabwm-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.cc'; then $(CYGPATH_W) 'gtk_xwindow_handler.cc'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.cc'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

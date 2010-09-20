@@ -1,6 +1,6 @@
-AC_INIT([tabwm], [0.0.2])
+AC_INIT([page], [0.0.2])
 AM_INIT_AUTOMAKE([-Wall -Werror])
-AC_CONFIG_SRCDIR([src/tabwm.cc])
+AC_CONFIG_SRCDIR([src/main.cc])
 
 PKG_CHECK_MODULES(X11, x11 >= 1.3.4)
 AC_SUBST(X11_CFLAGS)
