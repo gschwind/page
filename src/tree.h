@@ -8,7 +8,8 @@
 #ifndef TREE_H_
 #define TREE_H_
 
-#include "gtk/gtk.h"
+#include <gdk/gdk.h>
+#include <gtk/gtk.h>
 
 typedef struct _dock dock;
 struct _dock {
@@ -50,7 +51,7 @@ struct _tree {
 int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content);
 void tree_dock_init(tree * ths, void * ctx, tree * parent);
 void tree_dock_copy(tree * ths, tree * src);
-void tree_split(tree * ths);
+gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths);
 GtkWidget * tree_get_widget(tree * ths);
 
 
