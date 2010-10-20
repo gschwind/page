@@ -23,7 +23,6 @@ G_BEGIN_DECLS
 typedef struct _GtkXWindowHandler GtkXWindowHandler;
 typedef struct _GtkXWindowHandlerClass GtkXWindowHandlerClass;
 
-
 struct _GtkXWindowHandler {
   GtkWidget widget;
   GdkWindow * gwindow;
@@ -33,11 +32,9 @@ struct _GtkXWindowHandlerClass {
   GtkWidgetClass parent_class;
 };
 
-
 GtkType gtk_xwindow_handler_get_type(void);
 void gtk_xwindow_handler_set_gwindow(GtkXWindowHandler * xwindow_handler, GdkWindow * w);
 GtkWidget * gtk_xwindow_handler_new();
-
 
 G_END_DECLS
 

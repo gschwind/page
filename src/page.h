@@ -12,35 +12,54 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
+#include "tree.h"
 
-struct page {
+enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
+
+typedef struct _page page;
+struct _page {
 	GdkDisplay * dpy;
 	GdkScreen * scn;
 	GdkWindow * root;
+
+	/* size of scn */
 	gint sw, sh;
 
 	GdkWindow * gdk_main_win;
 	GtkWidget * gtk_main_win;
 
 	GMainLoop * main_loop;
-	GtkWidget * notebook;
-
+	GtkWidget * notebook1;
+	GtkWidget * notebook2;
+	GtkWidget * hpaned;
 	GdkCursor * main_cursor;
-	GList * managed_windows;
 
-	/* event handler */
+	GSList * clients;
+
+	/* events handlers */
 	GdkFilterReturn (*event_handler[LASTEvent])(page *, XEvent *);
+
+	tree * t;
 
 };
 
+/* juste create the page */
 page * page_new();
+/* init, must be call before other function of page */
 void page_init(page * ths, int * argc, char *** argv);
+/* link event to corresponding function */
 void page_init_event_hander(page * ths);
+/* run loop till exit */
 void page_run(page * ths);
+/* destroy the current context */
 void page_destroy(page * ths);
+/* this function scan for each sub window of root. */
 void page_scan(page * ths);
-void page_manage(page * ths, Window w, XWindowAttributes * wa);
-GdkFilterReturn page_event_callback(GdkXEvent * xevent, GdkEvent * event,
+/* manage a new visible window */
+void page_manage(page * ths, GdkWindow * w);
+/* filter event, event can be removed, translated to gdk, or just forwarded
+ * for normal processing */
+GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		gpointer data);
 GdkFilterReturn page_process_map_request(page * ths, XEvent * e);
 

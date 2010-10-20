@@ -10,11 +10,13 @@
 
 #include "gtk_xwindow_handler.h"
 
-struct client {
+typedef struct _client client;
+
+struct _client {
 	Window xwin;
 	GdkWindow * gwin;
-	GtkNotebook * notebook_parent;
 	GtkXWindowHandler * xwindow_handler;
+	GtkNotebook * notebook_parent;
 };
 
 #endif /* CLIENT_H_ */
