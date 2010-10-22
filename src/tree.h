@@ -60,6 +60,7 @@ void tree_dock_init(tree * ths, void * ctx, tree * parent);
 void tree_root_init(tree * ths, void * ctx);
 void tree_dock_copy(tree * ths, tree * src);
 gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths);
+gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths);
 GtkWidget * tree_get_widget(tree * ths);
 
 

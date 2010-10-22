@@ -26,6 +26,8 @@ void tree_build_control_tab(tree * ths) {
 			TRUE, TRUE, 0);
 	g_signal_connect(GTK_OBJECT(ths->data.d.split_button), "button-release-event",
 			GTK_SIGNAL_FUNC(tree_split), ths);
+	g_signal_connect(GTK_OBJECT(ths->data.d.close_button), "button-release-event",
+			GTK_SIGNAL_FUNC(tree_close), ths);
 	gtk_widget_show_all(ths->data.d.hbox);
 }
 
@@ -146,6 +148,76 @@ gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths) {
 	/* now the widget is handled by split_container */
 	gtk_widget_show_all(GTK_WIDGET(split->parent->w));
 	gtk_widget_queue_draw(GTK_WIDGET(split->parent->w));
+	return TRUE;
+}
+
+gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths) {
+	tree * tab_dst = NULL;
+	if (ths->parent->mode != TREE_ROOT) {
+		if (ths == ths->parent->pack1) {
+			tab_dst = ths->parent->pack2;
+		} else {
+			tab_dst = ths->parent->pack1;
+		}
+
+		int i = gtk_notebook_get_n_pages(GTK_NOTEBOOK(ths->data.d.notebook));
+		while (i--) {
+			GtkWidget * content = gtk_notebook_get_nth_page(
+					GTK_NOTEBOOK(ths->data.d.notebook), i);
+			GtkWidget * label = gtk_notebook_get_tab_label(
+					GTK_NOTEBOOK(ths->data.d.notebook), content);
+			if (label != ths->data.d.hbox) {
+				g_object_ref(G_OBJECT(content));
+				g_object_ref(G_OBJECT(label));
+				gtk_notebook_remove_page(GTK_NOTEBOOK(ths->data.d.notebook), i);
+				tree_append_widget(tab_dst, label, content);
+				g_object_unref(G_OBJECT(content));
+				g_object_unref(G_OBJECT(label));
+			} else {
+				gtk_notebook_remove_page(GTK_NOTEBOOK(ths->data.d.notebook), i);
+			}
+		}
+
+		g_object_ref(G_OBJECT(tab_dst->w));
+		/* remove the widget from the parent */
+		gtk_container_remove(GTK_CONTAINER(ths->parent->data.s.split_container),
+				GTK_WIDGET(tab_dst->w));
+		gtk_container_remove(
+				GTK_CONTAINER(ths->parent->parent->w),
+				GTK_WIDGET(ths->parent->w));
+		tab_dst->parent = ths->parent->parent;
+		/* now we rebuild gtk_tree */
+		if (ths->parent->parent->mode == TREE_ROOT) {
+			printf("find tree root \n");
+			/* add reference of the widget, avoid remove to destroy it */
+			gtk_container_add(GTK_CONTAINER(ths->parent->parent->data.r.window),
+					GTK_WIDGET(tab_dst->w));
+			free(ths->parent->parent->pack1);
+			ths->parent->parent->pack1 = tab_dst;
+		} else {
+			if (ths->parent->parent->pack1 == ths->parent) {
+				gtk_paned_pack1(GTK_PANED(ths->parent->parent->data.s.split_container),
+						GTK_WIDGET(tab_dst->w), FALSE, FALSE);
+				free(ths->parent->parent->pack1);
+				ths->parent->parent->pack1 = tab_dst;
+			} else {
+				gtk_paned_pack2(GTK_PANED(ths->parent->parent->data.s.split_container),
+						GTK_WIDGET(tab_dst->w), FALSE, FALSE);
+				free(ths->parent->parent->pack2);
+				ths->parent->parent->pack2 = tab_dst;
+			}
+
+		}
+
+		g_object_unref(G_OBJECT(tab_dst->w));
+		gtk_widget_show_all(tab_dst->parent->w);
+		gtk_widget_queue_draw(tab_dst->parent->w);
+		free(ths);
+		return TRUE;
+
+	} else {
+		return TRUE;
+	}
 	return TRUE;
 }
 
