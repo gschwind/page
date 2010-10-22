@@ -10,6 +10,7 @@
 
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
+#include "client.h"
 
 G_BEGIN_DECLS
 
@@ -25,7 +26,7 @@ typedef struct _GtkXWindowHandlerClass GtkXWindowHandlerClass;
 
 struct _GtkXWindowHandler {
   GtkWidget widget;
-  GdkWindow * gwindow;
+  client * c;
 };
 
 struct _GtkXWindowHandlerClass {
@@ -33,7 +34,8 @@ struct _GtkXWindowHandlerClass {
 };
 
 GtkType gtk_xwindow_handler_get_type(void);
-void gtk_xwindow_handler_set_gwindow(GtkXWindowHandler * xwindow_handler, GdkWindow * w);
+void gtk_xwindow_handler_set_client(GtkXWindowHandler * ths, client * c);
+client * gtk_xwindow_handler_get_client(GtkXWindowHandler * ths);
 GtkWidget * gtk_xwindow_handler_new();
 
 G_END_DECLS

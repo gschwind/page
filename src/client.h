@@ -8,15 +8,18 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 
-#include "gtk_xwindow_handler.h"
-
 typedef struct _client client;
-
 struct _client {
 	Window xwin;
 	GdkWindow * gwin;
-	GtkXWindowHandler * xwindow_handler;
 	GtkNotebook * notebook_parent;
+
+	guint orig_width;
+	guint orig_height;
+	guint orig_x;
+	guint orig_y;
+	guint orig_depth;
+
 };
 
 #endif /* CLIENT_H_ */

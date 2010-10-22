@@ -15,7 +15,8 @@ typedef struct _dock dock;
 struct _dock {
 	GtkWidget * notebook;
 	GtkWidget * hbox;
-	GtkWidget * split_button;
+	GtkWidget * hsplit_button;
+	GtkWidget * vsplit_button;
 	GtkWidget * close_button;
 	GtkWidget * exit_button;
 	GtkWidget * label;
@@ -59,7 +60,9 @@ int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content);
 void tree_dock_init(tree * ths, void * ctx, tree * parent);
 void tree_root_init(tree * ths, void * ctx);
 void tree_dock_copy(tree * ths, tree * src);
-gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths);
+gboolean tree_quit(GtkWidget * w, GdkEventButton * e, gpointer data);
+gboolean tree_hsplit(GtkWidget * x, GdkEventButton * e, tree * ths);
+gboolean tree_vsplit(GtkWidget * x, GdkEventButton * e, tree * ths);
 gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths);
 GtkWidget * tree_get_widget(tree * ths);
 

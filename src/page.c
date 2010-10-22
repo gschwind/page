@@ -13,6 +13,7 @@
 #include "page.h"
 #include "client.h"
 #include "tree.h"
+#include "gtk_xwindow_handler.h"
 
 static GdkAtom wmatom[WMLast];
 
@@ -34,12 +35,14 @@ static void page_page_added(GtkNotebook *notebook, GtkWidget *child,
 	/* register this page to the notebook */
 
 	page * ths = (page *) user_data;
-	client * c = page_find_client_by_widget(ths, child);
-	if (c == NULL)
-		return;
-	c->notebook_parent = notebook;
-	printf("page %p added to %p\n", child, notebook);
-	gtk_widget_queue_draw(GTK_WIDGET(notebook));
+	if (GTK_IS_XWINDOW_HANDLER(child)) {
+		client * c = gtk_xwindow_handler_get_client(GTK_XWINDOW_HANDLER(child));
+		if (c == NULL)
+			return;
+		c->notebook_parent = notebook;
+		printf("page %p added to %p\n", child, notebook);
+		gtk_widget_queue_draw(GTK_WIDGET(notebook));
+	}
 
 }
 
@@ -82,39 +85,7 @@ GtkWidget * build_control_tab(page * ths) {
 void page_run(page * ths) {
 	gint x, y, width, height, depth;
 
-	//ths->gtk_main_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	//gtk_window_set_default_size(GTK_WINDOW(ths->gtk_main_win), ths->sw, ths->sh);
-	//gtk_widget_show_all(ths->gtk_main_win);
-	//ths->gdk_main_win = gtk_widget_get_window(ths->gtk_main_win);
-	//ths->main_cursor = gdk_cursor_new(GDK_PLUS);
-	//gdk_window_set_cursor(ths->gdk_main_win, ths->main_cursor);
-
-	//ths->hpaned = gtk_hpaned_new();
-
-	//ths->notebook1 = gtk_notebook_new();
-	//ths->notebook2 = gtk_notebook_new();
-
-	//gtk_notebook_set_group_id(GTK_NOTEBOOK(ths->notebook1), 1928374);
-	//gtk_notebook_set_group_id(GTK_NOTEBOOK(ths->notebook2), 1928374);
-
-	//gtk_paned_pack1(GTK_PANED(ths->hpaned), ths->notebook1, 0, 0);
-	//gtk_paned_pack2(GTK_PANED(ths->hpaned), ths->notebook2, 0, 0);
-
-	//g_signal_connect(GTK_OBJECT(ths->notebook1), "page-added", GTK_SIGNAL_FUNC(page_page_added), ths);
-	//g_signal_connect(GTK_OBJECT(ths->notebook2), "page-added", GTK_SIGNAL_FUNC(page_page_added), ths);
-
-	//GtkWidget * label0 = gtk_label_new("hello world 0");
-	//GtkWidget * label1 = gtk_label_new("hello world 1");
-	//GtkWidget * label2 = gtk_label_new("hello world 2");
-	//GtkWidget * tab_label0 = build_control_tab(ths);
-	//GtkWidget * tab_label1 = gtk_label_new("label 1");
-	//GtkWidget * tab_label2 = gtk_label_new("label 2");
-
-	//gtk_notebook_append_page(GTK_NOTEBOOK(ths->notebook1), label0, tab_label0);
-	//gtk_notebook_append_page(GTK_NOTEBOOK(ths->notebook1), label1, tab_label1);
-	//gtk_notebook_append_page(GTK_NOTEBOOK(ths->notebook2), label2, tab_label2);
-
-	ths->t = (tree *)malloc(sizeof(tree));
+	ths->t = (tree *) malloc(sizeof(tree));
 	tree_root_init(ths->t, ths);
 
 	page_scan(ths);
@@ -187,6 +158,7 @@ void page_scan(page * ths) {
 
 /* this function is call when a client want map a new window
  * the evant is on root window, e->xmaprequest.window is the window that request the map */
+#if 0
 GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
 	printf("call %s\n", __FUNCTION__);
 	GdkWindow * w = gdk_window_foreign_new(e->xdestroywindow.window);
@@ -201,7 +173,7 @@ GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
 			GTK_WIDGET(c->xwindow_handler));
 	printf("remove %d of %p\n", n, c->notebook_parent);
 	if (n < 0)
-		return GDK_FILTER_CONTINUE;
+	return GDK_FILTER_CONTINUE;
 	gtk_notebook_remove_page((c->notebook_parent), n);
 	gtk_widget_queue_draw(GTK_WIDGET(c->notebook_parent));
 	ths->clients = g_slist_remove(ths->clients, c);
@@ -210,6 +182,7 @@ GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
 	return GDK_FILTER_REMOVE;
 
 }
+#endif
 
 /* this function is call when a client want map a new window
  * the evant is on root window, e->xmaprequest.window is the window that request the map */
@@ -268,19 +241,7 @@ client * page_find_client_by_gwindow(page * ths, GdkWindow * w) {
 	return NULL;
 }
 
-client * page_find_client_by_widget(page * ths, GtkWidget * w) {
-	printf("call %s\n", __FUNCTION__);
-	if (!GTK_IS_XWINDOW_HANDLER(w))
-		return NULL;
-	GSList * i = ths->clients;
-	while (i != NULL) {
-		if (((client *) (i->data))->xwindow_handler == GTK_XWINDOW_HANDLER(w))
-			return (client *) i->data;
-		i = i->next;
-	}
-	return NULL;
-}
-
+#if 0
 GdkFilterReturn page_process_window_destroy_event(page * ths, XEvent * e) {
 	printf("call %s %d\n", __FUNCTION__, (int) e->xdestroywindow.window);
 	client * c = 0;
@@ -299,6 +260,7 @@ GdkFilterReturn page_process_window_destroy_event(page * ths, XEvent * e) {
 	//gtk_widget_queue_draw(GTK_WIDGET(ths->notebook1));
 	return GDK_FILTER_REMOVE;
 }
+#endif
 
 void page_init_event_hander(page * ths) {
 	gint i;
@@ -306,9 +268,8 @@ void page_init_event_hander(page * ths) {
 		ths->event_handler[i] = NULL;
 	}
 
-	ths->event_handler[DestroyNotify] = page_process_destroy_notify_event;
 	ths->event_handler[MapRequest] = page_process_map_request_event;
-	ths->event_handler[DestroyNotify] = page_process_window_destroy_event;
+
 }
 
 void page_manage(page * ths, GdkWindow * w) {
@@ -330,15 +291,17 @@ void page_manage(page * ths, GdkWindow * w) {
 	c->gwin = w;
 	c->notebook_parent = 0;
 
-	gdk_window_get_geometry(w, &x, &y, &width, &height, &depth);
-	printf("manage %p %dx%d+%d+%d(%d)\n", w, width, height, x, y, depth);
+	/* get original parameters */
+	gdk_window_get_geometry(w, &c->orig_x, &c->orig_y, &c->orig_width,
+			&c->orig_height, &c->orig_depth);
+	printf("manage #%p %dx%d+%d+%d(%d)\n", w, c->orig_width, c->orig_height,
+			c->orig_x, c->orig_y, c->orig_depth);
 
 	gchar * title = g_strdup_printf("%p", w);
 	GtkWidget * label = gtk_label_new(title);
 	GtkWidget * content = gtk_xwindow_handler_new();
-	gtk_xwindow_handler_set_gwindow(GTK_XWINDOW_HANDLER(content), c->gwin);
+	gtk_xwindow_handler_set_client(GTK_XWINDOW_HANDLER(content), c);
 
-	c->xwindow_handler = GTK_XWINDOW_HANDLER(content);
 	/* before page prepend !! */
 	ths->clients = g_slist_prepend(ths->clients, c);
 
@@ -346,9 +309,6 @@ void page_manage(page * ths, GdkWindow * w) {
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
-	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy),
-			GDK_WINDOW_XID(w), StructureNotifyMask | PropertyChangeMask);
-	gdk_flush();
-	/* will be setup in page_added event */
-
+	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy), GDK_WINDOW_XID(w),
+			StructureNotifyMask | PropertyChangeMask);
 }

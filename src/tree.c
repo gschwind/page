@@ -11,21 +11,36 @@
 #include "tree.h"
 #include "page.h"
 
+gboolean tree_quit(GtkWidget * w, GdkEventButton * e, gpointer data) {
+	printf("call %s\n", __FUNCTION__);
+	page * ths = (page *) data;
+	gtk_widget_destroy(GTK_WIDGET(ths->gtk_main_win));
+	while(gtk_events_pending())
+		gtk_main_iteration();
+	gtk_main_quit();
+	return TRUE;
+}
+
 void tree_build_control_tab(tree * ths) {
-	ths->data.d.hbox = gtk_hbox_new(TRUE, 0);
-	ths->data.d.split_button = gtk_button_new_with_label("S");
+	ths->data.d.hbox = gtk_hbox_new(FALSE, 0);
+	ths->data.d.hsplit_button = gtk_button_new_with_label("HS");
+	ths->data.d.vsplit_button = gtk_button_new_with_label("VS");
 	ths->data.d.close_button = gtk_button_new_with_label("C");
 	ths->data.d.exit_button = gtk_button_new_with_label("E");
 	//g_signal_connect(GTK_OBJECT(exit_button), "button-release-event",
 	//		GTK_SIGNAL_FUNC(page_quit), ths);
-	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.split_button,
+	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.hsplit_button,
+			TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.vsplit_button,
 			TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.close_button,
 			TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.exit_button,
 			TRUE, TRUE, 0);
-	g_signal_connect(GTK_OBJECT(ths->data.d.split_button), "button-release-event",
-			GTK_SIGNAL_FUNC(tree_split), ths);
+	g_signal_connect(GTK_OBJECT(ths->data.d.hsplit_button), "button-release-event",
+			GTK_SIGNAL_FUNC(tree_hsplit), ths);
+	g_signal_connect(GTK_OBJECT(ths->data.d.vsplit_button), "button-release-event",
+			GTK_SIGNAL_FUNC(tree_vsplit), ths);
 	g_signal_connect(GTK_OBJECT(ths->data.d.close_button), "button-release-event",
 			GTK_SIGNAL_FUNC(tree_close), ths);
 	gtk_widget_show_all(ths->data.d.hbox);
@@ -96,16 +111,20 @@ int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content) {
 	return 0;
 }
 
-gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths) {
+gboolean tree_split_generic(tree * ths, int mode) {
 	printf("call %s\n", __FUNCTION__);
 	tree * split = (tree *) malloc(sizeof(tree));
 	split->parent = ths->parent;
 	ths->parent = split;
-	split->mode = TREE_HPANED;
+	split->mode = mode;
 	split->pack1 = ths;
 	split->pack2 = (tree *) malloc(sizeof(tree));
 	tree_dock_init(split->pack2, ths->ctx, split);
-	split->data.s.split_container = gtk_hpaned_new();
+	if (mode == TREE_HPANED) {
+		split->data.s.split_container = gtk_hpaned_new();
+	} else {
+		split->data.s.split_container = gtk_vpaned_new();
+	}
 	split->w = split->data.s.split_container;
 	split->ctx = ths->ctx;
 
@@ -151,7 +170,18 @@ gboolean tree_split(GtkWidget * x, GdkEventButton * e, tree * ths) {
 	return TRUE;
 }
 
+gboolean tree_hsplit(GtkWidget * x, GdkEventButton * e, tree * ths) {
+	printf("call %s #%p\n", __FUNCTION__, ths);
+	return tree_split_generic(ths, TREE_HPANED);
+}
+
+gboolean tree_vsplit(GtkWidget * x, GdkEventButton * e, tree * ths) {
+	printf("call %s #%p\n", __FUNCTION__, ths);
+	return tree_split_generic(ths, TREE_VPANED);
+}
+
 gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths) {
+	printf("Enter %s #%p\n", __FUNCTION__, ths);
 	tree * tab_dst = NULL;
 	if (ths->parent->mode != TREE_ROOT) {
 		if (ths == ths->parent->pack1) {
@@ -180,28 +210,31 @@ gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths) {
 
 		g_object_ref(G_OBJECT(tab_dst->w));
 		/* remove the widget from the parent */
-		gtk_container_remove(GTK_CONTAINER(ths->parent->data.s.split_container),
-				GTK_WIDGET(tab_dst->w));
 		gtk_container_remove(
-				GTK_CONTAINER(ths->parent->parent->w),
+				GTK_CONTAINER(ths->parent->data.s.split_container),
+				GTK_WIDGET(tab_dst->w));
+		gtk_container_remove(GTK_CONTAINER(ths->parent->parent->w),
 				GTK_WIDGET(ths->parent->w));
 		tab_dst->parent = ths->parent->parent;
 		/* now we rebuild gtk_tree */
 		if (ths->parent->parent->mode == TREE_ROOT) {
 			printf("find tree root \n");
 			/* add reference of the widget, avoid remove to destroy it */
-			gtk_container_add(GTK_CONTAINER(ths->parent->parent->data.r.window),
+			gtk_container_add(
+					GTK_CONTAINER(ths->parent->parent->data.r.window),
 					GTK_WIDGET(tab_dst->w));
 			free(ths->parent->parent->pack1);
 			ths->parent->parent->pack1 = tab_dst;
 		} else {
 			if (ths->parent->parent->pack1 == ths->parent) {
-				gtk_paned_pack1(GTK_PANED(ths->parent->parent->data.s.split_container),
+				gtk_paned_pack1(
+						GTK_PANED(ths->parent->parent->data.s.split_container),
 						GTK_WIDGET(tab_dst->w), FALSE, FALSE);
 				free(ths->parent->parent->pack1);
 				ths->parent->parent->pack1 = tab_dst;
 			} else {
-				gtk_paned_pack2(GTK_PANED(ths->parent->parent->data.s.split_container),
+				gtk_paned_pack2(
+						GTK_PANED(ths->parent->parent->data.s.split_container),
 						GTK_WIDGET(tab_dst->w), FALSE, FALSE);
 				free(ths->parent->parent->pack2);
 				ths->parent->parent->pack2 = tab_dst;
@@ -213,11 +246,15 @@ gboolean tree_close(GtkWidget * x, GdkEventButton * e, tree * ths) {
 		gtk_widget_show_all(tab_dst->parent->w);
 		gtk_widget_queue_draw(tab_dst->parent->w);
 		free(ths);
+		printf("Exit %s #%p\n", __FUNCTION__, ths);
 		return TRUE;
 
 	} else {
+		tree_quit(x, e, ths->ctx);
+		printf("Exit %s #%p\n", __FUNCTION__, ths);
 		return TRUE;
 	}
+	printf("Exit %s #%p\n", __FUNCTION__, ths);
 	return TRUE;
 }
 
