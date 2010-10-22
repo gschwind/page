@@ -296,7 +296,7 @@ GdkFilterReturn page_process_window_destroy_event(page * ths, XEvent * e) {
 		ths->clients = g_slist_remove(ths->clients, c);
 		free(c);
 	}
-	gtk_widget_queue_draw(GTK_WIDGET(ths->notebook1));
+	//gtk_widget_queue_draw(GTK_WIDGET(ths->notebook1));
 	return GDK_FILTER_REMOVE;
 }
 
