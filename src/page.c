@@ -62,7 +62,7 @@ gboolean page_quit(GtkWidget * w, GdkEventButton * e, gpointer data) {
 	printf("call %s\n", __FUNCTION__);
 	page * ths = (page *) data;
 	gtk_widget_destroy(GTK_WIDGET(ths->gtk_main_win));
-	g_main_loop_quit(ths->main_loop);
+	//g_main_loop_quit(ths->main_loop);
 }
 
 GtkWidget * build_control_tab(page * ths) {
@@ -82,12 +82,12 @@ GtkWidget * build_control_tab(page * ths) {
 void page_run(page * ths) {
 	gint x, y, width, height, depth;
 
-	ths->gtk_main_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_default_size(GTK_WINDOW(ths->gtk_main_win), ths->sw, ths->sh);
-	gtk_widget_show_all(ths->gtk_main_win);
-	ths->gdk_main_win = gtk_widget_get_window(ths->gtk_main_win);
-	ths->main_cursor = gdk_cursor_new(GDK_PLUS);
-	gdk_window_set_cursor(ths->gdk_main_win, ths->main_cursor);
+	//ths->gtk_main_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	//gtk_window_set_default_size(GTK_WINDOW(ths->gtk_main_win), ths->sw, ths->sh);
+	//gtk_widget_show_all(ths->gtk_main_win);
+	//ths->gdk_main_win = gtk_widget_get_window(ths->gtk_main_win);
+	//ths->main_cursor = gdk_cursor_new(GDK_PLUS);
+	//gdk_window_set_cursor(ths->gdk_main_win, ths->main_cursor);
 
 	//ths->hpaned = gtk_hpaned_new();
 
@@ -115,24 +115,25 @@ void page_run(page * ths) {
 	//gtk_notebook_append_page(GTK_NOTEBOOK(ths->notebook2), label2, tab_label2);
 
 	ths->t = (tree *)malloc(sizeof(tree));
-	tree_dock_init(ths->t, ths, NULL);
-	gtk_container_add(GTK_CONTAINER(ths->gtk_main_win), tree_get_widget(ths->t));
+	tree_root_init(ths->t, ths);
 
 	page_scan(ths);
 	gtk_widget_show_all(ths->gtk_main_win);
 	gtk_widget_queue_draw(ths->gtk_main_win);
+	gdk_window_set_events(ths->gdk_main_win, GDK_ALL_EVENTS_MASK);
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
 	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy),
-			GDK_WINDOW_XID(ths->root), SubstructureRedirectMask
+			GDK_WINDOW_XID(ths->root), ExposureMask | SubstructureRedirectMask
 					| SubstructureNotifyMask);
 	/* get all unhandled event */
 	gdk_window_add_filter(ths->root, page_filter_event, ths);
 
-	ths->main_loop = g_main_loop_new(NULL, FALSE);
+	//ths->main_loop = g_main_loop_new(NULL, FALSE);
 	printf("start main loop\n");
-	g_main_loop_run(ths->main_loop);
+	//g_main_loop_run(ths->main_loop);
+	gtk_main();
 
 }
 
