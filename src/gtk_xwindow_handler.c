@@ -45,6 +45,37 @@ static void gtk_xwindow_handler_unmap(GtkWidget *widget);
 static void gtk_xwindow_handler_paint(GtkWidget *widget);
 static void gtk_xwindow_handler_destroy(GtkObject *object);
 
+void gtk_xwindow_handler_update_client_size(client * c, gint w, gint h) {
+	if (c) {
+		if (c->maxw != 0 && w > c->maxw) {
+			w = c->maxw;
+		}
+
+		if (c->maxh != 0 && h > c->maxh) {
+			h = c->maxh;
+		}
+
+		if (c->minw != 0 && w < c->minw) {
+			w = c->minw;
+		}
+
+		if (c->minh != 0 && h < c->minh) {
+			h = c->minh;
+		}
+
+		if (c->basew != 0) {
+			w -= ((w - c->basew) % c->incw);
+		}
+
+		if (c->baseh != 0) {
+			h -= ((h - c->baseh) % c->inch);
+		}
+
+		/* TODO respect Aspect */
+		gdk_window_move_resize(c->gwin, 0, 0, w, h);
+	}
+}
+
 GtkType gtk_xwindow_handler_get_type(void) {
 	static GtkType gtk_xwindow_handler_type = 0;
 	if (!gtk_xwindow_handler_type) {
@@ -108,10 +139,8 @@ static void gtk_xwindow_handler_size_allocate(GtkWidget *widget,
 	if (GTK_WIDGET_REALIZED(widget)) {
 		gdk_window_move_resize(widget->window, allocation->x, allocation->y,
 				allocation->width, allocation->height);
-		if (GTK_XWINDOW_HANDLER(widget)->c)
-			gdk_window_move_resize(GTK_XWINDOW_HANDLER(widget)->c->gwin, 0, 0,
-					GTK_XWINDOW_HANDLER(widget)->c->orig_width,
-					GTK_XWINDOW_HANDLER(widget)->c->orig_height);
+		gtk_xwindow_handler_update_client_size(GTK_XWINDOW_HANDLER(widget)->c,
+				allocation->width, allocation->height);
 	}
 }
 
@@ -170,11 +199,10 @@ static void gtk_xwindow_handler_realize(GtkWidget *widget) {
 	g_return_if_fail(GDK_IS_WINDOW(GTK_XWINDOW_HANDLER(widget)->c->gwin));
 
 	if (GTK_XWINDOW_HANDLER(widget)->c) {
-		gdk_window_reparent(GTK_XWINDOW_HANDLER(widget)->c->gwin,
-				widget->window, 0, 0);
-		gdk_window_move_resize(GTK_XWINDOW_HANDLER(widget)->c->gwin, 0, 0,
-				GTK_XWINDOW_HANDLER(widget)->c->orig_width,
-				GTK_XWINDOW_HANDLER(widget)->c->orig_height);
+		client * c = GTK_XWINDOW_HANDLER(widget)->c;
+		gdk_window_reparent(c->gwin, widget->window, 0, 0);
+		gtk_xwindow_handler_update_client_size(c, widget->allocation.width,
+				widget->allocation.height);
 	}
 	GTK_WIDGET_SET_FLAGS(widget, GTK_REALIZED);
 }
@@ -200,9 +228,8 @@ static gboolean gtk_xwindow_handler_configure_event(GtkWidget *widget,
 			event->width);
 	gdk_window_move_resize(widget->window, event->x, event->y, event->width,
 			event->height);
-	gdk_window_move_resize(GTK_XWINDOW_HANDLER(widget)->c->gwin, 0, 0,
-			GTK_XWINDOW_HANDLER(widget)->c->orig_width,
-			GTK_XWINDOW_HANDLER(widget)->c->orig_height);
+	client * c = GTK_XWINDOW_HANDLER(widget)->c;
+	gtk_xwindow_handler_update_client_size(c, event->width, event->height);
 	/* event done */
 	return TRUE;
 }

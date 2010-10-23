@@ -28,6 +28,19 @@ struct _client {
 
 	gchar * name;
 
+	gint basew;
+	gint baseh;
+	gint minw;
+	gint minh;
+	gint maxw;
+	gint maxh;
+	gint incw;
+	gint inch;
+	gdouble mina;
+	gdouble maxa;
+
+	gboolean is_fixed_size;
+
 	guint orig_width;
 	guint orig_height;
 	guint orig_x;

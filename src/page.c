@@ -86,6 +86,7 @@ gboolean page_get_text_prop(page * ths, Window w, Atom atom, gchar ** text) {
 	return True;
 }
 
+/* inspired from dwm */
 void page_update_title(page * ths, client * c) {
 	if(!page_get_text_prop(ths, c->xwin, ths->netatom[NetWMName], &c->name))
 		if(!page_get_text_prop(ths, c->xwin, XA_WM_NAME, &c->name)) {
@@ -95,6 +96,63 @@ void page_update_title(page * ths, client * c) {
 		g_free(c->name);
 		c->name = g_strdup_printf("%p (broken)", (gpointer)c->xwin);
 	}
+}
+
+void page_update_size_hints(page * ths, client * c) {
+	long msize;
+	XSizeHints size;
+
+	if(!XGetWMNormalHints(gdk_x11_display_get_xdisplay(ths->dpy), c->xwin, &size, &msize))
+		/* size is uninitialized, ensure that size.flags aren't used */
+		size.flags = PSize;
+
+	if(size.flags & PBaseSize) {
+		c->basew = size.base_width;
+		c->baseh = size.base_height;
+	} else if (size.flags & PMinSize) {
+		c->basew = size.min_width;
+		c->baseh = size.min_height;
+	} else {
+		c->basew = 0;
+		c->baseh = 0;
+	}
+
+	if(size.flags & PResizeInc) {
+		c->incw = size.width_inc;
+		c->inch = size.height_inc;
+	} else {
+		c->incw = 0;
+		c->inch = 0;
+	}
+
+	if(size.flags & PMaxSize) {
+		c->maxw = size.max_width;
+		c->maxh = size.max_height;
+	} else {
+		c->maxw = 0;
+		c->maxh = 0;
+	}
+
+	if(size.flags & PMinSize) {
+		c->minw = size.min_width;
+		c->minh = size.min_height;
+	} else if(size.flags & PBaseSize) {
+		c->minw = size.base_width;
+		c->minh = size.base_height;
+	} else {
+		c->minw = 0;
+		c->minh = 0;
+	}
+
+	if(size.flags & PAspect) {
+		c->mina = (gdouble)size.min_aspect.y / (gdouble)size.min_aspect.x;
+		c->maxa = (gdouble)size.max_aspect.x / (gdouble)size.max_aspect.y;
+	} else {
+		c->maxa = 0.0;
+		c->mina = 0.0;
+	}
+	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh
+	             && c->maxw == c->minw && c->maxh == c->minh);
 }
 
 void page_init(page * ths, int * argc, char *** argv) {
@@ -348,6 +406,7 @@ void page_manage(page * ths, GdkWindow * w) {
 	c->gwin = w;
 	c->notebook_parent = 0;
 	page_update_title(ths, c);
+	page_update_size_hints(ths, c);
 
 	/* get original parameters */
 	gdk_window_get_geometry(w, &c->orig_x, &c->orig_y, &c->orig_width,
