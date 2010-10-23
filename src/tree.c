@@ -60,6 +60,8 @@ void tree_dock_init(tree * ths, void * ctx, tree * parent) {
 	ths->mode = TREE_NOTEBOOK;
 	ths->data.d.notebook = gtk_notebook_new();
 	ths->w = ths->data.d.notebook;
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(ths->data.d.notebook), True);
+	gtk_notebook_popup_enable(GTK_NOTEBOOK(ths->data.d.notebook));
 	gtk_notebook_set_group_id(GTK_NOTEBOOK(ths->data.d.notebook), 1928374);
 	ths->data.d.label = gtk_label_new("hello world 0");
 	tree_build_control_tab(ths);
