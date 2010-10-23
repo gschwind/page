@@ -22,12 +22,13 @@
 #include <gdk/gdk.h>
 #include <gdk/gdkx.h>
 #include <gtk/gtk.h>
+#include <X11/X.h>
+#include <X11/Xatom.h>
 #include "page.h"
 #include "client.h"
 #include "tree.h"
 #include "gtk_xwindow_handler.h"
 
-static GdkAtom wmatom[WMLast];
 
 client * page_find_client_by_widget(page * ths, GtkWidget * w);
 client * page_find_client_by_gwindow(page * ths, GdkWindow * w);
@@ -58,6 +59,44 @@ static void page_page_added(GtkNotebook *notebook, GtkWidget *child,
 
 }
 
+/* inspired from dwm */
+gboolean page_get_text_prop(page * ths, Window w, Atom atom, gchar ** text) {
+	char **list = NULL;
+	int n;
+	XTextProperty name;
+	if (!text)
+		return False;
+	XGetTextProperty(gdk_x11_display_get_xdisplay(ths->dpy), w, &name, atom);
+	if (!name.nitems)
+		return False;
+	if (name.encoding == XA_STRING) {
+		*text = g_strdup((gchar const *) name.value);
+	} else {
+		if (XmbTextPropertyToTextList(gdk_x11_display_get_xdisplay(ths->dpy),
+				&name, &list, &n) == Success) {
+			if (n > 0) {
+				if (list[0]) {
+					*text = g_strdup(list[0]);
+				}
+			}
+			XFreeStringList(list);
+		}
+	}
+	XFree(name.value);
+	return True;
+}
+
+void page_update_title(page * ths, client * c) {
+	if(!page_get_text_prop(ths, c->xwin, ths->netatom[NetWMName], &c->name))
+		if(!page_get_text_prop(ths, c->xwin, XA_WM_NAME, &c->name)) {
+			c->name = g_strdup_printf("%p (noname)", (gpointer)c->xwin);
+		}
+	if(c->name[0] == '\0') { /* hack to mark broken clients */
+		g_free(c->name);
+		c->name = g_strdup_printf("%p (broken)", (gpointer)c->xwin);
+	}
+}
+
 void page_init(page * ths, int * argc, char *** argv) {
 	printf("call %s\n", __FUNCTION__);
 	gtk_init(argc, argv);
@@ -67,7 +106,13 @@ void page_init(page * ths, int * argc, char *** argv) {
 	gdk_window_get_geometry(ths->root, NULL, NULL, &ths->sw, &ths->sh, NULL);
 	printf("display size %d %d\n", ths->sw, ths->sh);
 
-	wmatom[WMState] = gdk_atom_intern("WM_STATE", False);
+	ths->wmatom[WMState] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy), "WM_STATE", False);
+
+	ths->netatom[NetSupported] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy), "_NET_SUPPORTED", False);
+	ths->netatom[NetWMName] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy), "_NET_WM_NAME", False);
+	ths->netatom[NetWMState] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy), "_NET_WM_STATE", False);
+	ths->netatom[NetWMFullscreen] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy), "_NET_WM_STATE_FULLSCREEN", False);
+
 	ths->clients = 0;
 
 	page_init_event_hander(ths);
@@ -107,9 +152,9 @@ void page_run(page * ths) {
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
-	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy),
-			GDK_WINDOW_XID(ths->root), ExposureMask | SubstructureRedirectMask
-					| SubstructureNotifyMask);
+	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy), GDK_WINDOW_XID(
+			ths->root), ExposureMask | SubstructureRedirectMask
+			| SubstructureNotifyMask);
 	/* get all unhandled event */
 	gdk_window_add_filter(ths->root, page_filter_event, ths);
 
@@ -263,7 +308,7 @@ GdkFilterReturn page_process_window_destroy_event(page * ths, XEvent * e) {
 				GTK_WIDGET(c->xwindow_handler));
 		printf("remove %d of %p\n", n, c->notebook_parent);
 		if (n < 0)
-			return GDK_FILTER_CONTINUE;
+		return GDK_FILTER_CONTINUE;
 		gtk_notebook_remove_page((c->notebook_parent), n);
 		gtk_widget_queue_draw(GTK_WIDGET(c->notebook_parent));
 		ths->clients = g_slist_remove(ths->clients, c);
@@ -302,6 +347,7 @@ void page_manage(page * ths, GdkWindow * w) {
 	c->xwin = GDK_WINDOW_XID(w);
 	c->gwin = w;
 	c->notebook_parent = 0;
+	page_update_title(ths, c);
 
 	/* get original parameters */
 	gdk_window_get_geometry(w, &c->orig_x, &c->orig_y, &c->orig_width,
@@ -309,8 +355,7 @@ void page_manage(page * ths, GdkWindow * w) {
 	printf("manage #%p %dx%d+%d+%d(%d)\n", w, c->orig_width, c->orig_height,
 			c->orig_x, c->orig_y, c->orig_depth);
 
-	gchar * title = g_strdup_printf("%p", w);
-	GtkWidget * label = gtk_label_new(title);
+	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_xwindow_handler_new();
 	gtk_xwindow_handler_set_client(GTK_XWINDOW_HANDLER(content), c);
 
@@ -321,7 +366,7 @@ void page_manage(page * ths, GdkWindow * w) {
 
 	/* this window will not be destroyed on page close (one bug less)
 	 * TODO check gdk equivalent */
-	XAddToSaveSet (gdk_x11_display_get_xdisplay(ths->dpy), c->xwin);
+	XAddToSaveSet(gdk_x11_display_get_xdisplay(ths->dpy), c->xwin);
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */

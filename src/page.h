@@ -27,6 +27,8 @@
 #include "tree.h"
 
 enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
+enum { NetSupported, NetWMName, NetWMState,
+       NetWMFullscreen, NetLast };                      /* EWMH atoms */
 
 typedef struct _page page;
 struct _page {
@@ -52,6 +54,9 @@ struct _page {
 	GdkFilterReturn (*event_handler[LASTEvent])(page *, XEvent *);
 
 	tree * t;
+
+	Atom wmatom[WMLast];
+	Atom netatom[NetLast];
 
 };
 

@@ -26,6 +26,8 @@ struct _client {
 	GdkWindow * gwin;
 	GtkNotebook * notebook_parent;
 
+	gchar * name;
+
 	guint orig_width;
 	guint orig_height;
 	guint orig_x;
