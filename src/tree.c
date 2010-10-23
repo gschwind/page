@@ -38,7 +38,6 @@ void tree_build_control_tab(tree * ths) {
 	ths->data.d.hsplit_button = gtk_button_new_with_label("HS");
 	ths->data.d.vsplit_button = gtk_button_new_with_label("VS");
 	ths->data.d.close_button = gtk_button_new_with_label("C");
-	ths->data.d.exit_button = gtk_button_new_with_label("E");
 	//g_signal_connect(GTK_OBJECT(exit_button), "button-release-event",
 	//		GTK_SIGNAL_FUNC(page_quit), ths);
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.hsplit_button,
@@ -46,8 +45,6 @@ void tree_build_control_tab(tree * ths) {
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.vsplit_button,
 			TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.close_button,
-			TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.exit_button,
 			TRUE, TRUE, 0);
 	g_signal_connect(GTK_OBJECT(ths->data.d.hsplit_button), "button-release-event",
 			GTK_SIGNAL_FUNC(tree_hsplit), ths);

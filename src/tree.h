@@ -30,7 +30,6 @@ struct _dock {
 	GtkWidget * hsplit_button;
 	GtkWidget * vsplit_button;
 	GtkWidget * close_button;
-	GtkWidget * exit_button;
 	GtkWidget * label;
 };
 
