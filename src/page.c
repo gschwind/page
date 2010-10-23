@@ -307,6 +307,10 @@ void page_manage(page * ths, GdkWindow * w) {
 
 	tree_append_widget(ths->t, label, content);
 
+	/* this window will not be destroyed on page close (one bug less)
+	 * TODO check gdk equivalent */
+	XAddToSaveSet (gdk_x11_display_get_xdisplay(ths->dpy), c->xwin);
+
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
 	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy), GDK_WINDOW_XID(w),
