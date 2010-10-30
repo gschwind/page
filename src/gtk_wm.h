@@ -48,8 +48,8 @@ struct _GtkWMClass {
 };
 
 GtkType gtk_wm_get_type(void);
-GtkWidget * gtk_wm_new();
-void gtk_wm_set_client(GtkWidget * w, client *c);
+GtkWidget * gtk_wm_new(client * c);
+void gtk_wm_set_client(GtkWM * w, client *c);
 
 G_END_DECLS
 

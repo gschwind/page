@@ -342,6 +342,17 @@ client * page_find_client_by_xwindow(page * ths, Window w) {
 	return NULL;
 }
 
+client * page_find_client_by_clipping_window(page * ths, Window w) {
+	printf("call %s\n", __FUNCTION__);
+	GSList * i = ths->clients;
+	while (i != NULL) {
+		if (((client *) (i->data))->clipping_window == w)
+			return (client *) i->data;
+		i = i->next;
+	}
+	return NULL;
+}
+
 /* this function is call when a client want map a new window
  * the event is on root window, e->xmaprequest.window is the window that request the map */
 GdkFilterReturn page_process_map_request_event(page * ths, XEvent * e) {
@@ -405,6 +416,10 @@ void page_manage(page * ths, Window w) {
 		printf("Window %p is already managed\n", c);
 		return;
 	}
+
+	if (page_find_client_by_clipping_window(ths, w))
+		return;
+
 	c = malloc(sizeof(client));
 	c->xwin = w;
 	c->root = ths->xroot;
@@ -417,9 +432,11 @@ void page_manage(page * ths, Window w) {
 	page_update_title(ths, c);
 	page_update_size_hints(ths, c);
 
+	c->clipping_window = XCreateSimpleWindow(c->dpy, c->root, 0, 0, 1, 1, 0,
+			XBlackPixel(c->dpy, 0), XWhitePixel(c->dpy, 0));
+
 	GtkWidget * label = gtk_label_new(c->name);
-	GtkWidget * content = gtk_wm_new();
-	gtk_wm_set_client(GTK_WM(content), c);
+	GtkWidget * content = gtk_wm_new(c);
 	tree_append_widget(ths->t, label, content);
 
 	/* this window will not be destroyed on page close (one bug less)

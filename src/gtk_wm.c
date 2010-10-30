@@ -42,8 +42,10 @@ GtkType gtk_wm_get_type(void) {
 	return gtk_wm_type;
 }
 
-GtkWidget * gtk_wm_new() {
-	return GTK_WIDGET(gtk_type_new(gtk_wm_get_type()));
+GtkWidget * gtk_wm_new(client * c) {
+	GtkWM * w = g_object_new(GTK_TYPE_WM, NULL);
+	gtk_wm_set_client(w, c);
+	return GTK_WIDGET(w);
 }
 
 static void gtk_wm_class_init(GtkWMClass *klass) {
@@ -70,7 +72,7 @@ static void gtk_wm_init(GtkWM * ths) {
 	GTK_WM(ths)->c = NULL;
 }
 
-void gtk_wm_set_client(GtkWidget * w, client *c) {
+void gtk_wm_set_client(GtkWM * w, client *c) {
 	g_return_if_fail(GTK_IS_WM(w));
 	GTK_WM(w)->c = c;
 	GTK_WM(w)->need_reparent = TRUE;
@@ -116,21 +118,15 @@ static void gtk_wm_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 	g_return_if_fail(widget != NULL);
 	g_return_if_fail(GTK_IS_WM(widget));
 	g_return_if_fail(allocation != NULL);
-
 	widget->allocation = *allocation;
-	if (gtk_widget_get_has_window(widget)) {
-		fprintf(stderr, "allocate %dx%d+%d+%d\n", allocation->width,
-				allocation->height, allocation->x, allocation->y);
-		gdk_window_move_resize(widget->window, allocation->x, allocation->y,
-				allocation->width, allocation->height);
-		client * c = GTK_WM(widget)->c;
-		if (c) {
-			gtk_wm_update_client_size(c, allocation->width, allocation->height);
-			XMoveResizeWindow(c->dpy, c->xwin, allocation->x, allocation->y, c->width, c->height);
-		}
-	} else {
-		GTK_WM(widget)->need_resize = TRUE;
-	}
+	client * c = GTK_WM(widget)->c;
+
+	fprintf(stderr, "allocate %dx%d+%d+%d\n", allocation->width,
+			allocation->height, allocation->x, allocation->y);
+	XMoveResizeWindow(c->dpy, c->clipping_window, allocation->x, allocation->y,
+			allocation->width, allocation->height);
+	gtk_wm_update_client_size(c, allocation->width, allocation->height);
+	XMoveResizeWindow(c->dpy, c->xwin, 0, 0, c->width, c->height);
 	fprintf(stderr, "Return %s #%p\n", __FUNCTION__, widget);
 }
 
@@ -138,21 +134,9 @@ static void gtk_wm_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 static void gtk_wm_unrealize(GtkWidget *widget) {
 	printf("Enterring %s #%p\n", __FUNCTION__, widget);
 	if (gtk_widget_get_realized(widget)) {
-
-		if (gtk_widget_get_mapped(widget)) {
-			GTK_WIDGET_GET_CLASS(widget)->unmap(widget);
-		}
-
 		client * c = GTK_WM(widget)->c;
-		if (!GTK_WM(widget)->need_reparent && c) {
-			XReparentWindow(c->dpy, c->xwin, c->root, 0, 0);
-		}
-
-		gdk_window_destroy(widget->window);
-		GTK_WM(widget)->need_reparent = FALSE;
+		XReparentWindow(c->dpy, c->clipping_window, c->root, 0, 0);
 		gtk_widget_set_realized(widget, FALSE);
-		gtk_widget_set_has_window(widget, FALSE);
-
 	}
 	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
@@ -164,41 +148,34 @@ static void gtk_wm_realize(GtkWidget *widget) {
 
 	if (!gtk_widget_get_realized(widget)) {
 		gtk_widget_set_realized(widget, TRUE);
-		gtk_widget_set_has_window(widget, TRUE);
+		gtk_widget_set_has_window(widget, FALSE);
 		GTK_WM(widget)->need_resize = FALSE;
-		GdkWindowAttr attributes;
 		guint attributes_mask;
-
-		if (GTK_WM(widget)->c)
-			GTK_WM(widget)->need_reparent = TRUE;
-
+		GdkWindowAttr attributes;
 		attributes.window_type = GDK_WINDOW_CHILD;
 		attributes.x = widget->allocation.x;
 		attributes.y = widget->allocation.y;
 		attributes.width = widget->allocation.width;
 		attributes.height = widget->allocation.height;
 		attributes.wclass = GDK_INPUT_OUTPUT;
-		attributes.event_mask = gtk_widget_get_events(widget)
-				| GDK_ALL_EVENTS_MASK;
+		attributes.event_mask = gtk_widget_get_events(widget);
 		attributes_mask = GDK_WA_X | GDK_WA_Y;
 
 		widget->window = gdk_window_new(gtk_widget_get_parent_window(widget),
 				&attributes, attributes_mask);
-		/* X window seems to not be created on gdk_window_new
-		 * Here we force the creation of this window to allow
-		 * reparrent. This behaviour is versatil :/ (more than 4 hours to find the
-		 * issue and solve it).
-		 * there is no probleme with the child window since it is on the
-		 *  way to be managed
-		 */
-		g_return_if_fail(gdk_window_ensure_native(widget->window));
 
 		/* Not clear */
 		gdk_window_set_user_data(widget->window, widget);
 
-		widget->style = gtk_style_attach(widget->style, widget->window);
-		gtk_style_set_background(widget->style, widget->window,
-				GTK_STATE_PRELIGHT);
+		client * c = GTK_WM(widget)->c;
+
+		XReparentWindow(c->dpy, c->clipping_window,
+				GDK_WINDOW_XID(gtk_widget_get_parent_window(widget)),
+				widget->allocation.x, widget->allocation.y);
+		XMoveResizeWindow(c->dpy, c->clipping_window, widget->allocation.x,
+				widget->allocation.y, widget->allocation.width,
+				widget->allocation.height);
+		XReparentWindow(c->dpy, c->xwin, c->clipping_window, 0, 0);
 
 	}
 	printf("Return in %s #%p\n", __FUNCTION__, widget);
@@ -207,47 +184,17 @@ static void gtk_wm_realize(GtkWidget *widget) {
 static void gtk_wm_unmap(GtkWidget *widget) {
 	printf("Entering in %s #%p\n", __FUNCTION__, widget);
 	client * c = GTK_WM(widget)->c;
-	if (gtk_widget_get_mapped(widget) && gtk_widget_get_has_window(widget)) {
-		if (c)
-			XUnmapWindow(c->dpy, c->xwin);
-		gtk_widget_set_mapped(widget, FALSE);
-		gdk_window_hide(widget->window);
-	}
+	XUnmapWindow(c->dpy, c->xwin);
+	XUnmapWindow(c->dpy, c->clipping_window);
 	printf("Return from %s #%p\n", __FUNCTION__, widget);
 }
 
 static void gtk_wm_map(GtkWidget * widget) {
 	printf("Enter %s #%p\n", __FUNCTION__, widget);
 	client * c = GTK_WM(widget)->c;
-	g_assert (gtk_widget_get_realized (widget));
-	if (!gtk_widget_get_mapped(widget) && gtk_widget_get_has_window(widget)) {
-		if (GTK_WM(widget)->need_resize) {
-			fprintf(stderr, "allocate %dx%d+%d+%d\n", widget->allocation.width,
-					widget->allocation.height, widget->allocation.x,
-					widget->allocation.y);
-			gdk_window_move_resize(widget->window, widget->allocation.x,
-					widget->allocation.y, widget->allocation.width,
-					widget->allocation.height);
-
-			if (c) {
-				gtk_wm_update_client_size(c, widget->allocation.width,
-						widget->allocation.height);
-				XMoveResizeWindow(c->dpy, c->xwin, widget->allocation.x, widget->allocation.y, c->width, c->height);
-				if (GTK_WM(widget)->need_reparent) {
-					XReparentWindow(c->dpy, c->xwin,
-							GDK_WINDOW_XID(gtk_widget_get_window(widget)),
-							widget->allocation.x, widget->allocation.y);
-					GTK_WM(widget)->need_reparent = FALSE;
-				}
-			}
-			GTK_WM(widget)->need_resize = FALSE;
-		}
-
-		if (c)
-			XMapWindow(c->dpy, c->xwin);
-		gtk_widget_set_mapped(widget, TRUE);
-		gdk_window_show(widget->window);
-	}
+	XMapWindow(c->dpy, c->clipping_window);
+	XMapWindow(c->dpy, c->xwin);
+	XRaiseWindow(c->dpy, c->clipping_window);
 	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
 
