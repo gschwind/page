@@ -106,6 +106,7 @@ int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content) {
 				content, TRUE);
 		gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(ths->data.d.notebook),
 				content, TRUE);
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(ths->data.d.notebook), 1);
 		gtk_widget_show_all(GTK_WIDGET(ths->data.d.notebook));
 		gtk_widget_queue_draw(GTK_WIDGET(ths->data.d.notebook));
 		return 1;

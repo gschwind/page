@@ -25,6 +25,7 @@
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
 #include "tree.h"
+#include "client.h"
 
 enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
 enum { NetSupported, NetWMName, NetWMState,
@@ -32,6 +33,8 @@ enum { NetSupported, NetWMName, NetWMState,
 
 typedef struct _page page;
 struct _page {
+	Display * xdpy;
+	Window xroot;
 	GdkDisplay * dpy;
 	GdkScreen * scn;
 	GdkWindow * root;
@@ -49,6 +52,7 @@ struct _page {
 	GdkCursor * main_cursor;
 
 	GSList * clients;
+	GSList * process_event;
 
 	/* events handlers */
 	GdkFilterReturn (*event_handler[LASTEvent])(page *, XEvent *);
@@ -73,11 +77,19 @@ void page_destroy(page * ths);
 /* this function scan for each sub window of root. */
 void page_scan(page * ths);
 /* manage a new visible window */
-void page_manage(page * ths, GdkWindow * w);
+void page_manage(page * ths, Window w);
 /* filter event, event can be removed, translated to gdk, or just forwarded
  * for normal processing */
 GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		gpointer data);
 GdkFilterReturn page_process_map_request(page * ths, XEvent * e);
+/* clients create a window */
+GdkFilterReturn page_process_create_notify_event(page * ths, XEvent * e);
+/* clients configure is window */
+GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * e);
+/* do unmap */
+GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * e);
+
+client * page_find_client_by_xwindow(page * ths, Window w);
 
 #endif /* PAGE_CONTEXT_H_ */

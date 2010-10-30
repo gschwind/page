@@ -34,7 +34,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = page$(EXEEXT) query_tree$(EXEEXT)
+bin_PROGRAMS = page$(EXEEXT) query_tree$(EXEEXT) log_events$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -46,11 +46,18 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_log_events_OBJECTS = log_events-log_events.$(OBJEXT)
+log_events_OBJECTS = $(am_log_events_OBJECTS)
+am__DEPENDENCIES_1 =
+log_events_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+log_events_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(log_events_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_page_OBJECTS = page-main.$(OBJEXT) \
 	page-gtk_xwindow_handler.$(OBJEXT) page-page.$(OBJEXT) \
-	page-tree.$(OBJEXT)
+	page-tree.$(OBJEXT) page-gtk_wm.$(OBJEXT)
 page_OBJECTS = $(am_page_OBJECTS)
-am__DEPENDENCIES_1 =
 page_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 page_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -76,8 +83,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(page_SOURCES) $(query_tree_SOURCES)
-DIST_SOURCES = $(page_SOURCES) $(query_tree_SOURCES)
+SOURCES = $(log_events_SOURCES) $(page_SOURCES) $(query_tree_SOURCES)
+DIST_SOURCES = $(log_events_SOURCES) $(page_SOURCES) \
+	$(query_tree_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -202,12 +210,15 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-page_SOURCES = main.c gtk_xwindow_handler.c page.c tree.c
+page_SOURCES = main.c gtk_xwindow_handler.c page.c tree.c gtk_wm.c
 page_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 page_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 query_tree_SOURCES = query_tree.c
 query_tree_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 query_tree_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
+log_events_SOURCES = log_events.c
+log_events_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
+log_events_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -285,6 +296,9 @@ clean-binPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+log_events$(EXEEXT): $(log_events_OBJECTS) $(log_events_DEPENDENCIES) 
+	@rm -f log_events$(EXEEXT)
+	$(log_events_LINK) $(log_events_OBJECTS) $(log_events_LDADD) $(LIBS)
 page$(EXEEXT): $(page_OBJECTS) $(page_DEPENDENCIES) 
 	@rm -f page$(EXEEXT)
 	$(page_LINK) $(page_OBJECTS) $(page_LDADD) $(LIBS)
@@ -298,6 +312,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_events-log_events.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_wm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_xwindow_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-page.Po@am__quote@
@@ -324,6 +340,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+log_events-log_events.o: log_events.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(log_events_CFLAGS) $(CFLAGS) -MT log_events-log_events.o -MD -MP -MF $(DEPDIR)/log_events-log_events.Tpo -c -o log_events-log_events.o `test -f 'log_events.c' || echo '$(srcdir)/'`log_events.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/log_events-log_events.Tpo $(DEPDIR)/log_events-log_events.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log_events.c' object='log_events-log_events.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(log_events_CFLAGS) $(CFLAGS) -c -o log_events-log_events.o `test -f 'log_events.c' || echo '$(srcdir)/'`log_events.c
+
+log_events-log_events.obj: log_events.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(log_events_CFLAGS) $(CFLAGS) -MT log_events-log_events.obj -MD -MP -MF $(DEPDIR)/log_events-log_events.Tpo -c -o log_events-log_events.obj `if test -f 'log_events.c'; then $(CYGPATH_W) 'log_events.c'; else $(CYGPATH_W) '$(srcdir)/log_events.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/log_events-log_events.Tpo $(DEPDIR)/log_events-log_events.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log_events.c' object='log_events-log_events.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(log_events_CFLAGS) $(CFLAGS) -c -o log_events-log_events.obj `if test -f 'log_events.c'; then $(CYGPATH_W) 'log_events.c'; else $(CYGPATH_W) '$(srcdir)/log_events.c'; fi`
 
 page-main.o: main.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-main.o -MD -MP -MF $(DEPDIR)/page-main.Tpo -c -o page-main.o `test -f 'main.c' || echo '$(srcdir)/'`main.c
@@ -380,6 +410,20 @@ page-tree.obj: tree.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tree.c' object='page-tree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-tree.obj `if test -f 'tree.c'; then $(CYGPATH_W) 'tree.c'; else $(CYGPATH_W) '$(srcdir)/tree.c'; fi`
+
+page-gtk_wm.o: gtk_wm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-gtk_wm.o -MD -MP -MF $(DEPDIR)/page-gtk_wm.Tpo -c -o page-gtk_wm.o `test -f 'gtk_wm.c' || echo '$(srcdir)/'`gtk_wm.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_wm.Tpo $(DEPDIR)/page-gtk_wm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gtk_wm.c' object='page-gtk_wm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-gtk_wm.o `test -f 'gtk_wm.c' || echo '$(srcdir)/'`gtk_wm.c
+
+page-gtk_wm.obj: gtk_wm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-gtk_wm.obj -MD -MP -MF $(DEPDIR)/page-gtk_wm.Tpo -c -o page-gtk_wm.obj `if test -f 'gtk_wm.c'; then $(CYGPATH_W) 'gtk_wm.c'; else $(CYGPATH_W) '$(srcdir)/gtk_wm.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_wm.Tpo $(DEPDIR)/page-gtk_wm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gtk_wm.c' object='page-gtk_wm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-gtk_wm.obj `if test -f 'gtk_wm.c'; then $(CYGPATH_W) 'gtk_wm.c'; else $(CYGPATH_W) '$(srcdir)/gtk_wm.c'; fi`
 
 query_tree-query_tree.o: query_tree.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(query_tree_CFLAGS) $(CFLAGS) -MT query_tree-query_tree.o -MD -MP -MF $(DEPDIR)/query_tree-query_tree.Tpo -c -o query_tree-query_tree.o `test -f 'query_tree.c' || echo '$(srcdir)/'`query_tree.c

@@ -22,11 +22,16 @@
 
 typedef struct _client client;
 struct _client {
+	Display * dpy;
+	Window root;
+
 	Window xwin;
-	GdkWindow * gwin;
 	GtkNotebook * notebook_parent;
 
 	gchar * name;
+
+	gint width;
+	gint height;
 
 	gint basew;
 	gint baseh;
@@ -41,11 +46,9 @@ struct _client {
 
 	gboolean is_fixed_size;
 
-	guint orig_width;
-	guint orig_height;
-	guint orig_x;
-	guint orig_y;
-	guint orig_depth;
+	gboolean need_resize;
+
+	gint unmap_pending;
 
 };
 

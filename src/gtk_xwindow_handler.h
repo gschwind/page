@@ -39,6 +39,8 @@ typedef struct _GtkXWindowHandlerClass GtkXWindowHandlerClass;
 struct _GtkXWindowHandler {
   GtkWidget widget;
   client * c;
+  gboolean reparented;
+  GdkWindow * gwin;
 };
 
 struct _GtkXWindowHandlerClass {

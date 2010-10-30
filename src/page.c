@@ -27,10 +27,28 @@
 #include "page.h"
 #include "client.h"
 #include "tree.h"
-#include "gtk_xwindow_handler.h"
+#include "gtk_wm.h"
 
 client * page_find_client_by_widget(page * ths, GtkWidget * w);
 client * page_find_client_by_gwindow(page * ths, GdkWindow * w);
+
+long page_get_window_state(page * ths, Window w) {
+	printf("call %s\n", __FUNCTION__);
+	int format;
+	long result = -1;
+	unsigned char *p = NULL;
+	unsigned long n, extra;
+	Atom real;
+
+	if (XGetWindowProperty(ths->xdpy, w, ths->wmatom[WMState], 0L, 2L, False,
+			ths->wmatom[WMState], &real, &format, &n, &extra,
+			(unsigned char **) &p) != Success)
+		return -1;
+	if (n != 0)
+		result = *p;
+	XFree(p);
+	return result;
+}
 
 page * page_new() {
 	page * ths = 0;
@@ -163,22 +181,21 @@ void page_init(page * ths, int * argc, char *** argv) {
 	ths->dpy = gdk_display_open(NULL);
 	ths->scn = gdk_display_get_default_screen(ths->dpy);
 	ths->root = gdk_screen_get_root_window(ths->scn);
+	ths->xdpy = gdk_x11_display_get_xdisplay(ths->dpy);
+	ths->xroot = GDK_WINDOW_XID(ths->root);
 	gdk_window_get_geometry(ths->root, NULL, NULL, &ths->sw, &ths->sh, NULL);
 	printf("display size %d %d\n", ths->sw, ths->sh);
 
-	ths->wmatom[WMState] = XInternAtom(gdk_x11_display_get_xdisplay(ths->dpy),
-			"WM_STATE", False);
+	ths->wmatom[WMState] = XInternAtom((ths->xdpy), "WM_STATE", False);
 
-	ths->netatom[NetSupported] = XInternAtom(gdk_x11_display_get_xdisplay(
-			ths->dpy), "_NET_SUPPORTED", False);
-	ths->netatom[NetWMName] = XInternAtom(
-			gdk_x11_display_get_xdisplay(ths->dpy), "_NET_WM_NAME", False);
-	ths->netatom[NetWMState] = XInternAtom(gdk_x11_display_get_xdisplay(
-			ths->dpy), "_NET_WM_STATE", False);
-	ths->netatom[NetWMFullscreen] = XInternAtom(gdk_x11_display_get_xdisplay(
-			ths->dpy), "_NET_WM_STATE_FULLSCREEN", False);
+	ths->netatom[NetSupported] = XInternAtom((ths->xdpy), "_NET_SUPPORTED",
+			False);
+	ths->netatom[NetWMName] = XInternAtom((ths->xdpy), "_NET_WM_NAME", False);
+	ths->netatom[NetWMState] = XInternAtom((ths->xdpy), "_NET_WM_STATE", False);
+	ths->netatom[NetWMFullscreen] = XInternAtom((ths->xdpy),
+			"_NET_WM_STATE_FULLSCREEN", False);
 
-	ths->clients = 0;
+	ths->clients = NULL;
 
 	page_init_event_hander(ths);
 }
@@ -209,11 +226,12 @@ void page_run(page * ths) {
 
 	ths->t = (tree *) malloc(sizeof(tree));
 	tree_root_init(ths->t, ths);
-
-	page_scan(ths);
 	gtk_widget_show_all(ths->gtk_main_win);
 	gtk_widget_queue_draw(ths->gtk_main_win);
 	gdk_window_set_events(ths->gdk_main_win, GDK_ALL_EVENTS_MASK);
+	fprintf(stderr, "Create %p\n", (void *) GDK_WINDOW_XID(ths->gdk_main_win));
+
+	page_scan(ths);
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
@@ -246,12 +264,19 @@ GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		gpointer data) {
 	page * ths = (page *) data;
 	XEvent * e = (XEvent *) (xevent);
-	if (e->type != MotionNotify)
-		printf("process event %d %d : %s\n", (int) e->xany.window,
+	if (e->type == MapRequest)
+		return ths->event_handler[e->type](ths, e);
+	else {
+		client * c = NULL;
+		c = page_find_client_by_xwindow(ths, e->xany.window);
+		if (!c)
+			return GDK_FILTER_CONTINUE;
+		fprintf(stderr, "process event %d %d : %s\n", (int) e->xany.window,
 				(int) e->xany.serial, event_name[e->type]);
-	if (ths->event_handler[e->type])
-		return ths->event_handler[e->type](ths, e); /* call handler */
-	return GDK_FILTER_CONTINUE;
+		if (ths->event_handler[e->type])
+			return ths->event_handler[e->type](ths, e); /* call handler */
+		return GDK_FILTER_CONTINUE;
+	}
 }
 
 void page_scan(page * ths) {
@@ -259,23 +284,23 @@ void page_scan(page * ths) {
 	unsigned int i, num;
 	Window d1, d2, *wins = 0;
 	XWindowAttributes wa;
-	Display * dpy;
-
-	dpy = gdk_x11_display_get_xdisplay(ths->dpy);
 
 	/* ask for child of current root window, use Xlib here since gdk only know windows it
 	 * have created. */
-	if (XQueryTree(dpy, GDK_WINDOW_XID(ths->root), &d1, &d2, &wins, &num)) {
+	if (XQueryTree(ths->xdpy, ths->xroot, &d1, &d2, &wins, &num)) {
 		for (i = 0; i < num; ++i) {
-			GdkWindow * w = gdk_window_foreign_new(wins[i]);
-			GdkWindowState s = gdk_window_get_state(w);
-			if (s != GDK_WINDOW_STATE_WITHDRAWN)
-				page_manage(ths, w);
+			if (!XGetWindowAttributes(ths->xdpy, wins[i], &wa))
+				continue;
+			if (wa.override_redirect)
+				continue;
+			if ((page_get_window_state(ths, wins[i]) == IconicState
+					|| wa.map_state == IsViewable))
+				page_manage(ths, wins[i]);
 		}
-	}
 
-	if (wins)
-		XFree(wins);
+		if (wins)
+			XFree(wins);
+	}
 }
 
 /* this function is call when a client want map a new window
@@ -306,41 +331,6 @@ GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
 }
 #endif
 
-/* this function is call when a client want map a new window
- * the evant is on root window, e->xmaprequest.window is the window that request the map */
-GdkFilterReturn page_process_map_request_event(page * ths, XEvent * e) {
-	printf("call %s\n", __FUNCTION__);
-	GdkWindow * w = gdk_window_foreign_new(e->xmaprequest.window);
-	if (w == ths->gdk_main_win) {
-		/* just map, do noting else */
-		gdk_window_show(ths->gdk_main_win);
-		gtk_widget_queue_draw(ths->gtk_main_win);
-		printf("try mapping myself\n");
-		return GDK_FILTER_REMOVE;
-	}
-
-	/* should never happen */
-	client * c = page_find_client_by_gwindow(ths, w);
-	if (c) {
-		/* just map, do noting else */
-		gdk_window_show(ths->gdk_main_win);
-		gtk_widget_queue_draw(ths->gtk_main_win);
-		printf("Already mapped\n");
-		return GDK_FILTER_REMOVE;
-	}
-
-	GdkWindowState s = gdk_window_get_state(w);
-	if (s != GDK_WINDOW_STATE_WITHDRAWN)
-		page_manage(ths, w);
-
-	/* manage the window but do not map it
-	 * Map will be made on widget show
-	 */
-	page_manage(ths, w);
-	return GDK_FILTER_REMOVE;
-
-}
-
 client * page_find_client_by_xwindow(page * ths, Window w) {
 	printf("call %s\n", __FUNCTION__);
 	GSList * i = ths->clients;
@@ -352,15 +342,24 @@ client * page_find_client_by_xwindow(page * ths, Window w) {
 	return NULL;
 }
 
-client * page_find_client_by_gwindow(page * ths, GdkWindow * w) {
-	printf("call %s\n", __FUNCTION__);
-	GSList * i = ths->clients;
-	while (i != NULL) {
-		if (((client *) (i->data))->gwin == w)
-			return (client *) i->data;
-		i = i->next;
-	}
-	return NULL;
+/* this function is call when a client want map a new window
+ * the event is on root window, e->xmaprequest.window is the window that request the map */
+GdkFilterReturn page_process_map_request_event(page * ths, XEvent * e) {
+	printf("Entering in %s #%p\n", __FUNCTION__, (void *) e->xmaprequest.window);
+	Window w = e->xmaprequest.window;
+	/* should never happen */
+
+	static XWindowAttributes wa;
+	if (!XGetWindowAttributes(ths->xdpy, w, &wa))
+		return GDK_FILTER_REMOVE;
+	if (wa.override_redirect)
+		return GDK_FILTER_REMOVE;
+	page_manage(ths, w);
+
+	exit: printf("Return from %s #%p\n", __FUNCTION__,
+			(void *) e->xmaprequest.window);
+	return GDK_FILTER_REMOVE;
+
 }
 
 #if 0
@@ -391,51 +390,88 @@ void page_init_event_hander(page * ths) {
 	}
 
 	ths->event_handler[MapRequest] = page_process_map_request_event;
-
+	ths->event_handler[ConfigureRequest] = page_process_configure_request_event;
+	ths->event_handler[CreateNotify] = page_process_create_notify_event;
 }
 
-void page_manage(page * ths, GdkWindow * w) {
-	printf("call %s on %p\n", __FUNCTION__, w);
-	gint width, height, x, y, depth;
-	if (w == ths->gdk_main_win) {
-		printf("Do not manage myself\n");
+void page_manage(page * ths, Window w) {
+	fprintf(stderr, "Call %s on %p\n", __FUNCTION__, (void *) w);
+	if (GDK_WINDOW_XID(ths->gdk_main_win) == w)
 		return;
-	}
 
 	client * c = 0;
-	c = page_find_client_by_gwindow(ths, w);
+	c = page_find_client_by_xwindow(ths, w);
 	if (c != NULL) {
 		printf("Window %p is already managed\n", c);
 		return;
 	}
 	c = malloc(sizeof(client));
-	c->xwin = GDK_WINDOW_XID(w);
-	c->gwin = w;
+	c->xwin = w;
+	c->root = ths->xroot;
+	c->dpy = ths->xdpy;
 	c->notebook_parent = 0;
-	page_update_title(ths, c);
-	page_update_size_hints(ths, c);
-
-	/* get original parameters */
-	gdk_window_get_geometry(w, &c->orig_x, &c->orig_y, &c->orig_width,
-			&c->orig_height, &c->orig_depth);
-	printf("manage #%p %dx%d+%d+%d(%d)\n", w, c->orig_width, c->orig_height,
-			c->orig_x, c->orig_y, c->orig_depth);
-
-	GtkWidget * label = gtk_label_new(c->name);
-	GtkWidget * content = gtk_xwindow_handler_new();
-	gtk_xwindow_handler_set_client(GTK_XWINDOW_HANDLER(content), c);
-
+	c->unmap_pending = 0;
 	/* before page prepend !! */
 	ths->clients = g_slist_prepend(ths->clients, c);
 
+	page_update_title(ths, c);
+	page_update_size_hints(ths, c);
+
+	GtkWidget * label = gtk_label_new(c->name);
+	GtkWidget * content = gtk_wm_new();
+	gtk_wm_set_client(GTK_WM(content), c);
 	tree_append_widget(ths->t, label, content);
 
 	/* this window will not be destroyed on page close (one bug less)
 	 * TODO check gdk equivalent */
-	XAddToSaveSet(gdk_x11_display_get_xdisplay(ths->dpy), c->xwin);
-
+	XAddToSaveSet(c->dpy, w);
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
-	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy), GDK_WINDOW_XID(w),
-			StructureNotifyMask | PropertyChangeMask);
+	XSelectInput(c->dpy, w, StructureNotifyMask | PropertyChangeMask);
+	XFlush(c->dpy);
+	fprintf(stderr, "Return %s on %p\n", __FUNCTION__, (void *) w);
 }
+
+GdkFilterReturn page_process_create_notify_event(page * ths, XEvent * ev) {
+	fprintf(stderr, "Entering in %s on %p\n", __FUNCTION__,
+			(void *) ev->xcreatewindow.window);
+
+	fprintf(stderr, "Return from %s on %p\n", __FUNCTION__,
+			(void *) ev->xcreatewindow.window);
+	return GDK_FILTER_CONTINUE;
+}
+
+GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * ev) {
+	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
+	unsigned long int mask = ev->xconfigurerequest.value_mask;
+	client * c = page_find_client_by_xwindow(ths, ev->xconfigurerequest.window);
+	if (c)
+		return GDK_FILTER_REMOVE;
+
+	/* no notebook mean not handled by widget, size is free */
+	XWindowChanges wc;
+	wc.x = ev->xconfigurerequest.x;
+	wc.y = ev->xconfigurerequest.y;
+	wc.width = ev->xconfigurerequest.width;
+	wc.height = ev->xconfigurerequest.height;
+	wc.border_width = ev->xconfigurerequest.border_width;
+	wc.sibling = ev->xconfigurerequest.above;
+	wc.stack_mode = ev->xconfigurerequest.detail;
+	XConfigureWindow(ths->xdpy, ev->xconfigurerequest.window,
+			ev->xconfigurerequest.value_mask, &wc);
+	return GDK_FILTER_REMOVE;
+}
+
+GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * ev) {
+	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
+	client * c = page_find_client_by_xwindow(ths, ev->xconfigurerequest.window);
+	if (!c)
+		return GDK_FILTER_CONTINUE;
+	c->unmap_pending -= 1;
+	if (c->unmap_pending == 0) {
+		/* TODO remove notebook */
+	}
+
+	return GDK_FILTER_REMOVE;
+}
+

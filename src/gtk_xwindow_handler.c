@@ -72,7 +72,11 @@ void gtk_xwindow_handler_update_client_size(client * c, gint w, gint h) {
 		}
 
 		/* TODO respect Aspect */
-		gdk_window_move_resize(c->gwin, 0, 0, w, h);
+		c->height = h;
+		c->width = w;
+
+		printf("Update #%p window size %dx%d\n", c->xwin, c->width, c->height);
+
 	}
 }
 
@@ -93,8 +97,6 @@ GtkType gtk_xwindow_handler_get_type(void) {
 
 void gtk_xwindow_handler_set_client(GtkXWindowHandler * ths, client * c) {
 	ths->c = c;
-	if (c)
-		gdk_window_hide(ths->c->gwin);
 }
 
 GtkWidget * gtk_xwindow_handler_new() {
@@ -112,9 +114,13 @@ static void gtk_xwindow_handler_class_init(GtkXWindowHandlerClass *klass) {
 	widget_class->unrealize = gtk_xwindow_handler_unrealize;
 	widget_class->size_allocate = gtk_xwindow_handler_size_allocate;
 	//widget_class->expose_event = gtk_xwindow_handler_expose;
-	widget_class->unmap_event = gtk_xwindow_handler_unmap_event;
-	widget_class->map_event = gtk_xwindow_handler_map_event;
+	//widget_class->unmap_event = gtk_xwindow_handler_unmap_event;
+	//widget_class->map_event = gtk_xwindow_handler_map_event;
 	widget_class->configure_event = gtk_xwindow_handler_configure_event;
+
+	widget_class->unmap = gtk_xwindow_handler_unmap;
+	widget_class->map = gtk_xwindow_handler_map;
+
 }
 
 static void gtk_xwindow_handler_init(GtkXWindowHandler * ths) {
@@ -123,88 +129,101 @@ static void gtk_xwindow_handler_init(GtkXWindowHandler * ths) {
 	g_return_if_fail(GTK_IS_XWINDOW_HANDLER(ths));
 	gtk_widget_set_has_window(GTK_WIDGET (ths), TRUE);
 	ths->c = NULL;
+	ths->reparented = FALSE;
 }
 
 static void gtk_xwindow_handler_size_allocate(GtkWidget *widget,
 		GtkAllocation *allocation) {
-	printf("call %s #%p\n", __FUNCTION__, widget);
+	fprintf(stderr, "Entering %s #%p\n", __FUNCTION__, widget);
 	g_return_if_fail(widget != NULL);
 	g_return_if_fail(GTK_IS_XWINDOW_HANDLER(widget));
 	g_return_if_fail(allocation != NULL);
 
 	widget->allocation = *allocation;
 
-	printf("allocation %dx%d+%d+%d\n", allocation->width, allocation->height,
-			allocation->x, allocation->y);
-	if (GTK_WIDGET_REALIZED(widget)) {
+	fprintf(stderr, "allocation %dx%d+%d+%d\n", allocation->width,
+			allocation->height, allocation->x, allocation->y);
+	gtk_xwindow_handler_update_client_size(GTK_XWINDOW_HANDLER(widget)->c,
+			allocation->width, allocation->height);
+	if (gtk_widget_get_has_window(widget)) {
 		gdk_window_move_resize(widget->window, allocation->x, allocation->y,
 				allocation->width, allocation->height);
-		gtk_xwindow_handler_update_client_size(GTK_XWINDOW_HANDLER(widget)->c,
-				allocation->width, allocation->height);
+		if (GTK_XWINDOW_HANDLER(widget)->reparented) {
+			client * c = GTK_XWINDOW_HANDLER(widget)->c;
+			XMoveResizeWindow(c->dpy, c->xwin, 0, 0, c->width, c->height);
+		}
 	}
+	fprintf(stderr, "Return %s #%p\n", __FUNCTION__, widget);
 }
 
 /* undo what was done in realize */
 static void gtk_xwindow_handler_unrealize(GtkWidget *widget) {
-	printf("call %s #%p\n", __FUNCTION__, widget);
-	g_return_if_fail(widget != NULL);
-	g_return_if_fail(GTK_IS_XWINDOW_HANDLER(widget));
-	/* go to root window */
-	gdk_window_reparent(GTK_XWINDOW_HANDLER(widget)->c->gwin,
-			gdk_get_default_root_window(), 0, 0);
-	/* Not clear */
-	gdk_window_set_user_data(widget->window, 0);
-	gtk_style_detach(widget->style);
-	/* destroy the created window */
-	gdk_window_destroy(widget->window);
-	widget->window = NULL;
-	GTK_WIDGET_UNSET_FLAGS(widget, GTK_REALIZED);
+	printf("Enterring %s #%p\n", __FUNCTION__, widget);
+	if (gtk_widget_get_realized(widget)) {
+		gtk_widget_set_realized(widget, FALSE);
+		g_return_if_fail(widget != NULL);
+		g_return_if_fail(GTK_IS_XWINDOW_HANDLER(widget));
+		client * c = GTK_XWINDOW_HANDLER(widget)->c;
+		/* go to root window */
+		if (GTK_XWINDOW_HANDLER(widget)->reparented) {
+			c->unmap_pending += 1;
+			XUnmapWindow(c->dpy, c->xwin);
+			XReparentWindow(c->dpy, c->xwin, c->root, 0, 0);
+			GTK_XWINDOW_HANDLER(widget)->reparented = FALSE;
+		}
+		/* Not clear */
+		gdk_window_set_user_data(widget->window, NULL);
+		gtk_style_detach(widget->style);
+		/* destroy the created window */
+		gdk_window_destroy(widget->window);
+		widget->window = NULL;
+	}
+	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
 
 static void gtk_xwindow_handler_realize(GtkWidget *widget) {
-	printf("call %s #%p\n", __FUNCTION__, widget);
-	GdkWindowAttr attributes;
-	guint attributes_mask;
+	printf("Entering in %s #%p\n", __FUNCTION__, widget);
+	if (!gtk_widget_get_realized(widget)) {
+		gtk_widget_set_realized(widget, TRUE);
+		GdkWindowAttr attributes;
+		guint attributes_mask;
 
-	g_return_if_fail(widget != NULL);
-	g_return_if_fail(GTK_IS_XWINDOW_HANDLER(widget));
+		g_return_if_fail(widget != NULL);
+		g_return_if_fail(GTK_IS_XWINDOW_HANDLER(widget));
 
-	attributes.window_type = GDK_WINDOW_CHILD;
-	attributes.x = widget->allocation.x;
-	attributes.y = widget->allocation.y;
-	attributes.width = widget->allocation.width;
-	attributes.height = widget->allocation.height;
-	attributes.wclass = GDK_INPUT_OUTPUT;
-	attributes.event_mask = gtk_widget_get_events(widget) | GDK_ALL_EVENTS_MASK;
-	attributes_mask = GDK_WA_X | GDK_WA_Y;
+		attributes.window_type = GDK_WINDOW_CHILD;
+		attributes.x = widget->allocation.x;
+		attributes.y = widget->allocation.y;
+		attributes.width = widget->allocation.width;
+		attributes.height = widget->allocation.height;
+		attributes.wclass = GDK_INPUT_OUTPUT;
+		attributes.event_mask = gtk_widget_get_events(widget);
+		attributes_mask = GDK_WA_X | GDK_WA_Y;
 
-	widget->window = gdk_window_new(gtk_widget_get_parent_window(widget),
-			&attributes, attributes_mask);
-	/* X window seems to not be created on gdk_window_new
-	 * Here we force the creation of this window to allow
-	 * reparrent. This behaviour is versatil :/ (more than 4 hours to find the
-	 * issue and solve it).
-	 * there is no probleme with the child window since it is on the
-	 *  way to be managed
-	 */
-	g_return_if_fail(gdk_window_ensure_native(widget->window));
+		widget->window = gdk_window_new(gtk_widget_get_parent_window(widget),
+				&attributes, attributes_mask);
+		/* X window seems to not be created on gdk_window_new
+		 * Here we force the creation of this window to allow
+		 * reparrent. This behaviour is versatil :/ (more than 4 hours to find the
+		 * issue and solve it).
+		 * there is no probleme with the child window since it is on the
+		 *  way to be managed
+		 */
+		g_return_if_fail(gdk_window_ensure_native(widget->window));
 
-	/* Not clear */
-	gdk_window_set_user_data(widget->window, widget);
+		/* Not clear */
+		gdk_window_set_user_data(widget->window, widget);
 
-	widget->style = gtk_style_attach(widget->style, widget->window);
-	gtk_style_set_background(widget->style, widget->window, GTK_STATE_NORMAL);
+		widget->style = gtk_style_attach(widget->style, widget->window);
+		gtk_style_set_background(widget->style, widget->window,
+				GTK_STATE_NORMAL);
 
-	g_return_if_fail(GDK_IS_WINDOW(widget->window));
-	g_return_if_fail(GDK_IS_WINDOW(GTK_XWINDOW_HANDLER(widget)->c->gwin));
-
-	if (GTK_XWINDOW_HANDLER(widget)->c) {
 		client * c = GTK_XWINDOW_HANDLER(widget)->c;
-		gdk_window_reparent(c->gwin, widget->window, 0, 0);
-		gtk_xwindow_handler_update_client_size(c, widget->allocation.width,
-				widget->allocation.height);
+		GTK_XWINDOW_HANDLER(widget)->gwin = gdk_window_foreign_new(c->xwin);
+
+
 	}
-	GTK_WIDGET_SET_FLAGS(widget, GTK_REALIZED);
+	printf("Return in %s #%p\n", __FUNCTION__, widget);
 }
 
 static gboolean gtk_xwindow_handler_expose(GtkWidget *widget,
@@ -213,7 +232,7 @@ static gboolean gtk_xwindow_handler_expose(GtkWidget *widget,
 	g_return_val_if_fail(widget != NULL, FALSE);
 	g_return_val_if_fail(GTK_IS_XWINDOW_HANDLER(widget), FALSE);
 	g_return_val_if_fail(event != NULL, FALSE);
-
+	client * c = GTK_XWINDOW_HANDLER(widget)->c;
 	/* call parent handler */
 	return FALSE;
 }
@@ -226,27 +245,69 @@ static gboolean gtk_xwindow_handler_configure_event(GtkWidget *widget,
 	g_return_val_if_fail(event != NULL, FALSE);
 	printf("configure %dx%d+%d+%d\n", event->width, event->height, event->y,
 			event->width);
-	gdk_window_move_resize(widget->window, event->x, event->y, event->width,
-			event->height);
+	//gdk_window_move_resize(widget->window, event->x, event->y, event->width,
+	//		event->height);
 	client * c = GTK_XWINDOW_HANDLER(widget)->c;
-	gtk_xwindow_handler_update_client_size(c, event->width, event->height);
+	//gtk_xwindow_handler_update_client_size(c, event->width, event->height);
 	/* event done */
 	return TRUE;
 }
 
 static gboolean gtk_xwindow_handler_unmap_event(GtkWidget *widget,
 		GdkEventAny *event) {
-	printf("call %s #%p\n", __FUNCTION__, widget);
-	gdk_window_hide(GTK_XWINDOW_HANDLER(widget)->c->gwin);
+	printf("Entering in %s #%p\n", __FUNCTION__, widget);
+	client * c = GTK_XWINDOW_HANDLER(widget)->c;
+	//c->unmap_pending += 1;
+	//XUnmapWindow(c->dpy, c->xwin);
+	//gdk_window_hide(widget->window);
 	/* the event is done */
+	printf("Return from %s #%p\n", __FUNCTION__, widget);
 	return TRUE;
+}
+
+static void gtk_xwindow_handler_unmap(GtkWidget *widget) {
+	printf("Entering in %s #%p\n", __FUNCTION__, widget);
+	client * c = GTK_XWINDOW_HANDLER(widget)->c;
+	if (gtk_widget_get_mapped(widget)) {
+		gtk_widget_set_mapped(widget, FALSE);
+		gdk_window_hide(widget->window);
+	}
+	printf("Return from %s #%p\n", __FUNCTION__, widget);
 }
 
 static gboolean gtk_xwindow_handler_map_event(GtkWidget *widget,
 		GdkEventAny *event) {
-	printf("call %s\n", __FUNCTION__);
-	gdk_window_show(GTK_XWINDOW_HANDLER(widget)->c->gwin);
+	printf("Enter %s #%p\n", __FUNCTION__, widget);
+	client * c = GTK_XWINDOW_HANDLER(widget)->c;
+	gtk_xwindow_handler_update_client_size(GTK_XWINDOW_HANDLER(widget)->c,
+			widget->allocation.width, widget->allocation.height);
+	if (!GTK_XWINDOW_HANDLER(widget)->reparented) {
+		XReparentWindow(c->dpy, c->xwin, GDK_WINDOW_XID(widget->window), 0, 0);
+		XMapWindow(c->dpy, c->xwin);
+		GTK_XWINDOW_HANDLER(widget)->reparented = TRUE;
+	}
+	//gdk_window_show(widget->window);
 	/* the event is done */
+	printf("Return %s #%p\n", __FUNCTION__, widget);
+	return TRUE;
+}
+
+static void gtk_xwindow_handler_map(GtkWidget * widget) {
+	printf("Enter %s #%p\n", __FUNCTION__, widget);
+	g_assert (gtk_widget_get_realized (widget));
+
+	if (!gtk_widget_get_mapped(widget)) {
+		gtk_widget_set_mapped(widget, TRUE);
+		client * c = GTK_XWINDOW_HANDLER(widget)->c;
+		if (!GTK_XWINDOW_HANDLER(widget)->reparented) {
+			XReparentWindow(c->dpy, c->xwin, GDK_WINDOW_XID(widget->window), 0,
+					0);
+			XMapWindow(c->dpy, c->xwin);
+			GTK_XWINDOW_HANDLER(widget)->reparented = TRUE;
+		}
+		gdk_window_show(widget->window);
+	}
+	printf("Return %s #%p\n", __FUNCTION__, widget);
 	return TRUE;
 }
 
