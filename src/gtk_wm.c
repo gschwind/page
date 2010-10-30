@@ -137,6 +137,7 @@ static void gtk_wm_unrealize(GtkWidget *widget) {
 		client * c = GTK_WM(widget)->c;
 		XReparentWindow(c->dpy, c->clipping_window, c->root, 0, 0);
 		gtk_widget_set_realized(widget, FALSE);
+		c->content = NULL;
 	}
 	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
@@ -168,7 +169,6 @@ static void gtk_wm_realize(GtkWidget *widget) {
 		gdk_window_set_user_data(widget->window, widget);
 
 		client * c = GTK_WM(widget)->c;
-
 		XReparentWindow(c->dpy, c->clipping_window,
 				GDK_WINDOW_XID(gtk_widget_get_parent_window(widget)),
 				widget->allocation.x, widget->allocation.y);
@@ -176,6 +176,10 @@ static void gtk_wm_realize(GtkWidget *widget) {
 				widget->allocation.y, widget->allocation.width,
 				widget->allocation.height);
 		XReparentWindow(c->dpy, c->xwin, c->clipping_window, 0, 0);
+		/* listen for new windows */
+		/* there is no gdk equivalent to the folowing */
+		XSelectInput(c->dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
+		c->content = widget;
 
 	}
 	printf("Return in %s #%p\n", __FUNCTION__, widget);

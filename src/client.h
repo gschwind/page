@@ -27,7 +27,7 @@ struct _client {
 
 	Window xwin;
 	Window clipping_window;
-	GtkNotebook * notebook_parent;
+	GtkWidget * content;
 
 	gchar * name;
 

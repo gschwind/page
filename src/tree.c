@@ -27,7 +27,7 @@ gboolean tree_quit(GtkWidget * w, GdkEventButton * e, gpointer data) {
 	printf("call %s\n", __FUNCTION__);
 	page * ths = (page *) data;
 	gtk_widget_destroy(GTK_WIDGET(ths->gtk_main_win));
-	while(gtk_events_pending())
+	while (gtk_events_pending())
 		gtk_main_iteration();
 	gtk_main_quit();
 	return TRUE;
@@ -115,6 +115,32 @@ int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content) {
 	} else {
 		if (!tree_append_widget(ths->pack1, label, content)) {
 			return tree_append_widget(ths->pack2, label, content);
+		} else {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int tree_remove_widget(tree * ths, GtkWidget * content) {
+	if (ths->mode == TREE_NOTEBOOK) {
+		/* will generate page-added event */
+		gint n = gtk_notebook_page_num(GTK_NOTEBOOK(ths->data.d.notebook),
+				content);
+		if (n != -1) {
+			gtk_notebook_remove_page(GTK_NOTEBOOK(ths->data.d.notebook), n);
+			gtk_widget_show_all(GTK_WIDGET(ths->data.d.notebook));
+			gtk_widget_queue_draw(GTK_WIDGET(ths->data.d.notebook));
+			return 1;
+		} else {
+			return 0;
+		}
+	} else if (ths->mode == TREE_ROOT) {
+		return tree_remove_widget(ths->pack1, content);
+	} else {
+		if (!tree_remove_widget(ths->pack1, content)) {
+			return tree_remove_widget(ths->pack2, content);
 		} else {
 			return 1;
 		}

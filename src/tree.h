@@ -68,6 +68,7 @@ struct _tree {
 };
 
 int tree_append_widget(tree * ths, GtkWidget * label, GtkWidget * content);
+int tree_remove_widget(tree * ths, GtkWidget * content);
 void tree_dock_init(tree * ths, void * ctx, tree * parent);
 void tree_root_init(tree * ths, void * ctx);
 void tree_dock_copy(tree * ths, tree * src);

@@ -69,7 +69,6 @@ static void page_page_added(GtkNotebook *notebook, GtkWidget *child,
 		client * c = gtk_xwindow_handler_get_client(GTK_XWINDOW_HANDLER(child));
 		if (c == NULL)
 			return;
-		c->notebook_parent = notebook;
 		printf("page %p added to %p\n", child, notebook);
 		gtk_widget_queue_draw(GTK_WIDGET(notebook));
 	}
@@ -239,7 +238,7 @@ void page_run(page * ths) {
 			ths->root), ExposureMask | SubstructureRedirectMask
 			| SubstructureNotifyMask);
 	/* get all unhandled event */
-	gdk_window_add_filter(ths->root, page_filter_event, ths);
+	gdk_window_add_filter(NULL, page_filter_event, ths);
 
 	//ths->main_loop = g_main_loop_new(NULL, FALSE);
 	printf("start main loop\n");
@@ -264,6 +263,7 @@ GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		gpointer data) {
 	page * ths = (page *) data;
 	XEvent * e = (XEvent *) (xevent);
+
 	if (e->type == MapRequest)
 		return ths->event_handler[e->type](ths, e);
 	else {
@@ -332,7 +332,6 @@ GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
 #endif
 
 client * page_find_client_by_xwindow(page * ths, Window w) {
-	printf("call %s\n", __FUNCTION__);
 	GSList * i = ths->clients;
 	while (i != NULL) {
 		if (((client *) (i->data))->xwin == w)
@@ -343,7 +342,6 @@ client * page_find_client_by_xwindow(page * ths, Window w) {
 }
 
 client * page_find_client_by_clipping_window(page * ths, Window w) {
-	printf("call %s\n", __FUNCTION__);
 	GSList * i = ths->clients;
 	while (i != NULL) {
 		if (((client *) (i->data))->clipping_window == w)
@@ -401,6 +399,7 @@ void page_init_event_hander(page * ths) {
 	}
 
 	ths->event_handler[MapRequest] = page_process_map_request_event;
+	ths->event_handler[DestroyNotify] = page_process_destroy_notify_event;
 	ths->event_handler[ConfigureRequest] = page_process_configure_request_event;
 	ths->event_handler[CreateNotify] = page_process_create_notify_event;
 }
@@ -424,7 +423,6 @@ void page_manage(page * ths, Window w) {
 	c->xwin = w;
 	c->root = ths->xroot;
 	c->dpy = ths->xdpy;
-	c->notebook_parent = 0;
 	c->unmap_pending = 0;
 	/* before page prepend !! */
 	ths->clients = g_slist_prepend(ths->clients, c);
@@ -432,9 +430,10 @@ void page_manage(page * ths, Window w) {
 	page_update_title(ths, c);
 	page_update_size_hints(ths, c);
 
+	gdk_window_foreign_new(c->xwin);
 	c->clipping_window = XCreateSimpleWindow(c->dpy, c->root, 0, 0, 1, 1, 0,
 			XBlackPixel(c->dpy, 0), XWhitePixel(c->dpy, 0));
-
+	gdk_window_foreign_new(c->clipping_window);
 	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_wm_new(c);
 	tree_append_widget(ths->t, label, content);
@@ -442,10 +441,7 @@ void page_manage(page * ths, Window w) {
 	/* this window will not be destroyed on page close (one bug less)
 	 * TODO check gdk equivalent */
 	XAddToSaveSet(c->dpy, w);
-	/* listen for new windows */
-	/* there is no gdk equivalent to the folowing */
-	XSelectInput(c->dpy, w, StructureNotifyMask | PropertyChangeMask);
-	XFlush(c->dpy);
+
 	fprintf(stderr, "Return %s on %p\n", __FUNCTION__, (void *) w);
 }
 
@@ -481,12 +477,22 @@ GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * ev) {
 
 GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * ev) {
 	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
-	client * c = page_find_client_by_xwindow(ths, ev->xconfigurerequest.window);
+
+	return GDK_FILTER_CONTINUE;
+}
+
+GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * ev) {
+	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
+	client * c = page_find_client_by_xwindow(ths, ev->xunmap.window);
 	if (!c)
 		return GDK_FILTER_CONTINUE;
-	c->unmap_pending -= 1;
-	if (c->unmap_pending == 0) {
-		/* TODO remove notebook */
+
+	if (c->content) {
+		tree_remove_widget(ths->t, c->content);
+		ths->clients = g_slist_remove(ths->clients, c);
+		XDestroyWindow(c->dpy, c->clipping_window);
+		g_free(c->name);
+		free(c);
 	}
 
 	return GDK_FILTER_REMOVE;
