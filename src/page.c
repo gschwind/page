@@ -58,23 +58,6 @@ page * page_new() {
 	return ths;
 }
 
-static void page_page_added(GtkNotebook *notebook, GtkWidget *child,
-		guint page_num, gpointer user_data) {
-	printf("call %s\n", __FUNCTION__);
-	printf("try to page %p added to %p\n", child, notebook);
-	/* register this page to the notebook */
-
-	page * ths = (page *) user_data;
-	if (GTK_IS_XWINDOW_HANDLER(child)) {
-		client * c = gtk_xwindow_handler_get_client(GTK_XWINDOW_HANDLER(child));
-		if (c == NULL)
-			return;
-		printf("page %p added to %p\n", child, notebook);
-		gtk_widget_queue_draw(GTK_WIDGET(notebook));
-	}
-
-}
-
 /* inspired from dwm */
 gboolean page_get_text_prop(page * ths, Window w, Atom atom, gchar ** text) {
 	char **list = NULL;
@@ -82,14 +65,13 @@ gboolean page_get_text_prop(page * ths, Window w, Atom atom, gchar ** text) {
 	XTextProperty name;
 	if (!text)
 		return False;
-	XGetTextProperty(gdk_x11_display_get_xdisplay(ths->dpy), w, &name, atom);
+	XGetTextProperty(ths->xdpy, w, &name, atom);
 	if (!name.nitems)
 		return False;
 	if (name.encoding == XA_STRING) {
 		*text = g_strdup((gchar const *) name.value);
 	} else {
-		if (XmbTextPropertyToTextList(gdk_x11_display_get_xdisplay(ths->dpy),
-				&name, &list, &n) == Success) {
+		if (XmbTextPropertyToTextList(ths->xdpy, &name, &list, &n) == Success) {
 			if (n > 0) {
 				if (list[0]) {
 					*text = g_strdup(list[0]);
@@ -118,8 +100,7 @@ void page_update_size_hints(page * ths, client * c) {
 	long msize;
 	XSizeHints size;
 
-	if (!XGetWMNormalHints(gdk_x11_display_get_xdisplay(ths->dpy), c->xwin,
-			&size, &msize))
+	if (!XGetWMNormalHints(ths->xdpy, c->xwin, &size, &msize))
 		/* size is uninitialized, ensure that size.flags aren't used */
 		size.flags = PSize;
 
@@ -175,23 +156,24 @@ void page_update_size_hints(page * ths, client * c) {
 }
 
 void page_init(page * ths, int * argc, char *** argv) {
-	printf("call %s\n", __FUNCTION__);
+	printf("Entering in %s\n", __FUNCTION__);
+	XWindowAttributes wa;
 	gtk_init(argc, argv);
-	ths->dpy = gdk_display_open(NULL);
-	ths->scn = gdk_display_get_default_screen(ths->dpy);
-	ths->root = gdk_screen_get_root_window(ths->scn);
-	ths->xdpy = gdk_x11_display_get_xdisplay(ths->dpy);
-	ths->xroot = GDK_WINDOW_XID(ths->root);
-	gdk_window_get_geometry(ths->root, NULL, NULL, &ths->sw, &ths->sh, NULL);
-	printf("display size %d %d\n", ths->sw, ths->sh);
+	/* Youhou totaly undocumented ? found on metacity sources */
+	ths->xdpy = gdk_display;
+	ths->xroot = XDefaultRootWindow(ths->xdpy);
+	XGetWindowAttributes(ths->xdpy, ths->xroot, &wa);
+	fprintf(stderr, "display size %d %d\n", wa.width, wa.height);
+	ths->sw = wa.width;
+	ths->sh = wa.height;
 
-	ths->wmatom[WMState] = XInternAtom((ths->xdpy), "WM_STATE", False);
+	ths->wmatom[WMState] = XInternAtom(ths->xdpy, "WM_STATE", False);
 
-	ths->netatom[NetSupported] = XInternAtom((ths->xdpy), "_NET_SUPPORTED",
-			False);
-	ths->netatom[NetWMName] = XInternAtom((ths->xdpy), "_NET_WM_NAME", False);
-	ths->netatom[NetWMState] = XInternAtom((ths->xdpy), "_NET_WM_STATE", False);
-	ths->netatom[NetWMFullscreen] = XInternAtom((ths->xdpy),
+	ths->netatom[NetSupported]
+			= XInternAtom(ths->xdpy, "_NET_SUPPORTED", False);
+	ths->netatom[NetWMName] = XInternAtom(ths->xdpy, "_NET_WM_NAME", False);
+	ths->netatom[NetWMState] = XInternAtom(ths->xdpy, "_NET_WM_STATE", False);
+	ths->netatom[NetWMFullscreen] = XInternAtom(ths->xdpy,
 			"_NET_WM_STATE_FULLSCREEN", False);
 
 	ths->clients = NULL;
@@ -206,36 +188,21 @@ gboolean page_quit(GtkWidget * w, GdkEventButton * e, gpointer data) {
 	//g_main_loop_quit(ths->main_loop);
 }
 
-GtkWidget * build_control_tab(page * ths) {
-	GtkWidget * hbox = gtk_hbox_new(TRUE, 0);
-	GtkWidget * split_button = gtk_button_new_with_label("SPLIT");
-	GtkWidget * close_button = gtk_button_new_with_label("CLOSE");
-	GtkWidget * exit_button = gtk_button_new_with_label("EXIT");
-	g_signal_connect(GTK_OBJECT(exit_button), "button-release-event", GTK_SIGNAL_FUNC(page_quit), ths);
-	gtk_box_pack_start(GTK_BOX(hbox), split_button, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), close_button, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), exit_button, TRUE, TRUE, 0);
-	gtk_widget_show_all(hbox);
-	return hbox;
-
-}
-
 void page_run(page * ths) {
 	gint x, y, width, height, depth;
 
 	ths->t = (tree *) malloc(sizeof(tree));
 	tree_root_init(ths->t, ths);
-	gtk_widget_show_all(ths->gtk_main_win);
-	gtk_widget_queue_draw(ths->gtk_main_win);
-	gdk_window_set_events(ths->gdk_main_win, GDK_ALL_EVENTS_MASK);
-	fprintf(stderr, "Create %p\n", (void *) GDK_WINDOW_XID(ths->gdk_main_win));
+	gtk_widget_show_all(GTK_WIDGET(ths->gtk_main_win));
+	gtk_widget_queue_draw(GTK_WIDGET(ths->gtk_main_win));
+	ths->x_main_window
+			= GDK_WINDOW_XID(gtk_widget_get_window(gtk_widget_get_toplevel(GTK_WIDGET(ths->gtk_main_win))));
 
 	page_scan(ths);
 
 	/* listen for new windows */
 	/* there is no gdk equivalent to the folowing */
-	XSelectInput(gdk_x11_display_get_xdisplay(ths->dpy), GDK_WINDOW_XID(
-			ths->root), ExposureMask | SubstructureRedirectMask
+	XSelectInput(ths->xdpy, ths->xroot, ExposureMask | SubstructureRedirectMask
 			| SubstructureNotifyMask);
 	/* get all unhandled event */
 	gdk_window_add_filter(NULL, page_filter_event, ths);
@@ -406,7 +373,7 @@ void page_init_event_hander(page * ths) {
 
 void page_manage(page * ths, Window w) {
 	fprintf(stderr, "Call %s on %p\n", __FUNCTION__, (void *) w);
-	if (GDK_WINDOW_XID(ths->gdk_main_win) == w)
+	if (ths->x_main_window == w)
 		return;
 
 	client * c = 0;

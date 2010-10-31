@@ -27,29 +27,24 @@
 #include "tree.h"
 #include "client.h"
 
-enum { WMProtocols, WMDelete, WMState, WMLast };        /* default atoms */
-enum { NetSupported, NetWMName, NetWMState,
-       NetWMFullscreen, NetLast };                      /* EWMH atoms */
+enum {
+	WMProtocols, WMDelete, WMState, WMLast
+}; /* default atoms */
+enum {
+	NetSupported, NetWMName, NetWMState, NetWMFullscreen, NetLast
+}; /* EWMH atoms */
 
 typedef struct _page page;
 struct _page {
 	Display * xdpy;
 	Window xroot;
-	GdkDisplay * dpy;
-	GdkScreen * scn;
-	GdkWindow * root;
-
 	/* size of scn */
 	gint sw, sh;
 
-	GdkWindow * gdk_main_win;
 	GtkWidget * gtk_main_win;
+	Window x_main_window;
 
 	GMainLoop * main_loop;
-	GtkWidget * notebook1;
-	GtkWidget * notebook2;
-	GtkWidget * hpaned;
-	GdkCursor * main_cursor;
 
 	GSList * clients;
 	GSList * process_event;

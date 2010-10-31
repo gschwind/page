@@ -81,11 +81,8 @@ void tree_root_init(tree * ths, void * _ctx) {
 	ctx->gtk_main_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_default_size(GTK_WINDOW(ctx->gtk_main_win), ctx->sw, ctx->sh);
 	gtk_widget_show_all(ctx->gtk_main_win);
-	ctx->gdk_main_win = gtk_widget_get_window(ctx->gtk_main_win);
 	ths->data.r.window = ctx->gtk_main_win;
 	ths->w = ths->data.r.window;
-	ctx->main_cursor = gdk_cursor_new(GDK_PLUS);
-	gdk_window_set_cursor(ctx->gdk_main_win, ctx->main_cursor);
 	ths->pack1 = (tree *) malloc(sizeof(tree));
 	tree_dock_init(ths->pack1, _ctx, ths);
 	gtk_container_add(GTK_CONTAINER(ctx->gtk_main_win), tree_get_widget(
