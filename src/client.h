@@ -20,20 +20,23 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 
+#include "page.h"
+
 typedef struct _client client;
 struct _client {
-	Display * dpy;
-	Window root;
-
+	page * ctx;
 	Window xwin;
 	Window clipping_window;
 	GtkWidget * content;
 
+	/* the name of window */
 	gchar * name;
 
+	/* the desired width/heigth */
 	gint width;
 	gint height;
 
+	/* Hints */
 	gint basew;
 	gint baseh;
 	gint minw;
@@ -44,12 +47,7 @@ struct _client {
 	gint inch;
 	gdouble mina;
 	gdouble maxa;
-
 	gboolean is_fixed_size;
-
-	gboolean need_resize;
-
-	gint unmap_pending;
 
 };
 

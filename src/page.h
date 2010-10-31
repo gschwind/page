@@ -25,7 +25,6 @@
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
 #include "tree.h"
-#include "client.h"
 
 enum {
 	WMProtocols, WMDelete, WMState, WMLast
@@ -87,7 +86,5 @@ GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * e);
 GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * e);
 
 GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * ev);
-
-client * page_find_client_by_xwindow(page * ths, Window w);
 
 #endif /* PAGE_CONTEXT_H_ */

@@ -31,6 +31,7 @@
 
 client * page_find_client_by_widget(page * ths, GtkWidget * w);
 client * page_find_client_by_gwindow(page * ths, GdkWindow * w);
+client * page_find_client_by_xwindow(page * ths, Window w);
 
 long page_get_window_state(page * ths, Window w) {
 	printf("call %s\n", __FUNCTION__);
@@ -387,9 +388,7 @@ void page_manage(page * ths, Window w) {
 
 	c = malloc(sizeof(client));
 	c->xwin = w;
-	c->root = ths->xroot;
-	c->dpy = ths->xdpy;
-	c->unmap_pending = 0;
+	c->ctx = ths;
 	/* before page prepend !! */
 	ths->clients = g_slist_prepend(ths->clients, c);
 
@@ -397,8 +396,8 @@ void page_manage(page * ths, Window w) {
 	page_update_size_hints(ths, c);
 
 	gdk_window_foreign_new(c->xwin);
-	c->clipping_window = XCreateSimpleWindow(c->dpy, c->root, 0, 0, 1, 1, 0,
-			XBlackPixel(c->dpy, 0), XWhitePixel(c->dpy, 0));
+	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1, 0,
+			XBlackPixel(ths->xdpy, 0), XWhitePixel(ths->xdpy, 0));
 	gdk_window_foreign_new(c->clipping_window);
 	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_wm_new(c);
@@ -406,7 +405,7 @@ void page_manage(page * ths, Window w) {
 
 	/* this window will not be destroyed on page close (one bug less)
 	 * TODO check gdk equivalent */
-	XAddToSaveSet(c->dpy, w);
+	XAddToSaveSet(ths->xdpy, w);
 
 	fprintf(stderr, "Return %s on %p\n", __FUNCTION__, (void *) w);
 }
@@ -456,7 +455,7 @@ GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * ev) {
 	if (c->content) {
 		tree_remove_widget(ths->t, c->content);
 		ths->clients = g_slist_remove(ths->clients, c);
-		XDestroyWindow(c->dpy, c->clipping_window);
+		XDestroyWindow(ths->xdpy, c->clipping_window);
 		g_free(c->name);
 		free(c);
 	}
