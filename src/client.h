@@ -51,4 +51,6 @@ struct _client {
 
 };
 
+void client_update_size_hints(client * ths);
+
 #endif /* CLIENT_H_ */

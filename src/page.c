@@ -29,8 +29,17 @@
 #include "tree.h"
 #include "gtk_wm.h"
 
-client * page_find_client_by_widget(page * ths, GtkWidget * w);
-client * page_find_client_by_gwindow(page * ths, GdkWindow * w);
+char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
+		"ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify",
+		"LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose",
+		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
+		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
+		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
+		"GravityNotify", "ResizeRequest", "CirculateNotify",
+		"CirculateRequest", "PropertyNotify", "SelectionClear",
+		"SelectionRequest", "SelectionNotify", "ColormapNotify",
+		"ClientMessage", "MappingNotify", "GenericEvent" };
+
 client * page_find_client_by_xwindow(page * ths, Window w);
 
 long page_get_window_state(page * ths, Window w) {
@@ -97,65 +106,6 @@ void page_update_title(page * ths, client * c) {
 	}
 }
 
-void page_update_size_hints(page * ths, client * c) {
-	long msize;
-	XSizeHints size;
-
-	if (!XGetWMNormalHints(ths->xdpy, c->xwin, &size, &msize))
-		/* size is uninitialized, ensure that size.flags aren't used */
-		size.flags = PSize;
-
-	if (size.flags & PBaseSize) {
-		c->basew = size.base_width;
-		c->baseh = size.base_height;
-	} else if (size.flags & PMinSize) {
-		c->basew = size.min_width;
-		c->baseh = size.min_height;
-	} else {
-		c->basew = 0;
-		c->baseh = 0;
-	}
-
-	if (size.flags & PResizeInc) {
-		c->incw = size.width_inc;
-		c->inch = size.height_inc;
-	} else {
-		c->incw = 0;
-		c->inch = 0;
-	}
-
-	if (size.flags & PMaxSize) {
-		c->maxw = size.max_width;
-		c->maxh = size.max_height;
-	} else {
-		c->maxw = 0;
-		c->maxh = 0;
-	}
-
-	if (size.flags & PMinSize) {
-		c->minw = size.min_width;
-		c->minh = size.min_height;
-	} else if (size.flags & PBaseSize) {
-		c->minw = size.base_width;
-		c->minh = size.base_height;
-	} else {
-		c->minw = 0;
-		c->minh = 0;
-	}
-
-	if (size.flags & PAspect) {
-		if (size.min_aspect.x != 0 && size.max_aspect.y != 0) {
-			c->mina = (gdouble) size.min_aspect.y / (gdouble) size.min_aspect.x;
-			c->maxa = (gdouble) size.max_aspect.x / (gdouble) size.max_aspect.y;
-		}
-	} else {
-		c->maxa = 0.0;
-		c->mina = 0.0;
-	}
-	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh && c->maxw
-			== c->minw && c->maxh == c->minh);
-}
-
 void page_init(page * ths, int * argc, char *** argv) {
 	printf("Entering in %s\n", __FUNCTION__);
 	XWindowAttributes wa;
@@ -214,17 +164,6 @@ void page_run(page * ths) {
 
 }
 
-char const * event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
-		"ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify",
-		"LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose",
-		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
-		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
-		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
-		"GravityNotify", "ResizeRequest", "CirculateNotify",
-		"CirculateRequest", "PropertyNotify", "SelectionClear",
-		"SelectionRequest", "SelectionNotify", "ColormapNotify",
-		"ClientMessage", "MappingNotify", "GenericEvent" };
-
 /* this function is call on each event of root window, it can filter, or translate event to another */
 GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		gpointer data) {
@@ -239,7 +178,7 @@ GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,
 		if (!c)
 			return GDK_FILTER_CONTINUE;
 		fprintf(stderr, "process event %d %d : %s\n", (int) e->xany.window,
-				(int) e->xany.serial, event_name[e->type]);
+				(int) e->xany.serial, x_event_name[e->type]);
 		if (ths->event_handler[e->type])
 			return ths->event_handler[e->type](ths, e); /* call handler */
 		return GDK_FILTER_CONTINUE;
@@ -269,34 +208,6 @@ void page_scan(page * ths) {
 			XFree(wins);
 	}
 }
-
-/* this function is call when a client want map a new window
- * the evant is on root window, e->xmaprequest.window is the window that request the map */
-#if 0
-GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * e) {
-	printf("call %s\n", __FUNCTION__);
-	GdkWindow * w = gdk_window_foreign_new(e->xdestroywindow.window);
-	/* should never happen */
-	client * c = page_find_client_by_gwindow(ths, w);
-	if (c == NULL) {
-		/* just map, do noting else */
-		printf("This window (%p) is not managed\n", w);
-		return GDK_FILTER_REMOVE;
-	}
-	gint n = gtk_notebook_page_num(c->notebook_parent,
-			GTK_WIDGET(c->xwindow_handler));
-	printf("remove %d of %p\n", n, c->notebook_parent);
-	if (n < 0)
-	return GDK_FILTER_CONTINUE;
-	gtk_notebook_remove_page((c->notebook_parent), n);
-	gtk_widget_queue_draw(GTK_WIDGET(c->notebook_parent));
-	ths->clients = g_slist_remove(ths->clients, c);
-	free(c);
-	gtk_widget_queue_draw(GTK_WIDGET(ths->notebook1));
-	return GDK_FILTER_REMOVE;
-
-}
-#endif
 
 client * page_find_client_by_xwindow(page * ths, Window w) {
 	GSList * i = ths->clients;
@@ -338,27 +249,6 @@ GdkFilterReturn page_process_map_request_event(page * ths, XEvent * e) {
 
 }
 
-#if 0
-GdkFilterReturn page_process_window_destroy_event(page * ths, XEvent * e) {
-	printf("call %s %d\n", __FUNCTION__, (int) e->xdestroywindow.window);
-	client * c = 0;
-	c = page_find_client_by_xwindow(ths, e->xdestroywindow.window);
-	if (c != 0) {
-		gint n = gtk_notebook_page_num(c->notebook_parent,
-				GTK_WIDGET(c->xwindow_handler));
-		printf("remove %d of %p\n", n, c->notebook_parent);
-		if (n < 0)
-		return GDK_FILTER_CONTINUE;
-		gtk_notebook_remove_page((c->notebook_parent), n);
-		gtk_widget_queue_draw(GTK_WIDGET(c->notebook_parent));
-		ths->clients = g_slist_remove(ths->clients, c);
-		free(c);
-	}
-	//gtk_widget_queue_draw(GTK_WIDGET(ths->notebook1));
-	return GDK_FILTER_REMOVE;
-}
-#endif
-
 void page_init_event_hander(page * ths) {
 	gint i;
 	for (i = 0; i < LASTEvent; ++i) {
@@ -393,7 +283,7 @@ void page_manage(page * ths, Window w) {
 	ths->clients = g_slist_prepend(ths->clients, c);
 
 	page_update_title(ths, c);
-	page_update_size_hints(ths, c);
+	client_update_size_hints(c);
 
 	gdk_window_foreign_new(c->xwin);
 	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1, 0,

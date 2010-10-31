@@ -55,7 +55,8 @@ log_events_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(log_events_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_page_OBJECTS = page-main.$(OBJEXT) page-page.$(OBJEXT) \
-	page-tree.$(OBJEXT) page-gtk_wm.$(OBJEXT)
+	page-tree.$(OBJEXT) page-gtk_wm.$(OBJEXT) \
+	page-client.$(OBJEXT)
 page_OBJECTS = $(am_page_OBJECTS)
 page_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -209,7 +210,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-page_SOURCES = main.c page.c tree.c gtk_wm.c
+page_SOURCES = main.c page.c tree.c gtk_wm.c client.c
 page_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 page_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 query_tree_SOURCES = query_tree.c
@@ -312,6 +313,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_events-log_events.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_wm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-page.Po@am__quote@
@@ -408,6 +410,20 @@ page-gtk_wm.obj: gtk_wm.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gtk_wm.c' object='page-gtk_wm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-gtk_wm.obj `if test -f 'gtk_wm.c'; then $(CYGPATH_W) 'gtk_wm.c'; else $(CYGPATH_W) '$(srcdir)/gtk_wm.c'; fi`
+
+page-client.o: client.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-client.o -MD -MP -MF $(DEPDIR)/page-client.Tpo -c -o page-client.o `test -f 'client.c' || echo '$(srcdir)/'`client.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-client.Tpo $(DEPDIR)/page-client.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='client.c' object='page-client.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-client.o `test -f 'client.c' || echo '$(srcdir)/'`client.c
+
+page-client.obj: client.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-client.obj -MD -MP -MF $(DEPDIR)/page-client.Tpo -c -o page-client.obj `if test -f 'client.c'; then $(CYGPATH_W) 'client.c'; else $(CYGPATH_W) '$(srcdir)/client.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-client.Tpo $(DEPDIR)/page-client.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='client.c' object='page-client.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-client.obj `if test -f 'client.c'; then $(CYGPATH_W) 'client.c'; else $(CYGPATH_W) '$(srcdir)/client.c'; fi`
 
 query_tree-query_tree.o: query_tree.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(query_tree_CFLAGS) $(CFLAGS) -MT query_tree-query_tree.o -MD -MP -MF $(DEPDIR)/query_tree-query_tree.Tpo -c -o query_tree-query_tree.o `test -f 'query_tree.c' || echo '$(srcdir)/'`query_tree.c
