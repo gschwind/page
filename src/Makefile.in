@@ -54,8 +54,7 @@ log_events_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 log_events_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(log_events_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_page_OBJECTS = page-main.$(OBJEXT) \
-	page-gtk_xwindow_handler.$(OBJEXT) page-page.$(OBJEXT) \
+am_page_OBJECTS = page-main.$(OBJEXT) page-page.$(OBJEXT) \
 	page-tree.$(OBJEXT) page-gtk_wm.$(OBJEXT)
 page_OBJECTS = $(am_page_OBJECTS)
 page_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -210,7 +209,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-page_SOURCES = main.c gtk_xwindow_handler.c page.c tree.c gtk_wm.c
+page_SOURCES = main.c page.c tree.c gtk_wm.c
 page_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 page_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 query_tree_SOURCES = query_tree.c
@@ -314,7 +313,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_events-log_events.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_wm.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-gtk_xwindow_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-tree.Po@am__quote@
@@ -368,20 +366,6 @@ page-main.obj: main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='main.c' object='page-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-main.obj `if test -f 'main.c'; then $(CYGPATH_W) 'main.c'; else $(CYGPATH_W) '$(srcdir)/main.c'; fi`
-
-page-gtk_xwindow_handler.o: gtk_xwindow_handler.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-gtk_xwindow_handler.o -MD -MP -MF $(DEPDIR)/page-gtk_xwindow_handler.Tpo -c -o page-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.c' || echo '$(srcdir)/'`gtk_xwindow_handler.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_xwindow_handler.Tpo $(DEPDIR)/page-gtk_xwindow_handler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gtk_xwindow_handler.c' object='page-gtk_xwindow_handler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-gtk_xwindow_handler.o `test -f 'gtk_xwindow_handler.c' || echo '$(srcdir)/'`gtk_xwindow_handler.c
-
-page-gtk_xwindow_handler.obj: gtk_xwindow_handler.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-gtk_xwindow_handler.obj -MD -MP -MF $(DEPDIR)/page-gtk_xwindow_handler.Tpo -c -o page-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.c'; then $(CYGPATH_W) 'gtk_xwindow_handler.c'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/page-gtk_xwindow_handler.Tpo $(DEPDIR)/page-gtk_xwindow_handler.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gtk_xwindow_handler.c' object='page-gtk_xwindow_handler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -c -o page-gtk_xwindow_handler.obj `if test -f 'gtk_xwindow_handler.c'; then $(CYGPATH_W) 'gtk_xwindow_handler.c'; else $(CYGPATH_W) '$(srcdir)/gtk_xwindow_handler.c'; fi`
 
 page-page.o: page.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_CFLAGS) $(CFLAGS) -MT page-page.o -MD -MP -MF $(DEPDIR)/page-page.Tpo -c -o page-page.o `test -f 'page.c' || echo '$(srcdir)/'`page.c

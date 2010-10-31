@@ -159,7 +159,7 @@ void page_init(page * ths, int * argc, char *** argv) {
 	printf("Entering in %s\n", __FUNCTION__);
 	XWindowAttributes wa;
 	gtk_init(argc, argv);
-	/* Youhou totaly undocumented ? found on metacity sources */
+	/* Youhou totaly undocumented ? found in metacity sources */
 	ths->xdpy = gdk_display;
 	ths->xroot = XDefaultRootWindow(ths->xdpy);
 	XGetWindowAttributes(ths->xdpy, ths->xroot, &wa);
@@ -168,7 +168,6 @@ void page_init(page * ths, int * argc, char *** argv) {
 	ths->sh = wa.height;
 
 	ths->wmatom[WMState] = XInternAtom(ths->xdpy, "WM_STATE", False);
-
 	ths->netatom[NetSupported]
 			= XInternAtom(ths->xdpy, "_NET_SUPPORTED", False);
 	ths->netatom[NetWMName] = XInternAtom(ths->xdpy, "_NET_WM_NAME", False);

@@ -38,20 +38,21 @@ typedef struct _page page;
 struct _page {
 	Display * xdpy;
 	Window xroot;
-	/* size of scn */
+	/* size of default root window */
 	gint sw, sh;
 
+	/* gtk window wich handle notebooks */
 	GtkWidget * gtk_main_win;
 	Window x_main_window;
 
 	GMainLoop * main_loop;
 
 	GSList * clients;
-	GSList * process_event;
 
 	/* events handlers */
 	GdkFilterReturn (*event_handler[LASTEvent])(page *, XEvent *);
 
+	/* tree of notebooks */
 	tree * t;
 
 	Atom wmatom[WMLast];
@@ -59,7 +60,7 @@ struct _page {
 
 };
 
-/* juste create the page */
+/* just create the page */
 page * page_new();
 /* init, must be call before other function of page */
 void page_init(page * ths, int * argc, char *** argv);

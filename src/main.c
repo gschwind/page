@@ -36,7 +36,6 @@
 
 #include <glib-object.h>
 
-#include "gtk_xwindow_handler.h"
 #include "page.h"
 
 int main(int argc, char * * argv) {

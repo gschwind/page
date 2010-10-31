@@ -1,5 +1,5 @@
 bin_PROGRAMS = page query_tree log_events
-page_SOURCES = main.c gtk_xwindow_handler.c page.c tree.c gtk_wm.c
+page_SOURCES = main.c page.c tree.c gtk_wm.c
 page_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 page_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 
