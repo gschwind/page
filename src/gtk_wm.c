@@ -96,11 +96,11 @@ void gtk_wm_update_client_size(client * c, gint w, gint h) {
 			h = c->minh;
 		}
 
-		if (c->basew != 0) {
+		if (c->incw != 0) {
 			w -= ((w - c->basew) % c->incw);
 		}
 
-		if (c->baseh != 0) {
+		if (c->inch != 0) {
 			h -= ((h - c->baseh) % c->inch);
 		}
 

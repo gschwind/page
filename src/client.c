@@ -17,9 +17,9 @@
  * 02111-1307, USA.
  */
 
-#include "client.h"
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include "client.h"
 
 void client_update_size_hints(client * ths) {
 	long msize;
