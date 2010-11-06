@@ -47,11 +47,11 @@ void tree_build_control_tab(tree * ths) {
 	gtk_box_pack_start(GTK_BOX(ths->data.d.hbox), ths->data.d.close_button,
 			TRUE, TRUE, 0);
 	g_signal_connect(GTK_OBJECT(ths->data.d.hsplit_button), "button-release-event",
-			GTK_SIGNAL_FUNC(tree_hsplit), ths);
+			G_CALLBACK(tree_hsplit), ths);
 	g_signal_connect(GTK_OBJECT(ths->data.d.vsplit_button), "button-release-event",
-			GTK_SIGNAL_FUNC(tree_vsplit), ths);
+			G_CALLBACK(tree_vsplit), ths);
 	g_signal_connect(GTK_OBJECT(ths->data.d.close_button), "button-release-event",
-			GTK_SIGNAL_FUNC(tree_close), ths);
+			G_CALLBACK(tree_close), ths);
 	gtk_widget_show_all(ths->data.d.hbox);
 }
 
@@ -59,6 +59,7 @@ void tree_dock_init(tree * ths, void * ctx, tree * parent) {
 	ths->ctx = ctx;
 	ths->mode = TREE_NOTEBOOK;
 	ths->data.d.notebook = gtk_notebook_new();
+	//ths->data.d.tabber = anjuta_tabber_new(GTK_NOTEBOOK(ths->data.d.notebook));
 	ths->w = ths->data.d.notebook;
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(ths->data.d.notebook), True);
 	gtk_notebook_popup_enable(GTK_NOTEBOOK(ths->data.d.notebook));
@@ -70,6 +71,7 @@ void tree_dock_init(tree * ths, void * ctx, tree * parent) {
 	ths->pack1 = NULL;
 	ths->pack2 = NULL;
 	ths->parent = parent;
+	gtk_widget_show_all(ths->data.d.notebook);
 	gtk_widget_show_all(ths->w);
 }
 

@@ -30,14 +30,15 @@ static void gtk_wm_realize(GtkWidget *widget);
 static void gtk_wm_unmap(GtkWidget *widget);
 static void gtk_wm_map(GtkWidget * widget);
 
-GtkType gtk_wm_get_type(void) {
-	static GtkType gtk_wm_type = 0;
+GType gtk_wm_get_type(void) {
+	static GType gtk_wm_type = 0;
 	if (!gtk_wm_type) {
-		static const GtkTypeInfo gtk_wm_info = { "GtkWM", sizeof(GtkWM),
-				sizeof(GtkWMClass), (GtkClassInitFunc) gtk_wm_class_init,
-				(GtkObjectInitFunc) gtk_wm_init, NULL, NULL,
-				(GtkClassInitFunc) NULL };
-		gtk_wm_type = gtk_type_unique(GTK_TYPE_WIDGET, &gtk_wm_info);
+		const GTypeInfo gtk_wm_info = { sizeof(GtkWMClass), NULL, NULL,
+				(GClassInitFunc) gtk_wm_class_init, NULL, NULL, sizeof(GtkWM),
+				0, (GInstanceInitFunc) gtk_wm_init, };
+		gtk_wm_type = g_type_register_static(GTK_TYPE_WIDGET, "GtkWM",
+				&gtk_wm_info, 0);
+
 	}
 	return gtk_wm_type;
 }
@@ -65,17 +66,12 @@ static void gtk_wm_class_init(GtkWMClass *klass) {
 
 static void gtk_wm_init(GtkWM * ths) {
 	printf("call %s #%p\n", __FUNCTION__, ths);
-	g_return_if_fail(ths != NULL);
-	g_return_if_fail(GTK_IS_WM(ths));
-
-	GTK_WM(ths)->need_resize = FALSE;
 	GTK_WM(ths)->c = NULL;
+	printf("return %s #%p\n", __FUNCTION__, ths);
 }
 
 void gtk_wm_set_client(GtkWM * w, client *c) {
-	g_return_if_fail(GTK_IS_WM(w));
 	GTK_WM(w)->c = c;
-	GTK_WM(w)->need_reparent = TRUE;
 }
 
 void gtk_wm_update_client_size(client * c, gint w, gint h) {
@@ -108,7 +104,8 @@ void gtk_wm_update_client_size(client * c, gint w, gint h) {
 		c->height = h;
 		c->width = w;
 
-		printf("Update #%p window size %dx%d\n", (void *)c->xwin, c->width, c->height);
+		printf("Update #%p window size %dx%d\n", (void *) c->xwin, c->width,
+				c->height);
 
 	}
 }
@@ -123,8 +120,8 @@ static void gtk_wm_size_allocate(GtkWidget *widget, GtkAllocation *allocation) {
 
 	fprintf(stderr, "allocate %dx%d+%d+%d\n", allocation->width,
 			allocation->height, allocation->x, allocation->y);
-	XMoveResizeWindow(c->ctx->xdpy, c->clipping_window, allocation->x, allocation->y,
-			allocation->width, allocation->height);
+	XMoveResizeWindow(c->ctx->xdpy, c->clipping_window, allocation->x,
+			allocation->y, allocation->width, allocation->height);
 	gtk_wm_update_client_size(c, allocation->width, allocation->height);
 	XMoveResizeWindow(c->ctx->xdpy, c->xwin, 0, 0, c->width, c->height);
 	fprintf(stderr, "Return %s #%p\n", __FUNCTION__, widget);
@@ -135,6 +132,7 @@ static void gtk_wm_unrealize(GtkWidget *widget) {
 	printf("Enterring %s #%p\n", __FUNCTION__, widget);
 	if (gtk_widget_get_realized(widget)) {
 		client * c = GTK_WM(widget)->c;
+		//GTK_WIDGET_CLASS(widget)->unmap(widget);
 		XReparentWindow(c->ctx->xdpy, c->clipping_window, c->ctx->xroot, 0, 0);
 		gtk_widget_set_realized(widget, FALSE);
 		c->content = NULL;
@@ -144,49 +142,31 @@ static void gtk_wm_unrealize(GtkWidget *widget) {
 
 static void gtk_wm_realize(GtkWidget *widget) {
 	printf("Entering in %s #%p\n", __FUNCTION__, widget);
-	g_return_if_fail(widget != NULL);
-	g_return_if_fail(GTK_IS_WM(widget));
+	//GTK_WIDGET_CLASS(g_type_class_peek_parent(GTK_WM_GET_CLASS(widget)))->realize(widget);
+	GtkWM * wm = GTK_WM(widget);
+	client * c = wm->c;
+	gtk_widget_set_realized(widget, TRUE);
+	gtk_widget_set_has_window(widget, FALSE);
+	widget->window = gtk_widget_get_parent_window(widget);
 
-	if (!gtk_widget_get_realized(widget)) {
-		gtk_widget_set_realized(widget, TRUE);
-		gtk_widget_set_has_window(widget, FALSE);
-		GTK_WM(widget)->need_resize = FALSE;
-		guint attributes_mask;
-		GdkWindowAttr attributes;
-		attributes.window_type = GDK_WINDOW_CHILD;
-		attributes.x = widget->allocation.x;
-		attributes.y = widget->allocation.y;
-		attributes.width = widget->allocation.width;
-		attributes.height = widget->allocation.height;
-		attributes.wclass = GDK_INPUT_OUTPUT;
-		attributes.event_mask = gtk_widget_get_events(widget);
-		attributes_mask = GDK_WA_X | GDK_WA_Y;
-
-		widget->window = gdk_window_new(gtk_widget_get_parent_window(widget),
-				&attributes, attributes_mask);
-
-		/* Not clear */
-		gdk_window_set_user_data(widget->window, widget);
-
-		client * c = GTK_WM(widget)->c;
-		XReparentWindow(c->ctx->xdpy, c->clipping_window,
-				GDK_WINDOW_XID(gtk_widget_get_parent_window(widget)),
-				widget->allocation.x, widget->allocation.y);
-		XMoveResizeWindow(c->ctx->xdpy, c->clipping_window, widget->allocation.x,
-				widget->allocation.y, widget->allocation.width,
-				widget->allocation.height);
-		XReparentWindow(c->ctx->xdpy, c->xwin, c->clipping_window, 0, 0);
-		/* listen for new windows */
-		/* there is no gdk equivalent to the folowing */
-		XSelectInput(c->ctx->xdpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
-		c->content = widget;
-
-	}
+	XReparentWindow(c->ctx->xdpy, c->clipping_window,
+			GDK_WINDOW_XID(widget->window), widget->allocation.x,
+			widget->allocation.y);
+	XMoveResizeWindow(c->ctx->xdpy, c->clipping_window, widget->allocation.x,
+			widget->allocation.y, widget->allocation.width,
+			widget->allocation.height);
+	XSelectInput(c->ctx->xdpy, c->xwin, StructureNotifyMask
+			| PropertyChangeMask);
+	c->content = widget;
 	printf("Return in %s #%p\n", __FUNCTION__, widget);
 }
 
 static void gtk_wm_unmap(GtkWidget *widget) {
 	printf("Entering in %s #%p\n", __FUNCTION__, widget);
+	/* gtk check if we are mapped to send event, noto switch this value cause
+	 * nevar call map.
+	 */
+	gtk_widget_set_mapped(widget, FALSE);
 	client * c = GTK_WM(widget)->c;
 	XUnmapWindow(c->ctx->xdpy, c->xwin);
 	XUnmapWindow(c->ctx->xdpy, c->clipping_window);
@@ -195,10 +175,12 @@ static void gtk_wm_unmap(GtkWidget *widget) {
 
 static void gtk_wm_map(GtkWidget * widget) {
 	printf("Enter %s #%p\n", __FUNCTION__, widget);
+	gtk_widget_set_mapped(widget, TRUE);
 	client * c = GTK_WM(widget)->c;
 	XMapWindow(c->ctx->xdpy, c->clipping_window);
 	XMapWindow(c->ctx->xdpy, c->xwin);
 	XRaiseWindow(c->ctx->xdpy, c->clipping_window);
+	//XSetInputFocus(c->ctx->xdpy, c->xwin, RevertToNone, CurrentTime);
 	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
 

@@ -25,6 +25,7 @@
 
 typedef struct _dock dock;
 struct _dock {
+	GtkWidget * tabber;
 	GtkWidget * notebook;
 	GtkWidget * hbox;
 	GtkWidget * hsplit_button;

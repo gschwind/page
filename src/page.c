@@ -376,10 +376,11 @@ void page_manage(page * ths, Window w, XWindowAttributes * wa) {
 		return;
 	}
 
-	gdk_window_foreign_new(c->xwin);
+	//gdk_window_foreign_new(c->xwin);
 	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1,
 			0, XBlackPixel(ths->xdpy, 0), XWhitePixel(ths->xdpy, 0));
-	gdk_window_foreign_new(c->clipping_window);
+	XReparentWindow(c->ctx->xdpy, c->xwin, c->clipping_window, 0, 0);
+	//gdk_window_foreign_new(c->clipping_window);
 	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_wm_new(c);
 	tree_append_widget(ths->t, label, content);

@@ -27,7 +27,7 @@ void run(void) {
 	XSync(dpy, False);
 	while (!XNextEvent(dpy, &ev)) {
 		if (x_event_name[ev.type])
-			printf("Event no %d : %s on #%p\n", ev.xany.serial,
+			printf("Event no %lu : %s on #%p\n", ev.xany.serial,
 					x_event_name[ev.type], (void *) ev.xany.window);
 		if (ev.type == MapRequest)
 			XMapWindow(dpy, ev.xmaprequest.window);

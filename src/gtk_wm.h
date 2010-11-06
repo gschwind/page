@@ -26,20 +26,18 @@
 
 G_BEGIN_DECLS
 
-#define GTK_TYPE_WM (gtk_wm_get_type ())
-#define GTK_WM(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_WM, GtkWM))
-#define GTK_WM_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST ((klass) , GTK_TYPE_WM, GtkWMClass))
-#define GTK_IS_WM(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_WM))
-#define GTK_IS_WM_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass), GTK_TYPE_WM))
-#define GTK_WM_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_WM, GtkWMClass))
+#define GTK_TYPE_WM                   (gtk_wm_get_type ())
+#define GTK_WM(obj)                   (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_WM, GtkWM))
+#define GTK_WM_CLASS(klass)           (G_TYPE_CHECK_CLASS_CAST ((klass) , GTK_TYPE_WM, GtkWMClass))
+#define GTK_IS_WM(obj)                (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_WM))
+#define GTK_IS_WM_CLASS(klass)        (G_TYPE_CHECK_CLASS_TYPE ((klass), GTK_TYPE_WM))
+#define GTK_WM_GET_CLASS(obj)         (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_WM, GtkWMClass))
 
-typedef struct _GtkWM GtkWM;
-typedef struct _GtkWMClass GtkWMClass;
+typedef struct _GtkWM       GtkWM;
+typedef struct _GtkWMClass  GtkWMClass;
 
 struct _GtkWM {
   GtkWidget widget;
-  gboolean need_resize;
-  gboolean need_reparent;
   client * c;
 };
 
@@ -47,7 +45,7 @@ struct _GtkWMClass {
   GtkWidgetClass parent_class;
 };
 
-GtkType gtk_wm_get_type(void);
+GType gtk_wm_get_type(void);
 GtkWidget * gtk_wm_new(client * c);
 void gtk_wm_set_client(GtkWM * w, client *c);
 
