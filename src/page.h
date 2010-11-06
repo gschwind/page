@@ -25,20 +25,33 @@
 #include <gtk/gtk.h>
 #include <X11/Xlib.h>
 #include "tree.h"
+#include "atoms.h"
 
 enum {
-	WMProtocols, WMDelete, WMState, WMLast
-}; /* default atoms */
-enum {
-	NetSupported, NetWMName, NetWMState, NetWMFullscreen, NetLast
+	AtomType,
+	WMProtocols,
+	WMDelete,
+	WMState,
+	WMLast,
+	NetSupported,
+	NetWMName,
+	NetWMState,
+	NetWMFullscreen,
+	NetWMType,
+	NetWMTypeDock,
+	NetLast,
+	AtomLast
 }; /* EWMH atoms */
 
 typedef struct _page page;
 struct _page {
 	Display * xdpy;
+	gint xscr;
 	Window xroot;
 	/* size of default root window */
-	gint sw, sh;
+	gint sw, sh, sx, sy;
+	gint start_x, end_x;
+	gint start_y, end_y;
 
 	/* gtk window wich handle notebooks */
 	GtkWidget * gtk_main_win;
@@ -54,9 +67,7 @@ struct _page {
 	/* tree of notebooks */
 	tree * t;
 
-	Atom wmatom[WMLast];
-	Atom netatom[NetLast];
-
+	atoms_t atoms;
 };
 
 /* just create the page */
@@ -72,7 +83,7 @@ void page_destroy(page * ths);
 /* this function scan for each sub window of root. */
 void page_scan(page * ths);
 /* manage a new visible window */
-void page_manage(page * ths, Window w);
+void page_manage(page * ths, Window w, XWindowAttributes * wa);
 /* filter event, event can be removed, translated to gdk, or just forwarded
  * for normal processing */
 GdkFilterReturn page_filter_event(GdkXEvent * xevent, GdkEvent * event,

@@ -50,8 +50,8 @@ long page_get_window_state(page * ths, Window w) {
 	unsigned long n, extra;
 	Atom real;
 
-	if (XGetWindowProperty(ths->xdpy, w, ths->wmatom[WMState], 0L, 2L, False,
-			ths->wmatom[WMState], &real, &format, &n, &extra,
+	if (XGetWindowProperty(ths->xdpy, w, ths->atoms.WM_STATE, 0L, 2L, False,
+			ths->atoms.WM_STATE, &real, &format, &n, &extra,
 			(unsigned char **) &p) != Success)
 		return -1;
 	if (n != 0)
@@ -66,6 +66,62 @@ page * page_new() {
 	/* TODO: manage error */
 	memset(ths, 0, sizeof(page));
 	return ths;
+}
+
+static gboolean page_get_all(page * ths, Window win, Atom prop, Atom type,
+		gint size, guchar **data, guint *num) {
+	gboolean ret = FALSE;
+	gint res;
+	guchar *xdata = NULL;
+	Atom ret_type;
+	gint ret_size;
+	gulong ret_items, bytes_left;
+
+	res = XGetWindowProperty(ths->xdpy, win, prop, 0l, G_MAXLONG, FALSE, type,
+			&ret_type, &ret_size, &ret_items, &bytes_left, &xdata);
+	if (res == Success) {
+		if (ret_size == size && ret_items > 0) {
+			guint i;
+
+			*data = g_malloc(ret_items * (size / 8));
+			for (i = 0; i < ret_items; ++i)
+				switch (size) {
+				case 8:
+					(*data)[i] = xdata[i];
+					break;
+				case 16:
+					((guint16*) *data)[i] = ((gushort*) xdata)[i];
+					break;
+				case 32:
+					((guint32*) *data)[i] = ((gulong*) xdata)[i];
+					break;
+				default:
+					g_assert_not_reached(); /* unhandled size */
+				}
+			*num = ret_items;
+			ret = TRUE;
+		}
+		XFree(xdata);
+	}
+	return ret;
+}
+
+gboolean client_is_dock(page * ths, client * c) {
+	guint num, i;
+	guint32 *val;
+	Window t;
+
+	if (page_get_all(ths, c->xwin, ths->atoms._NET_WM_WINDOW_TYPE,
+			ths->atoms.ATOM, 32, (guchar **) &val, &num)) {
+		/* use the first value that we know about in the array */
+		for (i = 0; i < num; ++i) {
+			if (val[i] == ths->atoms._NET_WM_WINDOW_TYPE_DOCK)
+				return True;
+		}
+		g_free(val);
+	}
+
+	return False;
 }
 
 /* inspired from dwm */
@@ -96,7 +152,7 @@ gboolean page_get_text_prop(page * ths, Window w, Atom atom, gchar ** text) {
 
 /* inspired from dwm */
 void page_update_title(page * ths, client * c) {
-	if (!page_get_text_prop(ths, c->xwin, ths->netatom[NetWMName], &c->name))
+	if (!page_get_text_prop(ths, c->xwin, ths->atoms._NET_WM_NAME, &c->name))
 		if (!page_get_text_prop(ths, c->xwin, XA_WM_NAME, &c->name)) {
 			c->name = g_strdup_printf("%p (noname)", (gpointer) c->xwin);
 		}
@@ -112,19 +168,31 @@ void page_init(page * ths, int * argc, char *** argv) {
 	gtk_init(argc, argv);
 	/* Youhou totaly undocumented ? found in metacity sources */
 	ths->xdpy = gdk_display;
+	ths->xscr = XDefaultScreen(ths->xdpy);
 	ths->xroot = XDefaultRootWindow(ths->xdpy);
 	XGetWindowAttributes(ths->xdpy, ths->xroot, &wa);
 	fprintf(stderr, "display size %d %d\n", wa.width, wa.height);
 	ths->sw = wa.width;
 	ths->sh = wa.height;
+	ths->sx = 0;
+	ths->sy = 0;
 
-	ths->wmatom[WMState] = XInternAtom(ths->xdpy, "WM_STATE", False);
-	ths->netatom[NetSupported]
-			= XInternAtom(ths->xdpy, "_NET_SUPPORTED", False);
-	ths->netatom[NetWMName] = XInternAtom(ths->xdpy, "_NET_WM_NAME", False);
-	ths->netatom[NetWMState] = XInternAtom(ths->xdpy, "_NET_WM_STATE", False);
-	ths->netatom[NetWMFullscreen] = XInternAtom(ths->xdpy,
-			"_NET_WM_STATE_FULLSCREEN", False);
+#define ATOM_INIT(name) ths->atoms.name = XInternAtom(ths->xdpy, #name, False)
+
+	ATOM_INIT(ATOM);
+	ATOM_INIT(CARDINAL);
+
+	ATOM_INIT(WM_STATE);
+
+	ATOM_INIT(_NET_SUPPORTED);
+	ATOM_INIT(_NET_WM_NAME);
+	ATOM_INIT(_NET_WM_STATE);
+	ATOM_INIT(_NET_WM_STATE_FULLSCREEN);
+
+	ATOM_INIT(_NET_WM_WINDOW_TYPE);
+	ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
+
+	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
 
 	ths->clients = NULL;
 
@@ -201,7 +269,7 @@ void page_scan(page * ths) {
 				continue;
 			if ((page_get_window_state(ths, wins[i]) == IconicState
 					|| wa.map_state == IsViewable))
-				page_manage(ths, wins[i]);
+				page_manage(ths, wins[i], &wa);
 		}
 
 		if (wins)
@@ -241,7 +309,7 @@ GdkFilterReturn page_process_map_request_event(page * ths, XEvent * e) {
 		return GDK_FILTER_REMOVE;
 	if (wa.override_redirect)
 		return GDK_FILTER_REMOVE;
-	page_manage(ths, w);
+	page_manage(ths, w, &wa);
 
 	exit: printf("Return from %s #%p\n", __FUNCTION__,
 			(void *) e->xmaprequest.window);
@@ -261,7 +329,7 @@ void page_init_event_hander(page * ths) {
 	ths->event_handler[CreateNotify] = page_process_create_notify_event;
 }
 
-void page_manage(page * ths, Window w) {
+void page_manage(page * ths, Window w, XWindowAttributes * wa) {
 	fprintf(stderr, "Call %s on %p\n", __FUNCTION__, (void *) w);
 	if (ths->x_main_window == w)
 		return;
@@ -285,9 +353,32 @@ void page_manage(page * ths, Window w) {
 	page_update_title(ths, c);
 	client_update_size_hints(c);
 
+	gchar * type;
+	;
+	if (client_is_dock(ths, c)) {
+		printf("IsDock !\n");
+		/* partial struct need to be read ! */
+		gint32 * partial_struct;
+		guint n;
+		page_get_all(ths, c->xwin, ths->atoms._NET_WM_STRUT_PARTIAL,
+				ths->atoms.CARDINAL, 32, (guchar **) &partial_struct, &n);
+
+		ths->sw -= partial_struct[0] + partial_struct[1];
+		ths->sh -= partial_struct[2] + partial_struct[3];
+		if(ths->sx < partial_struct[0])
+			ths->sx = partial_struct[0];
+		if(ths->sy < partial_struct[2])
+			ths->sy = partial_struct[2];
+
+		gtk_window_move(GTK_WINDOW(ths->gtk_main_win), ths->sx, ths->sy);
+		gtk_window_resize(GTK_WINDOW(ths->gtk_main_win), ths->sw, ths->sh);
+
+		return;
+	}
+
 	gdk_window_foreign_new(c->xwin);
-	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1, 0,
-			XBlackPixel(ths->xdpy, 0), XWhitePixel(ths->xdpy, 0));
+	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1,
+			0, XBlackPixel(ths->xdpy, 0), XWhitePixel(ths->xdpy, 0));
 	gdk_window_foreign_new(c->clipping_window);
 	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_wm_new(c);
