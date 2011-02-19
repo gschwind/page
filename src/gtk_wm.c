@@ -180,7 +180,8 @@ static void gtk_wm_map(GtkWidget * widget) {
 	XMapWindow(c->ctx->xdpy, c->clipping_window);
 	XMapWindow(c->ctx->xdpy, c->xwin);
 	XRaiseWindow(c->ctx->xdpy, c->clipping_window);
-	//XSetInputFocus(c->ctx->xdpy, c->xwin, RevertToNone, CurrentTime);
+	XRaiseWindow(c->ctx->xdpy, c->xwin);
+	XSetInputFocus(c->ctx->xdpy, c->xwin, RevertToNone, CurrentTime);
 	printf("Return %s #%p\n", __FUNCTION__, widget);
 }
 
