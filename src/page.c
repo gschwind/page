@@ -327,6 +327,7 @@ void page_init_event_hander(page * ths) {
 	ths->event_handler[DestroyNotify] = page_process_destroy_notify_event;
 	ths->event_handler[ConfigureRequest] = page_process_configure_request_event;
 	ths->event_handler[CreateNotify] = page_process_create_notify_event;
+	ths->event_handler[PropertyNotify] = page_process_property_notify_event;
 }
 
 void page_manage(page * ths, Window w, XWindowAttributes * wa) {
@@ -354,7 +355,7 @@ void page_manage(page * ths, Window w, XWindowAttributes * wa) {
 	client_update_size_hints(c);
 
 	gchar * type;
-	;
+
 	if (client_is_dock(ths, c)) {
 		printf("IsDock !\n");
 		/* partial struct need to be read ! */
@@ -376,6 +377,10 @@ void page_manage(page * ths, Window w, XWindowAttributes * wa) {
 		return;
 	}
 
+	/* this window will not be destroyed on page close (one bug less)
+	 * TODO check gdk equivalent */
+	XAddToSaveSet(ths->xdpy, w);
+
 	//gdk_window_foreign_new(c->xwin);
 	c->clipping_window = XCreateSimpleWindow(ths->xdpy, ths->xroot, 0, 0, 1, 1,
 			0, XBlackPixel(ths->xdpy, 0), XWhitePixel(ths->xdpy, 0));
@@ -384,10 +389,6 @@ void page_manage(page * ths, Window w, XWindowAttributes * wa) {
 	GtkWidget * label = gtk_label_new(c->name);
 	GtkWidget * content = gtk_wm_new(c);
 	tree_append_widget(ths->t, label, content);
-
-	/* this window will not be destroyed on page close (one bug less)
-	 * TODO check gdk equivalent */
-	XAddToSaveSet(ths->xdpy, w);
 
 	fprintf(stderr, "Return %s on %p\n", __FUNCTION__, (void *) w);
 }
@@ -425,6 +426,18 @@ GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * ev) {
 GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * ev) {
 	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
 
+	return GDK_FILTER_CONTINUE;
+}
+
+GdkFilterReturn page_process_property_notify_event(page * ths, XEvent * ev) {
+	printf("Entering in %s on %p\n", __FUNCTION__, (void *) ev);
+	char * name = XGetAtomName(ths->xdpy, ev->xproperty.atom);
+	printf("Atom Property Name %s\n", name);
+	if(strcmp(name, "_NET_WM_USER_TIME") == 0) {
+		XRaiseWindow(ths->xdpy, ev->xproperty.window);
+		XSetInputFocus(ths->xdpy, ev->xproperty.window, RevertToNone, CurrentTime);
+	}
+	XFree(name);
 	return GDK_FILTER_CONTINUE;
 }
 

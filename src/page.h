@@ -97,5 +97,6 @@ GdkFilterReturn page_process_configure_request_event(page * ths, XEvent * e);
 GdkFilterReturn page_process_unmap_notify_event(page * ths, XEvent * e);
 
 GdkFilterReturn page_process_destroy_notify_event(page * ths, XEvent * ev);
+GdkFilterReturn page_process_property_notify_event(page * ths, XEvent * ev);
 
 #endif /* PAGE_CONTEXT_H_ */
