@@ -34,7 +34,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-bin_PROGRAMS = page$(EXEEXT) query_tree$(EXEEXT) log_events$(EXEEXT)
+bin_PROGRAMS = page$(EXEEXT) query_tree$(EXEEXT) log_events$(EXEEXT) \
+	page_next$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -63,6 +64,14 @@ page_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 page_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(page_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_page_next_OBJECTS = page_next-page-next.$(OBJEXT)
+page_next_OBJECTS = $(am_page_next_OBJECTS)
+page_next_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+page_next_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(page_next_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_query_tree_OBJECTS = query_tree-query_tree.$(OBJEXT)
 query_tree_OBJECTS = $(am_query_tree_OBJECTS)
 query_tree_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -83,9 +92,19 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(log_events_SOURCES) $(page_SOURCES) $(query_tree_SOURCES)
-DIST_SOURCES = $(log_events_SOURCES) $(page_SOURCES) \
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+SOURCES = $(log_events_SOURCES) $(page_SOURCES) $(page_next_SOURCES) \
 	$(query_tree_SOURCES)
+DIST_SOURCES = $(log_events_SOURCES) $(page_SOURCES) \
+	$(page_next_SOURCES) $(query_tree_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -96,11 +115,17 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+CAIRO_CFLAGS = @CAIRO_CFLAGS@
+CAIRO_LIBS = @CAIRO_LIBS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CXX = @CXX@
+CXXCPP = @CXXCPP@
+CXXDEPMODE = @CXXDEPMODE@
+CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -164,6 +189,7 @@ abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_CC = @ac_ct_CC@
+ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
@@ -219,10 +245,13 @@ query_tree_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
 log_events_SOURCES = log_events.c
 log_events_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
 log_events_CFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS)
+page_next_SOURCES = page-next.cc
+page_next_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS) $(CAIRO_LIBS)
+page_next_CXXFLAGS = $(X11_CFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS) $(CAIRO_CFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .cc .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -302,6 +331,9 @@ log_events$(EXEEXT): $(log_events_OBJECTS) $(log_events_DEPENDENCIES)
 page$(EXEEXT): $(page_OBJECTS) $(page_DEPENDENCIES) 
 	@rm -f page$(EXEEXT)
 	$(page_LINK) $(page_OBJECTS) $(page_LDADD) $(LIBS)
+page_next$(EXEEXT): $(page_next_OBJECTS) $(page_next_DEPENDENCIES) 
+	@rm -f page_next$(EXEEXT)
+	$(page_next_LINK) $(page_next_OBJECTS) $(page_next_LDADD) $(LIBS)
 query_tree$(EXEEXT): $(query_tree_OBJECTS) $(query_tree_DEPENDENCIES) 
 	@rm -f query_tree$(EXEEXT)
 	$(query_tree_LINK) $(query_tree_OBJECTS) $(query_tree_LDADD) $(LIBS)
@@ -318,6 +350,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page-tree.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/page_next-page-next.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/query_tree-query_tree.Po@am__quote@
 
 .c.o:
@@ -438,6 +471,41 @@ query_tree-query_tree.obj: query_tree.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='query_tree.c' object='query_tree-query_tree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(query_tree_CFLAGS) $(CFLAGS) -c -o query_tree-query_tree.obj `if test -f 'query_tree.c'; then $(CYGPATH_W) 'query_tree.c'; else $(CYGPATH_W) '$(srcdir)/query_tree.c'; fi`
+
+.cc.o:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cc.obj:
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cc.lo:
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+page_next-page-next.o: page-next.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_next_CXXFLAGS) $(CXXFLAGS) -MT page_next-page-next.o -MD -MP -MF $(DEPDIR)/page_next-page-next.Tpo -c -o page_next-page-next.o `test -f 'page-next.cc' || echo '$(srcdir)/'`page-next.cc
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page_next-page-next.Tpo $(DEPDIR)/page_next-page-next.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='page-next.cc' object='page_next-page-next.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_next_CXXFLAGS) $(CXXFLAGS) -c -o page_next-page-next.o `test -f 'page-next.cc' || echo '$(srcdir)/'`page-next.cc
+
+page_next-page-next.obj: page-next.cc
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_next_CXXFLAGS) $(CXXFLAGS) -MT page_next-page-next.obj -MD -MP -MF $(DEPDIR)/page_next-page-next.Tpo -c -o page_next-page-next.obj `if test -f 'page-next.cc'; then $(CYGPATH_W) 'page-next.cc'; else $(CYGPATH_W) '$(srcdir)/page-next.cc'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/page_next-page-next.Tpo $(DEPDIR)/page_next-page-next.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='page-next.cc' object='page_next-page-next.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(page_next_CXXFLAGS) $(CXXFLAGS) -c -o page_next-page-next.obj `if test -f 'page-next.cc'; then $(CYGPATH_W) 'page-next.cc'; else $(CYGPATH_W) '$(srcdir)/page-next.cc'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
