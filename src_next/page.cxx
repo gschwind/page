@@ -41,7 +41,7 @@ root_t::root_t() {
 	allocation.height = 600;
 
 	vpan = new tree_t(dpy, x_main_window);
-	vpan->mutate_to_split();
+	vpan->mutate_to_split(VERTICAL_SPLIT);
 	vpan->add_notebook(new client_t("Asdl;kfj ;lafsdja;sdf"));
 	vpan->add_notebook(new client_t("bsdl;kfj ;lafsdja;sdf"));
 	vpan->add_notebook(new client_t("Csdl;kfj ;lafsdja;sdf"));

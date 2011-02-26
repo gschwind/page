@@ -33,6 +33,10 @@ tree_t::tree_t(tree_t::shared_t * s, tree_t * parent) {
 	_allocation.height = -1;
 }
 
+tree_t::~tree_t() {
+	_shared->note_link.remove(this);
+}
+
 tree_t::tree_t(Display * dpy, Window w) {
 	_shared = new shared_t;
 	_shared->_dpy = dpy;
@@ -81,17 +85,31 @@ void tree_t::split_update_allocation(box_t & alloc) {
 	_allocation = alloc;
 	fprintf(stderr, "%p : %s return %d,%d,%d,%d\n", this, __PRETTY_FUNCTION__,
 			_allocation.x, _allocation.y, _allocation.width, _allocation.height);
-	box_t b;
-	b.x = _allocation.x;
-	b.y = _allocation.y;
-	b.width = _allocation.width * _split - 2;
-	b.height = _allocation.height;
-	_pack0->update_allocation(b);
-	b.x = _allocation.x + _allocation.width * _split + 2;
-	b.y = _allocation.y;
-	b.width = _allocation.width - _allocation.width * _split - 5;
-	b.height = _allocation.height;
-	_pack1->update_allocation(b);
+	if (_split_type == VERTICAL_SPLIT) {
+		box_t b;
+		b.x = _allocation.x;
+		b.y = _allocation.y;
+		b.width = _allocation.width * _split - 2;
+		b.height = _allocation.height;
+		_pack0->update_allocation(b);
+		b.x = _allocation.x + _allocation.width * _split + 2;
+		b.y = _allocation.y;
+		b.width = _allocation.width - _allocation.width * _split - 5;
+		b.height = _allocation.height;
+		_pack1->update_allocation(b);
+	} else {
+		box_t b;
+		b.x = _allocation.x;
+		b.y = _allocation.y;
+		b.width = _allocation.width;
+		b.height = _allocation.height * _split - 2;
+		_pack0->update_allocation(b);
+		b.x = _allocation.x;
+		b.y = _allocation.y + _allocation.height * _split + 2;
+		b.width = _allocation.width;
+		b.height = _allocation.height - _allocation.height * _split - 2;
+		_pack1->update_allocation(b);
+	}
 }
 
 void tree_t::split_render(cairo_t * cr) {
@@ -99,19 +117,35 @@ void tree_t::split_render(cairo_t * cr) {
 			_allocation.height);
 	cairo_clip(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_rectangle(cr, _allocation.x + (_allocation.width * _split) - 2,
-			_allocation.y, 4, _allocation.height);
+	if (_split_type == VERTICAL_SPLIT) {
+		cairo_rectangle(cr, _allocation.x + (_allocation.width * _split) - 2,
+				_allocation.y, 4, _allocation.height);
+	} else {
+		cairo_rectangle(cr, _allocation.x, _allocation.y + (_allocation.height
+				* _split) - 2, _allocation.width, 4);
+	}
 	cairo_fill(cr);
 	_pack0->render(cr);
 	_pack1->render(cr);
 
 }
 
-void tree_t::split_process_button_press_event(XEvent const * e) {
+bool tree_t::split_process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		if (_allocation.x + (_allocation.width * _split) - 2 < e->xbutton.x
-				&& _allocation.x + (_allocation.width * _split) + 2
-						> e->xbutton.x) {
+		box_t slide;
+		if (_split_type == VERTICAL_SPLIT) {
+			slide.y = _allocation.y;
+			slide.height = _allocation.height;
+			slide.x = _allocation.x + (_allocation.width * _split) - 2;
+			slide.width = 5;
+		} else {
+			slide.y = _allocation.y + (_allocation.height * _split) - 2;
+			slide.height = 5;
+			slide.x = _allocation.x;
+			slide.width = _allocation.width;
+		}
+
+		if (slide.is_inside(e->xbutton.x, e->xbutton.y)) {
 			XEvent ev;
 			cairo_t * cr;
 
@@ -119,7 +153,7 @@ void tree_t::split_process_button_press_event(XEvent const * e) {
 					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 					GrabModeAsync, GrabModeAsync, None, _shared->cursor,
 					CurrentTime) != GrabSuccess)
-				return;
+				return true;
 			do {
 				XMaskEvent(_shared->_dpy, (ButtonPressMask | ButtonReleaseMask
 						| PointerMotionMask) | ExposureMask
@@ -137,9 +171,14 @@ void tree_t::split_process_button_press_event(XEvent const * e) {
 					cairo_destroy(cr);
 					break;
 				case MotionNotify:
-					_split = (ev.xmotion.x - _allocation.x)
-							/ (double) (_allocation.width);
-					this->update_allocation(_allocation);
+					if (_split_type == VERTICAL_SPLIT) {
+						_split = (ev.xmotion.x - _allocation.x)
+								/ (double) (_allocation.width);
+					} else {
+						_split = (ev.xmotion.y - _allocation.y)
+								/ (double) (_allocation.height);
+					}
+					update_allocation(_allocation);
 					cr = this->get_cairo();
 					cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 					cairo_rectangle(cr, _allocation.x, _allocation.y,
@@ -151,11 +190,14 @@ void tree_t::split_process_button_press_event(XEvent const * e) {
 				}
 			} while (ev.type != ButtonRelease);
 			XUngrabPointer(_shared->_dpy, CurrentTime);
+		} else {
+			if (!_pack0->process_button_press_event(e)) {
+				_pack1->process_button_press_event(e);
+			}
 		}
+		return true;
 	}
-
-	_pack0->process_button_press_event(e);
-	_pack1->process_button_press_event(e);
+	return false;
 }
 
 bool tree_t::split_is_selected(int x, int y) {
@@ -218,86 +260,90 @@ void tree_t::notebook_render(cairo_t * cr) {
 	cairo_reset_clip(cr);
 }
 
-void tree_t::notebook_process_button_press_event(XEvent const * e) {
+bool tree_t::notebook_process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		if ((e->xbutton.y - _allocation.y) < 20 && _clients.size() != 0) {
-			int s = (e->xbutton.x - _allocation.x) / ((_allocation.width - 17
-					* 3) / _clients.size());
-			if (s >= 0 && s < _clients.size()) {
-				_selected = s;
-				printf("select %d\n", s);
-				XEvent ev;
-				cairo_t * cr;
+		if (e->xbutton.y < _allocation.y + 20 && e->xbutton.y > _allocation.y) {
+			if (_clients.size() > 0) {
+				int s = (e->xbutton.x - _allocation.x) / ((_allocation.width
+						- 17 * 3) / _clients.size());
+				if (s >= 0 && s < _clients.size()) {
+					_selected = s;
+					printf("select %d\n", s);
+					XEvent ev;
+					cairo_t * cr;
 
-				if (XGrabPointer(_shared->_dpy, _shared->_w, False,
-						(ButtonPressMask | ButtonReleaseMask
-								| PointerMotionMask), GrabModeAsync,
-						GrabModeAsync, None, _shared->cursor, CurrentTime)
-						!= GrabSuccess)
-					return;
-				do {
-					XMaskEvent(_shared->_dpy, (ButtonPressMask
-							| ButtonReleaseMask | PointerMotionMask)
-							| ExposureMask | SubstructureRedirectMask, &ev);
-					switch (ev.type) {
-					case ConfigureRequest:
-					case Expose:
-					case MapRequest:
-						cr = this->get_cairo();
-						cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-						cairo_rectangle(cr, _allocation.x, _allocation.y,
-								_allocation.width, _allocation.height);
-						cairo_fill(cr);
-						this->render(cr);
-						cairo_destroy(cr);
-						break;
-					case MotionNotify:
-						break;
+					if (XGrabPointer(_shared->_dpy, _shared->_w, False,
+							(ButtonPressMask | ButtonReleaseMask
+									| PointerMotionMask), GrabModeAsync,
+							GrabModeAsync, None, _shared->cursor, CurrentTime)
+							!= GrabSuccess)
+						return true;
+					do {
+						XMaskEvent(_shared->_dpy, (ButtonPressMask
+								| ButtonReleaseMask | PointerMotionMask)
+								| ExposureMask | SubstructureRedirectMask, &ev);
+						switch (ev.type) {
+						case ConfigureRequest:
+						case Expose:
+						case MapRequest:
+							cr = this->get_cairo();
+							cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+							cairo_rectangle(cr, _allocation.x, _allocation.y,
+									_allocation.width, _allocation.height);
+							cairo_fill(cr);
+							this->render(cr);
+							cairo_destroy(cr);
+							break;
+						case MotionNotify:
+							break;
+						}
+					} while (ev.type != ButtonRelease);
+					XUngrabPointer(_shared->_dpy, CurrentTime);
+
+					std::list<tree_t *>::iterator i;
+					for (i = _shared->note_link.begin(); i
+							!= _shared->note_link.end(); ++i) {
+						if ((*i)->is_selected(ev.xbutton.x, ev.xbutton.y))
+							break;
 					}
-				} while (ev.type != ButtonRelease);
-				XUngrabPointer(_shared->_dpy, CurrentTime);
 
-				std::list<tree_t *>::iterator i;
-				for (i = _shared->note_link.begin(); i
-						!= _shared->note_link.end(); ++i) {
-					if ((*i)->is_selected(ev.xbutton.x, ev.xbutton.y))
-						break;
+					if (i != _shared->note_link.end() && (*i) != this) {
+						std::list<client_t *>::iterator c = _clients.begin();
+						std::advance(c, s);
+						client_t * move = *(c);
+						_clients.remove(move);
+						(*i)->add_notebook(move);
+					}
+
+					cr = this->get_cairo();
+					this->render(cr);
+					cairo_destroy(cr);
 				}
-
-				if (i != _shared->note_link.end() && (*i) != this) {
-					std::list<client_t *>::iterator c = _clients.begin();
-					std::advance(c, s);
-					client_t * move = *(c);
-					_clients.remove(move);
-					(*i)->add_notebook(move);
-				}
-
-				cr = this->get_cairo();
-				this->render(cr);
-				cairo_destroy(cr);
-
 			}
 
 			if (_allocation.x + _allocation.width - 17 < e->xbutton.x
 					&& _allocation.x + _allocation.width > e->xbutton.x) {
-				_parent->mutate_to_notebook();
-				cairo_t * cr = this->get_cairo();
-				this->render(cr);
-				cairo_destroy(cr);
+				if (_parent != 0) {
+					_parent->mutate_to_notebook(this);
+				}
 			}
 
 			if (_allocation.x + _allocation.width - 34 < e->xbutton.x
 					&& _allocation.x + _allocation.width - 17 > e->xbutton.x) {
-				/* TODO: vsplit */
+				mutate_to_split(VERTICAL_SPLIT);
 			}
 
 			if (_allocation.x + _allocation.width - 51 < e->xbutton.x
 					&& _allocation.x + _allocation.width - 34 > e->xbutton.x) {
-				/* TODO: hsplit */
+				mutate_to_split(HORIZONTAL_SPLIT);
 			}
 
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 bool tree_t::notebook_is_selected(int x, int y) {
@@ -308,40 +354,53 @@ bool tree_t::notebook_is_selected(int x, int y) {
 	return (_allocation.is_inside(x, y));
 }
 
-void tree_t::mutate_to_split() {
+void tree_t::mutate_to_split(split_type_t type) {
 	if ((_pack0 == 0 && _pack1 == 0)) {
 		_pack0 = new tree_t(_shared, this);
 		_pack1 = new tree_t(_shared, this);
 		_vtable = _shared->vtable_split;
 		_split = 0.5;
+		_split_type = type;
 		_pack0->_clients.splice(_pack0->_clients.end(), _clients);
-		box_t b;
-		b.x = _allocation.x;
-		b.y = _allocation.y;
-		b.width = _allocation.width * _split - 2;
-		b.height = _allocation.height;
-		_pack0->update_allocation(b);
-		b.x = _allocation.x + _allocation.width * _split + 2;
-		b.y = _allocation.y;
-		b.width = _allocation.width - _allocation.width * _split - 5;
-		b.height = _allocation.height;
-		_pack1->update_allocation(b);
+		update_allocation(_allocation);
 	} else {
 		fprintf(stderr, "invalid call of %s\n", __PRETTY_FUNCTION__);
 		return;
 	}
 }
 
-void tree_t::mutate_to_notebook() {
+void tree_t::mutate_to_notebook(tree_t * pack) {
 	if (_pack0 != 0 && _pack1 != 0) {
-		_vtable = _shared->vtable_notebook;
-		_clients.splice(_clients.end(), _pack0->_clients);
-		_clients.splice(_clients.end(), _pack1->_clients);
-		delete _pack0;
-		delete _pack1;
-		_pack0 = 0;
-		_pack1 = 0;
-
+		tree_t * other = _pack0;
+		if (pack == _pack0) {
+			other = _pack1;
+		}
+		if (other->_pack0 != 0 && other->_pack1 != 0) { /* other is split */
+			_vtable = _shared->vtable_split;
+			_pack0 = other->_pack0;
+			_pack1 = other->_pack1;
+			_pack0->_parent = this;
+			_pack1->_parent = this;
+			_split = other->_split;
+			_split_type = other->_split_type;
+			update_allocation(_allocation);
+			other->_pack0 = 0;
+			other->_pack1 = 0;
+			std::list<client_t *>::iterator i;
+			for (i = pack->_clients.begin(); i != pack->_clients.end(); ++i) {
+				_pack0->add_notebook((*i));
+			}
+			delete pack;
+			delete other;
+		} else { /* other is notebook */
+			_vtable = _shared->vtable_notebook;
+			_clients.splice(_clients.end(), _pack0->_clients);
+			_clients.splice(_clients.end(), _pack1->_clients);
+			delete _pack0;
+			delete _pack1;
+			_pack0 = 0;
+			_pack1 = 0;
+		}
 	} else {
 		fprintf(stderr, "invalid call of %s\n", __PRETTY_FUNCTION__);
 		return;
@@ -362,7 +421,8 @@ void tree_t::update_allocation(box_t & alloc) {
 void tree_t::render(cairo_t * cr) {
 	(this->*_vtable._render)(cr);
 }
-void tree_t::process_button_press_event(XEvent const * e) {
+
+bool tree_t::process_button_press_event(XEvent const * e) {
 	(this->*_vtable._process_button_press_event)(e);
 }
 
