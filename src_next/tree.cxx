@@ -17,6 +17,8 @@
 #include <cstdio>
 #include "tree.hxx"
 
+#define CTOF(r, g, b) (r/255.0),(g/255.0),(b/255.0)
+
 namespace page_next {
 
 tree_t::tree_t(tree_t::shared_t * s, tree_t * parent) {
@@ -29,8 +31,8 @@ tree_t::tree_t(tree_t::shared_t * s, tree_t * parent) {
 	_vtable = _shared->vtable_notebook;
 	_allocation.x = -1;
 	_allocation.y = -1;
-	_allocation.width = -1;
-	_allocation.height = -1;
+	_allocation.w = -1;
+	_allocation.h = -1;
 }
 
 tree_t::~tree_t() {
@@ -76,53 +78,53 @@ tree_t::tree_t(Display * dpy, Window w) {
 
 	_allocation.x = -1;
 	_allocation.y = -1;
-	_allocation.width = -1;
-	_allocation.height = -1;
+	_allocation.w = -1;
+	_allocation.h = -1;
 
 }
 
-void tree_t::split_update_allocation(box_t & alloc) {
+void tree_t::split_update_allocation(box_t<int> & alloc) {
 	_allocation = alloc;
 	fprintf(stderr, "%p : %s return %d,%d,%d,%d\n", this, __PRETTY_FUNCTION__,
-			_allocation.x, _allocation.y, _allocation.width, _allocation.height);
+			_allocation.x, _allocation.y, _allocation.w, _allocation.h);
 	if (_split_type == VERTICAL_SPLIT) {
-		box_t b;
+		box_t<int> b;
 		b.x = _allocation.x;
 		b.y = _allocation.y;
-		b.width = _allocation.width * _split - 2;
-		b.height = _allocation.height;
+		b.w = _allocation.w * _split - 2;
+		b.h = _allocation.h;
 		_pack0->update_allocation(b);
-		b.x = _allocation.x + _allocation.width * _split + 2;
+		b.x = _allocation.x + _allocation.w * _split + 2;
 		b.y = _allocation.y;
-		b.width = _allocation.width - _allocation.width * _split - 5;
-		b.height = _allocation.height;
+		b.w = _allocation.w - _allocation.w * _split - 5;
+		b.h = _allocation.h;
 		_pack1->update_allocation(b);
 	} else {
-		box_t b;
+		box_t<int> b;
 		b.x = _allocation.x;
 		b.y = _allocation.y;
-		b.width = _allocation.width;
-		b.height = _allocation.height * _split - 2;
+		b.w = _allocation.w;
+		b.h = _allocation.h * _split - 2;
 		_pack0->update_allocation(b);
 		b.x = _allocation.x;
-		b.y = _allocation.y + _allocation.height * _split + 2;
-		b.width = _allocation.width;
-		b.height = _allocation.height - _allocation.height * _split - 2;
+		b.y = _allocation.y + _allocation.h * _split + 2;
+		b.w = _allocation.w;
+		b.h = _allocation.h - _allocation.h * _split - 2;
 		_pack1->update_allocation(b);
 	}
 }
 
 void tree_t::split_render(cairo_t * cr) {
-	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.width,
-			_allocation.height);
+	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+			_allocation.h);
 	cairo_clip(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(cr, _allocation.x + (_allocation.width * _split) - 2,
-				_allocation.y, 4, _allocation.height);
+		cairo_rectangle(cr, _allocation.x + (_allocation.w * _split) - 2,
+				_allocation.y, 4, _allocation.h);
 	} else {
-		cairo_rectangle(cr, _allocation.x, _allocation.y + (_allocation.height
-				* _split) - 2, _allocation.width, 4);
+		cairo_rectangle(cr, _allocation.x, _allocation.y + (_allocation.h
+				* _split) - 2, _allocation.w, 4);
 	}
 	cairo_fill(cr);
 	_pack0->render(cr);
@@ -132,17 +134,17 @@ void tree_t::split_render(cairo_t * cr) {
 
 bool tree_t::split_process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		box_t slide;
+		box_t<int> slide;
 		if (_split_type == VERTICAL_SPLIT) {
 			slide.y = _allocation.y;
-			slide.height = _allocation.height;
-			slide.x = _allocation.x + (_allocation.width * _split) - 2;
-			slide.width = 5;
+			slide.h = _allocation.h;
+			slide.x = _allocation.x + (_allocation.w * _split) - 2;
+			slide.w = 5;
 		} else {
-			slide.y = _allocation.y + (_allocation.height * _split) - 2;
-			slide.height = 5;
+			slide.y = _allocation.y + (_allocation.h * _split) - 2;
+			slide.h = 5;
 			slide.x = _allocation.x;
-			slide.width = _allocation.width;
+			slide.w = _allocation.w;
 		}
 
 		if (slide.is_inside(e->xbutton.x, e->xbutton.y)) {
@@ -165,7 +167,7 @@ bool tree_t::split_process_button_press_event(XEvent const * e) {
 					cr = this->get_cairo();
 					cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 					cairo_rectangle(cr, _allocation.x, _allocation.y,
-							_allocation.width, _allocation.height);
+							_allocation.w, _allocation.h);
 					cairo_fill(cr);
 					this->render(cr);
 					cairo_destroy(cr);
@@ -173,16 +175,16 @@ bool tree_t::split_process_button_press_event(XEvent const * e) {
 				case MotionNotify:
 					if (_split_type == VERTICAL_SPLIT) {
 						_split = (ev.xmotion.x - _allocation.x)
-								/ (double) (_allocation.width);
+								/ (double) (_allocation.w);
 					} else {
 						_split = (ev.xmotion.y - _allocation.y)
-								/ (double) (_allocation.height);
+								/ (double) (_allocation.h);
 					}
 					update_allocation(_allocation);
 					cr = this->get_cairo();
 					cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 					cairo_rectangle(cr, _allocation.x, _allocation.y,
-							_allocation.width, _allocation.height);
+							_allocation.w, _allocation.h);
 					cairo_fill(cr);
 					this->render(cr);
 					cairo_destroy(cr);
@@ -205,24 +207,28 @@ bool tree_t::split_is_selected(int x, int y) {
 	return false;
 }
 
-void tree_t::notebook_update_allocation(box_t & alloc) {
+void tree_t::notebook_update_allocation(box_t<int> & alloc) {
 	_allocation = alloc;
 	fprintf(stderr, "%p : %s return %d,%d,%d,%d\n", this, __PRETTY_FUNCTION__,
-			_allocation.x, _allocation.y, _allocation.width, _allocation.height);
+			_allocation.x, _allocation.y, _allocation.w, _allocation.h);
 }
 
 void tree_t::notebook_render(cairo_t * cr) {
 
-	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.width,
-			_allocation.height);
+	update_client_mapping();
+	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+			_allocation.h);
 	cairo_clip(cr);
+	cairo_set_source_rgb(cr, CTOF(0x72, 0x9f, 0xcf));
+	cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20, _allocation.w - 2, _allocation.h - 22);
+	cairo_stroke(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
 			CAIRO_FONT_WEIGHT_BOLD);
 	cairo_set_font_size(cr, 13);
 	std::list<client_t *>::iterator i;
 	int offset = _allocation.x;
-	int length = (_allocation.width - 17 * 3) / _clients.size();
+	int length = (_allocation.w - 17 * 3) / _clients.size();
 	int s = 0;
 	for (i = _clients.begin(); i != _clients.end(); ++i, ++s) {
 		cairo_save(cr);
@@ -241,12 +247,12 @@ void tree_t::notebook_render(cairo_t * cr) {
 				CAIRO_FONT_WEIGHT_BOLD);
 		cairo_set_font_size(cr, 13);
 		cairo_move_to(cr, 2, 13);
-		cairo_show_text(cr, (*i)->get_name().c_str());
+		cairo_show_text(cr, (*i)->name.c_str());
 		cairo_restore(cr);
 	}
 
 	cairo_save(cr);
-	cairo_translate(cr, _allocation.x + _allocation.width - 16.0, _allocation.y
+	cairo_translate(cr, _allocation.x + _allocation.w - 16.0, _allocation.y
 			+ 1.0);
 	cairo_set_source_surface(cr, _shared->close_img, 0.0, 0.0);
 	cairo_paint(cr);
@@ -258,14 +264,15 @@ void tree_t::notebook_render(cairo_t * cr) {
 	cairo_paint(cr);
 	cairo_restore(cr);
 	cairo_reset_clip(cr);
+
 }
 
 bool tree_t::notebook_process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
 		if (e->xbutton.y < _allocation.y + 20 && e->xbutton.y > _allocation.y) {
 			if (_clients.size() > 0) {
-				int s = (e->xbutton.x - _allocation.x) / ((_allocation.width
-						- 17 * 3) / _clients.size());
+				int s = (e->xbutton.x - _allocation.x) / ((_allocation.w - 17
+						* 3) / _clients.size());
 				if (s >= 0 && s < _clients.size()) {
 					_selected = s;
 					printf("select %d\n", s);
@@ -286,12 +293,12 @@ bool tree_t::notebook_process_button_press_event(XEvent const * e) {
 						case ConfigureRequest:
 						case Expose:
 						case MapRequest:
-							cr = this->get_cairo();
+							cr = get_cairo();
 							cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 							cairo_rectangle(cr, _allocation.x, _allocation.y,
-									_allocation.width, _allocation.height);
+									_allocation.w, _allocation.h);
 							cairo_fill(cr);
-							this->render(cr);
+							render(cr);
 							cairo_destroy(cr);
 							break;
 						case MotionNotify:
@@ -315,26 +322,26 @@ bool tree_t::notebook_process_button_press_event(XEvent const * e) {
 						(*i)->add_notebook(move);
 					}
 
-					cr = this->get_cairo();
-					this->render(cr);
+					cr = get_cairo();
+					render(cr);
 					cairo_destroy(cr);
 				}
 			}
 
-			if (_allocation.x + _allocation.width - 17 < e->xbutton.x
-					&& _allocation.x + _allocation.width > e->xbutton.x) {
+			if (_allocation.x + _allocation.w - 17 < e->xbutton.x
+					&& _allocation.x + _allocation.w > e->xbutton.x) {
 				if (_parent != 0) {
 					_parent->mutate_to_notebook(this);
 				}
 			}
 
-			if (_allocation.x + _allocation.width - 34 < e->xbutton.x
-					&& _allocation.x + _allocation.width - 17 > e->xbutton.x) {
+			if (_allocation.x + _allocation.w - 34 < e->xbutton.x
+					&& _allocation.x + _allocation.w - 17 > e->xbutton.x) {
 				mutate_to_split(VERTICAL_SPLIT);
 			}
 
-			if (_allocation.x + _allocation.width - 51 < e->xbutton.x
-					&& _allocation.x + _allocation.width - 34 > e->xbutton.x) {
+			if (_allocation.x + _allocation.w - 51 < e->xbutton.x
+					&& _allocation.x + _allocation.w - 34 > e->xbutton.x) {
 				mutate_to_split(HORIZONTAL_SPLIT);
 			}
 
@@ -348,9 +355,8 @@ bool tree_t::notebook_process_button_press_event(XEvent const * e) {
 
 bool tree_t::notebook_is_selected(int x, int y) {
 	fprintf(stderr, "%p : %s return %d,%d,%d,%d:%s\n", this,
-			__PRETTY_FUNCTION__, _allocation.x, _allocation.y,
-			_allocation.width, _allocation.height,
-			_allocation.is_inside(x, y) ? "true" : "false");
+			__PRETTY_FUNCTION__, _allocation.x, _allocation.y, _allocation.w,
+			_allocation.h, _allocation.is_inside(x, y) ? "true" : "false");
 	return (_allocation.is_inside(x, y));
 }
 
@@ -412,10 +418,15 @@ void tree_t::split_add_notebook(client_t *c) {
 }
 
 void tree_t::notebook_add_notebook(client_t *c) {
-	_clients.push_back(c);
+	_clients.push_front(c);
+	_selected = 0;
+	update_client_mapping();
+	cairo_t * cr = get_cairo();
+	render(cr);
+	cairo_destroy(cr);
 }
 
-void tree_t::update_allocation(box_t & alloc) {
+void tree_t::update_allocation(box_t<int> & alloc) {
 	(this->*_vtable._update_allocation)(alloc);
 }
 void tree_t::render(cairo_t * cr) {
@@ -442,6 +453,60 @@ cairo_t * tree_t::get_cairo() {
 			wa.width, wa.height);
 	cairo_t * cr = cairo_create(surf);
 	return cr;
+}
+
+void tree_t::update_client_mapping() {
+	int k = 0;
+	std::list<client_t *>::iterator i;
+	for (i = _clients.begin(); i != _clients.end(); ++i) {
+		if (k != _selected) {
+			(*i)->unmap();
+		} else {
+			client_t * c = (*i);
+			update_client_size(c, _allocation.w, _allocation.h);
+			XResizeWindow(c->dpy, c->xwin, c->width, c->height);
+			XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x, _allocation.y
+					+ 20, _allocation.w, _allocation.h - 20);
+			c->map();
+		}
+		++k;
+	}
+}
+
+void tree_t::update_client_size(client_t * c, int w, int h) {
+	if (c) {
+		if (c->maxw != 0 && w > c->maxw) {
+			w = c->maxw;
+		}
+
+		if (c->maxh != 0 && h > c->maxh) {
+			h = c->maxh;
+		}
+
+		if (c->minw != 0 && w < c->minw) {
+			w = c->minw;
+		}
+
+		if (c->minh != 0 && h < c->minh) {
+			h = c->minh;
+		}
+
+		if (c->incw != 0) {
+			w -= ((w - c->basew) % c->incw);
+		}
+
+		if (c->inch != 0) {
+			h -= ((h - c->baseh) % c->inch);
+		}
+
+		/* TODO respect Aspect */
+		c->height = h;
+		c->width = w;
+
+		printf("Update #%p window size %dx%d\n", (void *) c->xwin, c->width,
+				c->height);
+
+	}
 }
 
 }

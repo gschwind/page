@@ -21,18 +21,9 @@
 #include <cairo-xlib.h>
 #include <list>
 #include "client.hxx"
+#include "box.hxx"
 
 namespace page_next {
-
-struct box_t {
-	int x, y;
-	int width, height;
-
-	inline bool is_inside(int _x, int _y) {
-		return (x < _x && _x < x + width && y < _y && _y < y + height);
-	}
-
-};
 
 enum split_type_t {
 	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
@@ -43,7 +34,7 @@ class tree_t {
 private:
 
 	struct vtable_t {
-		void (tree_t::*_update_allocation)(box_t & alloc);
+		void (tree_t::*_update_allocation)(box_t<int> & alloc);
 		void (tree_t::*_render)(cairo_t * cr);
 		bool (tree_t::*_process_button_press_event)(XEvent const * e);
 		void (tree_t::*_add_notebook)(client_t * c);
@@ -64,7 +55,7 @@ private:
 
 	shared_t * _shared;
 
-	box_t _allocation;
+	box_t<int> _allocation;
 	int _selected;
 	std::list<client_t *> _clients;
 	tree_t * _parent;
@@ -79,13 +70,13 @@ private:
 	tree_t(tree_t const &);
 	tree_t &operator=(tree_t const &);
 
-	void split_update_allocation(box_t & alloc);
+	void split_update_allocation(box_t<int> & alloc);
 	void split_render(cairo_t * cr);
 	bool split_process_button_press_event(XEvent const * e);
 	void split_add_notebook(client_t * c);
 	bool split_is_selected(int x, int y);
 
-	void notebook_update_allocation(box_t & alloc);
+	void notebook_update_allocation(box_t<int> & alloc);
 	void notebook_render(cairo_t * cr);
 	bool notebook_process_button_press_event(XEvent const * e);
 	void notebook_add_notebook(client_t * c);
@@ -94,6 +85,7 @@ private:
 	vtable_t _vtable;
 
 	bool is_selected(int x, int y);
+	void update_client_mapping();
 
 	tree_t(shared_t * s, tree_t * parent);
 public:
@@ -101,7 +93,7 @@ public:
 	tree_t(Display * dpy, Window w);
 	~tree_t();
 
-	void update_allocation(box_t & alloc);
+	void update_allocation(box_t<int> & alloc);
 	void render(cairo_t * cr);
 	bool process_button_press_event(XEvent const * e);
 	void add_notebook(client_t * c);
@@ -109,6 +101,8 @@ public:
 	void mutate_to_split(split_type_t type);
 	void mutate_to_notebook(tree_t * pack);
 	cairo_t * get_cairo();
+
+	void update_client_size(client_t * c, int w, int h);
 
 };
 

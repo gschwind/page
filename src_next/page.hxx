@@ -22,12 +22,30 @@
 #include <iostream>
 
 #include "tree.hxx"
+#include "atoms.hxx"
+#include "client.hxx"
 
 namespace page_next {
 
+enum {
+	AtomType,
+	WMProtocols,
+	WMDelete,
+	WMState,
+	WMLast,
+	NetSupported,
+	NetWMName,
+	NetWMState,
+	NetWMFullscreen,
+	NetWMType,
+	NetWMTypeDock,
+	NetLast,
+	AtomLast
+}; /* EWMH atoms */
+
 class root_t {
-	tree_t *note0, *note1;
-	tree_t *vpan;
+	tree_t * tree_root;
+	std::list<client_t *> clients;
 
 	Cursor cursor;
 	XWindowAttributes wa;
@@ -40,6 +58,8 @@ class root_t {
 	int sw, sh, sx, sy;
 	int start_x, end_x;
 	int start_y, end_y;
+
+	atoms_t atoms;
 
 	Window x_main_window;
 
@@ -68,9 +88,19 @@ public:
 		return cr;
 	}
 
-	void update_allocation(box_t & alloc) {
-	}
+	void scan();
+	long get_window_state(Window w);
+	void manage(Window w, XWindowAttributes * wa);
+	client_t * find_client_by_xwindow(Window w);
+	client_t * find_client_by_clipping_window(Window w);
+	bool get_text_prop(Window w, Atom atom, std::string & text);
+	void update_title(client_t * c);
+	void client_update_size_hints(client_t * ths);
+	bool client_is_dock(client_t * c);
+	bool get_all(Window win, Atom prop, Atom type, int size,
+			unsigned char **data, unsigned int *num);
 
+	void process_map_request_event(XEvent * e);
 };
 
 }
