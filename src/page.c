@@ -167,7 +167,7 @@ void page_init(page * ths, int * argc, char *** argv) {
 	XWindowAttributes wa;
 	gtk_init(argc, argv);
 	/* Youhou totaly undocumented ? found in metacity sources */
-	ths->xdpy = gdk_display;
+	ths->xdpy = gdk_display_get_default();
 	ths->xscr = XDefaultScreen(ths->xdpy);
 	ths->xroot = XDefaultRootWindow(ths->xdpy);
 	XGetWindowAttributes(ths->xdpy, ths->xroot, &wa);

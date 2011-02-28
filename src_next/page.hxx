@@ -43,7 +43,7 @@ enum {
 	AtomLast
 }; /* EWMH atoms */
 
-class root_t {
+class main_t {
 	tree_t * tree_root;
 	std::list<client_t *> clients;
 
@@ -63,10 +63,10 @@ class root_t {
 
 	Window x_main_window;
 
-	root_t(root_t const &);
-	root_t &operator=(root_t const &);
+	main_t(main_t const &);
+	main_t &operator=(main_t const &);
 public:
-	root_t();
+	main_t();
 	void render(cairo_t * cr);
 	void render();
 	void run();

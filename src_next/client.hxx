@@ -41,6 +41,7 @@ struct client_t {
 
 	void map();
 	void unmap();
+	void update_client_size(int w, int h);
 
 };
 

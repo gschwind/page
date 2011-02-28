@@ -5,9 +5,22 @@
  *      Author: gschwind
  */
 
+#include <X11/cursorfont.h>
+#include <X11/keysym.h>
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xproto.h>
+#include <X11/Xutil.h>
+#include <X11/cursorfont.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <cairo.h>
+#include <cairo-xlib.h>
+
 #include "page.hxx"
 #include "box.hxx"
 #include "client.hxx"
+#include "root.hxx"
 
 #include <X11/Xlib.h>
 #include <stdlib.h>
@@ -29,7 +42,7 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 		"SelectionRequest", "SelectionNotify", "ColormapNotify",
 		"ClientMessage", "MappingNotify", "GenericEvent" };
 
-root_t::root_t() {
+main_t::main_t() {
 	XSetWindowAttributes swa;
 	dpy = XOpenDisplay(0);
 	screen = DefaultScreen(dpy);
@@ -60,26 +73,24 @@ root_t::root_t() {
 
 	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
 
-	box_t<int> allocation;
-	allocation.x = 0;
-	allocation.y = 0;
-	allocation.w = 800;
-	allocation.h = 600;
-
-	tree_root = new tree_t(dpy, x_main_window);
-	tree_root->update_allocation(allocation);
+	box_t<int> a(0, 0, 800, 600);
+	tree_root = new root_t(dpy, x_main_window, a);
 
 }
 
-void root_t::run() {
+void main_t::run() {
 	scan();
 	running = 1;
 	while (running) {
 		XEvent e;
 		XNextEvent(this->dpy, &e);
 		printf("Event %s\n", x_event_name[e.type]);
-		if (e.type == MapNotify || e.type == Expose) {
-			render();
+		if (e.type == MapNotify) {
+			if (e.xmapping.window == x_main_window)
+				render();
+		} else if (e.type == Expose) {
+			if (e.xmapping.window == x_main_window)
+				render();
 		} else if (e.type == ButtonPress) {
 			tree_root->process_button_press_event(&e);
 			render();
@@ -89,20 +100,24 @@ void root_t::run() {
 	}
 }
 
-void root_t::render(cairo_t * cr) {
+void main_t::render(cairo_t * cr) {
 	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 	cairo_fill(cr);
 	tree_root->render(cr);
 }
 
-void root_t::render() {
+void main_t::render() {
+	XWindowAttributes wa;
+	XGetWindowAttributes(dpy, x_main_window, &wa);
+	box_t<int> b(0, 0, wa.width, wa.height);
+	tree_root->update_allocation(b);
 	cairo_t * cr = get_cairo();
 	render(cr);
 	cairo_destroy(cr);
 }
 
-void root_t::scan() {
+void main_t::scan() {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	unsigned int i, num;
 	Window d1, d2, *wins = 0;
@@ -126,7 +141,7 @@ void root_t::scan() {
 	}
 }
 
-client_t * root_t::find_client_by_xwindow(Window w) {
+client_t * main_t::find_client_by_xwindow(Window w) {
 	std::list<client_t *>::iterator i = clients.begin();
 	while (i != clients.end()) {
 		if ((*i)->xwin == w)
@@ -137,7 +152,7 @@ client_t * root_t::find_client_by_xwindow(Window w) {
 	return 0;
 }
 
-client_t * root_t::find_client_by_clipping_window(Window w) {
+client_t * main_t::find_client_by_clipping_window(Window w) {
 	std::list<client_t *>::iterator i = clients.begin();
 	while (i != clients.end()) {
 		if ((*i)->clipping_window == w)
@@ -148,7 +163,7 @@ client_t * root_t::find_client_by_clipping_window(Window w) {
 	return 0;
 }
 
-void root_t::manage(Window w, XWindowAttributes * wa) {
+void main_t::manage(Window w, XWindowAttributes * wa) {
 	fprintf(stderr, "Call %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
 	if (x_main_window == w)
 		return;
@@ -213,7 +228,7 @@ void root_t::manage(Window w, XWindowAttributes * wa) {
 	fprintf(stderr, "Return %s on %p\n", __FUNCTION__, (void *) w);
 }
 
-long root_t::get_window_state(Window w) {
+long main_t::get_window_state(Window w) {
 	printf("call %s\n", __FUNCTION__);
 	int format;
 	long result = -1;
@@ -232,7 +247,7 @@ long root_t::get_window_state(Window w) {
 }
 
 /* inspired from dwm */
-bool root_t::get_text_prop(Window w, Atom atom, std::string & text) {
+bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	char **list = NULL;
 	int n;
 	XTextProperty name;
@@ -258,7 +273,7 @@ bool root_t::get_text_prop(Window w, Atom atom, std::string & text) {
 }
 
 /* inspired from dwm */
-void root_t::update_title(client_t * c) {
+void main_t::update_title(client_t * c) {
 	if (!get_text_prop(c->xwin, atoms._NET_WM_NAME, c->name))
 		if (!get_text_prop(c->xwin, XA_WM_NAME, c->name)) {
 			std::stringstream s(std::stringstream::in | std::stringstream::out);
@@ -272,7 +287,7 @@ void root_t::update_title(client_t * c) {
 	}
 }
 
-void root_t::client_update_size_hints(client_t * c) {
+void main_t::client_update_size_hints(client_t * c) {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	long msize;
 	XSizeHints size;
@@ -334,7 +349,7 @@ void root_t::client_update_size_hints(client_t * c) {
 	printf("return %s %d,%d\n", __PRETTY_FUNCTION__, c->width, c->height);
 }
 
-bool root_t::get_all(Window win, Atom prop, Atom type, int size,
+bool main_t::get_all(Window win, Atom prop, Atom type, int size,
 		unsigned char **data, unsigned int *num) {
 	bool ret = false;
 	int res;
@@ -373,7 +388,7 @@ bool root_t::get_all(Window win, Atom prop, Atom type, int size,
 	return ret;
 }
 
-bool root_t::client_is_dock(client_t * c) {
+bool main_t::client_is_dock(client_t * c) {
 	unsigned int num, i;
 	int32_t * val;
 	Window t;
@@ -391,7 +406,7 @@ bool root_t::client_is_dock(client_t * c) {
 	return false;
 }
 
-void root_t::process_map_request_event(XEvent * e) {
+void main_t::process_map_request_event(XEvent * e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	Window w = e->xmaprequest.window;
