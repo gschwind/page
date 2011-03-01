@@ -179,7 +179,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 			if (button_close.is_inside(e->xbutton.x, e->xbutton.y)) {
 				if (_parent != 0) {
-					//_parent->mutate_to_notebook(this);
+					_parent->remove(this);
 				}
 			}
 
@@ -219,10 +219,6 @@ void notebook_t::update_client_mapping() {
 void notebook_t::add_notebook(client_t *c) {
 	_clients.push_front(c);
 	_selected = _clients.begin();
-	update_client_mapping();
-	cairo_t * cr = get_cairo();
-	render(cr);
-	cairo_destroy(cr);
 }
 
 cairo_t * notebook_t::get_cairo() {
@@ -244,6 +240,18 @@ void notebook_t::split(split_type_t type) {
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
 
+}
+
+void notebook_t::close(tree_t * src) {
+
+}
+
+void notebook_t::remove(tree_t * src) {
+
+}
+
+std::list<client_t *> * notebook_t::get_clients() {
+	return &_clients;
 }
 
 }

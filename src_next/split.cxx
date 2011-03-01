@@ -184,4 +184,33 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	}
 }
 
+void split_t::close(tree_t * src) {
+	_parent->replace(this, src);
+
+
+}
+
+
+void split_t::remove(tree_t * src) {
+	std::list<client_t *> * client = src->get_clients();
+	std::list<client_t *>::iterator i = client->begin();
+
+	tree_t * dst = (src==_pack0)?_pack1:_pack0;
+	while(i != client->end()) {
+		dst->add_notebook((*i));
+		++i;
+	}
+	_parent->replace(this, dst);
+	cairo_t * cr = get_cairo();
+	_parent->render(cr);
+	cairo_destroy(cr);
+	delete src;
+	/* self destruction ^^ */
+	delete this;
+}
+
+std::list<client_t *> * split_t::get_clients() {
+	return 0;
+}
+
 }

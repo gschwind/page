@@ -46,4 +46,17 @@ void root_t::replace(tree_t * src, tree_t * by) {
 	}
 }
 
+void root_t::close(tree_t * src) {
+
+}
+
+
+void root_t::remove(tree_t * src) {
+
+}
+
+std::list<client_t *> * root_t::get_clients() {
+	return 0;
+}
+
 }

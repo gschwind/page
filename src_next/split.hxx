@@ -35,6 +35,9 @@ public:
 	void add_notebook(client_t *c);
 	void replace(tree_t * src, tree_t * by);
 	cairo_t * get_cairo();
+	void close(tree_t * src);
+	void remove(tree_t * src);
+	std::list<client_t *> * get_clients();
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();

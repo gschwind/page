@@ -10,6 +10,7 @@
 
 #include <X11/Xlib.h>
 #include <cairo.h>
+#include <list>
 #include "box.hxx"
 #include "client.hxx"
 
@@ -29,7 +30,10 @@ public:
 	virtual bool process_button_press_event(XEvent const * e) = 0;
 	virtual void add_notebook(client_t *c) = 0;
 	virtual void replace(tree_t * src, tree_t * by) = 0;
+	virtual void remove(tree_t * src) = 0;
 	virtual void reparent(tree_t * parent);
+	virtual void close(tree_t * src) = 0;
+	virtual std::list<client_t *> * get_clients() = 0;
 
 };
 }

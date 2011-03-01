@@ -43,6 +43,9 @@ public:
 	void update_client_mapping();
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
+	void close(tree_t * src);
+	void remove(tree_t * src);
+	std::list<client_t *> * get_clients();
 };
 
 }
