@@ -90,7 +90,7 @@ public:
 
 	void scan();
 	long get_window_state(Window w);
-	void manage(Window w, XWindowAttributes * wa);
+	bool manage(Window w, XWindowAttributes * wa);
 	client_t * find_client_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
 	bool get_text_prop(Window w, Atom atom, std::string & text);
@@ -101,6 +101,8 @@ public:
 			unsigned char **data, unsigned int *num);
 
 	void process_map_request_event(XEvent * e);
+	void process_map_notify_event(XEvent * e);
+	void process_unmap_notify_event(XEvent * e);
 };
 
 }

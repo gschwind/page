@@ -177,20 +177,16 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				cairo_destroy(cr);
 			}
 
-			if (button_close.is_inside(e->xbutton.x, e->xbutton.y)) {
-				if (_parent != 0) {
-					_parent->remove(this);
-				}
-			}
+		}
 
-			if (button_vsplit.is_inside(e->xbutton.x, e->xbutton.y)) {
-				split(VERTICAL_SPLIT);
+		if (button_close.is_inside(e->xbutton.x, e->xbutton.y)) {
+			if (_parent != 0) {
+				_parent->remove(this);
 			}
-
-			if (button_hsplit.is_inside(e->xbutton.x, e->xbutton.y)) {
-				split(HORIZONTAL_SPLIT);
-			}
-
+		} else if (button_vsplit.is_inside(e->xbutton.x, e->xbutton.y)) {
+			split(VERTICAL_SPLIT);
+		} else if (button_hsplit.is_inside(e->xbutton.x, e->xbutton.y)) {
+			split(HORIZONTAL_SPLIT);
 		}
 
 		return true;
@@ -252,6 +248,17 @@ void notebook_t::remove(tree_t * src) {
 
 std::list<client_t *> * notebook_t::get_clients() {
 	return &_clients;
+}
+
+void notebook_t::remove_client(Window w) {
+	std::list<client_t *>::iterator i = _clients.begin();
+	while(i != _clients.end()) {
+		if((*i)->xwin == w) {
+			_clients.remove((*i));
+			break;
+		}
+		++i;
+	}
 }
 
 }

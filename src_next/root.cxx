@@ -59,4 +59,8 @@ std::list<client_t *> * root_t::get_clients() {
 	return 0;
 }
 
+void root_t::remove_client(Window w) {
+	_pack0->remove_client(w);
+}
+
 }

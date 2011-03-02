@@ -34,6 +34,7 @@ public:
 	virtual void reparent(tree_t * parent);
 	virtual void close(tree_t * src) = 0;
 	virtual std::list<client_t *> * get_clients() = 0;
+	virtual void remove_client(Window w) = 0;
 
 };
 }

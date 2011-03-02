@@ -38,6 +38,7 @@ struct client_t {
 	bool is_fixed_size;
 
 	bool is_mapped;
+	bool clippling_is_mapped;
 
 	void map();
 	void unmap();

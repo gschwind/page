@@ -116,13 +116,6 @@ bool split_t::process_button_press_event(XEvent const * e) {
 				case ConfigureRequest:
 				case Expose:
 				case MapRequest:
-					cr = get_cairo();
-					cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-					cairo_rectangle(cr, _allocation.x, _allocation.y,
-							_allocation.w, _allocation.h);
-					cairo_fill(cr);
-					render(cr);
-					cairo_destroy(cr);
 					break;
 				case MotionNotify:
 					if (_split_type == VERTICAL_SPLIT) {
@@ -186,8 +179,6 @@ void split_t::replace(tree_t * src, tree_t * by) {
 
 void split_t::close(tree_t * src) {
 	_parent->replace(this, src);
-
-
 }
 
 
@@ -211,6 +202,13 @@ void split_t::remove(tree_t * src) {
 
 std::list<client_t *> * split_t::get_clients() {
 	return 0;
+}
+
+void split_t::remove_client(Window w) {
+	if(_pack0)
+		_pack0->remove_client(w);
+	if(_pack1)
+		_pack1->remove_client(w);
 }
 
 }

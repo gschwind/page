@@ -46,6 +46,7 @@ public:
 	void close(tree_t * src);
 	void remove(tree_t * src);
 	std::list<client_t *> * get_clients();
+	void remove_client(Window w);
 };
 
 }
