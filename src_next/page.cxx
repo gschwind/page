@@ -1,7 +1,7 @@
 /*
  * page.cxx
  *
- *  Created on: 23 févr. 2011
+ *  Created on: 23 f��vr. 2011
  *      Author: gschwind
  */
 
@@ -18,6 +18,7 @@
 #include <cairo-xlib.h>
 #include <X11/Xlib.h>
 #include <stdlib.h>
+#include <cstring>
 
 #include <sstream>
 #include <limits>
@@ -43,16 +44,25 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 
 main_t::main_t() {
 	XSetWindowAttributes swa;
+	XWindowAttributes wa;
 	dpy = XOpenDisplay(0);
 	screen = DefaultScreen(dpy);
 	xroot = DefaultRootWindow(dpy);
-	XSelectInput(dpy, xroot, SubstructureNotifyMask | SubstructureRedirectMask
-			| ButtonPressMask);
-	this->x_main_window = XCreateWindow(dpy, xroot, 0, 0, 800, 600, 0,
-			DefaultDepth(dpy, screen), InputOutput, DefaultVisual(dpy, screen),
-			0, &swa);
-	XSelectInput(dpy, x_main_window, StructureNotifyMask | ButtonPressMask);
-	XMapWindow(dpy, x_main_window);
+	XGetWindowAttributes(dpy, xroot, &root_wa);
+	sx = 0;
+	sy = 0;
+	sw = root_wa.width;
+	sh = root_wa.height;
+	XSelectInput(dpy, xroot, SubstructureNotifyMask | SubstructureRedirectMask);
+
+	main_window = XCreateWindow(dpy, xroot, sx, sy, sw, sh, 0, root_wa.depth,
+			InputOutput, root_wa.visual, 0, &swa);
+	cursor = XCreateFontCursor(dpy, XC_left_ptr);
+	XDefineCursor(dpy, main_window, cursor);
+	XSelectInput(dpy, main_window, StructureNotifyMask | ButtonPressMask);
+	XMapWindow(dpy, main_window);
+
+	printf("Created main window #%lu\n", main_window);
 
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
 
@@ -71,23 +81,26 @@ main_t::main_t() {
 
 	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
 
-	box_t<int> a(0, 0, 800, 600);
-	tree_root = new root_t(dpy, x_main_window, a);
+	ATOM_INIT(_NET_WM_USER_TIME);
+
+	box_t<int> a(0, 0, sw, sh);
+	tree_root = new root_t(dpy, main_window, a);
 
 }
 
 void main_t::run() {
 	scan();
+	box_t<int> b(0, 0, sw, sh);
+	tree_root->update_allocation(b);
+	XMoveResizeWindow(dpy, main_window, sx, sy, sw, sh);
 	running = 1;
 	while (running) {
 		XEvent e;
-		XNextEvent(this->dpy, &e);
-		printf("Event %s\n", x_event_name[e.type]);
+		XNextEvent(dpy, &e);
+		printf("Event %s #%lu\n", x_event_name[e.type], e.xany.window);
 		if (e.type == MapNotify) {
-			if (e.xmapping.window == x_main_window)
-				render();
 		} else if (e.type == Expose) {
-			if (e.xmapping.window == x_main_window)
+			if (e.xmapping.window == main_window)
 				render();
 		} else if (e.type == ButtonPress) {
 			tree_root->process_button_press_event(&e);
@@ -99,6 +112,10 @@ void main_t::run() {
 			process_map_notify_event(&e);
 		} else if (e.type == UnmapNotify) {
 			process_unmap_notify_event(&e);
+		} else if (e.type == PropertyNotify) {
+			process_property_notify_event(&e);
+		} else if (e.type == DestroyNotify) {
+			process_destroy_notify_event(&e);
 		}
 	}
 }
@@ -111,8 +128,7 @@ void main_t::render(cairo_t * cr) {
 }
 
 void main_t::render() {
-	XWindowAttributes wa;
-	XGetWindowAttributes(dpy, x_main_window, &wa);
+	XGetWindowAttributes(dpy, main_window, &wa);
 	box_t<int> b(0, 0, wa.width, wa.height);
 	tree_root->update_allocation(b);
 	cairo_t * cr = get_cairo();
@@ -126,8 +142,9 @@ void main_t::scan() {
 	Window d1, d2, *wins = 0;
 	XWindowAttributes wa;
 
-	/* ask for child of current root window, use Xlib here since gdk only know windows it
-	 * have created. */
+	/* ask for child of current root window, use Xlib here since gdk
+	 * only know windows it have created.
+	 */
 	if (XQueryTree(dpy, xroot, &d1, &d2, &wins, &num)) {
 		for (i = 0; i < num; ++i) {
 			if (!XGetWindowAttributes(dpy, wins[i], &wa))
@@ -167,8 +184,8 @@ client_t * main_t::find_client_by_clipping_window(Window w) {
 }
 
 bool main_t::manage(Window w, XWindowAttributes * wa) {
-	fprintf(stderr, "Call %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
-	if (x_main_window == w)
+	printf("Manage #%lu\n", w);
+	if (main_window == w)
 		return false;
 
 	client_t * c = find_client_by_xwindow(w);
@@ -184,8 +201,6 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	c = new client_t;
 	c->xwin = w;
 	c->dpy = dpy;
-	c->clipping_window = false;
-	c->is_mapped = false;
 	/* before page prepend !! */
 	clients.push_back(c);
 
@@ -194,42 +209,50 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 
 	if (client_is_dock(c)) {
 		printf("IsDock !\n");
-		/* partial struct need to be read ! */
 		int32_t * partial_struct;
 		unsigned int n;
-		get_all(c->xwin, atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, 32,
-				(unsigned char **) &partial_struct, &n);
+		if (get_all(c->xwin, atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, 32,
+				(unsigned char **) &partial_struct, &n)) {
 
-		sw -= partial_struct[0] + partial_struct[1];
-		sh -= partial_struct[2] + partial_struct[3];
-		if (sx < partial_struct[0])
-			sx = partial_struct[0];
-		if (sy < partial_struct[2])
-			sy = partial_struct[2];
+			printf("partial struct %d %d %d %d\n", partial_struct[0],
+					partial_struct[1], partial_struct[2], partial_struct[3]);
 
-		XMoveResizeWindow(dpy, x_main_window, sx, sy, sw, sh);
-		box_t<int> b(0, 0, sw, sh);
-		tree_root->update_allocation(b);
-
+			sw -= partial_struct[0] + partial_struct[2];
+			sh -= partial_struct[1] + partial_struct[3];
+			if (sx < partial_struct[0])
+				sx = partial_struct[0];
+			if (sy < partial_struct[1])
+				sy = partial_struct[1];
+		}
 		return true;
+
 	}
 
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(dpy, w);
 	XSetWindowBorderWidth(dpy, w, 0);
-	c->clipping_window = XCreateSimpleWindow(dpy, x_main_window, 0, 0, 1, 1, 0,
-			XBlackPixel(dpy, 0), XBlackPixel(dpy, 0));
-	XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
-	XSelectInput(dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
-	XMapWindow(dpy, w);
-	tree_root->add_notebook(c);
 
-	fprintf(stderr, "Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
+	XSetWindowAttributes swa;
+	swa.background_pixel = XBlackPixel(dpy, screen);
+	swa.border_pixel = XBlackPixel(dpy, screen);
+	c->clipping_window = XCreateWindow(dpy, main_window, 0, 0, 1, 1, 0,
+			root_wa.depth, InputOutput, root_wa.visual, CWBackPixel | CWBorderPixel, &swa);
+
+	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", dpy, c->xwin,
+			c->clipping_window, 0, 0);
+	XSelectInput(dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
+	XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
+
+	if (!tree_root->add_notebook(c)) {
+		printf("Fail to add a client\n");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
 	return true;
 }
 
 long main_t::get_window_state(Window w) {
-	printf("call %s\n", __FUNCTION__);
 	int format;
 	long result = -1;
 	unsigned char *p = NULL;
@@ -240,6 +263,7 @@ long main_t::get_window_state(Window w) {
 			atoms.WM_STATE, &real, &format, &n, &extra, (unsigned char **) &p)
 			!= Success)
 		return -1;
+
 	if (n != 0)
 		result = *p;
 	XFree(p);
@@ -256,19 +280,7 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	XGetTextProperty(dpy, w, &name, atom);
 	if (!name.nitems)
 		return false;
-	if (name.encoding == XA_STRING) {
-		text = (char const *) name.value;
-	} else {
-		if (XmbTextPropertyToTextList(dpy, &name, &list, &n) == Success) {
-			if (n > 0) {
-				if (list[0]) {
-					text = list[0];
-				}
-			}
-			XFreeStringList(list);
-		}
-	}
-	XFree(name.value);
+	text = (char const *) name.value;
 	return true;
 }
 
@@ -412,12 +424,17 @@ void main_t::process_map_request_event(XEvent * e) {
 	Window w = e->xmaprequest.window;
 	/* should never happen */
 	XWindowAttributes wa;
-	if (!XGetWindowAttributes(dpy, w, &wa))
+	if (!XGetWindowAttributes(dpy, w, &wa)) {
+		XMapWindow(dpy, w);
 		return;
-	if (wa.override_redirect)
+	}
+	if (wa.override_redirect) {
+		XMapWindow(dpy, w);
 		return;
-	if (manage(w, &wa))
-		render();
+	}
+	manage(w, &wa);
+	XMapWindow(dpy, w);
+	render();
 
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
@@ -426,18 +443,26 @@ void main_t::process_map_request_event(XEvent * e) {
 }
 
 void main_t::process_map_notify_event(XEvent * e) {
-	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if (c) {
-		c->is_mapped = true;
-	} else {
-		c = find_client_by_clipping_window(e->xmap.window);
-		if (c)
-			c->clippling_is_mapped = true;
-	}
+
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	printf("UnmapNotify #%lu\n", e->xunmap.window);
+	//	client_t * c = find_client_by_xwindow(e->xmap.window);
+	//	if (c) {
+	//		tree_root->remove_client(c->xwin);
+	//		clients.remove(c);
+	//		XUnmapWindow(dpy, c->xwin);
+	//		XReparentWindow(dpy, c->xwin, xroot, 0, 0);
+	//		XRemoveFromSaveSet(dpy, c->xwin);
+	//		XDestroyWindow(dpy, c->clipping_window);
+	//		delete c;
+	//		render();
+	//	}
+}
+
+void main_t::process_destroy_notify_event(XEvent * e) {
+	printf("DestroyNotify #%lu\n", e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		tree_root->remove_client(c->xwin);
@@ -445,6 +470,19 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		XDestroyWindow(dpy, c->clipping_window);
 		delete c;
 		render();
+	}
+}
+
+void main_t::process_property_notify_event(XEvent * ev) {
+	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__, ev->xproperty.window);
+
+	char * name = XGetAtomName(dpy, ev->xproperty.atom);
+	printf("Atom Name = \"%s\"\n", name);
+	XFree(name);
+
+	if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
+		XRaiseWindow(dpy, ev->xproperty.window);
+		XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
 	}
 }
 

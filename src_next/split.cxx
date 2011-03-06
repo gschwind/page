@@ -23,8 +23,6 @@ split_t::split_t(split_type_t type) {
 
 void split_t::update_allocation(box_t<int> &allocation) {
 	_allocation = allocation;
-	fprintf(stderr, "%p : %s return %d,%d,%d,%d\n", this, __PRETTY_FUNCTION__,
-			_allocation.x, _allocation.y, _allocation.w, _allocation.h);
 	update_allocation_pack0();
 	update_allocation_pack1();
 }
@@ -74,8 +72,8 @@ void split_t::render(cairo_t * cr) {
 		cairo_rectangle(cr, _allocation.x + (_allocation.w * _split) - 2,
 				_allocation.y, 4, _allocation.h);
 	} else {
-		cairo_rectangle(cr, _allocation.x, _allocation.y + (_allocation.h
-				* _split) - 2, _allocation.w, 4);
+		cairo_rectangle(cr, _allocation.x,
+				_allocation.y + (_allocation.h * _split) - 2, _allocation.w, 4);
 	}
 	cairo_fill(cr);
 	if (_pack0)
@@ -104,14 +102,17 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			XEvent ev;
 			cairo_t * cr;
 			cursor = XCreateFontCursor(_dpy, XC_fleur);
-			if (XGrabPointer(_dpy, _w, False, (ButtonPressMask
-					| ButtonReleaseMask | PointerMotionMask), GrabModeAsync,
-					GrabModeAsync, None, cursor, CurrentTime) != GrabSuccess)
+			if (XGrabPointer(_dpy, _w, False,
+					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+					GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
+					!= GrabSuccess)
 				return true;
 			do {
-				XMaskEvent(_dpy, (ButtonPressMask | ButtonReleaseMask
-						| PointerMotionMask) | ExposureMask
-						| SubstructureRedirectMask, &ev);
+				XMaskEvent(
+						_dpy,
+						(ButtonPressMask | ButtonReleaseMask
+								| PointerMotionMask) | ExposureMask
+								| SubstructureRedirectMask, &ev);
 				switch (ev.type) {
 				case ConfigureRequest:
 				case Expose:
@@ -149,8 +150,22 @@ bool split_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-void split_t::add_notebook(client_t *c) {
-	_pack0->add_notebook(c);
+bool split_t::add_notebook(client_t *c) {
+	if (_pack0) {
+		if (!_pack0->add_notebook(c)) {
+			if (_pack1)
+				return _pack1->add_notebook(c);
+			else
+				return false;
+		} else
+			return true;
+	} else {
+		if (_pack1)
+			return _pack1->add_notebook(c);
+		else
+			return false;
+	}
+
 }
 
 cairo_t * split_t::get_cairo() {
@@ -181,13 +196,12 @@ void split_t::close(tree_t * src) {
 	_parent->replace(this, src);
 }
 
-
 void split_t::remove(tree_t * src) {
 	std::list<client_t *> * client = src->get_clients();
 	std::list<client_t *>::iterator i = client->begin();
 
-	tree_t * dst = (src==_pack0)?_pack1:_pack0;
-	while(i != client->end()) {
+	tree_t * dst = (src == _pack0) ? _pack1 : _pack0;
+	while (i != client->end()) {
 		dst->add_notebook((*i));
 		++i;
 	}
@@ -205,9 +219,9 @@ std::list<client_t *> * split_t::get_clients() {
 }
 
 void split_t::remove_client(Window w) {
-	if(_pack0)
+	if (_pack0)
 		_pack0->remove_client(w);
-	if(_pack1)
+	if (_pack1)
 		_pack1->remove_client(w);
 }
 

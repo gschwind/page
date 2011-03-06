@@ -76,12 +76,11 @@ void scan(Window w, int level) {
 		escape[i] = '|';
 	escape[level] = 0;
 	char * s = update_title(w);
-	printf("%s+-%d\n", escape, (int)w);
+	printf("%s+-%lu\n", escape, w);
 	//printf("%s+-%d %s\n", escape, (int)w, s);
 	/* ask for child of current root window */
 	if (XQueryTree(dpy, w,
 			&d1, &d2, &wins, &num)) {
-
 		for (i = 0; i < num; ++i) {
 			scan(wins[i], level + 1);
 		}

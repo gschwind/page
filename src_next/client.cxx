@@ -12,18 +12,10 @@
 namespace page_next {
 
 void client_t::map() {
-	if (!clippling_is_mapped) {
-		printf("map %s\n", name.c_str());
-		XMapWindow(dpy, clipping_window);
-		clippling_is_mapped = true;
-	}
-
+	XMapWindow(dpy, clipping_window);
 }
 void client_t::unmap() {
-	if (clippling_is_mapped) {
-		XUnmapWindow(dpy, clipping_window);
-		clippling_is_mapped = false;
-	}
+	XUnmapWindow(dpy, clipping_window);
 }
 
 void client_t::update_client_size(int w, int h) {

@@ -25,6 +25,8 @@ struct atoms_t {
 	Atom _NET_WM_WINDOW_TYPE;
 	Atom _NET_WM_WINDOW_TYPE_DOCK;
 
+	Atom _NET_WM_USER_TIME;
+
 };
 
 #endif /* ATOMS_HXX_ */

@@ -32,7 +32,7 @@ public:
 	void update_allocation(box_t<int> & alloc);
 	void render(cairo_t * cr);
 	bool process_button_press_event(XEvent const * e);
-	void add_notebook(client_t *c);
+	bool add_notebook(client_t *c);
 	void replace(tree_t * src, tree_t * by);
 	cairo_t * get_cairo();
 	void close(tree_t * src);

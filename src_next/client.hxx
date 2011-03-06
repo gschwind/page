@@ -37,9 +37,6 @@ struct client_t {
 	double maxa;
 	bool is_fixed_size;
 
-	bool is_mapped;
-	bool clippling_is_mapped;
-
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);

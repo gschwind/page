@@ -1,7 +1,7 @@
 /*
  * page.hxx
  *
- *  Created on: 23 févr. 2011
+ *  Created on: 23 f��vr. 2011
  *      Author: gschwind
  */
 
@@ -48,12 +48,13 @@ class main_t {
 	std::list<client_t *> clients;
 
 	Cursor cursor;
-	XWindowAttributes wa;
+
 	int running;
 	int selected;
 	Display *dpy;
 	int screen;
 	Window xroot;
+	XWindowAttributes root_wa;
 	/* size of default root window */
 	int sw, sh, sx, sy;
 	int start_x, end_x;
@@ -61,7 +62,8 @@ class main_t {
 
 	atoms_t atoms;
 
-	Window x_main_window;
+	Window main_window;
+	XWindowAttributes wa;
 
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);
@@ -72,7 +74,7 @@ public:
 	void run();
 
 	Window get_window() {
-		return x_main_window;
+		return main_window;
 	}
 
 	Display * get_dpy() {
@@ -81,9 +83,9 @@ public:
 
 	cairo_t * get_cairo() {
 		cairo_surface_t * surf;
-		XGetWindowAttributes(this->dpy, this->x_main_window, &(this->wa));
-		surf = cairo_xlib_surface_create(this->dpy, this->x_main_window,
-				this->wa.visual, this->wa.width, this->wa.height);
+		XGetWindowAttributes(dpy, main_window, &(wa));
+		surf = cairo_xlib_surface_create(dpy, main_window,
+				wa.visual, wa.width, wa.height);
 		cairo_t * cr = cairo_create(surf);
 		return cr;
 	}
@@ -103,6 +105,8 @@ public:
 	void process_map_request_event(XEvent * e);
 	void process_map_notify_event(XEvent * e);
 	void process_unmap_notify_event(XEvent * e);
+	void process_property_notify_event(XEvent * ev);
+	void process_destroy_notify_event(XEvent * e);
 };
 
 }

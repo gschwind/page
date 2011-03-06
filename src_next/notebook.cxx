@@ -34,17 +34,17 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	_allocation = allocation;
 
 	button_close.x = _allocation.x + _allocation.w - 17;
-	button_close.y = 0;
+	button_close.y = _allocation.y;
 	button_close.w = 17;
 	button_close.h = 20;
 
 	button_vsplit.x = _allocation.x + _allocation.w - 17 * 2;
-	button_vsplit.y = 0;
+	button_vsplit.y = _allocation.y;
 	button_vsplit.w = 17;
 	button_vsplit.h = 20;
 
 	button_hsplit.x = _allocation.x + _allocation.w - 17 * 3;
-	button_hsplit.y = 0;
+	button_hsplit.y = _allocation.y;
 	button_hsplit.w = 17;
 	button_hsplit.h = 20;
 }
@@ -165,9 +165,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					client_t * move = *(c);
 					/* reselect a new window */
 					_selected = c;
-					++_selected;
-					if(_selected == _clients.end())
-						_selected = _clients.begin();
+					select_next();
 					_clients.remove(move);
 					(*dst)->add_notebook(move);
 				}
@@ -175,6 +173,10 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				cr = get_cairo();
 				render(cr);
 				cairo_destroy(cr);
+
+				XRaiseWindow((*_selected)->dpy, (*_selected)->xwin);
+				XSetInputFocus((*_selected)->dpy, (*_selected)->xwin, RevertToNone, CurrentTime);
+
 			}
 
 		}
@@ -202,7 +204,8 @@ void notebook_t::update_client_mapping() {
 			(*i)->unmap();
 		} else {
 			client_t * c = (*i);
-			c->update_client_size(_allocation.w, _allocation.h);
+			c->update_client_size(_allocation.w - 4, _allocation.h - 24);
+			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin, c->width, c->height);
 			XResizeWindow(c->dpy, c->xwin, c->width, c->height);
 			XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 2,
 					_allocation.y + 2 + 20, _allocation.w - 4, _allocation.h
@@ -212,9 +215,11 @@ void notebook_t::update_client_mapping() {
 	}
 }
 
-void notebook_t::add_notebook(client_t *c) {
+bool notebook_t::add_notebook(client_t *c) {
+	printf("Add client %lu\n", c->xwin);
 	_clients.push_front(c);
 	_selected = _clients.begin();
+	return true;
 }
 
 cairo_t * notebook_t::get_cairo() {
@@ -254,11 +259,19 @@ void notebook_t::remove_client(Window w) {
 	std::list<client_t *>::iterator i = _clients.begin();
 	while(i != _clients.end()) {
 		if((*i)->xwin == w) {
+			if(i == _selected)
+				select_next();
 			_clients.remove((*i));
 			break;
 		}
 		++i;
 	}
+}
+
+void notebook_t::select_next() {
+	++_selected;
+	if(_selected == _clients.end())
+		_selected = _clients.begin();
 }
 
 }

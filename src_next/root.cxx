@@ -33,8 +33,11 @@ bool root_t::process_button_press_event(XEvent const * e) {
 	_pack0->process_button_press_event(e);
 }
 
-void root_t::add_notebook(client_t *c) {
-	_pack0->add_notebook(c);
+bool root_t::add_notebook(client_t *c) {
+	if(_pack0)
+		return _pack0->add_notebook(c);
+	else
+		return false;
 }
 
 void root_t::replace(tree_t * src, tree_t * by) {

@@ -38,7 +38,7 @@ public:
 	void update_allocation(box_t<int> & allocation);
 	void render(cairo_t * cr);
 	bool process_button_press_event(XEvent const * e);
-	void add_notebook(client_t *c);
+	bool add_notebook(client_t *c);
 	void split(split_type_t type);
 	void update_client_mapping();
 	cairo_t * get_cairo();
@@ -47,6 +47,7 @@ public:
 	void remove(tree_t * src);
 	std::list<client_t *> * get_clients();
 	void remove_client(Window w);
+	void select_next();
 };
 
 }
