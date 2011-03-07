@@ -17,6 +17,12 @@ struct client_t {
 	Display * dpy;
 	/* the name of window */
 	std::string name;
+
+	bool wm_name_is_valid;
+	std::string wm_name;
+	bool net_wm_name_is_valid;
+	std::string net_wm_name;
+
 	Window xwin;
 	Window clipping_window;
 

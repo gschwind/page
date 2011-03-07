@@ -70,6 +70,7 @@ main_t::main_t() {
 	ATOM_INIT(CARDINAL);
 
 	ATOM_INIT(WM_STATE);
+	ATOM_INIT(WM_NAME);
 
 	ATOM_INIT(_NET_SUPPORTED);
 	ATOM_INIT(_NET_WM_NAME);
@@ -204,7 +205,9 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	/* before page prepend !! */
 	clients.push_back(c);
 
-	update_title(c);
+	update_net_vm_name(*c);
+	update_vm_name(*c);
+	update_title(*c);
 	client_update_size_hints(c);
 
 	if (client_is_dock(c)) {
@@ -275,8 +278,6 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	char **list = NULL;
 	int n;
 	XTextProperty name;
-	if (text.length() == 0)
-		return false;
 	XGetTextProperty(dpy, w, &name, atom);
 	if (!name.nitems)
 		return false;
@@ -284,19 +285,44 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	return true;
 }
 
+void main_t::update_vm_name(client_t &c) {
+	c.wm_name_is_valid = false;
+	char **list = NULL;
+	int n;
+	XTextProperty name;
+	XGetTextProperty(c.dpy, c.xwin, &name, atoms.WM_NAME);
+	if (!name.nitems)
+		return;
+	c.wm_name_is_valid = true;
+	c.wm_name = (char const *) name.value;
+	XFree(name.value);
+}
+
+void main_t::update_net_vm_name(client_t &c) {
+	c.net_wm_name_is_valid = false;
+	char **list = NULL;
+	int n;
+	XTextProperty name;
+	XGetTextProperty(c.dpy, c.xwin, &name, atoms._NET_WM_NAME);
+	if (!name.nitems)
+		return;
+	c.net_wm_name_is_valid = true;
+	c.net_wm_name = (char const *) name.value;
+	XFree(name.value);
+}
+
 /* inspired from dwm */
-void main_t::update_title(client_t * c) {
-	if (!get_text_prop(c->xwin, atoms._NET_WM_NAME, c->name))
-		if (!get_text_prop(c->xwin, XA_WM_NAME, c->name)) {
-			std::stringstream s(std::stringstream::in | std::stringstream::out);
-			s << static_cast<int> (c->xwin) << " (noname)";
-			c->name = s.str();
-		}
-	if (c->name[0] == '\0') { /* hack to mark broken clients */
-		std::ostringstream s;
-		s << static_cast<int> (c->xwin) << " (broken)";
-		c->name = s.str();
+void main_t::update_title(client_t &c) {
+	if (c.net_wm_name_is_valid) {
+		c.name = c.net_wm_name;
+		return;
 	}
+	if(c.wm_name_is_valid) {
+		c.name = c.wm_name;
+	}
+	std::stringstream s(std::stringstream::in | std::stringstream::out);
+	s << "#" << (c.xwin) << " (noname)";
+	c.name = s.str();
 }
 
 void main_t::client_update_size_hints(client_t * c) {
@@ -483,6 +509,14 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
 		XRaiseWindow(dpy, ev->xproperty.window);
 		XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
+	} else if(ev->xproperty.atom == atoms._NET_WM_NAME) {
+		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		update_net_vm_name(*c);
+		update_title(*c);
+	} else if(ev->xproperty.atom == atoms.WM_NAME) {
+		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		update_vm_name(*c);
+		update_title(*c);
 	}
 }
 

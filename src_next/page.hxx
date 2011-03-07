@@ -96,7 +96,7 @@ public:
 	client_t * find_client_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
 	bool get_text_prop(Window w, Atom atom, std::string & text);
-	void update_title(client_t * c);
+
 	void client_update_size_hints(client_t * ths);
 	bool client_is_dock(client_t * c);
 	bool get_all(Window win, Atom prop, Atom type, int size,
@@ -107,6 +107,10 @@ public:
 	void process_unmap_notify_event(XEvent * e);
 	void process_property_notify_event(XEvent * ev);
 	void process_destroy_notify_event(XEvent * e);
+
+	void update_vm_name(client_t &c);
+	void update_net_vm_name(client_t &c);
+	void update_title(client_t &c);
 };
 
 }

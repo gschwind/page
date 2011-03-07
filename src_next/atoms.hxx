@@ -15,6 +15,7 @@ struct atoms_t {
 	Atom ATOM;
 
 	Atom WM_STATE;
+	Atom WM_NAME;
 
 	Atom _NET_SUPPORTED;
 	Atom _NET_WM_NAME;
