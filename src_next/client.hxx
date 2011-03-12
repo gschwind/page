@@ -58,6 +58,9 @@ struct client_t {
 	void unmap();
 	void update_client_size(int w, int h);
 
+	bool try_lock_client();
+	void unlock_client();
+
 };
 
 }

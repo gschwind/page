@@ -144,6 +144,9 @@ void main_t::scan() {
 	Window d1, d2, *wins = 0;
 	XWindowAttributes wa;
 
+	/* secure the scan process */
+	XGrabServer(dpy);
+	XSync(dpy, False);
 	/* ask for child of current root window, use Xlib here since gdk
 	 * only know windows it have created.
 	 */
@@ -161,6 +164,9 @@ void main_t::scan() {
 		if (wins)
 			XFree(wins);
 	}
+
+	XUngrabServer(dpy);
+	XFlush(dpy);
 }
 
 client_t * main_t::find_client_by_xwindow(Window w) {
@@ -464,6 +470,24 @@ void main_t::process_map_request_event(XEvent * e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	Window w = e->xmaprequest.window;
+	/* secure the map request */
+	XGrabServer(dpy);
+	XSync(dpy, False);
+	XEvent ev;
+	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
+		/* the window is already destroyed, return */
+		XUngrabServer(dpy);
+		XFlush(dpy);
+		return;
+	}
+
+	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, UnmapNotify, &ev)) {
+		/* the window is already unmapped, return */
+		XUngrabServer(dpy);
+		XFlush(dpy);
+		return;
+	}
+
 	/* should never happen */
 	XWindowAttributes wa;
 	if (!XGetWindowAttributes(dpy, w, &wa)) {
@@ -477,7 +501,8 @@ void main_t::process_map_request_event(XEvent * e) {
 	manage(w, &wa);
 	XMapWindow(dpy, w);
 	render();
-
+	XUngrabServer(dpy);
+	XFlush(dpy);
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	return;

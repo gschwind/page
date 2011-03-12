@@ -63,4 +63,21 @@ void client_t::update_client_size(int w, int h) {
 	printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
 }
 
+bool client_t::try_lock_client() {
+	XGrabServer(dpy);
+	XSync(dpy, False);
+	XEvent e;
+	if (XCheckTypedWindowEvent(dpy, xwin, DestroyNotify, &e)) {
+		XPutBackEvent(dpy, &e);
+		XUngrabServer(dpy);
+		return false;
+	}
+	return true;
+}
+
+void client_t::unlock_client() {
+	XUngrabServer(dpy);
+	XFlush(dpy);
+}
+
 }

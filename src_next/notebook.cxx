@@ -180,9 +180,12 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				render(cr);
 				cairo_destroy(cr);
 
-				XRaiseWindow((*_selected)->dpy, (*_selected)->xwin);
-				XSetInputFocus((*_selected)->dpy, (*_selected)->xwin,
-						RevertToNone, CurrentTime);
+				if (((*_selected)->try_lock_client())) {
+					XRaiseWindow((*_selected)->dpy, (*_selected)->xwin);
+					XSetInputFocus((*_selected)->dpy, (*_selected)->xwin,
+							RevertToNone, CurrentTime);
+					(*_selected)->unlock_client();
+				}
 
 			}
 
@@ -207,6 +210,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 void notebook_t::update_client_mapping() {
 	std::list<client_t *>::iterator i;
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
+		if (!((*i)->try_lock_client()))
+			continue;
 		if (i != _selected) {
 			(*i)->unmap();
 		} else {
@@ -220,6 +225,7 @@ void notebook_t::update_client_mapping() {
 					_allocation.h - 20 - 4);
 			c->map();
 		}
+		(*i)->unlock_client();
 	}
 }
 
