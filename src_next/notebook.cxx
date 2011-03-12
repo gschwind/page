@@ -56,8 +56,8 @@ void notebook_t::render(cairo_t * cr) {
 	cairo_clip(cr);
 	cairo_set_line_width(cr, 1.0);
 	cairo_set_source_rgb(cr, CTOF(0x72, 0x9f, 0xcf));
-	cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20, _allocation.w
-			- 2, _allocation.h - 22);
+	cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20,
+			_allocation.w - 2, _allocation.h - 22);
 	cairo_stroke(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
@@ -89,8 +89,8 @@ void notebook_t::render(cairo_t * cr) {
 	}
 
 	cairo_save(cr);
-	cairo_translate(cr, _allocation.x + _allocation.w - 16.0, _allocation.y
-			+ 1.0);
+	cairo_translate(cr, _allocation.x + _allocation.w - 16.0,
+			_allocation.y + 1.0);
 	cairo_set_source_surface(cr, close_img, 0.0, 0.0);
 	cairo_paint(cr);
 	cairo_translate(cr, -17.0, 0.0);
@@ -125,15 +125,21 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				cursor = XCreateFontCursor(_dpy, XC_fleur);
 
-				if (XGrabPointer(_dpy, _w, False, (ButtonPressMask
-						| ButtonReleaseMask | PointerMotionMask),
-						GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
+				if (XGrabPointer(
+						_dpy,
+						_w,
+						False,
+						(ButtonPressMask | ButtonReleaseMask
+								| PointerMotionMask), GrabModeAsync,
+						GrabModeAsync, None, cursor, CurrentTime)
 						!= GrabSuccess)
 					return true;
 				do {
-					XMaskEvent(_dpy, (ButtonPressMask | ButtonReleaseMask
-							| PointerMotionMask) | ExposureMask
-							| SubstructureRedirectMask, &ev);
+					XMaskEvent(
+							_dpy,
+							(ButtonPressMask | ButtonReleaseMask
+									| PointerMotionMask) | ExposureMask
+									| SubstructureRedirectMask, &ev);
 					switch (ev.type) {
 					case ConfigureRequest:
 					case Expose:
@@ -175,7 +181,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				cairo_destroy(cr);
 
 				XRaiseWindow((*_selected)->dpy, (*_selected)->xwin);
-				XSetInputFocus((*_selected)->dpy, (*_selected)->xwin, RevertToNone, CurrentTime);
+				XSetInputFocus((*_selected)->dpy, (*_selected)->xwin,
+						RevertToNone, CurrentTime);
 
 			}
 
@@ -205,11 +212,12 @@ void notebook_t::update_client_mapping() {
 		} else {
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 4, _allocation.h - 24);
-			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin, c->width, c->height);
-			XResizeWindow(c->dpy, c->xwin, c->width, c->height);
+			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin,
+					c->width, c->height);
+			XMoveResizeWindow(c->dpy, c->xwin, 0, 0, c->width, c->height);
 			XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 2,
-					_allocation.y + 2 + 20, _allocation.w - 4, _allocation.h
-							- 20 - 4);
+					_allocation.y + 2 + 20, _allocation.w - 4,
+					_allocation.h - 20 - 4);
 			c->map();
 		}
 	}
@@ -257,9 +265,9 @@ std::list<client_t *> * notebook_t::get_clients() {
 
 void notebook_t::remove_client(Window w) {
 	std::list<client_t *>::iterator i = _clients.begin();
-	while(i != _clients.end()) {
-		if((*i)->xwin == w) {
-			if(i == _selected)
+	while (i != _clients.end()) {
+		if ((*i)->xwin == w) {
+			if (i == _selected)
 				select_next();
 			_clients.remove((*i));
 			break;
@@ -270,7 +278,7 @@ void notebook_t::remove_client(Window w) {
 
 void notebook_t::select_next() {
 	++_selected;
-	if(_selected == _clients.end())
+	if (_selected == _clients.end())
 		_selected = _clients.begin();
 }
 

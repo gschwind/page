@@ -26,6 +26,17 @@ struct client_t {
 	Window xwin;
 	Window clipping_window;
 
+	/* store the map/unmap stase from the point of view of PAGE */
+	bool is_map;
+	/* this is used to distinguish if unmap is initiated by client or by PAGE
+	 * PAGE unmap mean Normal to Iconic
+	 * client unmap mean Normal to WithDrawn */
+	int unmap_pending;
+
+	bool as_icon;
+	Pixmap pixmap_icon;
+	Window w_icon;
+
 	/* the desired width/heigth */
 	int width;
 	int height;

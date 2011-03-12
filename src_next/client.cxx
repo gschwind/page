@@ -12,10 +12,23 @@
 namespace page_next {
 
 void client_t::map() {
-	XMapWindow(dpy, clipping_window);
+	if (!is_map) {
+		is_map = true;
+		XMapWindow(dpy, clipping_window);
+		XMapWindow(dpy, xwin);
+	}
 }
 void client_t::unmap() {
-	XUnmapWindow(dpy, clipping_window);
+	if (is_map) {
+		is_map = false;
+		unmap_pending += 1;
+		printf("Unmap of #%lu\n", xwin);
+		/* ICCCM require that WM unmap client window to change client state from
+		 * Normal to Iconic state
+		 * in PAGE all unviewable window are in iconic state */
+		XUnmapWindow(dpy, xwin);
+		XUnmapWindow(dpy, clipping_window);
+	}
 }
 
 void client_t::update_client_size(int w, int h) {

@@ -111,6 +111,7 @@ public:
 	void update_vm_name(client_t &c);
 	void update_net_vm_name(client_t &c);
 	void update_title(client_t &c);
+	void update_vm_hints(client_t &c);
 };
 
 }

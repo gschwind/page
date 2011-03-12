@@ -94,6 +94,7 @@ void main_t::run() {
 	box_t<int> b(0, 0, sw, sh);
 	tree_root->update_allocation(b);
 	XMoveResizeWindow(dpy, main_window, sx, sy, sw, sh);
+	render();
 	running = 1;
 	while (running) {
 		XEvent e;
@@ -202,6 +203,18 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	c = new client_t;
 	c->xwin = w;
 	c->dpy = dpy;
+	printf("Map stase : %d\n", wa->map_state);
+	/* if the client is mapped, the reparent will unmap the window
+	 * The client is mapped if the manage occur on start of
+	 * page.
+	 */
+	if (wa->map_state == IsUnmapped) {
+		c->is_map = false;
+		c->unmap_pending = 0;
+	} else {
+		c->is_map = true;
+		c->unmap_pending = 1;
+	}
 	/* before page prepend !! */
 	clients.push_back(c);
 
@@ -239,12 +252,15 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	swa.background_pixel = XBlackPixel(dpy, screen);
 	swa.border_pixel = XBlackPixel(dpy, screen);
 	c->clipping_window = XCreateWindow(dpy, main_window, 0, 0, 1, 1, 0,
-			root_wa.depth, InputOutput, root_wa.visual, CWBackPixel | CWBorderPixel, &swa);
+			root_wa.depth, InputOutput, root_wa.visual,
+			CWBackPixel | CWBorderPixel, &swa);
 
 	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", dpy, c->xwin,
 			c->clipping_window, 0, 0);
 	XSelectInput(dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
+	/* this produce an unmap ? */
 	XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
+	XUnmapWindow(dpy, c->clipping_window);
 
 	if (!tree_root->add_notebook(c)) {
 		printf("Fail to add a client\n");
@@ -317,7 +333,7 @@ void main_t::update_title(client_t &c) {
 		c.name = c.net_wm_name;
 		return;
 	}
-	if(c.wm_name_is_valid) {
+	if (c.wm_name_is_valid) {
 		c.name = c.wm_name;
 	}
 	std::stringstream s(std::stringstream::in | std::stringstream::out);
@@ -473,22 +489,51 @@ void main_t::process_map_notify_event(XEvent * e) {
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
-	printf("UnmapNotify #%lu\n", e->xunmap.window);
-	//	client_t * c = find_client_by_xwindow(e->xmap.window);
-	//	if (c) {
-	//		tree_root->remove_client(c->xwin);
-	//		clients.remove(c);
-	//		XUnmapWindow(dpy, c->xwin);
-	//		XReparentWindow(dpy, c->xwin, xroot, 0, 0);
-	//		XRemoveFromSaveSet(dpy, c->xwin);
-	//		XDestroyWindow(dpy, c->clipping_window);
-	//		delete c;
-	//		render();
-	//	}
+	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
+	client_t * c = find_client_by_xwindow(e->xmap.window);
+	/* unmap can be received twice time but are unique per window event.
+	 * so this remove multiple events.
+	 */
+	if (e->xunmap.window != e->xunmap.event) {
+		printf("Ignore this unmap #%lu #%lu\n", e->xunmap.window,
+				e->xunmap.event);
+		return;
+	}
+	if (!c)
+		return;
+	if (c->unmap_pending > 0) {
+		printf("Expected Unmap\n");
+		c->unmap_pending -= 1;
+	} else {
+		/**
+		 * The client initiate an unmap.
+		 * That mean the window go in WithDrawn state, PAGE must forget this window.
+		 * Unmap is often followed by destroy window, If this is the case we try to
+		 * reparent a destroyed window. Therefore we grab the server and check if the
+		 * window is not already destroyed.
+		 */
+		XGrabServer(dpy);
+		XSync(dpy, False);
+		XEvent ev;
+		if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
+			process_destroy_notify_event(&ev);
+		} else {
+			tree_root->remove_client(c->xwin);
+			clients.remove(c);
+			XReparentWindow(c->dpy, c->xwin, xroot, 0, 0);
+			XRemoveFromSaveSet(c->dpy, c->xwin);
+			XDestroyWindow(c->dpy, c->clipping_window);
+			delete c;
+			render();
+		}
+		XUngrabServer(dpy);
+		XFlush(dpy);
+	}
 }
 
 void main_t::process_destroy_notify_event(XEvent * e) {
-	printf("DestroyNotify #%lu\n", e->xunmap.event);
+	printf("DestroyNotify destroy : #%lu, event : #%lu\n", e->xunmap.window,
+			e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		tree_root->remove_client(c->xwin);
@@ -509,15 +554,23 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
 		XRaiseWindow(dpy, ev->xproperty.window);
 		XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
-	} else if(ev->xproperty.atom == atoms._NET_WM_NAME) {
+	} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
 		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		if (!c)
+			return;
 		update_net_vm_name(*c);
 		update_title(*c);
-	} else if(ev->xproperty.atom == atoms.WM_NAME) {
+	} else if (ev->xproperty.atom == atoms.WM_NAME) {
 		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		if (!c)
+			return;
 		update_vm_name(*c);
 		update_title(*c);
 	}
+}
+
+void main_t::update_vm_hints(client_t &c) {
+
 }
 
 }
