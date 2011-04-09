@@ -1,1 +1,1 @@
-SUBDIRS = src src_next
+SUBDIRS = src

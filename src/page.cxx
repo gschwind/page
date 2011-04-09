@@ -1,7 +1,7 @@
 /*
  * page.cxx
  *
- *  Created on: 23 f��vr. 2011
+ *  Created on: 23 févr. 2011
  *      Author: gschwind
  */
 
@@ -576,21 +576,21 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
-	if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
-		XRaiseWindow(dpy, ev->xproperty.window);
-		XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
-	} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
-		client_t * c = find_client_by_xwindow(ev->xproperty.window);
-		if (!c)
-			return;
-		update_net_vm_name(*c);
-		update_title(*c);
-	} else if (ev->xproperty.atom == atoms.WM_NAME) {
-		client_t * c = find_client_by_xwindow(ev->xproperty.window);
-		if (!c)
-			return;
-		update_vm_name(*c);
-		update_title(*c);
+	client_t * c = find_client_by_xwindow(ev->xproperty.window);
+	if (!c)
+		return;
+	if (c->try_lock_client()) {
+		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
+			XRaiseWindow(dpy, ev->xproperty.window);
+			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
+		} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
+			update_net_vm_name(*c);
+			update_title(*c);
+		} else if (ev->xproperty.atom == atoms.WM_NAME) {
+			update_vm_name(*c);
+			update_title(*c);
+		}
+		c->unlock_client();
 	}
 }
 

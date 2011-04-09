@@ -70,6 +70,7 @@ bool client_t::try_lock_client() {
 	if (XCheckTypedWindowEvent(dpy, xwin, DestroyNotify, &e)) {
 		XPutBackEvent(dpy, &e);
 		XUngrabServer(dpy);
+		XFlush(dpy);
 		return false;
 	}
 	return true;

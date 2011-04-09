@@ -74,9 +74,9 @@ void notebook_t::render(cairo_t * cr) {
 		cairo_clip(cr);
 		offset += length;
 		if (_selected == i) {
-			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+			cairo_set_source_rgb(cr, CTOF(0x34, 0x64, 0xa4));
 		} else {
-			cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+			cairo_set_source_rgb(cr, CTOF(0xd3, 0xd7, 0xcf));
 		}
 		cairo_paint(cr);
 		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
@@ -86,6 +86,9 @@ void notebook_t::render(cairo_t * cr) {
 		cairo_move_to(cr, 2, 13);
 		cairo_show_text(cr, (*i)->name.c_str());
 		cairo_restore(cr);
+		cairo_rectangle(cr, offset, _allocation.y, length - 1, 19);
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_stroke(cr);
 	}
 
 	cairo_save(cr);
