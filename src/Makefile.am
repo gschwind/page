@@ -1,4 +1,4 @@
 bin_PROGRAMS = page_next_xx
 page_next_xx_SOURCES = main.cxx page.cxx tree.cxx notebook.cxx split.cxx root.cxx client.cxx 
-page_next_xx_LDADD = $(X11_LIBS) $(PANGO_LIBS) $(GDK_LIBS) $(GTK_LIBS)
-page_next_xx_CXXFLAGS = $(X11_CXXFLAGS) $(PANGO_CFLAGS) $(GDK_CFLAGS) $(GTK_CFLAGS) -DGDK_PIXBUF_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
+page_next_xx_LDADD = $(X11_LIBS) $(CAIRO_LIBS)
+page_next_xx_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS)
