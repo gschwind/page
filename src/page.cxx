@@ -123,9 +123,11 @@ void main_t::run() {
 }
 
 void main_t::render(cairo_t * cr) {
+  cairo_save(cr);
 	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 	cairo_fill(cr);
+	cairo_restore(cr);
 	tree_root->render(cr);
 }
 

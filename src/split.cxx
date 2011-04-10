@@ -10,8 +10,6 @@
 #include <X11/cursorfont.h>
 #include "split.hxx"
 
-#define CTOF(r, g, b) (r/255.0),(g/255.0),(b/255.0)
-
 namespace page_next {
 
 split_t::split_t(split_type_t type) {
@@ -64,10 +62,8 @@ void split_t::update_allocation_pack1() {
 }
 
 void split_t::render(cairo_t * cr) {
-	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
-			_allocation.h);
-	cairo_clip(cr);
-	cairo_set_source_rgb(cr, CTOF(0xf5, 0x79, 0x00));
+	cairo_save(cr);
+	cairo_set_source_rgb(cr, 0xf5U/255.0, 0x79U/255.0, 0x00U/255.0);
 	if (_split_type == VERTICAL_SPLIT) {
 		cairo_rectangle(cr, _allocation.x + (_allocation.w * _split) - 2,
 				_allocation.y, 4, _allocation.h);
@@ -76,6 +72,7 @@ void split_t::render(cairo_t * cr) {
 				_allocation.y + (_allocation.h * _split) - 2, _allocation.w, 4);
 	}
 	cairo_fill(cr);
+	cairo_restore(cr);
 	if (_pack0)
 		_pack0->render(cr);
 	if (_pack1)
