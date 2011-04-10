@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
+#include <cmath>
 #include "notebook.hxx"
 
 #define CTOF(r, g, b) (r/255.0),(g/255.0),(b/255.0)
@@ -51,13 +52,20 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 
 void notebook_t::render(cairo_t * cr) {
 	update_client_mapping();
-	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
-			_allocation.h);
-	cairo_clip(cr);
+	cairo_save(cr);
+	cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w, 19);
+	cairo_pattern_t *pat;
+	pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, 19.0);
+	cairo_pattern_add_color_stop_rgba(pat, 0, CTOF(0xee, 0xee, 0xec), 1);
+	cairo_pattern_add_color_stop_rgba (pat, 1, CTOF(0xba, 0xbd, 0xd6), 1);
+	cairo_set_source (cr, pat);
+	cairo_fill(cr);
+	cairo_pattern_destroy (pat);
+
 	cairo_set_line_width(cr, 1.0);
 	cairo_set_source_rgb(cr, CTOF(0x72, 0x9f, 0xcf));
-	cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20,
-			_allocation.w - 2, _allocation.h - 22);
+	cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20, _allocation.w -2,
+			_allocation.h - 22);
 	cairo_stroke(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
@@ -70,30 +78,51 @@ void notebook_t::render(cairo_t * cr) {
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
 		cairo_save(cr);
 		cairo_translate(cr, offset, _allocation.y);
-		cairo_rectangle(cr, 0, 0, length - 1, 19);
-		cairo_clip(cr);
-		offset += length;
 		if (_selected == i) {
-			cairo_set_source_rgb(cr, CTOF(0x34, 0x64, 0xa4));
-		} else {
-			cairo_set_source_rgb(cr, CTOF(0xd3, 0xd7, 0xcf));
+			cairo_rectangle(cr, 0, 3.0, length, 19);
+			cairo_set_source_rgb(cr, CTOF(0xee, 0xee, 0xec));
+			cairo_fill(cr);
 		}
-		cairo_paint(cr);
+		offset += length;
+		cairo_save(cr);
+		cairo_rectangle(cr, 2, 0, length - 4, 19);
+		cairo_clip(cr);
 		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
-				CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 13);
-		cairo_move_to(cr, 2, 13);
+		cairo_move_to(cr, 3.0, 15.0);
 		cairo_show_text(cr, (*i)->name.c_str());
 		cairo_restore(cr);
-		cairo_rectangle(cr, offset, _allocation.y, length - 1, 19);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_stroke(cr);
-	}
 
+		cairo_set_line_width(cr, 1.0);
+		if(_selected == i) {
+			cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+			cairo_new_path(cr);
+			cairo_rectangle(cr, 1.0, 1.0, length, 3.0);
+			cairo_set_source_rgb(cr, CTOF(0x72, 0x9f, 0xcf));
+			cairo_fill(cr);
+			cairo_new_path(cr);
+			cairo_move_to(cr, 2.0, 4.0);
+			cairo_line_to(cr, length, 4.0);
+			cairo_set_source_rgb(cr, CTOF(0x34, 0x64, 0xa4));
+			cairo_stroke(cr);
+			cairo_set_source_rgb(cr, CTOF(0x88, 0x8a, 0x85));
+			rounded_rectangle(cr, 1.0, 1.0, length, 19.0, 3.0);
+		} else {
+			cairo_set_source_rgb(cr, CTOF(0x88, 0x8a, 0x85));
+			rounded_rectangle(cr, 1.0, 3.0, length, 17.0, 2.0);
+			cairo_set_source_rgb(cr, CTOF(0xd3, 0xd7, 0xcf));
+			cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+			cairo_new_path(cr);
+			cairo_move_to(cr, 0.0, 19.0);
+			cairo_line_to(cr, length+1.0, 20.0);
+			cairo_stroke(cr);
+		}
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+		cairo_restore(cr);
+	}
+	cairo_restore(cr);
 	cairo_save(cr);
-	cairo_translate(cr, _allocation.x + _allocation.w - 16.0,
-			_allocation.y + 1.0);
+	cairo_translate(cr, _allocation.x + _allocation.w - 16.0, _allocation.y + 1.0);
 	cairo_set_source_surface(cr, close_img, 0.0, 0.0);
 	cairo_paint(cr);
 	cairo_translate(cr, -17.0, 0.0);
@@ -103,8 +132,6 @@ void notebook_t::render(cairo_t * cr) {
 	cairo_set_source_surface(cr, hsplit_img, 0.0, 0.0);
 	cairo_paint(cr);
 	cairo_restore(cr);
-	cairo_reset_clip(cr);
-
 }
 
 bool notebook_t::process_button_press_event(XEvent const * e) {
@@ -120,7 +147,6 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				b.x += box_width;
 				++c;
 			}
-
 			if (c != _clients.end()) {
 				_selected = c;
 				XEvent ev;
@@ -128,29 +154,24 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				cursor = XCreateFontCursor(_dpy, XC_fleur);
 
-				if (XGrabPointer(
-						_dpy,
-						_w,
-						False,
-						(ButtonPressMask | ButtonReleaseMask
-								| PointerMotionMask), GrabModeAsync,
-						GrabModeAsync, None, cursor, CurrentTime)
+				if (XGrabPointer(_dpy, _w, False,
+						(ButtonPressMask | ButtonReleaseMask |PointerMotionMask),
+						GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
 						!= GrabSuccess)
 					return true;
 				do {
 					XMaskEvent(
 							_dpy,
-							(ButtonPressMask | ButtonReleaseMask
-									| PointerMotionMask) | ExposureMask
-									| SubstructureRedirectMask, &ev);
+							(ButtonPressMask | ButtonReleaseMask | PointerMotionMask)
+									| ExposureMask | SubstructureRedirectMask, &ev);
 					switch (ev.type) {
 					case ConfigureRequest:
 					case Expose:
 					case MapRequest:
 						cr = get_cairo();
 						cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-						cairo_rectangle(cr, _allocation.x, _allocation.y,
-								_allocation.w, _allocation.h);
+						cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+								_allocation.h);
 						cairo_fill(cr);
 						render(cr);
 						cairo_destroy(cr);
@@ -164,8 +185,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				std::list<notebook_t *>::iterator dst;
 				for (dst = notebooks.begin(); dst != notebooks.end(); ++dst) {
-					if ((*dst)->_allocation.is_inside(ev.xbutton.x,
-							ev.xbutton.y) && this->group == (*dst)->group) {
+					if ((*dst)->_allocation.is_inside(ev.xbutton.x, ev.xbutton.y)
+							&& this->group == (*dst)->group) {
 						break;
 					}
 				}
@@ -185,8 +206,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				if (((*_selected)->try_lock_client())) {
 					XRaiseWindow((*_selected)->dpy, (*_selected)->xwin);
-					XSetInputFocus((*_selected)->dpy, (*_selected)->xwin,
-							RevertToNone, CurrentTime);
+					XSetInputFocus((*_selected)->dpy, (*_selected)->xwin, RevertToNone,
+							CurrentTime);
 					(*_selected)->unlock_client();
 				}
 
@@ -220,12 +241,11 @@ void notebook_t::update_client_mapping() {
 		} else {
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 4, _allocation.h - 24);
-			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin,
-					c->width, c->height);
+			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin, c->width,
+					c->height);
 			XMoveResizeWindow(c->dpy, c->xwin, 0, 0, c->width, c->height);
 			XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 2,
-					_allocation.y + 2 + 20, _allocation.w - 4,
-					_allocation.h - 20 - 4);
+					_allocation.y + 2 + 20, _allocation.w - 4, _allocation.h - 20 - 4);
 			c->map();
 		}
 		(*i)->unlock_client();
@@ -289,6 +309,35 @@ void notebook_t::select_next() {
 	++_selected;
 	if (_selected == _clients.end())
 		_selected = _clients.begin();
+}
+
+void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
+		double h, double r) {
+	cairo_save(cr);
+	cairo_new_path(cr);
+	cairo_move_to(cr, x, y + h);
+	cairo_line_to(cr, x, y + r);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_stroke(cr);
+	cairo_new_path(cr);
+	cairo_arc(cr, x + r, y + r, r, 2.0 * (M_PI_2), 3.0 * (M_PI_2));
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	cairo_stroke(cr);
+	cairo_new_path(cr);
+	cairo_move_to(cr, x+r, y);
+	cairo_line_to(cr, x+w-r, y);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_stroke(cr);
+	cairo_new_path(cr);
+	cairo_arc(cr, x + w - r, y + r, r, 3.0 * (M_PI_2), 4.0 * (M_PI_2));
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	cairo_stroke(cr);
+	cairo_new_path(cr);
+	cairo_move_to(cr, x+w, y + h);
+	cairo_line_to(cr, x+w, y + r);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_stroke(cr);
+	cairo_restore(cr);
 }
 
 }

@@ -43,17 +43,26 @@ enum {
 	AtomLast
 }; /* EWMH atoms */
 
-class main_t {
-	tree_t * tree_root;
-	std::list<client_t *> clients;
+typedef std::list<client_t *> client_list_t;
 
+class main_t {
+
+	tree_t * tree_root;
+	/* managed clients */
+	client_list_t clients;
+	/* default cursor */
 	Cursor cursor;
 
 	int running;
 	int selected;
+
+	/* main display */
 	Display *dpy;
+	/* main screen */
 	int screen;
+	/* the root window */
 	Window xroot;
+	/* root window atributes */
 	XWindowAttributes root_wa;
 	/* size of default root window */
 	int sw, sh, sx, sy;
@@ -62,7 +71,9 @@ class main_t {
 
 	atoms_t atoms;
 
+	/* the main window */
 	Window main_window;
+	/* the main window attributes */
 	XWindowAttributes wa;
 
 	main_t(main_t const &);

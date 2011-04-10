@@ -48,6 +48,7 @@ public:
 	std::list<client_t *> * get_clients();
 	void remove_client(Window w);
 	void select_next();
+	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 };
 
 }
