@@ -99,6 +99,19 @@ bool split_t::process_button_press_event(XEvent const * e) {
       XEvent ev;
       cairo_t * cr;
       cursor = XCreateFontCursor(_dpy, XC_fleur);
+
+      XWindowAttributes w_attribute;
+      XSetWindowAttributes swa;
+      swa.save_under = True;
+      swa.background_pixel = XBlackPixel(_dpy, 0);
+      swa.border_pixel = XWhitePixel(_dpy, 0);
+
+      XGetWindowAttributes(_dpy, _w, &w_attribute);
+      Window w = XCreateWindow(_dpy, _w, 0, 0, 100, 100, 1,
+          w_attribute.depth, InputOutput, w_attribute.visual,
+          CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+      XMapWindow(_dpy, w);
+
       if (XGrabPointer(_dpy, _w, False,
           (ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
           GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
@@ -117,28 +130,43 @@ bool split_t::process_button_press_event(XEvent const * e) {
         case MotionNotify:
           if (_split_type == VERTICAL_SPLIT) {
             _split = (ev.xmotion.x - _allocation.x) / (double) (_allocation.w);
+            if (_split > 0.95)
+              _split = 0.95;
+            if (_split < 0.05)
+              _split = 0.05;
+            XMoveResizeWindow(_dpy, w, _allocation.x + (int)(_split * _allocation.w) - 2, _allocation.y, 5, _allocation.h);
           } else {
             _split = (ev.xmotion.y - _allocation.y) / (double) (_allocation.h);
+            if (_split > 0.95)
+              _split = 0.95;
+            if (_split < 0.05)
+              _split = 0.05;
+            XMoveResizeWindow(_dpy, w, _allocation.x, _allocation.y + (int)(_split * _allocation.h) - 2, _allocation.w, 5);
           }
+
+
 
           if (_split > 0.95)
             _split = 0.95;
           if (_split < 0.05)
             _split = 0.05;
 
-          update_allocation(_allocation);
-          cr = get_cairo();
-          cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-          cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
-              _allocation.h);
-          cairo_fill(cr);
-          render(cr);
-          cairo_destroy(cr);
           break;
         }
       } while (ev.type != ButtonRelease);
       XUngrabPointer(_dpy, CurrentTime);
       XFreeCursor(_dpy, cursor);
+      XDestroyWindow(_dpy, w);
+
+      update_allocation(_allocation);
+      cr = get_cairo();
+      cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+      cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+          _allocation.h);
+      cairo_fill(cr);
+      render(cr);
+      cairo_destroy(cr);
+
     } else {
       if (_pack0)
         _pack0->process_button_press_event(e);
