@@ -99,7 +99,7 @@ void main_t::run() {
 	while (running) {
 		XEvent e;
 		XNextEvent(dpy, &e);
-		printf("Event %s #%lu\n", x_event_name[e.type], e.xany.window);
+		printf("#%lu event: %s window: %lu\n", e.xany.serial, x_event_name[e.type], e.xany.window);
 		if (e.type == MapNotify) {
 		} else if (e.type == Expose) {
 			if (e.xmapping.window == main_window)
@@ -588,9 +588,11 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
 			update_net_vm_name(*c);
 			update_title(*c);
+			render();
 		} else if (ev->xproperty.atom == atoms.WM_NAME) {
 			update_vm_name(*c);
 			update_title(*c);
+			render();
 		}
 		c->unlock_client();
 	}
