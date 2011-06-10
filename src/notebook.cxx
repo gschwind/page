@@ -131,9 +131,13 @@ void notebook_t::render(cairo_t * cr) {
   {
     cairo_translate(cr, _allocation.x + _allocation.w - 16.0,
         _allocation.y + 1.0);
-    cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
-    cairo_fill(cr);
+    cairo_new_path(cr);
+    cairo_move_to(cr, 4.0, 4.0);
+    cairo_line_to(cr, 12.0, 12.0);
+    cairo_move_to(cr, 12.0, 4.0);
+    cairo_line_to(cr, 4.0, 12.0);
+    cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
+    cairo_stroke(cr);
     cairo_translate(cr, -17.0, 0.0);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
     cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
