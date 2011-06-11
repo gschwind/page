@@ -131,6 +131,7 @@ void notebook_t::render(cairo_t * cr) {
   {
     cairo_translate(cr, _allocation.x + _allocation.w - 16.0,
         _allocation.y + 1.0);
+    /* draw close */
     cairo_new_path(cr);
     cairo_move_to(cr, 4.0, 4.0);
     cairo_line_to(cr, 12.0, 12.0);
@@ -138,14 +139,24 @@ void notebook_t::render(cairo_t * cr) {
     cairo_line_to(cr, 4.0, 12.0);
     cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
     cairo_stroke(cr);
+
+    /* draw vertical split */
     cairo_translate(cr, -17.0, 0.0);
+    cairo_move_to(cr, 8.0, 2.0);
+    cairo_line_to(cr, 8.0, 14.0);
+    cairo_move_to(cr, 9.0, 2.0);
+    cairo_line_to(cr, 9.0, 14.0);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
-    cairo_fill(cr);
+    cairo_stroke(cr);
+
+    /* draw horizontal split */
     cairo_translate(cr, -17.0, 0.0);
+    cairo_move_to(cr, 2.0, 8.0);
+    cairo_line_to(cr, 14.0, 8.0);
+    cairo_move_to(cr, 2.0, 8.0);
+    cairo_line_to(cr, 14.0, 8.0);
     cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-    cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
-    cairo_fill(cr);
+    cairo_stroke(cr);
   }
   cairo_restore(cr);
 }
