@@ -54,6 +54,12 @@ struct client_t {
 	double maxa;
 	bool is_fixed_size;
 
+	bool has_partial_struct;
+	int struct_left;
+	int struct_right;
+	int struct_top;
+	int struct_bottom;
+
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);

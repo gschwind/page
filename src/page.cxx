@@ -91,6 +91,30 @@ main_t::main_t() {
 
 void main_t::run() {
 	scan();
+
+	/* update main window location */
+	int left = 0, right = 0, top = 0, bottom = 0;
+	std::list<client_t *>::iterator i = clients.begin();
+	while (i != clients.end()) {
+		if ((*i)->has_partial_struct) {
+			client_t * c = (*i);
+			if(left < c->struct_left)
+				left = c->struct_left;
+			if(right < c->struct_right)
+				right = c->struct_right;
+			if(top < c->struct_top)
+				top = c->struct_top;
+			if(bottom < c->struct_bottom)
+				bottom = c->struct_bottom;
+		}
+		++i;
+	}
+
+	sx = left;
+	sy = top;
+	sw -= left + right;
+	sh -= top + bottom;
+
 	box_t<int> b(0, 0, sw, sh);
 	tree_root->update_allocation(b);
 	XMoveResizeWindow(dpy, main_window, sx, sy, sw, sh);
@@ -209,6 +233,7 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		return false;
 
 	c = new client_t;
+	c->has_partial_struct = false;
 	c->xwin = w;
 	c->dpy = dpy;
 	printf("Map stase : %d\n", wa->map_state);
@@ -241,12 +266,12 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 			printf("partial struct %d %d %d %d\n", partial_struct[0],
 					partial_struct[1], partial_struct[2], partial_struct[3]);
 
-			sw -= partial_struct[0] + partial_struct[2];
-			sh -= partial_struct[1] + partial_struct[3];
-			if (sx < partial_struct[0])
-				sx = partial_struct[0];
-			if (sy < partial_struct[1])
-				sy = partial_struct[1];
+			c->has_partial_struct = true;
+			c->struct_left = partial_struct[0];
+			c->struct_right = partial_struct[1];
+			c->struct_top = partial_struct[2];
+			c->struct_bottom = partial_struct[3];
+
 		}
 		return true;
 
@@ -440,7 +465,7 @@ bool main_t::get_all(Window win, Atom prop, Atom type, int size,
 					((uint32_t*) *data)[i] = ((uint32_t*) xdata)[i];
 					break;
 				default:
-					; /* unhandled size */
+					break; /* unhandled size */
 				}
 			*num = ret_items;
 			ret = true;
