@@ -20,10 +20,13 @@
 #include <list>
 #include <string>
 #include <iostream>
+#include <limits>
+#include <cstring>
 
 #include "tree.hxx"
 #include "atoms.hxx"
 #include "client.hxx"
+#include "box.hxx"
 
 namespace page_next {
 
@@ -41,9 +44,19 @@ enum {
 	NetWMTypeDock,
 	NetLast,
 	AtomLast
-}; /* EWMH atoms */
+};
+/* EWMH atoms */
 
 typedef std::list<client_t *> client_list_t;
+
+inline void print_buffer__(const char * buf, int size) {
+	for (int i = 0; i < size; ++i) {
+		printf("%02x", buf[i]);
+	}
+
+	printf("\n");
+
+}
 
 class main_t {
 
@@ -66,6 +79,7 @@ class main_t {
 	XWindowAttributes root_wa;
 	/* size of default root window */
 	int sw, sh, sx, sy;
+	box_t<int> page_area;
 	int start_x, end_x;
 	int start_y, end_y;
 
@@ -95,8 +109,8 @@ public:
 	cairo_t * get_cairo() {
 		cairo_surface_t * surf;
 		XGetWindowAttributes(dpy, main_window, &(wa));
-		surf = cairo_xlib_surface_create(dpy, main_window,
-				wa.visual, wa.width, wa.height);
+		surf = cairo_xlib_surface_create(dpy, main_window, wa.visual, wa.width,
+				wa.height);
 		cairo_t * cr = cairo_create(surf);
 		return cr;
 	}
@@ -107,6 +121,8 @@ public:
 	client_t * find_client_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
 	bool get_text_prop(Window w, Atom atom, std::string & text);
+
+	void update_page_aera();
 
 	void client_update_size_hints(client_t * ths);
 	bool client_is_dock(client_t * c);
@@ -123,6 +139,46 @@ public:
 	void update_net_vm_name(client_t &c);
 	void update_title(client_t &c);
 	void update_vm_hints(client_t &c);
+
+	void update_client_list();
+	void update_net_supported();
+
+	template<typename T, unsigned int SIZE>
+	T * get_properties(Window win, Atom prop, Atom type, unsigned int *num) {
+		bool ret = false;
+		int res;
+		unsigned char * xdata = 0;
+		Atom ret_type;
+		int ret_size;
+		unsigned long int ret_items, bytes_left;
+		T * result = 0;
+		T * data;
+
+		res = XGetWindowProperty(dpy, win, prop, 0L,
+				std::numeric_limits<int>::max(), False, type, &ret_type,
+				&ret_size, &ret_items, &bytes_left, &xdata);
+		if (res == Success) {
+			char * x = XGetAtomName(dpy, ret_type);
+			XFree(x);
+			if (ret_size == SIZE && ret_items > 0) {
+				result = new T[ret_items];
+				data = reinterpret_cast<T*>(xdata);
+				for (unsigned int i = 0; i < ret_items; ++i) {
+					result[i] = data[i];
+					//printf("%d %p\n", data[i], &data[i]);
+				}
+			}
+			if(num)
+				*num = ret_items;
+			XFree(xdata);
+		}
+		return result;
+	}
+
+	long * get_properties32(Window win, Atom prop, Atom type, unsigned int *num);
+	short * get_properties16(Window win, Atom prop, Atom type, unsigned int *num);
+	char * get_properties8(Window win, Atom prop, Atom type, unsigned int *num);
+
 };
 
 }

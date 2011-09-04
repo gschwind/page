@@ -37,10 +37,10 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
 		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
 		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
-		"GravityNotify", "ResizeRequest", "CirculateNotify",
-		"CirculateRequest", "PropertyNotify", "SelectionClear",
-		"SelectionRequest", "SelectionNotify", "ColormapNotify",
-		"ClientMessage", "MappingNotify", "GenericEvent" };
+		"GravityNotify", "ResizeRequest", "CirculateNotify", "CirculateRequest",
+		"PropertyNotify", "SelectionClear", "SelectionRequest",
+		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
+		"GenericEvent" };
 
 main_t::main_t() {
 	XSetWindowAttributes swa;
@@ -68,6 +68,7 @@ main_t::main_t() {
 
 	ATOM_INIT(ATOM);
 	ATOM_INIT(CARDINAL);
+	ATOM_INIT(WINDOW);
 
 	ATOM_INIT(WM_STATE);
 	ATOM_INIT(WM_NAME);
@@ -84,46 +85,94 @@ main_t::main_t() {
 
 	ATOM_INIT(_NET_WM_USER_TIME);
 
+	ATOM_INIT(_NET_CLIENT_LIST);
+	ATOM_INIT(_NET_CLIENT_LIST_STACKING);
+
+	ATOM_INIT(_NET_NUMBER_OF_DESKTOPS);
+	ATOM_INIT(_NET_DESKTOP_GEOMETRY);
+	ATOM_INIT(_NET_DESKTOP_VIEWPORT);
+	ATOM_INIT(_NET_CURRENT_DESKTOP);
+
 	box_t<int> a(0, 0, sw, sh);
 	tree_root = new root_t(dpy, main_window, a);
 
 }
 
-void main_t::run() {
-	scan();
+long * main_t::get_properties32(Window win, Atom prop, Atom type, unsigned int *num) {
+	return this->get_properties< long, 32 > (win, prop, type, num);
+}
 
-	/* update main window location */
+short * main_t::get_properties16(Window win, Atom prop, Atom type, unsigned int *num) {
+	return this->get_properties< short, 16 > (win, prop, type, num);
+}
+
+char * main_t::get_properties8(Window win, Atom prop, Atom type, unsigned int *num) {
+	return this->get_properties< char, 8 > (win, prop, type, num);
+}
+
+/* update main window location */
+void main_t::update_page_aera() {
 	int left = 0, right = 0, top = 0, bottom = 0;
 	std::list<client_t *>::iterator i = clients.begin();
 	while (i != clients.end()) {
 		if ((*i)->has_partial_struct) {
 			client_t * c = (*i);
-			if(left < c->struct_left)
+			if (left < c->struct_left)
 				left = c->struct_left;
-			if(right < c->struct_right)
+			if (right < c->struct_right)
 				right = c->struct_right;
-			if(top < c->struct_top)
+			if (top < c->struct_top)
 				top = c->struct_top;
-			if(bottom < c->struct_bottom)
+			if (bottom < c->struct_bottom)
 				bottom = c->struct_bottom;
 		}
 		++i;
 	}
 
-	sx = left;
-	sy = top;
-	sw -= left + right;
-	sh -= top + bottom;
+	page_area.x = left;
+	page_area.y = top;
+	page_area.w = sw - (left + right);
+	page_area.h = sh - (top + bottom);
 
 	box_t<int> b(0, 0, sw, sh);
 	tree_root->update_allocation(b);
-	XMoveResizeWindow(dpy, main_window, sx, sy, sw, sh);
+	XMoveResizeWindow(dpy, main_window, page_area.x, page_area.y, page_area.w,
+			page_area.h);
+
+}
+
+void main_t::run() {
+	update_net_supported();
+
+	/* update number of desktop */
+	int32_t number_of_desktop = 1;
+	XChangeProperty(dpy, xroot, atoms._NET_NUMBER_OF_DESKTOPS, atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
+
+
+	/* define desktop geometry */
+	long desktop_geometry[2];
+	desktop_geometry[0] = sw;
+	desktop_geometry[1] = sh;
+	printf("%d %d\n", sw, sh);
+	XChangeProperty(dpy, xroot, atoms._NET_DESKTOP_GEOMETRY, atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(desktop_geometry), 2);
+
+	/* set viewport */
+	long viewport[2] = { 0, 0 };
+	XChangeProperty(dpy, xroot, atoms._NET_DESKTOP_VIEWPORT, atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(viewport), 2);
+
+	/* set current desktop */
+	long current_desktop = 0;
+	XChangeProperty(dpy, xroot, atoms._NET_CURRENT_DESKTOP, atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&current_desktop), 1);
+
+	scan();
+	update_page_aera();
 	render();
 	running = 1;
 	while (running) {
 		XEvent e;
 		XNextEvent(dpy, &e);
-		printf("#%lu event: %s window: %lu\n", e.xany.serial, x_event_name[e.type], e.xany.window);
+		printf("#%lu event: %s window: %lu\n", e.xany.serial,
+				x_event_name[e.type], e.xany.window);
 		if (e.type == MapNotify) {
 		} else if (e.type == Expose) {
 			if (e.xmapping.window == main_window)
@@ -147,7 +196,7 @@ void main_t::run() {
 }
 
 void main_t::render(cairo_t * cr) {
-  cairo_save(cr);
+	cairo_save(cr);
 	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
 	cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 	cairo_fill(cr);
@@ -172,6 +221,7 @@ void main_t::scan() {
 
 	/* secure the scan process */
 	XGrabServer(dpy);
+	/* drop old event */
 	XSync(dpy, False);
 	/* ask for child of current root window, use Xlib here since gdk
 	 * only know windows it have created.
@@ -182,8 +232,8 @@ void main_t::scan() {
 				continue;
 			if (wa.override_redirect)
 				continue;
-			if ((get_window_state(wins[i]) == IconicState || wa.map_state
-					== IsViewable))
+			if ((get_window_state(wins[i]) == IconicState
+					|| wa.map_state == IsViewable))
 				manage(wins[i], &wa);
 		}
 
@@ -191,6 +241,7 @@ void main_t::scan() {
 			XFree(wins);
 	}
 
+	update_client_list();
 	XUngrabServer(dpy);
 	XFlush(dpy);
 }
@@ -215,6 +266,41 @@ client_t * main_t::find_client_by_clipping_window(Window w) {
 	}
 
 	return 0;
+}
+
+void main_t::update_net_supported() {
+
+	Atom supported_list[8];
+
+	supported_list[0] = atoms._NET_WM_NAME;
+	supported_list[1] = atoms._NET_WM_USER_TIME;
+	supported_list[2] = atoms._NET_CLIENT_LIST;
+	supported_list[3] = atoms._NET_WM_STRUT_PARTIAL;
+	supported_list[4] = atoms._NET_NUMBER_OF_DESKTOPS;
+	supported_list[5] = atoms._NET_DESKTOP_GEOMETRY;
+	supported_list[6] = atoms._NET_DESKTOP_VIEWPORT;
+	supported_list[7] = atoms._NET_CURRENT_DESKTOP;
+	XChangeProperty(dpy, xroot, atoms._NET_SUPPORTED, atoms.ATOM, 32, PropModeReplace, reinterpret_cast<unsigned char *>(supported_list), 8);
+
+}
+
+void main_t::update_client_list() {
+
+	Window * data = new Window[clients.size()];
+
+	int k = 0;
+
+	std::list<client_t *>::iterator i = clients.begin();
+	while (i != clients.end()) {
+		data[k] = (*i)->xwin;
+		++i;
+		++k;
+	}
+
+	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST, atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), clients.size());
+	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST_STACKING, atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), clients.size());
+
+	delete[] data;
 }
 
 bool main_t::manage(Window w, XWindowAttributes * wa) {
@@ -258,12 +344,13 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 
 	if (client_is_dock(c)) {
 		printf("IsDock !\n");
-		int32_t * partial_struct;
 		unsigned int n;
-		if (get_all(c->xwin, atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, 32,
-				(unsigned char **) &partial_struct, &n)) {
+		long * partial_struct = get_properties32(c->xwin,
+				atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, &n);
 
-			printf("partial struct %d %d %d %d\n", partial_struct[0],
+		if (partial_struct) {
+
+			printf("partial struct %ld %ld %ld %ld\n", partial_struct[0],
 					partial_struct[1], partial_struct[2], partial_struct[3]);
 
 			c->has_partial_struct = true;
@@ -272,9 +359,10 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 			c->struct_top = partial_struct[2];
 			c->struct_bottom = partial_struct[3];
 
+			delete[] partial_struct;
+
 		}
 		return true;
-
 	}
 
 	/* this window will not be destroyed on page close (one bug less) */
@@ -313,7 +401,8 @@ long main_t::get_window_state(Window w) {
 
 	if (XGetWindowProperty(dpy, w, atoms.WM_STATE, 0L, 2L, False,
 			atoms.WM_STATE, &real, &format, &n, &extra, (unsigned char **) &p)
-			!= Success)
+			!= Success
+		)
 		return -1;
 
 	if (n != 0)
@@ -430,58 +519,18 @@ void main_t::client_update_size_hints(client_t * c) {
 		c->maxa = 0.0;
 		c->mina = 0.0;
 	}
-	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh && c->maxw
-			== c->minw && c->maxh == c->minh);
+	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh
+			&& c->maxw == c->minw && c->maxh == c->minh);
 
 	printf("return %s %d,%d\n", __PRETTY_FUNCTION__, c->width, c->height);
 }
 
-bool main_t::get_all(Window win, Atom prop, Atom type, int size,
-		unsigned char **data, unsigned int *num) {
-	bool ret = false;
-	int res;
-	unsigned char * xdata = 0;
-	Atom ret_type;
-	int ret_size;
-	unsigned long int ret_items, bytes_left;
-
-	res = XGetWindowProperty(dpy, win, prop, 0L,
-			std::numeric_limits<int>::max(), False, type, &ret_type, &ret_size,
-			&ret_items, &bytes_left, &xdata);
-	if (res == Success) {
-		if (ret_size == size && ret_items > 0) {
-			unsigned int i;
-
-			*data = (unsigned char *) malloc(ret_items * (size / 8));
-			for (i = 0; i < ret_items; ++i)
-				switch (size) {
-				case 8:
-					(*data)[i] = xdata[i];
-					break;
-				case 16:
-					((uint16_t*) *data)[i] = ((uint16_t*) xdata)[i];
-					break;
-				case 32:
-					((uint32_t*) *data)[i] = ((uint32_t*) xdata)[i];
-					break;
-				default:
-					break; /* unhandled size */
-				}
-			*num = ret_items;
-			ret = true;
-		}
-		XFree(xdata);
-	}
-	return ret;
-}
-
 bool main_t::client_is_dock(client_t * c) {
 	unsigned int num, i;
-	int32_t * val;
+	long * val = get_properties32(c->xwin, atoms._NET_WM_WINDOW_TYPE, atoms.ATOM, &num);
 	Window t;
 
-	if (get_all(c->xwin, atoms._NET_WM_WINDOW_TYPE, atoms.ATOM, 32,
-			(unsigned char **) &val, &num)) {
+	if (val) {
 		/* use the first value that we know about in the array */
 		for (i = 0; i < num; ++i) {
 			if (val[i] == atoms._NET_WM_WINDOW_TYPE_DOCK)
@@ -528,6 +577,7 @@ void main_t::process_map_request_event(XEvent * e) {
 	manage(w, &wa);
 	XMapWindow(dpy, w);
 	render();
+	update_client_list();
 	XUngrabServer(dpy);
 	XFlush(dpy);
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
@@ -590,6 +640,9 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	if (c) {
 		tree_root->remove_client(c->xwin);
 		clients.remove(c);
+		if (c->has_partial_struct)
+			update_page_aera();
+		update_client_list();
 		XDestroyWindow(dpy, c->clipping_window);
 		delete c;
 		render();
@@ -597,7 +650,8 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 }
 
 void main_t::process_property_notify_event(XEvent * ev) {
-	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__, ev->xproperty.window);
+	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
+			ev->xproperty.window);
 
 	char * name = XGetAtomName(dpy, ev->xproperty.atom);
 	printf("Atom Name = \"%s\"\n", name);
@@ -609,7 +663,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (c->try_lock_client()) {
 		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
 			XRaiseWindow(dpy, ev->xproperty.window);
-			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone, CurrentTime);
+			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone,
+					CurrentTime);
 		} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
 			update_net_vm_name(*c);
 			update_title(*c);
@@ -618,6 +673,31 @@ void main_t::process_property_notify_event(XEvent * ev) {
 			update_vm_name(*c);
 			update_title(*c);
 			render();
+		} else if (ev->xproperty.atom == atoms._NET_WM_STRUT_PARTIAL) {
+			if (ev->xproperty.state == PropertyNewValue) {
+				unsigned int n;
+				long * partial_struct = get_properties32(c->xwin,
+						atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, &n);
+
+				if (partial_struct) {
+
+					printf("partial struct %ld %ld %ld %ld\n", partial_struct[0],
+							partial_struct[1], partial_struct[2],
+							partial_struct[3]);
+
+					c->has_partial_struct = true;
+					c->struct_left = partial_struct[0];
+					c->struct_right = partial_struct[1];
+					c->struct_top = partial_struct[2];
+					c->struct_bottom = partial_struct[3];
+
+					delete[] partial_struct;
+
+				}
+			} else if (ev->xproperty.state == PropertyDelete) {
+				c->has_partial_struct = false;
+			}
+
 		}
 		c->unlock_client();
 	}
