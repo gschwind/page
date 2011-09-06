@@ -10,11 +10,15 @@
 
 #include <X11/Xlib.h>
 #include <string>
+#include "atoms.hxx"
 
 namespace page_next {
 
 struct client_t {
+	/* the Xlib context */
 	Display * dpy;
+	Window xroot;
+	atoms_t * atoms;
 	/* the name of window */
 	std::string name;
 
