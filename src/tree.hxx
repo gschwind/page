@@ -35,6 +35,7 @@ public:
 	virtual void close(tree_t * src) = 0;
 	virtual std::list<client_t *> * get_clients() = 0;
 	virtual void remove_client(Window w) = 0;
+	virtual void activate_client(client_t * c) = 0;
 
 };
 }

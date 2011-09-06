@@ -14,7 +14,7 @@
 namespace page_next {
 
 root_t::root_t(Display * dpy, Window w, box_t<int> &allocation) :
-	root_t::tree_t(dpy, w, 0, allocation) {
+		root_t::tree_t(dpy, w, 0, allocation) {
 	_pack0 = new notebook_t();
 	_pack0->reparent(this);
 	_pack0->update_allocation(allocation);
@@ -34,7 +34,7 @@ bool root_t::process_button_press_event(XEvent const * e) {
 }
 
 bool root_t::add_notebook(client_t *c) {
-	if(_pack0)
+	if (_pack0)
 		return _pack0->add_notebook(c);
 	else
 		return false;
@@ -53,9 +53,13 @@ void root_t::close(tree_t * src) {
 
 }
 
-
 void root_t::remove(tree_t * src) {
 
+}
+
+void root_t::activate_client(client_t * c) {
+	if (_pack0)
+		_pack0->activate_client(c);
 }
 
 std::list<client_t *> * root_t::get_clients() {

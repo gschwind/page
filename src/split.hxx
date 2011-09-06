@@ -39,9 +39,12 @@ public:
 	void remove(tree_t * src);
 	std::list<client_t *> * get_clients();
 	void remove_client(Window w);
+	void activate_client(client_t * c);
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();
+
+
 };
 
 }

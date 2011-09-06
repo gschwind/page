@@ -219,6 +219,8 @@ void main_t::run() {
 			process_property_notify_event(&e);
 		} else if (e.type == DestroyNotify) {
 			process_destroy_notify_event(&e);
+		} else if (e.type == ClientMessage) {
+			process_client_message_event(&e);
 		}
 	}
 }
@@ -736,9 +738,83 @@ void main_t::process_property_notify_event(XEvent * ev) {
 				c->has_partial_struct = false;
 			}
 
+		} else if (ev->xproperty.atom == atoms._NET_ACTIVE_WINDOW) {
+			printf("request to activate %lu\n", ev->xproperty.window);
+
 		}
 		c->unlock_client();
 	}
+}
+
+void main_t::process_client_message_event(XEvent * ev) {
+	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
+			ev->xproperty.window);
+
+	char * name = XGetAtomName(dpy, ev->xclient.message_type);
+	printf("Atom Name = \"%s\"\n", name);
+	XFree(name);
+
+	if (ev->xclient.message_type == atoms._NET_ACTIVE_WINDOW) {
+		printf("request to activate %lu\n", ev->xclient.window);
+		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		if(c) {
+			tree_root->activate_client(c);
+			render();
+		}
+
+	}
+
+//	client_t * c = find_client_by_xwindow(ev->xproperty.window);
+//	if (!c)
+//		return;
+//	if (c->try_lock_client()) {
+//		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
+//			XRaiseWindow(dpy, ev->xproperty.window);
+//			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone,
+//					CurrentTime);
+//			XChangeProperty(dpy, xroot, atoms._NET_ACTIVE_WINDOW, atoms.WINDOW,
+//					32, PropModeReplace,
+//					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
+//					1);
+//		} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
+//			update_net_vm_name(*c);
+//			update_title(*c);
+//			render();
+//		} else if (ev->xproperty.atom == atoms.WM_NAME) {
+//			update_vm_name(*c);
+//			update_title(*c);
+//			render();
+//		} else if (ev->xproperty.atom == atoms._NET_WM_STRUT_PARTIAL) {
+//			if (ev->xproperty.state == PropertyNewValue) {
+//				unsigned int n;
+//				long * partial_struct = get_properties32(c->xwin,
+//						atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, &n);
+//
+//				if (partial_struct) {
+//
+//					printf("partial struct %ld %ld %ld %ld\n",
+//							partial_struct[0], partial_struct[1],
+//							partial_struct[2], partial_struct[3]);
+//
+//					c->has_partial_struct = true;
+//					c->struct_left = partial_struct[0];
+//					c->struct_right = partial_struct[1];
+//					c->struct_top = partial_struct[2];
+//					c->struct_bottom = partial_struct[3];
+//
+//					delete[] partial_struct;
+//
+//				}
+//			} else if (ev->xproperty.state == PropertyDelete) {
+//				c->has_partial_struct = false;
+//			}
+//
+//		} else if (ev->xproperty.atom == atoms._NET_ACTIVE_WINDOW) {
+//			printf("request to activate %lu\n", ev->xproperty.window);
+//
+//		}
+//		c->unlock_client();
+//	}
 }
 
 void main_t::update_vm_hints(client_t &c) {

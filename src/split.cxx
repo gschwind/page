@@ -253,6 +253,13 @@ void split_t::remove(tree_t * src) {
 	delete this;
 }
 
+void split_t::activate_client(client_t * c) {
+	if(_pack0)
+		_pack0->activate_client(c);
+	if(_pack1)
+		_pack1->activate_client(c);
+}
+
 std::list<client_t *> * split_t::get_clients() {
 	return 0;
 }

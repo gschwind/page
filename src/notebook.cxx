@@ -335,6 +335,23 @@ void notebook_t::remove(tree_t * src) {
 
 }
 
+void notebook_t::activate_client(client_t * c) {
+	bool has_client = false;
+	std::list<client_t *>::iterator i = _clients.begin();
+	while (i != _clients.end()) {
+		if((*i) == c) {
+			has_client = true;
+			break;
+		}
+		++i;
+	}
+
+	if(has_client) {
+		_selected = i;
+	}
+
+}
+
 std::list<client_t *> * notebook_t::get_clients() {
 	return &_clients;
 }

@@ -134,6 +134,7 @@ public:
 	void process_unmap_notify_event(XEvent * e);
 	void process_property_notify_event(XEvent * ev);
 	void process_destroy_notify_event(XEvent * e);
+	void process_client_message_event(XEvent * e);
 
 	void update_vm_name(client_t &c);
 	void update_net_vm_name(client_t &c);
