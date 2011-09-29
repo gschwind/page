@@ -218,79 +218,100 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				++c;
 			}
 			if (c != _clients.end()) {
-				_selected = c;
-				XEvent ev;
-				cairo_t * cr;
+				if (_selected == c && b.x + b.w - 16 < e->xbutton.x) {
 
-				cursor = XCreateFontCursor(_dpy, XC_fleur);
+					XEvent ev;
+					ev.xclient.display = _dpy;
+					ev.xclient.type = ClientMessage;
+					ev.xclient.format = 32;
+					ev.xclient.message_type = (*c)->atoms->WM_PROTOCOLS;
+					ev.xclient.window = (*c)->xwin;
+					ev.xclient.data.l[0] = (*c)->atoms->WM_DELETE_WINDOW;
+					ev.xclient.data.l[1] = e->xbutton.time;
 
-				if (XGrabPointer(
-						_dpy,
-						_w,
-						False,
-						(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-						GrabModeAsync, GrabModeAsync, None, cursor,
-						CurrentTime) != GrabSuccess
-						)
-					return true;
-				do {
-					XMaskEvent(
-							_dpy,
-							(ButtonPressMask | ButtonReleaseMask
-									| PointerMotionMask) | ExposureMask
-									| SubstructureRedirectMask, &ev);
-					switch (ev.type) {
-					case ConfigureRequest:
-					case Expose:
-					case MapRequest:
-						cr = get_cairo();
-						cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-						cairo_rectangle(cr, _allocation.x, _allocation.y,
-								_allocation.w, _allocation.h);
-						cairo_fill(cr);
-						render(cr);
-						cairo_destroy(cr);
-						break;
-					case MotionNotify:
-						break;
-					}
-				} while (ev.type != ButtonRelease);
-				XUngrabPointer(_dpy, CurrentTime);
-				XFreeCursor(_dpy, cursor);
+					XSendEvent(_dpy, (*c)->xwin, False, NoEventMask, &ev);
 
-				std::list<notebook_t *>::iterator dst;
-				for (dst = notebooks.begin(); dst != notebooks.end(); ++dst) {
-					if ((*dst)->_allocation.is_inside(ev.xbutton.x,
-							ev.xbutton.y) && this->group == (*dst)->group) {
-						break;
-					}
-				}
+				} else {
 
-				if (dst != notebooks.end() && (*dst) != this) {
-					client_t * move = *(c);
-					/* reselect a new window */
 					_selected = c;
-					select_next();
-					_clients.remove(move);
-					(*dst)->add_notebook(move);
-				}
+					XEvent ev;
+					cairo_t * cr;
 
-				cr = get_cairo();
-				render(cr);
-				cairo_destroy(cr);
+					cursor = XCreateFontCursor(_dpy, XC_fleur);
 
-				if (((*_selected)->try_lock_client())) {
-					client_t * c = (*_selected);
+					if (XGrabPointer(
+							_dpy,
+							_w,
+							False,
+							(ButtonPressMask | ButtonReleaseMask
+									| PointerMotionMask), GrabModeAsync,
+							GrabModeAsync, None, cursor,
+							CurrentTime) != GrabSuccess
+							)
+						return true;
+					do {
+						XMaskEvent(
+								_dpy,
+								(ButtonPressMask | ButtonReleaseMask
+										| PointerMotionMask) | ExposureMask
+										| SubstructureRedirectMask, &ev);
+						switch (ev.type) {
+						case ConfigureRequest:
+						case Expose:
+						case MapRequest:
+							cr = get_cairo();
+							cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+							cairo_rectangle(cr, _allocation.x, _allocation.y,
+									_allocation.w, _allocation.h);
+							cairo_fill(cr);
+							render(cr);
+							cairo_destroy(cr);
+							break;
+						case MotionNotify:
+							break;
+						}
+					} while (ev.type != ButtonRelease);
+					XUngrabPointer(_dpy, CurrentTime);
+					XFreeCursor(_dpy, cursor);
 
-					XRaiseWindow(c->dpy, c->xwin);
-					XSetInputFocus(c->dpy, c->xwin, RevertToNone, CurrentTime);
+					std::list<notebook_t *>::iterator dst;
+					for (dst = notebooks.begin(); dst != notebooks.end();
+							++dst) {
+						if ((*dst)->_allocation.is_inside(ev.xbutton.x,
+								ev.xbutton.y) && this->group == (*dst)->group) {
+							break;
+						}
+					}
 
-					XChangeProperty(c->dpy, XDefaultRootWindow(c->dpy),
-							c->atoms->_NET_ACTIVE_WINDOW, c->atoms->WINDOW, 32,
-							PropModeReplace,
-							reinterpret_cast<unsigned char *>(&(c->xwin)), 1);
+					if (dst != notebooks.end() && (*dst) != this) {
+						client_t * move = *(c);
+						/* reselect a new window */
+						_selected = c;
+						select_next();
+						_clients.remove(move);
+						(*dst)->add_notebook(move);
+					}
 
-					(*_selected)->unlock_client();
+					cr = get_cairo();
+					render(cr);
+					cairo_destroy(cr);
+
+					if (((*_selected)->try_lock_client())) {
+						client_t * c = (*_selected);
+
+						XRaiseWindow(c->dpy, c->xwin);
+						XSetInputFocus(c->dpy, c->xwin, RevertToNone,
+								CurrentTime);
+
+						XChangeProperty(c->dpy, XDefaultRootWindow(c->dpy),
+								c->atoms->_NET_ACTIVE_WINDOW, c->atoms->WINDOW,
+								32, PropModeReplace,
+								reinterpret_cast<unsigned char *>(&(c->xwin)),
+								1);
+
+						(*_selected)->unlock_client();
+					}
+
 				}
 
 			}
