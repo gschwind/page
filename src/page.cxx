@@ -161,7 +161,6 @@ void main_t::run() {
 	long desktop_geometry[2];
 	desktop_geometry[0] = sw;
 	desktop_geometry[1] = sh;
-	printf("%d %d\n", sw, sh);
 	XChangeProperty(dpy, xroot, atoms._NET_DESKTOP_GEOMETRY, atoms.CARDINAL, 32,
 			PropModeReplace,
 			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
@@ -321,7 +320,7 @@ void main_t::update_client_list() {
 
 	Window * data = new Window[clients.size()];
 
-int	k = 0;
+	int k = 0;
 
 	std::list<client_t *>::iterator i = clients.begin();
 	while (i != clients.end()) {
@@ -330,8 +329,12 @@ int	k = 0;
 		++k;
 	}
 
-	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST, atoms.WINDOW, 32,PropModeReplace, reinterpret_cast<unsigned char *>(data), clients.size());
-	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST_STACKING, atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), clients.size());
+	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST, atoms.WINDOW, 32,
+			PropModeReplace, reinterpret_cast<unsigned char *>(data),
+			clients.size());
+	XChangeProperty(dpy, xroot, atoms._NET_CLIENT_LIST_STACKING, atoms.WINDOW,
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(data),
+			clients.size());
 
 	delete[] data;
 }
@@ -435,8 +438,8 @@ long main_t::get_window_state(Window w) {
 	Atom real;
 
 	if (XGetWindowProperty(dpy, w, atoms.WM_STATE, 0L, 2L, False,
-			atoms.WM_STATE, &real, &format, &n, &extra, (unsigned char **) &p)
-			!= Success
+			atoms.WM_STATE, &real, &format, &n, &extra,
+			(unsigned char **) &p) != Success
 			)
 		return -1;
 
@@ -623,7 +626,46 @@ void main_t::process_map_request_event(XEvent * e) {
 }
 
 void main_t::process_map_notify_event(XEvent * e) {
-
+//	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
+//			(void *) e->xmap.window);
+//	Window w = e->xmap.window;
+//	/* secure the map request */
+//	XGrabServer(dpy);
+//	XSync(dpy, False);
+//	XEvent ev;
+//	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
+//		/* the window is already destroyed, return */
+//		XUngrabServer(dpy);
+//		XFlush(dpy);
+//		return;
+//	}
+//
+//	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, UnmapNotify, &ev)) {
+//		/* the window is already unmapped, return */
+//		XUngrabServer(dpy);
+//		XFlush(dpy);
+//		return;
+//	}
+//
+//	/* should never happen */
+//	XWindowAttributes wa;
+//	if (!XGetWindowAttributes(dpy, w, &wa)) {
+//		XMapWindow(dpy, w);
+//		return;
+//	}
+//	if (wa.override_redirect) {
+//		XMapWindow(dpy, w);
+//		return;
+//	}
+//	manage(w, &wa);
+//	XMapWindow(dpy, w);
+//	render();
+//	update_client_list();
+//	XUngrabServer(dpy);
+//	XFlush(dpy);
+//	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
+//			(void *) e->xmaprequest.window);
+//	return;
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
@@ -698,6 +740,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		return;
 	if (c->try_lock_client()) {
 		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
+			tree_root->activate_client(c);
+			render();
 			XRaiseWindow(dpy, ev->xproperty.window);
 			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone,
 					CurrentTime);
@@ -757,7 +801,7 @@ void main_t::process_client_message_event(XEvent * ev) {
 	if (ev->xclient.message_type == atoms._NET_ACTIVE_WINDOW) {
 		printf("request to activate %lu\n", ev->xclient.window);
 		client_t * c = find_client_by_xwindow(ev->xproperty.window);
-		if(c) {
+		if (c) {
 			tree_root->activate_client(c);
 			render();
 		}

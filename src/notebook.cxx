@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <cmath>
 #include "notebook.hxx"
 
@@ -284,6 +286,11 @@ void notebook_t::update_client_mapping() {
 			continue;
 		if (i != _selected) {
 			(*i)->unmap();
+			long state = IconicState;
+			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE, (*i)->atoms->CARDINAL, 32,
+					PropModeReplace,
+					reinterpret_cast<unsigned char *>(&state), 1);
+
 		} else {
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 4, _allocation.h - 24);
@@ -294,6 +301,11 @@ void notebook_t::update_client_mapping() {
 					_allocation.y + 2 + 20, _allocation.w - 4,
 					_allocation.h - 20 - 4);
 			c->map();
+
+			long state = NormalState;
+			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE, (*i)->atoms->CARDINAL, 32,
+					PropModeReplace,
+					reinterpret_cast<unsigned char *>(&state), 1);
 		}
 		(*i)->unlock_client();
 	}

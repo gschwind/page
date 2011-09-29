@@ -104,11 +104,12 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			XSetWindowAttributes swa;
 			swa.background_pixel = XBlackPixel(_dpy, 0);
 			swa.border_pixel = XWhitePixel(_dpy, 0);
+			swa.save_under = True;
 
 			XGetWindowAttributes(_dpy, _w, &w_attribute);
 			Window w = XCreateWindow(_dpy, _w, 0, 0, 100, 100, 1,
 					w_attribute.depth, InputOutput, w_attribute.visual,
-					CWBackPixel | CWBorderPixel, &swa);
+					CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			XMapWindow(_dpy, w);
 
 			if (XGrabPointer(_dpy, _w, False,
@@ -159,9 +160,9 @@ bool split_t::process_button_press_event(XEvent const * e) {
 						_split = 0.95;
 					if (_split < 0.05)
 						_split = 0.05;
-					cr = get_cairo();
-					render(cr);
-					cairo_destroy(cr);
+					//cr = get_cairo();
+					//render(cr);
+					//cairo_destroy(cr);
 					break;
 				}
 			} while (ev.type != ButtonRelease);
