@@ -93,19 +93,20 @@ void notebook_t::render(cairo_t * cr) {
 					cairo_fill(cr);
 				}
 				offset += length;
-				cairo_save(cr);
-				{
-					cairo_rectangle(cr, 2, 0, length - 4, 19);
-					cairo_clip(cr);
-					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-					cairo_set_font_size(cr, 13);
-					cairo_move_to(cr, 3.0, 15.0);
-					cairo_show_text(cr, (*i)->name.c_str());
-				}
-				cairo_restore(cr);
-
 				cairo_set_line_width(cr, 1.0);
 				if (_selected == i) {
+
+					cairo_save(cr);
+					{
+						cairo_rectangle(cr, 2, 0, length - 16, 19);
+						cairo_clip(cr);
+						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+						cairo_set_font_size(cr, 13);
+						cairo_move_to(cr, 3.0, 15.0);
+						cairo_show_text(cr, (*i)->name.c_str());
+					}
+					cairo_restore(cr);
+
 					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 					cairo_new_path(cr);
 					cairo_rectangle(cr, 1.0, 1.0, length, 3.0);
@@ -121,7 +122,37 @@ void notebook_t::render(cairo_t * cr) {
 					cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
 							0x85U / 255.0);
 					rounded_rectangle(cr, 1.0, 1.0, length, 19.0, 3.0);
+
+					cairo_save(cr);
+					{
+						cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+						cairo_set_line_width(cr, 2.0);
+						cairo_translate(cr, length - 16.0, 2.0);
+						/* draw close */
+						cairo_new_path(cr);
+						cairo_move_to(cr, 4.0, 4.0);
+						cairo_line_to(cr, 12.0, 12.0);
+						cairo_move_to(cr, 12.0, 4.0);
+						cairo_line_to(cr, 4.0, 12.0);
+						cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0,
+								0x00U / 255.0);
+						cairo_stroke(cr);
+					}
+					cairo_restore(cr);
+
 				} else {
+
+					cairo_save(cr);
+					{
+						cairo_rectangle(cr, 2, 0, length - 4, 19);
+						cairo_clip(cr);
+						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+						cairo_set_font_size(cr, 13);
+						cairo_move_to(cr, 3.0, 15.0);
+						cairo_show_text(cr, (*i)->name.c_str());
+					}
+					cairo_restore(cr);
+
 					cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
 							0x85U / 255.0);
 					rounded_rectangle(cr, 1.0, 3.0, length, 17.0, 2.0);
@@ -197,11 +228,10 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						_dpy,
 						_w,
 						False,
-						(ButtonPressMask | ButtonReleaseMask
-								| PointerMotionMask),
-						GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
-						!= GrabSuccess
-					)
+						(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+						GrabModeAsync, GrabModeAsync, None, cursor,
+						CurrentTime) != GrabSuccess
+						)
 					return true;
 				do {
 					XMaskEvent(
@@ -291,8 +321,8 @@ void notebook_t::update_client_mapping() {
 		if (i != _selected) {
 			(*i)->unmap();
 			long state = IconicState;
-			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE, (*i)->atoms->CARDINAL, 32,
-					PropModeReplace,
+			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
+					(*i)->atoms->CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
 
 		} else {
@@ -307,8 +337,8 @@ void notebook_t::update_client_mapping() {
 			c->map();
 
 			long state = NormalState;
-			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE, (*i)->atoms->CARDINAL, 32,
-					PropModeReplace,
+			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
+					(*i)->atoms->CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
 		}
 		(*i)->unlock_client();
@@ -355,14 +385,14 @@ void notebook_t::activate_client(client_t * c) {
 	bool has_client = false;
 	std::list<client_t *>::iterator i = _clients.begin();
 	while (i != _clients.end()) {
-		if((*i) == c) {
+		if ((*i) == c) {
 			has_client = true;
 			break;
 		}
 		++i;
 	}
 
-	if(has_client) {
+	if (has_client) {
 		_selected = i;
 	}
 
