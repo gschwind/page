@@ -64,6 +64,11 @@ main_t::main_t() {
 
 	printf("Created main window #%lu\n", main_window);
 
+	XGetWindowAttributes(dpy, main_window, &(wa));
+	surf = cairo_xlib_surface_create(dpy, main_window, wa.visual, wa.width,
+			wa.height);
+	cr = cairo_create(surf);
+
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
 
 	ATOM_INIT(ATOM);
@@ -102,6 +107,11 @@ main_t::main_t() {
 	box_t<int> a(0, 0, sw, sh);
 	tree_root = new root_t(dpy, main_window, a);
 
+}
+
+main_t::~main_t() {
+	cairo_destroy(cr);
+	cairo_surface_destroy(surf);
 }
 
 long * main_t::get_properties32(Window win, Atom prop, Atom type,
@@ -227,11 +237,6 @@ void main_t::run() {
 }
 
 void main_t::render(cairo_t * cr) {
-	cairo_save(cr);
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_rectangle(cr, 0, 0, wa.width, wa.height);
-	cairo_fill(cr);
-	cairo_restore(cr);
 	tree_root->render(cr);
 }
 
@@ -239,9 +244,7 @@ void main_t::render() {
 	XGetWindowAttributes(dpy, main_window, &wa);
 	box_t<int> b(0, 0, wa.width, wa.height);
 	tree_root->update_allocation(b);
-	cairo_t * cr = get_cairo();
 	render(cr);
-	cairo_destroy(cr);
 }
 
 void main_t::scan() {

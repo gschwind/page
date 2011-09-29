@@ -14,8 +14,8 @@ namespace page_next {
 void client_t::map() {
 	if (!is_map) {
 		is_map = true;
-		XMapWindow(dpy, clipping_window);
 		XMapWindow(dpy, xwin);
+		XMapWindow(dpy, clipping_window);
 	}
 }
 void client_t::unmap() {
@@ -26,8 +26,8 @@ void client_t::unmap() {
 		/* ICCCM require that WM unmap client window to change client state from
 		 * Normal to Iconic state
 		 * in PAGE all unviewable window are in iconic state */
-		XUnmapWindow(dpy, xwin);
 		XUnmapWindow(dpy, clipping_window);
+		XUnmapWindow(dpy, xwin);
 	}
 }
 

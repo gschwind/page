@@ -22,9 +22,8 @@ class notebook_t: public tree_t {
 	static std::list<notebook_t *> notebooks;
 	Cursor cursor;
 
-	//cairo_surface_t * close_img;
-	//cairo_surface_t * vsplit_img;
-	//cairo_surface_t * hsplit_img;
+	cairo_surface_t * back_buffer;
+	cairo_t * back_buffer_cr;
 
 	box_t<int> button_close;
 	box_t<int> button_vsplit;

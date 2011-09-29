@@ -20,22 +20,26 @@ std::list<notebook_t *> notebook_t::notebooks;
 notebook_t::notebook_t(int group) :
 		group(group) {
 
-	// close_img = cairo_image_surface_create_from_png(
-	//    "/home/gschwind/page/data/close.png");
-	// hsplit_img = cairo_image_surface_create_from_png(
-	//     "/home/gschwind/page/data/hsplit.png");
-	// vsplit_img = cairo_image_surface_create_from_png(
-	//     "/home/gschwind/page/data/vsplit.png");
-
+	back_buffer = 0;
+	back_buffer_cr = 0;
 	notebooks.push_back(this);
 
 }
 
 notebook_t::~notebook_t() {
+	cairo_destroy(back_buffer_cr);
+	cairo_surface_destroy(back_buffer);
 	notebooks.remove(this);
 }
 
 void notebook_t::update_allocation(box_t<int> & allocation) {
+
+	if (_allocation.w < allocation.w) {
+		cairo_destroy(back_buffer_cr);
+		cairo_surface_destroy(back_buffer);
+		back_buffer = 0;
+	}
+
 	_allocation = allocation;
 
 	button_close.x = _allocation.x + _allocation.w - 17;
@@ -56,152 +60,190 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 
 void notebook_t::render(cairo_t * cr) {
 	update_client_mapping();
-	cairo_save(cr);
+
+	if (back_buffer == 0) {
+		cairo_surface_t * target = cairo_get_target(cr);
+		back_buffer = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR,
+				_allocation.w, 20);
+		back_buffer_cr = cairo_create(back_buffer);
+		printf("allocate %p \n", back_buffer);
+	}
+
+	cairo_save(back_buffer_cr);
 	{
-		cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w, 19);
+		/* create tabs back ground */
+		cairo_rectangle(back_buffer_cr, 0.0, 0.0, _allocation.w, 20.0);
 		cairo_pattern_t *pat;
 		pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, 19.0);
 		cairo_pattern_add_color_stop_rgba(pat, 0, 0xeeU / 255.0, 0xeeU / 255.0,
 				0xecU / 255.0, 1);
 		cairo_pattern_add_color_stop_rgba(pat, 1, 0xbaU / 255.0, 0xbdU / 255.0,
 				0xd6U / 255.0, 1);
-		cairo_set_source(cr, pat);
-		cairo_fill(cr);
+		cairo_set_source(back_buffer_cr, pat);
+		cairo_fill(back_buffer_cr);
 		cairo_pattern_destroy(pat);
 
+		std::list<client_t *>::iterator i;
+		int offset = 0;
+		int length = (_allocation.w - 17 * 3) / _clients.size();
+		for (i = _clients.begin(); i != _clients.end(); ++i) {
+
+			cairo_save(back_buffer_cr);
+			{
+				cairo_translate(back_buffer_cr, offset, 0.0);
+
+				if (_selected == i) {
+
+					cairo_set_line_width(back_buffer_cr, 1.0);
+					cairo_select_font_face(back_buffer_cr, "Sans",
+							CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+					cairo_set_font_size(back_buffer_cr, 13);
+
+					/* draw light background */
+					cairo_rectangle(back_buffer_cr, 0.0, 3.0, length, 19.0);
+					cairo_set_source_rgb(back_buffer_cr, 0xeeU / 255.0,
+							0xeeU / 255.0, 0xecU / 255.0);
+					cairo_fill(back_buffer_cr);
+
+					/* draw the name */
+					cairo_rectangle(back_buffer_cr, 2.0, 0.0, length - 16.0,
+							19.0);
+					cairo_clip(back_buffer_cr);
+					cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+					cairo_set_font_size(back_buffer_cr, 13.0);
+					cairo_move_to(back_buffer_cr, 3.0, 15.0);
+					cairo_show_text(back_buffer_cr, (*i)->name.c_str());
+
+					/* draw blue lines */
+					cairo_reset_clip(back_buffer_cr);
+
+					cairo_set_antialias(back_buffer_cr, CAIRO_ANTIALIAS_NONE);
+					cairo_new_path(back_buffer_cr);
+					cairo_rectangle(back_buffer_cr, 1.0, 1.0, length, 3.0);
+					cairo_set_source_rgb(back_buffer_cr, 0x72U / 255.0,
+							0x9fU / 255.0, 0xcfU / 255.0);
+					cairo_fill(back_buffer_cr);
+					cairo_new_path(back_buffer_cr);
+					cairo_move_to(back_buffer_cr, 2.0, 4.0);
+					cairo_line_to(back_buffer_cr, length, 4.0);
+					cairo_set_source_rgb(back_buffer_cr, 0x34U / 255.0,
+							0x64U / 255.0, 0xa4U / 255.0);
+					cairo_stroke(back_buffer_cr);
+
+					cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0,
+							0x8aU / 255.0, 0x85U / 255.0);
+					rounded_rectangle(back_buffer_cr, 1.0, 1.0, length, 19.0,
+							3.0);
+
+					/* draw close icon */
+					cairo_set_antialias(back_buffer_cr,
+							CAIRO_ANTIALIAS_DEFAULT);
+					cairo_set_line_width(back_buffer_cr, 2.0);
+					cairo_translate(back_buffer_cr, length - 16.0, 2.0);
+					/* draw close */
+					cairo_new_path(back_buffer_cr);
+					cairo_move_to(back_buffer_cr, 4.0, 4.0);
+					cairo_line_to(back_buffer_cr, 12.0, 12.0);
+					cairo_move_to(back_buffer_cr, 12.0, 4.0);
+					cairo_line_to(back_buffer_cr, 4.0, 12.0);
+					cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
+							0x00U / 255.0, 0x00U / 255.0);
+					cairo_stroke(back_buffer_cr);
+
+				} else {
+
+					cairo_set_line_width(back_buffer_cr, 1.0);
+					cairo_select_font_face(back_buffer_cr, "Sans",
+							CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+					cairo_set_font_size(back_buffer_cr, 13);
+
+					/* draw window name */
+					cairo_rectangle(back_buffer_cr, 2, 0, length - 4, 19);
+					cairo_clip(back_buffer_cr);
+					cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+					cairo_set_font_size(back_buffer_cr, 13);
+					cairo_move_to(back_buffer_cr, 3.0, 15.0);
+					cairo_show_text(back_buffer_cr, (*i)->name.c_str());
+
+					/* draw border */
+					cairo_reset_clip(back_buffer_cr);
+
+					cairo_rectangle(back_buffer_cr, 0.0, 0.0, length + 1.0,
+							19.0);
+					cairo_clip(back_buffer_cr);
+					cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0,
+							0x8aU / 255.0, 0x85U / 255.0);
+					rounded_rectangle(back_buffer_cr, 1.0, 3.0, length, 17.0,
+							2.0);
+					cairo_set_source_rgb(back_buffer_cr, 0xd3U / 255.0,
+							0xd7U / 255.0, 0xcfU / 255.0);
+					cairo_set_antialias(back_buffer_cr, CAIRO_ANTIALIAS_NONE);
+					cairo_new_path(back_buffer_cr);
+					cairo_move_to(back_buffer_cr, 0.0, 19.0);
+					cairo_line_to(back_buffer_cr, length + 1.0, 20.0);
+					cairo_stroke(back_buffer_cr);
+				}
+			}
+			cairo_restore(back_buffer_cr);
+			offset += length;
+		}
+
+		cairo_save(back_buffer_cr);
+		{
+			cairo_translate(back_buffer_cr, _allocation.w - 16.0, 1.0);
+			/* draw close */
+			cairo_new_path(back_buffer_cr);
+			cairo_move_to(back_buffer_cr, 4.0, 4.0);
+			cairo_line_to(back_buffer_cr, 12.0, 12.0);
+			cairo_move_to(back_buffer_cr, 12.0, 4.0);
+			cairo_line_to(back_buffer_cr, 4.0, 12.0);
+			cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0, 0x00U / 255.0,
+					0x00U / 255.0);
+			cairo_stroke(back_buffer_cr);
+
+			/* draw vertical split */
+			cairo_translate(back_buffer_cr, -17.0, 0.0);
+			cairo_move_to(back_buffer_cr, 8.0, 2.0);
+			cairo_line_to(back_buffer_cr, 8.0, 14.0);
+			cairo_move_to(back_buffer_cr, 9.0, 2.0);
+			cairo_line_to(back_buffer_cr, 9.0, 14.0);
+			cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+			cairo_stroke(back_buffer_cr);
+
+			/* draw horizontal split */
+			cairo_translate(back_buffer_cr, -17.0, 0.0);
+			cairo_move_to(back_buffer_cr, 2.0, 8.0);
+			cairo_line_to(back_buffer_cr, 14.0, 8.0);
+			cairo_move_to(back_buffer_cr, 2.0, 8.0);
+			cairo_line_to(back_buffer_cr, 14.0, 8.0);
+			cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+			cairo_stroke(back_buffer_cr);
+		}
+		cairo_restore(back_buffer_cr);
+
+	}
+	cairo_restore(back_buffer_cr);
+
+	cairo_save(cr);
+	{
+
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+
+		/* draw border */
 		cairo_set_line_width(cr, 1.0);
 		cairo_set_source_rgb(cr, 0x72U / 255.0, 0x9fU / 255.0, 0xcfU / 255.0);
 		cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 20,
 				_allocation.w - 2, _allocation.h - 22);
 		cairo_stroke(cr);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL,
-				CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr, 13);
-		std::list<client_t *>::iterator i;
-		int offset = _allocation.x;
-		int length = (_allocation.w - 17 * 3) / _clients.size();
-		int s = 0;
-		for (i = _clients.begin(); i != _clients.end(); ++i) {
-			cairo_save(cr);
-			{
-				cairo_translate(cr, offset, _allocation.y);
-				if (_selected == i) {
-					cairo_rectangle(cr, 0, 3.0, length, 19);
-					cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
-							0xecU / 255.0);
-					cairo_fill(cr);
-				}
-				offset += length;
-				cairo_set_line_width(cr, 1.0);
-				if (_selected == i) {
 
-					cairo_save(cr);
-					{
-						cairo_rectangle(cr, 2, 0, length - 16, 19);
-						cairo_clip(cr);
-						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-						cairo_set_font_size(cr, 13);
-						cairo_move_to(cr, 3.0, 15.0);
-						cairo_show_text(cr, (*i)->name.c_str());
-					}
-					cairo_restore(cr);
+		cairo_translate(cr, _allocation.x, _allocation.y);
+		cairo_rectangle(cr, 0, 0, _allocation.w, 20.0);
+		cairo_set_source_surface(cr, back_buffer, 0.0, 0.0);
+		cairo_fill(cr);
 
-					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-					cairo_new_path(cr);
-					cairo_rectangle(cr, 1.0, 1.0, length, 3.0);
-					cairo_set_source_rgb(cr, 0x72U / 255.0, 0x9fU / 255.0,
-							0xcfU / 255.0);
-					cairo_fill(cr);
-					cairo_new_path(cr);
-					cairo_move_to(cr, 2.0, 4.0);
-					cairo_line_to(cr, length, 4.0);
-					cairo_set_source_rgb(cr, 0x34U / 255.0, 0x64U / 255.0,
-							0xa4U / 255.0);
-					cairo_stroke(cr);
-					cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
-							0x85U / 255.0);
-					rounded_rectangle(cr, 1.0, 1.0, length, 19.0, 3.0);
-
-					cairo_save(cr);
-					{
-						cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-						cairo_set_line_width(cr, 2.0);
-						cairo_translate(cr, length - 16.0, 2.0);
-						/* draw close */
-						cairo_new_path(cr);
-						cairo_move_to(cr, 4.0, 4.0);
-						cairo_line_to(cr, 12.0, 12.0);
-						cairo_move_to(cr, 12.0, 4.0);
-						cairo_line_to(cr, 4.0, 12.0);
-						cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0,
-								0x00U / 255.0);
-						cairo_stroke(cr);
-					}
-					cairo_restore(cr);
-
-				} else {
-
-					cairo_save(cr);
-					{
-						cairo_rectangle(cr, 2, 0, length - 4, 19);
-						cairo_clip(cr);
-						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-						cairo_set_font_size(cr, 13);
-						cairo_move_to(cr, 3.0, 15.0);
-						cairo_show_text(cr, (*i)->name.c_str());
-					}
-					cairo_restore(cr);
-
-					cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
-							0x85U / 255.0);
-					rounded_rectangle(cr, 1.0, 3.0, length, 17.0, 2.0);
-					cairo_set_source_rgb(cr, 0xd3U / 255.0, 0xd7U / 255.0,
-							0xcfU / 255.0);
-					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-					cairo_new_path(cr);
-					cairo_move_to(cr, 0.0, 19.0);
-					cairo_line_to(cr, length + 1.0, 20.0);
-					cairo_stroke(cr);
-				}
-				cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-			}
-			cairo_restore(cr);
-		}
 	}
 	cairo_restore(cr);
-	cairo_save(cr);
-	{
-		cairo_translate(cr, _allocation.x + _allocation.w - 16.0,
-				_allocation.y + 1.0);
-		/* draw close */
-		cairo_new_path(cr);
-		cairo_move_to(cr, 4.0, 4.0);
-		cairo_line_to(cr, 12.0, 12.0);
-		cairo_move_to(cr, 12.0, 4.0);
-		cairo_line_to(cr, 4.0, 12.0);
-		cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
-		cairo_stroke(cr);
 
-		/* draw vertical split */
-		cairo_translate(cr, -17.0, 0.0);
-		cairo_move_to(cr, 8.0, 2.0);
-		cairo_line_to(cr, 8.0, 14.0);
-		cairo_move_to(cr, 9.0, 2.0);
-		cairo_line_to(cr, 9.0, 14.0);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_stroke(cr);
-
-		/* draw horizontal split */
-		cairo_translate(cr, -17.0, 0.0);
-		cairo_move_to(cr, 2.0, 8.0);
-		cairo_line_to(cr, 14.0, 8.0);
-		cairo_move_to(cr, 2.0, 8.0);
-		cairo_line_to(cr, 14.0, 8.0);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_stroke(cr);
-	}
-	cairo_restore(cr);
 }
 
 bool notebook_t::process_button_press_event(XEvent const * e) {
@@ -260,10 +302,6 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						case Expose:
 						case MapRequest:
 							cr = get_cairo();
-							cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-							cairo_rectangle(cr, _allocation.x, _allocation.y,
-									_allocation.w, _allocation.h);
-							cairo_fill(cr);
 							render(cr);
 							cairo_destroy(cr);
 							break;
@@ -336,17 +374,13 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 void notebook_t::update_client_mapping() {
 	std::list<client_t *>::iterator i;
-	for (i = _clients.begin(); i != _clients.end(); ++i) {
-		if (!((*i)->try_lock_client()))
-			continue;
-		if (i != _selected) {
-			(*i)->unmap();
-			long state = IconicState;
-			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
-					(*i)->atoms->CARDINAL, 32, PropModeReplace,
-					reinterpret_cast<unsigned char *>(&state), 1);
 
-		} else {
+	/* map before unmap */
+
+	for (i = _clients.begin(); i != _clients.end(); ++i) {
+		if (i == _selected) {
+			if (!((*i)->try_lock_client()))
+				continue;
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 4, _allocation.h - 24);
 			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin,
@@ -361,8 +395,22 @@ void notebook_t::update_client_mapping() {
 			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
 					(*i)->atoms->CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
+			(*i)->unlock_client();
 		}
-		(*i)->unlock_client();
+	}
+
+	for (i = _clients.begin(); i != _clients.end(); ++i) {
+		if (i != _selected) {
+			if (!((*i)->try_lock_client()))
+				continue;
+			(*i)->unmap();
+			long state = IconicState;
+			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
+					(*i)->atoms->CARDINAL, 32, PropModeReplace,
+					reinterpret_cast<unsigned char *>(&state), 1);
+			(*i)->unlock_client();
+		}
+
 	}
 }
 

@@ -90,10 +90,14 @@ class main_t {
 	/* the main window attributes */
 	XWindowAttributes wa;
 
+	cairo_surface_t * surf;
+	cairo_t * cr;
+
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);
 public:
 	main_t();
+	~main_t();
 	void render(cairo_t * cr);
 	void render();
 	void run();

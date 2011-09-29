@@ -189,10 +189,6 @@ bool split_t::process_button_press_event(XEvent const * e) {
 
 			update_allocation(_allocation);
 			cr = get_cairo();
-			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-			cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
-					_allocation.h);
-			cairo_fill(cr);
 			render(cr);
 			cairo_destroy(cr);
 
