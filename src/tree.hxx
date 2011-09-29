@@ -25,6 +25,7 @@ public:
 	tree_t();
 	tree_t(Display * dpy, Window w, tree_t * parent = 0, box_t<int> allocation =
 			box_t<int>());
+	virtual ~tree_t() { };
 	virtual void update_allocation(box_t<int> & alloc) = 0;
 	virtual void render(cairo_t * cr) = 0;
 	virtual bool process_button_press_event(XEvent const * e) = 0;

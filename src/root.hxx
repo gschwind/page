@@ -17,6 +17,7 @@ class root_t: public tree_t {
 	tree_t * _pack0;
 public:
 	root_t(Display * dpy, Window w, box_t<int> &allocation);
+	~root_t();
 	void update_allocation(box_t<int> & allocation);
 
 	void render(cairo_t * cr);

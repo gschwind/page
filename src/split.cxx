@@ -19,6 +19,10 @@ split_t::split_t(split_type_t type) {
 	_pack1 = 0;
 }
 
+split_t::~split_t() {
+
+}
+
 void split_t::update_allocation(box_t<int> &allocation) {
 	_allocation = allocation;
 	update_allocation_pack0();
@@ -111,15 +115,16 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			Window w;
 
 			if (_split_type == VERTICAL_SPLIT) {
-				w = XCreateWindow(_dpy, _w, _allocation.x + (int) (_split * _allocation.w)
-						- 2, _allocation.y, 5, _allocation.h, 1,
-						w_attribute.depth, InputOutput, w_attribute.visual,
+				w = XCreateWindow(_dpy, _w,
+						_allocation.x + (int) (_split * _allocation.w) - 2,
+						_allocation.y, 5, _allocation.h, 1, w_attribute.depth,
+						InputOutput, w_attribute.visual,
 						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			} else {
 				w = XCreateWindow(_dpy, _w, _allocation.x,
-						_allocation.y + (int) (_split * _allocation.h)
-								- 2, _allocation.w, 5, 1,
-						w_attribute.depth, InputOutput, w_attribute.visual,
+						_allocation.y + (int) (_split * _allocation.h) - 2,
+						_allocation.w, 5, 1, w_attribute.depth, InputOutput,
+						w_attribute.visual,
 						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			}
 
@@ -127,15 +132,14 @@ bool split_t::process_button_press_event(XEvent const * e) {
 
 			if (XGrabPointer(_dpy, _w, False,
 					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-					GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
-					!= GrabSuccess)
+					GrabModeAsync, GrabModeAsync, None, cursor,
+					CurrentTime) != GrabSuccess)
 				return true;
 			do {
 				XMaskEvent(
 						_dpy,
-						(ButtonPressMask | ButtonReleaseMask
-								| PointerMotionMask) | ExposureMask
-								| SubstructureRedirectMask, &ev);
+						(ButtonPressMask | ButtonReleaseMask | PointerMotionMask)
+								| ExposureMask | SubstructureRedirectMask, &ev);
 				switch (ev.type) {
 				case ConfigureRequest:
 				case Expose:
@@ -193,10 +197,14 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			cairo_destroy(cr);
 
 		} else {
-			if (_pack0)
-				_pack0->process_button_press_event(e);
-			if (_pack1)
-				_pack1->process_button_press_event(e);
+
+			/* the pack test is for sanity, but should never be null */
+			if (_pack0) {
+				/* avoid double close */
+				if (!_pack0->process_button_press_event(e) && _pack1) {
+					_pack1->process_button_press_event(e);
+				}
+			}
 		}
 		return true;
 	}
@@ -253,11 +261,15 @@ void split_t::remove(tree_t * src) {
 	std::list<client_t *> * client = src->get_clients();
 	std::list<client_t *>::iterator i = client->begin();
 
+	if (src != _pack0 && src != _pack1)
+		return;
+
 	tree_t * dst = (src == _pack0) ? _pack1 : _pack0;
 	while (i != client->end()) {
 		dst->add_notebook((*i));
 		++i;
 	}
+
 	_parent->replace(this, dst);
 	cairo_t * cr = get_cairo();
 	_parent->render(cr);
@@ -268,9 +280,9 @@ void split_t::remove(tree_t * src) {
 }
 
 void split_t::activate_client(client_t * c) {
-	if(_pack0)
+	if (_pack0)
 		_pack0->activate_client(c);
-	if(_pack1)
+	if (_pack1)
 		_pack1->activate_client(c);
 }
 

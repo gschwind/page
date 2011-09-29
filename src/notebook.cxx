@@ -31,6 +31,10 @@ notebook_t::notebook_t(int group) :
 
 }
 
+notebook_t::~notebook_t() {
+	notebooks.remove(this);
+}
+
 void notebook_t::update_allocation(box_t<int> & allocation) {
 	_allocation = allocation;
 

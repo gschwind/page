@@ -35,6 +35,7 @@ class notebook_t: public tree_t {
 	std::list<client_t *>::iterator _selected;
 public:
 	notebook_t(int group = 0);
+	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
 	void render(cairo_t * cr);
 	bool process_button_press_event(XEvent const * e);

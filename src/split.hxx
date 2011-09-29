@@ -29,6 +29,7 @@ class split_t: public tree_t {
 
 public:
 	split_t(split_type_t type);
+	~split_t();
 	void update_allocation(box_t<int> & alloc);
 	void render(cairo_t * cr);
 	bool process_button_press_event(XEvent const * e);

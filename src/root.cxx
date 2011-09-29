@@ -20,6 +20,10 @@ root_t::root_t(Display * dpy, Window w, box_t<int> &allocation) :
 	_pack0->update_allocation(allocation);
 }
 
+root_t::~root_t() {
+
+}
+
 void root_t::update_allocation(box_t<int> & allocation) {
 	_allocation = allocation;
 	_pack0->update_allocation(allocation);
@@ -30,7 +34,7 @@ void root_t::render(cairo_t * cr) {
 }
 
 bool root_t::process_button_press_event(XEvent const * e) {
-	_pack0->process_button_press_event(e);
+	return _pack0->process_button_press_event(e);
 }
 
 bool root_t::add_notebook(client_t *c) {
