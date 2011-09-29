@@ -107,9 +107,22 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			swa.save_under = True;
 
 			XGetWindowAttributes(_dpy, _w, &w_attribute);
-			Window w = XCreateWindow(_dpy, _w, 0, 0, 100, 100, 1,
-					w_attribute.depth, InputOutput, w_attribute.visual,
-					CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+
+			Window w;
+
+			if (_split_type == VERTICAL_SPLIT) {
+				w = XCreateWindow(_dpy, _w, _allocation.x + (int) (_split * _allocation.w)
+						- 2, _allocation.y, 5, _allocation.h, 1,
+						w_attribute.depth, InputOutput, w_attribute.visual,
+						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+			} else {
+				w = XCreateWindow(_dpy, _w, _allocation.x,
+						_allocation.y + (int) (_split * _allocation.h)
+								- 2, _allocation.w, 5, 1,
+						w_attribute.depth, InputOutput, w_attribute.visual,
+						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+			}
+
 			XMapWindow(_dpy, w);
 
 			if (XGrabPointer(_dpy, _w, False,
