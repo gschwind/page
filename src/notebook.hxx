@@ -22,6 +22,7 @@ class notebook_t: public tree_t {
 	static std::list<notebook_t *> notebooks;
 	Cursor cursor;
 
+	bool back_buffer_is_valid;
 	cairo_surface_t * back_buffer;
 	cairo_t * back_buffer_cr;
 

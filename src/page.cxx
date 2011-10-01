@@ -365,6 +365,8 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	c->dpy = dpy;
 	c->xroot = xroot;
 	c->atoms = &atoms;
+	c->height = wa->height;
+	c->width = wa->width;
 	printf("Map stase : %d\n", wa->map_state);
 	/* if the client is mapped, the reparent will unmap the window
 	 * The client is mapped if the manage occur on start of
@@ -511,9 +513,11 @@ void main_t::client_update_size_hints(client_t * c) {
 	long msize;
 	XSizeHints size;
 
-	if (!XGetWMNormalHints(c->dpy, c->xwin, &size, &msize))
+	if (!XGetWMNormalHints(c->dpy, c->xwin, &size, &msize)) {
 		/* size is uninitialized, ensure that size.flags aren't used */
 		size.flags = PSize;
+		printf("no WMNormalHints\n");
+	}
 
 	if (size.flags & PBaseSize) {
 		c->basew = size.base_width;
@@ -736,6 +740,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
 			ev->xproperty.window);
 
+	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(dpy, ev->xproperty.atom);
 	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
@@ -799,6 +804,7 @@ void main_t::process_client_message_event(XEvent * ev) {
 	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
 			ev->xproperty.window);
 
+	//printf("%lu\n", ev->xclient.message_type);
 	char * name = XGetAtomName(dpy, ev->xclient.message_type);
 	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);

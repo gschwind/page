@@ -177,9 +177,6 @@ bool split_t::process_button_press_event(XEvent const * e) {
 						_split = 0.95;
 					if (_split < 0.05)
 						_split = 0.05;
-					//cr = get_cairo();
-					//render(cr);
-					//cairo_destroy(cr);
 					break;
 				}
 			} while (ev.type != ButtonRelease);
