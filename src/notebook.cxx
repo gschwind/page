@@ -430,6 +430,7 @@ bool notebook_t::add_notebook(client_t *c) {
 	_clients.push_front(c);
 	_selected = _clients.begin();
 	back_buffer_is_valid = false;
+	update_client_mapping();
 	return true;
 }
 

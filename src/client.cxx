@@ -12,11 +12,9 @@
 namespace page_next {
 
 void client_t::map() {
-	if (!is_map) {
-		is_map = true;
-		XMapWindow(dpy, xwin);
-		XMapWindow(dpy, clipping_window);
-	}
+	is_map = true;
+	XMapWindow(dpy, xwin);
+	XMapWindow(dpy, clipping_window);
 }
 void client_t::unmap() {
 	if (is_map) {
