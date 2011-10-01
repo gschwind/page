@@ -36,13 +36,13 @@ void split_t::update_allocation_pack0() {
 	if (_split_type == VERTICAL_SPLIT) {
 		b.x = _allocation.x;
 		b.y = _allocation.y;
-		b.w = _allocation.w * _split - 2;
+		b.w = _allocation.w * _split - 3;
 		b.h = _allocation.h;
 	} else {
 		b.x = _allocation.x;
 		b.y = _allocation.y;
 		b.w = _allocation.w;
-		b.h = _allocation.h * _split - 2;
+		b.h = _allocation.h * _split - 3;
 	}
 	_pack0->update_allocation(b);
 }
@@ -52,28 +52,29 @@ void split_t::update_allocation_pack1() {
 		return;
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x + _allocation.w * _split + 2;
+		b.x = _allocation.x + _allocation.w * _split + 3;
 		b.y = _allocation.y;
-		b.w = _allocation.w - _allocation.w * _split - 5;
+		b.w = _allocation.w - _allocation.w * _split - 3;
 		b.h = _allocation.h;
 	} else {
 		b.x = _allocation.x;
-		b.y = _allocation.y + _allocation.h * _split + 2;
+		b.y = _allocation.y + _allocation.h * _split + 3;
 		b.w = _allocation.w;
-		b.h = _allocation.h - _allocation.h * _split - 2;
+		b.h = _allocation.h - _allocation.h * _split - 3;
 	}
 	_pack1->update_allocation(b);
 }
 
 void split_t::render(cairo_t * cr) {
 	cairo_save(cr);
-	cairo_set_source_rgb(cr, 0xf5U / 255.0, 0x79U / 255.0, 0x00U / 255.0);
+	cairo_set_source_rgb(cr, 0xeeU / 255.0,
+			0xeeU / 255.0, 0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(cr, _allocation.x + (_allocation.w * _split) - 2,
-				_allocation.y, 4, _allocation.h);
+		cairo_rectangle(cr, _allocation.x + _allocation.w * _split - 3.0,
+				_allocation.y, 6.0, _allocation.h - 1.0);
 	} else {
 		cairo_rectangle(cr, _allocation.x,
-				_allocation.y + (_allocation.h * _split) - 2, _allocation.w, 4);
+				_allocation.y + (_allocation.h * _split) - 3.0, _allocation.w, 6.0);
 	}
 	cairo_fill(cr);
 	cairo_restore(cr);
@@ -81,6 +82,13 @@ void split_t::render(cairo_t * cr) {
 		_pack0->render(cr);
 	if (_pack1)
 		_pack1->render(cr);
+
+	//cairo_save(cr);
+	//cairo_set_line_width(cr, 1.0);
+	//cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+	//cairo_rectangle(cr, _allocation.x + 0.5, _allocation.y + 0.5, _allocation.w - 1.0, _allocation.h - 1.0);
+	//cairo_stroke(cr);
+	//cairo_restore(cr);
 
 }
 

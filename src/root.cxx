@@ -30,7 +30,15 @@ void root_t::update_allocation(box_t<int> & allocation) {
 }
 
 void root_t::render(cairo_t * cr) {
+
 	_pack0->render(cr);
+
+	//cairo_save(cr);
+	//cairo_set_line_width(cr, 1.0);
+	//cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+	//cairo_rectangle(cr, _allocation.x + 0.5, _allocation.y + 0.5, _allocation.w - 1.0, _allocation.h - 1.0);
+	//cairo_stroke(cr);
+	//cairo_restore(cr);
 }
 
 bool root_t::process_button_press_event(XEvent const * e) {
