@@ -163,8 +163,6 @@ public:
 				std::numeric_limits<int>::max(), False, type, &ret_type,
 				&ret_size, &ret_items, &bytes_left, &xdata);
 		if (res == Success) {
-			char * x = XGetAtomName(dpy, ret_type);
-			XFree(x);
 			if (ret_size == SIZE && ret_items > 0) {
 				result = new T[ret_items];
 				data = reinterpret_cast<T*>(xdata);
