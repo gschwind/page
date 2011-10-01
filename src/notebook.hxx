@@ -32,7 +32,13 @@ class notebook_t: public tree_t {
 
 	int group;
 	std::list<client_t *> _clients;
-	std::list<client_t *>::iterator _selected;
+	std::list<client_t *> _selected;
+
+	inline void set_selected(client_t * c) {
+		_selected.remove(c);
+		_selected.push_front(c);
+	}
+
 public:
 	notebook_t(int group = 0);
 	~notebook_t();

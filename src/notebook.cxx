@@ -97,7 +97,7 @@ void notebook_t::render(cairo_t * cr) {
 				{
 					cairo_translate(back_buffer_cr, offset, 0.0);
 
-					if (_selected == i) {
+					if ((*_selected.begin()) == (*i)) {
 
 						cairo_set_line_width(back_buffer_cr, 1.0);
 						cairo_select_font_face(back_buffer_cr, "Sans",
@@ -271,7 +271,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 				++c;
 			}
 			if (c != _clients.end()) {
-				if (_selected == c && b.x + b.w - 16 < e->xbutton.x) {
+				if (_selected.front() == (*c) && b.x + b.w - 16 < e->xbutton.x) {
 
 					XEvent ev;
 					ev.xclient.display = _dpy;
@@ -286,7 +286,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				} else {
 
-					_selected = c;
+					set_selected((*c));
 					XEvent ev;
 					cairo_t * cr;
 
@@ -335,7 +335,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					if (dst != notebooks.end() && (*dst) != this) {
 						client_t * move = *(c);
 						/* reselect a new window */
-						_selected = c;
+						set_selected((*c));
 						select_next();
 						_clients.remove(move);
 						(*dst)->add_notebook(move);
@@ -345,8 +345,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					render(cr);
 					cairo_destroy(cr);
 
-					if (((*_selected)->try_lock_client())) {
-						client_t * c = (*_selected);
+					if ((_selected.front())->try_lock_client()) {
+						client_t * c = _selected.front();
 
 						XRaiseWindow(c->dpy, c->xwin);
 						XSetInputFocus(c->dpy, c->xwin, RevertToNone,
@@ -358,7 +358,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 								reinterpret_cast<unsigned char *>(&(c->xwin)),
 								1);
 
-						(*_selected)->unlock_client();
+						(_selected.front())->unlock_client();
 					}
 
 				}
@@ -389,7 +389,7 @@ void notebook_t::update_client_mapping() {
 	/* map before unmap */
 
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
-		if (i == _selected) {
+		if ((*i) == _selected.front()) {
 			if (!((*i)->try_lock_client()))
 				continue;
 			client_t * c = (*i);
@@ -411,7 +411,7 @@ void notebook_t::update_client_mapping() {
 	}
 
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
-		if (i != _selected) {
+		if ((*i) != _selected.front()) {
 			if (!((*i)->try_lock_client()))
 				continue;
 			(*i)->unmap();
@@ -428,7 +428,7 @@ void notebook_t::update_client_mapping() {
 bool notebook_t::add_notebook(client_t *c) {
 	printf("Add client %lu\n", c->xwin);
 	_clients.push_front(c);
-	_selected = _clients.begin();
+	_selected.push_front(c);
 	back_buffer_is_valid = false;
 	update_client_mapping();
 	return true;
@@ -475,7 +475,7 @@ void notebook_t::activate_client(client_t * c) {
 	}
 
 	if (has_client) {
-		_selected = i;
+		set_selected(*i);
 	}
 
 	back_buffer_is_valid = false;
@@ -490,7 +490,7 @@ void notebook_t::remove_client(Window w) {
 	std::list<client_t *>::iterator i = _clients.begin();
 	while (i != _clients.end()) {
 		if ((*i)->xwin == w) {
-			if (i == _selected)
+			if ((*i) == _selected.front())
 				select_next();
 			_clients.remove((*i));
 			break;
@@ -502,9 +502,7 @@ void notebook_t::remove_client(Window w) {
 }
 
 void notebook_t::select_next() {
-	++_selected;
-	if (_selected == _clients.end())
-		_selected = _clients.begin();
+	_selected.remove(_selected.front());
 	back_buffer_is_valid = false;
 }
 
