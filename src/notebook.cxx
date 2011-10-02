@@ -366,7 +366,6 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					if (dst != notebooks.end() && (*dst) != this) {
 						client_t * move = *(c);
 						/* reselect a new window */
-						set_selected((*c));
 						select_next();
 						_clients.remove(move);
 						(*dst)->add_notebook(move);
@@ -376,22 +375,27 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					render(cr);
 					cairo_destroy(cr);
 
-					if ((_selected.front())->try_lock_client()) {
-						client_t * c = _selected.front();
+					if (_selected.size() > 0) {
+						if ((_selected.front())->try_lock_client()) {
+							client_t * c = _selected.front();
 
-						XRaiseWindow(c->dpy, c->xwin);
-						XSetInputFocus(c->dpy, c->xwin, RevertToNone,
-								CurrentTime);
+							XRaiseWindow(c->dpy, c->xwin);
+							XSetInputFocus(c->dpy, c->xwin, RevertToNone,
+									CurrentTime);
 
-						XChangeProperty(c->dpy, XDefaultRootWindow(c->dpy),
-								c->atoms->_NET_ACTIVE_WINDOW, c->atoms->WINDOW,
-								32, PropModeReplace,
-								reinterpret_cast<unsigned char *>(&(c->xwin)),
-								1);
+							XChangeProperty(
+									c->dpy,
+									XDefaultRootWindow(c->dpy),
+									c->atoms->_NET_ACTIVE_WINDOW,
+									c->atoms->WINDOW,
+									32,
+									PropModeReplace,
+									reinterpret_cast<unsigned char *>(&(c->xwin)),
+									1);
 
-						(_selected.front())->unlock_client();
+							(_selected.front())->unlock_client();
+						}
 					}
-
 				}
 
 			}
@@ -539,8 +543,10 @@ void notebook_t::remove_client(Window w) {
 }
 
 void notebook_t::select_next() {
-	_selected.remove(_selected.front());
-	back_buffer_is_valid = false;
+	if (_selected.size() > 0) {
+		_selected.remove(_selected.front());
+		back_buffer_is_valid = false;
+	}
 }
 
 void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
