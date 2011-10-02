@@ -46,28 +46,9 @@ struct client_t {
 	int width;
 	int height;
 
-	bool has_base_size;
-	bool has_min_size;
-	bool has_max_size;
-	bool has_increment;
-	bool has_aspect;
-	bool is_fixed_size;
-	bool has_partial_struct;
-
-	/* Hints */
-	int basew;
-	int baseh;
-	int minw;
-	int minh;
-	int maxw;
-	int maxh;
-	int incw;
-	int inch;
-	double mina;
-	double maxa;
-
 	XSizeHints hints;
 
+	bool has_partial_struct;
 	int struct_left;
 	int struct_right;
 	int struct_top;

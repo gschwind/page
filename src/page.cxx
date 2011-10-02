@@ -514,71 +514,11 @@ void main_t::client_update_size_hints(client_t * c) {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	long msize;
 	XSizeHints &size = c->hints;
-
 	if (!XGetWMNormalHints(c->dpy, c->xwin, &size, &msize)) {
 		/* size is uninitialized, ensure that size.flags aren't used */
 		size.flags = PSize;
 		printf("no WMNormalHints\n");
 	}
-
-	if (size.flags & PBaseSize) {
-		c->basew = size.base_width;
-		c->baseh = size.base_height;
-	} else if (size.flags & PMinSize) {
-		c->basew = size.min_width;
-		c->baseh = size.min_height;
-	} else {
-		c->basew = 0;
-		c->baseh = 0;
-	}
-
-	if (size.flags & PResizeInc) {
-		c->has_increment = true;
-		c->incw = size.width_inc;
-		c->inch = size.height_inc;
-	} else {
-		c->has_increment = false;
-		c->incw = 0;
-		c->inch = 0;
-	}
-
-	if (size.flags & PMaxSize) {
-		c->has_max_size = true;
-		c->maxw = size.max_width;
-		c->maxh = size.max_height;
-	} else {
-		c->has_max_size = false;
-		c->maxw = 0;
-		c->maxh = 0;
-	}
-
-	if (size.flags & PMinSize) {
-		c->minw = size.min_width;
-		c->minh = size.min_height;
-	} else if (size.flags & PBaseSize) {
-		c->minw = size.base_width;
-		c->minh = size.base_height;
-	} else {
-		c->minw = 0;
-		c->minh = 0;
-	}
-
-	if (size.flags & PAspect) {
-		c->has_aspect = true;
-		if (size.min_aspect.x != 0 && size.max_aspect.y != 0) {
-			c->mina = (double) size.min_aspect.y / (double) size.min_aspect.x;
-			c->maxa = (double) size.max_aspect.x / (double) size.max_aspect.y;
-		}
-	} else {
-		c->has_aspect = false;
-		c->maxa = 0.0;
-		c->mina = 0.0;
-	}
-
-	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh
-			&& c->maxw == c->minw && c->maxh == c->minh);
-
-	printf("return %s %d,%d\n", __PRETTY_FUNCTION__, c->width, c->height);
 }
 
 bool main_t::client_is_dock(client_t * c) {

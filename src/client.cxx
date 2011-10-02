@@ -52,7 +52,7 @@ void client_t::update_client_size(int w, int h) {
 
 	if(hints.flags & PAspect) {
 		if(hints.flags & PBaseSize) {
-			/* ICCCM say if base is set substract base before aspect checking */
+			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
 			if((w-hints.base_width) * hints.min_aspect.y < (h-hints.base_height) * hints.min_aspect.x) {
 				/* reduce h */
 				h = hints.base_height + ((w-hints.base_width) * hints.min_aspect.y) / hints.min_aspect.x;
@@ -79,32 +79,6 @@ void client_t::update_client_size(int w, int h) {
 		h -= ((h - hints.base_height) % hints.height_inc);
 	}
 
-
-//	if (maxw != 0 && w > maxw) {
-//		w = maxw;
-//	}
-//
-//	if (maxh != 0 && h > maxh) {
-//		h = maxh;
-//	}
-//
-//	if (minw != 0 && w < minw) {
-//		w = minw;
-//	}
-//
-//	if (minh != 0 && h < minh) {
-//		h = minh;
-//	}
-//
-//	if (incw != 0) {
-//		w -= ((w - basew) % incw);
-//	}
-//
-//	if (inch != 0) {
-//		h -= ((h - baseh) % inch);
-//	}
-
-	/* TODO respect Aspect */
 	height = h;
 	width = w;
 
