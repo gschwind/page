@@ -9,6 +9,7 @@
 #define CLIENT_HXX_
 
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <string>
 #include "atoms.hxx"
 
@@ -45,6 +46,14 @@ struct client_t {
 	int width;
 	int height;
 
+	bool has_base_size;
+	bool has_min_size;
+	bool has_max_size;
+	bool has_increment;
+	bool has_aspect;
+	bool is_fixed_size;
+	bool has_partial_struct;
+
 	/* Hints */
 	int basew;
 	int baseh;
@@ -56,9 +65,9 @@ struct client_t {
 	int inch;
 	double mina;
 	double maxa;
-	bool is_fixed_size;
 
-	bool has_partial_struct;
+	XSizeHints hints;
+
 	int struct_left;
 	int struct_right;
 	int struct_top;

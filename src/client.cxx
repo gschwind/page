@@ -5,7 +5,6 @@
  *      Author: gschwind
  */
 
-#include <X11/Xlib.h>
 #include <stdio.h>
 #include "client.hxx"
 
@@ -30,29 +29,80 @@ void client_t::unmap() {
 }
 
 void client_t::update_client_size(int w, int h) {
-	if (maxw != 0 && w > maxw) {
-		w = maxw;
+
+	if(hints.flags & PMaxSize) {
+		if(w > hints.max_width)
+			w = hints.max_width;
+		if(h > hints.max_height)
+			h = hints.max_height;
 	}
 
-	if (maxh != 0 && h > maxh) {
-		h = maxh;
+
+	if(hints.flags & PBaseSize) {
+		if(w < hints.base_width)
+			w = hints.base_width;
+		if(h < hints.base_height)
+			h = hints.base_height;
+	} else if (hints.flags & PMinSize) {
+		if(w < hints.min_width)
+			w = hints.min_width;
+		if(h < hints.min_height)
+			h = hints.min_height;
 	}
 
-	if (minw != 0 && w < minw) {
-		w = minw;
+	if(hints.flags & PAspect) {
+		if(hints.flags & PBaseSize) {
+			/* ICCCM say if base is set substract base before aspect checking */
+			if((w-hints.base_width) * hints.min_aspect.y < (h-hints.base_height) * hints.min_aspect.x) {
+				/* reduce h */
+				h = hints.base_height + ((w-hints.base_width) * hints.min_aspect.y) / hints.min_aspect.x;
+
+			} else if ((w-hints.base_width) * hints.max_aspect.y > (h-hints.base_height) * hints.max_aspect.x) {
+				/* reduce w */
+				w = hints.base_width + ((h-hints.base_height) * hints.max_aspect.x) / hints.max_aspect.y;
+			}
+		} else {
+			if(w * hints.min_aspect.y < h * hints.min_aspect.x) {
+				/* reduce h */
+				h = (w * hints.min_aspect.y) / hints.min_aspect.x;
+
+			} else if (w * hints.max_aspect.y > h * hints.max_aspect.x) {
+				/* reduce w */
+				w = (h * hints.max_aspect.x) / hints.max_aspect.y;
+			}
+		}
+
 	}
 
-	if (minh != 0 && h < minh) {
-		h = minh;
+	if(hints.flags & PResizeInc) {
+		w -= ((w - hints.base_width) % hints.width_inc);
+		h -= ((h - hints.base_height) % hints.height_inc);
 	}
 
-	if (incw != 0) {
-		w -= ((w - basew) % incw);
-	}
 
-	if (inch != 0) {
-		h -= ((h - baseh) % inch);
-	}
+//	if (maxw != 0 && w > maxw) {
+//		w = maxw;
+//	}
+//
+//	if (maxh != 0 && h > maxh) {
+//		h = maxh;
+//	}
+//
+//	if (minw != 0 && w < minw) {
+//		w = minw;
+//	}
+//
+//	if (minh != 0 && h < minh) {
+//		h = minh;
+//	}
+//
+//	if (incw != 0) {
+//		w -= ((w - basew) % incw);
+//	}
+//
+//	if (inch != 0) {
+//		h -= ((h - baseh) % inch);
+//	}
 
 	/* TODO respect Aspect */
 	height = h;

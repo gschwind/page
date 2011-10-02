@@ -20,6 +20,8 @@ struct atoms_t {
 	Atom WM_DELETE_WINDOW;
 	Atom WM_PROTOCOLS;
 
+	Atom WM_NORMAL_HINTS;
+
 	Atom _NET_SUPPORTED;
 	Atom _NET_WM_NAME;
 	Atom _NET_WM_STATE;

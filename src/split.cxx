@@ -98,11 +98,11 @@ bool split_t::process_button_press_event(XEvent const * e) {
 		if (_split_type == VERTICAL_SPLIT) {
 			slide.y = _allocation.y;
 			slide.h = _allocation.h;
-			slide.x = _allocation.x + (_allocation.w * _split) - 2;
-			slide.w = 5;
+			slide.x = _allocation.x + (_allocation.w * _split) - 3;
+			slide.w = 6;
 		} else {
-			slide.y = _allocation.y + (_allocation.h * _split) - 2;
-			slide.h = 5;
+			slide.y = _allocation.y + (_allocation.h * _split) - 3;
+			slide.h = 6;
 			slide.x = _allocation.x;
 			slide.w = _allocation.w;
 		}
@@ -124,14 +124,14 @@ bool split_t::process_button_press_event(XEvent const * e) {
 
 			if (_split_type == VERTICAL_SPLIT) {
 				w = XCreateWindow(_dpy, _w,
-						_allocation.x + (int) (_split * _allocation.w) - 2,
-						_allocation.y, 5, _allocation.h, 1, w_attribute.depth,
+						_allocation.x + (int) (_split * _allocation.w) - 3,
+						_allocation.y, 6, _allocation.h, 1, w_attribute.depth,
 						InputOutput, w_attribute.visual,
 						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			} else {
 				w = XCreateWindow(_dpy, _w, _allocation.x,
-						_allocation.y + (int) (_split * _allocation.h) - 2,
-						_allocation.w, 5, 1, w_attribute.depth, InputOutput,
+						_allocation.y + (int) (_split * _allocation.h) - 3,
+						_allocation.w, 6, 1, w_attribute.depth, InputOutput,
 						w_attribute.visual,
 						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			}
@@ -152,6 +152,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 				case ConfigureRequest:
 				case Expose:
 				case MapRequest:
+					printf("EXPOSE\n");
 					break;
 				case MotionNotify:
 					if (_split_type == VERTICAL_SPLIT) {
@@ -165,7 +166,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 								_dpy,
 								w,
 								_allocation.x + (int) (_split * _allocation.w)
-										- 2, _allocation.y, 5, _allocation.h);
+										- 3, _allocation.y, 6, _allocation.h);
 					} else {
 						_split = (ev.xmotion.y - _allocation.y)
 								/ (double) (_allocation.h);
@@ -178,7 +179,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 								w,
 								_allocation.x,
 								_allocation.y + (int) (_split * _allocation.h)
-										- 2, _allocation.w, 5);
+										- 3, _allocation.w, 6);
 					}
 
 					if (_split > 0.95)

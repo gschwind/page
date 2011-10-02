@@ -80,6 +80,8 @@ main_t::main_t() {
 	ATOM_INIT(WM_DELETE_WINDOW);
 	ATOM_INIT(WM_PROTOCOLS);
 
+	ATOM_INIT(WM_NORMAL_HINTS);
+
 	ATOM_INIT(_NET_SUPPORTED);
 	ATOM_INIT(_NET_WM_NAME);
 	ATOM_INIT(_NET_WM_STATE);
@@ -511,7 +513,7 @@ void main_t::update_title(client_t &c) {
 void main_t::client_update_size_hints(client_t * c) {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	long msize;
-	XSizeHints size;
+	XSizeHints &size = c->hints;
 
 	if (!XGetWMNormalHints(c->dpy, c->xwin, &size, &msize)) {
 		/* size is uninitialized, ensure that size.flags aren't used */
@@ -531,17 +533,21 @@ void main_t::client_update_size_hints(client_t * c) {
 	}
 
 	if (size.flags & PResizeInc) {
+		c->has_increment = true;
 		c->incw = size.width_inc;
 		c->inch = size.height_inc;
 	} else {
+		c->has_increment = false;
 		c->incw = 0;
 		c->inch = 0;
 	}
 
 	if (size.flags & PMaxSize) {
+		c->has_max_size = true;
 		c->maxw = size.max_width;
 		c->maxh = size.max_height;
 	} else {
+		c->has_max_size = false;
 		c->maxw = 0;
 		c->maxh = 0;
 	}
@@ -558,14 +564,17 @@ void main_t::client_update_size_hints(client_t * c) {
 	}
 
 	if (size.flags & PAspect) {
+		c->has_aspect = true;
 		if (size.min_aspect.x != 0 && size.max_aspect.y != 0) {
 			c->mina = (double) size.min_aspect.y / (double) size.min_aspect.x;
 			c->maxa = (double) size.max_aspect.x / (double) size.max_aspect.y;
 		}
 	} else {
+		c->has_aspect = false;
 		c->maxa = 0.0;
 		c->mina = 0.0;
 	}
+
 	c->is_fixed_size = (c->maxw && c->minw && c->maxh && c->minh
 			&& c->maxw == c->minw && c->maxh == c->minh);
 
@@ -795,6 +804,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		} else if (ev->xproperty.atom == atoms._NET_ACTIVE_WINDOW) {
 			printf("request to activate %lu\n", ev->xproperty.window);
 
+		} else if (ev->xproperty.atom == atoms.WM_NORMAL_HINTS) {
+			client_update_size_hints(c);
 		}
 		c->unlock_client();
 	}
