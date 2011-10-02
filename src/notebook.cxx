@@ -416,9 +416,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 void notebook_t::update_client_mapping() {
 	std::list<client_t *>::iterator i;
-
 	/* map before unmap */
-
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i) == _selected.front()) {
 			if (!((*i)->try_lock_client()))

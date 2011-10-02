@@ -67,14 +67,14 @@ void split_t::update_allocation_pack1() {
 
 void split_t::render(cairo_t * cr) {
 	cairo_save(cr);
-	cairo_set_source_rgb(cr, 0xeeU / 255.0,
-			0xeeU / 255.0, 0xecU / 255.0);
+	cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
 		cairo_rectangle(cr, _allocation.x + _allocation.w * _split - 3.0,
 				_allocation.y, 6.0, _allocation.h - 1.0);
 	} else {
 		cairo_rectangle(cr, _allocation.x,
-				_allocation.y + (_allocation.h * _split) - 3.0, _allocation.w, 6.0);
+				_allocation.y + (_allocation.h * _split) - 3.0, _allocation.w,
+				6.0);
 	}
 	cairo_fill(cr);
 	cairo_restore(cr);
@@ -143,6 +143,8 @@ bool split_t::process_button_press_event(XEvent const * e) {
 					GrabModeAsync, GrabModeAsync, None, cursor,
 					CurrentTime) != GrabSuccess)
 				return true;
+
+			int save_render = 0;
 			do {
 				XMaskEvent(
 						_dpy,
@@ -152,7 +154,13 @@ bool split_t::process_button_press_event(XEvent const * e) {
 				case ConfigureRequest:
 				case Expose:
 				case MapRequest:
-					printf("EXPOSE\n");
+					save_render = (save_render + 1) % 10;
+					/* only render 1 time per 10 */
+					if (save_render == 0) {
+						cr = get_cairo();
+						render(cr);
+						cairo_destroy(cr);
+					}
 					break;
 				case MotionNotify:
 					if (_split_type == VERTICAL_SPLIT) {

@@ -59,7 +59,7 @@ main_t::main_t() {
 			InputOutput, root_wa.visual, 0, &swa);
 	cursor = XCreateFontCursor(dpy, XC_left_ptr);
 	XDefineCursor(dpy, main_window, cursor);
-	XSelectInput(dpy, main_window, StructureNotifyMask | ButtonPressMask);
+	XSelectInput(dpy, main_window, StructureNotifyMask | ButtonPressMask | ExposureMask);
 	XMapWindow(dpy, main_window);
 
 	printf("Created main window #%lu\n", main_window);
