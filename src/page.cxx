@@ -417,7 +417,8 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	XSetWindowBorderWidth(dpy, w, 0);
 
 	XSetWindowAttributes swa;
-	swa.background_pixel = 0xFFU << 16 | 0x00U << 8 | 0x00U;
+
+	swa.background_pixel = 0xeeU << 16 | 0xeeU << 8 | 0xecU;
 	swa.border_pixel = XBlackPixel(dpy, screen);
 	c->clipping_window = XCreateWindow(dpy, main_window, 0, 0, 1, 1, 0,
 			root_wa.depth, InputOutput, root_wa.visual,

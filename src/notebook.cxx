@@ -248,6 +248,14 @@ void notebook_t::render(cairo_t * cr) {
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
 
 		/* draw border */
+		if (_clients.size() == 0) {
+			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
+					0xecU / 255.0);
+			cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+					_allocation.h);
+			cairo_fill(cr);
+		}
+
 		//cairo_set_line_width(cr, 1.0);
 		//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 		//cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 21,
