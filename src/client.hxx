@@ -48,6 +48,20 @@ struct client_t {
 
 	XSizeHints hints;
 
+	/* _NET_WM_STATE */
+	bool is_modal; /* has no effect */
+	bool is_sticky; /* has no effect */
+	bool is_maximized_vert; /* has no effect */
+	bool is_maximized_horz; /* has no effect */
+	bool is_is_shaded; /* has no effect */
+	bool is_skip_taskbar; /* has no effect */
+	bool is_skip_pager; /* has no effect */
+	bool is_hidden; /* has no effect */
+	bool is_fullscreen; /* has no effect */
+	bool is_above; /* has no effect */
+	bool is_below; /* has no effect */
+	bool is_demands_attention; /* has no effect */
+
 	bool has_partial_struct;
 	int struct_left;
 	int struct_right;

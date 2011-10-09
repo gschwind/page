@@ -59,7 +59,8 @@ main_t::main_t() {
 			InputOutput, root_wa.visual, 0, &swa);
 	cursor = XCreateFontCursor(dpy, XC_left_ptr);
 	XDefineCursor(dpy, main_window, cursor);
-	XSelectInput(dpy, main_window, StructureNotifyMask | ButtonPressMask | ExposureMask);
+	XSelectInput(dpy, main_window,
+			StructureNotifyMask | ButtonPressMask | ExposureMask);
 	XMapWindow(dpy, main_window);
 
 	printf("Created main window #%lu\n", main_window);
@@ -85,7 +86,6 @@ main_t::main_t() {
 	ATOM_INIT(_NET_SUPPORTED);
 	ATOM_INIT(_NET_WM_NAME);
 	ATOM_INIT(_NET_WM_STATE);
-	ATOM_INIT(_NET_WM_STATE_FULLSCREEN);
 	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
 
 	ATOM_INIT(_NET_WM_WINDOW_TYPE);
@@ -105,6 +105,19 @@ main_t::main_t() {
 	ATOM_INIT(_NET_WORKAREA);
 
 	ATOM_INIT(_NET_ACTIVE_WINDOW);
+
+	ATOM_INIT(_NET_WM_STATE_MODAL);
+	ATOM_INIT(_NET_WM_STATE_STICKY);
+	ATOM_INIT(_NET_WM_STATE_MAXIMIZED_VERT);
+	ATOM_INIT(_NET_WM_STATE_MAXIMIZED_HORZ);
+	ATOM_INIT(_NET_WM_STATE_SHADED);
+	ATOM_INIT(_NET_WM_STATE_SKIP_TASKBAR);
+	ATOM_INIT(_NET_WM_STATE_SKIP_PAGER);
+	ATOM_INIT(_NET_WM_STATE_HIDDEN);
+	ATOM_INIT(_NET_WM_STATE_FULLSCREEN);
+	ATOM_INIT(_NET_WM_STATE_ABOVE);
+	ATOM_INIT(_NET_WM_STATE_BELOW);
+	ATOM_INIT(_NET_WM_STATE_DEMANDS_ATTENTION);
 
 	box_t<int> a(0, 0, sw, sh);
 	tree_root = new root_t(dpy, main_window, a);
@@ -412,6 +425,58 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		return true;
 	}
 
+	/* take _NET_WM_STATE */
+	{
+		unsigned int n;
+		long * net_wm_state = get_properties32(c->xwin, atoms._NET_WM_STATE,
+				atoms.ATOM, &n);
+
+		c->is_modal = false;
+		c->is_sticky = false;
+		c->is_maximized_vert = false;
+		c->is_maximized_horz = false;
+		c->is_is_shaded = false;
+		c->is_skip_taskbar = false;
+		c->is_skip_pager = false;
+		c->is_hidden = false;
+		c->is_fullscreen = false;
+		c->is_above = false;
+		c->is_below = false;
+		c->is_demands_attention = false;
+
+		for (int i = 0; i < n; ++i) {
+			if (net_wm_state[i] == atoms._NET_WM_STATE_MODAL) {
+				c->is_modal = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_STICKY) {
+				c->is_sticky = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_MAXIMIZED_VERT) {
+				c->is_maximized_vert = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_MAXIMIZED_HORZ) {
+				c->is_maximized_horz = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_SHADED) {
+				c->is_is_shaded = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_SKIP_TASKBAR) {
+				c->is_skip_taskbar = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_SKIP_PAGER) {
+				c->is_skip_pager = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_HIDDEN) {
+				c->is_hidden = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_FULLSCREEN) {
+				c->is_fullscreen = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_ABOVE) {
+				c->is_above = true;
+			} else if (net_wm_state[i] == atoms._NET_WM_STATE_BELOW) {
+				c->is_below = true;
+			} else if (net_wm_state[i]
+					== atoms._NET_WM_STATE_DEMANDS_ATTENTION) {
+				c->is_demands_attention = true;
+			}
+
+		}
+	}
+
+	/* TODO : is full screen manage on another way i.e. do not reparent */
+
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(dpy, w);
 	XSetWindowBorderWidth(dpy, w, 0);
@@ -428,12 +493,18 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 			c->clipping_window, 0, 0);
 	XSelectInput(dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
 	/* this produce an unmap ? */
-	XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
-	XUnmapWindow(dpy, c->clipping_window);
+	if (!c->is_fullscreen) {
+		XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
+		XUnmapWindow(dpy, c->clipping_window);
 
-	if (!tree_root->add_notebook(c)) {
-		printf("Fail to add a client\n");
-		exit(EXIT_FAILURE);
+		if (!tree_root->add_notebook(c)) {
+			printf("Fail to add a client\n");
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		XUnmapWindow(dpy, c->clipping_window);
+		XMoveResizeWindow(dpy, c->xwin, 0, 0, sw, sh);
+		XRaiseWindow(dpy, c->xwin);
 	}
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
@@ -585,46 +656,7 @@ void main_t::process_map_request_event(XEvent * e) {
 }
 
 void main_t::process_map_notify_event(XEvent * e) {
-//	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
-//			(void *) e->xmap.window);
-//	Window w = e->xmap.window;
-//	/* secure the map request */
-//	XGrabServer(dpy);
-//	XSync(dpy, False);
-//	XEvent ev;
-//	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
-//		/* the window is already destroyed, return */
-//		XUngrabServer(dpy);
-//		XFlush(dpy);
-//		return;
-//	}
-//
-//	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, UnmapNotify, &ev)) {
-//		/* the window is already unmapped, return */
-//		XUngrabServer(dpy);
-//		XFlush(dpy);
-//		return;
-//	}
-//
-//	/* should never happen */
-//	XWindowAttributes wa;
-//	if (!XGetWindowAttributes(dpy, w, &wa)) {
-//		XMapWindow(dpy, w);
-//		return;
-//	}
-//	if (wa.override_redirect) {
-//		XMapWindow(dpy, w);
-//		return;
-//	}
-//	manage(w, &wa);
-//	XMapWindow(dpy, w);
-//	render();
-//	update_client_list();
-//	XUngrabServer(dpy);
-//	XFlush(dpy);
-//	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
-//			(void *) e->xmaprequest.window);
-//	return;
+
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
@@ -687,8 +719,8 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 }
 
 void main_t::process_property_notify_event(XEvent * ev) {
-	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
-			ev->xproperty.window);
+	//printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
+	//		ev->xproperty.window);
 
 	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(dpy, ev->xproperty.atom);
@@ -752,6 +784,24 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	}
 }
 
+void main_t::toggle_fullscreen(client_t * c) {
+	if (c->is_fullscreen) {
+		c->is_fullscreen = false;
+		XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
+		XUnmapWindow(dpy, c->clipping_window);
+		if (!tree_root->add_notebook(c)) {
+			printf("Fail to add a client\n");
+			exit(EXIT_FAILURE);
+		}
+	} else {
+		c->is_fullscreen = true;
+		XReparentWindow(dpy, c->xwin, xroot, 0, 0);
+		XUnmapWindow(dpy, c->clipping_window);
+		XResizeWindow(dpy, c->xwin, sw, sh);
+		XRaiseWindow(dpy, c->xwin);
+	}
+}
+
 void main_t::process_client_message_event(XEvent * ev) {
 	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
 			ev->xproperty.window);
@@ -763,65 +813,42 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 	if (ev->xclient.message_type == atoms._NET_ACTIVE_WINDOW) {
 		printf("request to activate %lu\n", ev->xclient.window);
-		client_t * c = find_client_by_xwindow(ev->xproperty.window);
+		client_t * c = find_client_by_xwindow(ev->xclient.window);
 		if (c) {
 			tree_root->activate_client(c);
 			render();
 		}
 
-	}
+	} else if (ev->xclient.message_type == atoms._NET_WM_STATE) {
+		client_t * c = find_client_by_xwindow(ev->xclient.window);
+		if (c) {
+			if (c->try_lock_client()) {
+				if (ev->xclient.data.l[1] == atoms._NET_WM_STATE_FULLSCREEN
+						|| ev->xclient.data.l[2]
+								== atoms._NET_WM_STATE_FULLSCREEN) {
+					switch (ev->xclient.data.l[0]) {
+					case 0:
+						if (c->is_fullscreen) {
+							toggle_fullscreen(c);
+						}
+						break;
+					case 1:
+						if (!c->is_fullscreen) {
+							toggle_fullscreen(c);
+						}
+						break;
+					case 2:
+						toggle_fullscreen(c);
+						break;
 
-//	client_t * c = find_client_by_xwindow(ev->xproperty.window);
-//	if (!c)
-//		return;
-//	if (c->try_lock_client()) {
-//		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
-//			XRaiseWindow(dpy, ev->xproperty.window);
-//			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone,
-//					CurrentTime);
-//			XChangeProperty(dpy, xroot, atoms._NET_ACTIVE_WINDOW, atoms.WINDOW,
-//					32, PropModeReplace,
-//					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
-//					1);
-//		} else if (ev->xproperty.atom == atoms._NET_WM_NAME) {
-//			update_net_vm_name(*c);
-//			update_title(*c);
-//			render();
-//		} else if (ev->xproperty.atom == atoms.WM_NAME) {
-//			update_vm_name(*c);
-//			update_title(*c);
-//			render();
-//		} else if (ev->xproperty.atom == atoms._NET_WM_STRUT_PARTIAL) {
-//			if (ev->xproperty.state == PropertyNewValue) {
-//				unsigned int n;
-//				long * partial_struct = get_properties32(c->xwin,
-//						atoms._NET_WM_STRUT_PARTIAL, atoms.CARDINAL, &n);
-//
-//				if (partial_struct) {
-//
-//					printf("partial struct %ld %ld %ld %ld\n",
-//							partial_struct[0], partial_struct[1],
-//							partial_struct[2], partial_struct[3]);
-//
-//					c->has_partial_struct = true;
-//					c->struct_left = partial_struct[0];
-//					c->struct_right = partial_struct[1];
-//					c->struct_top = partial_struct[2];
-//					c->struct_bottom = partial_struct[3];
-//
-//					delete[] partial_struct;
-//
-//				}
-//			} else if (ev->xproperty.state == PropertyDelete) {
-//				c->has_partial_struct = false;
-//			}
-//
-//		} else if (ev->xproperty.atom == atoms._NET_ACTIVE_WINDOW) {
-//			printf("request to activate %lu\n", ev->xproperty.window);
-//
-//		}
-//		c->unlock_client();
-//	}
+					}
+				}
+				c->unlock_client();
+			}
+
+		}
+
+	}
 }
 
 void main_t::update_vm_hints(client_t &c) {

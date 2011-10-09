@@ -178,6 +178,8 @@ public:
 		return result;
 	}
 
+	void toggle_fullscreen(client_t * c);
+
 	long * get_properties32(Window win, Atom prop, Atom type, unsigned int *num);
 	short * get_properties16(Window win, Atom prop, Atom type, unsigned int *num);
 	char * get_properties8(Window win, Atom prop, Atom type, unsigned int *num);
