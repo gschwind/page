@@ -10,8 +10,11 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <cairo.h>
 #include <string>
+#include <list>
 #include "atoms.hxx"
+#include "icon.hxx"
 
 namespace page_next {
 
@@ -47,6 +50,14 @@ struct client_t {
 	int height;
 
 	XSizeHints hints;
+
+	long * icon_data;
+	int32_t * icon_data32;
+	int icon_data_size;
+
+	icon selected;
+	cairo_surface_t * icon_surf;
+	std::list<struct icon> icons;
 
 	/* _NET_WM_STATE */
 	bool is_modal; /* has no effect */

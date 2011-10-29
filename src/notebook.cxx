@@ -107,6 +107,7 @@ void notebook_t::render(cairo_t * cr) {
 
 				cairo_save(back_buffer_cr);
 				{
+
 					cairo_translate(back_buffer_cr, offset, 0.0);
 
 					if (_selected.front() == (*i)) {
@@ -123,13 +124,23 @@ void notebook_t::render(cairo_t * cr) {
 								0xeeU / 255.0, 0xecU / 255.0);
 						cairo_fill(back_buffer_cr);
 
+						if ((*i)->icon_data != 0) {
+							printf("RENDER ICON\n");
+							icon tmp = (*i)->icons.front();
+							cairo_set_source_surface(back_buffer_cr,
+									(*i)->icon_surf, 4.0, 3.0);
+							cairo_rectangle(back_buffer_cr, 0.0, 0.0, 18.0,
+									18.0);
+							cairo_fill(back_buffer_cr);
+						}
+
 						/* draw the name */
 						cairo_rectangle(back_buffer_cr, 2.0, 0.0, length - 16.0,
 								19.0);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13.0);
-						cairo_move_to(back_buffer_cr, 3.5, 15.5);
+						cairo_move_to(back_buffer_cr, 20.5, 15.5);
 						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
 
 						/* draw blue lines */
@@ -170,6 +181,16 @@ void notebook_t::render(cairo_t * cr) {
 
 					} else {
 
+						if ((*i)->icon_data != 0) {
+							printf("RENDER ICON\n");
+							icon tmp = (*i)->icons.front();
+							cairo_set_source_surface(back_buffer_cr,
+									(*i)->icon_surf, 4.0, 3.0);
+							cairo_rectangle(back_buffer_cr, 0.0, 0.0, 18.0,
+									18.0);
+							cairo_fill(back_buffer_cr);
+						}
+
 						cairo_set_line_width(back_buffer_cr, 1.0);
 						cairo_select_font_face(back_buffer_cr, "Sans",
 								CAIRO_FONT_SLANT_NORMAL,
@@ -181,7 +202,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13);
-						cairo_move_to(back_buffer_cr, 3.0, 15.0);
+						cairo_move_to(back_buffer_cr, 20.5, 15.5);
 						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
 
 						/* draw border */

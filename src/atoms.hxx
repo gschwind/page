@@ -58,6 +58,8 @@ struct atoms_t {
 	Atom _NET_WM_STATE_BELOW;
 	Atom _NET_WM_STATE_DEMANDS_ATTENTION;
 
+	Atom _NET_WM_ICON;
+
 
 	/*TODO Atoms for root window */
 	Atom _NET_DESKTOP_NAMES;

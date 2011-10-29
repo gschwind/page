@@ -27,6 +27,7 @@
 #include "atoms.hxx"
 #include "client.hxx"
 #include "box.hxx"
+#include "icon.hxx"
 
 namespace page_next {
 
@@ -163,6 +164,8 @@ public:
 				std::numeric_limits<int>::max(), False, type, &ret_type,
 				&ret_size, &ret_items, &bytes_left, &xdata);
 		if (res == Success) {
+			if(bytes_left != 0)
+				printf("some bits lefts\n");
 			if (ret_size == SIZE && ret_items > 0) {
 				result = new T[ret_items];
 				data = reinterpret_cast<T*>(xdata);
@@ -185,6 +188,8 @@ public:
 	long * get_properties32(Window win, Atom prop, Atom type, unsigned int *num);
 	short * get_properties16(Window win, Atom prop, Atom type, unsigned int *num);
 	char * get_properties8(Window win, Atom prop, Atom type, unsigned int *num);
+
+	void parse_icons(client_t * c);
 
 };
 

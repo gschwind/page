@@ -119,6 +119,8 @@ main_t::main_t() {
 	ATOM_INIT(_NET_WM_STATE_BELOW);
 	ATOM_INIT(_NET_WM_STATE_DEMANDS_ATTENTION);
 
+	ATOM_INIT(_NET_WM_ICON);
+
 	box_t<int> a(0, 0, sw, sh);
 	tree_root = new root_t(dpy, main_window, a);
 
@@ -501,6 +503,47 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		}
 	}
 
+	{
+		unsigned int n;
+		c->icon_data = get_properties32(c->xwin, atoms._NET_WM_ICON,
+				atoms.CARDINAL, &n);
+		c->icon_data_size = n;
+
+		if (n > 0) {
+			c->icon_data32 = new int32_t[n];
+			for (int i = 0; i < n; ++i)
+				c->icon_data32[i] = c->icon_data[i];
+		}
+		parse_icons(c);
+
+		icon ic;
+		int x = 0;
+		int y = 0;
+		bool has_icon = false;
+		/* find a icon */
+		std::list<icon>::iterator i = c->icons.begin();
+		while (i != c->icons.end()) {
+			if ((*i).width <= 16 && x < (*i).width) {
+				x = (*i).width;
+				ic = (*i);
+				has_icon = true;
+			}
+			++i;
+		}
+
+		if (has_icon)
+			c->selected = ic;
+		else
+			c->selected = c->icons.front();
+
+		c->icon_surf = cairo_image_surface_create_for_data(
+				(unsigned char *) c->selected.data,
+				CAIRO_FORMAT_ARGB32,
+				c->selected.width,
+				c->selected.height,
+				cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
+						c->selected.width));
+	}
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(dpy, w);
 	XSetWindowBorderWidth(dpy, w, 0);
@@ -901,6 +944,19 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 void main_t::update_vm_hints(client_t &c) {
 
+}
+
+void main_t::parse_icons(client_t * c) {
+	int offset = 0;
+	while (offset < c->icon_data_size) {
+		icon tmp;
+		tmp.width = c->icon_data[offset + 0];
+		tmp.height = c->icon_data[offset + 1];
+		printf("FIND ICON%d %d\n", tmp.width, tmp.height);
+		tmp.data = &c->icon_data32[offset + 3];
+		offset += 2 + tmp.width * tmp.height;
+		c->icons.push_back(tmp);
+	}
 }
 
 }

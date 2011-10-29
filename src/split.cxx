@@ -207,6 +207,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			XFreeCursor(_dpy, cursor);
 			XDestroyWindow(_dpy, w);
 
+			/* reenable big grab */
 			XGrabServer(_dpy);
 			XSync(_dpy, False);
 
