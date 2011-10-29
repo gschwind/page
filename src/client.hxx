@@ -62,6 +62,7 @@ struct client_t {
 	bool is_below; /* has no effect */
 	bool is_demands_attention; /* has no effect */
 
+	bool is_dock;
 	bool has_partial_struct;
 	int struct_left;
 	int struct_right;

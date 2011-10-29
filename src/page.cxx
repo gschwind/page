@@ -384,6 +384,7 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		return false;
 
 	c = new client_t;
+	c->is_dock = false;
 	c->has_partial_struct = false;
 	c->xwin = w;
 	c->dpy = dpy;
@@ -412,6 +413,7 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	client_update_size_hints(c);
 
 	if (client_is_dock(c)) {
+		c->is_dock = true;
 		printf("IsDock !\n");
 		unsigned int n;
 		long * partial_struct = get_properties32(c->xwin,
@@ -721,7 +723,8 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 		if (c->has_partial_struct)
 			update_page_aera();
 		update_client_list();
-		XDestroyWindow(dpy, c->clipping_window);
+		if (!c->is_dock)
+			XDestroyWindow(dpy, c->clipping_window);
 		delete c;
 		render();
 	}
@@ -798,8 +801,7 @@ void main_t::fullscreen(client_t *c) {
 	long new_state[1];
 	new_state[0] = atoms._NET_WM_STATE_FULLSCREEN;
 	XChangeProperty(dpy, xroot, atoms._NET_WM_STATE, atoms.ATOM, 32,
-			PropModeReplace,
-			reinterpret_cast<unsigned char *>(new_state), 1);
+			PropModeReplace, reinterpret_cast<unsigned char *>(new_state), 1);
 
 	XReparentWindow(dpy, c->clipping_window, xroot, 0, 0);
 	XMoveResizeWindow(dpy, c->xwin, 0, 0, sw, sh);
@@ -815,8 +817,7 @@ void main_t::unfullscreen(client_t * c) {
 	long new_state[1];
 	new_state[0] = atoms._NET_WM_STATE_FULLSCREEN;
 	XChangeProperty(dpy, xroot, atoms._NET_WM_STATE, atoms.ATOM, 32,
-			PropModeReplace,
-			reinterpret_cast<unsigned char *>(new_state), 0);
+			PropModeReplace, reinterpret_cast<unsigned char *>(new_state), 0);
 	XReparentWindow(dpy, c->clipping_window, main_window, 0, 0);
 	c->unmap();
 	render();

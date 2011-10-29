@@ -15,6 +15,7 @@ void client_t::map() {
 	XMapWindow(dpy, xwin);
 	XMapWindow(dpy, clipping_window);
 }
+
 void client_t::unmap() {
 	if (is_map) {
 		is_map = false;
