@@ -138,6 +138,12 @@ bool split_t::process_button_press_event(XEvent const * e) {
 
 			XMapWindow(_dpy, w);
 
+			/* ungrab the big grab, which allow
+			 * update client.
+			 */
+			XUngrabServer(_dpy);
+			XFlush(_dpy);
+
 			if (XGrabPointer(_dpy, _w, False,
 					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 					GrabModeAsync, GrabModeAsync, None, cursor,
@@ -200,6 +206,9 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			XUngrabPointer(_dpy, CurrentTime);
 			XFreeCursor(_dpy, cursor);
 			XDestroyWindow(_dpy, w);
+
+			XGrabServer(_dpy);
+			XSync(_dpy, False);
 
 			update_allocation(_allocation);
 			cr = get_cairo();

@@ -647,15 +647,15 @@ void main_t::process_map_request_event(XEvent * e) {
 	XEvent ev;
 	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
 		/* the window is already destroyed, return */
-		XUngrabServer(dpy);
-		XFlush(dpy);
+		//XUngrabServer(dpy);
+		//XFlush(dpy);
 		return;
 	}
 
 	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, UnmapNotify, &ev)) {
 		/* the window is already unmapped, return */
-		XUngrabServer(dpy);
-		XFlush(dpy);
+		//XUngrabServer(dpy);
+		//XFlush(dpy);
 		return;
 	}
 
