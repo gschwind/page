@@ -225,6 +225,18 @@ void main_t::run() {
 	while (running) {
 		XEvent e;
 		XNextEvent(dpy, &e);
+
+		/* big grab
+		 * this is avoid window destruction when
+		 * WM manipulate them
+		 * WM does not own windows that it change
+		 * so client can destroy window async when WM try to move it.
+		 * Grab server avoid this situation
+		 * When the WM will be mature this grab may be avoid by try-catch error
+		 * handle, maybe :/
+		 **/
+		XGrabServer(dpy);
+		XSync(dpy, False);
 		printf("#%lu event: %s window: %lu\n", e.xany.serial,
 				x_event_name[e.type], e.xany.window);
 		if (e.type == MapNotify) {
@@ -256,6 +268,9 @@ void main_t::run() {
 		} else if (e.type == ClientMessage) {
 			process_client_message_event(&e);
 		}
+		/* release grab */
+		XUngrabServer(dpy);
+		XFlush(dpy);
 	}
 }
 
@@ -627,8 +642,8 @@ void main_t::process_map_request_event(XEvent * e) {
 			(void *) e->xmaprequest.window);
 	Window w = e->xmaprequest.window;
 	/* secure the map request */
-	XGrabServer(dpy);
-	XSync(dpy, False);
+	//XGrabServer(dpy);
+	//XSync(dpy, False);
 	XEvent ev;
 	if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
 		/* the window is already destroyed, return */
@@ -658,8 +673,8 @@ void main_t::process_map_request_event(XEvent * e) {
 	XMapWindow(dpy, w);
 	render();
 	update_client_list();
-	XUngrabServer(dpy);
-	XFlush(dpy);
+	//XUngrabServer(dpy);
+	//XFlush(dpy);
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	return;
@@ -694,8 +709,8 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		 * reparent a destroyed window. Therefore we grab the server and check if the
 		 * window is not already destroyed.
 		 */
-		XGrabServer(dpy);
-		XSync(dpy, False);
+		//XGrabServer(dpy);
+		//XSync(dpy, False);
 		XEvent ev;
 		if (XCheckTypedWindowEvent(dpy, e->xunmap.window, DestroyNotify, &ev)) {
 			process_destroy_notify_event(&ev);
@@ -708,8 +723,8 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			delete c;
 			render();
 		}
-		XUngrabServer(dpy);
-		XFlush(dpy);
+		//XUngrabServer(dpy);
+		//XFlush(dpy);
 	}
 }
 
@@ -789,6 +804,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 		} else if (ev->xproperty.atom == atoms.WM_NORMAL_HINTS) {
 			client_update_size_hints(c);
+			render();
 		}
 		c->unlock_client();
 	}
