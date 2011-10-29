@@ -386,9 +386,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						if ((_selected.front())->try_lock_client()) {
 							client_t * c = _selected.front();
 
-							XRaiseWindow(c->dpy, c->xwin);
-							XSetInputFocus(c->dpy, c->xwin, RevertToNone,
-									CurrentTime);
+							c->focus();
 
 							XChangeProperty(
 									c->dpy,
@@ -444,10 +442,13 @@ void notebook_t::update_client_mapping() {
 			if (offset_y < 0)
 				offset_y = 0;
 
-			XMoveResizeWindow(c->dpy, c->xwin, offset_x, offset_y, c->width,
-					c->height);
-			XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 1,
-					_allocation.y + 20, _allocation.w - 2, _allocation.h - 21);
+			if (!c->is_fullscreen) {
+				XMoveResizeWindow(c->dpy, c->xwin, offset_x, offset_y, c->width,
+						c->height);
+				XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 1,
+						_allocation.y + 20, _allocation.w - 2,
+						_allocation.h - 21);
+			}
 			c->map();
 
 			long state = NormalState;

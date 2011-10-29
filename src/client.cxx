@@ -30,6 +30,10 @@ void client_t::unmap() {
 
 void client_t::update_client_size(int w, int h) {
 
+	if(is_fullscreen)
+		return;
+
+
 	if(hints.flags & PMaxSize) {
 		if(w > hints.max_width)
 			w = hints.max_width;
@@ -101,6 +105,19 @@ bool client_t::try_lock_client() {
 void client_t::unlock_client() {
 	XUngrabServer(dpy);
 	XFlush(dpy);
+}
+
+void client_t::focus() {
+	if(is_map) {
+		XRaiseWindow(dpy, clipping_window);
+		XRaiseWindow(dpy, xwin);
+		XSetInputFocus(dpy, xwin, RevertToNone, CurrentTime);
+	}
+}
+
+void client_t::fullscreen(int w, int h) {
+	width = w;
+	height = h;
 }
 
 }

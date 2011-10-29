@@ -1,8 +1,8 @@
 /*
  * page.hxx
  *
- *  Created on: 23 f��vr. 2011
- *      Author: gschwind
+ * copyright (2010) Benoit Gschwind
+ *
  */
 
 #ifndef PAGE_HXX_
@@ -178,6 +178,8 @@ public:
 		return result;
 	}
 
+	void fullscreen(client_t * c);
+	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
 
 	long * get_properties32(Window win, Atom prop, Atom type, unsigned int *num);

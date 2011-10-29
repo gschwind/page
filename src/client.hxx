@@ -74,6 +74,8 @@ struct client_t {
 
 	bool try_lock_client();
 	void unlock_client();
+	void focus();
+	void fullscreen(int w, int h);
 
 };
 

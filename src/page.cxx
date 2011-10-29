@@ -1,8 +1,8 @@
 /*
  * page.cxx
  *
- *  Created on: 23 févr. 2011
- *      Author: gschwind
+ * copyright (2010) Benoit Gschwind
+ *
  */
 
 #include <X11/cursorfont.h>
@@ -232,7 +232,15 @@ void main_t::run() {
 			if (e.xmapping.window == main_window)
 				render();
 		} else if (e.type == ButtonPress) {
-			tree_root->process_button_press_event(&e);
+			client_t * c = find_client_by_clipping_window(e.xbutton.window);
+			if (c) {
+				if (c->try_lock_client()) {
+					c->focus();
+					c->unlock_client();
+				}
+			} else {
+				tree_root->process_button_press_event(&e);
+			}
 			render();
 		} else if (e.type == MapRequest) {
 			printf("MapRequest\n");
@@ -330,9 +338,10 @@ void main_t::update_net_supported() {
 	supported_list[6] = atoms._NET_DESKTOP_VIEWPORT;
 	supported_list[7] = atoms._NET_CURRENT_DESKTOP;
 	supported_list[8] = atoms._NET_ACTIVE_WINDOW;
+	supported_list[9] = atoms._NET_WM_STATE_FULLSCREEN;
 	XChangeProperty(dpy, xroot, atoms._NET_SUPPORTED, atoms.ATOM, 32,
 			PropModeReplace, reinterpret_cast<unsigned char *>(supported_list),
-			9);
+			10);
 
 }
 
@@ -475,8 +484,6 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		}
 	}
 
-	/* TODO : is full screen manage on another way i.e. do not reparent */
-
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(dpy, w);
 	XSetWindowBorderWidth(dpy, w, 0);
@@ -488,23 +495,25 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	c->clipping_window = XCreateWindow(dpy, main_window, 0, 0, 1, 1, 0,
 			root_wa.depth, InputOutput, root_wa.visual,
 			CWBackPixel | CWBorderPixel, &swa);
+	XSelectInput(dpy, c->clipping_window, ButtonPressMask | ButtonRelease);
 
 	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", dpy, c->xwin,
 			c->clipping_window, 0, 0);
 	XSelectInput(dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
-	/* this produce an unmap ? */
-	if (!c->is_fullscreen) {
-		XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
-		XUnmapWindow(dpy, c->clipping_window);
+	XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
 
-		if (!tree_root->add_notebook(c)) {
-			printf("Fail to add a client\n");
-			exit(EXIT_FAILURE);
-		}
-	} else {
-		XUnmapWindow(dpy, c->clipping_window);
+	if (!tree_root->add_notebook(c)) {
+		printf("Fail to add a client\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (c->is_fullscreen) {
+		XReparentWindow(dpy, c->clipping_window, xroot, 0, 0);
 		XMoveResizeWindow(dpy, c->xwin, 0, 0, sw, sh);
-		XRaiseWindow(dpy, c->xwin);
+		XMoveResizeWindow(dpy, c->clipping_window, 0, 0, sw, sh);
+		c->fullscreen(sw, sh);
+		c->map();
+		c->focus();
 	}
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
@@ -724,7 +733,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(dpy, ev->xproperty.atom);
-	printf("Atom Name = \"%s\"\n", name);
+	//printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
 	client_t * c = find_client_by_xwindow(ev->xproperty.window);
@@ -734,9 +743,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		if (ev->xproperty.atom == atoms._NET_WM_USER_TIME) {
 			tree_root->activate_client(c);
 			render();
-			XRaiseWindow(dpy, ev->xproperty.window);
-			XSetInputFocus(dpy, ev->xproperty.window, RevertToNone,
-					CurrentTime);
+			c->focus();
 			XChangeProperty(dpy, xroot, atoms._NET_ACTIVE_WINDOW, atoms.WINDOW,
 					32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
@@ -784,21 +791,42 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	}
 }
 
+void main_t::fullscreen(client_t *c) {
+	printf("TOGGLE FULLSCREEN\n");
+	c->is_fullscreen = true;
+	/* update window state */
+	long new_state[1];
+	new_state[0] = atoms._NET_WM_STATE_FULLSCREEN;
+	XChangeProperty(dpy, xroot, atoms._NET_WM_STATE, atoms.ATOM, 32,
+			PropModeReplace,
+			reinterpret_cast<unsigned char *>(new_state), 1);
+
+	XReparentWindow(dpy, c->clipping_window, xroot, 0, 0);
+	XMoveResizeWindow(dpy, c->xwin, 0, 0, sw, sh);
+	XMoveResizeWindow(dpy, c->clipping_window, 0, 0, sw, sh);
+	c->fullscreen(sw, sh);
+	c->map();
+	c->focus();
+}
+
+void main_t::unfullscreen(client_t * c) {
+	printf("TOGGLE WINDOWED\n");
+	c->is_fullscreen = false;
+	long new_state[1];
+	new_state[0] = atoms._NET_WM_STATE_FULLSCREEN;
+	XChangeProperty(dpy, xroot, atoms._NET_WM_STATE, atoms.ATOM, 32,
+			PropModeReplace,
+			reinterpret_cast<unsigned char *>(new_state), 0);
+	XReparentWindow(dpy, c->clipping_window, main_window, 0, 0);
+	c->unmap();
+	render();
+}
+
 void main_t::toggle_fullscreen(client_t * c) {
 	if (c->is_fullscreen) {
-		c->is_fullscreen = false;
-		XReparentWindow(dpy, c->xwin, c->clipping_window, 0, 0);
-		XUnmapWindow(dpy, c->clipping_window);
-		if (!tree_root->add_notebook(c)) {
-			printf("Fail to add a client\n");
-			exit(EXIT_FAILURE);
-		}
+		unfullscreen(c);
 	} else {
-		c->is_fullscreen = true;
-		XReparentWindow(dpy, c->xwin, xroot, 0, 0);
-		XUnmapWindow(dpy, c->clipping_window);
-		XResizeWindow(dpy, c->xwin, sw, sh);
-		XRaiseWindow(dpy, c->xwin);
+		fullscreen(c);
 	}
 }
 
@@ -828,16 +856,19 @@ void main_t::process_client_message_event(XEvent * ev) {
 								== atoms._NET_WM_STATE_FULLSCREEN) {
 					switch (ev->xclient.data.l[0]) {
 					case 0:
+						printf("SET normal\n");
 						if (c->is_fullscreen) {
 							toggle_fullscreen(c);
 						}
 						break;
 					case 1:
+						printf("SET fullscreen\n");
 						if (!c->is_fullscreen) {
 							toggle_fullscreen(c);
 						}
 						break;
 					case 2:
+						printf("SET toggle\n");
 						toggle_fullscreen(c);
 						break;
 
