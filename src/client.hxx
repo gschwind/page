@@ -78,7 +78,9 @@ struct client_t {
 	int struct_top;
 	int struct_bottom;
 
-	client_t(xconnection_t &cnx) : cnx(cnx) { }
+	client_t(xconnection_t &cnx) :
+			cnx(cnx) {
+	}
 
 	void map();
 	void unmap();
@@ -92,6 +94,20 @@ struct client_t {
 	void update_vm_name();
 	void update_net_vm_name();
 	void update_title();
+	void parse_icons();
+	void init_icon();
+
+	long * get_properties32(Atom prop, Atom type, unsigned int *num) {
+		return cnx.get_properties<long, 32>(xwin, prop, type, num);
+	}
+
+	short * get_properties16(Atom prop, Atom type, unsigned int *num) {
+		return cnx.get_properties<short, 16>(xwin, prop, type, num);
+	}
+
+	char * get_properties8(Atom prop, Atom type, unsigned int *num) {
+		return cnx.get_properties<char, 8>(xwin, prop, type, num);
+	}
 
 };
 

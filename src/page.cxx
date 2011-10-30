@@ -45,10 +45,12 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 main_t::main_t() {
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
-	XSelectInput(cnx.dpy, cnx.xroot, SubstructureNotifyMask | SubstructureRedirectMask);
+	XSelectInput(cnx.dpy, cnx.xroot,
+			SubstructureNotifyMask | SubstructureRedirectMask);
 
-	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x, cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0, cnx.root_wa.depth,
-			InputOutput, cnx.root_wa.visual, 0, &swa);
+	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
+			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
+			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
 	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
 	XDefineCursor(cnx.dpy, main_window, cursor);
 	XSelectInput(cnx.dpy, main_window,
@@ -70,21 +72,6 @@ main_t::main_t() {
 main_t::~main_t() {
 	cairo_destroy(cr);
 	cairo_surface_destroy(surf);
-}
-
-long * main_t::get_properties32(Window win, Atom prop, Atom type,
-		unsigned int *num) {
-	return this->get_properties<long, 32>(win, prop, type, num);
-}
-
-short * main_t::get_properties16(Window win, Atom prop, Atom type,
-		unsigned int *num) {
-	return this->get_properties<short, 16>(win, prop, type, num);
-}
-
-char * main_t::get_properties8(Window win, Atom prop, Atom type,
-		unsigned int *num) {
-	return this->get_properties<char, 8>(win, prop, type, num);
 }
 
 /* update main window location */
@@ -113,8 +100,8 @@ void main_t::update_page_aera() {
 
 	box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
 	tree_root->update_allocation(b);
-	XMoveResizeWindow(cnx.dpy, main_window, page_area.x, page_area.y, page_area.w,
-			page_area.h);
+	XMoveResizeWindow(cnx.dpy, main_window, page_area.x, page_area.y,
+			page_area.w, page_area.h);
 
 }
 
@@ -123,32 +110,33 @@ void main_t::run() {
 
 	/* update number of desktop */
 	int32_t number_of_desktop = 1;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_NUMBER_OF_DESKTOPS, cnx.atoms.CARDINAL,
-			32, PropModeReplace,
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_NUMBER_OF_DESKTOPS,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
 
 	/* define desktop geometry */
 	long desktop_geometry[2];
 	desktop_geometry[0] = cnx.root_size.w;
 	desktop_geometry[1] = cnx.root_size.h;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_DESKTOP_GEOMETRY, cnx.atoms.CARDINAL, 32,
-			PropModeReplace,
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_DESKTOP_GEOMETRY,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_DESKTOP_VIEWPORT, cnx.atoms.CARDINAL, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(viewport), 2);
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_DESKTOP_VIEWPORT,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(viewport), 2);
 
 	/* set current desktop */
 	long current_desktop = 0;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CURRENT_DESKTOP, cnx.atoms.CARDINAL, 32,
-			PropModeReplace,
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CURRENT_DESKTOP,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&current_desktop), 1);
 
 	long showing_desktop = 0;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_SHOWING_DESKTOP, cnx.atoms.CARDINAL, 32,
-			PropModeReplace,
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_SHOWING_DESKTOP,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&showing_desktop), 1);
 
 	scan();
@@ -160,8 +148,9 @@ void main_t::run() {
 	workarea[2] = page_area.w;
 	workarea[3] = page_area.h;
 
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WORKAREA, cnx.atoms.CARDINAL, 32,
-			PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WORKAREA,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
+			reinterpret_cast<unsigned char*>(workarea), 4);
 
 	render();
 	running = 1;
@@ -201,7 +190,7 @@ void main_t::run() {
 			process_client_message_event(&e);
 		}
 
-		if(!cnx.is_not_grab()) {
+		if (!cnx.is_not_grab()) {
 			fprintf(stderr, "SERVEUR IS GRAB WHERE IT SHOULDN'T");
 			exit(EXIT_FAILURE);
 		}
@@ -213,6 +202,7 @@ void main_t::render(cairo_t * cr) {
 }
 
 void main_t::render() {
+	printf("RENDER\n");
 	XGetWindowAttributes(cnx.dpy, main_window, &wa);
 	box_t<int> b(0, 0, wa.width, wa.height);
 	tree_root->update_allocation(b);
@@ -284,9 +274,9 @@ void main_t::update_net_supported() {
 	supported_list[7] = cnx.atoms._NET_CURRENT_DESKTOP;
 	supported_list[8] = cnx.atoms._NET_ACTIVE_WINDOW;
 	supported_list[9] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_SUPPORTED, cnx.atoms.ATOM, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(supported_list),
-			10);
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_SUPPORTED,
+			cnx.atoms.ATOM, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(supported_list), 10);
 
 }
 
@@ -303,12 +293,12 @@ void main_t::update_client_list() {
 		++k;
 	}
 
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(data),
-			clients.size());
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(data),
-			clients.size());
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST,
+			cnx.atoms.WINDOW, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(data), clients.size());
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING,
+			cnx.atoms.WINDOW, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(data), clients.size());
 
 	delete[] data;
 }
@@ -358,7 +348,7 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		c->is_dock = true;
 		printf("IsDock !\n");
 		unsigned int n;
-		long * partial_struct = get_properties32(c->xwin,
+		long * partial_struct = c->get_properties32(
 				cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL, &n);
 
 		if (partial_struct) {
@@ -381,7 +371,7 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	/* take _NET_WM_STATE */
 	{
 		unsigned int n;
-		long * net_wm_state = get_properties32(c->xwin, cnx.atoms._NET_WM_STATE,
+		long * net_wm_state = c->get_properties32(cnx.atoms._NET_WM_STATE,
 				cnx.atoms.ATOM, &n);
 
 		c->is_modal = false;
@@ -402,13 +392,16 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 				c->is_modal = true;
 			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_STICKY) {
 				c->is_sticky = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_MAXIMIZED_VERT) {
+			} else if (net_wm_state[i]
+					== cnx.atoms._NET_WM_STATE_MAXIMIZED_VERT) {
 				c->is_maximized_vert = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_MAXIMIZED_HORZ) {
+			} else if (net_wm_state[i]
+					== cnx.atoms._NET_WM_STATE_MAXIMIZED_HORZ) {
 				c->is_maximized_horz = true;
 			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_SHADED) {
 				c->is_is_shaded = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_SKIP_TASKBAR) {
+			} else if (net_wm_state[i]
+					== cnx.atoms._NET_WM_STATE_SKIP_TASKBAR) {
 				c->is_skip_taskbar = true;
 			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_SKIP_PAGER) {
 				c->is_skip_pager = true;
@@ -428,47 +421,8 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		}
 	}
 
-	{
-		unsigned int n;
-		c->icon_data = get_properties32(c->xwin, cnx.atoms._NET_WM_ICON,
-				cnx.atoms.CARDINAL, &n);
-		c->icon_data_size = n;
+	c->init_icon();
 
-		if (n > 0) {
-			c->icon_data32 = new int32_t[n];
-			for (int i = 0; i < n; ++i)
-				c->icon_data32[i] = c->icon_data[i];
-		}
-		parse_icons(c);
-
-		icon ic;
-		int x = 0;
-		int y = 0;
-		bool has_icon = false;
-		/* find a icon */
-		std::list<icon>::iterator i = c->icons.begin();
-		while (i != c->icons.end()) {
-			if ((*i).width <= 16 && x < (*i).width) {
-				x = (*i).width;
-				ic = (*i);
-				has_icon = true;
-			}
-			++i;
-		}
-
-		if (has_icon)
-			c->selected = ic;
-		else
-			c->selected = c->icons.front();
-
-		c->icon_surf = cairo_image_surface_create_for_data(
-				(unsigned char *) c->selected.data,
-				CAIRO_FORMAT_ARGB32,
-				c->selected.width,
-				c->selected.height,
-				cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
-						c->selected.width));
-	}
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(cnx.dpy, w);
 	XSetWindowBorderWidth(cnx.dpy, w, 0);
@@ -494,8 +448,10 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 
 	if (c->is_fullscreen) {
 		XReparentWindow(cnx.dpy, c->clipping_window, cnx.xroot, 0, 0);
-		XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
-		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w, cnx.root_size.h);
+		XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w,
+				cnx.root_size.h);
+		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
+				cnx.root_size.h);
 		c->fullscreen(cnx.root_size.w, cnx.root_size.h);
 		c->map();
 		c->focus();
@@ -514,8 +470,7 @@ long main_t::get_window_state(Window w) {
 
 	if (XGetWindowProperty(cnx.dpy, w, cnx.atoms.WM_STATE, 0L, 2L, False,
 			cnx.atoms.WM_STATE, &real, &format, &n, &extra,
-			(unsigned char **) &p) != Success
-			)
+			(unsigned char **) &p) != Success)
 		return -1;
 
 	if (n != 0)
@@ -538,7 +493,7 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 
 bool main_t::client_is_dock(client_t * c) {
 	unsigned int num, i;
-	long * val = get_properties32(c->xwin, cnx.atoms._NET_WM_WINDOW_TYPE,
+	long * val = c->get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE,
 			cnx.atoms.ATOM, &num);
 	Window t;
 
@@ -626,10 +581,10 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		 * reparent a destroyed window. Therefore we grab the server and check if the
 		 * window is not already destroyed.
 		 */
-		//XGrabServer(cnx.dpy);
-		//XSync(cnx.dpy, False);
+		cnx.grab();
 		XEvent ev;
-		if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, DestroyNotify, &ev)) {
+		if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, DestroyNotify,
+				&ev)) {
 			process_destroy_notify_event(&ev);
 		} else {
 			tree_root->remove_client(c->xwin);
@@ -640,8 +595,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			delete c;
 			render();
 		}
-		//XUngrabServer(cnx.dpy);
-		//XFlush(cnx.dpy);
+		cnx.ungrab();
 	}
 }
 
@@ -677,10 +631,10 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (c->try_lock_client()) {
 		if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
 			tree_root->activate_client(c);
-			render();
+			//render();
 			c->focus();
-			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW, cnx.atoms.WINDOW,
-					32, PropModeReplace,
+			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
+					cnx.atoms.WINDOW, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
 					1);
 		} else if (ev->xproperty.atom == cnx.atoms._NET_WM_NAME) {
@@ -694,8 +648,9 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		} else if (ev->xproperty.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
 			if (ev->xproperty.state == PropertyNewValue) {
 				unsigned int n;
-				long * partial_struct = get_properties32(c->xwin,
-						cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL, &n);
+				long * partial_struct = c->get_properties32(
+						cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL,
+						&n);
 
 				if (partial_struct) {
 
@@ -733,12 +688,14 @@ void main_t::fullscreen(client_t *c) {
 	/* update window state */
 	long new_state[1];
 	new_state[0] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(new_state), 1);
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
+			1);
 
 	XReparentWindow(cnx.dpy, c->clipping_window, cnx.xroot, 0, 0);
 	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
-	XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w, cnx.root_size.h);
+	XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
+			cnx.root_size.h);
 	c->fullscreen(cnx.root_size.w, cnx.root_size.h);
 	c->map();
 	c->focus();
@@ -749,8 +706,9 @@ void main_t::unfullscreen(client_t * c) {
 	c->is_fullscreen = false;
 	long new_state[1];
 	new_state[0] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(new_state), 0);
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
+			0);
 	XReparentWindow(cnx.dpy, c->clipping_window, main_window, 0, 0);
 	c->unmap();
 	render();
@@ -818,19 +776,6 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 void main_t::update_vm_hints(client_t &c) {
 
-}
-
-void main_t::parse_icons(client_t * c) {
-	int offset = 0;
-	while (offset < c->icon_data_size) {
-		icon tmp;
-		tmp.width = c->icon_data[offset + 0];
-		tmp.height = c->icon_data[offset + 1];
-		printf("FIND ICON%d %d\n", tmp.width, tmp.height);
-		tmp.data = &c->icon_data32[offset + 3];
-		offset += 2 + tmp.width * tmp.height;
-		c->icons.push_back(tmp);
-	}
 }
 
 }

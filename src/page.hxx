@@ -138,45 +138,9 @@ public:
 	void update_client_list();
 	void update_net_supported();
 
-	template<typename T, unsigned int SIZE>
-	T * get_properties(Window win, Atom prop, Atom type, unsigned int *num) {
-		bool ret = false;
-		int res;
-		unsigned char * xdata = 0;
-		Atom ret_type;
-		int ret_size;
-		unsigned long int ret_items, bytes_left;
-		T * result = 0;
-		T * data;
-
-		res = XGetWindowProperty(cnx.dpy, win, prop, 0L,
-				std::numeric_limits<int>::max(), False, type, &ret_type,
-				&ret_size, &ret_items, &bytes_left, &xdata);
-		if (res == Success) {
-			if(bytes_left != 0)
-				printf("some bits lefts\n");
-			if (ret_size == SIZE && ret_items > 0) {
-				result = new T[ret_items];
-				data = reinterpret_cast<T*>(xdata);
-				for (unsigned int i = 0; i < ret_items; ++i) {
-					result[i] = data[i];
-					//printf("%d %p\n", data[i], &data[i]);
-				}
-			}
-			if(num)
-				*num = ret_items;
-			XFree(xdata);
-		}
-		return result;
-	}
-
 	void fullscreen(client_t * c);
 	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
-
-	long * get_properties32(Window win, Atom prop, Atom type, unsigned int *num);
-	short * get_properties16(Window win, Atom prop, Atom type, unsigned int *num);
-	char * get_properties8(Window win, Atom prop, Atom type, unsigned int *num);
 
 	void parse_icons(client_t * c);
 

@@ -9,6 +9,7 @@
 #define XCONNECTION_HXX_
 
 #include <stdio.h>
+#include <limits>
 #include "box.hxx"
 #include "atoms.hxx"
 
@@ -161,12 +162,12 @@ struct xconnection_t {
 	}
 
 	void ungrab() {
-		if(grab_count == 0) {
+		if (grab_count == 0) {
 			fprintf(stderr, "TRY TO UNGRAB NOT GRABBED CONNECTION!\n");
 			return;
 		}
 		--grab_count;
-		if(grab_count == 0) {
+		if (grab_count == 0) {
 			XUngrabServer(dpy);
 			XFlush(dpy);
 		}
@@ -174,6 +175,53 @@ struct xconnection_t {
 
 	inline bool is_not_grab() {
 		return grab_count == 0;
+	}
+
+	template<typename T, unsigned int SIZE>
+	T * get_properties(Window win, Atom prop, Atom type, unsigned int *num) {
+		bool ret = false;
+		int res;
+		unsigned char * xdata = 0;
+		Atom ret_type;
+		int ret_size;
+		unsigned long int ret_items, bytes_left;
+		T * result = 0;
+		T * data;
+
+		res = XGetWindowProperty(dpy, win, prop, 0L,
+				std::numeric_limits<int>::max(), False, type, &ret_type,
+				&ret_size, &ret_items, &bytes_left, &xdata);
+		if (res == Success) {
+			if (bytes_left != 0)
+				printf("some bits lefts\n");
+			if (ret_size == SIZE && ret_items > 0) {
+				result = new T[ret_items];
+				data = reinterpret_cast<T*>(xdata);
+				for (unsigned int i = 0; i < ret_items; ++i) {
+					result[i] = data[i];
+					//printf("%d %p\n", data[i], &data[i]);
+				}
+			}
+			if (num)
+				*num = ret_items;
+			XFree(xdata);
+		}
+		return result;
+	}
+
+	long * get_properties32(Window win, Atom prop, Atom type,
+			unsigned int *num) {
+		return this->get_properties<long, 32>(win, prop, type, num);
+	}
+
+	short * get_properties16(Window win, Atom prop, Atom type,
+			unsigned int *num) {
+		return this->get_properties<short, 16>(win, prop, type, num);
+	}
+
+	char * get_properties8(Window win, Atom prop, Atom type,
+			unsigned int *num) {
+		return this->get_properties<char, 8>(win, prop, type, num);
 	}
 
 };

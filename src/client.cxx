@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
+#include <cairo.h>
 #include "client.hxx"
 
 namespace page_next {
@@ -173,6 +174,58 @@ void client_t::update_title() {
 	std::stringstream s(std::stringstream::in | std::stringstream::out);
 	s << "#" << (xwin) << " (noname)";
 	name = s.str();
+}
+
+void client_t::parse_icons() {
+	int offset = 0;
+	while (offset < icon_data_size) {
+		icon tmp;
+		tmp.width = icon_data[offset + 0];
+		tmp.height = icon_data[offset + 1];
+		printf("FIND ICON%d %d\n", tmp.width, tmp.height);
+		tmp.data = &icon_data32[offset + 3];
+		offset += 2 + tmp.width * tmp.height;
+		icons.push_back(tmp);
+	}
+}
+
+void client_t::init_icon() {
+	unsigned int n;
+	icon_data = cnx.get_properties32(xwin, cnx.atoms._NET_WM_ICON,
+			cnx.atoms.CARDINAL, &n);
+	icon_data_size = n;
+
+	if (n > 0) {
+		icon_data32 = new int32_t[n];
+		for (int i = 0; i < n; ++i)
+			icon_data32[i] = icon_data[i];
+	}
+	parse_icons();
+
+	icon ic;
+	int x = 0;
+	int y = 0;
+	bool has_icon = false;
+	/* find a icon */
+	std::list<icon>::iterator i = icons.begin();
+	while (i != icons.end()) {
+		if ((*i).width <= 16 && x < (*i).width) {
+			x = (*i).width;
+			ic = (*i);
+			has_icon = true;
+		}
+		++i;
+	}
+
+	if (has_icon)
+		selected = ic;
+	else
+		selected = icons.front();
+
+	icon_surf = cairo_image_surface_create_for_data(
+			(unsigned char *) selected.data, CAIRO_FORMAT_ARGB32,
+			selected.width, selected.height,
+			cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, selected.width));
 }
 
 }
