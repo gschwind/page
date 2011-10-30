@@ -9,6 +9,9 @@
 #include <iostream>
 #include <sstream>
 #include <cairo.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <cstring>
 #include "client.hxx"
 
 namespace page_next {
@@ -173,20 +176,14 @@ void client_t::update_title() {
 	name = s.str();
 }
 
-void client_t::parse_icons() {
-	int offset = 0;
-	while (offset < icon_data_size) {
-		icon tmp;
-		tmp.width = icon_data[offset + 0];
-		tmp.height = icon_data[offset + 1];
-		printf("FIND ICON%d %d\n", tmp.width, tmp.height);
-		tmp.data = &icon_data32[offset + 3];
-		offset += 2 + tmp.width * tmp.height;
-		icons.push_back(tmp);
-	}
-}
-
 void client_t::init_icon() {
+
+	long * icon_data;
+	int32_t * icon_data32;
+	int icon_data_size;
+	icon_t selected;
+	std::list<struct icon_t> icons;
+
 	unsigned int n;
 	icon_data = get_properties32(cnx.atoms._NET_WM_ICON, cnx.atoms.CARDINAL,
 			&n);
@@ -197,14 +194,23 @@ void client_t::init_icon() {
 		for (int i = 0; i < n; ++i)
 			icon_data32[i] = icon_data[i];
 	}
-	parse_icons();
 
-	icon ic;
+	int offset = 0;
+	while (offset < icon_data_size) {
+		icon_t tmp;
+		tmp.width = icon_data[offset + 0];
+		tmp.height = icon_data[offset + 1];
+		tmp.data = (unsigned char *) &icon_data32[offset + 2];
+		offset += 2 + tmp.width * tmp.height;
+		icons.push_back(tmp);
+	}
+
+	icon_t ic;
 	int x = 0;
 	int y = 0;
 	bool has_icon = false;
 	/* find a icon */
-	std::list<icon>::iterator i = icons.begin();
+	std::list<icon_t>::iterator i = icons.begin();
 	while (i != icons.end()) {
 		if ((*i).width <= 16 && x < (*i).width) {
 			x = (*i).width;
@@ -214,15 +220,43 @@ void client_t::init_icon() {
 		++i;
 	}
 
-	if (has_icon)
+	if (has_icon) {
 		selected = ic;
-	else
-		selected = icons.front();
+	} else {
+		if (icons.size() > 0) {
+			selected = icons.front();
+			has_icon = true;
+		} else {
+			has_icon = false;
+		}
 
-	icon_surf = cairo_image_surface_create_for_data(
-			(unsigned char *) selected.data, CAIRO_FORMAT_ARGB32,
-			selected.width, selected.height,
-			cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, selected.width));
+	}
+
+	if (has_icon) {
+		int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
+				selected.width);
+
+		icon.width = selected.width;
+		icon.height = selected.height;
+		icon.data = (unsigned char *) malloc(stride * selected.height);
+
+		for (int i = 0; i < selected.height; ++i) {
+			memcpy(icon.data + stride * i,
+					selected.data + (sizeof(uint32_t) * selected.width * i),
+					sizeof(uint32_t) * selected.width);
+		}
+
+		icon_surf = cairo_image_surface_create_for_data(
+				(unsigned char *) icon.data, CAIRO_FORMAT_ARGB32, icon.width,
+				icon.height, stride);
+
+	} else {
+		icon_surf = 0;
+	}
+
+	delete[] icon_data;
+	delete[] icon_data32;
+
 }
 
 void client_t::update_type() {

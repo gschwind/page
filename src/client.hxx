@@ -58,13 +58,8 @@ struct client_t {
 
 	XSizeHints hints;
 
-	long * icon_data;
-	int32_t * icon_data32;
-	int icon_data_size;
-
-	icon selected;
+	icon_t icon;
 	cairo_surface_t * icon_surf;
-	std::list<struct icon> icons;
 
 	bool is_dock;
 	bool has_partial_struct;
@@ -111,7 +106,6 @@ struct client_t {
 	void update_vm_name();
 	void update_net_vm_name();
 	void update_title();
-	void parse_icons();
 	void init_icon();
 	void update_type();
 	void read_wm_state();

@@ -10,10 +10,10 @@
 
 namespace page_next {
 
-struct icon {
+struct icon_t {
 	int width;
 	int height;
-	int32_t * data;
+	unsigned char * data;
 };
 
 }
