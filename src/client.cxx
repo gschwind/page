@@ -34,8 +34,10 @@ void client_t::unmap() {
 
 void client_t::update_client_size(int w, int h) {
 
-	if (is_fullscreen)
-		return;
+	if (is_fullscreen()) {
+		height = cnx.root_size.h;
+		width = cnx.root_size.w;
+	}
 
 	if (hints.flags & PMaxSize) {
 		if (w > hints.max_width)
@@ -121,11 +123,6 @@ void client_t::focus() {
 	}
 }
 
-void client_t::fullscreen(int w, int h) {
-	width = w;
-	height = h;
-}
-
 void client_t::client_update_size_hints() {
 	long msize;
 	XSizeHints &size = hints;
@@ -191,8 +188,8 @@ void client_t::parse_icons() {
 
 void client_t::init_icon() {
 	unsigned int n;
-	icon_data = cnx.get_properties32(xwin, cnx.atoms._NET_WM_ICON,
-			cnx.atoms.CARDINAL, &n);
+	icon_data = get_properties32(cnx.atoms._NET_WM_ICON, cnx.atoms.CARDINAL,
+			&n);
 	icon_data_size = n;
 
 	if (n > 0) {
@@ -226,6 +223,73 @@ void client_t::init_icon() {
 			(unsigned char *) selected.data, CAIRO_FORMAT_ARGB32,
 			selected.width, selected.height,
 			cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, selected.width));
+}
+
+void client_t::update_type() {
+	unsigned int num, i;
+	long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
+			&num);
+	if (val) {
+		type.clear();
+		/* use the first value that we know about in the array */
+		for (i = 0; i < num; ++i) {
+			type.insert(val[i]);
+		}
+		delete[] val;
+	}
+}
+
+void client_t::read_wm_state() {
+	/* take _NET_WM_STATE */
+	unsigned int n;
+	long * net_wm_state = get_properties32(cnx.atoms._NET_WM_STATE,
+			cnx.atoms.ATOM, &n);
+	if (net_wm_state) {
+		this->net_wm_state.clear();
+		for (int i = 0; i < n; ++i) {
+			this->net_wm_state.insert(net_wm_state[i]);
+		}
+	}
+}
+
+void client_t::write_wm_state() {
+	int size = net_wm_state.size();
+	long * new_state = new long[size];
+	std::set<Atom>::iterator iter = net_wm_state.begin();
+	int i = 0;
+	while (iter != net_wm_state.end()) {
+		new_state[i] = *iter;
+		++iter;
+		++i;
+	}
+
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
+			size);
+	delete[] new_state;
+}
+
+void client_t::set_fullscreen() {
+	/* update window state */
+	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
+	write_wm_state();
+
+	XReparentWindow(cnx.dpy, clipping_window, cnx.xroot, 0, 0);
+	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
+	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
+			cnx.root_size.h);
+	/* will set full screen, parameters will be ignored*/
+	update_client_size(0, 0);
+	map();
+	focus();
+}
+
+void client_t::unset_fullscreen() {
+	/* update window state */
+	net_wm_state.erase(cnx.atoms._NET_WM_STATE_FULLSCREEN);
+	write_wm_state();
+	XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
+	unmap();
 }
 
 }

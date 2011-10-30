@@ -227,7 +227,7 @@ void main_t::scan() {
 				continue;
 			if ((get_window_state(wins[i]) == IconicState
 					|| wa.map_state == IsViewable))
-				manage(wins[i], &wa);
+				manage(wins[i], wa);
 		}
 
 		if (wins)
@@ -303,7 +303,7 @@ void main_t::update_client_list() {
 	delete[] data;
 }
 
-bool main_t::manage(Window w, XWindowAttributes * wa) {
+bool main_t::manage(Window w, XWindowAttributes & wa) {
 	printf("Manage #%lu\n", w);
 	if (main_window == w)
 		return false;
@@ -318,33 +318,14 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 	if (find_client_by_clipping_window(w))
 		return false;
 
-	c = new client_t(cnx);
-	c->is_dock = false;
-	c->has_partial_struct = false;
-	c->xwin = w;
-	c->height = wa->height;
-	c->width = wa->width;
-	printf("Map stase : %d\n", wa->map_state);
-	/* if the client is mapped, the reparent will unmap the window
-	 * The client is mapped if the manage occur on start of
-	 * page.
-	 */
-	if (wa->map_state == IsUnmapped) {
-		c->is_map = false;
-		c->unmap_pending = 0;
-	} else {
-		c->is_map = true;
-		c->unmap_pending = 1;
-	}
+	/* this window will not be destroyed on page close (one bug less) */
+	XAddToSaveSet(cnx.dpy, w);
+
+	c = new client_t(cnx, main_window, w, wa);
 	/* before page prepend !! */
 	clients.push_back(c);
 
-	c->update_net_vm_name();
-	c->update_vm_name();
-	c->update_title();
-	c->client_update_size_hints();
-
-	if (client_is_dock(c)) {
+	if (c->client_is_dock()) {
 		c->is_dock = true;
 		printf("IsDock !\n");
 		unsigned int n;
@@ -368,63 +349,8 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		return true;
 	}
 
-	/* take _NET_WM_STATE */
-	{
-		unsigned int n;
-		long * net_wm_state = c->get_properties32(cnx.atoms._NET_WM_STATE,
-				cnx.atoms.ATOM, &n);
-
-		c->is_modal = false;
-		c->is_sticky = false;
-		c->is_maximized_vert = false;
-		c->is_maximized_horz = false;
-		c->is_is_shaded = false;
-		c->is_skip_taskbar = false;
-		c->is_skip_pager = false;
-		c->is_hidden = false;
-		c->is_fullscreen = false;
-		c->is_above = false;
-		c->is_below = false;
-		c->is_demands_attention = false;
-
-		for (int i = 0; i < n; ++i) {
-			if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_MODAL) {
-				c->is_modal = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_STICKY) {
-				c->is_sticky = true;
-			} else if (net_wm_state[i]
-					== cnx.atoms._NET_WM_STATE_MAXIMIZED_VERT) {
-				c->is_maximized_vert = true;
-			} else if (net_wm_state[i]
-					== cnx.atoms._NET_WM_STATE_MAXIMIZED_HORZ) {
-				c->is_maximized_horz = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_SHADED) {
-				c->is_is_shaded = true;
-			} else if (net_wm_state[i]
-					== cnx.atoms._NET_WM_STATE_SKIP_TASKBAR) {
-				c->is_skip_taskbar = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_SKIP_PAGER) {
-				c->is_skip_pager = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_HIDDEN) {
-				c->is_hidden = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
-				c->is_fullscreen = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_ABOVE) {
-				c->is_above = true;
-			} else if (net_wm_state[i] == cnx.atoms._NET_WM_STATE_BELOW) {
-				c->is_below = true;
-			} else if (net_wm_state[i]
-					== cnx.atoms._NET_WM_STATE_DEMANDS_ATTENTION) {
-				c->is_demands_attention = true;
-			}
-
-		}
-	}
-
 	c->init_icon();
 
-	/* this window will not be destroyed on page close (one bug less) */
-	XAddToSaveSet(cnx.dpy, w);
 	XSetWindowBorderWidth(cnx.dpy, w, 0);
 
 	XSetWindowAttributes swa;
@@ -446,15 +372,8 @@ bool main_t::manage(Window w, XWindowAttributes * wa) {
 		exit(EXIT_FAILURE);
 	}
 
-	if (c->is_fullscreen) {
-		XReparentWindow(cnx.dpy, c->clipping_window, cnx.xroot, 0, 0);
-		XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w,
-				cnx.root_size.h);
-		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
-				cnx.root_size.h);
-		c->fullscreen(cnx.root_size.w, cnx.root_size.h);
-		c->map();
-		c->focus();
+	if (c->is_fullscreen()) {
+		c->set_fullscreen();
 	}
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
@@ -491,43 +410,22 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	return true;
 }
 
-bool main_t::client_is_dock(client_t * c) {
-	unsigned int num, i;
-	long * val = c->get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE,
-			cnx.atoms.ATOM, &num);
-	Window t;
-
-	if (val) {
-		/* use the first value that we know about in the array */
-		for (i = 0; i < num; ++i) {
-			if (val[i] == cnx.atoms._NET_WM_WINDOW_TYPE_DOCK)
-				return true;
-		}
-		free(val);
-	}
-
-	return false;
-}
-
 void main_t::process_map_request_event(XEvent * e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	Window w = e->xmaprequest.window;
 	/* secure the map request */
-	//XGrabServer(cnx.dpy);
-	//XSync(cnx.dpy, False);
+	cnx.grab();
 	XEvent ev;
 	if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, DestroyNotify, &ev)) {
 		/* the window is already destroyed, return */
-		//XUngrabServer(cnx.dpy);
-		//XFlush(cnx.dpy);
+		cnx.ungrab();
 		return;
 	}
 
 	if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, UnmapNotify, &ev)) {
 		/* the window is already unmapped, return */
-		//XUngrabServer(cnx.dpy);
-		//XFlush(cnx.dpy);
+		cnx.ungrab();
 		return;
 	}
 
@@ -541,12 +439,11 @@ void main_t::process_map_request_event(XEvent * e) {
 		XMapWindow(cnx.dpy, w);
 		return;
 	}
-	manage(w, &wa);
+	manage(w, wa);
 	XMapWindow(cnx.dpy, w);
 	render();
 	update_client_list();
-	//XUngrabServer(cnx.dpy);
-	//XFlush(cnx.dpy);
+	cnx.ungrab();
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	return;
@@ -684,41 +581,19 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 void main_t::fullscreen(client_t *c) {
 	printf("TOGGLE FULLSCREEN\n");
-	c->is_fullscreen = true;
-	/* update window state */
-	long new_state[1];
-	new_state[0] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
-			1);
-
-	XReparentWindow(cnx.dpy, c->clipping_window, cnx.xroot, 0, 0);
-	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
-	XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
-			cnx.root_size.h);
-	c->fullscreen(cnx.root_size.w, cnx.root_size.h);
-	c->map();
-	c->focus();
+	c->set_fullscreen();
 }
 
 void main_t::unfullscreen(client_t * c) {
-	printf("TOGGLE WINDOWED\n");
-	c->is_fullscreen = false;
-	long new_state[1];
-	new_state[0] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
-			0);
-	XReparentWindow(cnx.dpy, c->clipping_window, main_window, 0, 0);
-	c->unmap();
+	c->unset_fullscreen();
 	render();
 }
 
 void main_t::toggle_fullscreen(client_t * c) {
-	if (c->is_fullscreen) {
-		unfullscreen(c);
+	if (c->is_fullscreen()) {
+		c->unset_fullscreen();
 	} else {
-		fullscreen(c);
+		c->set_fullscreen();
 	}
 }
 
@@ -749,15 +624,11 @@ void main_t::process_client_message_event(XEvent * ev) {
 					switch (ev->xclient.data.l[0]) {
 					case 0:
 						printf("SET normal\n");
-						if (c->is_fullscreen) {
-							toggle_fullscreen(c);
-						}
+						fullscreen(c);
 						break;
 					case 1:
 						printf("SET fullscreen\n");
-						if (!c->is_fullscreen) {
-							toggle_fullscreen(c);
-						}
+						unfullscreen(c);
 						break;
 					case 2:
 						printf("SET toggle\n");
@@ -772,10 +643,6 @@ void main_t::process_client_message_event(XEvent * ev) {
 		}
 
 	}
-}
-
-void main_t::update_vm_hints(client_t &c) {
-
 }
 
 }

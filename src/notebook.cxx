@@ -461,7 +461,7 @@ void notebook_t::update_client_mapping() {
 			if (offset_y < 0)
 				offset_y = 0;
 
-			if (!c->is_fullscreen) {
+			if (!c->is_fullscreen()) {
 				XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y,
 						c->width, c->height);
 				XMoveResizeWindow(c->cnx.dpy, c->clipping_window,

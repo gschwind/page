@@ -13,6 +13,7 @@
 #include <cairo.h>
 #include <string>
 #include <list>
+#include <set>
 #include "atoms.hxx"
 #include "icon.hxx"
 #include "xconnection.hxx"
@@ -21,6 +22,14 @@ namespace page_next {
 
 struct client_t {
 	xconnection_t &cnx;
+	Window xwin;
+	XWindowAttributes wa;
+
+	int lock_count;
+
+	std::set<Atom> type;
+	std::set<Atom> net_wm_state;
+
 	/* the name of window */
 	std::string name;
 
@@ -28,9 +37,9 @@ struct client_t {
 	std::string wm_name;
 	bool net_wm_name_is_valid;
 	std::string net_wm_name;
-
-	Window xwin;
 	Window clipping_window;
+
+	Window page_window;
 
 	/* store the map/unmap stase from the point of view of PAGE */
 	bool is_map;
@@ -57,20 +66,6 @@ struct client_t {
 	cairo_surface_t * icon_surf;
 	std::list<struct icon> icons;
 
-	/* _NET_WM_STATE */
-	bool is_modal; /* has no effect */
-	bool is_sticky; /* has no effect */
-	bool is_maximized_vert; /* has no effect */
-	bool is_maximized_horz; /* has no effect */
-	bool is_is_shaded; /* has no effect */
-	bool is_skip_taskbar; /* has no effect */
-	bool is_skip_pager; /* has no effect */
-	bool is_hidden; /* has no effect */
-	bool is_fullscreen; /* has no effect */
-	bool is_above; /* has no effect */
-	bool is_below; /* has no effect */
-	bool is_demands_attention; /* has no effect */
-
 	bool is_dock;
 	bool has_partial_struct;
 	int struct_left;
@@ -78,8 +73,30 @@ struct client_t {
 	int struct_top;
 	int struct_bottom;
 
-	client_t(xconnection_t &cnx) :
-			cnx(cnx) {
+	client_t(xconnection_t &cnx, Window page_window, Window w,
+			XWindowAttributes &wa) :
+			cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(
+					false), height(wa.height), width(wa.width), page_window(
+					page_window), lock_count(0) {
+
+		/* if the client is mapped, the reparent will unmap the window
+		 * The client is mapped if the manage occur on start of
+		 * page.
+		 */
+		if (wa.map_state == IsUnmapped) {
+			is_map = false;
+			unmap_pending = 0;
+		} else {
+			is_map = true;
+			unmap_pending = 1;
+		}
+
+		update_net_vm_name();
+		update_vm_name();
+		update_title();
+		client_update_size_hints();
+		update_type();
+		read_wm_state();
 	}
 
 	void map();
@@ -96,6 +113,21 @@ struct client_t {
 	void update_title();
 	void parse_icons();
 	void init_icon();
+	void update_type();
+	void read_wm_state();
+	void write_wm_state();
+
+	bool client_is_dock() {
+		return type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DOCK) != type.end();
+	}
+
+	bool is_fullscreen() {
+		return net_wm_state.find(cnx.atoms._NET_WM_STATE_FULLSCREEN)
+				!= net_wm_state.end();
+	}
+
+	void set_fullscreen();
+	void unset_fullscreen();
 
 	long * get_properties32(Atom prop, Atom type, unsigned int *num) {
 		return cnx.get_properties<long, 32>(xwin, prop, type, num);

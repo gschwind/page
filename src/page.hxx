@@ -112,14 +112,13 @@ public:
 
 	void scan();
 	long get_window_state(Window w);
-	bool manage(Window w, XWindowAttributes * wa);
+	bool manage(Window w, XWindowAttributes & wa);
 	client_t * find_client_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
 	bool get_text_prop(Window w, Atom atom, std::string & text);
 
 	void update_page_aera();
 
-	bool client_is_dock(client_t * c);
 	bool get_all(Window win, Atom prop, Atom type, int size,
 			unsigned char **data, unsigned int *num);
 
@@ -130,19 +129,12 @@ public:
 	void process_destroy_notify_event(XEvent * e);
 	void process_client_message_event(XEvent * e);
 
-	void update_vm_name(client_t &c);
-	void update_net_vm_name(client_t &c);
-	void update_title(client_t &c);
-	void update_vm_hints(client_t &c);
-
 	void update_client_list();
 	void update_net_supported();
 
 	void fullscreen(client_t * c);
 	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
-
-	void parse_icons(client_t * c);
 
 };
 
