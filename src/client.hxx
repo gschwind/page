@@ -15,14 +15,12 @@
 #include <list>
 #include "atoms.hxx"
 #include "icon.hxx"
+#include "xconnection.hxx"
 
 namespace page_next {
 
 struct client_t {
-	/* the Xlib context */
-	Display * dpy;
-	Window xroot;
-	atoms_t * atoms;
+	xconnection_t &cnx;
 	/* the name of window */
 	std::string name;
 
@@ -80,6 +78,8 @@ struct client_t {
 	int struct_top;
 	int struct_bottom;
 
+	client_t(xconnection_t &cnx) : cnx(cnx) { }
+
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);
@@ -88,6 +88,10 @@ struct client_t {
 	void unlock_client();
 	void focus();
 	void fullscreen(int w, int h);
+	void client_update_size_hints();
+	void update_vm_name();
+	void update_net_vm_name();
+	void update_title();
 
 };
 

@@ -24,10 +24,10 @@
 #include <cstring>
 
 #include "tree.hxx"
-#include "atoms.hxx"
 #include "client.hxx"
 #include "box.hxx"
 #include "icon.hxx"
+#include "xconnection.hxx"
 
 namespace page_next {
 
@@ -60,6 +60,8 @@ inline void print_buffer__(const char * buf, int size) {
 }
 
 class main_t {
+	/* connection will be start, as soon as main is created. */
+	xconnection_t cnx;
 
 	tree_t * tree_root;
 	/* managed clients */
@@ -70,21 +72,9 @@ class main_t {
 	int running;
 	int selected;
 
-	/* main display */
-	Display *dpy;
-	/* main screen */
-	int screen;
-	/* the root window */
-	Window xroot;
-	/* root window atributes */
-	XWindowAttributes root_wa;
-	/* size of default root window */
-	int sw, sh, sx, sy;
 	box_t<int> page_area;
 	int start_x, end_x;
 	int start_y, end_y;
-
-	atoms_t atoms;
 
 	/* the main window */
 	Window main_window;
@@ -108,13 +98,13 @@ public:
 	}
 
 	Display * get_dpy() {
-		return dpy;
+		return cnx.dpy;
 	}
 
 	cairo_t * get_cairo() {
 		cairo_surface_t * surf;
-		XGetWindowAttributes(dpy, main_window, &(wa));
-		surf = cairo_xlib_surface_create(dpy, main_window, wa.visual, wa.width,
+		XGetWindowAttributes(cnx.dpy, main_window, &(wa));
+		surf = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual, wa.width,
 				wa.height);
 		cairo_t * cr = cairo_create(surf);
 		return cr;
@@ -129,7 +119,6 @@ public:
 
 	void update_page_aera();
 
-	void client_update_size_hints(client_t * ths);
 	bool client_is_dock(client_t * c);
 	bool get_all(Window win, Atom prop, Atom type, int size,
 			unsigned char **data, unsigned int *num);
@@ -160,7 +149,7 @@ public:
 		T * result = 0;
 		T * data;
 
-		res = XGetWindowProperty(dpy, win, prop, 0L,
+		res = XGetWindowProperty(cnx.dpy, win, prop, 0L,
 				std::numeric_limits<int>::max(), False, type, &ret_type,
 				&ret_size, &ret_items, &bytes_left, &xdata);
 		if (res == Success) {

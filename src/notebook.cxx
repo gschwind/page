@@ -125,7 +125,6 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_fill(back_buffer_cr);
 
 						if ((*i)->icon_data != 0) {
-							printf("RENDER ICON\n");
 							icon tmp = (*i)->icons.front();
 							cairo_set_source_surface(back_buffer_cr,
 									(*i)->icon_surf, 4.0, 3.0);
@@ -182,7 +181,6 @@ void notebook_t::render(cairo_t * cr) {
 					} else {
 
 						if ((*i)->icon_data != 0) {
-							printf("RENDER ICON\n");
 							icon tmp = (*i)->icons.front();
 							cairo_set_source_surface(back_buffer_cr,
 									(*i)->icon_surf, 4.0, 3.0);
@@ -336,9 +334,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					ev.xclient.display = _dpy;
 					ev.xclient.type = ClientMessage;
 					ev.xclient.format = 32;
-					ev.xclient.message_type = (*c)->atoms->WM_PROTOCOLS;
+					ev.xclient.message_type = (*c)->cnx.atoms.WM_PROTOCOLS;
 					ev.xclient.window = (*c)->xwin;
-					ev.xclient.data.l[0] = (*c)->atoms->WM_DELETE_WINDOW;
+					ev.xclient.data.l[0] = (*c)->cnx.atoms.WM_DELETE_WINDOW;
 					ev.xclient.data.l[1] = e->xbutton.time;
 
 					XSendEvent(_dpy, (*c)->xwin, False, NoEventMask, &ev);
@@ -410,10 +408,10 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							c->focus();
 
 							XChangeProperty(
-									c->dpy,
-									XDefaultRootWindow(c->dpy),
-									c->atoms->_NET_ACTIVE_WINDOW,
-									c->atoms->WINDOW,
+									c->cnx.dpy,
+									c->cnx.xroot,
+									c->cnx.atoms._NET_ACTIVE_WINDOW,
+									c->cnx.atoms.WINDOW,
 									32,
 									PropModeReplace,
 									reinterpret_cast<unsigned char *>(&(c->xwin)),
@@ -453,7 +451,7 @@ void notebook_t::update_client_mapping() {
 				continue;
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 2, _allocation.h - 21);
-			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->dpy, c->xwin,
+			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
 					c->width, c->height);
 
 			int offset_x = (_allocation.w - 2 - c->width) / 2;
@@ -464,17 +462,17 @@ void notebook_t::update_client_mapping() {
 				offset_y = 0;
 
 			if (!c->is_fullscreen) {
-				XMoveResizeWindow(c->dpy, c->xwin, offset_x, offset_y, c->width,
-						c->height);
-				XMoveResizeWindow(c->dpy, c->clipping_window, _allocation.x + 1,
-						_allocation.y + 20, _allocation.w - 2,
-						_allocation.h - 21);
+				XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y,
+						c->width, c->height);
+				XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
+						_allocation.x + 1, _allocation.y + 20,
+						_allocation.w - 2, _allocation.h - 21);
 			}
 			c->map();
 
 			long state = NormalState;
-			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
-					(*i)->atoms->CARDINAL, 32, PropModeReplace,
+			XChangeProperty((*i)->cnx.dpy, (*i)->xwin, (*i)->cnx.atoms.WM_STATE,
+					(*i)->cnx.atoms.CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
 			(*i)->unlock_client();
 		}
@@ -486,8 +484,8 @@ void notebook_t::update_client_mapping() {
 				continue;
 			(*i)->unmap();
 			long state = IconicState;
-			XChangeProperty((*i)->dpy, (*i)->xwin, (*i)->atoms->WM_STATE,
-					(*i)->atoms->CARDINAL, 32, PropModeReplace,
+			XChangeProperty((*i)->cnx.dpy, (*i)->xwin, (*i)->cnx.atoms.WM_STATE,
+					(*i)->cnx.atoms.CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
 			(*i)->unlock_client();
 		}

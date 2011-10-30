@@ -11,6 +11,7 @@
 #include <X11/Xatom.h>
 
 struct atoms_t {
+
 	Atom CARDINAL;
 	Atom ATOM;
 	Atom WINDOW;
@@ -60,16 +61,12 @@ struct atoms_t {
 
 	Atom _NET_WM_ICON;
 
-
 	/*TODO Atoms for root window */
 	Atom _NET_DESKTOP_NAMES;
 	Atom _NET_ACTIVE_WINDOW;
 	Atom _NET_SUPPORTING_WM_CHECK;
 	Atom _NET_VIRTUAL_ROOTS;
 	Atom _NET_DESKTOP_LAYOUT;
-
-
-
 
 };
 
