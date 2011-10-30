@@ -1,8 +1,8 @@
 /*
  * notebook.cxx
  *
- *  Created on: 27 févr. 2011
- *      Author: gschwind
+ * copyright (2011) Benoit Gschwind
+ *
  */
 
 #include <stdio.h>
@@ -225,7 +225,7 @@ void notebook_t::render(cairo_t * cr) {
 
 			cairo_save(back_buffer_cr);
 			{
-				cairo_translate(back_buffer_cr, _allocation.w - 16.0, 1.0);
+				cairo_translate(back_buffer_cr, _allocation.w - 16.5, 1.5);
 				/* draw close */
 				cairo_new_path(back_buffer_cr);
 				cairo_move_to(back_buffer_cr, 4.0, 4.0);
@@ -244,6 +244,7 @@ void notebook_t::render(cairo_t * cr) {
 				cairo_line_to(back_buffer_cr, 9.0, 14.0);
 				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 				cairo_stroke(back_buffer_cr);
+
 
 				/* draw horizontal split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);

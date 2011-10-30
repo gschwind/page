@@ -183,79 +183,82 @@ void client_t::init_icon() {
 	int icon_data_size;
 	icon_t selected;
 	std::list<struct icon_t> icons;
-
+	bool has_icon = false;
 	unsigned int n;
 	icon_data = get_properties32(cnx.atoms._NET_WM_ICON, cnx.atoms.CARDINAL,
 			&n);
 	icon_data_size = n;
 
-	if (n > 0) {
+	if (icon_data != 0) {
 		icon_data32 = new int32_t[n];
 		for (int i = 0; i < n; ++i)
 			icon_data32[i] = icon_data[i];
-	}
 
-	int offset = 0;
-	while (offset < icon_data_size) {
-		icon_t tmp;
-		tmp.width = icon_data[offset + 0];
-		tmp.height = icon_data[offset + 1];
-		tmp.data = (unsigned char *) &icon_data32[offset + 2];
-		offset += 2 + tmp.width * tmp.height;
-		icons.push_back(tmp);
-	}
-
-	icon_t ic;
-	int x = 0;
-	int y = 0;
-	bool has_icon = false;
-	/* find a icon */
-	std::list<icon_t>::iterator i = icons.begin();
-	while (i != icons.end()) {
-		if ((*i).width <= 16 && x < (*i).width) {
-			x = (*i).width;
-			ic = (*i);
-			has_icon = true;
+		int offset = 0;
+		while (offset < icon_data_size) {
+			icon_t tmp;
+			tmp.width = icon_data[offset + 0];
+			tmp.height = icon_data[offset + 1];
+			tmp.data = (unsigned char *) &icon_data32[offset + 2];
+			offset += 2 + tmp.width * tmp.height;
+			icons.push_back(tmp);
 		}
-		++i;
-	}
 
-	if (has_icon) {
-		selected = ic;
-	} else {
-		if (icons.size() > 0) {
-			selected = icons.front();
-			has_icon = true;
+		icon_t ic;
+		int x = 0;
+		int y = 0;
+
+		/* find a icon */
+		std::list<icon_t>::iterator i = icons.begin();
+		while (i != icons.end()) {
+			if ((*i).width <= 16 && x < (*i).width) {
+				x = (*i).width;
+				ic = (*i);
+				has_icon = true;
+			}
+			++i;
+		}
+
+		if (has_icon) {
+			selected = ic;
 		} else {
-			has_icon = false;
+			if (icons.size() > 0) {
+				selected = icons.front();
+				has_icon = true;
+			} else {
+				has_icon = false;
+			}
+
 		}
 
-	}
+		if (has_icon) {
+			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
+					selected.width);
 
-	if (has_icon) {
-		int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
-				selected.width);
+			icon.width = selected.width;
+			icon.height = selected.height;
+			icon.data = (unsigned char *) malloc(stride * selected.height);
 
-		icon.width = selected.width;
-		icon.height = selected.height;
-		icon.data = (unsigned char *) malloc(stride * selected.height);
+			for (int i = 0; i < selected.height; ++i) {
+				memcpy(icon.data + stride * i,
+						selected.data + (sizeof(uint32_t) * selected.width * i),
+						sizeof(uint32_t) * selected.width);
+			}
 
-		for (int i = 0; i < selected.height; ++i) {
-			memcpy(icon.data + stride * i,
-					selected.data + (sizeof(uint32_t) * selected.width * i),
-					sizeof(uint32_t) * selected.width);
+			icon_surf = cairo_image_surface_create_for_data(
+					(unsigned char *) icon.data, CAIRO_FORMAT_ARGB32,
+					icon.width, icon.height, stride);
+
+		} else {
+			icon_surf = 0;
 		}
 
-		icon_surf = cairo_image_surface_create_for_data(
-				(unsigned char *) icon.data, CAIRO_FORMAT_ARGB32, icon.width,
-				icon.height, stride);
+		delete[] icon_data;
+		delete[] icon_data32;
 
 	} else {
 		icon_surf = 0;
 	}
-
-	delete[] icon_data;
-	delete[] icon_data32;
 
 }
 

@@ -18,8 +18,16 @@
 
 namespace page_next {
 
+struct img_t {
+  unsigned int   width;
+  unsigned int   height;
+  unsigned int   bytes_per_pixel; /* 3:RGB, 4:RGBA */
+  unsigned char  pixel_data[16 * 16 * 4 + 1];
+};
+
 class notebook_t: public tree_t {
 	static std::list<notebook_t *> notebooks;
+
 	Cursor cursor;
 
 	bool back_buffer_is_valid;
