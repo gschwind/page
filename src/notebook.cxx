@@ -16,6 +16,7 @@
 namespace page_next {
 
 std::list<notebook_t *> notebook_t::notebooks;
+int const notebook_t::HEIGHT = 21;
 
 notebook_t::notebook_t(int group) :
 		group(group) {
@@ -48,26 +49,27 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	button_close.x = _allocation.x + _allocation.w - 17;
 	button_close.y = _allocation.y;
 	button_close.w = 17;
-	button_close.h = 20;
+	button_close.h = HEIGHT;
 
 	button_vsplit.x = _allocation.x + _allocation.w - 17 * 2;
 	button_vsplit.y = _allocation.y;
 	button_vsplit.w = 17;
-	button_vsplit.h = 20;
+	button_vsplit.h = HEIGHT;
 
 	button_hsplit.x = _allocation.x + _allocation.w - 17 * 3;
 	button_hsplit.y = _allocation.y;
 	button_hsplit.w = 17;
-	button_hsplit.h = 20;
+	button_hsplit.h = HEIGHT;
 }
 
 void notebook_t::render(cairo_t * cr) {
+
 	update_client_mapping();
 
 	if (back_buffer == 0) {
 		cairo_surface_t * target = cairo_get_target(cr);
 		back_buffer = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR,
-				_allocation.w, 20);
+				_allocation.w, HEIGHT);
 		back_buffer_cr = cairo_create(back_buffer);
 		printf("allocate %p \n", back_buffer);
 	}
@@ -80,9 +82,9 @@ void notebook_t::render(cairo_t * cr) {
 			cairo_set_antialias(back_buffer_cr, CAIRO_ANTIALIAS_DEFAULT);
 
 			/* create tabs back ground */
-			cairo_rectangle(back_buffer_cr, 0.0, 0.0, _allocation.w, 20.0);
+			cairo_rectangle(back_buffer_cr, 0.0, 0.0, _allocation.w, HEIGHT);
 			cairo_pattern_t *pat;
-			pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
+			pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, HEIGHT);
 			cairo_pattern_add_color_stop_rgba(pat, 0, 0xeeU / 255.0,
 					0xeeU / 255.0, 0xecU / 255.0, 1);
 			cairo_pattern_add_color_stop_rgba(pat, 1, 0xbaU / 255.0,
@@ -95,8 +97,8 @@ void notebook_t::render(cairo_t * cr) {
 			cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0, 0x8aU / 255.0,
 					0x85U / 255.0);
 			cairo_new_path(back_buffer_cr);
-			cairo_move_to(back_buffer_cr, 0.0, 19.5);
-			cairo_line_to(back_buffer_cr, _allocation.w, 19.5);
+			cairo_move_to(back_buffer_cr, 0.0, HEIGHT - 0.5);
+			cairo_line_to(back_buffer_cr, _allocation.w, HEIGHT - 0.5);
 
 			cairo_stroke(back_buffer_cr);
 
@@ -119,7 +121,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw light background */
-						cairo_rectangle(back_buffer_cr, 0.0, 3.0, length, 20.0);
+						cairo_rectangle(back_buffer_cr, 0.0, 3.0, length, HEIGHT);
 						cairo_set_source_rgb(back_buffer_cr, 0xeeU / 255.0,
 								0xeeU / 255.0, 0xecU / 255.0);
 						cairo_fill(back_buffer_cr);
@@ -167,7 +169,7 @@ void notebook_t::render(cairo_t * cr) {
 
 						/* draw close icon */
 						cairo_set_line_width(back_buffer_cr, 2.0);
-						cairo_translate(back_buffer_cr, length - 16.0, 2.0);
+						cairo_translate(back_buffer_cr, length - 16.5, 3.5);
 						/* draw close */
 						cairo_new_path(back_buffer_cr);
 						cairo_move_to(back_buffer_cr, 4.0, 4.0);
@@ -196,7 +198,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw window name */
-						cairo_rectangle(back_buffer_cr, 2, 0, length - 4, 19);
+						cairo_rectangle(back_buffer_cr, 2, 0, length - 4, HEIGHT - 1);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13);
@@ -215,7 +217,7 @@ void notebook_t::render(cairo_t * cr) {
 								20.0, 2.0);
 						cairo_new_path(back_buffer_cr);
 						cairo_move_to(back_buffer_cr, 0.0, 20.0);
-						cairo_line_to(back_buffer_cr, length + 1.0, 20.0);
+						cairo_line_to(back_buffer_cr, length + 1.0, HEIGHT);
 						cairo_stroke(back_buffer_cr);
 					}
 				}
@@ -288,7 +290,7 @@ void notebook_t::render(cairo_t * cr) {
 		/* draw top line */
 
 		cairo_translate(cr, _allocation.x, _allocation.y);
-		cairo_rectangle(cr, 0.0, 0.0, _allocation.w, 20.0);
+		cairo_rectangle(cr, 0.0, 0.0, _allocation.w, HEIGHT);
 		cairo_set_source_surface(cr, back_buffer, 0.0, 0.0);
 		cairo_fill(cr);
 
@@ -318,7 +320,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
 		if (_clients.size() > 0) {
 			int box_width = ((_allocation.w - 17 * 3) / _clients.size());
-			box_t<int> b(_allocation.x, _allocation.y, box_width, 20);
+			box_t<int> b(_allocation.x, _allocation.y, box_width, HEIGHT);
 			std::list<client_t *>::iterator c = _clients.begin();
 			while (c != _clients.end()) {
 				if (b.is_inside(e->xbutton.x, e->xbutton.y)) {
@@ -406,6 +408,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						if ((_selected.front())->try_lock_client()) {
 							client_t * c = _selected.front();
 
+							c->map();
 							c->focus();
 
 							XChangeProperty(
@@ -451,12 +454,12 @@ void notebook_t::update_client_mapping() {
 			if (!((*i)->try_lock_client()))
 				continue;
 			client_t * c = (*i);
-			c->update_client_size(_allocation.w - 2, _allocation.h - 21);
+			c->update_client_size(_allocation.w - 2, _allocation.h - HEIGHT - 2);
 			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
 					c->width, c->height);
 
 			int offset_x = (_allocation.w - 2 - c->width) / 2;
-			int offset_y = (_allocation.h - 21 - c->height) / 2;
+			int offset_y = (_allocation.h - HEIGHT - 1 - c->height) / 2;
 			if (offset_x < 0)
 				offset_x = 0;
 			if (offset_y < 0)
@@ -466,8 +469,8 @@ void notebook_t::update_client_mapping() {
 				XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y,
 						c->width, c->height);
 				XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
-						_allocation.x + 1, _allocation.y + 20,
-						_allocation.w - 2, _allocation.h - 21);
+						_allocation.x + 1, _allocation.y + HEIGHT,
+						_allocation.w - 2, _allocation.h - HEIGHT - 1);
 			}
 			c->map();
 

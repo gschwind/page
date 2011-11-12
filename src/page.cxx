@@ -518,9 +518,9 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	//		ev->xproperty.window);
 
 	//printf("%lu\n", ev->xproperty.atom);
-	char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
+	//char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
 	//printf("Atom Name = \"%s\"\n", name);
-	XFree(name);
+	//XFree(name);
 
 	client_t * c = find_client_by_xwindow(ev->xproperty.window);
 	if (!c)

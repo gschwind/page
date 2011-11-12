@@ -745,6 +745,7 @@ enable_fast_install
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+with_gnu_ld
 '
       ac_precious_vars='build_alias
 host_alias
@@ -763,6 +764,9 @@ LIBS
 CPPFLAGS
 CXX
 CXXFLAGS
+LDFLAGS
+LIBS
+CPPFLAGS
 CCC
 CPP
 CXXCPP'

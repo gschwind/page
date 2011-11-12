@@ -27,6 +27,7 @@ struct img_t {
 
 class notebook_t: public tree_t {
 	static std::list<notebook_t *> notebooks;
+	static int const HEIGHT;
 
 	Cursor cursor;
 
