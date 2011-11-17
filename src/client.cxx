@@ -99,7 +99,7 @@ void client_t::update_client_size(int w, int h) {
 	height = h;
 	width = w;
 
-	printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
+	//printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
 }
 
 /* check if client is still alive */
@@ -119,10 +119,24 @@ void client_t::unlock_client() {
 }
 
 void client_t::focus() {
-	if (is_map) {
+	if (is_map && wm_input_focus) {
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
+	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end() && is_map){
+		printf("TAKE_FOCUS\n");
+		XRaiseWindow(cnx.dpy, clipping_window);
+		XRaiseWindow(cnx.dpy, xwin);
+		XEvent ev;
+		ev.xclient.display = cnx.dpy;
+		ev.xclient.type = ClientMessage;
+		ev.xclient.format = 32;
+		ev.xclient.message_type = cnx.atoms.WM_PROTOCOLS;
+		ev.xclient.window = xwin;
+		ev.xclient.data.l[0] = cnx.atoms.WM_TAKE_FOCUS;
+		ev.xclient.data.l[1] = cnx.last_know_time;
+
+		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
 	}
 }
 
@@ -289,6 +303,19 @@ void client_t::read_wm_state() {
 	}
 }
 
+void client_t::read_wm_protocols() {
+	/* take _NET_WM_STATE */
+	unsigned int n;
+	long * wm_protocols = get_properties32(cnx.atoms.WM_PROTOCOLS,
+			cnx.atoms.ATOM, &n);
+	if (wm_protocols) {
+		this->wm_protocols.clear();
+		for (int i = 0; i < n; ++i) {
+			this->wm_protocols.insert(wm_protocols[i]);
+		}
+	}
+}
+
 void client_t::write_wm_state() {
 	int size = net_wm_state.size();
 	long * new_state = new long[size];
@@ -318,7 +345,7 @@ void client_t::set_fullscreen() {
 	/* will set full screen, parameters will be ignored*/
 	update_client_size(0, 0);
 	map();
-	focus();
+	//focus();
 }
 
 void client_t::unset_fullscreen() {
