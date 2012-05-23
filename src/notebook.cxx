@@ -380,6 +380,12 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							break;
 						}
 					} while (ev.type != ButtonRelease);
+
+					/* ev is button release
+					 * so set the hidden focus parameter
+					 */
+					(*c)->cnx.last_know_time = ev.xbutton.time;
+
 					XUngrabPointer(_dpy, CurrentTime);
 					XFreeCursor(_dpy, cursor);
 

@@ -29,6 +29,8 @@ struct xconnection_t {
 
 	int grab_count;
 
+	Time last_know_time;
+
 	struct {
 		/* properties type */
 		Atom CARDINAL;
@@ -41,6 +43,7 @@ struct xconnection_t {
 		Atom WM_DELETE_WINDOW;
 		Atom WM_PROTOCOLS;
 		Atom WM_NORMAL_HINTS;
+		Atom WM_TAKE_FOCUS;
 
 		/* ICCCM extend atoms */
 		Atom _NET_SUPPORTED;
@@ -110,6 +113,7 @@ struct xconnection_t {
 		ATOM_INIT(WM_NAME);
 		ATOM_INIT(WM_DELETE_WINDOW);
 		ATOM_INIT(WM_PROTOCOLS);
+		ATOM_INIT(WM_TAKE_FOCUS);
 
 		ATOM_INIT(WM_NORMAL_HINTS);
 

@@ -29,6 +29,7 @@ struct client_t {
 
 	std::set<Atom> type;
 	std::set<Atom> net_wm_state;
+	std::set<Atom> wm_protocols;
 
 	/* the name of window */
 	std::string name;
@@ -41,6 +42,8 @@ struct client_t {
 
 	Window page_window;
 
+	/* store if wm must do input focus */
+	bool wm_input_focus;
 	/* store the map/unmap stase from the point of view of PAGE */
 	bool is_map;
 	bool need_focus;
@@ -88,12 +91,21 @@ struct client_t {
 			unmap_pending = 1;
 		}
 
+		wm_input_focus = false;
+
+		XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
+		if (hints) {
+			if ((hints->flags & InputHint) && hints->input == True)
+				wm_input_focus = true;
+		}
+
 		update_net_vm_name();
 		update_vm_name();
 		update_title();
 		client_update_size_hints();
 		update_type();
 		read_wm_state();
+		read_wm_protocols();
 	}
 
 	void map();
@@ -111,6 +123,7 @@ struct client_t {
 	void init_icon();
 	void update_type();
 	void read_wm_state();
+	void read_wm_protocols();
 	void write_wm_state();
 
 	bool client_is_dock() {

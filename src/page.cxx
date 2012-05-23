@@ -169,6 +169,8 @@ void main_t::run() {
 			client_t * c = find_client_by_clipping_window(e.xbutton.window);
 			if (c) {
 				if (c->try_lock_client()) {
+					/* the hidden focus parameter */
+					cnx.last_know_time = e.xbutton.time;
 					c->focus();
 					c->unlock_client();
 				}
@@ -457,14 +459,14 @@ void main_t::process_map_notify_event(XEvent * e) {
 	// seems to never happen
 	printf("MapNotify\n");
 	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if (c)
+	if(c)
 		c->is_map = true;
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
 	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if (c)
+	if(c)
 		c->is_map = false;
 	/* unmap can be received twice time but are unique per window event.
 	 * so this remove multiple events.
@@ -537,6 +539,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (c->try_lock_client()) {
 		if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
 			tree_root->activate_client(c);
+			/* the hidden parameter of focus */
+			cnx.last_know_time = ev->xproperty.time;
 			c->focus();
 			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 					cnx.atoms.WINDOW, 32, PropModeReplace,
