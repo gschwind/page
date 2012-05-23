@@ -455,8 +455,8 @@ void notebook_t::update_client_mapping() {
 				continue;
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 2, _allocation.h - HEIGHT - 2);
-			printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
-					c->width, c->height);
+			//printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
+			//		c->width, c->height);
 
 			int offset_x = (_allocation.w - 2 - c->width) / 2;
 			int offset_y = (_allocation.h - HEIGHT - 1 - c->height) / 2;

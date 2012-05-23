@@ -158,10 +158,11 @@ void main_t::run() {
 		XEvent e;
 		XNextEvent(cnx.dpy, &e);
 
-		printf("#%lu event: %s window: %lu\n", e.xany.serial,
-				x_event_name[e.type], e.xany.window);
+		//printf("#%lu event: %s window: %lu\n", e.xany.serial,
+		//		x_event_name[e.type], e.xany.window);
 		if (e.type == MapNotify) {
 		} else if (e.type == Expose) {
+			printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xmapping.window == main_window)
 				render();
 		} else if (e.type == ButtonPress) {
@@ -176,7 +177,7 @@ void main_t::run() {
 			}
 			render();
 		} else if (e.type == MapRequest) {
-			printf("MapRequest\n");
+			//printf("MapRequest\n");
 			process_map_request_event(&e);
 		} else if (e.type == MapNotify) {
 			process_map_notify_event(&e);
@@ -202,7 +203,6 @@ void main_t::render(cairo_t * cr) {
 }
 
 void main_t::render() {
-	printf("RENDER\n");
 	XGetWindowAttributes(cnx.dpy, main_window, &wa);
 	box_t<int> b(0, 0, wa.width, wa.height);
 	tree_root->update_allocation(b);
@@ -310,6 +310,7 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 	client_t * c = find_client_by_xwindow(w);
 	if (c != NULL) {
+		c->is_map = true;
 		printf("Window %p is already managed\n", c);
 		return false;
 	}
@@ -360,11 +361,13 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 1, 1, 0,
 			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual,
 			CWBackPixel | CWBorderPixel, &swa);
-	XSelectInput(cnx.dpy, c->clipping_window, ButtonPressMask | ButtonRelease);
+	XSelectInput(cnx.dpy, c->clipping_window,
+			ButtonPressMask | ButtonRelease | ExposureMask);
 
-	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
-			c->clipping_window, 0, 0);
-	XSelectInput(cnx.dpy, c->xwin, StructureNotifyMask | PropertyChangeMask);
+	//printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
+	//		c->clipping_window, 0, 0);
+	XSelectInput(cnx.dpy, c->xwin,
+			StructureNotifyMask | PropertyChangeMask | ExposureMask);
 	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
 
 	if (!tree_root->add_notebook(c)) {
@@ -451,12 +454,18 @@ void main_t::process_map_request_event(XEvent * e) {
 }
 
 void main_t::process_map_notify_event(XEvent * e) {
-
+	// seems to never happen
+	printf("MapNotify\n");
+	client_t * c = find_client_by_xwindow(e->xmap.window);
+	if (c)
+		c->is_map = true;
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
 	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
+	if (c)
+		c->is_map = false;
 	/* unmap can be received twice time but are unique per window event.
 	 * so this remove multiple events.
 	 */
@@ -497,8 +506,8 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 }
 
 void main_t::process_destroy_notify_event(XEvent * e) {
-	printf("DestroyNotify destroy : #%lu, event : #%lu\n", e->xunmap.window,
-			e->xunmap.event);
+	//printf("DestroyNotify destroy : #%lu, event : #%lu\n", e->xunmap.window,
+	//		e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		tree_root->remove_client(c->xwin);
@@ -528,7 +537,6 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (c->try_lock_client()) {
 		if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
 			tree_root->activate_client(c);
-			//render();
 			c->focus();
 			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 					cnx.atoms.WINDOW, 32, PropModeReplace,
@@ -580,7 +588,6 @@ void main_t::process_property_notify_event(XEvent * ev) {
 }
 
 void main_t::fullscreen(client_t *c) {
-	printf("TOGGLE FULLSCREEN\n");
 	c->set_fullscreen();
 }
 
@@ -623,15 +630,15 @@ void main_t::process_client_message_event(XEvent * ev) {
 								== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
 					switch (ev->xclient.data.l[0]) {
 					case 0:
-						printf("SET normal\n");
+						//printf("SET normal\n");
 						fullscreen(c);
 						break;
 					case 1:
-						printf("SET fullscreen\n");
+						//printf("SET fullscreen\n");
 						unfullscreen(c);
 						break;
 					case 2:
-						printf("SET toggle\n");
+						//printf("SET toggle\n");
 						toggle_fullscreen(c);
 						break;
 

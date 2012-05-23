@@ -17,7 +17,9 @@
 namespace page_next {
 
 void client_t::map() {
+	// this wil be set in map request event.
 	is_map = true;
+	// generate a map request event.
 	XMapWindow(cnx.dpy, xwin);
 	XMapWindow(cnx.dpy, clipping_window);
 }
@@ -99,7 +101,7 @@ void client_t::update_client_size(int w, int h) {
 	height = h;
 	width = w;
 
-	printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
+	//printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
 }
 
 /* check if client is still alive */
@@ -111,15 +113,20 @@ bool client_t::try_lock_client() {
 		cnx.ungrab();
 		return false;
 	}
+	is_lock = true;
 	return true;
 }
 
 void client_t::unlock_client() {
+	is_lock = false;
 	cnx.ungrab();
 }
 
 void client_t::focus() {
 	if (is_map) {
+		if (!is_lock)
+			printf("warning: client isn't locked.\n");
+		printf("Focus #%x\n", (unsigned int) xwin);
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
@@ -232,17 +239,41 @@ void client_t::init_icon() {
 		}
 
 		if (has_icon) {
+
+			int target_height;
+			int target_width;
+			double ratio;
+
+			if (selected.width > selected.height) {
+				target_width = 16;
+				target_height = (double) selected.height
+						/ (double) selected.width * 16;
+				ratio = (double)target_width / (double)selected.width;
+			} else {
+				target_height = 16;
+				target_width = (double) selected.width
+						/ (double) selected.height * 16;
+				ratio = (double)target_height / (double)selected.height;
+			}
+
 			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
-					selected.width);
+					target_width);
 
-			icon.width = selected.width;
-			icon.height = selected.height;
-			icon.data = (unsigned char *) malloc(stride * selected.height);
+			printf("reformat from %dx%d to %dx%d %f\n", selected.width, selected.height, target_width, target_height, ratio);
 
-			for (int i = 0; i < selected.height; ++i) {
-				memcpy(icon.data + stride * i,
-						selected.data + (sizeof(uint32_t) * selected.width * i),
-						sizeof(uint32_t) * selected.width);
+			icon.width = target_width;
+			icon.height = target_height;
+			icon.data = (unsigned char *) malloc(stride * target_height);
+
+			for (int j = 0; j < target_height; ++j) {
+				for (int i = 0; i < target_width; ++i) {
+					int x = i / ratio;
+					int y = j / ratio;
+					if (x < selected.width && x >= 0 && y < selected.height && y >= 0) {
+						((uint32_t *) (icon.data + stride * j))[i] =
+								((uint32_t*)selected.data)[x + selected.width * y];
+					}
+				}
 			}
 
 			icon_surf = cairo_image_surface_create_for_data(

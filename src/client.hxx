@@ -43,6 +43,8 @@ struct client_t {
 
 	/* store the map/unmap stase from the point of view of PAGE */
 	bool is_map;
+	bool need_focus;
+	bool is_lock;
 	/* this is used to distinguish if unmap is initiated by client or by PAGE
 	 * PAGE unmap mean Normal to Iconic
 	 * client unmap mean Normal to WithDrawn */
@@ -72,7 +74,7 @@ struct client_t {
 			XWindowAttributes &wa) :
 			cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(
 					false), height(wa.height), width(wa.width), page_window(
-					page_window), lock_count(0) {
+					page_window), lock_count(0), is_lock(false) {
 
 		/* if the client is mapped, the reparent will unmap the window
 		 * The client is mapped if the manage occur on start of

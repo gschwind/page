@@ -70,7 +70,7 @@ void split_t::render(cairo_t * cr) {
 	cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
 		cairo_rectangle(cr, _allocation.x + _allocation.w * _split - 3.0,
-				_allocation.y, 6.0, _allocation.h - 1.0);
+				_allocation.y, 6.0, _allocation.h);
 	} else {
 		cairo_rectangle(cr, _allocation.x,
 				_allocation.y + (_allocation.h * _split) - 3.0, _allocation.w,
