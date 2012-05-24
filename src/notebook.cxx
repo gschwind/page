@@ -16,7 +16,7 @@
 namespace page_next {
 
 std::list<notebook_t *> notebook_t::notebooks;
-int const notebook_t::HEIGHT = 21;
+int const notebook_t::HEIGHT = 24;
 
 notebook_t::notebook_t(int group) :
 		group(group) {
@@ -104,7 +104,7 @@ void notebook_t::render(cairo_t * cr) {
 
 			std::list<client_t *>::iterator i;
 			int offset = 0;
-			int length = (_allocation.w - 17 * 3) / _clients.size();
+			int length = (_allocation.w - 17 * 3) / (_clients.size() + 1);
 			for (i = _clients.begin(); i != _clients.end(); ++i) {
 
 				cairo_save(back_buffer_cr);
@@ -117,11 +117,12 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_line_width(back_buffer_cr, 1.0);
 						cairo_select_font_face(back_buffer_cr, "Sans",
 								CAIRO_FONT_SLANT_NORMAL,
-								CAIRO_FONT_WEIGHT_NORMAL);
+								CAIRO_FONT_WEIGHT_BOLD);
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw light background */
-						cairo_rectangle(back_buffer_cr, 0.0, 3.0, length, HEIGHT);
+						cairo_rectangle(back_buffer_cr, 0.0, 3.0, length * 2,
+								HEIGHT);
 						cairo_set_source_rgb(back_buffer_cr, 0xeeU / 255.0,
 								0xeeU / 255.0, 0xecU / 255.0);
 						cairo_fill(back_buffer_cr);
@@ -136,8 +137,8 @@ void notebook_t::render(cairo_t * cr) {
 						}
 
 						/* draw the name */
-						cairo_rectangle(back_buffer_cr, 2.0, 0.0, length - 16.0,
-								19.0);
+						cairo_rectangle(back_buffer_cr, 2.0, 0.0,
+								length * 2 - 16.0, HEIGHT-2.0);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13.0);
@@ -149,27 +150,27 @@ void notebook_t::render(cairo_t * cr) {
 
 						cairo_new_path(back_buffer_cr);
 						cairo_move_to(back_buffer_cr, 1.0, 1.5);
-						cairo_line_to(back_buffer_cr, length, 1.5);
+						cairo_line_to(back_buffer_cr, length * 2, 1.5);
 						cairo_move_to(back_buffer_cr, 1.0, 2.5);
-						cairo_line_to(back_buffer_cr, length, 2.5);
+						cairo_line_to(back_buffer_cr, length * 2, 2.5);
 						cairo_set_source_rgb(back_buffer_cr, 0x72U / 255.0,
 								0x9fU / 255.0, 0xcfU / 255.0);
 						cairo_stroke(back_buffer_cr);
 						cairo_new_path(back_buffer_cr);
 						cairo_move_to(back_buffer_cr, 0.0, 3.5);
-						cairo_line_to(back_buffer_cr, length, 3.5);
+						cairo_line_to(back_buffer_cr, length * 2, 3.5);
 						cairo_set_source_rgb(back_buffer_cr, 0x34U / 255.0,
 								0x64U / 255.0, 0xa4U / 255.0);
 						cairo_stroke(back_buffer_cr);
 
 						cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0,
 								0x8aU / 255.0, 0x85U / 255.0);
-						rounded_rectangle(back_buffer_cr, 0.5, 0.5, length,
-								19.0, 3.0);
+						rounded_rectangle(back_buffer_cr, 0.5, 0.5, length * 2,
+								HEIGHT-1.0, 3.0);
 
 						/* draw close icon */
 						cairo_set_line_width(back_buffer_cr, 2.0);
-						cairo_translate(back_buffer_cr, length - 16.5, 3.5);
+						cairo_translate(back_buffer_cr, length * 2 - 16.5, 3.5);
 						/* draw close */
 						cairo_new_path(back_buffer_cr);
 						cairo_move_to(back_buffer_cr, 4.0, 4.0);
@@ -179,7 +180,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
 								0x00U / 255.0, 0x00U / 255.0);
 						cairo_stroke(back_buffer_cr);
-
+						offset += length * 2;
 					} else {
 
 						if ((*i)->icon_surf != 0) {
@@ -198,31 +199,33 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw window name */
-						cairo_rectangle(back_buffer_cr, 2, 0, length - 4, HEIGHT - 1);
+						cairo_rectangle(back_buffer_cr, 2, 0, length - 4,
+								HEIGHT - 1);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13);
-						cairo_move_to(back_buffer_cr, 20.5, 15.5);
+						cairo_move_to(back_buffer_cr, HEIGHT+0.5, 15.5);
 						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
 
 						/* draw border */
 						cairo_reset_clip(back_buffer_cr);
 
 						cairo_rectangle(back_buffer_cr, 0.0, 0.0, length + 1.0,
-								20.0);
+								HEIGHT);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0,
 								0x8aU / 255.0, 0x85U / 255.0);
 						rounded_rectangle(back_buffer_cr, 0.5, 2.5, length,
-								20.0, 2.0);
+								HEIGHT, 2.0);
 						cairo_new_path(back_buffer_cr);
-						cairo_move_to(back_buffer_cr, 0.0, 20.0);
+						cairo_move_to(back_buffer_cr, 0.0, HEIGHT);
 						cairo_line_to(back_buffer_cr, length + 1.0, HEIGHT);
 						cairo_stroke(back_buffer_cr);
+						offset += length;
 					}
 				}
 				cairo_restore(back_buffer_cr);
-				offset += length;
+
 			}
 
 			cairo_save(back_buffer_cr);
@@ -246,7 +249,6 @@ void notebook_t::render(cairo_t * cr) {
 				cairo_line_to(back_buffer_cr, 9.0, 14.0);
 				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 				cairo_stroke(back_buffer_cr);
-
 
 				/* draw horizontal split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
@@ -278,15 +280,37 @@ void notebook_t::render(cairo_t * cr) {
 			cairo_fill(cr);
 		}
 
-		//cairo_set_line_width(cr, 1.0);
-		//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
-		//cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 21,
-		//		_allocation.w - 2, _allocation.h - 22);
-		//if (_selected.size() == 0) {
-		//	cairo_stroke(cr);
-		//} else {
-		//	cairo_fill(cr);
-		//}
+//		cairo_save(cr);
+//		{
+//			client_t * c = _selected.front();
+//
+//			int offset_x = (_allocation.w - 2 - c->width) / 2;
+//			int offset_y = (_allocation.h - HEIGHT - 1 - c->height) / 2;
+//			if (offset_x < 0)
+//				offset_x = 0;
+//			if (offset_y < 0)
+//				offset_y = 0;
+//
+//			if (offset_x > 0 && offset_y > 0) {
+//				cairo_set_source_rgb(cr, 0x00U / 255.0, 0x00U / 255.0,
+//						0x00U / 255.0);
+//				cairo_rectangle(cr, offset_x-1.0+_allocation.x, offset_y-1.0+_allocation.y, c->width + 2.0,
+//						c->height + 2.0);
+//				cairo_fill(cr);
+//			}
+//
+//		}
+//		cairo_restore(cr);
+
+//cairo_set_line_width(cr, 1.0);
+//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
+//cairo_rectangle(cr, _allocation.x + 1, _allocation.y + 21,
+//		_allocation.w - 2, _allocation.h - 22);
+//if (_selected.size() == 0) {
+//	cairo_stroke(cr);
+//} else {
+//	cairo_fill(cr);
+//}
 		/* draw top line */
 
 		cairo_translate(cr, _allocation.x, _allocation.y);
@@ -319,19 +343,31 @@ void notebook_t::render(cairo_t * cr) {
 bool notebook_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
 		if (_clients.size() > 0) {
-			int box_width = ((_allocation.w - 17 * 3) / _clients.size());
+			int box_width = ((_allocation.w - 17 * 3) / (_clients.size() + 1));
 			box_t<int> b(_allocation.x, _allocation.y, box_width, HEIGHT);
 			std::list<client_t *>::iterator c = _clients.begin();
 			while (c != _clients.end()) {
-				if (b.is_inside(e->xbutton.x, e->xbutton.y)) {
-					break;
+				if (*c == _selected.front()) {
+					box_t<int> b1 = b;
+					b1.w *= 2;
+					if (b1.is_inside(e->xbutton.x, e->xbutton.y)) {
+						break;
+					}
+					b.x += box_width*2;
+				} else {
+					if (b.is_inside(e->xbutton.x, e->xbutton.y)) {
+						break;
+					}
+					b.x += box_width;
 				}
-				b.x += box_width;
+
+
+
 				++c;
 			}
 			if (c != _clients.end()) {
 				if (_selected.front() == (*c)
-						&& b.x + b.w - 16 < e->xbutton.x) {
+						&& b.x + b.w*2 - 16 < e->xbutton.x) {
 
 					XEvent ev;
 					ev.xclient.display = _dpy;
@@ -352,10 +388,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 					cursor = XCreateFontCursor(_dpy, XC_fleur);
 
-					if (XGrabPointer(
-							_dpy,
-							_w,
-							False,
+					if (XGrabPointer(_dpy, _w, False,
 							(ButtonPressMask | ButtonReleaseMask
 									| PointerMotionMask), GrabModeAsync,
 							GrabModeAsync, None, cursor,
@@ -363,8 +396,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							)
 						return true;
 					do {
-						XMaskEvent(
-								_dpy,
+						XMaskEvent(_dpy,
 								(ButtonPressMask | ButtonReleaseMask
 										| PointerMotionMask) | ExposureMask
 										| SubstructureRedirectMask, &ev);
@@ -417,13 +449,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							c->map();
 							c->focus();
 
-							XChangeProperty(
-									c->cnx.dpy,
-									c->cnx.xroot,
+							XChangeProperty(c->cnx.dpy, c->cnx.xroot,
 									c->cnx.atoms._NET_ACTIVE_WINDOW,
-									c->cnx.atoms.WINDOW,
-									32,
-									PropModeReplace,
+									c->cnx.atoms.WINDOW, 32, PropModeReplace,
 									reinterpret_cast<unsigned char *>(&(c->xwin)),
 									1);
 
@@ -460,7 +488,8 @@ void notebook_t::update_client_mapping() {
 			if (!((*i)->try_lock_client()))
 				continue;
 			client_t * c = (*i);
-			c->update_client_size(_allocation.w - 2, _allocation.h - HEIGHT - 2);
+			c->update_client_size(_allocation.w - 2,
+					_allocation.h - HEIGHT - 2);
 			//printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
 			//		c->width, c->height);
 

@@ -31,6 +31,8 @@ struct xconnection_t {
 
 	Time last_know_time;
 
+	int (*old_error_handler)(Display * dpy, XErrorEvent * ev);
+
 	struct {
 		/* properties type */
 		Atom CARDINAL;
@@ -94,6 +96,7 @@ struct xconnection_t {
 
 	xconnection_t() {
 		dpy = XOpenDisplay(0);
+		old_error_handler = XSetErrorHandler(error_handler);
 		screen = DefaultScreen(dpy);
 		xroot = DefaultRootWindow(dpy);
 		XGetWindowAttributes(dpy, xroot, &root_wa);
@@ -226,6 +229,14 @@ struct xconnection_t {
 	char * get_properties8(Window win, Atom prop, Atom type,
 			unsigned int *num) {
 		return this->get_properties<char, 8>(win, prop, type, num);
+	}
+
+	static int error_handler(Display * dpy, XErrorEvent * ev) {
+		/* TODO: dump some use full information */
+		char buffer[1024];
+		XGetErrorText(dpy, ev->error_code, buffer, 1024);
+		printf("%s\n", buffer);
+		return 0;
 	}
 
 };
