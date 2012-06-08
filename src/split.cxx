@@ -92,8 +92,29 @@ void split_t::render(cairo_t * cr) {
 
 }
 
+void split_t::draw_box(GC gc, int x, int y, unsigned int width, unsigned int height)
+{
+   /* Set foreground pixel value -- default may be white on white */
+   //XSetForeground(_dpy, gc, BlackPixel(_dpy, 0));
+   /* Drawing on root window -- through all windows */
+   //XSetSubwindowMode(_dpy, gc, IncludeInferiors);
+   /* Logical function is XOR, so that double drawing erases box
+    * on both color and monochrome screens */
+   //XSetFunction(_dpy, gc, GXxor);
+   XDrawRectangle(_dpy, _w, gc, x, y,
+         width, height);
+}
+
 bool split_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
+		GC gc;
+		XGCValues gc_value;
+		gc_value.function = GXset;
+		gc_value.subwindow_mode = IncludeInferiors;
+		gc_value.foreground = BlackPixel(_dpy, 0);
+		gc_value.background = BlackPixel(_dpy, 0);
+		gc_value.fill_style = FillSolid;
+		gc = XCreateGC(_dpy, _w, GCForeground | GCBackground | GCFunction | GCSubwindowMode, &gc_value);
 		box_t<int> slide;
 		if (_split_type == VERTICAL_SPLIT) {
 			slide.y = _allocation.y;
@@ -123,20 +144,27 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			Window w;
 
 			if (_split_type == VERTICAL_SPLIT) {
-				w = XCreateWindow(_dpy, _w,
+				draw_box(gc,
 						_allocation.x + (int) (_split * _allocation.w) - 3,
-						_allocation.y, 6, _allocation.h, 1, w_attribute.depth,
-						InputOutput, w_attribute.visual,
-						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+						_allocation.y, 6, _allocation.h);
+				//w = XCreateWindow(_dpy, _w,
+				//		_allocation.x + (int) (_split * _allocation.w) - 3,
+				//		_allocation.y, 6, _allocation.h, 1, w_attribute.depth,
+				//		InputOutput, w_attribute.visual,
+				//		CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
 			} else {
-				w = XCreateWindow(_dpy, _w, _allocation.x,
-						_allocation.y + (int) (_split * _allocation.h) - 3,
-						_allocation.w, 6, 1, w_attribute.depth, InputOutput,
-						w_attribute.visual,
-						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+				//w = XCreateWindow(_dpy, _w, _allocation.x,
+				//		_allocation.y + (int) (_split * _allocation.h) - 3,
+				//		_allocation.w, 6, 1, w_attribute.depth, InputOutput,
+				//		w_attribute.visual,
+				//		CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
+				draw_box(gc,
+						_allocation.x,
+								_allocation.y + (int) (_split * _allocation.h) - 3,
+						_allocation.w, 6);
 			}
 
-			XMapWindow(_dpy, w);
+			//XMapWindow(_dpy, w);
 
 			if (XGrabPointer(_dpy, _w, False,
 					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
@@ -157,9 +185,9 @@ bool split_t::process_button_press_event(XEvent const * e) {
 					save_render = (save_render + 1) % 10;
 					/* only render 1 time per 10 */
 					if (save_render == 0) {
-						cr = get_cairo();
-						render(cr);
-						cairo_destroy(cr);
+						//cr = get_cairo();
+						//render(cr);
+						//cairo_destroy(cr);
 					}
 					break;
 				case MotionNotify:
@@ -170,11 +198,13 @@ bool split_t::process_button_press_event(XEvent const * e) {
 							_split = 0.95;
 						if (_split < 0.05)
 							_split = 0.05;
-						XMoveResizeWindow(
-								_dpy,
-								w,
-								_allocation.x + (int) (_split * _allocation.w)
-										- 3, _allocation.y, 6, _allocation.h);
+						//XMoveResizeWindow(
+						//		_dpy,
+						//		w,
+						//		_allocation.x + (int) (_split * _allocation.w)
+						//				- 3, _allocation.y, 6, _allocation.h);
+						draw_box(gc, _allocation.x + (int) (_split * _allocation.w)
+												- 3, _allocation.y, 6, _allocation.h);
 					} else {
 						_split = (ev.xmotion.y - _allocation.y)
 								/ (double) (_allocation.h);
@@ -182,12 +212,16 @@ bool split_t::process_button_press_event(XEvent const * e) {
 							_split = 0.95;
 						if (_split < 0.05)
 							_split = 0.05;
-						XMoveResizeWindow(
-								_dpy,
-								w,
-								_allocation.x,
-								_allocation.y + (int) (_split * _allocation.h)
-										- 3, _allocation.w, 6);
+
+						draw_box(gc, _allocation.x,
+										_allocation.y + (int) (_split * _allocation.h)
+												- 3, _allocation.w, 6);
+						//XMoveResizeWindow(
+						//		_dpy,
+						//		w,
+						//		_allocation.x,
+						//		_allocation.y + (int) (_split * _allocation.h)
+						//				- 3, _allocation.w, 6);
 					}
 
 					if (_split > 0.95)
@@ -199,7 +233,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			} while (ev.type != ButtonRelease);
 			XUngrabPointer(_dpy, CurrentTime);
 			XFreeCursor(_dpy, cursor);
-			XDestroyWindow(_dpy, w);
+			//XDestroyWindow(_dpy, w);
 
 			update_allocation(_allocation);
 			cr = get_cairo();

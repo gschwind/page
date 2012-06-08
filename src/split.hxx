@@ -45,6 +45,8 @@ public:
 	void update_allocation_pack0();
 	void update_allocation_pack1();
 
+	void draw_box(GC gc, int x, int y, unsigned int width, unsigned int height);
+
 
 };
 

@@ -157,23 +157,20 @@ void main_t::run() {
 	while (running) {
 		XEvent e;
 		XNextEvent(cnx.dpy, &e);
+		printf("##%lu\n", e.xany.serial);
 
 		//printf("#%lu event: %s window: %lu\n", e.xany.serial,
 		//		x_event_name[e.type], e.xany.window);
-		if (e.type == MapNotify) {
-		} else if (e.type == Expose) {
-			printf("Expose #%x\n", (unsigned int) e.xexpose.window);
+		if (e.type == Expose) {
+			//printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xmapping.window == main_window)
 				render();
 		} else if (e.type == ButtonPress) {
 			client_t * c = find_client_by_clipping_window(e.xbutton.window);
 			if (c) {
-				if (c->try_lock_client()) {
-					/* the hidden focus parameter */
-					cnx.last_know_time = e.xbutton.time;
-					c->focus();
-					c->unlock_client();
-				}
+				/* the hidden focus parameter */
+				cnx.last_know_time = e.xbutton.time;
+				c->focus();
 			} else {
 				tree_root->process_button_press_event(&e);
 			}
@@ -312,7 +309,7 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 	client_t * c = find_client_by_xwindow(w);
 	if (c != NULL) {
-		c->is_map = true;
+		//c->is_map = true;
 		printf("Window %p is already managed\n", c);
 		return false;
 	}
@@ -347,6 +344,8 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 			c->struct_bottom = partial_struct[3];
 
 			delete[] partial_struct;
+
+			update_page_aera();
 
 		}
 		return true;
@@ -445,7 +444,7 @@ void main_t::process_map_request_event(XEvent * e) {
 		return;
 	}
 	manage(w, wa);
-	XMapWindow(cnx.dpy, w);
+	//XMapWindow(cnx.dpy, w);
 	render();
 	update_client_list();
 	cnx.ungrab();
@@ -457,16 +456,16 @@ void main_t::process_map_request_event(XEvent * e) {
 
 void main_t::process_map_notify_event(XEvent * e) {
 	// seems to never happen
-	printf("MapNotify\n");
+	printf("MapNotify #%x\n", (unsigned int) e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if(c)
+	if (c)
 		c->is_map = true;
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
 	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if(c)
+	if (c)
 		c->is_map = false;
 	/* unmap can be received twice time but are unique per window event.
 	 * so this remove multiple events.
@@ -525,69 +524,66 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 }
 
 void main_t::process_property_notify_event(XEvent * ev) {
-	//printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
-	//		ev->xproperty.window);
+	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
+			ev->xproperty.window);
 
-	//printf("%lu\n", ev->xproperty.atom);
-	//char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
-	//printf("Atom Name = \"%s\"\n", name);
-	//XFree(name);
+	printf("%lu\n", ev->xproperty.atom);
+	char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
+	printf("Atom Name = \"%s\"\n", name);
+	XFree(name);
 
 	client_t * c = find_client_by_xwindow(ev->xproperty.window);
 	if (!c)
 		return;
-	if (c->try_lock_client()) {
-		if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
-			tree_root->activate_client(c);
-			/* the hidden parameter of focus */
-			cnx.last_know_time = ev->xproperty.time;
-			c->focus();
-			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
-					cnx.atoms.WINDOW, 32, PropModeReplace,
-					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
-					1);
-		} else if (ev->xproperty.atom == cnx.atoms._NET_WM_NAME) {
-			c->update_net_vm_name();
-			c->update_title();
-			render();
-		} else if (ev->xproperty.atom == cnx.atoms.WM_NAME) {
-			c->update_vm_name();
-			c->update_title();
-			render();
-		} else if (ev->xproperty.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
-			if (ev->xproperty.state == PropertyNewValue) {
-				unsigned int n;
-				long * partial_struct = c->get_properties32(
-						cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL,
-						&n);
+	if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
+		tree_root->activate_client(c);
+		/* the hidden parameter of focus */
+		cnx.last_know_time = ev->xproperty.time;
+		c->focus();
+		XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
+				cnx.atoms.WINDOW, 32, PropModeReplace,
+				reinterpret_cast<unsigned char *>(&(ev->xproperty.window)), 1);
+	} else if (ev->xproperty.atom == cnx.atoms._NET_WM_NAME) {
+		c->update_net_vm_name();
+		c->update_title();
+		render();
+	} else if (ev->xproperty.atom == cnx.atoms.WM_NAME) {
+		c->update_vm_name();
+		c->update_title();
+		render();
+	} else if (ev->xproperty.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
+		if (ev->xproperty.state == PropertyNewValue) {
+			unsigned int n;
+			long * partial_struct = c->get_properties32(
+					cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL, &n);
 
-				if (partial_struct) {
+			if (partial_struct) {
 
-					printf("partial struct %ld %ld %ld %ld\n",
-							partial_struct[0], partial_struct[1],
-							partial_struct[2], partial_struct[3]);
+				printf("partial struct %ld %ld %ld %ld\n", partial_struct[0],
+						partial_struct[1], partial_struct[2],
+						partial_struct[3]);
 
-					c->has_partial_struct = true;
-					c->struct_left = partial_struct[0];
-					c->struct_right = partial_struct[1];
-					c->struct_top = partial_struct[2];
-					c->struct_bottom = partial_struct[3];
+				c->has_partial_struct = true;
+				c->struct_left = partial_struct[0];
+				c->struct_right = partial_struct[1];
+				c->struct_top = partial_struct[2];
+				c->struct_bottom = partial_struct[3];
 
-					delete[] partial_struct;
+				delete[] partial_struct;
 
-				}
-			} else if (ev->xproperty.state == PropertyDelete) {
-				c->has_partial_struct = false;
+				update_page_aera();
+
 			}
-
-		} else if (ev->xproperty.atom == cnx.atoms._NET_ACTIVE_WINDOW) {
-			printf("request to activate %lu\n", ev->xproperty.window);
-
-		} else if (ev->xproperty.atom == cnx.atoms.WM_NORMAL_HINTS) {
-			c->client_update_size_hints();
-			render();
+		} else if (ev->xproperty.state == PropertyDelete) {
+			c->has_partial_struct = false;
 		}
-		c->unlock_client();
+
+	} else if (ev->xproperty.atom == cnx.atoms._NET_ACTIVE_WINDOW) {
+		printf("request to activate %lu\n", ev->xproperty.window);
+
+	} else if (ev->xproperty.atom == cnx.atoms.WM_NORMAL_HINTS) {
+		c->client_update_size_hints();
+		render();
 	}
 }
 
@@ -628,7 +624,6 @@ void main_t::process_client_message_event(XEvent * ev) {
 	} else if (ev->xclient.message_type == cnx.atoms._NET_WM_STATE) {
 		client_t * c = find_client_by_xwindow(ev->xclient.window);
 		if (c) {
-			if (c->try_lock_client()) {
 				if (ev->xclient.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
 						|| ev->xclient.data.l[2]
 								== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
@@ -648,8 +643,6 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 					}
 				}
-				c->unlock_client();
-			}
 
 		}
 

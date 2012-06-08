@@ -138,7 +138,7 @@ void notebook_t::render(cairo_t * cr) {
 
 						/* draw the name */
 						cairo_rectangle(back_buffer_cr, 2.0, 0.0,
-								length * 2 - 16.0, HEIGHT-2.0);
+								length * 2 - 16.0, HEIGHT - 2.0);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13.0);
@@ -166,7 +166,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_set_source_rgb(back_buffer_cr, 0x88U / 255.0,
 								0x8aU / 255.0, 0x85U / 255.0);
 						rounded_rectangle(back_buffer_cr, 0.5, 0.5, length * 2,
-								HEIGHT-1.0, 3.0);
+								HEIGHT - 1.0, 3.0);
 
 						/* draw close icon */
 						cairo_set_line_width(back_buffer_cr, 2.0);
@@ -204,7 +204,7 @@ void notebook_t::render(cairo_t * cr) {
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13);
-						cairo_move_to(back_buffer_cr, HEIGHT+0.5, 15.5);
+						cairo_move_to(back_buffer_cr, HEIGHT + 0.5, 15.5);
 						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
 
 						/* draw border */
@@ -353,7 +353,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					if (b1.is_inside(e->xbutton.x, e->xbutton.y)) {
 						break;
 					}
-					b.x += box_width*2;
+					b.x += box_width * 2;
 				} else {
 					if (b.is_inside(e->xbutton.x, e->xbutton.y)) {
 						break;
@@ -361,13 +361,11 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					b.x += box_width;
 				}
 
-
-
 				++c;
 			}
 			if (c != _clients.end()) {
 				if (_selected.front() == (*c)
-						&& b.x + b.w*2 - 16 < e->xbutton.x) {
+						&& b.x + b.w * 2 - 16 < e->xbutton.x) {
 
 					XEvent ev;
 					ev.xclient.display = _dpy;
@@ -443,20 +441,17 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 					cairo_destroy(cr);
 
 					if (_selected.size() > 0) {
-						if ((_selected.front())->try_lock_client()) {
-							client_t * c = _selected.front();
+						client_t * c = _selected.front();
 
-							c->map();
-							c->focus();
+						c->map();
+						c->focus();
 
-							XChangeProperty(c->cnx.dpy, c->cnx.xroot,
-									c->cnx.atoms._NET_ACTIVE_WINDOW,
-									c->cnx.atoms.WINDOW, 32, PropModeReplace,
-									reinterpret_cast<unsigned char *>(&(c->xwin)),
-									1);
+						XChangeProperty(c->cnx.dpy, c->cnx.xroot,
+								c->cnx.atoms._NET_ACTIVE_WINDOW,
+								c->cnx.atoms.WINDOW, 32, PropModeReplace,
+								reinterpret_cast<unsigned char *>(&(c->xwin)),
+								1);
 
-							(_selected.front())->unlock_client();
-						}
 					}
 				}
 
@@ -485,13 +480,11 @@ void notebook_t::update_client_mapping() {
 	/* map before unmap */
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i) == _selected.front()) {
-			if (!((*i)->try_lock_client()))
-				continue;
 			client_t * c = (*i);
 			c->update_client_size(_allocation.w - 2,
 					_allocation.h - HEIGHT - 2);
-			//printf("XResizeWindow(%p, %lu, %d, %d)\n", c->cnx.dpy, c->xwin,
-			//		c->width, c->height);
+			printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin,
+					c->width, c->height);
 
 			int offset_x = (_allocation.w - 2 - c->width) / 2;
 			int offset_y = (_allocation.h - HEIGHT - 1 - c->height) / 2;
@@ -513,27 +506,22 @@ void notebook_t::update_client_mapping() {
 			XChangeProperty((*i)->cnx.dpy, (*i)->xwin, (*i)->cnx.atoms.WM_STATE,
 					(*i)->cnx.atoms.CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
-			(*i)->unlock_client();
 		}
 	}
 
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
 		if ((*i) != _selected.front()) {
-			if (!((*i)->try_lock_client()))
-				continue;
 			(*i)->unmap();
 			long state = IconicState;
 			XChangeProperty((*i)->cnx.dpy, (*i)->xwin, (*i)->cnx.atoms.WM_STATE,
 					(*i)->cnx.atoms.CARDINAL, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&state), 1);
-			(*i)->unlock_client();
 		}
-
 	}
 }
 
 bool notebook_t::add_notebook(client_t *c) {
-	printf("Add client %lu\n", c->xwin);
+	printf("Add client #%lu\n", c->xwin);
 	_clients.push_front(c);
 	_selected.push_front(c);
 	back_buffer_is_valid = false;

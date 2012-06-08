@@ -17,8 +17,6 @@
 namespace page_next {
 
 void client_t::map() {
-	// this wil be set in map request event.
-	is_map = true;
 	// generate a map request event.
 	XMapWindow(cnx.dpy, xwin);
 	XMapWindow(cnx.dpy, clipping_window);
@@ -26,7 +24,6 @@ void client_t::map() {
 
 void client_t::unmap() {
 	if (is_map) {
-		is_map = false;
 		unmap_pending += 1;
 		printf("Unmap of #%lu\n", xwin);
 		/* ICCCM require that WM unmap client window to change client state from
@@ -126,7 +123,7 @@ void client_t::focus() {
 	if (is_map && wm_input_focus) {
 		if (!is_lock)
 			printf("warning: client isn't locked.\n");
-		printf("Focus #%x\n", (unsigned int) xwin);
+		//printf("Focus #%x\n", (unsigned int) xwin);
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);

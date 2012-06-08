@@ -112,8 +112,10 @@ struct client_t {
 	void unmap();
 	void update_client_size(int w, int h);
 
+private:
 	bool try_lock_client();
 	void unlock_client();
+public:
 	void focus();
 	void fullscreen(int w, int h);
 	void client_update_size_hints();
