@@ -666,6 +666,12 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+XRENDER_LIBS
+XRENDER_CFLAGS
+XDAMAGE_LIBS
+XDAMAGE_CFLAGS
+XCOMPOSITE_LIBS
+XCOMPOSITE_CFLAGS
 CAIRO_LIBS
 CAIRO_CFLAGS
 X11_LIBS
@@ -757,6 +763,12 @@ X11_CFLAGS
 X11_LIBS
 CAIRO_CFLAGS
 CAIRO_LIBS
+XCOMPOSITE_CFLAGS
+XCOMPOSITE_LIBS
+XDAMAGE_CFLAGS
+XDAMAGE_LIBS
+XRENDER_CFLAGS
+XRENDER_LIBS
 CC
 CFLAGS
 LDFLAGS
@@ -1418,6 +1430,18 @@ Some influential environment variables:
   CAIRO_CFLAGS
               C compiler flags for CAIRO, overriding pkg-config
   CAIRO_LIBS  linker flags for CAIRO, overriding pkg-config
+  XCOMPOSITE_CFLAGS
+              C compiler flags for XCOMPOSITE, overriding pkg-config
+  XCOMPOSITE_LIBS
+              linker flags for XCOMPOSITE, overriding pkg-config
+  XDAMAGE_CFLAGS
+              C compiler flags for XDAMAGE, overriding pkg-config
+  XDAMAGE_LIBS
+              linker flags for XDAMAGE, overriding pkg-config
+  XRENDER_CFLAGS
+              C compiler flags for XRENDER, overriding pkg-config
+  XRENDER_LIBS
+              linker flags for XRENDER, overriding pkg-config
   CC          C compiler command
   CFLAGS      C compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -3057,6 +3081,289 @@ else
 $as_echo "yes" >&6; }
 
 fi
+
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for XCOMPOSITE" >&5
+$as_echo_n "checking for XCOMPOSITE... " >&6; }
+
+if test -n "$XCOMPOSITE_CFLAGS"; then
+    pkg_cv_XCOMPOSITE_CFLAGS="$XCOMPOSITE_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xcomposite >= 0.4.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xcomposite >= 0.4.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XCOMPOSITE_CFLAGS=`$PKG_CONFIG --cflags "xcomposite >= 0.4.0" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$XCOMPOSITE_LIBS"; then
+    pkg_cv_XCOMPOSITE_LIBS="$XCOMPOSITE_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xcomposite >= 0.4.0\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xcomposite >= 0.4.0") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XCOMPOSITE_LIBS=`$PKG_CONFIG --libs "xcomposite >= 0.4.0" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        XCOMPOSITE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "xcomposite >= 0.4.0" 2>&1`
+        else
+	        XCOMPOSITE_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "xcomposite >= 0.4.0" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$XCOMPOSITE_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (xcomposite >= 0.4.0) were not met:
+
+$XCOMPOSITE_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables XCOMPOSITE_CFLAGS
+and XCOMPOSITE_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables XCOMPOSITE_CFLAGS
+and XCOMPOSITE_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+else
+	XCOMPOSITE_CFLAGS=$pkg_cv_XCOMPOSITE_CFLAGS
+	XCOMPOSITE_LIBS=$pkg_cv_XCOMPOSITE_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
+
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for XDAMAGE" >&5
+$as_echo_n "checking for XDAMAGE... " >&6; }
+
+if test -n "$XDAMAGE_CFLAGS"; then
+    pkg_cv_XDAMAGE_CFLAGS="$XDAMAGE_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xdamage >= 0.26\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xdamage >= 0.26") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XDAMAGE_CFLAGS=`$PKG_CONFIG --cflags "xdamage >= 0.26" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$XDAMAGE_LIBS"; then
+    pkg_cv_XDAMAGE_LIBS="$XDAMAGE_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xdamage >= 0.26\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xdamage >= 0.26") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XDAMAGE_LIBS=`$PKG_CONFIG --libs "xdamage >= 0.26" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        XDAMAGE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "xdamage >= 0.26" 2>&1`
+        else
+	        XDAMAGE_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "xdamage >= 0.26" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$XDAMAGE_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (xdamage >= 0.26) were not met:
+
+$XDAMAGE_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables XDAMAGE_CFLAGS
+and XDAMAGE_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables XDAMAGE_CFLAGS
+and XDAMAGE_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+else
+	XDAMAGE_CFLAGS=$pkg_cv_XDAMAGE_CFLAGS
+	XDAMAGE_LIBS=$pkg_cv_XDAMAGE_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
+
+
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for XRENDER" >&5
+$as_echo_n "checking for XRENDER... " >&6; }
+
+if test -n "$XRENDER_CFLAGS"; then
+    pkg_cv_XRENDER_CFLAGS="$XRENDER_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xrender >= 0.9.6\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xrender >= 0.9.6") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XRENDER_CFLAGS=`$PKG_CONFIG --cflags "xrender >= 0.9.6" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$XRENDER_LIBS"; then
+    pkg_cv_XRENDER_LIBS="$XRENDER_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"xrender >= 0.9.6\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "xrender >= 0.9.6") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_XRENDER_LIBS=`$PKG_CONFIG --libs "xrender >= 0.9.6" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        XRENDER_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "xrender >= 0.9.6" 2>&1`
+        else
+	        XRENDER_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "xrender >= 0.9.6" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$XRENDER_PKG_ERRORS" >&5
+
+	as_fn_error $? "Package requirements (xrender >= 0.9.6) were not met:
+
+$XRENDER_PKG_ERRORS
+
+Consider adjusting the PKG_CONFIG_PATH environment variable if you
+installed software in a non-standard prefix.
+
+Alternatively, you may set the environment variables XRENDER_CFLAGS
+and XRENDER_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details." "$LINENO" 5
+elif test $pkg_failed = untried; then
+     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
+is in your PATH or set the PKG_CONFIG environment variable to the full
+path to pkg-config.
+
+Alternatively, you may set the environment variables XRENDER_CFLAGS
+and XRENDER_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+To get pkg-config, see <http://pkg-config.freedesktop.org/>.
+See \`config.log' for more details" "$LINENO" 5; }
+else
+	XRENDER_CFLAGS=$pkg_cv_XRENDER_CFLAGS
+	XRENDER_LIBS=$pkg_cv_XRENDER_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
+
 
 
 

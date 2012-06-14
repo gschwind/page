@@ -29,8 +29,10 @@ void client_t::unmap() {
 		/* ICCCM require that WM unmap client window to change client state from
 		 * Normal to Iconic state
 		 * in PAGE all unviewable window are in iconic state */
-		XUnmapWindow(cnx.dpy, clipping_window);
-		XUnmapWindow(cnx.dpy, xwin);
+		//XUnmapWindow(cnx.dpy, clipping_window);
+		//XUnmapWindow(cnx.dpy, xwin);
+		cnx.unmap(clipping_window);
+		cnx.unmap(xwin);
 	}
 }
 
@@ -98,7 +100,7 @@ void client_t::update_client_size(int w, int h) {
 	height = h;
 	width = w;
 
-	//printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
+	printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
 }
 
 /* check if client is still alive */
@@ -121,8 +123,8 @@ void client_t::unlock_client() {
 
 void client_t::focus() {
 	if (is_map && wm_input_focus) {
-		if (!is_lock)
-			printf("warning: client isn't locked.\n");
+		//if (!is_lock)
+		//	printf("warning: client isn't locked.\n");
 		//printf("Focus #%x\n", (unsigned int) xwin);
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);

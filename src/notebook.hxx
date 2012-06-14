@@ -49,13 +49,13 @@ class notebook_t: public tree_t {
 	}
 
 public:
-	notebook_t(int group = 0);
+	notebook_t(cairo_t * cr, Window overlay, int group = 0);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
-	void render(cairo_t * cr);
+	void render();
 	bool process_button_press_event(XEvent const * e);
 	bool add_notebook(client_t *c);
-	void split(split_type_t type);
+	void split(split_type_e type);
 	void update_client_mapping();
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);

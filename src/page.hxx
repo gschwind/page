@@ -59,6 +59,14 @@ inline void print_buffer__(const char * buf, int size) {
 
 }
 
+struct popup_t {
+	XWindowAttributes wa;
+	Window w;
+	Damage damage;
+	cairo_surface_t * surf;
+};
+
+
 class main_t {
 	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
@@ -66,6 +74,7 @@ class main_t {
 	tree_t * tree_root;
 	/* managed clients */
 	client_list_t clients;
+	std::list<popup_t *> popups;
 	/* default cursor */
 	Cursor cursor;
 
@@ -76,13 +85,21 @@ class main_t {
 	int start_x, end_x;
 	int start_y, end_y;
 
+	/* Composite overlay window */
+	Window composite_overlay;
+	cairo_surface_t * composite_overlay_s;
+	cairo_t * composite_overlay_cr;
+
 	/* the main window */
 	Window main_window;
+	cairo_surface_t * main_window_s;
+	cairo_t * main_window_cr;
+
 	/* the main window attributes */
 	XWindowAttributes wa;
 
-	cairo_surface_t * surf;
-	cairo_t * cr;
+	int damage_event, damage_error; // The event base is important here
+	Damage damage;
 
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);
@@ -114,6 +131,7 @@ public:
 	long get_window_state(Window w);
 	bool manage(Window w, XWindowAttributes & wa);
 	client_t * find_client_by_xwindow(Window w);
+	popup_t * find_popup_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
 	bool get_text_prop(Window w, Atom atom, std::string & text);
 
@@ -128,6 +146,7 @@ public:
 	void process_property_notify_event(XEvent * ev);
 	void process_destroy_notify_event(XEvent * e);
 	void process_client_message_event(XEvent * e);
+	void process_damage_event(XEvent * ev);
 
 	void update_client_list();
 	void update_net_supported();

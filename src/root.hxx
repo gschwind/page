@@ -16,11 +16,11 @@ namespace page_next {
 class root_t: public tree_t {
 	tree_t * _pack0;
 public:
-	root_t(Display * dpy, Window w, box_t<int> &allocation);
+	root_t(Display * dpy, Window w, Window overlay, cairo_t * cr, box_t<int> &allocation);
 	~root_t();
 	void update_allocation(box_t<int> & allocation);
 
-	void render(cairo_t * cr);
+	void render();
 	bool process_button_press_event(XEvent const * e);
 	bool add_notebook(client_t *c);
 	void replace(tree_t * src, tree_t * by);

@@ -13,9 +13,9 @@
 
 namespace page_next {
 
-root_t::root_t(Display * dpy, Window w, box_t<int> &allocation) :
-		root_t::tree_t(dpy, w, 0, allocation) {
-	_pack0 = new notebook_t();
+root_t::root_t(Display * dpy, Window w, Window overlay, cairo_t * cr, box_t<int> &allocation) :
+		root_t::tree_t(dpy, w, cr, 0, allocation) {
+	_pack0 = new notebook_t(cr, overlay);
 	_pack0->reparent(this);
 	_pack0->update_allocation(allocation);
 }
@@ -25,13 +25,13 @@ root_t::~root_t() {
 }
 
 void root_t::update_allocation(box_t<int> & allocation) {
+	printf("update_allocation %dx%d+%d+%d\n", allocation.x, allocation.y, allocation.w, allocation.h);
 	_allocation = allocation;
 	_pack0->update_allocation(allocation);
 }
 
-void root_t::render(cairo_t * cr) {
-
-	_pack0->render(cr);
+void root_t::render() {
+	_pack0->render();
 
 	//cairo_save(cr);
 	//cairo_set_line_width(cr, 1.0);

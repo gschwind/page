@@ -5,6 +5,9 @@
  *
  */
 
+#include <X11/extensions/shape.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xrender.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
@@ -45,12 +48,18 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 main_t::main_t() {
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
+
+	composite_overlay = XCompositeGetOverlayWindow(cnx.dpy, cnx.xroot);
+	cnx.allow_input_passthrough(composite_overlay);
+
 	XSelectInput(cnx.dpy, cnx.xroot,
 			SubstructureNotifyMask | SubstructureRedirectMask);
 
 	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
 			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
 			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
+	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectAutomatic);
+	//XReparentWindow(cnx.dpy, main_window, composite_overlay, wa.x, wa.y);
 	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
 	XDefineCursor(cnx.dpy, main_window, cursor);
 	XSelectInput(cnx.dpy, main_window,
@@ -60,18 +69,31 @@ main_t::main_t() {
 	printf("Created main window #%lu\n", main_window);
 
 	XGetWindowAttributes(cnx.dpy, main_window, &(wa));
-	surf = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual, wa.width,
-			wa.height);
-	cr = cairo_create(surf);
+	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
+			wa.width, wa.height);
+	main_window_cr = cairo_create(main_window_s);
+	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy, composite_overlay,
+			wa.visual, wa.width, wa.height);
+	composite_overlay_cr = cairo_create(composite_overlay_s);
 
+	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
 	box_t<int> a(0, 0, cnx.root_size.w, cnx.root_size.h);
-	tree_root = new root_t(cnx.dpy, main_window, a);
+	tree_root = new root_t(cnx.dpy, main_window, composite_overlay,
+			main_window_cr, a);
+
+	XDamageQueryExtension(cnx.dpy, &damage_event, &damage_error);
+	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
+
+	page_area.x = 0;
+	page_area.y = 0;
+	page_area.w = cnx.root_size.w;
+	page_area.h = cnx.root_size.h;
 
 }
 
 main_t::~main_t() {
-	cairo_destroy(cr);
-	cairo_surface_destroy(surf);
+	cairo_destroy(main_window_cr);
+	cairo_surface_destroy(main_window_s);
 }
 
 /* update main window location */
@@ -98,10 +120,10 @@ void main_t::update_page_aera() {
 	page_area.w = cnx.root_size.w - (left + right);
 	page_area.h = cnx.root_size.h - (top + bottom);
 
-	box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
+	box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
 	tree_root->update_allocation(b);
-	XMoveResizeWindow(cnx.dpy, main_window, page_area.x, page_area.y,
-			page_area.w, page_area.h);
+	//XMoveResizeWindow(cnx.dpy, main_window, page_area.x, page_area.y,
+	//		page_area.w, page_area.h);
 
 }
 
@@ -157,14 +179,35 @@ void main_t::run() {
 	while (running) {
 		XEvent e;
 		XNextEvent(cnx.dpy, &e);
-		printf("##%lu\n", e.xany.serial);
-
-		//printf("#%lu event: %s window: %lu\n", e.xany.serial,
-		//		x_event_name[e.type], e.xany.window);
+		//printf("##%lu\n", e.xany.serial);
+		if (e.type != damage_event + XDamageNotify) {
+			printf("##%lu\n", e.xany.serial);
+			//printf("#%lu event: %s window: %lu\n", e.xany.serial,
+			//		x_event_name[e.type], e.xany.window);
+		}
 		if (e.type == Expose) {
 			//printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xmapping.window == main_window)
 				render();
+
+			XGetWindowAttributes(cnx.dpy, composite_overlay, &wa);
+			XRenderPictFormat *format = XRenderFindVisualFormat(cnx.dpy,
+					wa.visual);
+
+			XWindowAttributes wa1;
+			XRenderPictureAttributes src_pa;
+			src_pa.subwindow_mode = IncludeInferiors;
+			Picture src_picture = XRenderCreatePicture(cnx.dpy, main_window,
+					format, CPSubwindowMode, &src_pa);
+
+			XRenderPictureAttributes pa;
+			pa.subwindow_mode = IncludeInferiors; // Don't clip child widgets
+			Picture picture = XRenderCreatePicture(cnx.dpy, composite_overlay,
+					format, CPSubwindowMode, &pa);
+
+			XRenderComposite(cnx.dpy, PictOpSrc, src_picture, None, picture, 0,
+					0, 0, 0, 0, 0, wa.width, wa.height);
+
 		} else if (e.type == ButtonPress) {
 			client_t * c = find_client_by_clipping_window(e.xbutton.window);
 			if (c) {
@@ -188,24 +231,32 @@ void main_t::run() {
 			process_destroy_notify_event(&e);
 		} else if (e.type == ClientMessage) {
 			process_client_message_event(&e);
+		} else if (e.type == damage_event + XDamageNotify) {
+			process_damage_event(&e);
 		}
 
 		if (!cnx.is_not_grab()) {
-			fprintf(stderr, "SERVEUR IS GRAB WHERE IT SHOULDN'T");
+			fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
 			exit(EXIT_FAILURE);
 		}
 	}
 }
 
 void main_t::render(cairo_t * cr) {
-	tree_root->render(cr);
+	tree_root->render();
 }
 
 void main_t::render() {
+	printf("Enter render\n");
 	XGetWindowAttributes(cnx.dpy, main_window, &wa);
-	box_t<int> b(0, 0, wa.width, wa.height);
+	box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
 	tree_root->update_allocation(b);
-	render(cr);
+
+	cairo_save(main_window_cr);
+	render(main_window_cr);
+	cairo_restore(main_window_cr);
+
+	printf("return render\n");
 }
 
 void main_t::scan() {
@@ -245,6 +296,16 @@ client_t * main_t::find_client_by_xwindow(Window w) {
 		++i;
 	}
 
+	return 0;
+}
+
+popup_t * main_t::find_popup_by_xwindow(Window w) {
+	std::list<popup_t *>::iterator i = popups.begin();
+	while (i != popups.end()) {
+		if ((*i)->w == w)
+			return (*i);
+		++i;
+	}
 	return 0;
 }
 
@@ -325,6 +386,8 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 	/* before page prepend !! */
 	clients.push_back(c);
 
+	//XShapeSelectInput(cnx.dpy, w, ShapeNotifyMask);
+
 	if (c->client_is_dock()) {
 		c->is_dock = true;
 		printf("IsDock !\n");
@@ -348,6 +411,10 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 			update_page_aera();
 
 		}
+
+		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
+		XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
+
 		return true;
 	}
 
@@ -370,6 +437,8 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 	XSelectInput(cnx.dpy, c->xwin,
 			StructureNotifyMask | PropertyChangeMask | ExposureMask);
 	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
+
+	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
 	if (!tree_root->add_notebook(c)) {
 		printf("Fail to add a client\n");
@@ -436,11 +505,13 @@ void main_t::process_map_request_event(XEvent * e) {
 	/* should never happen */
 	XWindowAttributes wa;
 	if (!XGetWindowAttributes(cnx.dpy, w, &wa)) {
-		XMapWindow(cnx.dpy, w);
 		return;
 	}
 	if (wa.override_redirect) {
-		XMapWindow(cnx.dpy, w);
+		XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
+				CompositeRedirectAutomatic);
+		//XReparentWindow(cnx.dpy, e->xmap.window, main_window, wa.x, wa.y);
+		//XRaiseWindow(cnx.dpy, e->xmap.window);
 		return;
 	}
 	manage(w, wa);
@@ -456,15 +527,74 @@ void main_t::process_map_request_event(XEvent * e) {
 
 void main_t::process_map_notify_event(XEvent * e) {
 	// seems to never happen
-	printf("MapNotify #%x\n", (unsigned int) e->xmap.window);
+	printf("MapNotify #%u\n", (unsigned) e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
-	if (c)
+	if (c) {
 		c->is_map = true;
+		//XFreePixmap(cnx.dpy, c->pix);
+		//c->pix = XCompositeNameWindowPixmap(cnx.dpy, c->xwin);
+	} else {
+		if (e->xmap.event == cnx.xroot) {
+			/* pop up menu do not throw map_request_notify */
+			XWindowAttributes wa;
+			XWindowAttributes dst_wa;
+			if (!XGetWindowAttributes(cnx.dpy, e->xmap.window, &wa)) {
+				return;
+			}
+
+			if (wa.override_redirect) {
+				//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
+
+				//printf(">>1>%lu\n", NextRequest(cnx.dpy));
+				XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
+						CompositeRedirectAutomatic);
+
+				popup_t * c = new popup_t;
+				c->wa = wa;
+				c->w = e->xmap.window;
+				c->damage = XDamageCreate(cnx.dpy, c->w,
+						XDamageReportRawRectangles);
+				c->surf = cairo_xlib_surface_create(cnx.dpy, c->w, c->wa.visual,
+						c->wa.width, c->wa.height);
+				popups.push_front(c);
+			}
+
+		}
+
+	}
+
+	printf("Return MapNotify\n");
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
 	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
+
+	/* remove popup */
+	popup_t * p = find_popup_by_xwindow(e->xmap.window);
+	if (p) {
+		popups.remove(p);
+		XDamageDestroy(cnx.dpy, p->damage);
+		cairo_surface_destroy(p->surf);
+
+		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
+		cairo_rectangle(composite_overlay_cr, p->wa.x, p->wa.y, p->wa.width,
+				p->wa.height);
+		cairo_fill(composite_overlay_cr);
+
+		delete p;
+		return;
+	}
+
 	client_t * c = find_client_by_xwindow(e->xmap.window);
+
+	event_t ex;
+	ex.serial = e->xunmap.serial;
+	ex.type = e->xunmap.type;
+
+	if (cnx.find_pending_event(ex)) {
+		printf("FIND UNMAP MATCH\n");
+	}
+
 	if (c)
 		c->is_map = false;
 	/* unmap can be received twice time but are unique per window event.
@@ -519,6 +649,15 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 		if (!c->is_dock)
 			XDestroyWindow(cnx.dpy, c->clipping_window);
 		delete c;
+		render();
+	}
+
+	popup_t * p = find_popup_by_xwindow(e->xmap.window);
+
+	if (p) {
+		popups.remove(p);
+		XDamageDestroy(cnx.dpy, p->damage);
+		delete p;
 		render();
 	}
 }
@@ -624,29 +763,92 @@ void main_t::process_client_message_event(XEvent * ev) {
 	} else if (ev->xclient.message_type == cnx.atoms._NET_WM_STATE) {
 		client_t * c = find_client_by_xwindow(ev->xclient.window);
 		if (c) {
-				if (ev->xclient.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
-						|| ev->xclient.data.l[2]
-								== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
-					switch (ev->xclient.data.l[0]) {
-					case 0:
-						//printf("SET normal\n");
-						fullscreen(c);
-						break;
-					case 1:
-						//printf("SET fullscreen\n");
-						unfullscreen(c);
-						break;
-					case 2:
-						//printf("SET toggle\n");
-						toggle_fullscreen(c);
-						break;
+			if (ev->xclient.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
+					|| ev->xclient.data.l[2]
+							== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
+				switch (ev->xclient.data.l[0]) {
+				case 0:
+					//printf("SET normal\n");
+					fullscreen(c);
+					break;
+				case 1:
+					//printf("SET fullscreen\n");
+					unfullscreen(c);
+					break;
+				case 2:
+					//printf("SET toggle\n");
+					toggle_fullscreen(c);
+					break;
 
-					}
 				}
+			}
 
 		}
 
 	}
+}
+
+void main_t::process_damage_event(XEvent * ev) {
+	XDamageNotifyEvent * e = (XDamageNotifyEvent *) ev;
+
+	/* printf here create recursive damage when ^^ */
+	//printf("damage event %dx%d+%d+%d\n", (int) e->area.width,
+	//		(int) e->area.height, (int) e->area.x, (int) e->area.y);
+
+	cairo_save(composite_overlay_cr);
+	cairo_reset_clip(composite_overlay_cr);
+	popup_t * p = find_popup_by_xwindow(e->drawable);
+	if (p) {
+		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
+		cairo_rectangle(composite_overlay_cr, p->wa.x + e->area.x,
+				p->wa.y + e->area.y, e->area.width, e->area.height);
+		cairo_fill(composite_overlay_cr);
+
+		cairo_save(composite_overlay_cr);
+		cairo_set_source_surface(composite_overlay_cr, p->surf, p->wa.x,
+				p->wa.y);
+		cairo_rectangle(composite_overlay_cr, p->wa.x + e->area.x,
+				p->wa.y + e->area.y, e->area.width, e->area.height);
+		cairo_clip(composite_overlay_cr);
+		cairo_paint_with_alpha(composite_overlay_cr, 0.9);
+		cairo_fill(composite_overlay_cr);
+		cairo_restore(composite_overlay_cr);
+	} else if (e->drawable == main_window) {
+		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
+		cairo_rectangle(composite_overlay_cr, e->area.x, e->area.y,
+				e->area.width, e->area.height);
+		cairo_fill(composite_overlay_cr);
+
+		std::list<popup_t *>::iterator i = popups.begin();
+		while (i != popups.end()) {
+			popup_t * p = (*i);
+			/* make intersec */
+			int left = (p->wa.x < e->area.x) ? e->area.x : p->wa.x;
+			int rigth =
+					((p->wa.x + p->wa.width) < (e->area.x + e->area.width)) ?
+							(p->wa.x + p->wa.width) :
+							(e->area.x + e->area.width);
+			int top = (p->wa.y < e->area.y) ? e->area.y : p->wa.y;
+			int bottom =
+					((p->wa.y + p->wa.height) < (e->area.y + e->area.height)) ?
+							(p->wa.y + p->wa.height) :
+							(e->area.y + e->area.height);
+			if ((bottom - top) > 0 && (rigth - left) > 0) {
+				cairo_save(composite_overlay_cr);
+				cairo_set_source_surface(composite_overlay_cr, p->surf, p->wa.x,
+						p->wa.y);
+				cairo_rectangle(composite_overlay_cr, left, top, rigth - left,
+						bottom - top);
+				cairo_clip(composite_overlay_cr);
+				cairo_paint_with_alpha(composite_overlay_cr, 0.9);
+				cairo_restore(composite_overlay_cr);
+			}
+
+			++i;
+		}
+	}
+
+	cairo_restore(composite_overlay_cr);
 }
 
 }

@@ -39,8 +39,9 @@ struct client_t {
 	bool net_wm_name_is_valid;
 	std::string net_wm_name;
 	Window clipping_window;
-
 	Window page_window;
+
+	Pixmap pix;
 
 	/* store if wm must do input focus */
 	bool wm_input_focus;
@@ -60,6 +61,8 @@ struct client_t {
 	/* the desired width/heigth */
 	int width;
 	int height;
+
+	Damage damage;
 
 	XSizeHints hints;
 

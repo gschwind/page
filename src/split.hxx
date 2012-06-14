@@ -15,23 +15,23 @@
 
 namespace page_next {
 
-enum split_type_t {
+enum split_type_e {
 	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
 };
 
 class split_t: public tree_t {
 	Cursor cursor;
 	box_t<int> separetion_bar;
-	split_type_t _split_type;
+	split_type_e _split_type;
 	double _split;
 	tree_t * _pack0;
 	tree_t * _pack1;
 
 public:
-	split_t(split_type_t type);
+	split_t(cairo_t * cr, Window overlay, split_type_e type);
 	~split_t();
 	void update_allocation(box_t<int> & alloc);
-	void render(cairo_t * cr);
+	void render();
 	bool process_button_press_event(XEvent const * e);
 	bool add_notebook(client_t *c);
 	void replace(tree_t * src, tree_t * by);

@@ -18,9 +18,8 @@ namespace page_next {
 std::list<notebook_t *> notebook_t::notebooks;
 int const notebook_t::HEIGHT = 24;
 
-notebook_t::notebook_t(int group) :
-		group(group) {
-
+notebook_t::notebook_t(cairo_t * cr, Window overlay, int group) :
+		notebook_t::tree_t(cr, overlay), group(group) {
 	back_buffer_is_valid = false;
 	back_buffer = 0;
 	back_buffer_cr = 0;
@@ -62,12 +61,12 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	button_hsplit.h = HEIGHT;
 }
 
-void notebook_t::render(cairo_t * cr) {
+void notebook_t::render() {
 
 	update_client_mapping();
 
 	if (back_buffer == 0) {
-		cairo_surface_t * target = cairo_get_target(cr);
+		cairo_surface_t * target = cairo_get_target(_cr);
 		back_buffer = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR,
 				_allocation.w, HEIGHT);
 		back_buffer_cr = cairo_create(back_buffer);
@@ -266,18 +265,18 @@ void notebook_t::render(cairo_t * cr) {
 
 	}
 
-	cairo_save(cr);
+	cairo_save(_cr);
 	{
 
-		cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+		cairo_set_antialias(_cr, CAIRO_ANTIALIAS_DEFAULT);
 
 		/* draw border */
 		if (_clients.size() == 0) {
-			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
+			cairo_set_source_rgb(_cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
-			cairo_rectangle(cr, _allocation.x, _allocation.y, _allocation.w,
+			cairo_rectangle(_cr, _allocation.x, _allocation.y, _allocation.w,
 					_allocation.h);
-			cairo_fill(cr);
+			cairo_fill(_cr);
 		}
 
 //		cairo_save(cr);
@@ -313,23 +312,23 @@ void notebook_t::render(cairo_t * cr) {
 //}
 		/* draw top line */
 
-		cairo_translate(cr, _allocation.x, _allocation.y);
-		cairo_rectangle(cr, 0.0, 0.0, _allocation.w, HEIGHT);
-		cairo_set_source_surface(cr, back_buffer, 0.0, 0.0);
-		cairo_fill(cr);
+		cairo_translate(_cr, _allocation.x, _allocation.y);
+		cairo_rectangle(_cr, 0.0, 0.0, _allocation.w, HEIGHT);
+		cairo_set_source_surface(_cr, back_buffer, 0.0, 0.0);
+		cairo_fill(_cr);
 
-		cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0, 0x85U / 255.0);
-		cairo_set_line_width(cr, 1.0);
-		cairo_new_path(cr);
-		cairo_move_to(cr, 0.5, 0.5);
-		cairo_line_to(cr, _allocation.w - 0.5, 0.5);
-		cairo_line_to(cr, _allocation.w - 0.5, _allocation.h - 0.5);
-		cairo_line_to(cr, 0.5, _allocation.h - 0.5);
-		cairo_line_to(cr, 0.5, 0.5);
-		cairo_stroke(cr);
+		cairo_set_source_rgb(_cr, 0x88U / 255.0, 0x8aU / 255.0, 0x85U / 255.0);
+		cairo_set_line_width(_cr, 1.0);
+		cairo_new_path(_cr);
+		cairo_move_to(_cr, 0.5, 0.5);
+		cairo_line_to(_cr, _allocation.w - 0.5, 0.5);
+		cairo_line_to(_cr, _allocation.w - 0.5, _allocation.h - 0.5);
+		cairo_line_to(_cr, 0.5, _allocation.h - 0.5);
+		cairo_line_to(_cr, 0.5, 0.5);
+		cairo_stroke(_cr);
 
 	}
-	cairo_restore(cr);
+	cairo_restore(_cr);
 
 	//cairo_save(cr);
 	//cairo_set_line_width(cr, 1.0);
@@ -402,9 +401,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						case ConfigureRequest:
 						case Expose:
 						case MapRequest:
-							cr = get_cairo();
-							render(cr);
-							cairo_destroy(cr);
+							//cr = get_cairo();
+							render();
+							//cairo_destroy(cr);
 							break;
 						case MotionNotify:
 							break;
@@ -436,9 +435,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						(*dst)->add_notebook(move);
 					}
 
-					cr = get_cairo();
-					render(cr);
-					cairo_destroy(cr);
+					//cr = get_cairo();
+					render();
+					//cairo_destroy(cr);
 
 					if (_selected.size() > 0) {
 						client_t * c = _selected.front();
@@ -538,11 +537,11 @@ cairo_t * notebook_t::get_cairo() {
 	return cr;
 }
 
-void notebook_t::split(split_type_t type) {
-	split_t * split = new split_t(type);
+void notebook_t::split(split_type_e type) {
+	split_t * split = new split_t(_cr, _overlay, type);
 	_parent->replace(this, split);
 	split->replace(0, this);
-	split->replace(0, new notebook_t());
+	split->replace(0, new notebook_t(_cr, _overlay));
 	update_client_mapping();
 }
 
