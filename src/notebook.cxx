@@ -444,6 +444,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 						c->map();
 						c->focus();
+						c->cnx.focuced = c;
 
 						XChangeProperty(c->cnx.dpy, c->cnx.xroot,
 								c->cnx.atoms._NET_ACTIVE_WINDOW,

@@ -163,6 +163,8 @@ struct xconnection_t {
 
 	std::list<event_t> pending;
 
+	void * focuced;
+
 	int grab_count;
 
 	Time last_know_time;
@@ -231,6 +233,7 @@ struct xconnection_t {
 	} atoms;
 
 	xconnection_t() {
+		focuced = 0;
 		dpy = XOpenDisplay(0);
 		old_error_handler = XSetErrorHandler(error_handler);
 		screen = DefaultScreen(dpy);

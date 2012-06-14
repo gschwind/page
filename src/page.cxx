@@ -531,6 +531,9 @@ void main_t::process_map_notify_event(XEvent * e) {
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		c->is_map = true;
+		if(cnx.focuced == c) {
+			c->focus();
+		}
 		//XFreePixmap(cnx.dpy, c->pix);
 		//c->pix = XCompositeNameWindowPixmap(cnx.dpy, c->xwin);
 	} else {
