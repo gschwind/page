@@ -49,9 +49,6 @@ main_t::main_t() {
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
-	composite_overlay = XCompositeGetOverlayWindow(cnx.dpy, cnx.xroot);
-	cnx.allow_input_passthrough(composite_overlay);
-
 	XSelectInput(cnx.dpy, cnx.xroot,
 			SubstructureNotifyMask | SubstructureRedirectMask);
 
@@ -64,7 +61,7 @@ main_t::main_t() {
 	XDefineCursor(cnx.dpy, main_window, cursor);
 	XSelectInput(cnx.dpy, main_window,
 			StructureNotifyMask | ButtonPressMask | ExposureMask);
-	XMapWindow(cnx.dpy, main_window);
+	cnx.map(main_window);
 
 	printf("Created main window #%lu\n", main_window);
 
@@ -72,14 +69,13 @@ main_t::main_t() {
 	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
 			wa.width, wa.height);
 	main_window_cr = cairo_create(main_window_s);
-	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy, composite_overlay,
-			wa.visual, wa.width, wa.height);
+	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
+			cnx.composite_overlay, wa.visual, wa.width, wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
 	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
 	box_t<int> a(0, 0, cnx.root_size.w, cnx.root_size.h);
-	tree_root = new root_t(cnx.dpy, main_window, composite_overlay,
-			main_window_cr, a);
+	tree_root = new root_t(*this, a);
 
 	XDamageQueryExtension(cnx.dpy, &damage_event, &damage_error);
 	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
@@ -181,7 +177,7 @@ void main_t::run() {
 		XNextEvent(cnx.dpy, &e);
 		//printf("##%lu\n", e.xany.serial);
 		if (e.type != damage_event + XDamageNotify) {
-			printf("##%lu\n", e.xany.serial);
+			//printf("##%lu\n", e.xany.serial);
 			//printf("#%lu event: %s window: %lu\n", e.xany.serial,
 			//		x_event_name[e.type], e.xany.window);
 		}
@@ -189,24 +185,6 @@ void main_t::run() {
 			//printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xmapping.window == main_window)
 				render();
-
-			XGetWindowAttributes(cnx.dpy, composite_overlay, &wa);
-			XRenderPictFormat *format = XRenderFindVisualFormat(cnx.dpy,
-					wa.visual);
-
-			XWindowAttributes wa1;
-			XRenderPictureAttributes src_pa;
-			src_pa.subwindow_mode = IncludeInferiors;
-			Picture src_picture = XRenderCreatePicture(cnx.dpy, main_window,
-					format, CPSubwindowMode, &src_pa);
-
-			XRenderPictureAttributes pa;
-			pa.subwindow_mode = IncludeInferiors; // Don't clip child widgets
-			Picture picture = XRenderCreatePicture(cnx.dpy, composite_overlay,
-					format, CPSubwindowMode, &pa);
-
-			XRenderComposite(cnx.dpy, PictOpSrc, src_picture, None, picture, 0,
-					0, 0, 0, 0, 0, wa.width, wa.height);
 
 		} else if (e.type == ButtonPress) {
 			client_t * c = find_client_by_clipping_window(e.xbutton.window);
@@ -414,7 +392,6 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 		XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
-
 		return true;
 	}
 
@@ -527,11 +504,11 @@ void main_t::process_map_request_event(XEvent * e) {
 
 void main_t::process_map_notify_event(XEvent * e) {
 	// seems to never happen
-	printf("MapNotify #%u\n", (unsigned) e->xmap.window);
+	printf("MapNotify serial:#%lu win:#%lu\n", e->xmap.serial, e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		c->is_map = true;
-		if(cnx.focuced == c) {
+		if (cnx.focuced == c) {
 			c->focus();
 		}
 		//XFreePixmap(cnx.dpy, c->pix);
@@ -559,7 +536,7 @@ void main_t::process_map_notify_event(XEvent * e) {
 						XDamageReportRawRectangles);
 				c->surf = cairo_xlib_surface_create(cnx.dpy, c->w, c->wa.visual,
 						c->wa.width, c->wa.height);
-				popups.push_front(c);
+				popups.push_back(c);
 			}
 
 		}
@@ -570,7 +547,8 @@ void main_t::process_map_notify_event(XEvent * e) {
 }
 
 void main_t::process_unmap_notify_event(XEvent * e) {
-	printf("UnmapNotify #%lu #%lu\n", e->xunmap.window, e->xunmap.event);
+	printf("UnmapNotify serial:#%lu event: #%lu win:#%lu \n", e->xunmap.serial,
+			e->xunmap.window, e->xunmap.event);
 
 	/* remove popup */
 	popup_t * p = find_popup_by_xwindow(e->xmap.window);
@@ -627,7 +605,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 				&ev)) {
 			process_destroy_notify_event(&ev);
 		} else {
-			tree_root->remove_client(c->xwin);
+			tree_root->remove_client(c);
 			clients.remove(c);
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
@@ -644,7 +622,7 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	//		e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
-		tree_root->remove_client(c->xwin);
+		tree_root->remove_client(c);
 		clients.remove(c);
 		if (c->has_partial_struct)
 			update_page_aera();
@@ -666,12 +644,12 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 }
 
 void main_t::process_property_notify_event(XEvent * ev) {
-	printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
-			ev->xproperty.window);
+	//printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
+	//		ev->xproperty.window);
 
-	printf("%lu\n", ev->xproperty.atom);
+	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
-	printf("Atom Name = \"%s\"\n", name);
+	//printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
 	client_t * c = find_client_by_xwindow(ev->xproperty.window);
@@ -797,7 +775,6 @@ void main_t::process_damage_event(XEvent * ev) {
 	/* printf here create recursive damage when ^^ */
 	//printf("damage event %dx%d+%d+%d\n", (int) e->area.width,
 	//		(int) e->area.height, (int) e->area.x, (int) e->area.y);
-
 	cairo_save(composite_overlay_cr);
 	cairo_reset_clip(composite_overlay_cr);
 	popup_t * p = find_popup_by_xwindow(e->drawable);
@@ -813,7 +790,7 @@ void main_t::process_damage_event(XEvent * ev) {
 		cairo_rectangle(composite_overlay_cr, p->wa.x + e->area.x,
 				p->wa.y + e->area.y, e->area.width, e->area.height);
 		cairo_clip(composite_overlay_cr);
-		cairo_paint_with_alpha(composite_overlay_cr, 0.9);
+		cairo_paint_with_alpha(composite_overlay_cr, OPACITY);
 		cairo_fill(composite_overlay_cr);
 		cairo_restore(composite_overlay_cr);
 	} else if (e->drawable == main_window) {
@@ -843,7 +820,7 @@ void main_t::process_damage_event(XEvent * ev) {
 				cairo_rectangle(composite_overlay_cr, left, top, rigth - left,
 						bottom - top);
 				cairo_clip(composite_overlay_cr);
-				cairo_paint_with_alpha(composite_overlay_cr, 0.9);
+				cairo_paint_with_alpha(composite_overlay_cr, OPACITY);
 				cairo_restore(composite_overlay_cr);
 			}
 
@@ -852,6 +829,10 @@ void main_t::process_damage_event(XEvent * ev) {
 	}
 
 	cairo_restore(composite_overlay_cr);
+}
+
+void main_t::drag_and_drop_loop() {
+
 }
 
 }

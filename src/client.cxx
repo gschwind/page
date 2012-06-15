@@ -18,19 +18,16 @@ namespace page_next {
 
 void client_t::map() {
 	// generate a map request event.
-	XMapWindow(cnx.dpy, xwin);
-	XMapWindow(cnx.dpy, clipping_window);
+	cnx.map(xwin);
+	cnx.map(clipping_window);
 }
 
 void client_t::unmap() {
 	if (is_map) {
 		unmap_pending += 1;
-		printf("Unmap of #%lu\n", xwin);
 		/* ICCCM require that WM unmap client window to change client state from
 		 * Normal to Iconic state
 		 * in PAGE all unviewable window are in iconic state */
-		//XUnmapWindow(cnx.dpy, clipping_window);
-		//XUnmapWindow(cnx.dpy, xwin);
 		cnx.unmap(clipping_window);
 		cnx.unmap(xwin);
 	}
@@ -141,7 +138,6 @@ void client_t::focus() {
 		ev.xclient.window = xwin;
 		ev.xclient.data.l[0] = cnx.atoms.WM_TAKE_FOCUS;
 		ev.xclient.data.l[1] = cnx.last_know_time;
-
 		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
 	}
 }
@@ -368,13 +364,14 @@ void client_t::set_fullscreen() {
 	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
 	write_wm_state();
 
-	XReparentWindow(cnx.dpy, clipping_window, cnx.xroot, 0, 0);
+	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
 	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
 	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
 			cnx.root_size.h);
 	/* will set full screen, parameters will be ignored*/
 	update_client_size(0, 0);
 	map();
+	cnx.focuced = this;
 	//focus();
 }
 
@@ -382,7 +379,7 @@ void client_t::unset_fullscreen() {
 	/* update window state */
 	net_wm_state.erase(cnx.atoms._NET_WM_STATE_FULLSCREEN);
 	write_wm_state();
-	XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
+	//XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
 	unmap();
 }
 

@@ -12,6 +12,7 @@
 
 #include "box.hxx"
 #include "tree.hxx"
+#include "page.hxx"
 
 namespace page_next {
 
@@ -20,6 +21,10 @@ enum split_type_e {
 };
 
 class split_t: public tree_t {
+	static int const GRIP_SIZE = 2;
+
+	main_t & page;
+
 	Cursor cursor;
 	box_t<int> separetion_bar;
 	split_type_e _split_type;
@@ -28,7 +33,7 @@ class split_t: public tree_t {
 	tree_t * _pack1;
 
 public:
-	split_t(cairo_t * cr, Window overlay, split_type_e type);
+	split_t(main_t & page, split_type_e type);
 	~split_t();
 	void update_allocation(box_t<int> & alloc);
 	void render();
@@ -38,15 +43,12 @@ public:
 	cairo_t * get_cairo();
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	std::list<client_t *> * get_clients();
-	void remove_client(Window w);
+	client_list_t * get_clients();
+	void remove_client(client_t * c);
 	void activate_client(client_t * c);
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();
-
-	void draw_box(GC gc, int x, int y, unsigned int width, unsigned int height);
-
 
 };
 

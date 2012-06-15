@@ -48,7 +48,6 @@ enum {
 };
 /* EWMH atoms */
 
-typedef std::list<client_t *> client_list_t;
 
 inline void print_buffer__(const char * buf, int size) {
 	for (int i = 0; i < size; ++i) {
@@ -66,8 +65,13 @@ struct popup_t {
 	cairo_surface_t * surf;
 };
 
+typedef std::list<popup_t *> popup_list_t;
 
 class main_t {
+public:
+
+	static double const OPACITY = 0.95;
+
 	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
 
@@ -85,8 +89,6 @@ class main_t {
 	int start_x, end_x;
 	int start_y, end_y;
 
-	/* Composite overlay window */
-	Window composite_overlay;
 	cairo_surface_t * composite_overlay_s;
 	cairo_t * composite_overlay_cr;
 
@@ -147,6 +149,8 @@ public:
 	void process_destroy_notify_event(XEvent * e);
 	void process_client_message_event(XEvent * e);
 	void process_damage_event(XEvent * ev);
+
+	void drag_and_drop_loop();
 
 	void update_client_list();
 	void update_net_supported();

@@ -157,6 +157,8 @@ public:
 
 };
 
+typedef std::list<client_t *> client_list_t;
+
 }
 
 #endif /* CLIENT_HXX_ */

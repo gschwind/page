@@ -11,12 +11,16 @@
 #include <list>
 #include <cairo.h>
 
+#include "xconnection.hxx"
 #include "box.hxx"
 #include "client.hxx"
 #include "tree.hxx"
 #include "split.hxx"
+#include "page.hxx"
 
 namespace page_next {
+
+typedef std::list<client_t *> client_list_t;
 
 struct img_t {
   unsigned int   width;
@@ -26,8 +30,11 @@ struct img_t {
 };
 
 class notebook_t: public tree_t {
+	static int const BORDER_SIZE = 2;
+	static int const HEIGHT = 24;
+
 	static std::list<notebook_t *> notebooks;
-	static int const HEIGHT;
+	main_t & page;
 
 	Cursor cursor;
 
@@ -39,9 +46,8 @@ class notebook_t: public tree_t {
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;
 
-	int group;
-	std::list<client_t *> _clients;
-	std::list<client_t *> _selected;
+	client_list_t _clients;
+	client_list_t _selected;
 
 	inline void set_selected(client_t * c) {
 		_selected.remove(c);
@@ -49,7 +55,7 @@ class notebook_t: public tree_t {
 	}
 
 public:
-	notebook_t(cairo_t * cr, Window overlay, int group = 0);
+	notebook_t(main_t & cnx);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
 	void render();
@@ -61,8 +67,8 @@ public:
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	std::list<client_t *> * get_clients();
-	void remove_client(Window w);
+	client_list_t * get_clients();
+	void remove_client(client_t * c);
 	void activate_client(client_t * c);
 
 	void select_next();

@@ -13,8 +13,8 @@
 
 namespace page_next {
 
-split_t::split_t(cairo_t * cr, Window overlay, split_type_e type) :
-		split_t::tree_t(cr, overlay) {
+split_t::split_t(main_t & page, split_type_e type) :
+		page(page) {
 	_split_type = type;
 	_split = 0.5;
 	_pack0 = 0;
@@ -38,13 +38,13 @@ void split_t::update_allocation_pack0() {
 	if (_split_type == VERTICAL_SPLIT) {
 		b.x = _allocation.x;
 		b.y = _allocation.y;
-		b.w = _allocation.w * _split - 3;
+		b.w = _allocation.w * _split - GRIP_SIZE;
 		b.h = _allocation.h;
 	} else {
 		b.x = _allocation.x;
 		b.y = _allocation.y;
 		b.w = _allocation.w;
-		b.h = _allocation.h * _split - 3;
+		b.h = _allocation.h * _split - GRIP_SIZE;
 	}
 	_pack0->update_allocation(b);
 }
@@ -54,79 +54,51 @@ void split_t::update_allocation_pack1() {
 		return;
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x + _allocation.w * _split + 3;
+		b.x = _allocation.x + _allocation.w * _split + GRIP_SIZE;
 		b.y = _allocation.y;
-		b.w = _allocation.w - _allocation.w * _split - 3;
+		b.w = _allocation.w - _allocation.w * _split - GRIP_SIZE;
 		b.h = _allocation.h;
 	} else {
 		b.x = _allocation.x;
-		b.y = _allocation.y + _allocation.h * _split + 3;
+		b.y = _allocation.y + _allocation.h * _split + GRIP_SIZE;
 		b.w = _allocation.w;
-		b.h = _allocation.h - _allocation.h * _split - 3;
+		b.h = _allocation.h - _allocation.h * _split - GRIP_SIZE;
 	}
 	_pack1->update_allocation(b);
 }
 
 void split_t::render() {
-	cairo_save(_cr);
-	cairo_set_source_rgb(_cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
+	cairo_save(page.main_window_cr);
+	cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0, 0xeeU / 255.0,
+			0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(_cr, _allocation.x + _allocation.w * _split - 3.0,
-				_allocation.y, 6.0, _allocation.h);
+		cairo_rectangle(page.main_window_cr,
+				_allocation.x + _allocation.w * _split - GRIP_SIZE,
+				_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
 	} else {
-		cairo_rectangle(_cr, _allocation.x,
-				_allocation.y + (_allocation.h * _split) - 3.0, _allocation.w,
-				6.0);
+		cairo_rectangle(page.main_window_cr, _allocation.x,
+				_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
+				_allocation.w, GRIP_SIZE * 2.0);
 	}
-	cairo_fill(_cr);
-	cairo_restore(_cr);
+	cairo_fill(page.main_window_cr);
+	cairo_restore(page.main_window_cr);
 	if (_pack0)
 		_pack0->render();
 	if (_pack1)
 		_pack1->render();
-
-	//cairo_save(cr);
-	//cairo_set_line_width(cr, 1.0);
-	//cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-	//cairo_rectangle(cr, _allocation.x + 0.5, _allocation.y + 0.5, _allocation.w - 1.0, _allocation.h - 1.0);
-	//cairo_stroke(cr);
-	//cairo_restore(cr);
-
-}
-
-void split_t::draw_box(GC gc, int x, int y, unsigned int width,
-		unsigned int height) {
-	/* Set foreground pixel value -- default may be white on white */
-	//XSetForeground(_dpy, gc, BlackPixel(_dpy, 0));
-	/* Drawing on root window -- through all windows */
-	//XSetSubwindowMode(_dpy, gc, IncludeInferiors);
-	/* Logical function is XOR, so that double drawing erases box
-	 * on both color and monochrome screens */
-	//XSetFunction(_dpy, gc, GXxor);
-	XDrawRectangle(_dpy, _w, gc, x, y, width, height);
 }
 
 bool split_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		GC gc;
-		XGCValues gc_value;
-		gc_value.function = GXset;
-		gc_value.subwindow_mode = IncludeInferiors;
-		gc_value.foreground = BlackPixel(_dpy, 0);
-		gc_value.background = BlackPixel(_dpy, 0);
-		gc_value.fill_style = FillSolid;
-		gc = XCreateGC(_dpy, _w,
-				GCForeground | GCBackground | GCFunction | GCSubwindowMode,
-				&gc_value);
 		box_t<int> slide;
 		if (_split_type == VERTICAL_SPLIT) {
 			slide.y = _allocation.y;
 			slide.h = _allocation.h;
-			slide.x = _allocation.x + (_allocation.w * _split) - 3;
-			slide.w = 6;
+			slide.x = _allocation.x + (_allocation.w * _split) - GRIP_SIZE;
+			slide.w = GRIP_SIZE * 2;
 		} else {
-			slide.y = _allocation.y + (_allocation.h * _split) - 3;
-			slide.h = 6;
+			slide.y = _allocation.y + (_allocation.h * _split) - GRIP_SIZE;
+			slide.h = GRIP_SIZE * 2;
 			slide.x = _allocation.x;
 			slide.w = _allocation.w;
 		}
@@ -134,63 +106,16 @@ bool split_t::process_button_press_event(XEvent const * e) {
 		if (slide.is_inside(e->xbutton.x, e->xbutton.y)) {
 			XEvent ev;
 			//cairo_t * cr;
-			cursor = XCreateFontCursor(_dpy, XC_fleur);
+			cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
 			XWindowAttributes w_attribute;
 			XSetWindowAttributes swa;
-			swa.background_pixel = XBlackPixel(_dpy, 0);
-			swa.border_pixel = XWhitePixel(_dpy, 0);
+			swa.background_pixel = XBlackPixel(page.cnx.dpy, 0);
+			swa.border_pixel = XWhitePixel(page.cnx.dpy, 0);
 			swa.save_under = True;
 
-			XGetWindowAttributes(_dpy, _w, &w_attribute);
+			XGetWindowAttributes(page.cnx.dpy, page.main_window, &w_attribute);
 
-			Window w;
-
-			XRenderPictFormat *format = XRenderFindVisualFormat(_dpy,
-					w_attribute.visual);
-
-			XRenderPictureAttributes src_pa;
-			//Pixmap src_px = XCompositeNameWindowPixmap(_dpy, _w);
-			src_pa.subwindow_mode = IncludeInferiors;
-			Picture src_picture = XRenderCreatePicture(_dpy, _w, format,
-					CPSubwindowMode, &src_pa);
-
-			XRenderPictureAttributes pa;
-			pa.subwindow_mode = IncludeInferiors; // Don't clip child widgets
-			Picture picture = XRenderCreatePicture(_dpy, _overlay, format,
-					CPSubwindowMode, &pa);
-
-			XRenderComposite(_dpy, PictOpSrc, src_picture, None, picture, 0, 0,
-					0, 0, 0, 0, w_attribute.width, w_attribute.height);
-
-			cairo_surface_t * surf = cairo_xlib_surface_create(_dpy, _overlay,
-					w_attribute.visual, w_attribute.width, w_attribute.height);
-
-			cairo_t * cr = cairo_create(surf);
-
-			cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
-
-//			if (_split_type == VERTICAL_SPLIT) {
-//				//draw_box(gc, _allocation.x + (int) (_split * _allocation.w) - 3,
-//				//		_allocation.y, 6, _allocation.h);
-//				w =
-//						XCreateWindow(_dpy, _overlay,
-//								_allocation.x + (int) (_split * _allocation.w)
-//										- 3, _allocation.y, 6, _allocation.h, 1,
-//								w_attribute.depth, InputOutput,
-//								w_attribute.visual,
-//								CWBackPixel | CWBorderPixel | CWSaveUnder,
-//								&swa);
-//			} else {
-//				w = XCreateWindow(_dpy, _overlay, _allocation.x,
-//						_allocation.y + (int) (_split * _allocation.h) - 3,
-//						_allocation.w, 6, 1, w_attribute.depth, InputOutput,
-//						w_attribute.visual,
-//						CWBackPixel | CWBorderPixel | CWSaveUnder, &swa);
-//			}
-
-			//XMapWindow(_dpy, w);
-
-			if (XGrabPointer(_dpy, _overlay, False,
+			if (XGrabPointer(page.cnx.dpy, page.main_window, False,
 					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 					GrabModeAsync, GrabModeAsync, None, cursor,
 					CurrentTime) != GrabSuccess)
@@ -199,47 +124,28 @@ bool split_t::process_button_press_event(XEvent const * e) {
 			int save_render = 0;
 			int expose_count = 0;
 			do {
-				XMaskEvent(_dpy,
+				XMaskEvent(page.cnx.dpy,
 						(ButtonPressMask | ButtonReleaseMask | PointerMotionMask)
 								| ExposureMask | SubstructureRedirectMask, &ev);
 				switch (ev.type) {
 				case ConfigureRequest:
 				case Expose:
-					//cairo_save(_cr);
-					//cairo_rectangle(_cr, ev.xexpose.x, ev.xexpose.y,
-					//		ev.xexpose.width, ev.xexpose.height);
-					//cairo_clip(_cr);
-					//render();
-					//cairo_restore(_cr);
 					expose_count += 1;
-					//printf("expose count = %d\n", expose_count);
-
-					//if (ev.xexpose.window == _w) {
-//					XRenderComposite(_dpy, PictOpSrc, src_picture, None,
-//							picture, 0, 0, 0, 0, 0, 0, _allocation.w,
-//							_allocation.h);
-					//}
-
 					break;
 				case MapRequest:
 					save_render = (save_render + 1) % 10;
-					/* only render 1 time per 10 */
-					//if (save_render == 0) {
-					//	cr = get_cairo();
-					//render();
-					//	cairo_destroy(cr);
-					//}
 					break;
 				case MotionNotify:
 
 					if (_split_type == VERTICAL_SPLIT) {
 
-						XRenderComposite(_dpy, PictOpSrc, src_picture, None,
-								picture,
+						cairo_set_source_surface(page.composite_overlay_cr,
+								page.main_window_s, 0, 0);
+						cairo_rectangle(page.composite_overlay_cr,
 								_allocation.x + (int) (_split * _allocation.w)
-										- 3, _allocation.y, 0, 0,
-								_allocation.x + (int) (_split * _allocation.w)
-										- 3, _allocation.y, 6, _allocation.h);
+										- GRIP_SIZE, _allocation.y,
+								2 * GRIP_SIZE, _allocation.h);
+						cairo_fill(page.composite_overlay_cr);
 
 						_split = (ev.xmotion.x - _allocation.x)
 								/ (double) (_allocation.w);
@@ -247,21 +153,24 @@ bool split_t::process_button_press_event(XEvent const * e) {
 							_split = 0.95;
 						if (_split < 0.05)
 							_split = 0.05;
-						//XMoveResizeWindow(_dpy, w,
-						//		_allocation.x + (int) (_split * _allocation.w)
-						//				- 3, _allocation.y, 6, _allocation.h);
 
-						cairo_rectangle(cr,
+						cairo_set_source_rgba(page.composite_overlay_cr, 0.0,
+								0.0, 0.0, 0.5);
+						cairo_rectangle(page.composite_overlay_cr,
 								_allocation.x + (int) (_split * _allocation.w)
-										- 3, _allocation.y, 6, _allocation.h);
+										- GRIP_SIZE, _allocation.y,
+								2 * GRIP_SIZE, _allocation.h);
+						cairo_fill(page.composite_overlay_cr);
 					} else {
 
-						XRenderComposite(_dpy, PictOpSrc, src_picture, None,
-								picture, _allocation.x,
+						cairo_set_source_surface(page.composite_overlay_cr,
+								page.main_window_s, 0, 0);
+						cairo_rectangle(page.composite_overlay_cr,
+								_allocation.x,
 								_allocation.y + (int) (_split * _allocation.h)
-										- 3, 0, 0, _allocation.x,
-								_allocation.y + (int) (_split * _allocation.h)
-										- 3, _allocation.w, 6);
+										- GRIP_SIZE, _allocation.w,
+								2 * GRIP_SIZE);
+						cairo_fill(page.composite_overlay_cr);
 
 						_split = (ev.xmotion.y - _allocation.y)
 								/ (double) (_allocation.h);
@@ -270,13 +179,14 @@ bool split_t::process_button_press_event(XEvent const * e) {
 						if (_split < 0.05)
 							_split = 0.05;
 
-						//XMoveResizeWindow(_dpy, w, _allocation.x,
-						//		_allocation.y + (int) (_split * _allocation.h)
-						//				- 3, _allocation.w, 6);
-
-						cairo_rectangle(cr, _allocation.x,
+						cairo_set_source_rgba(page.composite_overlay_cr, 0.0,
+								0.0, 0.0, 0.5);
+						cairo_rectangle(page.composite_overlay_cr,
+								_allocation.x,
 								_allocation.y + (int) (_split * _allocation.h)
-										- 3, _allocation.w, 6);
+										- GRIP_SIZE, _allocation.w,
+								2 * GRIP_SIZE);
+						cairo_fill(page.composite_overlay_cr);
 					}
 
 					if (_split > 0.95)
@@ -284,20 +194,13 @@ bool split_t::process_button_press_event(XEvent const * e) {
 					if (_split < 0.05)
 						_split = 0.05;
 
-					cairo_fill(cr);
-
 					break;
 				}
 			} while (ev.type != ButtonRelease);
-			XUngrabPointer(_dpy, CurrentTime);
-			XFreeCursor(_dpy, cursor);
-			XDestroyWindow(_dpy, w);
-
+			XUngrabPointer(page.cnx.dpy, CurrentTime);
+			XFreeCursor(page.cnx.dpy, cursor);
 			update_allocation(_allocation);
-			//cr = get_cairo();
 			render();
-			//cairo_destroy(cr);
-
 		} else {
 
 			/* the pack test is for sanity, but should never be null */
@@ -329,15 +232,6 @@ bool split_t::add_notebook(client_t *c) {
 			return false;
 	}
 
-}
-
-cairo_t * split_t::get_cairo() {
-	cairo_surface_t * surf;
-	XWindowAttributes wa;
-	XGetWindowAttributes(_dpy, _w, &wa);
-	surf = cairo_xlib_surface_create(_dpy, _w, wa.visual, wa.width, wa.height);
-	cairo_t * cr = cairo_create(surf);
-	return cr;
 }
 
 void split_t::replace(tree_t * src, tree_t * by) {
@@ -392,11 +286,11 @@ std::list<client_t *> * split_t::get_clients() {
 	return 0;
 }
 
-void split_t::remove_client(Window w) {
+void split_t::remove_client(client_t * c) {
 	if (_pack0)
-		_pack0->remove_client(w);
+		_pack0->remove_client(c);
 	if (_pack1)
-		_pack1->remove_client(w);
+		_pack1->remove_client(c);
 }
 
 }

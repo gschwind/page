@@ -9,13 +9,14 @@
 #include <stdio.h>
 #include "box.hxx"
 #include "root.hxx"
+#include "page.hxx"
 #include "notebook.hxx"
 
 namespace page_next {
 
-root_t::root_t(Display * dpy, Window w, Window overlay, cairo_t * cr, box_t<int> &allocation) :
-		root_t::tree_t(dpy, w, cr, 0, allocation) {
-	_pack0 = new notebook_t(cr, overlay);
+root_t::root_t(main_t & page, box_t<int> &allocation) :
+		root_t::tree_t(0, allocation) {
+	_pack0 = new notebook_t(page);
 	_pack0->reparent(this);
 	_pack0->update_allocation(allocation);
 }
@@ -74,12 +75,12 @@ void root_t::activate_client(client_t * c) {
 		_pack0->activate_client(c);
 }
 
-std::list<client_t *> * root_t::get_clients() {
+client_list_t * root_t::get_clients() {
 	return 0;
 }
 
-void root_t::remove_client(Window w) {
-	_pack0->remove_client(w);
+void root_t::remove_client(client_t * c) {
+	_pack0->remove_client(c);
 }
 
 }
