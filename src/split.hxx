@@ -32,6 +32,9 @@ class split_t: public tree_t {
 	tree_t * _pack0;
 	tree_t * _pack1;
 
+	static Bool drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg);
+	void process_drag_and_drop();
+
 public:
 	split_t(main_t & page, split_type_e type);
 	~split_t();

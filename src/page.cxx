@@ -280,7 +280,7 @@ client_t * main_t::find_client_by_xwindow(Window w) {
 popup_t * main_t::find_popup_by_xwindow(Window w) {
 	std::list<popup_t *>::iterator i = popups.begin();
 	while (i != popups.end()) {
-		if ((*i)->w == w)
+		if ((*i)->is_window(w))
 			return (*i);
 		++i;
 	}
@@ -529,13 +529,7 @@ void main_t::process_map_notify_event(XEvent * e) {
 				XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
 						CompositeRedirectAutomatic);
 
-				popup_t * c = new popup_t;
-				c->wa = wa;
-				c->w = e->xmap.window;
-				c->damage = XDamageCreate(cnx.dpy, c->w,
-						XDamageReportRawRectangles);
-				c->surf = cairo_xlib_surface_create(cnx.dpy, c->w, c->wa.visual,
-						c->wa.width, c->wa.height);
+				popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
 				popups.push_back(c);
 			}
 
@@ -554,14 +548,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	popup_t * p = find_popup_by_xwindow(e->xmap.window);
 	if (p) {
 		popups.remove(p);
-		XDamageDestroy(cnx.dpy, p->damage);
-		cairo_surface_destroy(p->surf);
-
-		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
-		cairo_rectangle(composite_overlay_cr, p->wa.x, p->wa.y, p->wa.width,
-				p->wa.height);
-		cairo_fill(composite_overlay_cr);
-
+		p->hide(composite_overlay_cr, main_window_s);
 		delete p;
 		return;
 	}
@@ -637,9 +624,8 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 
 	if (p) {
 		popups.remove(p);
-		XDamageDestroy(cnx.dpy, p->damage);
+		p->hide(composite_overlay_cr, main_window_s);
 		delete p;
-		render();
 	}
 }
 
@@ -779,20 +765,8 @@ void main_t::process_damage_event(XEvent * ev) {
 	cairo_reset_clip(composite_overlay_cr);
 	popup_t * p = find_popup_by_xwindow(e->drawable);
 	if (p) {
-		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
-		cairo_rectangle(composite_overlay_cr, p->wa.x + e->area.x,
-				p->wa.y + e->area.y, e->area.width, e->area.height);
-		cairo_fill(composite_overlay_cr);
-
-		cairo_save(composite_overlay_cr);
-		cairo_set_source_surface(composite_overlay_cr, p->surf, p->wa.x,
-				p->wa.y);
-		cairo_rectangle(composite_overlay_cr, p->wa.x + e->area.x,
-				p->wa.y + e->area.y, e->area.width, e->area.height);
-		cairo_clip(composite_overlay_cr);
-		cairo_paint_with_alpha(composite_overlay_cr, OPACITY);
-		cairo_fill(composite_overlay_cr);
-		cairo_restore(composite_overlay_cr);
+		p->repair0(composite_overlay_cr, main_window_s, e->area.x, e->area.y,
+				e->area.width, e->area.height);
 	} else if (e->drawable == main_window) {
 		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
 		cairo_rectangle(composite_overlay_cr, e->area.x, e->area.y,
@@ -803,27 +777,8 @@ void main_t::process_damage_event(XEvent * ev) {
 		while (i != popups.end()) {
 			popup_t * p = (*i);
 			/* make intersec */
-			int left = (p->wa.x < e->area.x) ? e->area.x : p->wa.x;
-			int rigth =
-					((p->wa.x + p->wa.width) < (e->area.x + e->area.width)) ?
-							(p->wa.x + p->wa.width) :
-							(e->area.x + e->area.width);
-			int top = (p->wa.y < e->area.y) ? e->area.y : p->wa.y;
-			int bottom =
-					((p->wa.y + p->wa.height) < (e->area.y + e->area.height)) ?
-							(p->wa.y + p->wa.height) :
-							(e->area.y + e->area.height);
-			if ((bottom - top) > 0 && (rigth - left) > 0) {
-				cairo_save(composite_overlay_cr);
-				cairo_set_source_surface(composite_overlay_cr, p->surf, p->wa.x,
-						p->wa.y);
-				cairo_rectangle(composite_overlay_cr, left, top, rigth - left,
-						bottom - top);
-				cairo_clip(composite_overlay_cr);
-				cairo_paint_with_alpha(composite_overlay_cr, OPACITY);
-				cairo_restore(composite_overlay_cr);
-			}
-
+			p->repair1(composite_overlay_cr, e->area.x, e->area.y,
+					e->area.width, e->area.height);
 			++i;
 		}
 	}

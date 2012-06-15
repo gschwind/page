@@ -28,6 +28,7 @@
 #include "box.hxx"
 #include "icon.hxx"
 #include "xconnection.hxx"
+#include "popup.hxx"
 
 namespace page_next {
 
@@ -58,14 +59,6 @@ inline void print_buffer__(const char * buf, int size) {
 
 }
 
-struct popup_t {
-	XWindowAttributes wa;
-	Window w;
-	Damage damage;
-	cairo_surface_t * surf;
-};
-
-typedef std::list<popup_t *> popup_list_t;
 
 class main_t {
 public:

@@ -104,105 +104,8 @@ bool split_t::process_button_press_event(XEvent const * e) {
 		}
 
 		if (slide.is_inside(e->xbutton.x, e->xbutton.y)) {
-			XEvent ev;
-			//cairo_t * cr;
-			cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
-			XWindowAttributes w_attribute;
-			XSetWindowAttributes swa;
-			swa.background_pixel = XBlackPixel(page.cnx.dpy, 0);
-			swa.border_pixel = XWhitePixel(page.cnx.dpy, 0);
-			swa.save_under = True;
-
-			XGetWindowAttributes(page.cnx.dpy, page.main_window, &w_attribute);
-
-			if (XGrabPointer(page.cnx.dpy, page.main_window, False,
-					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-					GrabModeAsync, GrabModeAsync, None, cursor,
-					CurrentTime) != GrabSuccess)
-				return true;
-
-			int save_render = 0;
-			int expose_count = 0;
-			do {
-				XMaskEvent(page.cnx.dpy,
-						(ButtonPressMask | ButtonReleaseMask | PointerMotionMask)
-								| ExposureMask | SubstructureRedirectMask, &ev);
-				switch (ev.type) {
-				case ConfigureRequest:
-				case Expose:
-					expose_count += 1;
-					break;
-				case MapRequest:
-					save_render = (save_render + 1) % 10;
-					break;
-				case MotionNotify:
-
-					if (_split_type == VERTICAL_SPLIT) {
-
-						cairo_set_source_surface(page.composite_overlay_cr,
-								page.main_window_s, 0, 0);
-						cairo_rectangle(page.composite_overlay_cr,
-								_allocation.x + (int) (_split * _allocation.w)
-										- GRIP_SIZE, _allocation.y,
-								2 * GRIP_SIZE, _allocation.h);
-						cairo_fill(page.composite_overlay_cr);
-
-						_split = (ev.xmotion.x - _allocation.x)
-								/ (double) (_allocation.w);
-						if (_split > 0.95)
-							_split = 0.95;
-						if (_split < 0.05)
-							_split = 0.05;
-
-						cairo_set_source_rgba(page.composite_overlay_cr, 0.0,
-								0.0, 0.0, 0.5);
-						cairo_rectangle(page.composite_overlay_cr,
-								_allocation.x + (int) (_split * _allocation.w)
-										- GRIP_SIZE, _allocation.y,
-								2 * GRIP_SIZE, _allocation.h);
-						cairo_fill(page.composite_overlay_cr);
-					} else {
-
-						cairo_set_source_surface(page.composite_overlay_cr,
-								page.main_window_s, 0, 0);
-						cairo_rectangle(page.composite_overlay_cr,
-								_allocation.x,
-								_allocation.y + (int) (_split * _allocation.h)
-										- GRIP_SIZE, _allocation.w,
-								2 * GRIP_SIZE);
-						cairo_fill(page.composite_overlay_cr);
-
-						_split = (ev.xmotion.y - _allocation.y)
-								/ (double) (_allocation.h);
-						if (_split > 0.95)
-							_split = 0.95;
-						if (_split < 0.05)
-							_split = 0.05;
-
-						cairo_set_source_rgba(page.composite_overlay_cr, 0.0,
-								0.0, 0.0, 0.5);
-						cairo_rectangle(page.composite_overlay_cr,
-								_allocation.x,
-								_allocation.y + (int) (_split * _allocation.h)
-										- GRIP_SIZE, _allocation.w,
-								2 * GRIP_SIZE);
-						cairo_fill(page.composite_overlay_cr);
-					}
-
-					if (_split > 0.95)
-						_split = 0.95;
-					if (_split < 0.05)
-						_split = 0.05;
-
-					break;
-				}
-			} while (ev.type != ButtonRelease);
-			XUngrabPointer(page.cnx.dpy, CurrentTime);
-			XFreeCursor(page.cnx.dpy, cursor);
-			update_allocation(_allocation);
-			render();
+			process_drag_and_drop();
 		} else {
-
 			/* the pack test is for sanity, but should never be null */
 			if (_pack0) {
 				/* avoid double close */
@@ -291,6 +194,122 @@ void split_t::remove_client(client_t * c) {
 		_pack0->remove_client(c);
 	if (_pack1)
 		_pack1->remove_client(c);
+}
+
+void split_t::process_drag_and_drop() {
+	XEvent ev;
+	//cairo_t * cr;
+	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
+	XWindowAttributes w_attribute;
+	XSetWindowAttributes swa;
+	swa.background_pixel = XBlackPixel(page.cnx.dpy, 0);
+	swa.border_pixel = XWhitePixel(page.cnx.dpy, 0);
+	swa.save_under = True;
+
+	popup_split_t * p;
+
+	if (_split_type == VERTICAL_SPLIT) {
+		p = new popup_split_t(
+				_allocation.x + (int) (_split * _allocation.w) - GRIP_SIZE,
+				_allocation.y, 2 * GRIP_SIZE, _allocation.h);
+	} else {
+		p = new popup_split_t(_allocation.x,
+				_allocation.y + (int) (_split * _allocation.h) - GRIP_SIZE,
+				_allocation.w, 2 * GRIP_SIZE);
+	}
+
+	page.popups.push_back(p);
+
+	XGetWindowAttributes(page.cnx.dpy, page.main_window, &w_attribute);
+
+	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
+			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+			GrabModeAsync, GrabModeAsync, None, cursor,
+			CurrentTime) != GrabSuccess)
+		return;
+
+	int save_render = 0;
+	int expose_count = 0;
+	do {
+
+		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char*) this);
+
+		if (ev.type == page.damage_event + XDamageNotify) {
+			page.process_damage_event(&ev);
+		} else {
+
+			switch (ev.type) {
+			case ConfigureRequest:
+			case Expose:
+				expose_count += 1;
+				break;
+			case MapRequest:
+				save_render = (save_render + 1) % 10;
+				break;
+			case MotionNotify:
+
+				if (_split_type == VERTICAL_SPLIT) {
+
+					_split = (ev.xmotion.x - _allocation.x)
+							/ (double) (_allocation.w);
+					if (_split > 0.95)
+						_split = 0.95;
+					if (_split < 0.05)
+						_split = 0.05;
+
+					p->update_area(page.composite_overlay_cr,
+							page.main_window_s,
+							_allocation.x + (int) (_split * _allocation.w)
+									- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
+							_allocation.h);
+				} else {
+
+					cairo_set_source_surface(page.composite_overlay_cr,
+							page.main_window_s, 0, 0);
+					cairo_rectangle(page.composite_overlay_cr, _allocation.x,
+							_allocation.y + (int) (_split * _allocation.h)
+									- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+					cairo_fill(page.composite_overlay_cr);
+
+					_split = (ev.xmotion.y - _allocation.y)
+							/ (double) (_allocation.h);
+					if (_split > 0.95)
+						_split = 0.95;
+					if (_split < 0.05)
+						_split = 0.05;
+
+					p->update_area(page.composite_overlay_cr,
+							page.main_window_s, _allocation.x,
+							_allocation.y + (int) (_split * _allocation.h)
+									- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+				}
+
+				if (_split > 0.95)
+					_split = 0.95;
+				if (_split < 0.05)
+					_split = 0.05;
+
+				break;
+			default:
+
+				break;
+			}
+		}
+	} while (ev.type != ButtonRelease);
+	page.popups.remove(p);
+	p->hide(page.composite_overlay_cr, page.main_window_s);
+	delete p;
+	XUngrabPointer(page.cnx.dpy, CurrentTime);
+	XFreeCursor(page.cnx.dpy, cursor);
+	update_allocation(_allocation);
+	render();
+}
+
+Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
+	split_t * ths = (split_t *) arg;
+	return (ev->type == ConfigureRequest) || (ev->type == Expose)
+			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
+			|| (ev->type == ths->page.damage_event + XDamageNotify);
 }
 
 }
