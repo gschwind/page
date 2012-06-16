@@ -97,6 +97,12 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 
 	//update_client_mapping();
 
+	if(_selected.size() == 0) {
+		if(_clients.size() != 0) {
+			_selected.push_front(_clients.front());
+		}
+	}
+
 	if (_selected.size() > 0) {
 		client_t * c = _selected.front();
 		c->update_client_size(_allocation.w - 2 * BORDER_SIZE,
@@ -118,6 +124,7 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 				_allocation.h - HEIGHT - BORDER_SIZE);
 
 	}
+
 }
 
 void notebook_t::render() {
@@ -425,7 +432,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-void notebook_t::update_client_mapping() {
+void notebook_t::_update_client_mapping() {
 	std::list<client_t *>::iterator i;
 	/* map before unmap */
 	for (i = _clients.begin(); i != _clients.end(); ++i) {
@@ -474,7 +481,7 @@ void notebook_t::update_client_mapping() {
 
 bool notebook_t::add_notebook(client_t *c) {
 	printf("Add client #%lu\n", c->xwin);
-	_clients.push_front(c);
+	_clients.push_back(c);
 	back_buffer_is_valid = false;
 	set_selected(c);
 	return true;
@@ -612,12 +619,14 @@ void notebook_t::set_selected(client_t * c) {
 		if (!c->is_fullscreen()) {
 			c->update_client_size(_allocation.w - 2 * BORDER_SIZE,
 					_allocation.h - HEIGHT - 2 * BORDER_SIZE);
-			printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin,
-					c->width, c->height);
 
 			int offset_x = (_allocation.w - 2 * BORDER_SIZE - c->width) / 2;
 			int offset_y = (_allocation.h - HEIGHT - BORDER_SIZE - c->height)
 					/ 2;
+
+			printf("XResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+					c->xwin, offset_x, offset_y, c->width, c->height);
+
 			if (offset_x < 0)
 				offset_x = 0;
 			if (offset_y < 0)
@@ -628,6 +637,12 @@ void notebook_t::set_selected(client_t * c) {
 					_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
 					_allocation.w - 2 * BORDER_SIZE,
 					_allocation.h - HEIGHT - BORDER_SIZE);
+			XFlush(c->cnx.dpy);
+			printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+					c->clipping_window, _allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
+					_allocation.w - 2 * BORDER_SIZE,
+					_allocation.h - HEIGHT - BORDER_SIZE);
+
 			c->map();
 			if (_selected.size() > 0) {
 				client_t * c1 = _selected.front();
@@ -637,6 +652,11 @@ void notebook_t::set_selected(client_t * c) {
 						page.cnx.atoms.CARDINAL, 32, PropModeReplace,
 						reinterpret_cast<unsigned char *>(&state), 1);
 			}
+
+			long state = NormalState;
+			XChangeProperty(page.cnx.dpy, c->xwin, page.cnx.atoms.WM_STATE,
+					page.cnx.atoms.CARDINAL, 32, PropModeReplace,
+					reinterpret_cast<unsigned char *>(&state), 1);
 		}
 		_selected.remove(c);
 		_selected.push_front(c);

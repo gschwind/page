@@ -130,8 +130,8 @@ void main_t::update_page_aera() {
 //	page_area.w = screen_area.w - (left + right);
 //	page_area.h = screen_area.h - (top + bottom);
 //
-  box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
-  tree_root->update_allocation(b);
+	box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
+	tree_root->update_allocation(b);
 
 }
 
@@ -188,12 +188,27 @@ void main_t::run() {
 		XEvent e;
 		cnx.xnextevent(&e);
 		//printf("##%lu\n", e.xany.serial);
-		if (e.type != damage_event + XDamageNotify) {
+		if (e.type < LASTEvent && e.type > 0) {
 			//printf("##%lu\n", e.xany.serial);
-			//printf("#%lu event: %s window: %lu\n", e.xany.serial,
-			//		x_event_name[e.type], e.xany.window);
+			printf("%s serial:#%lu win: %lu\n", x_event_name[e.type],
+					e.xany.serial, e.xany.window);
 		}
-		if (e.type == Expose) {
+
+		if (e.type == ConfigureNotify) {
+			printf("Configure %dx%d+%d+%d\n", e.xconfigure.width,
+					e.xconfigure.height, e.xconfigure.x, e.xconfigure.y);
+			/* Some client set size and position after map the window ... we need fix it */
+			client_t * c = find_client_by_xwindow(e.xconfigure.window);
+			if(c) {
+				c->hints.height = e.xconfigure.height;
+				c->hints.width = e.xconfigure.width;
+				c->hints.x = e.xconfigure.x;
+				c->hints.y = e.xconfigure.y;
+				box_t<int> x;
+				tree_root->update_allocation(x);
+			}
+
+		} else if (e.type == Expose) {
 			//printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xmapping.window == main_window)
 				render();
@@ -693,7 +708,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 						partial_struct[0], partial_struct[1], partial_struct[2],
 						partial_struct[3], partial_struct[4], partial_struct[5],
 						partial_struct[6], partial_struct[7], partial_struct[8],
-						partial_struct[9], partial_struct[10], partial_struct[11]);
+						partial_struct[9], partial_struct[10],
+						partial_struct[11]);
 
 				c->has_partial_struct = true;
 				memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);

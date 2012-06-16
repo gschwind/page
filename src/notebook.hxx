@@ -83,7 +83,7 @@ public:
 	void split_top(client_t * c);
 	void split_bottom(client_t * c);
 
-	void update_client_mapping();
+	void _update_client_mapping();
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);

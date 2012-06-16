@@ -37,10 +37,10 @@ void client_t::unmap() {
 
 void client_t::update_client_size(int w, int h) {
 
-	if (is_fullscreen()) {
-		height = cnx.root_size.h;
-		width = cnx.root_size.w;
-	}
+	//if (is_fullscreen()) {
+	//	height = cnx.root_size.h;
+	//	width = cnx.root_size.w;
+	//}
 
 	if (hints.flags & PMaxSize) {
 		if (w > hints.max_width)
@@ -128,7 +128,7 @@ void client_t::focus() {
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
-	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end() && is_map){
+	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()){
 		printf("TAKE_FOCUS\n");
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
@@ -362,19 +362,19 @@ void client_t::write_wm_state() {
 }
 
 void client_t::set_fullscreen() {
-	/* update window state */
-	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-	write_wm_state();
-
-	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
-	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
-	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
-			cnx.root_size.h);
-	/* will set full screen, parameters will be ignored*/
-	update_client_size(0, 0);
-	map();
-	//cnx.focuced = this;
-	//focus();
+//	/* update window state */
+//	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
+//	write_wm_state();
+//
+//	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
+//	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
+//	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
+//			cnx.root_size.h);
+//	/* will set full screen, parameters will be ignored*/
+//	update_client_size(0, 0);
+//	map();
+//	//cnx.focuced = this;
+//	//focus();
 }
 
 void client_t::unset_fullscreen() {
