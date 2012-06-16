@@ -652,7 +652,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 
 	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
 
-	popup_split_t * p = new popup_split_t(tab_area.x, tab_area.y, tab_area.w,
+	popup_notebook_t * p = new popup_notebook_t(tab_area.x, tab_area.y, tab_area.w,
 			tab_area.h);
 
 	page.popups.push_back(p);

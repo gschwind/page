@@ -52,6 +52,17 @@ struct popup_split_t : public popup_t {
 	void update_area(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
 };
 
+struct popup_notebook_t : public popup_t {
+	box_t<int> area;
+	popup_notebook_t(int x, int y, int width, int height);
+	~popup_notebook_t();
+	virtual void repair0(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
+	virtual void repair1(cairo_t * cr, int x, int y, int width, int height);
+	virtual void hide(cairo_t * cr, cairo_surface_t * s);
+	virtual bool is_window(Window w);
+	void update_area(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
+};
+
 
 }
 
