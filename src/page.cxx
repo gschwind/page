@@ -405,6 +405,8 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 		}
 
+		XSelectInput(cnx.dpy, c->xwin,
+				StructureNotifyMask | PropertyChangeMask);
 		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
 		/* reparent will generate UnmapNotify */
@@ -686,17 +688,20 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 			if (partial_struct) {
 
-				printf("partial struct %ld %ld %ld %ld\n", partial_struct[0],
-						partial_struct[1], partial_struct[2],
-						partial_struct[3]);
+				printf(
+						"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
+						partial_struct[0], partial_struct[1], partial_struct[2],
+						partial_struct[3], partial_struct[4], partial_struct[5],
+						partial_struct[6], partial_struct[7], partial_struct[8],
+						partial_struct[9], partial_struct[10], partial_struct[11]);
 
 				c->has_partial_struct = true;
 				memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);
-
 				delete[] partial_struct;
-
 				update_page_aera();
 
+			} else {
+				c->has_partial_struct = false;
 			}
 		} else if (ev->xproperty.state == PropertyDelete) {
 			c->has_partial_struct = false;
