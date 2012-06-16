@@ -33,6 +33,15 @@ class notebook_t: public tree_t {
 	static int const BORDER_SIZE = 1;
 	static int const HEIGHT = 24;
 
+	enum select_e {
+		SELECT_NONE,
+		SELECT_TAB,
+		SELECT_TOP,
+		SELECT_BOTTOM,
+		SELECT_LEFT,
+		SELECT_RIGHT
+	};
+
 	static std::list<notebook_t *> notebooks;
 	main_t & page;
 
@@ -46,10 +55,19 @@ class notebook_t: public tree_t {
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;
 
+	box_t<int> tab_area;
+	box_t<int> top_area;
+	box_t<int> bottom_area;
+	box_t<int> left_area;
+	box_t<int> right_area;
+
 	client_list_t _clients;
 	client_list_t _selected;
 
 	void set_selected(client_t * c);
+
+	static Bool drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg);
+	void process_drag_and_drop(client_t * c);
 
 public:
 	notebook_t(main_t & cnx);
@@ -59,6 +77,12 @@ public:
 	bool process_button_press_event(XEvent const * e);
 	bool add_notebook(client_t *c);
 	void split(split_type_e type);
+
+	void split_left(client_t * c);
+	void split_right(client_t * c);
+	void split_top(client_t * c);
+	void split_bottom(client_t * c);
+
 	void update_client_mapping();
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
@@ -70,6 +94,7 @@ public:
 
 	void select_next();
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
+
 };
 
 }

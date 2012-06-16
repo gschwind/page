@@ -373,7 +373,7 @@ void client_t::set_fullscreen() {
 	/* will set full screen, parameters will be ignored*/
 	update_client_size(0, 0);
 	map();
-	cnx.focuced = this;
+	//cnx.focuced = this;
 	//focus();
 }
 

@@ -88,10 +88,8 @@ struct client_t {
 		 */
 		if (wa.map_state == IsUnmapped) {
 			is_map = false;
-			//unmap_pending = 0;
 		} else {
 			is_map = true;
-			//unmap_pending = 1;
 		}
 
 		wm_input_focus = false;

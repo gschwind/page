@@ -93,6 +93,8 @@ public:
 	/* the main window attributes */
 	XWindowAttributes wa;
 
+	client_t * focuced;
+
 	int damage_event, damage_error; // The event base is important here
 	Damage damage;
 

@@ -59,6 +59,42 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	button_hsplit.w = 17;
 	button_hsplit.h = HEIGHT;
 
+	tab_area.x = _allocation.x;
+	tab_area.y = _allocation.y;
+	tab_area.w = _allocation.w;
+	tab_area.h = HEIGHT;
+
+	top_area.x = _allocation.x;
+	top_area.y = _allocation.y + HEIGHT;
+	top_area.w = _allocation.w;
+	top_area.h = (_allocation.h - HEIGHT) * 0.2;
+
+	bottom_area.x = _allocation.x;
+	bottom_area.y = _allocation.y + HEIGHT + (0.8 * (_allocation.h - HEIGHT));
+	bottom_area.w = _allocation.w;
+	bottom_area.h = (_allocation.h - HEIGHT) * 0.2;
+
+	left_area.x = _allocation.x;
+	left_area.y = _allocation.y + HEIGHT;
+	left_area.w = _allocation.w * 0.2;
+	left_area.h = (_allocation.h - HEIGHT);
+
+	right_area.x = _allocation.x + _allocation.w * 0.8;
+	right_area.y = _allocation.y + HEIGHT;
+	right_area.w = _allocation.w * 0.2;
+	right_area.h = (_allocation.h - HEIGHT);
+
+	printf("xx %dx%d+%d+%d\n", _allocation.w, _allocation.h, _allocation.x,
+			_allocation.y);
+	printf("xx %dx%d+%d+%d\n", tab_area.w, tab_area.h, tab_area.x, tab_area.y);
+	printf("xx %dx%d+%d+%d\n", top_area.w, top_area.h, top_area.x, top_area.y);
+	printf("xx %dx%d+%d+%d\n", bottom_area.w, bottom_area.h, bottom_area.x,
+			bottom_area.y);
+	printf("xx %dx%d+%d+%d\n", left_area.w, left_area.h, left_area.x,
+			left_area.y);
+	printf("xx %dx%d+%d+%d\n", right_area.w, right_area.h, right_area.x,
+			right_area.y);
+
 	//update_client_mapping();
 
 	if (_selected.size() > 0) {
@@ -366,83 +402,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							&ev);
 
 				} else {
-
-					//set_selected((*c));
-					XEvent ev;
-					cairo_t * cr;
-
-					cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
-
-					if (XGrabPointer(page.cnx.dpy, page.main_window, False,
-							(ButtonPressMask | ButtonReleaseMask
-									| PointerMotionMask), GrabModeAsync,
-							GrabModeAsync, None, cursor,
-							CurrentTime) != GrabSuccess
-							)
-						return true;
-					do {
-						XMaskEvent(page.cnx.dpy,
-								(ButtonPressMask | ButtonReleaseMask
-										| PointerMotionMask) | ExposureMask
-										| SubstructureRedirectMask, &ev);
-						switch (ev.type) {
-						case ConfigureRequest:
-						case Expose:
-						case MapRequest:
-							//cr = get_cairo();
-							render();
-							//cairo_destroy(cr);
-							break;
-						case MotionNotify:
-							break;
-						}
-					} while (ev.type != ButtonRelease);
-
-					/* ev is button release
-					 * so set the hidden focus parameter
-					 */
-					(*c)->cnx.last_know_time = ev.xbutton.time;
-
-					XUngrabPointer(page.cnx.dpy, CurrentTime);
-					XFreeCursor(page.cnx.dpy, cursor);
-
-					std::list<notebook_t *>::iterator dst;
-					for (dst = notebooks.begin(); dst != notebooks.end();
-							++dst) {
-						if ((*dst)->_allocation.is_inside(ev.xbutton.x,
-								ev.xbutton.y)) {
-							break;
-						}
-					}
-
-					if (dst != notebooks.end() && (*dst) != this) {
-						client_t * move = *(c);
-						/* reselect a new window */
-						select_next();
-						_clients.remove(move);
-						(*dst)->add_notebook(move);
-					} else {
-						set_selected(*c);
-					}
-
-					//cr = get_cairo();
-					render();
-					//cairo_destroy(cr);
-
-					if (_selected.size() > 0) {
-						client_t * c = _selected.front();
-						//c->map();
-						c->focus();
-						c->cnx.focuced = c;
-						XChangeProperty(c->cnx.dpy, c->cnx.xroot,
-								c->cnx.atoms._NET_ACTIVE_WINDOW,
-								c->cnx.atoms.WINDOW, 32, PropModeReplace,
-								reinterpret_cast<unsigned char *>(&(c->xwin)),
-								1);
-
-					}
+					process_drag_and_drop(*c);
+					return true;
 				}
-
 			}
 
 		}
@@ -526,6 +488,42 @@ void notebook_t::split(split_type_e type) {
 	//update_client_mapping();
 }
 
+void notebook_t::split_left(client_t * c) {
+	split_t * split = new split_t(page, VERTICAL_SPLIT);
+	_parent->replace(this, split);
+	notebook_t * n = new notebook_t(page);
+	split->replace(0, n);
+	split->replace(0, this);
+	n->add_notebook(c);
+}
+
+void notebook_t::split_right(client_t * c) {
+	split_t * split = new split_t(page, VERTICAL_SPLIT);
+	_parent->replace(this, split);
+	notebook_t * n = new notebook_t(page);
+	split->replace(0, this);
+	split->replace(0, n);
+	n->add_notebook(c);
+}
+
+void notebook_t::split_top(client_t * c) {
+	split_t * split = new split_t(page, HORIZONTAL_SPLIT);
+	_parent->replace(this, split);
+	notebook_t * n = new notebook_t(page);
+	split->replace(0, n);
+	split->replace(0, this);
+	n->add_notebook(c);
+}
+
+void notebook_t::split_bottom(client_t * c) {
+	split_t * split = new split_t(page, HORIZONTAL_SPLIT);
+	_parent->replace(this, split);
+	split->replace(0, this);
+	notebook_t * n = new notebook_t(page);
+	split->replace(0, n);
+	n->add_notebook(c);
+}
+
 void notebook_t::replace(tree_t * src, tree_t * by) {
 
 }
@@ -551,6 +549,8 @@ void notebook_t::activate_client(client_t * c) {
 
 	if (has_client) {
 		set_selected(*i);
+		(*i)->focus();
+		page.focuced = (*i);
 	}
 
 	back_buffer_is_valid = false;
@@ -641,6 +641,165 @@ void notebook_t::set_selected(client_t * c) {
 		_selected.remove(c);
 		_selected.push_front(c);
 	}
+}
+
+void notebook_t::process_drag_and_drop(client_t * c) {
+	XEvent ev;
+	cairo_t * cr;
+
+	notebook_t * ns = 0;
+	select_e zone = SELECT_NONE;
+
+	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
+
+	popup_split_t * p = new popup_split_t(tab_area.x, tab_area.y, tab_area.w,
+			tab_area.h);
+
+	page.popups.push_back(p);
+
+	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
+			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+			GrabModeAsync, GrabModeAsync, None, cursor,
+			CurrentTime) != GrabSuccess
+			)
+		return;
+	do {
+
+		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char *) this);
+
+		if (ev.type == page.damage_event + XDamageNotify) {
+			page.process_damage_event(&ev);
+		} else if (ev.type == MotionNotify) {
+			if (ev.xmotion.window == page.main_window) {
+				printf("%d %d %d %d\n", ev.xmotion.x, ev.xmotion.y,
+						ev.xmotion.x_root, ev.xmotion.y_root);
+				std::list<notebook_t *>::iterator i = notebooks.begin();
+				while (i != notebooks.end()) {
+					if ((*i)->tab_area.is_inside(ev.xmotion.x_root,
+							ev.xmotion.y_root)) {
+						printf("tab\n");
+						if (zone != SELECT_TAB || ns != (*i)) {
+							zone = SELECT_TAB;
+							ns = (*i);
+							p->update_area(page.composite_overlay_cr,
+									page.main_window_s, (*i)->tab_area.x,
+									(*i)->tab_area.y, (*i)->tab_area.w,
+									(*i)->tab_area.h);
+						}
+					} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
+							ev.xmotion.y_root)) {
+						printf("right\n");
+						if (zone != SELECT_RIGHT || ns != (*i)) {
+							zone = SELECT_RIGHT;
+							ns = (*i);
+							p->update_area(page.composite_overlay_cr,
+									page.main_window_s, (*i)->right_area.x,
+									(*i)->right_area.y, (*i)->right_area.w,
+									(*i)->right_area.h);
+						}
+					} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
+							ev.xmotion.y_root)) {
+						printf("top\n");
+						if (zone != SELECT_TOP || ns != (*i)) {
+							zone = SELECT_TOP;
+							ns = (*i);
+							p->update_area(page.composite_overlay_cr,
+									page.main_window_s, (*i)->top_area.x,
+									(*i)->top_area.y, (*i)->top_area.w,
+									(*i)->top_area.h);
+						}
+					} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
+							ev.xmotion.y_root)) {
+						printf("bottom\n");
+						if (zone != SELECT_BOTTOM || ns != (*i)) {
+							zone = SELECT_BOTTOM;
+							ns = (*i);
+							p->update_area(page.composite_overlay_cr,
+									page.main_window_s, (*i)->bottom_area.x,
+									(*i)->bottom_area.y, (*i)->bottom_area.w,
+									(*i)->bottom_area.h);
+						}
+					} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
+							ev.xmotion.y_root)) {
+						printf("left\n");
+						if (zone != SELECT_LEFT || ns != (*i)) {
+							zone = SELECT_LEFT;
+							ns = (*i);
+							p->update_area(page.composite_overlay_cr,
+									page.main_window_s, (*i)->left_area.x,
+									(*i)->left_area.y, (*i)->left_area.w,
+									(*i)->left_area.h);
+						}
+					}
+					++i;
+				}
+			}
+		}
+	} while (ev.type != ButtonRelease);
+	page.popups.remove(p);
+	delete p;
+	render();
+	/* ev is button release
+	 * so set the hidden focus parameter
+	 */
+	c->cnx.last_know_time = ev.xbutton.time;
+
+	XUngrabPointer(page.cnx.dpy, CurrentTime);
+	XFreeCursor(page.cnx.dpy, cursor);
+
+	if (zone == SELECT_TAB && ns != 0) {
+
+		if (ns != this) {
+			client_t * move = c;
+			/* reselect a new window */
+			select_next();
+			_clients.remove(move);
+			(ns)->add_notebook(move);
+		}
+
+	} else if (zone == SELECT_TOP && ns != 0) {
+		select_next();
+		_clients.remove(c);
+		ns->split_top(c);
+	} else if (zone == SELECT_LEFT && ns != 0) {
+		select_next();
+		_clients.remove(c);
+		ns->split_left(c);
+	} else if (zone == SELECT_BOTTOM && ns != 0) {
+		select_next();
+		_clients.remove(c);
+		ns->split_bottom(c);
+	} else if (zone == SELECT_RIGHT && ns != 0) {
+		select_next();
+		_clients.remove(c);
+		ns->split_right(c);
+	} else {
+		set_selected(c);
+		if (_selected.size() > 0) {
+			client_t * c = _selected.front();
+			//c->map();
+			c->focus();
+			page.focuced = c;
+			XChangeProperty(c->cnx.dpy, c->cnx.xroot,
+					c->cnx.atoms._NET_ACTIVE_WINDOW, c->cnx.atoms.WINDOW, 32,
+					PropModeReplace,
+					reinterpret_cast<unsigned char *>(&(c->xwin)), 1);
+
+		}
+	}
+
+	if (_clients.size() == 0) {
+		_parent->remove(this);
+	} else {
+		render();
+	}
+}
+
+Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
+	notebook_t * ths = (notebook_t *) arg;
+	return (ev->type == ConfigureRequest) || (ev->type == Expose)
+			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
+			|| (ev->type == ths->page.damage_event + XDamageNotify);
 }
 
 }

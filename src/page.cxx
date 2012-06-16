@@ -85,6 +85,8 @@ main_t::main_t() {
 	page_area.w = cnx.root_size.w;
 	page_area.h = cnx.root_size.h;
 
+	focuced = 0;
+
 }
 
 main_t::~main_t() {
@@ -189,6 +191,7 @@ void main_t::run() {
 				/* the hidden focus parameter */
 				cnx.last_know_time = e.xbutton.time;
 				c->focus();
+				focuced = c;
 			} else {
 				tree_root->process_button_press_event(&e);
 			}
@@ -524,12 +527,9 @@ void main_t::process_map_notify_event(XEvent * e) {
 	printf("MapNotify serial:#%lu win:#%lu\n", e->xmap.serial, e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
-		//c->is_map = true;
-		if (cnx.focuced == c) {
+		if (focuced == c) {
 			c->focus();
 		}
-		//XFreePixmap(cnx.dpy, c->pix);
-		//c->pix = XCompositeNameWindowPixmap(cnx.dpy, c->xwin);
 	} else {
 		if (e->xmap.event == cnx.xroot) {
 			/* pop up menu do not throw map_request_notify */
@@ -584,7 +584,6 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		return;
 	if (expected_event) {
 		printf("Expected Unmap\n");
-		//c->unmap_pending -= 1;
 	} else {
 		/**
 		 * The client initiate an unmap.
@@ -653,6 +652,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 		/* the hidden parameter of focus */
 		cnx.last_know_time = ev->xproperty.time;
 		c->focus();
+		focuced = c;
 		XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 				cnx.atoms.WINDOW, 32, PropModeReplace,
 				reinterpret_cast<unsigned char *>(&(ev->xproperty.window)), 1);
