@@ -59,8 +59,29 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	button_hsplit.w = 17;
 	button_hsplit.h = HEIGHT;
 
-	update_client_mapping();
+	//update_client_mapping();
 
+	if (_selected.size() > 0) {
+		client_t * c = _selected.front();
+		c->update_client_size(_allocation.w - 2 * BORDER_SIZE,
+				_allocation.h - HEIGHT - 2 * BORDER_SIZE);
+		printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin,
+				c->width, c->height);
+
+		int offset_x = (_allocation.w - 2 * BORDER_SIZE - c->width) / 2;
+		int offset_y = (_allocation.h - HEIGHT - BORDER_SIZE - c->height) / 2;
+		if (offset_x < 0)
+			offset_x = 0;
+		if (offset_y < 0)
+			offset_y = 0;
+		XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
+				c->height);
+		XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
+				_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
+				_allocation.w - 2 * BORDER_SIZE,
+				_allocation.h - HEIGHT - BORDER_SIZE);
+
+	}
 }
 
 void notebook_t::render() {
@@ -492,9 +513,8 @@ void notebook_t::update_client_mapping() {
 bool notebook_t::add_notebook(client_t *c) {
 	printf("Add client #%lu\n", c->xwin);
 	_clients.push_front(c);
-	_selected.push_front(c);
 	back_buffer_is_valid = false;
-	update_client_mapping();
+	set_selected(c);
 	return true;
 }
 
@@ -503,7 +523,7 @@ void notebook_t::split(split_type_e type) {
 	_parent->replace(this, split);
 	split->replace(0, this);
 	split->replace(0, new notebook_t(page));
-	update_client_mapping();
+	//update_client_mapping();
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
@@ -557,7 +577,14 @@ void notebook_t::remove_client(client_t * c) {
 
 void notebook_t::select_next() {
 	if (_selected.size() > 0) {
-		_selected.remove(_selected.front());
+		/* quite tricky, select next, them remove */
+		client_t * c = _selected.front();
+		if (_selected.size() > 1) {
+			client_list_t::iterator i = _selected.begin();
+			++i;
+			set_selected(*i);
+		}
+		_selected.remove(c);
 		back_buffer_is_valid = false;
 	}
 }
@@ -578,6 +605,42 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 	cairo_stroke(cr);
 
 	cairo_restore(cr);
+}
+
+void notebook_t::set_selected(client_t * c) {
+	if (c != _selected.front()) {
+		if (!c->is_fullscreen()) {
+			c->update_client_size(_allocation.w - 2 * BORDER_SIZE,
+					_allocation.h - HEIGHT - 2 * BORDER_SIZE);
+			printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin,
+					c->width, c->height);
+
+			int offset_x = (_allocation.w - 2 * BORDER_SIZE - c->width) / 2;
+			int offset_y = (_allocation.h - HEIGHT - BORDER_SIZE - c->height)
+					/ 2;
+			if (offset_x < 0)
+				offset_x = 0;
+			if (offset_y < 0)
+				offset_y = 0;
+			XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
+					c->height);
+			XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
+					_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
+					_allocation.w - 2 * BORDER_SIZE,
+					_allocation.h - HEIGHT - BORDER_SIZE);
+			c->map();
+			if (_selected.size() > 0) {
+				client_t * c1 = _selected.front();
+				c1->unmap();
+				long state = IconicState;
+				XChangeProperty(page.cnx.dpy, c1->xwin, page.cnx.atoms.WM_STATE,
+						page.cnx.atoms.CARDINAL, 32, PropModeReplace,
+						reinterpret_cast<unsigned char *>(&state), 1);
+			}
+		}
+		_selected.remove(c);
+		_selected.push_front(c);
+	}
 }
 
 }

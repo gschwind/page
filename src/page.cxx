@@ -118,9 +118,6 @@ void main_t::update_page_aera() {
 
 	box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
 	tree_root->update_allocation(b);
-	//XMoveResizeWindow(cnx.dpy, main_window, page_area.x, page_area.y,
-	//		page_area.w, page_area.h);
-
 }
 
 void main_t::run() {
@@ -226,9 +223,9 @@ void main_t::render(cairo_t * cr) {
 
 void main_t::render() {
 	printf("Enter render\n");
-	XGetWindowAttributes(cnx.dpy, main_window, &wa);
-	box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
-	tree_root->update_allocation(b);
+	//XGetWindowAttributes(cnx.dpy, main_window, &wa);
+	//box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
+	//tree_root->update_allocation(b);
 
 	cairo_save(main_window_cr);
 	render(main_window_cr);

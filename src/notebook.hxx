@@ -49,10 +49,7 @@ class notebook_t: public tree_t {
 	client_list_t _clients;
 	client_list_t _selected;
 
-	inline void set_selected(client_t * c) {
-		_selected.remove(c);
-		_selected.push_front(c);
-	}
+	void set_selected(client_t * c);
 
 public:
 	notebook_t(main_t & cnx);
