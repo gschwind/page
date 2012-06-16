@@ -170,9 +170,7 @@ void split_t::remove(tree_t * src) {
 	}
 
 	_parent->replace(this, dst);
-	//cairo_t * cr = get_cairo();
 	_parent->render();
-	//cairo_destroy(cr);
 	delete src;
 	/* self destruction ^^ */
 	delete this;

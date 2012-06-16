@@ -652,8 +652,8 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 
 	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
 
-	popup_notebook_t * p = new popup_notebook_t(tab_area.x, tab_area.y, tab_area.w,
-			tab_area.h);
+	popup_notebook_t * p = new popup_notebook_t(tab_area.x, tab_area.y,
+			tab_area.w, tab_area.h);
 
 	page.popups.push_back(p);
 
@@ -747,16 +747,12 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	XUngrabPointer(page.cnx.dpy, CurrentTime);
 	XFreeCursor(page.cnx.dpy, cursor);
 
-	if (zone == SELECT_TAB && ns != 0) {
-
-		if (ns != this) {
-			client_t * move = c;
-			/* reselect a new window */
-			select_next();
-			_clients.remove(move);
-			(ns)->add_notebook(move);
-		}
-
+	if (zone == SELECT_TAB && ns != 0 && ns != this) {
+		client_t * move = c;
+		/* reselect a new window */
+		select_next();
+		_clients.remove(move);
+		(ns)->add_notebook(move);
 	} else if (zone == SELECT_TOP && ns != 0) {
 		select_next();
 		_clients.remove(c);

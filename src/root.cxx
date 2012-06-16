@@ -180,7 +180,7 @@ void root_t::replace(tree_t * src, tree_t * by) {
 		if ((*i)->_subtree == src) {
 			(*i)->_subtree = by;
 			(*i)->_subtree->reparent(this);
-			(*i)->_subtree->update_allocation((*i)->aera);
+			(*i)->_subtree->update_allocation((*i)->sub_aera);
 			break;
 		}
 		++i;
