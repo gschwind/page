@@ -84,16 +84,16 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	right_area.w = _allocation.w * 0.2;
 	right_area.h = (_allocation.h - HEIGHT);
 
-	printf("xx %dx%d+%d+%d\n", _allocation.w, _allocation.h, _allocation.x,
-			_allocation.y);
-	printf("xx %dx%d+%d+%d\n", tab_area.w, tab_area.h, tab_area.x, tab_area.y);
-	printf("xx %dx%d+%d+%d\n", top_area.w, top_area.h, top_area.x, top_area.y);
-	printf("xx %dx%d+%d+%d\n", bottom_area.w, bottom_area.h, bottom_area.x,
-			bottom_area.y);
-	printf("xx %dx%d+%d+%d\n", left_area.w, left_area.h, left_area.x,
-			left_area.y);
-	printf("xx %dx%d+%d+%d\n", right_area.w, right_area.h, right_area.x,
-			right_area.y);
+	//printf("xx %dx%d+%d+%d\n", _allocation.w, _allocation.h, _allocation.x,
+	//		_allocation.y);
+	//printf("xx %dx%d+%d+%d\n", tab_area.w, tab_area.h, tab_area.x, tab_area.y);
+	//printf("xx %dx%d+%d+%d\n", top_area.w, top_area.h, top_area.x, top_area.y);
+	//printf("xx %dx%d+%d+%d\n", bottom_area.w, bottom_area.h, bottom_area.x,
+	//		bottom_area.y);
+	//printf("xx %dx%d+%d+%d\n", left_area.w, left_area.h, left_area.x,
+	//		left_area.y);
+	//printf("xx %dx%d+%d+%d\n", right_area.w, right_area.h, right_area.x,
+	//		right_area.y);
 
 	//update_client_mapping();
 
@@ -671,13 +671,13 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (ev.xmotion.window == page.main_window) {
-				printf("%d %d %d %d\n", ev.xmotion.x, ev.xmotion.y,
-						ev.xmotion.x_root, ev.xmotion.y_root);
+				//printf("%d %d %d %d\n", ev.xmotion.x, ev.xmotion.y,
+				//		ev.xmotion.x_root, ev.xmotion.y_root);
 				std::list<notebook_t *>::iterator i = notebooks.begin();
 				while (i != notebooks.end()) {
 					if ((*i)->tab_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
-						printf("tab\n");
+						//printf("tab\n");
 						if (zone != SELECT_TAB || ns != (*i)) {
 							zone = SELECT_TAB;
 							ns = (*i);
@@ -688,7 +688,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						}
 					} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
-						printf("right\n");
+						//printf("right\n");
 						if (zone != SELECT_RIGHT || ns != (*i)) {
 							zone = SELECT_RIGHT;
 							ns = (*i);
@@ -699,7 +699,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						}
 					} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
-						printf("top\n");
+						//printf("top\n");
 						if (zone != SELECT_TOP || ns != (*i)) {
 							zone = SELECT_TOP;
 							ns = (*i);
@@ -710,7 +710,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						}
 					} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
-						printf("bottom\n");
+						//printf("bottom\n");
 						if (zone != SELECT_BOTTOM || ns != (*i)) {
 							zone = SELECT_BOTTOM;
 							ns = (*i);
@@ -721,7 +721,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						}
 					} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
-						printf("left\n");
+						//printf("left\n");
 						if (zone != SELECT_LEFT || ns != (*i)) {
 							zone = SELECT_LEFT;
 							ns = (*i);

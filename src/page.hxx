@@ -29,6 +29,7 @@
 #include "icon.hxx"
 #include "xconnection.hxx"
 #include "popup.hxx"
+#include "root.hxx"
 
 namespace page_next {
 
@@ -68,7 +69,7 @@ public:
 	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
 
-	tree_t * tree_root;
+	root_t * tree_root;
 	/* managed clients */
 	client_list_t clients;
 	std::list<popup_t *> popups;
@@ -78,7 +79,6 @@ public:
 	int running;
 	int selected;
 
-	box_t<int> page_area;
 	int start_x, end_x;
 	int start_y, end_y;
 
@@ -97,6 +97,8 @@ public:
 
 	int damage_event, damage_error; // The event base is important here
 	Damage damage;
+
+	int xinerama_event, xinerama_error;
 
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);

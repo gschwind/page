@@ -71,10 +71,7 @@ struct client_t {
 
 	bool is_dock;
 	bool has_partial_struct;
-	int struct_left;
-	int struct_right;
-	int struct_top;
-	int struct_bottom;
+	long partial_struct[12];
 
 	client_t(xconnection_t &cnx, Window page_window, Window w,
 			XWindowAttributes &wa) :

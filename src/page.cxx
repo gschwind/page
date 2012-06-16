@@ -8,6 +8,7 @@
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrender.h>
+#include <X11/extensions/Xinerama.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
@@ -74,18 +75,29 @@ main_t::main_t() {
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
 	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
-	box_t<int> a(0, 0, cnx.root_size.w, cnx.root_size.h);
-	tree_root = new root_t(*this, a);
 
 	XDamageQueryExtension(cnx.dpy, &damage_event, &damage_error);
 	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
 
-	page_area.x = 0;
-	page_area.y = 0;
-	page_area.w = cnx.root_size.w;
-	page_area.h = cnx.root_size.h;
+	tree_root = new root_t(*this);
+
+	XineramaQueryExtension(cnx.dpy, &xinerama_event, &xinerama_error);
+	int n;
+	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
+
+	if (n < 1) {
+		printf("NoScreen Found\n");
+		exit(1);
+	}
+
+	for (int i = 0; i < n; ++i) {
+		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
+				info[i].height);
+		tree_root->add_aera(x);
+	}
 
 	focuced = 0;
+	XFree(info);
 
 }
 
@@ -96,30 +108,31 @@ main_t::~main_t() {
 
 /* update main window location */
 void main_t::update_page_aera() {
-	int left = 0, right = 0, top = 0, bottom = 0;
-	std::list<client_t *>::iterator i = clients.begin();
-	while (i != clients.end()) {
-		if ((*i)->has_partial_struct) {
-			client_t * c = (*i);
-			if (left < c->struct_left)
-				left = c->struct_left;
-			if (right < c->struct_right)
-				right = c->struct_right;
-			if (top < c->struct_top)
-				top = c->struct_top;
-			if (bottom < c->struct_bottom)
-				bottom = c->struct_bottom;
-		}
-		++i;
-	}
+//	int left = 0, right = 0, top = 0, bottom = 0;
+//	std::list<client_t *>::iterator i = clients.begin();
+//	while (i != clients.end()) {
+//		if ((*i)->has_partial_struct) {
+//			client_t * c = (*i);
+//			if (left < c->struct_left)
+//				left = c->struct_left;
+//			if (right < c->struct_right)
+//				right = c->struct_right;
+//			if (top < c->struct_top)
+//				top = c->struct_top;
+//			if (bottom < c->struct_bottom)
+//				bottom = c->struct_bottom;
+//		}
+//		++i;
+//	}
+//
+//	page_area.x = screen_area.x + left;
+//	page_area.y = screen_area.y + top;
+//	page_area.w = screen_area.w - (left + right);
+//	page_area.h = screen_area.h - (top + bottom);
+//
+  box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
+  tree_root->update_allocation(b);
 
-	page_area.x = left;
-	page_area.y = top;
-	page_area.w = cnx.root_size.w - (left + right);
-	page_area.h = cnx.root_size.h - (top + bottom);
-
-	box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
-	tree_root->update_allocation(b);
 }
 
 void main_t::run() {
@@ -160,10 +173,10 @@ void main_t::run() {
 	update_page_aera();
 
 	long workarea[4];
-	workarea[0] = page_area.x;
-	workarea[1] = page_area.y;
-	workarea[2] = page_area.w;
-	workarea[3] = page_area.h;
+	workarea[0] = 0;
+	workarea[1] = 0;
+	workarea[2] = cnx.root_size.w;
+	workarea[3] = cnx.root_size.h;
 
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WORKAREA,
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
@@ -376,14 +389,15 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 		if (partial_struct) {
 
-			printf("partial struct %ld %ld %ld %ld\n", partial_struct[0],
-					partial_struct[1], partial_struct[2], partial_struct[3]);
+			printf(
+					"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
+					partial_struct[0], partial_struct[1], partial_struct[2],
+					partial_struct[3], partial_struct[4], partial_struct[5],
+					partial_struct[6], partial_struct[7], partial_struct[8],
+					partial_struct[9], partial_struct[10], partial_struct[11]);
 
 			c->has_partial_struct = true;
-			c->struct_left = partial_struct[0];
-			c->struct_right = partial_struct[1];
-			c->struct_top = partial_struct[2];
-			c->struct_bottom = partial_struct[3];
+			memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);
 
 			delete[] partial_struct;
 
@@ -394,7 +408,7 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
 		/* reparent will generate UnmapNotify */
-		if(wa.map_state != IsUnmapped) {
+		if (wa.map_state != IsUnmapped) {
 			event_t ev;
 			ev.serial = NextRequest(cnx.dpy);
 			ev.type = UnmapNotify;
@@ -424,7 +438,7 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 			StructureNotifyMask | PropertyChangeMask | ExposureMask);
 
 	/* reparent will generate UnmapNotify */
-	if(wa.map_state != IsUnmapped) {
+	if (wa.map_state != IsUnmapped) {
 		event_t ev;
 		ev.serial = NextRequest(cnx.dpy);
 		ev.type = UnmapNotify;
@@ -677,10 +691,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 						partial_struct[3]);
 
 				c->has_partial_struct = true;
-				c->struct_left = partial_struct[0];
-				c->struct_right = partial_struct[1];
-				c->struct_top = partial_struct[2];
-				c->struct_bottom = partial_struct[3];
+				memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);
 
 				delete[] partial_struct;
 
@@ -794,6 +805,7 @@ void main_t::process_damage_event(XEvent * ev) {
 }
 
 void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
+	return;
 	printf(">>> Window: #%lu\n", w);
 	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
 	printf("> border_width: %d\n", wa.border_width);
