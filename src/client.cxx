@@ -128,7 +128,8 @@ void client_t::focus() {
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
-	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()){
+	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS)
+			!= wm_protocols.end()) {
 		printf("TAKE_FOCUS\n");
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
@@ -259,18 +260,19 @@ void client_t::init_icon() {
 				target_width = 16;
 				target_height = (double) selected.height
 						/ (double) selected.width * 16;
-				ratio = (double)target_width / (double)selected.width;
+				ratio = (double) target_width / (double) selected.width;
 			} else {
 				target_height = 16;
 				target_width = (double) selected.width
 						/ (double) selected.height * 16;
-				ratio = (double)target_height / (double)selected.height;
+				ratio = (double) target_height / (double) selected.height;
 			}
 
 			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
 					target_width);
 
-			printf("reformat from %dx%d to %dx%d %f\n", selected.width, selected.height, target_width, target_height, ratio);
+			printf("reformat from %dx%d to %dx%d %f\n", selected.width,
+					selected.height, target_width, target_height, ratio);
 
 			icon.width = target_width;
 			icon.height = target_height;
@@ -280,9 +282,11 @@ void client_t::init_icon() {
 				for (int i = 0; i < target_width; ++i) {
 					int x = i / ratio;
 					int y = j / ratio;
-					if (x < selected.width && x >= 0 && y < selected.height && y >= 0) {
+					if (x < selected.width && x >= 0 && y < selected.height
+							&& y >= 0) {
 						((uint32_t *) (icon.data + stride * j))[i] =
-								((uint32_t*)selected.data)[x + selected.width * y];
+								((uint32_t*) selected.data)[x
+										+ selected.width * y];
 					}
 				}
 			}
@@ -328,6 +332,7 @@ void client_t::read_wm_state() {
 		for (int i = 0; i < n; ++i) {
 			this->net_wm_state.insert(net_wm_state[i]);
 		}
+		delete[] net_wm_state;
 	}
 }
 
@@ -341,6 +346,7 @@ void client_t::read_wm_protocols() {
 		for (int i = 0; i < n; ++i) {
 			this->wm_protocols.insert(wm_protocols[i]);
 		}
+		delete[] wm_protocols;
 	}
 }
 

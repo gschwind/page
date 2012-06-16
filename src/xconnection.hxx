@@ -238,6 +238,7 @@ struct xconnection_t {
 	} atoms;
 
 	xconnection_t() {
+		grab_count = 0;
 		dpy = XOpenDisplay(0);
 		old_error_handler = XSetErrorHandler(error_handler);
 		screen = DefaultScreen(dpy);

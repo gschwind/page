@@ -30,7 +30,7 @@ struct img_t {
 };
 
 class notebook_t: public tree_t {
-	static int const BORDER_SIZE = 1;
+	static int const BORDER_SIZE = 4;
 	static int const HEIGHT = 24;
 
 	enum select_e {
@@ -69,6 +69,8 @@ class notebook_t: public tree_t {
 	static Bool drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg);
 	void process_drag_and_drop(client_t * c);
 
+	void update_client_position(client_t * c);
+
 public:
 	notebook_t(main_t & cnx);
 	~notebook_t();
@@ -83,7 +85,6 @@ public:
 	void split_top(client_t * c);
 	void split_bottom(client_t * c);
 
-	void _update_client_mapping();
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);

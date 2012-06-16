@@ -53,12 +53,13 @@ struct client_t {
 	 * PAGE unmap mean Normal to Iconic
 	 * client unmap mean Normal to WithDrawn */
 	//int unmap_pending;
-
 	bool as_icon;
 	Pixmap pixmap_icon;
 	Window w_icon;
 
 	/* the desired width/heigth */
+	int offset_x;
+	int offset_y;
 	int width;
 	int height;
 
@@ -97,6 +98,8 @@ struct client_t {
 				wm_input_focus = true;
 		}
 
+		XFree(hints);
+
 		update_net_vm_name();
 		update_vm_name();
 		update_title();
@@ -104,6 +107,8 @@ struct client_t {
 		update_type();
 		read_wm_state();
 		read_wm_protocols();
+		clipping_window = None;
+
 	}
 
 	void map();
@@ -125,6 +130,12 @@ public:
 	void read_wm_state();
 	void read_wm_protocols();
 	void write_wm_state();
+
+	void set_state(long state) {
+		XChangeProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, cnx.atoms.CARDINAL,
+				32, PropModeReplace, reinterpret_cast<unsigned char *>(&state),
+				1);
+	}
 
 	bool client_is_dock() {
 		return type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DOCK) != type.end();
