@@ -13,9 +13,12 @@
 #include "X11/extensions/Xfixes.h"
 #include "X11/extensions/shape.h"
 
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits>
+#include <algorithm>
+#include <list>
 #include "box.hxx"
 #include "atoms.hxx"
 
@@ -449,6 +452,19 @@ struct xconnection_t {
 		}
 		return false;
 	}
+
+	static long int last_serial;
+	static bool filter(event_t e) {
+		return (e.serial < xconnection_t::last_serial);
+	}
+
+	void xnextevent(XEvent * ev) {
+		XNextEvent(dpy, ev);
+		xconnection_t::last_serial = ev->xany.serial;
+		std::remove_if(pending.begin(), pending.end(), filter);
+	}
+
+
 
 };
 

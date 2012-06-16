@@ -367,7 +367,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 				} else {
 
-					set_selected((*c));
+					//set_selected((*c));
 					XEvent ev;
 					cairo_t * cr;
 
@@ -421,6 +421,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 						select_next();
 						_clients.remove(move);
 						(*dst)->add_notebook(move);
+					} else {
+						set_selected(*c);
 					}
 
 					//cr = get_cairo();
@@ -429,11 +431,9 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 					if (_selected.size() > 0) {
 						client_t * c = _selected.front();
-
-						c->map();
+						//c->map();
 						c->focus();
 						c->cnx.focuced = c;
-
 						XChangeProperty(c->cnx.dpy, c->cnx.xroot,
 								c->cnx.atoms._NET_ACTIVE_WINDOW,
 								c->cnx.atoms.WINDOW, 32, PropModeReplace,

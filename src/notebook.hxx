@@ -30,7 +30,7 @@ struct img_t {
 };
 
 class notebook_t: public tree_t {
-	static int const BORDER_SIZE = 2;
+	static int const BORDER_SIZE = 1;
 	static int const HEIGHT = 24;
 
 	static std::list<notebook_t *> notebooks;

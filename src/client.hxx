@@ -52,7 +52,7 @@ struct client_t {
 	/* this is used to distinguish if unmap is initiated by client or by PAGE
 	 * PAGE unmap mean Normal to Iconic
 	 * client unmap mean Normal to WithDrawn */
-	int unmap_pending;
+	//int unmap_pending;
 
 	bool as_icon;
 	Pixmap pixmap_icon;
@@ -88,10 +88,10 @@ struct client_t {
 		 */
 		if (wa.map_state == IsUnmapped) {
 			is_map = false;
-			unmap_pending = 0;
+			//unmap_pending = 0;
 		} else {
 			is_map = true;
-			unmap_pending = 1;
+			//unmap_pending = 1;
 		}
 
 		wm_input_focus = false;

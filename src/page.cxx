@@ -171,7 +171,7 @@ void main_t::run() {
 	running = 1;
 	while (running) {
 		XEvent e;
-		XNextEvent(cnx.dpy, &e);
+		cnx.xnextevent(&e);
 		//printf("##%lu\n", e.xany.serial);
 		if (e.type != damage_event + XDamageNotify) {
 			//printf("##%lu\n", e.xany.serial);
@@ -222,7 +222,7 @@ void main_t::render(cairo_t * cr) {
 }
 
 void main_t::render() {
-	printf("Enter render\n");
+	//printf("Enter render\n");
 	//XGetWindowAttributes(cnx.dpy, main_window, &wa);
 	//box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
 	//tree_root->update_allocation(b);
@@ -231,7 +231,7 @@ void main_t::render() {
 	render(main_window_cr);
 	cairo_restore(main_window_cr);
 
-	printf("return render\n");
+	//printf("return render\n");
 }
 
 void main_t::scan() {
@@ -248,6 +248,7 @@ void main_t::scan() {
 		for (i = 0; i < num; ++i) {
 			if (!XGetWindowAttributes(cnx.dpy, wins[i], &wa))
 				continue;
+			print_window_attributes(wins[i], wa);
 			if (wa.override_redirect)
 				continue;
 			if ((get_window_state(wins[i]) == IconicState
@@ -388,6 +389,14 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 		}
 
 		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
+
+		/* reparent will generate UnmapNotify */
+		if(wa.map_state != IsUnmapped) {
+			event_t ev;
+			ev.serial = NextRequest(cnx.dpy);
+			ev.type = UnmapNotify;
+			cnx.pending.push_back(ev);
+		}
 		XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
 		return true;
 	}
@@ -410,6 +419,15 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 	//		c->clipping_window, 0, 0);
 	XSelectInput(cnx.dpy, c->xwin,
 			StructureNotifyMask | PropertyChangeMask | ExposureMask);
+
+	/* reparent will generate UnmapNotify */
+	if(wa.map_state != IsUnmapped) {
+		event_t ev;
+		ev.serial = NextRequest(cnx.dpy);
+		ev.type = UnmapNotify;
+		cnx.pending.push_back(ev);
+	}
+
 	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
 
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
@@ -481,6 +499,8 @@ void main_t::process_map_request_event(XEvent * e) {
 	if (!XGetWindowAttributes(cnx.dpy, w, &wa)) {
 		return;
 	}
+
+	print_window_attributes(w, wa);
 	if (wa.override_redirect) {
 		XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
 				CompositeRedirectAutomatic);
@@ -504,7 +524,7 @@ void main_t::process_map_notify_event(XEvent * e) {
 	printf("MapNotify serial:#%lu win:#%lu\n", e->xmap.serial, e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
-		c->is_map = true;
+		//c->is_map = true;
 		if (cnx.focuced == c) {
 			c->focus();
 		}
@@ -518,6 +538,8 @@ void main_t::process_map_notify_event(XEvent * e) {
 			if (!XGetWindowAttributes(cnx.dpy, e->xmap.window, &wa)) {
 				return;
 			}
+
+			print_window_attributes(e->xmap.window, wa);
 
 			if (wa.override_redirect) {
 				//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
@@ -556,25 +578,13 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	ex.serial = e->xunmap.serial;
 	ex.type = e->xunmap.type;
 
-	if (cnx.find_pending_event(ex)) {
-		printf("FIND UNMAP MATCH\n");
-	}
+	bool expected_event = cnx.find_pending_event(ex);
 
-	if (c)
-		c->is_map = false;
-	/* unmap can be received twice time but are unique per window event.
-	 * so this remove multiple events.
-	 */
-	if (e->xunmap.window != e->xunmap.event) {
-		printf("Ignore this unmap #%lu #%lu\n", e->xunmap.window,
-				e->xunmap.event);
-		return;
-	}
 	if (!c)
 		return;
-	if (c->unmap_pending > 0) {
+	if (expected_event) {
 		printf("Expected Unmap\n");
-		c->unmap_pending -= 1;
+		//c->unmap_pending -= 1;
 	} else {
 		/**
 		 * The client initiate an unmap.
@@ -595,7 +605,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
 			XDestroyWindow(cnx.dpy, c->clipping_window);
 			delete c;
-			render();
+			//render();
 		}
 		cnx.ungrab();
 	}
@@ -783,7 +793,26 @@ void main_t::process_damage_event(XEvent * ev) {
 	cairo_restore(composite_overlay_cr);
 }
 
-void main_t::drag_and_drop_loop() {
+void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
+	printf(">>> Window: #%lu\n", w);
+	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
+	printf("> border_width: %d\n", wa.border_width);
+	printf("> depth: %d\n", wa.depth);
+	printf("> visual #%p\n", wa.visual);
+	printf("> root: #%lu\n", wa.root);
+	printf("> class: %d\n", wa.c_class);
+	printf("> bit_gravity: %d\n", wa.bit_gravity);
+	printf("> win_gravity: %d\n", wa.win_gravity);
+	printf("> backing_store: %dlx\n", wa.backing_store);
+	printf("> backing_planes: %lx\n", wa.backing_planes);
+	printf("> backing_pixel: %lx\n", wa.backing_pixel);
+	printf("> save_under: %d\n", wa.save_under);
+	printf("> colormap: ?\n");
+	printf("> all_event_masks: %08lx\n", wa.all_event_masks);
+	printf("> your_event_mask: %08lx\n", wa.your_event_mask);
+	printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
+	printf("> override_redirect: %d\n", wa.override_redirect);
+	printf("> screen: %p\n", wa.screen);
 
 }
 

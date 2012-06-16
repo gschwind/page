@@ -18,13 +18,15 @@ namespace page_next {
 
 void client_t::map() {
 	// generate a map request event.
+	is_map = true;
 	cnx.map(xwin);
 	cnx.map(clipping_window);
 }
 
 void client_t::unmap() {
 	if (is_map) {
-		unmap_pending += 1;
+		is_map = false;
+		//unmap_pending += 1;
 		/* ICCCM require that WM unmap client window to change client state from
 		 * Normal to Iconic state
 		 * in PAGE all unviewable window are in iconic state */

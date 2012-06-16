@@ -21,7 +21,7 @@ enum split_type_e {
 };
 
 class split_t: public tree_t {
-	static int const GRIP_SIZE = 2;
+	static int const GRIP_SIZE = 3;
 
 	main_t & page;
 

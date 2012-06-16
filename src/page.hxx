@@ -152,6 +152,8 @@ public:
 	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
 
+	void print_window_attributes(Window w, XWindowAttributes &wa);
+
 };
 
 }
