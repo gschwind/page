@@ -70,6 +70,8 @@ notebook_t::~notebook_t() {
 	if (back_buffer != 0)
 		cairo_surface_destroy(back_buffer);
 	notebooks.remove(this);
+	if(page.default_window_pop == this)
+		page.default_window_pop = 0;
 }
 
 void notebook_t::update_allocation(box_t<int> & allocation) {
@@ -99,6 +101,11 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	button_hsplit.y = _allocation.y;
 	button_hsplit.w = 17;
 	button_hsplit.h = HEIGHT;
+
+	button_pop.x = _allocation.x + _allocation.w - 17 * 4;
+	button_pop.y = _allocation.y;
+	button_pop.w = 17;
+	button_pop.h = HEIGHT;
 
 	tab_area.x = _allocation.x;
 	tab_area.y = _allocation.y;
@@ -192,7 +199,7 @@ void notebook_t::render() {
 
 			std::list<client_t *>::iterator i;
 			int offset = 0;
-			int length = (_allocation.w - 17 * 3) / (_clients.size() + 1);
+			int length = (_allocation.w - 17 * 4) / (_clients.size() + 1);
 			for (i = _clients.begin(); i != _clients.end(); ++i) {
 
 				cairo_save(back_buffer_cr);
@@ -226,7 +233,7 @@ void notebook_t::render() {
 
 						/* draw the name */
 						cairo_rectangle(back_buffer_cr, 2.0, 0.0,
-								length * 2 - 16.0, HEIGHT - 2.0);
+								length * 2 - 17.0, HEIGHT - 2.0);
 						cairo_clip(back_buffer_cr);
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13.0);
@@ -326,39 +333,22 @@ void notebook_t::render() {
 				cairo_translate(back_buffer_cr, _allocation.w - 16.5, 1.5);
 				/* draw close */
 				cairo_new_path(back_buffer_cr);
-//				cairo_move_to(back_buffer_cr, 4.0, 4.0);
-//				cairo_line_to(back_buffer_cr, 12.0, 12.0);
-//				cairo_move_to(back_buffer_cr, 12.0, 4.0);
-//				cairo_line_to(back_buffer_cr, 4.0, 12.0);
-//				cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
-//						0x00U / 255.0, 0x00U / 255.0);
-//				cairo_stroke(back_buffer_cr);
-
 				cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5, 0.5);
 				cairo_paint(back_buffer_cr);
 
 				/* draw vertical split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-//				cairo_move_to(back_buffer_cr, 8.0, 2.0);
-//				cairo_line_to(back_buffer_cr, 8.0, 14.0);
-//				cairo_move_to(back_buffer_cr, 9.0, 2.0);
-//				cairo_line_to(back_buffer_cr, 9.0, 14.0);
-//				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
-//				cairo_stroke(back_buffer_cr);
-
 				cairo_set_source_surface(back_buffer_cr, vsplit_button_s, 0.5, 0.5);
 				cairo_paint(back_buffer_cr);
 
 				/* draw horizontal split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-//				cairo_move_to(back_buffer_cr, 2.0, 8.0);
-//				cairo_line_to(back_buffer_cr, 14.0, 8.0);
-//				cairo_move_to(back_buffer_cr, 2.0, 8.0);
-//				cairo_line_to(back_buffer_cr, 14.0, 8.0);
-//				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
-//				cairo_stroke(back_buffer_cr);
-
 				cairo_set_source_surface(back_buffer_cr, hsplit_button_s, 0.5, 0.5);
+				cairo_paint(back_buffer_cr);
+
+				/* draw pop button */
+				cairo_translate(back_buffer_cr, -17.0, 0.0);
+				cairo_set_source_surface(back_buffer_cr, pop_button_s, 0.5, 0.5);
 				cairo_paint(back_buffer_cr);
 
 
@@ -430,7 +420,7 @@ void notebook_t::render() {
 bool notebook_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
 		if (_clients.size() > 0) {
-			int box_width = ((_allocation.w - 17 * 3) / (_clients.size() + 1));
+			int box_width = ((_allocation.w - 17 * 4) / (_clients.size() + 1));
 			box_t<int> b(_allocation.x, _allocation.y, box_width, HEIGHT);
 			std::list<client_t *>::iterator c = _clients.begin();
 			while (c != _clients.end()) {
@@ -482,6 +472,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 			split(VERTICAL_SPLIT);
 		} else if (button_hsplit.is_inside(e->xbutton.x, e->xbutton.y)) {
 			split(HORIZONTAL_SPLIT);
+		} else if (button_pop.is_inside(e->xbutton.x, e->xbutton.y)) {
+			page.default_window_pop = this;
 		}
 
 		return true;

@@ -63,6 +63,8 @@ main_t::main_t(int argc, char ** argv) {
 		page_base_dir = "";
 	}
 
+	default_window_pop = 0;
+
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
@@ -482,9 +484,14 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
-	if (!tree_root->add_notebook(c)) {
-		printf("Fail to add a client\n");
-		exit(EXIT_FAILURE);
+	if (default_window_pop != 0) {
+		if (!default_window_pop->add_notebook(c)) {
+			throw std::runtime_error("Fail to add a client");
+		}
+	} else {
+		if (!tree_root->add_notebook(c)) {
+			throw std::runtime_error("Fail to add a client\n");
+		}
 	}
 
 	if (c->is_fullscreen()) {

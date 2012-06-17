@@ -72,6 +72,7 @@ public:
 	std::string page_base_dir;
 
 	root_t * tree_root;
+	tree_t * default_window_pop;
 	/* managed clients */
 	client_list_t clients;
 	std::list<popup_t *> popups;

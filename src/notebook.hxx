@@ -59,6 +59,7 @@ class notebook_t: public tree_t {
 	box_t<int> button_close;
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;
+	box_t<int> button_pop;
 
 	box_t<int> tab_area;
 	box_t<int> top_area;
