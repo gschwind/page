@@ -69,6 +69,8 @@ public:
 	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
 
+	std::string page_base_dir;
+
 	root_t * tree_root;
 	/* managed clients */
 	client_list_t clients;
@@ -103,7 +105,7 @@ public:
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);
 public:
-	main_t();
+	main_t(int argc, char ** argv);
 	~main_t();
 	void render(cairo_t * cr);
 	void render();

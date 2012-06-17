@@ -108,7 +108,7 @@ struct client_t {
 		read_wm_state();
 		read_wm_protocols();
 		clipping_window = None;
-
+		icon_surf = 0;
 	}
 
 	void map();
@@ -160,6 +160,13 @@ public:
 
 	char * get_properties8(Atom prop, Atom type, unsigned int *num) {
 		return cnx.get_properties<char, 8>(xwin, prop, type, num);
+	}
+
+	~client_t() {
+		if (icon_surf != 0) {
+			cairo_surface_destroy(icon_surf);
+			icon_surf = 0;
+		}
 	}
 
 };

@@ -156,13 +156,13 @@ void root_t::render() {
 
 bool root_t::process_button_press_event(XEvent const * e) {
 	//return _pack0->process_button_press_event(e);
-
 	std::list<screen_t *>::iterator i = subarea.begin();
 	while (i != subarea.end()) {
 		if ((*i)->_subtree->process_button_press_event(e))
-			break;
+			return true;
 		++i;
 	}
+	return false;
 }
 
 bool root_t::add_notebook(client_t *c) {

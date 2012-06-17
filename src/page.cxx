@@ -27,6 +27,7 @@
 #include <sstream>
 #include <limits>
 #include <stdint.h>
+#include <stdexcept>
 
 #include "page.hxx"
 #include "box.hxx"
@@ -46,7 +47,22 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
 		"GenericEvent" };
 
-main_t::main_t() {
+main_t::main_t(int argc, char ** argv) {
+
+	if (argc >= 1) {
+		char * tmp = strdup(argv[0]);
+		char * end = strrchr(tmp, '/');
+		if (end != 0) {
+			*end = 0;
+			page_base_dir = tmp;
+			free(tmp);
+		} else {
+			page_base_dir = "";
+		}
+	} else {
+		page_base_dir = "";
+	}
+
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
@@ -190,7 +206,7 @@ void main_t::run() {
 		//printf("##%lu\n", e.xany.serial);
 		if (e.type < LASTEvent && e.type > 0) {
 			//printf("##%lu\n", e.xany.serial);
-			printf("%s serial:#%lu win: %lu\n", x_event_name[e.type],
+			printf("%s serial: #%lu win: #%lu\n", x_event_name[e.type],
 					e.xany.serial, e.xany.window);
 		}
 
@@ -199,7 +215,7 @@ void main_t::run() {
 					e.xconfigure.height, e.xconfigure.x, e.xconfigure.y);
 			/* Some client set size and position after map the window ... we need fix it */
 			client_t * c = find_client_by_xwindow(e.xconfigure.window);
-			if(c) {
+			if (c) {
 				c->hints.height = e.xconfigure.height;
 				c->hints.width = e.xconfigure.width;
 				c->hints.x = e.xconfigure.x;

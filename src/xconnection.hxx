@@ -21,6 +21,7 @@
 #include <list>
 #include "box.hxx"
 #include "atoms.hxx"
+#include <stdexcept>
 
 namespace page_next {
 
@@ -238,12 +239,20 @@ struct xconnection_t {
 	} atoms;
 
 	xconnection_t() {
-		grab_count = 0;
-		dpy = XOpenDisplay(0);
 		old_error_handler = XSetErrorHandler(error_handler);
+
+		dpy = XOpenDisplay(0);
+		if(dpy == NULL) {
+			throw std::runtime_error("Could not open display");
+		}
+
+		grab_count = 0;
 		screen = DefaultScreen(dpy);
 		xroot = DefaultRootWindow(dpy);
-		XGetWindowAttributes(dpy, xroot, &root_wa);
+		if(!XGetWindowAttributes(dpy, xroot, &root_wa)) {
+			throw std::runtime_error("Cannot get root window attributes");
+		}
+
 		root_size.x = 0;
 		root_size.y = 0;
 		root_size.w = root_wa.width;
@@ -255,19 +264,19 @@ struct xconnection_t {
 			int major = 0, minor = 0; // The highest version we support
 			XCompositeQueryVersion(dpy, &major, &minor);
 			if (major != 0 || minor < 4) {
-				fprintf(stderr, "X Server doesn't support Composite 0.4\n");
-				exit(1);
+				throw std::runtime_error("X Server doesn't support Composite 0.4");
 			} else {
 				printf("using composite %d.%d\n", major, minor);
 			}
 		} else {
-			fprintf(stderr, "X Server doesn't support Composite 0.4\n");
-			exit(1);
+			throw std::runtime_error("X Server doesn't support Composite");
 		}
 
 		// check/init Damage.
 		int damage_event, damage_error; // The event base is important here
-		XDamageQueryExtension(dpy, &damage_event, &damage_error);
+		if(!XDamageQueryExtension(dpy, &damage_event, &damage_error)) {
+			throw std::runtime_error("Damage extension is not supported");
+		}
 
 		composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
 		allow_input_passthrough(composite_overlay);

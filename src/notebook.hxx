@@ -51,6 +51,11 @@ class notebook_t: public tree_t {
 	cairo_surface_t * back_buffer;
 	cairo_t * back_buffer_cr;
 
+	static cairo_surface_t * vsplit_button_s;
+	static cairo_surface_t * hsplit_button_s;
+	static cairo_surface_t * close_button_s;
+	static cairo_surface_t * pop_button_s;
+
 	box_t<int> button_close;
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;

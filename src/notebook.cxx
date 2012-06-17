@@ -11,11 +11,17 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cmath>
+#include <stdexcept>
 #include "notebook.hxx"
 
 namespace page_next {
 
 std::list<notebook_t *> notebook_t::notebooks;
+cairo_surface_t * notebook_t::hsplit_button_s = 0;
+cairo_surface_t * notebook_t::vsplit_button_s = 0;
+cairo_surface_t * notebook_t::close_button_s = 0;
+cairo_surface_t * notebook_t::pop_button_s = 0;
+
 
 notebook_t::notebook_t(main_t & page) :
 		page(page) {
@@ -24,11 +30,45 @@ notebook_t::notebook_t(main_t & page) :
 	back_buffer_cr = 0;
 	notebooks.push_back(this);
 
+	if(hsplit_button_s == 0) {
+		std::string filename = page.page_base_dir + "/data/hsplit_button.png";
+		printf("Load: %s\n", filename.c_str());
+		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if(hsplit_button_s == 0)
+			throw std::runtime_error("file not found!");
+	}
+
+	if(vsplit_button_s == 0) {
+		std::string filename = page.page_base_dir + "/data/vsplit_button.png";
+		printf("Load: %s\n", filename.c_str());
+		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if(vsplit_button_s == 0)
+			throw std::runtime_error("file not found!");
+	}
+
+	if(close_button_s == 0) {
+		std::string filename = page.page_base_dir + "/data/close_button.png";
+		printf("Load: %s\n", filename.c_str());
+		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if(close_button_s == 0)
+			throw std::runtime_error("file not found!");
+	}
+
+	if(pop_button_s == 0) {
+		std::string filename = page.page_base_dir + "/data/pop_button.png";
+		printf("Load: %s\n", filename.c_str());
+		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if(pop_button_s == 0)
+			throw std::runtime_error("file not found!");
+	}
+
 }
 
 notebook_t::~notebook_t() {
-	cairo_destroy(back_buffer_cr);
-	cairo_surface_destroy(back_buffer);
+	if (back_buffer_cr != 0)
+		cairo_destroy(back_buffer_cr);
+	if (back_buffer != 0)
+		cairo_surface_destroy(back_buffer);
 	notebooks.remove(this);
 }
 
@@ -38,6 +78,7 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 		cairo_destroy(back_buffer_cr);
 		cairo_surface_destroy(back_buffer);
 		back_buffer = 0;
+		back_buffer_cr = 0;
 	}
 
 	back_buffer_is_valid = false;
@@ -227,6 +268,11 @@ void notebook_t::render() {
 						cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
 								0x00U / 255.0, 0x00U / 255.0);
 						cairo_stroke(back_buffer_cr);
+
+						cairo_set_antialias(back_buffer_cr, CAIRO_ANTIALIAS_NONE);
+						cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5, 0.5);
+						cairo_paint(back_buffer_cr);
+
 						offset += length * 2;
 					} else {
 
@@ -280,31 +326,42 @@ void notebook_t::render() {
 				cairo_translate(back_buffer_cr, _allocation.w - 16.5, 1.5);
 				/* draw close */
 				cairo_new_path(back_buffer_cr);
-				cairo_move_to(back_buffer_cr, 4.0, 4.0);
-				cairo_line_to(back_buffer_cr, 12.0, 12.0);
-				cairo_move_to(back_buffer_cr, 12.0, 4.0);
-				cairo_line_to(back_buffer_cr, 4.0, 12.0);
-				cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
-						0x00U / 255.0, 0x00U / 255.0);
-				cairo_stroke(back_buffer_cr);
+//				cairo_move_to(back_buffer_cr, 4.0, 4.0);
+//				cairo_line_to(back_buffer_cr, 12.0, 12.0);
+//				cairo_move_to(back_buffer_cr, 12.0, 4.0);
+//				cairo_line_to(back_buffer_cr, 4.0, 12.0);
+//				cairo_set_source_rgb(back_buffer_cr, 0xCCU / 255.0,
+//						0x00U / 255.0, 0x00U / 255.0);
+//				cairo_stroke(back_buffer_cr);
+
+				cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5, 0.5);
+				cairo_paint(back_buffer_cr);
 
 				/* draw vertical split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-				cairo_move_to(back_buffer_cr, 8.0, 2.0);
-				cairo_line_to(back_buffer_cr, 8.0, 14.0);
-				cairo_move_to(back_buffer_cr, 9.0, 2.0);
-				cairo_line_to(back_buffer_cr, 9.0, 14.0);
-				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
-				cairo_stroke(back_buffer_cr);
+//				cairo_move_to(back_buffer_cr, 8.0, 2.0);
+//				cairo_line_to(back_buffer_cr, 8.0, 14.0);
+//				cairo_move_to(back_buffer_cr, 9.0, 2.0);
+//				cairo_line_to(back_buffer_cr, 9.0, 14.0);
+//				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+//				cairo_stroke(back_buffer_cr);
+
+				cairo_set_source_surface(back_buffer_cr, vsplit_button_s, 0.5, 0.5);
+				cairo_paint(back_buffer_cr);
 
 				/* draw horizontal split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-				cairo_move_to(back_buffer_cr, 2.0, 8.0);
-				cairo_line_to(back_buffer_cr, 14.0, 8.0);
-				cairo_move_to(back_buffer_cr, 2.0, 8.0);
-				cairo_line_to(back_buffer_cr, 14.0, 8.0);
-				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
-				cairo_stroke(back_buffer_cr);
+//				cairo_move_to(back_buffer_cr, 2.0, 8.0);
+//				cairo_line_to(back_buffer_cr, 14.0, 8.0);
+//				cairo_move_to(back_buffer_cr, 2.0, 8.0);
+//				cairo_line_to(back_buffer_cr, 14.0, 8.0);
+//				cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
+//				cairo_stroke(back_buffer_cr);
+
+				cairo_set_source_surface(back_buffer_cr, hsplit_button_s, 0.5, 0.5);
+				cairo_paint(back_buffer_cr);
+
+
 			}
 			cairo_restore(back_buffer_cr);
 
@@ -324,6 +381,25 @@ void notebook_t::render() {
 					0xeeU / 255.0, 0xecU / 255.0);
 			cairo_rectangle(page.main_window_cr, _allocation.x, _allocation.y,
 					_allocation.w, _allocation.h);
+			cairo_fill(page.main_window_cr);
+		} else {
+			cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0,
+					0xeeU / 255.0, 0xecU / 255.0);
+			cairo_rectangle(page.main_window_cr, _allocation.x,
+					_allocation.y + HEIGHT, BORDER_SIZE,
+					_allocation.h - HEIGHT);
+			cairo_fill(page.main_window_cr);
+			cairo_rectangle(page.main_window_cr,
+					_allocation.x + _allocation.w - BORDER_SIZE,
+					_allocation.y + HEIGHT, BORDER_SIZE,
+					_allocation.h - HEIGHT);
+			cairo_fill(page.main_window_cr);
+			cairo_rectangle(page.main_window_cr, _allocation.x,
+					_allocation.y + HEIGHT, _allocation.w, BORDER_SIZE);
+			cairo_fill(page.main_window_cr);
+			cairo_rectangle(page.main_window_cr, _allocation.x,
+					_allocation.y + _allocation.h - BORDER_SIZE, _allocation.w,
+					BORDER_SIZE);
 			cairo_fill(page.main_window_cr);
 		}
 
@@ -550,7 +626,7 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 }
 
 void notebook_t::set_selected(client_t * c) {
-	if(_selected.size() == 0) {
+	if (_selected.size() == 0) {
 		update_client_position(c);
 		c->map();
 		c->set_state(NormalState);
@@ -662,7 +738,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 				}
 			}
 		}
-	} while (ev.type != ButtonRelease);
+	} while (ev.type != ButtonRelease && ev.type != ButtonPress);
 	page.popups.remove(p);
 	delete p;
 	render();
@@ -713,15 +789,15 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 
 	if (_clients.size() == 0) {
 		_parent->remove(this);
-	} else {
-		render();
 	}
+	render();
 }
 
 Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 	notebook_t * ths = (notebook_t *) arg;
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
+			|| (ev->type == ButtonPress)
 			|| (ev->type == ths->page.damage_event + XDamageNotify);
 }
 

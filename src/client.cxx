@@ -161,8 +161,10 @@ void client_t::update_vm_name() {
 	int n;
 	XTextProperty name;
 	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms.WM_NAME);
-	if (!name.nitems)
+	if (!name.nitems) {
+		XFree(name.value);
 		return;
+	}
 	wm_name_is_valid = true;
 	wm_name = (char const *) name.value;
 	XFree(name.value);
@@ -174,8 +176,10 @@ void client_t::update_net_vm_name() {
 	int n;
 	XTextProperty name;
 	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms._NET_WM_NAME);
-	if (!name.nitems)
+	if (!name.nitems) {
+		XFree(name.value);
 		return;
+	}
 	net_wm_name_is_valid = true;
 	net_wm_name = (char const *) name.value;
 	XFree(name.value);
@@ -196,6 +200,11 @@ void client_t::update_title() {
 }
 
 void client_t::init_icon() {
+
+	if(icon_surf != 0) {
+		cairo_surface_destroy(icon_surf);
+		icon_surf = 0;
+	}
 
 	long * icon_data;
 	int32_t * icon_data32;
