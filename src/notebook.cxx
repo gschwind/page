@@ -21,7 +21,7 @@ cairo_surface_t * notebook_t::hsplit_button_s = 0;
 cairo_surface_t * notebook_t::vsplit_button_s = 0;
 cairo_surface_t * notebook_t::close_button_s = 0;
 cairo_surface_t * notebook_t::pop_button_s = 0;
-
+cairo_surface_t * notebook_t::pops_button_s = 0;
 
 notebook_t::notebook_t(main_t & page) :
 		page(page) {
@@ -30,35 +30,43 @@ notebook_t::notebook_t(main_t & page) :
 	back_buffer_cr = 0;
 	notebooks.push_back(this);
 
-	if(hsplit_button_s == 0) {
+	if (hsplit_button_s == 0) {
 		std::string filename = page.page_base_dir + "/data/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if(hsplit_button_s == 0)
+		if (hsplit_button_s == 0)
 			throw std::runtime_error("file not found!");
 	}
 
-	if(vsplit_button_s == 0) {
+	if (vsplit_button_s == 0) {
 		std::string filename = page.page_base_dir + "/data/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if(vsplit_button_s == 0)
+		if (vsplit_button_s == 0)
 			throw std::runtime_error("file not found!");
 	}
 
-	if(close_button_s == 0) {
+	if (close_button_s == 0) {
 		std::string filename = page.page_base_dir + "/data/close_button.png";
 		printf("Load: %s\n", filename.c_str());
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if(close_button_s == 0)
+		if (close_button_s == 0)
 			throw std::runtime_error("file not found!");
 	}
 
-	if(pop_button_s == 0) {
+	if (pop_button_s == 0) {
 		std::string filename = page.page_base_dir + "/data/pop_button.png";
 		printf("Load: %s\n", filename.c_str());
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if(pop_button_s == 0)
+		if (pop_button_s == 0)
+			throw std::runtime_error("file not found!");
+	}
+
+	if (pops_button_s == 0) {
+		std::string filename = page.page_base_dir + "/data/pops_button.png";
+		printf("Load: %s\n", filename.c_str());
+		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if (pop_button_s == 0)
 			throw std::runtime_error("file not found!");
 	}
 
@@ -70,7 +78,7 @@ notebook_t::~notebook_t() {
 	if (back_buffer != 0)
 		cairo_surface_destroy(back_buffer);
 	notebooks.remove(this);
-	if(page.default_window_pop == this)
+	if (page.default_window_pop == this)
 		page.default_window_pop = 0;
 }
 
@@ -276,8 +284,10 @@ void notebook_t::render() {
 								0x00U / 255.0, 0x00U / 255.0);
 						cairo_stroke(back_buffer_cr);
 
-						cairo_set_antialias(back_buffer_cr, CAIRO_ANTIALIAS_NONE);
-						cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5, 0.5);
+						cairo_set_antialias(back_buffer_cr,
+								CAIRO_ANTIALIAS_NONE);
+						cairo_set_source_surface(back_buffer_cr, close_button_s,
+								0.5, 0.5);
 						cairo_paint(back_buffer_cr);
 
 						offset += length * 2;
@@ -333,24 +343,33 @@ void notebook_t::render() {
 				cairo_translate(back_buffer_cr, _allocation.w - 16.5, 1.5);
 				/* draw close */
 				cairo_new_path(back_buffer_cr);
-				cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5, 0.5);
+				cairo_set_source_surface(back_buffer_cr, close_button_s, 0.5,
+						0.5);
 				cairo_paint(back_buffer_cr);
 
 				/* draw vertical split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-				cairo_set_source_surface(back_buffer_cr, vsplit_button_s, 0.5, 0.5);
+				cairo_set_source_surface(back_buffer_cr, vsplit_button_s, 0.5,
+						0.5);
 				cairo_paint(back_buffer_cr);
 
 				/* draw horizontal split */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-				cairo_set_source_surface(back_buffer_cr, hsplit_button_s, 0.5, 0.5);
+				cairo_set_source_surface(back_buffer_cr, hsplit_button_s, 0.5,
+						0.5);
 				cairo_paint(back_buffer_cr);
 
 				/* draw pop button */
 				cairo_translate(back_buffer_cr, -17.0, 0.0);
-				cairo_set_source_surface(back_buffer_cr, pop_button_s, 0.5, 0.5);
-				cairo_paint(back_buffer_cr);
-
+				if (page.default_window_pop == this) {
+					cairo_set_source_surface(back_buffer_cr, pops_button_s, 0.5,
+							0.5);
+					cairo_paint(back_buffer_cr);
+				} else {
+					cairo_set_source_surface(back_buffer_cr, pop_button_s, 0.5,
+							0.5);
+					cairo_paint(back_buffer_cr);
+				}
 
 			}
 			cairo_restore(back_buffer_cr);
