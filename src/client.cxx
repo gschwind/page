@@ -377,19 +377,19 @@ void client_t::write_wm_state() {
 }
 
 void client_t::set_fullscreen() {
-//	/* update window state */
-//	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-//	write_wm_state();
-//
-//	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
+	/* update window state */
+	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
+	write_wm_state();
+
+	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
 //	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
 //	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
 //			cnx.root_size.h);
 //	/* will set full screen, parameters will be ignored*/
 //	update_client_size(0, 0);
 //	map();
-//	//cnx.focuced = this;
-//	//focus();
+	//cnx.focuced = this;
+	//focus();
 }
 
 void client_t::unset_fullscreen() {
@@ -397,7 +397,7 @@ void client_t::unset_fullscreen() {
 	net_wm_state.erase(cnx.atoms._NET_WM_STATE_FULLSCREEN);
 	write_wm_state();
 	//XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
-	unmap();
+	//unmap();
 }
 
 }

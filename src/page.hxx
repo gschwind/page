@@ -71,6 +71,8 @@ public:
 
 	std::string page_base_dir;
 
+
+	client_t * fullscreen_client;
 	root_t * tree_root;
 	tree_t * default_window_pop;
 	/* managed clients */
@@ -158,6 +160,8 @@ public:
 	void fullscreen(client_t * c);
 	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
+
+	void insert_client(client_t * c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 

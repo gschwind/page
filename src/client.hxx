@@ -142,8 +142,8 @@ public:
 	}
 
 	bool is_fullscreen() {
-		//return net_wm_state.find(cnx.atoms._NET_WM_STATE_FULLSCREEN)
-		//		!= net_wm_state.end();
+		return net_wm_state.find(cnx.atoms._NET_WM_STATE_FULLSCREEN)
+				!= net_wm_state.end();
 		return false;
 	}
 

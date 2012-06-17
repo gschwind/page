@@ -276,10 +276,18 @@ void main_t::render() {
 	//box_t<int> b(page_area.x, page_area.y, page_area.w, page_area.h);
 	//tree_root->update_allocation(b);
 
-	cairo_save(main_window_cr);
-	render(main_window_cr);
-	cairo_restore(main_window_cr);
-
+	if (fullscreen_client == 0) {
+		cairo_save(main_window_cr);
+		render(main_window_cr);
+		cairo_restore(main_window_cr);
+	} else {
+		XMoveResizeWindow(cnx.dpy, fullscreen_client->clipping_window, 0, 0,
+				cnx.root_size.w, cnx.root_size.h);
+		XMoveResizeWindow(cnx.dpy, fullscreen_client->xwin, 0, 0,
+				cnx.root_size.w, cnx.root_size.h);
+		fullscreen_client->map();
+		XRaiseWindow(cnx.dpy, fullscreen_client->clipping_window);
+	}
 	//printf("return render\n");
 }
 
@@ -484,18 +492,10 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
-	if (default_window_pop != 0) {
-		if (!default_window_pop->add_notebook(c)) {
-			throw std::runtime_error("Fail to add a client");
-		}
-	} else {
-		if (!tree_root->add_notebook(c)) {
-			throw std::runtime_error("Fail to add a client\n");
-		}
-	}
+	insert_client(c);
 
 	if (c->is_fullscreen()) {
-		c->set_fullscreen();
+		fullscreen(c);
 	}
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
@@ -653,6 +653,8 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			process_destroy_notify_event(&ev);
 		} else {
 			tree_root->remove_client(c);
+			if(fullscreen_client == c)
+				fullscreen_client = 0;
 			clients.remove(c);
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
@@ -669,6 +671,8 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	//		e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
+		if(fullscreen_client == c)
+			fullscreen_client = 0;
 		tree_root->remove_client(c);
 		clients.remove(c);
 		if (c->has_partial_struct)
@@ -702,14 +706,17 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	if (!c)
 		return;
 	if (ev->xproperty.atom == cnx.atoms._NET_WM_USER_TIME) {
-		tree_root->activate_client(c);
-		/* the hidden parameter of focus */
-		cnx.last_know_time = ev->xproperty.time;
-		c->focus();
-		focuced = c;
-		XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
-				cnx.atoms.WINDOW, 32, PropModeReplace,
-				reinterpret_cast<unsigned char *>(&(ev->xproperty.window)), 1);
+		if (fullscreen_client == 0 || fullscreen_client == c) {
+			tree_root->activate_client(c);
+			/* the hidden parameter of focus */
+			cnx.last_know_time = ev->xproperty.time;
+			c->focus();
+			focuced = c;
+			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
+					cnx.atoms.WINDOW, 32, PropModeReplace,
+					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
+					1);
+		}
 	} else if (ev->xproperty.atom == cnx.atoms._NET_WM_NAME) {
 		c->update_net_vm_name();
 		c->update_title();
@@ -756,19 +763,34 @@ void main_t::process_property_notify_event(XEvent * ev) {
 }
 
 void main_t::fullscreen(client_t *c) {
+
+	if (fullscreen_client != 0) {
+		c->unmap();
+		c->unset_fullscreen();
+		fullscreen_client = 0;
+		insert_client(c);
+	}
+
+	fullscreen_client = c;
 	c->set_fullscreen();
+	c->map();
+	tree_root->remove_client(c);
 }
 
 void main_t::unfullscreen(client_t * c) {
-	c->unset_fullscreen();
-	render();
+	if (fullscreen_client == c) {
+		fullscreen_client = 0;
+		c->unset_fullscreen();
+		insert_client(c);
+		//render();
+	}
 }
 
 void main_t::toggle_fullscreen(client_t * c) {
-	if (c->is_fullscreen()) {
-		c->unset_fullscreen();
+	if (c == fullscreen_client) {
+		unfullscreen(c);
 	} else {
-		c->set_fullscreen();
+		fullscreen(c);
 	}
 }
 
@@ -797,15 +819,15 @@ void main_t::process_client_message_event(XEvent * ev) {
 							== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
 				switch (ev->xclient.data.l[0]) {
 				case 0:
-					//printf("SET normal\n");
+					printf("SET normal\n");
 					fullscreen(c);
 					break;
 				case 1:
-					//printf("SET fullscreen\n");
+					printf("SET fullscreen\n");
 					unfullscreen(c);
 					break;
 				case 2:
-					//printf("SET toggle\n");
+					printf("SET toggle\n");
 					toggle_fullscreen(c);
 					break;
 
@@ -870,6 +892,18 @@ void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
 	printf("> override_redirect: %d\n", wa.override_redirect);
 	printf("> screen: %p\n", wa.screen);
 
+}
+
+void main_t::insert_client(client_t * c) {
+	if (default_window_pop != 0) {
+		if (!default_window_pop->add_notebook(c)) {
+			throw std::runtime_error("Fail to add a client");
+		}
+	} else {
+		if (!tree_root->add_notebook(c)) {
+			throw std::runtime_error("Fail to add a client\n");
+		}
+	}
 }
 
 }
