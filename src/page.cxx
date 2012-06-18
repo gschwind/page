@@ -67,7 +67,6 @@ main_t::main_t(int argc, char ** argv) {
 	fullscreen_client = 0;
 	running = 1;
 
-
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
@@ -269,10 +268,6 @@ void main_t::run() {
 	}
 }
 
-void main_t::render(cairo_t * cr) {
-	tree_root->render();
-}
-
 void main_t::render() {
 	//printf("Enter render\n");
 	//XGetWindowAttributes(cnx.dpy, main_window, &wa);
@@ -281,7 +276,7 @@ void main_t::render() {
 
 	if (fullscreen_client == 0) {
 		cairo_save(main_window_cr);
-		render(main_window_cr);
+		tree_root->render();
 		cairo_restore(main_window_cr);
 	} else {
 		XMoveResizeWindow(cnx.dpy, fullscreen_client->clipping_window, 0, 0,
@@ -450,21 +445,23 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 
 			update_page_aera();
 
+			XSelectInput(cnx.dpy, c->xwin,
+					StructureNotifyMask | PropertyChangeMask);
+			XCompositeRedirectWindow(cnx.dpy, c->xwin,
+					CompositeRedirectAutomatic);
+
+			/* reparent will generate UnmapNotify */
+			if (wa.map_state != IsUnmapped) {
+				event_t ev;
+				ev.serial = NextRequest(cnx.dpy);
+				ev.type = UnmapNotify;
+				cnx.pending.push_back(ev);
+			}
+			XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
+			return true;
+
 		}
 
-		XSelectInput(cnx.dpy, c->xwin,
-				StructureNotifyMask | PropertyChangeMask);
-		XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
-
-		/* reparent will generate UnmapNotify */
-		if (wa.map_state != IsUnmapped) {
-			event_t ev;
-			ev.serial = NextRequest(cnx.dpy);
-			ev.type = UnmapNotify;
-			cnx.pending.push_back(ev);
-		}
-		XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
-		return true;
 	}
 
 	c->init_icon();
@@ -501,7 +498,12 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 	insert_client(c);
 
 	if (c->is_fullscreen()) {
+		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
+				cnx.root_size.h);
+		XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w,
+				cnx.root_size.h);
 		fullscreen(c);
+		update_focus(c);
 	}
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
@@ -659,12 +661,17 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		} else {
 			clients.remove(c);
 			tree_root->remove_client(c);
-			if(fullscreen_client == c)
+			if (fullscreen_client == c)
 				fullscreen_client = 0;
+			if (client_focused == c) {
+				update_focus(0);
+			}
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
 			XDestroyWindow(cnx.dpy, c->clipping_window);
 			delete c;
+			box_t<int> x;
+			tree_root->update_allocation(x);
 		}
 		cnx.ungrab();
 		render();
@@ -677,9 +684,9 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		clients.remove(c);
-		if(fullscreen_client == c)
+		if (fullscreen_client == c)
 			fullscreen_client = 0;
-		if(client_focused == c) {
+		if (client_focused == c) {
 			update_focus(0);
 		}
 		tree_root->remove_client(c);
@@ -773,16 +780,21 @@ void main_t::process_property_notify_event(XEvent * ev) {
 void main_t::fullscreen(client_t *c) {
 
 	if (fullscreen_client != 0) {
-		c->unmap();
-		c->unset_fullscreen();
+		fullscreen_client->unmap();
+		fullscreen_client->unset_fullscreen();
+		insert_client(fullscreen_client);
 		fullscreen_client = 0;
-		insert_client(c);
+		update_focus(0);
 	}
 
 	fullscreen_client = c;
-	c->set_fullscreen();
-	c->map();
 	tree_root->remove_client(c);
+	c->set_fullscreen();
+	XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
+			cnx.root_size.h);
+	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
+	c->map();
+	update_focus(c);
 	c->focus();
 }
 
@@ -790,8 +802,9 @@ void main_t::unfullscreen(client_t * c) {
 	if (fullscreen_client == c) {
 		fullscreen_client = 0;
 		c->unset_fullscreen();
+		update_focus(0);
 		insert_client(c);
-		//render();
+		render();
 	}
 }
 
@@ -829,11 +842,11 @@ void main_t::process_client_message_event(XEvent * ev) {
 				switch (ev->xclient.data.l[0]) {
 				case 0:
 					printf("SET normal\n");
-					fullscreen(c);
+					unfullscreen(c);
 					break;
 				case 1:
 					printf("SET fullscreen\n");
-					unfullscreen(c);
+					fullscreen(c);
 					break;
 				case 2:
 					printf("SET toggle\n");
@@ -917,17 +930,17 @@ void main_t::insert_client(client_t * c) {
 
 void main_t::update_focus(client_t * c) {
 
-	if(client_focused == c)
+	if (client_focused == c)
 		return;
 
-	if(client_focused != 0) {
+	if (client_focused != 0) {
 		client_focused->net_wm_state.erase(cnx.atoms._NET_WM_STATE_FOCUSED);
 		client_focused->write_wm_state();
 	}
 
 	client_focused = c;
 
-	if(client_focused != 0) {
+	if (client_focused != 0) {
 		client_focused->net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
 		client_focused->write_wm_state();
 	}
