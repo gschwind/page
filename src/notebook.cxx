@@ -159,10 +159,12 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 		}
 	}
 
-	if (!_selected.empty()) {
-		client_t * c = _selected.front();
-		update_client_position(c);
+	client_list_t::iterator i = _clients.begin();
+	while(i != _clients.end()) {
+		update_client_position(*i);
+		++i;
 	}
+
 }
 
 void notebook_t::render() {
@@ -823,7 +825,7 @@ void notebook_t::update_client_position(client_t * c) {
 	if (offset_y < 0)
 		offset_y = 0;
 
-	if (!c->is_fullscreen()) {
+	if (page.fullscreen_client == 0) {
 		XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
 				c->height);
 		XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
