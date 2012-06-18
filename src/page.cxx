@@ -802,6 +802,7 @@ void main_t::unfullscreen(client_t * c) {
 	if (fullscreen_client == c) {
 		fullscreen_client = 0;
 		c->unset_fullscreen();
+		c->unmap();
 		update_focus(0);
 		insert_client(c);
 		render();
