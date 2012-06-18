@@ -55,15 +55,18 @@ main_t::main_t(int argc, char ** argv) {
 		if (end != 0) {
 			*end = 0;
 			page_base_dir = tmp;
-			free(tmp);
 		} else {
 			page_base_dir = "";
 		}
+		free(tmp);
 	} else {
 		page_base_dir = "";
 	}
 
 	default_window_pop = 0;
+	fullscreen_client = 0;
+	running = 1;
+
 
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
@@ -293,7 +296,7 @@ void main_t::render() {
 
 void main_t::scan() {
 	printf("call %s\n", __PRETTY_FUNCTION__);
-	unsigned int i, num;
+	unsigned int num;
 	Window d1, d2, *wins = 0;
 	XWindowAttributes wa;
 
@@ -302,7 +305,7 @@ void main_t::scan() {
 	 * only know windows it have created.
 	 */
 	if (XQueryTree(cnx.dpy, cnx.xroot, &d1, &d2, &wins, &num)) {
-		for (i = 0; i < num; ++i) {
+		for (unsigned i = 0; i < num; ++i) {
 			if (!XGetWindowAttributes(cnx.dpy, wins[i], &wa))
 				continue;
 			print_window_attributes(wins[i], wa);
@@ -355,7 +358,7 @@ client_t * main_t::find_client_by_clipping_window(Window w) {
 
 void main_t::update_net_supported() {
 
-	Atom supported_list[9];
+	Atom supported_list[10];
 
 	supported_list[0] = cnx.atoms._NET_WM_NAME;
 	supported_list[1] = cnx.atoms._NET_WM_USER_TIME;
@@ -523,7 +526,6 @@ long main_t::get_window_state(Window w) {
 /* inspired from dwm */
 bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 	char **list = NULL;
-	int n;
 	XTextProperty name;
 	XGetTextProperty(cnx.dpy, w, &name, atom);
 	if (!name.nitems)
@@ -699,7 +701,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(cnx.dpy, ev->xproperty.atom);
-	//printf("Atom Name = \"%s\"\n", name);
+	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
 	client_t * c = find_client_by_xwindow(ev->xproperty.window);
@@ -775,6 +777,7 @@ void main_t::fullscreen(client_t *c) {
 	c->set_fullscreen();
 	c->map();
 	tree_root->remove_client(c);
+	c->focus();
 }
 
 void main_t::unfullscreen(client_t * c) {

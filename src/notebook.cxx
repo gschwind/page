@@ -153,13 +153,13 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 
 	//update_client_mapping();
 
-	if (_selected.size() == 0) {
-		if (_clients.size() != 0) {
+	if (_selected.empty()) {
+		if (!_clients.empty()) {
 			_selected.push_front(_clients.front());
 		}
 	}
 
-	if (_selected.size() > 0) {
+	if (!_selected.empty()) {
 		client_t * c = _selected.front();
 		update_client_position(c);
 	}
@@ -385,7 +385,7 @@ void notebook_t::render() {
 		cairo_set_antialias(page.main_window_cr, CAIRO_ANTIALIAS_DEFAULT);
 
 		/* draw border */
-		if (_clients.size() == 0) {
+		if (_clients.empty()) {
 			cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0,
 					0xeeU / 255.0, 0xecU / 255.0);
 			cairo_rectangle(page.main_window_cr, _allocation.x, _allocation.y,
@@ -438,7 +438,7 @@ void notebook_t::render() {
 
 bool notebook_t::process_button_press_event(XEvent const * e) {
 	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		if (_clients.size() > 0) {
+		if (!_clients.empty()) {
 			int box_width = ((_allocation.w - 17 * 4) / (_clients.size() + 1));
 			box_t<int> b(_allocation.x, _allocation.y, box_width, HEIGHT);
 			std::list<client_t *>::iterator c = _clients.begin();
@@ -605,7 +605,7 @@ void notebook_t::remove_client(client_t * c) {
 }
 
 void notebook_t::select_next() {
-	if (_selected.size() > 0) {
+	if (!_selected.empty()) {
 		/* quite tricky, select next, them remove */
 		client_t * c = _selected.front();
 		if (_selected.size() > 1) {
@@ -637,17 +637,24 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 }
 
 void notebook_t::set_selected(client_t * c) {
-	if (_selected.size() == 0) {
+	if (_selected.empty()) {
 		update_client_position(c);
 		c->map();
+		c->focus();
+		page.focuced = c;
 		c->set_state(NormalState);
 		_selected.remove(c);
 		_selected.push_front(c);
 	} else {
-		if (c == _selected.front())
+		if (c == _selected.front()) {
+			c->focus();
+			page.focuced = c;
 			return;
+		}
 		update_client_position(c);
 		c->map();
+		c->focus();
+		page.focuced = c;
 		c->set_state(NormalState);
 		client_t * c1 = _selected.front();
 		c1->unmap();
@@ -659,8 +666,6 @@ void notebook_t::set_selected(client_t * c) {
 
 void notebook_t::process_drag_and_drop(client_t * c) {
 	XEvent ev;
-	cairo_t * cr;
-
 	notebook_t * ns = 0;
 	select_e zone = SELECT_NONE;
 
@@ -785,27 +790,25 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		ns->split_right(c);
 	} else {
 		set_selected(c);
-		if (_selected.size() > 0) {
-			client_t * c = _selected.front();
-			//c->map();
-			c->focus();
-			page.focuced = c;
-			XChangeProperty(c->cnx.dpy, c->cnx.xroot,
-					c->cnx.atoms._NET_ACTIVE_WINDOW, c->cnx.atoms.WINDOW, 32,
-					PropModeReplace,
-					reinterpret_cast<unsigned char *>(&(c->xwin)), 1);
+		client_t * c = _selected.front();
+		//c->map();
+		//c->focus();
+		page.focuced = c;
+		XChangeProperty(c->cnx.dpy, c->cnx.xroot,
+				c->cnx.atoms._NET_ACTIVE_WINDOW, c->cnx.atoms.WINDOW, 32,
+				PropModeReplace, reinterpret_cast<unsigned char *>(&(c->xwin)),
+				1);
 
-		}
 	}
 
-	if (_clients.size() == 0) {
+	if (_clients.empty()) {
 		_parent->remove(this);
 	}
 	render();
 }
 
 Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
-	notebook_t * ths = (notebook_t *) arg;
+	notebook_t * ths = reinterpret_cast<notebook_t *>(arg);
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
 			|| (ev->type == ButtonPress)

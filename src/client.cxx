@@ -124,7 +124,7 @@ void client_t::focus() {
 	if (is_map && wm_input_focus) {
 		//if (!is_lock)
 		//	printf("warning: client isn't locked.\n");
-		//printf("Focus #%x\n", (unsigned int) xwin);
+		printf("Focus #%x\n", (unsigned int) xwin);
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
@@ -158,7 +158,6 @@ void client_t::client_update_size_hints() {
 void client_t::update_vm_name() {
 	wm_name_is_valid = false;
 	char **list = NULL;
-	int n;
 	XTextProperty name;
 	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms.WM_NAME);
 	if (!name.nitems) {
@@ -173,7 +172,6 @@ void client_t::update_vm_name() {
 void client_t::update_net_vm_name() {
 	net_wm_name_is_valid = false;
 	char **list = NULL;
-	int n;
 	XTextProperty name;
 	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms._NET_WM_NAME);
 	if (!name.nitems) {
@@ -234,8 +232,6 @@ void client_t::init_icon() {
 
 		icon_t ic;
 		int x = 0;
-		int y = 0;
-
 		/* find a icon */
 		std::list<icon_t>::iterator i = icons.begin();
 		while (i != icons.end()) {
@@ -250,7 +246,7 @@ void client_t::init_icon() {
 		if (has_icon) {
 			selected = ic;
 		} else {
-			if (icons.size() > 0) {
+			if (!icons.empty()) {
 				selected = icons.front();
 				has_icon = true;
 			} else {
@@ -318,13 +314,13 @@ void client_t::init_icon() {
 }
 
 void client_t::update_type() {
-	unsigned int num, i;
+	unsigned int num;
 	long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
 			&num);
 	if (val) {
 		type.clear();
 		/* use the first value that we know about in the array */
-		for (i = 0; i < num; ++i) {
+		for (unsigned i = 0; i < num; ++i) {
 			type.insert(val[i]);
 		}
 		delete[] val;

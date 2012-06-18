@@ -11,6 +11,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cairo.h>
+#include <cstring>
 #include <string>
 #include <list>
 #include <set>
@@ -47,19 +48,17 @@ struct client_t {
 	bool wm_input_focus;
 	/* store the map/unmap stase from the point of view of PAGE */
 	bool is_map;
-	bool need_focus;
 	bool is_lock;
 	/* this is used to distinguish if unmap is initiated by client or by PAGE
 	 * PAGE unmap mean Normal to Iconic
 	 * client unmap mean Normal to WithDrawn */
 	//int unmap_pending;
-	bool as_icon;
 	Pixmap pixmap_icon;
 	Window w_icon;
 
 	/* the desired width/heigth */
-	int offset_x;
-	int offset_y;
+	//int offset_x;
+	//int offset_y;
 	int width;
 	int height;
 
@@ -90,7 +89,7 @@ struct client_t {
 			is_map = true;
 		}
 
-		wm_input_focus = false;
+		wm_input_focus = true;
 
 		XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
 		if (hints) {
@@ -99,6 +98,8 @@ struct client_t {
 		}
 
 		XFree(hints);
+
+		memset(partial_struct, 0, sizeof(partial_struct));
 
 		update_net_vm_name();
 		update_vm_name();
@@ -144,7 +145,6 @@ public:
 	bool is_fullscreen() {
 		return net_wm_state.find(cnx.atoms._NET_WM_STATE_FULLSCREEN)
 				!= net_wm_state.end();
-		return false;
 	}
 
 	void set_fullscreen();

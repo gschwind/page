@@ -166,7 +166,7 @@ bool root_t::process_button_press_event(XEvent const * e) {
 }
 
 bool root_t::add_notebook(client_t *c) {
-	if (subarea.size() > 0)
+	if (!subarea.empty())
 		return subarea.front()->_subtree->add_notebook(c);
 	else
 		return false;

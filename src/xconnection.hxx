@@ -455,7 +455,7 @@ struct xconnection_t {
 		while (i != pending.end()) {
 			if (e.type == (*i).type && e.serial == (*i).serial)
 				return true;
-			i++;
+			++i;
 		}
 		return false;
 	}

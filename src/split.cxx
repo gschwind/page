@@ -263,7 +263,7 @@ void split_t::process_drag_and_drop() {
 }
 
 Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
-	split_t * ths = (split_t *) arg;
+	split_t * ths = reinterpret_cast<split_t *>(arg);
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
 			|| (ev->type == ths->page.damage_event + XDamageNotify);

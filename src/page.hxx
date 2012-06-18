@@ -55,11 +55,8 @@ inline void print_buffer__(const char * buf, int size) {
 	for (int i = 0; i < size; ++i) {
 		printf("%02x", buf[i]);
 	}
-
 	printf("\n");
-
 }
-
 
 class main_t {
 public:
@@ -82,10 +79,6 @@ public:
 	Cursor cursor;
 
 	int running;
-	int selected;
-
-	int start_x, end_x;
-	int start_y, end_y;
 
 	cairo_surface_t * composite_overlay_s;
 	cairo_t * composite_overlay_cr;
