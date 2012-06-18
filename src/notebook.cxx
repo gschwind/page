@@ -503,7 +503,8 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 bool notebook_t::add_notebook(client_t *c) {
 	printf("Add client #%lu\n", c->xwin);
-	_clients.push_back(c);
+	_clients.push_front(c);
+	_selected.push_back(c);
 	back_buffer_is_valid = false;
 	set_selected(c);
 	return true;
@@ -606,14 +607,15 @@ void notebook_t::remove_client(client_t * c) {
 
 void notebook_t::select_next() {
 	if (!_selected.empty()) {
-		/* quite tricky, select next, them remove */
-		client_t * c = _selected.front();
-		if (_selected.size() > 1) {
-			client_list_t::iterator i = _selected.begin();
-			++i;
-			set_selected(*i);
+		_selected.pop_front();
+		if (!_selected.empty()) {
+			client_t * c = _selected.front();
+			update_client_position(c);
+			c->map();
+			c->focus();
+			c->set_state(NormalState);
+			page.focuced = c;
 		}
-		_selected.remove(c);
 		back_buffer_is_valid = false;
 	}
 }
@@ -637,31 +639,23 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 }
 
 void notebook_t::set_selected(client_t * c) {
-	if (_selected.empty()) {
-		update_client_position(c);
-		c->map();
-		c->focus();
-		page.focuced = c;
-		c->set_state(NormalState);
-		_selected.remove(c);
-		_selected.push_front(c);
-	} else {
-		if (c == _selected.front()) {
-			c->focus();
-			page.focuced = c;
-			return;
+	update_client_position(c);
+	c->map();
+	c->focus();
+	c->set_state(NormalState);
+	page.focuced = c;
+
+	if (!_selected.empty()) {
+		if (c != _selected.front()) {
+			client_t * c = _selected.front();
+			c->unmap();
+			c->set_state(IconicState);
 		}
-		update_client_position(c);
-		c->map();
-		c->focus();
-		page.focuced = c;
-		c->set_state(NormalState);
-		client_t * c1 = _selected.front();
-		c1->unmap();
-		c1->set_state(IconicState);
-		_selected.remove(c);
-		_selected.push_front(c);
 	}
+
+	_selected.remove(c);
+	_selected.push_front(c);
+
 }
 
 void notebook_t::process_drag_and_drop(client_t * c) {
@@ -800,11 +794,12 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 				1);
 
 	}
-
-	if (_clients.empty()) {
+	if (_clients.empty() && _parent != 0) {
+		/* self destruct */
 		_parent->remove(this);
+	} else {
+		render();
 	}
-	render();
 }
 
 Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
