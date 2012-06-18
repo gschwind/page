@@ -160,7 +160,7 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	}
 
 	client_list_t::iterator i = _clients.begin();
-	while(i != _clients.end()) {
+	while (i != _clients.end()) {
 		update_client_position(*i);
 		++i;
 	}
@@ -595,15 +595,10 @@ std::list<client_t *> * notebook_t::get_clients() {
 
 void notebook_t::remove_client(client_t * c) {
 	std::list<client_t *>::iterator i = _clients.begin();
-	while (i != _clients.end()) {
-		if ((*i) == c) {
-			if ((*i) == _selected.front())
-				select_next();
-			_clients.remove((*i));
-			break;
-		}
-		++i;
-	}
+	_clients.remove(c);
+	if (c == _selected.front())
+		select_next();
+	_selected.remove(c);
 	back_buffer_is_valid = false;
 }
 

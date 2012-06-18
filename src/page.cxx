@@ -654,17 +654,17 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 				&ev)) {
 			process_destroy_notify_event(&ev);
 		} else {
+			clients.remove(c);
 			tree_root->remove_client(c);
 			if(fullscreen_client == c)
 				fullscreen_client = 0;
-			clients.remove(c);
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
 			XDestroyWindow(cnx.dpy, c->clipping_window);
 			delete c;
-			//render();
 		}
 		cnx.ungrab();
+		render();
 	}
 }
 
@@ -673,10 +673,10 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	//		e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
+		clients.remove(c);
 		if(fullscreen_client == c)
 			fullscreen_client = 0;
 		tree_root->remove_client(c);
-		clients.remove(c);
 		if (c->has_partial_struct)
 			update_page_aera();
 		update_client_list();
