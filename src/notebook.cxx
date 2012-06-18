@@ -758,38 +758,23 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	XFreeCursor(page.cnx.dpy, cursor);
 
 	if (zone == SELECT_TAB && ns != 0 && ns != this) {
-		client_t * move = c;
-		/* reselect a new window */
-		select_next();
-		_clients.remove(move);
-		(ns)->add_notebook(move);
+		remove_client(c);
+		ns->add_notebook(c);
 	} else if (zone == SELECT_TOP && ns != 0) {
-		select_next();
-		_clients.remove(c);
+		remove_client(c);
 		ns->split_top(c);
 	} else if (zone == SELECT_LEFT && ns != 0) {
-		select_next();
-		_clients.remove(c);
+		remove_client(c);
 		ns->split_left(c);
 	} else if (zone == SELECT_BOTTOM && ns != 0) {
-		select_next();
-		_clients.remove(c);
+		remove_client(c);
 		ns->split_bottom(c);
 	} else if (zone == SELECT_RIGHT && ns != 0) {
-		select_next();
-		_clients.remove(c);
+		remove_client(c);
 		ns->split_right(c);
 	} else {
 		set_selected(c);
 		client_t * c = _selected.front();
-		//c->map();
-		//c->focus();
-		page.focuced = c;
-		XChangeProperty(c->cnx.dpy, c->cnx.xroot,
-				c->cnx.atoms._NET_ACTIVE_WINDOW, c->cnx.atoms.WINDOW, 32,
-				PropModeReplace, reinterpret_cast<unsigned char *>(&(c->xwin)),
-				1);
-
 	}
 	if (_clients.empty() && _parent != 0) {
 		/* self destruct */

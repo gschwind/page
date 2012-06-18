@@ -143,6 +143,11 @@ void client_t::focus() {
 		ev.xclient.data.l[1] = cnx.last_know_time;
 		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
 	}
+
+	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
+			cnx.atoms.WINDOW, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(&(xwin)), 1);
+
 }
 
 void client_t::client_update_size_hints() {
@@ -199,7 +204,7 @@ void client_t::update_title() {
 
 void client_t::init_icon() {
 
-	if(icon_surf != 0) {
+	if (icon_surf != 0) {
 		cairo_surface_destroy(icon_surf);
 		icon_surf = 0;
 	}
