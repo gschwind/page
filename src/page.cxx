@@ -117,7 +117,7 @@ main_t::main_t(int argc, char ** argv) {
 		tree_root->add_aera(x);
 	}
 
-	focuced = 0;
+	client_focused = 0;
 	XFree(info);
 
 }
@@ -240,7 +240,7 @@ void main_t::run() {
 				/* the hidden focus parameter */
 				cnx.last_know_time = e.xbutton.time;
 				c->focus();
-				focuced = c;
+				update_focus(c);
 			} else {
 				tree_root->process_button_press_event(&e);
 			}
@@ -358,7 +358,8 @@ client_t * main_t::find_client_by_clipping_window(Window w) {
 
 void main_t::update_net_supported() {
 
-	Atom supported_list[10];
+	const int N_SUPPORTED = 11;
+	Atom supported_list[N_SUPPORTED];
 
 	supported_list[0] = cnx.atoms._NET_WM_NAME;
 	supported_list[1] = cnx.atoms._NET_WM_USER_TIME;
@@ -370,9 +371,11 @@ void main_t::update_net_supported() {
 	supported_list[7] = cnx.atoms._NET_CURRENT_DESKTOP;
 	supported_list[8] = cnx.atoms._NET_ACTIVE_WINDOW;
 	supported_list[9] = cnx.atoms._NET_WM_STATE_FULLSCREEN;
+	supported_list[10] = cnx.atoms._NET_WM_STATE_FOCUSED;
+
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_SUPPORTED,
 			cnx.atoms.ATOM, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(supported_list), 10);
+			reinterpret_cast<unsigned char *>(supported_list), N_SUPPORTED);
 
 }
 
@@ -583,7 +586,7 @@ void main_t::process_map_notify_event(XEvent * e) {
 	printf("MapNotify serial:#%lu win:#%lu\n", e->xmap.serial, e->xmap.window);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
-		if (focuced == c) {
+		if (client_focused == c) {
 			c->focus();
 		}
 	} else {
@@ -676,6 +679,9 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 		clients.remove(c);
 		if(fullscreen_client == c)
 			fullscreen_client = 0;
+		if(client_focused == c) {
+			update_focus(0);
+		}
 		tree_root->remove_client(c);
 		if (c->has_partial_struct)
 			update_page_aera();
@@ -713,7 +719,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 			/* the hidden parameter of focus */
 			cnx.last_know_time = ev->xproperty.time;
 			c->focus();
-			focuced = c;
+			update_focus(c);
 			XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 					cnx.atoms.WINDOW, 32, PropModeReplace,
 					reinterpret_cast<unsigned char *>(&(ev->xproperty.window)),
@@ -874,7 +880,7 @@ void main_t::process_damage_event(XEvent * ev) {
 }
 
 void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
-	return;
+	//return;
 	printf(">>> Window: #%lu\n", w);
 	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
 	printf("> border_width: %d\n", wa.border_width);
@@ -906,6 +912,24 @@ void main_t::insert_client(client_t * c) {
 		if (!tree_root->add_notebook(c)) {
 			throw std::runtime_error("Fail to add a client\n");
 		}
+	}
+}
+
+void main_t::update_focus(client_t * c) {
+
+	if(client_focused == c)
+		return;
+
+	if(client_focused != 0) {
+		client_focused->net_wm_state.erase(cnx.atoms._NET_WM_STATE_FOCUSED);
+		client_focused->write_wm_state();
+	}
+
+	client_focused = c;
+
+	if(client_focused != 0) {
+		client_focused->net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
+		client_focused->write_wm_state();
 	}
 }
 

@@ -91,8 +91,9 @@ public:
 	/* the main window attributes */
 	XWindowAttributes wa;
 
-	client_t * focuced;
-
+private:
+	client_t * client_focused;
+public:
 	int damage_event, damage_error; // The event base is important here
 	Damage damage;
 
@@ -157,6 +158,8 @@ public:
 	void insert_client(client_t * c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
+
+	void update_focus(client_t * c);
 
 };
 

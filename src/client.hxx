@@ -8,6 +8,7 @@
 #ifndef CLIENT_HXX_
 #define CLIENT_HXX_
 
+#include <X11/Xmd.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cairo.h>
@@ -132,10 +133,18 @@ public:
 	void read_wm_protocols();
 	void write_wm_state();
 
+	/* NOTE : ICCCM CARD32 mean "long" C type */
 	void set_state(long state) {
-		XChangeProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, cnx.atoms.CARDINAL,
-				32, PropModeReplace, reinterpret_cast<unsigned char *>(&state),
-				1);
+		struct {
+			long state;
+			Window icon;
+		} data;
+
+		data.state = state;
+		data.icon = None;
+		XChangeProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, cnx.atoms.WM_STATE,
+				32, PropModeReplace, reinterpret_cast<unsigned char *>(&data),
+				2);
 	}
 
 	bool client_is_dock() {

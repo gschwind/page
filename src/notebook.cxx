@@ -581,8 +581,8 @@ void notebook_t::activate_client(client_t * c) {
 
 	if (has_client) {
 		set_selected(*i);
-		(*i)->focus();
-		page.focuced = (*i);
+		//(*i)->focus();
+		page.update_focus(*i);
 	}
 
 	back_buffer_is_valid = false;
@@ -611,7 +611,7 @@ void notebook_t::select_next() {
 			c->map();
 			c->focus();
 			c->set_state(NormalState);
-			page.focuced = c;
+			page.update_focus(c);
 		}
 		back_buffer_is_valid = false;
 	}
@@ -636,11 +636,12 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 }
 
 void notebook_t::set_selected(client_t * c) {
+
 	update_client_position(c);
 	c->map();
 	c->focus();
 	c->set_state(NormalState);
-	page.focuced = c;
+	page.update_focus(c);
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {

@@ -144,6 +144,9 @@ void client_t::focus() {
 		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
 	}
 
+	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
+	write_wm_state();
+
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&(xwin)), 1);
