@@ -678,7 +678,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 
 		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char *) this);
 
-		if (ev.type == page.damage_event + XDamageNotify) {
+		if (ev.type == page.cnx.damage_event + XDamageNotify) {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (ev.xmotion.window == page.main_window) {
@@ -790,7 +790,7 @@ Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
 			|| (ev->type == ButtonPress)
-			|| (ev->type == ths->page.damage_event + XDamageNotify);
+			|| (ev->type == ths->page.cnx.damage_event + XDamageNotify);
 }
 
 void notebook_t::update_client_position(client_t * c) {

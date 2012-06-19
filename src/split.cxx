@@ -221,7 +221,7 @@ void split_t::process_drag_and_drop() {
 
 		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char*) this);
 
-		if (ev.type == page.damage_event + XDamageNotify) {
+		if (ev.type == page.cnx.damage_event + XDamageNotify) {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
@@ -266,7 +266,7 @@ Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 	split_t * ths = reinterpret_cast<split_t *>(arg);
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
-			|| (ev->type == ths->page.damage_event + XDamageNotify);
+			|| (ev->type == ths->page.cnx.damage_event + XDamageNotify);
 }
 
 }

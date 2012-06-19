@@ -94,10 +94,8 @@ public:
 private:
 	client_t * client_focused;
 public:
-	int damage_event, damage_error; // The event base is important here
-	Damage damage;
 
-	int xinerama_event, xinerama_error;
+	Damage damage;
 
 	main_t(main_t const &);
 	main_t &operator=(main_t const &);

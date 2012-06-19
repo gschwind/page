@@ -12,6 +12,7 @@
 #include "X11/extensions/Xdamage.h"
 #include "X11/extensions/Xfixes.h"
 #include "X11/extensions/shape.h"
+#include <X11/extensions/Xinerama.h>
 
 
 #include <stdlib.h>
@@ -239,12 +240,26 @@ struct xconnection_t {
 
 	} atoms;
 
+	/*damage event handler */
+	int damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_event, composite_error;
+
+	/* fixes event handler */
+	int fixes_event, fixes_error;
+
+	/* xinerama extension handler */
+	int xinerama_event, xinerama_error;
+
 	xconnection_t() {
 		old_error_handler = XSetErrorHandler(error_handler);
 
 		dpy = XOpenDisplay(0);
 		if(dpy == NULL) {
 			throw std::runtime_error("Could not open display");
+		} else {
+			printf("Open display : Success\n");
 		}
 
 		grab_count = 0;
@@ -252,6 +267,8 @@ struct xconnection_t {
 		xroot = DefaultRootWindow(dpy);
 		if(!XGetWindowAttributes(dpy, xroot, &root_wa)) {
 			throw std::runtime_error("Cannot get root window attributes");
+		} else {
+			printf("Get root windows attribute Success\n");
 		}
 
 		root_size.x = 0;
@@ -260,8 +277,7 @@ struct xconnection_t {
 		root_size.h = root_wa.height;
 
 		// Check if composite is supported.
-		int event_base, error_base;
-		if (XCompositeQueryExtension(dpy, &event_base, &error_base)) {
+		if (XCompositeQueryExtension(dpy, &composite_event, &composite_error)) {
 			int major = 0, minor = 0; // The highest version we support
 			XCompositeQueryVersion(dpy, &major, &minor);
 			if (major != 0 || minor < 4) {
@@ -274,11 +290,26 @@ struct xconnection_t {
 		}
 
 		// check/init Damage.
-		int damage_event, damage_error; // The event base is important here
 		if(!XDamageQueryExtension(dpy, &damage_event, &damage_error)) {
 			throw std::runtime_error("Damage extension is not supported");
+		} else {
+			int major = 0, minor = 0;
+			XDamageQueryVersion(dpy, &major, &minor);
+			printf("Damage Extension version %d.%d found\n", major, minor);
 		}
 
+
+		if(!XineramaQueryExtension(dpy, &xinerama_event, &xinerama_error)) {
+			throw std::runtime_error("Fixes extension is not supported");
+		} else {
+			int major = 0, minor = 0;
+			XineramaQueryVersion(dpy, &major, &minor);
+			printf("Xinerama Extension version %d.%d found\n", major, minor);
+		}
+
+
+
+		/* map & passtrough the overlay */
 		composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
 		allow_input_passthrough(composite_overlay);
 

@@ -47,7 +47,8 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
 		"GenericEvent" };
 
-main_t::main_t(int argc, char ** argv) {
+main_t::main_t(int argc, char ** argv) :
+		cnx() {
 
 	if (argc >= 1) {
 		char * tmp = strdup(argv[0]);
@@ -65,59 +66,15 @@ main_t::main_t(int argc, char ** argv) {
 
 	default_window_pop = 0;
 	fullscreen_client = 0;
-	running = 1;
-
-	XSetWindowAttributes swa;
-	XWindowAttributes wa;
-
-	XSelectInput(cnx.dpy, cnx.xroot,
-			SubstructureNotifyMask | SubstructureRedirectMask);
-
-	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
-			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
-			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
-	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectAutomatic);
-	//XReparentWindow(cnx.dpy, main_window, composite_overlay, wa.x, wa.y);
-	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
-	XDefineCursor(cnx.dpy, main_window, cursor);
-	XSelectInput(cnx.dpy, main_window,
-			StructureNotifyMask | ButtonPressMask | ExposureMask);
-	cnx.map(main_window);
-
-	printf("Created main window #%lu\n", main_window);
-
-	XGetWindowAttributes(cnx.dpy, main_window, &(wa));
-	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
-			wa.width, wa.height);
-	main_window_cr = cairo_create(main_window_s);
-	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
-			cnx.composite_overlay, wa.visual, wa.width, wa.height);
-	composite_overlay_cr = cairo_create(composite_overlay_s);
-
-	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
-
-	XDamageQueryExtension(cnx.dpy, &damage_event, &damage_error);
-	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
-
-	tree_root = new root_t(*this);
-
-	XineramaQueryExtension(cnx.dpy, &xinerama_event, &xinerama_error);
-	int n;
-	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
-
-	if (n < 1) {
-		printf("NoScreen Found\n");
-		exit(1);
-	}
-
-	for (int i = 0; i < n; ++i) {
-		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
-				info[i].height);
-		tree_root->add_aera(x);
-	}
-
 	client_focused = 0;
-	XFree(info);
+	running = 0;
+
+	main_window = None;
+	main_window_s = 0;
+	main_window_cr = 0;
+
+	composite_overlay_s = 0;
+	composite_overlay_cr = 0;
 
 }
 
@@ -156,6 +113,52 @@ void main_t::update_page_aera() {
 }
 
 void main_t::run() {
+	XSetWindowAttributes swa;
+	XWindowAttributes wa;
+
+	XSelectInput(cnx.dpy, cnx.xroot,
+			SubstructureNotifyMask | SubstructureRedirectMask);
+
+	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
+			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
+			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
+	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectAutomatic);
+	//XReparentWindow(cnx.dpy, main_window, composite_overlay, wa.x, wa.y);
+	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
+	XDefineCursor(cnx.dpy, main_window, cursor);
+	XSelectInput(cnx.dpy, main_window,
+			StructureNotifyMask | ButtonPressMask | ExposureMask);
+	cnx.map(main_window);
+
+	printf("Created main window #%lu\n", main_window);
+
+	XGetWindowAttributes(cnx.dpy, main_window, &(wa));
+	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
+			wa.width, wa.height);
+	main_window_cr = cairo_create(main_window_s);
+	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
+			cnx.composite_overlay, wa.visual, wa.width, wa.height);
+	composite_overlay_cr = cairo_create(composite_overlay_s);
+
+	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
+
+	tree_root = new root_t(*this);
+
+	int n;
+	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
+
+	if (n < 1) {
+		printf("NoScreen Found\n");
+		exit(1);
+	}
+
+	for (int i = 0; i < n; ++i) {
+		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
+				info[i].height);
+		tree_root->add_aera(x);
+	}
+	XFree(info);
+
 	update_net_supported();
 
 	/* update number of desktop */
@@ -197,10 +200,11 @@ void main_t::run() {
 	workarea[1] = 0;
 	workarea[2] = cnx.root_size.w;
 	workarea[3] = cnx.root_size.h;
-
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WORKAREA,
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char*>(workarea), 4);
+
+	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
 
 	render();
 	running = 1;
@@ -257,7 +261,7 @@ void main_t::run() {
 			process_destroy_notify_event(&e);
 		} else if (e.type == ClientMessage) {
 			process_client_message_event(&e);
-		} else if (e.type == damage_event + XDamageNotify) {
+		} else if (e.type == cnx.damage_event + XDamageNotify) {
 			process_damage_event(&e);
 		}
 
@@ -296,9 +300,6 @@ void main_t::scan() {
 	XWindowAttributes wa;
 
 	cnx.grab();
-	/* ask for child of current root window, use Xlib here since gdk
-	 * only know windows it have created.
-	 */
 	if (XQueryTree(cnx.dpy, cnx.xroot, &d1, &d2, &wins, &num)) {
 		for (unsigned i = 0; i < num; ++i) {
 			if (!XGetWindowAttributes(cnx.dpy, wins[i], &wa))
@@ -306,13 +307,12 @@ void main_t::scan() {
 			print_window_attributes(wins[i], wa);
 			if (wa.override_redirect)
 				continue;
-			if ((get_window_state(wins[i]) == IconicState
-					|| wa.map_state == IsViewable))
+			long state = get_window_state(wins[i]);
+			if (state == IconicState || state == NormalState
+					|| wa.map_state != IsUnmapped)
 				manage(wins[i], wa);
 		}
-
-		if (wins)
-			XFree(wins);
+		XFree(wins);
 	}
 
 	update_client_list();
@@ -513,7 +513,7 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 long main_t::get_window_state(Window w) {
 	int format;
 	long result = -1;
-	unsigned char *p = NULL;
+	long * p = NULL;
 	unsigned long n, extra;
 	Atom real;
 
@@ -522,8 +522,12 @@ long main_t::get_window_state(Window w) {
 			(unsigned char **) &p) != Success)
 		return -1;
 
-	if (n != 0)
-		result = *p;
+	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
+		result = p[0];
+	} else {
+		printf("Error in WM_STATE\n");
+		return -1;
+	}
 	XFree(p);
 	return result;
 }
