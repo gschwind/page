@@ -35,25 +35,17 @@ client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
 
 }
 
-void client_t::withdraw_to_normal() {
+void client_t::update_all() {
 
-	set_wm_state(NormalState);
-	wm_input_focus = true;
+	wm_input_focus = false;
 	XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
 	if (hints) {
 		if ((hints->flags & InputHint) && hints->input == True)
 			wm_input_focus = true;
 
-		if(hints->initial_state == IconicState) {
-			printf("iconic\n");
-		} else if (hints->initial_state == NormalState) {
-			printf("normal\n");
-		} else {
-			printf("Unkwon\n");
-		}
+		XFree(hints);
 	}
 
-	XFree(hints);
 	update_net_vm_name();
 	update_vm_name();
 	update_title();
@@ -61,6 +53,8 @@ void client_t::withdraw_to_normal() {
 	update_type();
 	read_net_wm_state();
 	read_wm_protocols();
+
+	init_icon();
 
 }
 

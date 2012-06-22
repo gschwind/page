@@ -503,12 +503,14 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool notebook_t::add_notebook(client_t *c) {
+bool notebook_t::add_client(client_t *c) {
 	printf("Add client #%lu\n", c->xwin);
 	_clients.push_front(c);
 	_selected.push_back(c);
 	back_buffer_is_valid = false;
-	set_selected(c);
+	if (c->wm_state == NormalState) {
+		set_selected(c);
+	}
 	return true;
 }
 
@@ -526,7 +528,7 @@ void notebook_t::split_left(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
-	n->add_notebook(c);
+	n->add_client(c);
 }
 
 void notebook_t::split_right(client_t * c) {
@@ -535,7 +537,7 @@ void notebook_t::split_right(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, this);
 	split->replace(0, n);
-	n->add_notebook(c);
+	n->add_client(c);
 }
 
 void notebook_t::split_top(client_t * c) {
@@ -544,7 +546,7 @@ void notebook_t::split_top(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
-	n->add_notebook(c);
+	n->add_client(c);
 }
 
 void notebook_t::split_bottom(client_t * c) {
@@ -553,7 +555,7 @@ void notebook_t::split_bottom(client_t * c) {
 	split->replace(0, this);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
-	n->add_notebook(c);
+	n->add_client(c);
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
@@ -760,7 +762,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 
 	if (zone == SELECT_TAB && ns != 0 && ns != this) {
 		remove_client(c);
-		ns->add_notebook(c);
+		ns->add_client(c);
 	} else if (zone == SELECT_TOP && ns != 0) {
 		remove_client(c);
 		ns->split_top(c);

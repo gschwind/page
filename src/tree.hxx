@@ -25,7 +25,7 @@ public:
 	virtual void update_allocation(box_t<int> & alloc) = 0;
 	virtual void render() = 0;
 	virtual bool process_button_press_event(XEvent const * e) = 0;
-	virtual bool add_notebook(client_t *c) = 0;
+	virtual bool add_client(client_t *c) = 0;
 	virtual void replace(tree_t * src, tree_t * by) = 0;
 	virtual void remove(tree_t * src) = 0;
 	virtual void reparent(tree_t * parent);

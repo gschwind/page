@@ -147,7 +147,7 @@ public:
 		}
 	}
 
-	void withdraw_to_normal();
+	void update_all();
 
 };
 

@@ -34,6 +34,8 @@
 
 namespace page_next {
 
+typedef std::set<client_t *> client_set_t;
+
 enum {
 	AtomType,
 	WMProtocols,
@@ -74,8 +76,7 @@ public:
 	root_t * tree_root;
 	tree_t * default_window_pop;
 	/* managed clients */
-	client_list_t clients;
-	client_list_t withdrawn_clients;
+	client_set_t clients;
 	std::list<popup_t *> popups;
 	/* default cursor */
 	Cursor cursor;
@@ -130,7 +131,6 @@ public:
 
 	void scan();
 	long get_window_state(Window w);
-	bool manage(client_t * c);
 	client_t * find_client_by_xwindow(Window w);
 	popup_t * find_popup_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
@@ -175,10 +175,7 @@ public:
 
 	wm_mode_e guess_window_state(long know_state, Bool overide_redirect, int map_state, int w_class);
 
-	client_t * find_withdraw_by_xwindow(Window w);
-
-	void withdraw_to_normal(client_t * c);
-	void withdraw_to_iconic(client_t * c);
+	void withdraw_to_X(client_t * c);
 
 	void move_fullscreen(client_t * c);
 

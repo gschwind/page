@@ -84,7 +84,7 @@ public:
 	void update_allocation(box_t<int> & allocation);
 	void render();
 	bool process_button_press_event(XEvent const * e);
-	bool add_notebook(client_t *c);
+	bool add_client(client_t *c);
 	void split(split_type_e type);
 
 	void split_left(client_t * c);

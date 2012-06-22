@@ -119,18 +119,18 @@ bool split_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool split_t::add_notebook(client_t *c) {
+bool split_t::add_client(client_t *c) {
 	if (_pack0) {
-		if (!_pack0->add_notebook(c)) {
+		if (!_pack0->add_client(c)) {
 			if (_pack1)
-				return _pack1->add_notebook(c);
+				return _pack1->add_client(c);
 			else
 				return false;
 		} else
 			return true;
 	} else {
 		if (_pack1)
-			return _pack1->add_notebook(c);
+			return _pack1->add_client(c);
 		else
 			return false;
 	}
@@ -165,7 +165,7 @@ void split_t::remove(tree_t * src) {
 
 	tree_t * dst = (src == _pack0) ? _pack1 : _pack0;
 	while (i != client->end()) {
-		dst->add_notebook((*i));
+		dst->add_client((*i));
 		++i;
 	}
 

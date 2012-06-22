@@ -62,7 +62,7 @@ void root_t::update_allocation(box_t<int> & allocation) {
 		(*i)->sub_aera = (*i)->aera;
 		int xtop = 0, xleft = 0, xright = 0, xbottom = 0;
 
-		std::list<client_t *>::iterator j = page.clients.begin();
+		client_set_t::iterator j = page.clients.begin();
 		while (j != page.clients.end()) {
 			if ((*j)->has_partial_struct) {
 				client_t * c = (*j);
@@ -165,9 +165,9 @@ bool root_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool root_t::add_notebook(client_t *c) {
+bool root_t::add_client(client_t *c) {
 	if (!subarea.empty())
-		return subarea.front()->_subtree->add_notebook(c);
+		return subarea.front()->_subtree->add_client(c);
 	else
 		return false;
 }

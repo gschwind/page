@@ -16,11 +16,8 @@
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <cairo.h>
 #include <cairo-xlib.h>
-#include <X11/Xlib.h>
 #include <stdlib.h>
 #include <cstring>
 
@@ -28,6 +25,7 @@
 #include <limits>
 #include <stdint.h>
 #include <stdexcept>
+#include <set>
 
 #include "page.hxx"
 #include "box.hxx"
@@ -368,11 +366,11 @@ void main_t::scan() {
 				if (find_client_by_clipping_window(wins[i]) != 0)
 					continue;
 				c = new client_t(cnx, main_window, wins[i], wa, NormalState);
-				manage(c);
+				withdraw_to_X(c);
 				break;
 			case WM_MODE_WITHDRAW:
 				c = new client_t(cnx, main_window, wins[i], wa, WithdrawnState);
-				withdrawn_clients.push_back(c);
+				clients.insert(c);
 				break;
 			case WM_MODE_POPUP:
 				XCompositeRedirectWindow(cnx.dpy, wins[i],
@@ -400,24 +398,12 @@ void main_t::scan() {
 }
 
 client_t * main_t::find_client_by_xwindow(Window w) {
-	std::list<client_t *>::iterator i = clients.begin();
+	client_set_t::iterator i = clients.begin();
 	while (i != clients.end()) {
 		if ((*i)->xwin == w)
 			return (*i);
 		++i;
 	}
-
-	return 0;
-}
-
-client_t * main_t::find_withdraw_by_xwindow(Window w) {
-	std::list<client_t *>::iterator i = withdrawn_clients.begin();
-	while (i != withdrawn_clients.end()) {
-		if ((*i)->xwin == w)
-			return (*i);
-		++i;
-	}
-
 	return 0;
 }
 
@@ -432,7 +418,7 @@ popup_t * main_t::find_popup_by_xwindow(Window w) {
 }
 
 client_t * main_t::find_client_by_clipping_window(Window w) {
-	std::list<client_t *>::iterator i = clients.begin();
+	client_set_t::iterator i = clients.begin();
 	while (i != clients.end()) {
 		if ((*i)->clipping_window == w)
 			return (*i);
@@ -471,7 +457,7 @@ void main_t::update_client_list() {
 
 	int k = 0;
 
-	std::list<client_t *>::iterator i = clients.begin();
+	client_set_t::iterator i = clients.begin();
 	while (i != clients.end()) {
 		data[k] = (*i)->xwin;
 		++i;
@@ -486,100 +472,6 @@ void main_t::update_client_list() {
 			reinterpret_cast<unsigned char *>(data), clients.size());
 
 	delete[] data;
-}
-
-bool main_t::manage(client_t * c) {
-	printf("Manage #%lu\n", c->xwin);
-
-	/* this window will not be destroyed on page close (one bug less) */
-	XAddToSaveSet(cnx.dpy, c->xwin);
-
-	/* before page prepend !! */
-	clients.push_back(c);
-
-	c->withdraw_to_normal();
-
-	if (c->client_is_dock()) {
-		c->is_dock = true;
-		printf("IsDock !\n");
-		unsigned int n;
-		long * partial_struct = c->get_properties32(
-				cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL, &n);
-
-		if (partial_struct) {
-
-			printf(
-					"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
-					partial_struct[0], partial_struct[1], partial_struct[2],
-					partial_struct[3], partial_struct[4], partial_struct[5],
-					partial_struct[6], partial_struct[7], partial_struct[8],
-					partial_struct[9], partial_struct[10], partial_struct[11]);
-
-			c->has_partial_struct = true;
-			memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);
-
-			delete[] partial_struct;
-
-			update_page_aera();
-
-			XSelectInput(cnx.dpy, c->xwin,
-					StructureNotifyMask | PropertyChangeMask);
-			XCompositeRedirectWindow(cnx.dpy, c->xwin,
-					CompositeRedirectAutomatic);
-
-			/* reparent will generate UnmapNotify */
-			if (c->wa.map_state != IsUnmapped) {
-				event_t ev;
-				ev.serial = NextRequest(cnx.dpy);
-				ev.type = UnmapNotify;
-				cnx.pending.push_back(ev);
-			}
-			XReparentWindow(cnx.dpy, c->xwin, main_window, c->wa.x, c->wa.y);
-			return true;
-		}
-	}
-
-	c->init_icon();
-
-	XSetWindowBorderWidth(cnx.dpy, c->xwin, 0);
-
-	XSetWindowAttributes swa;
-
-	swa.background_pixel = 0xeeU << 16 | 0xeeU << 8 | 0xecU;
-	swa.border_pixel = XBlackPixel(cnx.dpy, cnx.screen);
-	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 300, 300, 0,
-			cnx.root_wa.depth, InputOutput, wa.visual,
-			CWBackPixel | CWBorderPixel, &swa);
-	//XCompositeRedirectWindow(cnx.dpy, c->clipping_window,
-	//		CompositeRedirectAutomatic);
-	XSelectInput(cnx.dpy, c->clipping_window,
-			ButtonPressMask | ButtonRelease | ExposureMask);
-	XSelectInput(cnx.dpy, c->xwin,
-			StructureNotifyMask | PropertyChangeMask | ExposureMask);
-
-	/* reparent will generate UnmapNotify */
-	if (wa.map_state != IsUnmapped) {
-		event_t ev;
-		ev.serial = NextRequest(cnx.dpy);
-		ev.type = UnmapNotify;
-		cnx.pending.push_back(ev);
-	}
-
-	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
-			c->clipping_window, 0, 0);
-	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
-	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
-
-	if (c->is_fullscreen()) {
-		move_fullscreen(c);
-		fullscreen(c);
-		update_focus(c);
-	} else if (!c->is_dock) {
-		insert_client(c);
-	}
-
-	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) c->xwin);
-	return true;
 }
 
 long main_t::get_window_state(Window w) {
@@ -647,17 +539,15 @@ void main_t::process_map_request_event(XEvent * e) {
 
 	//print_window_attributes(w, wa);
 
-	client_t * c = find_withdraw_by_xwindow(w);
+	client_t * c = find_client_by_xwindow(w);
 	if (c) {
-		withdrawn_clients.remove(c);
-		manage(c);
-	}
-
-	/* if window is in Iconic state, map mean go to Normal */
-	c = find_client_by_xwindow(w);
-	if (c) {
-		c->set_wm_state(NormalState);
-		tree_root->activate_client(c);
+		if (c->wm_state == WithdrawnState) {
+			withdraw_to_X(c);
+		} else {
+			/* if window is in Iconic state, map mean go to Normal */
+			c->set_wm_state(NormalState);
+			tree_root->activate_client(c);
+		}
 	}
 
 	render();
@@ -676,38 +566,33 @@ void main_t::process_map_notify_event(XEvent * e) {
 	if (e->xmap.window == main_window)
 		return;
 
-//	event_t evx;
-//	evx.serial = e->xmap.serial;
-//	evx.type = MapNotify;
-//	if (cnx.find_pending_event(evx))
-//		return;
-
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		if (client_focused == c) {
 			c->focus();
 		}
-	} else {
-		if (e->xmap.event == cnx.xroot) {
-			/* pop up menu do not throw map_request_notify */
-			XWindowAttributes wa;
-			XWindowAttributes dst_wa;
-			if (!XGetWindowAttributes(cnx.dpy, e->xmap.window, &wa)) {
-				return;
-			}
 
-			print_window_attributes(e->xmap.window, wa);
+		if (c->wm_state != WithdrawnState)
+			return;
+	}
+	if (e->xmap.event == cnx.xroot) {
+		/* pop up menu do not throw map_request_notify */
+		XWindowAttributes wa;
+		XWindowAttributes dst_wa;
+		if (!XGetWindowAttributes(cnx.dpy, e->xmap.window, &wa)) {
+			return;
+		}
 
-			if (wa.override_redirect) {
-				//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
-				//printf(">>1>%lu\n", NextRequest(cnx.dpy));
-				XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
-						CompositeRedirectAutomatic);
+		//print_window_attributes(e->xmap.window, wa);
 
-				popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
-				popups.push_back(c);
-			}
+		if (wa.override_redirect) {
+			//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
+			//printf(">>1>%lu\n", NextRequest(cnx.dpy));
+			XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
+					CompositeRedirectAutomatic);
 
+			popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
+			popups.push_back(c);
 		}
 
 	}
@@ -746,7 +631,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		if (e->xunmap.send_event) {
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
-			clients.remove(c);
+			clients.erase(c);
 			if (fullscreen_client == c)
 				fullscreen_client = 0;
 			if (client_focused == c) {
@@ -761,7 +646,6 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 				c->clipping_window = None;
 			}
 			c->set_wm_state(WithdrawnState);
-			withdrawn_clients.push_back(c);
 			render();
 		}
 	}
@@ -772,7 +656,7 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 	//		e->xunmap.event);
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
-		clients.remove(c);
+		clients.erase(c);
 		if (fullscreen_client == c)
 			fullscreen_client = 0;
 		if (client_focused == c) {
@@ -782,7 +666,7 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 		if (c->has_partial_struct)
 			update_page_aera();
 		update_client_list();
-		if (!c->is_dock)
+		if (c->clipping_window != None)
 			XDestroyWindow(cnx.dpy, c->clipping_window);
 		delete c;
 		render();
@@ -1018,11 +902,11 @@ void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
 
 void main_t::insert_client(client_t * c) {
 	if (default_window_pop != 0) {
-		if (!default_window_pop->add_notebook(c)) {
+		if (!default_window_pop->add_client(c)) {
 			throw std::runtime_error("Fail to add a client");
 		}
 	} else {
-		if (!tree_root->add_notebook(c)) {
+		if (!tree_root->add_client(c)) {
 			throw std::runtime_error("Fail to add a client\n");
 		}
 	}
@@ -1054,7 +938,7 @@ void main_t::process_create_window_event(XEvent * e) {
 			&& e->xcreatewindow.parent == cnx.xroot) {
 		client_t * c = new client_t(cnx, main_window, e->xcreatewindow.window,
 				wa, WithdrawnState);
-		withdrawn_clients.push_back(c);
+		clients.insert(c);
 	}
 }
 
@@ -1064,6 +948,111 @@ void main_t::move_fullscreen(client_t * c) {
 			fullscreen_position.h);
 	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, fullscreen_position.w,
 			fullscreen_position.h);
+}
+
+void main_t::withdraw_to_X(client_t * c) {
+	printf("Manage #%lu\n", c->xwin);
+
+	/* this window will not be destroyed on page close (one bug less) */
+	XAddToSaveSet(cnx.dpy, c->xwin);
+	/* before page prepend !! */
+	clients.insert(c);
+
+	c->update_all();
+
+	XWMHints * hints = XGetWMHints(cnx.dpy, c->xwin);
+	if (hints) {
+		if (hints->initial_state == IconicState) {
+			c->set_wm_state(IconicState);
+		} else {
+			c->set_wm_state(NormalState);
+		}
+		XFree(hints);
+	} else {
+		c->set_wm_state(NormalState);
+	}
+
+	if (c->client_is_dock()) {
+		c->is_dock = true;
+		printf("IsDock !\n");
+		unsigned int n;
+		long * partial_struct = c->get_properties32(
+				cnx.atoms._NET_WM_STRUT_PARTIAL, cnx.atoms.CARDINAL, &n);
+
+		if (partial_struct) {
+
+			printf(
+					"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
+					partial_struct[0], partial_struct[1], partial_struct[2],
+					partial_struct[3], partial_struct[4], partial_struct[5],
+					partial_struct[6], partial_struct[7], partial_struct[8],
+					partial_struct[9], partial_struct[10], partial_struct[11]);
+
+			c->has_partial_struct = true;
+			memcpy(c->partial_struct, partial_struct, sizeof(long) * 12);
+
+			delete[] partial_struct;
+
+			update_page_aera();
+
+			XSelectInput(cnx.dpy, c->xwin,
+					StructureNotifyMask | PropertyChangeMask);
+			XCompositeRedirectWindow(cnx.dpy, c->xwin,
+					CompositeRedirectAutomatic);
+
+			/* reparent will generate UnmapNotify */
+			if (c->wa.map_state != IsUnmapped) {
+				event_t ev;
+				ev.serial = NextRequest(cnx.dpy);
+				ev.type = UnmapNotify;
+				cnx.pending.push_back(ev);
+			}
+			XReparentWindow(cnx.dpy, c->xwin, main_window, c->wa.x, c->wa.y);
+			return;
+		} /* if has not partial struct threat it as normal window */
+
+	}
+
+	XSetWindowBorderWidth(cnx.dpy, c->xwin, 0);
+
+	XSetWindowAttributes swa;
+
+	swa.background_pixel = 0xeeU << 16 | 0xeeU << 8 | 0xecU;
+	swa.border_pixel = XBlackPixel(cnx.dpy, cnx.screen);
+	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 300, 300, 0,
+			cnx.root_wa.depth, InputOutput, wa.visual,
+			CWBackPixel | CWBorderPixel, &swa);
+	//XCompositeRedirectWindow(cnx.dpy, c->clipping_window,
+	//		CompositeRedirectAutomatic);
+	XSelectInput(cnx.dpy, c->clipping_window,
+			ButtonPressMask | ButtonRelease | ExposureMask);
+	XSelectInput(cnx.dpy, c->xwin,
+			StructureNotifyMask | PropertyChangeMask | ExposureMask);
+
+	/* reparent will generate UnmapNotify */
+	if (wa.map_state != IsUnmapped) {
+		event_t ev;
+		ev.serial = NextRequest(cnx.dpy);
+		ev.type = UnmapNotify;
+		cnx.pending.push_back(ev);
+	}
+
+	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
+			c->clipping_window, 0, 0);
+	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
+	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
+
+	if (c->is_fullscreen()) {
+		move_fullscreen(c);
+		fullscreen(c);
+		update_focus(c);
+	} else if (!c->is_dock) {
+		insert_client(c);
+	}
+
+	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) c->xwin);
+	return;
+
 }
 
 }

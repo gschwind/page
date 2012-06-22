@@ -31,7 +31,7 @@ public:
 	void update_allocation(box_t<int> & allocation);
 	void render();
 	bool process_button_press_event(XEvent const * e);
-	bool add_notebook(client_t *c);
+	bool add_client(client_t *c);
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
