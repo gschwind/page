@@ -191,6 +191,8 @@ struct xconnection_t {
 		Atom WM_NORMAL_HINTS;
 		Atom WM_TAKE_FOCUS;
 
+		Atom WM_CHANGE_STATE;
+
 		/* ICCCM extend atoms */
 		Atom _NET_SUPPORTED;
 		Atom _NET_WM_NAME;
@@ -324,6 +326,7 @@ struct xconnection_t {
 		ATOM_INIT(WM_TAKE_FOCUS);
 
 		ATOM_INIT(WM_NORMAL_HINTS);
+		ATOM_INIT(WM_CHANGE_STATE);
 
 		ATOM_INIT(_NET_SUPPORTED);
 		ATOM_INIT(_NET_WM_NAME);
@@ -363,6 +366,8 @@ struct xconnection_t {
 		ATOM_INIT(_NET_WM_STATE_FOCUSED);
 
 		ATOM_INIT(_NET_WM_ICON);
+
+#undef ATOM_INIT
 
 	}
 

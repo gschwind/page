@@ -650,6 +650,14 @@ void main_t::process_map_request_event(XEvent * e) {
 		withdrawn_clients.remove(c);
 		manage(c);
 	}
+
+	/* if window is in Iconic state, map mean go to Normal */
+	c = find_client_by_xwindow(w);
+	if(c) {
+		c->set_wm_state(NormalState);
+		tree_root->activate_client(c);
+	}
+
 	render();
 	update_client_list();
 	cnx.ungrab();
@@ -725,7 +733,6 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	event_t ex;
 	ex.serial = e->xunmap.serial;
 	ex.type = e->xunmap.type;
-
 	bool expected_event = cnx.find_pending_event(ex);
 
 	if (!c)
@@ -733,11 +740,8 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	if (expected_event) {
 		printf("Expected Unmap\n");
 	} else {
+		/* Syntetic unmap mean Normal/Iconic to WithDraw */
 		if (e->xunmap.send_event) {
-			printf("Syntetic Unmap\n");
-		}
-
-		if (c->wm_state == IconicState && e->xunmap.send_event) {
 			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
 			clients.remove(c);
@@ -750,13 +754,13 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			if (c->has_partial_struct)
 				update_page_aera();
 			update_client_list();
-			if (!c->is_dock)
+			if (!c->is_dock) {
 				XDestroyWindow(cnx.dpy, c->clipping_window);
-			delete c;
+				c->clipping_window = None;
+			}
+			c->set_wm_state(WithdrawnState);
+			withdrawn_clients.push_back(c);
 			render();
-		} else if (c->wm_state == NormalState) {
-			printf("set iconic state\n");
-			c->set_wm_state(IconicState);
 		}
 	}
 }
@@ -943,6 +947,16 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 		}
 
+	} else if (ev->xclient.message_type == cnx.atoms.WM_CHANGE_STATE) {
+		/* client should send this message to go iconic */
+		if(ev->xclient.data.l[0] == IconicState) {
+			client_t * c = find_client_by_xwindow(ev->xclient.window);
+			if(c) {
+				printf("Set to iconic %lu\n", c->xwin);
+				c->set_wm_state(IconicState);
+				c->unmap();
+			}
+		}
 	}
 }
 
