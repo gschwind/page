@@ -30,6 +30,7 @@
 #include "xconnection.hxx"
 #include "popup.hxx"
 #include "root.hxx"
+#include "ftrace_function.hxx"
 
 namespace page_next {
 
@@ -74,6 +75,7 @@ public:
 	tree_t * default_window_pop;
 	/* managed clients */
 	client_list_t clients;
+	client_list_t withdrawn_clients;
 	std::list<popup_t *> popups;
 	/* default cursor */
 	Cursor cursor;
@@ -125,7 +127,7 @@ public:
 
 	void scan();
 	long get_window_state(Window w);
-	bool manage(Window w, XWindowAttributes & wa);
+	bool manage(client_t * c);
 	client_t * find_client_by_xwindow(Window w);
 	popup_t * find_popup_by_xwindow(Window w);
 	client_t * find_client_by_clipping_window(Window w);
@@ -142,7 +144,8 @@ public:
 	void process_property_notify_event(XEvent * ev);
 	void process_destroy_notify_event(XEvent * e);
 	void process_client_message_event(XEvent * e);
-	void process_damage_event(XEvent * ev);
+	void process_damage_event(XEvent * ev) __attribute__((no_instrument_function));
+	void process_create_window_event(XEvent * e);
 
 	void drag_and_drop_loop();
 
@@ -158,6 +161,18 @@ public:
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
 	void update_focus(client_t * c);
+
+	enum wm_mode_e {
+		WM_MODE_IGNORE,
+		WM_MODE_AUTO,
+		WM_MODE_WITHDRAW,
+		WM_MODE_POPUP,
+		WM_MODE_ERROR
+	};
+
+	wm_mode_e guess_window_state(long know_state, Bool overide_redirect, int map_state, int w_class);
+
+	client_t * find_withdraw_by_xwindow(Window w);
 
 };
 

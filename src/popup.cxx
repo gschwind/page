@@ -32,7 +32,7 @@ void popup_window_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
 	cairo_set_source_surface(cr, surf, wa.x, wa.y);
 	cairo_rectangle(cr, wa.x + x, wa.y + y, width, height);
 	cairo_clip(cr);
-	cairo_paint_with_alpha(cr, 0.95);
+	cairo_paint(cr);
 	cairo_fill(cr);
 	cairo_restore(cr);
 }
@@ -49,7 +49,7 @@ void popup_window_t::repair1(cairo_t * cr, int x, int y, int width,
 		cairo_set_source_surface(cr, surf, wa.x, wa.y);
 		cairo_rectangle(cr, left, top, rigth - left, bottom - top);
 		cairo_clip(cr);
-		cairo_paint_with_alpha(cr, 0.95);
+		cairo_paint(cr);
 		cairo_restore(cr);
 	}
 }

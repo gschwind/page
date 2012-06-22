@@ -50,6 +50,8 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 main_t::main_t(int argc, char ** argv) :
 		cnx() {
 
+	trace_init();
+
 	if (argc >= 1) {
 		char * tmp = strdup(argv[0]);
 		char * end = strrchr(tmp, '/');
@@ -116,19 +118,12 @@ void main_t::run() {
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
-	XSelectInput(cnx.dpy, cnx.xroot,
-			SubstructureNotifyMask | SubstructureRedirectMask);
-
 	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
 			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
 			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
 	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectAutomatic);
-	//XReparentWindow(cnx.dpy, main_window, composite_overlay, wa.x, wa.y);
 	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
 	XDefineCursor(cnx.dpy, main_window, cursor);
-	XSelectInput(cnx.dpy, main_window,
-			StructureNotifyMask | ButtonPressMask | ExposureMask);
-	cnx.map(main_window);
 
 	printf("Created main window #%lu\n", main_window);
 
@@ -136,6 +131,7 @@ void main_t::run() {
 	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
 			wa.width, wa.height);
 	main_window_cr = cairo_create(main_window_s);
+	XGetWindowAttributes(cnx.dpy, cnx.composite_overlay, &wa);
 	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
 			cnx.composite_overlay, wa.visual, wa.width, wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
@@ -194,6 +190,7 @@ void main_t::run() {
 
 	scan();
 	update_page_aera();
+	render();
 
 	long workarea[4];
 	workarea[0] = 0;
@@ -204,9 +201,11 @@ void main_t::run() {
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char*>(workarea), 4);
 
+	XSelectInput(cnx.dpy, main_window,
+			StructureNotifyMask | ButtonPressMask | ExposureMask);
+	cnx.map(main_window);
 	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
 
-	render();
 	running = 1;
 	while (running) {
 		XEvent e;
@@ -233,8 +232,8 @@ void main_t::run() {
 			}
 
 		} else if (e.type == Expose) {
-			//printf("Expose #%x\n", (unsigned int) e.xexpose.window);
-			if (e.xmapping.window == main_window)
+			printf("Expose #%x\n", (unsigned int) e.xexpose.window);
+			if (e.xexpose.window == main_window)
 				render();
 
 		} else if (e.type == ButtonPress) {
@@ -261,6 +260,8 @@ void main_t::run() {
 			process_destroy_notify_event(&e);
 		} else if (e.type == ClientMessage) {
 			process_client_message_event(&e);
+		} else if (e.type == CreateNotify) {
+			process_create_window_event(&e);
 		} else if (e.type == cnx.damage_event + XDamageNotify) {
 			process_damage_event(&e);
 		}
@@ -293,35 +294,122 @@ void main_t::render() {
 	//printf("return render\n");
 }
 
+enum wm_mode_e {
+	WM_MODE_IGNORE, WM_MODE_AUTO, WM_MODE_WITHDRAW, WM_MODE_POPUP, WM_MODE_ERROR
+};
+
+main_t::wm_mode_e main_t::guess_window_state(long know_state,
+		Bool overide_redirect, int map_state, int w_class) {
+	if (w_class == InputOnly) {
+		printf("> SET Ignore\n");
+		return WM_MODE_IGNORE;
+	} else {
+		if (know_state == IconicState || know_state == NormalState) {
+			printf("> SET Auto\n");
+			return WM_MODE_AUTO;
+		} else if (know_state == WithdrawnState) {
+			printf("> SET Withdrawn\n");
+			return WM_MODE_WITHDRAW;
+		} else {
+			if (overide_redirect && map_state != IsUnmapped) {
+				printf("> SET POPUP\n");
+				return WM_MODE_POPUP;
+			} else if (wa.map_state == IsUnmapped
+					&& wa.override_redirect == 0) {
+				printf("> SET Withdrawn\n");
+				return WM_MODE_WITHDRAW;
+			} else if (wa.override_redirect && wa.map_state == IsUnmapped) {
+				printf("> SET Ignore\n");
+				return WM_MODE_IGNORE;
+			} else if (!wa.override_redirect && wa.map_state != IsUnmapped) {
+				printf("> SET Auto\n");
+				return WM_MODE_AUTO;
+			} else {
+				printf("> OUPSSSSS\n");
+				return WM_MODE_ERROR;
+			}
+		}
+	}
+}
+
 void main_t::scan() {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	unsigned int num;
 	Window d1, d2, *wins = 0;
 	XWindowAttributes wa;
-
 	cnx.grab();
 	if (XQueryTree(cnx.dpy, cnx.xroot, &d1, &d2, &wins, &num)) {
 		for (unsigned i = 0; i < num; ++i) {
+			client_t * c;
+			popup_t * p;
 			if (!XGetWindowAttributes(cnx.dpy, wins[i], &wa))
 				continue;
-			print_window_attributes(wins[i], wa);
-			if (wa.override_redirect)
+			if (wa.c_class == InputOnly)
 				continue;
+
+			//print_window_attributes(wins[i], wa);
+
 			long state = get_window_state(wins[i]);
-			if (state == IconicState || state == NormalState
-					|| wa.map_state != IsUnmapped)
-				manage(wins[i], wa);
+
+			/* Folowing ICCCM the following rules are ok ... */
+			switch (guess_window_state(state, wa.override_redirect,
+					wa.map_state, wa.c_class)) {
+			case WM_MODE_AUTO:
+				if (main_window == wins[i])
+					continue;
+				if (find_client_by_xwindow(wins[i]) != 0) {
+					printf("Window %p is already managed\n", c);
+					continue;
+				}
+				/* do not manage clipping window */
+				if (find_client_by_clipping_window(wins[i]) != 0)
+					continue;
+				c = new client_t(cnx, main_window, wins[i], wa, NormalState);
+				manage(c);
+				break;
+			case WM_MODE_WITHDRAW:
+				c = new client_t(cnx, main_window, wins[i], wa, WithdrawnState);
+				withdrawn_clients.push_back(c);
+				break;
+			case WM_MODE_POPUP:
+				XCompositeRedirectWindow(cnx.dpy, wins[i],
+						CompositeRedirectAutomatic);
+				p = new popup_window_t(cnx.dpy, wins[i], wa);
+				popups.push_back(p);
+				break;
+			case WM_MODE_IGNORE:
+				break;
+			case WM_MODE_ERROR:
+			default:
+				printf("Found an unexpected window state\n");
+				break;
+			}
 		}
+
 		XFree(wins);
 	}
-
 	update_client_list();
+
+	/* scan is ended, start to listen event */
+	XSelectInput(cnx.dpy, cnx.xroot,
+			SubstructureNotifyMask | SubstructureRedirectMask);
 	cnx.ungrab();
 }
 
 client_t * main_t::find_client_by_xwindow(Window w) {
 	std::list<client_t *>::iterator i = clients.begin();
 	while (i != clients.end()) {
+		if ((*i)->xwin == w)
+			return (*i);
+		++i;
+	}
+
+	return 0;
+}
+
+client_t * main_t::find_withdraw_by_xwindow(Window w) {
+	std::list<client_t *>::iterator i = withdrawn_clients.begin();
+	while (i != withdrawn_clients.end()) {
 		if ((*i)->xwin == w)
 			return (*i);
 		++i;
@@ -397,30 +485,16 @@ void main_t::update_client_list() {
 	delete[] data;
 }
 
-bool main_t::manage(Window w, XWindowAttributes & wa) {
-	printf("Manage #%lu\n", w);
-	if (main_window == w)
-		return false;
-
-	client_t * c = find_client_by_xwindow(w);
-	if (c != NULL) {
-		//c->is_map = true;
-		printf("Window %p is already managed\n", c);
-		return false;
-	}
-
-	/* do not manage clipping window */
-	if (find_client_by_clipping_window(w))
-		return false;
+bool main_t::manage(client_t * c) {
+	printf("Manage #%lu\n", c->xwin);
 
 	/* this window will not be destroyed on page close (one bug less) */
-	XAddToSaveSet(cnx.dpy, w);
+	XAddToSaveSet(cnx.dpy, c->xwin);
 
-	c = new client_t(cnx, main_window, w, wa);
+	c->withdraw_to_normal();
+
 	/* before page prepend !! */
 	clients.push_back(c);
-
-	//XShapeSelectInput(cnx.dpy, w, ShapeNotifyMask);
 
 	if (c->client_is_dock()) {
 		c->is_dock = true;
@@ -451,35 +525,32 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 					CompositeRedirectAutomatic);
 
 			/* reparent will generate UnmapNotify */
-			if (wa.map_state != IsUnmapped) {
+			if (c->wa.map_state != IsUnmapped) {
 				event_t ev;
 				ev.serial = NextRequest(cnx.dpy);
 				ev.type = UnmapNotify;
 				cnx.pending.push_back(ev);
 			}
-			XReparentWindow(cnx.dpy, c->xwin, main_window, wa.x, wa.y);
+			XReparentWindow(cnx.dpy, c->xwin, main_window, c->wa.x, c->wa.y);
 			return true;
-
 		}
-
 	}
 
 	c->init_icon();
 
-	XSetWindowBorderWidth(cnx.dpy, w, 0);
+	XSetWindowBorderWidth(cnx.dpy, c->xwin, 0);
 
 	XSetWindowAttributes swa;
 
 	swa.background_pixel = 0xeeU << 16 | 0xeeU << 8 | 0xecU;
 	swa.border_pixel = XBlackPixel(cnx.dpy, cnx.screen);
-	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 1, 1, 0,
-			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual,
+	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 300, 300, 0,
+			cnx.root_wa.depth, InputOutput, wa.visual,
 			CWBackPixel | CWBorderPixel, &swa);
+	//XCompositeRedirectWindow(cnx.dpy, c->clipping_window,
+	//		CompositeRedirectAutomatic);
 	XSelectInput(cnx.dpy, c->clipping_window,
 			ButtonPressMask | ButtonRelease | ExposureMask);
-
-	//printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
-	//		c->clipping_window, 0, 0);
 	XSelectInput(cnx.dpy, c->xwin,
 			StructureNotifyMask | PropertyChangeMask | ExposureMask);
 
@@ -491,11 +562,10 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 		cnx.pending.push_back(ev);
 	}
 
+	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
+			c->clipping_window, 0, 0);
 	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
-
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
-
-	insert_client(c);
 
 	if (c->is_fullscreen()) {
 		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
@@ -504,9 +574,11 @@ bool main_t::manage(Window w, XWindowAttributes & wa) {
 				cnx.root_size.h);
 		fullscreen(c);
 		update_focus(c);
+	} else if (!c->is_dock) {
+		insert_client(c);
 	}
 
-	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) w);
+	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) c->xwin);
 	return true;
 }
 
@@ -525,7 +597,7 @@ long main_t::get_window_state(Window w) {
 	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
 		result = p[0];
 	} else {
-		printf("Error in WM_STATE\n");
+		printf("Error in WM_STATE %lu %d %lu\n", n, format, real);
 		return -1;
 	}
 	XFree(p);
@@ -546,17 +618,20 @@ bool main_t::get_text_prop(Window w, Atom atom, std::string & text) {
 void main_t::process_map_request_event(XEvent * e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
+	if (e->xmaprequest.parent != cnx.xroot)
+		return;
+
 	Window w = e->xmaprequest.window;
 	/* secure the map request */
 	cnx.grab();
 	XEvent ev;
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, DestroyNotify, &ev)) {
+	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, DestroyNotify, &ev)) {
 		/* the window is already destroyed, return */
 		cnx.ungrab();
 		return;
 	}
 
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, UnmapNotify, &ev)) {
+	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, UnmapNotify, &ev)) {
 		/* the window is already unmapped, return */
 		cnx.ungrab();
 		return;
@@ -568,16 +643,13 @@ void main_t::process_map_request_event(XEvent * e) {
 		return;
 	}
 
-	print_window_attributes(w, wa);
-	if (wa.override_redirect) {
-		XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
-				CompositeRedirectAutomatic);
-		//XReparentWindow(cnx.dpy, e->xmap.window, main_window, wa.x, wa.y);
-		//XRaiseWindow(cnx.dpy, e->xmap.window);
-		return;
+	//print_window_attributes(w, wa);
+
+	client_t * c = find_withdraw_by_xwindow(w);
+	if (c) {
+		withdrawn_clients.remove(c);
+		manage(c);
 	}
-	manage(w, wa);
-	//XMapWindow(cnx.dpy, w);
 	render();
 	update_client_list();
 	cnx.ungrab();
@@ -588,8 +660,18 @@ void main_t::process_map_request_event(XEvent * e) {
 }
 
 void main_t::process_map_notify_event(XEvent * e) {
-	// seems to never happen
 	printf("MapNotify serial:#%lu win:#%lu\n", e->xmap.serial, e->xmap.window);
+	if (e->xmap.event != cnx.xroot)
+		return;
+	if (e->xmap.window == main_window)
+		return;
+
+//	event_t evx;
+//	evx.serial = e->xmap.serial;
+//	evx.type = MapNotify;
+//	if (cnx.find_pending_event(evx))
+//		return;
+
 	client_t * c = find_client_by_xwindow(e->xmap.window);
 	if (c) {
 		if (client_focused == c) {
@@ -608,7 +690,6 @@ void main_t::process_map_notify_event(XEvent * e) {
 
 			if (wa.override_redirect) {
 				//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
-
 				//printf(">>1>%lu\n", NextRequest(cnx.dpy));
 				XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
 						CompositeRedirectAutomatic);
@@ -627,9 +708,8 @@ void main_t::process_map_notify_event(XEvent * e) {
 void main_t::process_unmap_notify_event(XEvent * e) {
 	printf("UnmapNotify serial:#%lu event: #%lu win:#%lu \n", e->xunmap.serial,
 			e->xunmap.window, e->xunmap.event);
-
 	/* remove popup */
-	popup_t * p = find_popup_by_xwindow(e->xmap.window);
+	popup_t * p = find_popup_by_xwindow(e->xunmap.window);
 	if (p) {
 		popups.remove(p);
 		p->hide(composite_overlay_cr, main_window_s);
@@ -637,7 +717,10 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		return;
 	}
 
-	client_t * c = find_client_by_xwindow(e->xmap.window);
+	if (e->xunmap.event == cnx.xroot)
+		return;
+
+	client_t * c = find_client_by_xwindow(e->xunmap.window);
 
 	event_t ex;
 	ex.serial = e->xunmap.serial;
@@ -650,35 +733,31 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	if (expected_event) {
 		printf("Expected Unmap\n");
 	} else {
-		/**
-		 * The client initiate an unmap.
-		 * That mean the window go in WithDrawn state, PAGE must forget this window.
-		 * Unmap is often followed by destroy window, If this is the case we try to
-		 * reparent a destroyed window. Therefore we grab the server and check if the
-		 * window is not already destroyed.
-		 */
-		cnx.grab();
-		XEvent ev;
-		if (XCheckTypedWindowEvent(cnx.dpy, e->xunmap.window, DestroyNotify,
-				&ev)) {
-			process_destroy_notify_event(&ev);
-		} else {
+		if (e->xunmap.send_event) {
+			printf("Syntetic Unmap\n");
+		}
+
+		if (c->wm_state == IconicState && e->xunmap.send_event) {
+			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
+			XRemoveFromSaveSet(cnx.dpy, c->xwin);
 			clients.remove(c);
-			tree_root->remove_client(c);
 			if (fullscreen_client == c)
 				fullscreen_client = 0;
 			if (client_focused == c) {
 				update_focus(0);
 			}
-			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
-			XRemoveFromSaveSet(cnx.dpy, c->xwin);
-			XDestroyWindow(cnx.dpy, c->clipping_window);
+			tree_root->remove_client(c);
+			if (c->has_partial_struct)
+				update_page_aera();
+			update_client_list();
+			if (!c->is_dock)
+				XDestroyWindow(cnx.dpy, c->clipping_window);
 			delete c;
-			box_t<int> x;
-			tree_root->update_allocation(x);
+			render();
+		} else if (c->wm_state == NormalState) {
+			printf("set iconic state\n");
+			c->set_wm_state(IconicState);
 		}
-		cnx.ungrab();
-		render();
 	}
 }
 
@@ -783,6 +862,7 @@ void main_t::process_property_notify_event(XEvent * ev) {
 
 void main_t::fullscreen(client_t *c) {
 
+	printf("FUULLLLSCREEENNN\n");
 	if (fullscreen_client != 0) {
 		fullscreen_client->unmap();
 		fullscreen_client->unset_fullscreen();
@@ -870,8 +950,10 @@ void main_t::process_damage_event(XEvent * ev) {
 	XDamageNotifyEvent * e = (XDamageNotifyEvent *) ev;
 
 	/* printf here create recursive damage when ^^ */
-	//printf("damage event %dx%d+%d+%d\n", (int) e->area.width,
-	//		(int) e->area.height, (int) e->area.x, (int) e->area.y);
+	//printf("damage event win: #%lu %dx%d+%d+%d\n", e->drawable,
+	//		(int) e->area.width, (int) e->area.height, (int) e->area.x,
+	//		(int) e->area.y);
+
 	cairo_save(composite_overlay_cr);
 	cairo_reset_clip(composite_overlay_cr);
 	popup_t * p = find_popup_by_xwindow(e->drawable);
@@ -940,14 +1022,26 @@ void main_t::update_focus(client_t * c) {
 
 	if (client_focused != 0) {
 		client_focused->net_wm_state.erase(cnx.atoms._NET_WM_STATE_FOCUSED);
-		client_focused->write_wm_state();
+		client_focused->write_net_wm_state();
 	}
 
 	client_focused = c;
 
 	if (client_focused != 0) {
 		client_focused->net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
-		client_focused->write_wm_state();
+		client_focused->write_net_wm_state();
+	}
+}
+
+void main_t::process_create_window_event(XEvent * e) {
+	XWindowAttributes wa;
+	XGetWindowAttributes(cnx.dpy, e->xcreatewindow.window, &wa);
+	if (!e->xcreatewindow.override_redirect
+			&& e->xcreatewindow.window != main_window
+			&& e->xcreatewindow.parent == cnx.xroot) {
+		client_t * c = new client_t(cnx, main_window, e->xcreatewindow.window,
+				wa, WithdrawnState);
+		withdrawn_clients.push_back(c);
 	}
 }
 

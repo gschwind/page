@@ -14,7 +14,6 @@
 #include "X11/extensions/shape.h"
 #include <X11/extensions/Xinerama.h>
 
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits>
@@ -256,7 +255,7 @@ struct xconnection_t {
 		old_error_handler = XSetErrorHandler(error_handler);
 
 		dpy = XOpenDisplay(0);
-		if(dpy == NULL) {
+		if (dpy == NULL) {
 			throw std::runtime_error("Could not open display");
 		} else {
 			printf("Open display : Success\n");
@@ -265,7 +264,7 @@ struct xconnection_t {
 		grab_count = 0;
 		screen = DefaultScreen(dpy);
 		xroot = DefaultRootWindow(dpy);
-		if(!XGetWindowAttributes(dpy, xroot, &root_wa)) {
+		if (!XGetWindowAttributes(dpy, xroot, &root_wa)) {
 			throw std::runtime_error("Cannot get root window attributes");
 		} else {
 			printf("Get root windows attribute Success\n");
@@ -281,7 +280,8 @@ struct xconnection_t {
 			int major = 0, minor = 0; // The highest version we support
 			XCompositeQueryVersion(dpy, &major, &minor);
 			if (major != 0 || minor < 4) {
-				throw std::runtime_error("X Server doesn't support Composite 0.4");
+				throw std::runtime_error(
+						"X Server doesn't support Composite 0.4");
 			} else {
 				printf("using composite %d.%d\n", major, minor);
 			}
@@ -290,7 +290,7 @@ struct xconnection_t {
 		}
 
 		// check/init Damage.
-		if(!XDamageQueryExtension(dpy, &damage_event, &damage_error)) {
+		if (!XDamageQueryExtension(dpy, &damage_event, &damage_error)) {
 			throw std::runtime_error("Damage extension is not supported");
 		} else {
 			int major = 0, minor = 0;
@@ -298,16 +298,13 @@ struct xconnection_t {
 			printf("Damage Extension version %d.%d found\n", major, minor);
 		}
 
-
-		if(!XineramaQueryExtension(dpy, &xinerama_event, &xinerama_error)) {
+		if (!XineramaQueryExtension(dpy, &xinerama_event, &xinerama_error)) {
 			throw std::runtime_error("Fixes extension is not supported");
 		} else {
 			int major = 0, minor = 0;
 			XineramaQueryVersion(dpy, &major, &minor);
 			printf("Xinerama Extension version %d.%d found\n", major, minor);
 		}
-
-
 
 		/* map & passtrough the overlay */
 		composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
@@ -494,17 +491,14 @@ struct xconnection_t {
 	}
 
 	static long int last_serial;
-	static bool filter(event_t e) {
-		return (e.serial < xconnection_t::last_serial);
-	}
+
+	static bool filter(event_t e) __attribute__((no_instrument_function));
 
 	void xnextevent(XEvent * ev) {
 		XNextEvent(dpy, ev);
 		xconnection_t::last_serial = ev->xany.serial;
-		std::remove_if(pending.begin(), pending.end(), filter);
+		//std::remove_if(pending.begin(), pending.end(), filter);
 	}
-
-
 
 };
 

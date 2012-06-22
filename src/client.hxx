@@ -29,6 +29,9 @@ struct client_t {
 
 	int lock_count;
 
+	/* store the ICCCM WM_STATE : WithDraw, Iconic or Normal */
+	long wm_state;
+
 	std::set<Atom> type;
 	std::set<Atom> net_wm_state;
 	std::set<Atom> wm_protocols;
@@ -75,49 +78,14 @@ struct client_t {
 	long partial_struct[12];
 
 	client_t(xconnection_t &cnx, Window page_window, Window w,
-			XWindowAttributes &wa) :
-			cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(
-					false), height(wa.height), width(wa.width), page_window(
-					page_window), lock_count(0), is_lock(false) {
-
-		/* if the client is mapped, the reparent will unmap the window
-		 * The client is mapped if the manage occur on start of
-		 * page.
-		 */
-		if (wa.map_state == IsUnmapped) {
-			is_map = false;
-		} else {
-			is_map = true;
-		}
-
-		wm_input_focus = true;
-
-		XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
-		if (hints) {
-			if ((hints->flags & InputHint) && hints->input == True)
-				wm_input_focus = true;
-		}
-
-		XFree(hints);
-
-		memset(partial_struct, 0, sizeof(partial_struct));
-
-		update_net_vm_name();
-		update_vm_name();
-		update_title();
-		client_update_size_hints();
-		update_type();
-		read_wm_state();
-		read_wm_protocols();
-		clipping_window = None;
-		icon_surf = 0;
-	}
-
+			XWindowAttributes &wa, long wm_state);
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);
 
 private:
+	long get_window_state();
+
 	bool try_lock_client();
 	void unlock_client();
 public:
@@ -129,12 +97,13 @@ public:
 	void update_title();
 	void init_icon();
 	void update_type();
-	void read_wm_state();
+	void read_net_wm_state();
 	void read_wm_protocols();
-	void write_wm_state();
+	void write_net_wm_state();
 
 	/* NOTE : ICCCM CARD32 mean "long" C type */
-	void set_state(long state) {
+	void set_wm_state(long state) {
+		wm_state = state;
 		struct {
 			long state;
 			Window icon;
@@ -177,6 +146,8 @@ public:
 			icon_surf = 0;
 		}
 	}
+
+	void withdraw_to_normal();
 
 };
 

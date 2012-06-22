@@ -610,7 +610,7 @@ void notebook_t::select_next() {
 			update_client_position(c);
 			c->map();
 			c->focus();
-			c->set_state(NormalState);
+			c->set_wm_state(NormalState);
 			page.update_focus(c);
 		}
 		back_buffer_is_valid = false;
@@ -639,15 +639,15 @@ void notebook_t::set_selected(client_t * c) {
 
 	update_client_position(c);
 	c->map();
-	c->focus();
-	c->set_state(NormalState);
+	//c->focus();
+	c->set_wm_state(NormalState);
 	page.update_focus(c);
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			client_t * c = _selected.front();
 			c->unmap();
-			c->set_state(IconicState);
+			c->set_wm_state(IconicState);
 		}
 	}
 
@@ -809,10 +809,19 @@ void notebook_t::update_client_position(client_t * c) {
 	if (page.fullscreen_client == 0) {
 		XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
 				c->height);
+		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+				c->xwin, offset_x, offset_y, c->width, c->height);
+
 		XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
 				_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
 				_allocation.w - 2 * BORDER_SIZE,
 				_allocation.h - HEIGHT - BORDER_SIZE);
+
+		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+				c->clipping_window, _allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
+				_allocation.w - 2 * BORDER_SIZE,
+				_allocation.h - HEIGHT - BORDER_SIZE);
+
 	}
 }
 

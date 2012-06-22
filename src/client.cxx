@@ -16,6 +16,76 @@
 
 namespace page_next {
 
+client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
+		XWindowAttributes &wa, long wm_state) :
+		cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(false), height(
+				wa.height), width(wa.width), page_window(page_window), lock_count(
+				0), is_lock(false), clipping_window(None), icon_surf(
+				0) {
+
+	set_wm_state(wm_state);
+
+	if (wa.map_state == IsUnmapped) {
+		is_map = false;
+	} else {
+		is_map = true;
+	}
+
+	memset(partial_struct, 0, sizeof(partial_struct));
+
+}
+
+void client_t::withdraw_to_normal() {
+
+	set_wm_state(NormalState);
+	wm_input_focus = true;
+	XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
+	if (hints) {
+		if ((hints->flags & InputHint) && hints->input == True)
+			wm_input_focus = true;
+	}
+
+	if(hints->initial_state == IconicState) {
+		printf("iconic\n");
+	} else if (hints->initial_state == NormalState) {
+		printf("normal\n");
+	} else {
+		printf("Unkwon\n");
+	}
+
+	XFree(hints);
+	update_net_vm_name();
+	update_vm_name();
+	update_title();
+	client_update_size_hints();
+	update_type();
+	read_net_wm_state();
+	read_wm_protocols();
+
+}
+
+long client_t::get_window_state() {
+	int format;
+	long result = -1;
+	long * p = NULL;
+	unsigned long n, extra;
+	Atom real;
+
+	if (XGetWindowProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, 0L, 2L, False,
+			cnx.atoms.WM_STATE, &real, &format, &n, &extra,
+			(unsigned char **) &p) != Success)
+		return -1;
+
+	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
+		result = p[0];
+	} else {
+		printf("Error in WM_STATE %lu %d %lu\n", n, format, real);
+		return -1;
+	}
+	XFree(p);
+	return result;
+}
+
 void client_t::map() {
 	// generate a map request event.
 	is_map = true;
@@ -99,7 +169,7 @@ void client_t::update_client_size(int w, int h) {
 	height = h;
 	width = w;
 
-	printf("Update #%p window size %dx%d\n", (void *) xwin, width, height);
+	printf("Update #%lu window size %dx%d\n", xwin, width, height);
 }
 
 /* check if client is still alive */
@@ -145,7 +215,7 @@ void client_t::focus() {
 	}
 
 	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
-	write_wm_state();
+	write_net_wm_state();
 
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
@@ -335,7 +405,7 @@ void client_t::update_type() {
 	}
 }
 
-void client_t::read_wm_state() {
+void client_t::read_net_wm_state() {
 	/* take _NET_WM_STATE */
 	unsigned int n;
 	long * net_wm_state = get_properties32(cnx.atoms._NET_WM_STATE,
@@ -363,7 +433,7 @@ void client_t::read_wm_protocols() {
 	}
 }
 
-void client_t::write_wm_state() {
+void client_t::write_net_wm_state() {
 	int size = net_wm_state.size();
 	long * new_state = new long[size];
 	std::set<Atom>::iterator iter = net_wm_state.begin();
@@ -383,7 +453,7 @@ void client_t::write_wm_state() {
 void client_t::set_fullscreen() {
 	/* update window state */
 	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-	write_wm_state();
+	write_net_wm_state();
 
 	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
 //	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
@@ -399,7 +469,7 @@ void client_t::set_fullscreen() {
 void client_t::unset_fullscreen() {
 	/* update window state */
 	net_wm_state.erase(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-	write_wm_state();
+	write_net_wm_state();
 	//XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
 	//unmap();
 }
