@@ -1011,6 +1011,8 @@ void main_t::withdraw_to_X(client_t * c) {
 			return;
 		} /* if has not partial struct threat it as normal window */
 
+	} else {
+		c->is_dock = false;
 	}
 
 	XSetWindowBorderWidth(cnx.dpy, c->xwin, 0);
@@ -1046,7 +1048,7 @@ void main_t::withdraw_to_X(client_t * c) {
 		move_fullscreen(c);
 		fullscreen(c);
 		update_focus(c);
-	} else if (!c->is_dock) {
+	} else {
 		insert_client(c);
 	}
 
