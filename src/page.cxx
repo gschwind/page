@@ -77,6 +77,7 @@ main_t::main_t(int argc, char ** argv) :
 
 	composite_overlay_s = 0;
 	composite_overlay_cr = 0;
+	has_fullscreen_size = false;
 
 }
 
@@ -151,6 +152,11 @@ void main_t::run() {
 	for (int i = 0; i < n; ++i) {
 		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
 				info[i].height);
+		if (!has_fullscreen_size) {
+			has_fullscreen_size = true;
+			fullscreen_position = x;
+		}
+
 		tree_root->add_aera(x);
 	}
 	XFree(info);
@@ -284,10 +290,7 @@ void main_t::render() {
 		tree_root->render();
 		cairo_restore(main_window_cr);
 	} else {
-		XMoveResizeWindow(cnx.dpy, fullscreen_client->clipping_window, 0, 0,
-				cnx.root_size.w, cnx.root_size.h);
-		XMoveResizeWindow(cnx.dpy, fullscreen_client->xwin, 0, 0,
-				cnx.root_size.w, cnx.root_size.h);
+		move_fullscreen(fullscreen_client);
 		fullscreen_client->map();
 		XRaiseWindow(cnx.dpy, fullscreen_client->clipping_window);
 	}
@@ -491,10 +494,10 @@ bool main_t::manage(client_t * c) {
 	/* this window will not be destroyed on page close (one bug less) */
 	XAddToSaveSet(cnx.dpy, c->xwin);
 
-	c->withdraw_to_normal();
-
 	/* before page prepend !! */
 	clients.push_back(c);
+
+	c->withdraw_to_normal();
 
 	if (c->client_is_dock()) {
 		c->is_dock = true;
@@ -568,10 +571,7 @@ bool main_t::manage(client_t * c) {
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
 	if (c->is_fullscreen()) {
-		XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
-				cnx.root_size.h);
-		XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w,
-				cnx.root_size.h);
+		move_fullscreen(c);
 		fullscreen(c);
 		update_focus(c);
 	} else if (!c->is_dock) {
@@ -625,13 +625,15 @@ void main_t::process_map_request_event(XEvent * e) {
 	/* secure the map request */
 	cnx.grab();
 	XEvent ev;
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, DestroyNotify, &ev)) {
+	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, DestroyNotify,
+			&ev)) {
 		/* the window is already destroyed, return */
 		cnx.ungrab();
 		return;
 	}
 
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, UnmapNotify, &ev)) {
+	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, UnmapNotify,
+			&ev)) {
 		/* the window is already unmapped, return */
 		cnx.ungrab();
 		return;
@@ -653,7 +655,7 @@ void main_t::process_map_request_event(XEvent * e) {
 
 	/* if window is in Iconic state, map mean go to Normal */
 	c = find_client_by_xwindow(w);
-	if(c) {
+	if (c) {
 		c->set_wm_state(NormalState);
 		tree_root->activate_client(c);
 	}
@@ -878,9 +880,7 @@ void main_t::fullscreen(client_t *c) {
 	fullscreen_client = c;
 	tree_root->remove_client(c);
 	c->set_fullscreen();
-	XMoveResizeWindow(cnx.dpy, c->clipping_window, 0, 0, cnx.root_size.w,
-			cnx.root_size.h);
-	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
+	move_fullscreen(c);
 	c->map();
 	update_focus(c);
 	c->focus();
@@ -949,12 +949,12 @@ void main_t::process_client_message_event(XEvent * ev) {
 
 	} else if (ev->xclient.message_type == cnx.atoms.WM_CHANGE_STATE) {
 		/* client should send this message to go iconic */
-		if(ev->xclient.data.l[0] == IconicState) {
+		if (ev->xclient.data.l[0] == IconicState) {
 			client_t * c = find_client_by_xwindow(ev->xclient.window);
-			if(c) {
+			if (c) {
 				printf("Set to iconic %lu\n", c->xwin);
 				c->set_wm_state(IconicState);
-				c->unmap();
+				tree_root->iconify_client(c);
 			}
 		}
 	}
@@ -967,7 +967,6 @@ void main_t::process_damage_event(XEvent * ev) {
 	//printf("damage event win: #%lu %dx%d+%d+%d\n", e->drawable,
 	//		(int) e->area.width, (int) e->area.height, (int) e->area.x,
 	//		(int) e->area.y);
-
 	cairo_save(composite_overlay_cr);
 	cairo_reset_clip(composite_overlay_cr);
 	popup_t * p = find_popup_by_xwindow(e->drawable);
@@ -1057,6 +1056,14 @@ void main_t::process_create_window_event(XEvent * e) {
 				wa, WithdrawnState);
 		withdrawn_clients.push_back(c);
 	}
+}
+
+void main_t::move_fullscreen(client_t * c) {
+	XMoveResizeWindow(cnx.dpy, c->clipping_window, fullscreen_position.x,
+			fullscreen_position.y, fullscreen_position.w,
+			fullscreen_position.h);
+	XMoveResizeWindow(cnx.dpy, c->xwin, 0, 0, fullscreen_position.w,
+			fullscreen_position.h);
 }
 
 }

@@ -99,6 +99,7 @@ public:
 	client_list_t * get_clients();
 	void remove_client(client_t * c);
 	void activate_client(client_t * c);
+	void iconify_client(client_t * c);
 
 	void select_next();
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);

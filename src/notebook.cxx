@@ -581,7 +581,7 @@ void notebook_t::activate_client(client_t * c) {
 
 	if (has_client) {
 		set_selected(*i);
-		//(*i)->focus();
+		(*i)->focus();
 		page.update_focus(*i);
 	}
 
@@ -639,7 +639,7 @@ void notebook_t::set_selected(client_t * c) {
 
 	update_client_position(c);
 	c->map();
-	//c->focus();
+	c->focus();
 	c->set_wm_state(NormalState);
 	page.update_focus(c);
 
@@ -818,11 +818,37 @@ void notebook_t::update_client_position(client_t * c) {
 				_allocation.h - HEIGHT - BORDER_SIZE);
 
 		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
-				c->clipping_window, _allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
-				_allocation.w - 2 * BORDER_SIZE,
+				c->clipping_window, _allocation.x + BORDER_SIZE,
+				_allocation.y + HEIGHT, _allocation.w - 2 * BORDER_SIZE,
 				_allocation.h - HEIGHT - BORDER_SIZE);
 
 	}
+}
+
+void notebook_t::iconify_client(client_t * c) {
+	bool has_client = false;
+	std::list<client_t *>::iterator i = _clients.begin();
+	while (i != _clients.end()) {
+		if ((*i) == c) {
+			has_client = true;
+			break;
+		}
+		++i;
+	}
+
+	if (has_client) {
+		if (!_selected.empty()) {
+			if (_selected.front() == *i) {
+				_selected.pop_front();
+				if (!_selected.empty()) {
+					set_selected(_selected.front());
+				}
+			}
+		}
+	}
+
+	back_buffer_is_valid = false;
+
 }
 
 }

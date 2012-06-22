@@ -215,4 +215,12 @@ void root_t::remove_client(client_t * c) {
 	}
 }
 
+void root_t::iconify_client(client_t * c) {
+	std::list<screen_t *>::iterator i = subarea.begin();
+	while (i != subarea.end()) {
+		(*i)->_subtree->iconify_client(c);
+		++i;
+	}
+}
+
 }

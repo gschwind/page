@@ -33,6 +33,7 @@ public:
 	virtual client_list_t * get_clients() = 0;
 	virtual void remove_client(client_t * c) = 0;
 	virtual void activate_client(client_t * c) = 0;
+	virtual void iconify_client(client_t * c) = 0;
 
 };
 }

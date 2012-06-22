@@ -93,6 +93,9 @@ public:
 	/* the main window attributes */
 	XWindowAttributes wa;
 
+	bool has_fullscreen_size;
+	box_t<int> fullscreen_position;
+
 private:
 	client_t * client_focused;
 public:
@@ -173,6 +176,11 @@ public:
 	wm_mode_e guess_window_state(long know_state, Bool overide_redirect, int map_state, int w_class);
 
 	client_t * find_withdraw_by_xwindow(Window w);
+
+	void withdraw_to_normal(client_t * c);
+	void withdraw_to_iconic(client_t * c);
+
+	void move_fullscreen(client_t * c);
 
 };
 

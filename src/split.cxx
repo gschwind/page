@@ -183,6 +183,13 @@ void split_t::activate_client(client_t * c) {
 		_pack1->activate_client(c);
 }
 
+void split_t::iconify_client(client_t * c) {
+	if (_pack0)
+		_pack0->iconify_client(c);
+	if (_pack1)
+		_pack1->iconify_client(c);
+}
+
 std::list<client_t *> * split_t::get_clients() {
 	return 0;
 }

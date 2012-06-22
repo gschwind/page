@@ -49,6 +49,7 @@ public:
 	client_list_t * get_clients();
 	void remove_client(client_t * c);
 	void activate_client(client_t * c);
+	void iconify_client(client_t * c);
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();

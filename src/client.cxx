@@ -43,14 +43,14 @@ void client_t::withdraw_to_normal() {
 	if (hints) {
 		if ((hints->flags & InputHint) && hints->input == True)
 			wm_input_focus = true;
-	}
 
-	if(hints->initial_state == IconicState) {
-		printf("iconic\n");
-	} else if (hints->initial_state == NormalState) {
-		printf("normal\n");
-	} else {
-		printf("Unkwon\n");
+		if(hints->initial_state == IconicState) {
+			printf("iconic\n");
+		} else if (hints->initial_state == NormalState) {
+			printf("normal\n");
+		} else {
+			printf("Unkwon\n");
+		}
 	}
 
 	XFree(hints);
