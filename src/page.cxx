@@ -76,7 +76,6 @@ main_t::main_t(int argc, char ** argv) :
 	composite_overlay_s = 0;
 	composite_overlay_cr = 0;
 	has_fullscreen_size = false;
-
 }
 
 main_t::~main_t() {
@@ -459,17 +458,19 @@ void main_t::update_client_list() {
 
 	client_set_t::iterator i = clients.begin();
 	while (i != clients.end()) {
-		data[k] = (*i)->xwin;
+		if ((*i)->wm_state != WithdrawnState) {
+			data[k] = (*i)->xwin;
+			++k;
+		}
 		++i;
-		++k;
 	}
 
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(data), clients.size());
+			reinterpret_cast<unsigned char *>(data), k);
 	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(data), clients.size());
+			reinterpret_cast<unsigned char *>(data), k);
 
 	delete[] data;
 }

@@ -8,6 +8,10 @@
 #ifndef PAGE_HXX_
 #define PAGE_HXX_
 
+//#define _POSIX_C_SOURCE 199309L
+
+#include <features.h>
+#include <ctime>
 #include <X11/X.h>
 #include <X11/cursorfont.h>
 #include <assert.h>
