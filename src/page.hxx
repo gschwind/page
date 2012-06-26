@@ -75,7 +75,6 @@ public:
 
 	std::string page_base_dir;
 
-
 	client_t * fullscreen_client;
 	root_t * tree_root;
 	tree_t * default_window_pop;
@@ -92,6 +91,9 @@ public:
 
 	/* the main window */
 	Window main_window;
+	cairo_surface_t * back_buffer_s;
+	cairo_t * back_buffer_cr;
+
 	cairo_surface_t * main_window_s;
 	cairo_t * main_window_cr;
 

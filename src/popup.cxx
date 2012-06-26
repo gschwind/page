@@ -32,7 +32,7 @@ void popup_window_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
 	cairo_set_source_surface(cr, surf, wa.x, wa.y);
 	cairo_rectangle(cr, wa.x + x, wa.y + y, width, height);
 	cairo_clip(cr);
-	cairo_paint(cr);
+	cairo_paint_with_alpha(cr, 0.9);
 	cairo_fill(cr);
 	cairo_restore(cr);
 }
@@ -62,6 +62,11 @@ void popup_window_t::hide(cairo_t * cr, cairo_surface_t * s) {
 
 bool popup_window_t::is_window(Window w) {
 	return this->w == w;
+}
+
+void popup_window_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
+	absolute_x = wa.x + relative_x;
+	absolute_y = wa.y + relative_y;
 }
 
 popup_split_t::popup_split_t(int x, int y, int width, int height) :
@@ -113,6 +118,9 @@ void popup_split_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int y,
 	repair1(cr, area.x, area.y, area.w, area.h);
 }
 
+void popup_split_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
+
+}
 
 popup_notebook_t::popup_notebook_t(int x, int y, int width, int height) :
 		area(x, y, width, height) {
@@ -165,6 +173,10 @@ void popup_notebook_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int
 	area.w = width;
 	area.h = height;
 	repair1(cr, area.x, area.y, area.w, area.h);
+}
+
+void popup_notebook_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
+
 }
 
 }

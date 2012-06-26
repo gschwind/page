@@ -232,7 +232,7 @@ void split_t::process_drag_and_drop() {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
-
+				int old_split = _split;
 				_split = (ev.xmotion.x - _allocation.x)
 						/ (double) (_allocation.w);
 				if (_split > 0.95)
@@ -240,12 +240,26 @@ void split_t::process_drag_and_drop() {
 				if (_split < 0.05)
 					_split = 0.05;
 
-				p->update_area(page.composite_overlay_cr, page.main_window_s,
+				p->update_area(page.back_buffer_cr, page.main_window_s,
 						_allocation.x + (int) (_split * _allocation.w)
 								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
 						_allocation.h);
-			} else {
 
+				cairo_set_source_surface(page.composite_overlay_cr,
+						page.back_buffer_s, 0, 0);
+				cairo_rectangle(page.composite_overlay_cr,
+						_allocation.x + (int) (_split * _allocation.w)
+								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
+						_allocation.h);
+				cairo_fill(page.composite_overlay_cr);
+				cairo_rectangle(page.composite_overlay_cr,
+						_allocation.x + (int) (old_split * _allocation.w)
+								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
+						_allocation.h);
+				cairo_fill(page.composite_overlay_cr);
+
+			} else {
+				int old_split = _split;
 				_split = (ev.xmotion.y - _allocation.y)
 						/ (double) (_allocation.h);
 				if (_split > 0.95)
@@ -253,10 +267,22 @@ void split_t::process_drag_and_drop() {
 				if (_split < 0.05)
 					_split = 0.05;
 
-				p->update_area(page.composite_overlay_cr, page.main_window_s,
+				p->update_area(page.back_buffer_cr, page.main_window_s,
 						_allocation.x,
 						_allocation.y + (int) (_split * _allocation.h)
 								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+
+				cairo_set_source_surface(page.composite_overlay_cr,
+						page.back_buffer_s, 0, 0);
+				cairo_rectangle(page.composite_overlay_cr, _allocation.x,
+						_allocation.y + (int) (_split * _allocation.h)
+								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+				cairo_fill(page.composite_overlay_cr);
+				cairo_rectangle(page.composite_overlay_cr, _allocation.x,
+						_allocation.y + (int) (old_split * _allocation.h)
+								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+				cairo_fill(page.composite_overlay_cr);
+
 			}
 		}
 	} while (ev.type != ButtonRelease);

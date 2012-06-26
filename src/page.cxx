@@ -70,6 +70,9 @@ main_t::main_t(int argc, char ** argv) :
 	running = 0;
 
 	main_window = None;
+	back_buffer_s = 0;
+	back_buffer_cr = 0;
+
 	main_window_s = 0;
 	main_window_cr = 0;
 
@@ -129,6 +132,11 @@ void main_t::run() {
 	main_window_s = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual,
 			wa.width, wa.height);
 	main_window_cr = cairo_create(main_window_s);
+
+	back_buffer_s = cairo_surface_create_similar(main_window_s, CAIRO_CONTENT_COLOR,
+			wa.width, wa.height);
+	back_buffer_cr = cairo_create(back_buffer_s);
+
 	XGetWindowAttributes(cnx.dpy, cnx.composite_overlay, &wa);
 	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
 			cnx.composite_overlay, wa.visual, wa.width, wa.height);
@@ -857,26 +865,41 @@ void main_t::process_damage_event(XEvent * ev) {
 	//		(int) e->area.y);
 	cairo_save(composite_overlay_cr);
 	cairo_reset_clip(composite_overlay_cr);
+	cairo_save(back_buffer_cr);
+	cairo_reset_clip(back_buffer_cr);
 	popup_t * p = find_popup_by_xwindow(e->drawable);
 	if (p) {
-		p->repair0(composite_overlay_cr, main_window_s, e->area.x, e->area.y,
+		p->repair0(back_buffer_cr, main_window_s, e->area.x, e->area.y,
 				e->area.width, e->area.height);
-	} else if (e->drawable == main_window) {
-		cairo_set_source_surface(composite_overlay_cr, main_window_s, 0, 0);
-		cairo_rectangle(composite_overlay_cr, e->area.x, e->area.y,
+		int x, y;
+		p->get_absolute_coord(e->area.x, e->area.y, x, y);
+		cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
+		cairo_rectangle(composite_overlay_cr, x, y,
 				e->area.width, e->area.height);
 		cairo_fill(composite_overlay_cr);
+
+	} else if (e->drawable == main_window) {
+		cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
+		cairo_rectangle(back_buffer_cr, e->area.x, e->area.y,
+				e->area.width, e->area.height);
+		cairo_fill(back_buffer_cr);
 
 		std::list<popup_t *>::iterator i = popups.begin();
 		while (i != popups.end()) {
 			popup_t * p = (*i);
 			/* make intersec */
-			p->repair1(composite_overlay_cr, e->area.x, e->area.y,
+			p->repair1(back_buffer_cr, e->area.x, e->area.y,
 					e->area.width, e->area.height);
 			++i;
 		}
+
+		cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
+		cairo_rectangle(composite_overlay_cr, e->area.x, e->area.y,
+				e->area.width, e->area.height);
+		cairo_fill(composite_overlay_cr);
 	}
 
+	cairo_restore(back_buffer_cr);
 	cairo_restore(composite_overlay_cr);
 }
 
