@@ -20,8 +20,7 @@ client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
 		XWindowAttributes &wa, long wm_state) :
 		cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(false), height(
 				wa.height), width(wa.width), page_window(page_window), lock_count(
-				0), is_lock(false), clipping_window(None), icon_surf(
-				0) {
+				0), is_lock(false), clipping_window(None), icon_surf(0) {
 
 	set_wm_state(wm_state);
 
@@ -42,7 +41,6 @@ void client_t::update_all() {
 	if (hints) {
 		if ((hints->flags & InputHint) && hints->input == True)
 			wm_input_focus = true;
-
 		XFree(hints);
 	}
 
@@ -192,8 +190,9 @@ void client_t::focus() {
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
-	} else if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS)
-			!= wm_protocols.end()) {
+	}
+
+	if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()) {
 		printf("TAKE_FOCUS\n");
 		XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);

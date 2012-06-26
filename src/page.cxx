@@ -629,10 +629,11 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		printf("Expected Unmap\n");
 	} else {
 		/* Syntetic unmap mean Normal/Iconic to WithDraw */
-		if (e->xunmap.send_event) {
-			XReparentWindow(cnx.dpy, c->xwin, cnx.xroot, 0, 0);
+		/* some client do not honor syntetic unmap ... */
+		//if (e->xunmap.send_event) {
+			printf("Unmap form send event\n");
+			cnx.reparentwindow(c->xwin, cnx.xroot, 0, 0);
 			XRemoveFromSaveSet(cnx.dpy, c->xwin);
-			clients.erase(c);
 			if (fullscreen_client == c)
 				fullscreen_client = 0;
 			if (client_focused == c) {
@@ -641,14 +642,14 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 			tree_root->remove_client(c);
 			if (c->has_partial_struct)
 				update_page_aera();
-			update_client_list();
 			if (!c->is_dock) {
 				XDestroyWindow(cnx.dpy, c->clipping_window);
 				c->clipping_window = None;
 			}
 			c->set_wm_state(WithdrawnState);
+			update_client_list();
 			render();
-		}
+			//}
 	}
 }
 
@@ -748,6 +749,8 @@ void main_t::process_property_notify_event(XEvent * ev) {
 	} else if (ev->xproperty.atom == cnx.atoms.WM_NORMAL_HINTS) {
 		c->client_update_size_hints();
 		render();
+	} else if (ev->xproperty.atom == cnx.atoms.WM_PROTOCOLS) {
+		c->read_wm_protocols();
 	}
 }
 
@@ -1008,7 +1011,7 @@ void main_t::withdraw_to_X(client_t * c) {
 				ev.type = UnmapNotify;
 				cnx.pending.push_back(ev);
 			}
-			XReparentWindow(cnx.dpy, c->xwin, main_window, c->wa.x, c->wa.y);
+			cnx.reparentwindow(c->xwin, main_window, c->wa.x, c->wa.y);
 			return;
 		} /* if has not partial struct threat it as normal window */
 
@@ -1032,17 +1035,9 @@ void main_t::withdraw_to_X(client_t * c) {
 	XSelectInput(cnx.dpy, c->xwin,
 			StructureNotifyMask | PropertyChangeMask | ExposureMask);
 
-	/* reparent will generate UnmapNotify */
-	if (wa.map_state != IsUnmapped) {
-		event_t ev;
-		ev.serial = NextRequest(cnx.dpy);
-		ev.type = UnmapNotify;
-		cnx.pending.push_back(ev);
-	}
-
 	printf("XReparentWindow(%p, #%lu, #%lu, %d, %d)\n", cnx.dpy, c->xwin,
 			c->clipping_window, 0, 0);
-	XReparentWindow(cnx.dpy, c->xwin, c->clipping_window, 0, 0);
+	cnx.reparentwindow(c->xwin, c->clipping_window, 0, 0);
 	XCompositeRedirectWindow(cnx.dpy, c->xwin, CompositeRedirectAutomatic);
 
 	if (c->is_fullscreen()) {

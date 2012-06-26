@@ -475,6 +475,17 @@ struct xconnection_t {
 		pending.push_back(e);
 	}
 
+	void reparentwindow(Window w, Window parent, int x, int y) {
+		unsigned long serial = XNextRequest(dpy);
+		printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+		XReparentWindow(dpy, w, parent, x, y);
+		event_t e;
+		e.serial = serial;
+		e.type = UnmapNotify;
+		pending.push_back(e);
+	}
+
+
 	void map(Window w) {
 		unsigned long serial = XNextRequest(dpy);
 		printf("Map serial: #%lu win: #%lu\n", serial, w);
