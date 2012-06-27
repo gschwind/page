@@ -616,7 +616,12 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	popup_t * p = find_popup_by_xwindow(e->xunmap.window);
 	if (p) {
 		popups.remove(p);
-		p->hide(composite_overlay_cr, main_window_s);
+
+		XDamageNotifyEvent ev;
+		ev.drawable = main_window;
+		p->get_extend(ev.area.x, ev.area.y, ev.area.width, ev.area.height);
+		process_damage_event((XEvent *)&ev);
+		//p->hide(composite_overlay_cr, main_window_s);
 		delete p;
 		return;
 	}

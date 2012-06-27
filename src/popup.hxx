@@ -23,6 +23,7 @@ struct popup_t {
 	virtual void hide(cairo_t * cr, cairo_surface_t * s) = 0;
 	virtual bool is_window(Window w) = 0;
 	virtual void get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) = 0;
+	virtual void get_extend(short &x, short &y, unsigned short &w, unsigned short &h) = 0;
 };
 
 typedef std::list<popup_t *> popup_list_t;
@@ -41,6 +42,7 @@ struct popup_window_t : public popup_t{
 	virtual void hide(cairo_t * cr, cairo_surface_t * s);
 	virtual bool is_window(Window w);
 	virtual void get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y);
+	virtual void get_extend(short &x, short &y, unsigned short &w, unsigned short &h);
 };
 
 struct popup_split_t : public popup_t {
@@ -53,6 +55,7 @@ struct popup_split_t : public popup_t {
 	virtual bool is_window(Window w);
 	void update_area(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
 	virtual void get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y);
+	virtual void get_extend(short &x, short &y, unsigned short &w, unsigned short &h);
 };
 
 struct popup_notebook_t : public popup_t {
@@ -65,6 +68,7 @@ struct popup_notebook_t : public popup_t {
 	virtual bool is_window(Window w);
 	void update_area(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
 	virtual void get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y);
+	virtual void get_extend(short &x, short &y, unsigned short &w, unsigned short &h);
 };
 
 

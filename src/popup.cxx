@@ -69,6 +69,13 @@ void popup_window_t::get_absolute_coord(int relative_x, int relative_y, int &abs
 	absolute_y = wa.y + relative_y;
 }
 
+void popup_window_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
+	x = wa.x;
+	y = wa.y;
+	w = wa.width;
+	h = wa.height;
+}
+
 popup_split_t::popup_split_t(int x, int y, int width, int height) :
 		area(x, y, width, height) {
 
@@ -119,6 +126,10 @@ void popup_split_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int y,
 }
 
 void popup_split_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
+
+}
+
+void popup_split_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
 
 }
 
@@ -176,6 +187,10 @@ void popup_notebook_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int
 }
 
 void popup_notebook_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
+
+}
+
+void popup_notebook_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
 
 }
 

@@ -240,11 +240,11 @@ void split_t::process_drag_and_drop() {
 				if (_split < 0.05)
 					_split = 0.05;
 
-				p->update_area(page.back_buffer_cr, page.main_window_s,
-						_allocation.x + (int) (_split * _allocation.w)
-								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
-						_allocation.h);
-
+//				p->update_area(page.back_buffer_cr, page.main_window_s,
+//						_allocation.x + (int) (_split * _allocation.w)
+//								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
+//						_allocation.h);
+//
 				cairo_set_source_surface(page.composite_overlay_cr,
 						page.back_buffer_s, 0, 0);
 				cairo_rectangle(page.composite_overlay_cr,
@@ -252,6 +252,8 @@ void split_t::process_drag_and_drop() {
 								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
 						_allocation.h);
 				cairo_fill(page.composite_overlay_cr);
+				cairo_set_source_surface(page.composite_overlay_cr,
+						page.back_buffer_s, 0, 0);
 				cairo_rectangle(page.composite_overlay_cr,
 						_allocation.x + (int) (old_split * _allocation.w)
 								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
@@ -267,10 +269,12 @@ void split_t::process_drag_and_drop() {
 				if (_split < 0.05)
 					_split = 0.05;
 
-				p->update_area(page.back_buffer_cr, page.main_window_s,
-						_allocation.x,
-						_allocation.y + (int) (_split * _allocation.h)
-								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+//				p->update_area(page.back_buffer_cr, page.main_window_s,
+//						_allocation.x,
+//						_allocation.y + (int) (_split * _allocation.h)
+//								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
+//
+
 
 				cairo_set_source_surface(page.composite_overlay_cr,
 						page.back_buffer_s, 0, 0);
@@ -278,6 +282,8 @@ void split_t::process_drag_and_drop() {
 						_allocation.y + (int) (_split * _allocation.h)
 								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
 				cairo_fill(page.composite_overlay_cr);
+				cairo_set_source_surface(page.composite_overlay_cr,
+						page.back_buffer_s, 0, 0);
 				cairo_rectangle(page.composite_overlay_cr, _allocation.x,
 						_allocation.y + (int) (old_split * _allocation.h)
 								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
