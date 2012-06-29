@@ -1,4 +1,4 @@
-bin_PROGRAMS = page query_tree listen_root_event simple_window_test
+bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit
 
 
 page_SOURCES = main.cxx page.cxx tree.cxx notebook.cxx split.cxx root.cxx client.cxx popup.cxx xconnection.cxx ftrace_function.cxx
@@ -16,3 +16,7 @@ listen_root_event_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS
 simple_window_test_SOURCES = simple_window_test.cxx
 simple_window_test_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
 simple_window_test_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+
+send_page_quit_SOURCES = send_page_quit.cxx
+send_page_quit_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
+send_page_quit_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing

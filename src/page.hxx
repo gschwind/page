@@ -84,7 +84,7 @@ public:
 	/* default cursor */
 	Cursor cursor;
 
-	int running;
+	bool running;
 
 	cairo_surface_t * composite_overlay_s;
 	cairo_t * composite_overlay_cr;

@@ -239,6 +239,9 @@ struct xconnection_t {
 		Atom _NET_VIRTUAL_ROOTS;
 		Atom _NET_DESKTOP_LAYOUT;
 
+		/* page special protocol */
+		Atom PAGE_QUIT; /* quit page */
+
 	} atoms;
 
 	/*damage event handler */
@@ -366,6 +369,8 @@ struct xconnection_t {
 		ATOM_INIT(_NET_WM_STATE_FOCUSED);
 
 		ATOM_INIT(_NET_WM_ICON);
+
+		ATOM_INIT(PAGE_QUIT);
 
 #undef ATOM_INIT
 

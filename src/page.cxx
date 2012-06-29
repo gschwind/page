@@ -67,7 +67,7 @@ main_t::main_t(int argc, char ** argv) :
 	default_window_pop = 0;
 	fullscreen_client = 0;
 	client_focused = 0;
-	running = 0;
+	running = false;
 
 	main_window = None;
 	back_buffer_s = 0;
@@ -217,7 +217,7 @@ void main_t::run() {
 	cnx.map(main_window);
 	damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
 
-	running = 1;
+	running = true;
 	while (running) {
 		XEvent e;
 		cnx.xnextevent(&e);
@@ -861,6 +861,8 @@ void main_t::process_client_message_event(XEvent * ev) {
 				tree_root->iconify_client(c);
 			}
 		}
+	} else if (ev->xclient.message_type == cnx.atoms.PAGE_QUIT) {
+		running = false;
 	}
 }
 
