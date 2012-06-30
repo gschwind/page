@@ -251,10 +251,6 @@ void notebook_t::render() {
 					if (_selected.front() == (*i)) {
 
 						cairo_set_line_width(back_buffer_cr, 1.0);
-						//cairo_select_font_face(back_buffer_cr, "Sans",
-						//		CAIRO_FONT_SLANT_NORMAL,
-						//		CAIRO_FONT_WEIGHT_BOLD);
-
 						cairo_set_font_face(back_buffer_cr, font_bold);
 						cairo_set_font_size(back_buffer_cr, 13);
 
@@ -712,7 +708,11 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	popup_notebook_t * p = new popup_notebook_t(tab_area.x, tab_area.y,
 			tab_area.w, tab_area.h);
 
+	popup_notebook2_t * p1 = new popup_notebook2_t(_allocation.x, _allocation.y,
+			font, c->icon_surf, c->name);
+
 	page.popups.push_back(p);
+	page.popups.push_back(p1);
 
 	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
 			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
@@ -728,6 +728,14 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (ev.xmotion.window == page.main_window) {
+
+				box_int_t old_area = p1->get_absolute_extend();
+				p1->reconfigure(box_int_t(ev.xmotion.x + 10, ev.xmotion.y, 0, 0));
+				page.repair_back_buffer(old_area);
+				page.repair_overlay(old_area);
+				page.repair_back_buffer(p1->area);
+				page.repair_overlay(p1->area);
+
 				//printf("%d %d %d %d\n", ev.xmotion.x, ev.xmotion.y,
 				//		ev.xmotion.x_root, ev.xmotion.y_root);
 				std::list<notebook_t *>::iterator i = notebooks.begin();
@@ -789,7 +797,9 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		}
 	} while (ev.type != ButtonRelease && ev.type != ButtonPress);
 	page.popups.remove(p);
+	page.popups.remove(p1);
 	delete p;
+	delete p1;
 	render();
 	/* ev is button release
 	 * so set the hidden focus parameter

@@ -12,12 +12,14 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include <list>
+#include <string>
 #include "box.hxx"
 
 namespace page_next {
 
 struct popup_t {
-	virtual ~popup_t() { }
+	virtual ~popup_t() {
+	}
 	virtual void repair1(cairo_t * cr, box_int_t const & area) = 0;
 	virtual bool is_window(Window w) = 0;
 	virtual box_int_t get_absolute_extend() = 0;
@@ -26,7 +28,7 @@ struct popup_t {
 
 typedef std::list<popup_t *> popup_list_t;
 
-struct popup_window_t : public popup_t{
+struct popup_window_t: public popup_t {
 	Display * dpy;
 	box_int_t area;
 	Window w;
@@ -42,7 +44,7 @@ struct popup_window_t : public popup_t{
 	virtual void reconfigure(box_int_t const & area);
 };
 
-struct popup_split_t : public popup_t {
+struct popup_split_t: public popup_t {
 	box_t<int> area;
 	popup_split_t(box_t<int> const & area);
 	~popup_split_t();
@@ -52,7 +54,7 @@ struct popup_split_t : public popup_t {
 	virtual void reconfigure(box_int_t const & area);
 };
 
-struct popup_notebook_t : public popup_t {
+struct popup_notebook_t: public popup_t {
 	box_t<int> area;
 	popup_notebook_t(int x, int y, int width, int height);
 	~popup_notebook_t();
@@ -62,8 +64,20 @@ struct popup_notebook_t : public popup_t {
 	virtual void reconfigure(box_int_t const & area);
 };
 
+struct popup_notebook2_t: public popup_t {
+	box_t<int> area;
+	cairo_surface_t * surf;
+	std::string title;
+	cairo_font_face_t * font;
+	popup_notebook2_t(int x, int y, cairo_font_face_t * font,
+			cairo_surface_t * icon, std::string & title);
+	virtual ~popup_notebook2_t();
+	virtual void repair1(cairo_t * cr, box_int_t const & area);
+	virtual bool is_window(Window w);
+	virtual box_int_t get_absolute_extend();
+	virtual void reconfigure(box_int_t const & area);
+};
 
 }
-
 
 #endif /* POPUP_HXX_ */
