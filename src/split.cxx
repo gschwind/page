@@ -247,14 +247,7 @@ void split_t::process_drag_and_drop() {
 
 			page.repair_back_buffer(old_area);
 			page.repair_back_buffer(slider_area);
-
-			box_int_t full_area;
-			full_area.x = min(old_area.x, slider_area.x);
-			full_area.y = min(old_area.y, slider_area.y);
-			full_area.w = max(old_area.x + old_area.w,
-					slider_area.x + slider_area.w) - full_area.x;
-			full_area.h = max(old_area.y + old_area.h,
-					slider_area.y + slider_area.h) - full_area.y;
+			box_int_t full_area = get_max_extand(old_area, slider_area);
 			page.repair_overlay(full_area);
 		}
 	} while (ev.type != ButtonRelease);

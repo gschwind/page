@@ -102,7 +102,6 @@ void popup_split_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
 }
 
 void popup_split_t::repair1(cairo_t * cr, int x, int y, int width, int height) {
-	printf("repair %dx%d+%d+%d\n", width, height, x, y);
 	int left = max(area.x, x);
 	int rigth = min(area.x + area.w, x + width);
 	int top = max(area.y, y);
