@@ -308,4 +308,16 @@ Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 			|| (ev->type == ths->page.cnx.damage_event + XDamageNotify);
 }
 
+void split_t::delete_all() {
+	if(_pack0) {
+		_pack0->delete_all();
+		delete _pack0;
+	}
+
+	if(_pack1) {
+		_pack1->delete_all();
+		delete _pack1;
+	}
+}
+
 }

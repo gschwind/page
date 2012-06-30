@@ -40,7 +40,7 @@ public:
 	void activate_client(client_t * c);
 	void add_aera(box_t<int> & area);
 	void iconify_client(client_t * c);
-
+	void delete_all();
 };
 
 }

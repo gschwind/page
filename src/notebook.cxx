@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <cairo-ft.h>
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
 #include <X11/Xlib.h>
@@ -22,6 +23,13 @@ cairo_surface_t * notebook_t::vsplit_button_s = 0;
 cairo_surface_t * notebook_t::close_button_s = 0;
 cairo_surface_t * notebook_t::pop_button_s = 0;
 cairo_surface_t * notebook_t::pops_button_s = 0;
+
+bool notebook_t::ft_is_loaded = false;
+FT_Library notebook_t::library = 0;
+FT_Face notebook_t::face = 0;
+cairo_font_face_t * notebook_t::font = 0;
+FT_Face notebook_t::face_bold = 0;
+cairo_font_face_t * notebook_t::font_bold = 0;
 
 notebook_t::notebook_t(main_t & page) :
 		page(page) {
@@ -68,6 +76,31 @@ notebook_t::notebook_t(main_t & page) :
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == 0)
 			throw std::runtime_error("file not found!");
+	}
+
+	if (!ft_is_loaded) {
+		FT_Error error = FT_Init_FreeType(&library);
+		if (error) {
+			throw std::runtime_error("unable to init freetype");
+		}
+
+		error = FT_New_Face(library, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 0,
+				&face);
+
+		if(error != FT_Err_Ok)
+			throw std::runtime_error("unable to load /usr/share/fonts/dejavu/DejaVuSans.ttf");
+
+		font = cairo_ft_font_face_create_for_ft_face(face, 0);
+
+		error = FT_New_Face(library, "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf", 0,
+				&face_bold);
+
+		if(error != FT_Err_Ok)
+			throw std::runtime_error("unable to load /usr/share/fonts/dejavu/DejaVuSans-Bold.ttf");
+
+		font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, 0);
+
+		ft_is_loaded = true;
 	}
 
 }
@@ -220,9 +253,11 @@ void notebook_t::render() {
 					if (_selected.front() == (*i)) {
 
 						cairo_set_line_width(back_buffer_cr, 1.0);
-						cairo_select_font_face(back_buffer_cr, "Sans",
-								CAIRO_FONT_SLANT_NORMAL,
-								CAIRO_FONT_WEIGHT_BOLD);
+						//cairo_select_font_face(back_buffer_cr, "Sans",
+						//		CAIRO_FONT_SLANT_NORMAL,
+						//		CAIRO_FONT_WEIGHT_BOLD);
+
+						cairo_set_font_face(back_buffer_cr, font_bold);
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw light background */
@@ -305,9 +340,10 @@ void notebook_t::render() {
 						}
 
 						cairo_set_line_width(back_buffer_cr, 1.0);
-						cairo_select_font_face(back_buffer_cr, "Sans",
-								CAIRO_FONT_SLANT_NORMAL,
-								CAIRO_FONT_WEIGHT_NORMAL);
+//						cairo_select_font_face(back_buffer_cr, "Sans",
+//								CAIRO_FONT_SLANT_NORMAL,
+//								CAIRO_FONT_WEIGHT_NORMAL);
+						cairo_set_font_face(back_buffer_cr, font);
 						cairo_set_font_size(back_buffer_cr, 13);
 
 						/* draw window name */
@@ -850,6 +886,10 @@ void notebook_t::iconify_client(client_t * c) {
 	}
 
 	back_buffer_is_valid = false;
+
+}
+
+void notebook_t::delete_all() {
 
 }
 

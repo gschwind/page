@@ -53,6 +53,7 @@ public:
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();
+	void delete_all();
 
 };
 

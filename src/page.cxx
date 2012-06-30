@@ -84,6 +84,16 @@ main_t::main_t(int argc, char ** argv) :
 main_t::~main_t() {
 	cairo_destroy(main_window_cr);
 	cairo_surface_destroy(main_window_s);
+
+	tree_root->delete_all();
+	delete tree_root;
+
+	client_set_t::iterator i = clients.begin();
+	while (i != clients.end()) {
+		delete (*i);
+		++i;
+	}
+
 }
 
 /* update main window location */
@@ -307,7 +317,7 @@ enum wm_mode_e {
 };
 
 main_t::wm_mode_e main_t::guess_window_state(long know_state,
-		Bool overide_redirect, int map_state, int w_class) {
+		Bool override_redirect, int map_state, int w_class) {
 	if (w_class == InputOnly) {
 		printf("> SET Ignore\n");
 		return WM_MODE_IGNORE;
@@ -319,17 +329,17 @@ main_t::wm_mode_e main_t::guess_window_state(long know_state,
 			printf("> SET Withdrawn\n");
 			return WM_MODE_WITHDRAW;
 		} else {
-			if (overide_redirect && map_state != IsUnmapped) {
+			if (override_redirect && map_state != IsUnmapped) {
 				printf("> SET POPUP\n");
 				return WM_MODE_POPUP;
-			} else if (wa.map_state == IsUnmapped
-					&& wa.override_redirect == 0) {
+			} else if (map_state == IsUnmapped
+					&& override_redirect == 0) {
 				printf("> SET Withdrawn\n");
 				return WM_MODE_WITHDRAW;
-			} else if (wa.override_redirect && wa.map_state == IsUnmapped) {
+			} else if (override_redirect && map_state == IsUnmapped) {
 				printf("> SET Ignore\n");
 				return WM_MODE_IGNORE;
-			} else if (!wa.override_redirect && wa.map_state != IsUnmapped) {
+			} else if (!override_redirect && map_state != IsUnmapped) {
 				printf("> SET Auto\n");
 				return WM_MODE_AUTO;
 			} else {
@@ -344,7 +354,7 @@ void main_t::scan() {
 	printf("call %s\n", __PRETTY_FUNCTION__);
 	unsigned int num;
 	Window d1, d2, *wins = 0;
-	XWindowAttributes wa;
+	XWindowAttributes wa = { 0 };
 	cnx.grab();
 	if (XQueryTree(cnx.dpy, cnx.xroot, &d1, &d2, &wins, &num)) {
 		for (unsigned i = 0; i < num; ++i) {
@@ -1054,12 +1064,12 @@ void main_t::withdraw_to_X(client_t * c) {
 
 	XSetWindowBorderWidth(cnx.dpy, c->xwin, 0);
 
-	XSetWindowAttributes swa;
+	XSetWindowAttributes swa = { 0 };
 
 	swa.background_pixel = 0xeeU << 16 | 0xeeU << 8 | 0xecU;
 	swa.border_pixel = XBlackPixel(cnx.dpy, cnx.screen);
 	c->clipping_window = XCreateWindow(cnx.dpy, main_window, 0, 0, 300, 300, 0,
-			cnx.root_wa.depth, InputOutput, wa.visual,
+			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual,
 			CWBackPixel | CWBorderPixel, &swa);
 	//XCompositeRedirectWindow(cnx.dpy, c->clipping_window,
 	//		CompositeRedirectAutomatic);

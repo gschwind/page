@@ -97,9 +97,6 @@ public:
 	cairo_surface_t * main_window_s;
 	cairo_t * main_window_cr;
 
-	/* the main window attributes */
-	XWindowAttributes wa;
-
 	bool has_fullscreen_size;
 	box_t<int> fullscreen_position;
 
@@ -124,15 +121,6 @@ public:
 
 	Display * get_dpy() {
 		return cnx.dpy;
-	}
-
-	cairo_t * get_cairo() {
-		cairo_surface_t * surf;
-		XGetWindowAttributes(cnx.dpy, main_window, &(wa));
-		surf = cairo_xlib_surface_create(cnx.dpy, main_window, wa.visual, wa.width,
-				wa.height);
-		cairo_t * cr = cairo_create(surf);
-		return cr;
 	}
 
 	void scan();
@@ -179,7 +167,7 @@ public:
 		WM_MODE_ERROR
 	};
 
-	wm_mode_e guess_window_state(long know_state, Bool overide_redirect, int map_state, int w_class);
+	wm_mode_e guess_window_state(long know_state, Bool override_redirect, int map_state, int w_class);
 
 	void withdraw_to_X(client_t * c);
 

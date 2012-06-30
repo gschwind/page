@@ -22,6 +22,8 @@ client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
 				wa.height), width(wa.width), page_window(page_window), lock_count(
 				0), is_lock(false), clipping_window(None), icon_surf(0) {
 
+	icon.data = 0;
+
 	set_wm_state(wm_state);
 
 	if (wa.map_state == IsUnmapped) {
@@ -273,6 +275,11 @@ void client_t::init_icon() {
 	if (icon_surf != 0) {
 		cairo_surface_destroy(icon_surf);
 		icon_surf = 0;
+	}
+
+	if(icon.data != 0) {
+		free(icon.data);
+		icon.data = 0;
 	}
 
 	long * icon_data;

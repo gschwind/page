@@ -10,6 +10,9 @@
 
 #include <list>
 #include <cairo.h>
+#include <ft2build.h>
+#include <freetype/freetype.h>
+#include FT_FREETYPE_H
 
 #include "xconnection.hxx"
 #include "box.hxx"
@@ -57,6 +60,13 @@ class notebook_t: public tree_t {
 	static cairo_surface_t * pop_button_s;
 	static cairo_surface_t * pops_button_s;
 
+	static bool ft_is_loaded;
+	static FT_Library library; /* handle to library */
+	static FT_Face face; /* handle to face object */
+	static cairo_font_face_t * font;
+	static FT_Face face_bold; /* handle to face object */
+	static cairo_font_face_t * font_bold;
+
 	box_t<int> button_close;
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;
@@ -103,6 +113,7 @@ public:
 
 	void select_next();
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
+	void delete_all();
 
 };
 

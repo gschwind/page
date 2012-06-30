@@ -10,5 +10,6 @@
 int main(int argc, char * * argv) {
 	page_next::main_t * m = new page_next::main_t(argc, argv);
 	m->run();
+	delete m;
 	return 0;
 }

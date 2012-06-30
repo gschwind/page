@@ -145,6 +145,11 @@ public:
 			cairo_surface_destroy(icon_surf);
 			icon_surf = 0;
 		}
+
+		if(icon.data != 0) {
+			free(icon.data);
+			icon.data = 0;
+		}
 	}
 
 	void update_all();
