@@ -144,6 +144,8 @@ public:
 	void process_damage_event(XEvent * ev) __attribute__((no_instrument_function));
 	void process_create_window_event(XEvent * e);
 
+	void process_configure_notify_event(XEvent * e);
+
 	void drag_and_drop_loop();
 
 	void update_client_list();

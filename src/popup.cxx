@@ -76,6 +76,20 @@ void popup_window_t::get_extend(short &x, short &y, unsigned short &w, unsigned 
 	h = wa.height;
 }
 
+void popup_window_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
+	wa.x = x;
+	wa.y = y;
+	wa.height = h;
+	wa.width = w;
+
+	if(surf != 0) {
+		cairo_surface_destroy(surf);
+	}
+
+	surf = cairo_xlib_surface_create(dpy, w, wa.visual, wa.width, wa.height);
+
+}
+
 popup_split_t::popup_split_t(int x, int y, int width, int height) :
 		area(x, y, width, height) {
 
@@ -130,6 +144,10 @@ void popup_split_t::get_absolute_coord(int relative_x, int relative_y, int &abso
 }
 
 void popup_split_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
+
+}
+
+void popup_split_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
 
 }
 
@@ -191,6 +209,10 @@ void popup_notebook_t::get_absolute_coord(int relative_x, int relative_y, int &a
 }
 
 void popup_notebook_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
+
+}
+
+void popup_notebook_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
 
 }
 

@@ -239,19 +239,7 @@ void main_t::run() {
 		}
 
 		if (e.type == ConfigureNotify) {
-			printf("Configure %dx%d+%d+%d\n", e.xconfigure.width,
-					e.xconfigure.height, e.xconfigure.x, e.xconfigure.y);
-			/* Some client set size and position after map the window ... we need fix it */
-			client_t * c = find_client_by_xwindow(e.xconfigure.window);
-			if (c) {
-				c->hints.height = e.xconfigure.height;
-				c->hints.width = e.xconfigure.width;
-				c->hints.x = e.xconfigure.x;
-				c->hints.y = e.xconfigure.y;
-				box_t<int> x;
-				tree_root->update_allocation(x);
-			}
-
+			process_configure_notify_event(&e);
 		} else if (e.type == Expose) {
 			printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xexpose.window == main_window)
@@ -609,9 +597,16 @@ void main_t::process_map_notify_event(XEvent * e) {
 			//printf(">>1>%lu\n", NextRequest(cnx.dpy));
 			XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
 					CompositeRedirectAutomatic);
-
 			popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
 			popups.push_back(c);
+
+			XDamageNotifyEvent ev;
+			ev.drawable = main_window;
+			ev.area.x = wa.x;
+			ev.area.y = wa.y;
+			ev.area.height = wa.height;
+			ev.area.width = wa.width;
+			process_damage_event((XEvent *)&ev);
 		}
 
 	}
@@ -887,18 +882,23 @@ void main_t::process_damage_event(XEvent * ev) {
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_save(back_buffer_cr);
 	cairo_reset_clip(back_buffer_cr);
+
+	/* if this is a popup, I find the coresponding area on
+	 * main window, then I repair the main window.
+	 * This avoid multiple repair method.
+	 */
 	popup_t * p = find_popup_by_xwindow(e->drawable);
 	if (p) {
 		p->repair0(back_buffer_cr, main_window_s, e->area.x, e->area.y,
 				e->area.width, e->area.height);
 		int x, y;
 		p->get_absolute_coord(e->area.x, e->area.y, x, y);
-		cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
-		cairo_rectangle(composite_overlay_cr, x, y,
-				e->area.width, e->area.height);
-		cairo_fill(composite_overlay_cr);
+		e->area.x = x;
+		e->area.y = y;
 
-	} else if (e->drawable == main_window) {
+	}
+
+	if (p || e->drawable == main_window) {
 		cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
 		cairo_rectangle(back_buffer_cr, e->area.x, e->area.y,
 				e->area.width, e->area.height);
@@ -1093,6 +1093,35 @@ void main_t::withdraw_to_X(client_t * c) {
 
 	printf("Return %s on %p\n", __PRETTY_FUNCTION__, (void *) c->xwin);
 	return;
+
+}
+
+void main_t::process_configure_notify_event(XEvent * e) {
+	printf("Configure %dx%d+%d+%d\n", e->xconfigure.width,
+			e->xconfigure.height, e->xconfigure.x, e->xconfigure.y);
+	popup_t * p = find_popup_by_xwindow(e->xconfigure.window);
+	if(p) {
+		p->reconfigure(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width, e->xconfigure.height);
+		XDamageNotifyEvent ev;
+		ev.drawable = main_window;
+		ev.area.x = e->xconfigure.x;
+		ev.area.y = e->xconfigure.y;
+		ev.area.height = e->xconfigure.height;
+		ev.area.width = e->xconfigure.width;
+		process_damage_event((XEvent *)&ev);
+	}
+
+
+	/* Some client set size and position after map the window ... we need fix it */
+	client_t * c = find_client_by_xwindow(e->xconfigure.window);
+	if (c) {
+		c->hints.height = e->xconfigure.height;
+		c->hints.width = e->xconfigure.width;
+		c->hints.x = e->xconfigure.x;
+		c->hints.y = e->xconfigure.y;
+		box_t<int> x;
+		tree_root->update_allocation(x);
+	}
 
 }
 
