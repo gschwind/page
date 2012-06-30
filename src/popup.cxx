@@ -14,7 +14,7 @@ namespace page_next {
 #define max(x,y) (((x)<(y)?(y):(x)))
 
 popup_window_t::popup_window_t(Display * dpy, Window w, XWindowAttributes &wa) :
-		wa(wa), w(w), dpy(dpy) {
+		area(wa.x, wa.y, wa.width, wa.height), w(w), dpy(dpy), visual(wa.visual) {
 	damage = XDamageCreate(dpy, w, XDamageReportRawRectangles);
 	surf = cairo_xlib_surface_create(dpy, w, wa.visual, wa.width, wa.height);
 }
@@ -24,30 +24,15 @@ popup_window_t::~popup_window_t() {
 	cairo_surface_destroy(surf);
 }
 
-void popup_window_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
-		int width, int height) {
-	cairo_save(cr);
-	cairo_set_source_surface(cr, s, 0, 0);
-	cairo_rectangle(cr, wa.x + x, wa.y + y, width, height);
-	cairo_fill(cr);
-	cairo_set_source_surface(cr, surf, wa.x, wa.y);
-	cairo_rectangle(cr, wa.x + x, wa.y + y, width, height);
-	cairo_clip(cr);
-	cairo_paint_with_alpha(cr, 0.9);
-	cairo_fill(cr);
-	cairo_restore(cr);
-}
-
-void popup_window_t::repair1(cairo_t * cr, int x, int y, int width,
-		int height) {
-	int left = max(wa.x,x);
-	int rigth = min(wa.x + wa.width, x + width);
-	int top = max(wa.y, y);
-	int bottom = min(wa.y + wa.height, y + height);
+void popup_window_t::repair1(cairo_t * cr, box_int_t const & _area) {
+	int left = max(area.x,_area.x);
+	int rigth = min(area.x + area.w, _area.x + _area.w);
+	int top = max(area.y, _area.y);
+	int bottom = min(area.y + area.h, _area.y + _area.h);
 
 	if ((bottom - top) > 0 && (rigth - left) > 0) {
 		cairo_save(cr);
-		cairo_set_source_surface(cr, surf, wa.x, wa.y);
+		cairo_set_source_surface(cr, surf, area.x, area.y);
 		cairo_rectangle(cr, left, top, rigth - left, bottom - top);
 		cairo_clip(cr);
 		cairo_paint_with_alpha(cr, 0.9);
@@ -55,39 +40,25 @@ void popup_window_t::repair1(cairo_t * cr, int x, int y, int width,
 	}
 }
 
-void popup_window_t::hide(cairo_t * cr, cairo_surface_t * s) {
-	cairo_set_source_surface(cr, s, 0, 0);
-	cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
-	cairo_fill(cr);
-}
-
 bool popup_window_t::is_window(Window w) {
 	return this->w == w;
 }
 
-void popup_window_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
-	absolute_x = wa.x + relative_x;
-	absolute_y = wa.y + relative_y;
+box_int_t popup_window_t::get_absolute_extend() {
+	return area;
 }
 
-void popup_window_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
-	x = wa.x;
-	y = wa.y;
-	w = wa.width;
-	h = wa.height;
-}
+void popup_window_t::reconfigure(box_int_t const & a) {
+	area.x = a.x;
+	area.y = a.y;
+	area.h = a.h;
+	area.w = a.w;
 
-void popup_window_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
-	wa.x = x;
-	wa.y = y;
-	wa.height = h;
-	wa.width = w;
-
-	if(surf != 0) {
+	if (surf != 0) {
 		cairo_surface_destroy(surf);
 	}
 
-	surf = cairo_xlib_surface_create(dpy, w, wa.visual, wa.width, wa.height);
+	surf = cairo_xlib_surface_create(dpy, w, visual, area.w, area.h);
 
 }
 
@@ -96,21 +67,12 @@ popup_split_t::popup_split_t(box_t<int> const & area) :
 
 }
 
-void popup_split_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
-		int width, int height) {
-	/* never called */
-}
-
-void popup_split_t::repair1(cairo_t * cr, int x, int y, int width, int height) {
-	int left = max(area.x, x);
-	int rigth = min(area.x + area.w, x + width);
-	int top = max(area.y, y);
-	int bottom = min(area.y + area.h, y + height);
-
-	if ((bottom - top) > 0 && (rigth - left) > 0) {
+void popup_split_t::repair1(cairo_t * cr, box_int_t const & a) {
+	box_int_t i = area & a;
+	if (i.w > 0 && i.h > 0) {
 		cairo_save(cr);
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
-		cairo_rectangle(cr, left, top, rigth - left, bottom - top);
+		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 		cairo_fill(cr);
 		cairo_restore(cr);
 	}
@@ -124,32 +86,12 @@ bool popup_split_t::is_window(Window w) {
 	return false;
 }
 
-void popup_split_t::hide(cairo_t * cr, cairo_surface_t * s) {
-	cairo_set_source_surface(cr, s, 0, 0);
-	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-	cairo_fill(cr);
+box_int_t popup_split_t::get_absolute_extend() {
+	return area;
 }
 
-void popup_split_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int y,
-		int width, int height) {
-	hide(cr, s);
-	area.x = x;
-	area.y = y;
-	area.w = width;
-	area.h = height;
-	repair1(cr, area.x, area.y, area.w, area.h);
-}
-
-void popup_split_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
-
-}
-
-void popup_split_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
-
-}
-
-void popup_split_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
-
+void popup_split_t::reconfigure(box_int_t const & a) {
+	area = a;
 }
 
 popup_notebook_t::popup_notebook_t(int x, int y, int width, int height) :
@@ -157,25 +99,16 @@ popup_notebook_t::popup_notebook_t(int x, int y, int width, int height) :
 
 }
 
-void popup_notebook_t::repair0(cairo_t * cr, cairo_surface_t * s, int x, int y,
-		int width, int height) {
-	/* never called */
-}
-
-void popup_notebook_t::repair1(cairo_t * cr, int x, int y, int width, int height) {
-	int left = max(area.x, x);
-	int rigth = min(area.x + area.w, x + width);
-	int top = max(area.y, y);
-	int bottom = min(area.y + area.h, y + height);
-
-	if ((bottom - top) > 0 && (rigth - left) > 0) {
+void popup_notebook_t::repair1(cairo_t * cr, box_int_t const & a) {
+	box_int_t i = area & a;
+	if (i.w > 0 && i.h > 0) {
 		cairo_save(cr);
 		cairo_set_line_width(cr, 2.0);
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 		cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
-		cairo_rectangle(cr, left, top, rigth - left, bottom - top);
+		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 		cairo_clip(cr);
-		cairo_rectangle(cr, area.x+3, area.y+3, area.w-6, area.h-6);
+		cairo_rectangle(cr, area.x + 3, area.y + 3, area.w - 6, area.h - 6);
 		cairo_stroke(cr);
 		cairo_restore(cr);
 	}
@@ -189,32 +122,12 @@ bool popup_notebook_t::is_window(Window w) {
 	return false;
 }
 
-void popup_notebook_t::hide(cairo_t * cr, cairo_surface_t * s) {
-	cairo_set_source_surface(cr, s, 0, 0);
-	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-	cairo_fill(cr);
+box_int_t popup_notebook_t::get_absolute_extend() {
+	return area;
 }
 
-void popup_notebook_t::update_area(cairo_t * cr, cairo_surface_t * s, int x, int y,
-		int width, int height) {
-	hide(cr, s);
-	area.x = x;
-	area.y = y;
-	area.w = width;
-	area.h = height;
-	repair1(cr, area.x, area.y, area.w, area.h);
-}
-
-void popup_notebook_t::get_absolute_coord(int relative_x, int relative_y, int &absolute_x, int &absolute_y) {
-
-}
-
-void popup_notebook_t::get_extend(short &x, short &y, unsigned short &w, unsigned short &h) {
-
-}
-
-void popup_notebook_t::reconfigure(short x, short y, unsigned short w, unsigned short h) {
-
+void popup_notebook_t::reconfigure(box_int_t const & a) {
+	area = a;
 }
 
 }

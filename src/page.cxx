@@ -645,10 +645,9 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 	if (p) {
 		popups.remove(p);
 		XDamageNotifyEvent ev;
-		ev.drawable = main_window;
-		p->get_extend(ev.area.x, ev.area.y, ev.area.width, ev.area.height);
-		process_damage_event((XEvent *) &ev);
-		//p->hide(composite_overlay_cr, main_window_s);
+		box_int_t area = p->get_absolute_extend();
+		repair_back_buffer(area);
+		repair_overlay(area);
 		delete p;
 		return;
 	}
@@ -718,11 +717,9 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 
 	if (p) {
 		popups.remove(p);
-		XDamageNotifyEvent ev;
-		ev.drawable = main_window;
-		p->get_extend(ev.area.x, ev.area.y, ev.area.width, ev.area.height);
-		process_damage_event((XEvent *) &ev);
-		//p->hide(composite_overlay_cr, main_window_s);
+		box_int_t area = p->get_absolute_extend();
+		repair_back_buffer(area);
+		repair_overlay(area);
 		delete p;
 	}
 }
@@ -907,17 +904,12 @@ void main_t::process_damage_event(XEvent * ev) {
 	 */
 	popup_t * p = find_popup_by_xwindow(e->drawable);
 	if (p) {
-		p->repair0(back_buffer_cr, main_window_s, e->area.x, e->area.y,
-				e->area.width, e->area.height);
-		int x, y;
-		p->get_absolute_coord(e->area.x, e->area.y, x, y);
-		e->area.x = x;
-		e->area.y = y;
-
+		box_int_t area = p->get_absolute_extend();
+		e->area.x += area.x;
+		e->area.y += area.y;
 	}
 
 	if (p || e->drawable == main_window) {
-
 		box_int_t x(e->area.x, e->area.y, e->area.width, e->area.height);
 		pending_damage = substract_box(pending_damage, x);
 		pending_damage.push_back(x);
@@ -949,7 +941,7 @@ void main_t::repair_back_buffer(box_int_t const & area) {
 	while (i != popups.end()) {
 		popup_t * p = (*i);
 		/* make intersection */
-		p->repair1(back_buffer_cr, area.x, area.y, area.w, area.h);
+		p->repair1(back_buffer_cr, area);
 		++i;
 	}
 }
@@ -1164,9 +1156,10 @@ void main_t::process_configure_notify_event(XEvent * e) {
 		short y;
 		unsigned short w;
 		unsigned short h;
-		p->get_extend(x, y, w, h);
-		p->reconfigure(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width,
-				e->xconfigure.height);
+
+		box_int_t area = p->get_absolute_extend();
+		p->reconfigure(box_int_t(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width,
+				e->xconfigure.height));
 
 		int left = min<int>(x, e->xconfigure.x);
 		int right = max<int>(x+w, e->xconfigure.x + e->xconfigure.width);

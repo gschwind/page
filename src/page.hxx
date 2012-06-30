@@ -49,7 +49,6 @@
 namespace page_next {
 
 typedef std::set<client_t *> client_set_t;
-typedef box_t<int> box_int_t;
 typedef std::list<box_int_t> box_list_t;
 
 enum {

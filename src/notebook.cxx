@@ -84,18 +84,16 @@ notebook_t::notebook_t(main_t & page) :
 			throw std::runtime_error("unable to init freetype");
 		}
 
-		error = FT_New_Face(library, page.font.c_str(), 0,
-				&face);
+		error = FT_New_Face(library, page.font.c_str(), 0, &face);
 
-		if(error != FT_Err_Ok)
+		if (error != FT_Err_Ok)
 			throw std::runtime_error("unable to load default font");
 
 		font = cairo_ft_font_face_create_for_ft_face(face, 0);
 
-		error = FT_New_Face(library, page.font_bold.c_str(), 0,
-				&face_bold);
+		error = FT_New_Face(library, page.font_bold.c_str(), 0, &face_bold);
 
-		if(error != FT_Err_Ok)
+		if (error != FT_Err_Ok)
 			throw std::runtime_error("unable to load default bold font");
 
 		font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, 0);
@@ -694,6 +692,19 @@ void notebook_t::set_selected(client_t * c) {
 
 }
 
+void notebook_t::update_popup_position(popup_notebook_t * p, int x, int y,
+		int w, int h) {
+	box_int_t old_area = p->area;
+	p->area.x = x;
+	p->area.y = y;
+	p->area.w = w;
+	p->area.h = h;
+	page.repair_back_buffer(old_area);
+	page.repair_overlay(old_area);
+	page.repair_back_buffer(p->area);
+	page.repair_overlay(p->area);
+}
+
 void notebook_t::process_drag_and_drop(client_t * c) {
 	XEvent ev;
 	notebook_t * ns = 0;
@@ -730,8 +741,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						if (zone != SELECT_TAB || ns != (*i)) {
 							zone = SELECT_TAB;
 							ns = (*i);
-							p->update_area(page.composite_overlay_cr,
-									page.main_window_s, (*i)->tab_area.x,
+							update_popup_position(p, (*i)->tab_area.x,
 									(*i)->tab_area.y, (*i)->tab_area.w,
 									(*i)->tab_area.h);
 						}
@@ -741,8 +751,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						if (zone != SELECT_RIGHT || ns != (*i)) {
 							zone = SELECT_RIGHT;
 							ns = (*i);
-							p->update_area(page.composite_overlay_cr,
-									page.main_window_s, (*i)->right_area.x,
+							update_popup_position(p, (*i)->right_area.x,
 									(*i)->right_area.y, (*i)->right_area.w,
 									(*i)->right_area.h);
 						}
@@ -752,8 +761,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						if (zone != SELECT_TOP || ns != (*i)) {
 							zone = SELECT_TOP;
 							ns = (*i);
-							p->update_area(page.composite_overlay_cr,
-									page.main_window_s, (*i)->top_area.x,
+							update_popup_position(p, (*i)->top_area.x,
 									(*i)->top_area.y, (*i)->top_area.w,
 									(*i)->top_area.h);
 						}
@@ -763,8 +771,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						if (zone != SELECT_BOTTOM || ns != (*i)) {
 							zone = SELECT_BOTTOM;
 							ns = (*i);
-							p->update_area(page.composite_overlay_cr,
-									page.main_window_s, (*i)->bottom_area.x,
+							update_popup_position(p, (*i)->bottom_area.x,
 									(*i)->bottom_area.y, (*i)->bottom_area.w,
 									(*i)->bottom_area.h);
 						}
@@ -774,8 +781,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 						if (zone != SELECT_LEFT || ns != (*i)) {
 							zone = SELECT_LEFT;
 							ns = (*i);
-							p->update_area(page.composite_overlay_cr,
-									page.main_window_s, (*i)->left_area.x,
+							update_popup_position(p, (*i)->left_area.x,
 									(*i)->left_area.y, (*i)->left_area.w,
 									(*i)->left_area.h);
 						}

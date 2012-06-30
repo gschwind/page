@@ -252,7 +252,8 @@ void split_t::process_drag_and_drop() {
 		}
 	} while (ev.type != ButtonRelease);
 	page.popups.remove(p);
-	p->hide(page.composite_overlay_cr, page.main_window_s);
+	page.repair_back_buffer(slider_area);
+	page.repair_overlay(slider_area);
 	delete p;
 	XUngrabPointer(page.cnx.dpy, CurrentTime);
 	XFreeCursor(page.cnx.dpy, cursor);

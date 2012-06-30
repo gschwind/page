@@ -72,6 +72,8 @@ box_t<T> get_max_extand(box_t<T> const & box0, box_t<T> const & box1) {
 	return result;
 }
 
+typedef box_t<int> box_int_t;
+
 }
 
 #endif /* BOX_HXX_ */

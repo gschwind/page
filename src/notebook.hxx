@@ -20,6 +20,7 @@
 #include "tree.hxx"
 #include "split.hxx"
 #include "page.hxx"
+#include "popup.hxx"
 
 namespace page_next {
 
@@ -114,6 +115,8 @@ public:
 	void select_next();
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 	void delete_all();
+
+	void update_popup_position(popup_notebook_t * p, int x, int y, int w, int h);
 
 };
 
