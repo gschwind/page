@@ -694,11 +694,8 @@ void notebook_t::set_selected(client_t * c) {
 
 void notebook_t::update_popup_position(popup_notebook_t * p, int x, int y,
 		int w, int h) {
-	box_int_t old_area = p->area;
-	p->area.x = x;
-	p->area.y = y;
-	p->area.w = w;
-	p->area.h = h;
+	box_int_t old_area = p->get_absolute_extend();
+	p->reconfigure(box_int_t(x, y, w, h));
 	page.repair_back_buffer(old_area);
 	page.repair_overlay(old_area);
 	page.repair_back_buffer(p->area);
