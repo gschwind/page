@@ -61,30 +61,29 @@ main_t::main_t(int argc, char ** argv) :
 	}
 
 	gchar * theme = g_key_file_get_string(conf, "default", "theme_dir", 0);
-	if(theme == 0) {
+	if (theme == 0) {
 		throw std::runtime_error("no theme_dir found in config file");
 	}
 
 	page_base_dir = theme;
 	g_free(theme);
 
-
 	gchar * sfont = g_key_file_get_string(conf, "default", "font_file", 0);
-	if(theme == 0) {
+	if (theme == 0) {
 		throw std::runtime_error("no font_file found in config file");
 	}
 
 	font = sfont;
 	g_free(sfont);
 
-	gchar * sfont_bold = g_key_file_get_string(conf, "default", "font_bold_file", 0);
-	if(theme == 0) {
+	gchar * sfont_bold = g_key_file_get_string(conf, "default",
+			"font_bold_file", 0);
+	if (theme == 0) {
 		throw std::runtime_error("no font_file found in config file");
 	}
 
 	font_bold = sfont_bold;
 	g_free(sfont_bold);
-
 
 	default_window_pop = 0;
 	fullscreen_client = 0;
@@ -608,7 +607,6 @@ void main_t::process_map_notify_event(XEvent * e) {
 	if (e->xmap.event == cnx.xroot) {
 		/* pop up menu do not throw map_request_notify */
 		XWindowAttributes wa;
-		XWindowAttributes dst_wa;
 		if (!XGetWindowAttributes(cnx.dpy, e->xmap.window, &wa)) {
 			return;
 		}
@@ -616,20 +614,13 @@ void main_t::process_map_notify_event(XEvent * e) {
 		//print_window_attributes(e->xmap.window, wa);
 
 		if (wa.override_redirect) {
-			//XGetWindowAttributes(cnx.dpy, popup_overlay, &dst_wa);
-			//printf(">>1>%lu\n", NextRequest(cnx.dpy));
 			XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
 					CompositeRedirectAutomatic);
 			popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
 			popups.push_back(c);
+			repair_back_buffer(c->get_absolute_extend());
+			repair_overlay(c->get_absolute_extend());
 
-			XDamageNotifyEvent ev;
-			ev.drawable = main_window;
-			ev.area.x = wa.x;
-			ev.area.y = wa.y;
-			ev.area.height = wa.height;
-			ev.area.width = wa.width;
-			process_damage_event((XEvent *) &ev);
 		}
 
 	}
@@ -970,7 +961,6 @@ void main_t::repair_overlay(box_int_t const & area) {
 //	++color;
 //	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
 //	cairo_stroke(composite_overlay_cr);
-
 }
 
 void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
@@ -1151,29 +1141,15 @@ void main_t::process_configure_notify_event(XEvent * e) {
 			e->xconfigure.x, e->xconfigure.y);
 	popup_t * p = find_popup_by_xwindow(e->xconfigure.window);
 	if (p) {
-
-		short x;
-		short y;
-		unsigned short w;
-		unsigned short h;
-
 		box_int_t area = p->get_absolute_extend();
-		p->reconfigure(box_int_t(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width,
-				e->xconfigure.height));
+		box_int_t new_area(e->xconfigure.x, e->xconfigure.y,
+				e->xconfigure.width, e->xconfigure.height);
+		p->reconfigure(new_area);
+		box_int_t full_extend = get_max_extand(area, new_area);
 
-		int left = min<int>(x, e->xconfigure.x);
-		int right = max<int>(x+w, e->xconfigure.x + e->xconfigure.width);
-		int top = min<int>(y, e->xconfigure.y);
-		int bottom = max<int>(y+h, e->xconfigure.y + e->xconfigure.height);
-
-		if (right - left > 0 && bottom - top > 0) {
-			XDamageNotifyEvent ev;
-			ev.drawable = main_window;
-			ev.area.x = left;
-			ev.area.y = top;
-			ev.area.width = right - left;
-			ev.area.height = bottom - top;
-			process_damage_event((XEvent *) &ev);
+		if (full_extend.w > 0 && full_extend.h > 0) {
+			repair_back_buffer(full_extend);
+			repair_overlay(full_extend);
 		}
 
 	}
