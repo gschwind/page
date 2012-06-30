@@ -39,7 +39,7 @@ notebook_t::notebook_t(main_t & page) :
 	notebooks.push_back(this);
 
 	if (hsplit_button_s == 0) {
-		std::string filename = page.page_base_dir + "/data/hsplit_button.png";
+		std::string filename = page.page_base_dir + "/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (hsplit_button_s == 0)
@@ -47,7 +47,7 @@ notebook_t::notebook_t(main_t & page) :
 	}
 
 	if (vsplit_button_s == 0) {
-		std::string filename = page.page_base_dir + "/data/vsplit_button.png";
+		std::string filename = page.page_base_dir + "/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (vsplit_button_s == 0)
@@ -55,7 +55,7 @@ notebook_t::notebook_t(main_t & page) :
 	}
 
 	if (close_button_s == 0) {
-		std::string filename = page.page_base_dir + "/data/close_button.png";
+		std::string filename = page.page_base_dir + "/close_button.png";
 		printf("Load: %s\n", filename.c_str());
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == 0)
@@ -63,7 +63,7 @@ notebook_t::notebook_t(main_t & page) :
 	}
 
 	if (pop_button_s == 0) {
-		std::string filename = page.page_base_dir + "/data/pop_button.png";
+		std::string filename = page.page_base_dir + "/pop_button.png";
 		printf("Load: %s\n", filename.c_str());
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == 0)
@@ -71,7 +71,7 @@ notebook_t::notebook_t(main_t & page) :
 	}
 
 	if (pops_button_s == 0) {
-		std::string filename = page.page_base_dir + "/data/pops_button.png";
+		std::string filename = page.page_base_dir + "/pops_button.png";
 		printf("Load: %s\n", filename.c_str());
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == 0)
@@ -84,19 +84,19 @@ notebook_t::notebook_t(main_t & page) :
 			throw std::runtime_error("unable to init freetype");
 		}
 
-		error = FT_New_Face(library, "/usr/share/fonts/dejavu/DejaVuSans.ttf", 0,
+		error = FT_New_Face(library, page.font.c_str(), 0,
 				&face);
 
 		if(error != FT_Err_Ok)
-			throw std::runtime_error("unable to load /usr/share/fonts/dejavu/DejaVuSans.ttf");
+			throw std::runtime_error("unable to load default font");
 
 		font = cairo_ft_font_face_create_for_ft_face(face, 0);
 
-		error = FT_New_Face(library, "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf", 0,
+		error = FT_New_Face(library, page.font_bold.c_str(), 0,
 				&face_bold);
 
 		if(error != FT_Err_Ok)
-			throw std::runtime_error("unable to load /usr/share/fonts/dejavu/DejaVuSans-Bold.ttf");
+			throw std::runtime_error("unable to load default bold font");
 
 		font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, 0);
 

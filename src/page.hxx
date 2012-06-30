@@ -10,6 +10,8 @@
 
 //#define _POSIX_C_SOURCE 199309L
 
+#include <glib.h>
+
 #include <features.h>
 #include <ctime>
 #include <X11/X.h>
@@ -109,9 +111,12 @@ public:
 
 	bool has_fullscreen_size;
 	box_t<int> fullscreen_position;
-
-
 	box_list_t pending_damage;
+
+	GKeyFile * conf;
+
+	std::string font;
+	std::string font_bold;
 
 private:
 	client_t * client_focused;

@@ -33,7 +33,6 @@ int main(int argc, char ** argv) {
 	XSendEvent(dpy, root, False, 0xffffff, &ev);
 
 	XFlush(dpy);
-	sleep(3);
 
 	XCloseDisplay(dpy);
 

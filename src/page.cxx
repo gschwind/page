@@ -50,19 +50,41 @@ main_t::main_t(int argc, char ** argv) :
 
 	trace_init();
 
-	if (argc >= 1) {
-		char * tmp = strdup(argv[0]);
-		char * end = strrchr(tmp, '/');
-		if (end != 0) {
-			*end = 0;
-			page_base_dir = tmp;
-		} else {
-			page_base_dir = "";
-		}
-		free(tmp);
-	} else {
-		page_base_dir = "";
+	conf = g_key_file_new();
+
+	if (argc < 2) {
+		throw std::runtime_error("usage : prg <config_file>");
 	}
+
+	if (!g_key_file_load_from_file(conf, argv[1], G_KEY_FILE_NONE, 0)) {
+		throw std::runtime_error("could not load config file");
+	}
+
+	gchar * theme = g_key_file_get_string(conf, "default", "theme_dir", 0);
+	if(theme == 0) {
+		throw std::runtime_error("no theme_dir found in config file");
+	}
+
+	page_base_dir = theme;
+	g_free(theme);
+
+
+	gchar * sfont = g_key_file_get_string(conf, "default", "font_file", 0);
+	if(theme == 0) {
+		throw std::runtime_error("no font_file found in config file");
+	}
+
+	font = sfont;
+	g_free(sfont);
+
+	gchar * sfont_bold = g_key_file_get_string(conf, "default", "font_bold_file", 0);
+	if(theme == 0) {
+		throw std::runtime_error("no font_file found in config file");
+	}
+
+	font_bold = sfont_bold;
+	g_free(sfont_bold);
+
 
 	default_window_pop = 0;
 	fullscreen_client = 0;
@@ -93,6 +115,8 @@ main_t::~main_t() {
 		delete (*i);
 		++i;
 	}
+
+	g_key_file_free(conf);
 
 }
 
@@ -877,7 +901,6 @@ void main_t::process_damage_event(XEvent * ev) {
 	//printf("damage event win: #%lu %dx%d+%d+%d\n", e->drawable,
 	//		(int) e->area.width, (int) e->area.height, (int) e->area.x,
 	//		(int) e->area.y);
-
 	/* if this is a popup, I find the coresponding area on
 	 * main window, then I repair the main window.
 	 * This avoid multiple repair method.
@@ -955,7 +978,6 @@ void main_t::repair_overlay(box_int_t const & area) {
 //	++color;
 //	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
 //	cairo_stroke(composite_overlay_cr);
-
 	cairo_restore(back_buffer_cr);
 	cairo_restore(composite_overlay_cr);
 }
