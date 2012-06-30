@@ -143,8 +143,8 @@ void main_t::run() {
 			wa.width, wa.height);
 	main_window_cr = cairo_create(main_window_s);
 
-	back_buffer_s = cairo_surface_create_similar(main_window_s, CAIRO_CONTENT_COLOR,
-			wa.width, wa.height);
+	back_buffer_s = cairo_surface_create_similar(main_window_s,
+			CAIRO_CONTENT_COLOR, wa.width, wa.height);
 	back_buffer_cr = cairo_create(back_buffer_s);
 
 	XGetWindowAttributes(cnx.dpy, cnx.composite_overlay, &wa);
@@ -320,8 +320,7 @@ main_t::wm_mode_e main_t::guess_window_state(long know_state,
 			if (override_redirect && map_state != IsUnmapped) {
 				printf("> SET POPUP\n");
 				return WM_MODE_POPUP;
-			} else if (map_state == IsUnmapped
-					&& override_redirect == 0) {
+			} else if (map_state == IsUnmapped && override_redirect == 0) {
 				printf("> SET Withdrawn\n");
 				return WM_MODE_WITHDRAW;
 			} else if (override_redirect && map_state == IsUnmapped) {
@@ -606,7 +605,7 @@ void main_t::process_map_notify_event(XEvent * e) {
 			ev.area.y = wa.y;
 			ev.area.height = wa.height;
 			ev.area.width = wa.width;
-			process_damage_event((XEvent *)&ev);
+			process_damage_event((XEvent *) &ev);
 		}
 
 	}
@@ -624,7 +623,7 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		XDamageNotifyEvent ev;
 		ev.drawable = main_window;
 		p->get_extend(ev.area.x, ev.area.y, ev.area.width, ev.area.height);
-		process_damage_event((XEvent *)&ev);
+		process_damage_event((XEvent *) &ev);
 		//p->hide(composite_overlay_cr, main_window_s);
 		delete p;
 		return;
@@ -648,25 +647,25 @@ void main_t::process_unmap_notify_event(XEvent * e) {
 		/* Syntetic unmap mean Normal/Iconic to WithDraw */
 		/* some client do not honor syntetic unmap ... */
 		//if (e->xunmap.send_event) {
-			printf("Unmap form send event\n");
-			cnx.reparentwindow(c->xwin, cnx.xroot, 0, 0);
-			XRemoveFromSaveSet(cnx.dpy, c->xwin);
-			if (fullscreen_client == c)
-				fullscreen_client = 0;
-			if (client_focused == c) {
-				update_focus(0);
-			}
-			tree_root->remove_client(c);
-			if (c->has_partial_struct)
-				update_page_aera();
-			if (!c->is_dock) {
-				XDestroyWindow(cnx.dpy, c->clipping_window);
-				c->clipping_window = None;
-			}
-			c->set_wm_state(WithdrawnState);
-			update_client_list();
-			render();
-			//}
+		printf("Unmap form send event\n");
+		cnx.reparentwindow(c->xwin, cnx.xroot, 0, 0);
+		XRemoveFromSaveSet(cnx.dpy, c->xwin);
+		if (fullscreen_client == c)
+			fullscreen_client = 0;
+		if (client_focused == c) {
+			update_focus(0);
+		}
+		tree_root->remove_client(c);
+		if (c->has_partial_struct)
+			update_page_aera();
+		if (!c->is_dock) {
+			XDestroyWindow(cnx.dpy, c->clipping_window);
+			c->clipping_window = None;
+		}
+		c->set_wm_state(WithdrawnState);
+		update_client_list();
+		render();
+		//}
 	}
 }
 
@@ -698,7 +697,7 @@ void main_t::process_destroy_notify_event(XEvent * e) {
 		XDamageNotifyEvent ev;
 		ev.drawable = main_window;
 		p->get_extend(ev.area.x, ev.area.y, ev.area.width, ev.area.height);
-		process_damage_event((XEvent *)&ev);
+		process_damage_event((XEvent *) &ev);
 		//p->hide(composite_overlay_cr, main_window_s);
 		delete p;
 	}
@@ -900,16 +899,16 @@ void main_t::process_damage_event(XEvent * ev) {
 
 	if (p || e->drawable == main_window) {
 		cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
-		cairo_rectangle(back_buffer_cr, e->area.x, e->area.y,
-				e->area.width, e->area.height);
+		cairo_rectangle(back_buffer_cr, e->area.x, e->area.y, e->area.width,
+				e->area.height);
 		cairo_fill(back_buffer_cr);
 
 		std::list<popup_t *>::iterator i = popups.begin();
 		while (i != popups.end()) {
 			popup_t * p = (*i);
 			/* make intersec */
-			p->repair1(back_buffer_cr, e->area.x, e->area.y,
-					e->area.width, e->area.height);
+			p->repair1(back_buffer_cr, e->area.x, e->area.y, e->area.width,
+					e->area.height);
 			++i;
 		}
 
@@ -1097,20 +1096,37 @@ void main_t::withdraw_to_X(client_t * c) {
 }
 
 void main_t::process_configure_notify_event(XEvent * e) {
-	printf("Configure %dx%d+%d+%d\n", e->xconfigure.width,
-			e->xconfigure.height, e->xconfigure.x, e->xconfigure.y);
+	printf("Configure %dx%d+%d+%d\n", e->xconfigure.width, e->xconfigure.height,
+			e->xconfigure.x, e->xconfigure.y);
 	popup_t * p = find_popup_by_xwindow(e->xconfigure.window);
-	if(p) {
-		p->reconfigure(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width, e->xconfigure.height);
-		XDamageNotifyEvent ev;
-		ev.drawable = main_window;
-		ev.area.x = e->xconfigure.x;
-		ev.area.y = e->xconfigure.y;
-		ev.area.height = e->xconfigure.height;
-		ev.area.width = e->xconfigure.width;
-		process_damage_event((XEvent *)&ev);
-	}
+	if (p) {
 
+		short x;
+		short y;
+		unsigned short w;
+		unsigned short h;
+		p->get_extend(x, y, w, h);
+		p->reconfigure(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width,
+				e->xconfigure.height);
+
+#define min(x,y) (((x)>(y))?(y):(x))
+#define max(x,y) (((x)<(y))?(y):(x))
+
+		int left = min(x, e->xconfigure.x);
+		int right = max(x+w, e->xconfigure.x + e->xconfigure.width);
+		int top = min(y, e->xconfigure.y);
+		int bottom = max(y+h, e->xconfigure.y + e->xconfigure.height);
+
+		if (right - left > 0 && bottom - top > 0) {
+			XDamageNotifyEvent ev;
+			ev.drawable = main_window;
+			ev.area.x = left;
+			ev.area.y = top;
+			ev.area.width = right - left;
+			ev.area.height = bottom - top;
+			process_damage_event((XEvent *) &ev);
+		}
+	}
 
 	/* Some client set size and position after map the window ... we need fix it */
 	client_t * c = find_client_by_xwindow(e->xconfigure.window);
