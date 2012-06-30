@@ -46,7 +46,7 @@ void trace_init() {
 	printf("opening %s\n", string_buff);
 	char x[1000];
 	snprintf(x, 1000, "cat %s", string_buff);
-	system(x);
+	//system(x);
 	char cmdline[2000];
 	int size;
 	load_file(string_buff, cmdline, 2000);

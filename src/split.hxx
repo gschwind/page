@@ -55,6 +55,8 @@ public:
 	void update_allocation_pack1();
 	void delete_all();
 
+	void compute_slider_area(box_int_t & area);
+
 };
 
 }

@@ -929,6 +929,7 @@ void main_t::process_damage_event(XEvent * ev) {
 
 		box_list_t::const_iterator i = pending_damage.begin();
 		while (i != pending_damage.end()) {
+			repair_back_buffer(*i);
 			repair_overlay(*i);
 			++i;
 		}
@@ -938,13 +939,8 @@ void main_t::process_damage_event(XEvent * ev) {
 
 }
 
-void main_t::repair_overlay(box_int_t const & area) {
-
-	cairo_save(composite_overlay_cr);
-	cairo_reset_clip(composite_overlay_cr);
-	cairo_save(back_buffer_cr);
+void main_t::repair_back_buffer(box_int_t const & area) {
 	cairo_reset_clip(back_buffer_cr);
-
 	cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
 	cairo_rectangle(back_buffer_cr, area.x, area.y, area.w, area.h);
 	cairo_fill(back_buffer_cr);
@@ -952,11 +948,15 @@ void main_t::repair_overlay(box_int_t const & area) {
 	std::list<popup_t *>::iterator i = popups.begin();
 	while (i != popups.end()) {
 		popup_t * p = (*i);
-		/* make intersec */
+		/* make intersection */
 		p->repair1(back_buffer_cr, area.x, area.y, area.w, area.h);
 		++i;
 	}
+}
 
+void main_t::repair_overlay(box_int_t const & area) {
+
+	cairo_reset_clip(composite_overlay_cr);
 	cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
 	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
 	cairo_fill(composite_overlay_cr);
@@ -978,8 +978,7 @@ void main_t::repair_overlay(box_int_t const & area) {
 //	++color;
 //	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
 //	cairo_stroke(composite_overlay_cr);
-	cairo_restore(back_buffer_cr);
-	cairo_restore(composite_overlay_cr);
+
 }
 
 void main_t::print_window_attributes(Window w, XWindowAttributes & wa) {
@@ -1169,13 +1168,10 @@ void main_t::process_configure_notify_event(XEvent * e) {
 		p->reconfigure(e->xconfigure.x, e->xconfigure.y, e->xconfigure.width,
 				e->xconfigure.height);
 
-#define min(x,y) (((x)>(y))?(y):(x))
-#define max(x,y) (((x)<(y))?(y):(x))
-
-		int left = min(x, e->xconfigure.x);
-		int right = max(x+w, e->xconfigure.x + e->xconfigure.width);
-		int top = min(y, e->xconfigure.y);
-		int bottom = max(y+h, e->xconfigure.y + e->xconfigure.height);
+		int left = min<int>(x, e->xconfigure.x);
+		int right = max<int>(x+w, e->xconfigure.x + e->xconfigure.width);
+		int top = min<int>(y, e->xconfigure.y);
+		int bottom = max<int>(y+h, e->xconfigure.y + e->xconfigure.height);
 
 		if (right - left > 0 && bottom - top > 0) {
 			XDamageNotifyEvent ev;

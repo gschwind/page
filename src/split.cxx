@@ -206,16 +206,11 @@ void split_t::process_drag_and_drop() {
 	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
 	popup_split_t * p;
 
-	if (_split_type == VERTICAL_SPLIT) {
-		p = new popup_split_t(
-				_allocation.x + (int) (_split * _allocation.w) - GRIP_SIZE,
-				_allocation.y, 2 * GRIP_SIZE, _allocation.h);
-	} else {
-		p = new popup_split_t(_allocation.x,
-				_allocation.y + (int) (_split * _allocation.h) - GRIP_SIZE,
-				_allocation.w, 2 * GRIP_SIZE);
-	}
+	box_int_t slider_area;
 
+	compute_slider_area(slider_area);
+
+	p = new popup_split_t(slider_area);
 	page.popups.push_back(p);
 
 	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
@@ -232,64 +227,35 @@ void split_t::process_drag_and_drop() {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
-				int old_split = _split;
 				_split = (ev.xmotion.x - _allocation.x)
 						/ (double) (_allocation.w);
-				if (_split > 0.95)
-					_split = 0.95;
-				if (_split < 0.05)
-					_split = 0.05;
-
-//				p->update_area(page.back_buffer_cr, page.main_window_s,
-//						_allocation.x + (int) (_split * _allocation.w)
-//								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
-//						_allocation.h);
-//
-				cairo_set_source_surface(page.composite_overlay_cr,
-						page.back_buffer_s, 0, 0);
-				cairo_rectangle(page.composite_overlay_cr,
-						_allocation.x + (int) (_split * _allocation.w)
-								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
-						_allocation.h);
-				cairo_fill(page.composite_overlay_cr);
-				cairo_set_source_surface(page.composite_overlay_cr,
-						page.back_buffer_s, 0, 0);
-				cairo_rectangle(page.composite_overlay_cr,
-						_allocation.x + (int) (old_split * _allocation.w)
-								- GRIP_SIZE, _allocation.y, 2 * GRIP_SIZE,
-						_allocation.h);
-				cairo_fill(page.composite_overlay_cr);
-
 			} else {
-				int old_split = _split;
 				_split = (ev.xmotion.y - _allocation.y)
 						/ (double) (_allocation.h);
-				if (_split > 0.95)
-					_split = 0.95;
-				if (_split < 0.05)
-					_split = 0.05;
-
-//				p->update_area(page.back_buffer_cr, page.main_window_s,
-//						_allocation.x,
-//						_allocation.y + (int) (_split * _allocation.h)
-//								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
-//
-
-
-				cairo_set_source_surface(page.composite_overlay_cr,
-						page.back_buffer_s, 0, 0);
-				cairo_rectangle(page.composite_overlay_cr, _allocation.x,
-						_allocation.y + (int) (_split * _allocation.h)
-								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
-				cairo_fill(page.composite_overlay_cr);
-				cairo_set_source_surface(page.composite_overlay_cr,
-						page.back_buffer_s, 0, 0);
-				cairo_rectangle(page.composite_overlay_cr, _allocation.x,
-						_allocation.y + (int) (old_split * _allocation.h)
-								- GRIP_SIZE, _allocation.w, 2 * GRIP_SIZE);
-				cairo_fill(page.composite_overlay_cr);
-
 			}
+
+			if (_split > 0.95)
+				_split = 0.95;
+			if (_split < 0.05)
+				_split = 0.05;
+
+			/* Render slider with quite complex render method to avoid flickering */
+			box_int_t old_area = slider_area;
+			compute_slider_area(slider_area);
+
+			p->area = slider_area;
+
+			page.repair_back_buffer(old_area);
+			page.repair_back_buffer(slider_area);
+
+			box_int_t full_area;
+			full_area.x = min(old_area.x, slider_area.x);
+			full_area.y = min(old_area.y, slider_area.y);
+			full_area.w = max(old_area.x + old_area.w,
+					slider_area.x + slider_area.w) - full_area.x;
+			full_area.h = max(old_area.y + old_area.h,
+					slider_area.y + slider_area.h) - full_area.y;
+			page.repair_overlay(full_area);
 		}
 	} while (ev.type != ButtonRelease);
 	page.popups.remove(p);
@@ -309,14 +275,30 @@ Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 }
 
 void split_t::delete_all() {
-	if(_pack0) {
+	if (_pack0) {
 		_pack0->delete_all();
 		delete _pack0;
 	}
 
-	if(_pack1) {
+	if (_pack1) {
 		_pack1->delete_all();
 		delete _pack1;
+	}
+}
+
+/* compute the slider area */
+void split_t::compute_slider_area(box_int_t & area) {
+	if (_split_type == VERTICAL_SPLIT) {
+		area.x = _allocation.x + (int) (_split * _allocation.w) - GRIP_SIZE;
+		area.y = _allocation.y;
+		area.w = 2 * GRIP_SIZE;
+		area.h = _allocation.h;
+
+	} else {
+		area.x = _allocation.x;
+		area.y = _allocation.y + (int) (_split * _allocation.h) - GRIP_SIZE;
+		area.w = _allocation.w;
+		area.h = 2 * GRIP_SIZE;
 	}
 }
 

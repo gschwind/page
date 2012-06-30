@@ -49,7 +49,6 @@
 namespace page_next {
 
 typedef std::set<client_t *> client_set_t;
-
 typedef box_t<int> box_int_t;
 typedef std::list<box_int_t> box_list_t;
 
@@ -197,6 +196,8 @@ public:
 
 	box_list_t substract_box(box_int_t const &box0, box_int_t const &box1);
 	box_list_t substract_box(box_list_t &box_list, box_int_t &box1);
+
+	void repair_back_buffer(box_int_t const & area);
 	void repair_overlay(box_int_t const & area);
 
 	bool merge_area_macro(box_list_t & list);

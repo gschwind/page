@@ -11,6 +11,17 @@
 namespace page_next {
 
 template<typename T>
+inline T min(T x, T y) {
+	return (((x)<(y))?(x):(y));
+}
+
+template<typename T>
+inline T max(T x, T y) {
+	return (((x)>(y))?(x):(y));
+}
+
+
+template<typename T>
 struct box_t {
 	T x, y;
 	T w, h;
@@ -31,9 +42,6 @@ struct box_t {
 
 	box_t<T> operator&(box_t<T> const & box) const {
 
-#define min(x,y) (((x)>(y))?(y):(x))
-#define max(x,y) (((x)<(y))?(y):(x))
-
 		T left = max(this->x, box.x);
 		T right = min(this->x+this->w, box.x+box.w);
 		T top = max(this->y, box.y);
@@ -44,9 +52,6 @@ struct box_t {
 		} else {
 			return box_t<T>(left, top, right-left, bottom-top);
 		}
-
-#undef min
-#undef max
 
 	}
 

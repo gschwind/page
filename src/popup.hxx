@@ -49,7 +49,7 @@ struct popup_window_t : public popup_t{
 
 struct popup_split_t : public popup_t {
 	box_t<int> area;
-	popup_split_t(int x, int y, int width, int height);
+	popup_split_t(box_t<int> const & area);
 	~popup_split_t();
 	virtual void repair0(cairo_t * cr, cairo_surface_t * s, int x, int y, int width, int height);
 	virtual void repair1(cairo_t * cr, int x, int y, int width, int height);
