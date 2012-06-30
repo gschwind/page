@@ -229,6 +229,7 @@ void main_t::run() {
 
 	running = true;
 	while (running) {
+
 		XEvent e;
 		cnx.xnextevent(&e);
 		//printf("##%lu\n", e.xany.serial);
@@ -244,7 +245,6 @@ void main_t::run() {
 			printf("Expose #%x\n", (unsigned int) e.xexpose.window);
 			if (e.xexpose.window == main_window)
 				render();
-
 		} else if (e.type == ButtonPress) {
 			client_t * c = find_client_by_clipping_window(e.xbutton.window);
 			if (c) {
@@ -877,10 +877,6 @@ void main_t::process_damage_event(XEvent * ev) {
 	//printf("damage event win: #%lu %dx%d+%d+%d\n", e->drawable,
 	//		(int) e->area.width, (int) e->area.height, (int) e->area.x,
 	//		(int) e->area.y);
-	cairo_save(composite_overlay_cr);
-	cairo_reset_clip(composite_overlay_cr);
-	cairo_save(back_buffer_cr);
-	cairo_reset_clip(back_buffer_cr);
 
 	/* if this is a popup, I find the coresponding area on
 	 * main window, then I repair the main window.
@@ -898,25 +894,67 @@ void main_t::process_damage_event(XEvent * ev) {
 	}
 
 	if (p || e->drawable == main_window) {
-		cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
-		cairo_rectangle(back_buffer_cr, e->area.x, e->area.y, e->area.width,
-				e->area.height);
-		cairo_fill(back_buffer_cr);
 
-		std::list<popup_t *>::iterator i = popups.begin();
-		while (i != popups.end()) {
-			popup_t * p = (*i);
-			/* make intersec */
-			p->repair1(back_buffer_cr, e->area.x, e->area.y, e->area.width,
-					e->area.height);
-			++i;
+		box_int_t x(e->area.x, e->area.y, e->area.width, e->area.height);
+		pending_damage = substract_box(pending_damage, x);
+		pending_damage.push_back(x);
+	}
+
+	if (!e->more) {
+		while (merge_area_macro(pending_damage)) {
 		}
 
-		cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
-		cairo_rectangle(composite_overlay_cr, e->area.x, e->area.y,
-				e->area.width, e->area.height);
-		cairo_fill(composite_overlay_cr);
+		box_list_t::const_iterator i = pending_damage.begin();
+		while (i != pending_damage.end()) {
+			repair_overlay(*i);
+			++i;
+		}
+		pending_damage.clear();
+
 	}
+
+}
+
+void main_t::repair_overlay(box_int_t const & area) {
+
+	cairo_save(composite_overlay_cr);
+	cairo_reset_clip(composite_overlay_cr);
+	cairo_save(back_buffer_cr);
+	cairo_reset_clip(back_buffer_cr);
+
+	cairo_set_source_surface(back_buffer_cr, main_window_s, 0, 0);
+	cairo_rectangle(back_buffer_cr, area.x, area.y, area.w, area.h);
+	cairo_fill(back_buffer_cr);
+
+	std::list<popup_t *>::iterator i = popups.begin();
+	while (i != popups.end()) {
+		popup_t * p = (*i);
+		/* make intersec */
+		p->repair1(back_buffer_cr, area.x, area.y, area.w, area.h);
+		++i;
+	}
+
+	cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
+	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
+	cairo_fill(composite_overlay_cr);
+
+	/* for debug purpose */
+
+//	static int color = 0;
+//	switch (color % 3) {
+//	case 0:
+//		cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 0.0);
+//		break;
+//	case 1:
+//		cairo_set_source_rgb(composite_overlay_cr, 1.0, 1.0, 0.0);
+//		break;
+//	case 2:
+//		cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 1.0);
+//		break;
+//	}
+//	++color;
+//	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
+//	cairo_stroke(composite_overlay_cr);
 
 	cairo_restore(back_buffer_cr);
 	cairo_restore(composite_overlay_cr);
@@ -1126,6 +1164,7 @@ void main_t::process_configure_notify_event(XEvent * e) {
 			ev.area.height = bottom - top;
 			process_damage_event((XEvent *) &ev);
 		}
+
 	}
 
 	/* Some client set size and position after map the window ... we need fix it */
@@ -1138,6 +1177,204 @@ void main_t::process_configure_notify_event(XEvent * e) {
 		box_t<int> x;
 		tree_root->update_allocation(x);
 	}
+
+}
+
+/* box0 - box1 */
+box_list_t main_t::substract_box(box_int_t const &box0, box_int_t const &box1) {
+	box_list_t result;
+
+	box_int_t inter_sec = box0 & box1;
+
+	if (inter_sec.w > 0 && inter_sec.h > 0) {
+		/* top box */
+		{
+			int left = inter_sec.x;
+			int right = inter_sec.x + inter_sec.w;
+			int top = box0.y;
+			int bottom = inter_sec.y;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* bottom box */
+		{
+			int left = inter_sec.x;
+			int right = inter_sec.x + inter_sec.w;
+			int top = inter_sec.y + inter_sec.h;
+			int bottom = box0.y + box0.h;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* left box */
+		{
+			int left = box0.x;
+			int right = inter_sec.x;
+			int top = inter_sec.y;
+			int bottom = inter_sec.y + inter_sec.h;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* right box */
+		{
+			int left = inter_sec.x + inter_sec.w;
+			int right = box0.x + box0.w;
+			int top = inter_sec.y;
+			int bottom = inter_sec.y + inter_sec.h;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* top left box */
+		{
+			int left = box0.x;
+			int right = inter_sec.x;
+			int top = box0.y;
+			int bottom = inter_sec.y;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* top right box */
+		{
+			int left = inter_sec.x + inter_sec.w;
+			int right = box0.x + box0.w;
+			int top = box0.y;
+			int bottom = inter_sec.y;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* bottom left box */
+		{
+			int left = box0.x;
+			int right = inter_sec.x;
+			int top = inter_sec.y + inter_sec.h;
+			int bottom = box0.y + box0.h;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+		/* bottom right box */
+		{
+			int left = inter_sec.x + inter_sec.w;
+			int right = box0.x + box0.w;
+			int top = inter_sec.y + inter_sec.h;
+			int bottom = box0.y + box0.h;
+
+			if (right - left > 0 && bottom - top > 0) {
+				result.push_back(
+						box_int_t(left, top, right - left, bottom - top));
+			}
+		}
+
+	} else {
+		result.push_back(box0);
+	}
+
+	return result;
+
+}
+
+box_list_t main_t::substract_box(box_list_t &box_list, box_int_t &box1) {
+	box_list_t result;
+	box_list_t::const_iterator i = box_list.begin();
+	while (i != box_list.end()) {
+		box_list_t x = substract_box(*i, box1);
+		result.insert(result.end(), x.begin(), x.end());
+		++i;
+	}
+	return result;
+}
+
+inline void copy_without(box_list_t::const_iterator x,
+		box_list_t::const_iterator y, box_list_t const & list,
+		box_list_t & out) {
+	box_list_t::const_iterator i = list.begin();
+	while (i != list.end()) {
+		if (i != x && i != y) {
+			out.push_back(*i);
+		}
+		++i;
+	}
+}
+
+/* merge 2 reactangle, not efficiently */
+bool main_t::merge_area_macro(box_list_t & list) {
+
+	box_list_t result;
+	box_list_t tmp;
+	box_list_t::const_iterator i = list.begin();
+	while (i != list.end()) {
+		box_list_t::const_iterator j = list.begin();
+		while (j != list.end()) {
+			if (i != j) {
+				if ((*i).x + (*i).w == (*j).x && (*i).y == (*j).y
+						&& (*i).h == (*j).h) {
+					copy_without(i, j, list, tmp);
+					tmp.push_back(
+							box_int_t((*i).x, (*i).y, (*j).w + (*i).w, (*i).h));
+					list = tmp;
+					return true;
+				}
+
+				if ((*i).x == (*j).x + (*j).w && (*i).y == (*j).y
+						&& (*i).h == (*j).h) {
+					copy_without(i, j, list, tmp);
+					tmp.push_back(
+							box_int_t((*j).x, (*j).y, (*j).w + (*i).w, (*j).h));
+					list = tmp;
+					return true;
+				}
+
+				if ((*i).y == (*j).y + (*j).h && (*i).x == (*j).x
+						&& (*i).w == (*j).w) {
+					copy_without(i, j, list, tmp);
+					tmp.push_back(
+							box_int_t((*j).x, (*j).y, (*j).w, (*j).h + (*i).h));
+					list = tmp;
+					return true;
+				}
+
+				if ((*i).y + (*i).h == (*j).y && (*i).x == (*j).x
+						&& (*i).w == (*j).w) {
+					copy_without(i, j, list, tmp);
+					tmp.push_back(
+							box_int_t((*i).x, (*i).y, (*i).w, (*j).h + (*i).h));
+					list = tmp;
+					return true;
+				}
+
+			}
+			++j;
+		}
+		++i;
+	}
+
+	return false;
 
 }
 

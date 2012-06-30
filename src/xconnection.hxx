@@ -177,6 +177,8 @@ struct xconnection_t {
 
 	int (*old_error_handler)(Display * dpy, XErrorEvent * ev);
 
+	int connection_fd;
+
 	struct {
 		/* properties type */
 		Atom CARDINAL;
@@ -265,6 +267,8 @@ struct xconnection_t {
 		} else {
 			printf("Open display : Success\n");
 		}
+
+		connection_fd = ConnectionNumber(dpy);
 
 		grab_count = 0;
 		screen = DefaultScreen(dpy);
