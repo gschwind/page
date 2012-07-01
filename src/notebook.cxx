@@ -171,6 +171,11 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 	right_area.w = _allocation.w * 0.2;
 	right_area.h = (_allocation.h - HEIGHT);
 
+	client_area.x = _allocation.x + BORDER_SIZE;
+	client_area.y = _allocation.y + BORDER_SIZE + HEIGHT;
+	client_area.w = _allocation.w - 2 * BORDER_SIZE;
+	client_area.h = _allocation.h - HEIGHT - 2 * BORDER_SIZE;
+
 	//printf("xx %dx%d+%d+%d\n", _allocation.w, _allocation.h, _allocation.x,
 	//		_allocation.y);
 	//printf("xx %dx%d+%d+%d\n", tab_area.w, tab_area.h, tab_area.x, tab_area.y);
@@ -203,7 +208,7 @@ void notebook_t::render() {
 	//update_client_mapping();
 
 	if (back_buffer == 0) {
-		cairo_surface_t * target = cairo_get_target(page.main_window_cr);
+		cairo_surface_t * target = cairo_get_target(page.back_buffer_cr);
 		back_buffer = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR,
 				_allocation.w, HEIGHT);
 		back_buffer_cr = cairo_create(back_buffer);
@@ -372,6 +377,14 @@ void notebook_t::render() {
 
 			cairo_save(back_buffer_cr);
 			{
+
+				/* draw icon background */
+				cairo_rectangle(back_buffer_cr, _allocation.w - 17.0 * 4, 0,
+						17.0 * 4, HEIGHT - 1);
+				cairo_set_source_rgb(back_buffer_cr, 0xeeU / 255.0,
+						0xeeU / 255.0, 0xecU / 255.0);
+				cairo_fill(back_buffer_cr);
+
 				cairo_translate(back_buffer_cr, _allocation.w - 16.5, 1.5);
 				/* draw close */
 				cairo_new_path(back_buffer_cr);
@@ -411,60 +424,60 @@ void notebook_t::render() {
 
 	}
 
-	cairo_save(page.main_window_cr);
+	cairo_save(page.back_buffer_cr);
 	{
 
-		cairo_set_antialias(page.main_window_cr, CAIRO_ANTIALIAS_DEFAULT);
+		cairo_set_antialias(page.back_buffer_cr, CAIRO_ANTIALIAS_DEFAULT);
 
 		/* draw border */
 		if (_clients.empty()) {
-			cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0,
+			cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0,
 					0xeeU / 255.0, 0xecU / 255.0);
-			cairo_rectangle(page.main_window_cr, _allocation.x, _allocation.y,
+			cairo_rectangle(page.back_buffer_cr, _allocation.x, _allocation.y,
 					_allocation.w, _allocation.h);
-			cairo_fill(page.main_window_cr);
+			cairo_fill(page.back_buffer_cr);
 		} else {
-			cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0,
+			cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0,
 					0xeeU / 255.0, 0xecU / 255.0);
-			cairo_rectangle(page.main_window_cr, _allocation.x,
+			cairo_rectangle(page.back_buffer_cr, _allocation.x,
 					_allocation.y + HEIGHT, BORDER_SIZE,
 					_allocation.h - HEIGHT);
-			cairo_fill(page.main_window_cr);
-			cairo_rectangle(page.main_window_cr,
+			cairo_fill(page.back_buffer_cr);
+			cairo_rectangle(page.back_buffer_cr,
 					_allocation.x + _allocation.w - BORDER_SIZE,
 					_allocation.y + HEIGHT, BORDER_SIZE,
 					_allocation.h - HEIGHT);
-			cairo_fill(page.main_window_cr);
-			cairo_rectangle(page.main_window_cr, _allocation.x,
+			cairo_fill(page.back_buffer_cr);
+			cairo_rectangle(page.back_buffer_cr, _allocation.x,
 					_allocation.y + HEIGHT, _allocation.w, BORDER_SIZE);
-			cairo_fill(page.main_window_cr);
-			cairo_rectangle(page.main_window_cr, _allocation.x,
+			cairo_fill(page.back_buffer_cr);
+			cairo_rectangle(page.back_buffer_cr, _allocation.x,
 					_allocation.y + _allocation.h - BORDER_SIZE, _allocation.w,
 					BORDER_SIZE);
-			cairo_fill(page.main_window_cr);
+			cairo_fill(page.back_buffer_cr);
 		}
 
 		/* draw top line */
 
-		cairo_translate(page.main_window_cr, _allocation.x, _allocation.y);
-		cairo_rectangle(page.main_window_cr, 0.0, 0.0, _allocation.w, HEIGHT);
-		cairo_set_source_surface(page.main_window_cr, back_buffer, 0.0, 0.0);
-		cairo_fill(page.main_window_cr);
+		cairo_translate(page.back_buffer_cr, _allocation.x, _allocation.y);
+		cairo_rectangle(page.back_buffer_cr, 0.0, 0.0, _allocation.w, HEIGHT);
+		cairo_set_source_surface(page.back_buffer_cr, back_buffer, 0.0, 0.0);
+		cairo_fill(page.back_buffer_cr);
 
-		cairo_set_source_rgb(page.main_window_cr, 0x88U / 255.0, 0x8aU / 255.0,
+		cairo_set_source_rgb(page.back_buffer_cr, 0x88U / 255.0, 0x8aU / 255.0,
 				0x85U / 255.0);
-		cairo_set_line_width(page.main_window_cr, 1.0);
-		cairo_new_path(page.main_window_cr);
-		cairo_move_to(page.main_window_cr, 0.5, 0.5);
-		cairo_line_to(page.main_window_cr, _allocation.w - 0.5, 0.5);
-		cairo_line_to(page.main_window_cr, _allocation.w - 0.5,
+		cairo_set_line_width(page.back_buffer_cr, 1.0);
+		cairo_new_path(page.back_buffer_cr);
+		cairo_move_to(page.back_buffer_cr, 0.5, 0.5);
+		cairo_line_to(page.back_buffer_cr, _allocation.w - 0.5, 0.5);
+		cairo_line_to(page.back_buffer_cr, _allocation.w - 0.5,
 				_allocation.h - 0.5);
-		cairo_line_to(page.main_window_cr, 0.5, _allocation.h - 0.5);
-		cairo_line_to(page.main_window_cr, 0.5, 0.5);
-		cairo_stroke(page.main_window_cr);
+		cairo_line_to(page.back_buffer_cr, 0.5, _allocation.h - 0.5);
+		cairo_line_to(page.back_buffer_cr, 0.5, 0.5);
+		cairo_stroke(page.back_buffer_cr);
 
 	}
-	cairo_restore(page.main_window_cr);
+	cairo_restore(page.back_buffer_cr);
 
 }
 
@@ -538,6 +551,7 @@ bool notebook_t::add_client(client_t *c) {
 	_clients.push_front(c);
 	_selected.push_back(c);
 	back_buffer_is_valid = false;
+	update_client_position(c);
 	if (c->wm_state == NormalState) {
 		set_selected(c);
 	}
@@ -669,7 +683,7 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 
 void notebook_t::set_selected(client_t * c) {
 
-	update_client_position(c);
+	//update_client_position(c);
 	c->map();
 	c->focus();
 	c->set_wm_state(NormalState);
@@ -714,7 +728,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	page.popups.push_back(p);
 	page.popups.push_back(p1);
 
-	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
+	if (XGrabPointer(page.cnx.dpy, page.cnx.xroot, False,
 			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 			GrabModeAsync, GrabModeAsync, None, cursor,
 			CurrentTime) != GrabSuccess
@@ -727,10 +741,11 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		if (ev.type == page.cnx.damage_event + XDamageNotify) {
 			page.process_damage_event(&ev);
 		} else if (ev.type == MotionNotify) {
-			if (ev.xmotion.window == page.main_window) {
+			if (ev.xmotion.window == page.cnx.xroot) {
 
 				box_int_t old_area = p1->get_absolute_extend();
-				p1->reconfigure(box_int_t(ev.xmotion.x + 10, ev.xmotion.y, 0, 0));
+				p1->reconfigure(
+						box_int_t(ev.xmotion.x + 10, ev.xmotion.y, 0, 0));
 				page.repair_back_buffer(old_area);
 				page.repair_overlay(old_area);
 				page.repair_back_buffer(p1->area);
@@ -800,7 +815,6 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	page.popups.remove(p1);
 	delete p;
 	delete p1;
-	render();
 	/* ev is button release
 	 * so set the hidden focus parameter
 	 */
@@ -826,8 +840,8 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		ns->split_right(c);
 	} else {
 		set_selected(c);
-		client_t * c = _selected.front();
 	}
+
 	if (_clients.empty() && _parent != 0) {
 		/* self destruct */
 		_parent->remove(this);
@@ -850,28 +864,38 @@ void notebook_t::update_client_position(client_t * c) {
 	printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin, c->width,
 			c->height);
 
-	int offset_x = (_allocation.w - 2 * BORDER_SIZE - c->width) / 2;
-	int offset_y = (_allocation.h - HEIGHT - BORDER_SIZE - c->height) / 2;
-	if (offset_x < 0)
-		offset_x = 0;
-	if (offset_y < 0)
-		offset_y = 0;
+	box_int_t client_size;
+	client_size.x = (client_area.w - c->width) / 2;
+	client_size.y = (client_area.h - c->height) / 2;
+	client_size.w = c->width;
+	client_size.h = c->height;
+
+	if (client_size.x < 0)
+		client_size.x = 0;
+	if (client_size.y < 0)
+		client_size.y = 0;
+
+	client_size.x += client_area.x;
+	client_size.y += client_area.y;
+
+	/* clip client size */
+	client_size = client_area & client_size;
 
 	if (page.fullscreen_client == 0) {
-		XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
-				c->height);
-		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
-				c->xwin, offset_x, offset_y, c->width, c->height);
+//		XMoveResizeWindow(c->cnx.dpy, c->xwin, offset_x, offset_y, c->width,
+//				c->height);
+//		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+//				c->xwin, offset_x, offset_y, c->width, c->height);
 
-		XMoveResizeWindow(c->cnx.dpy, c->clipping_window,
-				_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT,
-				_allocation.w - 2 * BORDER_SIZE,
-				_allocation.h - HEIGHT - BORDER_SIZE);
+		/* ICCCM mandate that client must be prepared to accept any size */
+//		XMoveResizeWindow(c->cnx.dpy, c->xwin, client_size.x, client_size.y,
+//				client_size.w, client_size.h);
+		c->move_resize(client_size);
 
-		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
-				c->clipping_window, _allocation.x + BORDER_SIZE,
-				_allocation.y + HEIGHT, _allocation.w - 2 * BORDER_SIZE,
-				_allocation.h - HEIGHT - BORDER_SIZE);
+//		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
+//				c->clipping_window, _allocation.x + BORDER_SIZE,
+//				_allocation.y + HEIGHT, _allocation.w - 2 * BORDER_SIZE,
+//				_allocation.h - HEIGHT - BORDER_SIZE);
 
 	}
 }
@@ -905,5 +929,6 @@ void notebook_t::iconify_client(client_t * c) {
 void notebook_t::delete_all() {
 
 }
+
 
 }

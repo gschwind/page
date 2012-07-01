@@ -100,12 +100,13 @@ public:
 	cairo_t * composite_overlay_cr;
 
 	/* the main window */
-	Window main_window;
+	//Window main_window;
+	//cairo_surface_t * main_window_s;
+	//cairo_t * main_window_cr;
+
 	cairo_surface_t * back_buffer_s;
 	cairo_t * back_buffer_cr;
 
-	cairo_surface_t * main_window_s;
-	cairo_t * main_window_cr;
 
 	bool has_fullscreen_size;
 	box_t<int> fullscreen_position;
@@ -130,14 +131,6 @@ public:
 	void render(cairo_t * cr);
 	void render();
 	void run();
-
-	Window get_window() {
-		return main_window;
-	}
-
-	Display * get_dpy() {
-		return cnx.dpy;
-	}
 
 	void scan();
 	long get_window_state(Window w);

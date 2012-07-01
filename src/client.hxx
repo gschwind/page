@@ -12,6 +12,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <cairo.h>
+#include <cairo-xlib.h>
 #include <cstring>
 #include <string>
 #include <list>
@@ -43,8 +44,8 @@ struct client_t {
 	std::string wm_name;
 	bool net_wm_name_is_valid;
 	std::string net_wm_name;
-	Window clipping_window;
-	Window page_window;
+	//Window clipping_window;
+	//Window page_window;
 
 	Pixmap pix;
 
@@ -73,12 +74,16 @@ struct client_t {
 	icon_t icon;
 	cairo_surface_t * icon_surf;
 
+	cairo_surface_t * window_surf;
+
+	box_int_t size;
+
 	bool is_dock;
 	bool has_partial_struct;
 	long partial_struct[12];
 
-	client_t(xconnection_t &cnx, Window page_window, Window w,
-			XWindowAttributes &wa, long wm_state);
+	client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
+			long wm_state);
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);
@@ -146,13 +151,19 @@ public:
 			icon_surf = 0;
 		}
 
-		if(icon.data != 0) {
+		if (icon.data != 0) {
 			free(icon.data);
 			icon.data = 0;
 		}
 	}
 
 	void update_all();
+
+	void move_resize(box_int_t const & location) {
+		size = location;
+		XMoveResizeWindow(cnx.dpy, xwin, size.x, size.y, size.w, size.h);
+		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+	}
 
 };
 

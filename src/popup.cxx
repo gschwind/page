@@ -16,8 +16,7 @@ namespace page_next {
 
 popup_window_t::popup_window_t(Display * dpy, Window w, XWindowAttributes &wa) :
 		area(wa.x, wa.y, wa.width, wa.height), w(w), dpy(dpy), visual(wa.visual) {
-	XCompositeRedirectWindow(dpy, w,
-			CompositeRedirectManual);
+	XCompositeRedirectWindow(dpy, w, CompositeRedirectManual);
 	damage = XDamageCreate(dpy, w, XDamageReportRawRectangles);
 	surf = cairo_xlib_surface_create(dpy, w, wa.visual, wa.width, wa.height);
 }
@@ -29,15 +28,12 @@ popup_window_t::~popup_window_t() {
 }
 
 void popup_window_t::repair1(cairo_t * cr, box_int_t const & _area) {
-	int left = max(area.x,_area.x);
-	int rigth = min(area.x + area.w, _area.x + _area.w);
-	int top = max(area.y, _area.y);
-	int bottom = min(area.y + area.h, _area.y + _area.h);
-
-	if ((bottom - top) > 0 && (rigth - left) > 0) {
+	box_int_t clip = area & _area;
+	//printf("repair popup %p %dx%d+%d+%d\n", this, clip.w, clip.h, clip.x, clip.y);
+	if (clip.w > 0 && clip.h > 0) {
 		cairo_save(cr);
 		cairo_set_source_surface(cr, surf, area.x, area.y);
-		cairo_rectangle(cr, left, top, rigth - left, bottom - top);
+		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 		cairo_clip(cr);
 		cairo_paint_with_alpha(cr, 0.9);
 		cairo_restore(cr);
@@ -59,11 +55,8 @@ void popup_window_t::reconfigure(box_int_t const & a) {
 	area.w = a.w;
 
 	if (surf != 0) {
-		cairo_surface_destroy(surf);
+		cairo_xlib_surface_set_size(surf, area.w, area.h);
 	}
-
-	surf = cairo_xlib_surface_create(dpy, w, visual, area.w, area.h);
-
 }
 
 popup_split_t::popup_split_t(box_t<int> const & area) :
@@ -170,8 +163,7 @@ void popup_notebook2_t::repair1(cairo_t * cr, box_int_t const & a) {
 	cairo_paint(cr);
 
 	/* draw the name */
-	cairo_rectangle(cr, 0.0, 0.0,
-			area.w - 17.0, area.h);
+	cairo_rectangle(cr, 0.0, 0.0, area.w - 17.0, area.h);
 	cairo_clip(cr);
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_set_font_size(cr, 13.0);

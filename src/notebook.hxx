@@ -68,6 +68,8 @@ class notebook_t: public tree_t {
 	static FT_Face face_bold; /* handle to face object */
 	static cairo_font_face_t * font_bold;
 
+	box_int_t client_area;
+
 	box_t<int> button_close;
 	box_t<int> button_vsplit;
 	box_t<int> button_hsplit;

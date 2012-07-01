@@ -68,20 +68,20 @@ void split_t::update_allocation_pack1() {
 }
 
 void split_t::render() {
-	cairo_save(page.main_window_cr);
-	cairo_set_source_rgb(page.main_window_cr, 0xeeU / 255.0, 0xeeU / 255.0,
+	cairo_save(page.back_buffer_cr);
+	cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0, 0xeeU / 255.0,
 			0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(page.main_window_cr,
+		cairo_rectangle(page.back_buffer_cr,
 				_allocation.x + _allocation.w * _split - GRIP_SIZE,
 				_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
 	} else {
-		cairo_rectangle(page.main_window_cr, _allocation.x,
+		cairo_rectangle(page.back_buffer_cr, _allocation.x,
 				_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
 				_allocation.w, GRIP_SIZE * 2.0);
 	}
-	cairo_fill(page.main_window_cr);
-	cairo_restore(page.main_window_cr);
+	cairo_fill(page.back_buffer_cr);
+	cairo_restore(page.back_buffer_cr);
 	if (_pack0)
 		_pack0->render();
 	if (_pack1)
@@ -213,7 +213,7 @@ void split_t::process_drag_and_drop() {
 	p = new popup_split_t(slider_area);
 	page.popups.push_back(p);
 
-	if (XGrabPointer(page.cnx.dpy, page.main_window, False,
+	if (XGrabPointer(page.cnx.dpy, page.cnx.xroot, False,
 			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 			GrabModeAsync, GrabModeAsync, None, cursor,
 			CurrentTime) != GrabSuccess)

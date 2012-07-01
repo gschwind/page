@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <cairo.h>
+#include <cairo-xlib.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <cstring>
@@ -16,11 +17,11 @@
 
 namespace page_next {
 
-client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
+client_t::client_t(xconnection_t &cnx, Window w,
 		XWindowAttributes &wa, long wm_state) :
 		cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(false), height(
-				wa.height), width(wa.width), page_window(page_window), lock_count(
-				0), is_lock(false), clipping_window(None), icon_surf(0) {
+				wa.height), width(wa.width), lock_count(
+				0), is_lock(false), icon_surf(0) {
 
 	icon.data = 0;
 
@@ -33,6 +34,15 @@ client_t::client_t(xconnection_t &cnx, Window page_window, Window w,
 	}
 
 	memset(partial_struct, 0, sizeof(partial_struct));
+
+	window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, wa.visual, wa.width, wa.height);
+	damage = XDamageCreate(cnx.dpy, xwin, XDamageReportRawRectangles);
+	XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+
+	size.x = wa.x;
+	size.y = wa.y;
+	size.w = wa.width;
+	size.h = wa.height;
 
 }
 
@@ -84,7 +94,7 @@ void client_t::map() {
 	// generate a map request event.
 	is_map = true;
 	cnx.map(xwin);
-	cnx.map(clipping_window);
+	//cnx.map(clipping_window);
 }
 
 void client_t::unmap() {
@@ -94,7 +104,7 @@ void client_t::unmap() {
 		/* ICCCM require that WM unmap client window to change client state from
 		 * Normal to Iconic state
 		 * in PAGE all unviewable window are in iconic state */
-		cnx.unmap(clipping_window);
+		//cnx.unmap(clipping_window);
 		cnx.unmap(xwin);
 	}
 }
@@ -189,14 +199,14 @@ void client_t::focus() {
 		//if (!is_lock)
 		//	printf("warning: client isn't locked.\n");
 		printf("Focus #%x\n", (unsigned int) xwin);
-		XRaiseWindow(cnx.dpy, clipping_window);
+		//XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
 	}
 
 	if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()) {
 		printf("TAKE_FOCUS\n");
-		XRaiseWindow(cnx.dpy, clipping_window);
+		//XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XEvent ev;
 		ev.xclient.display = cnx.dpy;

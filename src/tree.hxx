@@ -35,7 +35,6 @@ public:
 	virtual void activate_client(client_t * c) = 0;
 	virtual void iconify_client(client_t * c) = 0;
 	virtual void delete_all() = 0;
-
 };
 }
 
