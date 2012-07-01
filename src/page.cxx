@@ -155,7 +155,7 @@ void main_t::run() {
 	main_window = XCreateWindow(cnx.dpy, cnx.xroot, cnx.root_size.x,
 			cnx.root_size.y, cnx.root_size.w, cnx.root_size.h, 0,
 			cnx.root_wa.depth, InputOutput, cnx.root_wa.visual, 0, &swa);
-	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectAutomatic);
+	XCompositeRedirectWindow(cnx.dpy, main_window, CompositeRedirectManual);
 	cursor = XCreateFontCursor(cnx.dpy, XC_left_ptr);
 	XDefineCursor(cnx.dpy, main_window, cursor);
 
@@ -400,8 +400,6 @@ void main_t::scan() {
 				clients.insert(c);
 				break;
 			case WM_MODE_POPUP:
-				XCompositeRedirectWindow(cnx.dpy, wins[i],
-						CompositeRedirectAutomatic);
 				p = new popup_window_t(cnx.dpy, wins[i], wa);
 				popups.push_back(p);
 				break;
@@ -416,12 +414,11 @@ void main_t::scan() {
 
 		XFree(wins);
 	}
-	update_client_list();
-
 	/* scan is ended, start to listen event */
 	XSelectInput(cnx.dpy, cnx.xroot,
 			SubstructureNotifyMask | SubstructureRedirectMask);
 	cnx.ungrab();
+	update_client_list();
 }
 
 client_t * main_t::find_client_by_xwindow(Window w) {
@@ -544,25 +541,26 @@ void main_t::process_map_request_event(XEvent * e) {
 
 	Window w = e->xmaprequest.window;
 	/* secure the map request */
-	cnx.grab();
-	XEvent ev;
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, DestroyNotify,
-			&ev)) {
-		/* the window is already destroyed, return */
-		cnx.ungrab();
-		return;
-	}
-
-	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, UnmapNotify,
-			&ev)) {
-		/* the window is already unmapped, return */
-		cnx.ungrab();
-		return;
-	}
+	//cnx.grab();
+//	XEvent ev;
+//	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, DestroyNotify,
+//			&ev)) {
+//		/* the window is already destroyed, return */
+//		cnx.ungrab();
+//		return;
+//	}
+//
+//	if (XCheckTypedWindowEvent(cnx.dpy, e->xmaprequest.window, UnmapNotify,
+//			&ev)) {
+//		/* the window is already unmapped, return */
+//		cnx.ungrab();
+//		return;
+//	}
 
 	/* should never happen */
 	XWindowAttributes wa;
 	if (!XGetWindowAttributes(cnx.dpy, w, &wa)) {
+		//cnx.ungrab();
 		return;
 	}
 
@@ -581,7 +579,7 @@ void main_t::process_map_request_event(XEvent * e) {
 
 	render();
 	update_client_list();
-	cnx.ungrab();
+	//cnx.ungrab();
 	printf("Return from %s #%p\n", __PRETTY_FUNCTION__,
 			(void *) e->xmaprequest.window);
 	return;
@@ -614,13 +612,10 @@ void main_t::process_map_notify_event(XEvent * e) {
 		//print_window_attributes(e->xmap.window, wa);
 
 		if (wa.override_redirect) {
-			XCompositeRedirectWindow(cnx.dpy, e->xmap.window,
-					CompositeRedirectAutomatic);
 			popup_t * c = new popup_window_t(cnx.dpy, e->xmap.window, wa);
 			popups.push_back(c);
 			repair_back_buffer(c->get_absolute_extend());
 			repair_overlay(c->get_absolute_extend());
-
 		}
 
 	}

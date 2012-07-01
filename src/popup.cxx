@@ -7,6 +7,7 @@
 
 #include "popup.hxx"
 #include <cstdio>
+#include <X11/extensions/Xcomposite.h>
 
 namespace page_next {
 
@@ -15,11 +16,14 @@ namespace page_next {
 
 popup_window_t::popup_window_t(Display * dpy, Window w, XWindowAttributes &wa) :
 		area(wa.x, wa.y, wa.width, wa.height), w(w), dpy(dpy), visual(wa.visual) {
+	XCompositeRedirectWindow(dpy, w,
+			CompositeRedirectManual);
 	damage = XDamageCreate(dpy, w, XDamageReportRawRectangles);
 	surf = cairo_xlib_surface_create(dpy, w, wa.visual, wa.width, wa.height);
 }
 
 popup_window_t::~popup_window_t() {
+	XCompositeUnredirectWindow(dpy, w, CompositeRedirectManual);
 	XDamageDestroy(dpy, damage);
 	cairo_surface_destroy(surf);
 }
