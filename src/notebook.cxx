@@ -538,7 +538,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 							&ev);
 
 				} else {
-					process_drag_and_drop(*c);
+					process_drag_and_drop(*c, e->xbutton.x, e->xbutton.y);
 					return true;
 				}
 			}
@@ -713,16 +713,18 @@ void notebook_t::set_selected(client_t * c) {
 }
 
 void notebook_t::update_popup_position(popup_notebook_t * p, int x, int y,
-		int w, int h) {
+		int w, int h, bool show_popup) {
 	box_int_t old_area = p->get_absolute_extend();
 	p->reconfigure(box_int_t(x, y, w, h));
-	page.repair_back_buffer(old_area);
-	page.repair_overlay(old_area);
-	page.repair_back_buffer(p->area);
-	page.repair_overlay(p->area);
+	if (show_popup) {
+		page.repair_back_buffer(old_area);
+		page.repair_overlay(old_area);
+		page.repair_back_buffer(p->area);
+		page.repair_overlay(p->area);
+	}
 }
 
-void notebook_t::process_drag_and_drop(client_t * c) {
+void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 	XEvent ev;
 	notebook_t * ns = 0;
 	select_e zone = SELECT_NONE;
@@ -735,8 +737,10 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 	popup_notebook2_t * p1 = new popup_notebook2_t(_allocation.x, _allocation.y,
 			font, c->icon_surf, c->name);
 
-	page.popups.push_back(p);
-	page.popups.push_back(p1);
+	//page.popups.push_back(p);
+	//page.popups.push_back(p1);
+
+	bool popup_is_added = false;
 
 	if (XGrabPointer(page.cnx.dpy, page.cnx.xroot, False,
 			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
@@ -753,13 +757,26 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		} else if (ev.type == MotionNotify) {
 			if (ev.xmotion.window == page.cnx.xroot) {
 
-				box_int_t old_area = p1->get_absolute_extend();
-				p1->reconfigure(
-						box_int_t(ev.xmotion.x + 10, ev.xmotion.y, 0, 0));
-				page.repair_back_buffer(old_area);
-				page.repair_overlay(old_area);
-				page.repair_back_buffer(p1->area);
-				page.repair_overlay(p1->area);
+				if (ev.xmotion.x < start_x - 5 || ev.xmotion.x > start_x + 5
+						|| ev.xmotion.y < start_y - 5
+						|| ev.xmotion.y > start_y + 5
+						|| !tab_area.is_inside(ev.xmotion.x, ev.xmotion.y)) {
+					if (!popup_is_added) {
+						page.popups.push_back(p);
+						page.popups.push_back(p1);
+						popup_is_added = true;
+					}
+				}
+
+				if (popup_is_added) {
+					box_int_t old_area = p1->get_absolute_extend();
+					p1->reconfigure(
+							box_int_t(ev.xmotion.x + 10, ev.xmotion.y, 0, 0));
+					page.repair_back_buffer(old_area);
+					page.repair_overlay(old_area);
+					page.repair_back_buffer(p1->area);
+					page.repair_overlay(p1->area);
+				}
 
 				//printf("%d %d %d %d\n", ev.xmotion.x, ev.xmotion.y,
 				//		ev.xmotion.x_root, ev.xmotion.y_root);
@@ -773,7 +790,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 							ns = (*i);
 							update_popup_position(p, (*i)->tab_area.x,
 									(*i)->tab_area.y, (*i)->tab_area.w,
-									(*i)->tab_area.h);
+									(*i)->tab_area.h, popup_is_added);
 						}
 					} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
@@ -783,7 +800,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 							ns = (*i);
 							update_popup_position(p, (*i)->right_area.x,
 									(*i)->right_area.y, (*i)->right_area.w,
-									(*i)->right_area.h);
+									(*i)->right_area.h, popup_is_added);
 						}
 					} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
@@ -793,7 +810,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 							ns = (*i);
 							update_popup_position(p, (*i)->top_area.x,
 									(*i)->top_area.y, (*i)->top_area.w,
-									(*i)->top_area.h);
+									(*i)->top_area.h, popup_is_added);
 						}
 					} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
@@ -803,7 +820,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 							ns = (*i);
 							update_popup_position(p, (*i)->bottom_area.x,
 									(*i)->bottom_area.y, (*i)->bottom_area.w,
-									(*i)->bottom_area.h);
+									(*i)->bottom_area.h, popup_is_added);
 						}
 					} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
 							ev.xmotion.y_root)) {
@@ -813,7 +830,7 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 							ns = (*i);
 							update_popup_position(p, (*i)->left_area.x,
 									(*i)->left_area.y, (*i)->left_area.w,
-									(*i)->left_area.h);
+									(*i)->left_area.h, popup_is_added);
 						}
 					}
 					++i;

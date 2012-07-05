@@ -87,7 +87,7 @@ class notebook_t: public tree_t {
 	void set_selected(client_t * c);
 
 	static Bool drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg);
-	void process_drag_and_drop(client_t * c);
+	void process_drag_and_drop(client_t * c, int start_x, int start_y);
 
 	void update_client_position(client_t * c);
 
@@ -118,7 +118,7 @@ public:
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 	void delete_all();
 
-	void update_popup_position(popup_notebook_t * p, int x, int y, int w, int h);
+	void update_popup_position(popup_notebook_t * p, int x, int y, int w, int h, bool show_popup);
 
 };
 
