@@ -68,20 +68,20 @@ void split_t::update_allocation_pack1() {
 }
 
 void split_t::render() {
-	cairo_save(page.back_buffer_cr);
-	cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0, 0xeeU / 255.0,
+	cairo_save(page.gui_cr);
+	cairo_set_source_rgb(page.gui_cr, 0xeeU / 255.0, 0xeeU / 255.0,
 			0xecU / 255.0);
 	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(page.back_buffer_cr,
+		cairo_rectangle(page.gui_cr,
 				_allocation.x + _allocation.w * _split - GRIP_SIZE,
 				_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
 	} else {
-		cairo_rectangle(page.back_buffer_cr, _allocation.x,
+		cairo_rectangle(page.gui_cr, _allocation.x,
 				_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
 				_allocation.w, GRIP_SIZE * 2.0);
 	}
-	cairo_fill(page.back_buffer_cr);
-	cairo_restore(page.back_buffer_cr);
+	cairo_fill(page.gui_cr);
+	cairo_restore(page.gui_cr);
 	if (_pack0)
 		_pack0->render();
 	if (_pack1)
@@ -252,13 +252,13 @@ void split_t::process_drag_and_drop() {
 		}
 	} while (ev.type != ButtonRelease);
 	page.popups.remove(p);
-	page.repair_back_buffer(slider_area);
-	page.repair_overlay(slider_area);
 	delete p;
 	XUngrabPointer(page.cnx.dpy, CurrentTime);
 	XFreeCursor(page.cnx.dpy, cursor);
 	update_allocation(_allocation);
 	render();
+	page.repair_back_buffer(_allocation);
+	page.repair_overlay(_allocation);
 }
 
 Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {

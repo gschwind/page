@@ -17,11 +17,11 @@
 
 namespace page_next {
 
-client_t::client_t(xconnection_t &cnx, Window w,
-		XWindowAttributes &wa, long wm_state) :
+client_t::client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
+		long wm_state) :
 		cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(false), height(
-				wa.height), width(wa.width), lock_count(
-				0), is_lock(false), icon_surf(0) {
+				wa.height), width(wa.width), lock_count(0), is_lock(false), icon_surf(
+				0) {
 
 	icon.data = 0;
 
@@ -35,15 +35,46 @@ client_t::client_t(xconnection_t &cnx, Window w,
 
 	memset(partial_struct, 0, sizeof(partial_struct));
 
-	window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, wa.visual, wa.width, wa.height);
-	damage = XDamageCreate(cnx.dpy, xwin, XDamageReportRawRectangles);
 	XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+
+	window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, wa.visual, wa.width,
+			wa.height);
+	damage = XDamageCreate(cnx.dpy, xwin, XDamageReportRawRectangles);
 
 	size.x = wa.x;
 	size.y = wa.y;
 	size.w = wa.width;
 	size.h = wa.height;
 
+	/* set frame extend to 0 (I don't know why a client need this data) */
+	long frame_extends[4] = { 0, 0, 0, 0 };
+	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS,
+			cnx.atoms.CARDINAL, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(frame_extends), 4);
+
+	update_net_wm_allowed_actions();
+
+}
+
+client_t::~client_t() {
+	if (icon_surf != 0) {
+		cairo_surface_destroy(icon_surf);
+		icon_surf = 0;
+	}
+
+	if (icon.data != 0) {
+		free(icon.data);
+		icon.data = 0;
+	}
+
+	XDamageDestroy(cnx.dpy, damage);
+
+	if(window_surf != 0) {
+		cairo_surface_destroy(window_surf);
+		window_surf = 0;
+	}
+
+	XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
 }
 
 void client_t::update_all() {
@@ -92,8 +123,10 @@ long client_t::get_window_state() {
 
 void client_t::map() {
 	// generate a map request event.
-	is_map = true;
-	cnx.map(xwin);
+	if (!is_map) {
+		is_map = true;
+		cnx.map(xwin);
+	}
 	//cnx.map(clipping_window);
 }
 
@@ -196,17 +229,13 @@ void client_t::unlock_client() {
 
 void client_t::focus() {
 	if (is_map && wm_input_focus) {
-		//if (!is_lock)
-		//	printf("warning: client isn't locked.\n");
 		printf("Focus #%x\n", (unsigned int) xwin);
-		//XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
-		XSetInputFocus(cnx.dpy, xwin, RevertToNone, CurrentTime);
+		XSetInputFocus(cnx.dpy, xwin, RevertToParent, cnx.last_know_time);
 	}
 
 	if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()) {
 		printf("TAKE_FOCUS\n");
-		//XRaiseWindow(cnx.dpy, clipping_window);
 		XRaiseWindow(cnx.dpy, xwin);
 		XEvent ev;
 		ev.xclient.display = cnx.dpy;
@@ -287,7 +316,7 @@ void client_t::init_icon() {
 		icon_surf = 0;
 	}
 
-	if(icon.data != 0) {
+	if (icon.data != 0) {
 		free(icon.data);
 		icon.data = 0;
 	}
@@ -458,6 +487,23 @@ void client_t::write_net_wm_state() {
 			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
 			size);
 	delete[] new_state;
+}
+
+void client_t::update_net_wm_allowed_actions() {
+	int size = net_wm_allowed_actions.size();
+	long * data = new long[size];
+	std::set<Atom>::iterator iter = net_wm_allowed_actions.begin();
+	int i = 0;
+	while (iter != net_wm_allowed_actions.end()) {
+		data[i] = *iter;
+		++iter;
+		++i;
+	}
+
+	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_ALLOWED_ACTIONS, cnx.atoms.ATOM,
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(data),
+			size);
+	delete[] data;
 }
 
 void client_t::set_fullscreen() {

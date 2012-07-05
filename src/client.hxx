@@ -36,6 +36,7 @@ struct client_t {
 	std::set<Atom> type;
 	std::set<Atom> net_wm_state;
 	std::set<Atom> wm_protocols;
+	std::set<Atom> net_wm_allowed_actions;
 
 	/* the name of window */
 	std::string name;
@@ -84,6 +85,8 @@ struct client_t {
 
 	client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
 			long wm_state);
+	~client_t();
+
 	void map();
 	void unmap();
 	void update_client_size(int w, int h);
@@ -105,6 +108,9 @@ public:
 	void read_net_wm_state();
 	void read_wm_protocols();
 	void write_net_wm_state();
+
+	void update_net_wm_allowed_actions();
+
 
 	/* NOTE : ICCCM CARD32 mean "long" C type */
 	void set_wm_state(long state) {
@@ -145,24 +151,17 @@ public:
 		return cnx.get_properties<char, 8>(xwin, prop, type, num);
 	}
 
-	~client_t() {
-		if (icon_surf != 0) {
-			cairo_surface_destroy(icon_surf);
-			icon_surf = 0;
-		}
 
-		if (icon.data != 0) {
-			free(icon.data);
-			icon.data = 0;
-		}
-	}
 
 	void update_all();
 
 	void move_resize(box_int_t const & location) {
 		size = location;
 		XMoveResizeWindow(cnx.dpy, xwin, size.x, size.y, size.w, size.h);
+		cairo_surface_flush(window_surf);
 		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+		cairo_surface_flush(window_surf);
+		cairo_surface_mark_dirty(window_surf);
 	}
 
 };

@@ -55,7 +55,10 @@ void popup_window_t::reconfigure(box_int_t const & a) {
 	area.w = a.w;
 
 	if (surf != 0) {
+		cairo_surface_flush(surf);
 		cairo_xlib_surface_set_size(surf, area.w, area.h);
+		cairo_surface_flush(surf);
+		cairo_surface_mark_dirty(surf);
 	}
 }
 
@@ -156,11 +159,14 @@ void popup_notebook2_t::reconfigure(box_int_t const & a) {
 void popup_notebook2_t::repair1(cairo_t * cr, box_int_t const & a) {
 	box_int_t i = area & a;
 	cairo_save(cr);
-	cairo_rectangle(cr, i.x, i.y, i.w, i.h);
-	cairo_clip(cr);
-	cairo_translate(cr, area.x, area.y);
-	cairo_set_source_surface(cr, surf, 0.0, 0.0);
-	cairo_paint(cr);
+
+	if (surf != 0) {
+		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
+		cairo_clip(cr);
+		cairo_translate(cr, area.x, area.y);
+		cairo_set_source_surface(cr, surf, 0.0, 0.0);
+		cairo_paint(cr);
+	}
 
 	/* draw the name */
 	cairo_rectangle(cr, 0.0, 0.0, area.w - 17.0, area.h);

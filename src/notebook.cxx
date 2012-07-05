@@ -13,6 +13,8 @@
 #include <X11/Xutil.h>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
+#include <cassert>
 #include "notebook.hxx"
 
 namespace page_next {
@@ -424,60 +426,75 @@ void notebook_t::render() {
 
 	}
 
-	cairo_save(page.back_buffer_cr);
+	cairo_save(page.gui_cr);
 	{
 
-		cairo_set_antialias(page.back_buffer_cr, CAIRO_ANTIALIAS_DEFAULT);
+		cairo_set_antialias(page.gui_cr, CAIRO_ANTIALIAS_DEFAULT);
 
 		/* draw border */
-		if (_clients.empty()) {
-			cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0,
-					0xeeU / 255.0, 0xecU / 255.0);
-			cairo_rectangle(page.back_buffer_cr, _allocation.x, _allocation.y,
+		if (_selected.empty()) {
+			cairo_set_source_rgb(page.gui_cr, 0xeeU / 255.0, 0xeeU / 255.0,
+					0xecU / 255.0);
+			cairo_rectangle(page.gui_cr, _allocation.x, _allocation.y,
 					_allocation.w, _allocation.h);
-			cairo_fill(page.back_buffer_cr);
+			cairo_fill(page.gui_cr);
 		} else {
-			cairo_set_source_rgb(page.back_buffer_cr, 0xeeU / 255.0,
-					0xeeU / 255.0, 0xecU / 255.0);
-			cairo_rectangle(page.back_buffer_cr, _allocation.x,
-					_allocation.y + HEIGHT, BORDER_SIZE,
+			client_t * c = _selected.front();
+			cairo_set_source_rgb(page.gui_cr, 0xeeU / 255.0, 0xeeU / 255.0,
+					0xecU / 255.0);
+
+			/* left */
+			cairo_rectangle(page.gui_cr, _allocation.x, _allocation.y + HEIGHT,
+					c->size.x - _allocation.x, _allocation.h - HEIGHT);
+			cairo_fill(page.gui_cr);
+			/* right */
+			cairo_rectangle(page.gui_cr, c->size.x + c->size.w,
+					_allocation.y + HEIGHT,
+					_allocation.x + _allocation.w - c->size.x - c->size.w,
 					_allocation.h - HEIGHT);
+			cairo_fill(page.gui_cr);
+
+			/* top */
+			cairo_rectangle(page.gui_cr, c->size.x, _allocation.y + HEIGHT,
+					c->size.w, c->size.y - _allocation.y - HEIGHT);
+
+			/* bottom */
 			cairo_fill(page.back_buffer_cr);
-			cairo_rectangle(page.back_buffer_cr,
-					_allocation.x + _allocation.w - BORDER_SIZE,
-					_allocation.y + HEIGHT, BORDER_SIZE,
-					_allocation.h - HEIGHT);
-			cairo_fill(page.back_buffer_cr);
-			cairo_rectangle(page.back_buffer_cr, _allocation.x,
-					_allocation.y + HEIGHT, _allocation.w, BORDER_SIZE);
-			cairo_fill(page.back_buffer_cr);
-			cairo_rectangle(page.back_buffer_cr, _allocation.x,
-					_allocation.y + _allocation.h - BORDER_SIZE, _allocation.w,
-					BORDER_SIZE);
-			cairo_fill(page.back_buffer_cr);
+			cairo_rectangle(page.gui_cr, c->size.x, c->size.y + c->size.h,
+					c->size.w,
+					_allocation.y + _allocation.h - c->size.y - c->size.h);
+			cairo_fill(page.gui_cr);
+
+			cairo_set_line_width(page.gui_cr, 1.0);
+			cairo_set_source_rgb(page.gui_cr, 0x88U / 255.0, 0x8aU / 255.0,
+					0x85U / 255.0);
+			cairo_rectangle(page.gui_cr, c->size.x - 0.5, c->size.y - 0.5,
+					c->size.w + 1.0, c->size.h + 1.0);
+			cairo_stroke(page.gui_cr);
+
 		}
 
 		/* draw top line */
 
-		cairo_translate(page.back_buffer_cr, _allocation.x, _allocation.y);
-		cairo_rectangle(page.back_buffer_cr, 0.0, 0.0, _allocation.w, HEIGHT);
-		cairo_set_source_surface(page.back_buffer_cr, back_buffer, 0.0, 0.0);
-		cairo_fill(page.back_buffer_cr);
+		cairo_translate(page.gui_cr, _allocation.x, _allocation.y);
+		cairo_rectangle(page.gui_cr, 0.0, 0.0, _allocation.w, HEIGHT);
+		cairo_set_source_surface(page.gui_cr, back_buffer, 0.0, 0.0);
+		cairo_fill(page.gui_cr);
 
-		cairo_set_source_rgb(page.back_buffer_cr, 0x88U / 255.0, 0x8aU / 255.0,
-				0x85U / 255.0);
-		cairo_set_line_width(page.back_buffer_cr, 1.0);
-		cairo_new_path(page.back_buffer_cr);
-		cairo_move_to(page.back_buffer_cr, 0.5, 0.5);
-		cairo_line_to(page.back_buffer_cr, _allocation.w - 0.5, 0.5);
-		cairo_line_to(page.back_buffer_cr, _allocation.w - 0.5,
-				_allocation.h - 0.5);
-		cairo_line_to(page.back_buffer_cr, 0.5, _allocation.h - 0.5);
-		cairo_line_to(page.back_buffer_cr, 0.5, 0.5);
-		cairo_stroke(page.back_buffer_cr);
+		//cairo_set_source_rgb(page.gui_cr, 0x88U / 255.0, 0x8aU / 255.0,
+		//		0x85U / 255.0);
+		cairo_set_source_rgb(page.gui_cr, 1.0, 0.0, 0.0);
+		cairo_set_line_width(page.gui_cr, 1.0);
+		cairo_new_path(page.gui_cr);
+		cairo_move_to(page.gui_cr, 0.5, 0.5);
+		cairo_line_to(page.gui_cr, _allocation.w - 0.5, 0.5);
+		cairo_line_to(page.gui_cr, _allocation.w - 0.5, _allocation.h - 0.5);
+		cairo_line_to(page.gui_cr, 0.5, _allocation.h - 0.5);
+		cairo_line_to(page.gui_cr, 0.5, 0.5);
+		cairo_stroke(page.gui_cr);
 
 	}
-	cairo_restore(page.back_buffer_cr);
+	cairo_restore(page.gui_cr);
 
 }
 
@@ -548,13 +565,14 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 
 bool notebook_t::add_client(client_t *c) {
 	printf("Add client #%lu\n", c->xwin);
+	assert(std::find(_clients.begin(), _clients.end(), c) == _clients.end());
 	_clients.push_front(c);
-	_selected.push_back(c);
 	back_buffer_is_valid = false;
 	update_client_position(c);
-	if (c->wm_state == NormalState) {
-		set_selected(c);
-	}
+	set_selected(c);
+	render();
+	page.repair_back_buffer(_allocation);
+	page.repair_overlay(_allocation);
 	return true;
 }
 
@@ -562,8 +580,12 @@ void notebook_t::split(split_type_e type) {
 	split_t * split = new split_t(page, type);
 	_parent->replace(this, split);
 	split->replace(0, this);
-	split->replace(0, new notebook_t(page));
+	notebook_t * n = new notebook_t(page);
+	split->replace(0, n);
 	//update_client_mapping();
+	n->render();
+	page.repair_back_buffer(n->_allocation);
+	page.repair_overlay(n->_allocation);
 }
 
 void notebook_t::split_left(client_t * c) {
@@ -615,24 +637,10 @@ void notebook_t::remove(tree_t * src) {
 }
 
 void notebook_t::activate_client(client_t * c) {
-	bool has_client = false;
-	std::list<client_t *>::iterator i = _clients.begin();
-	while (i != _clients.end()) {
-		if ((*i) == c) {
-			has_client = true;
-			break;
-		}
-		++i;
+	if (std::find(_clients.begin(), _clients.end(), c) != _clients.end()) {
+		set_selected(c);
+		back_buffer_is_valid = false;
 	}
-
-	if (has_client) {
-		set_selected(*i);
-		(*i)->focus();
-		page.update_focus(*i);
-	}
-
-	back_buffer_is_valid = false;
-
 }
 
 std::list<client_t *> * notebook_t::get_clients() {
@@ -640,12 +648,15 @@ std::list<client_t *> * notebook_t::get_clients() {
 }
 
 void notebook_t::remove_client(client_t * c) {
-	std::list<client_t *>::iterator i = _clients.begin();
-	_clients.remove(c);
-	if (c == _selected.front())
-		select_next();
-	_selected.remove(c);
-	back_buffer_is_valid = false;
+	if (std::find(_clients.begin(), _clients.end(), c) != _clients.end()) {
+		if (c == _selected.front())
+			select_next();
+		_selected.remove(c);
+		_clients.remove(c);
+		render();
+		page.repair_back_buffer(_allocation);
+		page.repair_overlay(_allocation);
+	}
 }
 
 void notebook_t::select_next() {
@@ -659,8 +670,8 @@ void notebook_t::select_next() {
 			c->set_wm_state(NormalState);
 			page.update_focus(c);
 		}
-		back_buffer_is_valid = false;
 	}
+	back_buffer_is_valid = false;
 }
 
 void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
@@ -682,8 +693,7 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 }
 
 void notebook_t::set_selected(client_t * c) {
-
-	//update_client_position(c);
+	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	c->map();
 	c->focus();
 	c->set_wm_state(NormalState);
@@ -691,9 +701,9 @@ void notebook_t::set_selected(client_t * c) {
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
-			client_t * c = _selected.front();
-			c->unmap();
-			c->set_wm_state(IconicState);
+			client_t * x = _selected.front();
+			x->unmap();
+			x->set_wm_state(IconicState);
 		}
 	}
 
@@ -847,6 +857,8 @@ void notebook_t::process_drag_and_drop(client_t * c) {
 		_parent->remove(this);
 	} else {
 		render();
+		page.repair_back_buffer(_allocation);
+		page.repair_overlay(_allocation);
 	}
 }
 
@@ -929,6 +941,5 @@ void notebook_t::iconify_client(client_t * c) {
 void notebook_t::delete_all() {
 
 }
-
 
 }

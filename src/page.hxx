@@ -101,8 +101,8 @@ public:
 
 	/* the main window */
 	//Window main_window;
-	//cairo_surface_t * main_window_s;
-	//cairo_t * main_window_cr;
+	cairo_surface_t * gui_s;
+	cairo_t * gui_cr;
 
 	cairo_surface_t * back_buffer_s;
 	cairo_t * back_buffer_cr;
@@ -187,12 +187,13 @@ public:
 	void move_fullscreen(client_t * c);
 
 	box_list_t substract_box(box_int_t const &box0, box_int_t const &box1);
-	box_list_t substract_box(box_list_t &box_list, box_int_t &box1);
+	box_list_t substract_box(box_list_t const &box_list, box_int_t const &box1);
 
 	void repair_back_buffer(box_int_t const & area);
 	void repair_overlay(box_int_t const & area);
 
 	bool merge_area_macro(box_list_t & list);
+
 
 };
 

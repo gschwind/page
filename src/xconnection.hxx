@@ -234,6 +234,26 @@ struct xconnection_t {
 
 		Atom _NET_WM_ICON;
 
+		Atom _NET_WM_ALLOWED_ACTIONS;
+
+		/* _NET_WM_ALLOWED_ACTIONS */
+		Atom _NET_WM_ACTION_MOVE; /*never allowed */
+		Atom _NET_WM_ACTION_RESIZE; /* never allowed */
+		Atom _NET_WM_ACTION_MINIMIZE; /* never allowed */
+		Atom _NET_WM_ACTION_SHADE; /* never allowed */
+		Atom _NET_WM_ACTION_STICK; /* never allowed */
+		Atom _NET_WM_ACTION_MAXIMIZE_HORZ; /* never allowed */
+		Atom _NET_WM_ACTION_MAXIMIZE_VERT; /* never allowed */
+		Atom _NET_WM_ACTION_FULLSCREEN; /* allowed */
+		Atom _NET_WM_ACTION_CHANGE_DESKTOP; /* never allowed */
+		Atom _NET_WM_ACTION_CLOSE; /* always allowed */
+		Atom _NET_WM_ACTION_ABOVE; /* never allowed */
+		Atom _NET_WM_ACTION_BELOW; /* never allowed */
+
+		Atom _NET_FRAME_EXTENTS;
+
+		Atom _NET_CLOSE_WINDOW;
+
 		/* TODO Atoms for root window */
 		Atom _NET_DESKTOP_NAMES;
 		Atom _NET_ACTIVE_WINDOW;
@@ -319,6 +339,8 @@ struct xconnection_t {
 		composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
 		allow_input_passthrough(composite_overlay);
 
+		//XCompositeRedirectSubwindows(dpy, xroot, CompositeRedirectManual);
+
 		/* initialize all atoms for this connection */
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
 
@@ -372,11 +394,47 @@ struct xconnection_t {
 		ATOM_INIT(_NET_WM_STATE_DEMANDS_ATTENTION);
 		ATOM_INIT(_NET_WM_STATE_FOCUSED);
 
+		ATOM_INIT(_NET_WM_ALLOWED_ACTIONS);
+
+		/* _NET_WM_ALLOWED_ACTIONS */
+		ATOM_INIT(_NET_WM_ACTION_MOVE);
+		/*never allowed */
+		ATOM_INIT(_NET_WM_ACTION_RESIZE);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_MINIMIZE);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_SHADE);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_STICK);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_MAXIMIZE_HORZ);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_MAXIMIZE_VERT);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_FULLSCREEN);
+		/* allowed */
+		ATOM_INIT(_NET_WM_ACTION_CHANGE_DESKTOP);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_CLOSE);
+		/* always allowed */
+		ATOM_INIT(_NET_WM_ACTION_ABOVE);
+		/* never allowed */
+		ATOM_INIT(_NET_WM_ACTION_BELOW);
+		/* never allowed */
+
+		ATOM_INIT(_NET_CLOSE_WINDOW);
+
+		ATOM_INIT(_NET_FRAME_EXTENTS);
+
 		ATOM_INIT(_NET_WM_ICON);
 
 		ATOM_INIT(PAGE_QUIT);
 
 #undef ATOM_INIT
+
+		/* try to register composite manager */
+		if (!register_cm())
+			throw std::runtime_error("Another compositor running");
 
 	}
 
@@ -476,7 +534,7 @@ struct xconnection_t {
 
 	void unmap(Window w) {
 		unsigned long serial = XNextRequest(dpy);
-		printf("UnMap serial: #%lu win: #%lu\n", serial, w);
+		//printf("UnMap serial: #%lu win: #%lu\n", serial, w);
 		XUnmapWindow(dpy, w);
 		event_t e;
 		e.serial = serial;
@@ -486,7 +544,7 @@ struct xconnection_t {
 
 	void reparentwindow(Window w, Window parent, int x, int y) {
 		unsigned long serial = XNextRequest(dpy);
-		printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+		//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
 		XReparentWindow(dpy, w, parent, x, y);
 		event_t e;
 		e.serial = serial;
@@ -494,10 +552,9 @@ struct xconnection_t {
 		pending.push_back(e);
 	}
 
-
 	void map(Window w) {
 		unsigned long serial = XNextRequest(dpy);
-		printf("Map serial: #%lu win: #%lu\n", serial, w);
+		//printf("Map serial: #%lu win: #%lu\n", serial, w);
 		XMapWindow(dpy, w);
 		event_t e;
 		e.serial = serial;
@@ -523,6 +580,54 @@ struct xconnection_t {
 		XNextEvent(dpy, ev);
 		xconnection_t::last_serial = ev->xany.serial;
 		//std::remove_if(pending.begin(), pending.end(), filter);
+	}
+
+	/* this fonction come from xcompmgr
+	 * it is intend to make page as composite manager */
+	bool register_cm() {
+		Window w;
+		Atom a;
+		static char net_wm_cm[] = "_NET_WM_CM_Sxx";
+
+		snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen);
+		a = XInternAtom(dpy, net_wm_cm, False);
+
+		w = XGetSelectionOwner(dpy, a);
+		if (w != None) {
+			XTextProperty tp;
+			char **strs;
+			int count;
+			Atom winNameAtom = XInternAtom(dpy, "_NET_WM_NAME", False);
+
+			if (!XGetTextProperty(dpy, w, &tp, winNameAtom)
+					&& !XGetTextProperty(dpy, w, &tp, XA_WM_NAME)) {
+				fprintf(stderr,
+						"Another composite manager is already running (0x%lx)\n",
+						(unsigned long) w);
+				return false;
+			}
+			if (XmbTextPropertyToTextList(dpy, &tp, &strs, &count) == Success) {
+				fprintf(stderr,
+						"Another composite manager is already running (%s)\n",
+						strs[0]);
+
+				XFreeStringList(strs);
+			}
+
+			XFree(tp.value);
+
+			return false;
+		}
+
+		w = XCreateSimpleWindow(dpy, RootWindow (dpy, screen), 0, 0, 1, 1, 0, None,
+				None);
+
+		Xutf8SetWMProperties(dpy, w, "page", "page", NULL, 0, NULL,
+				NULL, NULL);
+
+		XSetSelectionOwner(dpy, a, w, CurrentTime);
+
+		return true;
 	}
 
 };
