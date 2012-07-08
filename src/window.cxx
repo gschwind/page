@@ -52,7 +52,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	read_all();
 
 	/* save in case of page failure */
-	cnx.add_to_save_set(xwin);
+	//cnx.add_to_save_set(xwin);
 
 	create_render_context();
 
@@ -107,8 +107,11 @@ window_t::~window_t() {
 	created_window.erase(xwin);
 
 	write_wm_state(WithdrawnState);
+	XDeleteProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS);
+
 	cnx.select_input(xwin, NoEventMask);
 	destroy_render_context();
+
 	XRemoveFromSaveSet(cnx.dpy, xwin);
 }
 
@@ -120,27 +123,6 @@ void window_t::read_all() {
 		if ((hints->flags & InputHint) && hints->input == True)
 			wm_input_focus = true;
 		XFree(hints);
-	}
-
-	XWindowAttributes wa;
-
-	if (XGetWindowAttributes(cnx.dpy, xwin, &wa)) {
-
-		if (wa.map_state == IsUnmapped) {
-			_is_map = false;
-		} else {
-			_is_map = true;
-		}
-
-		memset(partial_struct, 0, sizeof(partial_struct));
-		size.x = wa.x;
-		size.y = wa.y;
-		size.w = wa.width;
-		size.h = wa.height;
-		visual = wa.visual;
-
-		_override_redirect = (wa.override_redirect ? true : false);
-
 	}
 
 	read_net_vm_name();
@@ -408,9 +390,7 @@ void window_t::write_wm_state(long state) {
 				32, PropModeReplace, reinterpret_cast<unsigned char *>(&data),
 				2);
 	} else {
-		XChangeProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, cnx.atoms.WM_STATE,
-				32, PropertyDelete, reinterpret_cast<unsigned char *>(&data),
-				2);
+		XDeleteProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE);
 	}
 }
 
@@ -507,8 +487,6 @@ void window_t::process_configure_notify_event(XConfigureEvent const & e) {
 	cairo_surface_flush(window_surf);
 	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
 	mark_dirty();
-
-	_override_redirect = (e.override_redirect ? true : false);
 
 }
 

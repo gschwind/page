@@ -13,6 +13,7 @@
 #include <map>
 #include "xconnection.hxx"
 #include "renderable.hxx"
+#include "region.hxx"
 
 namespace page {
 
@@ -103,6 +104,7 @@ public:
 	long const * read_partial_struct();
 	void read_all();
 	XWMHints * read_wm_hints();
+	void read_shape_clip();
 
 	void write_net_wm_state();
 	void write_net_wm_allowed_actions();
@@ -275,6 +277,15 @@ public:
 			x = 1.0;
 		if(x < 0.0)
 			x = 0.0;
+	}
+
+
+	void add_to_save_set() {
+		cnx.add_to_save_set(xwin);
+	}
+
+	void remove_from_save_set() {
+		cnx.remove_from_save_set(xwin);
 	}
 
 };

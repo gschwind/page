@@ -18,6 +18,8 @@
 namespace page {
 
 client_t::client_t(window_t & x) : w(x) {
+	w.add_to_save_set();
+
 	icon_surf = 0;
 	init_icon();
 }
@@ -35,6 +37,8 @@ client_t::~client_t() {
 		free(icon.data);
 		icon.data = 0;
 	}
+
+	w.remove_from_save_set();
 }
 
 void client_t::update_size(int w, int h) {

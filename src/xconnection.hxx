@@ -291,6 +291,9 @@ struct xconnection_t {
 	/* xinerama extension handler */
 	int xinerama_event, xinerama_error;
 
+	/* xinerama extension handler */
+	int xshape_event, xshape_error;
+
 	xconnection_t() {
 		old_error_handler = XSetErrorHandler(error_handler);
 
@@ -346,6 +349,14 @@ struct xconnection_t {
 			int major = 0, minor = 0;
 			XineramaQueryVersion(dpy, &major, &minor);
 			printf("Xinerama Extension version %d.%d found\n", major, minor);
+		}
+
+		if (!XShapeQueryExtension(dpy, &xshape_event, &xinerama_error)) {
+			throw std::runtime_error("Fixes extension is not supported");
+		} else {
+			int major = 0, minor = 0;
+			XShapeQueryVersion(dpy, &major, &minor);
+			printf("Shape Extension version %d.%d found\n", major, minor);
 		}
 
 		/* map & passtrough the overlay */
@@ -660,6 +671,10 @@ struct xconnection_t {
 
 	void add_to_save_set(Window w) {
 		XAddToSaveSet(dpy, w);
+	}
+
+	void remove_from_save_set(Window w) {
+		XRemoveFromSaveSet(dpy, w);
 	}
 
 	void select_input(Window w, long int mask) {

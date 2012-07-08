@@ -237,10 +237,6 @@ void page_t::run() {
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char*>(workarea), 4);
 
-	//XSelectInput(cnx.dpy, cnx.xroot, ButtonPressMask | SubstructureNotifyMask | SubstructureRedirectMask);
-	//cnx.map(main_window);
-	//damage = XDamageCreate(cnx.dpy, main_window, XDamageReportRawRectangles);
-
 	render();
 	repair_back_buffer(cnx.root_size);
 	repair_overlay(cnx.root_size);
@@ -250,9 +246,7 @@ void page_t::run() {
 
 		XEvent e;
 		cnx.xnextevent(&e);
-		//printf("##%lu\n", e.xany.serial);
 		if (e.type < LASTEvent && e.type > 0) {
-			//printf("##%lu\n", e.xany.serial);
 			printf("%s serial: #%lu win: #%lu\n", x_event_name[e.type],
 					e.xany.serial, e.xany.window);
 		}
@@ -361,21 +355,6 @@ void page_t::manage(window_t * w) {
 	/* WM must ignore this window */
 	if (w->is_input_only())
 		return;
-	w->print_net_wm_window_type();
-
-	if (w->get_wm_state() != WithdrawnState) {
-		if (w->is_dock()) {
-			w->setup_extends();
-			w->map();
-		} else if (w->is_popup()) {
-			w->set_opacity(OPACITY);
-			/* ignore */
-		} else if (w->is_normal()) {
-			insert_client(w);
-		}
-		return;
-	}
-
 	if (!w->is_map())
 		return;
 
@@ -385,7 +364,7 @@ void page_t::manage(window_t * w) {
 	} else if (w->is_popup()) {
 		w->set_opacity(OPACITY);
 		/* ignore */
-	} else if (w->is_normal()) {
+	} else if (w->is_normal() && !w->override_redirect()) {
 		insert_client(w);
 	}
 }
