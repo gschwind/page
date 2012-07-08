@@ -7,7 +7,7 @@
 
 #include "xconnection.hxx"
 
-namespace page_next {
+namespace page {
 
 long int xconnection_t::last_serial = 0;
 

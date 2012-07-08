@@ -8,12 +8,13 @@
 #include <stdio.h>
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
+
 #include "split.hxx"
-#include "X11/extensions/Xrender.h"
+#include "popup_split.hxx"
 
-namespace page_next {
+namespace page {
 
-split_t::split_t(main_t & page, split_type_e type) :
+split_t::split_t(page_t & page, split_type_e type) :
 		page(page) {
 	_split_type = type;
 	_split = 0.5;
@@ -119,7 +120,7 @@ bool split_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool split_t::add_client(client_t *c) {
+bool split_t::add_client(window_t * c) {
 	if (_pack0) {
 		if (!_pack0->add_client(c)) {
 			if (_pack1)
@@ -157,14 +158,14 @@ void split_t::close(tree_t * src) {
 }
 
 void split_t::remove(tree_t * src) {
-	std::list<client_t *> * client = src->get_clients();
-	std::list<client_t *>::iterator i = client->begin();
-
 	if (src != _pack0 && src != _pack1)
 		return;
 
 	tree_t * dst = (src == _pack0) ? _pack1 : _pack0;
-	while (i != client->end()) {
+
+	window_list_t windows = src->get_windows();
+	window_list_t::iterator i = windows.begin();
+	while (i != windows.end()) {
 		dst->add_client((*i));
 		++i;
 	}
@@ -176,25 +177,34 @@ void split_t::remove(tree_t * src) {
 	delete this;
 }
 
-void split_t::activate_client(client_t * c) {
+void split_t::activate_client(window_t * c) {
 	if (_pack0)
 		_pack0->activate_client(c);
 	if (_pack1)
 		_pack1->activate_client(c);
 }
 
-void split_t::iconify_client(client_t * c) {
+void split_t::iconify_client(window_t * c) {
 	if (_pack0)
 		_pack0->iconify_client(c);
 	if (_pack1)
 		_pack1->iconify_client(c);
 }
 
-std::list<client_t *> * split_t::get_clients() {
-	return 0;
+window_list_t split_t::get_windows() {
+	window_list_t list;
+	if(_pack0) {
+		window_list_t pack0_list = _pack0->get_windows();
+		list.insert(list.end(), pack0_list.begin(), pack0_list.end());
+	}
+	if(_pack1) {
+		window_list_t pack1_list = _pack0->get_windows();
+		list.insert(list.end(), pack1_list.begin(), pack1_list.end());
+	}
+	return list;
 }
 
-void split_t::remove_client(client_t * c) {
+void split_t::remove_client(window_t * c) {
 	if (_pack0)
 		_pack0->remove_client(c);
 	if (_pack1)
@@ -224,7 +234,7 @@ void split_t::process_drag_and_drop() {
 		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char*) this);
 
 		if (ev.type == page.cnx.damage_event + XDamageNotify) {
-			page.process_damage_event(&ev);
+			page.process_event(reinterpret_cast<XDamageNotifyEvent&>(ev));
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
 				_split = (ev.xmotion.x - _allocation.x)
@@ -257,8 +267,7 @@ void split_t::process_drag_and_drop() {
 	XFreeCursor(page.cnx.dpy, cursor);
 	update_allocation(_allocation);
 	render();
-	page.repair_back_buffer(_allocation);
-	page.repair_overlay(_allocation);
+	page.add_damage_area(_allocation);
 }
 
 Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {

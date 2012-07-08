@@ -1,9 +1,39 @@
 bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit
 
 
-page_SOURCES = main.cxx page.cxx tree.cxx notebook.cxx split.cxx root.cxx client.cxx popup.cxx xconnection.cxx ftrace_function.cxx
-page_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS) $(FT2_LIBS) $(GLIB_LIBS) -lbfd
-page_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) $(FT2_CFLAGS) $(GLIB_CFLAGS) -fno-strict-aliasing
+page_SOURCES = \
+	main.cxx page.cxx \
+	tree.cxx notebook.cxx \
+	split.cxx root.cxx \
+	client.cxx \
+	xconnection.cxx \
+	ftrace_function.cxx \
+	window.cxx \
+	popup_notebook0.cxx \
+	popup_notebook1.cxx \
+	popup_split.cxx
+
+page_LDADD = \
+	$(X11_LIBS) \
+	$(CAIRO_LIBS) \
+	$(XCOMPOSITE_LIBS) \
+	$(XDAMAGE_LIBS) \
+	$(XRENDER_LIBS) \
+	$(XINERAMA_LIBS) \
+	$(FT2_LIBS) \
+	$(GLIB_LIBS) \
+	-lbfd
+	
+page_CXXFLAGS = \
+	$(X11_CXXFLAGS) \
+	$(CAIRO_CFLAGS) \
+	$(XCOMPOSITE_CFLAGS) \
+	$(XDAMAGE_CFLAGS) \
+	$(XRENDER_CFLAGS) \
+	$(XINERAMA_CFLAGS) \
+	$(FT2_CFLAGS) \
+	$(GLIB_CFLAGS) \
+	-fno-strict-aliasing
 
 query_tree_SOURCES = query_tree.cxx
 query_tree_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)

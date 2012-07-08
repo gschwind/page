@@ -2,6 +2,8 @@ AC_INIT([page], [0.0.5])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
 
+AC_ARG_ENABLE([trace], [AS_HELP_STRING([--enable-trace],[enable trace feature with gcc])], [CXXFLAGS="-g -finstrument-functions -finstrument-functions-exclude-file-list=x86_64-pc-linux-gnu,X11 -DENABLE_TRACE $CXXFLAGS"], [])
+
 PKG_CHECK_MODULES(X11, x11 >= 1.3.2)
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)

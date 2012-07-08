@@ -8,7 +8,9 @@
 #ifndef BOX_HXX_
 #define BOX_HXX_
 
-namespace page_next {
+#include <X11/Xlib.h>
+
+namespace page {
 
 template<typename T>
 inline T min(T x, T y) {
@@ -39,6 +41,10 @@ struct box_t {
 			x(x), y(y), w(w), h(h) {
 	}
 
+	box_t(XRectangle const & rec) : x(rec.x), y(rec.y), w(rec.width), h(rec.height) {
+
+	}
+
 	/* compute intersection */
 	box_t<T> operator&(box_t<T> const & box) const {
 
@@ -58,6 +64,7 @@ struct box_t {
 	template<typename T1>
 	friend box_t<T1> get_max_extand(box_t<T1> const & box0,
 			box_t<T1> const & box1);
+
 
 };
 

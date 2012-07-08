@@ -8,7 +8,6 @@
 #ifndef PAGE_HXX_
 #define PAGE_HXX_
 
-//#define _POSIX_C_SOURCE 199309L
 
 #include <glib.h>
 
@@ -28,6 +27,7 @@
 #include <iostream>
 #include <limits>
 #include <cstring>
+#include <map>
 
 /* According to POSIX.1-2001 */
 #include <sys/select.h>
@@ -37,16 +37,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef ENABLE_TRACE
+#include "ftrace_function.hxx"
+#endif
+
+#include "renderable.hxx"
 #include "tree.hxx"
 #include "client.hxx"
 #include "box.hxx"
 #include "icon.hxx"
 #include "xconnection.hxx"
-#include "popup.hxx"
 #include "root.hxx"
-#include "ftrace_function.hxx"
+#include "window.hxx"
+#include "region.hxx"
 
-namespace page_next {
+namespace page {
 
 typedef std::set<client_t *> client_set_t;
 typedef std::list<box_int_t> box_list_t;
@@ -75,22 +80,26 @@ inline void print_buffer__(const char * buf, int size) {
 	printf("\n");
 }
 
-class main_t {
+class page_t {
 public:
 
 	static double const OPACITY = 0.95;
 
 	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
-
 	std::string page_base_dir;
 
-	client_t * fullscreen_client;
+	window_t * fullscreen_client;
 	root_t * tree_root;
 	tree_t * default_window_pop;
-	/* managed clients */
-	client_set_t clients;
-	std::list<popup_t *> popups;
+
+	/* all know top level windows */
+	window_list_t top_level_windows;
+	/* clients */
+	window_set_t clients;
+
+	renderable_list_t popups;
+
 	/* default cursor */
 	Cursor cursor;
 
@@ -110,7 +119,7 @@ public:
 
 	bool has_fullscreen_size;
 	box_t<int> fullscreen_position;
-	box_list_t pending_damage;
+	region_t<int> pending_damage;
 
 	GKeyFile * conf;
 
@@ -118,25 +127,22 @@ public:
 	std::string font_bold;
 
 private:
-	client_t * client_focused;
+	window_t * client_focused;
 public:
 
-	Damage damage;
-
-	main_t(main_t const &);
-	main_t &operator=(main_t const &);
+	page_t(page_t const &);
+	page_t &operator=(page_t const &);
 public:
-	main_t(int argc, char ** argv);
-	~main_t();
+	page_t(int argc, char ** argv);
+	~page_t();
 	void render(cairo_t * cr);
 	void render();
 	void run();
 
 	void scan();
 	long get_window_state(Window w);
-	client_t * find_client_by_xwindow(Window w);
-	popup_t * find_popup_by_xwindow(Window w);
-	client_t * find_client_by_clipping_window(Window w);
+
+
 	bool get_text_prop(Window w, Atom atom, std::string & text);
 
 	void update_page_aera();
@@ -144,17 +150,31 @@ public:
 	bool get_all(Window win, Atom prop, Atom type, int size,
 			unsigned char **data, unsigned int *num);
 
-	void process_map_request_event(XEvent * e);
-	void process_map_notify_event(XEvent * e);
-	void process_unmap_notify_event(XEvent * e);
-	void process_property_notify_event(XEvent * ev);
-	void process_destroy_notify_event(XEvent * e);
-	void process_client_message_event(XEvent * e);
-	void process_damage_event(XEvent * ev)
-			__attribute__((no_instrument_function));
-	void process_create_window_event(XEvent * e);
+	/* SubstructureNotifyMask */
+	void process_event(XCirculateEvent const & e);
+	void process_event(XConfigureEvent const & e);
+	void process_event(XCreateWindowEvent const & e);
+	void process_event(XDestroyWindowEvent const & e);
+	void process_event(XGravityEvent const & e);
+	void process_event(XMapEvent const & e);
+	void process_event(XReparentEvent const & e);
+	void process_event(XUnmapEvent const & e);
 
-	void process_configure_notify_event(XEvent * e);
+	/* SubstructureRedirectMask */
+	void process_event(XCirculateRequestEvent const & e);
+	void process_event(XConfigureRequestEvent const & e);
+	void process_event(XMapRequestEvent const & e);
+
+	/* PropertyChangeMask */
+	void process_event(XPropertyEvent const & e);
+
+	/* Unmaskable Events */
+	void process_event(XClientMessageEvent const & e);
+
+	/* extension events */
+	void process_event(XDamageNotifyEvent const & ev)
+			__attribute__((no_instrument_function));
+
 
 	void drag_and_drop_loop();
 
@@ -165,11 +185,13 @@ public:
 	void unfullscreen(client_t * c);
 	void toggle_fullscreen(client_t * c);
 
-	void insert_client(client_t * c);
+	void insert_client(window_t * c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
-	void update_focus(client_t * c);
+	void update_focus(window_t * c);
+
+	void manage(window_t * w);
 
 	enum wm_mode_e {
 		WM_MODE_IGNORE,
@@ -180,7 +202,7 @@ public:
 	};
 
 	wm_mode_e guess_window_state(long know_state, Bool override_redirect,
-			int map_state, int w_class);
+			bool map_state);
 
 	void withdraw_to_X(client_t * c);
 
@@ -194,6 +216,18 @@ public:
 
 	bool merge_area_macro(box_list_t & list);
 
+	window_t * find_window(Window w);
+	window_t * find_window(window_set_t const & list, Window w);
+
+	window_t * find_client(Window w) {
+		return find_window(clients, w);
+	}
+
+	void add_damage_area(box_int_t const & box);
+
+	void render_flush();
+
+	void set_window_above(window_t * w, Window above);
 
 };
 

@@ -11,9 +11,9 @@
 #include <X11/Xlib.h>
 #include <cairo.h>
 #include <list>
-#include "client.hxx"
+#include "window.hxx"
 
-namespace page_next {
+namespace page {
 class tree_t {
 protected:
 	tree_t * _parent;
@@ -25,15 +25,16 @@ public:
 	virtual void update_allocation(box_t<int> & alloc) = 0;
 	virtual void render() = 0;
 	virtual bool process_button_press_event(XEvent const * e) = 0;
-	virtual bool add_client(client_t *c) = 0;
 	virtual void replace(tree_t * src, tree_t * by) = 0;
 	virtual void remove(tree_t * src) = 0;
 	virtual void reparent(tree_t * parent);
 	virtual void close(tree_t * src) = 0;
-	virtual client_list_t * get_clients() = 0;
-	virtual void remove_client(client_t * c) = 0;
-	virtual void activate_client(client_t * c) = 0;
-	virtual void iconify_client(client_t * c) = 0;
+	virtual window_list_t get_windows() = 0;
+
+	virtual bool add_client(window_t * x) = 0;
+	virtual void remove_client(window_t * x) = 0;
+	virtual void activate_client(window_t * x) = 0;
+	virtual void iconify_client(window_t * x) = 0;
 	virtual void delete_all() = 0;
 };
 }

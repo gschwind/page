@@ -12,9 +12,9 @@
 #include "tree.hxx"
 #include "box.hxx"
 
-namespace page_next {
+namespace page {
 
-class main_t;
+class page_t;
 
 struct screen_t {
 	box_t<int> aera;
@@ -23,23 +23,25 @@ struct screen_t {
 };
 
 class root_t: public tree_t {
-	main_t & page;
+	page_t & page;
 	std::list<screen_t *> subarea;
 public:
-	root_t(main_t & page);
+	root_t(page_t & page);
 	~root_t();
 	void update_allocation(box_t<int> & allocation);
 	void render();
 	bool process_button_press_event(XEvent const * e);
-	bool add_client(client_t *c);
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	std::list<client_t *> *  get_clients();
-	void remove_client(client_t * c);
-	void activate_client(client_t * c);
+	window_list_t get_windows();
+
+	virtual bool add_client(window_t * x);
+	virtual void remove_client(window_t * x);
+	virtual void activate_client(window_t * x);
+	virtual void iconify_client(window_t * x);
+
 	void add_aera(box_t<int> & area);
-	void iconify_client(client_t * c);
 	void delete_all();
 };
 

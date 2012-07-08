@@ -15,48 +15,17 @@
 #include <cstring>
 #include "client.hxx"
 
-namespace page_next {
+namespace page {
 
-client_t::client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
-		long wm_state) :
-		cnx(cnx), xwin(w), wa(wa), is_dock(false), has_partial_struct(false), height(
-				wa.height), width(wa.width), lock_count(0), is_lock(false), icon_surf(
-				0) {
-
-	icon.data = 0;
-
-	set_wm_state(wm_state);
-
-	if (wa.map_state == IsUnmapped) {
-		is_map = false;
-	} else {
-		is_map = true;
-	}
-
-	memset(partial_struct, 0, sizeof(partial_struct));
-
-	XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
-
-	window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, wa.visual, wa.width,
-			wa.height);
-	damage = XDamageCreate(cnx.dpy, xwin, XDamageReportRawRectangles);
-
-	size.x = wa.x;
-	size.y = wa.y;
-	size.w = wa.width;
-	size.h = wa.height;
-
-	/* set frame extend to 0 (I don't know why a client need this data) */
-	long frame_extends[4] = { 0, 0, 0, 0 };
-	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(frame_extends), 4);
-
-	update_net_wm_allowed_actions();
-
+client_t::client_t(window_t & x) : w(x) {
+	icon_surf = 0;
+	init_icon();
 }
 
 client_t::~client_t() {
+
+	w.write_wm_state(WithdrawnState);
+
 	if (icon_surf != 0) {
 		cairo_surface_destroy(icon_surf);
 		icon_surf = 0;
@@ -66,88 +35,20 @@ client_t::~client_t() {
 		free(icon.data);
 		icon.data = 0;
 	}
-
-	XDamageDestroy(cnx.dpy, damage);
-
-	if(window_surf != 0) {
-		cairo_surface_destroy(window_surf);
-		window_surf = 0;
-	}
-
-	XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
 }
 
-void client_t::update_all() {
-
-	wm_input_focus = false;
-	XWMHints * hints = XGetWMHints(cnx.dpy, xwin);
-	if (hints) {
-		if ((hints->flags & InputHint) && hints->input == True)
-			wm_input_focus = true;
-		XFree(hints);
-	}
-
-	update_net_vm_name();
-	update_vm_name();
-	update_title();
-	client_update_size_hints();
-	update_type();
-	read_net_wm_state();
-	read_wm_protocols();
-
-	init_icon();
-
-}
-
-long client_t::get_window_state() {
-	int format;
-	long result = -1;
-	long * p = NULL;
-	unsigned long n, extra;
-	Atom real;
-
-	if (XGetWindowProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, 0L, 2L, False,
-			cnx.atoms.WM_STATE, &real, &format, &n, &extra,
-			(unsigned char **) &p) != Success)
-		return -1;
-
-	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
-		result = p[0];
-	} else {
-		printf("Error in WM_STATE %lu %d %lu\n", n, format, real);
-		return -1;
-	}
-	XFree(p);
-	return result;
-}
-
-void client_t::map() {
-	// generate a map request event.
-	if (!is_map) {
-		is_map = true;
-		cnx.map(xwin);
-	}
-	//cnx.map(clipping_window);
-}
-
-void client_t::unmap() {
-	if (is_map) {
-		is_map = false;
-		//unmap_pending += 1;
-		/* ICCCM require that WM unmap client window to change client state from
-		 * Normal to Iconic state
-		 * in PAGE all unviewable window are in iconic state */
-		//cnx.unmap(clipping_window);
-		cnx.unmap(xwin);
-	}
-}
-
-void client_t::update_client_size(int w, int h) {
+void client_t::update_size(int w, int h) {
 
 	//if (is_fullscreen()) {
 	//	height = cnx.root_size.h;
 	//	width = cnx.root_size.w;
 	//}
+
+	width = w;
+	height = h;
+
+	this->w.read_size_hints();
+	XSizeHints const & hints = this->w.get_size_hints();
 
 	if (hints.flags & PMaxSize) {
 		if (w > hints.max_width)
@@ -203,110 +104,11 @@ void client_t::update_client_size(int w, int h) {
 		h -= ((h - hints.base_height) % hints.height_inc);
 	}
 
-	height = h;
 	width = w;
+	height = h;
 
-	printf("Update #%lu window size %dx%d\n", xwin, width, height);
-}
-
-/* check if client is still alive */
-bool client_t::try_lock_client() {
-	cnx.grab();
-	XEvent e;
-	if (XCheckTypedWindowEvent(cnx.dpy, xwin, DestroyNotify, &e)) {
-		XPutBackEvent(cnx.dpy, &e);
-		cnx.ungrab();
-		return false;
-	}
-	is_lock = true;
-	return true;
-}
-
-void client_t::unlock_client() {
-	is_lock = false;
-	cnx.ungrab();
-}
-
-void client_t::focus() {
-	if (is_map && wm_input_focus) {
-		printf("Focus #%x\n", (unsigned int) xwin);
-		XRaiseWindow(cnx.dpy, xwin);
-		XSetInputFocus(cnx.dpy, xwin, RevertToParent, cnx.last_know_time);
-	}
-
-	if (wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS) != wm_protocols.end()) {
-		printf("TAKE_FOCUS\n");
-		XRaiseWindow(cnx.dpy, xwin);
-		XEvent ev;
-		ev.xclient.display = cnx.dpy;
-		ev.xclient.type = ClientMessage;
-		ev.xclient.format = 32;
-		ev.xclient.message_type = cnx.atoms.WM_PROTOCOLS;
-		ev.xclient.window = xwin;
-		ev.xclient.data.l[0] = cnx.atoms.WM_TAKE_FOCUS;
-		ev.xclient.data.l[1] = cnx.last_know_time;
-		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
-	}
-
-	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
-	write_net_wm_state();
-
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
-			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&(xwin)), 1);
-
-}
-
-void client_t::client_update_size_hints() {
-	long msize;
-	XSizeHints &size = hints;
-	if (!XGetWMNormalHints(cnx.dpy, xwin, &size, &msize)) {
-		/* size is uninitialized, ensure that size.flags aren't used */
-		size.flags = PSize;
-		printf("no WMNormalHints\n");
-	}
-}
-
-void client_t::update_vm_name() {
-	wm_name_is_valid = false;
-	char **list = NULL;
-	XTextProperty name;
-	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms.WM_NAME);
-	if (!name.nitems) {
-		XFree(name.value);
-		return;
-	}
-	wm_name_is_valid = true;
-	wm_name = (char const *) name.value;
-	XFree(name.value);
-}
-
-void client_t::update_net_vm_name() {
-	net_wm_name_is_valid = false;
-	char **list = NULL;
-	XTextProperty name;
-	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms._NET_WM_NAME);
-	if (!name.nitems) {
-		XFree(name.value);
-		return;
-	}
-	net_wm_name_is_valid = true;
-	net_wm_name = (char const *) name.value;
-	XFree(name.value);
-}
-
-/* inspired from dwm */
-void client_t::update_title() {
-	if (net_wm_name_is_valid) {
-		name = net_wm_name;
-		return;
-	}
-	if (wm_name_is_valid) {
-		name = wm_name;
-	}
-	std::stringstream s(std::stringstream::in | std::stringstream::out);
-	s << "#" << (xwin) << " (noname)";
-	name = s.str();
+	printf("Update #%lu window size %dx%d\n", this->w.get_xwin(), width,
+			height);
 }
 
 void client_t::init_icon() {
@@ -328,8 +130,7 @@ void client_t::init_icon() {
 	std::list<struct icon_t> icons;
 	bool has_icon = false;
 	unsigned int n;
-	icon_data = get_properties32(cnx.atoms._NET_WM_ICON, cnx.atoms.CARDINAL,
-			&n);
+	icon_data = w.get_icon_data(&n);
 	icon_data_size = n;
 
 	if (icon_data != 0) {
@@ -430,104 +231,61 @@ void client_t::init_icon() {
 
 }
 
-void client_t::update_type() {
-	unsigned int num;
-	long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
-			&num);
-	if (val) {
-		type.clear();
-		/* use the first value that we know about in the array */
-		for (unsigned i = 0; i < num; ++i) {
-			type.insert(val[i]);
-		}
-		delete[] val;
-	}
-}
-
-void client_t::read_net_wm_state() {
-	/* take _NET_WM_STATE */
-	unsigned int n;
-	long * net_wm_state = get_properties32(cnx.atoms._NET_WM_STATE,
-			cnx.atoms.ATOM, &n);
-	if (net_wm_state) {
-		this->net_wm_state.clear();
-		for (int i = 0; i < n; ++i) {
-			this->net_wm_state.insert(net_wm_state[i]);
-		}
-		delete[] net_wm_state;
-	}
-}
-
-void client_t::read_wm_protocols() {
-	/* take _NET_WM_STATE */
-	unsigned int n;
-	long * wm_protocols = get_properties32(cnx.atoms.WM_PROTOCOLS,
-			cnx.atoms.ATOM, &n);
-	if (wm_protocols) {
-		this->wm_protocols.clear();
-		for (int i = 0; i < n; ++i) {
-			this->wm_protocols.insert(wm_protocols[i]);
-		}
-		delete[] wm_protocols;
-	}
-}
-
-void client_t::write_net_wm_state() {
-	int size = net_wm_state.size();
-	long * new_state = new long[size];
-	std::set<Atom>::iterator iter = net_wm_state.begin();
-	int i = 0;
-	while (iter != net_wm_state.end()) {
-		new_state[i] = *iter;
-		++iter;
-		++i;
-	}
-
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
-			size);
-	delete[] new_state;
-}
-
-void client_t::update_net_wm_allowed_actions() {
-	int size = net_wm_allowed_actions.size();
-	long * data = new long[size];
-	std::set<Atom>::iterator iter = net_wm_allowed_actions.begin();
-	int i = 0;
-	while (iter != net_wm_allowed_actions.end()) {
-		data[i] = *iter;
-		++iter;
-		++i;
-	}
-
-	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_ALLOWED_ACTIONS, cnx.atoms.ATOM,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(data),
-			size);
-	delete[] data;
-}
-
 void client_t::set_fullscreen() {
-	/* update window state */
-	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-	write_net_wm_state();
-
-	//XReparentWindow(cnx.dpy, clipping_window, cnx.composite_overlay, 0, 0);
-//	XMoveResizeWindow(cnx.dpy, xwin, 0, 0, cnx.root_size.w, cnx.root_size.h);
-//	XMoveResizeWindow(cnx.dpy, clipping_window, 0, 0, cnx.root_size.w,
-//			cnx.root_size.h);
-//	/* will set full screen, parameters will be ignored*/
-//	update_client_size(0, 0);
-//	map();
-	//cnx.focuced = this;
-	//focus();
+	w.set_fullscreen();
 }
 
 void client_t::unset_fullscreen() {
-	/* update window state */
-	net_wm_state.erase(cnx.atoms._NET_WM_STATE_FULLSCREEN);
-	write_net_wm_state();
-	//XReparentWindow(cnx.dpy, clipping_window, page_window, 0, 0);
-	//unmap();
+	w.unset_fullscreen();
+}
+
+void client_t::withdraw_to_X() {
+	printf("Manage #%lu\n", w.get_xwin());
+	XWMHints * hints = w.read_wm_hints();
+	if (hints) {
+		if (hints->initial_state == IconicState) {
+			w.write_wm_state(IconicState);
+		} else {
+			w.write_wm_state(NormalState);
+		}
+		XFree(hints);
+	} else {
+		w.write_wm_state(NormalState);
+	}
+
+//	if (w.is_dock()) {
+//		printf("IsDock !\n");
+//		unsigned int n;
+//		long const * partial_struct = w.read_partial_struct();
+//		if (partial_struct) {
+//			w.set_dock_action();
+//			w.map();
+//			return;
+//		} /* if has not partial struct threat it as normal window */
+//	}
+
+	w.set_default_action();
+
+}
+
+void client_t::repair1(cairo_t * cr, box_int_t const & area) {
+	w.repair1(cr, area);
+}
+
+box_int_t client_t::get_absolute_extend() {
+	return w.get_absolute_extend();
+}
+
+void client_t::reconfigure(box_int_t const & area) {
+	w.move_resize(area);
+}
+
+void client_t::mark_dirty() {
+	w.mark_dirty();
+}
+
+void client_t::mark_dirty_retangle(box_int_t const & area) {
+	w.mark_dirty_retangle(area);
 }
 
 }

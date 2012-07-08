@@ -8,6 +8,7 @@
 #ifndef NOTEBOOK_HXX_
 #define NOTEBOOK_HXX_
 
+#include <map>
 #include <list>
 #include <cairo.h>
 #include <ft2build.h>
@@ -20,9 +21,10 @@
 #include "tree.hxx"
 #include "split.hxx"
 #include "page.hxx"
-#include "popup.hxx"
+#include "popup_notebook0.hxx"
+#include "popup_notebook1.hxx"
 
-namespace page_next {
+namespace page {
 
 typedef std::list<client_t *> client_list_t;
 
@@ -34,6 +36,10 @@ struct img_t {
 };
 
 class notebook_t: public tree_t {
+
+	typedef std::map<window_t *, client_t *> client_map_t;
+	client_map_t client_map;
+
 	static int const BORDER_SIZE = 4;
 	static int const HEIGHT = 24;
 
@@ -47,7 +53,7 @@ class notebook_t: public tree_t {
 	};
 
 	static std::list<notebook_t *> notebooks;
-	main_t & page;
+	page_t & page;
 
 	Cursor cursor;
 
@@ -92,12 +98,12 @@ class notebook_t: public tree_t {
 	void update_client_position(client_t * c);
 
 public:
-	notebook_t(main_t & cnx);
+	notebook_t(page_t & cnx);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
 	void render();
 	bool process_button_press_event(XEvent const * e);
-	bool add_client(client_t *c);
+
 	void split(split_type_e type);
 
 	void split_left(client_t * c);
@@ -109,7 +115,14 @@ public:
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	client_list_t * get_clients();
+	window_list_t get_windows();
+
+	virtual bool add_client(window_t * c);
+	virtual void remove_client(window_t * c);
+	virtual void activate_client(window_t * c);
+	virtual void iconify_client(window_t * c);
+
+	bool add_client(client_t * c);
 	void remove_client(client_t * c);
 	void activate_client(client_t * c);
 	void iconify_client(client_t * c);
@@ -118,7 +131,7 @@ public:
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 	void delete_all();
 
-	void update_popup_position(popup_notebook_t * p, int x, int y, int w, int h, bool show_popup);
+	void update_popup_position(popup_notebook0_t * p, int x, int y, int w, int h, bool show_popup);
 
 };
 

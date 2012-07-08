@@ -23,7 +23,7 @@
 #include "atoms.hxx"
 #include <stdexcept>
 
-namespace page_next {
+namespace page {
 
 static char const * const x_function_codes[] = { //
 		"", //
@@ -202,7 +202,20 @@ struct xconnection_t {
 		Atom _NET_WM_STRUT_PARTIAL;
 
 		Atom _NET_WM_WINDOW_TYPE;
+		Atom _NET_WM_WINDOW_TYPE_DESKTOP;
 		Atom _NET_WM_WINDOW_TYPE_DOCK;
+		Atom _NET_WM_WINDOW_TYPE_TOOLBAR;
+		Atom _NET_WM_WINDOW_TYPE_MENU;
+		Atom _NET_WM_WINDOW_TYPE_UTILITY;
+		Atom _NET_WM_WINDOW_TYPE_SPLASH;
+		Atom _NET_WM_WINDOW_TYPE_DIALOG;
+		Atom _NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
+		Atom _NET_WM_WINDOW_TYPE_POPUP_MENU;
+		Atom _NET_WM_WINDOW_TYPE_TOOLTIP;
+		Atom _NET_WM_WINDOW_TYPE_NOTIFICATION;
+		Atom _NET_WM_WINDOW_TYPE_COMBO;
+		Atom _NET_WM_WINDOW_TYPE_DND;
+		Atom _NET_WM_WINDOW_TYPE_NORMAL;
 
 		Atom _NET_WM_USER_TIME;
 
@@ -364,6 +377,22 @@ struct xconnection_t {
 
 		ATOM_INIT(_NET_WM_WINDOW_TYPE);
 		ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
+
+		ATOM_INIT(_NET_WM_WINDOW_TYPE);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_DESKTOP);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_TOOLBAR);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_MENU);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_UTILITY);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_SPLASH);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_DIALOG);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_POPUP_MENU);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_TOOLTIP);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_NOTIFICATION);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_COMBO);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_DND);
+		ATOM_INIT(_NET_WM_WINDOW_TYPE_NORMAL);
 
 		ATOM_INIT(_NET_WM_USER_TIME);
 
@@ -619,16 +648,54 @@ struct xconnection_t {
 			return false;
 		}
 
-		w = XCreateSimpleWindow(dpy, RootWindow (dpy, screen), 0, 0, 1, 1, 0, None,
-				None);
+		w = XCreateSimpleWindow(dpy, RootWindow (dpy, screen), 0, 0, 1, 1, 0,
+				None, None);
 
-		Xutf8SetWMProperties(dpy, w, "page", "page", NULL, 0, NULL,
-				NULL, NULL);
+		Xutf8SetWMProperties(dpy, w, "page", "page", NULL, 0, NULL, NULL, NULL);
 
 		XSetSelectionOwner(dpy, a, w, CurrentTime);
 
 		return true;
 	}
+
+	void add_to_save_set(Window w) {
+		XAddToSaveSet(dpy, w);
+	}
+
+	void select_input(Window w, long int mask) {
+		XSelectInput(dpy, w, mask);
+	}
+
+	void move_resize(Window w, box_int_t const & size) {
+		unsigned long serial = XNextRequest(dpy);
+		//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+		XMoveResizeWindow(dpy, w, size.x, size.y, size.w, size.h);
+		event_t e;
+		e.serial = serial;
+		e.type = ConfigureNotify;
+		pending.push_back(e);
+	}
+
+	void set_window_border_width(Window w, unsigned int width) {
+		unsigned long serial = XNextRequest(dpy);
+		//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+		XSetWindowBorderWidth(dpy, w, width);
+		event_t e;
+		e.serial = serial;
+		e.type = ConfigureNotify;
+		pending.push_back(e);
+	}
+
+	void raise_window(Window w) {
+		unsigned long serial = XNextRequest(dpy);
+		//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+		XRaiseWindow(dpy, w);
+		event_t e;
+		e.serial = serial;
+		e.type = ConfigureNotify;
+		pending.push_back(e);
+	}
+
 
 };
 

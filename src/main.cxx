@@ -8,7 +8,7 @@
 #include "page.hxx"
 
 int main(int argc, char * * argv) {
-	page_next::main_t * m = new page_next::main_t(argc, argv);
+	page::page_t * m = new page::page_t(argc, argv);
 	m->run();
 	delete m;
 	return 0;

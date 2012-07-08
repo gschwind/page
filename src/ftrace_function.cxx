@@ -5,6 +5,7 @@
  *
  */
 
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -18,6 +19,8 @@
 #include <stdexcept>
 
 #include <cxxabi.h>
+
+#ifdef ENABLE_TRACE
 
 extern "C" {
 
@@ -143,3 +146,5 @@ void __cyg_profile_func_exit(void *func, void *caller) {
 }
 
 }
+
+#endif

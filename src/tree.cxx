@@ -7,7 +7,7 @@
 
 #include "tree.hxx"
 
-namespace page_next {
+namespace page {
 
 tree_t::tree_t(tree_t * parent, box_t<int> allocation) :
 		_parent(parent), _allocation(allocation) {

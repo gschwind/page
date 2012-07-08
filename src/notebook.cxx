@@ -17,7 +17,7 @@
 #include <cassert>
 #include "notebook.hxx"
 
-namespace page_next {
+namespace page {
 
 std::list<notebook_t *> notebook_t::notebooks;
 cairo_surface_t * notebook_t::hsplit_button_s = 0;
@@ -33,7 +33,7 @@ cairo_font_face_t * notebook_t::font = 0;
 FT_Face notebook_t::face_bold = 0;
 cairo_font_face_t * notebook_t::font_bold = 0;
 
-notebook_t::notebook_t(main_t & page) :
+notebook_t::notebook_t(page_t & page) :
 		page(page) {
 	back_buffer_is_valid = false;
 	back_buffer = 0;
@@ -284,7 +284,8 @@ void notebook_t::render() {
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13.0);
 						cairo_move_to(back_buffer_cr, 20.5, 15.5);
-						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
+						cairo_show_text(back_buffer_cr,
+								(*i)->get_title().c_str());
 
 						/* draw blue lines */
 						cairo_reset_clip(back_buffer_cr);
@@ -354,7 +355,8 @@ void notebook_t::render() {
 						cairo_set_source_rgb(back_buffer_cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(back_buffer_cr, 13);
 						cairo_move_to(back_buffer_cr, HEIGHT + 0.5, 15.5);
-						cairo_show_text(back_buffer_cr, (*i)->name.c_str());
+						cairo_show_text(back_buffer_cr,
+								(*i)->get_title().c_str());
 
 						/* draw border */
 						cairo_reset_clip(back_buffer_cr);
@@ -443,33 +445,33 @@ void notebook_t::render() {
 			cairo_set_source_rgb(page.gui_cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
 
+			box_int_t size = c->get_absolute_extend();
 			/* left */
 			cairo_rectangle(page.gui_cr, _allocation.x, _allocation.y + HEIGHT,
-					c->size.x - _allocation.x, _allocation.h - HEIGHT);
+					size.x - _allocation.x, _allocation.h - HEIGHT);
 			cairo_fill(page.gui_cr);
 			/* right */
-			cairo_rectangle(page.gui_cr, c->size.x + c->size.w,
+			cairo_rectangle(page.gui_cr, size.x + size.w,
 					_allocation.y + HEIGHT,
-					_allocation.x + _allocation.w - c->size.x - c->size.w,
+					_allocation.x + _allocation.w - size.x - size.w,
 					_allocation.h - HEIGHT);
 			cairo_fill(page.gui_cr);
 
 			/* top */
-			cairo_rectangle(page.gui_cr, c->size.x, _allocation.y + HEIGHT,
-					c->size.w, c->size.y - _allocation.y - HEIGHT);
+			cairo_rectangle(page.gui_cr, size.x, _allocation.y + HEIGHT, size.w,
+					size.y - _allocation.y - HEIGHT);
 
 			/* bottom */
 			cairo_fill(page.back_buffer_cr);
-			cairo_rectangle(page.gui_cr, c->size.x, c->size.y + c->size.h,
-					c->size.w,
-					_allocation.y + _allocation.h - c->size.y - c->size.h);
+			cairo_rectangle(page.gui_cr, size.x, size.y + size.h, size.w,
+					_allocation.y + _allocation.h - size.y - size.h);
 			cairo_fill(page.gui_cr);
 
 			cairo_set_line_width(page.gui_cr, 1.0);
 			cairo_set_source_rgb(page.gui_cr, 0x88U / 255.0, 0x8aU / 255.0,
 					0x85U / 255.0);
-			cairo_rectangle(page.gui_cr, c->size.x - 0.5, c->size.y - 0.5,
-					c->size.w + 1.0, c->size.h + 1.0);
+			cairo_rectangle(page.gui_cr, size.x - 0.5, size.y - 0.5,
+					size.w + 1.0, size.h + 1.0);
 			cairo_stroke(page.gui_cr);
 
 		}
@@ -524,19 +526,7 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 			if (c != _clients.end()) {
 				if (_selected.front() == (*c)
 						&& b.x + b.w * 2 - 16 < e->xbutton.x) {
-
-					XEvent ev;
-					ev.xclient.display = page.cnx.dpy;
-					ev.xclient.type = ClientMessage;
-					ev.xclient.format = 32;
-					ev.xclient.message_type = (*c)->cnx.atoms.WM_PROTOCOLS;
-					ev.xclient.window = (*c)->xwin;
-					ev.xclient.data.l[0] = (*c)->cnx.atoms.WM_DELETE_WINDOW;
-					ev.xclient.data.l[1] = e->xbutton.time;
-
-					XSendEvent(page.cnx.dpy, (*c)->xwin, False, NoEventMask,
-							&ev);
-
+					(*c)->delete_window(e->xbutton.time);
 				} else {
 					process_drag_and_drop(*c, e->xbutton.x, e->xbutton.y);
 					return true;
@@ -563,16 +553,17 @@ bool notebook_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool notebook_t::add_client(client_t *c) {
-	printf("Add client #%lu\n", c->xwin);
-	assert(std::find(_clients.begin(), _clients.end(), c) == _clients.end());
+bool notebook_t::add_client(window_t * x) {
+	assert(client_map.find(x) == client_map.end());
+	client_t * c = new client_t(*x);
 	_clients.push_front(c);
+	client_map[x] = c;
 	back_buffer_is_valid = false;
 	update_client_position(c);
 	set_selected(c);
+	c->withdraw_to_X();
 	render();
-	page.repair_back_buffer(_allocation);
-	page.repair_overlay(_allocation);
+	page.add_damage_area(_allocation);
 	return true;
 }
 
@@ -583,9 +574,8 @@ void notebook_t::split(split_type_e type) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	//update_client_mapping();
-	n->render();
-	page.repair_back_buffer(n->_allocation);
-	page.repair_overlay(n->_allocation);
+	render();
+	page.add_damage_area(_allocation);
 }
 
 void notebook_t::split_left(client_t * c) {
@@ -594,7 +584,7 @@ void notebook_t::split_left(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
-	n->add_client(c);
+	n->add_client(c->get_window());
 }
 
 void notebook_t::split_right(client_t * c) {
@@ -603,7 +593,7 @@ void notebook_t::split_right(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, this);
 	split->replace(0, n);
-	n->add_client(c);
+	n->add_client(c->get_window());
 }
 
 void notebook_t::split_top(client_t * c) {
@@ -612,7 +602,7 @@ void notebook_t::split_top(client_t * c) {
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
-	n->add_client(c);
+	n->add_client(c->get_window());
 }
 
 void notebook_t::split_bottom(client_t * c) {
@@ -621,7 +611,7 @@ void notebook_t::split_bottom(client_t * c) {
 	split->replace(0, this);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
-	n->add_client(c);
+	n->add_client(c->get_window());
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
@@ -636,27 +626,41 @@ void notebook_t::remove(tree_t * src) {
 
 }
 
-void notebook_t::activate_client(client_t * c) {
-	if (std::find(_clients.begin(), _clients.end(), c) != _clients.end()) {
+void notebook_t::activate_client(window_t * x) {
+	client_map_t::iterator i;
+	if ((i = client_map.find(x)) != client_map.end()) {
+		client_t * c = i->second;
 		set_selected(c);
 		back_buffer_is_valid = false;
 	}
 }
 
-std::list<client_t *> * notebook_t::get_clients() {
-	return &_clients;
+window_list_t notebook_t::get_windows() {
+	window_list_t list;
+	client_list_t::iterator i = _clients.begin();
+	while (i != _clients.end()) {
+		list.push_back((*i)->get_window());
+		++i;
+	}
+	return list;
+}
+
+void notebook_t::remove_client(window_t * x) {
+	client_map_t::iterator i;
+	if ((i = client_map.find(x)) != client_map.end()) {
+		client_map.erase(x);
+		remove_client(i->second);
+	}
 }
 
 void notebook_t::remove_client(client_t * c) {
-	if (std::find(_clients.begin(), _clients.end(), c) != _clients.end()) {
-		if (c == _selected.front())
-			select_next();
-		_selected.remove(c);
-		_clients.remove(c);
-		render();
-		page.repair_back_buffer(_allocation);
-		page.repair_overlay(_allocation);
-	}
+	if (c == _selected.front())
+		select_next();
+	_selected.remove(c);
+	_clients.remove(c);
+	delete c;
+	render();
+	page.add_damage_area(_allocation);
 }
 
 void notebook_t::select_next() {
@@ -667,8 +671,8 @@ void notebook_t::select_next() {
 			update_client_position(c);
 			c->map();
 			c->focus();
-			c->set_wm_state(NormalState);
-			page.update_focus(c);
+			c->write_wm_state(NormalState);
+			page.update_focus(c->get_window());
 		}
 	}
 	back_buffer_is_valid = false;
@@ -696,14 +700,14 @@ void notebook_t::set_selected(client_t * c) {
 	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	c->map();
 	c->focus();
-	c->set_wm_state(NormalState);
-	page.update_focus(c);
+	c->write_wm_state(NormalState);
+	page.update_focus(c->get_window());
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			client_t * x = _selected.front();
 			x->unmap();
-			x->set_wm_state(IconicState);
+			x->write_wm_state(IconicState);
 		}
 	}
 
@@ -712,7 +716,7 @@ void notebook_t::set_selected(client_t * c) {
 
 }
 
-void notebook_t::update_popup_position(popup_notebook_t * p, int x, int y,
+void notebook_t::update_popup_position(popup_notebook0_t * p, int x, int y,
 		int w, int h, bool show_popup) {
 	box_int_t old_area = p->get_absolute_extend();
 	p->reconfigure(box_int_t(x, y, w, h));
@@ -731,14 +735,15 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 
 	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
 
-	popup_notebook_t * p = new popup_notebook_t(tab_area.x, tab_area.y,
+	popup_notebook0_t * p = new popup_notebook0_t(tab_area.x, tab_area.y,
 			tab_area.w, tab_area.h);
 
-	popup_notebook2_t * p1 = new popup_notebook2_t(_allocation.x, _allocation.y,
-			font, c->icon_surf, c->name);
+	std::string name = c->get_name();
+	popup_notebook1_t * p1 = new popup_notebook1_t(_allocation.x, _allocation.y,
+			font, c->icon_surf, name);
 
-	//page.popups.push_back(p);
-	//page.popups.push_back(p1);
+	page.popups.push_back(p);
+	page.popups.push_back(p1);
 
 	bool popup_is_added = false;
 
@@ -753,7 +758,7 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char *) this);
 
 		if (ev.type == page.cnx.damage_event + XDamageNotify) {
-			page.process_damage_event(&ev);
+			page.process_event(reinterpret_cast<XDamageNotifyEvent&>(ev));
 		} else if (ev.type == MotionNotify) {
 			if (ev.xmotion.window == page.cnx.xroot) {
 
@@ -845,26 +850,26 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 	/* ev is button release
 	 * so set the hidden focus parameter
 	 */
-	c->cnx.last_know_time = ev.xbutton.time;
+	page.cnx.last_know_time = ev.xbutton.time;
 
 	XUngrabPointer(page.cnx.dpy, CurrentTime);
 	XFreeCursor(page.cnx.dpy, cursor);
 
 	if (zone == SELECT_TAB && ns != 0 && ns != this) {
+		ns->add_client(c->get_window());
 		remove_client(c);
-		ns->add_client(c);
 	} else if (zone == SELECT_TOP && ns != 0) {
-		remove_client(c);
 		ns->split_top(c);
+		remove_client(c);
 	} else if (zone == SELECT_LEFT && ns != 0) {
-		remove_client(c);
 		ns->split_left(c);
+		remove_client(c);
 	} else if (zone == SELECT_BOTTOM && ns != 0) {
-		remove_client(c);
 		ns->split_bottom(c);
-	} else if (zone == SELECT_RIGHT && ns != 0) {
 		remove_client(c);
+	} else if (zone == SELECT_RIGHT && ns != 0) {
 		ns->split_right(c);
+		remove_client(c);
 	} else {
 		set_selected(c);
 	}
@@ -874,8 +879,7 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 		_parent->remove(this);
 	} else {
 		render();
-		page.repair_back_buffer(_allocation);
-		page.repair_overlay(_allocation);
+		page.add_damage_area(_allocation);
 	}
 }
 
@@ -888,10 +892,8 @@ Bool notebook_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 }
 
 void notebook_t::update_client_position(client_t * c) {
-	c->update_client_size(_allocation.w - 2 * BORDER_SIZE,
+	c->update_size(_allocation.w - 2 * BORDER_SIZE,
 			_allocation.h - HEIGHT - 2 * BORDER_SIZE);
-	printf("XResizeWindow(%p, #%lu, %d, %d)\n", c->cnx.dpy, c->xwin, c->width,
-			c->height);
 
 	box_int_t client_size;
 	client_size.x = (client_area.w - c->width) / 2;
@@ -919,7 +921,7 @@ void notebook_t::update_client_position(client_t * c) {
 		/* ICCCM mandate that client must be prepared to accept any size */
 //		XMoveResizeWindow(c->cnx.dpy, c->xwin, client_size.x, client_size.y,
 //				client_size.w, client_size.h);
-		c->move_resize(client_size);
+		c->reconfigure(client_size);
 
 //		printf("XMoveResizeWindow(%p, #%lu, %d, %d, %d, %d)\n", c->cnx.dpy,
 //				c->clipping_window, _allocation.x + BORDER_SIZE,
@@ -929,29 +931,22 @@ void notebook_t::update_client_position(client_t * c) {
 	}
 }
 
-void notebook_t::iconify_client(client_t * c) {
-	bool has_client = false;
-	std::list<client_t *>::iterator i = _clients.begin();
-	while (i != _clients.end()) {
-		if ((*i) == c) {
-			has_client = true;
-			break;
-		}
-		++i;
-	}
+void notebook_t::iconify_client(window_t * x) {
+	client_map_t::iterator i;
+	if ((i = client_map.find(x)) != client_map.end()) {
+		client_t * c = i->second;
 
-	if (has_client) {
 		if (!_selected.empty()) {
-			if (_selected.front() == *i) {
+			if (_selected.front() == c) {
 				_selected.pop_front();
 				if (!_selected.empty()) {
 					set_selected(_selected.front());
 				}
 			}
 		}
-	}
 
-	back_buffer_is_valid = false;
+		back_buffer_is_valid = false;
+	}
 
 }
 

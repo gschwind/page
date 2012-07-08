@@ -12,9 +12,9 @@
 #include "page.hxx"
 #include "notebook.hxx"
 
-namespace page_next {
+namespace page {
 
-root_t::root_t(main_t & page) :
+root_t::root_t(page_t & page) :
 		root_t::tree_t(0, box_t<int>()), page(page) {
 }
 
@@ -62,62 +62,53 @@ void root_t::update_allocation(box_t<int> & allocation) {
 		(*i)->sub_aera = (*i)->aera;
 		int xtop = 0, xleft = 0, xright = 0, xbottom = 0;
 
-		client_set_t::iterator j = page.clients.begin();
-		while (j != page.clients.end()) {
-			if ((*j)->has_partial_struct) {
-				client_t * c = (*j);
+		window_list_t::iterator j = page.top_level_windows.begin();
+		while (j != page.top_level_windows.end()) {
+			long const * ps = (*j)->read_partial_struct();
+			if (ps) {
+				window_t * c = (*j);
 				/* this is very crappy, but there is a way to do it better ? */
-				if (c->partial_struct[X_LEFT] >= (*i)->aera.x
-						&& c->partial_struct[X_LEFT]
-								<= (*i)->aera.x + (*i)->aera.w) {
-					int top =
-							max(c->partial_struct[X_LEFT_START_Y], (*i)->aera.y);
+				if (ps[X_LEFT] >= (*i)->aera.x
+						&& ps[X_LEFT] <= (*i)->aera.x + (*i)->aera.w) {
+					int top = max(ps[X_LEFT_START_Y], (*i)->aera.y);
 					int bottom =
-							min(c->partial_struct[X_LEFT_END_Y], (*i)->aera.y + (*i)->aera.h);
+							min(ps[X_LEFT_END_Y], (*i)->aera.y + (*i)->aera.h);
 					if (bottom - top > 0) {
-						xleft =
-								max(xleft, c->partial_struct[X_LEFT] - (*i)->sub_aera.x);
+						xleft = max(xleft, ps[X_LEFT] - (*i)->sub_aera.x);
 					}
 				}
 
-				if (page.cnx.root_size.w - c->partial_struct[X_RIGHT]
-						>= (*i)->aera.x
-						&& page.cnx.root_size.w - c->partial_struct[X_RIGHT]
+				if (page.cnx.root_size.w - ps[X_RIGHT] >= (*i)->aera.x
+						&& page.cnx.root_size.w - ps[X_RIGHT]
 								<= (*i)->aera.x + (*i)->aera.w) {
-					int top =
-							max(c->partial_struct[X_RIGHT_START_Y], (*i)->aera.y);
+					int top = max(ps[X_RIGHT_START_Y], (*i)->aera.y);
 					int bottom =
-							min(c->partial_struct[X_RIGHT_END_Y], (*i)->aera.y + (*i)->aera.h);
+							min(ps[X_RIGHT_END_Y], (*i)->aera.y + (*i)->aera.h);
 					if (bottom - top > 0) {
 						xright =
-								max(xright, ((*i)->aera.x + (*i)->aera.w) - (page.cnx.root_size.w - c->partial_struct[X_RIGHT]));
+								max(xright, ((*i)->aera.x + (*i)->aera.w) - (page.cnx.root_size.w - ps[X_RIGHT]));
 					}
 				}
 
-				if (c->partial_struct[X_TOP] >= (*i)->aera.y
-						&& c->partial_struct[X_TOP]
-								<= (*i)->aera.y + (*i)->aera.h) {
-					int left =
-							max(c->partial_struct[X_TOP_START_X], (*i)->aera.x);
+				if (ps[X_TOP] >= (*i)->aera.y
+						&& ps[X_TOP] <= (*i)->aera.y + (*i)->aera.h) {
+					int left = max(ps[X_TOP_START_X], (*i)->aera.x);
 					int right =
-							min(c->partial_struct[X_TOP_END_X], (*i)->aera.x + (*i)->aera.w);
+							min(ps[X_TOP_END_X], (*i)->aera.x + (*i)->aera.w);
 					if (right - left > 0) {
-						xtop =
-								max(xtop, c->partial_struct[X_TOP] - (*i)->aera.y);
+						xtop = max(xtop, ps[X_TOP] - (*i)->aera.y);
 					}
 				}
 
-				if (page.cnx.root_size.h - c->partial_struct[X_BOTTOM]
-						>= (*i)->aera.y
-						&& page.cnx.root_size.h - c->partial_struct[X_BOTTOM]
+				if (page.cnx.root_size.h - ps[X_BOTTOM] >= (*i)->aera.y
+						&& page.cnx.root_size.h - ps[X_BOTTOM]
 								<= (*i)->aera.y + (*i)->aera.h) {
-					int left =
-							max(c->partial_struct[X_BOTTOM_START_X], (*i)->aera.x);
+					int left = max(ps[X_BOTTOM_START_X], (*i)->aera.x);
 					int right =
-							min(c->partial_struct[X_BOTTOM_END_X], (*i)->aera.x + (*i)->aera.w);
+							min(ps[X_BOTTOM_END_X], (*i)->aera.x + (*i)->aera.w);
 					if (right - left > 0) {
 						xbottom =
-								max(xbottom, ((*i)->sub_aera.h + (*i)->sub_aera.y) - (page.cnx.root_size.h - c->partial_struct[X_BOTTOM]));
+								max(xbottom, ((*i)->sub_aera.h + (*i)->sub_aera.y) - (page.cnx.root_size.h - ps[X_BOTTOM]));
 					}
 				}
 
@@ -165,7 +156,7 @@ bool root_t::process_button_press_event(XEvent const * e) {
 	return false;
 }
 
-bool root_t::add_client(client_t *c) {
+bool root_t::add_client(window_t * c) {
 	if (!subarea.empty())
 		return subarea.front()->_subtree->add_client(c);
 	else
@@ -195,7 +186,7 @@ void root_t::remove(tree_t * src) {
 
 }
 
-void root_t::activate_client(client_t * c) {
+void root_t::activate_client(window_t * c) {
 	std::list<screen_t *>::iterator i = subarea.begin();
 	while (i != subarea.end()) {
 		(*i)->_subtree->activate_client(c);
@@ -203,11 +194,18 @@ void root_t::activate_client(client_t * c) {
 	}
 }
 
-client_list_t * root_t::get_clients() {
-	return 0;
+window_list_t root_t::get_windows() {
+	window_list_t list;
+	std::list<screen_t *>::iterator i = subarea.begin();
+	while (i != subarea.end()) {
+		window_list_t x = (*i)->_subtree->get_windows();
+		list.insert(list.end(), x.begin(), x.end());
+		++i;
+	}
+	return list;
 }
 
-void root_t::remove_client(client_t * c) {
+void root_t::remove_client(window_t * c) {
 	std::list<screen_t *>::iterator i = subarea.begin();
 	while (i != subarea.end()) {
 		(*i)->_subtree->remove_client(c);
@@ -215,7 +213,7 @@ void root_t::remove_client(client_t * c) {
 	}
 }
 
-void root_t::iconify_client(client_t * c) {
+void root_t::iconify_client(window_t * c) {
 	std::list<screen_t *>::iterator i = subarea.begin();
 	while (i != subarea.end()) {
 		(*i)->_subtree->iconify_client(c);

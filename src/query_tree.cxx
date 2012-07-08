@@ -11,9 +11,59 @@
 #include <stdexcept>
 #include <cstdio>
 #include <string>
+#include <limits>
 
 Atom WM_STATE;
 Atom WM_NAME;
+Atom _NET_WM_WINDOW_TYPE;
+Atom ATOM;
+
+template<typename T, unsigned int SIZE>
+T * get_properties(Display * dpy, Window win, Atom prop, Atom type, unsigned int *num) {
+	bool ret = false;
+	int res;
+	unsigned char * xdata = 0;
+	Atom ret_type;
+	int ret_size;
+	unsigned long int ret_items, bytes_left;
+	T * result = 0;
+	T * data;
+
+	res = XGetWindowProperty(dpy, win, prop, 0L,
+			std::numeric_limits<int>::max(), False, type, &ret_type,
+			&ret_size, &ret_items, &bytes_left, &xdata);
+	if (res == Success) {
+		if (bytes_left != 0)
+			printf("some bits lefts\n");
+		if (ret_size == SIZE && ret_items > 0) {
+			result = new T[ret_items];
+			data = reinterpret_cast<T*>(xdata);
+			for (unsigned int i = 0; i < ret_items; ++i) {
+				result[i] = data[i];
+				//printf("%d %p\n", data[i], &data[i]);
+			}
+		}
+		if (num)
+			*num = ret_items;
+		XFree(xdata);
+	}
+	return result;
+}
+
+void print_net_wm_window_type(Display * dpy, Window w) {
+	unsigned int num;
+	long * val = get_properties<long, 32>(dpy, w, _NET_WM_WINDOW_TYPE, ATOM,
+			&num);
+	if (val) {
+		/* use the first value that we know about in the array */
+		for (unsigned i = 0; i < num; ++i) {
+			char * name = XGetAtomName(dpy, val[i]);
+			printf("_NET_WM_WINDOW_TYPE = \"%s\"\n", name);
+			XFree(name);
+		}
+		delete[] val;
+	}
+}
 
 void print_window_attributes(Window w, XWindowAttributes & wa) {
 	//return;
@@ -81,6 +131,8 @@ void scan() {
 
 	WM_STATE = XInternAtom(dpy, "WM_STATE", False);
 	WM_NAME = XInternAtom(dpy, "WM_NAME", False);
+	_NET_WM_WINDOW_TYPE = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
+	ATOM = XInternAtom(dpy, "ATOM", False);
 
 	if (dpy == NULL) {
 		throw std::runtime_error("Could not open display");
@@ -104,6 +156,7 @@ void scan() {
 			if (!XGetWindowAttributes(dpy, wins[i], &wa))
 				continue;
 			print_window_attributes(wins[i], wa);
+			print_net_wm_window_type(dpy, wins[i]);
 
 			long toto = get_window_state(dpy, wins[i]);
 			switch (toto) {
