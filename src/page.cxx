@@ -106,12 +106,8 @@ page_t::page_t(int argc, char ** argv) :
 }
 
 page_t::~page_t() {
-	//cairo_destroy(main_window_cr);
-	//cairo_surface_destroy(main_window_s);
-
 	tree_root->delete_all();
 	delete tree_root;
-
 	window_list_t::iterator i = top_level_windows.begin();
 	while (i != top_level_windows.end()) {
 		delete (*i);
@@ -119,6 +115,8 @@ page_t::~page_t() {
 	}
 
 	g_key_file_free(conf);
+
+
 
 }
 

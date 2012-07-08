@@ -106,6 +106,13 @@ notebook_t::notebook_t(page_t & page) :
 }
 
 notebook_t::~notebook_t() {
+
+	client_list_t::iterator i = _clients.begin();
+	while(i != _clients.end()) {
+		delete (*i);
+		++i;
+	}
+
 	if (back_buffer_cr != 0)
 		cairo_destroy(back_buffer_cr);
 	if (back_buffer != 0)
@@ -206,8 +213,6 @@ void notebook_t::update_allocation(box_t<int> & allocation) {
 }
 
 void notebook_t::render() {
-
-	//update_client_mapping();
 
 	if (back_buffer == 0) {
 		cairo_surface_t * target = cairo_get_target(page.back_buffer_cr);
@@ -342,9 +347,6 @@ void notebook_t::render() {
 						}
 
 						cairo_set_line_width(back_buffer_cr, 1.0);
-//						cairo_select_font_face(back_buffer_cr, "Sans",
-//								CAIRO_FONT_SLANT_NORMAL,
-//								CAIRO_FONT_WEIGHT_NORMAL);
 						cairo_set_font_face(back_buffer_cr, font);
 						cairo_set_font_size(back_buffer_cr, 13);
 
@@ -483,9 +485,9 @@ void notebook_t::render() {
 		cairo_set_source_surface(page.gui_cr, back_buffer, 0.0, 0.0);
 		cairo_fill(page.gui_cr);
 
-		//cairo_set_source_rgb(page.gui_cr, 0x88U / 255.0, 0x8aU / 255.0,
-		//		0x85U / 255.0);
-		cairo_set_source_rgb(page.gui_cr, 1.0, 0.0, 0.0);
+		cairo_set_source_rgb(page.gui_cr, 0x88U / 255.0, 0x8aU / 255.0,
+				0x85U / 255.0);
+		//cairo_set_source_rgb(page.gui_cr, 1.0, 0.0, 0.0);
 		cairo_set_line_width(page.gui_cr, 1.0);
 		cairo_new_path(page.gui_cr);
 		cairo_move_to(page.gui_cr, 0.5, 0.5);
@@ -568,50 +570,57 @@ bool notebook_t::add_client(window_t * x) {
 }
 
 void notebook_t::split(split_type_e type) {
+	page.add_damage_area(_allocation);
 	split_t * split = new split_t(page, type);
 	_parent->replace(this, split);
 	split->replace(0, this);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
-	//update_client_mapping();
 	render();
-	page.add_damage_area(_allocation);
 }
 
 void notebook_t::split_left(client_t * c) {
+	page.add_damage_area(_allocation);
 	split_t * split = new split_t(page, VERTICAL_SPLIT);
 	_parent->replace(this, split);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
 	n->add_client(c->get_window());
+	render();
 }
 
 void notebook_t::split_right(client_t * c) {
+	page.add_damage_area(_allocation);
 	split_t * split = new split_t(page, VERTICAL_SPLIT);
 	_parent->replace(this, split);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, this);
 	split->replace(0, n);
 	n->add_client(c->get_window());
+	render();
 }
 
 void notebook_t::split_top(client_t * c) {
+	page.add_damage_area(_allocation);
 	split_t * split = new split_t(page, HORIZONTAL_SPLIT);
 	_parent->replace(this, split);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	split->replace(0, this);
 	n->add_client(c->get_window());
+	render();
 }
 
 void notebook_t::split_bottom(client_t * c) {
+	page.add_damage_area(_allocation);
 	split_t * split = new split_t(page, HORIZONTAL_SPLIT);
 	_parent->replace(this, split);
 	split->replace(0, this);
 	notebook_t * n = new notebook_t(page);
 	split->replace(0, n);
 	n->add_client(c->get_window());
+	render();
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
@@ -648,7 +657,6 @@ window_list_t notebook_t::get_windows() {
 void notebook_t::remove_client(window_t * x) {
 	client_map_t::iterator i;
 	if ((i = client_map.find(x)) != client_map.end()) {
-		client_map.erase(x);
 		remove_client(i->second);
 	}
 }
@@ -658,6 +666,7 @@ void notebook_t::remove_client(client_t * c) {
 		select_next();
 	_selected.remove(c);
 	_clients.remove(c);
+	client_map.erase(&(c->w));
 	delete c;
 	render();
 	page.add_damage_area(_allocation);
@@ -880,6 +889,7 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 	} else {
 		render();
 		page.add_damage_area(_allocation);
+		page.render_flush();
 	}
 }
 
