@@ -10,9 +10,11 @@
 
 #include <cairo.h>
 
+#include "xconnection.hxx"
+#include "render_context.hxx"
 #include "box.hxx"
 #include "tree.hxx"
-#include "page.hxx"
+#include "page_base.hxx"
 
 namespace page {
 
@@ -23,7 +25,18 @@ enum split_type_e {
 class split_t: public tree_t {
 	static int const GRIP_SIZE = 3;
 
-	page_t & page;
+	class xevent_handler_t : public ::page::xevent_handler_t {
+		split_t & split;
+	public:
+		xevent_handler_t(split_t & split) : split(split) { }
+		virtual ~xevent_handler_t() { }
+		virtual void process_event(XEvent const & e);
+	};
+
+
+	page_base_t & page;
+
+	xevent_handler_t even_handler;
 
 	Cursor cursor;
 	box_t<int> separetion_bar;
@@ -36,11 +49,9 @@ class split_t: public tree_t {
 	void process_drag_and_drop();
 
 public:
-	split_t(page_t & page, split_type_e type);
+	split_t(page_base_t & page, split_type_e type);
 	~split_t();
 	void update_allocation(box_t<int> & alloc);
-	void render();
-	bool process_button_press_event(XEvent const * e);
 	void replace(tree_t * src, tree_t * by);
 	cairo_t * get_cairo();
 	void close(tree_t * src);
@@ -58,6 +69,10 @@ public:
 	void delete_all();
 
 	void compute_slider_area(box_int_t & area);
+
+	virtual void repair1(cairo_t * cr, box_int_t const & area);
+	virtual box_int_t get_absolute_extend();
+	virtual void reconfigure(box_int_t const & area);
 
 };
 

@@ -20,6 +20,9 @@ struct popup_split_t: public renderable_t {
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
 	virtual void reconfigure(box_int_t const & area);
+	virtual bool is_visible() {
+		return true;
+	}
 };
 
 }

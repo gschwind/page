@@ -48,64 +48,65 @@ void client_t::update_size(int w, int h) {
 	//	width = cnx.root_size.w;
 	//}
 
+	/* default size if no size_hints is provided */
 	width = w;
 	height = h;
 
-	this->w.read_size_hints();
-	XSizeHints const & hints = this->w.get_size_hints();
+	this->w.read_wm_normal_hints();
+	XSizeHints const * size_hints = this->w.get_size_hints();
 
-	if (hints.flags & PMaxSize) {
-		if (w > hints.max_width)
-			w = hints.max_width;
-		if (h > hints.max_height)
-			h = hints.max_height;
+	if (size_hints->flags & PMaxSize) {
+		if (w > size_hints->max_width)
+			w = size_hints->max_width;
+		if (h > size_hints->max_height)
+			h = size_hints->max_height;
 	}
 
-	if (hints.flags & PBaseSize) {
-		if (w < hints.base_width)
-			w = hints.base_width;
-		if (h < hints.base_height)
-			h = hints.base_height;
-	} else if (hints.flags & PMinSize) {
-		if (w < hints.min_width)
-			w = hints.min_width;
-		if (h < hints.min_height)
-			h = hints.min_height;
+	if (size_hints->flags & PBaseSize) {
+		if (w < size_hints->base_width)
+			w = size_hints->base_width;
+		if (h < size_hints->base_height)
+			h = size_hints->base_height;
+	} else if (size_hints->flags & PMinSize) {
+		if (w < size_hints->min_width)
+			w = size_hints->min_width;
+		if (h < size_hints->min_height)
+			h = size_hints->min_height;
 	}
 
-	if (hints.flags & PAspect) {
-		if (hints.flags & PBaseSize) {
+	if (size_hints->flags & PAspect) {
+		if (size_hints->flags & PBaseSize) {
 			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
-			if ((w - hints.base_width) * hints.min_aspect.y
-					< (h - hints.base_height) * hints.min_aspect.x) {
+			if ((w - size_hints->base_width) * size_hints->min_aspect.y
+					< (h - size_hints->base_height) * size_hints->min_aspect.x) {
 				/* reduce h */
-				h = hints.base_height
-						+ ((w - hints.base_width) * hints.min_aspect.y)
-								/ hints.min_aspect.x;
+				h = size_hints->base_height
+						+ ((w - size_hints->base_width) * size_hints->min_aspect.y)
+								/ size_hints->min_aspect.x;
 
-			} else if ((w - hints.base_width) * hints.max_aspect.y
-					> (h - hints.base_height) * hints.max_aspect.x) {
+			} else if ((w - size_hints->base_width) * size_hints->max_aspect.y
+					> (h - size_hints->base_height) * size_hints->max_aspect.x) {
 				/* reduce w */
-				w = hints.base_width
-						+ ((h - hints.base_height) * hints.max_aspect.x)
-								/ hints.max_aspect.y;
+				w = size_hints->base_width
+						+ ((h - size_hints->base_height) * size_hints->max_aspect.x)
+								/ size_hints->max_aspect.y;
 			}
 		} else {
-			if (w * hints.min_aspect.y < h * hints.min_aspect.x) {
+			if (w * size_hints->min_aspect.y < h * size_hints->min_aspect.x) {
 				/* reduce h */
-				h = (w * hints.min_aspect.y) / hints.min_aspect.x;
+				h = (w * size_hints->min_aspect.y) / size_hints->min_aspect.x;
 
-			} else if (w * hints.max_aspect.y > h * hints.max_aspect.x) {
+			} else if (w * size_hints->max_aspect.y > h * size_hints->max_aspect.x) {
 				/* reduce w */
-				w = (h * hints.max_aspect.x) / hints.max_aspect.y;
+				w = (h * size_hints->max_aspect.x) / size_hints->max_aspect.y;
 			}
 		}
 
 	}
 
-	if (hints.flags & PResizeInc) {
-		w -= ((w - hints.base_width) % hints.width_inc);
-		h -= ((h - hints.base_height) % hints.height_inc);
+	if (size_hints->flags & PResizeInc) {
+		w -= ((w - size_hints->base_width) % size_hints->width_inc);
+		h -= ((h - size_hints->base_height) % size_hints->height_inc);
 	}
 
 	width = w;
@@ -244,15 +245,14 @@ void client_t::unset_fullscreen() {
 }
 
 void client_t::withdraw_to_X() {
-	printf("Manage #%lu\n", w.get_xwin());
-	XWMHints * hints = w.read_wm_hints();
+//	printf("Manage #%lu\n", w.get_xwin());
+	XWMHints const * hints = w.read_wm_hints();
 	if (hints) {
 		if (hints->initial_state == IconicState) {
 			w.write_wm_state(IconicState);
 		} else {
 			w.write_wm_state(NormalState);
 		}
-		XFree(hints);
 	} else {
 		w.write_wm_state(NormalState);
 	}
@@ -270,26 +270,6 @@ void client_t::withdraw_to_X() {
 
 	w.set_default_action();
 
-}
-
-void client_t::repair1(cairo_t * cr, box_int_t const & area) {
-	w.repair1(cr, area);
-}
-
-box_int_t client_t::get_absolute_extend() {
-	return w.get_absolute_extend();
-}
-
-void client_t::reconfigure(box_int_t const & area) {
-	w.move_resize(area);
-}
-
-void client_t::mark_dirty() {
-	w.mark_dirty();
-}
-
-void client_t::mark_dirty_retangle(box_int_t const & area) {
-	w.mark_dirty_retangle(area);
 }
 
 }

@@ -20,7 +20,7 @@ void popup_notebook0_t::repair1(cairo_t * cr, box_int_t const & a) {
 		cairo_save(cr);
 		cairo_set_line_width(cr, 2.0);
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-		cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 1.0);
+		cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 0.75);
 		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 		cairo_clip(cr);
 		cairo_rectangle(cr, area.x + 3, area.y + 3, area.w - 6, area.h - 6);
@@ -39,6 +39,10 @@ box_int_t popup_notebook0_t::get_absolute_extend() {
 
 void popup_notebook0_t::reconfigure(box_int_t const & a) {
 	area = a;
+}
+
+bool popup_notebook0_t::is_visible() {
+	return true;
 }
 
 }

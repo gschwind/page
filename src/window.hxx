@@ -24,14 +24,19 @@ protected:
 	typedef Window window_key_t;
 	typedef std::map<window_key_t, window_t *> window_map_t;
 
+	/* track created windows */
 	static window_map_t created_window;
 
-	xconnection_t &cnx;
-	Window xwin;
-	XSizeHints hints;
-	Visual * visual;
+	xconnection_t & cnx;
 
-	Window above;
+	Window xwin;
+
+	/* as Xlib recomand do not user static data allocation
+	 * use XAllocSizeHints */
+	XSizeHints * wm_normal_hints;
+	XWMHints * wm_hints;
+
+	Visual * visual;
 
 	int lock_count;
 
@@ -51,6 +56,8 @@ protected:
 	/* store the map/unmap stase from the point of view of PAGE */
 	bool _is_map;
 	bool is_lock;
+	bool _override_redirect;
+	bool _is_composite_redirected;
 
 	/* the name of window */
 	std::string name;
@@ -68,10 +75,9 @@ protected:
 	cairo_surface_t * window_surf;
 	long partial_struct[12];
 
-	bool _override_redirect;
-
 	int w_class;
 
+private:
 	/* avoid copy */
 	window_t(window_t const &);
 	window_t & operator=(window_t const &);
@@ -94,7 +100,7 @@ public:
 
 	/* read window status */
 	long read_wm_state();
-	void read_size_hints();
+	void read_wm_normal_hints();
 	std::string const & read_vm_name();
 	std::string const & read_net_vm_name();
 	std::string const & read_title();
@@ -103,10 +109,10 @@ public:
 	void read_net_wm_protocols();
 	long const * read_partial_struct();
 	void read_all();
-	XWMHints * read_wm_hints();
+	XWMHints const * read_wm_hints();
 	void read_shape_clip();
 
-	void write_net_wm_state();
+	void write_net_wm_state() const;
 	void write_net_wm_allowed_actions();
 	void write_wm_state(long state);
 
@@ -167,8 +173,8 @@ public:
 		write_net_wm_allowed_actions();
 	}
 
-	XSizeHints const & get_size_hints() {
-		return hints;
+	XSizeHints const * get_size_hints() {
+		return wm_normal_hints;
 	}
 
 	void create_render_context();
@@ -254,8 +260,8 @@ public:
 
 	void print_net_wm_window_type() {
 		unsigned int num;
-		long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
-				&num);
+		long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE,
+				cnx.atoms.ATOM, &num);
 		if (val) {
 			/* use the first value that we know about in the array */
 			for (unsigned i = 0; i < num; ++i) {
@@ -267,18 +273,17 @@ public:
 		}
 	}
 
-	bool is_input_only () {
+	bool is_input_only() {
 		return w_class == InputOnly;
 	}
 
 	void set_opacity(double x) {
 		opacity = x;
-		if(x > 1.0)
+		if (x > 1.0)
 			x = 1.0;
-		if(x < 0.0)
+		if (x < 0.0)
 			x = 0.0;
 	}
-
 
 	void add_to_save_set() {
 		cnx.add_to_save_set(xwin);
@@ -286,6 +291,10 @@ public:
 
 	void remove_from_save_set() {
 		cnx.remove_from_save_set(xwin);
+	}
+
+	bool is_visible() {
+		return is_map() && !is_input_only();
 	}
 
 };

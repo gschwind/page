@@ -48,7 +48,7 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 		"GenericEvent" };
 
 page_t::page_t(int argc, char ** argv) :
-		cnx() {
+		cnx(), rnd(cnx), event_handler(*this) {
 
 #ifdef ENABLE_TRACE
 	trace_init();
@@ -94,29 +94,23 @@ page_t::page_t(int argc, char ** argv) :
 	client_focused = 0;
 	running = false;
 
-	gui_s = 0;
-	gui_cr = 0;
-
-	back_buffer_s = 0;
-	back_buffer_cr = 0;
-
-	composite_overlay_s = 0;
-	composite_overlay_cr = 0;
 	has_fullscreen_size = false;
+
+	cursor = None;
 }
 
 page_t::~page_t() {
-	tree_root->delete_all();
-	delete tree_root;
-	window_list_t::iterator i = top_level_windows.begin();
-	while (i != top_level_windows.end()) {
+	window_list_t::iterator i = windows_stack.begin();
+	while (i != windows_stack.end()) {
+		rnd.remove(*i);
 		delete (*i);
 		++i;
 	}
 
-	g_key_file_free(conf);
-
-
+	if (conf) {
+		g_key_file_free(conf);
+		conf = 0;
+	}
 
 }
 
@@ -144,8 +138,8 @@ void page_t::update_page_aera() {
 //	page_area.w = screen_area.w - (left + right);
 //	page_area.h = screen_area.h - (top + bottom);
 //
-	box_t<int> b(0, 0, cnx.root_size.w, cnx.root_size.h);
-	tree_root->update_allocation(b);
+
+	update_allocation();
 
 }
 
@@ -153,23 +147,7 @@ void page_t::run() {
 	XSetWindowAttributes swa;
 	XWindowAttributes wa;
 
-	XGetWindowAttributes(cnx.dpy, cnx.composite_overlay, &wa);
-	composite_overlay_s = cairo_xlib_surface_create(cnx.dpy,
-			cnx.composite_overlay, cnx.root_wa.visual, cnx.root_wa.width,
-			cnx.root_wa.height);
-	composite_overlay_cr = cairo_create(composite_overlay_s);
-
-	gui_s = cairo_surface_create_similar(composite_overlay_s,
-			CAIRO_CONTENT_COLOR, cnx.root_wa.width, cnx.root_wa.height);
-	gui_cr = cairo_create(gui_s);
-
-	back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
-			CAIRO_CONTENT_COLOR, cnx.root_wa.width, cnx.root_wa.height);
-	back_buffer_cr = cairo_create(back_buffer_s);
-
 	printf("root size: %d,%d\n", cnx.root_size.w, cnx.root_size.h);
-
-	tree_root = new root_t(*this);
 
 	int n;
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
@@ -187,8 +165,12 @@ void page_t::run() {
 			fullscreen_position = x;
 		}
 
-		tree_root->add_aera(x);
+		viewport_t * v = new viewport_t(*this, x);
+		viewport_list.push_back(v);
+		v->z = -1;
+		rnd.add(v);
 	}
+
 	XFree(info);
 
 	update_net_supported();
@@ -226,7 +208,6 @@ void page_t::run() {
 
 	scan();
 	update_page_aera();
-	render();
 
 	long workarea[4];
 	workarea[0] = 0;
@@ -237,77 +218,22 @@ void page_t::run() {
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char*>(workarea), 4);
 
-	render();
-	repair_back_buffer(cnx.root_size);
-	repair_overlay(cnx.root_size);
+	rnd.add_damage_area(cnx.root_size);
+	rnd.render_flush();
+
+	/* add page evant handler */
+	cnx.add_event_handler(&event_handler);
 
 	running = true;
 	while (running) {
-
-		XEvent e;
-		cnx.xnextevent(&e);
-		if (e.type < LASTEvent && e.type > 0) {
-			printf("%s serial: #%lu win: #%lu\n", x_event_name[e.type],
-					e.xany.serial, e.xany.window);
-		}
-
-		if (e.type == ButtonPress) {
-			cnx.last_know_time = e.xbutton.time;
-			window_t * c = find_client(e.xbutton.window);
-			if (c) {
-				/* the hidden focus parameter */
-				c->focus();
-				//update_focus(c);
-			} else if (e.xbutton.window == cnx.xroot) {
-				tree_root->process_button_press_event(&e);
-				render_flush();
-			}
-			render_flush();
-		}
-
-		if (e.type == CirculateNotify) {
-			process_event(e.xcirculate);
-		} else if (e.type == ConfigureNotify) {
-			process_event(e.xconfigure);
-		} else if (e.type == CreateNotify) {
-			process_event(e.xcreatewindow);
-		} else if (e.type == DestroyNotify) {
-			process_event(e.xdestroywindow);
-		} else if (e.type == GravityNotify) {
-			process_event(e.xgravity);
-		} else if (e.type == MapNotify) {
-			process_event(e.xmap);
-		} else if (e.type == ReparentNotify) {
-			process_event(e.xreparent);
-		} else if (e.type == UnmapNotify) {
-			process_event(e.xunmap);
-		} else if (e.type == CirculateRequest) {
-			process_event(e.xcirculaterequest);
-		} else if (e.type == ConfigureRequest) {
-			process_event(e.xconfigurerequest);
-		} else if (e.type == MapRequest) {
-			process_event(e.xmaprequest);
-		} else if (e.type == PropertyNotify) {
-			process_event(e.xproperty);
-		} else if (e.type == ClientMessage) {
-			process_event(e.xclient);
-		} else if (e.type == cnx.damage_event + XDamageNotify) {
-			process_event(reinterpret_cast<XDamageNotifyEvent&>(e));
-		}
-
-		if (!cnx.is_not_grab()) {
-			fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
-			exit(EXIT_FAILURE);
-		}
+		cnx.process_next_event();
 	}
 }
 
 void page_t::render() {
 	if (fullscreen_client == 0) {
-		//cairo_save(main_window_cr);
-		tree_root->render();
-		repair_overlay(cnx.root_size);
-		//cairo_restore(main_window_cr);
+		rnd.add_damage_area(cnx.root_size);
+		rnd.render_flush();
 	} else {
 		//move_fullscreen(fullscreen_client);
 		//fullscreen_client->map();
@@ -352,19 +278,13 @@ page_t::wm_mode_e page_t::guess_window_state(long know_state,
 }
 
 void page_t::manage(window_t * w) {
-	/* WM must ignore this window */
-	if (w->is_input_only())
-		return;
-	if (!w->is_map())
-		return;
-
+	clients_map[w->get_xwin()] = w;
+	managed_windows.push_back(w);
+	w->read_all();
 	if (w->is_dock()) {
 		w->setup_extends();
 		w->map();
-	} else if (w->is_popup()) {
-		w->set_opacity(OPACITY);
-		/* ignore */
-	} else if (w->is_normal() && !w->override_redirect()) {
+	} else {
 		insert_client(w);
 	}
 }
@@ -379,21 +299,32 @@ void page_t::scan() {
 		for (unsigned i = 0; i < num; ++i) {
 			if (!XGetWindowAttributes(cnx.dpy, wins[i], &wa))
 				continue;
-			window_t * w = new window_t(cnx, wins[i], wa);
-			top_level_windows.push_back(w);
-			w->read_all();
-			manage(w);
+			print_window_attributes(wins[i], wa);
+			window_t * w = create_window(wins[i], wa);
+
+
+			if (!w->override_redirect() && !w->is_input_only() && w->is_map()) {
+				/* ICCCM top level window */
+				manage(w);
+			} else
+
+			/* special case were a window is on IconicState state */
+			if (!w->override_redirect() && !w->is_input_only()
+			&& !w->is_map()
+			&& w->read_wm_state() == IconicState) {
+				manage (w);
+				}
+		}
+			XFree(wins);
 		}
 
-		XFree(wins);
-	}
-
-	/* scan is ended, start to listen root event */
+		/* scan is ended, start to listen root event */
 	XSelectInput(cnx.dpy, cnx.xroot,
 			ButtonPressMask | SubstructureNotifyMask | SubstructureRedirectMask);
 	cnx.ungrab();
-
+	update_window_z();
 	update_client_list();
+	printf("return %s\n", __PRETTY_FUNCTION__);
 }
 
 void page_t::update_net_supported() {
@@ -455,16 +386,18 @@ void page_t::update_net_supported() {
 			cnx.atoms.ATOM, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(list), k);
 
+	delete[] list;
+
 }
 
 void page_t::update_client_list() {
 
-	Window * data = new Window[clients.size()];
+	Window * data = new Window[managed_windows.size() + 1];
 
 	int k = 0;
 
-	window_set_t::iterator i = clients.begin();
-	while (i != clients.end()) {
+	window_list_t::iterator i = managed_windows.begin();
+	while (i != managed_windows.end()) {
 		if ((*i)->get_wm_state() != WithdrawnState) {
 			data[k] = (*i)->get_xwin();
 			++k;
@@ -494,15 +427,16 @@ bool page_t::get_text_prop(Window w, Atom atom, std::string & text) {
 }
 
 void page_t::process_event(XCirculateEvent const & e) {
-	/* will happpen ? */
 	window_t * x = find_window(e.window);
 	if (x) {
 		if (e.place == PlaceOnTop) {
-			top_level_windows.remove(x);
-			top_level_windows.push_back(x);
+			windows_stack.remove(x);
+			windows_stack.push_back(x);
+			update_window_z();
 		} else if (e.place == PlaceOnBottom) {
-			top_level_windows.remove(x);
-			top_level_windows.push_front(x);
+			windows_stack.remove(x);
+			windows_stack.push_front(x);
+			update_window_z();
 		}
 	}
 }
@@ -510,44 +444,42 @@ void page_t::process_event(XCirculateEvent const & e) {
 void page_t::process_event(XConfigureEvent const & e) {
 	printf("Configure %dx%d+%d+%d above:%lu, event:%lu, window:%lu \n", e.width,
 			e.height, e.x, e.y, e.above, e.event, e.window);
-
 	/* track window position and stacking */
 	window_t * x = find_window(e.window);
 	if (x) {
 		/* restack x */
 		set_window_above(x, e.above);
-		add_damage_area(x->get_absolute_extend());
+		/* mark as dirty all area */
+		rnd.add_damage_area(x->get_absolute_extend());
 		x->process_configure_notify_event(e);
-		add_damage_area(x->get_absolute_extend());
-		render_flush();
+		rnd.add_damage_area(x->get_absolute_extend());
 	}
-
-	window_t * c = find_client(e.window);
-	if (c) {
-		/* apply page size constraints */
-		box_t<int> _;
-		tree_root->update_allocation(_);
-		return;
-	}
-
 }
 
 void page_t::process_event(XCreateWindowEvent const & e) {
+	/* track created window */
 	XWindowAttributes wa;
 	if (!XGetWindowAttributes(cnx.dpy, e.window, &wa))
 		return;
-	window_t * w = new window_t(cnx, e.window, wa);
-	top_level_windows.push_back(w);
+	create_window(e.window, wa);
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
+
+	window_t * c = find_client(e.window);
+	if (c) {
+		remove_client(c);
+		clients_map.erase(e.window);
+		managed_windows.remove(c);
+	}
+
 	window_t * x = find_window(e.window);
 	if (x) {
-		add_damage_area(x->get_absolute_extend());
-		render_flush();
-		tree_root->remove_client(x);
-		top_level_windows.remove(x);
-		clients.erase(x);
+		rnd.add_damage_area(x->get_absolute_extend());
+		windows_stack.remove(x);
+		windows_map.erase(e.window);
+		update_window_z();
+		rnd.remove(x);
 		delete x;
 	}
 }
@@ -565,19 +497,22 @@ void page_t::process_event(XMapEvent const & e) {
 		return;
 
 	x->map_notify();
-
 	if (x->is_popup())
-		x->set_opacity(0.90);
-	add_damage_area(x->get_absolute_extend());
-	render_flush();
+		x->set_opacity(OPACITY);
+	if (x == client_focused) {
+		x->focus();
+	}
 
-	event_t ex;
-	ex.serial = e.serial;
-	ex.type = e.type;
-	bool expected_event = cnx.find_pending_event(ex);
+	rnd.add_damage_area(x->get_absolute_extend());
 
-	if (expected_event)
-		return;
+	window_t * c = find_client(e.window);
+	if (!c) {
+		if (!x->is_input_only() && !x->override_redirect()) {
+			x->read_all();
+			manage(x);
+		}
+	}
+
 }
 
 void page_t::process_event(XReparentEvent const & e) {
@@ -586,17 +521,18 @@ void page_t::process_event(XReparentEvent const & e) {
 	if (x) {
 		/* the window is removed from root */
 		if (e.parent != cnx.xroot) {
-			top_level_windows.remove(x);
-			clients.erase(x);
-			tree_root->remove_client(x);
+			windows_stack.remove(x);
+			windows_map.erase(e.window);
+			update_window_z();
+			rnd.remove(x);
+			remove_client(x);
 		}
 	} else {
 		/* a new top level window */
 		if (e.parent == cnx.xroot) {
 			XWindowAttributes wa;
 			if (XGetWindowAttributes(cnx.dpy, e.window, &wa)) {
-				window_t * w = new window_t(cnx, e.window, wa);
-				top_level_windows.push_back(w);
+				create_window(e.window, wa);
 			}
 		}
 	}
@@ -609,8 +545,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 	window_t * x = find_window(e.window);
 	if (x) {
 		x->unmap_notify();
-		add_damage_area(x->get_absolute_extend());
-		render_flush();
+		rnd.add_damage_area(x->get_absolute_extend());
 	}
 
 	event_t ex;
@@ -622,8 +557,9 @@ void page_t::process_event(XUnmapEvent const & e) {
 
 	window_t * c = find_client(e.window);
 	if (c) {
-		tree_root->remove_client(c);
-		clients.erase(c);
+		remove_client(c);
+		managed_windows.remove(c);
+		clients_map.erase(e.window);
 	}
 
 }
@@ -633,77 +569,111 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 	window_t * x = find_window(e.window);
 	if (x) {
 		if (e.place == PlaceOnTop) {
-			top_level_windows.remove(x);
-			top_level_windows.push_back(x);
+			cnx.raise_window(e.window);
 		} else if (e.place == PlaceOnBottom) {
-			top_level_windows.remove(x);
-			top_level_windows.push_front(x);
+			XLowerWindow(cnx.dpy, e.window);
 		}
 	}
 }
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
-
 	window_t * x = find_window(e.window);
 	if (x) {
-		/* restack x */
-		set_window_above(x, e.above);
-		add_damage_area(x->get_absolute_extend());
-		x->process_configure_request_event(e);
-		add_damage_area(x->get_absolute_extend());
-		render_flush();
+		rnd.add_damage_area(x->get_absolute_extend());
+		window_t * w = find_client(e.window);
+		if (w) {
+			box_int_t size = x->get_absolute_extend();
+			/* restack the window if needed */
+			if ((e.value_mask & CWSibling)||(e.value_mask & CWStackMode)){
+
+			XWindowChanges wc;
+			long value_mask = 0;
+
+			if(e.value_mask & CWSibling) {
+				value_mask |= CWSibling;
+				wc.sibling = e.above;
+			}
+
+			if (e.value_mask & CWStackMode) {
+				value_mask |= CWStackMode;
+				wc.stack_mode = e.detail;
+			}
+
+			XConfigureWindow(cnx.dpy, e.window, value_mask,
+					&wc);
+
+		}
+
+			/* we never move a window, inform the window with that */
+			XEvent ev;
+			ev.xconfigure.type = ConfigureNotify;
+			ev.xconfigure.display = cnx.dpy;
+			ev.xconfigure.event = e.window;
+			ev.xconfigure.x = size.x;
+			ev.xconfigure.y = size.y;
+			ev.xconfigure.width = size.w;
+			ev.xconfigure.height = size.h;
+			ev.xconfigure.above = None;
+			ev.xconfigure.border_width = 0;
+			ev.xconfigure.override_redirect = False;
+			ev.xconfigure.send_event = True;
+			ev.xconfigure.window = e.window;
+			XSendEvent(cnx.dpy, e.window, False, StructureNotifyMask, &ev);
+		} else {
+			XWindowChanges wc;
+			wc.x = e.x;
+			wc.y = e.y;
+			wc.height = e.height;
+			wc.width = e.width;
+			wc.sibling = e.above;
+			wc.stack_mode = e.detail;
+			wc.border_width = e.border_width;
+			XConfigureWindow(cnx.dpy, e.window, e.value_mask, &wc);
+		}
 
 	}
-
-	window_t * c = find_client(e.window);
-	if (c) {
-		/* apply page size constraints */
-		box_t<int> _;
-		tree_root->update_allocation(_);
-		return;
-	}
-
 }
 
 void page_t::process_event(XMapRequestEvent const & e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
 	window_t * x = find_window(e.window);
 	if (x) {
-		x->read_all();
-		x->map();
-		manage(x);
+		window_t * c = find_client(e.window);
+		if (!c && !x->is_input_only()) {
+			x->map();
+			x->read_all();
+			manage(x);
+			activate_client(x);
+		}
 	}
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
 	//printf("Entering in %s on %lu\n", __PRETTY_FUNCTION__,
 	//		ev->xproperty.window);
-
 	//printf("%lu\n", ev->xproperty.atom);
 	char * name = XGetAtomName(cnx.dpy, e.atom);
 	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
+	cnx.last_know_time = e.time;
+
 	window_t * x = find_window(e.window);
 	if (!x)
 		return;
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
-		x->focus();
-		update_focus(x);
-//		window_t * x = find_client_by_xwindow(x->get_xwin());
-//		if (fullscreen_client == 0 || fullscreen_client == c) {
-//			tree_root->activate_client(c);
-//			/* the hidden parameter of focus */
-//			cnx.last_know_time = ev->xproperty.time;
-//			c->focus();
-//			update_focus(c);
-//		}
+		if (fullscreen_client == 0 || fullscreen_client == x) {
+			window_t * c = find_client(e.window);
+			if (c) {
+				activate_client(c);
+				c->focus();
+				set_focus(c);
+			}
+		}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_title();
-		render();
 	} else if (e.atom == cnx.atoms.WM_NAME) {
 		x->read_title();
-		render();
 	} else if (e.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
 		if (e.state == PropertyNewValue) {
 			x->read_partial_struct();
@@ -715,10 +685,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_net_wm_type();
 	} else if (e.atom == cnx.atoms._NET_ACTIVE_WINDOW) {
 		printf("request to activate %lu\n", e.window);
-
 	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
-		x->read_size_hints();
-		render();
+		x->read_wm_normal_hints();
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
 		x->read_net_wm_protocols();
 	}
@@ -734,12 +702,10 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 	if (e.message_type == cnx.atoms._NET_ACTIVE_WINDOW) {
 		printf("request to activate %lu\n", e.window);
-//		client_t * c = find_client_by_xwindow(ev->xclient.window);
-//		if (c) {
-//			tree_root->activate_client(c);
-//			render();
-//		}
-
+		window_t * w = find_client(e.window);
+		if (w) {
+			activate_client(w);
+		}
 	} else if (e.message_type == cnx.atoms._NET_WM_STATE) {
 //		client_t * c = find_client_by_xwindow(ev->xclient.window);
 //		if (c) {
@@ -768,14 +734,12 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == cnx.atoms.WM_CHANGE_STATE) {
 		/* client should send this message to go iconic */
 		if (e.data.l[0] == IconicState) {
-//			window_t * x = find_window(ev->xclient.window);
-//			if (x) {
-//				printf("Set to iconic %lu\n", x->get_xwin());
-//				x->write_wm_state(IconicState);
-//				client_t * c = find_client_by_xwindow(ev->xclient.window);
-//				if (c)
-//					tree_root->iconify_client(c);
-//			}
+			window_t * x = find_client(e.window);
+			if (x) {
+				printf("Set to iconic %lu\n", x->get_xwin());
+				x->write_wm_state(IconicState);
+				iconify_client(x);
+			}
 		}
 	} else if (e.message_type == cnx.atoms.PAGE_QUIT) {
 		running = false;
@@ -799,14 +763,6 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
-	/* printf here create recursive damage when ^^ */
-	//printf("damage event win: #%lu %dx%d+%d+%d\n", e->drawable,
-	//		(int) e->area.width, (int) e->area.height, (int) e->area.x,
-	//		(int) e->area.y);
-	/* if this is a popup, I find the coresponding area on
-	 * main window, then I repair the main window.
-	 * This avoid multiple repair method.
-	 */
 
 	/* create an empty region */
 	XserverRegion region = XFixesCreateRegion(cnx.dpy, 0, 0);
@@ -818,291 +774,152 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 	XDamageSubtract(cnx.dpy, e.damage, None, region);
 
 	window_t * x = find_window(e.drawable);
+	if (x) {
+		XRectangle * rects;
+		int nb_rects;
 
-	XRectangle * rects;
-	int nb_rects;
+		/* get all rectangles for the damaged region */
+		rects = XFixesFetchRegion(cnx.dpy, region, &nb_rects);
 
-	/* get all rectangles for the damaged region */
-	rects = XFixesFetchRegion(cnx.dpy, region, &nb_rects);
+		if (rects) {
+			for (int i = 0; i < nb_rects; ++i) {
+				box_int_t box(rects[i]);
 
-	if (rects) {
-		for (int i = 0; i < nb_rects; ++i) {
-			box_int_t box(rects[i]);
-			if (x) {
 				x->mark_dirty_retangle(box);
 				box_int_t _ = x->get_absolute_extend();
 				/* setup absolute damaged area */
 				box.x += _.x;
 				box.y += _.y;
-				pending_damage += box;
+				rnd.add_damage_area(box);
+
 			}
+			XFree(rects);
 		}
-		XFree(rects);
-	}
 
-	XFixesDestroyRegion(cnx.dpy, region);
-
-	/* if no more damage pending, process repair */
-	if (!e.more) {
-		render_flush();
+		XFixesDestroyRegion(cnx.dpy, region);
 	}
 
 }
 
-void page_t::fullscreen(client_t * c) {
-
-//	printf("FUULLLLSCREEENNN\n");
-//	if (fullscreen_client != 0) {
-//		fullscreen_client->unmap();
-//		fullscreen_client->unset_fullscreen();
-//		insert_client(fullscreen_client);
-//		fullscreen_client = 0;
-//		update_focus(0);
-//	}
+//void page_t::fullscreen(client_t * c) {
 //
-//	fullscreen_client = c;
-//	tree_root->remove_client(c);
-//	c->set_fullscreen();
-//	//move_fullscreen(c);
-//	c->map();
-//	update_focus(c);
-//	c->focus();
-}
-
-void page_t::unfullscreen(client_t * c) {
-//	if (fullscreen_client == c) {
-//		fullscreen_client = 0;
-//		c->unset_fullscreen();
-//		c->unmap();
-//		update_focus(0);
-//		insert_client(c);
-//		render();
-//	}
-}
-
-void page_t::toggle_fullscreen(client_t * c) {
-//	if (c == fullscreen_client) {
-//		unfullscreen(c);
-//	} else {
-//		fullscreen(c);
-//	}
-}
-
-void page_t::render_flush() {
-
-	box_list_t area = pending_damage.get_area();
-	/* update back buffer */
-	{
-		box_list_t::const_iterator i = area.begin();
-		while (i != area.end()) {
-			repair_back_buffer(*i);
-			++i;
-		}
-		cairo_surface_flush(back_buffer_s);
-	}
-	/* update front buffer */
-	{
-		box_list_t::const_iterator i = area.begin();
-		while (i != area.end()) {
-			repair_overlay(*i);
-			++i;
-		}
-		cairo_surface_flush(composite_overlay_s);
-	}
-	pending_damage.clear();
-
-}
-
-void page_t::add_damage_area(box_int_t const & box) {
-	pending_damage += box;
-}
-
-void page_t::repair_back_buffer(box_int_t const & area) {
-
-	/* complex computation to avoid useless memory blit */
-
-	/* get area of normal window */
-	/* remove normal window area from gui repair area */
-	region_t<int> gui_area = area;
-	for (window_set_t::iterator i = clients.begin(); i != clients.end(); ++i) {
-		if ((*i)->is_map()) {
-			gui_area -= ((*i)->get_absolute_extend());
-		}
-	}
-
-	/* render gui */
-	cairo_surface_flush(gui_s);
-	cairo_reset_clip(back_buffer_cr);
-	cairo_set_source_surface(back_buffer_cr, gui_s, 0., 0.);
-	for (box_list_t::const_iterator i = gui_area.begin(); i != gui_area.end(); ++i) {
-		box_int_t b = (*i);
-		cairo_rectangle(back_buffer_cr, b.x, b.y, b.w, b.h);
-		cairo_fill(back_buffer_cr);
-	}
-
-	/* draw top-level windows, from bottom most to top most */
-	cairo_reset_clip(back_buffer_cr);
-	/* draw dock normal window */
-	for (window_list_t::iterator i = top_level_windows.begin();
-			i != top_level_windows.end(); ++i) {
-		window_t * c = *i;
-		if (!c->is_map())
-			continue;
-		if (c->is_input_only())
-			continue;
-		box_int_t clip = area & c->get_absolute_extend();
-		if (clip.w > 0 && clip.h > 0) {
-			//printf("draw client %dx%d+%d+%d\n", clip.w, clip.h, clip.x, clip.x,
-			//		clip.y);
-			c->repair1(back_buffer_cr, clip);
-		}
-	}
-
-	/* draw popups (custom objects) over the screen */
-	cairo_reset_clip(back_buffer_cr);
-	/* draw dock normal window */
-	for (renderable_list_t::iterator i = popups.begin();
-			i != popups.end(); ++i) {
-		renderable_t * r = *i;
-		box_int_t clip = area & r->get_absolute_extend();
-		if (clip.w > 0 && clip.h > 0) {
-			//printf("draw client %dx%d+%d+%d\n", clip.w, clip.h, clip.x, clip.x,
-			//		clip.y);
-			r->repair1(back_buffer_cr, clip);
-		}
-	}
-
-}
-
-void page_t::repair_overlay(box_int_t const & area) {
-
-	cairo_reset_clip(composite_overlay_cr);
-	cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
-	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
-	cairo_fill(composite_overlay_cr);
-
-	/* for debug purpose */
-	if (false) {
-		static int color = 0;
-		switch (color % 3) {
-		case 0:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 0.0);
-			break;
-		case 1:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 1.0, 0.0);
-			break;
-		case 2:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 1.0);
-			break;
-		}
-		++color;
-		cairo_set_line_width(composite_overlay_cr, 1.0);
-		cairo_rectangle(composite_overlay_cr, area.x + 0.5, area.y + 0.5,
-				area.w - 1.0, area.h - 1.0);
-		cairo_stroke(composite_overlay_cr);
-	}
-
-	cairo_surface_flush(composite_overlay_s);
-
-}
+////	printf("FUULLLLSCREEENNN\n");
+////	if (fullscreen_client != 0) {
+////		fullscreen_client->unmap();
+////		fullscreen_client->unset_fullscreen();
+////		insert_client(fullscreen_client);
+////		fullscreen_client = 0;
+////		update_focus(0);
+////	}
+////
+////	fullscreen_client = c;
+////	tree_root->remove_client(c);
+////	c->set_fullscreen();
+////	//move_fullscreen(c);
+////	c->map();
+////	update_focus(c);
+////	c->focus();
+//}
+//
+//void page_t::unfullscreen(client_t * c) {
+////	if (fullscreen_client == c) {
+////		fullscreen_client = 0;
+////		c->unset_fullscreen();
+////		c->unmap();
+////		update_focus(0);
+////		insert_client(c);
+////		render();
+////	}
+//}
+//
+//void page_t::toggle_fullscreen(client_t * c) {
+////	if (c == fullscreen_client) {
+////		unfullscreen(c);
+////	} else {
+////		fullscreen(c);
+////	}
+//}
 
 void page_t::print_window_attributes(Window w, XWindowAttributes & wa) {
 	//return;
 	printf(">>> Window: #%lu\n", w);
 	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
-	printf("> border_width: %d\n", wa.border_width);
-	printf("> depth: %d\n", wa.depth);
-	printf("> visual #%p\n", wa.visual);
-	printf("> root: #%lu\n", wa.root);
-	printf("> class: %d\n", wa.c_class);
-	printf("> bit_gravity: %d\n", wa.bit_gravity);
-	printf("> win_gravity: %d\n", wa.win_gravity);
-	printf("> backing_store: %dlx\n", wa.backing_store);
-	printf("> backing_planes: %lx\n", wa.backing_planes);
-	printf("> backing_pixel: %lx\n", wa.backing_pixel);
-	printf("> save_under: %d\n", wa.save_under);
-	printf("> colormap: ?\n");
-	printf("> all_event_masks: %08lx\n", wa.all_event_masks);
-	printf("> your_event_mask: %08lx\n", wa.your_event_mask);
-	printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
+//	printf("> border_width: %d\n", wa.border_width);
+//	printf("> depth: %d\n", wa.depth);
+//	printf("> visual #%p\n", wa.visual);
+//	printf("> root: #%lu\n", wa.root);
+	if (wa.c_class == CopyFromParent) {
+		printf("> class: CopyFromParent\n");
+	} else if (wa.c_class == InputOutput) {
+		printf("> class: InputOutput\n");
+	} else if (wa.c_class == InputOnly) {
+		printf("> class: InputOnly\n");
+	} else {
+		printf("> class: Unknown\n");
+	}
+
+	if (wa.map_state == IsViewable) {
+		printf("> map_state: IsViewable\n");
+	} else if (wa.map_state == IsUnviewable) {
+		printf("> map_state: IsUnviewable\n");
+	} else if (wa.map_state == IsUnmapped) {
+		printf("> map_state: IsUnmapped\n");
+	} else {
+		printf("> map_state: Unknown\n");
+	}
+
+//	printf("> bit_gravity: %d\n", wa.bit_gravity);
+//	printf("> win_gravity: %d\n", wa.win_gravity);
+//	printf("> backing_store: %dlx\n", wa.backing_store);
+//	printf("> backing_planes: %lx\n", wa.backing_planes);
+//	printf("> backing_pixel: %lx\n", wa.backing_pixel);
+//	printf("> save_under: %d\n", wa.save_under);
+//	printf("> colormap: ?\n");
+//	printf("> all_event_masks: %08lx\n", wa.all_event_masks);
+//	printf("> your_event_mask: %08lx\n", wa.your_event_mask);
+//	printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
 	printf("> override_redirect: %d\n", wa.override_redirect);
-	printf("> screen: %p\n", wa.screen);
+//	printf("> screen: %p\n", wa.screen);
 
 }
 
 void page_t::insert_client(window_t * w) {
-	if (clients.find(w) != clients.end())
-		return;
-	clients.insert(w);
-
 	if (default_window_pop != 0) {
 		if (!default_window_pop->add_client(w)) {
 			throw std::runtime_error("Fail to add a client");
 		}
 	} else {
-		if (!tree_root->add_client(w)) {
-			throw std::runtime_error("Fail to add a client\n");
-		}
+		add_client(w);
 	}
-
 	update_client_list();
 }
 
-void page_t::update_focus(window_t * c) {
-
-	if (client_focused == c)
-		return;
-
-	if (client_focused != 0) {
-		client_focused->unset_focused();
-	}
-
-	client_focused = c;
-
-	if (client_focused != 0) {
-		client_focused->set_focused();
-	}
-}
-
-void page_t::move_fullscreen(client_t * c) {
-//	XMoveResizeWindow(cnx.dpy, c->clipping_window, fullscreen_position.x,
-//			fullscreen_position.y, fullscreen_position.w,
-//			fullscreen_position.h);
-	box_int_t x(0, 0, fullscreen_position.w, fullscreen_position.h);
-	c->get_window()->move_resize(x);
-}
-
-void page_t::withdraw_to_X(client_t * c) {
-//	c->withdraw_to_X();
-//	if (c->is_fullscreen()) {
-//		move_fullscreen(c);
-//		fullscreen(c);
-//		update_focus(c);
-//	} else {
-//		insert_client(c);
-//	}
-//	return;
-}
-
-
-inline void copy_without(box_list_t::const_iterator x,
-		box_list_t::const_iterator y, box_list_t const & list,
-		box_list_t & out) {
-	box_list_t::const_iterator i = list.begin();
-	while (i != list.end()) {
-		if (i != x && i != y) {
-			out.push_back(*i);
-		}
-		++i;
-	}
-}
+//void page_t::move_fullscreen(client_t * c) {
+////	XMoveResizeWindow(cnx.dpy, c->clipping_window, fullscreen_position.x,
+////			fullscreen_position.y, fullscreen_position.w,
+////			fullscreen_position.h);
+//	box_int_t x(0, 0, fullscreen_position.w, fullscreen_position.h);
+//	c->get_window()->move_resize(x);
+//}
+//
+//void page_t::withdraw_to_X(client_t * c) {
+////	c->withdraw_to_X();
+////	if (c->is_fullscreen()) {
+////		move_fullscreen(c);
+////		fullscreen(c);
+////		update_focus(c);
+////	} else {
+////		insert_client(c);
+////	}
+////	return;
+//}
 
 window_t * page_t::find_window(Window w) {
 	return window_t::find_window(&cnx, w);
 }
 
-window_t * page_t::find_window(window_set_t const & list, Window w) {
-	window_set_t::iterator i = list.begin();
+window_t * page_t::find_window(window_list_t const & list, Window w) {
+	window_list_t::const_iterator i = list.begin();
 	while (i != list.end()) {
 		if ((*i)->is_window(w))
 			return (*i);
@@ -1113,15 +930,214 @@ window_t * page_t::find_window(window_set_t const & list, Window w) {
 
 void page_t::set_window_above(window_t * w, Window above) {
 	assert(above != w->get_xwin());
-	top_level_windows.remove(w);
-	window_list_t::reverse_iterator i = top_level_windows.rbegin();
-	while (i != top_level_windows.rend()) {
+	windows_stack.remove(w);
+	window_list_t::reverse_iterator i = windows_stack.rbegin();
+	while (i != windows_stack.rend()) {
 		if ((*i)->get_xwin() == above) {
 			break;
 		}
 		++i;
 	}
-	top_level_windows.insert(i.base(), w);
+	windows_stack.insert(i.base(), w);
+	update_window_z();
+}
+
+void page_t::page_event_handler_t::process_event(XEvent const & e) {
+
+	if (e.type == MapNotify) {
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xmap.serial,
+				x_event_name[e.type], e.xmap.event, e.xmap.window);
+	} else if (e.type == DestroyNotify) {
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xdestroywindow.serial,
+				x_event_name[e.type], e.xdestroywindow.event,
+				e.xdestroywindow.window);
+	} else if (e.type == MapRequest) {
+		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xmaprequest.serial,
+				x_event_name[e.type], e.xmaprequest.parent,
+				e.xmaprequest.window);
+	} else if (e.type == UnmapNotify) {
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xunmap.serial,
+				x_event_name[e.type], e.xunmap.event, e.xunmap.window);
+	} else if (e.type == CreateNotify) {
+		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xcreatewindow.serial,
+				x_event_name[e.type], e.xcreatewindow.parent,
+				e.xcreatewindow.window);
+	} else if (e.type < LASTEvent && e.type > 0) {
+		printf("#%08lu %s: win: #%lu\n", e.xany.serial, x_event_name[e.type],
+				e.xany.window);
+	}
+
+//	page.cnx.grab();
+//
+//	/* remove all destroyed windows */
+//	XEvent tmp_ev;
+//	while (XCheckTypedEvent(page.cnx.dpy, DestroyNotify, &tmp_ev)) {
+//		page.process_event(e.xdestroywindow);
+//	}
+
+	if (e.type == ButtonPress) {
+		page.cnx.last_know_time = e.xbutton.time;
+		window_t * c = page.find_client(e.xbutton.window);
+		if (c) {
+			/* the hidden focus parameter */
+			c->focus();
+			page.set_focus(c);
+		} else if (e.xbutton.window == page.cnx.xroot) {
+			//tree_root->process_button_press_event(&e);
+		}
+	}
+
+	if (e.type == CirculateNotify) {
+		page.process_event(e.xcirculate);
+	} else if (e.type == ConfigureNotify) {
+		page.process_event(e.xconfigure);
+	} else if (e.type == CreateNotify) {
+		page.process_event(e.xcreatewindow);
+	} else if (e.type == DestroyNotify) {
+		page.process_event(e.xdestroywindow);
+	} else if (e.type == GravityNotify) {
+		page.process_event(e.xgravity);
+	} else if (e.type == MapNotify) {
+		page.process_event(e.xmap);
+	} else if (e.type == ReparentNotify) {
+		page.process_event(e.xreparent);
+	} else if (e.type == UnmapNotify) {
+		page.process_event(e.xunmap);
+	} else if (e.type == CirculateRequest) {
+		page.process_event(e.xcirculaterequest);
+	} else if (e.type == ConfigureRequest) {
+		page.process_event(e.xconfigurerequest);
+	} else if (e.type == MapRequest) {
+		page.process_event(e.xmaprequest);
+	} else if (e.type == PropertyNotify) {
+		page.process_event(e.xproperty);
+	} else if (e.type == ClientMessage) {
+		page.process_event(e.xclient);
+	} else if (e.type == page.cnx.damage_event + XDamageNotify) {
+		page.process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
+	}
+
+	page.rnd.render_flush();
+
+	//page.cnx.ungrab();
+
+	if (!page.cnx.is_not_grab()) {
+		fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
+		exit(EXIT_FAILURE);
+	}
+
+}
+
+void page_t::remove_client(window_t * x) {
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		(*i)->remove_client(x);
+		++i;
+	}
+}
+
+void page_t::activate_client(window_t * x) {
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		(*i)->activate_client(x);
+		++i;
+	}
+}
+
+void page_t::add_client(window_t * x) {
+	if (!viewport_list.empty()) {
+		viewport_list.front()->add_client(x);
+	}
+}
+
+void page_t::iconify_client(window_t * x) {
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		(*i)->iconify_client(x);
+		++i;
+	}
+}
+
+void page_t::update_allocation() {
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		box_int_t x = (*i)->get_absolute_extend();
+		(*i)->reconfigure(x);
+		++i;
+	}
+}
+
+void page_t::read_viewport_layout() {
+	int n;
+	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
+
+	if (n < 1) {
+		throw std::runtime_error("no Xinerama screen Found");
+	}
+
+	for (int i = 0; i < n; ++i) {
+		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
+				info[i].height);
+		viewport_list.push_back(new viewport_t(*this, x));
+	}
+
+	XFree(info);
+}
+
+void page_t::set_default_pop(tree_t * x) {
+	default_window_pop = x;
+}
+
+void page_t::set_focus(window_t * w) {
+	if (client_focused == w)
+		return;
+
+	if (client_focused != 0) {
+		client_focused->unset_focused();
+	}
+
+	client_focused = w;
+
+	if (client_focused != 0) {
+		client_focused->set_focused();
+	}
+}
+
+render_context_t & page_t::get_render_context() {
+	return rnd;
+}
+
+xconnection_t & page_t::get_xconnection() {
+	return cnx;
+}
+
+void page_t::update_window_z() {
+	int z = 0;
+	window_list_t::iterator i = windows_stack.begin();
+	while (i != windows_stack.end()) {
+		(*i)->z = z;
+		++i;
+		++z;
+	}
+}
+
+window_t * page_t::create_window(Window w, XWindowAttributes const & wa) {
+	window_t * x = new window_t(cnx, w, wa);
+	windows_map[w] = x;
+	windows_stack.push_back(x);
+	update_window_z();
+	rnd.add(x);
+	return x;
+}
+
+void page_t::delete_window(window_t * x) {
+	rnd.add_damage_area(x->get_absolute_extend());
+	windows_map.erase(x->get_xwin());
+	windows_stack.remove(x);
+	update_window_z();
+	rnd.remove(x);
+	managed_windows.remove(x);
+	delete x;
 }
 
 }

@@ -10,17 +10,9 @@
 
 #include <X11/Xlib.h>
 
+#include <algorithm>
+
 namespace page {
-
-template<typename T>
-inline T min(T x, T y) {
-	return (((x) < (y)) ? (x) : (y));
-}
-
-template<typename T>
-inline T max(T x, T y) {
-	return (((x) > (y)) ? (x) : (y));
-}
 
 template<typename T>
 struct box_t {
@@ -48,10 +40,10 @@ struct box_t {
 	/* compute intersection */
 	box_t<T> operator&(box_t<T> const & box) const {
 
-		T left = max(this->x, box.x);
-		T right = min(this->x + this->w, box.x + box.w);
-		T top = max(this->y, box.y);
-		T bottom = min(this->y + this->h, box.y + box.h);
+		T left = std::max(x, box.x);
+		T right = std::min(x + w, box.x + box.w);
+		T top = std::max(y, box.y);
+		T bottom = std::min(y + h, box.y + box.h);
 
 		if (right - left < 0 || bottom - top < 0) {
 			return box_t<T>(0, 0, 0, 0);
@@ -72,10 +64,10 @@ struct box_t {
 template<typename T>
 box_t<T> get_max_extand(box_t<T> const & box0, box_t<T> const & box1) {
 	box_t<T> result;
-	result.x = min(box0.x, box1.x);
-	result.y = min(box0.y, box1.y);
-	result.w = max(box0.x + box0.w, box1.x + box1.w) - result.x;
-	result.h = max(box0.y + box0.h, box1.y + box1.h) - result.y;
+	result.x = std::min(box0.x, box1.x);
+	result.y = std::min(box0.y, box1.y);
+	result.w = std::max(box0.x + box0.w, box1.x + box1.w) - result.x;
+	result.h = std::max(box0.y + box0.h, box1.y + box1.h) - result.y;
 	return result;
 }
 

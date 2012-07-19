@@ -16,6 +16,7 @@ popup_notebook1_t::popup_notebook1_t(int x, int y, cairo_font_face_t * font,
 	area.y = y;
 	area.w = 200;
 	area.h = 24;
+	cache = 0;
 }
 
 popup_notebook1_t::~popup_notebook1_t() {
@@ -33,26 +34,46 @@ void popup_notebook1_t::reconfigure(box_int_t const & a) {
 
 void popup_notebook1_t::repair1(cairo_t * cr, box_int_t const & a) {
 	box_int_t i = area & a;
-	cairo_save(cr);
 
-	if (surf != 0) {
-		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
-		cairo_clip(cr);
-		cairo_translate(cr, area.x, area.y);
-		cairo_set_source_surface(cr, surf, 0.0, 0.0);
-		cairo_paint(cr);
+	if (cache == 0) {
+		cache = cairo_surface_create_similar(cairo_get_target(cr),
+				CAIRO_CONTENT_COLOR_ALPHA, area.w, area.h);
+		cairo_t * tcr = cairo_create(cache);
+
+		cairo_set_source_rgba(tcr, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_operator(tcr, CAIRO_OPERATOR_SOURCE);
+		cairo_paint(tcr);
+
+		cairo_set_operator(tcr, CAIRO_OPERATOR_OVER);
+		if (surf != 0) {
+			cairo_rectangle(tcr, 0, 0, area.w, area.h);
+			cairo_clip(tcr);
+			cairo_set_source_surface(tcr, surf, 0.0, 0.0);
+			cairo_paint(tcr);
+		}
+
+		cairo_set_source_rgba(tcr, 0.0, 0.0, 0.0, 1.0);
+		cairo_set_font_size(tcr, 13.0);
+		cairo_move_to(tcr, 20.5, 15.5);
+		cairo_show_text(tcr, title.c_str());
+
+		cairo_surface_flush(cache);
+		cairo_destroy(tcr);
 	}
 
-	/* draw the name */
-	cairo_rectangle(cr, 0.0, 0.0, area.w - 17.0, area.h);
+	cairo_save(cr);
+	cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 	cairo_clip(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_set_font_size(cr, 13.0);
-	cairo_move_to(cr, 20.5, 15.5);
-	cairo_show_text(cr, title.c_str());
-
+	cairo_set_source_surface(cr, cache, area.x, area.y);
+	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_fill(cr);
 	cairo_restore(cr);
 
+}
+
+bool popup_notebook1_t::is_visible() {
+	return true;
 }
 
 }

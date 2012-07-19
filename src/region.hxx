@@ -15,8 +15,22 @@ namespace page {
 template<typename T>
 class region_t {
 	typedef box_t<T> _box_t;
+public:
 	typedef std::list<_box_t> box_list_t;
+private:
 	box_list_t area;
+
+	inline static void copy_without(typename box_list_t::const_iterator x,
+			typename box_list_t::const_iterator y, box_list_t const & list,
+			box_list_t & out) {
+		typename box_list_t::const_iterator i = list.begin();
+		while (i != list.end()) {
+			if (i != x && i != y) {
+				out.push_back(*i);
+			}
+			++i;
+		}
+	}
 
 	/* merge 2 reactangle, not efficiently */
 	static bool merge_area_macro(box_list_t & list) {

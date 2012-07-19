@@ -24,7 +24,7 @@
 
 namespace page {
 
-struct client_t : public renderable_t {
+struct client_t {
 	window_t & w;
 	/* the desired width/heigth */
 	int width;
@@ -101,12 +101,6 @@ struct client_t : public renderable_t {
 	std::string const & get_title() {
 		return w.get_title();
 	}
-
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
-	virtual box_int_t get_absolute_extend();
-	virtual void reconfigure(box_int_t const & area);
-	virtual void mark_dirty();
-	virtual void mark_dirty_retangle(box_int_t const & area);
 
 };
 

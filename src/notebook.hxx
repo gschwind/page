@@ -15,14 +15,14 @@
 #include <freetype/freetype.h>
 #include FT_FREETYPE_H
 
-#include "xconnection.hxx"
 #include "box.hxx"
 #include "client.hxx"
 #include "tree.hxx"
 #include "split.hxx"
-#include "page.hxx"
 #include "popup_notebook0.hxx"
 #include "popup_notebook1.hxx"
+#include "page_base.hxx"
+#include "xconnection.hxx"
 
 namespace page {
 
@@ -36,6 +36,14 @@ struct img_t {
 };
 
 class notebook_t: public tree_t {
+
+	class noteboot_event_handler_t : public xevent_handler_t {
+	public:
+		notebook_t & nbk;
+		noteboot_event_handler_t(notebook_t & nbk) : nbk(nbk) { }
+		virtual ~noteboot_event_handler_t() { }
+		virtual void process_event(XEvent const & e);
+	};
 
 	typedef std::map<window_t *, client_t *> client_map_t;
 	client_map_t client_map;
@@ -53,7 +61,12 @@ class notebook_t: public tree_t {
 	};
 
 	static std::list<notebook_t *> notebooks;
-	page_t & page;
+
+	page_base_t & page;
+	xconnection_t & cnx;
+	render_context_t & rnd;
+
+	noteboot_event_handler_t event_handler;
 
 	Cursor cursor;
 
@@ -98,10 +111,12 @@ class notebook_t: public tree_t {
 	void update_client_position(client_t * c);
 
 public:
-	notebook_t(page_t & cnx);
+	notebook_t(page_base_t & page);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
-	void render();
+	void render(cairo_t * cr);
+
+
 	bool process_button_press_event(XEvent const * e);
 
 	void split(split_type_e type);
@@ -133,6 +148,9 @@ public:
 
 	void update_popup_position(popup_notebook0_t * p, int x, int y, int w, int h, bool show_popup);
 
+	virtual void repair1(cairo_t * cr, box_int_t const & area);
+	virtual box_int_t get_absolute_extend();
+	virtual void reconfigure(box_int_t const & area);
 };
 
 }

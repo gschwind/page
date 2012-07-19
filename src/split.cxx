@@ -5,25 +5,32 @@
  *      Author: gschwind
  */
 
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
+
 
 #include "split.hxx"
 #include "popup_split.hxx"
 
 namespace page {
 
-split_t::split_t(page_t & page, split_type_e type) :
-		page(page) {
+split_t::split_t(page_base_t & page, split_type_e type) :
+		page(page), even_handler(*this) {
 	_split_type = type;
 	_split = 0.5;
 	_pack0 = 0;
 	_pack1 = 0;
+
+	cursor = None;
+
+	page.get_xconnection().add_event_handler(&even_handler);
+
 }
 
 split_t::~split_t() {
-
+	page.get_xconnection().remove_event_handler(&even_handler);
 }
 
 void split_t::update_allocation(box_t<int> &allocation) {
@@ -47,7 +54,7 @@ void split_t::update_allocation_pack0() {
 		b.w = _allocation.w;
 		b.h = _allocation.h * _split - GRIP_SIZE;
 	}
-	_pack0->update_allocation(b);
+	_pack0->reconfigure(b);
 }
 
 void split_t::update_allocation_pack1() {
@@ -65,59 +72,65 @@ void split_t::update_allocation_pack1() {
 		b.w = _allocation.w;
 		b.h = _allocation.h - _allocation.h * _split - GRIP_SIZE;
 	}
-	_pack1->update_allocation(b);
+	_pack1->reconfigure(b);
 }
 
-void split_t::render() {
-	cairo_save(page.gui_cr);
-	cairo_set_source_rgb(page.gui_cr, 0xeeU / 255.0, 0xeeU / 255.0,
-			0xecU / 255.0);
-	if (_split_type == VERTICAL_SPLIT) {
-		cairo_rectangle(page.gui_cr,
-				_allocation.x + _allocation.w * _split - GRIP_SIZE,
-				_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
-	} else {
-		cairo_rectangle(page.gui_cr, _allocation.x,
-				_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
-				_allocation.w, GRIP_SIZE * 2.0);
-	}
-	cairo_fill(page.gui_cr);
-	cairo_restore(page.gui_cr);
-	if (_pack0)
-		_pack0->render();
-	if (_pack1)
-		_pack1->render();
-}
-
-bool split_t::process_button_press_event(XEvent const * e) {
-	if (_allocation.is_inside(e->xbutton.x, e->xbutton.y)) {
-		box_t<int> slide;
+void split_t::repair1(cairo_t * cr, box_int_t const & area) {
+	box_int_t clip = _allocation & area;
+	if (clip.h > 0 && clip.w > 0) {
+		cairo_save(cr);
+		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+		cairo_clip(cr);
+		cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 		if (_split_type == VERTICAL_SPLIT) {
-			slide.y = _allocation.y;
-			slide.h = _allocation.h;
-			slide.x = _allocation.x + (_allocation.w * _split) - GRIP_SIZE;
-			slide.w = GRIP_SIZE * 2;
+			cairo_rectangle(cr,
+					_allocation.x + _allocation.w * _split - GRIP_SIZE,
+					_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
 		} else {
-			slide.y = _allocation.y + (_allocation.h * _split) - GRIP_SIZE;
-			slide.h = GRIP_SIZE * 2;
-			slide.x = _allocation.x;
-			slide.w = _allocation.w;
+			cairo_rectangle(cr, _allocation.x,
+					_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
+					_allocation.w, GRIP_SIZE * 2.0);
 		}
+		cairo_fill(cr);
+		cairo_restore(cr);
+		if (_pack0)
+			_pack0->repair1(cr, area);
+		if (_pack1)
+			_pack1->repair1(cr, area);
+	}
+}
 
-		if (slide.is_inside(e->xbutton.x, e->xbutton.y)) {
-			process_drag_and_drop();
-		} else {
-			/* the pack test is for sanity, but should never be null */
-			if (_pack0) {
-				/* avoid double close */
-				if (!_pack0->process_button_press_event(e) && _pack1) {
-					_pack1->process_button_press_event(e);
+void split_t::xevent_handler_t::process_event(XEvent const & e) {
+	if (e.type == ButtonPress) {
+		if (split._allocation.is_inside(e.xbutton.x, e.xbutton.y)) {
+			box_t<int> slide;
+			if (split._split_type == VERTICAL_SPLIT) {
+				slide.y = split._allocation.y;
+				slide.h = split._allocation.h;
+				slide.x = split._allocation.x + (split._allocation.w * split._split) - split.GRIP_SIZE;
+				slide.w = GRIP_SIZE * 2;
+			} else {
+				slide.y = split._allocation.y + (split._allocation.h * split._split) - split.GRIP_SIZE;
+				slide.h = split.GRIP_SIZE * 2;
+				slide.x = split._allocation.x;
+				slide.w = split._allocation.w;
+			}
+
+			if (slide.is_inside(e.xbutton.x, e.xbutton.y)) {
+				split.process_drag_and_drop();
+			} else {
+				/* the pack test is for sanity, but should never be null */
+				if (split._pack0) {
+					/* avoid double close */
+//				if (!_pack0->process_button_press_event(e) && _pack1) {
+//					_pack1->process_button_press_event(e);
+//				}
 				}
 			}
+			return;
 		}
-		return true;
+		return;
 	}
-	return false;
 }
 
 bool split_t::add_client(window_t * c) {
@@ -139,7 +152,6 @@ bool split_t::add_client(window_t * c) {
 }
 
 void split_t::replace(tree_t * src, tree_t * by) {
-
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src, by);
 		_pack0 = by;
@@ -158,8 +170,9 @@ void split_t::close(tree_t * src) {
 }
 
 void split_t::remove(tree_t * src) {
-	if (src != _pack0 && src != _pack1)
-		return;
+	assert(src == _pack0 || src == _pack1);
+
+	page.get_render_context().add_damage_area(_allocation);
 
 	tree_t * dst = (src == _pack0) ? _pack1 : _pack0;
 
@@ -171,7 +184,7 @@ void split_t::remove(tree_t * src) {
 	}
 
 	_parent->replace(this, dst);
-	_parent->render();
+	//_parent->render();
 	delete src;
 	/* self destruction ^^ */
 	delete this;
@@ -193,11 +206,11 @@ void split_t::iconify_client(window_t * c) {
 
 window_list_t split_t::get_windows() {
 	window_list_t list;
-	if(_pack0) {
+	if (_pack0) {
 		window_list_t pack0_list = _pack0->get_windows();
 		list.insert(list.end(), pack0_list.begin(), pack0_list.end());
 	}
-	if(_pack1) {
+	if (_pack1) {
 		window_list_t pack1_list = _pack0->get_windows();
 		list.insert(list.end(), pack1_list.begin(), pack1_list.end());
 	}
@@ -212,8 +225,9 @@ void split_t::remove_client(window_t * c) {
 }
 
 void split_t::process_drag_and_drop() {
+	xconnection_t & cnx = page.get_xconnection();
 	XEvent ev;
-	cursor = XCreateFontCursor(page.cnx.dpy, XC_fleur);
+	cursor = XCreateFontCursor(cnx.dpy, XC_fleur);
 	popup_split_t * p;
 
 	box_int_t slider_area;
@@ -221,9 +235,10 @@ void split_t::process_drag_and_drop() {
 	compute_slider_area(slider_area);
 
 	p = new popup_split_t(slider_area);
-	page.popups.push_back(p);
+	p->z = 1000;
+	page.get_render_context().overlay_add(p);
 
-	if (XGrabPointer(page.cnx.dpy, page.cnx.xroot, False,
+	if (XGrabPointer(cnx.dpy, cnx.xroot, False,
 			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
 			GrabModeAsync, GrabModeAsync, None, cursor,
 			CurrentTime) != GrabSuccess)
@@ -231,9 +246,9 @@ void split_t::process_drag_and_drop() {
 
 	do {
 
-		XIfEvent(page.cnx.dpy, &ev, drag_and_drop_filter, (char*) this);
+		XIfEvent(cnx.dpy, &ev, drag_and_drop_filter, (char*) this);
 
-		if (ev.type == page.cnx.damage_event + XDamageNotify) {
+		if (ev.type == cnx.damage_event + XDamageNotify) {
 			page.process_event(reinterpret_cast<XDamageNotifyEvent&>(ev));
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
@@ -255,26 +270,26 @@ void split_t::process_drag_and_drop() {
 
 			p->area = slider_area;
 
-			page.repair_back_buffer(old_area);
-			page.repair_back_buffer(slider_area);
-			box_int_t full_area = get_max_extand(old_area, slider_area);
-			page.repair_overlay(full_area);
+			page.get_render_context().add_damage_overlay_area(old_area);
+			page.get_render_context().add_damage_overlay_area(slider_area);
 		}
+
+		page.get_render_context().render_flush();
 	} while (ev.type != ButtonRelease);
-	page.popups.remove(p);
+	page.get_render_context().overlay_remove(p);
 	delete p;
-	XUngrabPointer(page.cnx.dpy, CurrentTime);
-	XFreeCursor(page.cnx.dpy, cursor);
+	XUngrabPointer(cnx.dpy, CurrentTime);
+	XFreeCursor(cnx.dpy, cursor);
 	update_allocation(_allocation);
-	render();
-	page.add_damage_area(_allocation);
+	page.get_render_context().add_damage_area(_allocation);
 }
 
 Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 	split_t * ths = reinterpret_cast<split_t *>(arg);
 	return (ev->type == ConfigureRequest) || (ev->type == Expose)
 			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
-			|| (ev->type == ths->page.cnx.damage_event + XDamageNotify);
+			|| (ev->type
+					== ths->page.get_xconnection().damage_event + XDamageNotify);
 }
 
 void split_t::delete_all() {
@@ -303,6 +318,16 @@ void split_t::compute_slider_area(box_int_t & area) {
 		area.w = _allocation.w;
 		area.h = 2 * GRIP_SIZE;
 	}
+}
+
+void split_t::reconfigure(box_t<int> const & allocation) {
+	_allocation = allocation;
+	update_allocation_pack0();
+	update_allocation_pack1();
+}
+
+box_int_t split_t::get_absolute_extend() {
+	return _allocation;
 }
 
 }

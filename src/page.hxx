@@ -41,37 +41,20 @@
 #include "ftrace_function.hxx"
 #endif
 
-#include "renderable.hxx"
 #include "tree.hxx"
-#include "client.hxx"
+#include "renderable.hxx"
+#include "render_context.hxx"
 #include "box.hxx"
 #include "icon.hxx"
 #include "xconnection.hxx"
-#include "root.hxx"
 #include "window.hxx"
 #include "region.hxx"
+#include "viewport.hxx"
+#include "page_base.hxx"
 
 namespace page {
 
-typedef std::set<client_t *> client_set_t;
 typedef std::list<box_int_t> box_list_t;
-
-enum {
-	AtomType,
-	WMProtocols,
-	WMDelete,
-	WMState,
-	WMLast,
-	NetSupported,
-	NetWMName,
-	NetWMState,
-	NetWMFullscreen,
-	NetWMType,
-	NetWMTypeDock,
-	NetLast,
-	AtomLast
-};
-/* EWMH atoms */
 
 inline void print_buffer__(const char * buf, int size) {
 	for (int i = 0; i < size; ++i) {
@@ -80,23 +63,23 @@ inline void print_buffer__(const char * buf, int size) {
 	printf("\n");
 }
 
-class page_t {
+class page_t : public page_base_t {
+
 public:
+
+	struct page_event_handler_t : public xevent_handler_t {
+		page_t & page;
+		page_event_handler_t(page_t & page) : page(page) { }
+		virtual ~page_event_handler_t() { }
+		virtual void process_event(XEvent const & e);
+	};
 
 	static double const OPACITY = 0.95;
 
-	/* connection will be start, as soon as main is created. */
 	xconnection_t cnx;
-	std::string page_base_dir;
+	render_context_t rnd;
 
 	window_t * fullscreen_client;
-	root_t * tree_root;
-	tree_t * default_window_pop;
-
-	/* all know top level windows */
-	window_list_t top_level_windows;
-	/* clients */
-	window_set_t clients;
 
 	renderable_list_t popups;
 
@@ -105,26 +88,14 @@ public:
 
 	bool running;
 
-	cairo_surface_t * composite_overlay_s;
-	cairo_t * composite_overlay_cr;
-
-	/* the main window */
-	//Window main_window;
-	cairo_surface_t * gui_s;
-	cairo_t * gui_cr;
-
-	cairo_surface_t * back_buffer_s;
-	cairo_t * back_buffer_cr;
-
-
 	bool has_fullscreen_size;
 	box_t<int> fullscreen_position;
-	region_t<int> pending_damage;
 
 	GKeyFile * conf;
 
-	std::string font;
-	std::string font_bold;
+	page_event_handler_t event_handler;
+
+	std::list<viewport_t *> viewport_list;
 
 private:
 	window_t * client_focused;
@@ -135,6 +106,13 @@ public:
 public:
 	page_t(int argc, char ** argv);
 	~page_t();
+
+	virtual void set_default_pop(tree_t * x);
+	virtual void set_focus(window_t * w);
+	virtual render_context_t & get_render_context();
+	virtual xconnection_t & get_xconnection();
+
+
 	void render(cairo_t * cr);
 	void render();
 	void run();
@@ -181,15 +159,16 @@ public:
 	void update_client_list();
 	void update_net_supported();
 
-	void fullscreen(client_t * c);
-	void unfullscreen(client_t * c);
-	void toggle_fullscreen(client_t * c);
+	//void fullscreen(client_t * c);
+	//void unfullscreen(client_t * c);
+	//void toggle_fullscreen(client_t * c);
 
 	void insert_client(window_t * c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
 	void update_focus(window_t * c);
+	void read_viewport_layout();
 
 	void manage(window_t * w);
 
@@ -204,9 +183,9 @@ public:
 	wm_mode_e guess_window_state(long know_state, Bool override_redirect,
 			bool map_state);
 
-	void withdraw_to_X(client_t * c);
+	//void withdraw_to_X(client_t * c);
 
-	void move_fullscreen(client_t * c);
+	//void move_fullscreen(client_t * c);
 
 	box_list_t substract_box(box_int_t const &box0, box_int_t const &box1);
 	box_list_t substract_box(box_list_t const &box_list, box_int_t const &box1);
@@ -217,10 +196,10 @@ public:
 	bool merge_area_macro(box_list_t & list);
 
 	window_t * find_window(Window w);
-	window_t * find_window(window_set_t const & list, Window w);
+	window_t * find_window(window_list_t const & list, Window w);
 
 	window_t * find_client(Window w) {
-		return find_window(clients, w);
+		return find_window(managed_windows, w);
 	}
 
 	void add_damage_area(box_int_t const & box);
@@ -228,6 +207,17 @@ public:
 	void render_flush();
 
 	void set_window_above(window_t * w, Window above);
+
+	void remove_client(window_t * x);
+	void activate_client(window_t * x);
+	void add_client(window_t * x);
+	void iconify_client(window_t * x);
+	void update_allocation();
+
+	void update_window_z();
+
+	window_t * create_window(Window w, XWindowAttributes const & wa);
+	void delete_window(window_t * w);
 
 };
 

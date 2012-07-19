@@ -26,12 +26,15 @@ window_t::window_map_t window_t::created_window;
 
 window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 		cnx(cnx), xwin(w), has_partial_struct(false), lock_count(0), is_lock(
-				false), window_surf(0), damage(0), opacity(1.0), has_wm_name(
+				false), window_surf(0), damage(None), opacity(1.0), has_wm_name(
 				false), has_net_wm_name(false), wm_name(""), net_wm_name(""), name(
 				"") {
 
 	assert(created_window.find(w) == created_window.end());
 	created_window[w] = this;
+
+	wm_normal_hints = XAllocSizeHints();
+	wm_hints = XAllocWMHints();
 
 	if (wa.map_state == IsUnmapped) {
 		_is_map = false;
@@ -49,37 +52,38 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 
 	_override_redirect = (wa.override_redirect ? true : false);
 
-	read_all();
+	wm_input_focus = false;
+	wm_state = WithdrawnState;
+	_is_composite_redirected = false;
 
-	/* save in case of page failure */
-	//cnx.add_to_save_set(xwin);
-
-	create_render_context();
+	if (wa.c_class == InputOutput) {
+		create_render_context();
+	}
 
 	cnx.select_input(xwin, PropertyChangeMask);
 
 }
 
 void window_t::create_render_context() {
-	assert(window_surf == 0);
-	assert(damage == 0);
-	/* redirect to back buffer */
-	XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
-	/* create the cairo surface */
-	window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, visual, size.w,
-			size.h);
-	/* track update */
-	damage = XDamageCreate(cnx.dpy, xwin, XDamageReportNonEmpty);
-	/* clear damaged area */
-	if (damage)
-		XDamageSubtract(cnx.dpy, damage, None, None);
+	if (window_surf == 0 && damage == None) {
+		/* redirect to back buffer */
+		XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+		_is_composite_redirected = true;
+		/* create the cairo surface */
+		window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, visual, size.w,
+				size.h);
+		/* track update */
+		damage = XDamageCreate(cnx.dpy, xwin, XDamageReportNonEmpty);
+		if (damage)
+			XDamageSubtract(cnx.dpy, damage, None, None);
+	}
 
 }
 
 void window_t::destroy_render_context() {
-	if (damage != 0) {
+	if (damage != None) {
 		XDamageDestroy(cnx.dpy, damage);
-		damage = 0;
+		damage = None;
 	}
 
 	if (window_surf != 0) {
@@ -87,7 +91,10 @@ void window_t::destroy_render_context() {
 		window_surf = 0;
 	}
 
-	XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+	if (_is_composite_redirected) {
+		XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+		_is_composite_redirected = false;
+	}
 }
 
 void window_t::setup_extends() {
@@ -103,32 +110,33 @@ void window_t::setup_extends() {
 }
 
 window_t::~window_t() {
+
+	XFree(wm_normal_hints);
+	XFree(wm_hints);
+
 	assert(created_window.find(xwin) != created_window.end());
 	created_window.erase(xwin);
 
-	write_wm_state(WithdrawnState);
-	XDeleteProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS);
-
-	cnx.select_input(xwin, NoEventMask);
-	destroy_render_context();
-
-	XRemoveFromSaveSet(cnx.dpy, xwin);
+	//destroy_render_context();
+	//write_wm_state(WithdrawnState);
+	//XDeleteProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS);
+	//cnx.select_input(xwin, NoEventMask);
+	//XRemoveFromSaveSet(cnx.dpy, xwin);
 }
 
 void window_t::read_all() {
 
-	wm_input_focus = false;
-	XWMHints * hints = read_wm_hints();
+	wm_input_focus = true;
+	XWMHints const * hints = read_wm_hints();
 	if (hints) {
-		if ((hints->flags & InputHint) && hints->input == True)
-			wm_input_focus = true;
-		XFree(hints);
+		if ((hints->flags & InputHint)&& hints->input != True)
+			wm_input_focus = false;
 	}
 
 	read_net_vm_name();
 	read_vm_name();
 	read_title();
-	read_size_hints();
+	read_wm_normal_hints();
 	read_net_wm_type();
 	read_net_wm_state();
 	read_net_wm_protocols();
@@ -188,9 +196,9 @@ void window_t::unlock() {
 }
 
 void window_t::focus() {
+
 	if (_is_map && wm_input_focus) {
 		printf("Focus #%x\n", (unsigned int) xwin);
-		//cnx.raise_window(xwin);
 		XSetInputFocus(cnx.dpy, xwin, RevertToParent, cnx.last_know_time);
 	}
 
@@ -218,18 +226,20 @@ void window_t::focus() {
 
 }
 
-void window_t::read_size_hints() {
-	long msize;
-	if (!XGetWMNormalHints(cnx.dpy, xwin, &hints, &msize)) {
+void window_t::read_wm_normal_hints() {
+	long size_hints_flags;
+	if (!XGetWMNormalHints(cnx.dpy, xwin, wm_normal_hints, &size_hints_flags)) {
 		/* size is uninitialized, ensure that size.flags aren't used */
-		hints.flags = 0;
+		wm_normal_hints->flags = 0;
 		printf("no WMNormalHints\n");
 	}
 }
 
-XWMHints *
+XWMHints const *
 window_t::read_wm_hints() {
-	return XGetWMHints(cnx.dpy, xwin);
+	XFree(wm_hints);
+	wm_hints = XGetWMHints(cnx.dpy, xwin);
+	return wm_hints;
 }
 
 std::string const &
@@ -313,23 +323,20 @@ void window_t::read_net_wm_state() {
 }
 
 void window_t::read_net_wm_protocols() {
-	/* take _NET_WM_STATE */
-	unsigned int n;
-	long * wm_protocols = get_properties32(cnx.atoms.WM_PROTOCOLS,
-			cnx.atoms.ATOM, &n);
-	if (wm_protocols) {
-		this->net_wm_protocols.clear();
-		for (int i = 0; i < n; ++i) {
-			this->net_wm_protocols.insert(wm_protocols[i]);
+	net_wm_protocols.clear();
+	int count;
+	Atom * atoms_list;
+	if (XGetWMProtocols(cnx.dpy, xwin, &atoms_list, &count)) {
+		for (int i = 0; i < count; ++i) {
+			net_wm_protocols.insert(atoms_list[i]);
 		}
-		delete[] wm_protocols;
+		XFree(atoms_list);
 	}
 }
 
-void window_t::write_net_wm_state() {
-	int size = net_wm_state.size();
-	long * new_state = new long[size];
-	std::set<Atom>::iterator iter = net_wm_state.begin();
+void window_t::write_net_wm_state() const {
+	long * new_state = new long[net_wm_state.size() + 1]; // a less one long
+	atom_set_t::const_iterator iter = net_wm_state.begin();
 	int i = 0;
 	while (iter != net_wm_state.end()) {
 		new_state[i] = *iter;
@@ -337,15 +344,13 @@ void window_t::write_net_wm_state() {
 		++i;
 	}
 
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(new_state),
-			size);
+	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM, 32,
+			PropModeReplace, (unsigned char *) new_state, i);
 	delete[] new_state;
 }
 
 void window_t::write_net_wm_allowed_actions() {
-	int size = net_wm_allowed_actions.size();
-	long * data = new long[size];
+	long * data = new long[net_wm_allowed_actions.size() + 1]; // at less one long
 	std::set<Atom>::iterator iter = net_wm_allowed_actions.begin();
 	int i = 0;
 	while (iter != net_wm_allowed_actions.end()) {
@@ -356,16 +361,18 @@ void window_t::write_net_wm_allowed_actions() {
 
 	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_ALLOWED_ACTIONS,
 			cnx.atoms.ATOM, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(data), size);
+			reinterpret_cast<unsigned char *>(data), i);
 	delete[] data;
 }
 
 void window_t::move_resize(box_int_t const & location) {
 	size = location;
 	cnx.move_resize(xwin, size);
-	cairo_surface_flush(window_surf);
-	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
-	mark_dirty();
+	if (window_surf) {
+		cairo_surface_flush(window_surf);
+		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+		mark_dirty();
+	}
 }
 
 /**
@@ -432,17 +439,26 @@ window_t::read_partial_struct() {
 }
 
 void window_t::repair1(cairo_t * cr, box_int_t const & area) {
-	assert(window_surf != 0);
-	box_int_t clip = area & size;
-	//printf("repair popup %p %dx%d+%d+%d\n", this, clip.w, clip.h, clip.x, clip.y);
-	if (clip.w > 0 && clip.h > 0) {
-		cairo_save(cr);
-		cairo_set_source_surface(cr, window_surf, size.x, size.y);
-		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-		cairo_clip(cr);
-		cairo_paint_with_alpha(cr, opacity);
-		cairo_restore(cr);
-	}
+//	assert(window_surf != 0);
+//	box_int_t clip = area & size;
+//	printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
+//	//if (clip.w > 0 && clip.h > 0) {
+//		cairo_save(cr);
+//		cairo_reset_clip(cr);
+//		cairo_set_source_surface(cr, window_surf, size.x, size.y);
+//		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+//		cairo_clip(cr);
+//		cairo_paint_with_alpha(cr, opacity);
+//		cairo_restore(cr);
+//	//}
+
+	cairo_save(cr);
+	cairo_reset_clip(cr);
+	cairo_set_source_surface(cr, window_surf, size.x, size.y);
+	cairo_rectangle(cr, size.x, size.y, size.w, size.h);
+	cairo_clip(cr);
+	cairo_paint_with_alpha(cr, opacity);
+	cairo_restore(cr);
 }
 
 box_int_t window_t::get_absolute_extend() {
@@ -484,9 +500,11 @@ void window_t::process_configure_notify_event(XConfigureEvent const & e) {
 	size.w = e.width;
 	size.h = e.height;
 
-	cairo_surface_flush(window_surf);
-	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
-	mark_dirty();
+	if (window_surf) {
+		cairo_surface_flush(window_surf);
+		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+		mark_dirty();
+	}
 
 }
 
@@ -499,9 +517,11 @@ void window_t::process_configure_request_event(
 	size.w = e.width;
 	size.h = e.height;
 
-	cairo_surface_flush(window_surf);
-	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
-	mark_dirty();
+	if (window_surf) {
+		cairo_surface_flush(window_surf);
+		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+		mark_dirty();
+	}
 
 }
 
