@@ -90,7 +90,6 @@ page_t::page_t(int argc, char ** argv) :
 	g_free(sfont_bold);
 
 	default_window_pop = 0;
-	fullscreen_client = 0;
 	client_focused = 0;
 	running = false;
 
@@ -231,13 +230,8 @@ void page_t::run() {
 }
 
 void page_t::render() {
-	if (fullscreen_client == 0) {
-		rnd.add_damage_area(cnx.root_size);
-		rnd.render_flush();
-	} else {
-		//move_fullscreen(fullscreen_client);
-		//fullscreen_client->map();
-	}
+	rnd.add_damage_area(cnx.root_size);
+	rnd.render_flush();
 }
 
 enum wm_mode_e {
@@ -302,7 +296,6 @@ void page_t::scan() {
 			print_window_attributes(wins[i], wa);
 			window_t * w = create_window(wins[i], wa);
 
-
 			if (!w->override_redirect() && !w->is_input_only() && w->is_map()) {
 				/* ICCCM top level window */
 				manage(w);
@@ -311,10 +304,8 @@ void page_t::scan() {
 			/* special case were a window is on IconicState state */
 			if (!w->override_redirect() && !w->is_input_only()
 			&& !w->is_map()
-			&& w->read_wm_state() == IconicState) {
-				manage (w);
-				}
-		}
+			&& w->read_wm_state() == IconicState) {manage (w);
+}			}
 			XFree(wins);
 		}
 
@@ -662,13 +653,9 @@ void page_t::process_event(XPropertyEvent const & e) {
 	if (!x)
 		return;
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
-		if (fullscreen_client == 0 || fullscreen_client == x) {
-			window_t * c = find_client(e.window);
-			if (c) {
-				activate_client(c);
-				c->focus();
-				set_focus(c);
-			}
+		window_t * c = find_client(e.window);
+		if (c) {
+			activate_client(c);
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_title();
@@ -707,29 +694,28 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			activate_client(w);
 		}
 	} else if (e.message_type == cnx.atoms._NET_WM_STATE) {
-//		client_t * c = find_client_by_xwindow(ev->xclient.window);
-//		if (c) {
-//			if (ev->xclient.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
-//					|| ev->xclient.data.l[2]
-//							== cnx.atoms._NET_WM_STATE_FULLSCREEN) {
-//				switch (ev->xclient.data.l[0]) {
-//				case 0:
-//					printf("SET normal\n");
-//					unfullscreen(c);
-//					break;
-//				case 1:
-//					printf("SET fullscreen\n");
-//					fullscreen(c);
-//					break;
-//				case 2:
-//					printf("SET toggle\n");
-//					toggle_fullscreen(c);
-//					break;
-//
-//				}
-//			}
-//
-//		}
+		window_t * c = find_client(e.window);
+		if (c) {
+			if (e.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
+					|| e.data.l[2] == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
+				switch (e.data.l[0]) {
+				case 0:
+					printf("SET normal\n");
+					unfullscreen(c);
+					break;
+				case 1:
+					printf("SET fullscreen\n");
+					fullscreen(c);
+					break;
+				case 2:
+					printf("SET toggle\n");
+					toggle_fullscreen(c);
+					break;
+
+				}
+			}
+			update_allocation();
+		}
 
 	} else if (e.message_type == cnx.atoms.WM_CHANGE_STATE) {
 		/* client should send this message to go iconic */
@@ -801,44 +787,80 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 
 }
 
-//void page_t::fullscreen(client_t * c) {
-//
-////	printf("FUULLLLSCREEENNN\n");
-////	if (fullscreen_client != 0) {
-////		fullscreen_client->unmap();
-////		fullscreen_client->unset_fullscreen();
-////		insert_client(fullscreen_client);
-////		fullscreen_client = 0;
-////		update_focus(0);
-////	}
-////
-////	fullscreen_client = c;
-////	tree_root->remove_client(c);
-////	c->set_fullscreen();
-////	//move_fullscreen(c);
-////	c->map();
-////	update_focus(c);
-////	c->focus();
-//}
-//
-//void page_t::unfullscreen(client_t * c) {
-////	if (fullscreen_client == c) {
-////		fullscreen_client = 0;
-////		c->unset_fullscreen();
-////		c->unmap();
-////		update_focus(0);
-////		insert_client(c);
-////		render();
-////	}
-//}
-//
-//void page_t::toggle_fullscreen(client_t * c) {
-////	if (c == fullscreen_client) {
-////		unfullscreen(c);
-////	} else {
-////		fullscreen(c);
-////	}
-//}
+void page_t::fullscreen(window_t * c) {
+
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		viewport_t * v = (*i);
+		window_list_t l = v->get_windows();
+		window_t * x = find_window(l, c->get_xwin());
+		if (x) {
+			if (v->fullscreen_client != 0) {
+				v->fullscreen_client->unmap();
+				v->fullscreen_client->unset_fullscreen();
+				v->add_client(v->fullscreen_client);
+				v->fullscreen_client = 0;
+				set_focus(0);
+			}
+
+			v->remove_client(c);
+			v->fullscreen_client = c;
+			c->set_fullscreen();
+			c->map();
+			c->move_resize(v->raw_aera);
+			set_focus(c);
+			c->focus();
+			cnx.raise_window(c->get_xwin());
+			return;
+		}
+		++i;
+	}
+
+	if (!viewport_list.empty()) {
+		viewport_t * v = viewport_list.front();
+
+		if (v->fullscreen_client != 0) {
+			v->fullscreen_client->unmap();
+			v->fullscreen_client->unset_fullscreen();
+			v->add_client(v->fullscreen_client);
+			v->fullscreen_client = 0;
+			set_focus(0);
+		}
+
+		v->remove_client(c);
+		v->fullscreen_client = c;
+		c->set_fullscreen();
+		c->map();
+		c->move_resize(v->raw_aera);
+		set_focus(c);
+		c->focus();
+		cnx.raise_window(c->get_xwin());
+		return;
+	}
+
+}
+
+void page_t::unfullscreen(window_t * c) {
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		viewport_t * v = (*i);
+		if (v->fullscreen_client == c) {
+			v->fullscreen_client->unmap();
+			v->fullscreen_client->unset_fullscreen();
+			set_focus(0);
+			v->remove_client(v->fullscreen_client);
+			v->add_client(v->fullscreen_client);
+			update_allocation();
+			rnd.add_damage_area(v->raw_aera);
+			return;
+		}
+		++i;
+	}
+}
+
+void page_t::toggle_fullscreen(window_t * c) {
+	/* TODO */
+}
 
 void page_t::print_window_attributes(Window w, XWindowAttributes & wa) {
 	//return;
@@ -890,6 +912,9 @@ void page_t::insert_client(window_t * w) {
 		}
 	} else {
 		add_client(w);
+		if (w->is_fullscreen()) {
+			fullscreen(w);
+		}
 	}
 	update_client_list();
 }
@@ -1029,6 +1054,8 @@ void page_t::page_event_handler_t::process_event(XEvent const & e) {
 }
 
 void page_t::remove_client(window_t * x) {
+	if(client_focused == x)
+		client_focused = 0;
 	std::list<viewport_t *>::iterator i = viewport_list.begin();
 	while (i != viewport_list.end()) {
 		(*i)->remove_client(x);

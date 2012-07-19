@@ -79,8 +79,6 @@ public:
 	xconnection_t cnx;
 	render_context_t rnd;
 
-	window_t * fullscreen_client;
-
 	renderable_list_t popups;
 
 	/* default cursor */
@@ -159,10 +157,6 @@ public:
 	void update_client_list();
 	void update_net_supported();
 
-	//void fullscreen(client_t * c);
-	//void unfullscreen(client_t * c);
-	//void toggle_fullscreen(client_t * c);
-
 	void insert_client(window_t * c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
@@ -218,6 +212,10 @@ public:
 
 	window_t * create_window(Window w, XWindowAttributes const & wa);
 	void delete_window(window_t * w);
+
+	void fullscreen(window_t * c);
+	void unfullscreen(window_t * c);
+	void toggle_fullscreen(window_t * c);
 
 };
 

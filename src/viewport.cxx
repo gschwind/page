@@ -56,7 +56,17 @@ void viewport_t::reconfigure(box_int_t const & area) {
 
 void viewport_t::repair1(cairo_t * cr, box_int_t const & area) {
 	assert(_subtree != 0);
-	_subtree->repair1(cr, area);
+
+	if (fullscreen_client != 0) {
+		if (fullscreen_client->is_visible()) {
+			cairo_save(cr);
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			fullscreen_client->repair1(cr, area);
+			cairo_restore(cr);
+		}
+	} else {
+		_subtree->repair1(cr, area);
+	}
 }
 
 box_int_t viewport_t::get_absolute_extend() {
@@ -65,7 +75,13 @@ box_int_t viewport_t::get_absolute_extend() {
 
 void viewport_t::activate_client(window_t * c) {
 	assert(_subtree != 0);
-	_subtree->activate_client(c);
+	if(c != fullscreen_client)
+		_subtree->activate_client(c);
+	else {
+		fullscreen_client->focus();
+		page.set_focus(c);
+		page.get_xconnection().raise_window(c->get_xwin());
+	}
 }
 
 window_list_t viewport_t::get_windows() {
@@ -74,8 +90,12 @@ window_list_t viewport_t::get_windows() {
 }
 
 void viewport_t::remove_client(window_t * c) {
-	assert(_subtree != 0);
-	_subtree->remove_client(c);
+	if (fullscreen_client == c) {
+		fullscreen_client = 0;
+	} else {
+		assert(_subtree != 0);
+		_subtree->remove_client(c);
+	}
 }
 
 void viewport_t::iconify_client(window_t * c) {
@@ -120,9 +140,11 @@ void viewport_t::fix_allocation() {
 			if (ps[X_LEFT] >= raw_aera.x
 					&& ps[X_LEFT] <= raw_aera.x + raw_aera.w) {
 				int top = std::max<int const>(ps[X_LEFT_START_Y], raw_aera.y);
-				int bottom = std::min<int const>(ps[X_LEFT_END_Y], raw_aera.y + raw_aera.h);
+				int bottom = std::min<int const>(ps[X_LEFT_END_Y],
+						raw_aera.y + raw_aera.h);
 				if (bottom - top > 0) {
-					xleft = std::max<int const>(xleft, ps[X_LEFT] - effective_aera.x);
+					xleft = std::max<int const>(xleft,
+							ps[X_LEFT] - effective_aera.x);
 				}
 			}
 
@@ -135,14 +157,16 @@ void viewport_t::fix_allocation() {
 				if (bottom - top > 0) {
 					xright = std::max<int const>(xright,
 							(raw_aera.x + raw_aera.w)
-									- (page.get_xconnection().root_size.w - ps[X_RIGHT]));
+									- (page.get_xconnection().root_size.w
+											- ps[X_RIGHT]));
 				}
 			}
 
 			if (ps[X_TOP] >= raw_aera.y
 					&& ps[X_TOP] <= raw_aera.y + raw_aera.h) {
 				int left = std::max<int const>(ps[X_TOP_START_X], raw_aera.x);
-				int right = std::min<int const>(ps[X_TOP_END_X], raw_aera.x + raw_aera.w);
+				int right = std::min<int const>(ps[X_TOP_END_X],
+						raw_aera.x + raw_aera.w);
 				if (right - left > 0) {
 					xtop = std::max<int const>(xtop, ps[X_TOP] - raw_aera.y);
 				}
@@ -151,13 +175,15 @@ void viewport_t::fix_allocation() {
 			if (page.get_xconnection().root_size.h - ps[X_BOTTOM] >= raw_aera.y
 					&& page.get_xconnection().root_size.h - ps[X_BOTTOM]
 							<= raw_aera.y + raw_aera.h) {
-				int left = std::max<int const>(ps[X_BOTTOM_START_X], raw_aera.x);
+				int left = std::max<int const>(ps[X_BOTTOM_START_X],
+						raw_aera.x);
 				int right = std::min<int const>(ps[X_BOTTOM_END_X],
 						raw_aera.x + raw_aera.w);
 				if (right - left > 0) {
 					xbottom = std::max<int const>(xbottom,
 							(effective_aera.h + effective_aera.y)
-									- (page.get_xconnection().root_size.h - ps[X_BOTTOM]));
+									- (page.get_xconnection().root_size.h
+											- ps[X_BOTTOM]));
 				}
 			}
 
