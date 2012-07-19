@@ -788,7 +788,7 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 }
 
 void page_t::fullscreen(window_t * c) {
-
+	/* WARNING: Call order is important, change it with caution */
 	std::list<viewport_t *>::iterator i = viewport_list.begin();
 	while (i != viewport_list.end()) {
 		viewport_t * v = (*i);
@@ -841,6 +841,7 @@ void page_t::fullscreen(window_t * c) {
 }
 
 void page_t::unfullscreen(window_t * c) {
+	/* WARNING: Call order is important, change it with caution */
 	std::list<viewport_t *>::iterator i = viewport_list.begin();
 	while (i != viewport_list.end()) {
 		viewport_t * v = (*i);
@@ -849,7 +850,7 @@ void page_t::unfullscreen(window_t * c) {
 			v->fullscreen_client->unset_fullscreen();
 			set_focus(0);
 			v->remove_client(v->fullscreen_client);
-			v->add_client(v->fullscreen_client);
+			v->add_client(c);
 			update_allocation();
 			rnd.add_damage_area(v->raw_aera);
 			return;
@@ -1000,7 +1001,7 @@ void page_t::page_event_handler_t::process_event(XEvent const & e) {
 //		page.process_event(e.xdestroywindow);
 //	}
 
-	if (e.type == ButtonPress) {
+	if (e.type == ButtonPress || e.type == ButtonRelease) {
 		page.cnx.last_know_time = e.xbutton.time;
 		window_t * c = page.find_client(e.xbutton.window);
 		if (c) {

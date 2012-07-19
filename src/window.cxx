@@ -60,7 +60,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 		create_render_context();
 	}
 
-	cnx.select_input(xwin, PropertyChangeMask);
+	cnx.select_input(xwin, PropertyChangeMask | ButtonPressMask | ButtonReleaseMask);
 
 }
 
