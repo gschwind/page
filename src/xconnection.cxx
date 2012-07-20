@@ -6,6 +6,7 @@
  */
 
 #include "xconnection.hxx"
+#include "X11/Xproto.h"
 
 namespace page {
 
@@ -33,7 +34,7 @@ xconnection_t::xconnection_t() {
 	grab_count = 0;
 	screen = DefaultScreen(dpy);
 	xroot = DefaultRootWindow(dpy) ;
-	if (!XGetWindowAttributes(dpy, xroot, &root_wa)) {
+	if (!get_window_attributes(xroot, &root_wa)) {
 		throw std::runtime_error("Cannot get root window attributes");
 	} else {
 		printf("Get root windows attribute Success\n");
@@ -53,7 +54,8 @@ xconnection_t::xconnection_t() {
 			throw std::runtime_error("X Server doesn't support Composite 0.4");
 		} else {
 			printf("using composite %d.%d\n", major, minor);
-			extension_request_name_map[composite_opcode] = xcomposite_request_name;
+			extension_request_name_map[composite_opcode] =
+					xcomposite_request_name;
 		}
 	} else {
 		throw std::runtime_error("X Server doesn't support Composite");
@@ -214,7 +216,11 @@ xconnection_t::xconnection_t() {
 
 void xconnection_t::grab() {
 	if (grab_count == 0) {
+		unsigned long serial = XNextRequest(dpy);
+		printf(">%08lu XGrabServer\n", serial);
 		XGrabServer(dpy);
+		serial = XNextRequest(dpy);
+		printf(">%08lu XSync\n", serial);
 		XSync(dpy, False);
 	}
 	++grab_count;
@@ -227,7 +233,11 @@ void xconnection_t::ungrab() {
 	}
 	--grab_count;
 	if (grab_count == 0) {
+		unsigned long serial = XNextRequest(dpy);
+		printf(">%08lu XUngrabServer\n", serial);
 		XUngrabServer(dpy);
+		serial = XNextRequest(dpy);
+		printf(">%08lu XFlush\n", serial);
 		XFlush(dpy);
 	}
 }
@@ -284,7 +294,7 @@ void xconnection_t::allow_input_passthrough(Window w) {
 
 void xconnection_t::unmap(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("UnMap serial: #%lu win: #%lu\n", serial, w);
+	printf(">%08lu X_UnmapWindow: win = %lu\n", serial, w);
 	XUnmapWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -304,7 +314,7 @@ void xconnection_t::reparentwindow(Window w, Window parent, int x, int y) {
 
 void xconnection_t::map(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("Map serial: #%lu win: #%lu\n", serial, w);
+	printf(">%08lu X_MapWindow: win = %lu\n", serial, w);
 	XMapWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -345,8 +355,8 @@ bool xconnection_t::register_cm() {
 		int count;
 		Atom winNameAtom = XInternAtom(dpy, "_NET_WM_NAME", False);
 
-		if (!XGetTextProperty(dpy, w, &tp, winNameAtom)
-				&& !XGetTextProperty(dpy, w, &tp, XA_WM_NAME )) {
+		if (!get_text_property(w, &tp, winNameAtom)
+				&& !get_text_property(w, &tp, XA_WM_NAME )) {
 			fprintf(stderr,
 					"Another composite manager is already running (0x%lx)\n",
 					(unsigned long) w);
@@ -376,20 +386,28 @@ bool xconnection_t::register_cm() {
 }
 
 void xconnection_t::add_to_save_set(Window w) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XAddToSaveSet: win = %lu\n", serial, w);
 	XAddToSaveSet(dpy, w);
 }
 
 void xconnection_t::remove_from_save_set(Window w) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XRemoveFromSaveSet: win = %lu\n", serial, w);
 	XRemoveFromSaveSet(dpy, w);
 }
 
 void xconnection_t::select_input(Window w, long int mask) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
+			(unsigned long) mask);
 	XSelectInput(dpy, w, mask);
 }
 
 void xconnection_t::move_resize(Window w, box_int_t const & size) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+	printf(">%08lu XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", serial, w,
+			size.w, size.h, size.x, size.y);
 	XMoveResizeWindow(dpy, w, size.x, size.y, size.w, size.h);
 	event_t e;
 	e.serial = serial;
@@ -399,7 +417,8 @@ void xconnection_t::move_resize(Window w, box_int_t const & size) {
 
 void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+	printf(">%08lu XSetWindowBorderWidth: win = %lu, width = %u\n", serial, w,
+			width);
 	XSetWindowBorderWidth(dpy, w, width);
 	event_t e;
 	e.serial = serial;
@@ -409,7 +428,7 @@ void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 
 void xconnection_t::raise_window(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+	printf(">%08lu XRaiseWindow: win = %lu\n", serial, w);
 	XRaiseWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -442,6 +461,78 @@ void xconnection_t::xconnection_t::process_next_event() {
 			v[i]->process_event(e);
 		}
 	}
+}
+
+int xconnection_t::change_property(Window w, Atom property, Atom type,
+		int format, int mode, unsigned char const * data, int nelements) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XChangeProperty: win = %lu\n", serial, w);
+	return XChangeProperty(dpy, w, property, type, format, mode, data,
+			nelements);
+}
+
+Status xconnection_t::get_window_attributes(Window w,
+		XWindowAttributes * window_attributes_return) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XGetWindowAttributes: win = %lu\n", serial, w);
+	return XGetWindowAttributes(dpy, w, window_attributes_return);
+}
+
+Status xconnection_t::get_text_property(Window w,
+		XTextProperty * text_prop_return, Atom property) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XGetTextProperty: win = %lu\n", serial, w);
+	return XGetTextProperty(dpy, w, text_prop_return, property);
+}
+
+int xconnection_t::lower_window(Window w) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XLowerWindow: win = %lu\n", serial, w);
+	return XLowerWindow(dpy, w);
+}
+
+int xconnection_t::configure_window(Window w, unsigned int value_mask,
+		XWindowChanges * values) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
+	return XConfigureWindow(dpy, w, value_mask, values);
+}
+
+char * xconnection_t::get_atom_name(Atom atom) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
+	return XGetAtomName(dpy, atom);
+}
+
+Status xconnection_t::send_event(Window w, Bool propagate, long event_mask,
+		XEvent* event_send) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XSendEvent: win = %lu\n", serial, w);
+	return XSendEvent(dpy, w, propagate, event_mask, event_send);
+}
+
+int xconnection_t::set_input_focus(Window focus, int revert_to, Time time) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
+	return XSetInputFocus(dpy, focus, revert_to, time);
+}
+
+int xconnection_t::get_window_property(Window w, Atom property,
+		long long_offset, long long_length, Bool c_delete, Atom req_type,
+		Atom* actual_type_return, int* actual_format_return,
+		unsigned long* nitems_return, unsigned long* bytes_after_return,
+		unsigned char** prop_return) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XGetWindowProperty: win = %lu\n", serial, w);
+	return XGetWindowProperty(dpy, w, property, long_offset, long_length,
+			c_delete, req_type, actual_type_return, actual_format_return,
+			nitems_return, bytes_after_return, prop_return);
+}
+
+XWMHints * xconnection_t::get_wm_hints(Window w) {
+	unsigned long serial = XNextRequest(dpy);
+	printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
+	return XGetWMHints(dpy, w);
 }
 
 }

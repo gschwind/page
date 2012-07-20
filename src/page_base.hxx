@@ -31,6 +31,8 @@ public:
 	std::string font;
 	std::string font_bold;
 
+	Time last_focus_time;
+
 	virtual ~page_base_t() { };
 	virtual void set_focus(window_t * w) = 0;
 	virtual render_context_t & get_render_context() = 0;

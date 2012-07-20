@@ -60,7 +60,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 		create_render_context();
 	}
 
-	cnx.select_input(xwin, PropertyChangeMask | ButtonPressMask | ButtonReleaseMask);
+	cnx.select_input(xwin, PropertyChangeMask);
 
 }
 
@@ -103,7 +103,7 @@ void window_t::setup_extends() {
 
 	/* set frame extend to 0 (I don't know why a client need this data) */
 	long frame_extends[4] = { 0, 0, 0, 0 };
-	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS,
+	cnx.change_property(xwin, cnx.atoms._NET_FRAME_EXTENTS,
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(frame_extends), 4);
 
@@ -116,12 +116,6 @@ window_t::~window_t() {
 
 	assert(created_window.find(xwin) != created_window.end());
 	created_window.erase(xwin);
-
-	//destroy_render_context();
-	//write_wm_state(WithdrawnState);
-	//XDeleteProperty(cnx.dpy, xwin, cnx.atoms._NET_FRAME_EXTENTS);
-	//cnx.select_input(xwin, NoEventMask);
-	//XRemoveFromSaveSet(cnx.dpy, xwin);
 }
 
 void window_t::read_all() {
@@ -152,7 +146,7 @@ long window_t::read_wm_state() {
 	unsigned long n, extra;
 	Atom real;
 
-	if (XGetWindowProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, 0L, 2L, False,
+	if (cnx.get_window_property(xwin, cnx.atoms.WM_STATE, 0L, 2L, False,
 			cnx.atoms.WM_STATE, &real, &format, &n, &extra,
 			(unsigned char **) &p) != Success)
 		return WithdrawnState;
@@ -198,14 +192,11 @@ void window_t::unlock() {
 void window_t::focus() {
 
 	if (_is_map && wm_input_focus) {
-		printf("Focus #%x\n", (unsigned int) xwin);
-		XSetInputFocus(cnx.dpy, xwin, RevertToParent, cnx.last_know_time);
+		cnx.set_input_focus(xwin, RevertToParent, cnx.last_know_time);
 	}
 
 	if (net_wm_protocols.find(cnx.atoms.WM_TAKE_FOCUS)
 			!= net_wm_protocols.end()) {
-		printf("TAKE_FOCUS\n");
-		//cnx.raise_window(xwin);
 		XEvent ev;
 		ev.xclient.display = cnx.dpy;
 		ev.xclient.type = ClientMessage;
@@ -214,13 +205,13 @@ void window_t::focus() {
 		ev.xclient.window = xwin;
 		ev.xclient.data.l[0] = cnx.atoms.WM_TAKE_FOCUS;
 		ev.xclient.data.l[1] = cnx.last_know_time;
-		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
+		cnx.send_event(xwin, False, NoEventMask, &ev);
 	}
 
 	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
 	write_net_wm_state();
 
-	XChangeProperty(cnx.dpy, cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&(xwin)), 1);
 
@@ -238,7 +229,7 @@ void window_t::read_wm_normal_hints() {
 XWMHints const *
 window_t::read_wm_hints() {
 	XFree(wm_hints);
-	wm_hints = XGetWMHints(cnx.dpy, xwin);
+	wm_hints = cnx.get_wm_hints(xwin);
 	return wm_hints;
 }
 
@@ -247,7 +238,7 @@ window_t::read_vm_name() {
 	has_wm_name = false;
 	char **list = NULL;
 	XTextProperty name;
-	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms.WM_NAME);
+	cnx.get_text_property(xwin, &name, cnx.atoms.WM_NAME);
 	if (!name.nitems) {
 		XFree(name.value);
 		wm_name = "none";
@@ -264,7 +255,7 @@ window_t::read_net_vm_name() {
 	has_net_wm_name = false;
 	char **list = NULL;
 	XTextProperty name;
-	XGetTextProperty(cnx.dpy, xwin, &name, cnx.atoms._NET_WM_NAME);
+	cnx.get_text_property(xwin, &name, cnx.atoms._NET_WM_NAME);
 	if (!name.nitems) {
 		XFree(name.value);
 		net_wm_name = "none";
@@ -344,7 +335,7 @@ void window_t::write_net_wm_state() const {
 		++i;
 	}
 
-	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM, 32,
+	cnx.change_property(xwin, cnx.atoms._NET_WM_STATE, cnx.atoms.ATOM, 32,
 			PropModeReplace, (unsigned char *) new_state, i);
 	delete[] new_state;
 }
@@ -359,7 +350,7 @@ void window_t::write_net_wm_allowed_actions() {
 		++i;
 	}
 
-	XChangeProperty(cnx.dpy, xwin, cnx.atoms._NET_WM_ALLOWED_ACTIONS,
+	cnx.change_property(xwin, cnx.atoms._NET_WM_ALLOWED_ACTIONS,
 			cnx.atoms.ATOM, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(data), i);
 	delete[] data;
@@ -393,7 +384,7 @@ void window_t::write_wm_state(long state) {
 	data.icon = None;
 
 	if (wm_state != WithdrawnState) {
-		XChangeProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE, cnx.atoms.WM_STATE,
+		cnx.change_property(xwin, cnx.atoms.WM_STATE, cnx.atoms.WM_STATE,
 				32, PropModeReplace, reinterpret_cast<unsigned char *>(&data),
 				2);
 	} else {

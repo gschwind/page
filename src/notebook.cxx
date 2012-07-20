@@ -604,9 +604,11 @@ void notebook_t::select_next() {
 			client_t * c = _selected.front();
 			update_client_position(c);
 			c->map();
-			c->focus();
 			c->write_wm_state(NormalState);
-			page.set_focus(c->get_window());
+			if (page.last_focus_time < cnx.last_know_time) {
+				c->focus();
+				page.set_focus(c->get_window());
+			}
 		}
 	}
 	back_buffer_is_valid = false;
@@ -633,9 +635,11 @@ void notebook_t::rounded_rectangle(cairo_t * cr, double x, double y, double w,
 void notebook_t::set_selected(client_t * c) {
 	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	c->map();
-	c->focus();
 	c->write_wm_state(NormalState);
-	page.set_focus(c->get_window());
+	if (page.last_focus_time < cnx.last_know_time) {
+		c->focus();
+		page.set_focus(c->get_window());
+	}
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
@@ -706,7 +710,8 @@ void notebook_t::process_drag_and_drop(client_t * c, int start_x, int start_y) {
 
 				if (popup_is_added) {
 					box_int_t old_area = p1->get_absolute_extend();
-					box_int_t new_area(ev.xmotion.x + 10, ev.xmotion.y, old_area.w, old_area.h);
+					box_int_t new_area(ev.xmotion.x + 10, ev.xmotion.y,
+							old_area.w, old_area.h);
 					p1->reconfigure(new_area);
 					rnd.add_damage_overlay_area(old_area);
 					rnd.add_damage_overlay_area(new_area);

@@ -157,7 +157,7 @@ public:
 		ev.xclient.window = xwin;
 		ev.xclient.data.l[0] = cnx.atoms.WM_DELETE_WINDOW;
 		ev.xclient.data.l[1] = t;
-		XSendEvent(cnx.dpy, xwin, False, NoEventMask, &ev);
+		cnx.send_event(xwin, False, NoEventMask, &ev);
 	}
 
 	void set_default_action() {

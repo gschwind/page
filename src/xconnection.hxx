@@ -336,7 +336,7 @@ struct xconnection_t {
 		T * result = 0;
 		T * data;
 
-		res = XGetWindowProperty(dpy, win, prop, 0L,
+		res = get_window_property(win, prop, 0L,
 				std::numeric_limits<int>::max(), False, type, &ret_type,
 				&ret_size, &ret_items, &bytes_left, &xdata);
 		if (res == Success) {
@@ -398,6 +398,36 @@ struct xconnection_t {
 	void add_event_handler(xevent_handler_t * func);
 	void remove_event_handler(xevent_handler_t * func);
 	void process_next_event();
+
+	int change_property(Window w, Atom property, Atom type, int format,
+			int mode, unsigned char const * data, int nelements);
+
+	Status get_window_attributes(Window w,
+			XWindowAttributes * window_attributes_return);
+
+	Status get_text_property(Window w, XTextProperty * text_prop_return,
+			Atom property);
+
+	int lower_window(Window w);
+
+	int configure_window(Window w, unsigned int value_mask,
+			XWindowChanges * values);
+
+	char * get_atom_name(Atom atom);
+
+	Status send_event(Window w, Bool propagate, long event_mask,
+			XEvent* event_send);
+
+	int set_input_focus(Window focus, int revert_to, Time time);
+
+	int get_window_property(Window w, Atom property, long long_offset,
+			long long_length, Bool c_delete, Atom req_type,
+			Atom* actual_type_return, int* actual_format_return,
+			unsigned long* nitems_return, unsigned long* bytes_after_return,
+			unsigned char** prop_return);
+
+	XWMHints * get_wm_hints(Window w);
+
 };
 
 }

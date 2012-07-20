@@ -52,7 +52,7 @@ void client_t::update_size(int w, int h) {
 	width = w;
 	height = h;
 
-	this->w.read_wm_normal_hints();
+	//this->w.read_wm_normal_hints();
 	XSizeHints const * size_hints = this->w.get_size_hints();
 
 	if (size_hints->flags & PMaxSize) {
