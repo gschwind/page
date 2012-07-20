@@ -95,6 +95,8 @@ public:
 
 	std::list<viewport_t *> viewport_list;
 
+	bool _super_is_pressed;
+
 private:
 	window_t * client_focused;
 public:
@@ -126,6 +128,7 @@ public:
 	bool get_all(Window win, Atom prop, Atom type, int size,
 			unsigned char **data, unsigned int *num);
 
+	void process_event(XKeyEvent const & e);
 	/* SubstructureNotifyMask */
 	void process_event(XCirculateEvent const & e);
 	void process_event(XConfigureEvent const & e);

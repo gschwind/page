@@ -5,6 +5,7 @@
  *
  */
 
+#include <X11/keysymdef.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrender.h>
@@ -190,6 +191,7 @@ void page_t::run() {
 	rnd.add_damage_area(cnx.root_size);
 	rnd.render_flush();
 	XSync(cnx.dpy, False);
+	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_f), Mod4Mask, cnx.xroot, True, GrabModeAsync, GrabModeAsync);
 
 	/* add page event handler */
 	cnx.add_event_handler(&event_handler);
@@ -240,7 +242,8 @@ void page_t::scan() {
 
 		/* scan is ended, start to listen root event */
 	XSelectInput(cnx.dpy, cnx.xroot,
-			ButtonPressMask | SubstructureNotifyMask | SubstructureRedirectMask);
+			ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask
+					| SubstructureNotifyMask | SubstructureRedirectMask);
 	cnx.ungrab();
 	update_window_z();
 	update_client_list();
@@ -342,6 +345,37 @@ bool page_t::get_text_prop(Window w, Atom atom, std::string & text) {
 		return false;
 	text = (char const *) name.value;
 	return true;
+}
+
+void page_t::process_event(XKeyEvent const & e) {
+	int n;
+	KeySym * k = XGetKeyboardMapping(cnx.dpy, e.keycode, 1, &n);
+
+	if(k == 0)
+		return;
+	if(n == 0) {
+		XFree(k);
+		return;
+	}
+
+	printf("key : %x\n", (unsigned)k[0]);
+
+	if (XK_Super_L == k[0]) {
+		if (e.type == KeyPress) {
+			_super_is_pressed = true;
+		} else {
+			_super_is_pressed = false;
+		}
+	}
+
+	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
+		if (client_focused != 0) {
+			toggle_fullscreen(client_focused);
+		}
+	}
+
+	XFree(k);
+
 }
 
 void page_t::process_event(XCirculateEvent const & e) {
@@ -632,10 +666,14 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				switch (e.data.l[0]) {
 				case 0:
 					printf("SET normal\n");
+					if(!c->is_fullscreen())
+						break;
 					unfullscreen(c);
 					break;
 				case 1:
 					printf("SET fullscreen\n");
+					if(c->is_fullscreen())
+						break;
 					fullscreen(c);
 					break;
 				case 2:
@@ -791,7 +829,26 @@ void page_t::unfullscreen(window_t * c) {
 }
 
 void page_t::toggle_fullscreen(window_t * c) {
-	/* TODO */
+
+	/* if is already full screen */
+	std::list<viewport_t *>::iterator i = viewport_list.begin();
+	while (i != viewport_list.end()) {
+		viewport_t * v = (*i);
+		if (v->fullscreen_client == c) {
+			v->fullscreen_client->unmap();
+			v->fullscreen_client->unset_fullscreen();
+			set_focus(0);
+			v->remove_client(v->fullscreen_client);
+			v->add_client(c);
+			update_allocation();
+			rnd.add_damage_area(v->raw_aera);
+			return;
+		}
+		++i;
+	}
+
+	/* if it is not fullscreen */
+	fullscreen(c);
 }
 
 void page_t::print_window_attributes(Window w, XWindowAttributes & wa) {
@@ -925,7 +982,9 @@ void page_t::page_event_handler_t::process_event(XEvent const & e) {
 		}
 	}
 
-	if (e.type == CirculateNotify) {
+	if (e.type == KeyPress || e.type == KeyRelease) {
+		page.process_event(e.xkey);
+	} else if (e.type == CirculateNotify) {
 		page.process_event(e.xcirculate);
 	} else if (e.type == ConfigureNotify) {
 		page.process_event(e.xconfigure);
