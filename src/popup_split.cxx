@@ -20,6 +20,7 @@ void popup_split_t::repair1(cairo_t * cr, box_int_t const & a) {
 	box_int_t i = area & a;
 	if (i.w > 0 && i.h > 0) {
 		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
 		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 		cairo_fill(cr);

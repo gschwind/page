@@ -20,9 +20,14 @@ void popup_notebook0_t::repair1(cairo_t * cr, box_int_t const & a) {
 		cairo_save(cr);
 		cairo_set_line_width(cr, 2.0);
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-		cairo_set_source_rgba(cr, 0.8, 0.8, 0.0, 0.75);
+
+		//3465A4
+		cairo_set_source_rgba(cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 0.15);
 		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
 		cairo_clip(cr);
+		cairo_rectangle(cr, area.x + 3, area.y + 3, area.w - 6, area.h - 6);
+		cairo_fill(cr);
+		cairo_set_source_rgba(cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 1.0);
 		cairo_rectangle(cr, area.x + 3, area.y + 3, area.w - 6, area.h - 6);
 		cairo_stroke(cr);
 		cairo_restore(cr);

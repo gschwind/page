@@ -95,8 +95,6 @@ public:
 
 	std::list<viewport_t *> viewport_list;
 
-	bool _super_is_pressed;
-
 private:
 	window_t * client_focused;
 public:

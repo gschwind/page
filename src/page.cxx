@@ -360,14 +360,6 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	printf("key : %x\n", (unsigned)k[0]);
 
-	if (XK_Super_L == k[0]) {
-		if (e.type == KeyPress) {
-			_super_is_pressed = true;
-		} else {
-			_super_is_pressed = false;
-		}
-	}
-
 	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		if (client_focused != 0) {
 			toggle_fullscreen(client_focused);
