@@ -192,6 +192,7 @@ void page_t::run() {
 	rnd.render_flush();
 	XSync(cnx.dpy, False);
 	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_f), Mod4Mask, cnx.xroot, True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_q), Mod4Mask, cnx.xroot, True, GrabModeAsync, GrabModeAsync);
 
 	/* add page event handler */
 	cnx.add_event_handler(&event_handler);
@@ -366,6 +367,12 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 	}
 
+	if (XK_q == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
+		running = false;
+	}
+
+
+
 	XFree(k);
 
 }
@@ -530,7 +537,7 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 void page_t::process_event(XConfigureRequestEvent const & e) {
 	window_t * x = find_window(e.window);
 	if (x) {
-		rnd.add_damage_area(x->get_absolute_extend());
+		//rnd.add_damage_area(x->get_absolute_extend());
 		window_t * w = find_client(e.window);
 		if (w) {
 			box_int_t size = x->get_absolute_extend();
@@ -615,8 +622,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 			activate_client(c);
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
+		x->read_net_vm_name();
 		x->read_title();
 	} else if (e.atom == cnx.atoms.WM_NAME) {
+		x->read_vm_name();
 		x->read_title();
 	} else if (e.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
 		if (e.state == PropertyNewValue) {

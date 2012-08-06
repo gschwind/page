@@ -465,11 +465,26 @@ void notebook_t::noteboot_event_handler_t::process_event(XEvent const & e) {
 				nbk.split(HORIZONTAL_SPLIT);
 			} else if (nbk.button_pop.is_inside(e.xbutton.x, e.xbutton.y)) {
 				nbk.page.default_window_pop = &nbk;
+				nbk.rnd.add_damage_area(nbk.tab_area);
 			}
 
 			return;
 		}
 
+	} else if (e.type == PropertyNotify) {
+		if (e.xproperty.atom == nbk.cnx.atoms._NET_WM_ICON) {
+			window_t * w = window_t::find_window(&nbk.cnx, e.xproperty.window);
+			if (!w && nbk.client_map.find(w) != nbk.client_map.end()) {
+				nbk.client_map[w]->init_icon();
+				nbk.rnd.add_damage_area(nbk.tab_area);
+			}
+		} else if (e.xproperty.atom == nbk.cnx.atoms._NET_WM_NAME
+				|| e.xproperty.atom == nbk.cnx.atoms.WM_NAME) {
+			window_t * w = window_t::find_window(&nbk.cnx, e.xproperty.window);
+			if (!w && nbk.client_map.find(w) != nbk.client_map.end()) {
+				nbk.rnd.add_damage_area(nbk.tab_area);
+			}
+		}
 	}
 }
 
