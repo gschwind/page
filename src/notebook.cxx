@@ -869,7 +869,9 @@ void notebook_t::update_client_position(client_t * c) {
 
 	printf("resize %dx%d+%d+%d\n", client_size.w, client_size.h, client_size.x,
 			client_size.y);
+	rnd.add_damage_area(c->w.get_absolute_extend());
 	c->w.reconfigure(client_size);
+	rnd.add_damage_area(c->w.get_absolute_extend());
 
 }
 

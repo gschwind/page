@@ -97,8 +97,6 @@ xconnection_t::xconnection_t() {
 	composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
 	allow_input_passthrough(composite_overlay);
 
-	//XCompositeRedirectSubwindows(dpy, xroot, CompositeRedirectManual);
-
 	/* initialize all atoms for this connection */
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
 
@@ -446,7 +444,7 @@ void xconnection_t::remove_event_handler(xevent_handler_t * func) {
 	event_handler_list.remove(func);
 }
 
-void xconnection_t::xconnection_t::process_next_event() {
+void xconnection_t::process_next_event() {
 	XEvent e;
 	xnextevent(&e);
 
@@ -460,6 +458,28 @@ void xconnection_t::xconnection_t::process_next_event() {
 				v[i]) != event_handler_list.end()) {
 			v[i]->process_event(e);
 		}
+	}
+}
+
+bool xconnection_t::process_check_event() {
+	XEvent e;
+	if (XCheckMaskEvent(dpy, 0xffffffff, &e)) {
+
+		/* since event handler can be removed on event, we copy it
+		 * and check for event removed each time.
+		 */
+		std::vector<xevent_handler_t *> v(event_handler_list.begin(),
+				event_handler_list.end());
+		for (int i = 0; i < v.size(); ++i) {
+			if (std::find(event_handler_list.begin(), event_handler_list.end(),
+					v[i]) != event_handler_list.end()) {
+				v[i]->process_event(e);
+			}
+		}
+
+		return true;
+	} else {
+		return false;
 	}
 }
 

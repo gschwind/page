@@ -398,6 +398,7 @@ struct xconnection_t {
 	void add_event_handler(xevent_handler_t * func);
 	void remove_event_handler(xevent_handler_t * func);
 	void process_next_event();
+	bool process_check_event();
 
 	int change_property(Window w, Atom property, Atom type, int format,
 			int mode, unsigned char const * data, int nelements);

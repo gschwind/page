@@ -37,15 +37,10 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
-		"ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify",
-		"LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose",
-		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
-		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
-		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
-		"GravityNotify", "ResizeRequest", "CirculateNotify", "CirculateRequest",
-		"PropertyNotify", "SelectionClear", "SelectionRequest",
-		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
+char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease", "ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify", "LeaveNotify",
+		"FocusIn", "FocusOut", "KeymapNotify", "Expose", "GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify", "DestroyNotify", "UnmapNotify",
+		"MapNotify", "MapRequest", "ReparentNotify", "ConfigureNotify", "ConfigureRequest", "GravityNotify", "ResizeRequest", "CirculateNotify",
+		"CirculateRequest", "PropertyNotify", "SelectionClear", "SelectionRequest", "SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
 		"GenericEvent" };
 
 page_t::page_t(int argc, char ** argv) :
@@ -81,8 +76,7 @@ page_t::page_t(int argc, char ** argv) :
 	font = sfont;
 	g_free(sfont);
 
-	gchar * sfont_bold = g_key_file_get_string(conf, "default",
-			"font_bold_file", 0);
+	gchar * sfont_bold = g_key_file_get_string(conf, "default", "font_bold_file", 0);
 	if (theme == 0) {
 		throw std::runtime_error("no font_file found in config file");
 	}
@@ -124,13 +118,23 @@ void page_t::run() {
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx.dpy, &n);
 
 	if (n < 1) {
-		printf("NoScreen Found\n");
-		exit(1);
+		printf("No Xinerama Screen Found\n");
+
+		box_t<int> x(0, 0, cnx.root_size.w, cnx.root_size.h);
+
+		if (!has_fullscreen_size) {
+			has_fullscreen_size = true;
+			fullscreen_position = x;
+		}
+
+		viewport_t * v = new viewport_t(*this, x);
+		viewport_list.push_back(v);
+		v->z = -1;
+		rnd.add(v);
 	}
 
 	for (int i = 0; i < n; ++i) {
-		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
-				info[i].height);
+		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width, info[i].height);
 		if (!has_fullscreen_size) {
 			has_fullscreen_size = true;
 			fullscreen_position = x;
@@ -148,34 +152,31 @@ void page_t::run() {
 
 	/* update number of desktop */
 	int32_t number_of_desktop = 1;
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_NUMBER_OF_DESKTOPS,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_NUMBER_OF_DESKTOPS, cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
 
 	/* define desktop geometry */
 	long desktop_geometry[2];
 	desktop_geometry[0] = cnx.root_size.w;
 	desktop_geometry[1] = cnx.root_size.h;
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_DESKTOP_GEOMETRY,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_DESKTOP_GEOMETRY, cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_DESKTOP_VIEWPORT,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(viewport), 2);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_DESKTOP_VIEWPORT, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(viewport), 2);
 
 	/* set current desktop */
 	long current_desktop = 0;
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CURRENT_DESKTOP,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&current_desktop), 1);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CURRENT_DESKTOP, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&current_desktop),
+			1);
 
 	long showing_desktop = 0;
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_SHOWING_DESKTOP,
-			cnx.atoms.CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&showing_desktop), 1);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_SHOWING_DESKTOP, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&showing_desktop),
+			1);
+
+	/* add page event handler */
+	cnx.add_event_handler(&event_handler);
 
 	scan();
 	update_allocation();
@@ -185,17 +186,13 @@ void page_t::run() {
 	workarea[1] = 0;
 	workarea[2] = cnx.root_size.w;
 	workarea[3] = cnx.root_size.h;
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_WORKAREA, cnx.atoms.CARDINAL,
-			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_WORKAREA, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
 
 	rnd.add_damage_area(cnx.root_size);
 	rnd.render_flush();
 	XSync(cnx.dpy, False);
 	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_f), Mod4Mask, cnx.xroot, True, GrabModeAsync, GrabModeAsync);
 	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_q), Mod4Mask, cnx.xroot, True, GrabModeAsync, GrabModeAsync);
-
-	/* add page event handler */
-	cnx.add_event_handler(&event_handler);
 
 	running = true;
 	while (running) {
@@ -225,26 +222,24 @@ void page_t::scan() {
 		for (unsigned i = 0; i < num; ++i) {
 			if (!cnx.get_window_attributes(wins[i], &wa))
 				continue;
-			print_window_attributes(wins[i], wa);
+			//print_window_attributes(wins[i], wa);
 			window_t * w = create_window(wins[i], wa);
 
 			if (!w->override_redirect() && !w->is_input_only() && w->is_map()) {
 				/* ICCCM top level window */
 				manage(w);
-			} else
+			} else if (!w->override_redirect() && !w->is_input_only() && !w->is_map() && w->read_wm_state() == IconicState) {
+				/* special case were a window is on IconicState state */
+				manage(w);
+			}
 
-			/* special case were a window is on IconicState state */
-			if (!w->override_redirect() && !w->is_input_only()
-			&& !w->is_map()
-			&& w->read_wm_state() == IconicState) {manage (w);
-}			}
-			XFree(wins);
+			XFlush(cnx.dpy);
 		}
+		XFree(wins);
+	}
 
-		/* scan is ended, start to listen root event */
-	XSelectInput(cnx.dpy, cnx.xroot,
-			ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask
-					| SubstructureNotifyMask | SubstructureRedirectMask);
+	/* scan is ended, start to listen root event */
+	XSelectInput(cnx.dpy, cnx.xroot, ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | SubstructureNotifyMask | SubstructureRedirectMask);
 	cnx.ungrab();
 	update_window_z();
 	update_client_list();
@@ -301,13 +296,11 @@ void page_t::update_net_supported() {
 
 	long * list = new long[supported_list.size()];
 	int k = 0;
-	for (std::list<Atom>::iterator i = supported_list.begin();
-			i != supported_list.end(); ++i, ++k) {
+	for (std::list<Atom>::iterator i = supported_list.begin(); i != supported_list.end(); ++i, ++k) {
 		list[k] = *i;
 	}
 
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_SUPPORTED, cnx.atoms.ATOM, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(list), k);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_SUPPORTED, cnx.atoms.ATOM, 32, PropModeReplace, reinterpret_cast<unsigned char *>(list), k);
 
 	delete[] list;
 
@@ -328,11 +321,8 @@ void page_t::update_client_list() {
 		++i;
 	}
 
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING,
-			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(data), k);
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(data), k);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), k);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), k);
 
 	delete[] data;
 }
@@ -352,14 +342,14 @@ void page_t::process_event(XKeyEvent const & e) {
 	int n;
 	KeySym * k = XGetKeyboardMapping(cnx.dpy, e.keycode, 1, &n);
 
-	if(k == 0)
+	if (k == 0)
 		return;
-	if(n == 0) {
+	if (n == 0) {
 		XFree(k);
 		return;
 	}
 
-	printf("key : %x\n", (unsigned)k[0]);
+	printf("key : %x\n", (unsigned) k[0]);
 
 	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		if (client_focused != 0) {
@@ -370,8 +360,6 @@ void page_t::process_event(XKeyEvent const & e) {
 	if (XK_q == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		running = false;
 	}
-
-
 
 	XFree(k);
 
@@ -395,8 +383,7 @@ void page_t::process_event(XCirculateEvent const & e) {
 }
 
 void page_t::process_event(XConfigureEvent const & e) {
-	printf("Configure %dx%d+%d+%d above:%lu, event:%lu, window:%lu \n", e.width,
-			e.height, e.x, e.y, e.above, e.event, e.window);
+	printf("Configure %dx%d+%d+%d above:%lu, event:%lu, window:%lu \n", e.width, e.height, e.x, e.y, e.above, e.event, e.window);
 	/* track window position and stacking */
 	window_t * x = find_window(e.window);
 	if (x) {
@@ -662,18 +649,17 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == cnx.atoms._NET_WM_STATE) {
 		window_t * c = find_client(e.window);
 		if (c) {
-			if (e.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
-					|| e.data.l[2] == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
+			if (e.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN || e.data.l[2] == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
 				switch (e.data.l[0]) {
 				case 0:
 					printf("SET normal\n");
-					if(!c->is_fullscreen())
+					if (!c->is_fullscreen())
 						break;
 					unfullscreen(c);
 					break;
 				case 1:
 					printf("SET fullscreen\n");
-					if(c->is_fullscreen())
+					if (c->is_fullscreen())
 						break;
 					fullscreen(c);
 					break;
@@ -719,7 +705,6 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
-
 	/* create an empty region */
 	XserverRegion region = XFixesCreateRegion(cnx.dpy, 0, 0);
 
@@ -939,26 +924,17 @@ void page_t::set_window_above(window_t * w, Window above) {
 void page_t::page_event_handler_t::process_event(XEvent const & e) {
 
 	if (e.type == MapNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xmap.serial,
-				x_event_name[e.type], e.xmap.event, e.xmap.window);
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xmap.serial, x_event_name[e.type], e.xmap.event, e.xmap.window);
 	} else if (e.type == DestroyNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xdestroywindow.serial,
-				x_event_name[e.type], e.xdestroywindow.event,
-				e.xdestroywindow.window);
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xdestroywindow.serial, x_event_name[e.type], e.xdestroywindow.event, e.xdestroywindow.window);
 	} else if (e.type == MapRequest) {
-		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xmaprequest.serial,
-				x_event_name[e.type], e.xmaprequest.parent,
-				e.xmaprequest.window);
+		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xmaprequest.serial, x_event_name[e.type], e.xmaprequest.parent, e.xmaprequest.window);
 	} else if (e.type == UnmapNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xunmap.serial,
-				x_event_name[e.type], e.xunmap.event, e.xunmap.window);
+		printf("#%08lu %s: event = %lu, win = %lu\n", e.xunmap.serial, x_event_name[e.type], e.xunmap.event, e.xunmap.window);
 	} else if (e.type == CreateNotify) {
-		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xcreatewindow.serial,
-				x_event_name[e.type], e.xcreatewindow.parent,
-				e.xcreatewindow.window);
+		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xcreatewindow.serial, x_event_name[e.type], e.xcreatewindow.parent, e.xcreatewindow.window);
 	} else if (e.type < LASTEvent && e.type > 0) {
-		printf("#%08lu %s: win: #%lu\n", e.xany.serial, x_event_name[e.type],
-				e.xany.window);
+		printf("#%08lu %s: win: #%lu\n", e.xany.serial, x_event_name[e.type], e.xany.window);
 	}
 
 //	page.cnx.grab();
@@ -1019,10 +995,10 @@ void page_t::page_event_handler_t::process_event(XEvent const & e) {
 
 	//page.cnx.ungrab();
 
-	if (!page.cnx.is_not_grab()) {
-		fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
-		exit(EXIT_FAILURE);
-	}
+//	if (!page.cnx.is_not_grab()) {
+//		fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
+//		exit(EXIT_FAILURE);
+//	}
 
 }
 
@@ -1077,8 +1053,7 @@ void page_t::read_viewport_layout() {
 	}
 
 	for (int i = 0; i < n; ++i) {
-		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
-				info[i].height);
+		box_t<int> x(info[i].x_org, info[i].y_org, info[i].width, info[i].height);
 		viewport_list.push_back(new viewport_t(*this, x));
 	}
 
