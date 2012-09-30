@@ -11,6 +11,9 @@
 #include <X11/Xlib.h>
 
 #include <algorithm>
+#include <list>
+#include <sstream>
+#include <iostream>
 
 namespace page {
 
@@ -37,25 +40,35 @@ struct box_t {
 
 	}
 
-	/* compute intersection */
-	box_t<T> operator&(box_t<T> const & box) const {
+	static box_t<T> intersection(box_t<T> const & b0, box_t<T> const & b1) {
+		T left = std::max(b0.x, b1.x);
+		T right = std::min(b0.x + b0.w, b1.x + b1.w);
+		T top = std::max(b0.y, b1.y);
+		T bottom = std::min(b0.y + b0.h, b1.y + b1.h);
 
-		T left = std::max(x, box.x);
-		T right = std::min(x + w, box.x + box.w);
-		T top = std::max(y, box.y);
-		T bottom = std::min(y + h, box.y + box.h);
+		//std::cout << box_t(left, right, top, bottom).to_string() << std::endl;
 
 		if (right - left < 0 || bottom - top < 0) {
 			return box_t<T>(0, 0, 0, 0);
 		} else {
 			return box_t<T>(left, top, right - left, bottom - top);
 		}
+	}
 
+	/* compute intersection */
+	box_t<T> operator&(box_t<T> const & box) const {
+		return intersection(*this, box);
 	}
 
 	template<typename T1>
 	friend box_t<T1> get_max_extand(box_t<T1> const & box0,
 			box_t<T1> const & box1);
+
+	std::string to_string() const {
+		std::ostringstream os;
+		os << "(" << this->x << "," << this->y << "," << this->w << "," << this->h << ")";
+		return os.str();
+	}
 
 
 };

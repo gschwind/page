@@ -22,7 +22,7 @@ public:
 	virtual void repair1(cairo_t * cr, box_int_t const & area) = 0;
 	virtual box_int_t get_absolute_extend() = 0;
 	virtual void reconfigure(box_int_t const & area) = 0;
-	virtual bool is_visible()= 0;
+	virtual bool is_visible() = 0;
 
 };
 

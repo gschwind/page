@@ -100,6 +100,11 @@ class notebook_t: public tree_t {
 	box_t<int> left_area;
 	box_t<int> right_area;
 
+	box_t<int> popup_top_area;
+	box_t<int> popup_bottom_area;
+	box_t<int> popup_left_area;
+	box_t<int> popup_right_area;
+
 	client_list_t _clients;
 	client_list_t _selected;
 

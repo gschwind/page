@@ -8,6 +8,8 @@
 #ifndef REGION_HXX_
 #define REGION_HXX_
 
+#include <iostream>
+#include <sstream>
 #include "box.hxx"
 
 namespace page {
@@ -32,7 +34,7 @@ private:
 		}
 	}
 
-	/* merge 2 reactangle, not efficiently */
+	/* merge 2 rectangle, not efficiently */
 	static bool merge_area_macro(box_list_t & list) {
 
 		box_list_t result;
@@ -94,9 +96,12 @@ private:
 
 	/* box0 - box1 */
 	static region_t::box_list_t substract_box(_box_t const & box0, _box_t const & box1) {
+		//std::cout <<"a "<< box0.to_string() << std::endl;
+		//std::cout <<"b "<< box1.to_string() << std::endl;
 		box_list_t result;
 
 		box_int_t inter_sec = box0 & box1;
+		//std::cout <<"c "<< inter_sec.to_string() << std::endl;
 
 		if (inter_sec.w > 0 && inter_sec.h > 0) {
 			/* top box */
@@ -207,6 +212,8 @@ private:
 			result.push_back(box0);
 		}
 
+
+
 		while (merge_area_macro(result))
 			continue;
 
@@ -226,6 +233,10 @@ public:
 
 	region_t(box_t<T> const & b) {
 		area.push_back(b);
+	}
+
+	region_t(T x, T y, T w, T h) {
+		area.push_back(box_t<T>(x, y, w, h));
 	}
 
 	region_t & operator=(region_t const & r) {
@@ -272,12 +283,14 @@ public:
 	}
 
 	region_t & operator+=(box_t<T> const & b) {
+		//std::cout << "XX this =" << this->to_string() << std::endl;
 		*this -= b;
+		//std::cout << "X@ this =" << this->to_string() << std::endl;
 		area.push_back(b);
-
+		//std::cout << "X# this =" << this->to_string() << std::endl;
 		while (merge_area_macro(area))
 			continue;
-
+		//std::cout << "X%% this =" << this->to_string() << std::endl;
 		return *this;
 	}
 
@@ -294,6 +307,7 @@ public:
 			result += *i;
 			++i;
 		}
+		//std::cout << "X$ this =" << result.to_string() << std::endl;
 		return result;
 	}
 
@@ -311,6 +325,21 @@ public:
 
 	typename std::list<box_t<T> >::const_iterator end() const {
 		return area.end();
+	}
+
+	std::string to_string() const {
+		std::ostringstream os;
+		//os << area.size();
+		typename std::list<box_t<T> >::const_iterator i = area.begin();
+		while(i != area.end()) {
+			if(i != area.begin())
+				os << ",";
+			os << (*i).to_string();
+			++i;
+		}
+
+		return os.str();
+
 	}
 
 

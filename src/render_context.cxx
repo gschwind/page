@@ -160,7 +160,7 @@ void render_context_t::repair_overlay(box_int_t const & area) {
 		cairo_stroke(composite_overlay_cr);
 	}
 
-	cairo_surface_flush(composite_overlay_s);
+	//cairo_surface_flush(composite_overlay_s);
 
 }
 

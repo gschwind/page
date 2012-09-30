@@ -118,6 +118,12 @@ public:
 
 	bool is_dock();
 	bool is_fullscreen();
+	bool demands_atteniion();
+
+	void set_net_wm_state(Atom x);
+	void unset_net_wm_state(Atom x);
+	void toggle_net_wm_state(Atom x);
+
 	inline bool is_window(Window w) {
 		return w == xwin;
 	}

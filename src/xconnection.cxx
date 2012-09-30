@@ -96,6 +96,7 @@ xconnection_t::xconnection_t() {
 	/* map & passtrough the overlay */
 	composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
 	allow_input_passthrough(composite_overlay);
+	XCompositeRedirectSubwindows(dpy, xroot, CompositeRedirectManual);
 
 	/* initialize all atoms for this connection */
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)

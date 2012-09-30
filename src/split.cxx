@@ -274,7 +274,7 @@ void split_t::process_drag_and_drop() {
 			page.get_render_context().add_damage_overlay_area(slider_area);
 		}
 
-		page.get_render_context().render_flush();
+		//page.get_render_context().render_flush();
 	} while (ev.type != ButtonRelease);
 	page.get_render_context().overlay_remove(p);
 	delete p;

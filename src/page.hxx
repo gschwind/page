@@ -95,6 +95,8 @@ public:
 
 	std::list<viewport_t *> viewport_list;
 
+	std::list<Atom> supported_list;
+
 private:
 	window_t * client_focused;
 public:
@@ -201,7 +203,7 @@ public:
 
 	void render_flush();
 
-	void set_window_above(window_t * w, Window above);
+	void insert_window_above_of(window_t * w, Window above);
 
 	void remove_client(window_t * x);
 	void activate_client(window_t * x);
@@ -211,12 +213,14 @@ public:
 
 	void update_window_z();
 
-	window_t * create_window(Window w, XWindowAttributes const & wa);
+	window_t * insert_new_window(Window w, XWindowAttributes const & wa);
 	void delete_window(window_t * w);
 
 	void fullscreen(window_t * c);
 	void unfullscreen(window_t * c);
 	void toggle_fullscreen(window_t * c);
+
+	window_list_t get_windows();
 
 };
 

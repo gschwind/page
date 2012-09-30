@@ -67,7 +67,8 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 void window_t::create_render_context() {
 	if (window_surf == 0 && damage == None) {
 		/* redirect to back buffer */
-		XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+		// using XCompositeRedirectSubwindows
+		//XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
 		_is_composite_redirected = true;
 		/* create the cairo surface */
 		window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, visual, size.w,
@@ -76,6 +77,8 @@ void window_t::create_render_context() {
 		damage = XDamageCreate(cnx.dpy, xwin, XDamageReportNonEmpty);
 		if (damage)
 			XDamageSubtract(cnx.dpy, damage, None, None);
+		else
+			printf("DAMAGE FAIL.\n");
 	}
 
 }
@@ -92,7 +95,8 @@ void window_t::destroy_render_context() {
 	}
 
 	if (_is_composite_redirected) {
-		XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
+		// using XCompositeRedirectSubwindows
+		//XCompositeUnredirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
 		_is_composite_redirected = false;
 	}
 }
@@ -400,6 +404,31 @@ bool window_t::is_dock() {
 bool window_t::is_fullscreen() {
 	return net_wm_state.find(cnx.atoms._NET_WM_STATE_FULLSCREEN)
 			!= net_wm_state.end();
+}
+
+bool window_t::demands_atteniion() {
+	return net_wm_state.find(cnx.atoms._NET_WM_STATE_DEMANDS_ATTENTION)
+			!= net_wm_state.end();
+}
+
+
+void window_t::set_net_wm_state(Atom x) {
+	net_wm_state.insert(x);
+	write_net_wm_state();
+}
+
+void window_t::unset_net_wm_state(Atom x) {
+	net_wm_state.erase(x);
+	write_net_wm_state();
+}
+
+void window_t::toggle_net_wm_state(Atom x) {
+	if(net_wm_state.find(x)
+			!= net_wm_state.end()) {
+		unset_net_wm_state(x);
+	} else {
+		set_net_wm_state(x);
+	}
 }
 
 long const *
