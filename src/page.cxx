@@ -279,7 +279,7 @@ void page_t::scan() {
 	}
 
 	/* scan is ended, start to listen root event */
-	XSelectInput(cnx.dpy, cnx.xroot, ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | SubstructureNotifyMask | SubstructureRedirectMask);
+	XSelectInput(cnx.dpy, cnx.xroot, ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | SubstructureNotifyMask | SubstructureRedirectMask | ExposureMask);
 	cnx.ungrab();
 	update_window_z();
 	update_client_list();
@@ -349,23 +349,38 @@ void page_t::update_net_supported() {
 
 void page_t::update_client_list() {
 
-	Window * data = new Window[managed_windows.size() + 1];
+	Window * client_list = new Window[managed_windows.size() + 1];
+	Window * client_list_stack = new Window[managed_windows.size() + 1];
 
 	int k = 0;
-
 	window_list_t::iterator i = managed_windows.begin();
 	while (i != managed_windows.end()) {
 		if ((*i)->get_wm_state() != WithdrawnState) {
-			data[k] = (*i)->get_xwin();
+			client_list[k] = (*i)->get_xwin();
 			++k;
 		}
 		++i;
 	}
 
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), k);
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(data), k);
 
-	delete[] data;
+	int l = 0;
+	/* enforce the stacking order */
+	i = windows_stack.begin();
+	while (i != windows_stack.end()) {
+		if(std::find(managed_windows.begin(), managed_windows.end(), (*i)) != managed_windows.end()) {
+			if ((*i)->get_wm_state() != WithdrawnState) {
+				client_list_stack[l] = (*i)->get_xwin();
+				++l;
+			}
+		}
+		++i;
+	}
+
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(client_list_stack), l);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(client_list), k);
+
+	delete[] client_list;
+	delete[] client_list_stack;
 }
 
 /* inspired from dwm */
@@ -481,6 +496,10 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	XWindowAttributes wa;
 	if (!cnx.get_window_attributes(e.window, &wa))
 		return;
+
+	Window ww;
+	if(XGetTransientForHint(cnx.dpy, e.window, &ww) == Success)
+		printf("TRANSIENT_FOR = #%ld\n", ww);
 
 	/* for unkwown reason page get create window event
 	 * from an already existing window.
