@@ -814,10 +814,11 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 		cnx.send_event(e.window, False, NoEventMask, &evx);
 	} else if (e.message_type == cnx.atoms._NET_REQUEST_FRAME_EXTENTS) {
+		if (!viewport_list.empty()) {
 			box_int_t b = viewport_list.front()->get_new_client_size();
 			long int size[4] = { b.x, b.y, b.w, b.h };
-			cnx.change_property(e.window, cnx.atoms._NET_FRAME_EXTENTS, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(size),
-					4);
+			cnx.change_property(e.window, cnx.atoms._NET_FRAME_EXTENTS, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(size), 4);
+		}
 	}
 }
 
