@@ -30,6 +30,11 @@ bool viewport_t::add_client(window_t * x) {
 	return _subtree->add_client(x);
 }
 
+box_int_t viewport_t::get_new_client_size() {
+	assert(_subtree != 0);
+	return _subtree->get_new_client_size();
+}
+
 void viewport_t::replace(tree_t * src, tree_t * by) {
 	printf("replace %p by %p\n", src, by);
 

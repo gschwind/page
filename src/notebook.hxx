@@ -138,6 +138,7 @@ public:
 	window_list_t get_windows();
 
 	virtual bool add_client(window_t * c);
+	virtual box_int_t get_new_client_size();
 	virtual void remove_client(window_t * c);
 	virtual void activate_client(window_t * c);
 	virtual void iconify_client(window_t * c);

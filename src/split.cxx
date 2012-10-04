@@ -10,7 +10,6 @@
 #include <cairo-xlib.h>
 #include <X11/cursorfont.h>
 
-
 #include "split.hxx"
 #include "popup_split.hxx"
 
@@ -83,13 +82,9 @@ void split_t::repair1(cairo_t * cr, box_int_t const & area) {
 		cairo_clip(cr);
 		cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 		if (_split_type == VERTICAL_SPLIT) {
-			cairo_rectangle(cr,
-					_allocation.x + _allocation.w * _split - GRIP_SIZE,
-					_allocation.y, GRIP_SIZE * 2.0, _allocation.h);
+			cairo_rectangle(cr, _allocation.x + _allocation.w * _split - GRIP_SIZE, _allocation.y, GRIP_SIZE * 2.0, _allocation.h);
 		} else {
-			cairo_rectangle(cr, _allocation.x,
-					_allocation.y + (_allocation.h * _split) - GRIP_SIZE,
-					_allocation.w, GRIP_SIZE * 2.0);
+			cairo_rectangle(cr, _allocation.x, _allocation.y + (_allocation.h * _split) - GRIP_SIZE, _allocation.w, GRIP_SIZE * 2.0);
 		}
 		cairo_fill(cr);
 		cairo_restore(cr);
@@ -149,6 +144,14 @@ bool split_t::add_client(window_t * c) {
 			return false;
 	}
 
+}
+
+box_int_t split_t::get_new_client_size() {
+	if (_pack0)
+		return _pack0->get_new_client_size();
+	if (_pack1)
+		return _pack1->get_new_client_size();
+	return box_int_t(0, 0, 0, 0);
 }
 
 void split_t::replace(tree_t * src, tree_t * by) {
@@ -238,10 +241,9 @@ void split_t::process_drag_and_drop() {
 	p->z = 1000;
 	page.get_render_context().overlay_add(p);
 
-	if (XGrabPointer(cnx.dpy, cnx.xroot, False,
-			(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-			GrabModeAsync, GrabModeAsync, None, cursor,
-			CurrentTime) != GrabSuccess)
+	if (XGrabPointer(cnx.dpy, cnx.xroot, False, (ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+	GrabModeAsync, GrabModeAsync, None, cursor,
+	CurrentTime) != GrabSuccess)
 		return;
 
 	do {
@@ -252,11 +254,9 @@ void split_t::process_drag_and_drop() {
 			page.process_event(reinterpret_cast<XDamageNotifyEvent&>(ev));
 		} else if (ev.type == MotionNotify) {
 			if (_split_type == VERTICAL_SPLIT) {
-				_split = (ev.xmotion.x - _allocation.x)
-						/ (double) (_allocation.w);
+				_split = (ev.xmotion.x - _allocation.x) / (double) (_allocation.w);
 			} else {
-				_split = (ev.xmotion.y - _allocation.y)
-						/ (double) (_allocation.h);
+				_split = (ev.xmotion.y - _allocation.y) / (double) (_allocation.h);
 			}
 
 			if (_split > 0.95)
@@ -286,10 +286,8 @@ void split_t::process_drag_and_drop() {
 
 Bool split_t::drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg) {
 	split_t * ths = reinterpret_cast<split_t *>(arg);
-	return (ev->type == ConfigureRequest) || (ev->type == Expose)
-			|| (ev->type == MotionNotify) || (ev->type == ButtonRelease)
-			|| (ev->type
-					== ths->page.get_xconnection().damage_event + XDamageNotify);
+	return (ev->type == ConfigureRequest) || (ev->type == Expose) || (ev->type == MotionNotify) || (ev->type == ButtonRelease)
+			|| (ev->type == ths->page.get_xconnection().damage_event + XDamageNotify);
 }
 
 void split_t::delete_all() {

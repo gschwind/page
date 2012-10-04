@@ -288,6 +288,7 @@ struct xconnection_t {
 		Atom _NET_WM_ACTION_ABOVE; /* never allowed */
 		Atom _NET_WM_ACTION_BELOW; /* never allowed */
 
+		Atom _NET_REQUEST_FRAME_EXTENTS;
 		Atom _NET_FRAME_EXTENTS;
 
 		Atom _NET_CLOSE_WINDOW;

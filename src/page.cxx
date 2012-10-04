@@ -227,7 +227,6 @@ void page_t::run() {
 //			XSync(cnx.dpy, False);
 //		}
 
-
 //		if(nfd == 0 || next_frame.tv_usec < 1000) {
 //			next_frame.tv_sec = 0;
 //			next_frame.tv_usec = 1.0/60.0 * 1.0e5;
@@ -279,7 +278,8 @@ void page_t::scan() {
 	}
 
 	/* scan is ended, start to listen root event */
-	XSelectInput(cnx.dpy, cnx.xroot, ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | SubstructureNotifyMask | SubstructureRedirectMask | ExposureMask);
+	XSelectInput(cnx.dpy, cnx.xroot,
+			ButtonPressMask | ButtonReleaseMask | KeyPressMask | KeyReleaseMask | SubstructureNotifyMask | SubstructureRedirectMask | ExposureMask);
 	cnx.ungrab();
 	update_window_z();
 	update_client_list();
@@ -302,6 +302,7 @@ void page_t::update_net_supported() {
 	supported_list.push_back(cnx.atoms._NET_WM_STATE_FULLSCREEN);
 	supported_list.push_back(cnx.atoms._NET_WM_STATE_FOCUSED);
 	supported_list.push_back(cnx.atoms._NET_WM_STATE_DEMANDS_ATTENTION);
+	supported_list.push_back(cnx.atoms._NET_REQUEST_FRAME_EXTENTS);
 	supported_list.push_back(cnx.atoms._NET_FRAME_EXTENTS);
 
 	supported_list.push_back(cnx.atoms._NET_WM_ALLOWED_ACTIONS);
@@ -362,12 +363,11 @@ void page_t::update_client_list() {
 		++i;
 	}
 
-
 	int l = 0;
 	/* enforce the stacking order */
 	i = windows_stack.begin();
 	while (i != windows_stack.end()) {
-		if(std::find(managed_windows.begin(), managed_windows.end(), (*i)) != managed_windows.end()) {
+		if (std::find(managed_windows.begin(), managed_windows.end(), (*i)) != managed_windows.end()) {
 			if ((*i)->get_wm_state() != WithdrawnState) {
 				client_list_stack[l] = (*i)->get_xwin();
 				++l;
@@ -376,7 +376,8 @@ void page_t::update_client_list() {
 		++i;
 	}
 
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(client_list_stack), l);
+	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING, cnx.atoms.WINDOW, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(client_list_stack), l);
 	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(client_list), k);
 
 	delete[] client_list;
@@ -422,26 +423,26 @@ void page_t::process_event(XKeyEvent const & e) {
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
 		/* select next window */
 		window_list_t tmp = get_windows();
-		if(client_focused != 0) {
+		if (client_focused != 0) {
 			window_list_t::iterator x = std::find(tmp.begin(), tmp.end(), client_focused);
-			if(x != tmp.end()) {
+			if (x != tmp.end()) {
 				++x;
-				if(x != tmp.end()) {
+				if (x != tmp.end()) {
 					printf("Next = %ld\n", (*x)->get_xwin());
 					activate_client(*x);
 				} else {
-					if(!tmp.empty()) {
+					if (!tmp.empty()) {
 						printf("Next = %ld\n", tmp.front()->get_xwin());
 						activate_client(tmp.front());
 					}
 				}
 			} else {
-				if(!tmp.empty()) {
+				if (!tmp.empty()) {
 					activate_client(tmp.front());
 				}
 			}
 		} else {
-			if(!tmp.empty()) {
+			if (!tmp.empty()) {
 				activate_client(tmp.front());
 			}
 		}
@@ -498,7 +499,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 		return;
 
 	Window ww;
-	if(XGetTransientForHint(cnx.dpy, e.window, &ww) == Success)
+	if (XGetTransientForHint(cnx.dpy, e.window, &ww) == Success)
 		printf("TRANSIENT_FOR = #%ld\n", ww);
 
 	/* for unkwown reason page get create window event
@@ -812,6 +813,15 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		evx.xclient.data.l[1] = e.data.l[0];
 
 		cnx.send_event(e.window, False, NoEventMask, &evx);
+	} else if (e.message_type == cnx.atoms._NET_REQUEST_FRAME_EXTENTS) {
+		window_t * x = find_window(e.window);
+		if (x != 0) {
+			box_int_t b = viewport_list.front()->get_new_client_size();
+			long int size[4] = { b.x, b.y, b.w, b.h };
+			cnx.change_property(x->get_xwin(), cnx.atoms._NET_FRAME_EXTENTS, cnx.atoms.CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(size),
+					4);
+			printf("UPDATE _NET_FRAME_EXTENT\n");
+		}
 	}
 }
 
@@ -855,7 +865,7 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 
 		XFixesDestroyRegion(cnx.dpy, region);
 
-		if(x->is_visible()) {
+		if (x->is_visible()) {
 			rnd.render_flush();
 		}
 	}
@@ -1266,7 +1276,7 @@ void page_t::delete_window(window_t * x) {
 window_list_t page_t::get_windows() {
 	window_list_t tmp;
 	std::list<viewport_t *>::iterator i = viewport_list.begin();
-	while(i != viewport_list.end()) {
+	while (i != viewport_list.end()) {
 		window_list_t x = (*i)->get_windows();
 		tmp.insert(tmp.begin(), x.begin(), x.end());
 		++i;

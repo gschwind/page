@@ -477,6 +477,10 @@ bool notebook_t::add_client(window_t * x) {
 	return true;
 }
 
+box_int_t notebook_t::get_new_client_size() {
+	return box_int_t(_allocation.x + BORDER_SIZE, _allocation.y + HEIGHT + BORDER_SIZE, _allocation.w - 2 * BORDER_SIZE, _allocation.h - HEIGHT - 2 * BORDER_SIZE);
+}
+
 void notebook_t::split(split_type_e type) {
 	page.get_render_context().add_damage_area(_allocation);
 	split_t * split = new split_t(page, type);
