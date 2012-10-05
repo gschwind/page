@@ -12,25 +12,20 @@ namespace page {
 
 render_context_t::render_context_t(xconnection_t & cnx) :
 		_cnx(cnx) {
-	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy,
-			_cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width,
-			_cnx.root_wa.height);
+	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy, _cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width, _cnx.root_wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
-	back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
-			CAIRO_CONTENT_COLOR, cnx.root_wa.width, _cnx.root_wa.height);
+	back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR, cnx.root_wa.width, _cnx.root_wa.height);
 	back_buffer_cr = cairo_create(back_buffer_s);
 
-	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
-			CAIRO_CONTENT_COLOR, cnx.root_wa.width, _cnx.root_wa.height);
+	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR, cnx.root_wa.width, _cnx.root_wa.height);
 	pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
 }
 
 void render_context_t::draw_box(box_int_t box, double r, double g, double b) {
 	cairo_set_source_rgb(composite_overlay_cr, r, g, b);
 	cairo_set_line_width(composite_overlay_cr, 1.0);
-	cairo_rectangle(composite_overlay_cr, box.x + 0.5, box.y + 0.5,
-			box.w - 1.0, box.h - 1.0);
+	cairo_rectangle(composite_overlay_cr, box.x + 0.5, box.y + 0.5, box.w - 1.0, box.h - 1.0);
 	cairo_stroke(composite_overlay_cr);
 	cairo_surface_flush(composite_overlay_s);
 }
@@ -43,13 +38,20 @@ void render_context_t::add_damage_overlay_area(box_int_t const & box) {
 	pending_overlay_damage += box;
 }
 
-
 bool render_context_t::z_comp(renderable_t * x, renderable_t * y) {
 	return x->z < y->z;
 }
 
 void render_context_t::render_flush() {
 	list.sort(z_comp);
+
+	/*
+	 * render is made in 3 step:
+	 *  1. update a back buffer with all windows
+	 *  2. update a back buffer with overlay (skipped if not needed)
+	 *  3. update the screen.
+	 *
+	 */
 
 	region_t<int>::box_list_t area = pending_damage.get_area();
 	/* update back buffer */
@@ -64,35 +66,40 @@ void render_context_t::render_flush() {
 	}
 
 	region_t<int>::box_list_t area_overlay = pending_overlay_damage.get_area();
-	/* update back buffer */
-	{
-		cairo_reset_clip(back_buffer_cr);
-		region_t<int>::box_list_t::const_iterator i = area_overlay.begin();
-		while (i != area_overlay.end()) {
-			repair_back_buffer(*i);
-			++i;
+	/* skip back_buffer if overlay_componant is empty */
+	cairo_surface_t * src = pre_back_buffer_s;
+	if (!overlay_componant.empty()) {
+		src = back_buffer_s;
+		/* update back buffer */
+		{
+			cairo_reset_clip(back_buffer_cr);
+			region_t<int>::box_list_t::const_iterator i = area_overlay.begin();
+			while (i != area_overlay.end()) {
+				repair_back_buffer(*i);
+				++i;
+			}
+			i = area.begin();
+			while (i != area.end()) {
+				repair_back_buffer(*i);
+				++i;
+			}
+			cairo_surface_flush(back_buffer_s);
 		}
-		i = area.begin();
-		while (i != area.end()) {
-			repair_back_buffer(*i);
-			++i;
-		}
-		cairo_surface_flush(back_buffer_s);
 	}
 
 	/* update front buffer */
 	{
-		region_t<int>::box_list_t::const_iterator i = area.begin();
-		while (i != area.end()) {
-			repair_overlay(*i);
+		/* merge pending_area and pending_overlay_damage to avoid double
+		 * area update.
+		 */
+		region_t<int> full_area = pending_damage + pending_overlay_damage;
+		region_t<int>::box_list_t full_list = full_area.get_area();
+		region_t<int>::box_list_t::const_iterator i = full_list.begin();
+		while (i != full_list.end()) {
+			repair_overlay(*i, src);
 			++i;
 		}
-		i = area_overlay.begin();
-		while (i != area_overlay.end()) {
-			repair_overlay(*i);
-			++i;
-		}
-		cairo_surface_flush(composite_overlay_s);
+		//cairo_surface_flush(composite_overlay_s);
 	}
 	pending_damage.clear();
 	pending_overlay_damage.clear();
@@ -131,11 +138,11 @@ void render_context_t::repair_back_buffer(box_int_t const & area) {
 	}
 }
 
-void render_context_t::repair_overlay(box_int_t const & area) {
+void render_context_t::repair_overlay(box_int_t const & area, cairo_surface_t * src) {
 
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(composite_overlay_cr, back_buffer_s, 0, 0);
+	cairo_set_source_surface(composite_overlay_cr, src, 0, 0);
 	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
 	cairo_fill(composite_overlay_cr);
 
@@ -155,11 +162,11 @@ void render_context_t::repair_overlay(box_int_t const & area) {
 		}
 		++color;
 		cairo_set_line_width(composite_overlay_cr, 1.0);
-		cairo_rectangle(composite_overlay_cr, area.x + 0.5, area.y + 0.5,
-				area.w - 1.0, area.h - 1.0);
+		cairo_rectangle(composite_overlay_cr, area.x + 0.5, area.y + 0.5, area.w - 1.0, area.h - 1.0);
 		cairo_stroke(composite_overlay_cr);
 	}
 
+	// Never flush composite_overlay_s because this surface is never a source surface.
 	//cairo_surface_flush(composite_overlay_s);
 
 }

@@ -59,7 +59,7 @@ public:
 
 	void repair_pre_back_buffer(box_int_t const & area);
 	void repair_back_buffer(box_int_t const & area);
-	void repair_overlay(box_int_t const & area);
+	void repair_overlay(box_int_t const & area, cairo_surface_t * src);
 
 	void add(renderable_t * x);
 	void remove(renderable_t * x);

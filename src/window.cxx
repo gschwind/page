@@ -58,7 +58,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	}
 
 	/*
-	 * to ensure the state of transient_for, we select input for property change and then
+	 * to ensure the state of transient_for and struct_partial, we select input for property change and then
 	 * we sync wuth server, and then check window state, if window property change
 	 * we get it.
 	 */
@@ -474,26 +474,26 @@ long const * window_t::get_partial_struct() {
 }
 
 void window_t::repair1(cairo_t * cr, box_int_t const & area) {
-//	assert(window_surf != 0);
-//	box_int_t clip = area & size;
-//	printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
-//	//if (clip.w > 0 && clip.h > 0) {
-//		cairo_save(cr);
-//		cairo_reset_clip(cr);
-//		cairo_set_source_surface(cr, window_surf, size.x, size.y);
-//		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-//		cairo_clip(cr);
-//		cairo_paint_with_alpha(cr, opacity);
-//		cairo_restore(cr);
-//	//}
+	assert(window_surf != 0);
+	box_int_t clip = area & size;
+	//printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
+	if (clip.w > 0 && clip.h > 0) {
+		cairo_save(cr);
+		cairo_reset_clip(cr);
+		cairo_set_source_surface(cr, window_surf, size.x, size.y);
+		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+		cairo_clip(cr);
+		cairo_paint_with_alpha(cr, opacity);
+		cairo_restore(cr);
+	}
 
-	cairo_save(cr);
-	cairo_reset_clip(cr);
-	cairo_set_source_surface(cr, window_surf, size.x, size.y);
-	cairo_rectangle(cr, size.x, size.y, size.w, size.h);
-	cairo_clip(cr);
-	cairo_paint_with_alpha(cr, opacity);
-	cairo_restore(cr);
+//	cairo_save(cr);
+//	cairo_reset_clip(cr);
+//	cairo_set_source_surface(cr, window_surf, size.x, size.y);
+//	cairo_rectangle(cr, size.x, size.y, size.w, size.h);
+//	cairo_clip(cr);
+//	cairo_paint_with_alpha(cr, opacity);
+//	cairo_restore(cr);
 }
 
 box_int_t window_t::get_absolute_extend() {
