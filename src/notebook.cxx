@@ -810,7 +810,7 @@ void notebook_t::update_client_position(client_t * c) {
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;
 
-	printf("resize %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x, client_area.y);
+	//printf("resize %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x, client_area.y);
 	/* clip client size */
 	client_size = client_area & client_size;
 

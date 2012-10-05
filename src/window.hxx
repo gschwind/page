@@ -77,6 +77,8 @@ protected:
 
 	int w_class;
 
+	Window _transient_for;
+
 private:
 	/* avoid copy */
 	window_t(window_t const &);
@@ -107,7 +109,8 @@ public:
 	void read_net_wm_type();
 	void read_net_wm_state();
 	void read_net_wm_protocols();
-	long const * read_partial_struct();
+	long const * get_partial_struct();
+	void update_partial_struct();
 	void read_all();
 	XWMHints const * read_wm_hints();
 	void read_shape_clip();
@@ -244,6 +247,10 @@ public:
 		return _override_redirect;
 	}
 
+	Window transient_for() {
+		return _transient_for;
+	}
+
 	void map_notify() {
 		_is_map = true;
 	}
@@ -302,6 +309,8 @@ public:
 	bool is_visible() {
 		return is_map() && !is_input_only();
 	}
+
+	Window update_transient_for();
 
 };
 

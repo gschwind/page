@@ -174,6 +174,10 @@ struct xevent_handler_t {
 	virtual void process_event(XEvent const & e) = 0;
 };
 
+
+/**
+ * Structure to handle X connection context.
+ */
 struct xconnection_t {
 	/* that allow error_handler to bind display to connection */
 	static std::map<Display *, xconnection_t *> open_connections;
@@ -293,12 +297,14 @@ struct xconnection_t {
 
 		Atom _NET_CLOSE_WINDOW;
 
+		Atom _NET_ACTIVE_WINDOW;
 		/* TODO Atoms for root window */
 		Atom _NET_DESKTOP_NAMES;
-		Atom _NET_ACTIVE_WINDOW;
 		Atom _NET_SUPPORTING_WM_CHECK;
 		Atom _NET_VIRTUAL_ROOTS;
 		Atom _NET_DESKTOP_LAYOUT;
+
+		Atom WM_TRANSIENT_FOR;
 
 		/* page special protocol */
 		Atom PAGE_QUIT; /* quit page */

@@ -202,6 +202,8 @@ xconnection_t::xconnection_t() {
 
 	ATOM_INIT(_NET_WM_ICON);
 
+	ATOM_INIT(WM_TRANSIENT_FOR);
+
 	ATOM_INIT(PAGE_QUIT);
 
 #undef ATOM_INIT
@@ -545,7 +547,16 @@ int xconnection_t::get_window_property(Window w, Atom property,
 		unsigned long* nitems_return, unsigned long* bytes_after_return,
 		unsigned char** prop_return) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XGetWindowProperty: win = %lu\n", serial, w);
+
+	char * prop = XGetAtomName(dpy, property);
+	char * type = XGetAtomName(dpy, req_type);
+
+	printf(">%08lu XGetWindowProperty: win = %lu, prop = %s, type = %s\n", serial, w, prop, type);
+	if(prop != 0)
+		XFree(prop);
+	if(type != 0)
+		XFree(type);
+
 	return XGetWindowProperty(dpy, w, property, long_offset, long_length,
 			c_delete, req_type, actual_type_return, actual_format_return,
 			nitems_return, bytes_after_return, prop_return);

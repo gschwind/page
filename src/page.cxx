@@ -498,10 +498,6 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	if (!cnx.get_window_attributes(e.window, &wa))
 		return;
 
-	Window ww;
-	if (XGetTransientForHint(cnx.dpy, e.window, &ww) == Success)
-		printf("TRANSIENT_FOR = #%ld\n", ww);
-
 	/* for unkwown reason page get create window event
 	 * from an already existing window.
 	 */
@@ -713,10 +709,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_title();
 	} else if (e.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
 		if (e.state == PropertyNewValue) {
-			x->read_partial_struct();
+			x->update_partial_struct();
 			update_allocation();
 		} else if (e.state == PropertyDelete) {
-			x->read_partial_struct();
+			x->update_partial_struct();
 			update_allocation();
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_WINDOW_TYPE) {
@@ -726,6 +722,19 @@ void page_t::process_event(XPropertyEvent const & e) {
 		update_allocation();
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
 		x->read_net_wm_protocols();
+	} else if (e.atom == cnx.atoms.WM_TRANSIENT_FOR) {
+		printf("TRANSIENT_FOR = #%ld\n", x->update_transient_for());
+
+		/* ICCCM if transient_for is set for override redirect window, move this window above
+		 * the transient one (it's for menus and popup)
+		 */
+		if(x->override_redirect() && x->transient_for() != None) {
+			insert_window_above_of(x, x->transient_for());
+			/* make the request to X server */
+			XWindowChanges cr;
+			cr.sibling = x->transient_for();
+			cnx.configure_window(x->get_xwin(), CWSibling, &cr);
+		}
 	}
 }
 
@@ -867,7 +876,7 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 		}
 	}
 
-	if (true) {
+	if (false) {
 		unsigned int num;
 		Window d1, d2, *wins = 0;
 		/* check for order matching */
@@ -1253,7 +1262,20 @@ void page_t::update_window_z() {
 window_t * page_t::insert_new_window(Window w, XWindowAttributes const & wa) {
 	window_t * x = new window_t(cnx, w, wa);
 	windows_map[w] = x;
-	windows_stack.push_back(x);
+
+	/* ICCCM if transient_for is set for override redirect window, move this window above
+	 * the transient one (it's for menus and popup)
+	 */
+	if(x->override_redirect() && x->transient_for() != None) {
+		insert_window_above_of(x, x->transient_for());
+
+		/* make the request to X server */
+		XWindowChanges cr;
+		cr.sibling = x->transient_for();
+		cnx.configure_window(w, CWSibling, &cr);
+	} else {
+		windows_stack.push_back(x);
+	}
 	update_window_z();
 	rnd.add(x);
 	return x;

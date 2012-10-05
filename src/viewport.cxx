@@ -138,7 +138,7 @@ void viewport_t::fix_allocation() {
 
 	window_list_t::iterator j = page.windows_stack.begin();
 	while (j != page.windows_stack.end()) {
-		long const * ps = (*j)->read_partial_struct();
+		long const * ps = (*j)->get_partial_struct();
 		if (ps) {
 			window_t * c = (*j);
 			/* this is very crappy, but there is a way to do it better ? */

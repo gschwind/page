@@ -70,6 +70,10 @@ struct box_t {
 		return os.str();
 	}
 
+	bool operator==(box_t<T> const & b) {
+		return (b.x == x && b.y == y && b.w == w && b.h == h);
+	}
+
 
 };
 

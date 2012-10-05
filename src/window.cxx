@@ -33,9 +33,6 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	assert(created_window.find(w) == created_window.end());
 	created_window[w] = this;
 
-	wm_normal_hints = XAllocSizeHints();
-	wm_hints = XAllocWMHints();
-
 	if (wa.map_state == IsUnmapped) {
 		_is_map = false;
 	} else {
@@ -60,7 +57,21 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 		create_render_context();
 	}
 
+	/*
+	 * to ensure the state of transient_for, we select input for property change and then
+	 * we sync wuth server, and then check window state, if window property change
+	 * we get it.
+	 */
 	cnx.select_input(xwin, PropertyChangeMask);
+	/* sync and flush, now we are sure that property change are listen */
+	XFlush(cnx.dpy);
+	XSync(cnx.dpy, False);
+
+	/* read transient_for state */
+	update_transient_for();
+	update_partial_struct();
+	wm_normal_hints = XAllocSizeHints();
+	wm_hints = XAllocWMHints();
 
 }
 
@@ -361,13 +372,15 @@ void window_t::write_net_wm_allowed_actions() {
 }
 
 void window_t::move_resize(box_int_t const & location) {
-	size = location;
-	cnx.move_resize(xwin, size);
-	if (window_surf) {
+	if(size == location)
+		return;
+	cnx.move_resize(xwin, location);
+	if (window_surf && (size.w != location.w || size.h != location.h)) {
 		cairo_surface_flush(window_surf);
-		cairo_xlib_surface_set_size(window_surf, size.w, size.h);
+		cairo_xlib_surface_set_size(window_surf, location.w, location.h);
 		mark_dirty();
 	}
+	size = location;
 }
 
 /**
@@ -431,8 +444,7 @@ void window_t::toggle_net_wm_state(Atom x) {
 	}
 }
 
-long const *
-window_t::read_partial_struct() {
+void window_t::update_partial_struct() {
 	unsigned int n;
 	long * p_struct = get_properties32(cnx.atoms._NET_WM_STRUT_PARTIAL,
 			cnx.atoms.CARDINAL, &n);
@@ -448,14 +460,17 @@ window_t::read_partial_struct() {
 		has_partial_struct = true;
 		memcpy(partial_struct, p_struct, sizeof(long) * 12);
 		delete[] p_struct;
+	} else {
+		has_partial_struct = false;
 	}
+}
 
+long const * window_t::get_partial_struct() {
 	if (has_partial_struct) {
 		return partial_struct;
 	} else {
 		return 0;
 	}
-
 }
 
 void window_t::repair1(cairo_t * cr, box_int_t const & area) {
@@ -490,12 +505,12 @@ void window_t::reconfigure(box_int_t const & area) {
 }
 
 void window_t::mark_dirty() {
-	cairo_surface_flush(window_surf);
+	//cairo_surface_flush(window_surf);
 	cairo_surface_mark_dirty(window_surf);
 }
 
 void window_t::mark_dirty_retangle(box_int_t const & area) {
-	cairo_surface_flush(window_surf);
+	//cairo_surface_flush(window_surf);
 	cairo_surface_mark_dirty_rectangle(window_surf, area.x, area.y, area.w,
 			area.h);
 }
@@ -543,6 +558,18 @@ void window_t::process_configure_request_event(
 		mark_dirty();
 	}
 
+}
+
+Window window_t::update_transient_for() {
+	unsigned int n;
+	long * data = get_properties32(cnx.atoms.WM_TRANSIENT_FOR, cnx.atoms.WINDOW, &n);
+	if(data && n == 1) {
+		_transient_for = data[0];
+		delete[] data;
+	} else {
+		_transient_for = None;
+	}
+	return _transient_for;
 }
 
 }
