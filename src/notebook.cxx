@@ -861,6 +861,9 @@ box_int_t notebook_t::get_absolute_extend() {
 }
 
 void notebook_t::reconfigure(box_int_t const & area) {
+	if(area == _allocation)
+		return;
+
 	if (_allocation.w < area.w) {
 		cairo_destroy(back_buffer_cr);
 		cairo_surface_destroy(back_buffer);
