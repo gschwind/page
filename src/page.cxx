@@ -477,6 +477,20 @@ void page_t::process_event(XConfigureEvent const & e) {
 		/* restack x */
 		windows_stack.remove(x);
 		insert_window_above_of(x, e.above);
+
+		/* if window is transient for other window, restack them */
+		window_list_t::const_iterator i = windows_stack.begin();
+		while(i != windows_stack.end()) {
+			if((*i)->transient_for() == e.window) {
+				/* update the stacking order for this window, hope that there is not
+				 * mutual transient for */
+				XWindowChanges cr;
+				cr.sibling = e.window;
+				cnx.configure_window((*i)->get_xwin(), CWSibling, &cr);
+			}
+			++i;
+		}
+
 		/* mark as dirty all area */
 		box_int_t old = x->get_absolute_extend();
 		x->process_configure_notify_event(e);
@@ -1268,7 +1282,6 @@ window_t * page_t::insert_new_window(Window w, XWindowAttributes const & wa) {
 	 */
 	if(x->override_redirect() && x->transient_for() != None) {
 		insert_window_above_of(x, x->transient_for());
-
 		/* make the request to X server */
 		XWindowChanges cr;
 		cr.sibling = x->transient_for();
