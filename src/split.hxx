@@ -68,6 +68,8 @@ public:
 	void update_allocation_pack0();
 	void update_allocation_pack1();
 	void delete_all();
+	void unmap_all();
+	void map_all();
 
 	void compute_slider_area(box_int_t & area);
 

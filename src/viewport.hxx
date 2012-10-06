@@ -34,6 +34,8 @@ struct viewport_t: public tree_t {
 	virtual void activate_client(window_t * x);
 	virtual void iconify_client(window_t * x);
 	virtual void delete_all();
+	virtual void unmap_all();
+	virtual void map_all();
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();

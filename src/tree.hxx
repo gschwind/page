@@ -36,6 +36,16 @@ public:
 	virtual void iconify_client(window_t * x) = 0;
 	virtual void delete_all() = 0;
 
+	/**
+	 * For fullscreen window we need to disable the render for window
+	 * which are under. So we just unmap them all.
+	 */
+	virtual void unmap_all() = 0;
+	/**
+	 * restore mapping when fullscreen end.
+	 */
+	virtual void map_all() = 0;
+
 	virtual void repair1(cairo_t * cr, box_int_t const & area) = 0;
 	virtual box_int_t get_absolute_extend() = 0;
 	virtual void reconfigure(box_int_t const & area) = 0;

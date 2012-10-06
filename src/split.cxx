@@ -302,6 +302,27 @@ void split_t::delete_all() {
 	}
 }
 
+
+void split_t::unmap_all() {
+	if (_pack0) {
+		_pack0->unmap_all();
+	}
+
+	if (_pack1) {
+		_pack1->unmap_all();
+	}
+}
+
+void split_t::map_all() {
+	if (_pack0) {
+		_pack0->map_all();
+	}
+
+	if (_pack1) {
+		_pack1->map_all();
+	}
+}
+
 /* compute the slider area */
 void split_t::compute_slider_area(box_int_t & area) {
 	if (_split_type == VERTICAL_SPLIT) {

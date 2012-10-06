@@ -152,6 +152,9 @@ public:
 	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 	void delete_all();
 
+	virtual void unmap_all();
+	virtual void map_all();
+
 	void update_popup_position(popup_notebook0_t * p, int x, int y, int w, int h, bool show_popup);
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);

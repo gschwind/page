@@ -923,6 +923,7 @@ void page_t::fullscreen(window_t * c) {
 		window_list_t l = v->get_windows();
 		window_t * x = find_window(l, c->get_xwin());
 		if (x) {
+			v->unmap_all();
 			if (v->fullscreen_client != 0) {
 				v->fullscreen_client->unmap();
 				v->fullscreen_client->unset_fullscreen();
@@ -947,6 +948,7 @@ void page_t::fullscreen(window_t * c) {
 	if (!viewport_list.empty()) {
 		viewport_t * v = viewport_list.front();
 
+		v->unmap_all();
 		if (v->fullscreen_client != 0) {
 			v->fullscreen_client->unmap();
 			v->fullscreen_client->unset_fullscreen();
@@ -974,6 +976,7 @@ void page_t::unfullscreen(window_t * c) {
 	while (i != viewport_list.end()) {
 		viewport_t * v = (*i);
 		if (v->fullscreen_client == c) {
+			v->map_all();
 			v->fullscreen_client->unmap();
 			v->fullscreen_client->unset_fullscreen();
 			set_focus(0);
@@ -994,6 +997,7 @@ void page_t::toggle_fullscreen(window_t * c) {
 	while (i != viewport_list.end()) {
 		viewport_t * v = (*i);
 		if (v->fullscreen_client == c) {
+			v->map_all();
 			v->fullscreen_client->unmap();
 			v->fullscreen_client->unset_fullscreen();
 			set_focus(0);

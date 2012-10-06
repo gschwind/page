@@ -844,6 +844,19 @@ void notebook_t::delete_all() {
 
 }
 
+
+void notebook_t::unmap_all() {
+	if(!_selected.empty()) {
+		_selected.front()->unmap();
+	}
+}
+
+void notebook_t::map_all() {
+	if(!_selected.empty()) {
+		_selected.front()->map();
+	}
+}
+
 void notebook_t::repair1(cairo_t * cr, box_int_t const & area) {
 	box_int_t clip = _allocation & area;
 	if (clip.h > 0 && clip.w > 0) {

@@ -114,6 +114,16 @@ void viewport_t::delete_all() {
 	delete _subtree;
 }
 
+void viewport_t::unmap_all() {
+	assert(_subtree != 0);
+	_subtree->unmap_all();
+}
+
+void viewport_t::map_all() {
+	assert(_subtree != 0);
+	_subtree->map_all();
+}
+
 void viewport_t::fix_allocation() {
 	printf("update_allocation %dx%d+%d+%d\n", raw_aera.x, raw_aera.y,
 			raw_aera.w, raw_aera.h);
