@@ -296,7 +296,7 @@ void xconnection_t::allow_input_passthrough(Window w) {
 
 void xconnection_t::unmap(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu X_UnmapWindow: win = %lu\n", serial, w);
+	//printf(">%08lu X_UnmapWindow: win = %lu\n", serial, w);
 	XUnmapWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -316,7 +316,7 @@ void xconnection_t::reparentwindow(Window w, Window parent, int x, int y) {
 
 void xconnection_t::map(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu X_MapWindow: win = %lu\n", serial, w);
+	//printf(">%08lu X_MapWindow: win = %lu\n", serial, w);
 	XMapWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -389,20 +389,20 @@ bool xconnection_t::register_cm() {
 
 void xconnection_t::add_to_save_set(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XAddToSaveSet: win = %lu\n", serial, w);
+	//printf(">%08lu XAddToSaveSet: win = %lu\n", serial, w);
 	XAddToSaveSet(dpy, w);
 }
 
 void xconnection_t::remove_from_save_set(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XRemoveFromSaveSet: win = %lu\n", serial, w);
+	//printf(">%08lu XRemoveFromSaveSet: win = %lu\n", serial, w);
 	XRemoveFromSaveSet(dpy, w);
 }
 
 void xconnection_t::select_input(Window w, long int mask) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
-			(unsigned long) mask);
+	//printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
+	//		(unsigned long) mask);
 	XSelectInput(dpy, w, mask);
 }
 
@@ -419,8 +419,8 @@ void xconnection_t::move_resize(Window w, box_int_t const & size) {
 
 void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XSetWindowBorderWidth: win = %lu, width = %u\n", serial, w,
-			width);
+	//printf(">%08lu XSetWindowBorderWidth: win = %lu, width = %u\n", serial, w,
+	//		width);
 	XSetWindowBorderWidth(dpy, w, width);
 	event_t e;
 	e.serial = serial;
@@ -430,7 +430,7 @@ void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 
 void xconnection_t::raise_window(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XRaiseWindow: win = %lu\n", serial, w);
+	//printf(">%08lu XRaiseWindow: win = %lu\n", serial, w);
 	XRaiseWindow(dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -490,7 +490,7 @@ bool xconnection_t::process_check_event() {
 int xconnection_t::change_property(Window w, Atom property, Atom type,
 		int format, int mode, unsigned char const * data, int nelements) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XChangeProperty: win = %lu\n", serial, w);
+	//printf(">%08lu XChangeProperty: win = %lu\n", serial, w);
 	return XChangeProperty(dpy, w, property, type, format, mode, data,
 			nelements);
 }
@@ -498,46 +498,53 @@ int xconnection_t::change_property(Window w, Atom property, Atom type,
 Status xconnection_t::get_window_attributes(Window w,
 		XWindowAttributes * window_attributes_return) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XGetWindowAttributes: win = %lu\n", serial, w);
+	//printf(">%08lu XGetWindowAttributes: win = %lu\n", serial, w);
 	return XGetWindowAttributes(dpy, w, window_attributes_return);
 }
 
 Status xconnection_t::get_text_property(Window w,
 		XTextProperty * text_prop_return, Atom property) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XGetTextProperty: win = %lu\n", serial, w);
+	//printf(">%08lu XGetTextProperty: win = %lu\n", serial, w);
 	return XGetTextProperty(dpy, w, text_prop_return, property);
 }
 
 int xconnection_t::lower_window(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XLowerWindow: win = %lu\n", serial, w);
+	//printf(">%08lu XLowerWindow: win = %lu\n", serial, w);
 	return XLowerWindow(dpy, w);
 }
 
 int xconnection_t::configure_window(Window w, unsigned int value_mask,
 		XWindowChanges * values) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
+	//printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
+	//if (value_mask & CWSibling)
+	//	printf("> Sibling %lu\n", values->sibling);
+	//if (value_mask & CWStackMode)
+	//	printf("> StackMode %d\n", values->stack_mode);
+	//if (value_mask & CWBorderWidth) {
+	//	printf("> BoderWidth %d\n", values->border_width);
+	//}
 	return XConfigureWindow(dpy, w, value_mask, values);
 }
 
 char * xconnection_t::get_atom_name(Atom atom) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
+	//printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
 	return XGetAtomName(dpy, atom);
 }
 
 Status xconnection_t::send_event(Window w, Bool propagate, long event_mask,
 		XEvent* event_send) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XSendEvent: win = %lu\n", serial, w);
+	//printf(">%08lu XSendEvent: win = %lu\n", serial, w);
 	return XSendEvent(dpy, w, propagate, event_mask, event_send);
 }
 
 int xconnection_t::set_input_focus(Window focus, int revert_to, Time time) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
+	//printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
 	return XSetInputFocus(dpy, focus, revert_to, time);
 }
 
@@ -551,10 +558,10 @@ int xconnection_t::get_window_property(Window w, Atom property,
 	char * prop = XGetAtomName(dpy, property);
 	char * type = XGetAtomName(dpy, req_type);
 
-	printf(">%08lu XGetWindowProperty: win = %lu, prop = %s, type = %s\n", serial, w, prop, type);
-	if(prop != 0)
+	//printf(">%08lu XGetWindowProperty: win = %lu, prop = %s, type = %s\n", serial, w, prop, type);
+	if (prop != 0)
 		XFree(prop);
-	if(type != 0)
+	if (type != 0)
 		XFree(type);
 
 	return XGetWindowProperty(dpy, w, property, long_offset, long_length,
@@ -564,7 +571,7 @@ int xconnection_t::get_window_property(Window w, Atom property,
 
 XWMHints * xconnection_t::get_wm_hints(Window w) {
 	unsigned long serial = XNextRequest(dpy);
-	printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
+	//printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
 	return XGetWMHints(dpy, w);
 }
 

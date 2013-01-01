@@ -29,36 +29,27 @@ class render_context_t {
 
 
 public:
-
 	renderable_list_t list;
-	renderable_list_t overlay_componant;
 
 	/* composite overlay surface (front buffer) */
 	cairo_surface_t * composite_overlay_s;
 	/* composite overlay cairo context */
 	cairo_t * composite_overlay_cr;
 
-	/* back buffer surface */
-	cairo_surface_t * back_buffer_s;
-	/* back buffer context */
-	cairo_t * back_buffer_cr;
-
 	cairo_t * pre_back_buffer_cr;
 	cairo_surface_t * pre_back_buffer_s;
 
 	/* damaged region */
 	region_t<int> pending_damage;
-	region_t<int> pending_overlay_damage;
 
 	render_context_t(xconnection_t & cnx);
-	void add_damage_area(box_int_t const & box);
-	void add_damage_overlay_area(box_int_t const & box);
+	void add_damage_area(region_t<int> const & box);
 
 	static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
 
-	void repair_pre_back_buffer(box_int_t const & area);
-	void repair_back_buffer(box_int_t const & area);
+	void repair_area(box_int_t const & box);
+
 	void repair_overlay(box_int_t const & area, cairo_surface_t * src);
 
 	void add(renderable_t * x);
@@ -68,6 +59,8 @@ public:
 	void overlay_remove(renderable_t * x);
 
 	void draw_box(box_int_t box, double r, double g, double b);
+
+	void repair_buffer(renderable_list_t & visible, cairo_t * cr, box_int_t const & area);
 
 };
 

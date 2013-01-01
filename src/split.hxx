@@ -8,13 +8,8 @@
 #ifndef SPLIT_HXX_
 #define SPLIT_HXX_
 
-#include <cairo.h>
-
-#include "xconnection.hxx"
-#include "render_context.hxx"
 #include "box.hxx"
 #include "tree.hxx"
-#include "page_base.hxx"
 
 namespace page {
 
@@ -23,22 +18,10 @@ enum split_type_e {
 };
 
 class split_t: public tree_t {
+
+public:
 	static int const GRIP_SIZE = 3;
 
-	class xevent_handler_t : public ::page::xevent_handler_t {
-		split_t & split;
-	public:
-		xevent_handler_t(split_t & split) : split(split) { }
-		virtual ~xevent_handler_t() { }
-		virtual void process_event(XEvent const & e);
-	};
-
-
-	page_base_t & page;
-
-	xevent_handler_t even_handler;
-
-	Cursor cursor;
 	box_t<int> separetion_bar;
 	split_type_e _split_type;
 	double _split;
@@ -49,21 +32,24 @@ class split_t: public tree_t {
 	void process_drag_and_drop();
 
 public:
-	split_t(page_base_t & page, split_type_e type);
+	split_t(split_type_e type);
 	~split_t();
 	void update_allocation(box_t<int> & alloc);
 	void replace(tree_t * src, tree_t * by);
 	cairo_t * get_cairo();
 	void close(tree_t * src);
-	void remove(tree_t * src);
 
-	window_list_t get_windows();
+	notebook_t * get_nearest_notebook();
 
-	virtual bool add_client(window_t *c);
-	virtual box_int_t get_new_client_size();
-	virtual void remove_client(window_t * c);
-	virtual void activate_client(window_t * c);
-	virtual void iconify_client(window_t * c);
+	bool is_inside(int x, int y);
+
+	window_set_t get_windows();
+
+	bool add_client(window_t *c);
+	box_int_t get_new_client_size();
+	void remove_client(window_t * c);
+	void activate_client(window_t * c);
+	void iconify_client(window_t * c);
 
 	void update_allocation_pack0();
 	void update_allocation_pack1();
@@ -71,11 +57,11 @@ public:
 	void unmap_all();
 	void map_all();
 
-	void compute_slider_area(box_int_t & area);
+	void compute_slider_area(box_int_t & area, double split);
 
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
-	virtual void reconfigure(box_int_t const & area);
+	virtual void set_allocation(box_int_t const & area);
+	virtual region_t<int> get_area();
 
 };
 

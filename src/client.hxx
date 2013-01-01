@@ -24,87 +24,87 @@
 
 namespace page {
 
-struct client_t {
-	window_t & w;
-	/* the desired width/heigth */
-	int width;
-	int height;
-	/* icon data */
-	icon_t icon;
-	/* icon surface */
-	cairo_surface_t * icon_surf;
-
-	explicit client_t(window_t & w);
-	client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
-			long wm_state);
-	virtual ~client_t();
-
-	void update_size(int w, int h);
-	void init_icon();
-	void set_fullscreen();
-	void unset_fullscreen();
-
-	bool is_fullscreen() {
-		return w.is_fullscreen();
-	}
-
-	bool is_xwin(Window x) {
-		return w.is_window(x);
-	}
-
-	void withdraw_to_X();
-
-	void write_wm_state(long int state) {
-		w.write_wm_state(state);
-	}
-
-	window_t * get_window() {
-		return &w;
-	}
-
-	void set_focused() {
-		w.set_focused();
-	}
-
-	void unset_focused() {
-		w.unset_focused();
-	}
-
-	void delete_window(Time t) {
-		w.delete_window(t);
-	}
-
-	std::string const & get_name() {
-		return w.read_title();
-	}
-
-	void focus() {
-		w.focus();
-	}
-
-	bool is_window(Window x) {
-		return w.is_window(x);
-	}
-
-	long get_wm_state() {
-		return w.get_wm_state();
-	}
-
-	void map() {
-		w.map();
-	}
-
-	void unmap() {
-		w.unmap();
-	}
-
-	std::string const & get_title() {
-		return w.get_title();
-	}
-
-};
-
-typedef std::list<client_t *> client_list_t;
+//struct client_t {
+//	window_t & w;
+//
+//	/* icon data */
+//	icon_t icon;
+//	/* icon surface */
+//	cairo_surface_t * icon_surf;
+//
+//	explicit client_t(window_t & w);
+//	client_t(xconnection_t &cnx, Window w, XWindowAttributes &wa,
+//			long wm_state);
+//	virtual ~client_t();
+//
+//
+//
+//	public:
+//	void update_icon();
+//	void set_fullscreen();
+//	void unset_fullscreen();
+//
+//	bool is_fullscreen() {
+//		return w.is_fullscreen();
+//	}
+//
+//	bool is_xwin(Window x) {
+//		return w.is_window(x);
+//	}
+//
+//	void withdraw_to_X();
+//
+//	void write_wm_state(long int state) {
+//		w.write_wm_state(state);
+//	}
+//
+//	window_t * get_window() {
+//		return &w;
+//	}
+//
+//	void set_focused() {
+//		w.set_focused();
+//	}
+//
+//	void unset_focused() {
+//		w.unset_focused();
+//	}
+//
+//	void delete_window(Time t) {
+//		w.delete_window(t);
+//	}
+//
+//	std::string const & get_name() {
+//		return w.read_title();
+//	}
+//
+//	void focus() {
+//		w.focus();
+//	}
+//
+//	bool is_window(Window x) {
+//		return w.is_window(x);
+//	}
+//
+//	long get_wm_state() {
+//		return w.get_wm_state();
+//	}
+//
+//	void map() {
+//		w.map();
+//	}
+//
+//	void unmap() {
+//		w.unmap();
+//	}
+//
+//	std::string const & get_title() {
+//		return w.get_title();
+//	}
+//
+//};
+//
+//typedef std::list<client_t *> client_list_t;
 
 }
 

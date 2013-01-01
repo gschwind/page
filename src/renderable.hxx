@@ -11,6 +11,7 @@
 #include <list>
 #include <cairo.h>
 #include "box.hxx"
+#include "region.hxx"
 
 namespace page {
 
@@ -40,9 +41,9 @@ public:
 	virtual void repair1(cairo_t * cr, box_int_t const & area) = 0;
 
 	/**
-	 * Get the absolute location of the renderable on screen.
+	 * Get the area on screen.
 	 */
-	virtual box_int_t get_absolute_extend() = 0;
+	virtual region_t<int> get_area() = 0;
 
 	/**
 	 * Move the renderable on screen.

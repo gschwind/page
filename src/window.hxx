@@ -14,6 +14,7 @@
 #include "xconnection.hxx"
 #include "renderable.hxx"
 #include "region.hxx"
+#include "icon.hxx"
 
 namespace page {
 
@@ -24,16 +25,17 @@ protected:
 	typedef Window window_key_t;
 	typedef std::map<window_key_t, window_t *> window_map_t;
 
+	xconnection_t & cnx;
+
 	/* track created windows */
 	static window_map_t created_window;
 
-	xconnection_t & cnx;
-
 	Window xwin;
 
-	/* as Xlib recomand do not user static data allocation
-	 * use XAllocSizeHints */
+	/* as Xlib recommend do not use static data allocation
+	 * and use XAllocSizeHints */
 	XSizeHints * wm_normal_hints;
+
 	XWMHints * wm_hints;
 
 	Visual * visual;
@@ -64,6 +66,7 @@ protected:
 	std::string wm_name;
 	std::string net_wm_name;
 
+	box_int_t requested_size;
 	/* the real size */
 	box_int_t size;
 
@@ -78,6 +81,14 @@ protected:
 	int w_class;
 
 	Window _transient_for;
+
+public:
+	/* icon data */
+	icon_t icon;
+	/* icon surface */
+	cairo_surface_t * icon_surf;
+
+	long user_time;
 
 private:
 	/* avoid copy */
@@ -101,6 +112,8 @@ public:
 	void unset_fullscreen();
 
 	/* read window status */
+	void update_net_wm_user_time();
+	void update_icon();
 	long read_wm_state();
 	void read_wm_normal_hints();
 	std::string const & read_vm_name();
@@ -191,6 +204,8 @@ public:
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
+	box_int_t get_requested_size();
+	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
 	virtual void mark_dirty();
 	virtual void mark_dirty_retangle(box_int_t const & area);
@@ -308,6 +323,10 @@ public:
 
 	bool is_visible() {
 		return is_map() && !is_input_only();
+	}
+
+	long get_net_user_time() {
+		return user_time;
 	}
 
 	Window update_transient_for();

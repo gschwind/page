@@ -18,7 +18,7 @@ popup_split_t::popup_split_t(box_t<int> const & area) :
 
 void popup_split_t::repair1(cairo_t * cr, box_int_t const & a) {
 	box_int_t i = area & a;
-	if (i.w > 0 && i.h > 0) {
+	if (!i.is_null()) {
 		cairo_save(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
@@ -34,6 +34,10 @@ popup_split_t::~popup_split_t() {
 
 box_int_t popup_split_t::get_absolute_extend() {
 	return area;
+}
+
+region_t<int> popup_split_t::get_area() {
+	return region_t<int>(area);
 }
 
 void popup_split_t::reconfigure(box_int_t const & a) {

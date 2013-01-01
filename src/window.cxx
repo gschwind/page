@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <cassert>
+#include <stdint.h>
 
 #include "window.hxx"
 
@@ -24,14 +25,17 @@ long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 window_t::window_map_t window_t::created_window;
 
-window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
-		cnx(cnx), xwin(w), has_partial_struct(false), lock_count(0), is_lock(
+window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) : cnx(cnx),
+		xwin(w), has_partial_struct(false), lock_count(0), is_lock(
 				false), window_surf(0), damage(None), opacity(1.0), has_wm_name(
 				false), has_net_wm_name(false), wm_name(""), net_wm_name(""), name(
 				"") {
 
 	assert(created_window.find(w) == created_window.end());
 	created_window[w] = this;
+
+	icon.data = 0;
+	icon_surf = 0;
 
 	if (wa.map_state == IsUnmapped) {
 		_is_map = false;
@@ -44,10 +48,16 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	size.y = wa.y;
 	size.w = wa.width;
 	size.h = wa.height;
+
+	requested_size = size;
+
 	visual = wa.visual;
 	w_class = wa.c_class;
 
 	_override_redirect = (wa.override_redirect ? true : false);
+	if(_override_redirect) {
+		opacity = 1.0;
+	}
 
 	wm_input_focus = false;
 	wm_state = WithdrawnState;
@@ -67,8 +77,11 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	XFlush(cnx.dpy);
 	XSync(cnx.dpy, False);
 
+	XGrabButton(cnx.dpy, Button1, AnyModifier, xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, cnx.xroot, None);
+
 	/* read transient_for state */
 	update_transient_for();
+	update_icon();
 	update_partial_struct();
 	wm_normal_hints = XAllocSizeHints();
 	wm_hints = XAllocWMHints();
@@ -81,9 +94,12 @@ void window_t::create_render_context() {
 		// using XCompositeRedirectSubwindows
 		//XCompositeRedirectWindow(cnx.dpy, xwin, CompositeRedirectManual);
 		_is_composite_redirected = true;
+
 		/* create the cairo surface */
 		window_surf = cairo_xlib_surface_create(cnx.dpy, xwin, visual, size.w,
 				size.h);
+		if(!window_surf)
+			printf("WARNING CAIRO FAIL\n");
 		/* track update */
 		damage = XDamageCreate(cnx.dpy, xwin, XDamageReportNonEmpty);
 		if (damage)
@@ -129,6 +145,16 @@ window_t::~window_t() {
 	XFree(wm_normal_hints);
 	XFree(wm_hints);
 
+	if (icon_surf != 0) {
+		cairo_surface_destroy(icon_surf);
+		icon_surf = 0;
+	}
+
+	if (icon.data != 0) {
+		free(icon.data);
+		icon.data = 0;
+	}
+
 	assert(created_window.find(xwin) != created_window.end());
 	created_window.erase(xwin);
 }
@@ -149,6 +175,7 @@ void window_t::read_all() {
 	read_net_wm_type();
 	read_net_wm_state();
 	read_net_wm_protocols();
+	update_net_wm_user_time();
 
 	wm_state = read_wm_state();
 
@@ -372,6 +399,7 @@ void window_t::write_net_wm_allowed_actions() {
 }
 
 void window_t::move_resize(box_int_t const & location) {
+	requested_size = location;
 	if(size == location)
 		return;
 	cnx.move_resize(xwin, location);
@@ -444,6 +472,136 @@ void window_t::toggle_net_wm_state(Atom x) {
 	}
 }
 
+void window_t::update_net_wm_user_time() {
+	unsigned int n;
+	long * time = get_properties32(cnx.atoms._NET_WM_USER_TIME, cnx.atoms.CARDINAL, &n);
+	if(time) {
+		user_time = time[0];
+	} else {
+		user_time = 0;
+	}
+}
+
+void window_t::update_icon() {
+
+	if (icon_surf != 0) {
+		cairo_surface_destroy(icon_surf);
+		icon_surf = 0;
+	}
+
+	if (icon.data != 0) {
+		free(icon.data);
+		icon.data = 0;
+	}
+
+	long * icon_data;
+	int32_t * icon_data32;
+	int icon_data_size;
+	icon_t selected;
+	std::list<struct icon_t> icons;
+	bool has_icon = false;
+	unsigned int n;
+	icon_data_size = n;
+
+	if (icon_data != 0) {
+		icon_data32 = new int32_t[n];
+		for (int i = 0; i < n; ++i)
+			icon_data32[i] = icon_data[i];
+
+		int offset = 0;
+		while (offset < icon_data_size) {
+			icon_t tmp;
+			tmp.width = icon_data[offset + 0];
+			tmp.height = icon_data[offset + 1];
+			tmp.data = (unsigned char *) &icon_data32[offset + 2];
+			offset += 2 + tmp.width * tmp.height;
+			icons.push_back(tmp);
+		}
+
+		icon_t ic;
+		int x = 0;
+		/* find an icon */
+		std::list<icon_t>::iterator i = icons.begin();
+		while (i != icons.end()) {
+			if ((*i).width <= 16 && x < (*i).width) {
+				x = (*i).width;
+				ic = (*i);
+				has_icon = true;
+			}
+			++i;
+		}
+
+		if (has_icon) {
+			selected = ic;
+		} else {
+			if (!icons.empty()) {
+				selected = icons.front();
+				has_icon = true;
+			} else {
+				has_icon = false;
+			}
+
+		}
+
+		if (has_icon) {
+
+			int target_height;
+			int target_width;
+			double ratio;
+
+			if (selected.width > selected.height) {
+				target_width = 16;
+				target_height = (double) selected.height
+						/ (double) selected.width * 16;
+				ratio = (double) target_width / (double) selected.width;
+			} else {
+				target_height = 16;
+				target_width = (double) selected.width
+						/ (double) selected.height * 16;
+				ratio = (double) target_height / (double) selected.height;
+			}
+
+			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
+					target_width);
+
+			printf("reformat from %dx%d to %dx%d %f\n", selected.width,
+					selected.height, target_width, target_height, ratio);
+
+			icon.width = target_width;
+			icon.height = target_height;
+			icon.data = (unsigned char *) malloc(stride * target_height);
+
+			for (int j = 0; j < target_height; ++j) {
+				for (int i = 0; i < target_width; ++i) {
+					int x = i / ratio;
+					int y = j / ratio;
+					if (x < selected.width && x >= 0 && y < selected.height
+							&& y >= 0) {
+						((uint32_t *) (icon.data + stride * j))[i] =
+								((uint32_t*) selected.data)[x
+										+ selected.width * y];
+					}
+				}
+			}
+
+			icon_surf = cairo_image_surface_create_for_data(
+					(unsigned char *) icon.data, CAIRO_FORMAT_ARGB32,
+					icon.width, icon.height, stride);
+
+		} else {
+			icon_surf = 0;
+		}
+
+		delete[] icon_data;
+		delete[] icon_data32;
+
+	} else {
+		icon_surf = 0;
+	}
+
+}
+
+
 void window_t::update_partial_struct() {
 	unsigned int n;
 	long * p_struct = get_properties32(cnx.atoms._NET_WM_STRUT_PARTIAL,
@@ -498,6 +656,15 @@ void window_t::repair1(cairo_t * cr, box_int_t const & area) {
 
 box_int_t window_t::get_absolute_extend() {
 	return size;
+}
+
+box_int_t window_t::get_requested_size() {
+	return requested_size;
+}
+
+
+region_t<int> window_t::get_area() {
+	return region_t<int>(size);
 }
 
 void window_t::reconfigure(box_int_t const & area) {

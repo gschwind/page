@@ -13,7 +13,9 @@ page_SOURCES = \
 	popup_notebook1.cxx \
 	popup_split.cxx \
 	render_context.cxx \
-	viewport.cxx
+	viewport.cxx \
+	render_tree.cxx \
+	renderable_page.cxx
 
 page_LDADD = \
 	$(X11_LIBS) \

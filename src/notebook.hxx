@@ -8,25 +8,13 @@
 #ifndef NOTEBOOK_HXX_
 #define NOTEBOOK_HXX_
 
-#include <map>
-#include <list>
-#include <cairo.h>
-#include <ft2build.h>
-#include <freetype/freetype.h>
-#include FT_FREETYPE_H
-
 #include "box.hxx"
 #include "client.hxx"
 #include "tree.hxx"
-#include "split.hxx"
-#include "popup_notebook0.hxx"
-#include "popup_notebook1.hxx"
-#include "page_base.hxx"
-#include "xconnection.hxx"
+#include "window.hxx"
+
 
 namespace page {
-
-typedef std::list<client_t *> client_list_t;
 
 struct img_t {
   unsigned int   width;
@@ -35,18 +23,8 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t: public tree_t {
-
-	class noteboot_event_handler_t : public xevent_handler_t {
-	public:
-		notebook_t & nbk;
-		noteboot_event_handler_t(notebook_t & nbk) : nbk(nbk) { }
-		virtual ~noteboot_event_handler_t() { }
-		virtual void process_event(XEvent const & e);
-	};
-
-	typedef std::map<window_t *, client_t *> client_map_t;
-	client_map_t client_map;
+class notebook_t : public tree_t {
+public:
 
 	static int const BORDER_SIZE = 4;
 	static int const HEIGHT = 24;
@@ -60,32 +38,14 @@ class notebook_t: public tree_t {
 		SELECT_RIGHT
 	};
 
-	static std::list<notebook_t *> notebooks;
+	// list of client to maintain tab order
+	window_list_t _clients;
+	// list of selected to have smart unselect (when window is closed we
+	// select the previous window selected
+	window_list_t _selected;
+	// set of map for fast check is window is in this notebook
+	window_set_t _client_map;
 
-	page_base_t & page;
-	xconnection_t & cnx;
-	render_context_t & rnd;
-
-	noteboot_event_handler_t event_handler;
-
-	Cursor cursor;
-
-	bool back_buffer_is_valid;
-	cairo_surface_t * back_buffer;
-	cairo_t * back_buffer_cr;
-
-	static cairo_surface_t * vsplit_button_s;
-	static cairo_surface_t * hsplit_button_s;
-	static cairo_surface_t * close_button_s;
-	static cairo_surface_t * pop_button_s;
-	static cairo_surface_t * pops_button_s;
-
-	static bool ft_is_loaded;
-	static FT_Library library; /* handle to library */
-	static FT_Face face; /* handle to face object */
-	static cairo_font_face_t * font;
-	static FT_Face face_bold; /* handle to face object */
-	static cairo_font_face_t * font_bold;
 
 	box_int_t client_area;
 
@@ -105,18 +65,12 @@ class notebook_t: public tree_t {
 	box_t<int> popup_left_area;
 	box_t<int> popup_right_area;
 
-	client_list_t _clients;
-	client_list_t _selected;
+	void set_selected(window_t * c);
 
-	void set_selected(client_t * c);
-
-	static Bool drag_and_drop_filter(Display * dpy, XEvent * ev, char * arg);
-	void process_drag_and_drop(client_t * c, int start_x, int start_y);
-
-	void update_client_position(client_t * c);
+	void update_client_position(window_t * c);
 
 public:
-	notebook_t(page_base_t & page);
+	notebook_t();
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
 	void render(cairo_t * cr);
@@ -124,42 +78,45 @@ public:
 
 	bool process_button_press_event(XEvent const * e);
 
-	void split(split_type_e type);
-
-	void split_left(client_t * c);
-	void split_right(client_t * c);
-	void split_top(client_t * c);
-	void split_bottom(client_t * c);
-
 	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	window_list_t get_windows();
+	window_set_t get_windows();
 
-	virtual bool add_client(window_t * c);
-	virtual box_int_t get_new_client_size();
-	virtual void remove_client(window_t * c);
-	virtual void activate_client(window_t * c);
-	virtual void iconify_client(window_t * c);
+	bool add_client(window_t * c);
+	void remove_client(window_t * c);
 
-	bool add_client(client_t * c);
-	void remove_client(client_t * c);
-	void activate_client(client_t * c);
-	void iconify_client(client_t * c);
+	void activate_client(window_t * x);
+	void iconify_client(window_t * x);
+
+	box_int_t get_new_client_size();
 
 	void select_next();
-	void rounded_rectangle(cairo_t * cr, double x, double y, double w, double h, double r);
 	void delete_all();
 
 	virtual void unmap_all();
 	virtual void map_all();
 
-	void update_popup_position(popup_notebook0_t * p, int x, int y, int w, int h, bool show_popup);
+	notebook_t * get_nearest_notebook();
 
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
+	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
+
+	window_t * is_inside(int x, int y);
+
+	/*
+	 * Compute client size taking in account possible max_width and max_heigth
+	 * and the window Hints.
+	 * @output width: width result
+	 * @output height: height result
+	 */
+
+	static void compute_client_size_with_constraint(XSizeHints const & size_hints,
+			unsigned int max_width, unsigned int max_height,
+			unsigned int & width, unsigned int & height);
+
 };
 
 }

@@ -9,6 +9,8 @@
 #define POPUP_NOTEBOOK1_HXX_
 
 #include <string>
+#include <cairo/cairo.h>
+#include <cairo/cairo-ft.h>
 #include "renderable.hxx"
 
 namespace page {
@@ -25,6 +27,7 @@ struct popup_notebook1_t: public renderable_t {
 	virtual ~popup_notebook1_t();
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
+	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
 	virtual bool is_visible();
 };

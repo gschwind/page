@@ -42,6 +42,10 @@ box_int_t popup_notebook0_t::get_absolute_extend() {
 	return area;
 }
 
+region_t<int> popup_notebook0_t::get_area() {
+	return region_t<int>(area);
+}
+
 void popup_notebook0_t::reconfigure(box_int_t const & a) {
 	area = a;
 }

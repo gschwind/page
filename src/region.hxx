@@ -15,12 +15,11 @@
 namespace page {
 
 template<typename T>
-class region_t {
+class region_t: public std::list<box_t<T> > {
 	typedef box_t<T> _box_t;
 public:
 	typedef std::list<_box_t> box_list_t;
 private:
-	box_list_t area;
 
 	inline static void copy_without(typename box_list_t::const_iterator x,
 			typename box_list_t::const_iterator y, box_list_t const & list,
@@ -95,7 +94,8 @@ private:
 	}
 
 	/* box0 - box1 */
-	static region_t::box_list_t substract_box(_box_t const & box0, _box_t const & box1) {
+	static region_t::box_list_t substract_box(_box_t const & box0,
+			_box_t const & box1) {
 		//std::cout <<"a "<< box0.to_string() << std::endl;
 		//std::cout <<"b "<< box1.to_string() << std::endl;
 		box_list_t result;
@@ -212,8 +212,6 @@ private:
 			result.push_back(box0);
 		}
 
-
-
 		while (merge_area_macro(result))
 			continue;
 
@@ -227,40 +225,38 @@ public:
 
 	}
 
-	region_t(region_t const & r) {
-		area = r.area;
+	region_t(region_t const & r) :
+			box_list_t(r) {
 	}
 
 	region_t(box_t<T> const & b) {
-		area.push_back(b);
+		if (!b.is_null())
+			push_back(b);
 	}
 
 	region_t(T x, T y, T w, T h) {
-		area.push_back(box_t<T>(x, y, w, h));
-	}
-
-	region_t & operator=(region_t const & r) {
-		if (this != &r)
-			area = r.area;
-		return *this;
+		box_t<T> b(x, y, w, h);
+		if (!b.is_null())
+			push_back(b);
 	}
 
 	region_t & operator=(box_t<T> const & b) {
-		area.clear();
-		area.push_back(b);
+		box_list_t::clear();
+		if (!b.is_null())
+			push_back(b);
 		return *this;
 	}
 
 	region_t operator-(box_t<T> const & box1) const {
 		region_t result;
-		typename box_list_t::const_iterator i = area.begin();
-		while (i != area.end()) {
+		typename box_list_t::const_iterator i = box_list_t::begin();
+		while (i != box_list_t::end()) {
 			region_t::box_list_t x = substract_box(*i, box1);
-			result.area.insert(result.area.end(), x.begin(), x.end());
+			result.insert(result.end(), x.begin(), x.end());
 			++i;
 		}
 
-		while (merge_area_macro(result.area))
+		while (merge_area_macro(result))
 			continue;
 
 		return result;
@@ -273,8 +269,8 @@ public:
 
 	region_t operator-(region_t const & b) const {
 		region_t result = *this;
-		typename box_list_t::const_iterator i = b.area.begin();
-		while (i != b.area.end()) {
+		typename box_list_t::const_iterator i = b.begin();
+		while (i != b.end()) {
 			result -= *i;
 			++i;
 		}
@@ -283,13 +279,15 @@ public:
 	}
 
 	region_t & operator+=(box_t<T> const & b) {
-		//std::cout << "XX this =" << this->to_string() << std::endl;
-		*this -= b;
-		//std::cout << "X@ this =" << this->to_string() << std::endl;
-		area.push_back(b);
-		//std::cout << "X# this =" << this->to_string() << std::endl;
-		while (merge_area_macro(area))
-			continue;
+		if (!b.is_null()) {
+			//std::cout << "XX this =" << this->to_string() << std::endl;
+			*this -= b;
+			//std::cout << "X@ this =" << this->to_string() << std::endl;
+			push_back(b);
+			//std::cout << "X# this =" << this->to_string() << std::endl;
+			while (merge_area_macro(*this))
+				continue;
+		}
 		//std::cout << "X%% this =" << this->to_string() << std::endl;
 		return *this;
 	}
@@ -302,8 +300,8 @@ public:
 
 	region_t operator+(region_t const & r) const {
 		region_t result = *this;
-		typename box_list_t::const_iterator i = r.area.begin();
-		while(i != r.area.end()) {
+		typename box_list_t::const_iterator i = r.begin();
+		while (i != r.end()) {
 			result += *i;
 			++i;
 		}
@@ -311,28 +309,31 @@ public:
 		return result;
 	}
 
-	void clear() {
-		area.clear();
+	region_t<T> operator&(region_t<T> const & r) const {
+		region_t<T> result;
+		typename region_t<T>::box_list_t::const_iterator i, j;
+		i = box_list_t::begin();
+		while (i != box_list_t::end()) {
+			j = r.begin();
+			while (j != r.end()) {
+				box_int_t v = (*i & *j);
+				if (!v.is_null()) {
+					result = result + v;
+				}
+				++j;
+			}
+			++i;
+		}
+		return result;
 	}
 
-	std::list<box_t<T> > get_area() {
-		return area;
-	}
-
-	typename std::list<box_t<T> >::const_iterator begin() const {
-		return area.begin();
-	}
-
-	typename std::list<box_t<T> >::const_iterator end() const {
-		return area.end();
-	}
 
 	std::string to_string() const {
 		std::ostringstream os;
 		//os << area.size();
-		typename std::list<box_t<T> >::const_iterator i = area.begin();
-		while(i != area.end()) {
-			if(i != area.begin())
+		typename box_list_t::const_iterator i = box_list_t::begin();
+		while (i != box_list_t::end()) {
+			if (i != box_list_t::begin())
 				os << ",";
 			os << (*i).to_string();
 			++i;
@@ -342,8 +343,9 @@ public:
 
 	}
 
-
 };
+
+
 
 }
 
