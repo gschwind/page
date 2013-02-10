@@ -41,6 +41,11 @@
 #include "client.hxx"
 #include "root.hxx"
 
+/* ICCCM definition */
+#define _NET_WM_STATE_REMOVE 0
+#define _NET_WM_STATE_ADD 1
+#define _NET_WM_STATE_TOGGLE 2
+
 namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
@@ -558,7 +563,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			if (last_focus_time < cnx.last_know_time) {
 				c->focus();
 				set_focus(c);
-				cnx.raise_window(c->get_xwin());
+				//cnx.raise_window(c->get_xwin());
 			}
 		} else if (e.window
 				== cnx.xroot&& e.root == cnx.xroot && e.subwindow == None) {
@@ -899,13 +904,12 @@ void page_t::process_event(XMapEvent const & e) {
 	window_t * x = get_window_t(e.window);
 	if (!x)
 		return;
-
 	x->map_notify();
+	rnd.add_damage_area(x->get_absolute_extend());
+	x->read_all();
 	if (x == client_focused) {
 		x->focus();
 	}
-
-	rnd.add_damage_area(x->get_absolute_extend());
 
 }
 
@@ -977,12 +981,15 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		wc.sibling = e.above;
 		wc.stack_mode = e.detail;
 
+		long value_mask = e.value_mask;
+
 		if(c->transient_for() != None) {
 			wc.sibling = c->transient_for();
 			wc.stack_mode = Above;
+			value_mask |= CWSibling | CWStackMode;
 		}
 
-		long value_mask = e.value_mask;
+
 		value_mask |= CWX | CWY | CWHeight | CWWidth | CWBorderWidth;
 		cnx.configure_window(e.window, value_mask, &wc);
 
@@ -1024,12 +1031,14 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 void page_t::process_event(XMapRequestEvent const & e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
 	window_t * x = get_window_t(e.window);
-	if (x) {
-		if (!x->is_input_only()) {
-			if (!has_key(normal_clients, x)) {
-				x->read_all();
-				manage(x);
-			}
+	assert(x != 0);
+	if (!x->is_input_only()) {
+		if (!has_key(normal_clients, x)) {
+			x->read_all();
+			manage(x);
+			activate_client(x);
+		} else {
+			x->read_all();
 			activate_client(x);
 		}
 	}
@@ -1037,7 +1046,7 @@ void page_t::process_event(XMapRequestEvent const & e) {
 
 void page_t::process_event(XPropertyEvent const & e) {
 	char * name = cnx.get_atom_name(e.atom);
-	//printf("Atom Name = \"%s\"\n", name);
+	printf("Atom Name = \"%s\"\n", name);
 	XFree(name);
 
 	cnx.last_know_time = e.time;
@@ -1051,19 +1060,18 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_net_vm_name();
 		x->read_title();
 		if(has_key(client_to_notebook_index, x)) {
+			rpage->mark_durty();
 			rnd.add_damage_area(client_to_notebook_index[x]->tab_area);
 		}
 	} else if (e.atom == cnx.atoms.WM_NAME) {
 		x->read_vm_name();
 		x->read_title();
 		if(has_key(client_to_notebook_index, x)) {
+			rpage->mark_durty();
 			rnd.add_damage_area(client_to_notebook_index[x]->tab_area);
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_STRUT_PARTIAL) {
-		if (e.state == PropertyNewValue) {
-			x->update_partial_struct();
-			update_allocation();
-		} else if (e.state == PropertyDelete) {
+		if (e.state == PropertyNewValue || e.state == PropertyDelete) {
 			x->update_partial_struct();
 			update_allocation();
 		}
@@ -1072,8 +1080,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == cnx.atoms._NET_WM_WINDOW_TYPE) {
 		x->read_net_wm_type();
 	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
-		x->read_wm_normal_hints();
-		update_allocation();
+		//x->read_wm_normal_hints();
+		//if (has_key(client_to_notebook_index, x)) {
+		//	update_allocation();
+		//}
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
 		x->read_net_wm_protocols();
 	} else if (e.atom == cnx.atoms.WM_TRANSIENT_FOR) {
@@ -1110,41 +1120,21 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == cnx.atoms._NET_WM_STATE) {
 		window_t * c = get_window_t(e.window);
 		if (c) {
-			if ((unsigned long)e.data.l[1] == cnx.atoms._NET_WM_STATE_FULLSCREEN
-					|| (unsigned long)e.data.l[2] == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
-				switch (e.data.l[0]) {
-				case 0:
-					printf("SET normal\n");
-					if (!c->is_fullscreen())
-						break;
-					unfullscreen(c);
-					break;
-				case 1:
-					printf("SET fullscreen\n");
-					if (c->is_fullscreen())
-						break;
-					fullscreen(c);
-					break;
-				case 2:
-					printf("SET toggle\n");
-					toggle_fullscreen(c);
-					break;
 
-				}
-				update_allocation();
-			}
+			process_net_vm_state_client_messate(c, e.data.l[0], e.data.l[1]);
+			process_net_vm_state_client_messate(c, e.data.l[0], e.data.l[2]);
 
 			for (int i = 1; i < 3; ++i) {
 				if (std::find(supported_list.begin(), supported_list.end(),
 						e.data.l[i]) != supported_list.end()) {
 					switch (e.data.l[0]) {
-					case 0:
+					case _NET_WM_STATE_REMOVE:
 						c->unset_net_wm_state(e.data.l[i]);
 						break;
-					case 1:
+					case _NET_WM_STATE_ADD:
 						c->set_net_wm_state(e.data.l[i]);
 						break;
-					case 2:
+					case _NET_WM_STATE_TOGGLE:
 						c->toggle_net_wm_state(e.data.l[i]);
 						break;
 					}
@@ -1300,7 +1290,7 @@ void page_t::fullscreen(window_t * c) {
 	c->move_resize(v->raw_aera);
 	set_focus(c);
 	c->focus();
-	cnx.raise_window(c->get_xwin());
+	//cnx.raise_window(c->get_xwin());
 
 }
 
@@ -1422,6 +1412,8 @@ void page_t::page_event_handler_t::process_event(XEvent const & e) {
 				e.xany.window);
 	}
 
+	fflush(stdout);
+
 //	page.cnx.grab();
 //
 //	/* remove all destroyed windows */
@@ -1521,7 +1513,6 @@ void page_t::iconify_client(window_t * x) {
 void page_t::update_allocation() {
 	std::set<viewport_t *>::iterator i = viewport_list.begin();
 	while (i != viewport_list.end()) {
-		//box_int_t x = (*i)->get_absolute_extend();
 		fix_allocation(*(*i));
 		(*i)->reconfigure();
 		++i;
@@ -1588,21 +1579,23 @@ void page_t::update_window_z() {
 
 /* create window handler */
 void page_t::insert_window_in_stack(window_t * x) {
-
-	/* ICCCM if transient_for is set for override redirect window, move this window above
-	 * the transient one (it's for menus and popup) */
-	if (x->override_redirect() && x->transient_for() != None) {
-		insert_window_above_of(x, x->transient_for());
-		/* make the request to X server */
-		XWindowChanges cr;
-		cr.sibling = x->transient_for();
-		cr.stack_mode = Above;
-		cnx.configure_window(x->get_xwin(), CWSibling | CWStackMode, &cr);
-	} else {
-		windows_stack.push_back(x);
-	}
+	windows_stack.push_back(x);
 	update_window_z();
 	rnd.add(x);
+
+//	/* ICCCM if transient_for is set for override redirect window, move this window above
+//	 * the transient one (it's for menus and popup) */
+//	if (x->override_redirect() && x->transient_for() != None) {
+//		//insert_window_above_of(x, x->transient_for());
+//		/* make the request to X server */
+//		XWindowChanges cr;
+//		cr.sibling = x->transient_for();
+//		cr.stack_mode = Above;
+//		cnx.configure_window(x->get_xwin(), CWSibling | CWStackMode, &cr);
+//	} else {
+//		windows_stack.push_back(x);
+//	}
+
 }
 
 window_t * page_t::new_window(Window const w, XWindowAttributes const & wa) {
@@ -1901,8 +1894,8 @@ void page_t::update_popup_position(popup_notebook0_t * p, int x, int y, int w,
 }
 
 void page_t::fix_allocation(viewport_t & v) {
-	printf("update_allocation %dx%d+%d+%d\n", v.raw_aera.x, v.raw_aera.y,
-			v.raw_aera.w, v.raw_aera.h);
+	printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
+			v.raw_aera.x, v.raw_aera.y);
 
 	/* Partial struct content definition */
 	enum {
@@ -2070,6 +2063,87 @@ viewport_t * page_t::new_viewport(box_int_t & area) {
 	notebook_t * n = new_notebook(v);
 	v->add_notebook(n);
 	return v;
+}
+
+void page_t::process_net_vm_state_client_messate(window_t * c, long type, Atom state_properties) {
+	if(state_properties == None)
+		return;
+
+	char const * action;
+
+	switch(type) {
+	case _NET_WM_STATE_REMOVE:
+		action = "remove";
+		break;
+	case _NET_WM_STATE_ADD:
+		action = "add";
+		break;
+	case _NET_WM_STATE_TOGGLE:
+		action = "toggle";
+		break;
+	default:
+		action = "unknown";
+		break;
+	}
+
+
+	char * name = cnx.get_atom_name(state_properties);
+	printf("process wm_state %s %s\n", action, name);
+	XFree(name);
+
+	if (state_properties == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
+		switch (type) {
+		case _NET_WM_STATE_REMOVE:
+			printf("SET normal\n");
+			if (!c->is_fullscreen())
+				break;
+			unfullscreen(c);
+			break;
+		case _NET_WM_STATE_ADD:
+			printf("SET fullscreen\n");
+			if (c->is_fullscreen())
+				break;
+			fullscreen(c);
+			break;
+		case _NET_WM_STATE_TOGGLE:
+			printf("SET toggle\n");
+			toggle_fullscreen(c);
+			break;
+		}
+		update_allocation();
+	} else if (state_properties == cnx.atoms._NET_WM_STATE_HIDDEN) {
+		switch(type) {
+		case _NET_WM_STATE_REMOVE:
+			if(has_key(client_to_notebook_index, c)) {
+				client_to_notebook_index[c]->activate_client(c);
+			} else {
+				c->map();
+			}
+			break;
+		case _NET_WM_STATE_ADD:
+			if(has_key(client_to_notebook_index, c)) {
+				// ignore
+			} else {
+				c->unmap();
+			}
+			break;
+		case _NET_WM_STATE_TOGGLE:
+			if(has_key(client_to_notebook_index, c)) {
+				/* only activate is possible here, because hide is ignored*/
+				client_to_notebook_index[c]->activate_client(c);
+			} else {
+				if(c->is_map()) {
+					c->unmap();
+				} else {
+					c->map();
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
 }
 
 }

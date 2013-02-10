@@ -366,6 +366,8 @@ public:
 
 	viewport_t * find_viewport(window_t * w);
 
+	void process_net_vm_state_client_messate(window_t * c, long type, Atom state_properties);
+
 };
 
 }

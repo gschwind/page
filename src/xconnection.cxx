@@ -518,14 +518,14 @@ int xconnection_t::lower_window(Window w) {
 int xconnection_t::configure_window(Window w, unsigned int value_mask,
 		XWindowChanges * values) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
-	//if (value_mask & CWSibling)
-	//	printf("> Sibling %lu\n", values->sibling);
-	//if (value_mask & CWStackMode)
-	//	printf("> StackMode %d\n", values->stack_mode);
-	//if (value_mask & CWBorderWidth) {
-	//	printf("> BoderWidth %d\n", values->border_width);
-	//}
+	printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
+	if (value_mask & CWSibling)
+		printf("> Sibling %lu\n", values->sibling);
+	if (value_mask & CWStackMode)
+		printf("> StackMode %d\n", values->stack_mode);
+	if (value_mask & CWBorderWidth) {
+		printf("> BoderWidth %d\n", values->border_width);
+	}
 	return XConfigureWindow(dpy, w, value_mask, values);
 }
 

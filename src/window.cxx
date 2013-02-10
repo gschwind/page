@@ -222,7 +222,6 @@ long window_t::read_wm_state() {
 	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
 		result = p[0];
 	} else {
-		printf("Error in WM_STATE %lu %d %lu\n", n, format, real);
 		return WithdrawnState;
 	}
 	XFree(p);
@@ -292,6 +291,16 @@ void window_t::read_wm_normal_hints() {
 		wm_normal_hints->flags = 0;
 		printf("no WMNormalHints\n");
 	}
+
+	printf("x: %d y: %d w: %d h: %d\n", wm_normal_hints->x, wm_normal_hints->y, wm_normal_hints->width, wm_normal_hints->height);
+	if(wm_normal_hints->flags & PMaxSize) {
+		printf("max w: %d max h: %d \n", wm_normal_hints->max_width, wm_normal_hints->max_height);
+	}
+
+	if(wm_normal_hints->flags & PMinSize) {
+		printf("min w: %d min h: %d \n", wm_normal_hints->min_width, wm_normal_hints->min_height);
+	}
+
 }
 
 XWMHints const *
@@ -790,6 +799,90 @@ void window_t::map_notify() {
 void window_t::unmap_notify() {
 	_is_map = false;
 	destroy_render_context();
+}
+
+void window_t::apply_size_constraint() {
+	/* default size if no size_hints is provided */
+	XSizeHints const & size_hints = *wm_normal_hints;
+
+	/* no vm hints */
+	if(wm_normal_hints->flags == 0)
+		return;
+
+	int max_width = size.w;
+	int max_height = size.h;
+
+	if (size_hints.flags & PMaxSize) {
+		if (max_width > size_hints.max_width)
+			max_width = size_hints.max_width;
+		if (max_height > size_hints.max_height)
+			max_height = size_hints.max_height;
+	}
+
+	if (size_hints.flags & PBaseSize) {
+		if (max_width < size_hints.base_width)
+			max_width = size_hints.base_width;
+		if (max_height < size_hints.base_height)
+			max_height = size_hints.base_height;
+	} else if (size_hints.flags & PMinSize) {
+		if (max_width < size_hints.min_width)
+			max_width = size_hints.min_width;
+		if (max_height < size_hints.min_height)
+			max_height = size_hints.min_height;
+	}
+
+	if (size_hints.flags & PAspect) {
+		if (size_hints.flags & PBaseSize) {
+			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
+			if ((max_width - size_hints.base_width) * size_hints.min_aspect.y
+					< (max_height - size_hints.base_height)
+							* size_hints.min_aspect.x) {
+				/* reduce h */
+				max_height = size_hints.base_height
+						+ ((max_width - size_hints.base_width)
+								* size_hints.min_aspect.y)
+								/ size_hints.min_aspect.x;
+
+			} else if ((max_width - size_hints.base_width)
+					* size_hints.max_aspect.y
+					> (max_height - size_hints.base_height)
+							* size_hints.max_aspect.x) {
+				/* reduce w */
+				max_width = size_hints.base_width
+						+ ((max_height - size_hints.base_height)
+								* size_hints.max_aspect.x)
+								/ size_hints.max_aspect.y;
+			}
+		} else {
+			if (max_width * size_hints.min_aspect.y
+					< max_height * size_hints.min_aspect.x) {
+				/* reduce h */
+				max_height = (max_width * size_hints.min_aspect.y)
+						/ size_hints.min_aspect.x;
+
+			} else if (max_width * size_hints.max_aspect.y
+					> max_height * size_hints.max_aspect.x) {
+				/* reduce w */
+				max_width = (max_height * size_hints.max_aspect.x)
+						/ size_hints.max_aspect.y;
+			}
+		}
+
+	}
+
+	if (size_hints.flags & PResizeInc) {
+		max_width -=
+				((max_width - size_hints.base_width) % size_hints.width_inc);
+		max_height -= ((max_height - size_hints.base_height)
+				% size_hints.height_inc);
+	}
+
+	printf("XXXX %d %d \n", max_width, max_height);
+
+	//if(max_height != size.h || max_width != size.w) {
+		move_resize(box_int_t(size.x, size.y, max_width, max_height));
+	//}
+
 }
 
 }

@@ -328,6 +328,8 @@ public:
 
 	Window update_transient_for();
 
+	void apply_size_constraint();
+
 };
 
 typedef std::list<window_t *> window_list_t;
