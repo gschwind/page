@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
 #include <fcntl.h>
 #include <assert.h>
 
@@ -19,132 +20,314 @@
 #include <stdexcept>
 
 #include <cxxabi.h>
+#include <dlfcn.h>
+#include <link.h>
+#include <list>
+#include <map>
+#include <sstream>
 
-#ifdef ENABLE_TRACE
-
-extern "C" {
-
-bfd * g_bfd = 0;
-asymbol ** g_symbol_table = 0;
-symbol_info * g_symbol_info;
-char const ** demangled_symbol;
-int g_nsyms;
-
-void load_file(char const * filename, char * data, int size) __attribute__((no_instrument_function));
-void trace_init() __attribute__((no_instrument_function));
-char const * get_symbol(void * addr) __attribute__((no_instrument_function));
+#include "ftrace_function.hxx"
 
 
-void load_file(char const * filename, char * data, int size) {
-	int fd = open(filename, O_RDONLY);
-	read(fd, data, size);
-	close(fd);
-}
+struct file_handler {
+	std::string name; /* object file name */
+	unsigned long addr; /* object address */
+	unsigned long seg_memsz; /* segment size */
+	unsigned long seg_vaddr; /* segment virtual address */
+};
 
-void trace_init() {
-	bfd_init();
+struct bfd_handler {
+public:
+	bfd * bfd_file;
+	asymbol ** symbol_table;
+	unsigned long nsyms;
 
-	char string_buff[2000];
-	snprintf(string_buff, 2000, "/proc/%d/cmdline", getpid());
-	printf("opening %s\n", string_buff);
-	char x[1000];
-	snprintf(x, 1000, "cat %s", string_buff);
-	//system(x);
-	char cmdline[2000];
-	int size;
-	load_file(string_buff, cmdline, 2000);
-	cmdline[1999] = 0;
-	printf("found execfile %s\n", cmdline);
-
-	g_bfd = bfd_openr(cmdline, 0);
-
-	if (g_bfd == NULL) {
-		printf("bfd_openr error\n");
-		return;
-	} else {
-		printf("bfd is opened\n");
+private:
+	bfd_handler() {
+		bfd_file = 0;
+		symbol_table = 0;
+		nsyms = 0;
 	}
 
-	char **matching;
-	if (!bfd_check_format_matches(g_bfd, bfd_object, &matching)) {
-		printf("format_matches\n");
+public:
+
+
+	~bfd_handler() {
+		if (bfd_file != NULL)
+			bfd_close(bfd_file);
+		if (symbol_table != NULL)
+			free(symbol_table);
 	}
 
-	long storage_needed;
-	long number_of_symbols;
-	long i;
+	static bfd_handler * new_bfd_handler(std::string const & filename) {
 
-	storage_needed = bfd_get_symtab_upper_bound(g_bfd);
+		int nsize = 0;
+		bfd_handler * ths = new bfd_handler;
+		if (ths == 0)
+			goto error;
 
-	if (storage_needed < 0) {
-		throw std::runtime_error("trace fail");
+		ths->bfd_file = bfd_openr(filename.c_str(), 0);
+
+		if (ths->bfd_file == NULL) {
+			fprintf(stderr, "fail to open %s\n", filename.c_str());
+			goto error;
+		}
+
+		if (!bfd_check_format(ths->bfd_file, bfd_object)) {
+			fprintf(stderr, "%s is not an bfd_object\n", filename.c_str());
+			goto error;
+		}
+
+		long storage_needed;
+
+		storage_needed = bfd_get_symtab_upper_bound(ths->bfd_file);
+
+		if (storage_needed < 0) {
+			throw std::runtime_error("trace fail");
+		}
+
+		if (storage_needed == 0) {
+			fprintf(stderr, "not symbol found in %s\n", filename.c_str());
+			goto error;
+		}
+
+		nsize = bfd_get_symtab_upper_bound (ths->bfd_file);
+		ths->symbol_table = (asymbol **) malloc(nsize);
+		if(ths->symbol_table == 0)
+			goto error;
+
+		ths->nsyms = bfd_canonicalize_symtab(ths->bfd_file, ths->symbol_table);
+
+		return ths;
+
+	error:
+		/* cleanup */
+		if (ths != NULL) {
+			delete ths;
+		}
+
+		return NULL;
 	}
 
-	if (storage_needed == 0) {
-		return;
+};
+
+struct trace_data {
+	static bool is_init;
+
+	struct search_debug_info {
+		int found;
+		bfd_vma pc;
+
+		char const * filename;
+		char const * functionname;
+		unsigned int line;
+
+		bfd_handler * bfdh;
+
+	};
+
+	std::list<file_handler> files;
+	std::map<unsigned long, std::string> symbols;
+	std::map<std::string, bfd_handler *> bfd_opened;
+
+
+	static int list_files_segments(struct dl_phdr_info *info, size_t size,
+			void *_data) {
+
+		trace_data * data = (trace_data*) _data;
+
+		long n;
+		const ElfW(Phdr) *phdr;
+		phdr = info->dlpi_phdr;
+		for (n = info->dlpi_phnum; --n >= 0; phdr++) {
+			if (phdr->p_type == PT_LOAD) {
+				file_handler x;
+				x.name = info->dlpi_name;
+				x.addr = info->dlpi_addr;
+				x.seg_vaddr = phdr->p_paddr;
+				x.seg_memsz = phdr->p_memsz;
+
+				if(x.name.size() == 0)
+					x.name = "/proc/self/exe";
+
+				//fprintf(stderr,
+				//		"segment addr: 0x%016lx, seg_vaddr: 0x%016lx, obj: %s, seg_memsz: %lu\n",
+				//		x.addr, x.seg_vaddr, x.name.c_str(), x.seg_memsz);
+				data->files.push_back(x);
+			}
+		}
+		return 0;
 	}
 
-	int nsize = bfd_get_symtab_upper_bound (g_bfd);
-	g_symbol_table = (asymbol **) malloc(nsize);
-	g_nsyms = bfd_canonicalize_symtab(g_bfd, g_symbol_table);
+	trace_data() {
+		if (!is_init) {
+			bfd_init();
+			is_init = true;
+		}
 
-	g_symbol_info = (symbol_info *)malloc(sizeof(symbol_info) * g_nsyms);
-	demangled_symbol = (char const **)malloc(sizeof(char *) * g_nsyms);
+		dl_iterate_phdr(list_files_segments, this);
 
-	for(int i = 0; i < g_nsyms; ++i) {
-		bfd_symbol_info(g_symbol_table[i], &g_symbol_info[i]);
-		int status = 0;
-		demangled_symbol[i] = abi::__cxa_demangle(g_symbol_info[i].name, 0, 0, &status);
-		if(status != 0)
-			demangled_symbol[i] = "Error in demangle";
+		std::list<file_handler>::iterator ii = files.begin();
+		while(ii != files.end()) {
+			if(bfd_opened.find((*ii).name) == bfd_opened.end()) {
+				bfd_handler * x = bfd_handler::new_bfd_handler((*ii).name);
+				if(x != 0) {
+					bfd_opened[(*ii).name] = x;
+				}
+			}
+			++ii;
+		}
+
 	}
 
-}
+	~trace_data() {
+		std::map<std::string, bfd_handler *>::iterator i = bfd_opened.begin();
+		while(i != bfd_opened.end()) {
+			delete i->second;
+			++i;
+		}
+		bfd_opened.clear();
+	}
 
-char const * get_symbol(void * addr) {
-	for (int i = 0; i < g_nsyms; i++) {
-		if (g_symbol_info[i].value == (unsigned long) addr) {
-			return demangled_symbol[i];
+	file_handler * find_file_handler(unsigned long addr) {
+		std::list<file_handler>::iterator i = files.begin();
+		while(i != files.end()) {
+			if((*i).addr + (*i).seg_vaddr <= addr && (*i).addr + (*i).seg_vaddr + (*i).seg_memsz > addr) {
+				return &(*i);
+			}
+			++i;
+		}
+		return 0;
+	}
+
+	static void find_address_in_section(bfd *abfd, asection *section, void * _data)
+	{
+		search_debug_info * data = (search_debug_info *)_data;
+
+		bfd_vma vma;
+		bfd_size_type size;
+
+		if (data->found)
+			return;
+
+		if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
+			return;
+
+
+		vma = bfd_get_section_vma(abfd, section);
+		if (data->pc < vma)
+			return;
+
+		size = bfd_section_size(abfd, section);
+		if (data->pc >= vma + size)
+			return;
+
+		//fprintf(stderr, "section found offset: 0x%016lx length: 0x%016lx, addr: 0x%016lx , name: %s\n", (unsigned long)bfd_get_section_vma(abfd, section), (unsigned long)bfd_section_size(abfd, section), data->pc, bfd_section_name(abfd, section));
+		data->found = bfd_find_nearest_line(abfd, section, data->bfdh->symbol_table, data->pc - vma,
+					      &(data->filename), &(data->functionname), &(data->line));
+
+		//fprintf(stderr, "xxx: %s %s %d\n", data->filename, data->functionname, data->line);
+	}
+
+
+	bool get_symbol(void * addr, std::string & sym) {
+
+		sym = "none";
+
+		file_handler * fh = find_file_handler((unsigned long)addr);
+		if(fh) {
+			//fprintf(stderr,
+			//		"segment FOUND addr: 0x%016lx, seg_vaddr: 0x%016lx, obj: %s, seg_memsz: %lu\n",
+			//		fh->addr, fh->seg_vaddr, fh->name.c_str(), fh->seg_memsz);
+
+			search_debug_info x;
+			x.pc = ((unsigned long)addr) - fh->addr;
+			x.found = 0;
+			x.filename = 0;
+			x.functionname = 0;
+			x.line = 0;
+
+			std::map<std::string, bfd_handler *>::iterator f = bfd_opened.find(fh->name);
+			if(f != bfd_opened.end()) {
+				x.bfdh = f->second;
+
+				//fprintf(stderr, "file found %s addr: 0x%016lx seg_vaddr: 0x%016lx size = %lu \n", fh->name.c_str(), fh->addr, fh->seg_vaddr, fh->seg_memsz);
+				bfd_map_over_sections(x.bfdh->bfd_file, find_address_in_section, &x);
+
+				if (x.found != 0) {
+
+					int status = 0;
+					char * tmp = abi::__cxa_demangle(x.functionname, 0, 0, &status);
+
+					std::string functionname;
+					if (status != 0)
+						functionname = x.functionname;
+					else
+						functionname = tmp;
+
+					std::stringstream out;
+					out << functionname << " at " << x.filename << ":" << x.line;
+
+					if(status != 0)
+						free(tmp);
+
+					sym = out.str();
+					return true;
+
+					//fprintf(stderr, "%s %s %d\n", x.filename, x.functionname,
+					//		x.line);
+				}
+			}
+		}
+		return false;
+	}
+
+};
+
+bool trace_data::is_init = false;
+
+
+void sig_handler(int sig) {
+	void *array[50];
+	size_t size;
+
+	trace_data * trace = new trace_data;
+
+	// get void*'s for all entries on the stack
+	size = backtrace(array, 50);
+
+	//backtrace_symbols_fd(array, size, 2);
+
+	// print out all the frames to stderr
+	fprintf(stderr, "Error: signal %d:\n", sig);
+
+	for (unsigned int i = 0; i < size; ++i) {
+		std::string sym;
+		Dl_info info;
+		if (trace->get_symbol(array[i], sym)) {
+			fprintf(stderr, "0x%016lx %s\n", (unsigned long) array[i],
+					sym.c_str());
+
+		} else if (dladdr(array[i], &info)) {
+			fprintf(stderr, "0x%016lx %s in %s\n", (unsigned long) array[i],
+					info.dli_sname, info.dli_fname);
+		} else {
+			fprintf(stderr, "0x%016lx unknow\n", (unsigned long) array[i]);
 		}
 	}
 
-	return "UNKNOW";
+	delete trace;
+	exit(1);
 }
 
-void __cyg_profile_func_enter(void *, void *)
-		__attribute__((no_instrument_function));
-void __cyg_profile_func_exit(void *, void *)
-		__attribute__((no_instrument_function));
 
-int depth = -1;
 
-void __cyg_profile_func_enter(void *func, void *caller) {
 
-	depth++;
-	for (int n = 0; n < depth; n++)
-		printf(" ");
 
-	if (!g_bfd) {
-		printf("%p\n", func);
-	} else {
-		char const * symb = get_symbol(func);
-		printf("%p %s\n", func, symb);
-	}
-}
 
-void __cyg_profile_func_exit(void *func, void *caller) {
-//	int n;
-//	for (n = 0; n < depth; n++)
-//		printf(" ");
-//	if (!g_bfd) {
-//		printf("<- %p\n", func);
-//	} else {
-//		char const * symb = get_symbol(func);
-//		printf("<- %p %s\n", func, symb);
-//	}
-	depth--;
-}
 
-}
 
-#endif
+
+
+
+

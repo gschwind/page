@@ -334,7 +334,6 @@ struct xconnection_t {
 
 	template<typename T, unsigned int SIZE>
 	T * get_properties(Window win, Atom prop, Atom type, unsigned int *num) {
-		bool ret = false;
 		int res;
 		unsigned char * xdata = 0;
 		Atom ret_type;

@@ -40,18 +40,8 @@ public:
 	virtual void close(tree_t * src);
 	virtual window_set_t get_windows();
 
-	virtual bool add_client(window_t * x);
-	virtual box_int_t get_new_client_size();
-	virtual void remove_client(window_t * x);
-	virtual void activate_client(window_t * x);
-	virtual void iconify_client(window_t * x);
-	virtual void delete_all();
-	virtual void unmap_all();
-	virtual void map_all();
-
 	notebook_t * get_nearest_notebook();
 
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();
 	virtual void set_allocation(box_int_t const & area);

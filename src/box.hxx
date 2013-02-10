@@ -22,7 +22,7 @@ struct box_t {
 	T x, y;
 	T w, h;
 
-	bool is_inside(T _x, T _y) {
+	bool is_inside(T _x, T _y) const {
 		return (x <= _x && _x <= x + w && y <= _y && _y <= y + h);
 	}
 

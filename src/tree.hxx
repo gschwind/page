@@ -24,25 +24,22 @@ public:
 	tree_t * _parent;
 	box_int_t _allocation;
 public:
-	tree_t(tree_t * parent = 0, box_int_t allocation = box_t<int>());
+	tree_t(tree_t * parent = 0, box_int_t allocation = box_int_t());
 	virtual ~tree_t() { }
 
 	virtual void replace(tree_t * src, tree_t * by) = 0;
 	virtual void set_parent(tree_t * parent);
-	virtual notebook_t * get_nearest_notebook() = 0;
 	virtual box_int_t get_absolute_extend() = 0;
 	virtual region_t<int> get_area() = 0;
 
-	virtual void set_allocation(box_int_t const & area) {
-		_allocation = area;
-	}
+	virtual void set_allocation(box_int_t const & area) = 0;
 
 	virtual void set_allocation(int x, int y, int w, int h) {
 		set_allocation(box_int_t(x, y, w, h));
 	}
 
 	virtual window_set_t get_windows() = 0;
-	virtual bool add_window(window_t * w);
+	//virtual bool add_window(window_t * w);
 
 };
 

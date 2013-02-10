@@ -135,6 +135,7 @@ public:
 	bool is_dock();
 	bool is_fullscreen();
 	bool demands_atteniion();
+	bool has_wm_type(Atom x);
 
 	void set_net_wm_state(Atom x);
 	void unset_net_wm_state(Atom x);
@@ -266,13 +267,9 @@ public:
 		return _transient_for;
 	}
 
-	void map_notify() {
-		_is_map = true;
-	}
+	void map_notify();
 
-	void unmap_notify() {
-		_is_map = false;
-	}
+	void unmap_notify();
 
 	static window_t * find_window(xconnection_t * cnx, Window w) {
 		window_map_t::iterator i = created_window.find(w);

@@ -37,10 +37,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef ENABLE_TRACE
-#include "ftrace_function.hxx"
-#endif
-
 #include "tree.hxx"
 #include "renderable.hxx"
 #include "render_context.hxx"
@@ -61,6 +57,27 @@
 
 namespace page {
 
+template<typename T, typename _>
+bool has_key(std::map<T, _> const & x, T const & key) {
+	typename std::map<T, _>::const_iterator i = x.find(key);
+	return i != x.end();
+}
+
+template<typename T>
+bool has_key(std::set<T> const & x, T const & key) {
+	typename std::set<T>::const_iterator i = x.find(key);
+	return i != x.end();
+}
+
+template<typename _0, typename _1>
+_1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
+	typename std::map<_0, _1>::iterator i = map.find(key);
+	if(i != map.end())
+		return i->second;
+	else
+		return def;
+}
+
 typedef std::list<box_int_t> box_list_t;
 
 inline void print_buffer__(const char * buf, int size) {
@@ -75,6 +92,7 @@ class page_t {
 public:
 
 	typedef std::map<Window, window_t *> window_map_t;
+	typedef std::set<notebook_t *> notebook_set_t;
 
 	enum select_e {
 		SELECT_NONE,
@@ -154,10 +172,13 @@ public:
 	/* track viewport, split and notebook */
 	std::set<viewport_t *> viewport_list;
 	std::set<split_t *> split_list;
-	std::set<notebook_t *> notebook_list;
+	notebook_set_t notebook_list;
 
 	// track where a client is stored
 	std::map<window_t *, notebook_t *> client_to_notebook_index;
+	std::map<notebook_t *, viewport_t *> notebook_to_viewport_index;
+	std::map<window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
+	std::map<viewport_t *, notebook_set_t > viewport_to_notebooks_index;
 
 	std::list<Atom> supported_list;
 
@@ -188,7 +209,7 @@ public:
 	page_t &operator=(page_t const &);
 public:
 	page_t(int argc, char ** argv);
-	~page_t();
+	virtual ~page_t();
 
 	virtual void set_default_pop(notebook_t * x);
 	virtual void set_focus(window_t * w);
@@ -253,6 +274,9 @@ public:
 	void read_viewport_layout();
 
 	void manage(window_t * w);
+	void unmanage(window_t * w);
+
+	void print_state();
 
 	enum wm_mode_e {
 		WM_MODE_IGNORE,
@@ -290,16 +314,19 @@ public:
 
 	void insert_window_above_of(window_t * w, Window above);
 
-	void remove_client(window_t * x);
+	void remove_window_from_tree(window_t * x);
 	void activate_client(window_t * x);
-	void add_client(window_t * x);
+	void insert_window_in_tree(window_t * x, notebook_t * n);
 	void iconify_client(window_t * x);
 	void update_allocation();
 
 	void update_window_z();
 
-	window_t * insert_new_window(Window w, XWindowAttributes const & wa);
+	void insert_window_in_stack(window_t * x);
+
+	window_t * new_window(Window const w, XWindowAttributes const & wa);
 	void delete_window(window_t * w);
+	void destroy(window_t * w);
 
 	void fullscreen(window_t * c);
 	void unfullscreen(window_t * c);
@@ -319,7 +346,7 @@ public:
 	void split_right(notebook_t * nbk, window_t * c);
 	void split_top(notebook_t * nbk, window_t * c);
 	void split_bottom(notebook_t * nbk, window_t * c);
-	void split_remove(split_t * ths, notebook_t * src);
+	void notebook_close(notebook_t * src);
 
 	void update_popup_position(popup_notebook0_t * p, int x, int y,
 			int w, int h, bool show_popup);
@@ -329,8 +356,15 @@ public:
 	split_t * new_split(split_type_e type);
 	void destroy(split_t * x);
 
-	notebook_t * new_notebook();
+	notebook_t * new_notebook(viewport_t * v);
 	void destroy(notebook_t * x);
+
+	viewport_t * new_viewport(box_int_t & area);
+
+	void unmap_set(window_set_t & set);
+	void map_set(window_set_t & set);
+
+	viewport_t * find_viewport(window_t * w);
 
 };
 

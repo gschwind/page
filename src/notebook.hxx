@@ -65,6 +65,8 @@ public:
 	box_t<int> popup_left_area;
 	box_t<int> popup_right_area;
 
+	box_t<int> close_client_area;
+
 	void set_selected(window_t * c);
 
 	void update_client_position(window_t * c);
@@ -102,9 +104,9 @@ public:
 
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();
-	virtual void reconfigure(box_int_t const & area);
+	virtual void set_allocation(box_int_t const & area);
 
-	window_t * is_inside(int x, int y);
+	window_t * find_client_tab(int x, int y);
 
 	/*
 	 * Compute client size taking in account possible max_width and max_heigth

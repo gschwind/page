@@ -14,13 +14,10 @@ notebook_t::notebook_t() {
 }
 
 notebook_t::~notebook_t() {
-	for (window_list_t::iterator i = _clients.begin(); i != _clients.end();
-			++i) {
-		delete (*i);
-	}
+
 }
 
-window_t * notebook_t::is_inside(int x, int y) {
+window_t * notebook_t::find_client_tab(int x, int y) {
 	if (_allocation.is_inside(x, y)) {
 		if (!_clients.empty()) {
 			int box_width = ((_allocation.w - 17 * 4)
@@ -45,14 +42,17 @@ window_t * notebook_t::is_inside(int x, int y) {
 
 				++c;
 			}
+
 			if (c != _clients.end()) {
-				if (_selected.front() == (*c)
-						&& b.x + b.w * 2 - 16 < x) {
-					//(*c)->delete_window(e.xbutton.time);
+				if (_selected.front() == (*c)) {
+					close_client_area.x = b.x + b.w * 2 - 16;
+					close_client_area.y = b.y;
+					close_client_area.w = 16;
+					close_client_area.h = HEIGHT;
 				} else {
-					//nbk.process_drag_and_drop(*c, e.xbutton.x, e.xbutton.y);
-					return *c;
+					close_client_area = box_int_t(0, 0, 0, 0);
 				}
+				return *c;
 			}
 
 		}
@@ -64,11 +64,12 @@ window_t * notebook_t::is_inside(int x, int y) {
 
 bool notebook_t::add_client(window_t * x) {
 	_clients.push_front(x);
+	_client_map.insert(x);
+	update_client_position(x);
 	if (_selected.empty()) {
 		x->map();
 		x->write_wm_state(NormalState);
 		_selected.push_front(x);
-		update_client_position(x);
 	} else {
 		x->unmap();
 		x->write_wm_state(IconicState);
@@ -107,14 +108,12 @@ window_set_t notebook_t::get_windows() {
 }
 
 void notebook_t::remove_client(window_t * x) {
-	if ((_client_map.find(x)) != _client_map.end()) {
-		if (x == _selected.front())
-			select_next();
-		// cleanup
-		_selected.remove(x);
-		_clients.remove(x);
-		_client_map.erase(x);
-	}
+	if (x == _selected.front())
+		select_next();
+	// cleanup
+	_selected.remove(x);
+	_clients.remove(x);
+	_client_map.erase(x);
 }
 
 void notebook_t::select_next() {
@@ -157,22 +156,26 @@ void notebook_t::update_client_position(window_t * c) {
 
 	/* compute the window placement within notebook */
 	box_int_t client_size;
-	client_size.x = (client_area.w - width) / 2;
-	client_size.y = (client_area.h - height) / 2;
-	client_size.w = width;
-	client_size.h = height;
+	client_size.x = (client_area.w - (int)width) / 2;
+	client_size.y = (client_area.h - (int)height) / 2;
+	client_size.w = (int)width;
+	client_size.h = (int)height;
 
 	if (client_size.x < 0)
 		client_size.x = 0;
 	if (client_size.y < 0)
 		client_size.y = 0;
+	if (client_size.w > client_area.w)
+		client_size.w = client_area.w;
+	if (client_size.h > client_area.h)
+		client_size.h = client_area.h;
 
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;
 
-	client_size = client_area & client_size;
+	//client_size = client_area & client_size;
 
-	printf("Request for %dx%d+%d+%d\n", client_size.w, client_size.h,
+	printf("Request for XX %dx%d+%d+%d\n", client_size.w, client_size.h,
 			client_size.x, client_size.y);
 	c->reconfigure(client_size);
 }
@@ -224,7 +227,7 @@ region_t<int> notebook_t::get_area() {
 	}
 }
 
-void notebook_t::reconfigure(box_int_t const & area) {
+void notebook_t::set_allocation(box_int_t const & area) {
 	if (area == _allocation)
 		return;
 
@@ -301,7 +304,7 @@ void notebook_t::reconfigure(box_int_t const & area) {
 	client_area.w = _allocation.w - 2 * BORDER_SIZE;
 	client_area.h = _allocation.h - HEIGHT - 2 * BORDER_SIZE;
 
-	printf("xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
+	printf("update client area xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
 			client_area.y);
 
 	if (_selected.empty()) {
@@ -310,8 +313,8 @@ void notebook_t::reconfigure(box_int_t const & area) {
 		}
 	}
 
-	if(!_selected.empty()) {
-		update_client_position(_selected.front());
+	for(window_set_t::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
+		update_client_position(*i);
 	}
 
 }
@@ -320,6 +323,8 @@ void notebook_t::reconfigure(box_int_t const & area) {
 void notebook_t::compute_client_size_with_constraint(XSizeHints const & size_hints,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
+
+	printf("XXX max : %d %d\n", max_width, max_height);
 
 	/* default size if no size_hints is provided */
 	width = max_width;
@@ -392,6 +397,8 @@ void notebook_t::compute_client_size_with_constraint(XSizeHints const & size_hin
 
 	width = max_width;
 	height = max_height;
+
+	printf("XXX result : %d %d\n", width, height);
 }
 
 

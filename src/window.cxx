@@ -25,11 +25,37 @@ long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 window_t::window_map_t window_t::created_window;
 
-window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) : cnx(cnx),
-		xwin(w), has_partial_struct(false), lock_count(0), is_lock(
-				false), window_surf(0), damage(None), opacity(1.0), has_wm_name(
-				false), has_net_wm_name(false), wm_name(""), net_wm_name(""), name(
-				"") {
+window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
+	cnx(cnx),
+	xwin(w),
+	wm_normal_hints(0),
+	wm_hints(0),
+	visual(0),
+	lock_count(0),
+	wm_state(0),
+	net_wm_type(),
+	net_wm_state(),
+	net_wm_protocols(),
+	net_wm_allowed_actions(),
+	has_wm_name(false),
+	has_net_wm_name(false),
+	has_partial_struct(false),
+	wm_input_focus(false),
+	_is_map(false),
+	is_lock(false),
+	_override_redirect(false),
+	_is_composite_redirected(false),
+	name(),
+	wm_name(),
+	net_wm_name(),
+	requested_size(),
+	size(),
+	damage(0),
+	opacity(1.0),
+	window_surf(0),
+	w_class(0),
+	_transient_for(0)
+{
 
 	assert(created_window.find(w) == created_window.end());
 	created_window[w] = this;
@@ -278,7 +304,6 @@ window_t::read_wm_hints() {
 std::string const &
 window_t::read_vm_name() {
 	has_wm_name = false;
-	char **list = NULL;
 	XTextProperty name;
 	cnx.get_text_property(xwin, &name, cnx.atoms.WM_NAME);
 	if (!name.nitems) {
@@ -295,7 +320,6 @@ window_t::read_vm_name() {
 std::string const &
 window_t::read_net_vm_name() {
 	has_net_wm_name = false;
-	char **list = NULL;
 	XTextProperty name;
 	cnx.get_text_property(xwin, &name, cnx.atoms._NET_WM_NAME);
 	if (!name.nitems) {
@@ -348,7 +372,7 @@ void window_t::read_net_wm_state() {
 			cnx.atoms.ATOM, &n);
 	if (net_wm_state) {
 		this->net_wm_state.clear();
-		for (int i = 0; i < n; ++i) {
+		for (unsigned int i = 0; i < n; ++i) {
 			this->net_wm_state.insert(net_wm_state[i]);
 		}
 		delete[] net_wm_state;
@@ -400,15 +424,15 @@ void window_t::write_net_wm_allowed_actions() {
 
 void window_t::move_resize(box_int_t const & location) {
 	requested_size = location;
-	if(size == location)
+	if(size == requested_size)
 		return;
-	cnx.move_resize(xwin, location);
-	if (window_surf && (size.w != location.w || size.h != location.h)) {
+	cnx.move_resize(xwin, requested_size);
+	if (window_surf && (size.w != requested_size.w || size.h != requested_size.h)) {
 		cairo_surface_flush(window_surf);
-		cairo_xlib_surface_set_size(window_surf, location.w, location.h);
+		cairo_xlib_surface_set_size(window_surf, requested_size.w, requested_size.h);
 		mark_dirty();
 	}
-	size = location;
+	size = requested_size;
 }
 
 /**
@@ -447,7 +471,13 @@ bool window_t::is_fullscreen() {
 			!= net_wm_state.end();
 }
 
+bool window_t::has_wm_type(Atom x) {
+	return net_wm_state.find(x)
+			!= net_wm_state.end();
+}
+
 bool window_t::demands_atteniion() {
+	return false;
 	return net_wm_state.find(cnx.atoms._NET_WM_STATE_DEMANDS_ATTENTION)
 			!= net_wm_state.end();
 }
@@ -494,21 +524,25 @@ void window_t::update_icon() {
 		icon.data = 0;
 	}
 
-	long * icon_data;
-	int32_t * icon_data32;
-	int icon_data_size;
-	icon_t selected;
-	std::list<struct icon_t> icons;
-	bool has_icon = false;
-	unsigned int n;
-	icon_data_size = n;
+	/* get icon properties */
+	unsigned int icon_data_size;
+	long * icon_data = get_properties32(cnx.atoms._NET_WM_ICON, cnx.atoms.CARDINAL, &icon_data_size);
 
+	/* if window have icon properties */
 	if (icon_data != 0) {
-		icon_data32 = new int32_t[n];
-		for (int i = 0; i < n; ++i)
+		int32_t * icon_data32 = 0;
+
+		icon_t selected;
+		std::list<struct icon_t> icons;
+		bool has_icon = false;
+
+		/* copy long to 32 bits int, this is needed for 64bits arch (recall: long in 64 bits arch are 64 bits)*/
+		icon_data32 = new int32_t[icon_data_size];
+		for (unsigned int i = 0; i < icon_data_size; ++i)
 			icon_data32[i] = icon_data[i];
 
-		int offset = 0;
+		/* find all icons */
+		unsigned int offset = 0;
 		while (offset < icon_data_size) {
 			icon_t tmp;
 			tmp.width = icon_data[offset + 0];
@@ -518,6 +552,7 @@ void window_t::update_icon() {
 			icons.push_back(tmp);
 		}
 
+		/* find then greater and nearest icon to show (16x16) */
 		icon_t ic;
 		int x = 0;
 		/* find an icon */
@@ -543,6 +578,7 @@ void window_t::update_icon() {
 
 		}
 
+		/* if we found icon we scale it to 16x16, with nearest method */
 		if (has_icon) {
 
 			int target_height;
@@ -592,6 +628,7 @@ void window_t::update_icon() {
 			icon_surf = 0;
 		}
 
+
 		delete[] icon_data;
 		delete[] icon_data32;
 
@@ -632,6 +669,8 @@ long const * window_t::get_partial_struct() {
 }
 
 void window_t::repair1(cairo_t * cr, box_int_t const & area) {
+	if(window_surf == 0)
+		return;
 	assert(window_surf != 0);
 	box_int_t clip = area & size;
 	//printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
@@ -641,7 +680,11 @@ void window_t::repair1(cairo_t * cr, box_int_t const & area) {
 		cairo_set_source_surface(cr, window_surf, size.x, size.y);
 		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 		cairo_clip(cr);
-		cairo_paint_with_alpha(cr, opacity);
+		cairo_paint(cr);
+		//cairo_reset_clip(cr);
+		//cairo_rectangle(cr, clip.x - 0.5, clip.y - 0.5, clip.w - 0.5, clip.h - 0.5);
+		//cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+		//cairo_stroke(cr);
 		cairo_restore(cr);
 	}
 
@@ -737,6 +780,16 @@ Window window_t::update_transient_for() {
 		_transient_for = None;
 	}
 	return _transient_for;
+}
+
+void window_t::map_notify() {
+	_is_map = true;
+	create_render_context();
+}
+
+void window_t::unmap_notify() {
+	_is_map = false;
+	destroy_render_context();
 }
 
 }

@@ -14,6 +14,8 @@ namespace page {
 
 
 class renderable_page_t : public renderable_t {
+	bool is_durty;
+
 public:
 
 	render_tree_t & render;
@@ -23,7 +25,8 @@ public:
 
 	renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks);
 
-	void render_();
+	void mark_durty();
+	void render_if_needed();
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual region_t<int> get_area();

@@ -59,7 +59,7 @@ public:
 		cr = cairo_create(s);
 
 		/* open icons */
-		if (hsplit_button_s == 0) {
+		if (hsplit_button_s == 0 || true) {
 			std::string filename = conf_img_dir + "/hsplit_button.png";
 			printf("Load: %s\n", filename.c_str());
 			hsplit_button_s = cairo_image_surface_create_from_png(
@@ -68,7 +68,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (vsplit_button_s == 0) {
+		if (vsplit_button_s == 0|| true) {
 			std::string filename = conf_img_dir + "/vsplit_button.png";
 			printf("Load: %s\n", filename.c_str());
 			vsplit_button_s = cairo_image_surface_create_from_png(
@@ -77,7 +77,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (close_button_s == 0) {
+		if (close_button_s == 0|| true) {
 			std::string filename = conf_img_dir + "/close_button.png";
 			printf("Load: %s\n", filename.c_str());
 			close_button_s = cairo_image_surface_create_from_png(
@@ -86,7 +86,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pop_button_s == 0) {
+		if (pop_button_s == 0|| true) {
 			std::string filename = conf_img_dir + "/pop_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pop_button_s = cairo_image_surface_create_from_png(
@@ -95,7 +95,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pops_button_s == 0) {
+		if (pops_button_s == 0|| true) {
 			std::string filename = conf_img_dir + "/pops_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pops_button_s = cairo_image_surface_create_from_png(
@@ -463,15 +463,8 @@ public:
 		cairo_save(cr);
 		//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
 		cairo_set_source_rgb(cr, 0xeeU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
-		if (s->_split_type == VERTICAL_SPLIT) {
-			cairo_rectangle(cr,
-					s->_allocation.x + s->_allocation.w * s->_split - GRIP_SIZE,
-					s->_allocation.y, GRIP_SIZE * 2.0, s->_allocation.h);
-		} else {
-			cairo_rectangle(cr, s->_allocation.x,
-					s->_allocation.y + (s->_allocation.h * s->_split)
-							- GRIP_SIZE, s->_allocation.w, GRIP_SIZE * 2.0);
-		}
+		box_int_t area = s->get_split_bar_area();
+		cairo_rectangle(cr, area.x, area.y, area.w, area.h);
 		cairo_fill(cr);
 		cairo_restore(cr);
 	}

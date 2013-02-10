@@ -13,11 +13,19 @@ namespace page {
 
 renderable_page_t::renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks) : render(render), splits(splits), notebooks(notebooks) {
 	z = 0;
+	is_durty = true;
 }
 
-void renderable_page_t::render_() {
-	render.render_splits(splits);
-	render.render_notebooks(notebooks);
+void renderable_page_t::mark_durty() {
+	is_durty = true;
+}
+
+void renderable_page_t::render_if_needed() {
+	if (is_durty) {
+		render.render_splits(splits);
+		render.render_notebooks(notebooks);
+		is_durty = false;
+	}
 }
 
 void renderable_page_t::repair1(cairo_t * cr, box_int_t const & area) {
