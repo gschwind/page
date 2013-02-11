@@ -290,6 +290,8 @@ void page_t::manage(window_t * w) {
 	if(w->is_fullscreen()) {
 		fullscreen(w);
 	}
+	rpage->mark_durty();
+	rnd.add_damage_area(cnx.root_size);
 }
 
 void page_t::unmanage(window_t * w) {
@@ -877,6 +879,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 		w = new_window(e.window, wa);
 		w->read_all();
 		insert_window_in_stack(w);
+		update_transient_for(w);
 	} else {
 		printf("already processed window\n");
 	}
@@ -1056,6 +1059,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		return;
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
 		x->update_net_wm_user_time();
+		safe_raise_window(x);
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		x->read_title();
@@ -1089,6 +1093,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == cnx.atoms.WM_TRANSIENT_FOR) {
 		printf("TRANSIENT_FOR = #%ld\n", x->update_transient_for());
 
+		update_transient_for(x);
 		/* ICCCM if transient_for is set for override redirect window, move this window above
 		 * the transient one (it's for menus and popup)
 		 */
@@ -2013,6 +2018,7 @@ void page_t::destroy(notebook_t * x) {
 void page_t::destroy(window_t * c) {
 	if(client_focused == c)
 		client_focused = 0;
+	clear_sibbling_child(c);
 	normal_clients.erase(c);
 	dock_clients.erase(c);
 	other_windows.erase(c);
@@ -2144,6 +2150,45 @@ void page_t::process_net_vm_state_client_messate(window_t * c, long type, Atom s
 		}
 	}
 
+}
+
+
+
+void page_t::update_transient_for(window_t * w) {
+	/* remove sibbling_child if needed */
+	clear_sibbling_child(w);
+
+	if(w->transient_for() != None) {
+		window_t * t = get_window_t(w->transient_for());
+		if(t != 0) {
+			t->sibbling_childs.insert(w);
+		}
+	}
+}
+
+void page_t::safe_raise_window(window_t * w) {
+	window_set_t raised_window;
+	window_list_t raise_list;
+	window_list_t raise_next;
+
+	raise_next.push_back(w);
+	while (raise_next.size() > 0) {
+		raise_list = raise_next;
+		raise_next.clear();
+		for (window_list_t::iterator i = raise_list.begin();
+				i != raise_list.end(); ++i) {
+			raise_next.insert(raise_next.end(), (*i)->sibbling_childs.begin(),
+					(*i)->sibbling_childs.end());
+			cnx.raise_window((*i)->get_xwin());
+		}
+	}
+}
+
+void page_t::clear_sibbling_child(window_t * w) {
+	/* remove sibbling_child if needed */
+	for(window_list_t::iterator i = windows_stack.begin(); i != windows_stack.end(); ++i) {
+		(*i)->sibbling_childs.erase(w);
+	}
 }
 
 }

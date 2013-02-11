@@ -54,7 +54,8 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	opacity(1.0),
 	window_surf(0),
 	w_class(0),
-	_transient_for(0)
+	_transient_for(0),
+	sibbling_childs()
 {
 
 	assert(created_window.find(w) == created_window.end());
@@ -292,7 +293,7 @@ void window_t::read_wm_normal_hints() {
 		printf("no WMNormalHints\n");
 	}
 
-	printf("x: %d y: %d w: %d h: %d\n", wm_normal_hints->x, wm_normal_hints->y, wm_normal_hints->width, wm_normal_hints->height);
+	//printf("x: %d y: %d w: %d h: %d\n", wm_normal_hints->x, wm_normal_hints->y, wm_normal_hints->width, wm_normal_hints->height);
 	if(wm_normal_hints->flags & PMaxSize) {
 		printf("max w: %d max h: %d \n", wm_normal_hints->max_width, wm_normal_hints->max_height);
 	}

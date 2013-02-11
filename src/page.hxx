@@ -368,6 +368,11 @@ public:
 
 	void process_net_vm_state_client_messate(window_t * c, long type, Atom state_properties);
 
+	void update_transient_for(window_t * w);
+
+	void safe_raise_window(window_t * w);
+	void clear_sibbling_child(window_t * w);
+
 };
 
 }

@@ -83,6 +83,8 @@ protected:
 	Window _transient_for;
 
 public:
+	std::set<window_t *> sibbling_childs;
+
 	/* icon data */
 	icon_t icon;
 	/* icon surface */

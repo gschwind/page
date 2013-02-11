@@ -229,6 +229,19 @@ struct trace_data {
 		//fprintf(stderr, "xxx: %s %s %d\n", data->filename, data->functionname, data->line);
 	}
 
+	static std::string safe_demangle(char const * s) {
+		int status = 0;
+		char * tmp = abi::__cxa_demangle(s, 0, 0, &status);
+		std::string functionname;
+		if (status != 0) {
+			/* demangle fail */
+			functionname = s;
+		} else {
+			functionname = tmp;
+			free(tmp);
+		}
+		return functionname;
+	}
 
 	bool get_symbol(void * addr, std::string & sym) {
 
@@ -256,20 +269,9 @@ struct trace_data {
 
 				if (x.found != 0) {
 
-					int status = 0;
-					char * tmp = abi::__cxa_demangle(x.functionname, 0, 0, &status);
-
-					std::string functionname;
-					if (status != 0)
-						functionname = x.functionname;
-					else
-						functionname = tmp;
-
+					std::string functionname = safe_demangle(x.functionname);
 					std::stringstream out;
 					out << functionname << " at " << x.filename << ":" << x.line;
-
-					if(status != 0)
-						free(tmp);
 
 					sym = out.str();
 					return true;
@@ -281,6 +283,8 @@ struct trace_data {
 		}
 		return false;
 	}
+
+
 
 };
 
@@ -307,10 +311,10 @@ void sig_handler(int sig) {
 		if (trace->get_symbol(array[i], sym)) {
 			fprintf(stderr, "0x%016lx %s\n", (unsigned long) array[i],
 					sym.c_str());
-
 		} else if (dladdr(array[i], &info)) {
+			std::string functionname = trace_data::safe_demangle(info.dli_sname);
 			fprintf(stderr, "0x%016lx %s in %s\n", (unsigned long) array[i],
-					info.dli_sname, info.dli_fname);
+					functionname.c_str(), info.dli_fname);
 		} else {
 			fprintf(stderr, "0x%016lx unknow\n", (unsigned long) array[i]);
 		}
