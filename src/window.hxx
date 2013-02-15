@@ -45,7 +45,9 @@ protected:
 	/* store the ICCCM WM_STATE : WithDraw, Iconic or Normal */
 	long wm_state;
 
-	atom_set_t net_wm_type;
+public:
+	std::list<Atom> net_wm_type;
+protected:
 	atom_set_t net_wm_state;
 	atom_set_t net_wm_protocols;
 	atom_set_t net_wm_allowed_actions;
@@ -91,6 +93,14 @@ public:
 	cairo_surface_t * icon_surf;
 
 	long user_time;
+
+	enum page_window_type_e {
+		PAGE_UNKNOW_WINDOW_TYPE,
+		PAGE_NORMAL_WINDOW_TYPE,
+		PAGE_OVERLAY_WINDOW_TYPE
+	};
+
+	page_window_type_e window_type;
 
 private:
 	/* avoid copy */
@@ -234,30 +244,6 @@ public:
 		return name;
 	}
 
-	bool is_popup() {
-		return (net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_POPUP_MENU)
-				!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
-						!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_TOOLTIP)
-						!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_SPLASH)
-						!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_NOTIFICATION)
-						!= net_wm_type.end());
-	}
-
-	bool is_normal() {
-		return (net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL)
-				!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DESKTOP)
-						!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG)
-						!= net_wm_type.end()
-				|| net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_UTILITY)
-						!= net_wm_type.end());
-	}
-
 	void process_configure_notify_event(XConfigureEvent const & e);
 	void process_configure_request_event(XConfigureRequestEvent const & e);
 
@@ -331,6 +317,16 @@ public:
 	Window update_transient_for();
 
 	void apply_size_constraint();
+
+	page_window_type_e find_window_type(Atom wm_window_type);
+
+	page_window_type_e get_window_type() {
+		return window_type;
+	}
+
+	void update_window_type();
+	void update_vm_hints();
+
 
 };
 

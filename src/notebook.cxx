@@ -20,14 +20,14 @@ notebook_t::~notebook_t() {
 window_t * notebook_t::find_client_tab(int x, int y) {
 	if (_allocation.is_inside(x, y)) {
 		if (!_clients.empty()) {
-			int box_width = ((_allocation.w - 17 * 4)
-					/ (_clients.size() + 1));
-			box_t<int> b(_allocation.x, _allocation.y, box_width,
+			double box_width = ((_allocation.w - 17.0 * 5.0)
+					/ (_clients.size() + 1.0));
+			box_t<double> b(_allocation.x, _allocation.y, box_width,
 					HEIGHT);
 			window_list_t::iterator c = _clients.begin();
 			while (c != _clients.end()) {
 				if (*c == _selected.front()) {
-					box_t<int> b1 = b;
+					box_t<double> b1 = b;
 					b1.w *= 2;
 					if (b1.is_inside(x, y)) {
 						break;

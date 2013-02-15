@@ -224,6 +224,8 @@ struct xconnection_t {
 
 		Atom WM_CHANGE_STATE;
 
+		Atom WM_HINTS;
+
 		/* ICCCM extend atoms */
 		Atom _NET_SUPPORTED;
 		Atom _NET_WM_NAME;

@@ -308,22 +308,23 @@ void page_t::unmanage(window_t * w) {
 
 static int __select_windows_type(window_t * w, XWindowAttributes & wa) {
 
-	if (!w->override_redirect() && !w->is_input_only() && w->is_map()) {
-		/* ICCCM top level window */
-		if (w->is_dock())
-			return 1;
-		else
-			return 0;
-	} else if (!w->override_redirect() && !w->is_input_only() && !w->is_map()
-			&& w->read_wm_state() == (IconicState)) {
-		/* special case were a window is on IconicState state */
-		if (w->is_dock())
-			return 1;
-		else
-			return 0;
-	} else {
-		return 2;
-	}
+//	if (!w->override_redirect() && !w->is_input_only() && w->is_map()) {
+//		/* ICCCM top level window */
+//		if (w->is_dock())
+//			return 1;
+//		else
+//			return 0;
+//	} else if (!w->override_redirect() && !w->is_input_only() && !w->is_map()
+//			&& w->read_wm_state() == (IconicState)) {
+//		/* special case were a window is on IconicState state */
+//		if (w->is_dock())
+//			return 1;
+//		else
+//			return 0;
+//	} else {
+//		return 2;
+//	}
+	return 0;
 }
 
 void page_t::scan() {
@@ -341,16 +342,8 @@ void page_t::scan() {
 			insert_window_in_stack(w);
 			w->read_all();
 
-			switch (__select_windows_type(w, wa)) {
-			case 0:
+			if(w->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE) {
 				manage(w);
-				break;
-			case 1:
-				dock_clients.insert(w);
-				break;
-			default:
-				other_windows.insert(w);
-				break;
 			}
 
 			XFlush(cnx.dpy);
@@ -914,6 +907,15 @@ void page_t::process_event(XMapEvent const & e) {
 		x->focus();
 	}
 
+	/* it seems that some window have the wrong window type on maprequest but have
+	 * the good one on map notify
+	 * (this fix issue with LibreOffice)
+	 */
+	if (!has_key(normal_clients, x)
+			&& x->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE) {
+		manage(x);
+	}
+
 }
 
 void page_t::process_event(XReparentEvent const & e) {
@@ -1035,15 +1037,13 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
 	window_t * x = get_window_t(e.window);
 	assert(x != 0);
-	if (!x->is_input_only()) {
-		if (!has_key(normal_clients, x)) {
-			x->read_all();
+	x->read_all();
+	if (!has_key(normal_clients, x)) {
+		if(x->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE) {
 			manage(x);
-			activate_client(x);
-		} else {
-			x->read_all();
-			activate_client(x);
 		}
+	} else {
+		activate_client(x);
 	}
 }
 
@@ -1060,6 +1060,9 @@ void page_t::process_event(XPropertyEvent const & e) {
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
 		x->update_net_wm_user_time();
 		safe_raise_window(x);
+		if(client_focused == x) {
+			x->focus();
+		}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		x->read_title();
@@ -1082,12 +1085,19 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == cnx.atoms._NET_WM_ICON) {
 		x->update_icon();
 	} else if (e.atom == cnx.atoms._NET_WM_WINDOW_TYPE) {
+		//window_t::page_window_type_e old = x->get_window_type();
 		x->read_net_wm_type();
-	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
-		//x->read_wm_normal_hints();
-		//if (has_key(client_to_notebook_index, x)) {
-		//	update_allocation();
+		x->update_window_type();
+
+		/* I do not see something in ICCCM */
+		//if(x->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE && old != window_t::PAGE_NORMAL_WINDOW_TYPE) {
+		//	manage(x);
 		//}
+	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
+		x->read_wm_normal_hints();
+		if (has_key(client_to_notebook_index, x)) {
+			update_allocation();
+		}
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
 		x->read_net_wm_protocols();
 	} else if (e.atom == cnx.atoms.WM_TRANSIENT_FOR) {
@@ -1104,6 +1114,13 @@ void page_t::process_event(XPropertyEvent const & e) {
 			cr.sibling = x->transient_for();
 			cr.stack_mode = Above;
 			cnx.configure_window(x->get_xwin(), CWSibling | CWStackMode, &cr);
+		}
+	} else if (e.atom == cnx.atoms.WM_HINTS) {
+		x->update_vm_hints();
+
+		/* WM_HINTS can change the focus behaviors, so re-focus if needed */
+		if(client_focused == x) {
+			x->focus();
 		}
 	}
 }
@@ -1215,7 +1232,8 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 				/* setup absolute damaged area */
 				box.x += _.x;
 				box.y += _.y;
-				rnd.add_damage_area(box);
+				if(x->is_visible())
+					rnd.add_damage_area(box);
 			}
 			XFree(rects);
 		}
@@ -1392,29 +1410,41 @@ void page_t::insert_window_above_of(window_t * w, Window above) {
 	update_window_z();
 }
 
+std::string page_t::safe_get_window_name(Window w) {
+	window_t * x = get_window_t(w);
+	std::string wname = "unknown window";
+	if(x != 0) {
+		wname = x->get_title();
+	}
+
+	return wname;
+}
+
 void page_t::page_event_handler_t::process_event(XEvent const & e) {
 
+
+
 	if (e.type == MapNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xmap.serial,
-				x_event_name[e.type], e.xmap.event, e.xmap.window);
+		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xmap.serial,
+				x_event_name[e.type], e.xmap.event, e.xmap.window, page.safe_get_window_name(e.xmap.window).c_str());
 	} else if (e.type == DestroyNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xdestroywindow.serial,
+		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xdestroywindow.serial,
 				x_event_name[e.type], e.xdestroywindow.event,
-				e.xdestroywindow.window);
+				e.xdestroywindow.window, page.safe_get_window_name(e.xdestroywindow.window).c_str());
 	} else if (e.type == MapRequest) {
-		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xmaprequest.serial,
+		printf("#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xmaprequest.serial,
 				x_event_name[e.type], e.xmaprequest.parent,
-				e.xmaprequest.window);
+				e.xmaprequest.window, page.safe_get_window_name(e.xmaprequest.window).c_str());
 	} else if (e.type == UnmapNotify) {
-		printf("#%08lu %s: event = %lu, win = %lu\n", e.xunmap.serial,
-				x_event_name[e.type], e.xunmap.event, e.xunmap.window);
+		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xunmap.serial,
+				x_event_name[e.type], e.xunmap.event, e.xunmap.window, page.safe_get_window_name(e.xunmap.window).c_str());
 	} else if (e.type == CreateNotify) {
-		printf("#%08lu %s: parent = %lu, win = %lu\n", e.xcreatewindow.serial,
+		printf("#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xcreatewindow.serial,
 				x_event_name[e.type], e.xcreatewindow.parent,
-				e.xcreatewindow.window);
+				e.xcreatewindow.window, page.safe_get_window_name(e.xcreatewindow.window).c_str());
 	} else if (e.type < LASTEvent && e.type > 0) {
-		printf("#%08lu %s: win: #%lu\n", e.xany.serial, x_event_name[e.type],
-				e.xany.window);
+		printf("#%08lu %s: win: #%lu, name=\"%s\"\n", e.xany.serial, x_event_name[e.type],
+				e.xany.window, page.safe_get_window_name(e.xany.window).c_str());
 	}
 
 	fflush(stdout);
@@ -2190,5 +2220,7 @@ void page_t::clear_sibbling_child(window_t * w) {
 		(*i)->sibbling_childs.erase(w);
 	}
 }
+
+
 
 }

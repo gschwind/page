@@ -187,14 +187,14 @@ public:
 			cairo_fill(cr);
 
 			std::list<window_t *>::iterator i;
-			int offset = 0;
-			int length = (n->_allocation.w - 17 * 4) / (n->_clients.size() + 1);
+			double offset = 0;
+			double length = (n->_allocation.w - 17.0 * 5.0) / (n->_clients.size() + 1.0);
 			for (i = n->_clients.begin(); i != n->_clients.end(); ++i) {
 
 				cairo_save(cr);
 				{
 
-					cairo_translate(cr, offset, 0.0);
+					cairo_translate(cr, floor(offset), 0.0);
 
 					if (n->_selected.front() == (*i)) {
 

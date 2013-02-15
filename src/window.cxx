@@ -55,7 +55,8 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	window_surf(0),
 	w_class(0),
 	_transient_for(0),
-	sibbling_childs()
+	sibbling_childs(),
+	window_type(PAGE_UNKNOW_WINDOW_TYPE)
 {
 
 	assert(created_window.find(w) == created_window.end());
@@ -81,7 +82,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	visual = wa.visual;
 	w_class = wa.c_class;
 
-	_override_redirect = (wa.override_redirect ? true : false);
+	_override_redirect = (wa.override_redirect == True ? true : false);
 	if(_override_redirect) {
 		opacity = 1.0;
 	}
@@ -189,11 +190,7 @@ window_t::~window_t() {
 void window_t::read_all() {
 
 	wm_input_focus = true;
-	XWMHints const * hints = read_wm_hints();
-	if (hints) {
-		if ((hints->flags & InputHint)&& hints->input != True)
-			wm_input_focus = false;
-	}
+	update_vm_hints();
 
 	read_net_vm_name();
 	read_vm_name();
@@ -205,6 +202,8 @@ void window_t::read_all() {
 	update_net_wm_user_time();
 
 	wm_state = read_wm_state();
+
+	update_window_type();
 
 }
 
@@ -369,10 +368,12 @@ void window_t::read_net_wm_type() {
 		net_wm_type.clear();
 		/* use the first value that we know about in the array */
 		for (unsigned i = 0; i < num; ++i) {
-			net_wm_type.insert(val[i]);
+			net_wm_type.push_back(val[i]);
 		}
 		delete[] val;
 	}
+
+	print_net_wm_window_type();
 }
 
 void window_t::read_net_wm_state() {
@@ -469,11 +470,6 @@ void window_t::write_wm_state(long state) {
 	} else {
 		XDeleteProperty(cnx.dpy, xwin, cnx.atoms.WM_STATE);
 	}
-}
-
-bool window_t::is_dock() {
-	return net_wm_type.find(cnx.atoms._NET_WM_WINDOW_TYPE_DOCK)
-			!= net_wm_type.end();
 }
 
 bool window_t::is_fullscreen() {
@@ -884,6 +880,72 @@ void window_t::apply_size_constraint() {
 		move_resize(box_int_t(size.x, size.y, max_width, max_height));
 	//}
 
+}
+
+window_t::page_window_type_e window_t::find_window_type(Atom wm_window_type) {
+	if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DESKTOP) {
+		return PAGE_NORMAL_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DOCK) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_TOOLBAR) {
+		return PAGE_NORMAL_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_MENU) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_UTILITY) {
+		return PAGE_NORMAL_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_SPLASH) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG) {
+		return PAGE_NORMAL_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DROPDOWN_MENU) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_POPUP_MENU) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_TOOLTIP) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_NOTIFICATION) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_COMBO) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DND) {
+		return PAGE_OVERLAY_WINDOW_TYPE;
+	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL) {
+		return PAGE_NORMAL_WINDOW_TYPE;
+	}
+
+	return PAGE_UNKNOW_WINDOW_TYPE;
+
+}
+
+void window_t::update_window_type() {
+	/* this function try to figure out the type of a given window
+	 * It seems that overide redirect is most important than
+	 * _NET_WINDOW_TYPE
+	 */
+	if (override_redirect()) {
+		window_type = PAGE_OVERLAY_WINDOW_TYPE;
+	} else {
+		if (net_wm_type.size() > 0) {
+			window_type = find_window_type(net_wm_type.front());
+		} else {
+			if (!is_input_only() && is_map()) {
+				window_type = PAGE_NORMAL_WINDOW_TYPE;
+			} else if (!is_input_only() && !is_map()
+					&& get_wm_state() == (IconicState)) {
+				window_type = PAGE_NORMAL_WINDOW_TYPE;
+			} else {
+				window_type = PAGE_OVERLAY_WINDOW_TYPE;
+			}
+		}
+	}
+}
+
+void window_t::update_vm_hints() {
+	XWMHints const * hints = read_wm_hints();
+	if (hints) {
+		if ((hints->flags & InputHint)&& hints->input != True)
+			wm_input_focus = false;
+	}
 }
 
 }

@@ -129,6 +129,8 @@ public:
 		NOTEBOOK_GRAB_PROCESS	// Process event when notebook tab is moved
 	};
 
+
+
 	/* this define the current state of page */
 	process_mode_e process_mode;
 
@@ -372,6 +374,8 @@ public:
 
 	void safe_raise_window(window_t * w);
 	void clear_sibbling_child(window_t * w);
+
+	std::string safe_get_window_name(Window w);
 
 };
 
