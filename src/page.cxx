@@ -801,9 +801,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		x = mode_data_floating.f->border->get_size();
 		x.x = e.x_root - mode_data_floating.x_offset;
 		x.y = e.y_root - mode_data_floating.y_offset;
-		rnd.add_damage_area(mode_data_floating.f->border->get_size());
 		mode_data_floating.f->border->move_resize(x);
-		rnd.add_damage_area(mode_data_floating.f->border->get_size());
 
 	}
 		break;
@@ -947,8 +945,7 @@ void page_t::process_event(XMapEvent const & e) {
 	if (e.event != cnx.xroot)
 		return;
 
-	if(has_key(floating_windows, e.window))
-		return;
+
 
 	window_t * x = get_window_t(e.window);
 	if (!x)
@@ -959,23 +956,28 @@ void page_t::process_event(XMapEvent const & e) {
 		x->focus();
 	}
 
+	if(has_key(window_to_floating_window, e.window))
+		return;
+
 	printf("overide_redirect = %s\n", x->override_redirect()? "true" : "false");
 	x->print_net_wm_window_type();
 
-	/* it seems that some window have the wrong window type on maprequest but have
-	 * the good one on map notify
-	 * (this fix issue with LibreOffice)
+	/* Libre Office doesn't generate MapRequest ?
 	 */
-//	if (!has_key(notebook_clients, x) && !has_key(window_to_floating_window, x->get_xwin())) {
-//		if(x->get_window_type() == PAGE_NORMAL_WINDOW_TYPE) {
-//			manage(x);
-//		} else if (x->get_window_type() == PAGE_FLOATING_WINDOW_TYPE) {
-////			floating_window_t * fw = new floating_window_t(cnx, x);
-////			window_to_floating_window[x] = fw;
-////			floating_windows.insert(fw);
-////			xwindow_to_window_index[fw->w_border->get_xwin()] = fw->w_border;
-//		}
-//	}
+	if (!has_key(notebook_clients, x) && !x->override_redirect()) {
+
+		printf("overide_redirect = %s\n", x->override_redirect()? "true" : "false");
+		x->print_net_wm_window_type();
+
+		page_window_type_e type = x->get_window_type();
+		if(type == PAGE_NORMAL_WINDOW_TYPE) {
+			manage(x);
+		} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
+			floating_window_t * fw = new_floating_window(x);
+			fw->map();
+			rpage->render.render_floating(fw);
+		}
+	}
 
 }
 

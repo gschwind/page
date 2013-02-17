@@ -27,10 +27,10 @@ floating_window_t::floating_window_t(window_t * w, Window parent) : w(w) {
 	box_int_t size = w->get_size();
 	box_int_t subsize = size;
 
-	size.w = width + 2;
-	size.h = heigth + 24 + 1;
+	size.w = width + 8;
+	size.h = heigth + 24 + 4;
 
-	subsize.x = 1;
+	subsize.x = 4;
 	subsize.y = 24;
 	subsize.w = width;
 	subsize.h = heigth;
