@@ -12,6 +12,7 @@
 #include "client.hxx"
 #include "tree.hxx"
 #include "window.hxx"
+#include "window_icon_handler.hxx"
 
 
 namespace page {
@@ -46,6 +47,7 @@ public:
 	// set of map for fast check is window is in this notebook
 	window_set_t _client_map;
 
+	std::map<window_t *, window_icon_handler_t *> icons;
 
 	box_int_t client_area;
 
@@ -115,9 +117,11 @@ public:
 	 * @output height: height result
 	 */
 
-	static void compute_client_size_with_constraint(XSizeHints const & size_hints,
+	static void compute_client_size_with_constraint(window_t * c,
 			unsigned int max_width, unsigned int max_height,
 			unsigned int & width, unsigned int & height);
+
+	cairo_surface_t * get_icon_surface(window_t * w);
 
 };
 

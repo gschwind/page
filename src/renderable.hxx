@@ -20,13 +20,10 @@ namespace page {
  */
 class renderable_t {
 public:
-	/* define the render order, lower are rendered before higher value */
-	int z;
-
 	/**
 	 * renderable default constructor.
 	 */
-	renderable_t() : z(0) { }
+	renderable_t() { }
 
 	/**
 	 * Destroy renderable

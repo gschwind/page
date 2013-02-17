@@ -12,7 +12,6 @@
 namespace page {
 
 renderable_page_t::renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks) : render(render), splits(splits), notebooks(notebooks) {
-	z = 0;
 	is_durty = true;
 }
 

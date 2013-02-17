@@ -31,10 +31,6 @@ void render_context_t::add_damage_area(region_t<int> const & box) {
 	pending_damage = pending_damage + box;
 }
 
-bool render_context_t::z_comp(renderable_t * x, renderable_t * y) {
-	return x->z < y->z;
-}
-
 void render_context_t::render_flush() {
 
 	/* a small optimization, because visible are often few */
@@ -44,8 +40,6 @@ void render_context_t::render_flush() {
 			visible.push_back((*i));
 		}
 	}
-
-	visible.sort(z_comp);
 
 	/* fast region are region that can be rendered directly on front buffer */
 	/* slow region are region that will be rendered in back buffer before the front */
@@ -171,6 +165,30 @@ void render_context_t::add(renderable_t * x) {
 
 void render_context_t::remove(renderable_t * x) {
 	list.remove(x);
+}
+
+void render_context_t::move_above(renderable_t * r, renderable_t * above) {
+	list.remove(r);
+	renderable_list_t::iterator i = std::find(list.begin(), list.end(), above);
+	if(i != list.end()) {
+		list.insert(++i, r);
+	} else {
+		list.push_back(r);
+	}
+}
+
+void render_context_t::raise(renderable_t * r) {
+	list.remove(r);
+	list.push_back(r);
+}
+
+void render_context_t::lower(renderable_t * r) {
+	list.remove(r);
+	list.push_front(r);
+}
+
+renderable_list_t render_context_t::get_renderable_list() {
+	return list;
 }
 
 }

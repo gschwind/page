@@ -521,13 +521,22 @@ int xconnection_t::configure_window(Window w, unsigned int value_mask,
 		XWindowChanges * values) {
 	unsigned long serial = XNextRequest(dpy);
 	printf(">%08lu XConfigureWindow: win = %lu\n", serial, w);
-	if (value_mask & CWSibling)
-		printf("> Sibling %lu\n", values->sibling);
-	if (value_mask & CWStackMode)
-		printf("> StackMode %d\n", values->stack_mode);
-	if (value_mask & CWBorderWidth) {
-		printf("> BoderWidth %d\n", values->border_width);
-	}
+	if(value_mask & CWX)
+		printf("has x: %d\n", values->x);
+	if(value_mask & CWY)
+		printf("has y: %d\n", values->y);
+	if(value_mask & CWWidth)
+		printf("has width: %d\n", values->width);
+	if(value_mask & CWHeight)
+		printf("has height: %d\n", values->height);
+
+	if(value_mask & CWSibling)
+		printf("has sibling: %lu\n", values->sibling);
+	if(value_mask & CWStackMode)
+		printf("has stack mode: %d\n", values->stack_mode);
+
+	if(value_mask & CWBorderWidth)
+		printf("has border: %d\n", values->border_width);
 	return XConfigureWindow(dpy, w, value_mask, values);
 }
 
@@ -575,6 +584,12 @@ XWMHints * xconnection_t::get_wm_hints(Window w) {
 	unsigned long serial = XNextRequest(dpy);
 	//printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
 	return XGetWMHints(dpy, w);
+}
+
+Window xconnection_t::create_window(int x, int y, unsigned w, unsigned h) {
+	XSetWindowAttributes wa;
+	wa.override_redirect = True;
+	return XCreateWindow(dpy, xroot, x, y, w, h, 0, root_wa.depth, InputOutput, root_wa.visual, CWOverrideRedirect, &wa);
 }
 
 }

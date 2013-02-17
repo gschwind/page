@@ -437,6 +437,8 @@ struct xconnection_t {
 
 	XWMHints * get_wm_hints(Window w);
 
+	Window create_window(int x, int y, unsigned w, unsigned h);
+
 };
 
 }

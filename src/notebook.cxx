@@ -149,9 +149,7 @@ void notebook_t::set_selected(window_t * c) {
 
 void notebook_t::update_client_position(window_t * c) {
 	unsigned int height, width;
-	compute_client_size_with_constraint(
-			*(c->get_size_hints()),
-			_allocation.w - 2 * BORDER_SIZE,
+	compute_client_size_with_constraint(c, _allocation.w - 2 * BORDER_SIZE,
 			_allocation.h - HEIGHT - 2 * BORDER_SIZE, width, height);
 
 	/* compute the window placement within notebook */
@@ -177,7 +175,7 @@ void notebook_t::update_client_position(window_t * c) {
 
 	printf("Request for XX %dx%d+%d+%d\n", client_size.w, client_size.h,
 			client_size.x, client_size.y);
-	c->reconfigure(client_size);
+	c->move_resize(client_size);
 }
 
 void notebook_t::iconify_client(window_t * x) {
@@ -220,7 +218,7 @@ box_int_t notebook_t::get_absolute_extend() {
 region_t<int> notebook_t::get_area() {
 	if (!_selected.empty()) {
 		region_t<int> area = _allocation;
-		area -= _selected.front()->get_absolute_extend();
+		area -= _selected.front()->get_size();
 		return area;
 	} else {
 		return region_t<int>(_allocation);
@@ -320,9 +318,11 @@ void notebook_t::set_allocation(box_int_t const & area) {
 }
 
 
-void notebook_t::compute_client_size_with_constraint(XSizeHints const & size_hints,
+void notebook_t::compute_client_size_with_constraint(window_t * c,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
+
+	XSizeHints const size_hints = *c->get_wm_normal_hints();
 
 	printf("XXX max : %d %d\n", max_width, max_height);
 
@@ -399,6 +399,14 @@ void notebook_t::compute_client_size_with_constraint(XSizeHints const & size_hin
 	height = max_height;
 
 	printf("XXX result : %d %d\n", width, height);
+}
+
+cairo_surface_t * notebook_t::get_icon_surface(window_t * w) {
+	std::map<window_t *, window_icon_handler_t *>::iterator i = icons.find(w);
+	if(i == icons.end()) {
+		icons[w] = new window_icon_handler_t(w);
+	}
+	return icons[w]->get_cairo_surface();
 }
 
 

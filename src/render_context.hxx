@@ -62,6 +62,13 @@ public:
 
 	void repair_buffer(renderable_list_t & visible, cairo_t * cr, box_int_t const & area);
 
+
+	void move_above(renderable_t * r, renderable_t * above);
+	void raise(renderable_t * r);
+	void lower(renderable_t * r);
+
+	renderable_list_t get_renderable_list();
+
 };
 
 }

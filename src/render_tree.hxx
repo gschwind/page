@@ -22,6 +22,8 @@
 #include "box.hxx"
 #include "split.hxx"
 #include "notebook.hxx"
+#include "renderable_window.hxx"
+#include "floating_window.hxx"
 
 namespace page {
 
@@ -68,7 +70,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (vsplit_button_s == 0|| true) {
+		if (vsplit_button_s == 0 || true) {
 			std::string filename = conf_img_dir + "/vsplit_button.png";
 			printf("Load: %s\n", filename.c_str());
 			vsplit_button_s = cairo_image_surface_create_from_png(
@@ -77,7 +79,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (close_button_s == 0|| true) {
+		if (close_button_s == 0 || true) {
 			std::string filename = conf_img_dir + "/close_button.png";
 			printf("Load: %s\n", filename.c_str());
 			close_button_s = cairo_image_surface_create_from_png(
@@ -86,7 +88,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pop_button_s == 0|| true) {
+		if (pop_button_s == 0 || true) {
 			std::string filename = conf_img_dir + "/pop_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pop_button_s = cairo_image_surface_create_from_png(
@@ -95,7 +97,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pops_button_s == 0|| true) {
+		if (pops_button_s == 0 || true) {
 			std::string filename = conf_img_dir + "/pops_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pops_button_s = cairo_image_surface_create_from_png(
@@ -208,10 +210,10 @@ public:
 								0xecU / 255.0);
 						cairo_fill(cr);
 
-						if ((*i)->icon_surf != 0) {
+						if (n->get_icon_surface((*i)) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, (*i)->icon_surf, 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -270,10 +272,10 @@ public:
 						offset += length * 2;
 					} else {
 
-						if ((*i)->icon_surf != 0) {
+						if (n->get_icon_surface((*i)) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, (*i)->icon_surf, 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -381,7 +383,7 @@ public:
 				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 						0xecU / 255.0);
 
-				box_int_t size = c->get_absolute_extend();
+				box_int_t size = c->get_size();
 				/* left */
 				cairo_rectangle(cr, n->_allocation.x, n->_allocation.y + HEIGHT,
 						size.x - n->_allocation.x, n->_allocation.h - HEIGHT);
@@ -482,6 +484,197 @@ public:
 			render_notebook(*i);
 		}
 	}
+
+
+	void render_floating(floating_window_t * f) {
+
+		cairo_t * cr = f->cr;
+
+		box_int_t _allocation = f->border->get_size();
+		_allocation.x = 0;
+		_allocation.y = 0;
+
+		cairo_save(cr);
+		{
+
+			//std::cout << "xxx: " << n->_allocation.to_string() << std::endl;
+
+			cairo_translate(cr, _allocation.x, _allocation.y);
+			cairo_set_line_width(cr, 1.0);
+			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+
+			/* create tabs back ground */
+			cairo_rectangle(cr, 0.0, 0.0, _allocation.w, HEIGHT);
+			cairo_pattern_t *pat;
+			pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, HEIGHT);
+			cairo_pattern_add_color_stop_rgba(pat, 0, 0xeeU / 255.0,
+					0xeeU / 255.0, 0xecU / 255.0, 1);
+			cairo_pattern_add_color_stop_rgba(pat, 1, 0xbaU / 255.0,
+					0xbdU / 255.0, 0xd6U / 255.0, 1);
+			cairo_set_source(cr, pat);
+			cairo_fill(cr);
+			cairo_pattern_destroy(pat);
+
+			/* draw top line */
+			cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
+					0x85U / 255.0);
+			cairo_new_path(cr);
+			cairo_move_to(cr, 0.0, HEIGHT - 0.5);
+			cairo_line_to(cr, _allocation.w, HEIGHT - 0.5);
+
+			cairo_stroke(cr);
+
+			cairo_set_source_rgb(cr, 0xeeU / 255.0,
+					0xeeU / 255.0, 0xecU / 255.0);
+			cairo_rectangle(cr, 0.0, HEIGHT, _allocation.w,
+					_allocation.h - HEIGHT);
+			cairo_fill(cr);
+
+			double offset = 2;
+			double length = _allocation.w - 4;
+
+			cairo_save(cr);
+			{
+
+				cairo_translate(cr, floor(offset), 0.0);
+
+				cairo_set_line_width(cr, 1.0);
+				cairo_set_font_face(cr, font_bold);
+				cairo_set_font_size(cr, 13);
+
+				/* draw light background */
+				cairo_rectangle(cr, 0.0, 3.0, length, HEIGHT);
+				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
+						0xecU / 255.0);
+				cairo_fill(cr);
+
+//				if (n->get_icon_surface((*i)) != 0) {
+//					cairo_save(cr);
+//					cairo_translate(cr, 3.0, 4.0);
+//					cairo_set_source_surface(cr, n->get_icon_surface((*i)), 0.0,
+//							0.0);
+//					cairo_paint(cr);
+//					cairo_restore(cr);
+//				}
+
+				/* draw the name */
+				cairo_rectangle(cr, 2.0, 0.0, length - 17.0, HEIGHT - 2.0);
+				cairo_clip(cr);
+				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+				cairo_set_font_size(cr, 13.0);
+				cairo_move_to(cr, 20.5, 15.5);
+
+				cairo_show_text(cr, f->w->get_title().c_str());
+
+				/* draw blue lines */
+				cairo_reset_clip(cr);
+
+				cairo_new_path(cr);
+				cairo_move_to(cr, 1.0, 1.5);
+				cairo_line_to(cr, length, 1.5);
+				cairo_move_to(cr, 1.0, 2.5);
+				cairo_line_to(cr, length, 2.5);
+				cairo_set_source_rgb(cr, 0x72U / 255.0, 0x9fU / 255.0,
+						0xcfU / 255.0);
+				cairo_stroke(cr);
+				cairo_new_path(cr);
+				cairo_move_to(cr, 0.0, 3.5);
+				cairo_line_to(cr, length, 3.5);
+				cairo_set_source_rgb(cr, 0x34U / 255.0, 0x64U / 255.0,
+						0xa4U / 255.0);
+				cairo_stroke(cr);
+
+				cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
+						0x85U / 255.0);
+				rounded_rectangle(cr, 0.5, 0.5, length, HEIGHT - 1.0, 3.0);
+
+				/* draw close icon */
+				cairo_set_line_width(cr, 2.0);
+				cairo_translate(cr, length - 16.5, 3.5);
+				/* draw close */
+				cairo_new_path(cr);
+				cairo_move_to(cr, 4.0, 4.0);
+				cairo_line_to(cr, 12.0, 12.0);
+				cairo_move_to(cr, 12.0, 4.0);
+				cairo_line_to(cr, 4.0, 12.0);
+				cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0,
+						0x00U / 255.0);
+				cairo_stroke(cr);
+
+				cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+				cairo_set_source_surface(cr, close_button_s, 0.5, 0.5);
+				cairo_paint(cr);
+
+			}
+			cairo_restore(cr);
+
+		}
+		cairo_restore(cr);
+
+		cairo_save(cr);
+		{
+
+			cairo_translate(cr, _allocation.x, _allocation.y);
+
+			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+
+
+				window_t * c = f->w;
+				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
+						0xecU / 255.0);
+
+				box_int_t size = c->get_size();
+				/* left */
+				cairo_rectangle(cr, _allocation.x, _allocation.y + HEIGHT,
+						size.x - _allocation.x, _allocation.h - HEIGHT);
+				cairo_fill(cr);
+				/* right */
+				cairo_rectangle(cr, size.x + size.w, _allocation.y + HEIGHT,
+						_allocation.x + _allocation.w - size.x - size.w,
+						_allocation.h - HEIGHT);
+				cairo_fill(cr);
+
+				/* top */
+				cairo_rectangle(cr, size.x, _allocation.y + HEIGHT, size.w,
+						size.y - _allocation.y - HEIGHT);
+
+				/* bottom */
+				cairo_fill(cr);
+				cairo_rectangle(cr, size.x, size.y + size.h, size.w,
+						_allocation.y + _allocation.h - size.y - size.h);
+				cairo_fill(cr);
+
+				cairo_set_line_width(cr, 1.0);
+				cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
+						0x85U / 255.0);
+				cairo_rectangle(cr, size.x - 0.5, size.y - 0.5, size.w + 1.0,
+						size.h + 1.0);
+				cairo_stroke(cr);
+
+
+			/* draw top line */
+
+//			cairo_translate(cr, n->_allocation.x, n->_allocation.y);
+//			cairo_rectangle(cr, 0.0, 0.0, n->_allocation.w, HEIGHT);
+//			cairo_set_source_surface(cr, s, 0.0, 0.0);
+//			cairo_fill(cr);
+			cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
+					0x85U / 255.0);
+			//cairo_set_source_rgb(page.gui_cr, 1.0, 0.0, 0.0);
+			cairo_set_line_width(cr, 1.0);
+			cairo_new_path(cr);
+			cairo_move_to(cr, 0.5, 0.5);
+			cairo_line_to(cr, _allocation.w - 0.5, 0.5);
+			cairo_line_to(cr, _allocation.w - 0.5, _allocation.h - 0.5);
+			cairo_line_to(cr, 0.5, _allocation.h - 0.5);
+			cairo_line_to(cr, 0.5, 0.5);
+			cairo_stroke(cr);
+
+		}
+		cairo_restore(cr);
+
+	}
+
 
 };
 

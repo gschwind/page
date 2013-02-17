@@ -54,6 +54,7 @@
 #include "page_base.hxx"
 #include "render_tree.hxx"
 #include "renderable_page.hxx"
+#include "floating_window.hxx"
 
 namespace page {
 
@@ -123,10 +124,17 @@ public:
 		bool popup_is_added;
 	};
 
+	struct mode_data_floating_t {
+		int x_offset;
+		int y_offset;
+		floating_window_t * f;
+	};
+
 	enum process_mode_e {
 		NORMAL_PROCESS,			// Process event as usual
 		SPLIT_GRAB_PROCESS,		// Process event when split is moving
-		NOTEBOOK_GRAB_PROCESS	// Process event when notebook tab is moved
+		NOTEBOOK_GRAB_PROCESS,	// Process event when notebook tab is moved
+		FLOATING_GRAB_PROCESS	// Process event when a floating window is moved
 	};
 
 
@@ -139,6 +147,8 @@ public:
 
 	/* this data are used when you drag&drop a notebook tab */
 	mode_data_notebook_t mode_data_notebook;
+
+	mode_data_floating_t mode_data_floating;
 
 
 	struct page_event_handler_t : public xevent_handler_t {
@@ -176,25 +186,30 @@ public:
 	std::set<split_t *> split_list;
 	notebook_set_t notebook_list;
 
+	/* top_level_windows */
+	window_set_t notebook_clients;
+	window_set_t floating_clients;
+
+	/* all known windows */
+	window_set_t windows_set;
+	window_map_t xwindow_to_window;
+
 	// track where a client is stored
-	std::map<window_t *, notebook_t *> client_to_notebook_index;
-	std::map<notebook_t *, viewport_t *> notebook_to_viewport_index;
+	std::map<notebook_t *, viewport_t *> notebook_to_viewport;
 	std::map<window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
-	std::map<viewport_t *, notebook_set_t > viewport_to_notebooks_index;
+	std::map<viewport_t *, notebook_set_t > viewport_to_notebooks;
+	std::map<window_t *, notebook_t *> client_to_notebook;
+
+
+	std::map<Window, renderable_window_t *> window_to_renderable_context;
+
+	std::map<Window, floating_window_t *> xfloating_window_to_floating_window;
+	std::map<Window, floating_window_t *> window_to_floating_window;
+	std::map<Window, window_t *> window_to_normal_window;
+
+	std::set<Window> floating_windows;
 
 	std::list<Atom> supported_list;
-
-
-	window_map_t xwindow_to_window_index;
-
-	/* top_level_windows */
-	window_set_t all_windows;
-	window_set_t normal_clients;
-	window_set_t dock_clients;
-	window_set_t other_windows;
-
-	/* all know windows in x11 stack order */
-	window_list_t windows_stack;
 
 	notebook_t * default_window_pop;
 	std::string page_base_dir;
@@ -300,8 +315,8 @@ public:
 	bool merge_area_macro(box_list_t & list);
 
 	window_t * get_window_t(Window w) {
-		window_map_t::iterator i = xwindow_to_window_index.find(w);
-		if(i != xwindow_to_window_index.end())
+		window_map_t::iterator i = xwindow_to_window.find(w);
+		if(i != xwindow_to_window.end())
 			return i->second;
 		else
 			return 0;
@@ -324,7 +339,7 @@ public:
 
 	void update_window_z();
 
-	void insert_window_in_stack(window_t * x);
+	void insert_window_in_stack(renderable_window_t * x);
 
 	window_t * new_window(Window const w, XWindowAttributes const & wa);
 	void delete_window(window_t * w);
@@ -362,6 +377,12 @@ public:
 	void destroy(notebook_t * x);
 
 	viewport_t * new_viewport(box_int_t & area);
+
+	renderable_window_t * new_renderable_window(window_t * w);
+	void destroy(renderable_window_t * w);
+
+	floating_window_t * new_floating_window(window_t * w);
+	void destroy(floating_window_t * w);
 
 	void unmap_set(window_set_t & set);
 	void map_set(window_set_t & set);

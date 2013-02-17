@@ -15,7 +15,10 @@ page_SOURCES = \
 	render_context.cxx \
 	viewport.cxx \
 	render_tree.cxx \
-	renderable_page.cxx
+	renderable_page.cxx \
+	floating_window.cxx \
+	renderable_window.cxx \
+	window_icon_handler.cxx
 
 page_LDADD = \
 	$(X11_LIBS) \
