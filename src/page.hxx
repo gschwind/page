@@ -127,6 +127,9 @@ public:
 	struct mode_data_floating_t {
 		int x_offset;
 		int y_offset;
+		int x_root;
+		int y_root;
+		box_int_t size;
 		floating_window_t * f;
 	};
 
@@ -134,7 +137,8 @@ public:
 		NORMAL_PROCESS,			// Process event as usual
 		SPLIT_GRAB_PROCESS,		// Process event when split is moving
 		NOTEBOOK_GRAB_PROCESS,	// Process event when notebook tab is moved
-		FLOATING_GRAB_PROCESS	// Process event when a floating window is moved
+		FLOATING_GRAB_PROCESS,	// Process event when a floating window is moved
+		FLOATING_RESIZE_PROCESS
 	};
 
 

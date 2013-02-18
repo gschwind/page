@@ -58,6 +58,8 @@ protected:
 	bool _is_map;
 	bool is_lock;
 	bool has_wm_normal_hints;
+	bool has_transient_for;
+	bool has_wm_state;
 
 	/* the name of window */
 	std::string wm_name;
@@ -191,6 +193,10 @@ public:
 	std::set<window_t *> get_sibbling_childs();
 
 	bool check_normal_hints_constraint(int width, int height);
+
+	std::list<Atom> get_net_wm_type();
+
+	bool get_has_wm_state();
 
 	friend class renderable_window_t;
 	friend class floating_window_t;

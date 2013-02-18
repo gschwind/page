@@ -59,6 +59,7 @@ void floating_window_t::map() {
 
 void floating_window_t::unmap() {
 	border->unmap();
+	w->unmap();
 }
 
 void floating_window_t::reconfigure(box_int_t const & area) {
@@ -71,17 +72,18 @@ void floating_window_t::reconfigure(box_int_t const & area) {
 
 	size.x -= 2;
 	size.y -= 11;
-	size.w = width + 2;
-	size.h = heigth + 12;
+	size.w = width + 8;
+	size.h = heigth + 24 + 4;
 
-	subsize.x = 1;
-	subsize.y = 11;
+	subsize.x = 4;
+	subsize.y = 24;
 	subsize.w = width;
 	subsize.h = heigth;
 
 	border->move_resize(size);
 	w->move_resize(subsize);
 }
+
 
 
 }

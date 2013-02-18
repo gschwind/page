@@ -318,9 +318,21 @@ void page_t::scan() {
 			window_t * w = new_window(wins[i], wa);
 			rnd.add(new_renderable_window(w));
 
-			if(w->get_window_type() == PAGE_NORMAL_WINDOW_TYPE) {
-				manage(w);
+			if (w->is_map()) {
+				if (w->get_window_type() == PAGE_NORMAL_WINDOW_TYPE) {
+					manage(w);
+				}
+			} else {
+				/* if the window is not map check if previous windows manager has set WM_STATE to iconic
+				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
+				 */
+				if(w->get_has_wm_state() && w->get_wm_state() == IconicState) {
+					if (w->get_window_type() == PAGE_NORMAL_WINDOW_TYPE) {
+						manage(w);
+					}
+				}
 			}
+
 
 			XFlush(cnx.dpy);
 		}
@@ -537,18 +549,42 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		if(has_key(xfloating_window_to_floating_window, e.window) && e.subwindow == None) {
 
-			mode_data_floating.x_offset = e.x;
-			mode_data_floating.y_offset = e.y;
-			mode_data_floating.f = xfloating_window_to_floating_window[e.window];
-			process_mode = FLOATING_GRAB_PROCESS;
+			mode_data_floating.f =
+					xfloating_window_to_floating_window[e.window];
+			mode_data_floating.size = mode_data_floating.f->w->get_size();
 
-			/* Grab Pointer no other client will get mouse event */
-			if (XGrabPointer(cnx.dpy, cnx.xroot, False,
-					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-					GrabModeAsync, GrabModeAsync, None, cursor_fleur,
-					CurrentTime) != GrabSuccess) {
-				/* bad news */
-				throw std::runtime_error("fail to grab pointer");
+			/* click on close button ? */
+			if (e.x > mode_data_floating.size.w - 17 && e.y < 24) {
+				mode_data_floating.f->w->delete_window(e.time);
+			} else {
+
+				mode_data_floating.x_offset = e.x;
+				mode_data_floating.y_offset = e.y;
+				mode_data_floating.x_root = e.x_root;
+				mode_data_floating.y_root = e.y_root;
+				mode_data_floating.f =
+						xfloating_window_to_floating_window[e.window];
+				mode_data_floating.size = mode_data_floating.f->w->get_size();
+				box_int_t size = mode_data_floating.f->border->get_size();
+				mode_data_floating.size.x += size.x;
+				mode_data_floating.size.y += size.y;
+
+				printf("XXXXX size = %s, x: %d, y: %d\n",
+						mode_data_floating.size.to_string().c_str(), e.x, e.y);
+				if ((e.x > size.w - 10) && (e.y > size.h - 10)) {
+					process_mode = FLOATING_RESIZE_PROCESS;
+				} else {
+					process_mode = FLOATING_GRAB_PROCESS;
+				}
+				/* Grab Pointer no other client will get mouse event */
+				if (XGrabPointer(cnx.dpy, cnx.xroot, False,
+						(ButtonPressMask | ButtonReleaseMask
+								| PointerMotionMask),
+						GrabModeAsync, GrabModeAsync, None, cursor_fleur,
+						CurrentTime) != GrabSuccess) {
+					/* bad news */
+					throw std::runtime_error("fail to grab pointer");
+				}
 			}
 
 		}
@@ -562,6 +598,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		break;
 	case FLOATING_GRAB_PROCESS:
 		/* should never happen */
+		break;
+	case FLOATING_RESIZE_PROCESS:
 		break;
 	}
 
@@ -636,6 +674,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		break;
 	case FLOATING_GRAB_PROCESS:
+		process_mode = NORMAL_PROCESS;
+		XUngrabPointer(cnx.dpy, CurrentTime);
+		break;
+	case FLOATING_RESIZE_PROCESS:
 		process_mode = NORMAL_PROCESS;
 		XUngrabPointer(cnx.dpy, CurrentTime);
 		break;
@@ -805,6 +847,25 @@ void page_t::process_event(XMotionEvent const & e) {
 
 	}
 		break;
+	case FLOATING_RESIZE_PROCESS:
+	{
+		/* get lastest know motion event */
+		ev.xmotion = e;
+		while(XCheckMaskEvent(cnx.dpy, Button1MotionMask, &ev));
+		box_int_t x = mode_data_floating.size;
+		x.w += e.x_root - mode_data_floating.x_root;
+		x.h += e.y_root - mode_data_floating.y_root;
+
+		if(x.h < 1)
+			x.h = 1;
+		if(x.w < 1)
+			x.w = 1;
+
+		printf("XXXXX resize = %s\n", x.to_string().c_str());
+		mode_data_floating.f->reconfigure(x);
+
+	}
+		break;
 	}
 }
 
@@ -944,8 +1005,6 @@ void page_t::process_event(XGravityEvent const & e) {
 void page_t::process_event(XMapEvent const & e) {
 	if (e.event != cnx.xroot)
 		return;
-
-
 
 	window_t * x = get_window_t(e.window);
 	if (!x)

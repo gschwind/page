@@ -341,23 +341,23 @@ void window_t::get_icon_data(long const *& data, int & size) {
 
 void window_t::read_wm_state() {
 	int format;
-	long result = -1;
 	long * p = NULL;
 	unsigned long n, extra;
 	Atom real;
 
+	has_wm_state = false;
+	wm_state = WithdrawnState;
+
 	if (cnx.get_window_property(xwin, cnx.atoms.WM_STATE, 0L, 2L, False,
 			cnx.atoms.WM_STATE, &real, &format, &n, &extra,
-			(unsigned char **) &p) != Success)
-		wm_state = WithdrawnState;
-
-	if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
-		result = p[0];
-	} else {
-		wm_state = WithdrawnState;
+			(unsigned char **) &p) == Success) {
+		if (n != 0 && format == 32 && real == cnx.atoms.WM_STATE) {
+			wm_state = p[0];
+			has_wm_state = true;
+		}
+		XFree(p);
 	}
-	XFree(p);
-	wm_state = result;
+
 }
 
 void window_t::map() {
@@ -576,9 +576,11 @@ void window_t::read_transient_for() {
 	unsigned int n;
 	long * data = get_properties32(cnx.atoms.WM_TRANSIENT_FOR, cnx.atoms.WINDOW, &n);
 	if(data && n == 1) {
+		has_transient_for = true;
 		_transient_for = data[0];
 		delete[] data;
 	} else {
+		has_transient_for = false;
 		_transient_for = None;
 	}
 }
@@ -710,6 +712,43 @@ page_window_type_e window_t::find_window_type_pass1(xconnection_t const & cnx, A
 
 }
 
+std::list<Atom> window_t::get_net_wm_type() {
+	std::list<Atom> net_wm_type;
+
+	unsigned int num;
+	long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
+			&num);
+	if (val) {
+		/* use the first value that we know about in the array */
+		for (unsigned i = 0; i < num; ++i) {
+			net_wm_type.push_back(val[i]);
+		}
+		delete[] val;
+	} else {
+		/*
+		 * Fallback from ICCCM.
+		 *
+		 */
+
+		if(!override_redirect()) {
+			/* Managed windows */
+			if(!has_transient_for) {
+				net_wm_type.push_back(cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL);
+			} else {
+				net_wm_type.push_back(cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG);
+			}
+
+		} else {
+			/* Override-redirected windows */
+			net_wm_type.push_back(cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL);
+		}
+
+	}
+
+	return net_wm_type;
+
+}
+
 page_window_type_e window_t::find_window_type(xconnection_t const & cnx, Window w, XWindowAttributes &wa) {
 	/* this function try to figure out the type of a given window
 	 * It seems that overide redirect is most important than
@@ -719,57 +758,33 @@ page_window_type_e window_t::find_window_type(xconnection_t const & cnx, Window 
 		return PAGE_INPUT_ONLY_TYPE;
 	}
 
-	std::list<Atom> net_wm_type;
+	std::list<Atom> net_wm_type = get_net_wm_type();
 
-	unsigned int num;
-	long * val = get_properties32(cnx.atoms._NET_WM_WINDOW_TYPE, cnx.atoms.ATOM,
-			&num);
-	if (val) {
-		net_wm_type.clear();
-		/* use the first value that we know about in the array */
-		for (unsigned i = 0; i < num; ++i) {
-			net_wm_type.push_back(val[i]);
-		}
-		delete[] val;
+	if(net_wm_type.empty()) {
+		/* should never happen */
+		throw std::runtime_error("_NET_WM_TYPE fail this should never happen");
 	}
 
-	page_window_type_e ret = PAGE_UNKNOW_WINDOW_TYPE;
-	std::list<Atom>::iterator i = net_wm_type.begin();
-	while(ret == PAGE_UNKNOW_WINDOW_TYPE && i != net_wm_type.end()) {
-		ret = find_window_type_pass1(cnx, *i);
 
-	}
-
-	if (ret != PAGE_UNKNOW_WINDOW_TYPE) {
-		return ret;
+	if(override_redirect()) {
+		/* override redirect window */
+		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else {
-		/*
-		 * Extended ICCCM state the following:
-		 *
-		 * _NET_WM_WINDOW_TYPE_DIALOG indicates that this is a dialog window.
-		 * If _NET_WM_WINDOW_TYPE is not set, then managed windows with
-		 * WM_TRANSIENT_FOR set MUST be taken as this type.
-		 *
-		 * Override-redirect windows with WM_TRANSIENT_FOR, but without
-		 * _NET_WM_WINDOW_TYPE must be taken as _NET_WM_WINDOW_TYPE_NORMAL.
-		 *
-		 */
+		/* Managed windows */
+		page_window_type_e ret = PAGE_UNKNOW_WINDOW_TYPE;
+		std::list<Atom>::iterator i = net_wm_type.begin();
+		while(ret == PAGE_UNKNOW_WINDOW_TYPE && i != net_wm_type.end()) {
+			ret = find_window_type_pass1(cnx, *i);
+		}
 
-		if (override_redirect() && transient_for() != None) {
-			/* ICCCM FAIL ? */
-			return PAGE_NORMAL_WINDOW_TYPE;
-		} else if (!override_redirect() && transient_for() == None) {
-			return PAGE_FLOATING_WINDOW_TYPE;
+		if (ret != PAGE_UNKNOW_WINDOW_TYPE) {
+			return ret;
 		} else {
-			if (is_map()) {
-				return PAGE_NORMAL_WINDOW_TYPE;
-			} else if (!is_map() && get_wm_state() == (IconicState)) {
-				return PAGE_NORMAL_WINDOW_TYPE;
-			} else {
-				return PAGE_OVERLAY_WINDOW_TYPE;
-			}
+			/* should never happen, as standard spesify */
+			throw std::runtime_error("Unknow window type, no BASE type is setup, this should never happen");
 		}
 	}
+
 }
 
 //void window_t::update_vm_hints() {
@@ -849,6 +864,11 @@ bool window_t::check_normal_hints_constraint(int width, int heigth) {
 	}
 
 	return true;
+}
+
+
+bool window_t::get_has_wm_state() {
+	return has_wm_state;
 }
 
 
