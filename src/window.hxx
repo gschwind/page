@@ -22,7 +22,8 @@ enum page_window_type_e {
 	PAGE_NORMAL_WINDOW_TYPE,
 	PAGE_OVERLAY_WINDOW_TYPE,
 	PAGE_FLOATING_WINDOW_TYPE,
-	PAGE_INPUT_ONLY_TYPE
+	PAGE_INPUT_ONLY_TYPE,
+	PAGE_NOTIFY_TYPE
 };
 
 class window_t {
@@ -37,7 +38,6 @@ protected:
 	Window xwin;
 	XSizeHints * wm_normal_hints;
 	XWMHints * wm_hints;
-	XWindowAttributes wa;
 
 	int lock_count;
 
@@ -76,6 +76,25 @@ protected:
 	long * net_wm_icon_data;
 
 	std::set<window_t *> sibbling_childs;
+
+	box_int_t position;				/* window position */
+    int border_width;				/* border width of window */
+    int depth;          			/* depth of window */
+    Visual * visual;				/* the associated visual structure */
+    Window root;					/* root of screen containing window */
+    int c_class;					/* C++ InputOutput, InputOnly*/
+    int bit_gravity;				/* one of bit gravity values */
+    int win_gravity;				/* one of the window gravity values */
+    bool save_under;				/* boolean, should bits under be saved? */
+    Colormap colormap;				/* color map to be associated with window */
+    bool map_installed;				/* boolean, is color map currently installed*/
+    int map_state;					/* IsUnmapped, IsUnviewable, IsViewable */
+    Screen *screen;					/* back pointer to correct screen */
+
+    bool _overide_redirect;
+    Window above;
+
+    page_window_type_e type;
 
 private:
 	/* avoid copy */
@@ -180,7 +199,7 @@ public:
 	void apply_size_constraint();
 
 	page_window_type_e find_window_type_pass1(xconnection_t const & cnx, Atom wm_window_type);
-	page_window_type_e find_window_type(xconnection_t const & cnx, Window w, XWindowAttributes &wa);
+	page_window_type_e find_window_type(xconnection_t const & cnx, Window w, int c_class);
 
 	page_window_type_e get_window_type();
 
@@ -197,6 +216,13 @@ public:
 	std::list<Atom> get_net_wm_type();
 
 	bool get_has_wm_state();
+
+	void notify_move_resize(box_int_t const & area);
+
+	void iconify();
+	void normalize();
+
+	void print_net_wm_state();
 
 	friend class renderable_window_t;
 	friend class floating_window_t;

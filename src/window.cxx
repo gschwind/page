@@ -46,13 +46,24 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	sibbling_childs()
 {
 
-	this->wa = wa;
 
-	if (wa.map_state == IsUnmapped) {
-		_is_map = false;
-	} else {
-		_is_map = true;
-	}
+	/* Copy windows attributes */
+	position = box_int_t(wa.x, wa.y, wa.width, wa.height);
+    border_width = wa.border_width;
+    depth = wa.depth;
+    visual = wa.visual;
+    root = wa.root;
+    c_class = wa.c_class;
+    bit_gravity = wa.bit_gravity;
+    win_gravity = wa.win_gravity;
+    save_under = wa.save_under;
+    colormap = wa.colormap;
+    map_installed = wa.map_installed;
+    map_state = wa.map_state;
+    screen = wa.screen;
+
+	_overide_redirect = (wa.override_redirect == True) ? true : false;
+	_is_map = (wa.map_state == IsUnmapped) ? false : true;
 
 	memset(partial_struct, 0, sizeof(partial_struct));
 
@@ -82,7 +93,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 }
 
 box_int_t window_t::get_size() {
-	return box_int_t(wa.x, wa.y, wa.width, wa.height);
+	return position;
 }
 
 void window_t::setup_extends() {
@@ -177,6 +188,9 @@ void window_t::read_net_wm_type() {
 	}
 
 	print_net_wm_window_type();
+
+	type = find_window_type(cnx, xwin, c_class);
+
 }
 
 void window_t::read_net_wm_state() {
@@ -191,6 +205,8 @@ void window_t::read_net_wm_state() {
 		}
 		delete[] net_wm_state;
 	}
+
+	print_net_wm_state();
 }
 
 void window_t::read_net_wm_protocols() {
@@ -283,8 +299,25 @@ void window_t::print_net_wm_window_type() {
 	}
 }
 
+void window_t::print_net_wm_state() {
+	unsigned int num;
+	long * val = get_properties32(cnx.atoms._NET_WM_STATE,
+			cnx.atoms.ATOM, &num);
+	printf("_NET_WM_STATE =");
+	if (val) {
+		/* use the first value that we know about in the array */
+		for (unsigned i = 0; i < num; ++i) {
+			char * name = XGetAtomName(cnx.dpy, val[i]);
+			printf(" \"%s\"", name);
+			XFree(name);
+		}
+		delete[] val;
+	}
+	printf("\n");
+}
+
 bool window_t::is_input_only() {
-	return wa.c_class == InputOnly;
+	return c_class == InputOnly;
 }
 
 void window_t::add_to_save_set() {
@@ -304,7 +337,7 @@ long window_t::get_net_user_time() {
 }
 
 bool window_t::override_redirect() {
-	return (wa.override_redirect == True)? true : false;
+	return _overide_redirect;
 }
 
 Window window_t::transient_for() {
@@ -366,7 +399,6 @@ void window_t::map() {
 }
 
 void window_t::unmap() {
-	_is_map = false;
 	cnx.unmap(xwin);
 }
 
@@ -410,10 +442,6 @@ void window_t::focus() {
 	net_wm_state.insert(cnx.atoms._NET_WM_STATE_FOCUSED);
 	write_net_wm_state();
 
-	cnx.change_property(cnx.xroot, cnx.atoms._NET_ACTIVE_WINDOW,
-			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&(xwin)), 1);
-
 }
 
 
@@ -425,6 +453,7 @@ std::string window_t::get_title() {
 		name = net_wm_name;
 		return name;
 	}
+
 	if (has_wm_name) {
 		name = wm_name;
 		return name;
@@ -470,11 +499,7 @@ void window_t::write_net_wm_allowed_actions() {
 void window_t::move_resize(box_int_t const & location) {
 	if(get_size() == location)
 		return;
-	wa.x = location.x;
-	wa.y = location.y;
-	wa.width = location.w;
-	wa.height = location.h;
-
+	position = location;
 	cnx.move_resize(xwin, location);
 }
 
@@ -562,14 +587,10 @@ void window_t::unset_fullscreen() {
 
 void window_t::process_configure_notify_event(XConfigureEvent const & e) {
 	assert(e.window == xwin);
-	wa.x = e.x;
-	wa.y = e.y;
-	wa.width = e.width;
-	wa.height = e.height;
-
-	wa.border_width = e.border_width;
-	wa.override_redirect = e.override_redirect;
-
+	position = box_int_t(e.x, e.y, e.width, e.height);
+	border_width = e.border_width;
+	_overide_redirect = (e.override_redirect == True)?true:false;
+	above = e.above;
 }
 
 void window_t::read_transient_for() {
@@ -601,8 +622,8 @@ void window_t::apply_size_constraint() {
 	if(wm_normal_hints->flags == 0)
 		return;
 
-	int max_width = wa.width;
-	int max_height = wa.height;
+	int max_width = position.w;
+	int max_height = position.h;
 
 	if (size_hints.flags & PMaxSize) {
 		if (max_width > size_hints.max_width)
@@ -672,7 +693,7 @@ void window_t::apply_size_constraint() {
 	printf("XXXX %d %d \n", max_width, max_height);
 
 	//if(max_height != size.h || max_width != size.w) {
-		move_resize(box_int_t(wa.x, wa.y, max_width, max_height));
+		move_resize(box_int_t(position.x, position.y, max_width, max_height));
 	//}
 
 }
@@ -699,7 +720,7 @@ page_window_type_e window_t::find_window_type_pass1(xconnection_t const & cnx, A
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_TOOLTIP) {
 		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_NOTIFICATION) {
-		return PAGE_OVERLAY_WINDOW_TYPE;
+		return PAGE_NOTIFY_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_COMBO) {
 		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DND) {
@@ -749,12 +770,12 @@ std::list<Atom> window_t::get_net_wm_type() {
 
 }
 
-page_window_type_e window_t::find_window_type(xconnection_t const & cnx, Window w, XWindowAttributes &wa) {
+page_window_type_e window_t::find_window_type(xconnection_t const & cnx, Window w, int c_class) {
 	/* this function try to figure out the type of a given window
 	 * It seems that overide redirect is most important than
 	 * _NET_WINDOW_TYPE
 	 */
-	if(wa.c_class == InputOnly) {
+	if(c_class == InputOnly) {
 		return PAGE_INPUT_ONLY_TYPE;
 	}
 
@@ -816,7 +837,7 @@ window_set_t window_t::get_sibbling_childs() {
 }
 
 page_window_type_e window_t::get_window_type() {
-	return find_window_type(cnx, xwin, wa);
+	return type;
 }
 
 bool window_t::is_window(Window w) {
@@ -871,6 +892,21 @@ bool window_t::get_has_wm_state() {
 	return has_wm_state;
 }
 
+void window_t::notify_move_resize(box_int_t const & area) {
+	position = area;
+}
+
+void window_t::iconify() {
+	unmap();
+	write_wm_state(IconicState);
+	set_net_wm_state(cnx.atoms._NET_WM_STATE_HIDDEN);
+}
+
+void window_t::normalize() {
+	map();
+	write_wm_state(NormalState);
+	unset_net_wm_state(cnx.atoms._NET_WM_STATE_HIDDEN);
+}
 
 }
 

@@ -67,12 +67,10 @@ bool notebook_t::add_client(window_t * x) {
 	_client_map.insert(x);
 	update_client_position(x);
 	if (_selected.empty()) {
-		x->map();
-		x->write_wm_state(NormalState);
+		x->normalize();
 		_selected.push_front(x);
 	} else {
-		x->unmap();
-		x->write_wm_state(IconicState);
+		x->iconify();
 		_selected.push_back(x);
 	}
 	return true;
@@ -122,8 +120,7 @@ void notebook_t::select_next() {
 		if (!_selected.empty()) {
 			window_t * x = _selected.front();
 			update_client_position(x);
-			x->map();
-			x->write_wm_state(NormalState);
+			x->normalize();
 		}
 	}
 }
@@ -131,14 +128,12 @@ void notebook_t::select_next() {
 void notebook_t::set_selected(window_t * c) {
 	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	update_client_position(c);
-	c->map();
-	c->write_wm_state(NormalState);
+	c->normalize();
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			window_t * x = _selected.front();
-			x->unmap();
-			x->write_wm_state(IconicState);
+			x->iconify();
 		}
 	}
 
@@ -201,13 +196,13 @@ void notebook_t::delete_all() {
 
 void notebook_t::unmap_all() {
 	if (!_selected.empty()) {
-		_selected.front()->unmap();
+		_selected.front()->iconify();
 	}
 }
 
 void notebook_t::map_all() {
 	if (!_selected.empty()) {
-		_selected.front()->map();
+		_selected.front()->normalize();
 	}
 }
 

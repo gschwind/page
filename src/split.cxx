@@ -158,4 +158,8 @@ void split_t::update_allocation() {
 	update_allocation_pack1();
 }
 
+double split_t::get_split_ratio() {
+	return _split;
+}
+
 }

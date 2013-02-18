@@ -19,10 +19,11 @@ floating_window_t::floating_window_t(window_t * w, Window parent) : w(w) {
 
 	/* create window handler */
 	border = new window_t(w->cnx, parent, xwa);
-	border->select_input(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask);
+	border->select_input(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | PropertyChangeMask);
+	border->read_all();
 
-	unsigned int width = w->wa.width;
-	unsigned int heigth = w->wa.height;
+	unsigned int width = w->position.w;
+	unsigned int heigth = w->position.h;
 
 	box_int_t size = w->get_size();
 	box_int_t subsize = size;
@@ -38,7 +39,7 @@ floating_window_t::floating_window_t(window_t * w, Window parent) : w(w) {
 	border->move_resize(size);
 	w->move_resize(subsize);
 
-	win_surf = cairo_xlib_surface_create(border->cnx.dpy, border->get_xwin(), border->wa.visual, border->wa.width, border->wa.height);
+	win_surf = cairo_xlib_surface_create(border->cnx.dpy, border->get_xwin(), border->visual, border->position.w, border->position.h);
 	cr = cairo_create(win_surf);
 
 }
@@ -53,13 +54,13 @@ floating_window_t::~floating_window_t() {
 }
 
 void floating_window_t::map() {
-	w->map();
 	border->map();
+	w->normalize();
 }
 
 void floating_window_t::unmap() {
 	border->unmap();
-	w->unmap();
+	w->iconify();
 }
 
 void floating_window_t::reconfigure(box_int_t const & area) {

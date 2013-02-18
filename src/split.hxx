@@ -53,6 +53,8 @@ public:
 	tree_t * get_pack1();
 	split_type_e get_split_type();
 
+	double get_split_ratio();
+
 };
 
 }
