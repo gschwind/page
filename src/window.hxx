@@ -224,6 +224,8 @@ public:
 
 	void print_net_wm_state();
 
+	bool is_hidden();
+
 	friend class renderable_window_t;
 	friend class floating_window_t;
 

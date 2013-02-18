@@ -908,5 +908,9 @@ void window_t::normalize() {
 	unset_net_wm_state(cnx.atoms._NET_WM_STATE_HIDDEN);
 }
 
+bool window_t::is_hidden() {
+	return net_wm_state.find(cnx.atoms._NET_WM_STATE_HIDDEN) != net_wm_state.end();
+}
+
 }
 

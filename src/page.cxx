@@ -287,7 +287,8 @@ void page_t::manage(window_t * w) {
 	notebook_clients.insert(w);
 	update_client_list();
 	insert_window_in_tree(w, 0);
-	activate_client(w);
+	if(!w->is_hidden())
+		activate_client(w);
 	if(w->is_fullscreen()) {
 		fullscreen(w);
 	}
@@ -1262,7 +1263,8 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 void page_t::process_event(XMapRequestEvent const & e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
 	window_t * x = get_window_t(e.window);
-	assert(x != 0);
+	if(x == 0)
+		return;
 	if (!has_key(notebook_clients, x)) {
 
 		printf("overide_redirect = %s\n", x->override_redirect()? "true" : "false");
@@ -1295,10 +1297,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 		return;
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
 		x->read_net_wm_user_time();
-		safe_raise_window(x);
-		if(client_focused == x) {
-			x->focus();
-		}
+		//safe_raise_window(x);
+		//if(client_focused == x) {
+		//	x->focus();
+		//}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		if(has_key(client_to_notebook, x)) {
@@ -1378,6 +1380,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_STATE) {
 		x->read_net_wm_state();
+	} else if (e.atom == cnx.atoms.WM_STATE) {
+		x->read_wm_state();
 	}
 }
 
@@ -1425,8 +1429,6 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			window_t * x = get_window_t(e.window);
 			if (x) {
 				printf("Set to iconic %lu\n", x->get_xwin());
-				x->write_wm_state(IconicState);
-				x->set_net_wm_state(cnx.atoms._NET_WM_STATE_HIDDEN);
 				iconify_client(x);
 			}
 		}
@@ -2321,15 +2323,18 @@ void page_t::process_net_vm_state_client_messate(window_t * c, long type, Atom s
 			break;
 		case _NET_WM_STATE_ADD:
 			if(has_key(client_to_notebook, c)) {
-				// ignore
+				client_to_notebook[c]->iconify_client(c);
 			} else {
 				c->unmap();
 			}
 			break;
 		case _NET_WM_STATE_TOGGLE:
 			if(has_key(client_to_notebook, c)) {
-				/* only activate is possible here, because hide is ignored*/
-				client_to_notebook[c]->activate_client(c);
+				if (c->get_wm_state() == IconicState) {
+					client_to_notebook[c]->activate_client(c);
+				} else {
+					client_to_notebook[c]->iconify_client(c);
+				}
 			} else {
 				if(c->is_map()) {
 					c->unmap();
