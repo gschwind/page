@@ -6,6 +6,7 @@
  */
 
 #include "notebook.hxx"
+#include <cmath>
 
 namespace page {
 
@@ -22,22 +23,24 @@ window_t * notebook_t::find_client_tab(int x, int y) {
 		if (!_clients.empty()) {
 			double box_width = ((_allocation.w - 17.0 * 5.0)
 					/ (_clients.size() + 1.0));
-			box_t<double> b(_allocation.x, _allocation.y, box_width,
-					HEIGHT);
+			double offset = _allocation.x;
+			box_t<int> b;
 			window_list_t::iterator c = _clients.begin();
 			while (c != _clients.end()) {
 				if (*c == _selected.front()) {
-					box_t<double> b1 = b;
-					b1.w *= 2;
-					if (b1.is_inside(x, y)) {
-						break;
-					}
-					b.x += box_width * 2;
-				} else {
+					b = box_int_t(floor(offset), _allocation.y, ceil(2.0 * box_width),
+							HEIGHT);
 					if (b.is_inside(x, y)) {
 						break;
 					}
-					b.x += box_width;
+					offset += box_width * 2;
+				} else {
+					b = box_int_t(floor(offset), _allocation.y, ceil(box_width),
+							HEIGHT);
+					if (b.is_inside(x, y)) {
+						break;
+					}
+					offset += box_width;
 				}
 
 				++c;
@@ -50,7 +53,7 @@ window_t * notebook_t::find_client_tab(int x, int y) {
 					close_client_area.w = 16;
 					close_client_area.h = HEIGHT;
 				} else {
-					close_client_area = box_int_t(0, 0, 0, 0);
+					close_client_area = box_int_t(-1, -1, 0, 0);
 				}
 				return *c;
 			}
