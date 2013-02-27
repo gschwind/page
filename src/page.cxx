@@ -203,6 +203,15 @@ void page_t::run() {
 			cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&showing_desktop), 1);
 
+	XIconSize icon_size;
+	icon_size.min_width = 16;
+	icon_size.min_height = 16;
+	icon_size.max_width = 16;
+	icon_size.max_height = 16;
+	icon_size.width_inc = 1;
+	icon_size.height_inc = 1;
+	XSetIconSizes(cnx.dpy, cnx.xroot, &icon_size, 1);
+
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0);
 
