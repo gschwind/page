@@ -497,8 +497,6 @@ void window_t::write_net_wm_allowed_actions() {
 }
 
 void window_t::move_resize(box_int_t const & location) {
-	if(get_size() == location)
-		return;
 	position = location;
 	cnx.move_resize(xwin, location);
 }

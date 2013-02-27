@@ -498,22 +498,9 @@ public:
 		{
 
 			//std::cout << "xxx: " << n->_allocation.to_string() << std::endl;
-
 			cairo_translate(cr, _allocation.x, _allocation.y);
 			cairo_set_line_width(cr, 1.0);
 			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-
-			/* create tabs back ground */
-			cairo_rectangle(cr, 0.0, 0.0, _allocation.w, HEIGHT);
-			cairo_pattern_t *pat;
-			pat = cairo_pattern_create_linear(0.0, 0.0, 0.0, HEIGHT);
-			cairo_pattern_add_color_stop_rgba(pat, 0, 0xeeU / 255.0,
-					0xeeU / 255.0, 0xecU / 255.0, 1);
-			cairo_pattern_add_color_stop_rgba(pat, 1, 0xbaU / 255.0,
-					0xbdU / 255.0, 0xd6U / 255.0, 1);
-			cairo_set_source(cr, pat);
-			cairo_fill(cr);
-			cairo_pattern_destroy(pat);
 
 			/* draw top line */
 			cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
@@ -586,7 +573,7 @@ public:
 
 				cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
 						0x85U / 255.0);
-				rounded_rectangle(cr, 0.5, 0.5, length, HEIGHT - 1.0, 3.0);
+				//rounded_rectangle(cr, 0.5, 0.5, length, HEIGHT - 1.0, 3.0);
 
 				/* draw close icon */
 				cairo_set_line_width(cr, 2.0);
@@ -651,8 +638,6 @@ public:
 						size.h + 1.0);
 				cairo_stroke(cr);
 
-
-			/* draw top line */
 
 //			cairo_translate(cr, n->_allocation.x, n->_allocation.y);
 //			cairo_rectangle(cr, 0.0, 0.0, n->_allocation.w, HEIGHT);

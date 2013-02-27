@@ -942,7 +942,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 		std::map<Window, floating_window_t *>::iterator x = xfloating_window_to_floating_window.find(e.window);
 		if(x != xfloating_window_to_floating_window.end()) {
 			x->second->border->process_configure_notify_event(e);
-			x->second->paint();
 			rpage->render.render_floating(x->second);
 		}
 	}
@@ -950,7 +949,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 	{
 		std::map<Window, floating_window_t *>::iterator x = window_to_floating_window.find(e.window);
 		if(x != window_to_floating_window.end()) {
-			x->second->paint();
 			rpage->render.render_floating(x->second);
 		}
 	}
@@ -1202,15 +1200,35 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		} else if (has_key(window_to_floating_window, e.window)) {
 
 			floating_window_t * f = window_to_floating_window[e.window];
-			box_int_t size = f->border->get_size();
-			box_int_t subsize = c->get_size();
 
-			ev.xconfigure.x = size.x + subsize.x;
-			ev.xconfigure.y = size.y + subsize.y;
-			ev.xconfigure.width = subsize.w;
-			ev.xconfigure.height = subsize.h;
+			box_int_t new_size = f->get_position();
+
+			if(e.value_mask & CWX) {
+				new_size.x = e.x;
+			}
+
+			if(e.value_mask & CWY) {
+				new_size.y = e.y;
+			}
+
+			if(e.value_mask & CWWidth) {
+				new_size.w = e.width;
+			}
+
+			if(e.value_mask & CWHeight) {
+				new_size.h = e.height;
+			}
+
+			f->reconfigure(new_size);
+
+			ev.xconfigure.x = new_size.x;
+			ev.xconfigure.y = new_size.y;
+			ev.xconfigure.width = new_size.w;
+			ev.xconfigure.height = new_size.h;
 
 			printf("configure event %d %d %d %d\n", ev.xconfigure.x, ev.xconfigure.y, ev.xconfigure.width, ev.xconfigure.height);
+
+
 
 		} else {
 
@@ -1232,10 +1250,11 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 				size.h = e.height;
 			}
 
-			c->move_resize(size);
+			if(e.value_mask & (CWX | CWY | CWWidth | CWHeight)) {
+				c->move_resize(size);
+			}
 
 			/* send mandatory fake event */
-			XEvent ev;
 			ev.xconfigure.x = size.x;
 			ev.xconfigure.y = size.y;
 			ev.xconfigure.width = size.w;
@@ -1309,7 +1328,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 
 		if(has_key(window_to_floating_window, x->get_xwin())) {
-			window_to_floating_window[x->get_xwin()]->paint();
 			rpage->render.render_floating(window_to_floating_window[x->get_xwin()]);
 		}
 
@@ -1321,7 +1339,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 
 		if(has_key(window_to_floating_window, x->get_xwin())) {
-			window_to_floating_window[x->get_xwin()]->paint();
 			rpage->render.render_floating(window_to_floating_window[x->get_xwin()]);
 		}
 
@@ -2411,7 +2428,7 @@ void page_t::destroy(renderable_window_t * w) {
 }
 
 floating_window_t * page_t::new_floating_window(window_t * w) {
-	Window parent = cnx.create_window(0, 0, 400, 400);
+	Window parent = cnx.create_window(0, 0, 800, 800);
 	floating_window_t * fw = new floating_window_t(w, parent);
 	xfloating_window_to_floating_window[parent] = fw;
 	window_to_floating_window[w->get_xwin()] = fw;

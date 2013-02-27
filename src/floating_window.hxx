@@ -38,6 +38,8 @@ public:
 
 	void move_resize(box_int_t const & area);
 
+	box_int_t get_position();
+
 };
 
 }
