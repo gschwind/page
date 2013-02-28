@@ -78,7 +78,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	 * we sync wuth server, and then check window state, if window property change
 	 * we get it.
 	 */
-	cnx.select_input(xwin, PropertyChangeMask | StructureNotifyMask);
+	//cnx.select_input(xwin, PropertyChangeMask | StructureNotifyMask);
 	/* sync and flush, now we are sure that property change are listen */
 	XFlush(cnx.dpy);
 	XSync(cnx.dpy, False);
@@ -89,7 +89,7 @@ window_t::window_t(xconnection_t &cnx, Window w, XWindowAttributes const & wa) :
 	wm_normal_hints = XAllocSizeHints();
 	wm_hints = XAllocWMHints();
 
-	read_all();
+	//read_all();
 }
 
 box_int_t window_t::get_size() {

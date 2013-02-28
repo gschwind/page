@@ -26,7 +26,7 @@ public:
 	cairo_t * cr;
 	cairo_surface_t * win_surf;
 
-	floating_window_t(window_t * w, Window parent);
+	floating_window_t(window_t * w, window_t * border);
 	virtual ~floating_window_t();
 
 	void map();

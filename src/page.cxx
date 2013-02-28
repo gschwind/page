@@ -329,6 +329,9 @@ void page_t::scan() {
 				continue;
 			//print_window_attributes(wins[i], wa);
 			window_t * w = new_window(wins[i], wa);
+			w->select_input(PropertyChangeMask | StructureNotifyMask);
+			w->read_all();
+
 			rnd.add(new_renderable_window(w));
 
 			if (w->is_map()) {
@@ -983,6 +986,8 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	window_t * w = get_window_t(e.window);
 	if (w == 0) {
 		w = new_window(e.window, wa);
+		w->select_input(PropertyChangeMask | StructureNotifyMask);
+		w->read_all();
 		rnd.add(new_renderable_window(w));
 		update_transient_for(w);
 
@@ -2443,7 +2448,14 @@ void page_t::destroy(renderable_window_t * w) {
 
 floating_window_t * page_t::new_floating_window(window_t * w) {
 	Window parent = cnx.create_window(0, 0, 800, 800);
-	floating_window_t * fw = new floating_window_t(w, parent);
+	XWindowAttributes xwa;
+	cnx.get_window_attributes(parent, &xwa);
+	window_t * border = new_window(parent, xwa);
+	rnd.add(new_renderable_window(border));
+	border->select_input(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | PropertyChangeMask | SubstructureRedirectMask);
+	border->read_all();
+
+	floating_window_t * fw = new floating_window_t(w, border);
 	xfloating_window_to_floating_window[parent] = fw;
 	window_to_floating_window[w->get_xwin()] = fw;
 	floating_windows.insert(parent);

@@ -12,16 +12,11 @@
 
 namespace page {
 
-floating_window_t::floating_window_t(window_t * w, Window parent) : w(w) {
-	XWindowAttributes xwa;
-	w->cnx.get_window_attributes(parent, &xwa);
+floating_window_t::floating_window_t(window_t * w, window_t * border) : w(w) {
 
-	/* create window handler */
-	border = new window_t(w->cnx, parent, xwa);
-	border->select_input(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask | PropertyChangeMask | SubstructureRedirectMask);
-	border->read_all();
+	this->border = border;
 
-	w->cnx.reparentwindow(w->get_xwin(), parent, 0, 0);
+	w->cnx.reparentwindow(w->get_xwin(), border->get_xwin(), 0, 0);
 
 	win_surf = cairo_xlib_surface_create(border->cnx.dpy, border->get_xwin(), border->visual, border->position.w, border->position.h);
 	cr = cairo_create(win_surf);
@@ -32,7 +27,13 @@ floating_window_t::floating_window_t(window_t * w, Window parent) : w(w) {
 }
 
 floating_window_t::~floating_window_t() {
-	delete border;
+	if(cr != 0) {
+		cairo_destroy(cr);
+	}
+
+	if(win_surf != 0) {
+		cairo_surface_destroy(win_surf);
+	}
 }
 
 void floating_window_t::map() {
