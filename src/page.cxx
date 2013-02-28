@@ -855,8 +855,8 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx.dpy, Button1MotionMask, &ev));
-
 		x = mode_data_floating.f->border->get_size();
+		rnd.add_damage_area(x);
 		x.x = e.x_root - mode_data_floating.x_offset;
 		x.y = e.y_root - mode_data_floating.y_offset;
 		mode_data_floating.f->border->move_resize(x);
