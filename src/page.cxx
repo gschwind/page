@@ -1047,7 +1047,9 @@ void page_t::process_event(XMapEvent const & e) {
 
 	/* Libre Office doesn't generate MapRequest ?
 	 */
-	if (!has_key(notebook_clients, x) && !x->override_redirect() && !has_key(fullscreen_client_to_viewport, x)) {
+	if (!has_key(notebook_clients, x) && !x->override_redirect()
+			&& !has_key(fullscreen_client_to_viewport, x)
+			&& !has_key(window_to_floating_window, e.window)) {
 
 		printf("overide_redirect = %s\n", x->override_redirect()? "true" : "false");
 		x->print_net_wm_window_type();
@@ -1081,7 +1083,7 @@ void page_t::process_event(XReparentEvent const & e) {
 		if (e.parent == cnx.xroot) {
 			XWindowAttributes wa;
 			if (cnx.get_window_attributes(e.window, &wa)) {
-				window_t * w = new_window(e.window, wa);
+				//window_t * w = new_window(e.window, wa);
 				/* TODO: manage things */
 				//insert_window(w);
 			}
@@ -1293,8 +1295,11 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	window_t * x = get_window_t(e.window);
 	if(x == 0)
 		return;
-	if (!has_key(notebook_clients, x)) {
 
+	/* if we don't map the window, some client try to remap the window, but they are already
+	 * managed, so skip them.
+	 */
+	if (!has_key(notebook_clients, x) && !has_key(window_to_floating_window, e.window)) {
 		printf("overide_redirect = %s\n", x->override_redirect()? "true" : "false");
 		x->print_net_wm_window_type();
 
@@ -1926,7 +1931,6 @@ bool page_t::check_for_start_split(XButtonEvent const & e) {
 bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 	//printf("call %s\n", __FUNCTION__);
 	window_t * c = 0;
-	notebook_t * nbk = 0;
 	std::set<notebook_t *>::const_iterator i = notebook_list.begin();
 	while (notebook_list.end() != i) {
 		c = (*i)->find_client_tab(e.x, e.y);
