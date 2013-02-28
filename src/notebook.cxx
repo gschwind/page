@@ -47,22 +47,46 @@ window_t * notebook_t::find_client_tab(int x, int y) {
 			}
 
 			if (c != _clients.end()) {
-				if (_selected.front() == (*c)) {
-					close_client_area.x = b.x + b.w * 2 - 16;
-					close_client_area.y = b.y;
-					close_client_area.w = 16;
-					close_client_area.h = HEIGHT;
-				} else {
-					close_client_area = box_int_t(-1, -1, 0, 0);
-				}
 				return *c;
 			}
-
 		}
 	}
 
 	return 0;
 
+}
+
+void notebook_t::update_close_area() {
+	if (!_clients.empty()) {
+		double box_width = ((_allocation.w - 17.0 * 5.0)
+				/ (_clients.size() + 1.0));
+		double offset = _allocation.x;
+		box_t<int> b;
+		window_list_t::iterator c = _clients.begin();
+		while (c != _clients.end()) {
+			if (*c == _selected.front()) {
+				b = box_int_t(floor(offset), _allocation.y,
+						ceil(2.0 * box_width), HEIGHT);
+				offset += box_width * 2;
+				break;
+			} else {
+				b = box_int_t(floor(offset), _allocation.y, ceil(box_width),
+						HEIGHT);
+				offset += box_width;
+			}
+
+			++c;
+		}
+
+		if (c != _clients.end()) {
+			close_client_area.x = b.x + b.w - 16;
+			close_client_area.y = b.y;
+			close_client_area.w = 16;
+			close_client_area.h = HEIGHT;
+		} else {
+			close_client_area = box_int_t(-1, -1, 0, 0);
+		}
+	}
 }
 
 bool notebook_t::add_client(window_t * x) {

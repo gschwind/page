@@ -518,7 +518,7 @@ public:
 			cairo_fill(cr);
 
 			double offset = 2;
-			double length = _allocation.w - 4;
+			double length = _allocation.w;
 
 			cairo_save(cr);
 			{
@@ -530,7 +530,7 @@ public:
 				cairo_set_font_size(cr, 13);
 
 				/* draw light background */
-				cairo_rectangle(cr, 0.0, 3.0, length, HEIGHT);
+				cairo_rectangle(cr, 0.0, 3.0, length, HEIGHT - 2);
 				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 						0xecU / 255.0);
 				cairo_fill(cr);
@@ -557,9 +557,9 @@ public:
 				cairo_reset_clip(cr);
 
 				cairo_new_path(cr);
-				cairo_move_to(cr, 1.0, 1.5);
+				cairo_move_to(cr, 0.0, 1.5);
 				cairo_line_to(cr, length, 1.5);
-				cairo_move_to(cr, 1.0, 2.5);
+				cairo_move_to(cr, 0.0, 2.5);
 				cairo_line_to(cr, length, 2.5);
 				cairo_set_source_rgb(cr, 0x72U / 255.0, 0x9fU / 255.0,
 						0xcfU / 255.0);

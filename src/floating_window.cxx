@@ -58,7 +58,7 @@ void floating_window_t::reconfigure(box_int_t const & area) {
 	size.x = x - 4;
 	size.y = y - 26;
 	size.w = width + 8;
-	size.h = heigth + 24 + 4;
+	size.h = heigth + 24 + 6;
 
 	if(size.x < 0)
 		size.x = 0;

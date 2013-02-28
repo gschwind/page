@@ -110,6 +110,8 @@ public:
 
 	window_t * find_client_tab(int x, int y);
 
+	void update_close_area();
+
 	/*
 	 * Compute client size taking in account possible max_width and max_heigth
 	 * and the window Hints.

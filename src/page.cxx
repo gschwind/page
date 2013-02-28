@@ -1937,6 +1937,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 
 	if (c != 0) {
 
+		(*i)->update_close_area();
 		if ((*i)->close_client_area.is_inside(e.x, e.y)) {
 			c->delete_window(e.time);
 		} else {
