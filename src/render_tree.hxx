@@ -517,7 +517,6 @@ public:
 					_allocation.h - HEIGHT);
 			cairo_fill(cr);
 
-			double offset = 0;
 			double length = _allocation.w;
 
 			cairo_save(cr);
@@ -605,39 +604,37 @@ public:
 
 			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
 
+			window_t * c = f->w;
+			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
+					0xecU / 255.0);
 
-				window_t * c = f->w;
-				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
-						0xecU / 255.0);
+			box_int_t size = c->get_size();
+			/* left */
+			cairo_rectangle(cr, _allocation.x, _allocation.y + HEIGHT,
+					size.x - _allocation.x, _allocation.h - HEIGHT);
+			cairo_fill(cr);
+			/* right */
+			cairo_rectangle(cr, size.x + size.w, _allocation.y + HEIGHT,
+					_allocation.x + _allocation.w - size.x - size.w,
+					_allocation.h - HEIGHT);
+			cairo_fill(cr);
 
-				box_int_t size = c->get_size();
-				/* left */
-				cairo_rectangle(cr, _allocation.x, _allocation.y + HEIGHT,
-						size.x - _allocation.x, _allocation.h - HEIGHT);
-				cairo_fill(cr);
-				/* right */
-				cairo_rectangle(cr, size.x + size.w, _allocation.y + HEIGHT,
-						_allocation.x + _allocation.w - size.x - size.w,
-						_allocation.h - HEIGHT);
-				cairo_fill(cr);
+			/* top */
+			cairo_rectangle(cr, size.x, _allocation.y + HEIGHT, size.w,
+					size.y - _allocation.y - HEIGHT);
 
-				/* top */
-				cairo_rectangle(cr, size.x, _allocation.y + HEIGHT, size.w,
-						size.y - _allocation.y - HEIGHT);
+			/* bottom */
+			cairo_fill(cr);
+			cairo_rectangle(cr, size.x, size.y + size.h, size.w,
+					_allocation.y + _allocation.h - size.y - size.h);
+			cairo_fill(cr);
 
-				/* bottom */
-				cairo_fill(cr);
-				cairo_rectangle(cr, size.x, size.y + size.h, size.w,
-						_allocation.y + _allocation.h - size.y - size.h);
-				cairo_fill(cr);
-
-				cairo_set_line_width(cr, 1.0);
-				cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
-						0x85U / 255.0);
-				cairo_rectangle(cr, size.x - 0.5, size.y - 0.5, size.w + 1.0,
-						size.h + 1.0);
-				cairo_stroke(cr);
-
+			cairo_set_line_width(cr, 1.0);
+			cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
+					0x85U / 255.0);
+			cairo_rectangle(cr, size.x - 0.5, size.y - 0.5, size.w + 1.0,
+					size.h + 1.0);
+			cairo_stroke(cr);
 
 //			cairo_translate(cr, n->_allocation.x, n->_allocation.y);
 //			cairo_rectangle(cr, 0.0, 0.0, n->_allocation.w, HEIGHT);

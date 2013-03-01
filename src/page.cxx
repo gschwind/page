@@ -879,6 +879,8 @@ void page_t::process_event(XMotionEvent const & e) {
 			x.w = 1;
 
 		printf("XXXXX resize = %s\n", x.to_string().c_str());
+
+		rnd.add_damage_area(mode_data_floating.f->border->get_size());
 		mode_data_floating.f->reconfigure(x);
 
 	}
