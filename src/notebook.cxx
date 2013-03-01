@@ -135,6 +135,12 @@ window_set_t notebook_t::get_windows() {
 void notebook_t::remove_client(window_t * x) {
 	if (x == _selected.front())
 		select_next();
+
+	if (icons.find(x) != icons.end()) {
+		delete icons[x];
+		icons.erase(x);
+	}
+
 	// cleanup
 	_selected.remove(x);
 	_clients.remove(x);
@@ -353,21 +359,21 @@ void notebook_t::compute_client_size_with_constraint(window_t * c,
 	height = max_height;
 
 	if (size_hints.flags & PMaxSize) {
-		if (max_width > size_hints.max_width)
+		if ((int)max_width > size_hints.max_width)
 			max_width = size_hints.max_width;
-		if (max_height > size_hints.max_height)
+		if ((int)max_height > size_hints.max_height)
 			max_height = size_hints.max_height;
 	}
 
 	if (size_hints.flags & PBaseSize) {
-		if (max_width < size_hints.base_width)
+		if ((int)max_width < size_hints.base_width)
 			max_width = size_hints.base_width;
-		if (max_height < size_hints.base_height)
+		if ((int)max_height < size_hints.base_height)
 			max_height = size_hints.base_height;
 	} else if (size_hints.flags & PMinSize) {
-		if (max_width < size_hints.min_width)
+		if ((int)max_width < size_hints.min_width)
 			max_width = size_hints.min_width;
-		if (max_height < size_hints.min_height)
+		if ((int)max_height < size_hints.min_height)
 			max_height = size_hints.min_height;
 	}
 

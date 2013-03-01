@@ -517,13 +517,13 @@ public:
 					_allocation.h - HEIGHT);
 			cairo_fill(cr);
 
-			double offset = 2;
+			double offset = 0;
 			double length = _allocation.w;
 
 			cairo_save(cr);
 			{
 
-				cairo_translate(cr, floor(offset), 0.0);
+				cairo_translate(cr, 0.0, 0.0);
 
 				cairo_set_line_width(cr, 1.0);
 				cairo_set_font_face(cr, font_bold);

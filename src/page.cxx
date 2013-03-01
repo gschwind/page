@@ -296,8 +296,9 @@ void page_t::manage(window_t * w) {
 	notebook_clients.insert(w);
 	update_client_list();
 	insert_window_in_tree(w, 0);
-	if(!w->is_hidden())
+	if(!w->is_hidden()) {
 		activate_client(w);
+	}
 	if(w->is_fullscreen()) {
 		fullscreen(w);
 	}
