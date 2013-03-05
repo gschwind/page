@@ -910,5 +910,10 @@ bool window_t::is_hidden() {
 	return net_wm_state.find(cnx.atoms._NET_WM_STATE_HIDDEN) != net_wm_state.end();
 }
 
+bool window_t::is_notification() {
+	return std::find(net_wm_type.begin(), net_wm_type.end(), cnx.atoms._NET_WM_WINDOW_TYPE_NOTIFICATION) != net_wm_type.end();
+}
+
+
 }
 

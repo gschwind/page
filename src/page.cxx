@@ -2429,7 +2429,7 @@ void page_t::safe_raise_window(window_t * w) {
 
 	for (window_set_t::iterator i = windows_set.begin(); windows_set.end() != i;
 			++i) {
-		if ((*i)->get_window_type() == PAGE_NOTIFY_TYPE) {
+		if ((*i)->get_window_type() == PAGE_NOTIFY_TYPE || (*i)->is_notification()) {
 			cnx.raise_window((*i)->get_xwin());
 		}
 	}
