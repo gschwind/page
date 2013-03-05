@@ -299,6 +299,7 @@ void page_t::manage(window_t * w) {
 	if(!w->is_hidden()) {
 		activate_client(w);
 	}
+
 	if(w->is_fullscreen()) {
 		fullscreen(w);
 	}
@@ -1129,6 +1130,8 @@ void page_t::process_event(XUnmapEvent const & e) {
 		if (expected_event)
 			return;
 
+		x->write_wm_state(WithdrawnState);
+
 		/* if client is managed */
 		if (has_key(notebook_clients, x)) {
 			unmanage(x);
@@ -1385,7 +1388,9 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
 		x->read_wm_normal_hints();
 		if (has_key(client_to_notebook, x)) {
-			update_allocation();
+			rnd.add_damage_area(x->get_size());
+			client_to_notebook[x]->update_client_position(x);
+			rnd.add_damage_area(x->get_size());
 		}
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
 		x->read_net_wm_protocols();
