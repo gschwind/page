@@ -2411,6 +2411,7 @@ void page_t::safe_raise_window(window_t * w) {
 	window_list_t raise_list;
 	window_list_t raise_next;
 
+	/* raise windows and it's transient for windows */
 	raise_next.push_back(w);
 	while (raise_next.size() > 0) {
 		raise_list = raise_next;
@@ -2427,6 +2428,14 @@ void page_t::safe_raise_window(window_t * w) {
 		}
 	}
 
+	/* raise floating windows that do not have transient for */
+	for(std::map<Window, floating_window_t *>::iterator i = window_to_floating_window.begin(); window_to_floating_window.end() != i; ++i) {
+		if(i->second->w->transient_for() == None) {
+			cnx.raise_window(i->second->border->get_xwin());
+		}
+	}
+
+	/* raise notification windows */
 	for (window_set_t::iterator i = windows_set.begin(); windows_set.end() != i;
 			++i) {
 		if ((*i)->get_window_type() == PAGE_NOTIFY_TYPE || (*i)->is_notification()) {
