@@ -227,6 +227,8 @@ public:
 	bool is_hidden();
 	bool is_notification();
 
+	int get_initial_state();
+
 	friend class renderable_window_t;
 	friend class floating_window_t;
 

@@ -208,8 +208,8 @@ void page_t::run() {
 	icon_size.min_height = 16;
 	icon_size.max_width = 16;
 	icon_size.max_height = 16;
-	icon_size.width_inc = 1;
-	icon_size.height_inc = 1;
+	icon_size.width_inc = 0;
+	icon_size.height_inc = 0;
 	XSetIconSizes(cnx.dpy, cnx.xroot, &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
@@ -236,6 +236,9 @@ void page_t::run() {
 			True, GrabModeAsync, GrabModeAsync);
 	/* quit page */
 	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_q), Mod4Mask, cnx.xroot,
+			True, GrabModeAsync, GrabModeAsync);
+
+	XGrabKey(cnx.dpy, XKeysymToKeycode(cnx.dpy, XK_r), Mod4Mask, cnx.xroot,
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* print state info */
@@ -296,13 +299,18 @@ void page_t::manage(window_t * w) {
 	notebook_clients.insert(w);
 	update_client_list();
 	insert_window_in_tree(w, 0);
-	if(!w->is_hidden()) {
+
+	w->set_default_action();
+
+	if(!w->is_hidden() && w->get_initial_state() == NormalState) {
 		activate_client(w);
 	}
 
 	if(w->is_fullscreen()) {
 		fullscreen(w);
 	}
+
+
 	rpage->mark_durty();
 	rnd.add_damage_area(cnx.root_size);
 }
@@ -506,6 +514,11 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_s == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		print_state();
+	}
+
+	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
+		rpage->mark_durty();
+		rnd.add_damage_area(cnx.root_size);
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
@@ -1067,6 +1080,7 @@ void page_t::process_event(XMapEvent const & e) {
 		if(type == PAGE_NORMAL_WINDOW_TYPE) {
 			manage(x);
 		} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
+			x->set_dock_action();
 			floating_window_t * fw = new_floating_window(x);
 			fw->map();
 			rpage->render.render_floating(fw);
@@ -1178,31 +1192,26 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		printf("has width: %d\n", e.width);
 	if(e.value_mask & CWHeight)
 		printf("has height: %d\n", e.height);
-
 	if(e.value_mask & CWSibling)
 		printf("has sibling: %lu\n", e.above);
 	if(e.value_mask & CWStackMode)
 		printf("has stack mode: %d\n", e.detail);
-
 	if(e.value_mask & CWBorderWidth)
 		printf("has border: %d\n", e.border_width);
-
-
 
 	if (c) {
 
 		XEvent ev;
 		ev.xconfigure.type = ConfigureNotify;
 		ev.xconfigure.display = cnx.dpy;
-		ev.xconfigure.event = cnx.xroot;
+		ev.xconfigure.event = e.window;
 		ev.xconfigure.window = e.window;
 		ev.xconfigure.send_event = True;
 
 		/* if ConfigureRequest happen, override redirect is False */
 		ev.xconfigure.override_redirect = False;
 		ev.xconfigure.border_width = e.border_width;
-
-		ev.xconfigure.above = c->transient_for();
+		ev.xconfigure.above = None;
 
 		if (has_key(client_to_notebook, c)) {
 			box_int_t size = c->get_size();
@@ -1284,7 +1293,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 		}
 
-		cnx.send_event(e.window, False, (SubstructureRedirectMask|SubstructureNotifyMask), &ev);
+		cnx.send_event(e.window, False, (StructureNotifyMask), &ev);
 
 	} else {
 		/* if this is an unknown window, move it without condition
@@ -1318,6 +1327,7 @@ void page_t::process_event(XMapRequestEvent const & e) {
 		if(type == PAGE_NORMAL_WINDOW_TYPE) {
 			manage(x);
 		} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
+			x->set_dock_action();
 			floating_window_t * fw = new_floating_window(x);
 			fw->map();
 			rpage->render.render_floating(fw);
@@ -2455,6 +2465,7 @@ void page_t::clear_sibbling_child(window_t * w) {
 renderable_window_t * page_t::new_renderable_window(window_t * w) {
 	renderable_window_t * x = new renderable_window_t(w);
 	window_to_renderable_context[w->get_xwin()] = x;
+	rnd.add_damage_area(w->get_size());
 	return x;
 }
 

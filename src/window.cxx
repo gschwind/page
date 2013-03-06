@@ -914,6 +914,13 @@ bool window_t::is_notification() {
 	return std::find(net_wm_type.begin(), net_wm_type.end(), cnx.atoms._NET_WM_WINDOW_TYPE_NOTIFICATION) != net_wm_type.end();
 }
 
+int window_t::get_initial_state() {
+	if (wm_hints) {
+		return wm_hints->initial_state;
+	}
+	return WithdrawnState;
+}
+
 
 }
 
