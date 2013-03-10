@@ -1099,8 +1099,33 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 	/* don't manage floating windows */
-	if(has_key(base_window_to_floating_window, x))
+	if(has_key(base_window_to_floating_window, x)) {
+		box_int_t size = base_window_to_floating_window[x]->get_position();
+		base_window_to_floating_window[x]->reconfigure(size);
 		return;
+	}
+
+	/* don't manage floating windows */
+	if(has_key(orig_window_to_floating_window, x)) {
+		box_int_t size = orig_window_to_floating_window[x]->get_position();
+		orig_window_to_floating_window[x]->reconfigure(size);
+		return;
+	}
+
+	/* don't manage floating windows */
+	if(has_key(base_window_to_tab_window, x)) {
+		box_int_t size = base_window_to_tab_window[x]->get_position();
+		base_window_to_tab_window[x]->reconfigure(size);
+		return;
+	}
+
+	/* don't manage floating windows */
+	if(has_key(orig_window_to_tab_window, x)) {
+		box_int_t size = orig_window_to_tab_window[x]->get_position();
+		orig_window_to_tab_window[x]->reconfigure(size);
+		return;
+	}
+
 
 	/* don't manage notebook windows */
 	if(has_key(base_window_to_tab_window, x))
@@ -1266,7 +1291,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		}
 
 		f->reconfigure(new_size);
-		cnx.fake_configure(e.window, new_size, e.border_width);
+
 
 	} else {
 

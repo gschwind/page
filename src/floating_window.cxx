@@ -77,6 +77,8 @@ void floating_window_t::reconfigure(box_int_t const & area) {
 	border->move_resize(size);
 	w->move_resize(subsize);
 
+	w->fake_configure(area, 0);
+
 	cairo_xlib_surface_set_size(win_surf, size.w, size.h);
 
 }
