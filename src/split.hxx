@@ -10,6 +10,7 @@
 
 #include "box.hxx"
 #include "tree.hxx"
+#include "tab_window.hxx"
 
 namespace page {
 
@@ -38,7 +39,7 @@ public:
 	~split_t();
 
 	void replace(tree_t * src, tree_t * by);
-	window_set_t get_windows();
+	tab_window_set_t get_windows();
 
 	void compute_split_bar_area(box_int_t & area, double split) const;
 

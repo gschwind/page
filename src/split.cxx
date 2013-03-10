@@ -85,18 +85,18 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	}
 }
 
-window_set_t split_t::get_windows() {
-	window_set_t list;
-	if (_pack0) {
-		window_set_t pack0_list = _pack0->get_windows();
-		list.insert(pack0_list.begin(), pack0_list.end());
-	}
-	if (_pack1) {
-		window_set_t pack1_list = _pack0->get_windows();
-		list.insert(pack1_list.begin(), pack1_list.end());
-	}
-	return list;
-}
+//tab_window_set_t split_t::get_windows() {
+//	tab_window_set_t list;
+//	if (_pack0) {
+//		tab_window_set_t pack0_list = _pack0->get_windows();
+//		list.insert(pack0_list.begin(), pack0_list.end());
+//	}
+//	if (_pack1) {
+//		tab_window_set_t pack1_list = _pack0->get_windows();
+//		list.insert(pack1_list.begin(), pack1_list.end());
+//	}
+//	return list;
+//}
 
 /* compute the slider area */
 void split_t::compute_split_bar_area(box_int_t & area, double split) const {

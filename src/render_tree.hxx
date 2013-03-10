@@ -157,6 +157,8 @@ public:
 
 			//std::cout << "xxx: " << n->_allocation.to_string() << std::endl;
 
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+
 			cairo_translate(cr, n->_allocation.x, n->_allocation.y);
 			cairo_set_line_width(cr, 1.0);
 			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
@@ -188,7 +190,7 @@ public:
 					n->_allocation.h - HEIGHT);
 			cairo_fill(cr);
 
-			std::list<window_t *>::iterator i;
+			tab_window_list_t::iterator i;
 			double offset = 0;
 			double length = (n->_allocation.w - 17.0 * 5.0) / (n->_clients.size() + 1.0);
 			for (i = n->_clients.begin(); i != n->_clients.end(); ++i) {
@@ -210,10 +212,10 @@ public:
 								0xecU / 255.0);
 						cairo_fill(cr);
 
-						if (n->get_icon_surface((*i)) != 0) {
+						if (n->get_icon_surface((*i)->w) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, n->get_icon_surface((*i)), 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)->w), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -227,7 +229,7 @@ public:
 						cairo_set_font_size(cr, 13.0);
 						cairo_move_to(cr, 20.5, 15.5);
 
-						cairo_show_text(cr, (*i)->get_title().c_str());
+						cairo_show_text(cr, (*i)->w->get_title().c_str());
 
 						/* draw blue lines */
 						cairo_reset_clip(cr);
@@ -272,10 +274,10 @@ public:
 						offset += length * 2;
 					} else {
 
-						if (n->get_icon_surface((*i)) != 0) {
+						if (n->get_icon_surface((*i)->w) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, n->get_icon_surface((*i)), 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)->w), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -291,7 +293,7 @@ public:
 						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(cr, 13);
 						cairo_move_to(cr, HEIGHT + 0.5, 15.5);
-						cairo_show_text(cr, (*i)->get_title().c_str());
+						cairo_show_text(cr, (*i)->w->get_title().c_str());
 
 						/* draw border */
 						cairo_reset_clip(cr);
@@ -306,7 +308,7 @@ public:
 						cairo_line_to(cr, length + 1.0, HEIGHT);
 						cairo_stroke(cr);
 
-						if ((*i)->demands_atteniion()) {
+						if ((*i)->w->demands_atteniion()) {
 							cairo_new_path(cr);
 							cairo_move_to(cr, 0.0, 3.5);
 							cairo_line_to(cr, length * 2, 3.5);
@@ -379,11 +381,11 @@ public:
 						n->_allocation.w, n->_allocation.h);
 				cairo_fill(cr);
 			} else {
-				window_t * c = n->_selected.front();
+				tab_window_t * c = n->_selected.front();
 				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 						0xecU / 255.0);
 
-				box_int_t size = c->get_size();
+				box_int_t size = c->border->get_size();
 				/* left */
 				cairo_rectangle(cr, n->_allocation.x, n->_allocation.y + HEIGHT,
 						size.x - n->_allocation.x, n->_allocation.h - HEIGHT);
@@ -496,6 +498,7 @@ public:
 
 		cairo_save(cr);
 		{
+			//cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 
 			//std::cout << "xxx: " << n->_allocation.to_string() << std::endl;
 			cairo_translate(cr, _allocation.x, _allocation.y);

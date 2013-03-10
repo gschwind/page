@@ -16,10 +16,13 @@ floating_window_t::floating_window_t(window_t * w, window_t * border) : w(w) {
 
 	this->border = border;
 
-	w->cnx.reparentwindow(w->get_xwin(), border->get_xwin(), 0, 0);
+	w->reparent(border->get_xwin(), 0, 0);
 
-	win_surf = cairo_xlib_surface_create(border->cnx.dpy, border->get_xwin(), border->visual, border->position.w, border->position.h);
+	win_surf = border->create_cairo_surface();
 	cr = cairo_create(win_surf);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+	cairo_paint(cr);
 
 	box_int_t x = w->get_size();
 	reconfigure(x);

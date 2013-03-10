@@ -13,6 +13,7 @@
 #include "tree.hxx"
 #include "window.hxx"
 #include "window_icon_handler.hxx"
+#include "tab_window.hxx"
 
 
 namespace page {
@@ -25,6 +26,7 @@ struct img_t {
 };
 
 class notebook_t : public tree_t {
+
 public:
 
 	static int const BORDER_SIZE = 4;
@@ -40,12 +42,12 @@ public:
 	};
 
 	// list of client to maintain tab order
-	window_list_t _clients;
+	tab_window_list_t _clients;
 	// list of selected to have smart unselect (when window is closed we
 	// select the previous window selected
-	window_list_t _selected;
+	tab_window_list_t _selected;
 	// set of map for fast check is window is in this notebook
-	window_set_t _client_map;
+	tab_window_set_t _client_map;
 
 	std::map<window_t *, window_icon_handler_t *> icons;
 
@@ -69,9 +71,9 @@ public:
 
 	box_t<int> close_client_area;
 
-	void set_selected(window_t * c);
+	void set_selected(tab_window_t * c);
 
-	void update_client_position(window_t * c);
+	void update_client_position(tab_window_t * c);
 
 public:
 	notebook_t();
@@ -86,13 +88,13 @@ public:
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	window_set_t get_windows();
+	tab_window_set_t get_windows();
 
-	bool add_client(window_t * c);
-	void remove_client(window_t * c);
+	bool add_client(tab_window_t * c, bool prefer_activate);
+	void remove_client(tab_window_t * c);
 
-	void activate_client(window_t * x);
-	void iconify_client(window_t * x);
+	void activate_client(tab_window_t * x);
+	void iconify_client(tab_window_t * x);
 
 	box_int_t get_new_client_size();
 
@@ -108,7 +110,7 @@ public:
 	virtual region_t<int> get_area();
 	virtual void set_allocation(box_int_t const & area);
 
-	window_t * find_client_tab(int x, int y);
+	tab_window_t * find_client_tab(int x, int y);
 
 	void update_close_area();
 
@@ -124,6 +126,8 @@ public:
 			unsigned int & width, unsigned int & height);
 
 	cairo_surface_t * get_icon_surface(window_t * w);
+
+	box_int_t compute_client_size(window_t * c);
 
 };
 

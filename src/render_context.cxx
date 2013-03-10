@@ -15,8 +15,21 @@ render_context_t::render_context_t(xconnection_t & cnx) :
 	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy, _cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width, _cnx.root_wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
-	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR, cnx.root_wa.width, _cnx.root_wa.height);
+	/* clean up surface */
+	cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(composite_overlay_cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_reset_clip(composite_overlay_cr);
+	cairo_paint(composite_overlay_cr);
+
+	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR_ALPHA, cnx.root_wa.width, _cnx.root_wa.height);
 	pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
+
+	/* clean up surface */
+	cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(pre_back_buffer_cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_reset_clip(pre_back_buffer_cr);
+	cairo_paint(pre_back_buffer_cr);
+
 }
 
 void render_context_t::draw_box(box_int_t box, double r, double g, double b) {
@@ -32,7 +45,6 @@ void render_context_t::add_damage_area(region_t<int> const & box) {
 }
 
 void render_context_t::render_flush() {
-
 	/* a small optimization, because visible are often few */
 	renderable_list_t visible;
 	for(renderable_list_t::iterator i = list.begin(); i != list.end(); ++i) {
@@ -72,13 +84,14 @@ void render_context_t::render_flush() {
 		region_t<int>::box_list_t::const_iterator i = fast_region.begin();
 		while (i != fast_region.end()) {
 			repair_buffer(visible, composite_overlay_cr, *i);
-			//cairo_set_source_rgb(composite_overlay_cr, 0.0, 0.0, 1.0);
-			//cairo_set_line_width(composite_overlay_cr, 1.0);
-			//cairo_rectangle(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5, (*i).w - 1.0, (*i).h - 1.0);
-			//cairo_clip(composite_overlay_cr);
-			//cairo_paint_with_alpha(composite_overlay_cr, 0.3);
-			//cairo_reset_clip(composite_overlay_cr);
-			//cairo_stroke(composite_overlay_cr);
+			/* this section show direct rendered screen */
+//			cairo_set_source_rgb(composite_overlay_cr, 0.0, 1.0, 0.0);
+//			cairo_set_line_width(composite_overlay_cr, 1.0);
+//			cairo_rectangle(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5, (*i).w - 1.0, (*i).h - 1.0);
+//			cairo_clip(composite_overlay_cr);
+//			cairo_paint_with_alpha(composite_overlay_cr, 0.1);
+//			cairo_reset_clip(composite_overlay_cr);
+//			cairo_stroke(composite_overlay_cr);
 			++i;
 		}
 	}
@@ -189,6 +202,11 @@ void render_context_t::lower(renderable_t * r) {
 
 renderable_list_t render_context_t::get_renderable_list() {
 	return list;
+}
+
+
+void render_context_t::process_event(XEvent const & e) {
+
 }
 
 }

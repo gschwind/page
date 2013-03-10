@@ -213,6 +213,7 @@ struct xconnection_t {
 		Atom CARDINAL;
 		Atom ATOM;
 		Atom WINDOW;
+		Atom UTF8_STRING;
 
 		/* ICCCM atoms */
 		Atom WM_STATE;
@@ -257,6 +258,7 @@ struct xconnection_t {
 		Atom _NET_DESKTOP_GEOMETRY;
 		Atom _NET_DESKTOP_VIEWPORT;
 		Atom _NET_CURRENT_DESKTOP;
+		Atom _NET_WM_DESKTOP;
 
 		Atom _NET_SHOWING_DESKTOP;
 		Atom _NET_WORKAREA;
@@ -437,7 +439,9 @@ struct xconnection_t {
 
 	XWMHints * get_wm_hints(Window w);
 
-	Window create_window(int x, int y, unsigned w, unsigned h);
+	Window create_window(Visual * visual, int x, int y, unsigned w, unsigned h);
+
+	void fake_configure(Window w, box_int_t location, int border_width);
 
 };
 

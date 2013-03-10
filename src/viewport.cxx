@@ -60,10 +60,10 @@ region_t<int> viewport_t::get_area() {
 	}
 }
 
-window_set_t viewport_t::get_windows() {
-	assert(_subtree != 0);
-	return _subtree->get_windows();
-}
+//tab_window_set_t viewport_t::get_windows() {
+//	assert(_subtree != 0);
+//	return _subtree->get_windows();
+//}
 
 //notebook_t * viewport_t::get_nearest_notebook() {
 //	if(_subtree != 0)

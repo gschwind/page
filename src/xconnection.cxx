@@ -104,6 +104,7 @@ xconnection_t::xconnection_t() {
 	ATOM_INIT(ATOM);
 	ATOM_INIT(CARDINAL);
 	ATOM_INIT(WINDOW);
+	ATOM_INIT(UTF8_STRING);
 
 	ATOM_INIT(WM_STATE);
 	ATOM_INIT(WM_NAME);
@@ -149,6 +150,7 @@ xconnection_t::xconnection_t() {
 	ATOM_INIT(_NET_DESKTOP_GEOMETRY);
 	ATOM_INIT(_NET_DESKTOP_VIEWPORT);
 	ATOM_INIT(_NET_CURRENT_DESKTOP);
+	ATOM_INIT(_NET_WM_DESKTOP);
 
 	ATOM_INIT(_NET_SHOWING_DESKTOP);
 	ATOM_INIT(_NET_WORKAREA);
@@ -207,6 +209,8 @@ xconnection_t::xconnection_t() {
 	ATOM_INIT(WM_TRANSIENT_FOR);
 
 	ATOM_INIT(PAGE_QUIT);
+
+	ATOM_INIT(_NET_SUPPORTING_WM_CHECK);
 
 #undef ATOM_INIT
 
@@ -308,7 +312,7 @@ void xconnection_t::unmap(Window w) {
 
 void xconnection_t::reparentwindow(Window w, Window parent, int x, int y) {
 	unsigned long serial = XNextRequest(dpy);
-	//printf("Reparent serial: #%lu win: #%lu\n", serial, w);
+	printf("Reparent serial: #%lu win: #%lu, parent: #%lu\n", serial, w, parent);
 	XReparentWindow(dpy, w, parent, x, y);
 	event_t e;
 	e.serial = serial;
@@ -412,7 +416,16 @@ void xconnection_t::move_resize(Window w, box_int_t const & size) {
 	unsigned long serial = XNextRequest(dpy);
 	printf(">%08lu XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", serial, w,
 			size.w, size.h, size.x, size.y);
-	XMoveResizeWindow(dpy, w, size.x, size.y, size.w, size.h);
+
+	XWindowChanges ev;
+	ev.x = size.x;
+	ev.y = size.y;
+	ev.width = size.w;
+	ev.height = size.h;
+	ev.border_width = 0;
+
+	XConfigureWindow(dpy, w, (CWX | CWY | CWHeight | CWWidth | CWBorderWidth), &ev);
+
 	event_t e;
 	e.serial = serial;
 	e.type = ConfigureNotify;
@@ -586,11 +599,49 @@ XWMHints * xconnection_t::get_wm_hints(Window w) {
 	return XGetWMHints(dpy, w);
 }
 
-Window xconnection_t::create_window(int x, int y, unsigned w, unsigned h) {
+Window xconnection_t::create_window(Visual * visual, int x, int y, unsigned w, unsigned h) {
 	XSetWindowAttributes wa;
+	unsigned long value_mask = CWOverrideRedirect;
 	wa.override_redirect = True;
-	return XCreateWindow(dpy, xroot, x, y, w, h, 0, root_wa.depth, InputOutput, root_wa.visual, CWOverrideRedirect, &wa);
+
+	if(visual != 0) {
+		wa.colormap = XCreateColormap(dpy, xroot, visual, AllocNone);
+		wa.background_pixel = BlackPixel(dpy, screen);
+		wa.border_pixel = BlackPixel(dpy, screen);
+		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
+	}
+
+	return XCreateWindow(dpy, xroot, x, y, w, h, 0, (visual == 0)? root_wa.depth : 32 , InputOutput, (visual == 0)? root_wa.visual : visual, value_mask, &wa);
+
 }
+
+void xconnection_t::fake_configure(Window w, box_int_t location, int border_width) {
+	XEvent ev;
+	ev.xconfigure.type = ConfigureNotify;
+	ev.xconfigure.display = dpy;
+	ev.xconfigure.event = w;
+	ev.xconfigure.window = w;
+	ev.xconfigure.send_event = True;
+
+	/* if ConfigureRequest happen, override redirect is False */
+	ev.xconfigure.override_redirect = False;
+	ev.xconfigure.border_width = border_width;
+	ev.xconfigure.above = None;
+
+	/* send mandatory fake event */
+	ev.xconfigure.x = location.x;
+	ev.xconfigure.y = location.y;
+	ev.xconfigure.width = location.w;
+	ev.xconfigure.height = location.h;
+
+	send_event(w, False, StructureNotifyMask, &ev);
+
+	ev.xconfigure.event = xroot;
+	send_event(xroot, False, SubstructureNotifyMask, &ev);
+
+
+}
+
 
 }
 

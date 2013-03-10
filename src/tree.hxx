@@ -11,9 +11,7 @@
 #include <X11/Xlib.h>
 #include <cairo.h>
 #include <list>
-#include "renderable.hxx"
-#include "window.hxx"
-
+#include "region.hxx"
 
 namespace page {
 
@@ -37,9 +35,6 @@ public:
 	virtual void set_allocation(int x, int y, int w, int h) {
 		set_allocation(box_int_t(x, y, w, h));
 	}
-
-	virtual window_set_t get_windows() = 0;
-	//virtual bool add_window(window_t * w);
 
 };
 

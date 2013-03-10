@@ -18,14 +18,14 @@ notebook_t::~notebook_t() {
 
 }
 
-window_t * notebook_t::find_client_tab(int x, int y) {
+tab_window_t * notebook_t::find_client_tab(int x, int y) {
 	if (_allocation.is_inside(x, y)) {
 		if (!_clients.empty()) {
 			double box_width = ((_allocation.w - 17.0 * 5.0)
 					/ (_clients.size() + 1.0));
 			double offset = _allocation.x;
 			box_t<int> b;
-			window_list_t::iterator c = _clients.begin();
+			tab_window_list_t::iterator c = _clients.begin();
 			while (c != _clients.end()) {
 				if (*c == _selected.front()) {
 					b = box_int_t(floor(offset), _allocation.y, ceil(2.0 * box_width),
@@ -62,7 +62,7 @@ void notebook_t::update_close_area() {
 				/ (_clients.size() + 1.0));
 		double offset = _allocation.x;
 		box_t<int> b;
-		window_list_t::iterator c = _clients.begin();
+		tab_window_list_t::iterator c = _clients.begin();
 		while (c != _clients.end()) {
 			if (*c == _selected.front()) {
 				b = box_int_t(floor(offset), _allocation.y,
@@ -89,17 +89,26 @@ void notebook_t::update_close_area() {
 	}
 }
 
-bool notebook_t::add_client(window_t * x) {
+bool notebook_t::add_client(tab_window_t * x, bool prefer_activate) {
 	_clients.push_front(x);
 	_client_map.insert(x);
-	update_client_position(x);
+
 	if (_selected.empty()) {
 		x->normalize();
 		_selected.push_front(x);
 	} else {
-		x->iconify();
-		_selected.push_back(x);
+		if (prefer_activate) {
+			_selected.front()->iconify();
+			x->normalize();
+			_selected.push_front(x);
+		} else {
+			x->iconify();
+			_selected.push_back(x);
+		}
 	}
+
+	update_client_position(x);
+
 	return true;
 }
 
@@ -122,23 +131,23 @@ void notebook_t::remove(tree_t * src) {
 
 }
 
-void notebook_t::activate_client(window_t * x) {
+void notebook_t::activate_client(tab_window_t * x) {
 	if ((_client_map.find(x)) != _client_map.end()) {
 		set_selected(x);
 	}
 }
 
-window_set_t notebook_t::get_windows() {
+tab_window_set_t notebook_t::get_windows() {
 	return _client_map;
 }
 
-void notebook_t::remove_client(window_t * x) {
+void notebook_t::remove_client(tab_window_t * x) {
 	if (x == _selected.front())
 		select_next();
 
-	if (icons.find(x) != icons.end()) {
-		delete icons[x];
-		icons.erase(x);
+	if (icons.find(x->w) != icons.end()) {
+		delete icons[x->w];
+		icons.erase(x->w);
 	}
 
 	// cleanup
@@ -151,21 +160,21 @@ void notebook_t::select_next() {
 	if (!_selected.empty()) {
 		_selected.pop_front();
 		if (!_selected.empty()) {
-			window_t * x = _selected.front();
+			tab_window_t * x = _selected.front();
 			update_client_position(x);
 			x->normalize();
 		}
 	}
 }
 
-void notebook_t::set_selected(window_t * c) {
+void notebook_t::set_selected(tab_window_t * c) {
 	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	update_client_position(c);
 	c->normalize();
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
-			window_t * x = _selected.front();
+			tab_window_t * x = _selected.front();
 			x->iconify();
 		}
 	}
@@ -175,38 +184,16 @@ void notebook_t::set_selected(window_t * c) {
 
 }
 
-void notebook_t::update_client_position(window_t * c) {
-	unsigned int height, width;
-	compute_client_size_with_constraint(c, _allocation.w - 2 * BORDER_SIZE,
-			_allocation.h - HEIGHT - 2 * BORDER_SIZE, width, height);
-
+void notebook_t::update_client_position(tab_window_t * c) {
 	/* compute the window placement within notebook */
-	box_int_t client_size;
-	client_size.x = (client_area.w - (int)width) / 2;
-	client_size.y = (client_area.h - (int)height) / 2;
-	client_size.w = (int)width;
-	client_size.h = (int)height;
+	box_int_t client_size = compute_client_size(c->w);
 
-	if (client_size.x < 0)
-		client_size.x = 0;
-	if (client_size.y < 0)
-		client_size.y = 0;
-	if (client_size.w > client_area.w)
-		client_size.w = client_area.w;
-	if (client_size.h > client_area.h)
-		client_size.h = client_area.h;
-
-	client_size.x += client_area.x;
-	client_size.y += client_area.y;
-
-	//client_size = client_area & client_size;
-
-	printf("Request for XX %dx%d+%d+%d\n", client_size.w, client_size.h,
-			client_size.x, client_size.y);
-	c->move_resize(client_size);
+	printf("SIZE = %s\n", client_size.to_string().c_str());
+	c->reconfigure(client_size);
+	c->w->fake_configure(client_size, 0);
 }
 
-void notebook_t::iconify_client(window_t * x) {
+void notebook_t::iconify_client(tab_window_t * x) {
 	if ((_client_map.find(x)) != _client_map.end()) {
 		if (!_selected.empty()) {
 			if (_selected.front() == x) {
@@ -246,7 +233,7 @@ box_int_t notebook_t::get_absolute_extend() {
 region_t<int> notebook_t::get_area() {
 	if (!_selected.empty()) {
 		region_t<int> area = _allocation;
-		area -= _selected.front()->get_size();
+		area -= _selected.front()->border->get_size();
 		return area;
 	} else {
 		return region_t<int>(_allocation);
@@ -339,8 +326,8 @@ void notebook_t::set_allocation(box_int_t const & area) {
 		}
 	}
 
-	for(window_set_t::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
-		update_client_position(*i);
+	for(tab_window_set_t::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
+		update_client_position((*i));
 	}
 
 }
@@ -435,6 +422,35 @@ cairo_surface_t * notebook_t::get_icon_surface(window_t * w) {
 		icons[w] = new window_icon_handler_t(w);
 	}
 	return icons[w]->get_cairo_surface();
+}
+
+box_int_t notebook_t::compute_client_size(window_t * c) {
+	unsigned int height, width;
+	compute_client_size_with_constraint(c, _allocation.w - 2 * BORDER_SIZE,
+			_allocation.h - HEIGHT - 2 * BORDER_SIZE, width, height);
+
+	/* compute the window placement within notebook */
+	box_int_t client_size;
+	client_size.x = (client_area.w - (int)width) / 2;
+	client_size.y = (client_area.h - (int)height) / 2;
+	client_size.w = (int)width;
+	client_size.h = (int)height;
+
+	if (client_size.x < 0)
+		client_size.x = 0;
+	if (client_size.y < 0)
+		client_size.y = 0;
+	if (client_size.w > client_area.w)
+		client_size.w = client_area.w;
+	if (client_size.h > client_area.h)
+		client_size.h = client_area.h;
+
+	client_size.x += client_area.x;
+	client_size.y += client_area.y;
+
+	printf("Computed client size %s\n", client_size.to_string().c_str());
+	return client_size;
+
 }
 
 

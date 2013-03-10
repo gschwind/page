@@ -55,6 +55,7 @@
 #include "render_tree.hxx"
 #include "renderable_page.hxx"
 #include "floating_window.hxx"
+#include "tab_window.hxx"
 
 namespace page {
 
@@ -70,6 +71,12 @@ bool has_key(std::set<T> const & x, T const & key) {
 	return i != x.end();
 }
 
+template<typename T>
+bool has_key(std::list<T> const & x, T const & key) {
+	typename std::list<T>::const_iterator i = std::find(x.begin(), x.end(), key);
+	return i != x.end();
+}
+
 template<typename _0, typename _1>
 _1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
 	typename std::map<_0, _1>::iterator i = map.find(key);
@@ -78,6 +85,9 @@ _1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
 	else
 		return def;
 }
+
+template bool has_key<window_t *, tab_window_t *>(std::map<window_t *, tab_window_t *> const & x, window_t * const & key);
+
 
 typedef std::list<box_int_t> box_list_t;
 
@@ -115,7 +125,7 @@ public:
 		int start_x;
 		int start_y;
 		select_e zone;
-		window_t * c;
+		tab_window_t * c;
 		notebook_t * from;
 		notebook_t * ns;
 		popup_notebook0_t * pn0;
@@ -185,33 +195,30 @@ public:
 
 	page_event_handler_t event_handler;
 
+	std::list<Window> _root_window_stack;
+
+	std::map<window_t *, renderable_window_t *> window_to_renderable_context;
+
 	/* track viewport, split and notebook */
 	std::set<viewport_t *> viewport_list;
 	std::set<split_t *> split_list;
 	notebook_set_t notebook_list;
 
-	/* top_level_windows */
-	window_set_t notebook_clients;
-	window_set_t floating_clients;
-
-	/* all known windows */
-	window_set_t windows_set;
+	/* main window data base */
 	window_map_t xwindow_to_window;
 
 	// track where a client is stored
 	std::map<notebook_t *, viewport_t *> notebook_to_viewport;
-	std::map<window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
-	std::map<viewport_t *, notebook_set_t > viewport_to_notebooks;
-	std::map<window_t *, notebook_t *> client_to_notebook;
+	std::map<tab_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
+	std::map<viewport_t *, notebook_set_t> viewport_to_notebooks;
 
+	std::map<tab_window_t *, notebook_t *> client_to_notebook;
 
-	std::map<Window, renderable_window_t *> window_to_renderable_context;
+	std::map<window_t *, floating_window_t *> base_window_to_floating_window;
+	std::map<window_t *, floating_window_t *> orig_window_to_floating_window;
 
-	std::map<Window, floating_window_t *> xfloating_window_to_floating_window;
-	std::map<Window, floating_window_t *> window_to_floating_window;
-	std::map<Window, window_t *> window_to_normal_window;
-
-	std::set<Window> floating_windows;
+	std::map<window_t *, tab_window_t *> base_window_to_tab_window;
+	std::map<window_t *, tab_window_t *> orig_window_to_tab_window;
 
 	std::list<Atom> supported_list;
 
@@ -318,16 +325,7 @@ public:
 
 	bool merge_area_macro(box_list_t & list);
 
-	window_t * get_window_t(Window w) {
-		window_map_t::iterator i = xwindow_to_window.find(w);
-		if(i != xwindow_to_window.end())
-			return i->second;
-		else
-			return 0;
-	}
-
-	window_t * find_client(Window w);
-
+	window_t * get_window_t(Window w);
 
 	void add_damage_area(box_int_t const & box);
 
@@ -335,25 +333,24 @@ public:
 
 	void insert_window_above_of(window_t * w, Window above);
 
-	void remove_window_from_tree(window_t * x);
-	void activate_client(window_t * x);
-	void insert_window_in_tree(window_t * x, notebook_t * n);
-	void iconify_client(window_t * x);
+	void remove_window_from_tree(tab_window_t * x);
+	void activate_client(tab_window_t * x);
+	void insert_window_in_tree(tab_window_t * x, notebook_t * n, bool prefer_activate);
+	void iconify_client(tab_window_t * x);
 	void update_allocation();
 
 	void update_window_z();
 
 	void insert_window_in_stack(renderable_window_t * x);
 
-	window_t * new_window(Window const w, XWindowAttributes const & wa);
 	void delete_window(window_t * w);
 	void destroy(window_t * w);
 
-	void fullscreen(window_t * c);
-	void unfullscreen(window_t * c);
-	void toggle_fullscreen(window_t * c);
+	void fullscreen(tab_window_t * c);
+	void unfullscreen(tab_window_t * c);
+	void toggle_fullscreen(tab_window_t * c);
 
-	window_list_t get_windows();
+	tab_window_list_t get_windows();
 
 	static bool user_time_comp(window_t *, window_t *);
 	void restack_all_window();
@@ -363,10 +360,10 @@ public:
 	bool check_for_start_notebook(XButtonEvent const & e);
 
 	void split(notebook_t * nbk, split_type_e type);
-	void split_left(notebook_t * nbk, window_t * c);
-	void split_right(notebook_t * nbk, window_t * c);
-	void split_top(notebook_t * nbk, window_t * c);
-	void split_bottom(notebook_t * nbk, window_t * c);
+	void split_left(notebook_t * nbk, tab_window_t * c);
+	void split_right(notebook_t * nbk, tab_window_t * c);
+	void split_top(notebook_t * nbk, tab_window_t * c);
+	void split_bottom(notebook_t * nbk, tab_window_t * c);
 	void notebook_close(notebook_t * src);
 
 	void update_popup_position(popup_notebook0_t * p, int x, int y,
@@ -393,7 +390,7 @@ public:
 
 	viewport_t * find_viewport(window_t * w);
 
-	void process_net_vm_state_client_messate(window_t * c, long type, Atom state_properties);
+	void process_net_vm_state_client_message(window_t * c, long type, Atom state_properties);
 
 	void update_transient_for(window_t * w);
 
@@ -402,8 +399,19 @@ public:
 
 	std::string safe_get_window_name(Window w);
 
+	bool check_manage(window_t * x);
+
+	tab_window_t * new_tab_window(window_t * w);
+	void destroy(tab_window_t * w);
+
+	window_t * find_root_window(window_t * w);
+	window_t * find_client_window(window_t * w);
+
+
 };
 
 }
+
+
 
 #endif /* PAGE_HXX_ */
