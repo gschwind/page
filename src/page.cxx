@@ -114,7 +114,7 @@ page_t::page_t(int argc, char ** argv) :
 
 	rndt = new render_tree_t(rnd.composite_overlay_s, page_base_dir, font,
 			font_bold, cnx.root_size.w, cnx.root_size.h);
-	rpage = new renderable_page_t(*rndt, split_list, notebook_list);
+	rpage = new renderable_page_t(*rndt, split_list, notebook_list, viewport_list);
 	rnd.add(rpage);
 	rnd.lower(rpage);
 

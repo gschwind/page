@@ -53,7 +53,7 @@ box_int_t viewport_t::get_absolute_extend() {
 }
 
 region_t<int> viewport_t::get_area() {
-	if(_is_visible) {
+	if(_is_visible && fullscreen_client == 0) {
 		return _subtree->get_area();
 	} else {
 		return box_int_t();

@@ -11,7 +11,7 @@
 
 namespace page {
 
-renderable_page_t::renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks) : render(render), splits(splits), notebooks(notebooks) {
+renderable_page_t::renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports) : render(render), splits(splits), notebooks(notebooks), viewports(viewports) {
 	is_durty = true;
 }
 
@@ -57,6 +57,13 @@ region_t<int> renderable_page_t::get_area() {
 	for(std::set<notebook_t *>::const_iterator i = notebooks.begin(); i != notebooks.end(); ++i) {
 		r = r + (*i)->get_area();
 	}
+
+	for(std::set<viewport_t *>::iterator i = viewports.begin(); i != viewports.end(); ++i) {
+		if((*i)->fullscreen_client != 0) {
+			r = r - (*i)->get_absolute_extend();
+		}
+	}
+
 	return r;
 
 }

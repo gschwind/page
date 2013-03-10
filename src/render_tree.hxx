@@ -22,6 +22,7 @@
 #include "box.hxx"
 #include "split.hxx"
 #include "notebook.hxx"
+#include "viewport.hxx"
 #include "renderable_window.hxx"
 #include "floating_window.hxx"
 

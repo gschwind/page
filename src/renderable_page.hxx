@@ -22,8 +22,9 @@ public:
 
 	std::set<split_t *> & splits;
 	std::set<notebook_t *> & notebooks;
+	std::set<viewport_t *> & viewports;
 
-	renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks);
+	renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports);
 
 	void mark_durty();
 	void render_if_needed();
