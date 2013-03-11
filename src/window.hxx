@@ -50,6 +50,8 @@ private:
 	atom_set_t _net_wm_protocols;
 	atom_set_t _net_wm_allowed_actions;
 
+	bool _is_managed;
+
 	bool _has_wm_name;
 	bool _has_net_wm_name;
 	bool _has_partial_struct;
@@ -156,6 +158,7 @@ public:
 
 	void update_partial_struct();
 	void read_all();
+	void read_when_mapped();
 
 	bool is_dock();
 	bool is_fullscreen();
@@ -234,6 +237,10 @@ public:
 	int get_depth();
 
 	void grab_button(int button);
+
+	void set_managed(bool state);
+	bool is_managed();
+
 
 };
 

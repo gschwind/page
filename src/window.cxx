@@ -40,6 +40,8 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 	_net_wm_protocols = atom_set_t();
 	_net_wm_allowed_actions = atom_set_t();
 
+	_is_managed = false;
+
 	_has_wm_name = false;
 	_has_net_wm_name = false;
 	_has_partial_struct = false;
@@ -368,6 +370,23 @@ void window_t::read_all() {
 	read_partial_struct();
 	read_net_wm_desktop();
 	read_window_attributes();
+}
+
+void window_t::read_when_mapped() {
+	read_window_attributes();
+	_wm_input_focus = true;
+	read_wm_hints();
+	read_wm_normal_hints();
+	read_vm_name();
+	read_transient_for();
+	read_net_wm_protocols();
+	read_net_vm_name();
+	read_net_wm_type();
+	read_net_wm_state();
+	read_net_wm_user_time();
+	read_icon_data();
+	read_partial_struct();
+	read_net_wm_desktop();
 }
 
 void window_t::get_icon_data(long const *& data, int & size) {
@@ -882,6 +901,14 @@ bool window_t::read_window_attributes() {
 
 void window_t::grab_button(int button) {
 	XGrabButton(_cnx.dpy, Button1, AnyModifier, _xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, _cnx.xroot, None);
+}
+
+void window_t::set_managed(bool state) {
+	_is_managed = state;
+}
+
+bool window_t::is_managed() {
+	return _is_managed;
 }
 
 }

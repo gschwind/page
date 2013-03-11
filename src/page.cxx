@@ -398,7 +398,7 @@ void page_t::scan() {
 			window_t * w = get_window_t(wins[i]);
 			if(!w->read_window_attributes())
 				continue;
-			w->read_all();
+			w->read_when_mapped();
 
 			printf("Scan for \"%s\"\n", w->get_title().c_str());
 
@@ -411,6 +411,7 @@ void page_t::scan() {
 				/* if the window is not map check if previous windows manager has set WM_STATE to iconic
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 				 */
+				w->read_net_wm_state();
 				if(w->get_has_wm_state() && w->get_wm_state() == IconicState) {
 					check_manage(w);
 				}
@@ -1127,11 +1128,21 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 
+	/* don't manage overide redirected window */
+	if(x->override_redirect()) {
+		/* overide redirected window must set transient for
+		 * and may set net_wm_type.
+		 */
+		x->read_transient_for();
+		x->read_net_wm_type();
+		update_transient_for(x);
+		return;
+	}
+
 	/* don't manage notebook windows */
 	if(has_key(base_window_to_tab_window, x))
 		return;
-
-	if(x->override_redirect())
+	if(has_key(base_window_to_floating_window, x))
 		return;
 
 	/* Libre Office doesn't generate MapRequest ?
@@ -1190,8 +1201,6 @@ void page_t::process_event(XUnmapEvent const & e) {
 	if (expected_event)
 		return;
 
-	x->write_wm_state(WithdrawnState);
-
 	/* if client is managed */
 	if (has_key(orig_window_to_tab_window, x)) {
 		unmanage(x);
@@ -1203,6 +1212,10 @@ void page_t::process_event(XUnmapEvent const & e) {
 		XDestroyWindow(cnx.dpy, t->border->get_xwin());
 		destroy(t);
 	}
+
+	x->set_managed(false);
+	x->write_wm_state(WithdrawnState);
+
 
 }
 
@@ -1341,12 +1354,14 @@ void page_t::process_event(XMapRequestEvent const & e) {
 
 	if(!a->read_window_attributes())
 		return;
+	if(a->is_input_only())
+		return;
 	if(has_key(base_window_to_floating_window, a))
 		return;
 	if(has_key(base_window_to_tab_window, a))
 		return;
-	if(a->is_input_only())
-		return;
+
+	a->read_when_mapped();
 
 	if(!check_manage(a)) {
 		a->map();
@@ -2578,29 +2593,27 @@ void page_t::destroy(floating_window_t * w) {
 
 bool page_t::check_manage(window_t * x) {
 
+	if(x->is_managed())
+		return true;
 	if(!x->read_window_attributes())
-		return false;
-	if(has_key(orig_window_to_floating_window, x))
-		return false;
-	if(has_key(orig_window_to_tab_window, x))
 		return false;
 	if(x->override_redirect())
 		return false;
 	if(x->is_input_only())
 		return false;
 
-	x->read_all();
-
 	/* find the type of current window */
 	page_window_type_e type = x->get_window_type();
 
 	if (type == PAGE_NORMAL_WINDOW_TYPE) {
 		printf("Fixed window found\n");
+		x->set_managed(true);
 		manage(x);
 		return true;
 	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
 		printf("Floating window found\n");
 		x->add_to_save_set();
+		x->set_managed(true);
 		x->set_dock_action();
 		x->write_net_wm_state();
 		floating_window_t * fw = new_floating_window(x);
@@ -2608,6 +2621,7 @@ bool page_t::check_manage(window_t * x) {
 		rpage->render.render_floating(fw);
 		return true;
 	} else if (type == PAGE_DESKTOP_WINDOW_TYPE) {
+		x->set_managed(true);
 		x->iconify();
 		return true;
 	}
@@ -2627,7 +2641,6 @@ window_t * page_t::get_window_t(Window w) {
 		return i->second;
 	} else {
 		window_t * x = new window_t(cnx, w);
-		x->read_all();
 		xwindow_to_window[w] = x;
 		return x;
 	}
