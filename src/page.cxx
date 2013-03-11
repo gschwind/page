@@ -2474,10 +2474,11 @@ void page_t::safe_raise_window(window_t * w) {
 		for (window_list_t::iterator i = raise_list.begin();
 				i != raise_list.end(); ++i) {
 			std::set<window_t *> childs = (*i)->get_sibbling_childs();
-			raise_next.insert(raise_next.end(), childs.begin(),
-					childs.end());
-			if(!has_key(raised_window, *i))
+			if (!has_key(raised_window, *i)) {
+				raise_next.insert(raise_next.end(), childs.begin(),
+						childs.end());
 				raised_window.push_back(*i);
+			}
 		}
 	}
 
