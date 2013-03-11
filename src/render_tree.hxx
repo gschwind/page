@@ -466,8 +466,8 @@ public:
 	/* this for call for each, is it usefull ? */
 	void render_split(split_t * s) {
 		cairo_save(cr);
-		//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
-		cairo_set_source_rgb(cr, 0xeeU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
+		cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0, 0xecU / 255.0);
+		//cairo_set_source_rgb(cr, 0xeeU / 255.0, 0x00U / 255.0, 0x00U / 255.0);
 		box_int_t area = s->get_split_bar_area();
 		cairo_rectangle(cr, area.x, area.y, area.w, area.h);
 		cairo_fill(cr);
