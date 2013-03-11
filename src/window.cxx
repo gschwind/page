@@ -27,12 +27,24 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 	_cnx(cnx), _xwin(w)
 {
 
+	_wm_normal_hints = XAllocSizeHints();
+	_wm_hints = XAllocWMHints();
+
+	_lock_count = 0;
+
+	/* store the ICCCM WM_STATE : WithDraw, Iconic or Normal */
+	_wm_state = WithdrawnState;
+
+	_net_wm_type = atom_list_t();
+	_net_wm_state = atom_set_t();
+	_net_wm_protocols = atom_set_t();
+	_net_wm_allowed_actions = atom_set_t();
+
 	_has_wm_name = false;
 	_has_net_wm_name = false;
 	_has_partial_struct = false;
 	/* store if wm must do input focus */
 	_wm_input_focus = true;
-	/* store the map/unmap stase from the point of view of PAGE */
 	_is_lock = false;
 
 	_has_wm_normal_hints = false;
@@ -40,24 +52,29 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 	_has_wm_state = false;
 	_has_net_wm_desktop = false;
 
+	_net_wm_desktop = 0;
+
+	/* the name of window */
+	_wm_name = "";
+	_net_wm_name = "";
+
 	memset(_partial_struct, 0, sizeof(_partial_struct));
 
-	_wm_input_focus = false;
-	_wm_state = WithdrawnState;
+	_transient_for = None;
+
+	_user_time = 0;
 
 	_net_wm_icon_size = 0;
 	_net_wm_icon_data = 0;
 
-//	XGrabButton(cnx.dpy, Button1, AnyModifier, _xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, cnx.xroot, None);
-//	XGrabButton(cnx.dpy, Button2, AnyModifier, _xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, cnx.xroot, None);
-//	XGrabButton(cnx.dpy, Button3, AnyModifier, _xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, cnx.xroot, None);
+	_sibbling_childs = std::set<window_t *>();
 
-	/* read transient_for state */
-	_wm_normal_hints = XAllocSizeHints();
-	_wm_hints = XAllocWMHints();
+	memset(&_wa, 0, sizeof(XWindowAttributes));
 
-	_net_wm_state.clear();
-	_net_wm_type.clear();
+    _above = None;
+
+    _type = PAGE_NORMAL_WINDOW_TYPE;
+
 
 }
 
