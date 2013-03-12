@@ -24,8 +24,9 @@ floating_window_t::floating_window_t(window_t * w, window_t * border) : w(w) {
 	cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
 	cairo_paint(cr);
 
-	box_int_t x = w->get_size();
-	reconfigure(x);
+	_desired_position = w->get_size();
+	reconfigure();
+	fake_configure();
 
 }
 
@@ -39,22 +40,22 @@ floating_window_t::~floating_window_t() {
 	}
 }
 
-void floating_window_t::map() {
+void floating_window_t::normalize() {
 	border->map();
 	w->normalize();
 }
 
-void floating_window_t::unmap() {
+void floating_window_t::iconify() {
 	border->unmap();
 	w->iconify();
 }
 
-void floating_window_t::reconfigure(box_int_t const & area) {
+void floating_window_t::reconfigure() {
 
-	int x = area.x;
-	int y = area.y;
-	int width = area.w;
-	int heigth = area.h;
+	int x = _desired_position.x;
+	int y = _desired_position.y;
+	int width = _desired_position.w;
+	int heigth = _desired_position.h;
 
 	box_int_t size;
 	box_int_t subsize;
@@ -77,18 +78,21 @@ void floating_window_t::reconfigure(box_int_t const & area) {
 	border->move_resize(size);
 	w->move_resize(subsize);
 
-	w->fake_configure(area, 0);
-
 	cairo_xlib_surface_set_size(win_surf, size.w, size.h);
 
 }
 
-box_int_t floating_window_t::get_position() {
-	box_int_t size = border->get_size();
-	box_int_t subsize = w->get_size();
-	return box_int_t(size.x + subsize.x, size.y + subsize.y, subsize.w, subsize.h);
+void floating_window_t::set_desired_position(box_int_t const & position) {
+		_desired_position = position;
 }
 
+box_int_t const & floating_window_t::get_desired_position() const {
+	return _desired_position;
+}
+
+void floating_window_t::fake_configure() {
+	w->fake_configure(_desired_position, 0);
+}
 
 }
 

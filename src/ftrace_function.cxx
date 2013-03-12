@@ -5,7 +5,6 @@
  *
  */
 
-
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -28,7 +27,6 @@
 
 #include "ftrace_function.hxx"
 
-
 struct file_handler {
 	std::string name; /* object file name */
 	unsigned long addr; /* object address */
@@ -50,7 +48,6 @@ private:
 	}
 
 public:
-
 
 	~bfd_handler() {
 		if (bfd_file != NULL)
@@ -93,14 +90,14 @@ public:
 
 		nsize = bfd_get_symtab_upper_bound (ths->bfd_file);
 		ths->symbol_table = (asymbol **) malloc(nsize);
-		if(ths->symbol_table == 0)
+		if (ths->symbol_table == 0)
 			goto error;
 
 		ths->nsyms = bfd_canonicalize_symtab(ths->bfd_file, ths->symbol_table);
 
 		return ths;
 
-	error:
+		error:
 		/* cleanup */
 		if (ths != NULL) {
 			delete ths;
@@ -130,7 +127,6 @@ struct trace_data {
 	std::map<unsigned long, std::string> symbols;
 	std::map<std::string, bfd_handler *> bfd_opened;
 
-
 	static int list_files_segments(struct dl_phdr_info *info, size_t size,
 			void *_data) {
 
@@ -147,12 +143,12 @@ struct trace_data {
 				x.seg_vaddr = phdr->p_paddr;
 				x.seg_memsz = phdr->p_memsz;
 
-				if(x.name.size() == 0)
+				if (x.name.size() == 0)
 					x.name = "/proc/self/exe";
 
-				//fprintf(stderr,
-				//		"segment addr: 0x%016lx, seg_vaddr: 0x%016lx, obj: %s, seg_memsz: %lu\n",
-				//		x.addr, x.seg_vaddr, x.name.c_str(), x.seg_memsz);
+				fprintf(stderr,
+						"segment addr: 0x%016lx, seg_vaddr: 0x%016lx, obj: %s, seg_memsz: %lu\n",
+						x.addr, x.seg_vaddr, x.name.c_str(), x.seg_memsz);
 				data->files.push_back(x);
 			}
 		}
@@ -168,10 +164,10 @@ struct trace_data {
 		dl_iterate_phdr(list_files_segments, this);
 
 		std::list<file_handler>::iterator ii = files.begin();
-		while(ii != files.end()) {
-			if(bfd_opened.find((*ii).name) == bfd_opened.end()) {
+		while (ii != files.end()) {
+			if (bfd_opened.find((*ii).name) == bfd_opened.end()) {
 				bfd_handler * x = bfd_handler::new_bfd_handler((*ii).name);
-				if(x != 0) {
+				if (x != 0) {
 					bfd_opened[(*ii).name] = x;
 				}
 			}
@@ -182,7 +178,7 @@ struct trace_data {
 
 	~trace_data() {
 		std::map<std::string, bfd_handler *>::iterator i = bfd_opened.begin();
-		while(i != bfd_opened.end()) {
+		while (i != bfd_opened.end()) {
 			delete i->second;
 			++i;
 		}
@@ -191,8 +187,9 @@ struct trace_data {
 
 	file_handler * find_file_handler(unsigned long addr) {
 		std::list<file_handler>::iterator i = files.begin();
-		while(i != files.end()) {
-			if((*i).addr + (*i).seg_vaddr <= addr && (*i).addr + (*i).seg_vaddr + (*i).seg_memsz > addr) {
+		while (i != files.end()) {
+			if ((*i).addr + (*i).seg_vaddr <= addr
+					&& (*i).addr + (*i).seg_vaddr + (*i).seg_memsz > addr) {
 				return &(*i);
 			}
 			++i;
@@ -200,9 +197,9 @@ struct trace_data {
 		return 0;
 	}
 
-	static void find_address_in_section(bfd *abfd, asection *section, void * _data)
-	{
-		search_debug_info * data = (search_debug_info *)_data;
+	static void find_address_in_section(bfd *abfd, asection *section,
+			void * _data) {
+		search_debug_info * data = (search_debug_info *) _data;
 
 		bfd_vma vma;
 		bfd_size_type size;
@@ -213,7 +210,6 @@ struct trace_data {
 		if ((bfd_get_section_flags(abfd, section) & SEC_ALLOC) == 0)
 			return;
 
-
 		vma = bfd_get_section_vma(abfd, section);
 		if (data->pc < vma)
 			return;
@@ -223,8 +219,9 @@ struct trace_data {
 			return;
 
 		//fprintf(stderr, "section found offset: 0x%016lx length: 0x%016lx, addr: 0x%016lx , name: %s\n", (unsigned long)bfd_get_section_vma(abfd, section), (unsigned long)bfd_section_size(abfd, section), data->pc, bfd_section_name(abfd, section));
-		data->found = bfd_find_nearest_line(abfd, section, data->bfdh->symbol_table, data->pc - vma,
-					      &(data->filename), &(data->functionname), &(data->line));
+		data->found =
+				bfd_find_nearest_line(abfd, section, data->bfdh->symbol_table, data->pc - vma,
+						&(data->filename), &(data->functionname), &(data->line));
 
 		//fprintf(stderr, "xxx: %s %s %d\n", data->filename, data->functionname, data->line);
 	}
@@ -247,31 +244,34 @@ struct trace_data {
 
 		sym = "none";
 
-		file_handler * fh = find_file_handler((unsigned long)addr);
-		if(fh) {
+		file_handler * fh = find_file_handler((unsigned long) addr);
+		if (fh) {
 			//fprintf(stderr,
 			//		"segment FOUND addr: 0x%016lx, seg_vaddr: 0x%016lx, obj: %s, seg_memsz: %lu\n",
 			//		fh->addr, fh->seg_vaddr, fh->name.c_str(), fh->seg_memsz);
 
 			search_debug_info x;
-			x.pc = ((unsigned long)addr) - fh->addr;
+			x.pc = ((unsigned long) addr) - fh->addr;
 			x.found = 0;
 			x.filename = 0;
 			x.functionname = 0;
 			x.line = 0;
 
-			std::map<std::string, bfd_handler *>::iterator f = bfd_opened.find(fh->name);
-			if(f != bfd_opened.end()) {
+			std::map<std::string, bfd_handler *>::iterator f = bfd_opened.find(
+					fh->name);
+			if (f != bfd_opened.end()) {
 				x.bfdh = f->second;
 
 				//fprintf(stderr, "file found %s addr: 0x%016lx seg_vaddr: 0x%016lx size = %lu \n", fh->name.c_str(), fh->addr, fh->seg_vaddr, fh->seg_memsz);
-				bfd_map_over_sections(x.bfdh->bfd_file, find_address_in_section, &x);
+				bfd_map_over_sections(x.bfdh->bfd_file, find_address_in_section,
+						&x);
 
 				if (x.found != 0) {
 
 					std::string functionname = safe_demangle(x.functionname);
 					std::stringstream out;
-					out << functionname << " at " << x.filename << ":" << x.line;
+					out << functionname << " at " << x.filename << ":"
+							<< x.line;
 
 					sym = out.str();
 					return true;
@@ -284,12 +284,9 @@ struct trace_data {
 		return false;
 	}
 
-
-
 };
 
 bool trace_data::is_init = false;
-
 
 void sig_handler(int sig) {
 	void *array[50];
@@ -300,7 +297,7 @@ void sig_handler(int sig) {
 	// get void*'s for all entries on the stack
 	size = backtrace(array, 50);
 
-	//backtrace_symbols_fd(array, size, 2);
+	backtrace_symbols_fd(array, size, 2);
 
 	// print out all the frames to stderr
 	fprintf(stderr, "Error: signal %d:\n", sig);
@@ -312,7 +309,8 @@ void sig_handler(int sig) {
 			fprintf(stderr, "0x%016lx %s\n", (unsigned long) array[i],
 					sym.c_str());
 		} else if (dladdr(array[i], &info)) {
-			std::string functionname = trace_data::safe_demangle(info.dli_sname);
+			std::string functionname = trace_data::safe_demangle(
+					info.dli_sname);
 			fprintf(stderr, "0x%016lx %s in %s\n", (unsigned long) array[i],
 					functionname.c_str(), info.dli_fname);
 		} else {
@@ -320,18 +318,9 @@ void sig_handler(int sig) {
 		}
 	}
 
+	fflush(stderr);
+
 	delete trace;
 	exit(1);
 }
-
-
-
-
-
-
-
-
-
-
-
 

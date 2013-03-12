@@ -188,9 +188,9 @@ void notebook_t::update_client_position(tab_window_t * c) {
 	/* compute the window placement within notebook */
 	box_int_t client_size = compute_client_size(c->w);
 
-	printf("SIZE = %s\n", client_size.to_string().c_str());
-	c->reconfigure(client_size);
-	c->w->fake_configure(client_size, 0);
+	c->set_desired_position(client_size);
+	c->reconfigure();
+	c->fake_configure();
 }
 
 void notebook_t::iconify_client(tab_window_t * x) {
