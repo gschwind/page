@@ -16,7 +16,7 @@ namespace page {
 class floating_window_t {
 private:
 
-	box_int_t _desired_position;
+	box_int_t _wished_position;
 
 	/* avoid copy */
 	floating_window_t(floating_window_t const &);
@@ -40,8 +40,8 @@ public:
 	void reconfigure();
 	void fake_configure();
 
-	void set_desired_position(box_int_t const & position);
-	box_int_t const & get_desired_position() const;
+	void set_wished_position(box_int_t const & position);
+	box_int_t const & get_wished_position() const;
 
 };
 

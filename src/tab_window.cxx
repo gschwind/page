@@ -38,9 +38,9 @@ tab_window_t::~tab_window_t() {
 }
 
 void tab_window_t::reconfigure() {
-	border->move_resize(box_int_t(_desired_position.x, _desired_position.y, _desired_position.w, _desired_position.h));
-	w->move_resize(box_int_t(0, 0, _desired_position.w, _desired_position.h));
-	cairo_xlib_surface_set_size(win_surf, _desired_position.w, _desired_position.h);
+	border->move_resize(box_int_t(_wished_position.x, _wished_position.y, _wished_position.w, _wished_position.h));
+	w->move_resize(box_int_t(0, 0, _wished_position.w, _wished_position.h));
+	cairo_xlib_surface_set_size(win_surf, _wished_position.w, _wished_position.h);
 }
 
 void tab_window_t::iconify() {
@@ -54,16 +54,16 @@ void tab_window_t::normalize() {
 }
 
 
-box_int_t const & tab_window_t::get_desired_position() {
-	return _desired_position;
+box_int_t const & tab_window_t::get_wished_position() {
+	return _wished_position;
 }
 
-void tab_window_t::set_desired_position(box_int_t const & position) {
-	_desired_position = position;
+void tab_window_t::set_wished_position(box_int_t const & position) {
+	_wished_position = position;
 }
 
 void tab_window_t::fake_configure() {
-	w->fake_configure(_desired_position, 0);
+	w->fake_configure(_wished_position, 0);
 }
 
 }

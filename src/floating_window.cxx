@@ -24,7 +24,7 @@ floating_window_t::floating_window_t(window_t * w, window_t * border) : w(w) {
 	cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
 	cairo_paint(cr);
 
-	_desired_position = w->get_size();
+	_wished_position = w->get_size();
 	reconfigure();
 	fake_configure();
 
@@ -52,10 +52,10 @@ void floating_window_t::iconify() {
 
 void floating_window_t::reconfigure() {
 
-	int x = _desired_position.x;
-	int y = _desired_position.y;
-	int width = _desired_position.w;
-	int heigth = _desired_position.h;
+	int x = _wished_position.x;
+	int y = _wished_position.y;
+	int width = _wished_position.w;
+	int heigth = _wished_position.h;
 
 	box_int_t size;
 	box_int_t subsize;
@@ -82,16 +82,16 @@ void floating_window_t::reconfigure() {
 
 }
 
-void floating_window_t::set_desired_position(box_int_t const & position) {
-		_desired_position = position;
+void floating_window_t::set_wished_position(box_int_t const & position) {
+		_wished_position = position;
 }
 
-box_int_t const & floating_window_t::get_desired_position() const {
-	return _desired_position;
+box_int_t const & floating_window_t::get_wished_position() const {
+	return _wished_position;
 }
 
 void floating_window_t::fake_configure() {
-	w->fake_configure(_desired_position, 0);
+	w->fake_configure(_wished_position, 0);
 }
 
 }

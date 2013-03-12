@@ -940,7 +940,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		printf("XXXXX resize = %s\n", x.to_string().c_str());
 
 		rnd.add_damage_area(mode_data_floating.f->border->get_size());
-		mode_data_floating.f->set_desired_position(x);
+		mode_data_floating.f->set_wished_position(x);
 		mode_data_floating.f->reconfigure();
 		mode_data_floating.f->fake_configure();
 
@@ -1270,7 +1270,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 		floating_window_t * f = orig_window_to_floating_window[c];
 
-		box_int_t new_size = f->get_desired_position();
+		box_int_t new_size = f->get_wished_position();
 
 		if (e.value_mask & CWX) {
 			new_size.x = e.x;
@@ -1288,7 +1288,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 			new_size.h = e.height;
 		}
 
-		f->set_desired_position(new_size);
+		f->set_wished_position(new_size);
 		f->reconfigure();
 		f->fake_configure();
 
@@ -1629,7 +1629,7 @@ void page_t::fullscreen(tab_window_t * c) {
 	fullscreen_client_to_viewport[c] = std::pair<viewport_t *, notebook_t *>(v, n);
 	c->w->set_fullscreen();
 	c->normalize();
-	c->set_desired_position(v->raw_aera);
+	c->set_wished_position(v->raw_aera);
 	c->reconfigure();
 	c->fake_configure();
 	set_focus(c->w);
