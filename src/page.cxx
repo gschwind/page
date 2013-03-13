@@ -1148,9 +1148,18 @@ void page_t::process_event(XMapEvent const & e) {
 	if(has_key(base_window_to_floating_window, x))
 		return;
 
-	/* Libre Office doesn't generate MapRequest ?
+
+	/* grab and sync the server to avoid miss of event and to
+	 * get a valid current state of windows
+	 */
+	cnx.grab();
+
+	/*
+	 * Libre Office doesn't generate MapRequest ... try to manage on map.
 	 */
 	check_manage(x);
+
+	cnx.ungrab();
 
 }
 
@@ -1288,6 +1297,14 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 			new_size.h = e.height;
 		}
 
+		unsigned int final_width = new_size.w;
+		unsigned int final_height = new_size.h;
+
+		compute_client_size_with_constraint(f->w, (unsigned)new_size.w, (unsigned)new_size.h, final_width, final_height);
+
+		new_size.w = final_width;
+		new_size.h = final_height;
+
 		f->set_wished_position(new_size);
 		f->reconfigure();
 		f->fake_configure();
@@ -1338,20 +1355,26 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
 	window_t * a = get_window_t(e.window);
 
-	if(!a->read_window_attributes())
-		return;
-	if(a->is_input_only())
-		return;
-	if(has_key(base_window_to_floating_window, a))
-		return;
-	if(has_key(base_window_to_tab_window, a))
-		return;
+	/*
+	 * We grab and sync the server here, to get valid state of the windows and
+	 * not miss some events.
+	 */
+	cnx.grab();
+
+	//if(has_key(base_window_to_floating_window, a))
+	//	goto end;
+	//if(has_key(base_window_to_tab_window, a))
+	//	goto end;
 
 	a->read_when_mapped();
 
 	if(!check_manage(a)) {
 		a->map();
 	}
+
+	end:
+
+	cnx.ungrab();
 
 }
 
@@ -1426,6 +1449,30 @@ void page_t::process_event(XPropertyEvent const & e) {
 				client_to_notebook[orig_window_to_tab_window[x]]->update_client_position(
 						orig_window_to_tab_window[x]);
 				rnd.add_damage_area(x->get_size());
+			}
+
+			if(has_key(orig_window_to_floating_window, x)) {
+
+				floating_window_t * fw = orig_window_to_floating_window[x];
+
+				rnd.add_damage_area(fw->get_wished_position());
+
+				/* apply normal hint to floating window */
+				box_int_t new_size = fw->get_wished_position();
+				unsigned int final_width = new_size.w;
+				unsigned int final_height = new_size.h;
+				compute_client_size_with_constraint(fw->w, (unsigned)new_size.w, (unsigned)new_size.h, final_width, final_height);
+				new_size.w = final_width;
+				new_size.h = final_height;
+				fw->set_wished_position(new_size);
+				fw->reconfigure();
+				fw->fake_configure();
+
+				rpage->render.render_floating(fw);
+
+				rnd.add_damage_area(fw->get_wished_position());
+
+
 			}
 		}
 	} else if (e.atom == cnx.atoms.WM_PROTOCOLS) {
@@ -2598,9 +2645,6 @@ void page_t::destroy(floating_window_t * fw) {
 
 bool page_t::check_manage(window_t * x) {
 
-	/* update possible position update by configure redirected request */
-	XSync(cnx.dpy, False);
-
 	if(x->is_managed())
 		return true;
 	if(!x->read_window_attributes())
@@ -2625,6 +2669,20 @@ bool page_t::check_manage(window_t * x) {
 		x->set_dock_action();
 		x->write_net_wm_state();
 		floating_window_t * fw = new_floating_window(x);
+
+
+		/* apply normal hint to floating window */
+		box_int_t new_size = fw->get_wished_position();
+		unsigned int final_width = new_size.w;
+		unsigned int final_height = new_size.h;
+		compute_client_size_with_constraint(fw->w, (unsigned)new_size.w, (unsigned)new_size.h, final_width, final_height);
+		new_size.w = final_width;
+		new_size.h = final_height;
+		fw->set_wished_position(new_size);
+		fw->reconfigure();
+		fw->fake_configure();
+
+
 		fw->normalize();
 		rpage->render.render_floating(fw);
 		return true;
@@ -2694,6 +2752,89 @@ window_t * page_t::find_client_window(window_t * w) {
 
 	return 0;
 
+}
+
+void page_t::compute_client_size_with_constraint(window_t * c,
+		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
+		unsigned int & height) {
+
+	XSizeHints const size_hints = *c->get_wm_normal_hints();
+
+	printf("XXX max : %d %d\n", wished_width, wished_height);
+
+	/* default size if no size_hints is provided */
+	width = wished_width;
+	height = wished_height;
+
+	if (size_hints.flags & PMaxSize) {
+		if ((int)wished_width > size_hints.max_width)
+			wished_width = size_hints.max_width;
+		if ((int)wished_height > size_hints.max_height)
+			wished_height = size_hints.max_height;
+	}
+
+	if (size_hints.flags & PBaseSize) {
+		if ((int)wished_width < size_hints.base_width)
+			wished_width = size_hints.base_width;
+		if ((int)wished_height < size_hints.base_height)
+			wished_height = size_hints.base_height;
+	} else if (size_hints.flags & PMinSize) {
+		if ((int)wished_width < size_hints.min_width)
+			wished_width = size_hints.min_width;
+		if ((int)wished_height < size_hints.min_height)
+			wished_height = size_hints.min_height;
+	}
+
+	if (size_hints.flags & PAspect) {
+		if (size_hints.flags & PBaseSize) {
+			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
+			if ((wished_width - size_hints.base_width) * size_hints.min_aspect.y
+					< (wished_height - size_hints.base_height)
+							* size_hints.min_aspect.x) {
+				/* reduce h */
+				wished_height = size_hints.base_height
+						+ ((wished_width - size_hints.base_width)
+								* size_hints.min_aspect.y)
+								/ size_hints.min_aspect.x;
+
+			} else if ((wished_width - size_hints.base_width)
+					* size_hints.max_aspect.y
+					> (wished_height - size_hints.base_height)
+							* size_hints.max_aspect.x) {
+				/* reduce w */
+				wished_width = size_hints.base_width
+						+ ((wished_height - size_hints.base_height)
+								* size_hints.max_aspect.x)
+								/ size_hints.max_aspect.y;
+			}
+		} else {
+			if (wished_width * size_hints.min_aspect.y
+					< wished_height * size_hints.min_aspect.x) {
+				/* reduce h */
+				wished_height = (wished_width * size_hints.min_aspect.y)
+						/ size_hints.min_aspect.x;
+
+			} else if (wished_width * size_hints.max_aspect.y
+					> wished_height * size_hints.max_aspect.x) {
+				/* reduce w */
+				wished_width = (wished_height * size_hints.max_aspect.x)
+						/ size_hints.max_aspect.y;
+			}
+		}
+
+	}
+
+	if (size_hints.flags & PResizeInc) {
+		wished_width -=
+				((wished_width - size_hints.base_width) % size_hints.width_inc);
+		wished_height -= ((wished_height - size_hints.base_height)
+				% size_hints.height_inc);
+	}
+
+	width = wished_width;
+	height = wished_height;
+
+	printf("XXX result : %d %d\n", width, height);
 }
 
 

@@ -407,6 +407,9 @@ public:
 	window_t * find_root_window(window_t * w);
 	window_t * find_client_window(window_t * w);
 
+	void compute_client_size_with_constraint(window_t * c,
+			unsigned int max_width, unsigned int max_height, unsigned int & width,
+			unsigned int & height);
 
 };
 
