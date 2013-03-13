@@ -1139,6 +1139,9 @@ void page_t::process_event(XMapEvent const & e) {
 		x->read_transient_for();
 		x->read_net_wm_type();
 		update_transient_for(x);
+		if (!x->is_input_only()) {
+			cnx.raise_window(x->get_xwin());
+		}
 		return;
 	}
 
