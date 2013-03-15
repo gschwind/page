@@ -576,7 +576,6 @@ public:
 
 				cairo_set_source_rgb(cr, 0x88U / 255.0, 0x8aU / 255.0,
 						0x85U / 255.0);
-				//rounded_rectangle(cr, 0.5, 0.5, length, HEIGHT - 1.0, 3.0);
 
 				/* draw close icon */
 				cairo_set_line_width(cr, 2.0);
@@ -655,6 +654,10 @@ public:
 			cairo_line_to(cr, 0.5, _allocation.h - 0.5);
 			cairo_line_to(cr, 0.5, 0.5);
 			cairo_stroke(cr);
+
+			cairo_rectangle(cr, _allocation.w - 20.0, _allocation.h - 20.0, _allocation.w, _allocation.h);
+			cairo_fill(cr);
+
 
 		}
 		cairo_restore(cr);
