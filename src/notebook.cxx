@@ -317,8 +317,8 @@ void notebook_t::set_allocation(box_int_t const & area) {
 	client_area.w = _allocation.w - 2 * BORDER_SIZE;
 	client_area.h = _allocation.h - HEIGHT - 2 * BORDER_SIZE;
 
-	printf("update client area xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
-			client_area.y);
+//	printf("update client area xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
+//			client_area.y);
 
 	if (_selected.empty()) {
 		if (!_clients.empty()) {

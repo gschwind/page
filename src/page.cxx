@@ -407,7 +407,7 @@ void page_t::scan() {
 			w->read_when_mapped();
 			update_transient_for(w);
 
-			printf("Scan for \"%s\"\n", w->get_title().c_str());
+//			printf("Scan for \"%s\"\n", w->get_title().c_str());
 
 			if(!w->is_input_only())
 				new_renderable_window(w);
@@ -655,8 +655,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.size =
 						mode_data_floating.f->get_wished_position();
 
-				printf("XXXXX size = %s, x: %d, y: %d\n",
-						size.to_string().c_str(), e.x, e.y);
+				//printf("XXXXX size = %s, x: %d, y: %d\n",
+//						size.to_string().c_str(), e.x, e.y);
 				if ((e.x > size.w - 20) && (e.y > size.h - 20) || (e.state & ControlMask)) {
 					process_mode = FLOATING_RESIZE_PROCESS;
 				} else {
@@ -2061,7 +2061,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			c->w->delete_window(e.time);
 		} else {
 
-			printf("starting notebook\n");
+//			printf("starting notebook\n");
 			process_mode = NOTEBOOK_GRAB_PROCESS;
 			mode_data_notebook.c = c;
 			mode_data_notebook.from = *i;
@@ -2737,12 +2737,12 @@ bool page_t::check_manage(window_t * x) {
 	page_window_type_e type = x->get_window_type();
 
 	if (type == PAGE_NORMAL_WINDOW_TYPE) {
-		printf("Fixed window found\n");
+//		printf("Fixed window found\n");
 		x->set_managed(true);
 		manage(x);
 		return true;
 	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
-		printf("Floating window found\n");
+//		printf("Floating window found\n");
 		x->add_to_save_set();
 		x->set_managed(true);
 		x->set_dock_action();

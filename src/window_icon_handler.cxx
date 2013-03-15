@@ -93,8 +93,8 @@ window_icon_handler_t::window_icon_handler_t(window_t * w) {
 			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
 					target_width);
 
-			printf("reformat from %dx%d to %dx%d %f\n", selected.width,
-					selected.height, target_width, target_height, ratio);
+//			printf("reformat from %dx%d to %dx%d %f\n", selected.width,
+//					selected.height, target_width, target_height, ratio);
 
 			icon.width = target_width;
 			icon.height = target_height;

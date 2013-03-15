@@ -116,15 +116,15 @@ void window_t::read_wm_normal_hints() {
 		/* size is uninitialized, ensure that size.flags aren't used */
 		_wm_normal_hints->flags = 0;
 		_has_wm_normal_hints = false;
-		printf("no WMNormalHints\n");
+		//printf("no WMNormalHints\n");
 	}
 	//printf("x: %d y: %d w: %d h: %d\n", wm_normal_hints->x, wm_normal_hints->y, wm_normal_hints->width, wm_normal_hints->height);
 	if(_wm_normal_hints->flags & PMaxSize) {
-		printf("max w: %d max h: %d \n", _wm_normal_hints->max_width, _wm_normal_hints->max_height);
+		//printf("max w: %d max h: %d \n", _wm_normal_hints->max_width, _wm_normal_hints->max_height);
 	}
 
 	if(_wm_normal_hints->flags & PMinSize) {
-		printf("min w: %d min h: %d \n", _wm_normal_hints->min_width, _wm_normal_hints->min_height);
+		//printf("min w: %d min h: %d \n", _wm_normal_hints->min_width, _wm_normal_hints->min_height);
 	}
 
 }
@@ -294,7 +294,7 @@ void window_t::print_net_wm_window_type() {
 		/* use the first value that we know about in the array */
 		for (unsigned i = 0; i < num; ++i) {
 			char * name = XGetAtomName(_cnx.dpy, val[i]);
-			printf("_NET_WM_WINDOW_TYPE = \"%s\"\n", name);
+			//printf("_NET_WM_WINDOW_TYPE = \"%s\"\n", name);
 			XFree(name);
 		}
 		delete[] val;
@@ -627,7 +627,7 @@ void window_t::read_transient_for() {
 		_transient_for = None;
 	}
 
-	printf("Transient for %lu\n", _transient_for);
+	//printf("Transient for %lu\n", _transient_for);
 
 }
 
@@ -854,7 +854,7 @@ bool window_t::is_notification() {
 
 int window_t::get_initial_state() {
 	if (_wm_hints) {
-		printf("XXXXXXXXXXXXXXXX initial_state = %d\n", _wm_hints->initial_state);
+		//printf("XXXXXXXXXXXXXXXX initial_state = %d\n", _wm_hints->initial_state);
 		return _wm_hints->initial_state;
 	}
 	return WithdrawnState;
