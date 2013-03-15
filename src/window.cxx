@@ -647,7 +647,7 @@ page_window_type_e window_t::find_window_type_pass1(xconnection_t const & cnx, A
 	if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DESKTOP) {
 		return PAGE_NORMAL_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DOCK) {
-		return PAGE_OVERLAY_WINDOW_TYPE;
+		return PAGE_DOCK_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_TOOLBAR) {
 		return PAGE_NORMAL_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_MENU) {

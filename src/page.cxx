@@ -1428,7 +1428,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 	if (e.atom == cnx.atoms._NET_WM_USER_TIME) {
 		x->read_net_wm_user_time();
-		//safe_raise_window(x);
+		safe_raise_window(x);
 		if(client_focused == x) {
 			x->focus();
 		}
@@ -2621,7 +2621,18 @@ void page_t::safe_raise_window(window_t * w) {
 		}
 	}
 
-	/* 3. raise fullscreen window */
+	/* 3. raise docks */
+	for (window_list_t::iterator i = window_stack.begin();
+			i != window_stack.end(); ++i) {
+		window_t * c = find_client_window(*i);
+		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
+				&& (*i)->get_window_type() == PAGE_DOCK_TYPE) {
+			cnx.raise_window((*i)->get_xwin());
+		}
+	}
+
+
+	/* 4. raise fullscreen window */
 	set<window_t *> fullsceen_window;
 	for (set<viewport_t *>::iterator i = viewport_list.begin();
 			i != viewport_list.end(); ++i) {
@@ -2630,16 +2641,17 @@ void page_t::safe_raise_window(window_t * w) {
 		}
 	}
 
-	/* 4. raise other windows */
+	/* 5. raise other windows */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		window_t * c = find_client_window(*i);
-		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()) {
+		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
+				&& (*i)->get_window_type() != PAGE_DOCK_TYPE) {
 			cnx.raise_window((*i)->get_xwin());
 		}
 	}
 
-	/* 5. raise notify windows */
+	/* 6. raise notify windows */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		window_t * c = find_client_window(*i);
