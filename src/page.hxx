@@ -57,6 +57,8 @@
 #include "floating_window.hxx"
 #include "tab_window.hxx"
 
+using namespace std;
+
 namespace page {
 
 template<typename T, typename _>
@@ -208,26 +210,30 @@ public:
 	window_map_t xwindow_to_window;
 
 	// track where a client is stored
-	std::map<notebook_t *, viewport_t *> notebook_to_viewport;
-	std::map<tab_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
-	std::map<viewport_t *, notebook_set_t> viewport_to_notebooks;
+	map<notebook_t *, viewport_t *> notebook_to_viewport;
+	map<tab_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
+	map<viewport_t *, notebook_set_t> viewport_to_notebooks;
 
-	std::map<tab_window_t *, notebook_t *> client_to_notebook;
+	map<tab_window_t *, notebook_t *> client_to_notebook;
 
-	std::map<window_t *, floating_window_t *> base_window_to_floating_window;
-	std::map<window_t *, floating_window_t *> orig_window_to_floating_window;
+	map<window_t *, floating_window_t *> base_window_to_floating_window;
+	map<window_t *, floating_window_t *> orig_window_to_floating_window;
 
-	std::map<window_t *, tab_window_t *> base_window_to_tab_window;
-	std::map<window_t *, tab_window_t *> orig_window_to_tab_window;
+	map<window_t *, tab_window_t *> base_window_to_tab_window;
+	map<window_t *, tab_window_t *> orig_window_to_tab_window;
 
-	std::list<Atom> supported_list;
+	list<Atom> supported_list;
 
 	notebook_t * default_window_pop;
-	std::string page_base_dir;
-	std::string font;
-	std::string font_bold;
+	string page_base_dir;
+	string font;
+	string font_bold;
 
 	Time last_focus_time;
+
+	list<window_t *> root_stack;
+
+	map<Window, list<Window> > transient_for_map;
 
 private:
 	window_t * client_focused;
@@ -379,8 +385,8 @@ public:
 
 	viewport_t * new_viewport(box_int_t & area);
 
-	renderable_window_t * new_renderable_window(window_t * w);
-	void destroy(renderable_window_t * w);
+	void new_renderable_window(window_t * w);
+	void destroy_renderable(window_t * w);
 
 	floating_window_t * new_floating_window(window_t * w);
 	void destroy(floating_window_t * w);
@@ -395,7 +401,7 @@ public:
 	void update_transient_for(window_t * w);
 
 	void safe_raise_window(window_t * w);
-	void clear_sibbling_child(window_t * w);
+	void clear_sibbling_child(Window w);
 
 	std::string safe_get_window_name(Window w);
 
@@ -410,6 +416,12 @@ public:
 	void compute_client_size_with_constraint(window_t * c,
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
+
+	void apply_transient_for(list<window_t *> & l);
+
+	void print_tree_windows();
+
+
 
 };
 

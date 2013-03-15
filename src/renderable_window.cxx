@@ -24,7 +24,16 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-renderable_window_t::renderable_window_t(window_t * w) : w(w), damage(None), opacity(1.0), window_surf(0) {
+renderable_window_t::renderable_window_t(Display * d, Window w, Visual * v, box_int_t const & p) {
+	dpy = d;
+	window = w;
+	visual = v;
+	position = p;
+	_is_map = false;
+
+	damage = None;
+	window_surf = 0;
+
 	create_render_context();
 }
 
@@ -32,15 +41,15 @@ void renderable_window_t::create_render_context() {
 	if (window_surf == 0 && damage == None) {
 
 		/* create the cairo surface */
-		window_surf = w->create_cairo_surface();
+		window_surf = cairo_xlib_surface_create(dpy, window, visual, position.w, position.h);;
 		if(!window_surf)
 			printf("WARNING CAIRO FAIL\n");
 		/* track update */
-		damage = XDamageCreate(w->get_display(), w->get_xwin(), XDamageReportNonEmpty);
+		damage = XDamageCreate(dpy, window, XDamageReportNonEmpty);
 		if (damage) {
-			XserverRegion region = XFixesCreateRegion(w->get_display(), 0, 0);
-			XDamageSubtract(w->get_display(), damage, None, region);
-			XFixesDestroyRegion(w->get_display(), region);
+			XserverRegion region = XFixesCreateRegion(dpy, 0, 0);
+			XDamageSubtract(dpy, damage, None, region);
+			XFixesDestroyRegion(dpy, region);
 		} else
 			printf("DAMAGE FAIL.\n");
 	}
@@ -57,7 +66,7 @@ void renderable_window_t::set_opacity(double x) {
 
 void renderable_window_t::destroy_render_context() {
 	if (damage != None) {
-		XDamageDestroy(w->get_display(), damage);
+		XDamageDestroy(dpy, damage);
 		damage = None;
 	}
 
@@ -77,7 +86,7 @@ void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
 		return;
 	assert(window_surf != 0);
 
-	box_int_t size = w->get_size();
+	box_int_t size = position;
 	box_int_t clip = area & size;
 
 	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
@@ -108,11 +117,11 @@ void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
 }
 
 box_int_t renderable_window_t::get_absolute_extend() {
-	return w->get_size();
+	return position;
 }
 
 region_t<int> renderable_window_t::get_area() {
-	return region_t<int>(w->get_size());
+	return region_t<int>(position);
 }
 
 void renderable_window_t::mark_dirty() {
@@ -127,11 +136,16 @@ void renderable_window_t::mark_dirty_retangle(box_int_t const & area) {
 }
 
 bool renderable_window_t::is_visible() {
-	return (w->is_map() && !w->is_input_only() && !w->is_hidden());
+	return _is_map;
 }
 
 void renderable_window_t::reconfigure(box_int_t const & area) {
+	position = area;
 	cairo_xlib_surface_set_size(window_surf, area.w, area.h);
+}
+
+void renderable_window_t::set_map(bool status) {
+	_is_map = status;
 }
 
 }

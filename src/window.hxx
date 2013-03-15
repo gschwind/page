@@ -80,8 +80,6 @@ private:
 	unsigned int _net_wm_icon_size;
 	long * _net_wm_icon_data;
 
-	std::set<window_t *> _sibbling_childs;
-
 	XWindowAttributes _wa;
 
     Window _above;
@@ -201,10 +199,6 @@ public:
 	void update_vm_hints();
 
 	long const * get_partial_struct();
-
-	void add_sibbling_child(window_t * c);
-	void remove_sibbling_child(window_t * c);
-	std::set<window_t *> get_sibbling_childs();
 
 	bool check_normal_hints_constraint(int width, int height);
 

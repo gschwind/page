@@ -12,9 +12,9 @@
 
 namespace page {
 
-floating_window_t::floating_window_t(window_t * w, window_t * border) : w(w) {
+floating_window_t::floating_window_t(window_t * w, window_t * border) : orig(w) {
 
-	this->border = border;
+	this->base = border;
 
 	w->reparent(border->get_xwin(), 0, 0);
 
@@ -41,13 +41,13 @@ floating_window_t::~floating_window_t() {
 }
 
 void floating_window_t::normalize() {
-	border->map();
-	w->normalize();
+	base->map();
+	orig->normalize();
 }
 
 void floating_window_t::iconify() {
-	border->unmap();
-	w->iconify();
+	base->unmap();
+	orig->iconify();
 }
 
 void floating_window_t::reconfigure() {
@@ -75,8 +75,8 @@ void floating_window_t::reconfigure() {
 	subsize.w = width;
 	subsize.h = heigth;
 
-	border->move_resize(size);
-	w->move_resize(subsize);
+	base->move_resize(size);
+	orig->move_resize(subsize);
 
 	cairo_xlib_surface_set_size(win_surf, size.w, size.h);
 
@@ -91,7 +91,19 @@ box_int_t const & floating_window_t::get_wished_position() const {
 }
 
 void floating_window_t::fake_configure() {
-	w->fake_configure(_wished_position, 0);
+	orig->fake_configure(_wished_position, 0);
+}
+
+void floating_window_t::delete_window(Time t) {
+	orig->delete_window(t);
+}
+
+window_t * floating_window_t::get_orig() {
+	return orig;
+}
+
+window_t * floating_window_t::get_base() {
+	return base;
 }
 
 }

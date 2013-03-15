@@ -493,7 +493,7 @@ public:
 
 		cairo_t * cr = f->cr;
 
-		box_int_t _allocation = f->border->get_size();
+		box_int_t _allocation = f->base->get_size();
 		_allocation.x = 0;
 		_allocation.y = 0;
 
@@ -554,7 +554,7 @@ public:
 				cairo_set_font_size(cr, 13.0);
 				cairo_move_to(cr, 20.5, 15.5);
 
-				cairo_show_text(cr, f->w->get_title().c_str());
+				cairo_show_text(cr, f->orig->get_title().c_str());
 
 				/* draw blue lines */
 				cairo_reset_clip(cr);
@@ -608,7 +608,7 @@ public:
 
 			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
 
-			window_t * c = f->w;
+			window_t * c = f->orig;
 			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
 

@@ -16,19 +16,19 @@ namespace page {
 class floating_window_t {
 private:
 
+	window_t * orig;
+	window_t * base;
+
 	box_int_t _wished_position;
+
+	cairo_t * cr;
+	cairo_surface_t * win_surf;
 
 	/* avoid copy */
 	floating_window_t(floating_window_t const &);
 	floating_window_t & operator=(floating_window_t const &);
 
 public:
-	window_t * w;
-	window_t * border;
-
-	cairo_t * cr;
-	cairo_surface_t * win_surf;
-
 
 
 	floating_window_t(window_t * w, window_t * border);
@@ -42,6 +42,13 @@ public:
 
 	void set_wished_position(box_int_t const & position);
 	box_int_t const & get_wished_position() const;
+
+	void delete_window(Time t);
+
+	window_t * get_orig();
+	window_t * get_base();
+
+	friend class render_tree_t;
 
 };
 

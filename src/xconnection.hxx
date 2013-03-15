@@ -26,6 +26,12 @@
 #include <stdexcept>
 #include <map>
 
+
+//#define cnx_printf(args...) printf(args)
+
+#define cnx_printf(args...) do { } while(false)
+
+
 namespace page {
 
 static char const * const x_function_codes[] = { //

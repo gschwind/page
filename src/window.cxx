@@ -69,7 +69,6 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 	_net_wm_icon_size = 0;
 	_net_wm_icon_data = 0;
 
-	_sibbling_childs = std::set<window_t *>();
 
 	memset(&_wa, 0, sizeof(XWindowAttributes));
 
@@ -627,6 +626,9 @@ void window_t::read_transient_for() {
 		_has_transient_for = false;
 		_transient_for = None;
 	}
+
+	printf("Transient for %lu\n", _transient_for);
+
 }
 
 void window_t::map_notify() {
@@ -765,18 +767,6 @@ XWMHints const * window_t::get_wm_hints() {
 
 XSizeHints const * window_t::get_wm_normal_hints() {
 	return _wm_normal_hints;
-}
-
-void window_t::add_sibbling_child(window_t * c) {
-	_sibbling_childs.insert(c);
-}
-
-void window_t::remove_sibbling_child(window_t * c) {
-	_sibbling_childs.erase(c);
-}
-
-window_set_t window_t::get_sibbling_childs() {
-	return _sibbling_childs;
 }
 
 page_window_type_e window_t::get_window_type() {
