@@ -25,7 +25,8 @@ enum page_window_type_e {
 	PAGE_FLOATING_WINDOW_TYPE,
 	PAGE_INPUT_ONLY_TYPE,
 	PAGE_NOTIFY_TYPE,
-	PAGE_DOCK_TYPE
+	PAGE_DOCK_TYPE,
+	PAGE_TOOLTIP
 };
 
 class window_t {

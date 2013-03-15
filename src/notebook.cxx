@@ -339,7 +339,7 @@ void notebook_t::compute_client_size_with_constraint(window_t * c,
 
 	XSizeHints const size_hints = *c->get_wm_normal_hints();
 
-	printf("XXX max : %d %d\n", max_width, max_height);
+	//printf("XXX max : %d %d\n", max_width, max_height);
 
 	/* default size if no size_hints is provided */
 	width = max_width;
@@ -413,7 +413,7 @@ void notebook_t::compute_client_size_with_constraint(window_t * c,
 	width = max_width;
 	height = max_height;
 
-	printf("XXX result : %d %d\n", width, height);
+	//printf("XXX result : %d %d\n", width, height);
 }
 
 cairo_surface_t * notebook_t::get_icon_surface(window_t * w) {
@@ -448,7 +448,7 @@ box_int_t notebook_t::compute_client_size(window_t * c) {
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;
 
-	printf("Computed client size %s\n", client_size.to_string().c_str());
+	//printf("Computed client size %s\n", client_size.to_string().c_str());
 	return client_size;
 
 }
