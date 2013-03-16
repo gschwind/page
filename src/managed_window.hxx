@@ -45,7 +45,6 @@ private:
 
 public:
 
-
 	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border);
 	virtual ~managed_window_t();
 

@@ -942,16 +942,29 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx.dpy, Button1MotionMask, &ev));
-		box_int_t x = mode_data_floating.size;
-		x.w += e.x_root - mode_data_floating.x_root;
-		x.h += e.y_root - mode_data_floating.y_root;
+		box_int_t size = mode_data_floating.size;
+		size.w += e.x_root - mode_data_floating.x_root;
+		size.h += e.y_root - mode_data_floating.y_root;
 
-		if(x.h < 1)
-			x.h = 1;
-		if(x.w < 1)
-			x.w = 1;
+		/* apply mornal hints */
+		unsigned int final_width = size.w;
+		unsigned int final_height = size.h;
+		compute_client_size_with_constraint(mode_data_floating.f->get_orig(), (unsigned)size.w, (unsigned)size.h, final_width, final_height);
+		size.w = final_width;
+		size.h = final_height;
 
-		mode_data_floating.f->set_wished_position(x);
+		if(size.h < 1)
+			size.h = 1;
+		if(size.w < 1)
+			size.w = 1;
+
+		/* do not allow to large windows */
+		if(size.w > cnx.root_size.w - 30)
+			size.w = cnx.root_size.w - 30;
+		if(size.h > cnx.root_size.h - 30)
+			size.h = cnx.root_size.h - 30;
+
+		mode_data_floating.f->set_wished_position(size);
 
 	}
 		break;
@@ -2765,14 +2778,21 @@ bool page_t::check_manage(window_t * x) {
 		x->write_net_wm_state();
 		managed_window_t * fw = new_floating_window(x);
 
-
 		/* apply normal hint to floating window */
 		box_int_t new_size = fw->get_wished_position();
+
+		/* do not allow to large windows */
+		if(new_size.w > cnx.root_size.w - 30)
+			new_size.w = cnx.root_size.w - 30;
+		if(new_size.h > cnx.root_size.h - 30)
+			new_size.h = cnx.root_size.h - 30;
+
 		unsigned int final_width = new_size.w;
 		unsigned int final_height = new_size.h;
 		compute_client_size_with_constraint(fw->get_orig(), (unsigned)new_size.w, (unsigned)new_size.h, final_width, final_height);
 		new_size.w = final_width;
 		new_size.h = final_height;
+
 		fw->set_wished_position(new_size);
 		fw->normalize();
 		rpage->render.render_floating(fw);

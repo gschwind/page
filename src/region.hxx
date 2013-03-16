@@ -237,13 +237,13 @@ public:
 	region_t(T x, T y, T w, T h) {
 		box_t<T> b(x, y, w, h);
 		if (!b.is_null())
-			push_back(b);
+			this->push_back(b);
 	}
 
 	region_t & operator=(box_t<T> const & b) {
 		box_list_t::clear();
 		if (!b.is_null())
-			push_back(b);
+			this->push_back(b);
 		return *this;
 	}
 
