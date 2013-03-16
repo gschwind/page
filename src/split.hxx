@@ -8,9 +8,14 @@
 #ifndef SPLIT_HXX_
 #define SPLIT_HXX_
 
+
+
 #include "box.hxx"
 #include "tree.hxx"
-#include "tab_window.hxx"
+
+#include <set>
+
+using namespace std;
 
 namespace page {
 
@@ -39,7 +44,6 @@ public:
 	~split_t();
 
 	void replace(tree_t * src, tree_t * by);
-	tab_window_set_t get_windows();
 
 	void compute_split_bar_area(box_int_t & area, double split) const;
 

@@ -13,7 +13,6 @@
 #include "tree.hxx"
 #include "window.hxx"
 #include "window_icon_handler.hxx"
-#include "tab_window.hxx"
 #include "managed_window.hxx"
 
 
@@ -43,12 +42,12 @@ public:
 	};
 
 	// list of client to maintain tab order
-	tab_window_list_t _clients;
+	list<managed_window_t *> _clients;
 	// list of selected to have smart unselect (when window is closed we
 	// select the previous window selected
-	tab_window_list_t _selected;
+	list<managed_window_t *> _selected;
 	// set of map for fast check is window is in this notebook
-	tab_window_set_t _client_map;
+	set<managed_window_t *> _client_map;
 
 	std::map<window_t *, window_icon_handler_t *> icons;
 
@@ -89,7 +88,8 @@ public:
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
-	tab_window_set_t get_windows();
+
+	set<managed_window_t *> const & get_windows();
 
 	bool add_client(managed_window_t * c, bool prefer_activate);
 	void remove_client(managed_window_t * c);

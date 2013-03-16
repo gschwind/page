@@ -25,7 +25,7 @@ managed_window_t * notebook_t::find_client_tab(int x, int y) {
 					/ (_clients.size() + 1.0));
 			double offset = _allocation.x;
 			box_t<int> b;
-			tab_window_list_t::iterator c = _clients.begin();
+			list<managed_window_t *>::iterator c = _clients.begin();
 			while (c != _clients.end()) {
 				if (*c == _selected.front()) {
 					b = box_int_t(floor(offset), _allocation.y, ceil(2.0 * box_width),
@@ -62,7 +62,7 @@ void notebook_t::update_close_area() {
 				/ (_clients.size() + 1.0));
 		double offset = _allocation.x;
 		box_t<int> b;
-		tab_window_list_t::iterator c = _clients.begin();
+		list<managed_window_t *>::iterator c = _clients.begin();
 		while (c != _clients.end()) {
 			if (*c == _selected.front()) {
 				b = box_int_t(floor(offset), _allocation.y,
@@ -137,7 +137,7 @@ void notebook_t::activate_client(managed_window_t * x) {
 	}
 }
 
-tab_window_set_t notebook_t::get_windows() {
+set<managed_window_t *> const & notebook_t::get_windows() {
 	return _client_map;
 }
 
@@ -326,7 +326,7 @@ void notebook_t::set_allocation(box_int_t const & area) {
 		}
 	}
 
-	for(tab_window_set_t::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
+	for(set<managed_window_t *>::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
 		update_client_position((*i));
 	}
 

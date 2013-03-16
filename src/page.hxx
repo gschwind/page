@@ -54,8 +54,6 @@
 #include "page_base.hxx"
 #include "render_tree.hxx"
 #include "renderable_page.hxx"
-#include "floating_window.hxx"
-#include "tab_window.hxx"
 #include "managed_window.hxx"
 
 using namespace std;
@@ -88,9 +86,6 @@ _1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
 	else
 		return def;
 }
-
-template bool has_key<window_t *, tab_window_t *>(std::map<window_t *, tab_window_t *> const & x, window_t * const & key);
-
 
 typedef std::list<box_int_t> box_list_t;
 
@@ -356,8 +351,6 @@ public:
 	void fullscreen(managed_window_t * c);
 	void unfullscreen(managed_window_t * c);
 	void toggle_fullscreen(managed_window_t * c);
-
-	tab_window_list_t get_windows();
 
 	static bool user_time_comp(window_t *, window_t *);
 	void restack_all_window();

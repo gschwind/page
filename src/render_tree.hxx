@@ -24,7 +24,6 @@
 #include "notebook.hxx"
 #include "viewport.hxx"
 #include "renderable_window.hxx"
-#include "floating_window.hxx"
 #include "managed_window.hxx"
 
 namespace page {
@@ -192,7 +191,7 @@ public:
 					n->_allocation.h - HEIGHT);
 			cairo_fill(cr);
 
-			tab_window_list_t::iterator i;
+			list<managed_window_t *>::iterator i;
 			double offset = 0;
 			double length = (n->_allocation.w - 17.0 * 5.0) / (n->_clients.size() + 1.0);
 			for (i = n->_clients.begin(); i != n->_clients.end(); ++i) {

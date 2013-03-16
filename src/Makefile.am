@@ -16,9 +16,7 @@ page_SOURCES = \
 	viewport.cxx \
 	render_tree.cxx \
 	renderable_page.cxx \
-	floating_window.cxx \
 	managed_window.cxx \
-	tab_window.cxx \
 	renderable_window.cxx \
 	window_icon_handler.cxx
 

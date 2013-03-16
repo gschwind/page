@@ -2211,8 +2211,9 @@ void page_t::notebook_close(notebook_t * src) {
 	tree_t * dst = (src == ths->get_pack0()) ? ths->get_pack1() : ths->get_pack0();
 
 	/* move all windows from src to default_window_pop */
-	tab_window_set_t windows = src->get_windows();
-	for(tab_window_set_t::iterator i = windows.begin(); i != windows.end(); ++i) {
+
+	set<managed_window_t *> windows = src->get_windows();
+	for(set<managed_window_t *>::iterator i = windows.begin(); i != windows.end(); ++i) {
 		remove_window_from_tree((*i));
 		insert_window_in_tree((*i), 0, false);
 	}
