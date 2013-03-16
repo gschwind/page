@@ -14,7 +14,7 @@ namespace page {
 
 managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border) : _orig(w) {
 
-	set_managed_type(initial_type);
+	init_managed_type(initial_type);
 
 	this->_base = border;
 
@@ -108,6 +108,28 @@ bool managed_window_t::check_orig_position(box_int_t const & position) {
 
 bool managed_window_t::check_base_position(box_int_t const & position) {
 	return position == _base_position;
+}
+
+void managed_window_t::init_managed_type(managed_window_type_e type) {
+	switch(type) {
+	case MANAGED_FLOATING:
+		_margin_top = 26;
+		_margin_bottom = 4;
+		_margin_left = 4;
+		_margin_right = 4;
+		break;
+	case MANAGED_NOTEBOOK:
+	case MANAGED_FULLSCREEN:
+	default:
+		_margin_top = 0;
+		_margin_bottom = 0;
+		_margin_left = 0;
+		_margin_right = 0;
+		break;
+	}
+
+	_type = type;
+
 }
 
 void managed_window_t::set_managed_type(managed_window_type_e type) {

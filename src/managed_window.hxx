@@ -45,6 +45,8 @@ private:
 	managed_window_t(managed_window_t const &);
 	managed_window_t & operator=(managed_window_t const &);
 
+	void init_managed_type(managed_window_type_e type);
+
 public:
 
 	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border);
