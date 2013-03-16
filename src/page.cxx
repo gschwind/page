@@ -1131,6 +1131,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		cnx.reparentwindow(t->get_orig()->get_xwin(), cnx.xroot, 0, 0);
 		XDestroyWindow(cnx.dpy, t->get_base()->get_xwin());
 		destroy_floating(t);
+		update_client_list();
 	}
 
 	destroy(c);
@@ -1280,8 +1281,8 @@ void page_t::process_event(XUnmapEvent const & e) {
 		managed_window_t * t = orig_window_to_floating_window[x];
 		cnx.reparentwindow(t->get_orig()->get_xwin(), cnx.xroot, 0, 0);
 		XDestroyWindow(cnx.dpy, t->get_base()->get_xwin());
-
 		destroy_floating(t);
+		update_client_list();
 	}
 
 	x->set_managed(false);
