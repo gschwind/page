@@ -2418,22 +2418,22 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 	if(state_properties == None)
 		return;
 
-	char const * action;
-
-	switch(type) {
-	case _NET_WM_STATE_REMOVE:
-		action = "remove";
-		break;
-	case _NET_WM_STATE_ADD:
-		action = "add";
-		break;
-	case _NET_WM_STATE_TOGGLE:
-		action = "toggle";
-		break;
-	default:
-		action = "unknown";
-		break;
-	}
+//	char const * action;
+//
+//	switch(type) {
+//	case _NET_WM_STATE_REMOVE:
+//		action = "remove";
+//		break;
+//	case _NET_WM_STATE_ADD:
+//		action = "add";
+//		break;
+//	case _NET_WM_STATE_TOGGLE:
+//		action = "toggle";
+//		break;
+//	default:
+//		action = "unknown";
+//		break;
+//	}
 
 	if (has_key(orig_window_to_tab_window, c)) {
 		managed_window_t * tw = orig_window_to_tab_window[c];
