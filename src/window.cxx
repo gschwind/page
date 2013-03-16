@@ -416,7 +416,7 @@ void window_t::read_wm_state() {
 
 void window_t::map() {
 	_wa.map_state = IsViewable;
-	_cnx.map(_xwin);
+	_cnx.map_window(_xwin);
 }
 
 void window_t::unmap() {

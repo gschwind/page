@@ -31,6 +31,7 @@
 
 #define cnx_printf(args...) do { } while(false)
 
+using namespace std;
 
 namespace page {
 
@@ -214,6 +215,8 @@ struct xconnection_t {
 
 	std::list<xevent_handler_t *> event_handler_list;
 
+	map<Atom, string> atom_name_cache;
+
 	struct {
 		/* properties type */
 		Atom CARDINAL;
@@ -393,7 +396,7 @@ struct xconnection_t {
 
 	void unmap(Window w);
 	void reparentwindow(Window w, Window parent, int x, int y);
-	void map(Window w);
+	void map_window(Window w);
 	bool find_pending_event(event_t & e);
 
 	unsigned long int last_serial;
@@ -436,7 +439,6 @@ struct xconnection_t {
 	int configure_window(Window w, unsigned int value_mask,
 			XWindowChanges * values);
 
-	char * get_atom_name(Atom atom);
 
 	Status send_event(Window w, Bool propagate, long event_mask,
 			XEvent* event_send);
@@ -454,6 +456,11 @@ struct xconnection_t {
 	Window create_window(Visual * visual, int x, int y, unsigned w, unsigned h);
 
 	void fake_configure(Window w, box_int_t location, int border_width);
+	string const & get_atom_name(Atom a);
+
+private:
+	char * _get_atom_name(Atom atom);
+
 
 };
 

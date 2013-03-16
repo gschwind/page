@@ -1413,9 +1413,7 @@ void page_t::process_event(XMapRequestEvent const & e) {
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
-//	char * name = cnx.get_atom_name(e.atom);
-//	printf("Atom Name = \"%s\"\n", name);
-//	XFree(name);
+	//printf("Atom Name = \"%s\"\n", cnx.get_atom_name(e.atom).c_str());
 
 	cnx.last_know_time = e.time;
 
@@ -1604,9 +1602,9 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == cnx.atoms.PAGE_QUIT) {
 		running = false;
 	} else if (e.message_type == cnx.atoms.WM_PROTOCOLS) {
-		char * name = cnx.get_atom_name(e.data.l[0]);
+//		char * name = cnx.get_atom_name(e.data.l[0]);
 //		printf("PROTOCOL Atom Name = \"%s\"\n", name);
-		XFree(name);
+//		XFree(name);
 	} else if (e.message_type == cnx.atoms._NET_CLOSE_WINDOW) {
 
 		XEvent evx;
@@ -2446,9 +2444,9 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 	if (has_key(orig_window_to_tab_window, c)) {
 		tab_window_t * tw = orig_window_to_tab_window[c];
 
-		char * name = cnx.get_atom_name(state_properties);
+		//char * name = cnx.get_atom_name(state_properties);
 		//printf("process wm_state %s %s\n", action, name);
-		XFree(name);
+		//XFree(name);
 
 		if (state_properties == cnx.atoms._NET_WM_STATE_FULLSCREEN) {
 			switch (type) {
@@ -2511,9 +2509,9 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 	if (has_key(orig_window_to_floating_window, c)) {
 		floating_window_t * tw = orig_window_to_floating_window[c];
 
-		char * name = cnx.get_atom_name(state_properties);
-		printf("process wm_state %s %s\n", action, name);
-		XFree(name);
+		//char * name = cnx.get_atom_name(state_properties);
+		//printf("process wm_state %s %s\n", action, name);
+		//XFree(name);
 
 		if (state_properties == cnx.atoms._NET_WM_STATE_HIDDEN) {
 			switch (type) {

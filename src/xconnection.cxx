@@ -323,7 +323,7 @@ void xconnection_t::reparentwindow(Window w, Window parent, int x, int y) {
 	pending.push_back(e);
 }
 
-void xconnection_t::map(Window w) {
+void xconnection_t::map_window(Window w) {
 	unsigned long serial = XNextRequest(dpy);
 	//cnx_printf(">%08lu X_MapWindow: win = %lu\n", serial, w);
 	XMapWindow(dpy, w);
@@ -557,7 +557,7 @@ int xconnection_t::configure_window(Window w, unsigned int value_mask,
 	return XConfigureWindow(dpy, w, value_mask, values);
 }
 
-char * xconnection_t::get_atom_name(Atom atom) {
+char * xconnection_t::_get_atom_name(Atom atom) {
 	unsigned long serial = XNextRequest(dpy);
 	//cnx_printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
 	return XGetAtomName(dpy, atom);
@@ -644,6 +644,24 @@ void xconnection_t::fake_configure(Window w, box_int_t location, int border_widt
 	send_event(xroot, False, SubstructureNotifyMask, &ev);
 
 
+}
+
+string const & xconnection_t::get_atom_name(Atom a) {
+	std::map<Atom, string>::iterator i = atom_name_cache.find(a);
+	if(i != atom_name_cache.end()) {
+		return i->second;
+	} else {
+		char * name = _get_atom_name(a);
+		if(name == 0) {
+			stringstream os;
+			os << "UNKNOWN_" << hex << a;
+			atom_name_cache[a] = os.str();
+		} else {
+			atom_name_cache[a] = string(name);
+			XFree(name);
+		}
+		return atom_name_cache[a];
+	}
 }
 
 
