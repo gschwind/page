@@ -1018,7 +1018,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 	/* enforce the valid position */
 	if(has_key(orig_window_to_floating_window, w)) {
-		floating_window_t * fw = orig_window_to_floating_window[w];
+		managed_window_t * fw = orig_window_to_floating_window[w];
 		if (!fw->check_orig_position(box_int_t(e.x, e.y, e.width, e.height))) {
 			fw->reconfigure();
 		}
@@ -1026,7 +1026,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 	/* enforce the valid position */
 	if(has_key(base_window_to_floating_window, w)) {
-		floating_window_t * fw = base_window_to_floating_window[w];
+		managed_window_t * fw = base_window_to_floating_window[w];
 		if (!fw->check_base_position(box_int_t(e.x, e.y, e.width, e.height))) {
 			fw->reconfigure();
 		}
@@ -1042,7 +1042,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 
 	{
-		std::map<window_t *, floating_window_t *>::iterator x = orig_window_to_floating_window.find(w);
+		std::map<window_t *, managed_window_t *>::iterator x = orig_window_to_floating_window.find(w);
 		if(x != orig_window_to_floating_window.end()) {
 			rpage->render.render_floating(x->second);
 		}
@@ -1106,10 +1106,10 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	}
 
 	if (has_key(orig_window_to_floating_window, c)) {
-		floating_window_t * t = orig_window_to_floating_window[c];
+		managed_window_t * t = orig_window_to_floating_window[c];
 		cnx.reparentwindow(t->get_orig()->get_xwin(), cnx.xroot, 0, 0);
 		XDestroyWindow(cnx.dpy, t->get_base()->get_xwin());
-		destroy(t);
+		destroy_floating(t);
 	}
 
 	destroy(c);
@@ -1256,11 +1256,11 @@ void page_t::process_event(XUnmapEvent const & e) {
 	}
 
 	if (has_key(orig_window_to_floating_window, x)) {
-		floating_window_t * t = orig_window_to_floating_window[x];
+		managed_window_t * t = orig_window_to_floating_window[x];
 		cnx.reparentwindow(t->get_orig()->get_xwin(), cnx.xroot, 0, 0);
 		XDestroyWindow(cnx.dpy, t->get_base()->get_xwin());
 
-		destroy(t);
+		destroy_floating(t);
 	}
 
 	x->set_managed(false);
@@ -1316,7 +1316,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 	} else if (has_key(orig_window_to_floating_window, c)) {
 
-		floating_window_t * f = orig_window_to_floating_window[c];
+		managed_window_t * f = orig_window_to_floating_window[c];
 
 		box_int_t new_size = f->get_wished_position();
 
@@ -1484,7 +1484,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 			if(has_key(orig_window_to_floating_window, x)) {
 
-				floating_window_t * fw = orig_window_to_floating_window[x];
+				managed_window_t * fw = orig_window_to_floating_window[x];
 
 				rnd.add_damage_area(fw->get_wished_position());
 
@@ -2502,7 +2502,7 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 
 
 	if (has_key(orig_window_to_floating_window, c)) {
-		floating_window_t * tw = orig_window_to_floating_window[c];
+		managed_window_t * tw = orig_window_to_floating_window[c];
 
 		//char * name = cnx.get_atom_name(state_properties);
 		//printf("process wm_state %s %s\n", action, name);
@@ -2691,7 +2691,7 @@ void page_t::destroy_renderable(window_t * w) {
 	}
 }
 
-floating_window_t * page_t::new_floating_window(window_t * w) {
+managed_window_t * page_t::new_floating_window(window_t * w) {
 	Visual * v = 0;
 	if(w->get_depth() == 32 && cnx.root_wa.depth != 32) {
 		v = w->get_visual();
@@ -2706,7 +2706,7 @@ floating_window_t * page_t::new_floating_window(window_t * w) {
 
 	w->select_input(StructureNotifyMask | PropertyChangeMask);
 
-	floating_window_t * fw = new floating_window_t(w, border);
+	managed_window_t * fw = new managed_window_t(MANAGED_FLOATING, w, border);
 	base_window_to_floating_window[border] = fw;
 	orig_window_to_floating_window[w] = fw;
 	return fw;
@@ -2732,7 +2732,7 @@ tab_window_t * page_t::new_tab_window(window_t * w) {
 	return tw;
 }
 
-void page_t::destroy(floating_window_t * fw) {
+void page_t::destroy_floating(managed_window_t * fw) {
 	clear_sibbling_child(fw->get_orig()->get_xwin());
 	orig_window_to_floating_window.erase(fw->get_orig());
 	base_window_to_floating_window.erase(fw->get_base());
@@ -2764,7 +2764,7 @@ bool page_t::check_manage(window_t * x) {
 		x->set_managed(true);
 		x->set_dock_action();
 		x->write_net_wm_state();
-		floating_window_t * fw = new_floating_window(x);
+		managed_window_t * fw = new_floating_window(x);
 
 
 		/* apply normal hint to floating window */

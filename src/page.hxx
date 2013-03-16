@@ -56,6 +56,7 @@
 #include "renderable_page.hxx"
 #include "floating_window.hxx"
 #include "tab_window.hxx"
+#include "managed_window.hxx"
 
 using namespace std;
 
@@ -142,7 +143,7 @@ public:
 		int x_root;
 		int y_root;
 		box_int_t size;
-		floating_window_t * f;
+		managed_window_t * f;
 	};
 
 	enum process_mode_e {
@@ -216,8 +217,8 @@ public:
 
 	map<tab_window_t *, notebook_t *> client_to_notebook;
 
-	map<window_t *, floating_window_t *> base_window_to_floating_window;
-	map<window_t *, floating_window_t *> orig_window_to_floating_window;
+	map<window_t *, managed_window_t *> base_window_to_floating_window;
+	map<window_t *, managed_window_t *> orig_window_to_floating_window;
 
 	map<window_t *, tab_window_t *> base_window_to_tab_window;
 	map<window_t *, tab_window_t *> orig_window_to_tab_window;
@@ -388,8 +389,8 @@ public:
 	void new_renderable_window(window_t * w);
 	void destroy_renderable(window_t * w);
 
-	floating_window_t * new_floating_window(window_t * w);
-	void destroy(floating_window_t * w);
+	managed_window_t * new_floating_window(window_t * w);
+	void destroy_floating(managed_window_t * w);
 
 	void unmap_set(window_set_t & set);
 	void map_set(window_set_t & set);
