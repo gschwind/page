@@ -137,7 +137,7 @@ public:
 		int y_offset;
 		int x_root;
 		int y_root;
-		box_int_t size;
+		box_int_t original_position;
 		managed_window_t * f;
 	};
 

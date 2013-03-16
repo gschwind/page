@@ -638,10 +638,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		if (has_key(base_window_to_floating_window, c) && (e.subwindow == None || (e.state & Mod1Mask) || (e.state & ControlMask))) {
 
-			mode_data_floating.f = base_window_to_floating_window[c];
-			mode_data_floating.size =
-					mode_data_floating.f->get_wished_position();
-
 			box_int_t size = c->get_size();
 
 			/* click on close button ? */
@@ -654,7 +650,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.x_root = e.x_root;
 				mode_data_floating.y_root = e.y_root;
 				mode_data_floating.f = base_window_to_floating_window[c];
-				mode_data_floating.size =
+				mode_data_floating.original_position =
 						mode_data_floating.f->get_wished_position();
 
 				//printf("XXXXX size = %s, x: %d, y: %d\n",
@@ -779,7 +775,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 void page_t::process_event(XMotionEvent const & e) {
 	XEvent ev;
 	box_int_t old_area;
-	box_int_t x;
+	box_int_t new_position;
 	static int count = 0;
 	count++;
 	switch (process_mode) {
@@ -931,10 +927,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx.dpy, Button1MotionMask, &ev));
-		x = mode_data_floating.f->get_wished_position();
-		x.x = e.x_root - mode_data_floating.x_offset;
-		x.y = e.y_root - mode_data_floating.y_offset;
-		mode_data_floating.f->set_wished_position(x);
+		box_int_t new_position = mode_data_floating.original_position;
+		new_position.x += e.x_root - mode_data_floating.x_root;
+		new_position.y += e.y_root - mode_data_floating.y_root;
+		mode_data_floating.f->set_wished_position(new_position);
 	}
 		break;
 	case FLOATING_RESIZE_PROCESS:
@@ -942,7 +938,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx.dpy, Button1MotionMask, &ev));
-		box_int_t size = mode_data_floating.size;
+		box_int_t size = mode_data_floating.original_position;
 		size.w += e.x_root - mode_data_floating.x_root;
 		size.h += e.y_root - mode_data_floating.y_root;
 
