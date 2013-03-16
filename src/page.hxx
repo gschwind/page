@@ -109,7 +109,8 @@ public:
 		SELECT_TOP,
 		SELECT_BOTTOM,
 		SELECT_LEFT,
-		SELECT_RIGHT
+		SELECT_RIGHT,
+		SELECT_CENTER
 	};
 
 	struct mode_data_split_t {

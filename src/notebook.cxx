@@ -319,6 +319,11 @@ void notebook_t::set_allocation(box_int_t const & area) {
 	popup_right_area.w = _allocation.w * 0.5;
 	popup_right_area.h = (_allocation.h - HEIGHT);
 
+	popup_center_area.x = _allocation.x + _allocation.w * 0.2;
+	popup_center_area.y = _allocation.y + HEIGHT + (_allocation.h - HEIGHT) * 0.2;
+	popup_center_area.w = _allocation.w * 0.6;
+	popup_center_area.h = (_allocation.h - HEIGHT) * 0.6;
+
 	client_area.x = _allocation.x + BORDER_SIZE;
 	client_area.y = _allocation.y + BORDER_SIZE + HEIGHT;
 	client_area.w = _allocation.w - 2 * BORDER_SIZE;

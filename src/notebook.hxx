@@ -68,6 +68,7 @@ public:
 	box_t<int> popup_bottom_area;
 	box_t<int> popup_left_area;
 	box_t<int> popup_right_area;
+	box_t<int> popup_center_area;
 
 	box_t<int> close_client_area;
 	box_t<int> undck_client_area;
