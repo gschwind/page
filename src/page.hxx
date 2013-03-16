@@ -366,8 +366,7 @@ public:
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(popup_notebook0_t * p, int x, int y,
-			int w, int h, bool show_popup);
+	void update_popup_position(popup_notebook0_t * p, box_int_t & position, bool show_popup);
 
 	void fix_allocation(viewport_t & v);
 

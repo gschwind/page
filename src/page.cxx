@@ -874,9 +874,7 @@ void page_t::process_event(XMotionEvent const & e) {
 					mode_data_notebook.zone = SELECT_TAB;
 					mode_data_notebook.ns = (*i);
 					update_popup_position(mode_data_notebook.pn0,
-							(*i)->tab_area.x, (*i)->tab_area.y,
-							(*i)->tab_area.w, (*i)->tab_area.h,
-							mode_data_notebook.popup_is_added);
+							(*i)->tab_area, mode_data_notebook.popup_is_added);
 				}
 				break;
 			} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
@@ -887,8 +885,7 @@ void page_t::process_event(XMotionEvent const & e) {
 					mode_data_notebook.zone = SELECT_RIGHT;
 					mode_data_notebook.ns = (*i);
 					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_right_area.x, (*i)->popup_right_area.y,
-							(*i)->popup_right_area.w, (*i)->popup_right_area.h,
+							(*i)->popup_right_area,
 							mode_data_notebook.popup_is_added);
 				}
 				break;
@@ -900,8 +897,7 @@ void page_t::process_event(XMotionEvent const & e) {
 					mode_data_notebook.zone = SELECT_TOP;
 					mode_data_notebook.ns = (*i);
 					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_top_area.x, (*i)->popup_top_area.y,
-							(*i)->popup_top_area.w, (*i)->popup_top_area.h,
+							(*i)->popup_top_area,
 							mode_data_notebook.popup_is_added);
 				}
 				break;
@@ -913,10 +909,7 @@ void page_t::process_event(XMotionEvent const & e) {
 					mode_data_notebook.zone = SELECT_BOTTOM;
 					mode_data_notebook.ns = (*i);
 					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_bottom_area.x,
-							(*i)->popup_bottom_area.y,
-							(*i)->popup_bottom_area.w,
-							(*i)->popup_bottom_area.h,
+							(*i)->popup_bottom_area,
 							mode_data_notebook.popup_is_added);
 				}
 				break;
@@ -928,15 +921,14 @@ void page_t::process_event(XMotionEvent const & e) {
 					mode_data_notebook.zone = SELECT_LEFT;
 					mode_data_notebook.ns = (*i);
 					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_left_area.x, (*i)->popup_left_area.y,
-							(*i)->popup_left_area.w, (*i)->popup_left_area.h,
+							(*i)->popup_left_area,
 							mode_data_notebook.popup_is_added);
 				}
 				break;
 			}
 			++i;
 		}
-		}
+	}
 
 		break;
 	case FLOATING_GRAB_PROCESS:
@@ -2270,10 +2262,9 @@ void page_t::notebook_close(notebook_t * src) {
 	destroy(ths);
 }
 
-void page_t::update_popup_position(popup_notebook0_t * p, int x, int y, int w,
-		int h, bool show_popup) {
+void page_t::update_popup_position(popup_notebook0_t * p, box_int_t & position, bool show_popup) {
 	box_int_t old_area = p->get_absolute_extend();
-	box_int_t new_area(x, y, w, h);
+	box_int_t new_area = position;
 	p->reconfigure(new_area);
 	rnd.add_damage_area(old_area);
 	rnd.add_damage_area(new_area);
