@@ -405,6 +405,7 @@ void page_t::scan() {
 			window_t * w = get_window_t(wins[i]);
 			if(!w->read_window_attributes())
 				continue;
+			w->select_input(PropertyChangeMask | StructureNotifyMask);
 			w->read_when_mapped();
 			update_transient_for(w);
 
@@ -1459,6 +1460,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		if ((e.state == PropertyNewValue or e.state == PropertyDelete)) {
 			x->read_partial_struct();
 			update_allocation();
+			rpage->mark_durty();
+			rnd.add_damage_area(cnx.root_size);
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_ICON) {
 		x->read_icon_data();
@@ -1500,11 +1503,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 				fw->set_wished_position(new_size);
 				fw->reconfigure();
 				fw->fake_configure();
-
 				rpage->render.render_floating(fw);
-
 				rnd.add_damage_area(fw->get_wished_position());
-
 
 			}
 		}
@@ -2667,13 +2667,12 @@ void page_t::safe_raise_window(window_t * w) {
 
 	final_order.reverse();
 
+	/* convert list to C array */
+	/* see vector spec. */
 	vector<Window> v_order(final_order.begin(), final_order.end());
 
-	/* see vector spec. */
-	Window * tmp = &v_order[0];
-
 	cnx.raise_window(final_order.back());
-	XRestackWindows(cnx.dpy, tmp, v_order.size());
+	XRestackWindows(cnx.dpy, &v_order[0], v_order.size());
 
 }
 
