@@ -653,7 +653,7 @@ page_window_type_e window_t::find_window_type_pass1(xconnection_t const & cnx, A
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_MENU) {
 		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_UTILITY) {
-		return PAGE_NORMAL_WINDOW_TYPE;
+		return PAGE_FLOATING_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_SPLASH) {
 		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG) {
