@@ -272,6 +272,14 @@ public:
 						cairo_set_source_surface(cr, close_button_s, 0.5, 0.5);
 						cairo_paint(cr);
 
+						/* draw undock button */
+						cairo_translate(cr, -16.0, 0.0);
+						cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
+						cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0,
+								0x00U / 255.0);
+						cairo_stroke(cr);
+
+
 						offset += length * 2;
 					} else {
 

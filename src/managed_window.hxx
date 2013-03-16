@@ -32,6 +32,8 @@ private:
 	window_t * _orig;
 	window_t * _base;
 
+	box_int_t _floating_wished_position;
+
 	box_int_t _wished_position;
 	box_int_t _orig_position;
 	box_int_t _base_position;

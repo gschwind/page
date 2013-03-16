@@ -70,6 +70,7 @@ public:
 	box_t<int> popup_right_area;
 
 	box_t<int> close_client_area;
+	box_t<int> undck_client_area;
 
 	void set_selected(managed_window_t * c);
 

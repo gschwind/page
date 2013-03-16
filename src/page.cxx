@@ -2077,6 +2077,23 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 		(*i)->update_close_area();
 		if ((*i)->close_client_area.is_inside(e.x_root, e.y_root)) {
 			c->delete_window(e.time);
+		} else if ((*i)->undck_client_area.is_inside(e.x_root, e.y_root)) {
+
+			remove_window_from_tree(c);
+
+			/* update database */
+			base_window_to_tab_window.erase(c->get_orig());
+			orig_window_to_tab_window.erase(c->get_base());
+			c->set_managed_type(MANAGED_FLOATING);
+			base_window_to_floating_window[c->get_base()] = c;
+			orig_window_to_floating_window[c->get_orig()] = c;
+
+			rpage->render.render_floating(c);
+
+			safe_raise_window(c->get_orig());
+			rpage->mark_durty();
+			rnd.add_damage_area(cnx.root_size);
+			update_client_list();
 		} else {
 
 //			printf("starting notebook\n");

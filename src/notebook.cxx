@@ -83,8 +83,15 @@ void notebook_t::update_close_area() {
 			close_client_area.y = b.y;
 			close_client_area.w = 16;
 			close_client_area.h = HEIGHT;
+
+			undck_client_area.x = b.x + b.w - 32;
+			undck_client_area.y = b.y;
+			undck_client_area.w = 16;
+			undck_client_area.h = HEIGHT;
+
 		} else {
 			close_client_area = box_int_t(-1, -1, 0, 0);
+			undck_client_area = box_int_t(-1, -1, 0, 0);
 		}
 	}
 }

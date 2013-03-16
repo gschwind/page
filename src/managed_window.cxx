@@ -26,6 +26,7 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t 
 	cairo_set_source_rgb(_cr, 1.0, 0.0, 1.0);
 	cairo_paint(_cr);
 
+	_floating_wished_position = w->get_size();
 	set_wished_position(w->get_size());
 
 }
@@ -110,23 +111,30 @@ bool managed_window_t::check_base_position(box_int_t const & position) {
 }
 
 void managed_window_t::set_managed_type(managed_window_type_e type) {
-	_type = type;
 	switch(type) {
 	case MANAGED_FLOATING:
 		_margin_top = 26;
 		_margin_bottom = 4;
 		_margin_left = 4;
 		_margin_right = 4;
+		_wished_position = _floating_wished_position;
+		reconfigure();
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
 	default:
+		if(_type == MANAGED_FLOATING)
+			_floating_wished_position = _wished_position;
+
 		_margin_top = 0;
 		_margin_bottom = 0;
 		_margin_left = 0;
 		_margin_right = 0;
 		break;
 	}
+
+	_type = type;
+
 }
 
 string managed_window_t::get_title() {
