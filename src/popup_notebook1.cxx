@@ -10,8 +10,11 @@
 namespace page {
 
 popup_notebook1_t::popup_notebook1_t(int x, int y, cairo_font_face_t * font,
-		cairo_surface_t * icon, std::string const & title) :
-		font(font), surf(icon), title(title) {
+		cairo_surface_t * icon, std::string const & title) {
+	this->surf = icon;
+	this->font = font;
+	this->title = title;
+
 	area.x = x;
 	area.y = y;
 	area.w = 200;

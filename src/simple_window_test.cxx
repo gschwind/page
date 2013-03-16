@@ -5,6 +5,8 @@
  *
  */
 
+#include <unistd.h>
+
 #include <X11/Xutil.h>
 
 #include <X11/Xlib.h>

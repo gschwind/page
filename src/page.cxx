@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <set>
 #include <stack>
+#include <vector>
 
 #include "page.hxx"
 #include "box.hxx"
@@ -657,7 +658,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				//printf("XXXXX size = %s, x: %d, y: %d\n",
 //						size.to_string().c_str(), e.x, e.y);
-				if ((e.x > size.w - 20) && (e.y > size.h - 20) || (e.state & ControlMask)) {
+				if (((e.x > size.w - 20) && (e.y > size.h - 20)) || (e.state & ControlMask)) {
 					process_mode = FLOATING_RESIZE_PROCESS;
 				} else {
 					process_mode = FLOATING_GRAB_PROCESS;
@@ -2587,13 +2588,18 @@ void page_t::safe_raise_window(window_t * w) {
 		}
 	}
 
+	/* remove the None window */
 	window_stack.pop_front();
+
+	list<Window> final_order;
 
 	/* 1. raise window in tabs */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		if (has_key(orig_window_to_tab_window, *i)) {
-			cnx.raise_window(orig_window_to_tab_window[*i]->border->get_xwin());
+			Window w = orig_window_to_tab_window[*i]->border->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
 
@@ -2601,8 +2607,9 @@ void page_t::safe_raise_window(window_t * w) {
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		if (has_key(orig_window_to_floating_window, *i)) {
-			cnx.raise_window(
-					orig_window_to_floating_window[*i]->get_base()->get_xwin());
+			Window w = orig_window_to_floating_window[*i]->get_base()->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
 
@@ -2612,7 +2619,9 @@ void page_t::safe_raise_window(window_t * w) {
 		window_t * c = find_client_window(*i);
 		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
 				&& (*i)->get_window_type() == PAGE_DOCK_TYPE) {
-			cnx.raise_window((*i)->get_xwin());
+			Window w = (*i)->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
 
@@ -2621,7 +2630,9 @@ void page_t::safe_raise_window(window_t * w) {
 	for (set<viewport_t *>::iterator i = viewport_list.begin();
 			i != viewport_list.end(); ++i) {
 		if ((*i)->fullscreen_client != 0) {
-			cnx.raise_window((*i)->fullscreen_client->border->get_xwin());
+			Window w = (*i)->fullscreen_client->border->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
 
@@ -2631,7 +2642,9 @@ void page_t::safe_raise_window(window_t * w) {
 		window_t * c = find_client_window(*i);
 		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
 				&& (*i)->get_window_type() != PAGE_DOCK_TYPE) {
-			cnx.raise_window((*i)->get_xwin());
+			Window w = (*i)->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
 
@@ -2646,9 +2659,21 @@ void page_t::safe_raise_window(window_t * w) {
 						|| (*i)->has_wm_type(
 								cnx.atoms._NET_WM_WINDOW_TYPE_TOOLTIP)
 						|| (*i)->get_window_type() == PAGE_TOOLTIP)) {
-			cnx.raise_window((*i)->get_xwin());
+			Window w = (*i)->get_xwin();
+			final_order.remove(w);
+			final_order.push_back(w);
 		}
 	}
+
+	final_order.reverse();
+
+	vector<Window> v_order(final_order.begin(), final_order.end());
+
+	/* see vector spec. */
+	Window * tmp = &v_order[0];
+
+	cnx.raise_window(final_order.back());
+	XRestackWindows(cnx.dpy, tmp, v_order.size());
 
 }
 

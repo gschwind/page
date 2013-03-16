@@ -10,11 +10,14 @@
 
 namespace page {
 
-long int xconnection_t::last_serial = 0;
 std::map<Display *, xconnection_t *> xconnection_t::open_connections;
 
-bool xconnection_t::filter(event_t e) {
-	return (e.serial < xconnection_t::last_serial);
+xconnection_t::serial_filter::serial_filter(unsigned long int serial) : last_serial(serial) {
+
+}
+
+bool xconnection_t::serial_filter::operator() (event_t e) {
+	return (e.serial < last_serial);
 }
 
 xconnection_t::xconnection_t() {
@@ -343,6 +346,7 @@ bool xconnection_t::find_pending_event(event_t & e) {
 void xconnection_t::xnextevent(XEvent * ev) {
 	XNextEvent(dpy, ev);
 	xconnection_t::last_serial = ev->xany.serial;
+	serial_filter filter(ev->xany.serial);
 	std::remove_if(pending.begin(), pending.end(), filter);
 }
 
@@ -472,7 +476,7 @@ void xconnection_t::process_next_event() {
 	 */
 	std::vector<xevent_handler_t *> v(event_handler_list.begin(),
 			event_handler_list.end());
-	for (int i = 0; i < v.size(); ++i) {
+	for (unsigned int i = 0; i < v.size(); ++i) {
 		if (std::find(event_handler_list.begin(), event_handler_list.end(),
 				v[i]) != event_handler_list.end()) {
 			v[i]->process_event(e);
@@ -489,7 +493,7 @@ bool xconnection_t::process_check_event() {
 		 */
 		std::vector<xevent_handler_t *> v(event_handler_list.begin(),
 				event_handler_list.end());
-		for (int i = 0; i < v.size(); ++i) {
+		for (unsigned int i = 0; i < v.size(); ++i) {
 			if (std::find(event_handler_list.begin(), event_handler_list.end(),
 					v[i]) != event_handler_list.end()) {
 				v[i]->process_event(e);

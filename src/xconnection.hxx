@@ -396,9 +396,15 @@ struct xconnection_t {
 	void map(Window w);
 	bool find_pending_event(event_t & e);
 
-	static long int last_serial;
+	unsigned long int last_serial;
 
-	static bool filter(event_t e) __attribute__((no_instrument_function));
+	class serial_filter {
+		unsigned long int last_serial;
+	public:
+		serial_filter(unsigned long int serial);
+		bool operator() (event_t e);
+	};
+
 	void xnextevent(XEvent * ev);
 
 	/* this fonction come from xcompmgr

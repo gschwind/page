@@ -41,6 +41,17 @@ AC_PROG_CXX
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
+AC_CHECK_HEADER([bfd.h],
+                  [AC_DEFINE([HAVE_BFD_H])],
+                  [AC_MSG_WARN([Header "bfd.h" from the binutils not found!])],
+   [[#ifdef HAVE_BFD_H
+     #include <bfd.h>
+     #endif]]
+   )
+    AC_SEARCH_LIBS([bfd_openr],  [bfd],
+                 [AC_MSG_RESULT([OK, found libbfd])],
+[AC_MSG_ERROR([BFD library from the binutils package not found!])])
+
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
