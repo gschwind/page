@@ -657,6 +657,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				orig_window_to_tab_window[mw->get_orig()] = mw;
 				insert_window_in_tree(mw, 0, true);
 
+				safe_raise_window(mw->get_orig());
+
 				rpage->mark_durty();
 				rnd.add_damage_area(cnx.root_size);
 				update_client_list();
