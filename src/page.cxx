@@ -935,9 +935,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		x.x = e.x_root - mode_data_floating.x_offset;
 		x.y = e.y_root - mode_data_floating.y_offset;
 		mode_data_floating.f->set_wished_position(x);
-		mode_data_floating.f->reconfigure();
-		mode_data_floating.f->fake_configure();
-
 	}
 		break;
 	case FLOATING_RESIZE_PROCESS:
@@ -955,8 +952,6 @@ void page_t::process_event(XMotionEvent const & e) {
 			x.w = 1;
 
 		mode_data_floating.f->set_wished_position(x);
-		mode_data_floating.f->reconfigure();
-		mode_data_floating.f->fake_configure();
 
 	}
 		break;
@@ -1021,13 +1016,21 @@ void page_t::process_event(XConfigureEvent const & e) {
 	if (is_root_window)
 		rnd.add_damage_area(w->get_size());
 
+	/* enforce the valid position */
 	if(has_key(orig_window_to_floating_window, w)) {
 		floating_window_t * fw = orig_window_to_floating_window[w];
-		box_int_t new_size = fw->get_wished_position();
-		fw->reconfigure();
-		fw->fake_configure();
+		if (!fw->check_orig_position(box_int_t(e.x, e.y, e.width, e.height))) {
+			fw->reconfigure();
+		}
 	}
 
+	/* enforce the valid position */
+	if(has_key(base_window_to_floating_window, w)) {
+		floating_window_t * fw = base_window_to_floating_window[w];
+		if (!fw->check_base_position(box_int_t(e.x, e.y, e.width, e.height))) {
+			fw->reconfigure();
+		}
+	}
 
 	/* reorder windows */
 	for (std::list<Window>::iterator i = _root_window_stack.begin();
@@ -1134,28 +1137,24 @@ void page_t::process_event(XMapEvent const & e) {
 	/* don't manage floating windows */
 	if(has_key(base_window_to_floating_window, x)) {
 		base_window_to_floating_window[x]->reconfigure();
-		base_window_to_floating_window[x]->fake_configure();
 		return;
 	}
 
 	/* don't manage floating windows */
 	if(has_key(orig_window_to_floating_window, x)) {
 		orig_window_to_floating_window[x]->reconfigure();
-		orig_window_to_floating_window[x]->fake_configure();
 		return;
 	}
 
 	/* don't manage floating windows */
 	if(has_key(base_window_to_tab_window, x)) {
 		base_window_to_tab_window[x]->reconfigure();
-		base_window_to_tab_window[x]->fake_configure();
 		return;
 	}
 
 	/* don't manage floating windows */
 	if(has_key(orig_window_to_tab_window, x)) {
 		orig_window_to_tab_window[x]->reconfigure();
-		orig_window_to_tab_window[x]->fake_configure();
 		return;
 	}
 
@@ -1346,8 +1345,6 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		new_size.h = final_height;
 
 		f->set_wished_position(new_size);
-		f->reconfigure();
-		f->fake_configure();
 
 	} else {
 
@@ -1499,8 +1496,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 				new_size.w = final_width;
 				new_size.h = final_height;
 				fw->set_wished_position(new_size);
-				fw->reconfigure();
-				fw->fake_configure();
 				rpage->render.render_floating(fw);
 				rnd.add_damage_area(fw->get_wished_position());
 
@@ -2780,10 +2775,6 @@ bool page_t::check_manage(window_t * x) {
 		new_size.w = final_width;
 		new_size.h = final_height;
 		fw->set_wished_position(new_size);
-		fw->reconfigure();
-		fw->fake_configure();
-
-
 		fw->normalize();
 		rpage->render.render_floating(fw);
 		return true;

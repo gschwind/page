@@ -20,6 +20,8 @@ private:
 	window_t * base;
 
 	box_int_t _wished_position;
+	box_int_t _orig_position;
+	box_int_t _base_position;
 
 	cairo_t * cr;
 	cairo_surface_t * win_surf;
@@ -47,6 +49,9 @@ public:
 
 	window_t * get_orig();
 	window_t * get_base();
+
+	bool check_orig_position(box_int_t const & position);
+	bool check_base_position(box_int_t const & position);
 
 	friend class render_tree_t;
 

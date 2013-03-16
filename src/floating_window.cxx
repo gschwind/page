@@ -24,9 +24,7 @@ floating_window_t::floating_window_t(window_t * w, window_t * border) : orig(w) 
 	cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
 	cairo_paint(cr);
 
-	_wished_position = w->get_size();
-	reconfigure();
-	fake_configure();
+	set_wished_position(w->get_size());
 
 }
 
@@ -52,38 +50,33 @@ void floating_window_t::iconify() {
 
 void floating_window_t::reconfigure() {
 
-	int x = _wished_position.x;
-	int y = _wished_position.y;
-	int width = _wished_position.w;
-	int heigth = _wished_position.h;
+	_base_position.x = _wished_position.x - 4;
+	_base_position.y = _wished_position.y - 26;
+	_base_position.w = _wished_position.w + 8;
+	_base_position.h = _wished_position.h + 24 + 6;
 
-	box_int_t size;
-	box_int_t subsize;
+	if(_base_position.x < 0)
+		_base_position.x = 0;
+	if(_base_position.y < 0)
+		_base_position.y = 0;
 
-	size.x = x - 4;
-	size.y = y - 26;
-	size.w = width + 8;
-	size.h = heigth + 24 + 6;
+	_orig_position.x = 4;
+	_orig_position.y = 26;
+	_orig_position.w = _wished_position.w;
+	_orig_position.h = _wished_position.h;
 
-	if(size.x < 0)
-		size.x = 0;
-	if(size.y < 0)
-		size.y = 0;
+	base->move_resize(_base_position);
+	orig->move_resize(_orig_position);
 
-	subsize.x = 4;
-	subsize.y = 26;
-	subsize.w = width;
-	subsize.h = heigth;
+	cairo_xlib_surface_set_size(win_surf, _base_position.w, _base_position.h);
 
-	base->move_resize(size);
-	orig->move_resize(subsize);
-
-	cairo_xlib_surface_set_size(win_surf, size.w, size.h);
+	fake_configure();
 
 }
 
 void floating_window_t::set_wished_position(box_int_t const & position) {
 		_wished_position = position;
+		reconfigure();
 }
 
 box_int_t const & floating_window_t::get_wished_position() const {
@@ -104,6 +97,14 @@ window_t * floating_window_t::get_orig() {
 
 window_t * floating_window_t::get_base() {
 	return base;
+}
+
+bool floating_window_t::check_orig_position(box_int_t const & position) {
+	return position == _orig_position;
+}
+
+bool floating_window_t::check_base_position(box_int_t const & position) {
+	return position == _base_position;
 }
 
 }
