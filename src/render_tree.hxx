@@ -231,7 +231,7 @@ public:
 						cairo_set_font_size(cr, 13.0);
 						cairo_move_to(cr, 20.5, 15.5);
 
-						cairo_show_text(cr, (*i)->get_orig()->get_title().c_str());
+						cairo_show_text(cr, (*i)->get_title().c_str());
 
 						/* draw blue lines */
 						cairo_reset_clip(cr);
@@ -295,7 +295,7 @@ public:
 						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(cr, 13);
 						cairo_move_to(cr, HEIGHT + 0.5, 15.5);
-						cairo_show_text(cr, (*i)->get_orig()->get_title().c_str());
+						cairo_show_text(cr, (*i)->get_title().c_str());
 
 						/* draw border */
 						cairo_reset_clip(cr);
@@ -492,9 +492,9 @@ public:
 
 	void render_floating(managed_window_t * f) {
 
-		cairo_t * cr = f->_cr;
+		cairo_t * cr = f->get_cairo_context();
 
-		box_int_t _allocation = f->_base->get_size();
+		box_int_t _allocation = f->get_base()->get_size();
 		_allocation.x = 0;
 		_allocation.y = 0;
 
@@ -555,7 +555,7 @@ public:
 				cairo_set_font_size(cr, 13.0);
 				cairo_move_to(cr, 20.5, 15.5);
 
-				cairo_show_text(cr, f->_orig->get_title().c_str());
+				cairo_show_text(cr, f->get_title().c_str());
 
 				/* draw blue lines */
 				cairo_reset_clip(cr);
@@ -608,7 +608,7 @@ public:
 
 			cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
 
-			window_t * c = f->_orig;
+			window_t * c = f->get_orig();
 			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
 

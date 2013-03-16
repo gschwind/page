@@ -748,7 +748,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		} else {
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			set_focus(mode_data_notebook.c->get_orig());
-			mode_data_notebook.c->get_orig()->focus();
+			mode_data_notebook.c->focus();
 		}
 
 		/* automaticaly close empty notebook */
@@ -1704,7 +1704,7 @@ void page_t::fullscreen(managed_window_t * c) {
 	c->normalize();
 	c->set_wished_position(v->raw_aera);
 	set_focus(c->get_orig());
-	c->get_orig()->focus();
+	c->focus();
 	//cnx.raise_window(c->get_xwin());
 
 }
@@ -2065,7 +2065,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 					mode_data_notebook.from->tab_area.w,
 					mode_data_notebook.from->tab_area.h);
 
-			mode_data_notebook.name = c->get_orig()->get_title();
+			mode_data_notebook.name = c->get_title();
 			mode_data_notebook.pn1 = new popup_notebook1_t(
 					mode_data_notebook.from->_allocation.x,
 					mode_data_notebook.from->_allocation.y, rndt->font,

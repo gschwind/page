@@ -68,7 +68,11 @@ public:
 
 	void set_managed_type(managed_window_type_e type);
 
-	friend class render_tree_t;
+	string get_title();
+
+	cairo_t * get_cairo_context();
+
+	void focus();
 
 };
 

@@ -129,6 +129,18 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	}
 }
 
+string managed_window_t::get_title() {
+	return _orig->get_title();
+}
+
+cairo_t * managed_window_t::get_cairo_context() {
+	return _cr;
+}
+
+void managed_window_t::focus() {
+	_orig->focus();
+}
+
 }
 
 

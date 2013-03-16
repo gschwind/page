@@ -149,7 +149,8 @@ public:
 
 
 	box_int_t get_size();
-	std::string get_title();
+
+	string get_title();
 
 	XWMHints const * get_wm_hints();
 	XSizeHints const * get_wm_normal_hints();
