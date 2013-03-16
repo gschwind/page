@@ -2082,8 +2082,8 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			remove_window_from_tree(c);
 
 			/* update database */
-			base_window_to_tab_window.erase(c->get_orig());
-			orig_window_to_tab_window.erase(c->get_base());
+			base_window_to_tab_window.erase(c->get_base());
+			orig_window_to_tab_window.erase(c->get_orig());
 			c->set_managed_type(MANAGED_FLOATING);
 			base_window_to_floating_window[c->get_base()] = c;
 			orig_window_to_floating_window[c->get_orig()] = c;
