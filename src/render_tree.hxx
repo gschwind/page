@@ -580,7 +580,8 @@ public:
 				/* draw close icon */
 				cairo_set_line_width(cr, 2.0);
 				cairo_translate(cr, length - 16.5, 3.5);
-				/* draw close */
+
+				/* draw close (an ugly vectorial fallback) */
 				cairo_new_path(cr);
 				cairo_move_to(cr, 4.0, 4.0);
 				cairo_line_to(cr, 12.0, 12.0);
@@ -590,9 +591,18 @@ public:
 						0x00U / 255.0);
 				cairo_stroke(cr);
 
+				/* draw nice close */
 				cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 				cairo_set_source_surface(cr, close_button_s, 0.5, 0.5);
 				cairo_paint(cr);
+
+				/* draw dock button */
+				cairo_translate(cr, -17.0, 0.0);
+				cairo_rectangle(cr, 0.0, 0.0, 16.0, 16.0);
+				cairo_set_source_rgb(cr, 0xCCU / 255.0, 0x00U / 255.0,
+						0x00U / 255.0);
+				cairo_stroke(cr);
+
 
 			}
 			cairo_restore(cr);

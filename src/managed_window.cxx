@@ -141,6 +141,10 @@ void managed_window_t::focus() {
 	_orig->focus();
 }
 
+box_int_t managed_window_t::get_base_position() {
+	return _base_position;
+}
+
 }
 
 

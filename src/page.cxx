@@ -638,24 +638,41 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		if (has_key(base_window_to_floating_window, c) && (e.subwindow == None || (e.state & Mod1Mask) || (e.state & ControlMask))) {
 
-			box_int_t size = c->get_size();
+			managed_window_t * mw = base_window_to_floating_window[c];
+			box_int_t size = mw->get_base_position();
+
+			box_int_t close_position(size.x + size.w - 17, size.y, 17, 24);
+			box_int_t dock_position(size.x + size.w - 34, size.y, 17, 24);
+			box_int_t resize_position(size.x + size.w - 20, size.y + size.h - 20, 20, 20);
 
 			/* click on close button ? */
-			if (e.x > size.w - 17 && e.y < 24) {
-				mode_data_floating.f->delete_window(e.time);
-			} else {
+			if (close_position.is_inside(e.x_root, e.y_root)) {
+				mw->delete_window(e.time);
+			} else if (dock_position.is_inside(e.x_root, e.y_root)) {
+				/* update database */
+				orig_window_to_floating_window.erase(mw->get_orig());
+				base_window_to_floating_window.erase(mw->get_base());
+				mw->set_managed_type(MANAGED_NOTEBOOK);
+				base_window_to_tab_window[mw->get_base()] = mw;
+				orig_window_to_tab_window[mw->get_orig()] = mw;
+				insert_window_in_tree(mw, 0, true);
 
+				rpage->mark_durty();
+				rnd.add_damage_area(cnx.root_size);
+				update_client_list();
+
+			} else {
 				mode_data_floating.x_offset = e.x;
 				mode_data_floating.y_offset = e.y;
 				mode_data_floating.x_root = e.x_root;
 				mode_data_floating.y_root = e.y_root;
-				mode_data_floating.f = base_window_to_floating_window[c];
+				mode_data_floating.f = mw;
 				mode_data_floating.original_position =
 						mode_data_floating.f->get_wished_position();
 
 				//printf("XXXXX size = %s, x: %d, y: %d\n",
 //						size.to_string().c_str(), e.x, e.y);
-				if (((e.x > size.w - 20) && (e.y > size.h - 20)) || (e.state & ControlMask)) {
+				if ((resize_position.is_inside(e.x_root, e.y_root)) || (e.state & ControlMask)) {
 					process_mode = FLOATING_RESIZE_PROCESS;
 				} else {
 					process_mode = FLOATING_GRAB_PROCESS;
