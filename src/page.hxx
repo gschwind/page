@@ -415,6 +415,8 @@ public:
 
 	void print_tree_windows();
 
+	void bind_window(managed_window_t * mw);
+	void unbind_window(managed_window_t * mw);
 
 
 };

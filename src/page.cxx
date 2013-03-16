@@ -649,20 +649,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			if (close_position.is_inside(e.x_root, e.y_root)) {
 				mw->delete_window(e.time);
 			} else if (dock_position.is_inside(e.x_root, e.y_root)) {
-				/* update database */
-				orig_window_to_floating_window.erase(mw->get_orig());
-				base_window_to_floating_window.erase(mw->get_base());
-				mw->set_managed_type(MANAGED_NOTEBOOK);
-				base_window_to_tab_window[mw->get_base()] = mw;
-				orig_window_to_tab_window[mw->get_orig()] = mw;
-				insert_window_in_tree(mw, 0, true);
-
-				safe_raise_window(mw->get_orig());
-
-				rpage->mark_durty();
-				rnd.add_damage_area(cnx.root_size);
-				update_client_list();
-
+				bind_window(mw);
 			} else {
 				mode_data_floating.x_offset = e.x;
 				mode_data_floating.y_offset = e.y;
@@ -762,23 +749,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			split_right(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_CENTER
 				&& mode_data_notebook.ns != 0) {
-
-			remove_window_from_tree(mode_data_notebook.c);
-
-			/* update database */
-			base_window_to_tab_window.erase(mode_data_notebook.c->get_base());
-			orig_window_to_tab_window.erase(mode_data_notebook.c->get_orig());
-			mode_data_notebook.c->set_managed_type(MANAGED_FLOATING);
-			base_window_to_floating_window[mode_data_notebook.c->get_base()] = mode_data_notebook.c;
-			orig_window_to_floating_window[mode_data_notebook.c->get_orig()] = mode_data_notebook.c;
-
-			rpage->render.render_floating(mode_data_notebook.c);
-
-			safe_raise_window(mode_data_notebook.c->get_orig());
-			rpage->mark_durty();
-			rnd.add_damage_area(cnx.root_size);
-			update_client_list();
-
+			unbind_window(mode_data_notebook.c);
 		} else {
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			set_focus(mode_data_notebook.c->get_orig());
@@ -2103,22 +2074,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 		if ((*i)->close_client_area.is_inside(e.x_root, e.y_root)) {
 			c->delete_window(e.time);
 		} else if ((*i)->undck_client_area.is_inside(e.x_root, e.y_root)) {
-
-			remove_window_from_tree(c);
-
-			/* update database */
-			base_window_to_tab_window.erase(c->get_base());
-			orig_window_to_tab_window.erase(c->get_orig());
-			c->set_managed_type(MANAGED_FLOATING);
-			base_window_to_floating_window[c->get_base()] = c;
-			orig_window_to_floating_window[c->get_orig()] = c;
-
-			rpage->render.render_floating(c);
-
-			safe_raise_window(c->get_orig());
-			rpage->mark_durty();
-			rnd.add_damage_area(cnx.root_size);
-			update_client_list();
+			unbind_window(c);
 		} else {
 
 //			printf("starting notebook\n");
@@ -3041,6 +2997,46 @@ void page_t::print_tree_windows() {
 
 
 }
+
+
+void page_t::bind_window(managed_window_t * mw) {
+	/* update database */
+	orig_window_to_floating_window.erase(mw->get_orig());
+	base_window_to_floating_window.erase(mw->get_base());
+	mw->set_managed_type(MANAGED_NOTEBOOK);
+	base_window_to_tab_window[mw->get_base()] = mw;
+	orig_window_to_tab_window[mw->get_orig()] = mw;
+
+	insert_window_in_tree(mw, 0, true);
+
+	safe_raise_window(mw->get_orig());
+
+	rpage->mark_durty();
+	rnd.add_damage_area(cnx.root_size);
+	update_client_list();
+
+}
+
+void page_t::unbind_window(managed_window_t * mw) {
+
+	remove_window_from_tree(mode_data_notebook.c);
+
+	/* update database */
+	base_window_to_tab_window.erase(mw->get_base());
+	orig_window_to_tab_window.erase(mw->get_orig());
+	mode_data_notebook.c->set_managed_type(MANAGED_FLOATING);
+	base_window_to_floating_window[mw->get_base()] = mw;
+	orig_window_to_floating_window[mw->get_orig()] = mw;
+
+	rpage->render.render_floating(mw);
+
+	safe_raise_window(mw->get_orig());
+	rpage->mark_durty();
+	rnd.add_damage_area(cnx.root_size);
+	update_client_list();
+
+}
+
 
 
 }
