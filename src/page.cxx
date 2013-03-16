@@ -1128,7 +1128,6 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 
 	if (has_key(orig_window_to_floating_window, c)) {
 		managed_window_t * t = orig_window_to_floating_window[c];
-		cnx.reparentwindow(t->get_orig()->get_xwin(), cnx.xroot, 0, 0);
 		XDestroyWindow(cnx.dpy, t->get_base()->get_xwin());
 		destroy_floating(t);
 		update_client_list();
