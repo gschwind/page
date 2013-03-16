@@ -128,7 +128,7 @@ public:
 		int start_x;
 		int start_y;
 		select_e zone;
-		tab_window_t * c;
+		managed_window_t * c;
 		notebook_t * from;
 		notebook_t * ns;
 		popup_notebook0_t * pn0;
@@ -212,16 +212,16 @@ public:
 
 	// track where a client is stored
 	map<notebook_t *, viewport_t *> notebook_to_viewport;
-	map<tab_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
+	map<managed_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
 	map<viewport_t *, notebook_set_t> viewport_to_notebooks;
 
-	map<tab_window_t *, notebook_t *> client_to_notebook;
+	map<managed_window_t *, notebook_t *> client_to_notebook;
 
 	map<window_t *, managed_window_t *> base_window_to_floating_window;
 	map<window_t *, managed_window_t *> orig_window_to_floating_window;
 
-	map<window_t *, tab_window_t *> base_window_to_tab_window;
-	map<window_t *, tab_window_t *> orig_window_to_tab_window;
+	map<window_t *, managed_window_t *> base_window_to_tab_window;
+	map<window_t *, managed_window_t *> orig_window_to_tab_window;
 
 	list<Atom> supported_list;
 
@@ -340,10 +340,10 @@ public:
 
 	void insert_window_above_of(window_t * w, Window above);
 
-	void remove_window_from_tree(tab_window_t * x);
-	void activate_client(tab_window_t * x);
-	void insert_window_in_tree(tab_window_t * x, notebook_t * n, bool prefer_activate);
-	void iconify_client(tab_window_t * x);
+	void remove_window_from_tree(managed_window_t * x);
+	void activate_client(managed_window_t * x);
+	void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
+	void iconify_client(managed_window_t * x);
 	void update_allocation();
 
 	void update_window_z();
@@ -353,9 +353,9 @@ public:
 	void delete_window(window_t * w);
 	void destroy(window_t * w);
 
-	void fullscreen(tab_window_t * c);
-	void unfullscreen(tab_window_t * c);
-	void toggle_fullscreen(tab_window_t * c);
+	void fullscreen(managed_window_t * c);
+	void unfullscreen(managed_window_t * c);
+	void toggle_fullscreen(managed_window_t * c);
 
 	tab_window_list_t get_windows();
 
@@ -367,10 +367,10 @@ public:
 	bool check_for_start_notebook(XButtonEvent const & e);
 
 	void split(notebook_t * nbk, split_type_e type);
-	void split_left(notebook_t * nbk, tab_window_t * c);
-	void split_right(notebook_t * nbk, tab_window_t * c);
-	void split_top(notebook_t * nbk, tab_window_t * c);
-	void split_bottom(notebook_t * nbk, tab_window_t * c);
+	void split_left(notebook_t * nbk, managed_window_t * c);
+	void split_right(notebook_t * nbk, managed_window_t * c);
+	void split_top(notebook_t * nbk, managed_window_t * c);
+	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
 	void update_popup_position(popup_notebook0_t * p, int x, int y,
@@ -408,8 +408,8 @@ public:
 
 	bool check_manage(window_t * x);
 
-	tab_window_t * new_tab_window(window_t * w);
-	void destroy(tab_window_t * w);
+	managed_window_t * new_tab_window(window_t * w);
+	void destroy_notebook_window(managed_window_t * w);
 
 	window_t * find_root_window(window_t * w);
 	window_t * find_client_window(window_t * w);

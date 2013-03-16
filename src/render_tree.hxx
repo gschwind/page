@@ -214,10 +214,10 @@ public:
 								0xecU / 255.0);
 						cairo_fill(cr);
 
-						if (n->get_icon_surface((*i)->w) != 0) {
+						if (n->get_icon_surface((*i)->get_orig()) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, n->get_icon_surface((*i)->w), 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)->get_orig()), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -231,7 +231,7 @@ public:
 						cairo_set_font_size(cr, 13.0);
 						cairo_move_to(cr, 20.5, 15.5);
 
-						cairo_show_text(cr, (*i)->w->get_title().c_str());
+						cairo_show_text(cr, (*i)->get_orig()->get_title().c_str());
 
 						/* draw blue lines */
 						cairo_reset_clip(cr);
@@ -276,10 +276,10 @@ public:
 						offset += length * 2;
 					} else {
 
-						if (n->get_icon_surface((*i)->w) != 0) {
+						if (n->get_icon_surface((*i)->get_orig()) != 0) {
 							cairo_save(cr);
 							cairo_translate(cr, 3.0, 4.0);
-							cairo_set_source_surface(cr, n->get_icon_surface((*i)->w), 0.0,
+							cairo_set_source_surface(cr, n->get_icon_surface((*i)->get_orig()), 0.0,
 									0.0);
 							cairo_paint(cr);
 							cairo_restore(cr);
@@ -295,7 +295,7 @@ public:
 						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 						cairo_set_font_size(cr, 13);
 						cairo_move_to(cr, HEIGHT + 0.5, 15.5);
-						cairo_show_text(cr, (*i)->w->get_title().c_str());
+						cairo_show_text(cr, (*i)->get_orig()->get_title().c_str());
 
 						/* draw border */
 						cairo_reset_clip(cr);
@@ -310,7 +310,7 @@ public:
 						cairo_line_to(cr, length + 1.0, HEIGHT);
 						cairo_stroke(cr);
 
-						if ((*i)->w->demands_atteniion()) {
+						if ((*i)->get_orig()->demands_atteniion()) {
 							cairo_new_path(cr);
 							cairo_move_to(cr, 0.0, 3.5);
 							cairo_line_to(cr, length * 2, 3.5);
@@ -383,11 +383,11 @@ public:
 						n->_allocation.w, n->_allocation.h);
 				cairo_fill(cr);
 			} else {
-				tab_window_t * c = n->_selected.front();
+				managed_window_t * c = n->_selected.front();
 				cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 						0xecU / 255.0);
 
-				box_int_t size = c->border->get_size();
+				box_int_t size = c->get_base()->get_size();
 				/* left */
 				cairo_rectangle(cr, n->_allocation.x, n->_allocation.y + HEIGHT,
 						size.x - n->_allocation.x, n->_allocation.h - HEIGHT);

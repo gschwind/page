@@ -21,7 +21,7 @@ public:
 	box_t<int> raw_aera;
 	box_t<int> effective_aera;
 	tree_t * _subtree;
-	tab_window_t * fullscreen_client;
+	managed_window_t * fullscreen_client;
 
 	bool _is_visible;
 

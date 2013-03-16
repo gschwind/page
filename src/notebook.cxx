@@ -18,7 +18,7 @@ notebook_t::~notebook_t() {
 
 }
 
-tab_window_t * notebook_t::find_client_tab(int x, int y) {
+managed_window_t * notebook_t::find_client_tab(int x, int y) {
 	if (_allocation.is_inside(x, y)) {
 		if (!_clients.empty()) {
 			double box_width = ((_allocation.w - 17.0 * 5.0)
@@ -89,7 +89,7 @@ void notebook_t::update_close_area() {
 	}
 }
 
-bool notebook_t::add_client(tab_window_t * x, bool prefer_activate) {
+bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	_clients.push_front(x);
 	_client_map.insert(x);
 
@@ -131,7 +131,7 @@ void notebook_t::remove(tree_t * src) {
 
 }
 
-void notebook_t::activate_client(tab_window_t * x) {
+void notebook_t::activate_client(managed_window_t * x) {
 	if ((_client_map.find(x)) != _client_map.end()) {
 		set_selected(x);
 	}
@@ -141,13 +141,13 @@ tab_window_set_t notebook_t::get_windows() {
 	return _client_map;
 }
 
-void notebook_t::remove_client(tab_window_t * x) {
+void notebook_t::remove_client(managed_window_t * x) {
 	if (x == _selected.front())
 		select_next();
 
-	if (icons.find(x->w) != icons.end()) {
-		delete icons[x->w];
-		icons.erase(x->w);
+	if (icons.find(x->get_orig()) != icons.end()) {
+		delete icons[x->get_orig()];
+		icons.erase(x->get_orig());
 	}
 
 	// cleanup
@@ -160,21 +160,21 @@ void notebook_t::select_next() {
 	if (!_selected.empty()) {
 		_selected.pop_front();
 		if (!_selected.empty()) {
-			tab_window_t * x = _selected.front();
+			managed_window_t * x = _selected.front();
 			update_client_position(x);
 			x->normalize();
 		}
 	}
 }
 
-void notebook_t::set_selected(tab_window_t * c) {
+void notebook_t::set_selected(managed_window_t * c) {
 	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	update_client_position(c);
 	c->normalize();
 
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
-			tab_window_t * x = _selected.front();
+			managed_window_t * x = _selected.front();
 			x->iconify();
 		}
 	}
@@ -184,16 +184,16 @@ void notebook_t::set_selected(tab_window_t * c) {
 
 }
 
-void notebook_t::update_client_position(tab_window_t * c) {
+void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
-	box_int_t client_size = compute_client_size(c->w);
+	box_int_t client_size = compute_client_size(c->get_orig());
 
 	c->set_wished_position(client_size);
 	c->reconfigure();
 	c->fake_configure();
 }
 
-void notebook_t::iconify_client(tab_window_t * x) {
+void notebook_t::iconify_client(managed_window_t * x) {
 	if ((_client_map.find(x)) != _client_map.end()) {
 		if (!_selected.empty()) {
 			if (_selected.front() == x) {
@@ -233,7 +233,7 @@ box_int_t notebook_t::get_absolute_extend() {
 region_t<int> notebook_t::get_area() {
 	if (!_selected.empty()) {
 		region_t<int> area = _allocation;
-		area -= _selected.front()->border->get_size();
+		area -= _selected.front()->get_base()->get_size();
 		return area;
 	} else {
 		return region_t<int>(_allocation);

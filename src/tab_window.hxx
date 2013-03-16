@@ -11,6 +11,7 @@
 
 #include "xconnection.hxx"
 #include "window.hxx"
+#include "managed_window.hxx"
 
 namespace page {
 
@@ -51,8 +52,8 @@ public:
 
 };
 
-typedef std::list<tab_window_t *> tab_window_list_t;
-typedef std::set<tab_window_t *> tab_window_set_t;
+typedef std::list<managed_window_t *> tab_window_list_t;
+typedef std::set<managed_window_t *> tab_window_set_t;
 
 
 }

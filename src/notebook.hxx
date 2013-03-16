@@ -14,6 +14,7 @@
 #include "window.hxx"
 #include "window_icon_handler.hxx"
 #include "tab_window.hxx"
+#include "managed_window.hxx"
 
 
 namespace page {
@@ -71,9 +72,9 @@ public:
 
 	box_t<int> close_client_area;
 
-	void set_selected(tab_window_t * c);
+	void set_selected(managed_window_t * c);
 
-	void update_client_position(tab_window_t * c);
+	void update_client_position(managed_window_t * c);
 
 public:
 	notebook_t();
@@ -90,11 +91,11 @@ public:
 	void remove(tree_t * src);
 	tab_window_set_t get_windows();
 
-	bool add_client(tab_window_t * c, bool prefer_activate);
-	void remove_client(tab_window_t * c);
+	bool add_client(managed_window_t * c, bool prefer_activate);
+	void remove_client(managed_window_t * c);
 
-	void activate_client(tab_window_t * x);
-	void iconify_client(tab_window_t * x);
+	void activate_client(managed_window_t * x);
+	void iconify_client(managed_window_t * x);
 
 	box_int_t get_new_client_size();
 
@@ -110,7 +111,7 @@ public:
 	virtual region_t<int> get_area();
 	virtual void set_allocation(box_int_t const & area);
 
-	tab_window_t * find_client_tab(int x, int y);
+	managed_window_t * find_client_tab(int x, int y);
 
 	void update_close_area();
 
