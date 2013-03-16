@@ -359,10 +359,10 @@ void page_t::manage(window_t * w) {
 
 void page_t::unmanage(window_t * w) {
 //	printf("unamage\n");
-	if(!has_key(orig_window_to_tab_window, w))
+	if(!has_key(orig_window_to_notebook_window, w))
 		return;
 
-	managed_window_t * tw = orig_window_to_tab_window[w];
+	managed_window_t * tw = orig_window_to_notebook_window[w];
 
 	if (client_focused == w)
 		set_focus(0);
@@ -392,7 +392,7 @@ void page_t::scan() {
 	_root_window_stack.clear();
 	xwindow_to_window.clear();
 	orig_window_to_floating_window.clear();
-	orig_window_to_tab_window.clear();
+	orig_window_to_notebook_window.clear();
 
 	if (XQueryTree(cnx.dpy, cnx.xroot, &d1, &d2, &wins, &num)) {
 
@@ -505,28 +505,27 @@ void page_t::update_net_supported() {
 
 void page_t::update_client_list() {
 
-	Window * client_list = new Window[client_to_notebook.size() + 1];
-	Window * client_list_stack = new Window[client_to_notebook.size() + 1];
 
+	vector<Window> client_list;
+	vector<Window> client_list_stack;
 
-	int k = 0;
-	std::map<managed_window_t *, notebook_t *>::iterator ll = client_to_notebook.begin();
-	while(ll != client_to_notebook.end()) {
-		client_list[k] = ll->first->get_orig()->get_xwin();
-		client_list_stack[k] = ll->first->get_orig()->get_xwin();
-		++k;
-		++ll;
+	for(map<window_t *, managed_window_t *>::iterator i = orig_window_to_notebook_window.begin(); i != orig_window_to_notebook_window.end(); ++i) {
+		client_list.push_back(i->first->get_xwin());
+		client_list_stack.push_back(i->first->get_xwin());
+	}
+
+	for(map<window_t *, managed_window_t *>::iterator i = orig_window_to_floating_window.begin(); i != orig_window_to_floating_window.end(); ++i) {
+		client_list.push_back(i->first->get_xwin());
+		client_list_stack.push_back(i->first->get_xwin());
 	}
 
 	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST_STACKING,
 			cnx.atoms.WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(client_list_stack), k);
+			reinterpret_cast<unsigned char *>(&client_list_stack[0]), client_list_stack.size());
 	cnx.change_property(cnx.xroot, cnx.atoms._NET_CLIENT_LIST, cnx.atoms.WINDOW,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(client_list),
-			k);
+			32, PropModeReplace, reinterpret_cast<unsigned char *>(&client_list[0]),
+			client_list.size());
 
-	delete[] client_list;
-	delete[] client_list_stack;
 }
 
 /* inspired from dwm */
@@ -555,8 +554,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		if (client_focused != 0) {
-			if (has_key(orig_window_to_tab_window, client_focused))
-				toggle_fullscreen(orig_window_to_tab_window[client_focused]);
+			if (has_key(orig_window_to_notebook_window, client_focused))
+				toggle_fullscreen(orig_window_to_notebook_window[client_focused]);
 		}
 	}
 
@@ -581,27 +580,27 @@ void page_t::process_event(XKeyEvent const & e) {
 		/* select next window */
 		if (client_focused != 0) {
 			std::map<window_t *, managed_window_t *>::iterator x =
-					orig_window_to_tab_window.find(client_focused);
-			if (x != orig_window_to_tab_window.end()) {
+					orig_window_to_notebook_window.find(client_focused);
+			if (x != orig_window_to_notebook_window.end()) {
 				++x;
-				if (x != orig_window_to_tab_window.end()) {
+				if (x != orig_window_to_notebook_window.end()) {
 					//printf("Next = %ld\n", (*x)->get_xwin());
 					activate_client(x->second);
 				} else {
-					if (!orig_window_to_tab_window.empty()) {
+					if (!orig_window_to_notebook_window.empty()) {
 						//printf("Next = %ld\n", tmp.front()->get_xwin());
 						activate_client(
-								orig_window_to_tab_window.begin()->second);
+								orig_window_to_notebook_window.begin()->second);
 					}
 				}
 			} else {
-				if (!orig_window_to_tab_window.empty()) {
-					activate_client(orig_window_to_tab_window.begin()->second);
+				if (!orig_window_to_notebook_window.empty()) {
+					activate_client(orig_window_to_notebook_window.begin()->second);
 				}
 			}
 		} else {
-			if (!orig_window_to_tab_window.empty()) {
-				activate_client(orig_window_to_tab_window.begin()->second);
+			if (!orig_window_to_notebook_window.empty()) {
+				activate_client(orig_window_to_notebook_window.begin()->second);
 			}
 		}
 	}
@@ -1123,7 +1122,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		}
 	}
 
-	if (has_key(orig_window_to_tab_window, c)) {
+	if (has_key(orig_window_to_notebook_window, c)) {
 		unmanage(c);
 	}
 
@@ -1169,14 +1168,14 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 	/* don't manage floating windows */
-	if(has_key(base_window_to_tab_window, x)) {
-		base_window_to_tab_window[x]->reconfigure();
+	if(has_key(base_window_to_notebook_window, x)) {
+		base_window_to_notebook_window[x]->reconfigure();
 		return;
 	}
 
 	/* don't manage floating windows */
-	if(has_key(orig_window_to_tab_window, x)) {
-		orig_window_to_tab_window[x]->reconfigure();
+	if(has_key(orig_window_to_notebook_window, x)) {
+		orig_window_to_notebook_window[x]->reconfigure();
 		return;
 	}
 
@@ -1196,7 +1195,7 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 	/* don't manage notebook windows */
-	if(has_key(base_window_to_tab_window, x))
+	if(has_key(base_window_to_notebook_window, x))
 		return;
 	if(has_key(base_window_to_floating_window, x))
 		return;
@@ -1273,7 +1272,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 		return;
 
 	/* if client is managed */
-	if (has_key(orig_window_to_tab_window, x)) {
+	if (has_key(orig_window_to_notebook_window, x)) {
 		unmanage(x);
 	}
 
@@ -1329,8 +1328,8 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //	if (e.value_mask & CWBorderWidth)
 //		printf("has border: %d\n", e.border_width);
 
-	if (has_key(orig_window_to_tab_window, c)) {
-		managed_window_t * tw = orig_window_to_tab_window[c];
+	if (has_key(orig_window_to_notebook_window, c)) {
+		managed_window_t * tw = orig_window_to_notebook_window[c];
 
 		if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight))!= 0){
 			tw->fake_configure();
@@ -1449,9 +1448,9 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 	} else if (e.atom == cnx.atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
-		if(has_key(orig_window_to_tab_window, x)) {
+		if(has_key(orig_window_to_notebook_window, x)) {
 			rpage->mark_durty();
-			rnd.add_damage_area(client_to_notebook[orig_window_to_tab_window[x]]->tab_area);
+			rnd.add_damage_area(client_to_notebook[orig_window_to_notebook_window[x]]->tab_area);
 		}
 
 		if(has_key(orig_window_to_floating_window, x)) {
@@ -1462,10 +1461,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 		if (x->is_managed()) {
 			x->read_vm_name();
 
-			if (has_key(orig_window_to_tab_window, x)) {
+			if (has_key(orig_window_to_notebook_window, x)) {
 				rpage->mark_durty();
 				rnd.add_damage_area(
-						client_to_notebook[orig_window_to_tab_window[x]]->tab_area);
+						client_to_notebook[orig_window_to_notebook_window[x]]->tab_area);
 			}
 
 			if (has_key(orig_window_to_floating_window, x)) {
@@ -1497,10 +1496,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == cnx.atoms.WM_NORMAL_HINTS) {
 		if (x->is_managed()) {
 			x->read_wm_normal_hints();
-			if (has_key(orig_window_to_tab_window, x)) {
+			if (has_key(orig_window_to_notebook_window, x)) {
 				rnd.add_damage_area(x->get_size());
-				client_to_notebook[orig_window_to_tab_window[x]]->update_client_position(
-						orig_window_to_tab_window[x]);
+				client_to_notebook[orig_window_to_notebook_window[x]]->update_client_position(
+						orig_window_to_notebook_window[x]);
 				rnd.add_damage_area(x->get_size());
 			}
 
@@ -1585,8 +1584,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 	if (e.message_type == cnx.atoms._NET_ACTIVE_WINDOW) {
 		printf("request to activate %lu\n", e.window);
-		if(has_key(orig_window_to_tab_window, w)) {
-			activate_client(orig_window_to_tab_window[w]);
+		if(has_key(orig_window_to_notebook_window, w)) {
+			activate_client(orig_window_to_notebook_window[w]);
 		}
 	} else if (e.message_type == cnx.atoms._NET_WM_STATE) {
 
@@ -1613,8 +1612,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		/* client should send this message to go iconic */
 		if (e.data.l[0] == IconicState) {
 			printf("Set to iconic %lu\n", w->get_xwin());
-			if (has_key(orig_window_to_tab_window, w))
-				iconify_client(orig_window_to_tab_window[w]);
+			if (has_key(orig_window_to_notebook_window, w))
+				iconify_client(orig_window_to_notebook_window[w]);
 		}
 	} else if (e.message_type == cnx.atoms.PAGE_QUIT) {
 		running = false;
@@ -2408,8 +2407,8 @@ void page_t::map_set(window_set_t & set) {
 }
 
 void page_t::print_state() {
-	std::map<window_t *, managed_window_t *>::iterator i = orig_window_to_tab_window.begin();
-	while (i != orig_window_to_tab_window.end()) {
+	std::map<window_t *, managed_window_t *>::iterator i = orig_window_to_notebook_window.begin();
+	while (i != orig_window_to_notebook_window.end()) {
 		std::string n = i->first->get_title();
 		printf("Know window %lu %s\n", i->first->get_xwin(), n.c_str());
 		++i;
@@ -2418,9 +2417,9 @@ void page_t::print_state() {
 }
 
 viewport_t * page_t::find_viewport(window_t * w) {
-	if(!has_key(orig_window_to_tab_window, w))
+	if(!has_key(orig_window_to_notebook_window, w))
 		return 0;
-	std::map<managed_window_t *, notebook_t *>::iterator x = client_to_notebook.find(orig_window_to_tab_window[w]);
+	std::map<managed_window_t *, notebook_t *>::iterator x = client_to_notebook.find(orig_window_to_notebook_window[w]);
 	if(x == client_to_notebook.end())
 		return 0;
 	std::map<notebook_t *, viewport_t *>::iterator y = notebook_to_viewport.find(x->second);
@@ -2458,8 +2457,8 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 //		break;
 //	}
 
-	if (has_key(orig_window_to_tab_window, c)) {
-		managed_window_t * tw = orig_window_to_tab_window[c];
+	if (has_key(orig_window_to_notebook_window, c)) {
+		managed_window_t * tw = orig_window_to_notebook_window[c];
 
 		//char * name = cnx.get_atom_name(state_properties);
 		//printf("process wm_state %s %s\n", action, name);
@@ -2611,8 +2610,8 @@ void page_t::safe_raise_window(window_t * w) {
 	/* 1. raise window in tabs */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		if (has_key(orig_window_to_tab_window, *i)) {
-			Window w = orig_window_to_tab_window[*i]->get_base()->get_xwin();
+		if (has_key(orig_window_to_notebook_window, *i)) {
+			Window w = orig_window_to_notebook_window[*i]->get_base()->get_xwin();
 			final_order.remove(w);
 			final_order.push_back(w);
 		}
@@ -2749,8 +2748,8 @@ managed_window_t * page_t::new_tab_window(window_t * w) {
 	w->select_input(StructureNotifyMask | PropertyChangeMask);
 
 	managed_window_t * tw = new managed_window_t(MANAGED_NOTEBOOK, w, border);
-	base_window_to_tab_window[border] = tw;
-	orig_window_to_tab_window[w] = tw;
+	base_window_to_notebook_window[border] = tw;
+	orig_window_to_notebook_window[w] = tw;
 	return tw;
 }
 
@@ -2806,6 +2805,9 @@ bool page_t::check_manage(window_t * x) {
 		fw->set_wished_position(new_size);
 		fw->normalize();
 		rpage->render.render_floating(fw);
+
+		update_client_list();
+
 		return true;
 	} else if (type == PAGE_DESKTOP_WINDOW_TYPE) {
 		x->set_managed(true);
@@ -2818,8 +2820,8 @@ bool page_t::check_manage(window_t * x) {
 
 void page_t::destroy_notebook_window(managed_window_t * tw) {
 	clear_sibbling_child(tw->get_orig()->get_xwin());
-	orig_window_to_tab_window.erase(tw->get_orig());
-	base_window_to_tab_window.erase(tw->get_base());
+	orig_window_to_notebook_window.erase(tw->get_orig());
+	base_window_to_notebook_window.erase(tw->get_base());
 	delete tw;
 }
 
@@ -2839,16 +2841,16 @@ window_t * page_t::find_root_window(window_t * w) {
 		return orig_window_to_floating_window[w]->get_base();
 	}
 
-	if(has_key(orig_window_to_tab_window, w)) {
-		return orig_window_to_tab_window[w]->get_base();
+	if(has_key(orig_window_to_notebook_window, w)) {
+		return orig_window_to_notebook_window[w]->get_base();
 	}
 
 	if(has_key(base_window_to_floating_window, w)) {
 		return base_window_to_floating_window[w]->get_base();
 	}
 
-	if(has_key(base_window_to_tab_window, w)) {
-		return base_window_to_tab_window[w]->get_base();
+	if(has_key(base_window_to_notebook_window, w)) {
+		return base_window_to_notebook_window[w]->get_base();
 	}
 
 	return 0;
@@ -2860,16 +2862,16 @@ window_t * page_t::find_client_window(window_t * w) {
 		return orig_window_to_floating_window[w]->get_orig();
 	}
 
-	if(has_key(orig_window_to_tab_window, w)) {
-		return orig_window_to_tab_window[w]->get_orig();
+	if(has_key(orig_window_to_notebook_window, w)) {
+		return orig_window_to_notebook_window[w]->get_orig();
 	}
 
 	if(has_key(base_window_to_floating_window, w)) {
 		return base_window_to_floating_window[w]->get_orig();
 	}
 
-	if(has_key(base_window_to_tab_window, w)) {
-		return base_window_to_tab_window[w]->get_orig();
+	if(has_key(base_window_to_notebook_window, w)) {
+		return base_window_to_notebook_window[w]->get_orig();
 	}
 
 	return 0;
@@ -3004,8 +3006,8 @@ void page_t::bind_window(managed_window_t * mw) {
 	orig_window_to_floating_window.erase(mw->get_orig());
 	base_window_to_floating_window.erase(mw->get_base());
 	mw->set_managed_type(MANAGED_NOTEBOOK);
-	base_window_to_tab_window[mw->get_base()] = mw;
-	orig_window_to_tab_window[mw->get_orig()] = mw;
+	base_window_to_notebook_window[mw->get_base()] = mw;
+	orig_window_to_notebook_window[mw->get_orig()] = mw;
 
 	insert_window_in_tree(mw, 0, true);
 
@@ -3022,8 +3024,8 @@ void page_t::unbind_window(managed_window_t * mw) {
 	remove_window_from_tree(mode_data_notebook.c);
 
 	/* update database */
-	base_window_to_tab_window.erase(mw->get_base());
-	orig_window_to_tab_window.erase(mw->get_orig());
+	base_window_to_notebook_window.erase(mw->get_base());
+	orig_window_to_notebook_window.erase(mw->get_orig());
 	mode_data_notebook.c->set_managed_type(MANAGED_FLOATING);
 	base_window_to_floating_window[mw->get_base()] = mw;
 	orig_window_to_floating_window[mw->get_orig()] = mw;

@@ -216,8 +216,8 @@ public:
 	map<window_t *, managed_window_t *> base_window_to_floating_window;
 	map<window_t *, managed_window_t *> orig_window_to_floating_window;
 
-	map<window_t *, managed_window_t *> base_window_to_tab_window;
-	map<window_t *, managed_window_t *> orig_window_to_tab_window;
+	map<window_t *, managed_window_t *> base_window_to_notebook_window;
+	map<window_t *, managed_window_t *> orig_window_to_notebook_window;
 
 	list<Atom> supported_list;
 
