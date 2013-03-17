@@ -80,6 +80,8 @@ public:
 
 	void focus();
 
+	managed_window_type_e get_type();
+
 };
 
 }

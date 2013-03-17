@@ -57,12 +57,22 @@ public:
 	render_tree_t(cairo_surface_t * target, std::string conf_img_dir,
 			std::string font, std::string font_bold, int width, int heigth) :
 			width(width), height(heigth) {
+
 		s = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR, width,
 				heigth);
 		cr = cairo_create(s);
 
+		ft_is_loaded = false;
+
+		vsplit_button_s = 0;
+		hsplit_button_s = 0;
+		close_button_s = 0;
+		pop_button_s = 0;
+		pops_button_s = 0;
+
+
 		/* open icons */
-		if (hsplit_button_s == 0 || true) {
+		if (hsplit_button_s == 0) {
 			std::string filename = conf_img_dir + "/hsplit_button.png";
 			printf("Load: %s\n", filename.c_str());
 			hsplit_button_s = cairo_image_surface_create_from_png(
@@ -71,7 +81,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (vsplit_button_s == 0 || true) {
+		if (vsplit_button_s == 0) {
 			std::string filename = conf_img_dir + "/vsplit_button.png";
 			printf("Load: %s\n", filename.c_str());
 			vsplit_button_s = cairo_image_surface_create_from_png(
@@ -80,7 +90,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (close_button_s == 0 || true) {
+		if (close_button_s == 0) {
 			std::string filename = conf_img_dir + "/close_button.png";
 			printf("Load: %s\n", filename.c_str());
 			close_button_s = cairo_image_surface_create_from_png(
@@ -89,7 +99,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pop_button_s == 0 || true) {
+		if (pop_button_s == 0) {
 			std::string filename = conf_img_dir + "/pop_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pop_button_s = cairo_image_surface_create_from_png(
@@ -98,7 +108,7 @@ public:
 				throw std::runtime_error("file not found!");
 		}
 
-		if (pops_button_s == 0 || true) {
+		if (pops_button_s == 0) {
 			std::string filename = conf_img_dir + "/pops_button.png";
 			printf("Load: %s\n", filename.c_str());
 			pops_button_s = cairo_image_surface_create_from_png(
@@ -114,12 +124,18 @@ public:
 				throw std::runtime_error("unable to init freetype");
 			}
 
+			printf("Load: %s\n", font.c_str());
+
 			error = FT_New_Face(library, font.c_str(), 0, &face);
 
 			if (error != FT_Err_Ok)
 				throw std::runtime_error("unable to load default font");
 
 			this->font = cairo_ft_font_face_create_for_ft_face(face, 0);
+			if(!this->font)
+				throw std::runtime_error("unable to load default font");
+
+			printf("Load: %s\n", font_bold.c_str());
 
 			error = FT_New_Face(library, font_bold.c_str(), 0, &face_bold);
 
@@ -128,6 +144,9 @@ public:
 
 			this->font_bold = cairo_ft_font_face_create_for_ft_face(face_bold,
 					0);
+			if(!this->font_bold)
+				throw std::runtime_error("unable to load default bold font");
+
 
 			ft_is_loaded = true;
 		}

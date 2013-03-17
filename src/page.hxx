@@ -96,7 +96,7 @@ inline void print_buffer__(const char * buf, int size) {
 	printf("\n");
 }
 
-class page_t {
+class page_t : public xevent_handler_t {
 
 public:
 
@@ -142,6 +142,13 @@ public:
 		managed_window_t * f;
 	};
 
+	struct fullscreen_data_t {
+		managed_window_t * window;
+		viewport_t * viewport;
+		managed_window_type_e revert_type;
+		notebook_t * revert_notebook;
+	};
+
 	enum process_mode_e {
 		NORMAL_PROCESS,			// Process event as usual
 		SPLIT_GRAB_PROCESS,		// Process event when split is moving
@@ -163,21 +170,10 @@ public:
 
 	mode_data_floating_t mode_data_floating;
 
-
-	struct page_event_handler_t : public xevent_handler_t {
-		page_t & page;
-		page_event_handler_t(page_t & page) : page(page) { }
-		virtual ~page_event_handler_t() { }
-		virtual void process_event(XEvent const & e);
-	};
-
 	static double const OPACITY = 0.95;
 
-	xconnection_t cnx;
-	render_context_t rnd;
-
-	render_tree_t * rndt;
-	renderable_page_t * rpage;
+	xconnection_t * cnx;
+	render_context_t * rnd;
 
 	renderable_list_t popups;
 
@@ -187,12 +183,7 @@ public:
 
 	bool running;
 
-	bool has_fullscreen_size;
-	box_t<int> fullscreen_position;
-
 	GKeyFile * conf;
-
-	page_event_handler_t event_handler;
 
 	std::list<Window> _root_window_stack;
 
@@ -208,7 +199,7 @@ public:
 
 	// track where a client is stored
 	map<notebook_t *, viewport_t *> notebook_to_viewport;
-	map<managed_window_t *, std::pair<viewport_t *, notebook_t *> > fullscreen_client_to_viewport;
+	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
 	map<viewport_t *, notebook_set_t> viewport_to_notebooks;
 
 	map<managed_window_t *, notebook_t *> client_to_notebook;
@@ -218,6 +209,9 @@ public:
 
 	map<window_t *, managed_window_t *> base_window_to_notebook_window;
 	map<window_t *, managed_window_t *> orig_window_to_notebook_window;
+
+	map<window_t *, managed_window_t *> base_window_to_fullscreen_window;
+	map<window_t *, managed_window_t *> orig_window_to_fullscreen_window;
 
 	list<Atom> supported_list;
 
@@ -236,16 +230,20 @@ private:
 	window_t * client_focused;
 public:
 
+	render_tree_t * rndt;
+	renderable_page_t * rpage;
+
+private:
 	page_t(page_t const &);
 	page_t &operator=(page_t const &);
 public:
 	page_t(int argc, char ** argv);
 	virtual ~page_t();
 
-	virtual void set_default_pop(notebook_t * x);
-	virtual void set_focus(window_t * w);
-	virtual render_context_t & get_render_context();
-	virtual xconnection_t & get_xconnection();
+	void set_default_pop(notebook_t * x);
+	void set_focus(window_t * w);
+	render_context_t * get_render_context();
+	xconnection_t * get_xconnection();
 
 
 	void render(cairo_t * cr);
@@ -291,6 +289,7 @@ public:
 	/* extension events */
 	void process_event(XDamageNotifyEvent const & ev);
 
+	void process_event(XEvent const & e);
 
 	void drag_and_drop_loop();
 
@@ -304,8 +303,8 @@ public:
 	void update_focus(window_t * c);
 	void read_viewport_layout();
 
-	void manage(window_t * w);
-	void unmanage(window_t * w);
+	managed_window_t * manage(managed_window_type_e type, window_t * w);
+	void unmanage(managed_window_t * mw);
 
 	void print_state();
 
@@ -382,8 +381,11 @@ public:
 	void new_renderable_window(window_t * w);
 	void destroy_renderable(window_t * w);
 
+	managed_window_t * new_managed_window(managed_window_type_e type, window_t * orig);
+
+
 	managed_window_t * new_floating_window(window_t * w);
-	void destroy_floating(managed_window_t * w);
+	void destroy_floating_window(managed_window_t * w);
 
 	void unmap_set(window_set_t & set);
 	void map_set(window_set_t & set);
@@ -401,7 +403,7 @@ public:
 
 	bool check_manage(window_t * x);
 
-	managed_window_t * new_tab_window(window_t * w);
+	managed_window_t * new_notebook_window(window_t * w);
 	void destroy_notebook_window(managed_window_t * w);
 
 	window_t * find_root_window(window_t * w);
@@ -418,6 +420,14 @@ public:
 	void bind_window(managed_window_t * mw);
 	void unbind_window(managed_window_t * mw);
 
+	void register_floating_window(managed_window_t * mw);
+	void unregister_floating_window(managed_window_t * mw);
+
+	void register_notebook_window(managed_window_t * mw);
+	void unregister_notebook_window(managed_window_t * mw);
+
+	void register_fullscreen_window(managed_window_t * mw);
+	void unregister_fullscreen_window(managed_window_t * mw);
 
 };
 

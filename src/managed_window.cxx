@@ -175,6 +175,10 @@ box_int_t managed_window_t::get_base_position() {
 	return _base_position;
 }
 
+managed_window_type_e managed_window_t::get_type() {
+	return _type;
+}
+
 }
 
 

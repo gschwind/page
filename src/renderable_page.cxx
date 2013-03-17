@@ -11,7 +11,7 @@
 
 namespace page {
 
-renderable_page_t::renderable_page_t(render_tree_t & render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports) : render(render), splits(splits), notebooks(notebooks), viewports(viewports) {
+renderable_page_t::renderable_page_t(render_tree_t * render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports) : render(render), splits(splits), notebooks(notebooks), viewports(viewports) {
 	is_durty = true;
 }
 
@@ -21,8 +21,8 @@ void renderable_page_t::mark_durty() {
 
 void renderable_page_t::render_if_needed() {
 	if (is_durty) {
-		render.render_splits(splits);
-		render.render_notebooks(notebooks);
+		render->render_splits(splits);
+		render->render_notebooks(notebooks);
 		is_durty = false;
 	}
 }
@@ -39,7 +39,7 @@ void renderable_page_t::repair1(cairo_t * cr, box_int_t const & area) {
 			cairo_reset_clip(cr);
 			cairo_identity_matrix(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(cr, render.s, 0.0, 0.0);
+			cairo_set_source_surface(cr, render->s, 0.0, 0.0);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_fill(cr);
 			cairo_restore(cr);

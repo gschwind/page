@@ -10,9 +10,9 @@
 
 namespace page {
 
-render_context_t::render_context_t(xconnection_t & cnx) :
-		_cnx(cnx) {
-	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy, _cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width, _cnx.root_wa.height);
+render_context_t::render_context_t(xconnection_t * cnx) {
+	_cnx = cnx;
+	composite_overlay_s = cairo_xlib_surface_create(_cnx->dpy, _cnx->composite_overlay, _cnx->root_wa.visual, _cnx->root_wa.width, _cnx->root_wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
 	/* clean up surface */
@@ -21,7 +21,7 @@ render_context_t::render_context_t(xconnection_t & cnx) :
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_paint(composite_overlay_cr);
 
-	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR_ALPHA, cnx.root_wa.width, _cnx.root_wa.height);
+	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR_ALPHA, _cnx->root_wa.width, _cnx->root_wa.height);
 	pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
 
 	/* clean up surface */
