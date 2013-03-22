@@ -50,9 +50,13 @@ public:
 	cairo_surface_t * close_button_s;
 	cairo_surface_t * pop_button_s;
 	cairo_surface_t * pops_button_s;
+	cairo_surface_t * unbind_button_s;
+	cairo_surface_t * bind_button_s;
 
 	int width;
 	int height;
+
+	notebook_t * pop_notebook;
 
 	render_tree_t(cairo_surface_t * target, std::string conf_img_dir,
 			std::string font, std::string font_bold, int width, int heigth) :
@@ -69,7 +73,9 @@ public:
 		close_button_s = 0;
 		pop_button_s = 0;
 		pops_button_s = 0;
+		unbind_button_s = 0;
 
+		pop_notebook = 0;
 
 		/* open icons */
 		if (hsplit_button_s == 0) {
@@ -91,7 +97,7 @@ public:
 		}
 
 		if (close_button_s == 0) {
-			std::string filename = conf_img_dir + "/close_button.png";
+			std::string filename = conf_img_dir + "/window-close.png";
 			printf("Load: %s\n", filename.c_str());
 			close_button_s = cairo_image_surface_create_from_png(
 					filename.c_str());
@@ -100,7 +106,7 @@ public:
 		}
 
 		if (pop_button_s == 0) {
-			std::string filename = conf_img_dir + "/pop_button.png";
+			std::string filename = conf_img_dir + "/pop.png";
 			printf("Load: %s\n", filename.c_str());
 			pop_button_s = cairo_image_surface_create_from_png(
 					filename.c_str());
@@ -109,13 +115,33 @@ public:
 		}
 
 		if (pops_button_s == 0) {
-			std::string filename = conf_img_dir + "/pops_button.png";
+			std::string filename = conf_img_dir + "/pop_selected.png";
 			printf("Load: %s\n", filename.c_str());
 			pops_button_s = cairo_image_surface_create_from_png(
 					filename.c_str());
 			if (pop_button_s == 0)
 				throw std::runtime_error("file not found!");
 		}
+
+		if (unbind_button_s == 0) {
+			std::string filename = conf_img_dir + "/media-eject.png";
+			printf("Load: %s\n", filename.c_str());
+			unbind_button_s = cairo_image_surface_create_from_png(
+					filename.c_str());
+			if (unbind_button_s == 0)
+				throw std::runtime_error("file not found!");
+		}
+
+
+		if (bind_button_s == 0) {
+			std::string filename = conf_img_dir + "/view-restore.png";
+			printf("Load: %s\n", filename.c_str());
+			bind_button_s = cairo_image_surface_create_from_png(
+					filename.c_str());
+			if (bind_button_s == 0)
+				throw std::runtime_error("file not found!");
+		}
+
 
 		/* load fonts */
 		if (!ft_is_loaded) {
@@ -170,7 +196,7 @@ public:
 		cairo_restore(cr);
 	}
 
-	void render_notebook(notebook_t * n) {
+	void render_notebook(notebook_t * n, bool is_default) {
 
 		cairo_save(cr);
 		{
@@ -298,6 +324,10 @@ public:
 								0x00U / 255.0);
 						cairo_stroke(cr);
 
+						cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+						cairo_set_source_surface(cr, unbind_button_s, 0.5, 0.5);
+						cairo_paint(cr);
+
 
 						offset += length * 2;
 					} else {
@@ -380,7 +410,7 @@ public:
 
 				/* draw pop button */
 				cairo_translate(cr, -17.0, 0.0);
-				if (/*page.default_window_pop == this*/false) {
+				if (is_default) {
 					cairo_set_source_surface(cr, pops_button_s, 0.5, 0.5);
 					cairo_paint(cr);
 				} else {
@@ -511,7 +541,7 @@ public:
 	void render_notebooks(std::set<notebook_t *> const & notebooks) {
 		for (std::set<notebook_t *>::const_iterator i = notebooks.begin();
 				i != notebooks.end(); ++i) {
-			render_notebook(*i);
+			render_notebook(*i, *i == pop_notebook);
 		}
 	}
 
@@ -630,6 +660,9 @@ public:
 						0x00U / 255.0);
 				cairo_stroke(cr);
 
+				cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+				cairo_set_source_surface(cr, bind_button_s, 0.5, 0.5);
+				cairo_paint(cr);
 
 			}
 			cairo_restore(cr);

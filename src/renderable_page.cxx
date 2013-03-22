@@ -19,8 +19,9 @@ void renderable_page_t::mark_durty() {
 	is_durty = true;
 }
 
-void renderable_page_t::render_if_needed() {
+void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 	if (is_durty) {
+		render->pop_notebook = default_pop;
 		render->render_splits(splits);
 		render->render_notebooks(notebooks);
 		is_durty = false;

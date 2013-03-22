@@ -350,7 +350,7 @@ void page_t::run() {
 		cnx->process_next_event();
 		while(cnx->process_check_event())
 			continue;
-		rpage->render_if_needed();
+		rpage->render_if_needed(default_window_pop);
 		rnd->render_flush();
 
 	}
@@ -1518,10 +1518,11 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	update_transient_for(a);
 	safe_raise_window(a);
 
-	if(!check_manage(a)) {
+//	if(!check_manage(a)) {
 		a->map();
-	}
+//	}
 
+		update_client_list();
 	cnx->ungrab();
 
 }

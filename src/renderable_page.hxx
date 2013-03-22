@@ -27,7 +27,7 @@ public:
 	renderable_page_t(render_tree_t * render, std::set<split_t *> & splits, std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports);
 
 	void mark_durty();
-	void render_if_needed();
+	void render_if_needed(notebook_t *);
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual region_t<int> get_area();
