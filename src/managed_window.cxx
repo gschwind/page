@@ -114,9 +114,9 @@ void managed_window_t::init_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
 		_margin_top = 26;
-		_margin_bottom = 4;
-		_margin_left = 4;
-		_margin_right = 4;
+		_margin_bottom = 6;
+		_margin_left = 6;
+		_margin_right = 6;
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
@@ -136,9 +136,9 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
 		_margin_top = 26;
-		_margin_bottom = 4;
-		_margin_left = 4;
-		_margin_right = 4;
+		_margin_bottom = 6;
+		_margin_left = 6;
+		_margin_right = 6;
 		_wished_position = _floating_wished_position;
 		reconfigure();
 		break;

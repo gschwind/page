@@ -150,11 +150,13 @@ public:
 	};
 
 	enum process_mode_e {
-		NORMAL_PROCESS,			// Process event as usual
-		SPLIT_GRAB_PROCESS,		// Process event when split is moving
-		NOTEBOOK_GRAB_PROCESS,	// Process event when notebook tab is moved
-		FLOATING_GRAB_PROCESS,	// Process event when a floating window is moved
-		FLOATING_RESIZE_PROCESS
+		PROCESS_NORMAL,			// Process event as usual
+		PROCESS_SPLIT_GRAB,		// Process event when split is moving
+		PROCESS_NOTEBOOK_GRAB,	// Process event when notebook tab is moved
+		PROCESS_FLOATING_GRAB,	// Process event when a floating window is moved
+		PROCESS_FLOATING_RESIZE,
+		PROCESS_FLOATING_CLOSE,
+		PROCESS_FLOATING_BIND
 	};
 
 
@@ -428,6 +430,8 @@ public:
 
 	void register_fullscreen_window(managed_window_t * mw);
 	void unregister_fullscreen_window(managed_window_t * mw);
+
+	void grab_pointer();
 
 };
 
