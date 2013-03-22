@@ -649,7 +649,7 @@ page_window_type_e window_t::find_window_type_pass1(xconnection_t const & cnx, A
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_DOCK) {
 		return PAGE_DOCK_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_TOOLBAR) {
-		return PAGE_NORMAL_WINDOW_TYPE;
+		return PAGE_FLOATING_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_MENU) {
 		return PAGE_OVERLAY_WINDOW_TYPE;
 	} else if (wm_window_type == cnx.atoms._NET_WM_WINDOW_TYPE_UTILITY) {
@@ -699,14 +699,14 @@ std::list<Atom> window_t::get_net_wm_type() {
 		if(!override_redirect()) {
 			/* Managed windows */
 			if(!_has_transient_for) {
-				net_wm_type.push_back(_cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL);
+				net_wm_type.push_back(_cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG);
 			} else {
 				net_wm_type.push_back(_cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG);
 			}
 
 		} else {
 			/* Override-redirected windows */
-			net_wm_type.push_back(_cnx.atoms._NET_WM_WINDOW_TYPE_NORMAL);
+			net_wm_type.push_back(_cnx.atoms._NET_WM_WINDOW_TYPE_DIALOG);
 		}
 
 	}

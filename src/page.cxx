@@ -2808,7 +2808,8 @@ void page_t::safe_raise_window(window_t * w) {
 	/* see vector spec. */
 	vector<Window> v_order(final_order.begin(), final_order.end());
 
-	cnx->raise_window(final_order.back());
+	// make graphical issue.
+	//cnx->raise_window(final_order.back());
 	XRestackWindows(cnx->dpy, &v_order[0], v_order.size());
 
 }
