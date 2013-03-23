@@ -74,6 +74,7 @@ public:
 		pop_button_s = 0;
 		pops_button_s = 0;
 		unbind_button_s = 0;
+		bind_button_s = 0;
 
 		pop_notebook = 0;
 

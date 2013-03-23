@@ -21,7 +21,9 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t 
 	w->reparent(border->get_xwin(), 0, 0);
 
 	_surf = border->create_cairo_surface();
+	assert(_surf != 0);
 	_cr = cairo_create(_surf);
+	assert(_cr != 0);
 	cairo_set_operator(_cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgb(_cr, 1.0, 0.0, 1.0);
 	cairo_paint(_cr);
