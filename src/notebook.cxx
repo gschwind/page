@@ -21,33 +21,29 @@ notebook_t::~notebook_t() {
 managed_window_t * notebook_t::find_client_tab(int x, int y) {
 	if (_allocation.is_inside(x, y)) {
 		if (!_clients.empty()) {
-			double box_width = ((_allocation.w - 17.0 * 5.0)
-					/ (_clients.size() + 1.0));
-			double offset = _allocation.x;
-			box_t<int> b;
-			list<managed_window_t *>::iterator c = _clients.begin();
-			while (c != _clients.end()) {
-				if (*c == _selected.front()) {
-					b = box_int_t(floor(offset), _allocation.y, ceil(2.0 * box_width),
-							layout->notebook_margin.top);
-					if (b.is_inside(x, y)) {
-						break;
-					}
-					offset += box_width * 2;
-				} else {
-					b = box_int_t(floor(offset), _allocation.y, ceil(box_width),
-							layout->notebook_margin.top);
-					if (b.is_inside(x, y)) {
-						break;
-					}
-					offset += box_width;
-				}
 
-				++c;
+			int number_of_client = _clients.size();
+			int selected_index = -1;
+
+			if(!_selected.empty()) {
+				list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
+				selected_index = distance(_clients.begin(), i);
 			}
 
-			if (c != _clients.end()) {
-				return *c;
+			list<box_int_t> tabs = layout->compute_client_tab(_allocation, number_of_client, selected_index);
+
+			list<box_int_t>::iterator i = tabs.begin();
+			while(i != tabs.end()) {
+				if((*i).is_inside(x, y))
+					break;
+				++i;
+			}
+
+			if (i != tabs.end()) {
+				int index = distance(tabs.begin(), i);
+				list<managed_window_t *>::iterator x = _clients.begin();
+				advance(x, index);
+				return *x;
 			}
 		}
 	}
@@ -57,43 +53,18 @@ managed_window_t * notebook_t::find_client_tab(int x, int y) {
 }
 
 void notebook_t::update_close_area() {
-	if (!_clients.empty()) {
-		double box_width = ((_allocation.w - 17.0 * 5.0)
-				/ (_clients.size() + 1.0));
-		double offset = _allocation.x;
-		box_t<int> b;
-		list<managed_window_t *>::iterator c = _clients.begin();
-		while (c != _clients.end()) {
-			if (*c == _selected.front()) {
-				b = box_int_t(floor(offset), _allocation.y,
-						ceil(2.0 * box_width), layout->notebook_margin.top);
-				offset += box_width * 2;
-				break;
-			} else {
-				b = box_int_t(floor(offset), _allocation.y, ceil(box_width),
-						layout->notebook_margin.top);
-				offset += box_width;
-			}
 
-			++c;
-		}
+	int number_of_client = _clients.size();
+	int selected_index = -1;
 
-		if (c != _clients.end()) {
-			close_client_area.x = b.x + b.w - 16;
-			close_client_area.y = b.y;
-			close_client_area.w = 16;
-			close_client_area.h = layout->notebook_margin.top;
-
-			undck_client_area.x = b.x + b.w - 32;
-			undck_client_area.y = b.y;
-			undck_client_area.w = 16;
-			undck_client_area.h = layout->notebook_margin.top;
-
-		} else {
-			close_client_area = box_int_t(-1, -1, 0, 0);
-			undck_client_area = box_int_t(-1, -1, 0, 0);
-		}
+	if(!_selected.empty()) {
+		list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
+		selected_index = distance(_clients.begin(), i);
 	}
+
+	close_client_area = layout->compute_notebook_close_window_position(_allocation, number_of_client, selected_index);
+	undck_client_area = layout->compute_notebook_unbind_window_position(_allocation, number_of_client, selected_index);
+
 }
 
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
@@ -248,25 +219,18 @@ void notebook_t::set_allocation(box_int_t const & area) {
 
 	_allocation = area;
 
-	button_close.x = _allocation.x + _allocation.w - 17;
-	button_close.y = _allocation.y;
-	button_close.w = 17;
-	button_close.h = layout->notebook_margin.top;
+	int number_of_client = _clients.size();
+	int selected_index = -1;
 
-	button_vsplit.x = _allocation.x + _allocation.w - 17 * 2;
-	button_vsplit.y = _allocation.y;
-	button_vsplit.w = 17;
-	button_vsplit.h = layout->notebook_margin.top;
+	if(!_selected.empty()) {
+		list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
+		selected_index = distance(_clients.begin(), i);
+	}
 
-	button_hsplit.x = _allocation.x + _allocation.w - 17 * 3;
-	button_hsplit.y = _allocation.y;
-	button_hsplit.w = 17;
-	button_hsplit.h = layout->notebook_margin.top;
-
-	button_pop.x = _allocation.x + _allocation.w - 17 * 4;
-	button_pop.y = _allocation.y;
-	button_pop.w = 17;
-	button_pop.h = layout->notebook_margin.top;
+	button_close = layout->compute_notebook_close_position(_allocation, number_of_client, selected_index);
+	button_vsplit = layout->compute_notebook_vsplit_position(_allocation, number_of_client, selected_index);
+	button_hsplit = layout->compute_notebook_vsplit_position(_allocation, number_of_client, selected_index);
+	button_pop = layout->compute_notebook_bookmark_position(_allocation, number_of_client, selected_index);
 
 	tab_area.x = _allocation.x;
 	tab_area.y = _allocation.y;

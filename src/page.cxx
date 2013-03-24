@@ -692,8 +692,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			managed_window_t * mw = base_window_to_floating_window[c];
 			box_int_t size = mw->get_base_position();
 
-			box_int_t close_position(size.x + size.w - 17, size.y, 17, 24);
-			box_int_t dock_position(size.x + size.w - 34, size.y, 17, 24);
+			box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
+			box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
 			box_int_t resize_position(size.x + size.w - 20, size.y + size.h - 20, 20, 20);
 
 			/* click on close button ? */
@@ -832,8 +832,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_FLOATING_CLOSE: {
 		managed_window_t * mw = mode_data_floating.f;
 		box_int_t size = mw->get_base_position();
-		box_int_t close_position(size.x + size.w - 17, size.y, 17, 24);
-
+		box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
 		/* click on close button ? */
 		if (close_position.is_inside(e.x_root, e.y_root)) {
 			mode_data_floating.f = mw;
@@ -851,7 +850,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		managed_window_t * mw = mode_data_floating.f;
 		box_int_t size = mw->get_base_position();
-		box_int_t dock_position(size.x + size.w - 34, size.y, 17, 24);
+		box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
 		if (dock_position.is_inside(e.x_root, e.y_root)) {
 			bind_window(mw);
 		}
