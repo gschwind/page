@@ -229,7 +229,7 @@ void notebook_t::set_allocation(box_int_t const & area) {
 
 	button_close = layout->compute_notebook_close_position(_allocation, number_of_client, selected_index);
 	button_vsplit = layout->compute_notebook_vsplit_position(_allocation, number_of_client, selected_index);
-	button_hsplit = layout->compute_notebook_vsplit_position(_allocation, number_of_client, selected_index);
+	button_hsplit = layout->compute_notebook_hsplit_position(_allocation, number_of_client, selected_index);
 	button_pop = layout->compute_notebook_bookmark_position(_allocation, number_of_client, selected_index);
 
 	tab_area.x = _allocation.x;
