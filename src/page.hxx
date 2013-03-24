@@ -433,6 +433,8 @@ public:
 
 	void grab_pointer();
 
+	void cleanup_grab(managed_window_t * mw);
+
 };
 
 }

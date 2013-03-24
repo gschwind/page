@@ -400,6 +400,9 @@ void page_t::unmanage(managed_window_t * mw) {
 	if (has_key(fullscreen_client_to_viewport, mw))
 		unfullscreen(mw);
 
+	/* if window is in move/resize/notebook move, do cleanup */
+	cleanup_grab(mw);
+
 	if (mw->get_type() == MANAGED_NOTEBOOK) {
 		remove_window_from_tree(mw);
 		destroy_notebook_window(mw);
@@ -3225,6 +3228,42 @@ void page_t::grab_pointer() {
 			CurrentTime) != GrabSuccess) {
 		/* bad news */
 		throw std::runtime_error("fail to grab pointer");
+	}
+}
+
+void page_t::cleanup_grab(managed_window_t * mw) {
+
+	switch (process_mode) {
+	case PROCESS_NORMAL:
+		break;
+
+	case PROCESS_NOTEBOOK_GRAB:
+
+		if (mode_data_notebook.c == mw) {
+			mode_data_notebook.c = 0;
+			process_mode = PROCESS_NORMAL;
+			rnd->remove(mode_data_notebook.pn0);
+			rnd->remove(mode_data_notebook.pn1);
+			delete mode_data_notebook.pn0;
+			delete mode_data_notebook.pn1;
+			/* ev is button release
+			 * so set the hidden focus parameter
+			 */
+			XUngrabPointer(cnx->dpy, CurrentTime);
+		}
+		break;
+
+	case PROCESS_FLOATING_GRAB:
+	case PROCESS_FLOATING_RESIZE:
+	case PROCESS_FLOATING_CLOSE:
+	case PROCESS_FLOATING_BIND:
+		if (mode_data_floating.f == mw) {
+			mode_data_floating.f = 0;
+			process_mode = PROCESS_NORMAL;
+			XUngrabPointer(cnx->dpy, CurrentTime);
+		}
+		break;
+
 	}
 }
 

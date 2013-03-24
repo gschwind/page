@@ -30,10 +30,10 @@ simple_theme_layout_t::simple_theme_layout_t() {
 		split_margin.left = 0;
 		split_margin.right = 0;
 
-		floating_margin.top = 24;
-		floating_margin.bottom = 4;
-		floating_margin.left = 4;
-		floating_margin.right = 4;
+		floating_margin.top = 28;
+		floating_margin.bottom = 8;
+		floating_margin.left = 8;
+		floating_margin.right = 8;
 
 		split_width = 8;
 
@@ -288,8 +288,6 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 	color_t plum0(0xad7fa8U);
 
-
-
 	cairo_identity_matrix(cr);
 	cairo_reset_clip(cr);
 	cairo_set_line_width(cr, 1.0);
@@ -333,18 +331,34 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		bicon.x += 2;
 		bicon.y += 2;
 
+		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_DARKEN);
 		if ((*c)->get_icon() != 0) {
 			cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 			cairo_set_source_surface(cr, (*c)->get_icon()->get_cairo_surface(),
 					bicon.x, bicon.y);
-			cairo_paint(cr);
+			if (*c == n->_selected.front()) {
+				cairo_paint_with_alpha(cr, 1.0);
+			} else {
+
+				cairo_paint_with_alpha(cr, 1.0);
+			}
 		}
+		cairo_restore(cr);
 
 		box_int_t btext = b;
-		btext.h -= 4;
-		btext.w -= 3 * 16 - 8;
-		btext.x += 2 + 16 + 2;
-		btext.y += 2;
+
+		if (*c == n->_selected.front()) {
+			btext.h -= 4;
+			btext.w -= 3 * 16 + 12;
+			btext.x += 2 + 16 + 2;
+			btext.y += 2;
+		} else {
+			btext.h -= 4;
+			btext.w -= 1 * 16 + 8;
+			btext.x += 2 + 16 + 2;
+			btext.y += 2;
+		}
 
 		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
 		cairo_clip(cr);
@@ -542,6 +556,10 @@ void simple_theme_t::render_split(cairo_t * cr, split_t * s) {
 
 	color_t grey0(0xeeeeecU);
 	color_t grey2(0xbabdb6U);
+
+	cairo_identity_matrix(cr);
+	cairo_reset_clip(cr);
+	cairo_set_line_width(cr, 1.0);
 
 	box_int_t area = s->get_split_bar_area();
 	cairo_reset_clip(cr);
