@@ -14,6 +14,7 @@ namespace page {
 
 managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme) : _orig(w) {
 
+	set_theme(theme);
 	init_managed_type(initial_type);
 
 	this->_base = border;
@@ -33,7 +34,7 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t 
 
 	icon = 0;
 
-	set_theme(theme);
+
 
 }
 
