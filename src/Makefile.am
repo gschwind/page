@@ -16,6 +16,7 @@ page_SOURCES = \
 	viewport.cxx \
 	default_theme.cxx \
 	minimal_theme.cxx \
+	simple_theme.cxx \
 	renderable_page.cxx \
 	managed_window.cxx \
 	renderable_window.cxx \

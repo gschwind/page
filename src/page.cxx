@@ -42,6 +42,7 @@
 #include "box.hxx"
 #include "client.hxx"
 #include "root.hxx"
+#include "simple_theme.hxx"
 
 /* ICCCM definition */
 #define _NET_WM_STATE_REMOVE 0
@@ -157,7 +158,8 @@ page_t::page_t(int argc, char ** argv) {
 	client_focused = 0;
 
 	//theme = new default_theme_t(page_base_dir, font, font_bold);
-	theme = new minimal_theme_t(page_base_dir, font, font_bold);
+	//theme = new minimal_theme_t(page_base_dir, font, font_bold);
+	theme = new simple_theme_t(page_base_dir, font, font_bold);
 
 	rpage = new renderable_page_t(theme, rnd->composite_overlay_s,
 			cnx->root_size.w, cnx->root_size.h, split_list, notebook_list,

@@ -32,6 +32,9 @@ class split_t: public tree_t {
 	tree_t * _pack0;
 	tree_t * _pack1;
 
+	box_int_t bpack0;
+	box_int_t bpack1;
+
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
 

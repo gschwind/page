@@ -36,21 +36,40 @@ void split_t::set_allocation(box_t<int> const & allocation) {
 }
 
 void split_t::update_allocation_pack0() {
-	if (!_pack0)
-		return;
+
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x + theme->split_margin.left;
-		b.y = _allocation.y + theme->split_margin.top;
-		b.w = _allocation.w * _split - theme->split_width - theme->split_margin.left - theme->split_margin.right;
-		b.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
+		box_int_t bpack0;
+		box_int_t bpack1;
+
+		int w = _allocation.w - 2 * theme->split_margin.left - 2 * theme->split_margin.right - theme->split_width;
+		int w0 = floor(w * _split + 0.5);
+		int w1 = w - w0;
+
+		bpack0.x = _allocation.x + theme->split_margin.left;
+		bpack0.y = _allocation.y + theme->split_margin.top;
+		bpack0.w = w0;
+		bpack0.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
+		bpack1.x = _allocation.x + theme->split_margin.left + w0 + theme->split_margin.right + theme->split_width + theme->split_margin.left;
+		bpack1.y = _allocation.y + theme->split_margin.top;
+		bpack1.w = w1;
+		bpack1.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
+		if(_pack0)
+			_pack0->set_allocation(bpack0);
+		if(_pack1)
+			_pack1->set_allocation(bpack1);
+
 	} else {
 		b.x = _allocation.x + theme->split_margin.left;
 		b.y = _allocation.y + theme->split_margin.top;
 		b.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
-		b.h = _allocation.h * _split - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
+		b.h = floor(_allocation.h * _split + 0.5) - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
+		_pack0->set_allocation(b);
 	}
-	_pack0->set_allocation(b);
+
 }
 
 void split_t::update_allocation_pack1() {
@@ -58,15 +77,12 @@ void split_t::update_allocation_pack1() {
 		return;
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x + _allocation.w * _split + theme->split_width + theme->split_margin.left;
-		b.y = _allocation.y + theme->split_margin.top;
-		b.w = _allocation.w - _allocation.w * _split - theme->split_width - theme->split_margin.left - theme->split_margin.right;
-		b.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
 	} else {
 		b.x = _allocation.x + theme->split_margin.left;
-		b.y = _allocation.y + _allocation.h * _split + theme->split_width + theme->split_margin.top;
+		b.y = _allocation.y + floor(_allocation.h * _split + 0.5) + theme->split_width + theme->split_margin.top;
 		b.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
-		b.h = _allocation.h - _allocation.h * _split - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
+		b.h = _allocation.h - floor(_allocation.h * _split + 0.5) - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
 	}
 	_pack1->set_allocation(b);
 }
@@ -76,13 +92,13 @@ void split_t::replace(tree_t * src, tree_t * by) {
 		printf("replace %p by %p\n", src, by);
 		_pack0 = by;
 		_pack0->set_parent(this);
-		update_allocation_pack0();
 	} else if (_pack1 == src) {
 		printf("replace %p by %p\n", src, by);
 		_pack1 = by;
 		_pack1->set_parent(this);
-		update_allocation_pack1();
 	}
+
+	update_allocation();
 }
 
 //tab_window_set_t split_t::get_windows() {
@@ -102,15 +118,25 @@ void split_t::replace(tree_t * src, tree_t * by) {
 void split_t::compute_split_bar_area(box_int_t & area, double split) const {
 
 	if (_split_type == VERTICAL_SPLIT) {
-		area.x = _allocation.x + (int) floor(split * _allocation.w) - theme->split_width;
+
+		int w = _allocation.w - 2 * theme->split_margin.left - 2 * theme->split_margin.right - theme->split_width;
+		int w0 = floor(w * split + 0.5);
+		int w1 = w - w0;
+
+		area.x = _allocation.x + theme->split_margin.left + w0 + theme->split_margin.right;
 		area.y = _allocation.y;
-		area.w = 2 * theme->split_width;
+		area.w = theme->split_width;
 		area.h = _allocation.h;
 	} else {
+
+		int h = _allocation.h - 2 * theme->split_margin.top - 2 * theme->split_margin.bottom - theme->split_width;
+		int h0 = floor(h * split + 0.5);
+		int h1 = h - h0;
+
 		area.x = _allocation.x;
-		area.y = _allocation.y + (int) floor(split * _allocation.h) - theme->split_width;
+		area.y = _allocation.y + theme->split_margin.top + h0 + theme->split_margin.bottom;
 		area.w = _allocation.w;
-		area.h = 2 * theme->split_width;
+		area.h = theme->split_width;
 	}
 }
 
@@ -154,8 +180,47 @@ split_type_e split_t::get_split_type() {
 
 void split_t::update_allocation() {
 	compute_split_bar_area(_split_bar_area, _split);
-	update_allocation_pack0();
-	update_allocation_pack1();
+
+	if (_split_type == VERTICAL_SPLIT) {
+
+		int w = _allocation.w - 2 * theme->split_margin.left - 2 * theme->split_margin.right - theme->split_width;
+		int w0 = floor(w * _split + 0.5);
+		int w1 = w - w0;
+
+		bpack0.x = _allocation.x + theme->split_margin.left;
+		bpack0.y = _allocation.y + theme->split_margin.top;
+		bpack0.w = w0;
+		bpack0.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
+		bpack1.x = _allocation.x + theme->split_margin.left + w0 + theme->split_margin.right + theme->split_width + theme->split_margin.left;
+		bpack1.y = _allocation.y + theme->split_margin.top;
+		bpack1.w = w1;
+		bpack1.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
+
+
+	} else {
+
+		int h = _allocation.h - 2 * theme->split_margin.top - 2 * theme->split_margin.bottom - theme->split_width;
+		int h0 = floor(h * _split + 0.5);
+		int h1 = h - h0;
+
+		bpack0.x = _allocation.x + theme->split_margin.left;
+		bpack0.y = _allocation.y + theme->split_margin.top;
+		bpack0.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
+		bpack0.h = h0;
+
+		bpack1.x = _allocation.x + theme->split_margin.left;
+		bpack1.y = _allocation.y + theme->split_margin.top + h0 + theme->split_margin.bottom + theme->split_width + theme->split_margin.top;
+		bpack1.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
+		bpack1.h = h1;
+
+	}
+
+	if(_pack0)
+		_pack0->set_allocation(bpack0);
+	if(_pack1)
+		_pack1->set_allocation(bpack1);
+
 }
 
 double split_t::get_split_ratio() {
