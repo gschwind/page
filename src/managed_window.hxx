@@ -10,6 +10,9 @@
 
 #include "xconnection.hxx"
 #include "window.hxx"
+#include "icon.hxx"
+#include "window_icon_handler.hxx"
+#include "theme_layout.hxx"
 
 namespace page {
 
@@ -21,6 +24,8 @@ enum managed_window_type_e {
 
 class managed_window_t {
 private:
+
+	theme_layout_t const * theme;
 
 	managed_window_type_e _type;
 
@@ -41,6 +46,8 @@ private:
 	cairo_t * _cr;
 	cairo_surface_t * _surf;
 
+	window_icon_handler_t * icon;
+
 	/* avoid copy */
 	managed_window_t(managed_window_t const &);
 	managed_window_t & operator=(managed_window_t const &);
@@ -49,7 +56,7 @@ private:
 
 public:
 
-	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border);
+	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
 	void normalize();
@@ -81,6 +88,13 @@ public:
 	void focus();
 
 	managed_window_type_e get_type();
+
+	window_icon_handler_t * get_icon();
+	void update_icon();
+
+	void set_theme(theme_layout_t const * theme);
+
+	cairo_t * get_cairo();
 
 };
 

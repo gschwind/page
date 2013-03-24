@@ -123,13 +123,13 @@ page_t::page_t(int argc, char ** argv) {
 
 	default_window_pop = 0;
 
-	gchar * theme = g_key_file_get_string(conf, "default", "theme_dir", 0);
-	if (theme == 0) {
+	gchar * theme_dir = g_key_file_get_string(conf, "default", "theme_dir", 0);
+	if (theme_dir == 0) {
 		throw std::runtime_error("no theme_dir found in config file");
 	}
 
-	page_base_dir = theme;
-	g_free(theme);
+	page_base_dir = theme_dir;
+	g_free(theme_dir);
 
 	gchar * sfont = g_key_file_get_string(conf, "default", "font_file", 0);
 	if (sfont == 0) {
@@ -156,9 +156,12 @@ page_t::page_t(int argc, char ** argv) {
 
 	client_focused = 0;
 
-	rndt = new render_tree_t(rnd->composite_overlay_s, page_base_dir, font,
-			font_bold, cnx->root_size.w, cnx->root_size.h);
-	rpage = new renderable_page_t(rndt, split_list, notebook_list, viewport_list);
+	//theme = new default_theme_t(page_base_dir, font, font_bold);
+	theme = new minimal_theme_t(page_base_dir, font, font_bold);
+
+	rpage = new renderable_page_t(theme, rnd->composite_overlay_s,
+			cnx->root_size.w, cnx->root_size.h, split_list, notebook_list,
+			viewport_list);
 
 	rnd->add(rpage);
 
@@ -173,7 +176,7 @@ page_t::~page_t() {
 	}
 
 	delete rpage;
-	delete rndt;
+	delete theme;
 	delete rnd;
 	delete cnx;
 
@@ -1155,7 +1158,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 	{
 		std::map<window_t *, managed_window_t *>::iterator x = orig_window_to_floating_window.find(w);
 		if(x != orig_window_to_floating_window.end()) {
-			rpage->render->render_floating(x->second);
+			theme->render_floating(x->second);
 		}
 	}
 
@@ -1551,7 +1554,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 
 		if(has_key(orig_window_to_floating_window, x)) {
-			rpage->render->render_floating(orig_window_to_floating_window[x]);
+			theme->render_floating(orig_window_to_floating_window[x]);
 		}
 
 	} else if (e.atom == cnx->atoms.WM_NAME) {
@@ -1565,8 +1568,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 
 			if (has_key(orig_window_to_floating_window, x)) {
-				rpage->render->render_floating(
-						orig_window_to_floating_window[x]);
+				theme->render_floating(orig_window_to_floating_window[x]);
 			}
 		}
 	} else if (e.atom == cnx->atoms._NET_WM_STRUT_PARTIAL) {
@@ -1614,7 +1616,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 				new_size.w = final_width;
 				new_size.h = final_height;
 				fw->set_wished_position(new_size);
-				rpage->render->render_floating(fw);
+				theme->render_floating(fw);
 				rnd->add_damage_area(fw->get_wished_position());
 
 			}
@@ -2214,8 +2216,8 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.name = c->get_title();
 			mode_data_notebook.pn1 = new popup_notebook1_t(
 					mode_data_notebook.from->_allocation.x,
-					mode_data_notebook.from->_allocation.y, rndt->font,
-					mode_data_notebook.from->get_icon_surface(c->get_orig()), mode_data_notebook.name);
+					mode_data_notebook.from->_allocation.y, theme->get_default_font(),
+					c->get_icon()->get_cairo_surface(), c->get_title());
 
 			mode_data_notebook.popup_is_added = false;
 
@@ -2358,8 +2360,8 @@ void page_t::notebook_close(notebook_t * src) {
 
 	/* move all windows from src to default_window_pop */
 
-	set<managed_window_t *> windows = src->get_windows();
-	for(set<managed_window_t *>::iterator i = windows.begin(); i != windows.end(); ++i) {
+	list<managed_window_t *> windows = src->get_clients();
+	for(list<managed_window_t *>::iterator i = windows.begin(); i != windows.end(); ++i) {
 		remove_window_from_tree((*i));
 		insert_window_in_tree((*i), 0, false);
 	}
@@ -2472,13 +2474,13 @@ void page_t::fix_allocation(viewport_t & v) {
 }
 
 split_t * page_t::new_split(split_type_e type) {
-	split_t * x = new split_t(type);
+	split_t * x = new split_t(type, theme->get_theme_layout());
 	split_list.insert(x);
 	return x;
 }
 
 notebook_t * page_t::new_notebook(viewport_t * v) {
-	notebook_t * x = new notebook_t();
+	notebook_t * x = new notebook_t(theme->get_theme_layout());
 	notebook_list.insert(x);
 	notebook_to_viewport[x] = v;
 	viewport_to_notebooks[v].insert(x);
@@ -2854,7 +2856,7 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	/* ensure event are listen */
 	orig->select_input(StructureNotifyMask | PropertyChangeMask);
 
-	managed_window_t * mw = new managed_window_t(type, orig, base);
+	managed_window_t * mw = new managed_window_t(type, orig, base, theme->get_theme_layout());
 
 	return mw;
 }
@@ -3173,7 +3175,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_FLOATING);
 	register_floating_window(mw);
 
-	rpage->render->render_floating(mw);
+	theme->render_floating(mw);
 
 	mw->normalize();
 	safe_raise_window(mw->get_orig());

@@ -34,7 +34,7 @@ public:
 	/* damaged region */
 	region_t<int> pending_damage;
 
-	~render_context_t() { };
+	virtual ~render_context_t() { };
 	render_context_t(xconnection_t * cnx);
 
 	void add_damage_area(region_t<int> const & box);

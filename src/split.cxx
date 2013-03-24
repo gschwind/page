@@ -15,7 +15,7 @@
 
 namespace page {
 
-split_t::split_t(split_type_e type) :
+split_t::split_t(split_type_e type, theme_layout_t const * theme) :
 	tree_t(),
 	_split_bar_area(),
 	_split_type(type),
@@ -23,7 +23,7 @@ split_t::split_t(split_type_e type) :
 	_pack0(0),
 	_pack1(0)
 {
-
+	set_theme(theme);
 }
 
 split_t::~split_t() {
@@ -40,15 +40,15 @@ void split_t::update_allocation_pack0() {
 		return;
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x;
-		b.y = _allocation.y;
-		b.w = _allocation.w * _split - GRIP_SIZE;
-		b.h = _allocation.h;
+		b.x = _allocation.x + theme->split_margin.left;
+		b.y = _allocation.y + theme->split_margin.top;
+		b.w = _allocation.w * _split - theme->split_width - theme->split_margin.left - theme->split_margin.right;
+		b.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
 	} else {
-		b.x = _allocation.x;
-		b.y = _allocation.y;
-		b.w = _allocation.w;
-		b.h = _allocation.h * _split - GRIP_SIZE;
+		b.x = _allocation.x + theme->split_margin.left;
+		b.y = _allocation.y + theme->split_margin.top;
+		b.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
+		b.h = _allocation.h * _split - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
 	}
 	_pack0->set_allocation(b);
 }
@@ -58,15 +58,15 @@ void split_t::update_allocation_pack1() {
 		return;
 	box_t<int> b;
 	if (_split_type == VERTICAL_SPLIT) {
-		b.x = _allocation.x + _allocation.w * _split + GRIP_SIZE;
-		b.y = _allocation.y;
-		b.w = _allocation.w - _allocation.w * _split - GRIP_SIZE;
-		b.h = _allocation.h;
+		b.x = _allocation.x + _allocation.w * _split + theme->split_width + theme->split_margin.left;
+		b.y = _allocation.y + theme->split_margin.top;
+		b.w = _allocation.w - _allocation.w * _split - theme->split_width - theme->split_margin.left - theme->split_margin.right;
+		b.h = _allocation.h - theme->split_margin.top - theme->split_margin.bottom;
 	} else {
-		b.x = _allocation.x;
-		b.y = _allocation.y + _allocation.h * _split + GRIP_SIZE;
-		b.w = _allocation.w;
-		b.h = _allocation.h - _allocation.h * _split - GRIP_SIZE;
+		b.x = _allocation.x + theme->split_margin.left;
+		b.y = _allocation.y + _allocation.h * _split + theme->split_width + theme->split_margin.top;
+		b.w = _allocation.w - theme->split_margin.left - theme->split_margin.right;
+		b.h = _allocation.h - _allocation.h * _split - theme->split_width - theme->split_margin.top - theme->split_margin.bottom;
 	}
 	_pack1->set_allocation(b);
 }
@@ -102,15 +102,15 @@ void split_t::replace(tree_t * src, tree_t * by) {
 void split_t::compute_split_bar_area(box_int_t & area, double split) const {
 
 	if (_split_type == VERTICAL_SPLIT) {
-		area.x = _allocation.x + (int) floor(split * _allocation.w) - GRIP_SIZE;
+		area.x = _allocation.x + (int) floor(split * _allocation.w) - theme->split_width;
 		area.y = _allocation.y;
-		area.w = 2 * GRIP_SIZE;
+		area.w = 2 * theme->split_width;
 		area.h = _allocation.h;
 	} else {
 		area.x = _allocation.x;
-		area.y = _allocation.y + (int) floor(split * _allocation.h) - GRIP_SIZE;
+		area.y = _allocation.y + (int) floor(split * _allocation.h) - theme->split_width;
 		area.w = _allocation.w;
-		area.h = 2 * GRIP_SIZE;
+		area.h = 2 * theme->split_width;
 	}
 }
 
@@ -160,6 +160,10 @@ void split_t::update_allocation() {
 
 double split_t::get_split_ratio() {
 	return _split;
+}
+
+void split_t::set_theme(theme_layout_t const * theme) {
+	this->theme = theme;
 }
 
 }

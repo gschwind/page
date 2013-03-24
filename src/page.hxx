@@ -52,9 +52,11 @@
 #include "popup_notebook0.hxx"
 #include "popup_notebook1.hxx"
 #include "page_base.hxx"
-#include "render_tree.hxx"
+#include "default_theme.hxx"
 #include "renderable_page.hxx"
 #include "managed_window.hxx"
+#include "theme.hxx"
+#include "minimal_theme.hxx"
 
 using namespace std;
 
@@ -159,8 +161,6 @@ public:
 		PROCESS_FLOATING_BIND
 	};
 
-
-
 	/* this define the current state of page */
 	process_mode_e process_mode;
 
@@ -232,7 +232,7 @@ private:
 	window_t * client_focused;
 public:
 
-	render_tree_t * rndt;
+	theme_t * theme;
 	renderable_page_t * rpage;
 
 private:

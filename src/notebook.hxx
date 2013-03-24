@@ -14,6 +14,7 @@
 #include "window.hxx"
 #include "window_icon_handler.hxx"
 #include "managed_window.hxx"
+#include "theme_layout.hxx"
 
 
 namespace page {
@@ -27,10 +28,9 @@ struct img_t {
 
 class notebook_t : public tree_t {
 
-public:
+	theme_layout_t const * layout;
 
-	static int const BORDER_SIZE = 4;
-	static int const HEIGHT = 24;
+public:
 
 	enum select_e {
 		SELECT_NONE,
@@ -48,8 +48,6 @@ public:
 	list<managed_window_t *> _selected;
 	// set of map for fast check is window is in this notebook
 	set<managed_window_t *> _client_map;
-
-	std::map<window_t *, window_icon_handler_t *> icons;
 
 	box_int_t client_area;
 
@@ -78,20 +76,17 @@ public:
 	void update_client_position(managed_window_t * c);
 
 public:
-	notebook_t();
+	notebook_t(theme_layout_t const * theme);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
-	void render(cairo_t * cr);
-
 
 	bool process_button_press_event(XEvent const * e);
 
-	cairo_t * get_cairo();
 	void replace(tree_t * src, tree_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
 
-	set<managed_window_t *> const & get_windows();
+	list<managed_window_t *> const & get_clients();
 
 	bool add_client(managed_window_t * c, bool prefer_activate);
 	void remove_client(managed_window_t * c);
@@ -131,6 +126,10 @@ public:
 	cairo_surface_t * get_icon_surface(window_t * w);
 
 	box_int_t compute_client_size(window_t * c);
+	box_int_t const & get_allocation();
+	managed_window_t const * get_selected();
+
+	void set_theme(theme_layout_t const * theme);
 
 };
 

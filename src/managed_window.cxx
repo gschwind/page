@@ -12,7 +12,7 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border) : _orig(w) {
+managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme) : _orig(w) {
 
 	init_managed_type(initial_type);
 
@@ -30,6 +30,10 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t 
 
 	_floating_wished_position = w->get_size();
 	set_wished_position(w->get_size());
+
+	icon = 0;
+
+	set_theme(theme);
 
 }
 
@@ -115,10 +119,10 @@ bool managed_window_t::check_base_position(box_int_t const & position) {
 void managed_window_t::init_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
-		_margin_top = 26;
-		_margin_bottom = 6;
-		_margin_left = 6;
-		_margin_right = 6;
+		_margin_top = theme->floating_margin.top;
+		_margin_bottom = theme->floating_margin.bottom;
+		_margin_left = theme->floating_margin.left;
+		_margin_right = theme->floating_margin.right;
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
@@ -137,10 +141,10 @@ void managed_window_t::init_managed_type(managed_window_type_e type) {
 void managed_window_t::set_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
-		_margin_top = 26;
-		_margin_bottom = 6;
-		_margin_left = 6;
-		_margin_right = 6;
+		_margin_top = theme->floating_margin.top;
+		_margin_bottom = theme->floating_margin.bottom;
+		_margin_left = theme->floating_margin.left;
+		_margin_right = theme->floating_margin.right;
 		_wished_position = _floating_wished_position;
 		reconfigure();
 		break;
@@ -179,6 +183,27 @@ box_int_t managed_window_t::get_base_position() {
 
 managed_window_type_e managed_window_t::get_type() {
 	return _type;
+}
+
+window_icon_handler_t * managed_window_t::get_icon() {
+	if(icon == 0) {
+		icon = new window_icon_handler_t(_orig);
+	}
+	return icon;
+}
+
+void managed_window_t::update_icon() {
+	if(icon != 0)
+		delete icon;
+	icon = new window_icon_handler_t(_orig);
+}
+
+void managed_window_t::set_theme(theme_layout_t const * theme) {
+	this->theme = theme;
+}
+
+cairo_t * managed_window_t::get_cairo() {
+	return _cr;
 }
 
 }

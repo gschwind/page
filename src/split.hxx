@@ -8,10 +8,9 @@
 #ifndef SPLIT_HXX_
 #define SPLIT_HXX_
 
-
-
 #include "box.hxx"
 #include "tree.hxx"
+#include "theme_layout.hxx"
 
 #include <set>
 
@@ -24,7 +23,8 @@ enum split_type_e {
 };
 
 class split_t: public tree_t {
-	static int const GRIP_SIZE = 3;
+
+	theme_layout_t const * theme;
 
 	box_int_t _split_bar_area;
 	split_type_e _split_type;
@@ -40,7 +40,7 @@ class split_t: public tree_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type);
+	split_t(split_type_e type, theme_layout_t const * theme);
 	~split_t();
 
 	void replace(tree_t * src, tree_t * by);
@@ -59,6 +59,8 @@ public:
 	split_type_e get_split_type();
 
 	double get_split_ratio();
+
+	void set_theme(theme_layout_t const * theme);
 
 };
 

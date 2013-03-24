@@ -14,7 +14,8 @@ page_SOURCES = \
 	popup_split.cxx \
 	render_context.cxx \
 	viewport.cxx \
-	render_tree.cxx \
+	default_theme.cxx \
+	minimal_theme.cxx \
 	renderable_page.cxx \
 	managed_window.cxx \
 	renderable_window.cxx \
