@@ -16,24 +16,30 @@ namespace page {
 
 class renderable_page_t : public renderable_t {
 	bool is_durty;
-
-public:
-
-	theme_t * render;
+	cairo_surface_t * _surf;
+	cairo_t * _cr;
 
 	std::set<split_t *> & splits;
 	std::set<notebook_t *> & notebooks;
 	std::set<viewport_t *> & viewports;
 
+	theme_t * render;
+
+	unsigned int _w, _h;
+
+	cairo_surface_t * _target;
+
+public:
+
 	notebook_t * default_pop;
 
-	cairo_surface_t * surf;
-	cairo_t * cr;
 
 	renderable_page_t(theme_t * render, cairo_surface_t * target, int width,
 			int height, std::set<split_t *> & splits,
 			std::set<notebook_t *> & notebooks,
 			std::set<viewport_t *> & viewports);
+
+	~renderable_page_t();
 
 	void mark_durty();
 	void render_if_needed(notebook_t *);
@@ -45,6 +51,8 @@ public:
 
 	void render_splits(std::set<split_t *> const & splits);
 	void render_notebooks(std::set<notebook_t *> const & notebooks);
+
+	void rebuild_cairo();
 
 };
 

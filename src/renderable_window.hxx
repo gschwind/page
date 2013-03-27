@@ -29,8 +29,6 @@ public:
 
 	box_int_t position;
 
-	bool _is_map;
-
 	Damage damage;
 	double opacity;
 	/* window surface */
@@ -57,8 +55,6 @@ public:
 	virtual bool is_visible();
 
 	void set_opacity(double x);
-
-	void set_map(bool status);
 
 };
 

@@ -97,6 +97,9 @@ void window_t::write_net_frame_extents() {
 
 window_t::~window_t() {
 
+	if(_net_wm_icon_data != 0)
+		delete[] _net_wm_icon_data;
+
 	XFree(_wm_normal_hints);
 	XFree(_wm_hints);
 
@@ -236,9 +239,11 @@ void window_t::read_partial_struct() {
 
 void window_t::read_net_wm_user_time() {
 	unsigned int n;
-	long * time = get_properties32(_cnx.atoms._NET_WM_USER_TIME, _cnx.atoms.CARDINAL, &n);
-	if(time) {
+	long * time = get_properties32(_cnx.atoms._NET_WM_USER_TIME,
+			_cnx.atoms.CARDINAL, &n);
+	if (time) {
 		_user_time = time[0];
+		delete[] time;
 	} else {
 		_user_time = 0;
 	}
@@ -247,10 +252,12 @@ void window_t::read_net_wm_user_time() {
 
 void window_t::read_net_wm_desktop() {
 	unsigned int n;
-	long * desktop = get_properties32(_cnx.atoms._NET_WM_DESKTOP, _cnx.atoms.CARDINAL, &n);
-	if(desktop) {
+	long * desktop = get_properties32(_cnx.atoms._NET_WM_DESKTOP,
+			_cnx.atoms.CARDINAL, &n);
+	if (desktop) {
 		_has_net_wm_desktop = true;
 		_net_wm_desktop = desktop[0];
+		delete[] desktop;
 	} else {
 		_has_net_wm_desktop = false;
 		_net_wm_desktop = 0;

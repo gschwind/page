@@ -139,6 +139,7 @@ void render_context_t::repair_buffer(renderable_list_t & visible, cairo_t * cr,
 void render_context_t::repair_overlay(box_int_t const & area, cairo_surface_t * src) {
 
 	cairo_reset_clip(composite_overlay_cr);
+	cairo_identity_matrix(composite_overlay_cr);
 	cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface(composite_overlay_cr, src, 0, 0);
 	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);

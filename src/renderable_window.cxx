@@ -29,7 +29,6 @@ renderable_window_t::renderable_window_t(Display * d, Window w, Visual * v, box_
 	window = w;
 	visual = v;
 	position = p;
-	_is_map = false;
 
 	damage = None;
 	window_surf = 0;
@@ -94,8 +93,9 @@ void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
 	//printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
 	if (clip.w > 0 && clip.h > 0) {
 		cairo_save(cr);
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_reset_clip(cr);
+		cairo_identity_matrix(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cr, window_surf, size.x, size.y);
 		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 		cairo_clip(cr);
@@ -136,16 +136,12 @@ void renderable_window_t::mark_dirty_retangle(box_int_t const & area) {
 }
 
 bool renderable_window_t::is_visible() {
-	return _is_map;
+	return true;
 }
 
 void renderable_window_t::reconfigure(box_int_t const & area) {
 	position = area;
 	cairo_xlib_surface_set_size(window_surf, area.w, area.h);
-}
-
-void renderable_window_t::set_map(bool status) {
-	_is_map = status;
 }
 
 }

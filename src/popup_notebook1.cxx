@@ -23,7 +23,8 @@ popup_notebook1_t::popup_notebook1_t(int x, int y, cairo_font_face_t * font,
 }
 
 popup_notebook1_t::~popup_notebook1_t() {
-
+	if(cache != 0)
+		cairo_surface_destroy(cache);
 }
 
 box_int_t popup_notebook1_t::get_absolute_extend() {

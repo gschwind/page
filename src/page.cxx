@@ -172,9 +172,19 @@ page_t::page_t(int argc, char ** argv) {
 
 page_t::~page_t() {
 
-	if (conf) {
+	if (conf != 0) {
 		g_key_file_free(conf);
 		conf = 0;
+	}
+
+	map<window_t *, renderable_window_t *> tmp = window_to_renderable_context;
+	for(map<window_t *, renderable_window_t *>::iterator i = tmp.begin(); i != tmp.end(); ++i) {
+		destroy_renderable(i->first);
+	}
+
+	for (map<Window, window_t *>::iterator i = xwindow_to_window.begin();
+			i != xwindow_to_window.end(); ++i) {
+		delete i->second;
 	}
 
 	delete rpage;
@@ -403,6 +413,8 @@ void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
+	Window base = mw->get_base()->get_xwin();
+
 	if (mw->get_type() == MANAGED_NOTEBOOK) {
 		remove_window_from_tree(mw);
 		destroy_notebook_window(mw);
@@ -410,7 +422,7 @@ void page_t::unmanage(managed_window_t * mw) {
 		unregister_floating_window(mw);
 	}
 
-	XDestroyWindow(cnx->dpy, mw->get_base()->get_xwin());
+	XDestroyWindow(cnx->dpy, base);
 	update_client_list();
 }
 
@@ -448,7 +460,7 @@ void page_t::scan() {
 
 //			printf("Scan for \"%s\"\n", w->get_title().c_str());
 
-			if(!w->is_input_only())
+			if(!w->is_input_only() && w->is_map())
 				new_renderable_window(w);
 
 			if (w->is_map()) {
@@ -629,6 +641,8 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
+		printf("rerender background\n");
+		rpage->rebuild_cairo();
 		rpage->mark_durty();
 		rnd->add_damage_area(cnx->root_size);
 	}
@@ -1077,15 +1091,16 @@ void page_t::process_event(XMotionEvent const & e) {
 }
 
 void page_t::process_event(XCirculateEvent const & e) {
-	window_t * w = get_window_t(e.window);
-	std::map<window_t *, renderable_window_t *>::iterator x = window_to_renderable_context.find(w);
-	if(x != window_to_renderable_context.end()) {
-		if (e.place == PlaceOnTop) {
-			rnd->raise(x->second);
-		} else if (e.place == PlaceOnBottom) {
-			rnd->lower(x->second);
-		}
-	}
+// this will be handled in configure events
+//	window_t * w = get_window_t(e.window);
+//	std::map<window_t *, renderable_window_t *>::iterator x = window_to_renderable_context.find(w);
+//	if(x != window_to_renderable_context.end()) {
+//		if (e.place == PlaceOnTop) {
+//			rnd->raise(x->second);
+//		} else if (e.place == PlaceOnBottom) {
+//			rnd->lower(x->second);
+//		}
+//	}
 }
 
 void page_t::process_event(XConfigureEvent const & e) {
@@ -1195,9 +1210,6 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	w->select_input(PropertyChangeMask | StructureNotifyMask);
 	update_transient_for(w);
 
-	if (!w->is_input_only())
-		new_renderable_window(w);
-
 	cnx->ungrab();
 
 }
@@ -1245,8 +1257,9 @@ void page_t::process_event(XMapEvent const & e) {
 	window_t * x = get_window_t(e.window);
 	x->map_notify();
 
-	if(has_key(window_to_renderable_context, x)) {
-		window_to_renderable_context[x]->set_map(true);
+	if (x->read_window_attributes() && !has_key(window_to_renderable_context, x)) {
+		if (!x->is_input_only())
+			new_renderable_window (x);
 	}
 
 	rnd->add_damage_area(x->get_size());
@@ -1357,8 +1370,8 @@ void page_t::process_event(XReparentEvent const & e) {
 void page_t::process_event(XUnmapEvent const & e) {
 	window_t * x = get_window_t(e.window);
 
-	if(has_key(window_to_renderable_context, x)) {
-		window_to_renderable_context[x]->set_map(false);
+	if(has_key(window_to_renderable_context, x) && e.event == cnx->xroot) {
+		destroy_renderable(x);
 	}
 
 	x->unmap_notify();
@@ -2098,6 +2111,7 @@ void page_t::read_viewport_layout() {
 
 void page_t::set_default_pop(notebook_t * x) {
 	default_window_pop = x;
+	rpage->default_pop = default_window_pop;
 }
 
 void page_t::set_focus(window_t * w) {
@@ -2827,17 +2841,18 @@ void page_t::clear_sibbling_child(Window w) {
 }
 
 void page_t::new_renderable_window(window_t * w) {
-	renderable_window_t * x = new renderable_window_t(w->get_display(), w->get_xwin(), w->get_visual(), w->get_size());
-	x->set_map(w->is_map());
-	window_to_renderable_context[w] = x;
-	rnd->add(x);
-	rnd->add_damage_area(x->get_absolute_extend());
+	renderable_window_t * rw = new renderable_window_t(w->get_display(), w->get_xwin(), w->get_visual(), w->get_size());
+	window_to_renderable_context[w] = rw;
+	rnd->add(rw);
+	rnd->add_damage_area(rw->get_absolute_extend());
 }
 
 void page_t::destroy_renderable(window_t * w) {
 	if (has_key(window_to_renderable_context, w)) {
 		renderable_window_t * rw = window_to_renderable_context[w];
 		window_to_renderable_context.erase(w);
+		rnd->remove(rw);
+		rnd->add_damage_area(rw->get_absolute_extend());
 		delete rw;
 	}
 }
@@ -3263,7 +3278,8 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			XUngrabPointer(cnx->dpy, CurrentTime);
 		}
 		break;
-
+	default:
+		break;
 	}
 }
 

@@ -223,6 +223,8 @@ xconnection_t::xconnection_t() {
 
 	open_connections[dpy] = this;
 
+	last_know_time = 0;
+
 }
 
 void xconnection_t::grab() {
