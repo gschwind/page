@@ -38,6 +38,8 @@ public:
 
 	simple_theme_layout_t();
 
+	virtual ~simple_theme_layout_t();
+
 	virtual list<box_int_t> compute_client_tab(box_int_t const & allocation,
 			int number_of_client, int selected_client_index) const;
 	virtual box_int_t compute_notebook_close_window_position(
@@ -91,6 +93,8 @@ public:
 
 	simple_theme_t(std::string conf_img_dir,
 			std::string font, std::string font_bold);
+
+	virtual ~simple_theme_t();
 
 	static void rounded_rectangle(cairo_t * cr, double x, double y, double w,
 			double h, double r);
