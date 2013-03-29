@@ -19,6 +19,7 @@
 #include <cairo/cairo-xlib.h>
 #include <cairo/cairo-ft.h>
 
+#include "color.hxx"
 #include "box.hxx"
 #include "split.hxx"
 #include "notebook.hxx"
@@ -91,8 +92,17 @@ public:
 	cairo_surface_t * unbind_button_s;
 	cairo_surface_t * bind_button_s;
 
-	simple_theme_t(std::string conf_img_dir,
-			std::string font, std::string font_bold);
+	color_t grey0;
+	color_t grey1;
+	color_t grey2;
+	color_t grey3;
+	color_t grey5;
+
+	color_t plum0;
+	color_t plum1;
+	color_t plum2;
+
+	simple_theme_t(GKeyFile * conf);
 
 	virtual ~simple_theme_t();
 
@@ -110,8 +120,8 @@ public:
 
 }
 
-
-
+// TODO
+//extern "C" page::theme_t * get_theme(GKeyFile * conf);
 
 
 #endif /* SIMPLE_THEME_HXX_ */

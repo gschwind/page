@@ -8,6 +8,8 @@
 #ifndef THEME_HXX_
 #define THEME_HXX_
 
+#include <glib.h>
+
 #include <set>
 #include <list>
 #include <string>

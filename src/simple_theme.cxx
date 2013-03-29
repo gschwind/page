@@ -6,8 +6,6 @@
  */
 
 
-
-
 #include "simple_theme.hxx"
 #include "box.hxx"
 #include "color.hxx"
@@ -158,8 +156,36 @@ box_int_t simple_theme_layout_t::compute_floating_bind_position(box_int_t const 
 
 /**********************************************************************************/
 
-simple_theme_t::simple_theme_t(std::string conf_img_dir, std::string font,
-		std::string font_bold) {
+
+inline string get_value_string(GKeyFile * conf, string const & group, string const & key) {
+	string ret;
+	gchar * value = g_key_file_get_string(conf, group.c_str(), key.c_str(), 0);
+	if(value != 0) {
+		ret = value;
+		g_free(value);
+		return ret;
+	} else {
+		throw runtime_error("config key missing");
+	}
+}
+
+
+simple_theme_t::simple_theme_t(GKeyFile * conf) {
+
+	string conf_img_dir = get_value_string(conf, "default", "theme_dir");
+	string font = get_value_string(conf, "default", "font_file");
+	string font_bold = get_value_string(conf, "default", "font_bold_file");
+
+
+	grey0.set(get_value_string(conf, "simple_theme", "grey0"));
+	grey1.set(get_value_string(conf, "simple_theme", "grey1"));
+	grey2.set(get_value_string(conf, "simple_theme", "grey2"));
+	grey3.set(get_value_string(conf, "simple_theme", "grey3"));
+	grey5.set(get_value_string(conf, "simple_theme", "grey5"));
+
+	plum0.set(get_value_string(conf, "simple_theme", "plum0"));
+	plum1.set(get_value_string(conf, "simple_theme", "plum1"));
+	plum2.set(get_value_string(conf, "simple_theme", "plum2"));
 
 	layout = new simple_theme_layout_t();
 
@@ -309,16 +335,6 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 
 void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		bool is_default) {
-
-	color_t grey0(0xeeeeecU);
-	color_t grey1(0xd3d7cfU);
-	color_t grey2(0xbabdb6U);
-	color_t grey3(0x888a85U);
-	color_t grey5(0x2e3436U);
-
-	color_t plum0(0xad7fa8U);
-	color_t plum1(0x75507bU);
-	color_t plum2(0x5c3566U);
 
 	cairo_reset_clip(cr);
 	cairo_identity_matrix(cr);
@@ -630,9 +646,6 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 void simple_theme_t::render_split(cairo_t * cr, split_t * s) {
 
-	color_t grey0(0xeeeeecU);
-	color_t grey2(0xbabdb6U);
-
 	cairo_reset_clip(cr);
 	cairo_identity_matrix(cr);
 	cairo_set_line_width(cr, 1.0);
@@ -665,10 +678,6 @@ void simple_theme_t::render_split(cairo_t * cr, split_t * s) {
 
 
 void simple_theme_t::render_floating(managed_window_t * mw) {
-
-	color_t plum0(0xad7fa8U);
-	color_t plum1(0x75507bU);
-	color_t plum2(0x5c3566U);
 
 	cairo_t * cr = mw->get_cairo();
 	box_int_t _allocation = mw->base->get_size();
@@ -852,4 +861,9 @@ cairo_font_face_t * simple_theme_t::get_default_font() {
 	return font;
 }
 
+}
+
+
+page::theme_t * get_theme(GKeyFile * conf) {
+	return new page::simple_theme_t(conf);
 }

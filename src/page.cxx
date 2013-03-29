@@ -111,15 +111,6 @@ page_t::page_t(int argc, char ** argv) {
 
 	client_to_notebook = map<managed_window_t *, notebook_t *>();
 
-	//base_window_to_floating_window = map<window_t *, managed_window_t *>();
-	//orig_window_to_floating_window = map<window_t *, managed_window_t *>();
-
-	//base_window_to_notebook_window = map<window_t *, managed_window_t *>();
-	//orig_window_to_notebook_window = map<window_t *, managed_window_t *>();
-
-	//base_window_to_fullscreen_window = map<window_t *, managed_window_t *>();
-	//orig_window_to_fullscreen_window = map<window_t *, managed_window_t *>();
-
 	supported_list = list<Atom>();
 
 	default_window_pop = 0;
@@ -159,7 +150,7 @@ page_t::page_t(int argc, char ** argv) {
 
 	//theme = new default_theme_t(page_base_dir, font, font_bold);
 	//theme = new minimal_theme_t(page_base_dir, font, font_bold);
-	theme = new simple_theme_t(page_base_dir, font, font_bold);
+	theme = new simple_theme_t(conf);
 
 	rpage = new renderable_page_t(theme, rnd->composite_overlay_s,
 			cnx->root_size.w, cnx->root_size.h, split_list, notebook_list,
