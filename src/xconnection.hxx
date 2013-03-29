@@ -282,12 +282,19 @@ struct xevent_handler_t {
  * Structure to handle X connection context.
  */
 struct xconnection_t {
+
+private:
 	/* that allow error_handler to bind display to connection */
 	static std::map<Display *, xconnection_t *> open_connections;
 	std::map<int, char const * const *> extension_request_name_map;
 
 	/* main display connection */
-	Display * dpy;
+	Display * _dpy;
+
+public:
+
+	Display * const & dpy;
+
 	/* main screen */
 	int screen;
 	/* the root window ID */
@@ -305,7 +312,7 @@ struct xconnection_t {
 
 	Time last_know_time;
 
-	int (*old_error_handler)(Display * dpy, XErrorEvent * ev);
+	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
 	int connection_fd;
 
@@ -434,6 +441,8 @@ struct xconnection_t {
 
 	/* xshape extension handler */
 	int xshape_opcode, xshape_event, xshape_error;
+
+public:
 
 	xconnection_t();
 

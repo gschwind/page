@@ -12,22 +12,20 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme) : _orig(w) {
+managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * orig, window_t * base, theme_layout_t const * theme) : orig(orig), base(base) {
 
 	set_theme(theme);
 	init_managed_type(initial_type);
 
-	this->_base = border;
+	orig->reparent(base->id, 0, 0);
 
-	w->reparent(border->get_xwin(), 0, 0);
-
-	_surf = border->create_cairo_surface();
+	_surf = base->create_cairo_surface();
 	assert(_surf != 0);
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
 
-	_floating_wished_position = w->get_size();
-	set_wished_position(w->get_size());
+	_floating_wished_position = orig->get_size();
+	set_wished_position(orig->get_size());
 
 	icon = 0;
 
@@ -44,13 +42,13 @@ managed_window_t::~managed_window_t() {
 }
 
 void managed_window_t::normalize() {
-	_base->map();
-	_orig->normalize();
+	base->map();
+	orig->normalize();
 }
 
 void managed_window_t::iconify() {
-	_base->unmap();
-	_orig->iconify();
+	base->unmap();
+	orig->iconify();
 }
 
 void managed_window_t::reconfigure() {
@@ -70,8 +68,8 @@ void managed_window_t::reconfigure() {
 	_orig_position.w = _wished_position.w;
 	_orig_position.h = _wished_position.h;
 
-	_base->move_resize(_base_position);
-	_orig->move_resize(_orig_position);
+	base->move_resize(_base_position);
+	orig->move_resize(_orig_position);
 
 	cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
 
@@ -89,19 +87,11 @@ box_int_t const & managed_window_t::get_wished_position() const {
 }
 
 void managed_window_t::fake_configure() {
-	_orig->fake_configure(_wished_position, 0);
+	orig->fake_configure(_wished_position, 0);
 }
 
 void managed_window_t::delete_window(Time t) {
-	_orig->delete_window(t);
-}
-
-window_t * managed_window_t::get_orig() {
-	return _orig;
-}
-
-window_t * managed_window_t::get_base() {
-	return _base;
+	orig->delete_window(t);
 }
 
 bool managed_window_t::check_orig_position(box_int_t const & position) {
@@ -122,7 +112,6 @@ void managed_window_t::init_managed_type(managed_window_type_e type) {
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
-	default:
 		_margin_top = 0;
 		_margin_bottom = 0;
 		_margin_left = 0;
@@ -142,14 +131,11 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 		_margin_left = theme->floating_margin.left;
 		_margin_right = theme->floating_margin.right;
 		_wished_position = _floating_wished_position;
-		reconfigure();
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
-	default:
 		if(_type == MANAGED_FLOATING)
 			_floating_wished_position = _wished_position;
-
 		_margin_top = 0;
 		_margin_bottom = 0;
 		_margin_left = 0;
@@ -158,11 +144,12 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	}
 
 	_type = type;
+	reconfigure();
 
 }
 
 string managed_window_t::get_title() {
-	return _orig->get_title();
+	return orig->get_title();
 }
 
 cairo_t * managed_window_t::get_cairo_context() {
@@ -170,7 +157,7 @@ cairo_t * managed_window_t::get_cairo_context() {
 }
 
 void managed_window_t::focus() {
-	_orig->focus();
+	orig->focus();
 }
 
 box_int_t managed_window_t::get_base_position() {
@@ -183,7 +170,7 @@ managed_window_type_e managed_window_t::get_type() {
 
 window_icon_handler_t * managed_window_t::get_icon() {
 	if(icon == 0) {
-		icon = new window_icon_handler_t(_orig);
+		icon = new window_icon_handler_t(orig);
 	}
 	return icon;
 }
@@ -191,7 +178,7 @@ window_icon_handler_t * managed_window_t::get_icon() {
 void managed_window_t::update_icon() {
 	if(icon != 0)
 		delete icon;
-	icon = new window_icon_handler_t(_orig);
+	icon = new window_icon_handler_t(orig);
 }
 
 void managed_window_t::set_theme(theme_layout_t const * theme) {
@@ -200,6 +187,10 @@ void managed_window_t::set_theme(theme_layout_t const * theme) {
 
 cairo_t * managed_window_t::get_cairo() {
 	return _cr;
+}
+
+bool managed_window_t::is(managed_window_type_e type) {
+	return _type == type;
 }
 
 }

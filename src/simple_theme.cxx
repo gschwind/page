@@ -549,7 +549,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		area.y += layout->notebook_margin.top - 4;
 		area.h -= layout->notebook_margin.top - 4;
 
-		box_int_t bclient = n->_selected.front()->get_base()->get_size();
+		box_int_t bclient = n->_selected.front()->base->get_size();
 
 		{
 			/* left */
@@ -671,7 +671,7 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 	color_t plum2(0x5c3566U);
 
 	cairo_t * cr = mw->get_cairo();
-	box_int_t _allocation = mw->get_base()->get_size();
+	box_int_t _allocation = mw->base->get_size();
 
 	_allocation.x = 0;
 	_allocation.y = 0;

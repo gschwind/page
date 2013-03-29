@@ -210,5 +210,9 @@ void render_context_t::process_event(XEvent const & e) {
 
 }
 
+void render_context_t::damage_all() {
+	add_damage_area(_cnx->root_size);
+}
+
 }
 

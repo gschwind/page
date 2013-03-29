@@ -206,14 +206,18 @@ public:
 
 	map<managed_window_t *, notebook_t *> client_to_notebook;
 
-	map<window_t *, managed_window_t *> base_window_to_floating_window;
-	map<window_t *, managed_window_t *> orig_window_to_floating_window;
+	/* TODO */
+	map<Window, managed_window_t *> window_to_managed_window;
+	set<managed_window_t *> managed_windows_set;
 
-	map<window_t *, managed_window_t *> base_window_to_notebook_window;
-	map<window_t *, managed_window_t *> orig_window_to_notebook_window;
+	//map<window_t *, managed_window_t *> base_window_to_floating_window;
+	//map<window_t *, managed_window_t *> orig_window_to_floating_window;
 
-	map<window_t *, managed_window_t *> base_window_to_fullscreen_window;
-	map<window_t *, managed_window_t *> orig_window_to_fullscreen_window;
+	//map<window_t *, managed_window_t *> base_window_to_notebook_window;
+	//map<window_t *, managed_window_t *> orig_window_to_notebook_window;
+
+	//map<window_t *, managed_window_t *> base_window_to_fullscreen_window;
+	//map<window_t *, managed_window_t *> orig_window_to_fullscreen_window;
 
 	list<Atom> supported_list;
 
@@ -384,10 +388,10 @@ public:
 	void destroy_renderable(window_t * w);
 
 	managed_window_t * new_managed_window(managed_window_type_e type, window_t * orig);
-
+	void destroy_managed_window(managed_window_t * mw);
 
 	managed_window_t * new_floating_window(window_t * w);
-	void destroy_floating_window(managed_window_t * w);
+	managed_window_t * new_notebook_window(window_t * w);
 
 	void unmap_set(window_set_t & set);
 	void map_set(window_set_t & set);
@@ -405,8 +409,6 @@ public:
 
 	bool check_manage(window_t * x);
 
-	managed_window_t * new_notebook_window(window_t * w);
-	void destroy_notebook_window(managed_window_t * w);
 
 	window_t * find_root_window(window_t * w);
 	window_t * find_client_window(window_t * w);
@@ -422,18 +424,11 @@ public:
 	void bind_window(managed_window_t * mw);
 	void unbind_window(managed_window_t * mw);
 
-	void register_floating_window(managed_window_t * mw);
-	void unregister_floating_window(managed_window_t * mw);
-
-	void register_notebook_window(managed_window_t * mw);
-	void unregister_notebook_window(managed_window_t * mw);
-
-	void register_fullscreen_window(managed_window_t * mw);
-	void unregister_fullscreen_window(managed_window_t * mw);
-
 	void grab_pointer();
 
 	void cleanup_grab(managed_window_t * mw);
+
+	managed_window_t * get_managed(Window w);
 
 };
 

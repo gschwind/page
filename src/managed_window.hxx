@@ -34,9 +34,6 @@ private:
 	unsigned _margin_left;
 	unsigned _margin_right;
 
-	window_t * _orig;
-	window_t * _base;
-
 	box_int_t _floating_wished_position;
 
 	box_int_t _wished_position;
@@ -56,6 +53,9 @@ private:
 
 public:
 
+	window_t * const orig;
+	window_t * const base;
+
 	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
@@ -69,9 +69,6 @@ public:
 	box_int_t const & get_wished_position() const;
 
 	void delete_window(Time t);
-
-	window_t * get_orig();
-	window_t * get_base();
 
 	bool check_orig_position(box_int_t const & position);
 	bool check_base_position(box_int_t const & position);
@@ -95,6 +92,8 @@ public:
 	void set_theme(theme_layout_t const * theme);
 
 	cairo_t * get_cairo();
+
+	bool is(managed_window_type_e type);
 
 };
 

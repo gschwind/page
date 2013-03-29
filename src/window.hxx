@@ -29,6 +29,9 @@ enum page_window_type_e {
 	PAGE_TOOLTIP
 };
 
+
+typedef pair<Display *, Window> window_id_t;
+
 class window_t {
 
 private:
@@ -38,11 +41,13 @@ private:
 	typedef std::map<window_key_t, window_t *> window_map_t;
 
 	xconnection_t & _cnx;
-	Window const _xwin;
-	XSizeHints * _wm_normal_hints;
-	XWMHints * _wm_hints;
 
 	int _lock_count;
+	bool _is_lock;
+	bool _is_managed;
+
+	XSizeHints * _wm_normal_hints;
+	XWMHints * _wm_hints;
 
 	/* store the ICCCM WM_STATE : WithDraw, Iconic or Normal */
 	long _wm_state;
@@ -52,14 +57,11 @@ private:
 	atom_set_t _net_wm_protocols;
 	atom_set_t _net_wm_allowed_actions;
 
-	bool _is_managed;
-
 	bool _has_wm_name;
 	bool _has_net_wm_name;
 	bool _has_partial_struct;
 	/* store if wm must do input focus */
 	bool _wm_input_focus;
-	bool _is_lock;
 
 	bool _has_wm_normal_hints;
 	bool _has_transient_for;
@@ -77,7 +79,7 @@ private:
 
 	Window _transient_for;
 
-	long _user_time;
+	long _net_wm_user_time;
 
 	unsigned int _net_wm_icon_size;
 	long * _net_wm_icon_data;
@@ -93,19 +95,22 @@ private:
 	window_t(window_t const &);
 	window_t & operator=(window_t const &);
 public:
+
+	Window const id;
+
 	window_t(xconnection_t &cnx, Window w);
 	virtual ~window_t();
 
 	long * get_properties32(Atom prop, Atom type, unsigned int *num) {
-		return _cnx.get_properties<long, 32>(_xwin, prop, type, num);
+		return _cnx.get_properties<long, 32>(id, prop, type, num);
 	}
 
 	short * get_properties16(Atom prop, Atom type, unsigned int *num) {
-		return _cnx.get_properties<short, 16>(_xwin, prop, type, num);
+		return _cnx.get_properties<short, 16>(id, prop, type, num);
 	}
 
 	char * get_properties8(Atom prop, Atom type, unsigned int *num) {
-		return _cnx.get_properties<char, 8>(_xwin, prop, type, num);
+		return _cnx.get_properties<char, 8>(id, prop, type, num);
 	}
 
 	/* READING FROM CLIENTS */
@@ -167,7 +172,6 @@ public:
 	bool has_wm_type(Atom x);
 
 	bool is_window(Window w);
-	Window get_xwin();
 	long get_wm_state();
 	bool is_map();
 	void delete_window(Time t);

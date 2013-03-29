@@ -60,6 +60,8 @@ public:
 	void raise(renderable_t * r);
 	void lower(renderable_t * r);
 
+	void damage_all();
+
 	renderable_list_t get_renderable_list();
 
 	virtual void process_event(XEvent const & e);

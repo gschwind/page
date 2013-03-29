@@ -24,7 +24,7 @@ namespace page {
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 window_t::window_t(xconnection_t &cnx, Window w) :
-	_cnx(cnx), _xwin(w)
+	_cnx(cnx), id(w)
 {
 
 	_wm_normal_hints = XAllocSizeHints();
@@ -64,7 +64,7 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 
 	_transient_for = None;
 
-	_user_time = 0;
+	_net_wm_user_time = 0;
 
 	_net_wm_icon_size = 0;
 	_net_wm_icon_data = 0;
@@ -85,11 +85,11 @@ box_int_t window_t::get_size() {
 
 void window_t::write_net_frame_extents() {
 	/* set border */
-	_cnx.set_window_border_width(_xwin, 0);
+	_cnx.set_window_border_width(id, 0);
 
 	/* set frame extend to 0 (I don't know why a client need this data) */
 	long frame_extends[4] = { 0, 0, 0, 0 };
-	_cnx.change_property(_xwin, _cnx.atoms._NET_FRAME_EXTENTS,
+	_cnx.change_property(id, _cnx.atoms._NET_FRAME_EXTENTS,
 			_cnx.atoms.CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(frame_extends), 4);
 
@@ -107,7 +107,7 @@ window_t::~window_t() {
 
 void window_t::read_wm_hints() {
 	XFree(_wm_hints);
-	_wm_hints = _cnx.get_wm_hints(_xwin);
+	_wm_hints = _cnx.get_wm_hints(id);
 }
 
 
@@ -115,7 +115,7 @@ void window_t::read_wm_normal_hints() {
 	_has_wm_normal_hints = true;
 
 	long size_hints_flags;
-	if (!XGetWMNormalHints(_cnx.dpy, _xwin, _wm_normal_hints, &size_hints_flags)) {
+	if (!XGetWMNormalHints(_cnx.dpy, id, _wm_normal_hints, &size_hints_flags)) {
 		/* size is uninitialized, ensure that size.flags aren't used */
 		_wm_normal_hints->flags = 0;
 		_has_wm_normal_hints = false;
@@ -136,7 +136,7 @@ void window_t::read_wm_normal_hints() {
 void window_t::read_vm_name() {
 	_has_wm_name = false;
 	XTextProperty name;
-	_cnx.get_text_property(_xwin, &name, _cnx.atoms.WM_NAME);
+	_cnx.get_text_property(id, &name, _cnx.atoms.WM_NAME);
 	if (!name.nitems) {
 		XFree(name.value);
 		_wm_name = "";
@@ -151,7 +151,7 @@ void window_t::read_vm_name() {
 void window_t::read_net_vm_name() {
 	_has_net_wm_name = false;
 	XTextProperty name;
-	_cnx.get_text_property(_xwin, &name, _cnx.atoms._NET_WM_NAME);
+	_cnx.get_text_property(id, &name, _cnx.atoms._NET_WM_NAME);
 	if (!name.nitems) {
 		XFree(name.value);
 		_net_wm_name = "";
@@ -179,7 +179,7 @@ void window_t::read_net_wm_type() {
 
 	//print_net_wm_window_type();
 
-	_type = find_window_type(_cnx, _xwin, _wa.c_class);
+	_type = find_window_type(_cnx, id, _wa.c_class);
 
 }
 
@@ -205,7 +205,7 @@ void window_t::read_net_wm_protocols() {
 	_net_wm_protocols.clear();
 	int count;
 	Atom * atoms_list;
-	if (XGetWMProtocols(_cnx.dpy, _xwin, &atoms_list, &count)) {
+	if (XGetWMProtocols(_cnx.dpy, id, &atoms_list, &count)) {
 		for (int i = 0; i < count; ++i) {
 			_net_wm_protocols.insert(atoms_list[i]);
 		}
@@ -242,10 +242,10 @@ void window_t::read_net_wm_user_time() {
 	long * time = get_properties32(_cnx.atoms._NET_WM_USER_TIME,
 			_cnx.atoms.CARDINAL, &n);
 	if (time) {
-		_user_time = time[0];
+		_net_wm_user_time = time[0];
 		delete[] time;
 	} else {
-		_user_time = 0;
+		_net_wm_user_time = 0;
 	}
 }
 
@@ -290,7 +290,7 @@ void window_t::set_dock_action() {
 
 
 void window_t::select_input(long int mask) {
-	_cnx.select_input(_xwin, mask);
+	_cnx.select_input(id, mask);
 }
 
 void window_t::print_net_wm_window_type() {
@@ -300,9 +300,9 @@ void window_t::print_net_wm_window_type() {
 	if (val) {
 		/* use the first value that we know about in the array */
 		for (unsigned i = 0; i < num; ++i) {
-			char * name = XGetAtomName(_cnx.dpy, val[i]);
+			//string name = _cnx.get_atom_name((Atom)val[i]);
 			//printf("_NET_WM_WINDOW_TYPE = \"%s\"\n", name);
-			XFree(name);
+			//XFree(name);
 		}
 		delete[] val;
 	}
@@ -316,9 +316,9 @@ void window_t::print_net_wm_state() {
 	if (val) {
 		/* use the first value that we know about in the array */
 		for (unsigned i = 0; i < num; ++i) {
-			char * name = XGetAtomName(_cnx.dpy, val[i]);
-			printf(" \"%s\"", name);
-			XFree(name);
+			string name = _cnx.get_atom_name((Atom)val[i]);
+			printf(" \"%s\"", name.c_str());
+			//XFree(name);
 		}
 		delete[] val;
 	}
@@ -330,11 +330,11 @@ bool window_t::is_input_only() {
 }
 
 void window_t::add_to_save_set() {
-	_cnx.add_to_save_set(_xwin);
+	_cnx.add_to_save_set(id);
 }
 
 void window_t::remove_from_save_set() {
-	_cnx.remove_from_save_set(_xwin);
+	_cnx.remove_from_save_set(id);
 }
 
 bool window_t::is_visible() {
@@ -342,7 +342,7 @@ bool window_t::is_visible() {
 }
 
 long window_t::get_net_user_time() {
-	return _user_time;
+	return _net_wm_user_time;
 }
 
 bool window_t::override_redirect() {
@@ -409,7 +409,7 @@ void window_t::read_wm_state() {
 	_has_wm_state = false;
 	_wm_state = WithdrawnState;
 
-	if (_cnx.get_window_property(_xwin, _cnx.atoms.WM_STATE, 0L, 2L, False,
+	if (_cnx.get_window_property(id, _cnx.atoms.WM_STATE, 0L, 2L, False,
 			_cnx.atoms.WM_STATE, &real, &format, &n, &extra,
 			(unsigned char **) &p) == Success) {
 		if (n != 0 && format == 32 && real == _cnx.atoms.WM_STATE) {
@@ -423,18 +423,18 @@ void window_t::read_wm_state() {
 
 void window_t::map() {
 	_wa.map_state = IsViewable;
-	_cnx.map_window(_xwin);
+	_cnx.map_window(id);
 }
 
 void window_t::unmap() {
-	_cnx.unmap(_xwin);
+	_cnx.unmap(id);
 }
 
 /* check if client is still alive */
 bool window_t::try_lock() {
 	_cnx.grab();
 	XEvent e;
-	if (XCheckTypedWindowEvent(_cnx.dpy, _xwin, DestroyNotify, &e)) {
+	if (XCheckTypedWindowEvent(_cnx.dpy, id, DestroyNotify, &e)) {
 		XPutBackEvent(_cnx.dpy, &e);
 		_cnx.ungrab();
 		return false;
@@ -451,7 +451,7 @@ void window_t::unlock() {
 void window_t::focus() {
 
 	if (is_map() && _wm_input_focus) {
-		_cnx.set_input_focus(_xwin, RevertToParent, _cnx.last_know_time);
+		_cnx.set_input_focus(id, RevertToParent, _cnx.last_know_time);
 	}
 
 	if (_net_wm_protocols.find(_cnx.atoms.WM_TAKE_FOCUS)
@@ -461,10 +461,10 @@ void window_t::focus() {
 		ev.xclient.type = ClientMessage;
 		ev.xclient.format = 32;
 		ev.xclient.message_type = _cnx.atoms.WM_PROTOCOLS;
-		ev.xclient.window = _xwin;
+		ev.xclient.window = id;
 		ev.xclient.data.l[0] = _cnx.atoms.WM_TAKE_FOCUS;
 		ev.xclient.data.l[1] = _cnx.last_know_time;
-		_cnx.send_event(_xwin, False, NoEventMask, &ev);
+		_cnx.send_event(id, False, NoEventMask, &ev);
 	}
 
 	_net_wm_state.insert(_cnx.atoms._NET_WM_STATE_FOCUSED);
@@ -488,7 +488,7 @@ std::string window_t::get_title() {
 	}
 
 	std::stringstream s(std::stringstream::in | std::stringstream::out);
-	s << "#" << (_xwin) << " (noname)";
+	s << "#" << (id) << " (noname)";
 	name = s.str();
 	return name;
 }
@@ -503,7 +503,7 @@ void window_t::write_net_wm_state() const {
 		++i;
 	}
 
-	_cnx.change_property(_xwin, _cnx.atoms._NET_WM_STATE, _cnx.atoms.ATOM, 32,
+	_cnx.change_property(id, _cnx.atoms._NET_WM_STATE, _cnx.atoms.ATOM, 32,
 			PropModeReplace, (unsigned char *) new_state, i);
 	delete[] new_state;
 }
@@ -518,7 +518,7 @@ void window_t::write_net_wm_allowed_actions() {
 		++i;
 	}
 
-	_cnx.change_property(_xwin, _cnx.atoms._NET_WM_ALLOWED_ACTIONS,
+	_cnx.change_property(id, _cnx.atoms._NET_WM_ALLOWED_ACTIONS,
 			_cnx.atoms.ATOM, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(data), i);
 	delete[] data;
@@ -526,7 +526,7 @@ void window_t::write_net_wm_allowed_actions() {
 
 void window_t::move_resize(box_int_t const & location) {
 	notify_move_resize(location);
-	_cnx.move_resize(_xwin, location);
+	_cnx.move_resize(id, location);
 }
 
 /**
@@ -547,11 +547,11 @@ void window_t::write_wm_state(long state) {
 	data.icon = None;
 
 	if (_wm_state != WithdrawnState) {
-		_cnx.change_property(_xwin, _cnx.atoms.WM_STATE, _cnx.atoms.WM_STATE,
+		_cnx.change_property(id, _cnx.atoms.WM_STATE, _cnx.atoms.WM_STATE,
 				32, PropModeReplace, reinterpret_cast<unsigned char *>(&data),
 				2);
 	} else {
-		XDeleteProperty(_cnx.dpy, _xwin, _cnx.atoms.WM_STATE);
+		XDeleteProperty(_cnx.dpy, id, _cnx.atoms.WM_STATE);
 	}
 }
 
@@ -612,7 +612,7 @@ void window_t::unset_fullscreen() {
 }
 
 void window_t::process_configure_notify_event(XConfigureEvent const & e) {
-	assert(e.window == _xwin);
+	assert(e.window == id);
 	_wa.x = e.x;
 	_wa.y = e.y;
 	_wa.width = e.width;
@@ -781,11 +781,7 @@ page_window_type_e window_t::get_window_type() {
 }
 
 bool window_t::is_window(Window w) {
-	return w == _xwin;
-}
-
-Window window_t::get_xwin() {
-	return _xwin;
+	return w == id;
 }
 
 long window_t::get_wm_state() {
@@ -802,10 +798,10 @@ void window_t::delete_window(Time t) {
 	ev.xclient.type = ClientMessage;
 	ev.xclient.format = 32;
 	ev.xclient.message_type = _cnx.atoms.WM_PROTOCOLS;
-	ev.xclient.window = _xwin;
+	ev.xclient.window = id;
 	ev.xclient.data.l[0] = _cnx.atoms.WM_DELETE_WINDOW;
 	ev.xclient.data.l[1] = t;
-	_cnx.send_event(_xwin, False, NoEventMask, &ev);
+	_cnx.send_event(id, False, NoEventMask, &ev);
 }
 
 bool window_t::check_normal_hints_constraint(int width, int heigth) {
@@ -868,15 +864,15 @@ int window_t::get_initial_state() {
 }
 
 void window_t::fake_configure(box_int_t location, int border_width) {
-	_cnx.fake_configure(_xwin, location, border_width);
+	_cnx.fake_configure(id, location, border_width);
 }
 
 void window_t::reparent(Window parent, int x, int y) {
-	_cnx.reparentwindow(_xwin, parent, x, y);
+	_cnx.reparentwindow(id, parent, x, y);
 }
 
 cairo_surface_t * window_t::create_cairo_surface() {
-	return cairo_xlib_surface_create(_cnx.dpy, _xwin, _wa.visual, _wa.width,
+	return cairo_xlib_surface_create(_cnx.dpy, id, _wa.visual, _wa.width,
 			_wa.height);
 }
 
@@ -893,11 +889,11 @@ int window_t::get_depth() {
 }
 
 bool window_t::read_window_attributes() {
-	return (_cnx.get_window_attributes(_xwin, &_wa) != 0);
+	return (_cnx.get_window_attributes(id, &_wa) != 0);
 }
 
 void window_t::grab_button(int button) {
-	XGrabButton(_cnx.dpy, Button1, AnyModifier, _xwin, False, ButtonPressMask, GrabModeSync, GrabModeAsync, _cnx.xroot, None);
+	XGrabButton(_cnx.dpy, Button1, AnyModifier, id, False, ButtonPressMask, GrabModeSync, GrabModeAsync, _cnx.xroot, None);
 }
 
 void window_t::set_managed(bool state) {
