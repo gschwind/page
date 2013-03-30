@@ -2932,6 +2932,10 @@ bool page_t::check_manage(window_t * x) {
 	/* find the type of current window */
 	page_window_type_e type = x->get_window_type();
 
+	/* make all window with transient_for floating by default */
+	if(type == PAGE_NORMAL_WINDOW_TYPE && x->transient_for() != None)
+		type = PAGE_FLOATING_WINDOW_TYPE;
+
 	if (type == PAGE_NORMAL_WINDOW_TYPE) {
 //		printf("Fixed window found\n");
 		managed_window_t * fw = manage(MANAGED_NOTEBOOK, x);
