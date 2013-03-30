@@ -1,7 +1,7 @@
 AC_INIT([page], [0.9.5])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
-AC_CONFIG_HEADERS([src/config.h])
+#AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_ARG_ENABLE([trace], [AS_HELP_STRING([--enable-trace],[enable trace feature with gcc])], [CXXFLAGS="-g -finstrument-functions -finstrument-functions-exclude-file-list=x86_64-pc-linux-gnu,X11 -DENABLE_TRACE $CXXFLAGS"], [])
