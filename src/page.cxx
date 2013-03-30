@@ -1178,6 +1178,9 @@ void page_t::process_event(XConfigureEvent const & e) {
 				mw->reconfigure();
 		}
 
+		if(mw->is(MANAGED_FLOATING))
+			theme->render_floating(mw);
+
 	}
 
 	/* reorder windows */
@@ -1270,6 +1273,8 @@ void page_t::process_event(XMapEvent const & e) {
 
 	if(has_key(window_to_managed_window, e.window)) {
 		window_to_managed_window[e.window]->reconfigure();
+		if(window_to_managed_window[e.window]->is(MANAGED_FLOATING))
+			theme->render_floating(window_to_managed_window[e.window]);
 	}
 
 	/* don't manage overide redirected window */
