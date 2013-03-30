@@ -1,9 +1,18 @@
-AC_INIT([page], [0.0.5])
+AC_INIT([page], [0.9.5])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
+AC_CONFIG_HEADERS([src/config.h])
 
 AC_ARG_ENABLE([trace], [AS_HELP_STRING([--enable-trace],[enable trace feature with gcc])], [CXXFLAGS="-g -finstrument-functions -finstrument-functions-exclude-file-list=x86_64-pc-linux-gnu,X11 -DENABLE_TRACE $CXXFLAGS"], [])
 
+# Check for programs
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_LIBTOOL
+
+AM_PROG_CC_C_O
+
+# Check for libs
 PKG_CHECK_MODULES(X11, x11 >= 1.3.2)
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)
@@ -36,23 +45,16 @@ PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.0.0)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 
-AC_PROG_CC
-AC_PROG_CXX
-AM_PROG_CC_C_O
-AC_PROG_LIBTOOL
-
 AC_CHECK_HEADER([bfd.h],
-                  [AC_DEFINE([HAVE_BFD_H])],
-                  [AC_MSG_WARN([Header "bfd.h" from the binutils not found!])],
-   [[#ifdef HAVE_BFD_H
-     #include <bfd.h>
-     #endif]]
-   )
-    AC_SEARCH_LIBS([bfd_openr],  [bfd],
-                 [AC_MSG_RESULT([OK, found libbfd])],
-[AC_MSG_ERROR([BFD library from the binutils package not found!])])
+                [AC_DEFINE([HAVE_BFD_H], [1], [BFD Headers])],
+                [AC_MSG_ERROR([Header "bfd.h" from the binutils not found!])])
+
+AC_SEARCH_LIBS([bfd_openr],  [bfd],
+               [AC_MSG_RESULT([OK, found libbfd])],
+               [AC_MSG_ERROR([BFD library from the binutils package not found!])])
 
 AC_CONFIG_FILES([
+  page.conf
   Makefile
   src/Makefile
   ])

@@ -1,0 +1,19 @@
+[default]
+#theme directory (page data directory)
+theme_dir=@prefix@/share/page/data/
+
+font_file=@prefix@/share/page/data/DejaVuSans.ttf
+font_bold_file=@prefix@/share/page/data/DejaVuSans-Bold.ttf
+
+[simple_theme]
+
+grey0 = eeeeec
+grey1 = d3d7cf
+grey2 = babdb6
+grey3 = 888a85
+grey5 = 2e3436
+
+plum0 = ad7fa8
+plum1 = 75507b
+plum2 = 5c3566
+

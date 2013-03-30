@@ -87,12 +87,18 @@ page_t::page_t(int argc, char ** argv) {
 	conf = g_key_file_new();
 
 	/* load configuration file */
-	if (argc < 2) {
-		throw std::runtime_error("usage : prg <config_file>");
-	}
 
-	if (!g_key_file_load_from_file(conf, argv[1], G_KEY_FILE_NONE, 0)) {
-		throw std::runtime_error("could not load config file");
+	if (argc == 2) {
+		if (!g_key_file_load_from_file(conf, argv[1], G_KEY_FILE_NONE, 0)) {
+			throw std::runtime_error("could not load config file");
+		}
+	} else if (argc == 1) {
+		char const * x = DATA_DIR "/page/page.conf";
+		if (!g_key_file_load_from_file(conf, x, G_KEY_FILE_NONE, 0)) {
+			throw std::runtime_error("could not load config file");
+		}
+	} else {
+		throw std::runtime_error("usage : prg <config_file>");
 	}
 
 	_root_window_stack = list<Window>();
@@ -1993,6 +1999,12 @@ void page_t::process_event(XEvent const & e) {
 		process_event(e.xclient);
 	} else if (e.type == cnx->damage_event + XDamageNotify) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
+	} else if (e.type == Expose) {
+		managed_window_t * mw = get_managed(e.xexpose.window);
+		if(mw != 0) {
+			if(mw->is(MANAGED_FLOATING))
+				theme->render_floating(mw);
+		}
 	}
 
 	//page.rnd->render_flush();

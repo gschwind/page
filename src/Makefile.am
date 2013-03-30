@@ -44,7 +44,8 @@ page_CXXFLAGS = \
 	$(XINERAMA_CFLAGS) \
 	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \
-	-fno-strict-aliasing
+	-fno-strict-aliasing \
+	-DDATA_DIR="\"$(datadir)\""
 
 query_tree_SOURCES = query_tree.cxx
 query_tree_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
