@@ -226,14 +226,13 @@ public:
 	string font;
 	string font_bold;
 
-	Time last_focus_time;
-
 	list<window_t *> root_stack;
 
 	map<Window, list<Window> > transient_for_map;
 
 private:
-	window_t * client_focused;
+	Time _last_focus_time;
+	list<managed_window_t *> _client_focused;
 public:
 
 	theme_t * theme;
@@ -247,7 +246,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(window_t * w);
+	void set_focus(managed_window_t * w);
 	render_context_t * get_render_context();
 	xconnection_t * get_xconnection();
 

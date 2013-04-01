@@ -146,13 +146,11 @@ page_t::page_t(int argc, char ** argv) {
 	font_bold = sfont_bold;
 	g_free(sfont_bold);
 
-	last_focus_time = 0;
+	_last_focus_time = 0;
 
 	root_stack = list<window_t *>();
 
 	transient_for_map = map<Window, list<Window> >();
-
-	client_focused = 0;
 
 	//theme = new default_theme_t(page_base_dir, font, font_bold);
 	//theme = new minimal_theme_t(page_base_dir, font, font_bold);
@@ -401,8 +399,7 @@ managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
 void page_t::unmanage(managed_window_t * mw) {
 //	printf("unamage\n");
 
-	if (client_focused == mw->orig)
-		set_focus(0);
+	_client_focused.remove(mw);
 
 	if (has_key(fullscreen_client_to_viewport, mw))
 		unfullscreen(mw);
@@ -657,9 +654,9 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
 		/* select next window */
-		if (client_focused != 0) {
+		if (!_client_focused.empty()) {
 			set<managed_window_t *>::iterator x =
-					managed_windows_set.find(window_to_managed_window[client_focused->id]);
+					managed_windows_set.find(_client_focused.front());
 			if (x != managed_windows_set.end()) {
 				++x;
 				if (x != managed_windows_set.end()) {
@@ -699,11 +696,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	case PROCESS_NORMAL:
 		cnx->last_know_time = e.time;
 		/* the hidden focus parameter */
-		if (last_focus_time < cnx->last_know_time) {
+		if (_last_focus_time < cnx->last_know_time) {
 			window_t * x = find_client_window(c);
-			if (x != 0) {
-				x->focus();
-				set_focus(x);
+			if (mw != 0) {
+				set_focus(mw);
 			}
 		}
 
@@ -836,7 +832,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			unbind_window(mode_data_notebook.c);
 		} else {
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			set_focus(mode_data_notebook.c->orig);
+			set_focus(mode_data_notebook.c);
 		}
 
 		/* automaticaly close empty notebook */
@@ -848,16 +844,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			rnd->add_damage_area(mode_data_notebook.from->_allocation);
 		}
 
-		set_focus(mode_data_notebook.c->orig);
+		set_focus(mode_data_notebook.c);
 		rpage->mark_durty();
 		break;
 	case PROCESS_FLOATING_GRAB:
-		set_focus(mode_data_floating.f->orig);
+		set_focus(mode_data_floating.f);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
 	case PROCESS_FLOATING_RESIZE:
-		set_focus(mode_data_floating.f->orig);
+		set_focus(mode_data_floating.f);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
@@ -1267,8 +1263,8 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 	rnd->add_damage_area(x->get_size());
-	if (x == client_focused) {
-		x->focus();
+	if (!_client_focused.empty()) {
+		_client_focused.front()->focus();
 	}
 
 	if(has_key(window_to_managed_window, e.window)) {
@@ -1537,9 +1533,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 	if (e.atom == cnx->atoms._NET_WM_USER_TIME) {
 		x->read_net_wm_user_time();
 		//safe_raise_window(x);
-		if(client_focused == x) {
-			x->focus();
-		}
+		if(mw != 0)
+			set_focus(mw);
 	} else if (e.atom == cnx->atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		if (mw != 0) {
@@ -1652,9 +1647,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_wm_hints();
 
 		/* WM_HINTS can change the focus behaviors, so re-focus if needed */
-		if(client_focused == x) {
-			x->focus();
-		}
+		if(!_client_focused.empty())
+			_client_focused.front()->focus();
 	} else if (e.atom == cnx->atoms._NET_WM_STATE) {
 		x->read_net_wm_state();
 	} else if (e.atom == cnx->atoms.WM_STATE) {
@@ -1690,7 +1684,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->normalize();
-				set_focus(mw->orig);
+				set_focus(mw);
 			}
 		}
 	} else if (e.message_type == cnx->atoms._NET_WM_STATE) {
@@ -1829,7 +1823,7 @@ void page_t::fullscreen(managed_window_t * mw) {
 	mw->normalize();
 	mw->orig->set_fullscreen();
 	mw->set_wished_position(data.viewport->raw_aera);
-	set_focus(mw->orig);
+	set_focus(mw);
 	safe_raise_window(mw->orig);
 }
 
@@ -1866,7 +1860,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	}
 
 	mw->orig->unset_fullscreen();
-	set_focus(mw->orig);
+	set_focus(mw);
 	update_allocation();
 	rnd->add_damage_area(cnx->root_size);
 
@@ -2027,7 +2021,7 @@ void page_t::activate_client(managed_window_t * x) {
 	if (has_key(client_to_notebook, x)) {
 		notebook_t * n = client_to_notebook[x];
 		n->activate_client(x);
-		set_focus(x->orig);
+		set_focus(x);
 		rpage->mark_durty();
 		rnd->add_damage_area(n->get_absolute_extend());
 	}
@@ -2094,36 +2088,28 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->default_pop = default_window_pop;
 }
 
-void page_t::set_focus(window_t * w) {
-	last_focus_time = cnx->last_know_time;
-	if (client_focused == w)
+void page_t::set_focus(managed_window_t * w) {
+	if(w == 0)
 		return;
 
-	if (client_focused != 0) {
-		client_focused->unset_focused();
-	}
+	if(!_client_focused.empty())
+		_client_focused.front()->orig->unset_focused();
 
-	client_focused = w;
+	_last_focus_time = cnx->last_know_time;
 
-	if (client_focused != 0) {
-		client_focused->set_focused();
-	}
+	_client_focused.remove(w);
+	_client_focused.push_front(w);
 
-	Window xw = None;
+	w->orig->set_focused();
+	safe_raise_window(w->orig);
+	if(w->orig->is_map())
+		w->focus();
 
-	if (client_focused != 0) {
-		xw = client_focused->id;
-		safe_raise_window(w);
-		if (w->is_map())
-			w->focus();
-	}
-
+	Window xw = w->orig->id;
 	/* update _NET_ACTIVE_WINDOW */
 	cnx->change_property(cnx->xroot, cnx->atoms._NET_ACTIVE_WINDOW,
 			cnx->atoms.WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&xw), 1);
-
-
 
 }
 
@@ -2506,9 +2492,6 @@ void page_t::destroy(window_t * c) {
 		rnd->remove(rw);
 		destroy_renderable(c);
 	}
-
-	if(client_focused == c)
-		set_focus(0);
 
 	delete_window(c);
 }
@@ -2918,6 +2901,7 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	window_to_managed_window.erase(mw->orig->id);
 	fullscreen_client_to_viewport.erase(mw);
 	managed_windows_set.erase(mw);
+	_client_focused.remove(mw);
 	delete mw;
 }
 
