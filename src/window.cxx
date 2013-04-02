@@ -108,6 +108,9 @@ window_t::~window_t() {
 void window_t::read_wm_hints() {
 	XFree(_wm_hints);
 	_wm_hints = _cnx.get_wm_hints(id);
+	if(_wm_hints != 0) {
+		_wm_input_focus = (_wm_hints->input == True) ? true : false;
+	}
 }
 
 
@@ -450,8 +453,9 @@ void window_t::unlock() {
 
 void window_t::focus() {
 
+
 	if (is_map() && _wm_input_focus) {
-		_cnx.set_input_focus(id, RevertToParent, _cnx.last_know_time);
+			_cnx.set_input_focus(id, RevertToPointerRoot, CurrentTime);
 	}
 
 	if (_net_wm_protocols.find(_cnx.atoms.WM_TAKE_FOCUS)
@@ -463,7 +467,7 @@ void window_t::focus() {
 		ev.xclient.message_type = _cnx.atoms.WM_PROTOCOLS;
 		ev.xclient.window = id;
 		ev.xclient.data.l[0] = _cnx.atoms.WM_TAKE_FOCUS;
-		ev.xclient.data.l[1] = _cnx.last_know_time;
+		ev.xclient.data.l[1] = CurrentTime;
 		_cnx.send_event(id, False, NoEventMask, &ev);
 	}
 

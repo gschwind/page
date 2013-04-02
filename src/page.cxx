@@ -694,7 +694,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
-		cnx->last_know_time = e.time;
 		/* the hidden focus parameter */
 		if (_last_focus_time < cnx->last_know_time) {
 			window_t * x = find_client_window(c);
@@ -779,6 +778,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 void page_t::process_event_release(XButtonEvent const & e) {
 	printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 			e.window, e.root, e.subwindow, e.x_root, e.y_root);
+
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 		break;
@@ -802,7 +802,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		/* ev is button release
 		 * so set the hidden focus parameter
 		 */
-		cnx->last_know_time = e.time;
 
 		XUngrabPointer(cnx->dpy, CurrentTime);
 
@@ -1256,6 +1255,7 @@ void page_t::process_event(XMapEvent const & e) {
 		return;
 	window_t * x = get_window_t(e.window);
 	x->map_notify();
+	x->read_when_mapped();
 
 	if (x->read_window_attributes() && !has_key(window_to_renderable_context, x)) {
 		if (!x->is_input_only())
@@ -1521,8 +1521,6 @@ void page_t::process_event(XMapRequestEvent const & e) {
 
 void page_t::process_event(XPropertyEvent const & e) {
 	//printf("Atom Name = \"%s\"\n", cnx->get_atom_name(e.atom).c_str());
-
-	cnx->last_know_time = e.time;
 
 	if(e.window == cnx->xroot)
 		return;
@@ -2091,6 +2089,8 @@ void page_t::set_default_pop(notebook_t * x) {
 void page_t::set_focus(managed_window_t * w) {
 	if(w == 0)
 		return;
+
+	printf("focus [%lu] %s\n", w->orig->id, w->get_title().c_str());
 
 	if(!_client_focused.empty())
 		_client_focused.front()->orig->unset_focused();
@@ -2960,6 +2960,8 @@ bool page_t::check_manage(window_t * x) {
 		if(x->is_fullscreen()) {
 			fullscreen(fw);
 		}
+
+		set_focus(fw);
 
 		ret = true;
 	}

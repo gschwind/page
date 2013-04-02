@@ -490,6 +490,39 @@ bool xconnection_t::process_check_event() {
 	XEvent e;
 	if (XCheckMaskEvent(_dpy, 0xffffffff, &e)) {
 
+		/* update last known time */
+		switch(e.type) {
+		case KeyPress:
+		case KeyRelease:
+			last_know_time = e.xkey.time;
+			break;
+		case ButtonPress:
+		case ButtonRelease:
+			last_know_time = e.xbutton.time;
+			break;
+		case MotionNotify:
+			last_know_time = e.xmotion.time;
+			break;
+		case EnterNotify:
+		case LeaveNotify:
+			last_know_time = e.xcrossing.time;
+			break;
+		case PropertyNotify:
+			last_know_time = e.xproperty.time;
+			break;
+		case SelectionClear:
+			last_know_time = e.xselectionclear.time;
+			break;
+		case SelectionRequest:
+			last_know_time = e.xselectionrequest.time;
+			break;
+		case SelectionNotify:
+			last_know_time = e.xselection.time;
+			break;
+		default:
+			break;
+		}
+
 		/* since event handler can be removed on event, we copy it
 		 * and check for event removed each time.
 		 */
@@ -574,7 +607,7 @@ Status xconnection_t::send_event(Window w, Bool propagate, long event_mask,
 
 int xconnection_t::set_input_focus(Window focus, int revert_to, Time time) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
+	printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
 	return XSetInputFocus(_dpy, focus, revert_to, time);
 }
 
