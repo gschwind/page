@@ -439,6 +439,8 @@ public:
 
 	bool is_valid_notebook(notebook_t * n);
 
+	void update_notebook_number(unsigned int n);
+
 
 };
 

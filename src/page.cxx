@@ -2013,7 +2013,7 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == cnx->xinerama_event) {
 		printf("a xinerama event\n");
 	} else if (e.type == cnx->xrandr_event + RRScreenChangeNotify) {
-		/* TODO: update xrandr layout */
+		update_viewport_layout();
 	}
 
 	//page.rnd->render_flush();
@@ -3192,68 +3192,35 @@ void page_t::update_viewport_layout() {
 	int n;
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx->dpy, &n);
 
+	default_window_pop = 0;
+
 	if (n < 1) {
 		printf("No Xinerama Layout Found\n");
 
+		update_notebook_number(1);
+
 		box_t<int> x(0, 0, cnx->root_size.w, cnx->root_size.h);
-		viewport_t * v = new_viewport(x);
-		default_window_pop = get_random_notebook();
+		viewport_list.front()->set_allocation(x);
 
 	} else {
 
-		while(viewport_list.size() < (unsigned)n) {
-			box_int_t x(0, 0, 1, 1);
-			new_viewport(x);
-		}
+		update_notebook_number(n);
 
-		while(viewport_list.size() > (unsigned)n) {
-			viewport_t * v = viewport_list.back();
-
-			/* remove fullscreened clients if needed */
-			if(v->fullscreen_client != 0) {
-				unfullscreen(v->fullscreen_client);
-			}
-
-			/* transfert clients to a valid notebook */
-			list<notebook_t *> nbks;
-			v->get_notebooks(nbks);
-			for(list<notebook_t *>::iterator i = nbks.begin(); i != nbks.end(); ++i) {
-				if(default_window_pop == *i)
-					default_window_pop = get_random_notebook();
-				list<managed_window_t *> lc = (*i)->get_clients();
-				for(list<managed_window_t *>::iterator i = lc.begin(); i != lc.end(); ++i) {
-					default_window_pop->add_client(*i, false);
-				}
-			}
-
-			/* cleanup */
-			{
-
-//				list<notebook_t *> nbks = viewport_to_notebooks[v];
-//				for (list<notebook_t *>::iterator i = nbks.begin();
-//						i != nbks.end(); ++i) {
-//					destroy(*i);
-//				}
-
-				/* TODO: destroy splits */
-
-			}
-
-
-		}
-
+		list<viewport_t *>::iterator it = viewport_list.begin();
 		for (int i = 0; i < n; ++i) {
 			box_t<int> x(info[i].x_org, info[i].y_org, info[i].width,
 					info[i].height);
-
-			viewport_t * v = new_viewport(x);
-
-			if (default_window_pop == 0)
-				default_window_pop = get_random_notebook();
+			(*it)->set_allocation(x);
+			++it;
 		}
 
 		XFree(info);
 	}
+
+	if (default_window_pop == 0)
+		default_window_pop = get_random_notebook();
+
+	update_allocation();
 }
 
 
@@ -3395,6 +3362,52 @@ bool page_t::is_valid_notebook(notebook_t * n) {
 	list<notebook_t *> l;
 	get_notebooks(l);
 	return has_key(l, n);
+}
+
+void page_t::update_notebook_number(unsigned int n) {
+
+	while (viewport_list.size() < n) {
+		box_int_t x(0, 0, 1, 1);
+		new_viewport(x);
+	}
+
+	while (viewport_list.size() > n) {
+		viewport_t * v = viewport_list.back();
+
+		/* remove fullscreened clients if needed */
+		if (v->fullscreen_client != 0) {
+			unfullscreen(v->fullscreen_client);
+		}
+
+		/* transfert clients to a valid notebook */
+		list<notebook_t *> nbks;
+		v->get_notebooks(nbks);
+		for (list<notebook_t *>::iterator i = nbks.begin(); i != nbks.end();
+				++i) {
+			if (default_window_pop == *i)
+				default_window_pop = get_random_notebook();
+			list<managed_window_t *> lc = (*i)->get_clients();
+			for (list<managed_window_t *>::iterator i = lc.begin();
+					i != lc.end(); ++i) {
+				default_window_pop->add_client(*i, false);
+			}
+		}
+
+		/* cleanup */
+		{
+
+			list<tree_t *> lst;
+			v->get_childs(lst);
+			for (list<tree_t *>::iterator i = lst.begin(); i != lst.end();
+					++i) {
+				delete *i;
+			}
+
+			delete v;
+			viewport_list.remove(v);
+		}
+
+	}
 }
 
 }
