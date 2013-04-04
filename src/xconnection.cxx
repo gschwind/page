@@ -88,12 +88,21 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 	}
 
 	if (!XQueryExtension(_dpy, SHAPENAME, &xshape_opcode, &xshape_event,
-			&xinerama_error)) {
-		throw std::runtime_error("Fixes extension is not supported");
+			&xshape_error)) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
 	} else {
 		int major = 0, minor = 0;
 		XShapeQueryVersion(_dpy, &major, &minor);
 		cnx_printf("Shape Extension version %d.%d found\n", major, minor);
+	}
+
+	if (!XQueryExtension(_dpy, RANDR_NAME, &xrandr_opcode, &xrandr_event,
+			&xrandr_error)) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(_dpy, &major, &minor);
+		cnx_printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
 	}
 
 	/* map & passtrough the overlay */

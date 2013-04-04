@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <typeinfo>
 #include "notebook.hxx"
 #include "viewport.hxx"
 
@@ -15,6 +16,12 @@ namespace page {
 viewport_t::viewport_t(box_t<int> const & area) : raw_aera(area), effective_aera(area), fullscreen_client(0) {
 	_subtree = 0;
 	_is_visible = true;
+}
+
+viewport_t::viewport_t() {
+	_subtree = 0;
+	_is_visible = true;
+	fullscreen_client = 0;
 }
 
 void viewport_t::replace(tree_t * src, tree_t * by) {
@@ -53,8 +60,17 @@ box_int_t viewport_t::get_absolute_extend() {
 }
 
 region_t<int> viewport_t::get_area() {
-	if(_is_visible && fullscreen_client == 0) {
-		return _subtree->get_area();
+	if (_is_visible && fullscreen_client == 0) {
+		region_t<int> r(effective_aera);
+		list<notebook_t *> lst;
+		get_notebooks(lst);
+		for (list<notebook_t *>::iterator i = lst.begin(); i != lst.end();
+				++i) {
+			if ((*i)->get_selected() != 0)
+				r = r - ((*i)->get_selected())->get_base_position();
+		}
+
+		return r;
 	} else {
 		return box_int_t();
 	}
@@ -70,5 +86,37 @@ region_t<int> viewport_t::get_area() {
 //		return _subtree->get_nearest_notebook();
 //	return 0;
 //}
+
+void viewport_t::get_childs(list<tree_t *> & lst) {
+	if(_subtree != 0) {
+		_subtree->get_childs(lst);
+		lst.push_back(_subtree);
+	}
+}
+
+//notebook_t * viewport_t::new_notebook() {
+//	notebook_t * n = new notebook_t();
+//	return n;
+//}
+
+void viewport_t::get_notebooks(list<notebook_t *> & l) {
+	list<tree_t *> lt;
+	get_childs(lt);
+
+	for(list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i) {
+		if(typeid(**i) == typeid(notebook_t))
+			l.push_back(dynamic_cast<notebook_t *>(*i));
+	}
+}
+
+void viewport_t::get_splits(list<split_t *> & l) {
+	list<tree_t *> lt;
+	get_childs(lt);
+
+	for(list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i) {
+		if(typeid(**i) == typeid(split_t))
+			l.push_back(dynamic_cast<split_t *>(*i));
+	}
+}
 
 }

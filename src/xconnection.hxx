@@ -13,6 +13,7 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xinerama.h>
+#include <X11/extensions/Xrandr.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -441,6 +442,9 @@ public:
 
 	/* xshape extension handler */
 	int xshape_opcode, xshape_event, xshape_error;
+
+	/* xrandr extension handler */
+	int xrandr_opcode, xrandr_event, xrandr_error;
 
 public:
 

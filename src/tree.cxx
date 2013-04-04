@@ -17,4 +17,8 @@ void tree_t::set_parent(tree_t * parent) {
 	_parent = parent;
 }
 
+void tree_t::set_allocation(int x, int y, int w, int h) {
+	set_allocation(box_int_t(x, y, w, h));
+}
+
 }

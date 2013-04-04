@@ -431,5 +431,9 @@ void notebook_t::set_theme(theme_layout_t const * theme) {
 	this->layout = theme;
 }
 
+void notebook_t::get_childs(list<tree_t *> & lst) {
+	/* has no child */
+}
+
 
 }

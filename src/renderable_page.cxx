@@ -12,9 +12,8 @@
 namespace page {
 
 renderable_page_t::renderable_page_t(theme_t * render, cairo_surface_t * target,
-		int width, int height, std::set<split_t *> & splits,
-		std::set<notebook_t *> & notebooks, std::set<viewport_t *> & viewports) :
-		render(render), splits(splits), notebooks(notebooks), viewports(
+		int width, int height, std::list<viewport_t *> & viewports) :
+		render(render), viewports(
 				viewports) {
 	is_durty = true;
 	default_pop = 0;
@@ -55,6 +54,15 @@ void renderable_page_t::mark_durty() {
 
 void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 	if (is_durty) {
+
+		list<split_t *> splits;
+		list<notebook_t *> notebooks;
+
+		for(list<viewport_t *>::iterator i = viewports.begin(); i != viewports.end(); ++i) {
+			(*i)->get_splits(splits);
+			(*i)->get_notebooks(notebooks);
+		}
+
 		cairo_reset_clip(_cr);
 		cairo_identity_matrix(_cr);
 		cairo_set_operator(_cr, CAIRO_OPERATOR_OVER);
@@ -89,17 +97,11 @@ void renderable_page_t::repair1(cairo_t * cr, box_int_t const & area) {
 
 region_t<int> renderable_page_t::get_area() {
 	region_t<int> r;
-	for(std::set<split_t *>::const_iterator i = splits.begin(); i != splits.end(); ++i) {
-		r = r + (*i)->get_area();
-	}
-	for(std::set<notebook_t *>::const_iterator i = notebooks.begin(); i != notebooks.end(); ++i) {
-		r = r + (*i)->get_area();
-	}
 
-	for(std::set<viewport_t *>::iterator i = viewports.begin(); i != viewports.end(); ++i) {
-		if((*i)->fullscreen_client != 0) {
-			r = r - (*i)->get_absolute_extend();
-		}
+	for (std::list<viewport_t *>::iterator v = viewports.begin();
+			v != viewports.end(); ++v) {
+		if ((*v)->fullscreen_client == 0)
+			r = r + (*v)->get_area();
 	}
 
 	return r;
@@ -115,15 +117,15 @@ bool renderable_page_t::is_visible() {
 	return true;
 }
 
-void renderable_page_t::render_splits(std::set<split_t *> const & splits) {
-	for (std::set<split_t *>::const_iterator i = splits.begin();
+void renderable_page_t::render_splits(std::list<split_t *> const & splits) {
+	for (std::list<split_t *>::const_iterator i = splits.begin();
 			i != splits.end(); ++i) {
 		render->render_split(_cr, *i);
 	}
 }
 
-void renderable_page_t::render_notebooks(std::set<notebook_t *> const & notebooks) {
-	for (std::set<notebook_t *>::const_iterator i = notebooks.begin();
+void renderable_page_t::render_notebooks(std::list<notebook_t *> const & notebooks) {
+	for (std::list<notebook_t *>::const_iterator i = notebooks.begin();
 			i != notebooks.end(); ++i) {
 		render->render_notebook(_cr, *i, *i == default_pop);
 	}

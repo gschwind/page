@@ -131,6 +131,8 @@ public:
 
 	void set_theme(theme_layout_t const * theme);
 
+	virtual void get_childs(list<tree_t *> & lst);
+
 };
 
 }

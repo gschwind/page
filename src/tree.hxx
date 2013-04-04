@@ -13,9 +13,9 @@
 #include <list>
 #include "region.hxx"
 
-namespace page {
+using namespace std;
 
-class notebook_t;
+namespace page {
 
 class tree_t {
 public:
@@ -26,15 +26,11 @@ public:
 	virtual ~tree_t() { }
 
 	virtual void replace(tree_t * src, tree_t * by) = 0;
-	virtual void set_parent(tree_t * parent);
-	virtual box_int_t get_absolute_extend() = 0;
-	virtual region_t<int> get_area() = 0;
-
 	virtual void set_allocation(box_int_t const & area) = 0;
+	virtual void get_childs(list<tree_t *> & lst) = 0;
 
-	virtual void set_allocation(int x, int y, int w, int h) {
-		set_allocation(box_int_t(x, y, w, h));
-	}
+	void set_parent(tree_t * parent);
+	void set_allocation(int x, int y, int w, int h);
 
 };
 

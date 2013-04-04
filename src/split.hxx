@@ -22,7 +22,7 @@ enum split_type_e {
 	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
 };
 
-class split_t: public tree_t {
+class split_t : public tree_t {
 
 	theme_layout_t const * theme;
 
@@ -50,9 +50,8 @@ public:
 
 	void compute_split_bar_area(box_int_t & area, double split) const;
 
-	virtual box_int_t get_absolute_extend();
-	virtual void set_allocation(box_int_t const & area);
-	virtual region_t<int> get_area();
+	box_int_t get_absolute_extend();
+	void set_allocation(box_int_t const & area);
 
 	void set_split(double split);
 	box_int_t const & get_split_bar_area() const;
@@ -64,6 +63,8 @@ public:
 	double get_split_ratio();
 
 	void set_theme(theme_layout_t const * theme);
+
+	virtual void get_childs(list<tree_t *> & lst);
 
 };
 

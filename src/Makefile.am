@@ -28,6 +28,7 @@ page_LDADD = \
 	$(XCOMPOSITE_LIBS) \
 	$(XDAMAGE_LIBS) \
 	$(XRENDER_LIBS) \
+	$(XRANDR_LIBS) \
 	$(XINERAMA_LIBS) \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
@@ -36,11 +37,12 @@ page_LDADD = \
 	
 page_CXXFLAGS = \
 	-rdynamic \
-	$(X11_CXXFLAGS) \
+	$(X11_CFLAGS) \
 	$(CAIRO_CFLAGS) \
 	$(XCOMPOSITE_CFLAGS) \
 	$(XDAMAGE_CFLAGS) \
 	$(XRENDER_CFLAGS) \
+	$(XRANDR_CFLAGS) \
 	$(XINERAMA_CFLAGS) \
 	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \

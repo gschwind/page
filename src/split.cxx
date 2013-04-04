@@ -144,15 +144,15 @@ box_int_t split_t::get_absolute_extend() {
 	return _allocation;
 }
 
-region_t<int> split_t::get_area() {
-	region_t<int> area;
-	if (_pack0)
-		area = area + _pack0->get_area();
-	if (_pack1)
-		area = area + _pack1->get_area();
-	area = area + _split_bar_area;
-	return area;
-}
+//region_t<int> split_t::get_area() {
+//	region_t<int> area;
+//	if (_pack0)
+//		area = area + _pack0->get_area();
+//	if (_pack1)
+//		area = area + _pack1->get_area();
+//	area = area + _split_bar_area;
+//	return area;
+//}
 
 void split_t::set_split(double split) {
 	if(split < 0.05)
@@ -229,6 +229,20 @@ double split_t::get_split_ratio() {
 
 void split_t::set_theme(theme_layout_t const * theme) {
 	this->theme = theme;
+}
+
+void split_t::get_childs(list<tree_t *> & lst) {
+
+	if(_pack0 != 0) {
+		_pack0->get_childs(lst);
+		lst.push_back(_pack0);
+	}
+
+	if(_pack1 != 0) {
+		_pack1->get_childs(lst);
+		lst.push_back(_pack1);
+	}
+
 }
 
 }

@@ -160,7 +160,7 @@ void managed_window_t::focus() {
 	orig->focus();
 }
 
-box_int_t managed_window_t::get_base_position() {
+box_int_t managed_window_t::get_base_position() const {
 	return _base_position;
 }
 

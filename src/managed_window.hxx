@@ -74,7 +74,7 @@ public:
 	bool check_base_position(box_int_t const & position);
 
 
-	box_int_t get_base_position();
+	box_int_t get_base_position() const;
 
 	void set_managed_type(managed_window_type_e type);
 

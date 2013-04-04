@@ -19,9 +19,7 @@ class renderable_page_t : public renderable_t {
 	cairo_surface_t * _surf;
 	cairo_t * _cr;
 
-	std::set<split_t *> & splits;
-	std::set<notebook_t *> & notebooks;
-	std::set<viewport_t *> & viewports;
+	std::list<viewport_t *> & viewports;
 
 	theme_t * render;
 
@@ -34,10 +32,8 @@ public:
 	notebook_t * default_pop;
 
 
-	renderable_page_t(theme_t * render, cairo_surface_t * target, int width,
-			int height, std::set<split_t *> & splits,
-			std::set<notebook_t *> & notebooks,
-			std::set<viewport_t *> & viewports);
+	renderable_page_t(theme_t * render, cairo_surface_t * target, int width, int height,
+			std::list<viewport_t *> & viewports);
 
 	~renderable_page_t();
 
@@ -49,8 +45,8 @@ public:
 	virtual void reconfigure(box_int_t const & area);
 	virtual bool is_visible();
 
-	void render_splits(std::set<split_t *> const & splits);
-	void render_notebooks(std::set<notebook_t *> const & notebooks);
+	void render_splits(std::list<split_t *> const & splits);
+	void render_notebooks(std::list<notebook_t *> const & notebooks);
 
 	void rebuild_cairo();
 

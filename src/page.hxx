@@ -100,6 +100,10 @@ inline void print_buffer__(const char * buf, int size) {
 
 class page_t : public xevent_handler_t {
 
+	static long const MANAGED_WINDOW_EVENT_MASK = (ButtonPressMask | ButtonReleaseMask
+			| StructureNotifyMask | PropertyChangeMask
+			| SubstructureRedirectMask | ExposureMask);
+
 public:
 
 	typedef std::map<Window, window_t *> window_map_t;
@@ -133,6 +137,9 @@ public:
 		popup_notebook1_t * pn1;
 		std::string name;
 		bool popup_is_added;
+
+		void process_motion(XMotionEvent const & e);
+		void process_release(page_t & p, XButtonEvent const & e);
 	};
 
 	struct mode_data_floating_t {
@@ -192,32 +199,13 @@ public:
 	std::map<window_t *, renderable_window_t *> window_to_renderable_context;
 
 	/* track viewport, split and notebook */
-	std::set<viewport_t *> viewport_list;
-	std::set<split_t *> split_list;
-	notebook_set_t notebook_list;
+	list<viewport_t *> viewport_list;
 
 	/* main window data base */
 	window_map_t xwindow_to_window;
 
-	// track where a client is stored
-	map<notebook_t *, viewport_t *> notebook_to_viewport;
 	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
-	map<viewport_t *, notebook_set_t> viewport_to_notebooks;
-
-	map<managed_window_t *, notebook_t *> client_to_notebook;
-
-	/* TODO */
-	map<Window, managed_window_t *> window_to_managed_window;
-	set<managed_window_t *> managed_windows_set;
-
-	//map<window_t *, managed_window_t *> base_window_to_floating_window;
-	//map<window_t *, managed_window_t *> orig_window_to_floating_window;
-
-	//map<window_t *, managed_window_t *> base_window_to_notebook_window;
-	//map<window_t *, managed_window_t *> orig_window_to_notebook_window;
-
-	//map<window_t *, managed_window_t *> base_window_to_fullscreen_window;
-	//map<window_t *, managed_window_t *> orig_window_to_fullscreen_window;
+	//map<Window, managed_window_t *> window_to_managed_window;
 
 	list<Atom> supported_list;
 
@@ -428,6 +416,29 @@ public:
 	void cleanup_grab(managed_window_t * mw);
 
 	managed_window_t * get_managed(Window w);
+
+	void update_viewport_layout();
+
+	/* cleanup unknown reference type from all indexes/cache
+	 * the ugly safe way.
+	 **/
+	void cleanup_reference(void * ref);
+
+	notebook_t * get_random_notebook();
+
+
+	void get_notebooks(list<notebook_t *> & l);
+	void get_splits(list<split_t *> & l);
+
+	notebook_t * find_notebook_for(managed_window_t * mw);
+
+	void get_managed_windows(list<managed_window_t *> & l);
+	managed_window_t * find_managed_window_with(Window w);
+
+	viewport_t * find_viewport_for(notebook_t * n);
+
+	bool is_valid_notebook(notebook_t * n);
+
 
 };
 

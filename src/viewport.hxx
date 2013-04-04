@@ -12,6 +12,9 @@
 #include "tree.hxx"
 #include "box.hxx"
 #include "notebook.hxx"
+#include "split.hxx"
+
+using namespace std;
 
 namespace page {
 
@@ -23,7 +26,12 @@ public:
 	tree_t * _subtree;
 	managed_window_t * fullscreen_client;
 
+	set<notebook_t *> _notebook_set;
+	set<split_t *> _split_set;
+
 	bool _is_visible;
+
+	viewport_t();
 
 	viewport_t(box_t<int> const & area);
 
@@ -51,6 +59,18 @@ public:
 	virtual bool is_visible() {
 		return true;
 	}
+
+	void split(notebook_t * nbk, split_type_e type);
+	void split_left(notebook_t * nbk, managed_window_t * c);
+	void split_right(notebook_t * nbk, managed_window_t * c);
+	void split_top(notebook_t * nbk, managed_window_t * c);
+	void split_bottom(notebook_t * nbk, managed_window_t * c);
+	void notebook_close(notebook_t * src);
+
+	virtual void get_childs(list<tree_t *> & lst);
+
+	void get_notebooks(list<notebook_t *> & l);
+	void get_splits(list<split_t *> & l);
 
 };
 
