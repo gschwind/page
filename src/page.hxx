@@ -198,18 +198,23 @@ public:
 
 	std::map<window_t *, renderable_window_t *> window_to_renderable_context;
 
-	/* track viewport, split and notebook */
+	/* list of view ports */
 	list<viewport_t *> viewport_list;
 
 	/* main window data base */
 	window_map_t xwindow_to_window;
 
+	/* floating windows */
+	list<managed_window_t *> floating_window;
+
+	/* store data to allow proper revert fullscreen window to
+	 * their original positions */
 	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
-	//map<Window, managed_window_t *> window_to_managed_window;
 
 	list<Atom> supported_list;
 
 	notebook_t * default_window_pop;
+
 	string page_base_dir;
 	string font;
 	string font_bold;
@@ -244,9 +249,8 @@ public:
 	void run();
 
 	void scan();
+
 	long get_window_state(Window w);
-
-
 	bool get_text_prop(Window w, Atom atom, std::string & text);
 
 	void update_page_aera();
@@ -301,30 +305,7 @@ public:
 
 	void print_state();
 
-	enum wm_mode_e {
-		WM_MODE_IGNORE,
-		WM_MODE_AUTO,
-		WM_MODE_WITHDRAW,
-		WM_MODE_POPUP,
-		WM_MODE_ERROR
-	};
-
-	wm_mode_e guess_window_state(long know_state, Bool override_redirect,
-			bool map_state);
-
-	box_list_t substract_box(box_int_t const &box0, box_int_t const &box1);
-	box_list_t substract_box(box_list_t const &box_list, box_int_t const &box1);
-
-	void repair_back_buffer(box_int_t const & area);
-	void repair_overlay(box_int_t const & area);
-
-	bool merge_area_macro(box_list_t & list);
-
 	window_t * get_window_t(Window w);
-
-	void add_damage_area(box_int_t const & box);
-
-	void render_flush();
 
 	void insert_window_above_of(window_t * w, Window above);
 
@@ -333,8 +314,6 @@ public:
 	void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
 	void iconify_client(managed_window_t * x);
 	void update_allocation();
-
-	void update_window_z();
 
 	void insert_window_in_stack(renderable_window_t * x);
 

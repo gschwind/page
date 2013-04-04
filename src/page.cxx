@@ -1515,14 +1515,9 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	a->read_when_mapped();
 	update_transient_for(a);
 	safe_raise_window(a);
-
-//	if(!check_manage(a)) {
-		a->map();
-//	}
-
-		update_client_list();
+	a->map();
+	update_client_list();
 	cnx->ungrab();
-
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
@@ -1852,6 +1847,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 		mw->set_managed_type(MANAGED_FLOATING);
 		mw->reconfigure();
 		theme->render_floating(mw);
+		floating_window.push_back(mw);
 	}
 
 	v->fullscreen_client = 0;
@@ -2873,6 +2869,7 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 
 managed_window_t * page_t::new_floating_window(window_t * w) {
 	managed_window_t * fw = new_managed_window(MANAGED_FLOATING, w);
+	floating_window.push_back(fw);
 	return fw;
 }
 
@@ -2885,6 +2882,7 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	clear_sibbling_child(mw->orig->id);
 	fullscreen_client_to_viewport.erase(mw);
 	_client_focused.remove(mw);
+	floating_window.remove(mw);
 	delete mw;
 }
 
@@ -2921,6 +2919,7 @@ bool page_t::check_manage(window_t * x) {
 	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
 //		printf("Floating window found\n");
 		managed_window_t * fw = manage(MANAGED_FLOATING, x);
+		floating_window.push_back(fw);
 
 		/* apply normal hint to floating window */
 		box_int_t new_size = fw->get_wished_position();
@@ -3112,6 +3111,7 @@ void page_t::print_tree_windows() {
 void page_t::bind_window(managed_window_t * mw) {
 	/* update database */
 
+	floating_window.remove(mw);
 	mw->set_managed_type(MANAGED_NOTEBOOK);
 	insert_window_in_tree(mw, 0, true);
 
@@ -3130,6 +3130,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	/* update database */
 	mw->set_managed_type(MANAGED_FLOATING);
 	theme->render_floating(mw);
+	floating_window.push_back(mw);
 
 	mw->normalize();
 	safe_raise_window(mw->orig);
@@ -3324,6 +3325,9 @@ notebook_t * page_t::find_notebook_for(managed_window_t * mw) {
 }
 
 void page_t::get_managed_windows(list<managed_window_t *> & l) {
+
+	l.insert(l.end(), floating_window.begin(), floating_window.end());
+
 	list<notebook_t *> nl;
 	get_notebooks(nl);
 	for(list<notebook_t *>::iterator i = nl.begin(); i != nl.end(); ++i) {

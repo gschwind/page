@@ -102,21 +102,17 @@ void viewport_t::get_childs(list<tree_t *> & lst) {
 void viewport_t::get_notebooks(list<notebook_t *> & l) {
 	list<tree_t *> lt;
 	get_childs(lt);
-
-	for(list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i) {
-		if(typeid(**i) == typeid(notebook_t))
-			l.push_back(dynamic_cast<notebook_t *>(*i));
-	}
+	for (list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i)
+		l.push_back(dynamic_cast<notebook_t *>(*i));
+	l.remove(0);
 }
 
 void viewport_t::get_splits(list<split_t *> & l) {
 	list<tree_t *> lt;
 	get_childs(lt);
-
-	for(list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i) {
-		if(typeid(**i) == typeid(split_t))
-			l.push_back(dynamic_cast<split_t *>(*i));
-	}
+	for (list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i)
+		l.push_back(dynamic_cast<split_t *>(*i));
+	l.remove(0);
 }
 
 }
