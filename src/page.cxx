@@ -442,7 +442,6 @@ void page_t::scan() {
 			_root_window_stack.push_back(wins[i]);
 		}
 
-
 		for (unsigned i = 0; i < num; ++i) {
 			window_t * w = get_window_t(wins[i]);
 			if(!w->read_window_attributes())
@@ -1265,6 +1264,12 @@ void page_t::process_event(XGravityEvent const & e) {
 void page_t::process_event(XMapEvent const & e) {
 	if (e.event != cnx->xroot)
 		return;
+
+	/* grab and sync the server to avoid miss of event and to
+	 * get a valid current state of windows
+	 */
+	cnx->grab();
+
 	window_t * x = get_window_t(e.window);
 	x->map_notify();
 	x->read_when_mapped();
@@ -1296,20 +1301,15 @@ void page_t::process_event(XMapEvent const & e) {
 		if (!x->is_input_only()) {
 			safe_raise_window(x);
 		}
+
+		cnx->ungrab();
 		return;
 	}
-
-	/* grab and sync the server to avoid miss of event and to
-	 * get a valid current state of windows
-	 */
-	cnx->grab();
 
 	/*
 	 * Libre Office doesn't generate MapRequest ... try to manage on map.
 	 */
-	if (!check_manage(x)) {
-
-	}
+	check_manage(x);
 
 	cnx->ungrab();
 
@@ -1517,13 +1517,11 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	 * We grab and sync the server here, to get valid state of the windows and
 	 * not miss some events.
 	 */
-	cnx->grab();
 	a->read_when_mapped();
 	update_transient_for(a);
 	safe_raise_window(a);
 	a->map();
 	update_client_list();
-	cnx->ungrab();
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
@@ -2014,6 +2012,8 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == cnx->xinerama_event) {
 		printf("a xinerama event\n");
 	} else if (e.type == cnx->xrandr_event + RRScreenChangeNotify) {
+		update_viewport_layout();
+	} else if (e.type == cnx->xrandr_event + RRNotify) {
 		update_viewport_layout();
 	}
 
@@ -2902,10 +2902,20 @@ bool page_t::check_manage(window_t * x) {
 		box_int_t new_size = fw->get_wished_position();
 
 		/* do not allow to large windows */
-		if(new_size.w > cnx->root_size.w - 30)
-			new_size.w = cnx->root_size.w - 30;
-		if(new_size.h > cnx->root_size.h - 30)
-			new_size.h = cnx->root_size.h - 30;
+		if (new_size.w
+				> (cnx->root_size.w
+						- theme->get_theme_layout()->floating_margin.left
+						- theme->get_theme_layout()->floating_margin.right))
+			new_size.w = cnx->root_size.w
+					- theme->get_theme_layout()->floating_margin.left
+					- theme->get_theme_layout()->floating_margin.right;
+		if (new_size.h
+				> cnx->root_size.h
+						- theme->get_theme_layout()->floating_margin.top
+						- theme->get_theme_layout()->floating_margin.bottom)
+			new_size.h = cnx->root_size.h
+					- theme->get_theme_layout()->floating_margin.top
+					- theme->get_theme_layout()->floating_margin.bottom;
 
 		unsigned int final_width = new_size.w;
 		unsigned int final_height = new_size.h;
@@ -3163,6 +3173,8 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 }
 
 void page_t::update_viewport_layout() {
+	printf("YYYYYY Update layout\n");
+
 	int n;
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx->dpy, &n);
 
@@ -3195,6 +3207,8 @@ void page_t::update_viewport_layout() {
 		default_window_pop = get_random_notebook();
 
 	update_allocation();
+	rpage->mark_durty();
+	rnd->add_damage_area(cnx->root_size);
 }
 
 

@@ -105,6 +105,13 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 		cnx_printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
 	}
 
+	XRRSelectInput(_dpy, xroot,
+			RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask
+					| RROutputChangeNotifyMask | RROutputPropertyNotifyMask
+					| RRProviderChangeNotifyMask | RRProviderChangeNotifyMask
+					| RRProviderPropertyNotifyMask | RRResourceChangeNotifyMask);
+
+
 	/* map & passtrough the overlay */
 	composite_overlay = XCompositeGetOverlayWindow(_dpy, xroot);
 	allow_input_passthrough(composite_overlay);
