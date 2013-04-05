@@ -205,7 +205,7 @@ public:
 	window_map_t xwindow_to_window;
 
 	/* floating windows */
-	list<managed_window_t *> floating_window;
+	set<managed_window_t *> managed_window;
 
 	/* store data to allow proper revert fullscreen window to
 	 * their original positions */
@@ -355,12 +355,6 @@ public:
 
 	managed_window_t * new_managed_window(managed_window_type_e type, window_t * orig);
 	void destroy_managed_window(managed_window_t * mw);
-
-	managed_window_t * new_floating_window(window_t * w);
-	managed_window_t * new_notebook_window(window_t * w);
-
-	void unmap_set(window_set_t & set);
-	void map_set(window_set_t & set);
 
 	viewport_t * find_viewport(window_t * w);
 
