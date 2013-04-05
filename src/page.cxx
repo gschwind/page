@@ -1122,8 +1122,15 @@ void page_t::process_event(XConfigureEvent const & e) {
 //			e.height, e.x, e.y, e.above, e.event, e.window, (e.send_event == True)?"true":"false");
 	if(e.send_event == True)
 		return;
-	if(e.window == cnx->xroot)
+	if(e.window == cnx->xroot) {
+		cnx->root_size.w = e.width;
+		cnx->root_size.h = e.height;
+		update_allocation();
+		rpage->reconfigure(cnx->root_size);
+		rpage->mark_durty();
+		rnd->add_damage_area(cnx->root_size);
 		return;
+	}
 
 	/* update unused stack */
 	if (has_key(_root_window_stack, e.window)) {
@@ -1566,12 +1573,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 		}
 	} else if (e.atom == cnx->atoms._NET_WM_STRUT_PARTIAL) {
-		if ((e.state == PropertyNewValue or e.state == PropertyDelete)) {
-			x->read_partial_struct();
-			update_allocation();
-			rpage->mark_durty();
-			rnd->add_damage_area(cnx->root_size);
-		}
+		x->read_partial_struct();
+		update_allocation();
+		rpage->mark_durty();
+		rnd->add_damage_area(cnx->root_size);
 	} else if (e.atom == cnx->atoms._NET_WM_ICON) {
 		x->read_icon_data();
 		/* TODO: durty notebook */
@@ -2385,85 +2390,80 @@ void page_t::fix_allocation(viewport_t & v) {
 
 	/* Partial struct content definition */
 	enum {
-		X_LEFT = 0,
-		X_RIGHT = 1,
-		X_TOP = 2,
-		X_BOTTOM = 3,
-		X_LEFT_START_Y = 4,
-		X_LEFT_END_Y = 5,
-		X_RIGHT_START_Y = 6,
-		X_RIGHT_END_Y = 7,
-		X_TOP_START_X = 8,
-		X_TOP_END_X = 9,
-		X_BOTTOM_START_X = 10,
-		X_BOTTOM_END_X = 11,
+		PS_LEFT = 0,
+		PS_RIGHT = 1,
+		PS_TOP = 2,
+		PS_BOTTOM = 3,
+		PS_LEFT_START_Y = 4,
+		PS_LEFT_END_Y = 5,
+		PS_RIGHT_START_Y = 6,
+		PS_RIGHT_END_Y = 7,
+		PS_TOP_START_X = 8,
+		PS_TOP_END_X = 9,
+		PS_BOTTOM_START_X = 10,
+		PS_BOTTOM_END_X = 11,
 	};
 
-	v.effective_aera = v.raw_aera;
-	int xtop = 0, xleft = 0, xright = 0, xbottom = 0;
+	long xtop = v.raw_aera.y;
+	long xleft = v.raw_aera.x;
+	long xright = cnx->root_size.w - v.raw_aera.x - v.raw_aera.w;
+	long xbottom = cnx->root_size.h - v.raw_aera.y - v.raw_aera.h;
 
 	std::map<Window, window_t *>::iterator j = xwindow_to_window.begin();
 	while (j != xwindow_to_window.end()) {
 		long const * ps = j->second->get_partial_struct();
-		if (ps) {
-			/* this is very crappy, but there is a way to do it better ? */
-			if (ps[X_LEFT] >= v.raw_aera.x
-					&& ps[X_LEFT] <= v.raw_aera.x + v.raw_aera.w) {
-				int top = std::max<int const>(ps[X_LEFT_START_Y], v.raw_aera.y);
-				int bottom = std::min<int const>(ps[X_LEFT_END_Y],
-						v.raw_aera.y + v.raw_aera.h);
-				if (bottom - top > 0) {
-					xleft = std::max<int const>(xleft,
-							ps[X_LEFT] - v.effective_aera.x);
+
+		if (ps != 0) {
+			if (ps[PS_LEFT] > 0) {
+				/* check if raw area intersec current viewport */
+				box_int_t b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
+						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
+				box_int_t x = v.raw_aera & b;
+				if (!x.is_null()) {
+					xleft = std::max(xleft, ps[PS_LEFT]);
 				}
 			}
 
-			if (cnx->root_size.w - ps[X_RIGHT] >= v.raw_aera.x
-					&& cnx->root_size.w - ps[X_RIGHT]
-							<= v.raw_aera.x + v.raw_aera.w) {
-				int top = std::max<int const>(ps[X_RIGHT_START_Y],
-						v.raw_aera.y);
-				int bottom = std::min<int const>(ps[X_RIGHT_END_Y],
-						v.raw_aera.y + v.raw_aera.h);
-				if (bottom - top > 0) {
-					xright = std::max<int const>(xright,
-							(v.raw_aera.x + v.raw_aera.w)
-									- (cnx->root_size.w - ps[X_RIGHT]));
+			if (ps[PS_RIGHT] > 0) {
+				/* check if raw area intersec current viewport */
+				box_int_t b(cnx->root_size.w - ps[PS_RIGHT],
+						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
+						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
+				box_int_t x = v.raw_aera & b;
+				if (!x.is_null()) {
+					xright = std::max(xright, ps[PS_RIGHT]);
 				}
 			}
 
-			if (ps[X_TOP] >= v.raw_aera.y
-					&& ps[X_TOP] <= v.raw_aera.y + v.raw_aera.h) {
-				int left = std::max<int const>(ps[X_TOP_START_X], v.raw_aera.x);
-				int right = std::min<int const>(ps[X_TOP_END_X],
-						v.raw_aera.x + v.raw_aera.w);
-				if (right - left > 0) {
-					xtop = std::max<int const>(xtop, ps[X_TOP] - v.raw_aera.y);
+			if (ps[PS_TOP] > 0) {
+				/* check if raw area intersec current viewport */
+				box_int_t b(ps[PS_TOP_START_X], 0,
+						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
+				box_int_t x = v.raw_aera & b;
+				if (!x.is_null()) {
+					xtop = std::max(xtop, ps[PS_TOP]);
 				}
 			}
 
-			if (cnx->root_size.h - ps[X_BOTTOM] >= v.raw_aera.y
-					&& cnx->root_size.h - ps[X_BOTTOM]
-							<= v.raw_aera.y + v.raw_aera.h) {
-				int left = std::max<int const>(ps[X_BOTTOM_START_X],
-						v.raw_aera.x);
-				int right = std::min<int const>(ps[X_BOTTOM_END_X],
-						v.raw_aera.x + v.raw_aera.w);
-				if (right - left > 0) {
-					xbottom = std::max<int const>(xbottom,
-							(v.effective_aera.h + v.effective_aera.y)
-									- (cnx->root_size.h - ps[X_BOTTOM]));
+			if (ps[PS_BOTTOM] > 0) {
+				/* check if raw area intersec current viewport */
+				box_int_t b(ps[PS_BOTTOM_START_X],
+						cnx->root_size.h - ps[PS_BOTTOM],
+						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
+						ps[PS_BOTTOM]);
+				box_int_t x = v.raw_aera & b;
+				if (!x.is_null()) {
+					xbottom = std::max(xbottom, ps[PS_BOTTOM]);
 				}
 			}
-
 		}
 		++j;
 	}
 
-	v.effective_aera.x += xleft;
-	v.effective_aera.w -= xleft + xright;
-	v.effective_aera.y += xtop;
-	v.effective_aera.h -= xtop + xbottom;
+	v.effective_aera.x = xleft;
+	v.effective_aera.w = cnx->root_size.w - xright - xleft + 1;
+	v.effective_aera.y = xtop;
+	v.effective_aera.h = cnx->root_size.h - xbottom - xtop + 1;
 
 	//printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
 	//		v.effective_aera.x, v.effective_aera.y);

@@ -110,7 +110,10 @@ region_t<int> renderable_page_t::get_area() {
 
 
 void renderable_page_t::reconfigure(box_int_t const & area) {
-
+	_w = area.w;
+	_h = area.h;
+	cairo_xlib_surface_set_size(_target, area.w, area.h);
+	rebuild_cairo();
 }
 
 bool renderable_page_t::is_visible() {
