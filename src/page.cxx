@@ -81,8 +81,10 @@ page_t::page_t(int argc, char ** argv) {
 
 	popups = renderable_list_t();
 
-	cursor = None;
+	cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
 	cursor_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
+
+	set_window_cursor(cnx->xroot, cursor);
 
 	running = false;
 
@@ -735,9 +737,26 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						//mw->delete_window(e.time);
 					} else if (dock_position.is_inside(e.x_root, e.y_root)) {
 						grab_pointer();
-						mode_data_floating.f = mw;
+
+						mode_data_bind.c = mw;
+						mode_data_bind.ns = 0;
+						mode_data_bind.zone = SELECT_NONE;
+						mode_data_bind.pn0 = new popup_notebook0_t(
+								mode_data_bind.c->get_base_position().x,
+								mode_data_bind.c->get_base_position().y,
+								mode_data_bind.c->get_base_position().w,
+								mode_data_bind.c->get_base_position().h);
+
+						mode_data_bind.name = mw->get_title();
+						mode_data_bind.pn1 = new popup_notebook1_t(
+								mode_data_bind.c->get_base_position().x,
+								mode_data_bind.c->get_base_position().y, theme->get_default_font(),
+								mw->get_icon()->get_cairo_surface(), c->get_title());
+
+						mode_data_bind.popup_is_added = false;
+
 						process_mode = PROCESS_FLOATING_BIND;
-						//bind_window(mw);
+
 					} else {
 						mode_data_floating.x_offset = e.x;
 						mode_data_floating.y_offset = e.y;
@@ -880,15 +899,55 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 	case PROCESS_FLOATING_BIND: {
 
-		managed_window_t * mw = mode_data_floating.f;
-		box_int_t size = mw->get_base_position();
-		box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
-		if (dock_position.is_inside(e.x_root, e.y_root)) {
-			bind_window(mw);
+		process_mode = PROCESS_NORMAL;
+		rnd->remove(mode_data_bind.pn0);
+		rnd->remove(mode_data_bind.pn1);
+		delete mode_data_bind.pn0;
+		delete mode_data_bind.pn1;
+		/* ev is button release
+		 * so set the hidden focus parameter
+		 */
+
+		XUngrabPointer(cnx->dpy, CurrentTime);
+
+
+		if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
+			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+			insert_window_in_tree(mode_data_bind.c, mode_data_bind.ns, true);
+
+			safe_raise_window(mode_data_bind.c->orig);
+
+			rpage->mark_durty();
+			rnd->add_damage_area(cnx->root_size);
+			update_client_list();
+
+		} else if (mode_data_bind.zone == SELECT_TOP
+				&& mode_data_bind.ns != 0) {
+			remove_window_from_tree(mode_data_notebook.c);
+			split_top(mode_data_bind.ns, mode_data_bind.c);
+		} else if (mode_data_bind.zone == SELECT_LEFT
+				&& mode_data_bind.ns != 0) {
+			remove_window_from_tree(mode_data_bind.c);
+			split_left(mode_data_bind.ns, mode_data_bind.c);
+		} else if (mode_data_bind.zone == SELECT_BOTTOM
+				&& mode_data_bind.ns != 0) {
+			remove_window_from_tree(mode_data_bind.c);
+			split_bottom(mode_data_bind.ns, mode_data_bind.c);
+		} else if (mode_data_bind.zone == SELECT_RIGHT
+				&& mode_data_bind.ns != 0) {
+			remove_window_from_tree(mode_data_bind.c);
+			split_right(mode_data_bind.ns, mode_data_bind.c);
+		} else {
+			bind_window(mode_data_bind.c);
 		}
 
+		rnd->add_damage_area(mode_data_bind.c->get_base_position());
+
+		set_focus(mode_data_bind.c);
+		rpage->mark_durty();
+
 		process_mode = PROCESS_NORMAL;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 
 		break;
 	}
@@ -1099,7 +1158,113 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 	case PROCESS_FLOATING_CLOSE:
 		break;
-	case PROCESS_FLOATING_BIND:
+	case PROCESS_FLOATING_BIND: {
+		/* get lastest know motion event */
+		ev.xmotion = e;
+		while (XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev))
+			continue;
+
+		/* do not start drag&drop for small move */
+		if (ev.xmotion.x_root < mode_data_bind.start_x - 5
+				|| ev.xmotion.x_root > mode_data_bind.start_x + 5
+				|| ev.xmotion.y_root < mode_data_bind.start_y - 5
+				|| ev.xmotion.y_root > mode_data_bind.start_y + 5) {
+			if (!mode_data_bind.popup_is_added) {
+				rnd->add(mode_data_bind.pn0);
+				rnd->add(mode_data_bind.pn1);
+				mode_data_bind.popup_is_added = true;
+			}
+		}
+
+		++count;
+		if (mode_data_bind.popup_is_added && (count % 10) == 0) {
+			box_int_t old_area = mode_data_bind.pn1->get_absolute_extend();
+			box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
+					old_area.w, old_area.h);
+			mode_data_bind.pn1->reconfigure(new_area);
+			rnd->add_damage_area(old_area);
+			rnd->add_damage_area(new_area);
+			rpage->mark_durty();
+		}
+
+		list<notebook_t *> ln;
+		get_notebooks(ln);
+		for (list<notebook_t *>::iterator i = ln.begin(); i != ln.end(); ++i) {
+			if ((*i)->tab_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("tab\n");
+				if (mode_data_bind.zone != SELECT_TAB
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_TAB;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->tab_area, mode_data_bind.popup_is_added);
+				}
+				break;
+			} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("right\n");
+				if (mode_data_bind.zone != SELECT_RIGHT
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_RIGHT;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->popup_right_area,
+							mode_data_bind.popup_is_added);
+				}
+				break;
+			} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("top\n");
+				if (mode_data_bind.zone != SELECT_TOP
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_TOP;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->popup_top_area,
+							mode_data_bind.popup_is_added);
+				}
+				break;
+			} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("bottom\n");
+				if (mode_data_bind.zone != SELECT_BOTTOM
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_BOTTOM;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->popup_bottom_area,
+							mode_data_bind.popup_is_added);
+				}
+				break;
+			} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("left\n");
+				if (mode_data_bind.zone != SELECT_LEFT
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_LEFT;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->popup_left_area,
+							mode_data_bind.popup_is_added);
+				}
+				break;
+			} else if ((*i)->popup_center_area.is_inside(ev.xmotion.x_root,
+					ev.xmotion.y_root)) {
+				//printf("center\n");
+				if (mode_data_bind.zone != SELECT_CENTER
+						|| mode_data_bind.ns != (*i)) {
+					mode_data_bind.zone = SELECT_CENTER;
+					mode_data_bind.ns = (*i);
+					update_popup_position(mode_data_bind.pn0,
+							(*i)->popup_center_area,
+							mode_data_bind.popup_is_added);
+				}
+				break;
+			}
+		}
+	}
+
 		break;
 	}
 }
@@ -1281,9 +1446,17 @@ void page_t::process_event(XMapEvent const & e) {
 	x->map_notify();
 	x->read_when_mapped();
 
-	if (x->read_window_attributes() && !has_key(window_to_renderable_context, x)) {
-		if (!x->is_input_only())
-			new_renderable_window (x);
+	if (x->read_window_attributes()
+			and not has_key(window_to_renderable_context, x)) {
+		if (!x->is_input_only()) {
+			new_renderable_window(x);
+
+			if(not find_managed_window_with(x->id)) {
+				window_to_renderable_context[x]->set_opacity(0.90);
+			}
+		}
+
+
 	}
 
 	rnd->add_damage_area(x->get_size());
@@ -1459,6 +1632,14 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			if (e.value_mask & CWHeight) {
 				new_size.h = e.height;
+			}
+
+			if((e.value_mask & (CWX)) and (e.value_mask & (CWY)) and e.x == 0 and e.y == 0 and !viewport_list.empty()) {
+				viewport_t * v = viewport_list.front();
+				box_int_t b = v->get_absolute_extend();
+				/* place on center */
+				new_size.x = (b.w - new_size.w) / 2 + b.x;
+				new_size.y = (b.h - new_size.h) / 2 + b.y;
 			}
 
 			unsigned int final_width = new_size.w;
@@ -3160,9 +3341,15 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 	case PROCESS_FLOATING_GRAB:
 	case PROCESS_FLOATING_RESIZE:
 	case PROCESS_FLOATING_CLOSE:
-	case PROCESS_FLOATING_BIND:
 		if (mode_data_floating.f == mw) {
 			mode_data_floating.f = 0;
+			process_mode = PROCESS_NORMAL;
+			XUngrabPointer(cnx->dpy, CurrentTime);
+		}
+		break;
+	case PROCESS_FLOATING_BIND:
+		if (mode_data_bind.c == mw) {
+			mode_data_bind.c = 0;
 			process_mode = PROCESS_NORMAL;
 			XUngrabPointer(cnx->dpy, CurrentTime);
 		}
@@ -3183,14 +3370,14 @@ void page_t::update_viewport_layout() {
 	if (n < 1) {
 		printf("No Xinerama Layout Found\n");
 
-		update_notebook_number(1);
+		update_viewport_number(1);
 
 		box_t<int> x(0, 0, cnx->root_size.w, cnx->root_size.h);
 		viewport_list.front()->set_allocation(x);
 
 	} else {
 
-		update_notebook_number(n);
+		update_viewport_number(n);
 
 		list<viewport_t *>::iterator it = viewport_list.begin();
 		for (int i = 0; i < n; ++i) {
@@ -3339,7 +3526,7 @@ bool page_t::is_valid_notebook(notebook_t * n) {
 	return has_key(l, n);
 }
 
-void page_t::update_notebook_number(unsigned int n) {
+void page_t::update_viewport_number(unsigned int n) {
 
 	while (viewport_list.size() < n) {
 		box_int_t x(0, 0, 1, 1);
@@ -3383,6 +3570,12 @@ void page_t::update_notebook_number(unsigned int n) {
 		}
 
 	}
+}
+
+void page_t::set_window_cursor(Window w, Cursor c) {
+	XSetWindowAttributes swa;
+	swa.cursor = c;
+	XChangeWindowAttributes(cnx->dpy, w, CWCursor, &swa);
 }
 
 }

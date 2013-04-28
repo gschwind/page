@@ -142,6 +142,22 @@ public:
 		void process_release(page_t & p, XButtonEvent const & e);
 	};
 
+
+	struct mode_data_bind_t {
+		int start_x;
+		int start_y;
+		select_e zone;
+		managed_window_t * c;
+		notebook_t * ns;
+		popup_notebook0_t * pn0;
+		popup_notebook1_t * pn1;
+		std::string name;
+		bool popup_is_added;
+
+		void process_motion(XMotionEvent const & e);
+		void process_release(page_t & p, XButtonEvent const & e);
+	};
+
 	struct mode_data_floating_t {
 		int x_offset;
 		int y_offset;
@@ -178,6 +194,8 @@ public:
 	mode_data_notebook_t mode_data_notebook;
 
 	mode_data_floating_t mode_data_floating;
+
+	mode_data_bind_t mode_data_bind;
 
 	static double const OPACITY = 0.95;
 
@@ -412,7 +430,9 @@ public:
 
 	bool is_valid_notebook(notebook_t * n);
 
-	void update_notebook_number(unsigned int n);
+	void update_viewport_number(unsigned int n);
+
+	void set_window_cursor(Window w, Cursor c);
 
 
 };

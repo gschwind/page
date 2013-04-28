@@ -33,6 +33,8 @@ renderable_window_t::renderable_window_t(Display * d, Window w, Visual * v, box_
 	damage = None;
 	window_surf = 0;
 
+	opacity = 1.0;
+
 	create_render_context();
 }
 
@@ -99,7 +101,7 @@ void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
 		cairo_set_source_surface(cr, window_surf, size.x, size.y);
 		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 		cairo_clip(cr);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr, opacity);
 //		cairo_reset_clip(cr);
 //		cairo_rectangle(cr, clip.x - 0.5, clip.y - 0.5, clip.w - 0.5, clip.h - 0.5);
 //		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
