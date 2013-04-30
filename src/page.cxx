@@ -702,8 +702,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 		/* the hidden focus parameter */
-		if (_last_focus_time < cnx->last_know_time) {
-			window_t * x = find_client_window(c);
+		if (_last_focus_time <= cnx->last_know_time) {
 			if (mw != 0) {
 				set_focus(mw);
 			}
