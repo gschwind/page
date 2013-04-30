@@ -20,7 +20,8 @@ page_SOURCES = \
 	renderable_page.cxx \
 	managed_window.cxx \
 	renderable_window.cxx \
-	window_icon_handler.cxx
+	window_icon_handler.cxx \
+	config_handler.cxx
 
 page_LDADD = \
 	$(X11_LIBS) \

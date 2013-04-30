@@ -88,22 +88,27 @@ page_t::page_t(int argc, char ** argv) {
 
 	running = false;
 
-	conf = g_key_file_new();
 
-	/* load configuration file */
+	/* load configurations, from lower priority to high one */
 
-	if (argc == 2) {
-		if (!g_key_file_load_from_file(conf, argv[1], G_KEY_FILE_NONE, 0)) {
-			throw std::runtime_error("could not load config file");
+	/* load default configuration */
+	conf.merge_from_file_if_exist(string(DATA_DIR "/page/page.conf"));
+
+	/* load homedir configuration */
+	{
+		char const * chome = getenv("HOME");
+		if(chome != NULL) {
+			string xhome = chome;
+			string file = xhome + "/.page.conf";
+			conf.merge_from_file_if_exist(file);
 		}
-	} else if (argc == 1) {
-		char const * x = DATA_DIR "/page/page.conf";
-		if (!g_key_file_load_from_file(conf, x, G_KEY_FILE_NONE, 0)) {
-			throw std::runtime_error("could not load config file");
-		}
-	} else {
-		throw std::runtime_error("usage : prg <config_file>");
 	}
+
+	/* load file in arguments if provided */
+	if (argc == 2) {
+		conf.merge_from_file_if_exist(string(argv[1]));
+	}
+
 
 	_root_window_stack = list<Window>();
 	window_to_renderable_context = map<window_t *, renderable_window_t *>();
@@ -125,30 +130,13 @@ page_t::page_t(int argc, char ** argv) {
 
 	default_window_pop = 0;
 
-	gchar * theme_dir = g_key_file_get_string(conf, "default", "theme_dir", 0);
-	if (theme_dir == 0) {
-		throw std::runtime_error("no theme_dir found in config file");
-	}
+	page_base_dir = conf.get_string("default", "theme_dir");
 
-	page_base_dir = theme_dir;
-	g_free(theme_dir);
 
-	gchar * sfont = g_key_file_get_string(conf, "default", "font_file", 0);
-	if (sfont == 0) {
-		throw std::runtime_error("no font_file found in config file");
-	}
 
-	font = sfont;
-	g_free(sfont);
+	font = conf.get_string("default", "font_file");
 
-	gchar * sfont_bold = g_key_file_get_string(conf, "default",
-			"font_bold_file", 0);
-	if (sfont_bold == 0) {
-		throw std::runtime_error("no font_file found in config file");
-	}
-
-	font_bold = sfont_bold;
-	g_free(sfont_bold);
+	font_bold = conf.get_string("default", "font_bold_file");
 
 	_last_focus_time = 0;
 
@@ -170,11 +158,6 @@ page_t::page_t(int argc, char ** argv) {
 }
 
 page_t::~page_t() {
-
-	if (conf != 0) {
-		g_key_file_free(conf);
-		conf = 0;
-	}
 
 	map<window_t *, renderable_window_t *> tmp = window_to_renderable_context;
 	for(map<window_t *, renderable_window_t *>::iterator i = tmp.begin(); i != tmp.end(); ++i) {

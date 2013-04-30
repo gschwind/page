@@ -28,6 +28,7 @@
 #include "managed_window.hxx"
 #include "theme_layout.hxx"
 #include "theme.hxx"
+#include "config_handler.hxx"
 
 using namespace std;
 
@@ -102,7 +103,10 @@ public:
 	color_t plum1;
 	color_t plum2;
 
-	simple_theme_t(GKeyFile * conf);
+	color_t color_font;
+	color_t color_font_selected;
+
+	simple_theme_t(config_handler_t & conf);
 
 	virtual ~simple_theme_t();
 

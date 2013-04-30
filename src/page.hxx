@@ -57,6 +57,7 @@
 #include "managed_window.hxx"
 #include "theme.hxx"
 #include "minimal_theme.hxx"
+#include "config_handler.hxx"
 
 using namespace std;
 
@@ -210,7 +211,7 @@ public:
 
 	bool running;
 
-	GKeyFile * conf;
+	config_handler_t conf;
 
 	std::list<Window> _root_window_stack;
 

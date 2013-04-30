@@ -170,22 +170,22 @@ inline string get_value_string(GKeyFile * conf, string const & group, string con
 }
 
 
-simple_theme_t::simple_theme_t(GKeyFile * conf) {
+simple_theme_t::simple_theme_t(config_handler_t & conf) {
 
-	string conf_img_dir = get_value_string(conf, "default", "theme_dir");
-	string font = get_value_string(conf, "default", "font_file");
-	string font_bold = get_value_string(conf, "default", "font_bold_file");
+	string conf_img_dir = conf.get_string("default", "theme_dir");
+	string font = conf.get_string("default", "font_file");
+	string font_bold = conf.get_string("default", "font_bold_file");
 
 
-	grey0.set(get_value_string(conf, "simple_theme", "grey0"));
-	grey1.set(get_value_string(conf, "simple_theme", "grey1"));
-	grey2.set(get_value_string(conf, "simple_theme", "grey2"));
-	grey3.set(get_value_string(conf, "simple_theme", "grey3"));
-	grey5.set(get_value_string(conf, "simple_theme", "grey5"));
+	grey0.set(conf.get_string("simple_theme", "grey0"));
+	grey1.set(conf.get_string("simple_theme", "grey1"));
+	grey2.set(conf.get_string("simple_theme", "grey2"));
+	grey3.set(conf.get_string("simple_theme", "grey3"));
+	grey5.set(conf.get_string("simple_theme", "grey5"));
 
-	plum0.set(get_value_string(conf, "simple_theme", "plum0"));
-	plum1.set(get_value_string(conf, "simple_theme", "plum1"));
-	plum2.set(get_value_string(conf, "simple_theme", "plum2"));
+	plum0.set(conf.get_string("simple_theme", "plum0"));
+	plum1.set(conf.get_string("simple_theme", "plum1"));
+	plum2.set(conf.get_string("simple_theme", "plum2"));
 
 	layout = new simple_theme_layout_t();
 
@@ -344,6 +344,20 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_fill(cr);
 
+	{
+		box_int_t b;
+		b.y = n->_allocation.y;
+		b.h = layout->notebook_margin.top - 4;
+
+		b.x = n->_allocation.x;
+		b.w = n->_allocation.x + n->_allocation.w;
+
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source_rgb(cr, grey1.r, grey1.g, grey1.b);
+		cairo_fill(cr);
+
+	}
+
 	int number_of_client = n->_clients.size();
 	int selected_index = -1;
 
@@ -358,7 +372,11 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 	list<managed_window_t *>::iterator c = n->_clients.begin();
 	for(list<box_int_t>::iterator i = tabs.begin(); i != tabs.end(); ++i, ++c) {
-		box_int_t & b = *i;
+		box_int_t b = *i;
+		b.x += 1;
+		b.w -= 2;
+		b.y += 1;
+		b.h -= 1;
 
 		if (*c == n->_selected.front()) {
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
@@ -864,6 +882,6 @@ cairo_font_face_t * simple_theme_t::get_default_font() {
 }
 
 
-page::theme_t * get_theme(GKeyFile * conf) {
-	return new page::simple_theme_t(conf);
-}
+//page::theme_t * get_theme(config_handler_t * conf) {
+//	return new page::simple_theme_t(*conf);
+//}
