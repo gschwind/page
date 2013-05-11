@@ -154,6 +154,8 @@ page_t::page_t(int argc, char ** argv) {
 
 	rnd->add(rpage);
 
+	menu_opacity = conf.get_double("default", "menu_opacity");
+
 
 }
 
@@ -202,7 +204,7 @@ void page_t::run() {
 
 	XFree(info);
 
-	default_window_pop = get_random_notebook();
+	default_window_pop = get_another_notebook();
 	if(default_window_pop == 0)
 		throw std::runtime_error("very bad error");
 
@@ -729,7 +731,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 								mode_data_bind.c->get_base_position().w,
 								mode_data_bind.c->get_base_position().h);
 
-						mode_data_bind.name = mw->get_title();
 						mode_data_bind.pn1 = new popup_notebook1_t(
 								mode_data_bind.c->get_base_position().x,
 								mode_data_bind.c->get_base_position().y, theme->get_default_font(),
@@ -929,7 +930,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		rpage->mark_durty();
 
 		process_mode = PROCESS_NORMAL;
-		//XUngrabPointer(cnx->dpy, CurrentTime);
 
 		break;
 	}
@@ -1379,6 +1379,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 	w->select_input(PropertyChangeMask | StructureNotifyMask);
 	update_transient_for(w);
+	w->default_position = w->get_size();
 
 	cnx->ungrab();
 
@@ -1434,7 +1435,7 @@ void page_t::process_event(XMapEvent const & e) {
 			new_renderable_window(x);
 
 			if(not find_managed_window_with(x->id)) {
-				window_to_renderable_context[x]->set_opacity(0.90);
+				window_to_renderable_context[x]->set_opacity(menu_opacity);
 			}
 		}
 
@@ -1583,6 +1584,29 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //		printf("has stack mode: %d\n", e.detail);
 //	if (e.value_mask & CWBorderWidth)
 //		printf("has border: %d\n", e.border_width);
+
+	if(c) {
+		box_int_t new_size = c->get_size();
+		if (e.value_mask & CWX) {
+			new_size.x = e.x;
+		}
+
+		if (e.value_mask & CWY) {
+			new_size.y = e.y;
+		}
+
+		if (e.value_mask & CWWidth) {
+			new_size.w = e.width;
+		}
+
+		if (e.value_mask & CWHeight) {
+			new_size.h = e.height;
+		}
+
+		c->default_position = new_size;
+
+	}
+
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 	if (mw != 0) {
@@ -2381,7 +2405,6 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 					mode_data_notebook.from->tab_area.w,
 					mode_data_notebook.from->tab_area.h);
 
-			mode_data_notebook.name = c->get_title();
 			mode_data_notebook.pn1 = new popup_notebook1_t(
 					mode_data_notebook.from->_allocation.x,
 					mode_data_notebook.from->_allocation.y, theme->get_default_font(),
@@ -2501,10 +2524,6 @@ void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
 
 void page_t::notebook_close(notebook_t * src) {
 
-	/* cannot close last notebook */
-	if(typeid(*(src->_parent)) != typeid(split_t))
-		return;
-
 	split_t * ths = dynamic_cast<split_t *>(src->_parent);
 
 	/* if parent is viewport return */
@@ -2516,7 +2535,7 @@ void page_t::notebook_close(notebook_t * src) {
 	/* if notebook is default_pop, select another one */
 	if (default_window_pop == src) {
 		/* if notebook list is empty we probably did something wrong */
-		default_window_pop = get_random_notebook();
+		default_window_pop = get_another_notebook(src);
 		/* put it back temporary since destroy will remove it */
 	}
 
@@ -3373,7 +3392,7 @@ void page_t::update_viewport_layout() {
 	}
 
 	if (default_window_pop == 0)
-		default_window_pop = get_random_notebook();
+		default_window_pop = get_another_notebook(0);
 
 	update_allocation();
 	rpage->mark_durty();
@@ -3392,68 +3411,72 @@ void page_t::cleanup_reference(void * ref) {
 
 }
 
-void page_t::mode_data_notebook_t::process_release(page_t & p, XButtonEvent const & e) {
+//void page_t::mode_data_notebook_t::process_release(page_t & p, XButtonEvent const & e) {
+//
+//	p.rnd->remove(pn0);
+//	p.rnd->remove(pn1);
+//	delete pn0;
+//	delete pn1;
+//	/* ev is button release
+//	 * so set the hidden focus parameter
+//	 */
+//
+//	XUngrabPointer(p.cnx->dpy, CurrentTime);
+//
+//
+//	if (zone == SELECT_TAB && ns != 0
+//			&& ns != from) {
+//		p.remove_window_from_tree(c);
+//		p.insert_window_in_tree(c, ns, true);
+//	} else if (zone == SELECT_TOP
+//			&& ns != 0) {
+//		p.remove_window_from_tree(c);
+//		p.split_top(ns, c);
+//	} else if (zone == SELECT_LEFT
+//			&& ns != 0) {
+//		p.remove_window_from_tree(c);
+//		p.split_left(ns, c);
+//	} else if (zone == SELECT_BOTTOM
+//			&& ns != 0) {
+//		p.remove_window_from_tree(c);
+//		p.split_bottom(ns, c);
+//	} else if (zone == SELECT_RIGHT
+//			&& ns != 0) {
+//		p.remove_window_from_tree(c);
+//		p.split_right(ns, c);
+//	} else if (zone == SELECT_CENTER
+//			&& ns != 0) {
+//		p.unbind_window(c);
+//	} else {
+//		from->set_selected(c);
+//		p.set_focus(c);
+//	}
+//
+//	/* automaticaly close empty notebook */
+//	if (from->_clients.empty()
+//			&& from->_parent != 0) {
+//		p.notebook_close(from);
+//		p.update_allocation();
+//	} else {
+//		p.rnd->add_damage_area(from->_allocation);
+//	}
+//
+//	p.set_focus(c);
+//	p.rpage->mark_durty();
+//}
 
-	p.rnd->remove(pn0);
-	p.rnd->remove(pn1);
-	delete pn0;
-	delete pn1;
-	/* ev is button release
-	 * so set the hidden focus parameter
-	 */
-
-	XUngrabPointer(p.cnx->dpy, CurrentTime);
-
-
-	if (zone == SELECT_TAB && ns != 0
-			&& ns != from) {
-		p.remove_window_from_tree(c);
-		p.insert_window_in_tree(c, ns, true);
-	} else if (zone == SELECT_TOP
-			&& ns != 0) {
-		p.remove_window_from_tree(c);
-		p.split_top(ns, c);
-	} else if (zone == SELECT_LEFT
-			&& ns != 0) {
-		p.remove_window_from_tree(c);
-		p.split_left(ns, c);
-	} else if (zone == SELECT_BOTTOM
-			&& ns != 0) {
-		p.remove_window_from_tree(c);
-		p.split_bottom(ns, c);
-	} else if (zone == SELECT_RIGHT
-			&& ns != 0) {
-		p.remove_window_from_tree(c);
-		p.split_right(ns, c);
-	} else if (zone == SELECT_CENTER
-			&& ns != 0) {
-		p.unbind_window(c);
-	} else {
-		from->set_selected(c);
-		p.set_focus(c);
-	}
-
-	/* automaticaly close empty notebook */
-	if (from->_clients.empty()
-			&& from->_parent != 0) {
-		p.notebook_close(from);
-		p.update_allocation();
-	} else {
-		p.rnd->add_damage_area(from->_allocation);
-	}
-
-	p.set_focus(c);
-	p.rpage->mark_durty();
-}
-
-notebook_t * page_t::get_random_notebook() {
+notebook_t * page_t::get_another_notebook(tree_t * x) {
 	list<notebook_t *> l;
 	get_notebooks(l);
 
-	if(l.empty())
-		return 0;
-	else
-		return l.front();
+	if (!l.empty()) {
+		if (l.front() != x)
+			return l.front();
+		if (l.back() != x)
+			return l.back();
+	}
+
+	return 0;
 
 }
 
@@ -3529,7 +3552,7 @@ void page_t::update_viewport_number(unsigned int n) {
 		for (list<notebook_t *>::iterator i = nbks.begin(); i != nbks.end();
 				++i) {
 			if (default_window_pop == *i)
-				default_window_pop = get_random_notebook();
+				default_window_pop = get_another_notebook(*i);
 			list<managed_window_t *> lc = (*i)->get_clients();
 			for (list<managed_window_t *>::iterator i = lc.begin();
 					i != lc.end(); ++i) {

@@ -90,6 +90,8 @@ private:
 
     page_window_type_e _type;
 
+
+
 private:
 	/* avoid copy */
 	window_t(window_t const &);
@@ -97,6 +99,8 @@ private:
 public:
 
 	Window const id;
+
+    box_int_t default_position;
 
 	window_t(xconnection_t &cnx, Window w);
 	virtual ~window_t();
@@ -241,7 +245,6 @@ public:
 
 	void set_managed(bool state);
 	bool is_managed();
-
 
 };
 

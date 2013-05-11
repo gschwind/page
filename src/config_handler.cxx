@@ -74,6 +74,20 @@ string config_handler_t::get_string(char const * group, char const * key) {
 	}
 }
 
+double config_handler_t::get_double(char const * group, char const * key) {
+	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
+	if(i != _data.end()) {
+		return g_strtod(i->second.c_str(), NULL);
+	} else {
+		throw runtime_error("group:key not found");
+	}
+}
+
+bool config_handler_t::has_key(char const * group, char const * key) {
+	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
+	return (i != _data.end());
+}
+
 }
 
 

@@ -686,8 +686,8 @@ void xconnection_t::fake_configure(Window w, box_int_t location, int border_widt
 
 	send_event(w, False, StructureNotifyMask, &ev);
 
-	ev.xconfigure.event = xroot;
-	send_event(xroot, False, SubstructureNotifyMask, &ev);
+	//ev.xconfigure.event = xroot;
+	//send_event(xroot, False, SubstructureNotifyMask, &ev);
 
 
 }

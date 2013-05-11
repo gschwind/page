@@ -624,6 +624,11 @@ void window_t::process_configure_notify_event(XConfigureEvent const & e) {
 	_wa.border_width = e.border_width;
 	_wa.override_redirect = e.override_redirect;
 	_above = e.above;
+
+	if(e.override_redirect == True) {
+		default_position = box_int_t(e.x, e.y, e.width, e.height);
+	}
+
 }
 
 void window_t::read_transient_for() {

@@ -136,11 +136,7 @@ public:
 		notebook_t * ns;
 		popup_notebook0_t * pn0;
 		popup_notebook1_t * pn1;
-		std::string name;
 		bool popup_is_added;
-
-		void process_motion(XMotionEvent const & e);
-		void process_release(page_t & p, XButtonEvent const & e);
 	};
 
 
@@ -152,11 +148,7 @@ public:
 		notebook_t * ns;
 		popup_notebook0_t * pn0;
 		popup_notebook1_t * pn1;
-		std::string name;
 		bool popup_is_added;
-
-		void process_motion(XMotionEvent const & e);
-		void process_release(page_t & p, XButtonEvent const & e);
 	};
 
 	struct mode_data_floating_t {
@@ -190,13 +182,13 @@ public:
 
 	/* this data are used when you drag&drop a split slider */
 	mode_data_split_t mode_data_split;
-
 	/* this data are used when you drag&drop a notebook tab */
 	mode_data_notebook_t mode_data_notebook;
-
+	/* this data are used when you move/resize a floating window */
 	mode_data_floating_t mode_data_floating;
-
+	/* this data are used when you bind/drag&drop a floating window */
 	mode_data_bind_t mode_data_bind;
+
 
 	static double const OPACITY = 0.95;
 
@@ -241,6 +233,8 @@ public:
 	list<window_t *> root_stack;
 
 	map<Window, list<Window> > transient_for_map;
+
+	double menu_opacity;
 
 private:
 	Time _last_focus_time;
@@ -416,7 +410,7 @@ public:
 	 **/
 	void cleanup_reference(void * ref);
 
-	notebook_t * get_random_notebook();
+	notebook_t * get_another_notebook(tree_t * x = 0);
 
 
 	void get_notebooks(list<notebook_t *> & l);

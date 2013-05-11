@@ -93,6 +93,8 @@ public:
 	cairo_surface_t * unbind_button_s;
 	cairo_surface_t * bind_button_s;
 
+	cairo_surface_t * background_s;
+
 	color_t grey0;
 	color_t grey1;
 	color_t grey2;

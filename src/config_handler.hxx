@@ -25,9 +25,10 @@ public:
 	config_handler_t();
 	void merge_from_file_if_exist(string const & f);
 
+	bool has_key(char const * groups, char const * key);
+
 	string get_string(char const * groups, char const * key);
-
-
+	double get_double(char const * groups, char const * key);
 
 };
 
