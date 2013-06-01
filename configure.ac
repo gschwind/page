@@ -42,6 +42,10 @@ PKG_CHECK_MODULES(XRANDR, xrandr >= 1.2.0)
 AC_SUBST(XRANDR_CFLAGS)
 AC_SUBST(XRANDR_LIBS)
 
+PKG_CHECK_MODULES(XEXT, xext >= 0.27)
+AC_SUBST(XEXT_CFLAGS)
+AC_SUBST(XEXT_LIBS)
+
 PKG_CHECK_MODULES(FT2, freetype2 >= 2.0.0)
 AC_SUBST(FT2_CFLAGS)
 AC_SUBST(FT2_LIBS)
@@ -56,7 +60,13 @@ AC_CHECK_HEADER([bfd.h],
 
 AC_SEARCH_LIBS([bfd_openr],  [bfd],
                [AC_MSG_RESULT([OK, found libbfd])],
-               [AC_MSG_ERROR([BFD library from the binutils package not found!])])
+               [AC_MSG_RESULT([no found libbfd])])
+
+AC_CHECK_LIB(rt, clock_gettime,
+    [RT_LIBS="-lrt"
+     AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
+	       [Define to 1 if you have the `clock_gettime` function.])])
+AC_SUBST(RT_LIBS)
 
 AC_CONFIG_FILES([
   page.conf

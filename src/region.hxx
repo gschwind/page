@@ -231,7 +231,7 @@ public:
 
 	region_t(box_t<T> const & b) {
 		if (!b.is_null())
-			push_back(b);
+			this->push_back(b);
 	}
 
 	region_t(T x, T y, T w, T h) {
@@ -283,7 +283,7 @@ public:
 			//std::cout << "XX this =" << this->to_string() << std::endl;
 			*this -= b;
 			//std::cout << "X@ this =" << this->to_string() << std::endl;
-			push_back(b);
+			this->push_back(b);
 			//std::cout << "X# this =" << this->to_string() << std::endl;
 			while (merge_area_macro(*this))
 				continue;
