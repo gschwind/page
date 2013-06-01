@@ -739,9 +739,11 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 
 					theme_layout_t const * layout = theme->get_theme_layout();
-					box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 10);
-					box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 10);
-					box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 10);
+
+					/* TODO: NEED TO FIX "- 20" in top margin */
+					box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 20);
+					box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 20);
+					box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 20);
 
 					box_int_t resize_position_left(size.x, size.y + layout->floating_margin.top, layout->floating_margin.left, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
 					box_int_t resize_position_right(size.x + size.w - layout->floating_margin.right, size.y + layout->floating_margin.top, layout->floating_margin.right, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
