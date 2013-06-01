@@ -30,6 +30,7 @@ class renderable_page_t : public renderable_t {
 public:
 
 	notebook_t * default_pop;
+	managed_window_t * focuced;
 
 
 	renderable_page_t(theme_t * render, cairo_surface_t * target, int width, int height,
@@ -49,6 +50,11 @@ public:
 	void render_notebooks(std::list<notebook_t *> const & notebooks);
 
 	void rebuild_cairo();
+
+
+	void set_focuced_client(managed_window_t * mw);
+	void set_default_pop(notebook_t * nk);
+
 
 };
 

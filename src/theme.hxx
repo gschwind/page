@@ -37,7 +37,7 @@ public:
 	virtual ~theme_t() { }
 
 	virtual void render_split(cairo_t * cr, split_t * s) = 0;
-	virtual void render_notebook(cairo_t * cr, notebook_t * n, bool is_default) = 0;
+	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default) = 0;
 
 	virtual void render_floating(managed_window_t * nw) = 0;
 

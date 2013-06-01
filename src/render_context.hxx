@@ -8,6 +8,8 @@
 #ifndef RENDER_CONTEXT_HXX_
 #define RENDER_CONTEXT_HXX_
 
+
+#include "ctime"
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include "xconnection.hxx"
@@ -18,6 +20,10 @@ namespace page {
 
 class render_context_t {
 	xconnection_t * _cnx;
+
+	unsigned int flush_count;
+	struct timespec last_tic;
+	struct timespec curr_tic;
 
 public:
 

@@ -7,6 +7,7 @@
 
 #include "xconnection.hxx"
 #include "X11/Xproto.h"
+#include "glib.h"
 
 namespace page {
 
@@ -111,11 +112,6 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 					| RRProviderChangeNotifyMask | RRProviderChangeNotifyMask
 					| RRProviderPropertyNotifyMask | RRResourceChangeNotifyMask);
 
-
-	/* map & passtrough the overlay */
-	composite_overlay = XCompositeGetOverlayWindow(_dpy, xroot);
-	allow_input_passthrough(composite_overlay);
-	XCompositeRedirectSubwindows(_dpy, xroot, CompositeRedirectManual);
 
 	/* initialize all atoms for this connection */
 #define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
@@ -232,10 +228,6 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 	ATOM_INIT(_NET_SUPPORTING_WM_CHECK);
 
 #undef ATOM_INIT
-
-	/* try to register composite manager */
-	if (!register_cm())
-		throw std::runtime_error("Another compositor running");
 
 	open_connections[_dpy] = this;
 
@@ -370,50 +362,130 @@ void xconnection_t::xnextevent(XEvent * ev) {
 
 /* this fonction come from xcompmgr
  * it is intend to make page as composite manager */
-bool xconnection_t::register_cm() {
-	Window w;
-	Atom a;
+bool xconnection_t::register_cm(bool replace, Window w) {
+	Window current_cm;
+	Atom a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
-
 	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen);
-	a = XInternAtom(_dpy, net_wm_cm, False);
+	a_cm = XInternAtom(_dpy, net_wm_cm, False);
 
-	w = XGetSelectionOwner(_dpy, a);
-	if (w != None) {
-		XTextProperty tp;
-		char **strs;
-		int count;
-		Atom winNameAtom = XInternAtom(_dpy, "_NET_WM_NAME", False);
-
-		if (!get_text_property(w, &tp, winNameAtom)
-				&& !get_text_property(w, &tp, XA_WM_NAME )) {
-			fprintf(stderr,
-					"Another composite manager is already running (0x%lx)\n",
-					(unsigned long) w);
+	current_cm = XGetSelectionOwner(_dpy, a_cm);
+	if (current_cm != None) {
+		if (!replace) {
+			printf("another composite manager is running\n");
 			return false;
+		} else {
+	        /* We want to find out when the current selection owner dies */
+	        XSelectInput(_dpy, current_cm, StructureNotifyMask);
+	        XSync(_dpy, FALSE);
+
+			XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
+
+            if (XGetSelectionOwner(_dpy, a_cm) != w) {
+                printf("Could not acquire window manager selection on screen %d", screen);
+                return false;
+            }
+
+			unsigned long wait = 0;
+			const unsigned long timeout = G_USEC_PER_SEC * 15; /* wait for 15s max */
+
+			XEvent ev;
+
+			while (wait < timeout) {
+				/* Checks the local queue and incoming events for this event */
+				if (XCheckTypedWindowEvent(_dpy, current_cm, DestroyNotify, &ev) == True)
+					break;
+				g_usleep(G_USEC_PER_SEC / 10);
+				wait += G_USEC_PER_SEC / 10;
+			}
+
+			if (wait >= timeout) {
+				printf("The WM on screen %d is not exiting", screen);
+				return false;
+			} else {
+				return true;
+			}
+
 		}
-		if (XmbTextPropertyToTextList(_dpy, &tp, &strs, &count) == Success) {
-			fprintf(stderr,
-					"Another composite manager is already running (%s)\n",
-					strs[0]);
+	} else {
+		XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
 
-			XFreeStringList(strs);
-		}
+        if (XGetSelectionOwner(_dpy, a_cm) != w) {
+            printf("Could not acquire window manager selection on screen %d", screen);
+            return false;
+        }
 
-		XFree(tp.value);
-
-		return false;
+		return true;
 	}
 
-	w = XCreateSimpleWindow(_dpy, RootWindow (_dpy, screen) , 0, 0, 1, 1, 0,
-	None, None);
-
-	Xutf8SetWMProperties(_dpy, w, "page", "page", NULL, 0, NULL, NULL, NULL);
-
-	XSetSelectionOwner(_dpy, a, w, CurrentTime);
-
-	return true;
+	return false;
 }
+
+bool xconnection_t::register_wm(bool replace, Window w) {
+    Atom wm_sn_atom;
+    Window current_wm_sn_owner;
+
+    static char wm_sn[] = "WM_Sxx";
+    snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen);
+    wm_sn_atom = XInternAtom(_dpy, wm_sn, FALSE);
+
+    current_wm_sn_owner = XGetSelectionOwner(_dpy, wm_sn_atom);
+    if (current_wm_sn_owner == w)
+        current_wm_sn_owner = None;
+    if (current_wm_sn_owner != None) {
+        if (!replace) {
+            printf("A window manager is already running on screen %d",
+                      screen);
+            return false;
+        } else {
+            /* We want to find out when the current selection owner dies */
+            XSelectInput(_dpy, current_wm_sn_owner, StructureNotifyMask);
+            XSync(_dpy, FALSE);
+
+            XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
+
+            if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
+                printf("Could not acquire window manager selection on screen %d",
+                          screen);
+                return false;
+            }
+
+            /* Wait for old window manager to go away */
+            if (current_wm_sn_owner != None) {
+              unsigned long wait = 0;
+              const unsigned long timeout = G_USEC_PER_SEC * 15; /* wait for 15s max */
+
+              XEvent ev;
+
+              while (wait < timeout) {
+                  /* Checks the local queue and incoming events for this event */
+                  if (XCheckTypedWindowEvent(_dpy, current_wm_sn_owner, DestroyNotify, &ev) == True)
+                      break;
+                  g_usleep(G_USEC_PER_SEC / 10);
+                  wait += G_USEC_PER_SEC / 10;
+              }
+
+              if (wait >= timeout) {
+                  printf("The WM on screen %d is not exiting", screen);
+                  return false;
+              }
+            }
+
+        }
+
+    } else {
+        XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
+
+        if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
+            printf("Could not acquire window manager selection on screen %d",
+                      screen);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 
 void xconnection_t::add_to_save_set(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
@@ -708,6 +780,13 @@ string const & xconnection_t::get_atom_name(Atom a) {
 		}
 		return atom_name_cache[a];
 	}
+}
+
+void xconnection_t::init_composite_overlay() {
+	/* map & passtrough the overlay */
+	composite_overlay = XCompositeGetOverlayWindow(_dpy, xroot);
+	allow_input_passthrough(composite_overlay);
+	XCompositeRedirectSubwindows(_dpy, xroot, CompositeRedirectManual);
 }
 
 

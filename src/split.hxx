@@ -66,6 +66,9 @@ public:
 
 	virtual void get_childs(list<tree_t *> & lst);
 
+	void set_pack0(tree_t * x);
+	void set_pack1(tree_t * x);
+
 };
 
 }

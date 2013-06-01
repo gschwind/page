@@ -15,6 +15,7 @@ namespace page {
 struct popup_notebook0_t: public renderable_t {
 	box_t<int> area;
 	popup_notebook0_t(int x, int y, int width, int height);
+	popup_notebook0_t(box_int_t x);
 	~popup_notebook0_t();
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();

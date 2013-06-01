@@ -12,6 +12,10 @@ namespace page {
 
 render_context_t::render_context_t(xconnection_t * cnx) {
 	_cnx = cnx;
+
+	flush_count = 0;
+	clock_gettime(CLOCK_MONOTONIC, &last_tic);
+
 	composite_overlay_s = cairo_xlib_surface_create(_cnx->dpy, _cnx->composite_overlay, _cnx->root_wa.visual, _cnx->root_wa.width, _cnx->root_wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
@@ -45,6 +49,20 @@ void render_context_t::add_damage_area(region_t<int> const & box) {
 }
 
 void render_context_t::render_flush() {
+	flush_count += 1;
+
+	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
+	if(last_tic.tv_sec + 5 < curr_tic.tv_sec) {
+
+		double t0 = last_tic.tv_sec + last_tic.tv_nsec / 1.0e9;
+		double t1 = curr_tic.tv_sec + curr_tic.tv_nsec / 1.0e9;
+
+		printf("render flush per second : %0.2f\n", flush_count / (t1 - t0));
+
+		last_tic = curr_tic;
+		flush_count = 0;
+	}
+
 	/* a small optimization, because visible are often few */
 	renderable_list_t visible;
 	for(renderable_list_t::iterator i = list.begin(); i != list.end(); ++i) {

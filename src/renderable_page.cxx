@@ -17,6 +17,7 @@ renderable_page_t::renderable_page_t(theme_t * render, cairo_surface_t * target,
 				viewports) {
 	is_durty = true;
 	default_pop = 0;
+	focuced = 0;
 
 	_surf = 0;
 	_cr = 0;
@@ -130,8 +131,16 @@ void renderable_page_t::render_splits(std::list<split_t *> const & splits) {
 void renderable_page_t::render_notebooks(std::list<notebook_t *> const & notebooks) {
 	for (std::list<notebook_t *>::const_iterator i = notebooks.begin();
 			i != notebooks.end(); ++i) {
-		render->render_notebook(_cr, *i, *i == default_pop);
+		render->render_notebook(_cr, *i, focuced, *i == default_pop);
 	}
+}
+
+void renderable_page_t::set_focuced_client(managed_window_t * mw) {
+	focuced = mw;
+}
+
+void renderable_page_t::set_default_pop(notebook_t * nk) {
+	default_pop = nk;
 }
 
 

@@ -239,6 +239,9 @@ public:
 private:
 	Time _last_focus_time;
 	list<managed_window_t *> _client_focused;
+
+	Window wm_window;
+
 public:
 
 	theme_t * theme;
@@ -428,7 +431,6 @@ public:
 	void update_viewport_number(unsigned int n);
 
 	void set_window_cursor(Window w, Cursor c);
-
 
 };
 

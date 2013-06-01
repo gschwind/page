@@ -14,6 +14,11 @@ popup_notebook0_t::popup_notebook0_t(int x, int y, int width, int height) :
 
 }
 
+popup_notebook0_t::popup_notebook0_t(box_int_t x) :
+		area(x) {
+
+}
+
 void popup_notebook0_t::repair1(cairo_t * cr, box_int_t const & a) {
 	box_int_t i = area & a;
 	if (i.w > 0 && i.h > 0) {

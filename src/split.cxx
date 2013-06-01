@@ -90,12 +90,10 @@ void split_t::update_allocation_pack1() {
 void split_t::replace(tree_t * src, tree_t * by) {
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src, by);
-		_pack0 = by;
-		_pack0->set_parent(this);
+		set_pack0(by);
 	} else if (_pack1 == src) {
 		printf("replace %p by %p\n", src, by);
-		_pack1 = by;
-		_pack1->set_parent(this);
+		set_pack1(by);
 	}
 
 	update_allocation();
@@ -216,9 +214,9 @@ void split_t::update_allocation() {
 
 	}
 
-	if(_pack0)
+	if(_pack0 != 0)
 		_pack0->set_allocation(bpack0);
-	if(_pack1)
+	if(_pack1 != 0)
 		_pack1->set_allocation(bpack1);
 
 }
@@ -243,6 +241,18 @@ void split_t::get_childs(list<tree_t *> & lst) {
 		lst.push_back(_pack1);
 	}
 
+}
+
+void split_t::set_pack0(tree_t * x) {
+	_pack0 = x;
+	x->set_parent(this);
+	update_allocation();
+}
+
+void split_t::set_pack1(tree_t * x) {
+	_pack1 = x;
+	x->set_parent(this);
+	update_allocation();
 }
 
 }

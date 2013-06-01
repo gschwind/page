@@ -145,11 +145,11 @@ box_int_t simple_theme_layout_t::compute_notebook_close_position(
 }
 
 box_int_t simple_theme_layout_t::compute_floating_close_position(box_int_t const & _allocation) const {
-	return box_int_t(_allocation.x + _allocation.w - 1 * 17 - 2, _allocation.y + 2, 16, 16);
+	return box_int_t(_allocation.x + _allocation.w - 1 * 17 - 8, _allocation.y + 8, 16, 16);
 }
 
 box_int_t simple_theme_layout_t::compute_floating_bind_position(box_int_t const & _allocation) const {
-	return box_int_t(_allocation.x + _allocation.w - 2 * 17 - 2, _allocation.y + 2, 16, 16);
+	return box_int_t(_allocation.x + _allocation.w - 2 * 17 - 8, _allocation.y + 8, 16, 16);
 }
 
 
@@ -339,7 +339,7 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	cairo_restore(cr);
 }
 
-void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
+void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced,
 		bool is_default) {
 
 	cairo_reset_clip(cr);
@@ -421,7 +421,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 			if(background_s != 0) {
 				cairo_set_source_surface(cr, background_s, 0.0, 0.0);
 			} else {
-				cairo_set_source_rgb(cr, grey0.r, grey0.g, grey0.b);
+				cairo_set_source_rgb(cr, grey2.r, grey2.g, grey2.b);
 			}
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_fill(cr);
@@ -444,7 +444,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		box_int_t bicon = b;
 		bicon.h = 16;
 		bicon.w = 16;
-		bicon.x += 2;
+		bicon.x += 3;
 		bicon.y += 2;
 
 		cairo_save(cr);
@@ -469,12 +469,12 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		if (*c == n->_selected.front()) {
 			btext.h -= 0;
 			btext.w -= 3 * 16 + 12;
-			btext.x += 2 + 16 + 2;
+			btext.x += 3 + 16 + 2;
 			btext.y += 2;
 		} else {
 			btext.h -= 0;
 			btext.w -= 1 * 16 + 8;
-			btext.x += 2 + 16 + 2;
+			btext.x += 3 + 16 + 2;
 			btext.y += 2;
 		}
 
@@ -489,14 +489,20 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 		if (*c == n->_selected.front()) {
 
+			/* draw selectected tittle */
 			cairo_set_font_face(cr, font_bold);
-			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+
+			if(*c == focuced) {
+				cairo_set_source_rgba(cr, 1.0, 0.4, 0.4, 1.0);
+			} else {
+				cairo_set_source_rgba(cr, 0.2, 0.5, 0.2, 0.5);
+			}
 
 			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
 
 			cairo_new_path(cr);
 			cairo_text_path(cr, (*c)->get_title().c_str());
-			cairo_set_line_width(cr, 2.5);
+			cairo_set_line_width(cr, 4.5);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 
 			cairo_stroke_preserve(cr);
@@ -506,14 +512,15 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 		} else {
 
+			/* draw tittle */
 			cairo_set_font_face(cr, font);
-			cairo_set_source_rgb(cr, 0.0, 0.0, 0.5);
+			cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
 
 			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
 
 			cairo_new_path(cr);
 			cairo_text_path(cr, (*c)->get_title().c_str());
-			cairo_set_line_width(cr, 2.5);
+			cairo_set_line_width(cr, 3.5);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 
 			cairo_stroke_preserve(cr);
@@ -553,6 +560,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 	}
 
 	if (!n->_selected.empty()) {
+
+		/* draw close button */
+
 		box_int_t b = layout->compute_notebook_close_window_position(n->_allocation,
 				number_of_client, selected_index);
 
@@ -567,6 +577,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 	}
 
 	if (!n->_selected.empty()) {
+
+		/* draw the unbind button */
+
 		box_int_t b = layout->compute_notebook_unbind_window_position(n->_allocation,
 				number_of_client, selected_index);
 
@@ -812,6 +825,7 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 	{
 		box_int_t b = _allocation;
 		b.h = layout->floating_margin.top - 8;
+		b.y += 8;
 
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_rgb(cr, plum0.r, plum0.g, plum0.b);
@@ -824,8 +838,8 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		box_int_t bicon = b;
 		bicon.h = 16;
 		bicon.w = 16;
-		bicon.x += 2;
-		bicon.y += 2;
+		bicon.x += 8;
+		bicon.y += 0;
 
 		if (mw->get_icon() != 0) {
 			if (mw->get_icon()->get_cairo_surface() != 0) {
@@ -839,8 +853,8 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		box_int_t btext = b;
 		btext.h -= 4;
 		btext.w -= 3 * 16 - 8;
-		btext.x += 2 + 16 + 2;
-		btext.y += 2;
+		btext.x += 8 + 16 + 2;
+		btext.y += 0;
 
 		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
 		cairo_clip(cr);
@@ -891,9 +905,9 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		/* left */
 
 		box_int_t b(_allocation.x,
-				_allocation.y + layout->floating_margin.top - 8,
+				0,
 				layout->floating_margin.left,
-				_allocation.h - layout->floating_margin.top + 8);
+				_allocation.h);
 
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_rgb(cr, plum0.r, plum0.g, plum0.b);
@@ -911,9 +925,9 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		box_int_t b(
 				_allocation.x + _allocation.w
 						- layout->floating_margin.right,
-				_allocation.y + layout->floating_margin.top - 8,
+				0,
 				layout->floating_margin.left,
-				_allocation.h - layout->floating_margin.top + 8);
+				_allocation.h);
 
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_rgb(cr, plum0.r, plum0.g, plum0.b);
@@ -929,7 +943,7 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		/* top */
 
 		box_int_t b(_allocation.x + layout->floating_margin.left,
-				_allocation.y + layout->floating_margin.top - 8,
+				0,
 				_allocation.w - layout->floating_margin.left
 						- layout->floating_margin.right, 8);
 

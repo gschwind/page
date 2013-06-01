@@ -453,7 +453,6 @@ void window_t::unlock() {
 
 void window_t::focus() {
 
-
 	if (is_map() && _wm_input_focus) {
 			_cnx.set_input_focus(id, RevertToPointerRoot, CurrentTime);
 	}

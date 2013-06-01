@@ -521,7 +521,8 @@ public:
 
 	/* this fonction come from xcompmgr
 	 * it is intend to make page as composite manager */
-	bool register_cm();
+	bool register_cm(bool replace, Window w);
+	bool register_wm(bool replace, Window w);
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);
 	void select_input(Window w, long int mask);
@@ -566,6 +567,8 @@ public:
 
 	void fake_configure(Window w, box_int_t location, int border_width);
 	string const & get_atom_name(Atom a);
+
+	void init_composite_overlay();
 
 private:
 	char * _get_atom_name(Atom atom);
