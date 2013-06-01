@@ -151,7 +151,19 @@ public:
 		bool popup_is_added;
 	};
 
+	enum resize_mode_e {
+		RESIZE_TOP_LEFT,
+		RESIZE_TOP,
+		RESIZE_TOP_RIGHT,
+		RESIZE_LEFT,
+		RESIZE_RIGHT,
+		RESIZE_BOTTOM_LEFT,
+		RESIZE_BOTTOM,
+		RESIZE_BOTTOM_RIGHT
+	};
+
 	struct mode_data_floating_t {
+		resize_mode_e mode;
 		int x_offset;
 		int y_offset;
 		int x_root;

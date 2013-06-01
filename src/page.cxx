@@ -736,7 +736,20 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
 					box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
-					box_int_t resize_position(size.x + size.w - 20, size.y + size.h - 20, 20, 20);
+
+
+					theme_layout_t const * layout = theme->get_theme_layout();
+					box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 10);
+					box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 10);
+					box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 10);
+
+					box_int_t resize_position_left(size.x, size.y + layout->floating_margin.top, layout->floating_margin.left, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
+					box_int_t resize_position_right(size.x + size.w - layout->floating_margin.right, size.y + layout->floating_margin.top, layout->floating_margin.right, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
+
+					box_int_t resize_position_bottom_left(size.x, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.left, layout->floating_margin.bottom);
+					box_int_t resize_position_bottom(size.x + layout->floating_margin.left, size.y + size.h - layout->floating_margin.bottom, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.bottom);
+					box_int_t resize_position_bottom_right(size.x + size.w - layout->floating_margin.right, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.right, layout->floating_margin.bottom);
+
 
 					/* click on close button ? */
 					if (close_position.is_inside(e.x_root, e.y_root)) {
@@ -771,8 +784,35 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 						//printf("XXXXX size = %s, x: %d, y: %d\n",
 	//						size.to_string().c_str(), e.x, e.y);
-						if ((resize_position.is_inside(e.x_root, e.y_root)) || (e.state & ControlMask)) {
+
+
+						if ((e.state & ControlMask)) {
 							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+						} else if (resize_position_top_left.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP_LEFT;
+						} else if (resize_position_top.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP;
+						} else if (resize_position_top_right.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP_RIGHT;
+						} else if (resize_position_left.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_LEFT;
+						} else if (resize_position_right.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_RIGHT;
+						} else if (resize_position_bottom_left.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+						} else if (resize_position_bottom.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM;
+						} else if (resize_position_bottom_right.is_inside(e.x_root, e.y_root)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 						} else {
 							process_mode = PROCESS_FLOATING_GRAB;
 						}
@@ -1141,8 +1181,28 @@ void page_t::process_event(XMotionEvent const & e) {
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
 		box_int_t size = mode_data_floating.original_position;
-		size.w += e.x_root - mode_data_floating.x_root;
-		size.h += e.y_root - mode_data_floating.y_root;
+
+		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_TOP) {
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+			size.h += e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+			size.h += e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+			size.h += e.y_root - mode_data_floating.y_root;
+		}
 
 		/* apply mornal hints */
 		unsigned int final_width = size.w;
@@ -1157,10 +1217,30 @@ void page_t::process_event(XMotionEvent const & e) {
 			size.w = 1;
 
 		/* do not allow to large windows */
-		if(size.w > cnx->root_size.w - 30)
-			size.w = cnx->root_size.w - 30;
-		if(size.h > cnx->root_size.h - 30)
-			size.h = cnx->root_size.h - 30;
+		if(size.w > cnx->root_size.w - 100)
+			size.w = cnx->root_size.w - 100;
+		if(size.h > cnx->root_size.h - 100)
+			size.h = cnx->root_size.h - 100;
+
+
+		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
+			size.x += mode_data_floating.original_position.w - size.w;
+			size.y += mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_TOP) {
+			size.y += mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+			size.y += mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_LEFT) {
+			size.x += mode_data_floating.original_position.w - size.w;
+		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+			size.x += mode_data_floating.original_position.w - size.w;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+
+		}
 
 		mode_data_floating.f->set_wished_position(size);
 		theme->render_floating(mode_data_floating.f);
