@@ -3529,6 +3529,15 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 
 	case PROCESS_FLOATING_GRAB:
 	case PROCESS_FLOATING_RESIZE:
+		rnd->remove(mode_data_floating.pn0);
+		delete mode_data_floating.pn0;
+		mode_data_floating.pn0 = 0;
+		if (mode_data_floating.f == mw) {
+			mode_data_floating.f = 0;
+			process_mode = PROCESS_NORMAL;
+			XUngrabPointer(cnx->dpy, CurrentTime);
+		}
+		break;
 	case PROCESS_FLOATING_CLOSE:
 		if (mode_data_floating.f == mw) {
 			mode_data_floating.f = 0;
