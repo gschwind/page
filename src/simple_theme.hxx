@@ -105,6 +105,18 @@ public:
 	color_t plum1;
 	color_t plum2;
 
+	color_t c_selected1;
+	color_t c_selected2;
+
+	color_t c_selected_highlight1;
+	color_t c_selected_highlight2;
+
+	color_t c_normal1;
+	color_t c_normal2;
+
+	color_t c_tab_boder_highlight;
+	color_t c_tab_boder_normal;
+
 	color_t color_font;
 	color_t color_font_selected;
 
@@ -119,7 +131,7 @@ public:
 
 	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default);
 	virtual void render_split(cairo_t * cr, split_t * s);
-	virtual void render_floating(managed_window_t * mw);
+	virtual void render_floating(managed_window_t * mw, bool is_focus);
 	virtual cairo_font_face_t * get_default_font();
 
 };

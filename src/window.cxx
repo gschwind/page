@@ -452,9 +452,13 @@ void window_t::unlock() {
 }
 
 void window_t::focus() {
+	_cnx.set_input_focus(id, RevertToPointerRoot, CurrentTime);
+}
+
+void window_t::icccm_focus() {
 
 	if (is_map() && _wm_input_focus) {
-			_cnx.set_input_focus(id, RevertToPointerRoot, CurrentTime);
+			focus();
 	}
 
 	if (_net_wm_protocols.find(_cnx.atoms.WM_TAKE_FOCUS)

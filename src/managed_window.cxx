@@ -157,7 +157,7 @@ cairo_t * managed_window_t::get_cairo_context() {
 }
 
 void managed_window_t::focus() {
-	orig->focus();
+	orig->icccm_focus();
 }
 
 box_int_t managed_window_t::get_base_position() const {

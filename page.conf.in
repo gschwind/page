@@ -19,3 +19,14 @@ plum0 = ad7fa8
 plum1 = 75507b
 plum2 = 5c3566
 
+selected1 = ffffff
+selected2 = 000000
+
+selected_highlight1 = ffffff
+selected_highlight2 = 000000
+
+normal1 = ffffff
+normal2 = 000000
+
+tab_boder_highlight = d3d7cf
+tab_boder_normal = babdb6

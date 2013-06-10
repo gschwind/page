@@ -131,6 +131,10 @@ public:
 	void read_transient_for();
 	void read_icon_data();
 	void read_net_wm_desktop();
+
+	/* try to read window atrribute
+	 * @output: return true on success, return false otherwise.
+	 */
 	bool read_window_attributes();
 
 	/* WRITING FOR CLIENT */
@@ -154,8 +158,8 @@ public:
 	void map();
 	void unmap();
 	void focus();
+	void icccm_focus();
 	void move_resize(box_int_t const & location);
-
 
 	box_int_t get_size();
 

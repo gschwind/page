@@ -13,6 +13,9 @@ namespace page {
 render_context_t::render_context_t(xconnection_t * cnx) {
 	_cnx = cnx;
 
+	fast_region_surf = 0.0;
+	slow_region_surf = 0.0;
+
 	flush_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
 
@@ -101,6 +104,7 @@ void render_context_t::render_flush() {
 		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
 		region_t<int>::box_list_t::const_iterator i = fast_region.begin();
 		while (i != fast_region.end()) {
+			fast_region_surf += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
 			/* this section show direct rendered screen */
 //			cairo_set_source_rgb(composite_overlay_cr, 0.0, 1.0, 0.0);
@@ -120,6 +124,7 @@ void render_context_t::render_flush() {
 		cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
 		region_t<int>::box_list_t::const_iterator i = slow_region.begin();
 		while (i != slow_region.end()) {
+			slow_region_surf += (*i).w * (*i).h;
 			repair_buffer(visible, pre_back_buffer_cr, *i);
 			++i;
 		}

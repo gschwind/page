@@ -37,6 +37,9 @@ public:
 	cairo_t * pre_back_buffer_cr;
 	cairo_surface_t * pre_back_buffer_s;
 
+	double fast_region_surf;
+	double slow_region_surf;
+
 	/* damaged region */
 	region_t<int> pending_damage;
 

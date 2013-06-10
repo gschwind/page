@@ -187,6 +187,18 @@ simple_theme_t::simple_theme_t(config_handler_t & conf) {
 	plum1.set(conf.get_string("simple_theme", "plum1"));
 	plum2.set(conf.get_string("simple_theme", "plum2"));
 
+	c_selected1.set(conf.get_string("simple_theme", "selected1"));
+	c_selected2.set(conf.get_string("simple_theme", "selected2"));
+
+	c_selected_highlight1.set(conf.get_string("simple_theme", "selected_highlight1"));
+	c_selected_highlight2.set(conf.get_string("simple_theme", "selected_highlight2"));
+
+	c_normal1.set(conf.get_string("simple_theme", "normal1"));
+	c_normal2.set(conf.get_string("simple_theme", "normal2"));
+
+	c_tab_boder_highlight.set(conf.get_string("simple_theme", "tab_boder_highlight"));
+	c_tab_boder_normal.set(conf.get_string("simple_theme", "tab_boder_normal"));
+
 	layout = new simple_theme_layout_t();
 
 	ft_is_loaded = false;
@@ -342,6 +354,8 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced,
 		bool is_default) {
 
+	bool has_focuced_client = false;
+
 	cairo_reset_clip(cr);
 	cairo_identity_matrix(cr);
 	cairo_set_line_width(cr, 1.0);
@@ -405,8 +419,8 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 			cairo_line_to(cr, b.x + 0.5, b.y + 0.5);
 			cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5);
 			cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5);
-			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 0.5, b.y + b.h + 0.5);
-			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 0.5, n->_allocation.y + n->_allocation.h - 1.5);
+			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 1.5, b.y + b.h + 0.5);
+			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 1.5, n->_allocation.y + n->_allocation.h - 1.5);
 			cairo_line_to(cr, n->_allocation.x + 0.5, n->_allocation.y + n->_allocation.h - 1.5);
 			cairo_line_to(cr, n->_allocation.x + 0.5, b.y + b.h + 0.5);
 			cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
@@ -492,40 +506,46 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 			/* draw selectected tittle */
 			cairo_set_font_face(cr, font_bold);
 
-			if(*c == focuced) {
-				cairo_set_source_rgba(cr, 1.0, 0.4, 0.4, 1.0);
-			} else {
-				cairo_set_source_rgba(cr, 0.2, 0.5, 0.2, 0.5);
-			}
-
 			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
 
 			cairo_new_path(cr);
 			cairo_text_path(cr, (*c)->get_title().c_str());
-			cairo_set_line_width(cr, 4.5);
+			cairo_set_line_width(cr, 3.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+			if(*c == focuced) {
+				has_focuced_client = true;
+				cairo_set_source_rgb(cr, c_selected_highlight2.r, c_selected_highlight2.g, c_selected_highlight2.b);
+			} else {
+				cairo_set_source_rgb(cr, c_selected2.r, c_selected2.g, c_selected2.b);
+			}
 
 			cairo_stroke_preserve(cr);
 
-			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+			if(*c == focuced) {
+				cairo_set_source_rgb(cr, c_selected_highlight1.r, c_selected_highlight1.g, c_selected_highlight1.b);
+			} else {
+				cairo_set_source_rgb(cr, c_selected1.r, c_selected1.g, c_selected1.b);
+			}
 			cairo_fill(cr);
 
 		} else {
 
 			/* draw tittle */
 			cairo_set_font_face(cr, font);
-			cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
+			cairo_set_source_rgb(cr, c_normal2.r, c_normal2.g, c_normal2.b);
 
 			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
 
 			cairo_new_path(cr);
 			cairo_text_path(cr, (*c)->get_title().c_str());
-			cairo_set_line_width(cr, 3.5);
+			cairo_set_line_width(cr, 3.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 
 			cairo_stroke_preserve(cr);
 
-			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+			cairo_set_source_rgb(cr, c_normal1.r, c_normal1.g, c_normal1.b);
 			cairo_fill(cr);
 		}
 
@@ -761,7 +781,11 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 	if(selected_path != 0) {
 		cairo_new_path(cr);
 		cairo_append_path(cr, selected_path);
-		cairo_set_source_rgb(cr, grey3.r, grey3.g, grey3.b);
+		if (has_focuced_client) {
+			cairo_set_source_rgb(cr, c_tab_boder_highlight.r, c_tab_boder_highlight.g, c_tab_boder_highlight.b);
+		} else {
+			cairo_set_source_rgb(cr, c_tab_boder_normal.r, c_tab_boder_normal.g, c_tab_boder_normal.b);
+		}
 		cairo_stroke(cr);
 		cairo_path_destroy(selected_path);
 	}
@@ -806,7 +830,7 @@ void simple_theme_t::render_split(cairo_t * cr, split_t * s) {
 
 
 
-void simple_theme_t::render_floating(managed_window_t * mw) {
+void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 
 	cairo_t * cr = mw->get_cairo();
 	box_int_t _allocation = mw->base->get_size();
@@ -856,14 +880,65 @@ void simple_theme_t::render_floating(managed_window_t * mw) {
 		btext.x += 8 + 16 + 2;
 		btext.y += 0;
 
+
+		cairo_reset_clip(cr);
+
+		cairo_save(cr);
+		cairo_new_path(cr);
 		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
 		cairo_clip(cr);
 
-		cairo_move_to(cr, btext.x, btext.y + btext.h - 3);
+		//cairo_move_to(cr, btext.x, btext.y + btext.h - 3);
 		cairo_set_font_size(cr, 13);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_show_text(cr, mw->get_title().c_str());
 
+		if (is_focussed) {
+
+			/* draw selectected tittle */
+			cairo_set_font_face(cr, font_bold);
+
+			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 4);
+
+			cairo_new_path(cr);
+			cairo_text_path(cr, mw->get_title().c_str());
+			cairo_set_line_width(cr, 3.0);
+			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+			if(true) {
+				cairo_set_source_rgb(cr, c_selected_highlight2.r, c_selected_highlight2.g, c_selected_highlight2.b);
+			} else {
+				cairo_set_source_rgb(cr, c_selected2.r, c_selected2.g, c_selected2.b);
+			}
+
+			cairo_stroke_preserve(cr);
+
+			if(true) {
+				cairo_set_source_rgb(cr, c_selected_highlight1.r, c_selected_highlight1.g, c_selected_highlight1.b);
+			} else {
+				cairo_set_source_rgb(cr, c_selected1.r, c_selected1.g, c_selected1.b);
+			}
+			cairo_fill(cr);
+
+		} else {
+
+			/* draw tittle */
+			cairo_set_font_face(cr, font);
+			cairo_set_source_rgb(cr, c_normal2.r, c_normal2.g, c_normal2.b);
+
+			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 4);
+
+			cairo_new_path(cr);
+			cairo_text_path(cr, mw->get_title().c_str());
+			cairo_set_line_width(cr, 3.0);
+			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+
+			cairo_stroke_preserve(cr);
+
+			cairo_set_source_rgb(cr, c_normal1.r, c_normal1.g, c_normal1.b);
+			cairo_fill(cr);
+		}
+
+		cairo_restore(cr);
 		cairo_reset_clip(cr);
 
 	}

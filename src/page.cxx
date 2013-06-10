@@ -380,7 +380,6 @@ void page_t::run() {
 
 managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
 //	printf("manage \n");
-	rnd->add_damage_area(w->get_size());
 	w->add_to_save_set();
 	w->set_managed(true);
 	w->read_all();
@@ -656,6 +655,10 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
+		printf("fast_region_surf = %g (%.2f)\n", rnd->fast_region_surf, rnd->fast_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
+		printf("slow_region_surf = %g (%.2f)\n", rnd->slow_region_surf, rnd->slow_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
+
+
 	}
 
 	if (XK_s == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
@@ -709,14 +712,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
+	if (mw != 0) {
+		set_focus(mw);
+	}
+
 	switch (process_mode) {
 	case PROCESS_NORMAL:
-		/* the hidden focus parameter */
-		if (_last_focus_time <= cnx->last_know_time) {
-			if (mw != 0) {
-				set_focus(mw);
-			}
-		}
 
 		if (e.window == cnx->xroot && e.root == cnx->xroot && e.subwindow == None) {
 		/* split and notebook are mutually exclusive */
@@ -727,103 +728,106 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			}
 		}
 
-			if (mw != 0) {
-				if (mw->is(MANAGED_FLOATING)
-						&& (e.subwindow == (None)
-				|| (e.state & (Mod1Mask))|| (e.state & (ControlMask)))) {
+		if (mw != 0) {
+			if (mw->is(MANAGED_FLOATING)
+					&& (e.subwindow == (None)
+			|| (e.state & (Mod1Mask))|| (e.state & (ControlMask)))) {
 
-					box_int_t size = mw->get_base_position();
+				box_int_t size = mw->get_base_position();
 
-					box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
-					box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
-
-
-					theme_layout_t const * layout = theme->get_theme_layout();
-
-					/* TODO: NEED TO FIX "- 20" in top margin */
-					box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 20);
-					box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 20);
-					box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 20);
-
-					box_int_t resize_position_left(size.x, size.y + layout->floating_margin.top, layout->floating_margin.left, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
-					box_int_t resize_position_right(size.x + size.w - layout->floating_margin.right, size.y + layout->floating_margin.top, layout->floating_margin.right, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
-
-					box_int_t resize_position_bottom_left(size.x, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.left, layout->floating_margin.bottom);
-					box_int_t resize_position_bottom(size.x + layout->floating_margin.left, size.y + size.h - layout->floating_margin.bottom, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.bottom);
-					box_int_t resize_position_bottom_right(size.x + size.w - layout->floating_margin.right, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.right, layout->floating_margin.bottom);
+				box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
+				box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
 
 
-					/* click on close button ? */
-					if (close_position.is_inside(e.x_root, e.y_root)) {
-						grab_pointer();
-						mode_data_floating.f = mw;
-						process_mode = PROCESS_FLOATING_CLOSE;
-						//mw->delete_window(e.time);
-					} else if (dock_position.is_inside(e.x_root, e.y_root)) {
-						grab_pointer();
+				theme_layout_t const * layout = theme->get_theme_layout();
 
-						mode_data_bind.c = mw;
-						mode_data_bind.ns = 0;
-						mode_data_bind.zone = SELECT_NONE;
-						mode_data_bind.pn0 = new popup_notebook0_t(mode_data_bind.c->get_base_position());
+				/* TODO: NEED TO FIX "- 20" in top margin */
+				box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 20);
+				box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 20);
+				box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 20);
 
-						mode_data_bind.pn1 = new popup_notebook1_t(
-								mode_data_bind.c->get_base_position().x,
-								mode_data_bind.c->get_base_position().y, theme->get_default_font(),
-								mw->get_icon()->get_cairo_surface(), c->get_title());
+				box_int_t resize_position_left(size.x, size.y + layout->floating_margin.top, layout->floating_margin.left, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
+				box_int_t resize_position_right(size.x + size.w - layout->floating_margin.right, size.y + layout->floating_margin.top, layout->floating_margin.right, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
 
-						mode_data_bind.popup_is_added = false;
+				box_int_t resize_position_bottom_left(size.x, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.left, layout->floating_margin.bottom);
+				box_int_t resize_position_bottom(size.x + layout->floating_margin.left, size.y + size.h - layout->floating_margin.bottom, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.bottom);
+				box_int_t resize_position_bottom_right(size.x + size.w - layout->floating_margin.right, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.right, layout->floating_margin.bottom);
 
-						process_mode = PROCESS_FLOATING_BIND;
 
+				/* click on close button ? */
+				if (close_position.is_inside(e.x_root, e.y_root)) {
+					grab_pointer();
+					mode_data_floating.f = mw;
+					process_mode = PROCESS_FLOATING_CLOSE;
+					//mw->delete_window(e.time);
+				} else if (dock_position.is_inside(e.x_root, e.y_root)) {
+					grab_pointer();
+
+					mode_data_bind.c = mw;
+					mode_data_bind.ns = 0;
+					mode_data_bind.zone = SELECT_NONE;
+					mode_data_bind.pn0 = new popup_notebook0_t(mode_data_bind.c->get_base_position());
+
+					mode_data_bind.pn1 = new popup_notebook1_t(
+							mode_data_bind.c->get_base_position().x,
+							mode_data_bind.c->get_base_position().y, theme->get_default_font(),
+							mw->get_icon()->get_cairo_surface(), c->get_title());
+
+					mode_data_bind.popup_is_added = false;
+
+					process_mode = PROCESS_FLOATING_BIND;
+
+				} else {
+					mode_data_floating.x_offset = e.x;
+					mode_data_floating.y_offset = e.y;
+					mode_data_floating.x_root = e.x_root;
+					mode_data_floating.y_root = e.y_root;
+					mode_data_floating.f = mw;
+					mode_data_floating.original_position = mw->get_wished_position();
+					mode_data_floating.final_position = mw->get_wished_position();
+
+					//printf("XXXXX size = %s, x: %d, y: %d\n",
+//						size.to_string().c_str(), e.x, e.y);
+
+					mode_data_floating.pn0 = new popup_notebook0_t(mw->get_wished_position());
+					rnd->add(mode_data_floating.pn0);
+
+					if ((e.state & ControlMask)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+					} else if (resize_position_top_left.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_TOP_LEFT;
+					} else if (resize_position_top.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_TOP;
+					} else if (resize_position_top_right.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_TOP_RIGHT;
+					} else if (resize_position_left.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_LEFT;
+					} else if (resize_position_right.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_RIGHT;
+					} else if (resize_position_bottom_left.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+					} else if (resize_position_bottom.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_BOTTOM;
+					} else if (resize_position_bottom_right.is_inside(e.x_root, e.y_root)) {
+						process_mode = PROCESS_FLOATING_RESIZE;
+						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					} else {
-						mode_data_floating.x_offset = e.x;
-						mode_data_floating.y_offset = e.y;
-						mode_data_floating.x_root = e.x_root;
-						mode_data_floating.y_root = e.y_root;
-						mode_data_floating.f = mw;
-						mode_data_floating.original_position = mw->get_wished_position();
-
-						//printf("XXXXX size = %s, x: %d, y: %d\n",
-	//						size.to_string().c_str(), e.x, e.y);
-
-
-						if ((e.state & ControlMask)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-						} else if (resize_position_top_left.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_TOP_LEFT;
-						} else if (resize_position_top.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_TOP;
-						} else if (resize_position_top_right.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-						} else if (resize_position_left.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_LEFT;
-						} else if (resize_position_right.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_RIGHT;
-						} else if (resize_position_bottom_left.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-						} else if (resize_position_bottom.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_BOTTOM;
-						} else if (resize_position_bottom_right.is_inside(e.x_root, e.y_root)) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-						} else {
-							process_mode = PROCESS_FLOATING_GRAB;
-						}
-						/* Grab Pointer no other client will get mouse event */
-						grab_pointer();
+						process_mode = PROCESS_FLOATING_GRAB;
 					}
-
+					/* Grab Pointer no other client will get mouse event */
+					grab_pointer();
 				}
+
 			}
+		}
 
 		break;
 	case PROCESS_SPLIT_GRAB:
@@ -848,6 +852,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 void page_t::process_event_release(XButtonEvent const & e) {
 	printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 			e.window, e.root, e.subwindow, e.x_root, e.y_root);
+
+	{
+		managed_window_t * mw = find_managed_window_with(e.window);
+		if (mw != 0) {
+			set_focus(mw);
+		}
+	}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -921,11 +932,27 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		break;
 	case PROCESS_FLOATING_GRAB:
+
+		rnd->remove(mode_data_floating.pn0);
+		delete mode_data_floating.pn0;
+		mode_data_floating.pn0 = 0;
+
+		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
+		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
+
 		set_focus(mode_data_floating.f);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
 	case PROCESS_FLOATING_RESIZE:
+
+		rnd->remove(mode_data_floating.pn0);
+		delete mode_data_floating.pn0;
+		mode_data_floating.pn0 = 0;
+
+		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
+		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
+
 		set_focus(mode_data_floating.f);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
@@ -1174,7 +1201,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		box_int_t new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
-		mode_data_floating.f->set_wished_position(new_position);
+		//mode_data_floating.f->set_wished_position(new_position);
+
+		update_popup_position(mode_data_floating.pn0, new_position, true);
+		mode_data_floating.final_position = new_position;
 
 		break;
 	}
@@ -1244,8 +1274,11 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		}
 
-		mode_data_floating.f->set_wished_position(size);
-		theme->render_floating(mode_data_floating.f);
+		update_popup_position(mode_data_floating.pn0, size, true);
+		mode_data_floating.final_position = size;
+
+		//mode_data_floating.f->set_wished_position(size);
+		//theme->render_floating(mode_data_floating.f);
 
 		break;
 	}
@@ -1452,7 +1485,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 		}
 
 		if(mw->is(MANAGED_FLOATING))
-			theme->render_floating(mw);
+			theme->render_floating(mw, is_focussed(mw));
 
 	}
 
@@ -1523,6 +1556,8 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 
 	update_client_list();
 	destroy(c);
+	rpage->mark_durty();
+	rnd->add_damage_area(cnx->root_size);
 }
 
 void page_t::process_event(XGravityEvent const & e) {
@@ -1530,64 +1565,56 @@ void page_t::process_event(XGravityEvent const & e) {
 }
 
 void page_t::process_event(XMapEvent const & e) {
+	/* find/create window handler */
+	window_t * x = get_window_t(e.window);
+	/* update map status */
+	x->map_notify();
+
+	/* if map event does not occur within root, ignore it */
 	if (e.event != cnx->xroot)
 		return;
 
-	/* grab and sync the server to avoid miss of event and to
-	 * get a valid current state of windows
-	 */
-	cnx->grab();
+	/* read window attribute, if fail, it's probably because
+	 * the window is alredy destroyed */
+	if(not x->read_window_attributes())
+		return;
 
-	window_t * x = get_window_t(e.window);
-	x->map_notify();
-	x->read_when_mapped();
-
-	if (x->read_window_attributes()
-			and not has_key(window_to_renderable_context, x)) {
-		if (!x->is_input_only()) {
-			new_renderable_window(x);
-
-			if(not find_managed_window_with(x->id)) {
-				window_to_renderable_context[x]->set_opacity(menu_opacity);
-			}
-		}
-
-
+	/* add the window to render context if it is not already done */
+	if (not has_key(window_to_renderable_context, x)) {
+		new_renderable_window(x);
+		//window_to_renderable_context[x]->set_opacity(menu_opacity);
 	}
 
+	/* request to redraw the window area */
 	rnd->add_damage_area(x->get_size());
-	if (!_client_focused.empty()) {
-		_client_focused.front()->focus();
-	}
+
+	if(x->is_input_only())
+		return;
+
+	/* grab and sync the server to avoid miss of event and to
+	   get a valid current state of windows */
+	//cnx->grab();
+
+	/* update all data about the window */
+	x->read_when_mapped();
+	update_transient_for(x);
+
 	managed_window_t * wm;
 	if((wm = find_managed_window_with(e.window)) != 0) {
 		wm->reconfigure();
 		if(wm->is(MANAGED_FLOATING))
-			theme->render_floating(wm);
+			theme->render_floating(wm, is_focussed(wm));
 	}
 
-	/* don't manage overide redirected window */
-	if(x->override_redirect()) {
-		/* overide redirected window must set transient for
-		 * and may set net_wm_type.
-		 */
-		x->read_transient_for();
-		x->read_net_wm_type();
-		update_transient_for(x);
-		if (!x->is_input_only()) {
-			safe_raise_window(x);
-		}
+	safe_raise_window(x);
 
-		cnx->ungrab();
-		return;
+	if(not x->override_redirect()) {
+		/* try to manage window here because
+		 * Libre Office doesn't generate MapRequest */
+		check_manage(x);
 	}
 
-	/*
-	 * Libre Office doesn't generate MapRequest ... try to manage on map.
-	 */
-	check_manage(x);
-
-	cnx->ungrab();
+	//cnx->ungrab();
 
 }
 
@@ -1817,18 +1844,9 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 }
 
 void page_t::process_event(XMapRequestEvent const & e) {
-//	printf("Entering in %s #%p\n", __PRETTY_FUNCTION__, (void *) e.window);
+	/* everything will be done in MapEvent */
 	window_t * a = get_window_t(e.window);
-
-	/*
-	 * We grab and sync the server here, to get valid state of the windows and
-	 * not miss some events.
-	 */
-	a->read_when_mapped();
-	update_transient_for(a);
-	safe_raise_window(a);
 	a->map();
-	update_client_list();
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
@@ -1842,9 +1860,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 	if (e.atom == cnx->atoms._NET_WM_USER_TIME) {
 		x->read_net_wm_user_time();
-		//safe_raise_window(x);
-		if(mw != 0)
-			set_focus(mw);
+		if (_last_focus_time < x->get_net_user_time())
+			_last_focus_time = x->get_net_user_time();
 	} else if (e.atom == cnx->atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		if (mw != 0) {
@@ -1854,7 +1871,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw);
+				theme->render_floating(mw, is_focussed(mw));
 			}
 		}
 
@@ -1868,7 +1885,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 				}
 
 				if (mw->is(MANAGED_FLOATING)) {
-					theme->render_floating(mw);
+					theme->render_floating(mw, is_focussed(mw));
 				}
 			}
 		}
@@ -1915,7 +1932,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 					new_size.w = final_width;
 					new_size.h = final_height;
 					mw->set_wished_position(new_size);
-					theme->render_floating(mw);
+					theme->render_floating(mw, is_focussed(mw));
 					rnd->add_damage_area(mw->get_wished_position());
 
 				}
@@ -2158,7 +2175,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	} else {
 		mw->set_managed_type(MANAGED_FLOATING);
 		mw->reconfigure();
-		theme->render_floating(mw);
+		theme->render_floating(mw, is_focussed(mw));
 	}
 
 	v->fullscreen_client = 0;
@@ -2315,7 +2332,7 @@ void page_t::process_event(XEvent const & e) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
 		if(mw != 0) {
 			if(mw->is(MANAGED_FLOATING))
-				theme->render_floating(mw);
+				theme->render_floating(mw, is_focussed(mw));
 		}
 	} else if (e.type == cnx->xinerama_event) {
 		printf("a xinerama event\n");
@@ -2419,7 +2436,6 @@ void page_t::set_focus(managed_window_t * w) {
 	if(w == 0)
 		return;
 
-
 	printf("focus [%lu] %s\n", w->orig->id, w->get_title().c_str());
 
 	_last_focus_time = cnx->last_know_time;
@@ -2432,8 +2448,14 @@ void page_t::set_focus(managed_window_t * w) {
 	if(current_focus == w)
 		return;
 
-	if (current_focus != 0)
+	if (current_focus != 0) {
 		current_focus->orig->unset_focused();
+
+		if(current_focus->get_type() == MANAGED_FLOATING) {
+			theme->render_floating(current_focus, false);
+			rnd->add_damage_area(current_focus->base->get_size());
+		}
+	}
 
 	rpage->set_focuced_client(w);
 	rpage->mark_durty();
@@ -2446,6 +2468,11 @@ void page_t::set_focus(managed_window_t * w) {
 	safe_raise_window(w->orig);
 	if(w->orig->is_map())
 		w->focus();
+
+	if(w->get_type() == MANAGED_FLOATING) {
+		theme->render_floating(w, true);
+		rnd->add_damage_area(w->base->get_size());
+	}
 
 	Window xw = w->orig->id;
 	/* update _NET_ACTIVE_WINDOW */
@@ -3165,11 +3192,17 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	Window parent = cnx->create_window(v, 0, 0, 1, 1);
 	window_t * base = get_window_t(parent);
 	base->read_window_attributes();
-	base->select_input(MANAGED_WINDOW_EVENT_MASK);
 	base->grab_button(Button1);
 
+	/* grab and sync the server before reading and setup select_input
+	 *  to avoid miss of event and to get a valid current state
+	 *  of windows */
+	cnx->grab();
+	base->select_input(MANAGED_WINDOW_EVENT_MASK);
 	/* ensure event are listen */
+	orig->read_when_mapped();
 	orig->select_input(StructureNotifyMask | PropertyChangeMask);
+	cnx->ungrab();
 
 	managed_window_t * mw = new managed_window_t(type, orig, base, theme->get_theme_layout());
 	managed_window.insert(mw);
@@ -3180,16 +3213,26 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	clear_sibbling_child(mw->orig->id);
 	managed_window.erase(mw);
 	fullscreen_client_to_viewport.erase(mw);
-	_client_focused.remove(mw);
+
+	/* Fallback focus to last focuced windows */
+	if(_client_focused.front() == mw) {
+		_client_focused.remove(mw);
+		if(!_client_focused.empty()) {
+			set_focus(_client_focused.front());
+		}
+	} else {
+		_client_focused.remove(mw);
+	}
+
 	delete mw;
 }
 
 bool page_t::check_manage(window_t * x) {
 
+	if(find_managed_window_with(x->id))
+		return true;
 	if(x->is_managed())
 		return true;
-	if(!x->read_window_attributes())
-		return false;
 	if(x->override_redirect())
 		return false;
 	if(x->is_input_only())
@@ -3223,7 +3266,6 @@ bool page_t::check_manage(window_t * x) {
 	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
 //		printf("Floating window found\n");
 		managed_window_t * fw = manage(MANAGED_FLOATING, x);
-
 		/* apply normal hint to floating window */
 		box_int_t new_size = fw->get_wished_position();
 
@@ -3442,7 +3484,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 
 	/* update database */
 	mw->set_managed_type(MANAGED_FLOATING);
-	theme->render_floating(mw);
+	theme->render_floating(mw, is_focussed(mw));
 	mw->normalize();
 	safe_raise_window(mw->orig);
 	rpage->mark_durty();
@@ -3727,6 +3769,10 @@ void page_t::set_window_cursor(Window w, Cursor c) {
 	XSetWindowAttributes swa;
 	swa.cursor = c;
 	XChangeWindowAttributes(cnx->dpy, w, CWCursor, &swa);
+}
+
+bool page_t::is_focussed(managed_window_t * mw) {
+	return _client_focused.empty() ? false : _client_focused.front() == mw;
 }
 
 }

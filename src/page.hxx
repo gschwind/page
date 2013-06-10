@@ -170,6 +170,8 @@ public:
 		int y_root;
 		box_int_t original_position;
 		managed_window_t * f;
+		popup_notebook0_t * pn0;
+		box_int_t final_position;
 	};
 
 	struct fullscreen_data_t {
@@ -443,6 +445,8 @@ public:
 	void update_viewport_number(unsigned int n);
 
 	void set_window_cursor(Window w, Cursor c);
+
+	bool is_focussed(managed_window_t * mw);
 
 };
 
