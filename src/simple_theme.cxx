@@ -1054,7 +1054,11 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		/* outer border */
 
 		cairo_rectangle(cr, 0.5, 0.5, _allocation.w - 1.0, _allocation.h - 1.0);
-		cairo_set_source_rgb(cr, plum2.r, plum2.g, plum2.b);
+		if (is_focussed) {
+			cairo_set_source_rgb(cr, c_tab_boder_highlight.r, c_tab_boder_highlight.g, c_tab_boder_highlight.b);
+		} else {
+			cairo_set_source_rgb(cr, c_tab_boder_normal.r, c_tab_boder_normal.g, c_tab_boder_normal.b);
+		}
 		cairo_stroke(cr);
 
 	}
