@@ -269,7 +269,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(managed_window_t * w);
+	void set_focus(managed_window_t * w, bool force_focus);
 	render_context_t * get_render_context();
 	xconnection_t * get_xconnection();
 

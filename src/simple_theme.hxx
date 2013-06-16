@@ -117,8 +117,13 @@ public:
 	color_t c_tab_boder_highlight;
 	color_t c_tab_boder_normal;
 
+	color_t c_tab_selected_background;
+	color_t c_tab_normal_background;
+
 	color_t color_font;
 	color_t color_font_selected;
+
+
 
 	simple_theme_t(config_handler_t & conf);
 

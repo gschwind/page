@@ -292,7 +292,7 @@ void page_t::run() {
 	XSetIconSizes(cnx->dpy, cnx->xroot, &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
-	set_focus(0);
+	set_focus(0, false);
 
 	/* add page event handler */
 	cnx->add_event_handler(this);
@@ -713,7 +713,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	managed_window_t * mw = find_managed_window_with(e.window);
 
 	if (mw != 0) {
-		set_focus(mw);
+		set_focus(mw, false);
 	}
 
 	switch (process_mode) {
@@ -856,7 +856,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	{
 		managed_window_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
-			set_focus(mw);
+			set_focus(mw, false);
 		}
 	}
 
@@ -914,7 +914,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			unbind_window(mode_data_notebook.c);
 		} else {
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			set_focus(mode_data_notebook.c);
+			set_focus(mode_data_notebook.c, false);
 		}
 
 		/* automaticaly close empty notebook */
@@ -926,7 +926,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			rnd->add_damage_area(mode_data_notebook.from->_allocation);
 		}
 
-		set_focus(mode_data_notebook.c);
+		set_focus(mode_data_notebook.c, false);
 		rpage->mark_durty();
 		rnd->add_damage_area(rpage->get_area());
 
@@ -940,7 +940,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
 		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
 
-		set_focus(mode_data_floating.f);
+		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
@@ -953,7 +953,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
 		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
 
-		set_focus(mode_data_floating.f);
+		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
 		XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
@@ -1020,7 +1020,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		rnd->add_damage_area(mode_data_bind.c->get_base_position());
 
-		set_focus(mode_data_bind.c);
+		set_focus(mode_data_bind.c, false);
 		rpage->mark_durty();
 		rnd->add_damage_area(rpage->get_area());
 
@@ -2009,7 +2009,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->normalize();
-				set_focus(mw);
+				set_focus(mw, false);
 			}
 		}
 	} else if (e.message_type == cnx->atoms._NET_WM_STATE) {
@@ -2152,7 +2152,7 @@ void page_t::fullscreen(managed_window_t * mw) {
 	mw->normalize();
 	mw->orig->set_fullscreen();
 	mw->set_wished_position(data.viewport->raw_aera);
-	set_focus(mw);
+	set_focus(mw, false);
 	safe_raise_window(mw->orig);
 }
 
@@ -2190,7 +2190,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	}
 
 	mw->orig->unset_fullscreen();
-	set_focus(mw);
+	set_focus(mw, false);
 	update_allocation();
 	rnd->add_damage_area(cnx->root_size);
 
@@ -2360,7 +2360,7 @@ void page_t::activate_client(managed_window_t * x) {
 	notebook_t * n = find_notebook_for(x);
 	if (n != 0) {
 		n->activate_client(x);
-		set_focus(x);
+		set_focus(x, false);
 		rpage->mark_durty();
 		rnd->add_damage_area(n->get_absolute_extend());
 		rnd->add_damage_area(rpage->get_area());
@@ -2432,7 +2432,7 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->default_pop = default_window_pop;
 }
 
-void page_t::set_focus(managed_window_t * w) {
+void page_t::set_focus(managed_window_t * w, bool force_focus) {
 	if(w == 0)
 		return;
 
@@ -2445,7 +2445,7 @@ void page_t::set_focus(managed_window_t * w) {
 		current_focus = _client_focused.front();
 	}
 
-	if(current_focus == w)
+	if(current_focus == w && !force_focus)
 		return;
 
 	if (current_focus != 0) {
@@ -3218,7 +3218,7 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	if(_client_focused.front() == mw) {
 		_client_focused.remove(mw);
 		if(!_client_focused.empty()) {
-			set_focus(_client_focused.front());
+			set_focus(_client_focused.front(), true);
 		}
 	} else {
 		_client_focused.remove(mw);
@@ -3300,7 +3300,7 @@ bool page_t::check_manage(window_t * x) {
 			fw->reconfigure();
 		}
 
-		set_focus(fw);
+		set_focus(fw, false);
 
 		ret = true;
 	}
