@@ -154,6 +154,8 @@ page_t::page_t(int argc, char ** argv) {
 
 	menu_opacity = conf.get_double("default", "menu_opacity");
 
+	_client_focused.push_front(0);
+
 
 }
 
@@ -785,11 +787,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.f = mw;
 					mode_data_floating.original_position = mw->get_wished_position();
 					mode_data_floating.final_position = mw->get_wished_position();
+					mode_data_floating.popup_original_position = mw->base->get_size();
 
 					//printf("XXXXX size = %s, x: %d, y: %d\n",
 //						size.to_string().c_str(), e.x, e.y);
 
-					mode_data_floating.pn0 = new popup_notebook0_t(mw->get_wished_position());
+					mode_data_floating.pn0 = new popup_frame_move_t(mw->base->get_size());
 					rnd->add(mode_data_floating.pn0);
 
 					if ((e.state & ControlMask)) {
@@ -1198,13 +1201,17 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
+
+		/* compute new window position */
 		box_int_t new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
-		//mode_data_floating.f->set_wished_position(new_position);
-
-		update_popup_position(mode_data_floating.pn0, new_position, true);
 		mode_data_floating.final_position = new_position;
+
+		box_int_t popup_new_position = mode_data_floating.popup_original_position;
+		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+		update_popup_position(mode_data_floating.pn0, popup_new_position, true);
 
 		break;
 	}
@@ -1254,28 +1261,40 @@ void page_t::process_event(XMotionEvent const & e) {
 		if(size.h > cnx->root_size.h - 100)
 			size.h = cnx->root_size.h - 100;
 
+		int x_diff = 0;
+		int y_diff = 0;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			size.x += mode_data_floating.original_position.w - size.w;
-			size.y += mode_data_floating.original_position.h - size.h;
+			x_diff = mode_data_floating.original_position.w - size.w;
+			y_diff = mode_data_floating.original_position.h - size.h;
 		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			size.y += mode_data_floating.original_position.h - size.h;
+			y_diff = mode_data_floating.original_position.h - size.h;
 		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			size.y += mode_data_floating.original_position.h - size.h;
+			y_diff = mode_data_floating.original_position.h - size.h;
 		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			size.x += mode_data_floating.original_position.w - size.w;
+			x_diff = mode_data_floating.original_position.w - size.w;
 		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
 
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			size.x += mode_data_floating.original_position.w - size.w;
+			x_diff = mode_data_floating.original_position.w - size.w;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
 
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
 
 		}
 
-		update_popup_position(mode_data_floating.pn0, size, true);
+		size.x += x_diff;
+		size.y += y_diff;
 		mode_data_floating.final_position = size;
+
+		box_int_t popup_new_position = size;
+		popup_new_position.x -= theme->get_theme_layout()->floating_margin.left;
+		popup_new_position.y -= theme->get_theme_layout()->floating_margin.top;
+		popup_new_position.w += theme->get_theme_layout()->floating_margin.left + theme->get_theme_layout()->floating_margin.right;
+		popup_new_position.h += theme->get_theme_layout()->floating_margin.top + theme->get_theme_layout()->floating_margin.bottom;
+
+		update_popup_position(mode_data_floating.pn0, popup_new_position, true);
+
 
 		//mode_data_floating.f->set_wished_position(size);
 		//theme->render_floating(mode_data_floating.f);
@@ -2432,53 +2451,54 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->default_pop = default_window_pop;
 }
 
-void page_t::set_focus(managed_window_t * w, bool force_focus) {
-	if(w == 0)
-		return;
-
-	printf("focus [%lu] %s\n", w->orig->id, w->get_title().c_str());
+void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 
 	_last_focus_time = cnx->last_know_time;
 
 	managed_window_t * current_focus = 0;
+
 	if(!_client_focused.empty()) {
 		current_focus = _client_focused.front();
 	}
 
-	if(current_focus == w && !force_focus)
-		return;
-
-	if (current_focus != 0) {
+	if(current_focus != focus && current_focus != 0) {
 		current_focus->orig->unset_focused();
-
 		if(current_focus->get_type() == MANAGED_FLOATING) {
 			theme->render_floating(current_focus, false);
-			rnd->add_damage_area(current_focus->base->get_size());
 		}
 	}
 
-	rpage->set_focuced_client(w);
+	if(current_focus == focus && !force_focus)
+		return;
+
+	if(focus == 0)
+		return;
+
+	printf("focus [%lu] %s\n", focus->orig->id, focus->get_title().c_str());
+
 	rpage->mark_durty();
 	rnd->add_damage_area(rpage->get_area());
 
-	_client_focused.remove(w);
-	_client_focused.push_front(w);
+	_client_focused.remove(focus);
+	_client_focused.push_front(focus);
 
-	w->orig->set_focused();
-	safe_raise_window(w->orig);
-	if(w->orig->is_map())
-		w->focus();
-
-	if(w->get_type() == MANAGED_FLOATING) {
-		theme->render_floating(w, true);
-		rnd->add_damage_area(w->base->get_size());
+	/* focus the selected window */
+	rpage->set_focuced_client(focus);
+	focus->orig->set_focused();
+	safe_raise_window(focus->orig);
+	if (focus->orig->is_map())
+		focus->focus();
+	if (focus->get_type() == MANAGED_FLOATING) {
+		theme->render_floating(focus, true);
+		rnd->add_damage_area(focus->base->get_size());
 	}
 
-	Window xw = w->orig->id;
+	Window xw = focus->orig->id;
 	/* update _NET_ACTIVE_WINDOW */
 	cnx->change_property(cnx->xroot, cnx->atoms._NET_ACTIVE_WINDOW,
 			cnx->atoms.WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&xw), 1);
+
 
 }
 
@@ -2730,6 +2750,15 @@ void page_t::update_popup_position(popup_notebook0_t * p, box_int_t & position, 
 	rnd->add_damage_area(old_area);
 	rnd->add_damage_area(new_area);
 }
+
+void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position, bool show_popup) {
+	box_int_t old_area = p->get_absolute_extend();
+	box_int_t new_area = position;
+	p->reconfigure(new_area);
+	rnd->add_damage_area(old_area);
+	rnd->add_damage_area(new_area);
+}
+
 
 void page_t::fix_allocation(viewport_t & v) {
 	//printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,

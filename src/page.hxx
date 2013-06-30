@@ -51,6 +51,7 @@
 #include "popup_split.hxx"
 #include "popup_notebook0.hxx"
 #include "popup_notebook1.hxx"
+#include "popup_frame_move.hxx"
 #include "page_base.hxx"
 #include "default_theme.hxx"
 #include "renderable_page.hxx"
@@ -170,7 +171,8 @@ public:
 		int y_root;
 		box_int_t original_position;
 		managed_window_t * f;
-		popup_notebook0_t * pn0;
+		box_int_t popup_original_position;
+		popup_frame_move_t * pn0;
 		box_int_t final_position;
 	};
 
@@ -369,6 +371,7 @@ public:
 	void notebook_close(notebook_t * src);
 
 	void update_popup_position(popup_notebook0_t * p, box_int_t & position, bool show_popup);
+	void update_popup_position(popup_frame_move_t * p, box_int_t & position, bool show_popup);
 
 	void fix_allocation(viewport_t & v);
 

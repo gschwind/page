@@ -9,6 +9,7 @@ page_SOURCES = \
 	xconnection.cxx \
 	ftrace_function.cxx \
 	window.cxx \
+	popup_frame_move.cxx \
 	popup_notebook0.cxx \
 	popup_notebook1.cxx \
 	popup_split.cxx \
