@@ -714,9 +714,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
-	if (mw != 0) {
-		set_focus(mw, false);
-	}
+	//if (mw != 0) {
+	//	set_focus(mw, false);
+	//}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -917,7 +917,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			unbind_window(mode_data_notebook.c);
 		} else {
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			set_focus(mode_data_notebook.c, false);
+			//set_focus(mode_data_notebook.c, false);
 		}
 
 		/* automaticaly close empty notebook */
@@ -1991,8 +1991,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_wm_hints();
 
 		/* WM_HINTS can change the focus behaviors, so re-focus if needed */
-		if(!_client_focused.empty())
-			_client_focused.front()->focus();
+		//if(_client_focused.front() != 0)
+		//	_client_focused.front()->focus();
 	} else if (e.atom == cnx->atoms._NET_WM_STATE) {
 		x->read_net_wm_state();
 	} else if (e.atom == cnx->atoms.WM_STATE) {
