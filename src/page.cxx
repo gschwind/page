@@ -38,7 +38,7 @@
 #include <set>
 #include <stack>
 #include <vector>
-#include<typeinfo>
+#include <typeinfo>
 
 #include "page.hxx"
 #include "box.hxx"
@@ -79,7 +79,6 @@ page_t::page_t(int argc, char ** argv) {
 	cnx = new xconnection_t();
 
 	rnd = 0;
-
 
 	popups = renderable_list_t();
 
@@ -332,8 +331,12 @@ void page_t::run() {
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask, cnx->xroot,
 			True, GrabModeAsync, GrabModeAsync);
 
-	XGrabButton(cnx->dpy, Button1, AnyModifier, cnx->xroot, False,
-			ButtonPressMask, GrabModeSync, GrabModeAsync, cnx->xroot, None);
+	/* This grab will freeze input for all client, all mouse button, until
+	 * we choose what to do with them with XAllowEvents. we can choose to keep
+	 * grabbing events or release event and allow futher processing by other clients. */
+	XGrabButton(cnx->dpy, AnyButton, AnyModifier, cnx->xroot, False,
+			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+			GrabModeSync, GrabModeAsync, cnx->xroot, None);
 
 
 
@@ -412,7 +415,13 @@ managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
 void page_t::unmanage(managed_window_t * mw) {
 //	printf("unamage\n");
 
-	_client_focused.remove(mw);
+
+	if(mw == _client_focused.front()) {
+		_client_focused.remove(mw);
+		set_focus(_client_focused.front(), true);
+	} else {
+		_client_focused.remove(mw);
+	}
 
 	if (has_key(fullscreen_client_to_viewport, mw))
 		unfullscreen(mw);
@@ -441,7 +450,8 @@ void page_t::scan() {
 	/* start listen root event before anything each event will be stored to right run later */
 	XSelectInput(cnx->dpy, cnx->xroot,
 			KeyPressMask | KeyReleaseMask | SubstructureNotifyMask
-					| SubstructureRedirectMask);
+					| SubstructureRedirectMask | ButtonReleaseMask
+					| ButtonPressMask | ButtonMotionMask);
 
 	_root_window_stack.clear();
 	xwindow_to_window.clear();
@@ -714,14 +724,11 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
-	//if (mw != 0) {
-	//	set_focus(mw, false);
-	//}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e.window == cnx->xroot && e.root == cnx->xroot && e.subwindow == None) {
+		if (e.window == cnx->xroot && e.root == cnx->xroot && e.subwindow == None && e.button == Button1) {
 		/* split and notebook are mutually exclusive */
 			if (!check_for_start_split(e)) {
 				mode_data_notebook.start_x = e.x_root;
@@ -733,7 +740,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING)
 					&& (e.subwindow == (None)
-			|| (e.state & (Mod1Mask))|| (e.state & (ControlMask)))) {
+			|| (e.state & (Mod1Mask)) || (e.state & (ControlMask))) && e.button == Button1) {
 
 				box_int_t size = mw->get_base_position();
 
@@ -758,12 +765,16 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				/* click on close button ? */
 				if (close_position.is_inside(e.x_root, e.y_root)) {
-					grab_pointer();
+					/* Grab the pointer */
+					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
+					//grab_pointer();
 					mode_data_floating.f = mw;
 					process_mode = PROCESS_FLOATING_CLOSE;
 					//mw->delete_window(e.time);
 				} else if (dock_position.is_inside(e.x_root, e.y_root)) {
-					grab_pointer();
+					/* Grab the pointer */
+					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
+					//grab_pointer();
 
 					mode_data_bind.c = mw;
 					mode_data_bind.ns = 0;
@@ -826,7 +837,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						process_mode = PROCESS_FLOATING_GRAB;
 					}
 					/* Grab Pointer no other client will get mouse event */
-					grab_pointer();
+					/* Grab the pointer */
+					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
+					//grab_pointer();
 				}
 
 			}
@@ -835,43 +848,68 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		break;
 	case PROCESS_SPLIT_GRAB:
 		/* should never happen */
+		/* AllowEvents, and replay Events */
+		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
 		/* should never happen */
+		/* AllowEvents, and replay Events */
+		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_FLOATING_GRAB:
 		/* should never happen */
+		/* AllowEvents, and replay Events */
+		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_FLOATING_RESIZE:
+		/* AllowEvents, and replay Events */
+		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	default:
+		/* AllowEvents, and replay Events */
+		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	}
 
-	/* AllowEvents, and replay Events */
-	XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+	/* if no change in process mode, focus the window under the cursor
+	 * and replay events for the window under cursor */
+	if (process_mode == PROCESS_NORMAL) {
+		if (mw != 0) {
+			set_focus(mw, false);
+		} else if((mw = find_managed_window_with(e.subwindow)) != 0) {
+			set_focus(mw, false);
+		}
+		/* don't keep event and replay events for others clients
+		 * It's like we never Grabed this events. */
+		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+	} else {
+		/* keep pointer events for page.
+		 * It's like we XGrabButton with GrabModeASync */
+		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
+	}
+
 }
 
 void page_t::process_event_release(XButtonEvent const & e) {
 	printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 			e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
+	if(e.button == Button1) {
+	switch (process_mode) {
+	case PROCESS_NORMAL:
 	{
 		managed_window_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
 			set_focus(mw, false);
 		}
 	}
-
-	switch (process_mode) {
-	case PROCESS_NORMAL:
 		break;
 	case PROCESS_SPLIT_GRAB:
 
 		process_mode = PROCESS_NORMAL;
 		rnd->remove(mode_data_split.p);
 		delete mode_data_split.p;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 		mode_data_split.split->set_split(mode_data_split.split_ratio);
 		rnd->add_damage_area(mode_data_split.split->_allocation);
 		rpage->mark_durty();
@@ -889,7 +927,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		 * so set the hidden focus parameter
 		 */
 
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		// Xlib documentation state that: if you release all button, grabpointer terminate
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 
 
 		if (mode_data_notebook.zone == SELECT_TAB && mode_data_notebook.ns != 0
@@ -945,7 +984,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		// Xlib documentation state that: if you release all button, grabpointer terminate
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
 	case PROCESS_FLOATING_RESIZE:
 
@@ -958,7 +998,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
 	case PROCESS_FLOATING_CLOSE: {
 		managed_window_t * mw = mode_data_floating.f;
@@ -972,7 +1012,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		/* cleanup */
 		process_mode = PROCESS_NORMAL;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+
+		// Xlib documentation state that: if you release all button, grabpointer terminate
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 
 		break;
 	}
@@ -988,7 +1030,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		 * so set the hidden focus parameter
 		 */
 
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 
 
 		if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
@@ -1035,9 +1077,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 	default:
 		process_mode = PROCESS_NORMAL;
-		XUngrabPointer(cnx->dpy, CurrentTime);
+		//XUngrabPointer(cnx->dpy, CurrentTime);
 		break;
 
+	}
 	}
 }
 
@@ -2540,13 +2583,13 @@ bool page_t::check_for_start_split(XButtonEvent const & e) {
 		rnd->add(mode_data_split.p);
 
 		/* Grab Pointer no other client will get mouse event */
-		if (XGrabPointer(cnx->dpy, cnx->xroot, False,
-				(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-				GrabModeAsync, GrabModeAsync, None, cursor_fleur,
-				CurrentTime) != GrabSuccess) {
-			/* bad news */
-			throw std::runtime_error("fail to grab pointer");
-		}
+//		if (XGrabPointer(cnx->dpy, cnx->xroot, False,
+//				(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+//				GrabModeAsync, GrabModeAsync, None, cursor_fleur,
+//				CurrentTime) != GrabSuccess) {
+//			/* bad news */
+//			throw std::runtime_error("fail to grab pointer");
+//		}
 
 	}
 
@@ -2598,13 +2641,13 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.popup_is_added = false;
 
 			/* Grab Pointer no other client will get mouse event */
-			if (XGrabPointer(cnx->dpy, cnx->xroot, False,
-					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-					GrabModeAsync, GrabModeAsync, None, cursor_fleur,
-					CurrentTime) != GrabSuccess) {
-				/* bad news */
-				throw std::runtime_error("fail to grab pointer");
-			}
+//			if (XGrabPointer(cnx->dpy, cnx->xroot, False,
+//					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
+//					GrabModeAsync, GrabModeAsync, None, cursor_fleur,
+//					CurrentTime) != GrabSuccess) {
+//				/* bad news */
+//				throw std::runtime_error("fail to grab pointer");
+//			}
 		}
 
 	} else {

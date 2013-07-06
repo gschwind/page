@@ -25,7 +25,13 @@ int main(int argc, char ** argv) {
 	Window root = XDefaultRootWindow(dpy);
 	int screen = XDefaultScreen(dpy);
 
-	XSelectInput(dpy, root, SubstructureNotifyMask | SubstructureRedirectMask);
+	Window w = XCreateSimpleWindow(dpy, root, 0, 0, 300, 300, 0, 0, 0);
+
+	//XSelectInput(dpy, root, SubstructureNotifyMask | SubstructureRedirectMask);
+
+	XSelectInput(dpy, w, SubstructureNotifyMask | SubstructureRedirectMask | ButtonPressMask | ButtonMotionMask | ButtonReleaseMask);
+
+	XMapWindow(dpy, w);
 
 	while (true) {
 		XEvent ev;
@@ -60,6 +66,9 @@ int main(int argc, char ** argv) {
 			XDestroyWindowEvent & e = ev.xdestroywindow;
 			printf("%s event: #%lu window #%lu send_event: %d\n",
 					x_event_name[e.type], e.event, e.window, e.send_event);
+		} else {
+			printf("%s event: #%lu window #%lu send_event: %d\n",
+					x_event_name[ev.xany.type], ev.xany.serial, ev.xany.window, ev.xany.send_event);
 		}
 	}
 

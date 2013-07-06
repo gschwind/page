@@ -268,11 +268,11 @@ bool xconnection_t::is_not_grab() {
 }
 
 int xconnection_t::error_handler(Display * dpy, XErrorEvent * ev) {
-	cnx_printf("#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+	printf("#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
 	if (open_connections.find(dpy) == open_connections.end()) {
-		cnx_printf("Error on unknow connection\n");
+		printf("Error on unknow connection\n");
 		return 0;
 	}
 
@@ -292,9 +292,9 @@ int xconnection_t::error_handler(Display * dpy, XErrorEvent * ev) {
 	}
 
 	if (func != 0) {
-		cnx_printf("\e[1;31m%s: %s %lu\e[m\n", func, buffer, ev->serial);
+		printf("\e[1;31m%s: %s %lu\e[m\n", func, buffer, ev->serial);
 	} else {
-		cnx_printf("XXXXX %u: %s %lu\n", (unsigned) ev->request_code, buffer,
+		printf("Error %u: %s %lu\n", (unsigned) ev->request_code, buffer,
 				ev->serial);
 	}
 
