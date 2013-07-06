@@ -231,7 +231,7 @@ public:
 	/* main window data base */
 	window_map_t xwindow_to_window;
 
-	/* floating windows */
+	/* all managed windows */
 	set<managed_window_t *> managed_window;
 
 	/* store data to allow proper revert fullscreen window to

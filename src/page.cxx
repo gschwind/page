@@ -685,32 +685,21 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
-//		/* select next window */
-//		if (!_client_focused.empty()) {
-//			set<managed_window_t *>::iterator x =
-//					managed_windows_set.find(_client_focused.front());
-//			if (x != managed_windows_set.end()) {
-//				++x;
-//				if (x != managed_windows_set.end()) {
-//					//printf("Next = %ld\n", (*x)->get_xwin());
-//					activate_client(*x);
-//				} else {
-//					if (!managed_windows_set.empty()) {
-//						//printf("Next = %ld\n", tmp.front()->get_xwin());
-//						activate_client(
-//								*(managed_windows_set.begin()));
-//					}
-//				}
-//			} else {
-//				if (!managed_windows_set.empty()) {
-//					activate_client(*(managed_windows_set.begin()));
-//				}
-//			}
-//		} else {
-//			if (!managed_windows_set.empty()) {
-//				activate_client(*(managed_windows_set.begin()));
-//			}
-//		}
+
+		if(!managed_window.empty()) {
+			managed_window_t * mw = _client_focused.front();
+			set<managed_window_t *>::iterator x = managed_window.find(mw);
+			if(x == managed_window.end()) {
+				activate_client(*managed_window.begin());
+			} else {
+				++x;
+				if(x == managed_window.end()) {
+					activate_client(*managed_window.begin());
+				} else {
+					activate_client(*x);
+				}
+			}
+		}
 	}
 
 	XFree(k);
@@ -2419,6 +2408,8 @@ void page_t::process_event(XEvent const & e) {
 }
 
 void page_t::activate_client(managed_window_t * x) {
+	if(x == 0)
+		return;
 	notebook_t * n = find_notebook_for(x);
 	if (n != 0) {
 		n->activate_client(x);
@@ -2426,7 +2417,10 @@ void page_t::activate_client(managed_window_t * x) {
 		rpage->mark_durty();
 		rnd->add_damage_area(n->get_absolute_extend());
 		rnd->add_damage_area(rpage->get_area());
-
+	} else {
+		/* floating window or fullscreen window */
+		set_focus(x, false);
+		rnd->add_damage_area(x->get_base_position());
 	}
 }
 
