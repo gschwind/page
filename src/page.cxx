@@ -336,7 +336,7 @@ void page_t::run() {
 	 * grabbing events or release event and allow futher processing by other clients. */
 	XGrabButton(cnx->dpy, AnyButton, AnyModifier, cnx->xroot, False,
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-			GrabModeSync, GrabModeAsync, cnx->xroot, None);
+			GrabModeSync, GrabModeAsync, None, None);
 
 
 
@@ -3267,7 +3267,12 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	base->select_input(MANAGED_WINDOW_EVENT_MASK);
 	/* ensure event are listen */
 	orig->read_when_mapped();
-	orig->select_input(StructureNotifyMask | PropertyChangeMask);
+	orig->select_input(StructureNotifyMask | PropertyChangeMask | ButtonPressMask | ButtonMotionMask | ButtonReleaseMask);
+
+	XGrabButton(cnx->dpy, AnyButton, AnyModifier, base->id, False,
+			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+			GrabModeSync, GrabModeAsync, None, None);
+
 	cnx->ungrab();
 
 	managed_window_t * mw = new managed_window_t(type, orig, base, theme->get_theme_layout());
