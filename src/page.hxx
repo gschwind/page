@@ -187,6 +187,7 @@ public:
 		PROCESS_NORMAL,			// Process event as usual
 		PROCESS_SPLIT_GRAB,		// Process event when split is moving
 		PROCESS_NOTEBOOK_GRAB,	// Process event when notebook tab is moved
+		PROCESS_NOTEBOOK_BUTTON_PRESS,
 		PROCESS_FLOATING_GRAB,	// Process event when a floating window is moved
 		PROCESS_FLOATING_RESIZE,
 		PROCESS_FLOATING_CLOSE,
@@ -254,6 +255,7 @@ public:
 
 private:
 	Time _last_focus_time;
+	Time _last_button_press;
 	list<managed_window_t *> _client_focused;
 
 	Window wm_window;

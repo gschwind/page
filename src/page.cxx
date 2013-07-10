@@ -140,6 +140,7 @@ page_t::page_t(int argc, char ** argv) {
 	font_bold = conf.get_string("default", "font_bold_file");
 
 	_last_focus_time = 0;
+	_last_button_press = 0;
 
 	root_stack = list<window_t *>();
 
@@ -708,11 +709,16 @@ void page_t::process_event(XKeyEvent const & e) {
 
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
-	printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root);
+	printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
+	if(_last_button_press >= e.time) {
+		/* ignore this event */
+		printf("ignore this press event\n");
+		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+	}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -872,6 +878,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		 * It's like we never Grabed this events. */
 		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 	} else {
+		_last_button_press = e.time;
+
 		/* keep pointer events for page.
 		 * It's like we XGrabButton with GrabModeASync */
 		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
@@ -960,6 +968,43 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		set_focus(mode_data_notebook.c, false);
 		rpage->mark_durty();
 		rnd->add_damage_area(rpage->get_area());
+
+		break;
+	case PROCESS_NOTEBOOK_BUTTON_PRESS:
+		process_mode = PROCESS_NORMAL;
+
+		if (mode_data_notebook.c != 0) {
+			mode_data_notebook.from->update_close_area();
+			if (mode_data_notebook.from->close_client_area.is_inside(e.x_root, e.y_root)) {
+				mode_data_notebook.c->delete_window(e.time);
+			} else if (mode_data_notebook.from->undck_client_area.is_inside(e.x_root, e.y_root)) {
+				unbind_window(mode_data_notebook.c);
+			}
+		} else {
+			if(mode_data_notebook.from != 0) {
+				if (mode_data_notebook.from->button_close.is_inside(e.x, e.y)) {
+					notebook_close (mode_data_notebook.from);
+					rpage->mark_durty();
+					rnd->add_damage_area(cnx->root_size);
+				} else if (mode_data_notebook.from->button_vsplit.is_inside(e.x, e.y)) {
+					split(mode_data_notebook.from, VERTICAL_SPLIT);
+					update_allocation();
+					rpage->mark_durty();
+					rnd->add_damage_area(cnx->root_size);
+				} else if (mode_data_notebook.from->button_hsplit.is_inside(e.x, e.y)) {
+					split(mode_data_notebook.from, HORIZONTAL_SPLIT);
+					update_allocation();
+					rpage->mark_durty();
+					rnd->add_damage_area(cnx->root_size);
+				} else if (mode_data_notebook.from->button_pop.is_inside(e.x, e.y)) {
+					default_window_pop = mode_data_notebook.from;
+					rnd->add_damage_area(mode_data_notebook.from->tab_area);
+					update_allocation();
+					rpage->mark_durty();
+					rnd->add_damage_area(cnx->root_size);
+				}
+			}
+		}
 
 		break;
 	case PROCESS_FLOATING_GRAB:
@@ -2610,9 +2655,25 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 
 		n->update_close_area();
 		if (n->close_client_area.is_inside(e.x_root, e.y_root)) {
-			c->delete_window(e.time);
+
+			/* apply change on button release */
+			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+			mode_data_notebook.c = c;
+			mode_data_notebook.from = n;
+			mode_data_notebook.ns = 0;
+
+			/* TODO: on release */
+			//c->delete_window(e.time);
 		} else if (n->undck_client_area.is_inside(e.x_root, e.y_root)) {
-			unbind_window(c);
+
+			/* apply change on button release */
+			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+			mode_data_notebook.c = c;
+			mode_data_notebook.from = n;
+			mode_data_notebook.ns = 0;
+
+			/* TODO: on release */
+			//unbind_window(c);
 		} else {
 
 //			printf("starting notebook\n");
@@ -2666,27 +2727,34 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 		}
 
 		if (x != 0) {
-			if (x->button_close.is_inside(e.x, e.y)) {
-				notebook_close(x);
-				rpage->mark_durty();
-				rnd->add_damage_area(cnx->root_size);
-			} else if (x->button_vsplit.is_inside(e.x, e.y)) {
-				split(x, VERTICAL_SPLIT);
-				update_allocation();
-				rpage->mark_durty();
-				rnd->add_damage_area(cnx->root_size);
-			} else if (x->button_hsplit.is_inside(e.x, e.y)) {
-				split(x, HORIZONTAL_SPLIT);
-				update_allocation();
-				rpage->mark_durty();
-				rnd->add_damage_area(cnx->root_size);
-			} else if (x->button_pop.is_inside(e.x, e.y)) {
-				default_window_pop = x;
-				rnd->add_damage_area(x->tab_area);
-				update_allocation();
-				rpage->mark_durty();
-				rnd->add_damage_area(cnx->root_size);
-			}
+			/* apply change on button release */
+			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+			mode_data_notebook.c = 0;
+			mode_data_notebook.from = x;
+			mode_data_notebook.ns = 0;
+
+			/* TODO: in release button */
+//			if (x->button_close.is_inside(e.x, e.y)) {
+//				notebook_close(x);
+//				rpage->mark_durty();
+//				rnd->add_damage_area(cnx->root_size);
+//			} else if (x->button_vsplit.is_inside(e.x, e.y)) {
+//				split(x, VERTICAL_SPLIT);
+//				update_allocation();
+//				rpage->mark_durty();
+//				rnd->add_damage_area(cnx->root_size);
+//			} else if (x->button_hsplit.is_inside(e.x, e.y)) {
+//				split(x, HORIZONTAL_SPLIT);
+//				update_allocation();
+//				rpage->mark_durty();
+//				rnd->add_damage_area(cnx->root_size);
+//			} else if (x->button_pop.is_inside(e.x, e.y)) {
+//				default_window_pop = x;
+//				rnd->add_damage_area(x->tab_area);
+//				update_allocation();
+//				rpage->mark_durty();
+//				rnd->add_damage_area(cnx->root_size);
+//			}
 		}
 
 	}
