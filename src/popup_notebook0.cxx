@@ -59,4 +59,8 @@ bool popup_notebook0_t::is_visible() {
 	return true;
 }
 
+bool popup_notebook0_t::has_alpha() {
+	return true;
+}
+
 }

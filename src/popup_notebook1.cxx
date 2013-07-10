@@ -84,4 +84,8 @@ bool popup_notebook1_t::is_visible() {
 	return true;
 }
 
+bool popup_notebook1_t::has_alpha() {
+	return true;
+}
+
 }

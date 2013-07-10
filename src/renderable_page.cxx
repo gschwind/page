@@ -121,6 +121,10 @@ bool renderable_page_t::is_visible() {
 	return true;
 }
 
+bool renderable_page_t::has_alpha() {
+	return false;
+}
+
 void renderable_page_t::render_splits(std::list<split_t *> const & splits) {
 	for (std::list<split_t *>::const_iterator i = splits.begin();
 			i != splits.end(); ++i) {

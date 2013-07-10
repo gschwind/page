@@ -44,4 +44,12 @@ void popup_split_t::reconfigure(box_int_t const & a) {
 	area = a;
 }
 
+bool popup_split_t::is_visible() {
+	return true;
+}
+
+bool popup_split_t::has_alpha() {
+	return true;
+}
+
 }

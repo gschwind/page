@@ -21,9 +21,8 @@ struct popup_split_t: public renderable_t {
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
-	virtual bool is_visible() {
-		return true;
-	}
+	virtual bool is_visible();
+	virtual bool has_alpha();
 };
 
 }

@@ -416,10 +416,16 @@ managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
 void page_t::unmanage(managed_window_t * mw) {
 //	printf("unamage\n");
 
-
 	if(mw == _client_focused.front()) {
 		_client_focused.remove(mw);
-		set_focus(_client_focused.front(), true);
+		if(_client_focused.front() != 0) {
+			if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
+				activate_client(_client_focused.front());
+			} else {
+				set_focus(_client_focused.front(), true);
+			}
+		}
+
 	} else {
 		_client_focused.remove(mw);
 	}
@@ -870,9 +876,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	 * and replay events for the window under cursor */
 	if (process_mode == PROCESS_NORMAL) {
 		if (mw != 0) {
-			set_focus(mw, false);
+			set_focus(mw, true);
 		} else if((mw = find_managed_window_with(e.subwindow)) != 0) {
-			set_focus(mw, false);
+			set_focus(mw, true);
 		}
 		/* don't keep event and replay events for others clients
 		 * It's like we never Grabed this events. */

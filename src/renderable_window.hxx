@@ -34,6 +34,8 @@ public:
 	/* window surface */
 	cairo_surface_t * window_surf;
 
+	bool _has_alpha;
+
 private:
 	/* avoid copy */
 	renderable_window_t(renderable_window_t const &);
@@ -53,6 +55,7 @@ public:
 	virtual void mark_dirty();
 	virtual void mark_dirty_retangle(box_int_t const & area);
 	virtual bool is_visible();
+	virtual bool has_alpha();
 
 	void set_opacity(double x);
 

@@ -22,6 +22,7 @@ struct popup_frame_move_t: public renderable_t {
 	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
 	virtual bool is_visible();
+	virtual bool has_alpha();
 };
 
 }

@@ -30,6 +30,12 @@ renderable_window_t::renderable_window_t(Display * d, Window w, Visual * v, box_
 	visual = v;
 	position = p;
 
+	XRenderPictFormat * format = XRenderFindVisualFormat(d, v);
+
+	_has_alpha = ( format->type == PictTypeDirect && format->direct.alphaMask );
+	printf("HAS_ALPHA = %s\n", _has_alpha?"true":"false");
+
+
 	damage = None;
 	window_surf = 0;
 
@@ -139,6 +145,10 @@ void renderable_window_t::mark_dirty_retangle(box_int_t const & area) {
 
 bool renderable_window_t::is_visible() {
 	return true;
+}
+
+bool renderable_window_t::has_alpha() {
+	return _has_alpha;
 }
 
 void renderable_window_t::reconfigure(box_int_t const & area) {

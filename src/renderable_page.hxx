@@ -45,6 +45,7 @@ public:
 	virtual region_t<int> get_area();
 	virtual void reconfigure(box_int_t const & area);
 	virtual bool is_visible();
+	virtual bool has_alpha();
 
 	void render_splits(std::list<split_t *> const & splits);
 	void render_notebooks(std::list<notebook_t *> const & notebooks);

@@ -66,6 +66,8 @@ void render_context_t::render_flush() {
 		flush_count = 0;
 	}
 
+	/* list content is bottom window to upper window in stack */
+
 	/* a small optimization, because visible are often few */
 	renderable_list_t visible;
 	for(renderable_list_t::iterator i = list.begin(); i != list.end(); ++i) {
@@ -76,14 +78,20 @@ void render_context_t::render_flush() {
 
 	/* fast region are region that can be rendered directly on front buffer */
 	/* slow region are region that will be rendered in back buffer before the front */
-	region_t<int> fast_region;
 
-	/* This loops check area that have only one window over it, if this is
-	 * the case we will be able to render it directly.
-	 */
+
+	/**
+	 * Find region were windows do not overlap each other.
+	 * i.e. region where only one window will be rendered
+	 * This is about 80% of the screen.
+	 * This kind of region will be directly rendered.
+	 **/
+	region_t<int> region_with_not_overlapped_window;
+
 	renderable_list_t::iterator i = visible.begin();
 	while (i != visible.end()) {
 		region_t<int> r = (*i)->get_area();
+		/* if we have alpha, we check if there is overlapping windows */
 		renderable_list_t::iterator j = visible.begin();
 		while (j != visible.end()) {
 			if (i != j) {
@@ -91,34 +99,114 @@ void render_context_t::render_flush() {
 			}
 			++j;
 		}
-		fast_region = fast_region + r;
+		region_with_not_overlapped_window = region_with_not_overlapped_window + r;
 		++i;
 	}
 
-	fast_region = fast_region & pending_damage;
-	region_t<int> slow_region = pending_damage - fast_region;
+	/**
+	 * Find region where the windows on top is not a window with alpha.
+	 * Small area, often popup menu.
+	 * This kind of area will be directly rendered.
+	 **/
+	region_t<int> region_with_not_alpha_on_top;
 
-	/* direct render */
+	/* from bottom to top window */
+	i = visible.begin();
+	while (i != visible.end()) {
+		region_t<int> r = (*i)->get_area();
+		/* if we have alpha, we check if there is overlapping windows */
+		if((*i)->has_alpha()) {
+			/* if has_alpha, remove this region */
+			region_with_not_alpha_on_top = region_with_not_alpha_on_top - r;
+		} else {
+			/* if not has_alpha, add this area */
+			region_with_not_alpha_on_top = region_with_not_alpha_on_top + r;
+		}
+		++i;
+	}
+
+	region_t<int> direct_region;
+
+	direct_region = direct_region + region_with_not_overlapped_window;
+
+	direct_region = direct_region & pending_damage;
+	region_t<int> slow_region = (pending_damage - direct_region) - region_with_not_alpha_on_top;
+
+	/* direct render, area where there is only one window visible */
 	{
 		cairo_reset_clip(composite_overlay_cr);
 		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-		region_t<int>::box_list_t::const_iterator i = fast_region.begin();
-		while (i != fast_region.end()) {
+		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
+
+		region_t<int>::box_list_t::const_iterator i = direct_region.begin();
+		while (i != direct_region.end()) {
 			fast_region_surf += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
 			/* this section show direct rendered screen */
 //			cairo_set_source_rgb(composite_overlay_cr, 0.0, 1.0, 0.0);
 //			cairo_set_line_width(composite_overlay_cr, 1.0);
 //			cairo_rectangle(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5, (*i).w - 1.0, (*i).h - 1.0);
-//			cairo_clip(composite_overlay_cr);
-//			cairo_paint_with_alpha(composite_overlay_cr, 0.1);
+//			//cairo_clip(composite_overlay_cr);
+//			//cairo_paint_with_alpha(composite_overlay_cr, 0.1);
 //			cairo_reset_clip(composite_overlay_cr);
 //			cairo_stroke(composite_overlay_cr);
+//
+//			cairo_new_path(composite_overlay_cr);
+//			cairo_move_to(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5);
+//			cairo_line_to(composite_overlay_cr, (*i).x + (*i).w - 1.0, (*i).y + (*i).h - 1.0);
+//
+//			cairo_move_to(composite_overlay_cr, (*i).x + (*i).w - 1.0, (*i).y + 0.5);
+//			cairo_line_to(composite_overlay_cr, (*i).x + 0.5, (*i).y + (*i).h - 1.0);
+//			cairo_stroke(composite_overlay_cr);
+
 			++i;
 		}
 	}
 
-	/* update back buffer */
+	/* render area where window on the has no alpha */
+
+	region_with_not_alpha_on_top = (region_with_not_alpha_on_top & pending_damage) - direct_region;
+
+	{
+		cairo_reset_clip(composite_overlay_cr);
+		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
+
+		/* from top to bottom */
+		for (renderable_list_t::reverse_iterator i = visible.rbegin(); i != visible.rend();
+				++i) {
+			renderable_t * r = *i;
+			region_t<int> draw_area = region_with_not_alpha_on_top & r->get_area();
+			if (!draw_area.empty()) {
+				for (region_t<int>::box_list_t::iterator j = draw_area.begin();
+						j != draw_area.end(); ++j) {
+					if (!(*j).is_null()) {
+						r->repair1(composite_overlay_cr, (*j));
+
+						/* this section show direct rendered screen */
+//						cairo_set_source_rgb(composite_overlay_cr, 0.0, 0.0, 1.0);
+//						cairo_set_line_width(composite_overlay_cr, 1.0);
+//						cairo_rectangle(composite_overlay_cr, (*j).x + 0.5, (*j).y + 0.5, (*j).w - 1.0, (*j).h - 1.0);
+//						//cairo_clip(composite_overlay_cr);
+//						//cairo_paint_with_alpha(composite_overlay_cr, 0.1);
+//						cairo_reset_clip(composite_overlay_cr);
+//						cairo_stroke(composite_overlay_cr);
+//
+//						cairo_new_path(composite_overlay_cr);
+//						cairo_move_to(composite_overlay_cr, (*j).x + 0.5, (*j).y + 0.5);
+//						cairo_line_to(composite_overlay_cr, (*j).x + (*j).w - 1.0, (*j).y + (*j).h - 1.0);
+//
+//						cairo_move_to(composite_overlay_cr, (*j).x + (*j).w - 1.0, (*j).y + 0.5);
+//						cairo_line_to(composite_overlay_cr, (*j).x + 0.5, (*j).y + (*j).h - 1.0);
+//						cairo_stroke(composite_overlay_cr);
+					}
+				}
+			}
+			region_with_not_alpha_on_top = region_with_not_alpha_on_top - r->get_area();
+		}
+	}
+
+	/* update back buffer, render area with posible transparency */
 	{
 		cairo_reset_clip(pre_back_buffer_cr);
 		cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);

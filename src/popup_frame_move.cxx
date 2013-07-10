@@ -56,4 +56,8 @@ bool popup_frame_move_t::is_visible() {
 	return true;
 }
 
+bool popup_frame_move_t::has_alpha() {
+	return true;
+}
+
 }

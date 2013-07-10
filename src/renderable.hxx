@@ -54,6 +54,8 @@ public:
 	 */
 	virtual bool is_visible() = 0;
 
+	virtual bool has_alpha() = 0;
+
 };
 
 /**
