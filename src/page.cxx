@@ -724,6 +724,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		/* ignore this event */
 		printf("ignore this press event\n");
 		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+		return;
 	}
 
 	switch (process_mode) {
@@ -918,6 +919,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		rpage->mark_durty();
 		rnd->add_damage_area(rpage->get_area());
 
+		mode_data_split.split = 0;
+		mode_data_split.p = 0;
+		mode_data_split.slider_area = box_int_t();
+		mode_data_split.split_ratio = 0.5;
+
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
 
@@ -975,6 +981,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		rpage->mark_durty();
 		rnd->add_damage_area(rpage->get_area());
 
+		mode_data_notebook.start_x = 0;
+		mode_data_notebook.start_y = 0;
+		mode_data_notebook.zone = SELECT_NONE;
+		mode_data_notebook.c = 0;
+		mode_data_notebook.from = 0;
+		mode_data_notebook.ns = 0;
+		mode_data_notebook.pn0 = 0;
+		mode_data_notebook.pn1 = 0;
+		mode_data_notebook.popup_is_added = false;
+
 		break;
 	case PROCESS_NOTEBOOK_BUTTON_PRESS:
 		process_mode = PROCESS_NORMAL;
@@ -1012,6 +1028,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 		}
 
+		mode_data_notebook.start_x = 0;
+		mode_data_notebook.start_y = 0;
+		mode_data_notebook.zone = SELECT_NONE;
+		mode_data_notebook.c = 0;
+		mode_data_notebook.from = 0;
+		mode_data_notebook.ns = 0;
+		mode_data_notebook.pn0 = 0;
+		mode_data_notebook.pn1 = 0;
+		mode_data_notebook.popup_is_added = false;
+
 		break;
 	case PROCESS_FLOATING_GRAB:
 
@@ -1026,6 +1052,18 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		process_mode = PROCESS_NORMAL;
 		// Xlib documentation state that: if you release all button, grabpointer terminate
 		//XUngrabPointer(cnx->dpy, CurrentTime);
+
+		mode_data_floating.mode = RESIZE_NONE;
+		mode_data_floating.x_offset = 0;
+		mode_data_floating.y_offset = 0;
+		mode_data_floating.x_root = 0;
+		mode_data_floating.y_root = 0;
+		mode_data_floating.original_position = box_int_t();
+		mode_data_floating.f = 0;
+		mode_data_floating.popup_original_position = box_int_t();
+		mode_data_floating.pn0 = 0;
+		mode_data_floating.final_position = box_int_t();
+
 		break;
 	case PROCESS_FLOATING_RESIZE:
 
@@ -1039,6 +1077,18 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
 		//XUngrabPointer(cnx->dpy, CurrentTime);
+
+		mode_data_floating.mode = RESIZE_NONE;
+		mode_data_floating.x_offset = 0;
+		mode_data_floating.y_offset = 0;
+		mode_data_floating.x_root = 0;
+		mode_data_floating.y_root = 0;
+		mode_data_floating.original_position = box_int_t();
+		mode_data_floating.f = 0;
+		mode_data_floating.popup_original_position = box_int_t();
+		mode_data_floating.pn0 = 0;
+		mode_data_floating.final_position = box_int_t();
+
 		break;
 	case PROCESS_FLOATING_CLOSE: {
 		managed_window_t * mw = mode_data_floating.f;
@@ -1055,6 +1105,17 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		// Xlib documentation state that: if you release all button, grabpointer terminate
 		//XUngrabPointer(cnx->dpy, CurrentTime);
+
+		mode_data_floating.mode = RESIZE_NONE;
+		mode_data_floating.x_offset = 0;
+		mode_data_floating.y_offset = 0;
+		mode_data_floating.x_root = 0;
+		mode_data_floating.y_root = 0;
+		mode_data_floating.original_position = box_int_t();
+		mode_data_floating.f = 0;
+		mode_data_floating.popup_original_position = box_int_t();
+		mode_data_floating.pn0 = 0;
+		mode_data_floating.final_position = box_int_t();
 
 		break;
 	}
@@ -1111,6 +1172,15 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 
 		process_mode = PROCESS_NORMAL;
+
+		mode_data_bind.start_x = 0;
+		mode_data_bind.start_y = 0;
+		mode_data_bind.zone = SELECT_NONE;
+		mode_data_bind.c = 0;
+		mode_data_bind.ns = 0;
+		mode_data_bind.pn0 = 0;
+		mode_data_bind.pn1 = 0;
+		mode_data_bind.popup_is_added = false;
 
 		break;
 	}
@@ -3664,44 +3734,88 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 		break;
 
 	case PROCESS_NOTEBOOK_GRAB:
+	case PROCESS_NOTEBOOK_BUTTON_PRESS:
 
 		if (mode_data_notebook.c == mw) {
 			mode_data_notebook.c = 0;
 			process_mode = PROCESS_NORMAL;
-			rnd->remove(mode_data_notebook.pn0);
-			rnd->remove(mode_data_notebook.pn1);
-			delete mode_data_notebook.pn0;
-			delete mode_data_notebook.pn1;
+
+			if (mode_data_notebook.pn0 != 0) {
+				rnd->remove(mode_data_notebook.pn0);
+				delete mode_data_notebook.pn0;
+			}
+
+			if (mode_data_notebook.pn1 != 0) {
+				rnd->remove(mode_data_notebook.pn1);
+				delete mode_data_notebook.pn1;
+			}
+
+			mode_data_notebook.start_x = 0;
+			mode_data_notebook.start_y = 0;
+			mode_data_notebook.zone = SELECT_NONE;
+			mode_data_notebook.c = 0;
+			mode_data_notebook.from = 0;
+			mode_data_notebook.ns = 0;
+			mode_data_notebook.pn0 = 0;
+			mode_data_notebook.pn1 = 0;
+			mode_data_notebook.popup_is_added = false;
+
 			/* ev is button release
 			 * so set the hidden focus parameter
 			 */
-			XUngrabPointer(cnx->dpy, CurrentTime);
+			//XUngrabPointer(cnx->dpy, CurrentTime);
 		}
 		break;
 
 	case PROCESS_FLOATING_GRAB:
 	case PROCESS_FLOATING_RESIZE:
-		rnd->remove(mode_data_floating.pn0);
-		delete mode_data_floating.pn0;
-		mode_data_floating.pn0 = 0;
-		if (mode_data_floating.f == mw) {
-			mode_data_floating.f = 0;
-			process_mode = PROCESS_NORMAL;
-			XUngrabPointer(cnx->dpy, CurrentTime);
-		}
-		break;
 	case PROCESS_FLOATING_CLOSE:
 		if (mode_data_floating.f == mw) {
-			mode_data_floating.f = 0;
 			process_mode = PROCESS_NORMAL;
-			XUngrabPointer(cnx->dpy, CurrentTime);
+
+			if (mode_data_floating.pn0 != 0) {
+				rnd->remove(mode_data_floating.pn0);
+				delete mode_data_floating.pn0;
+			}
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = box_int_t();
+			mode_data_floating.pn0 = 0;
+			mode_data_floating.final_position = box_int_t();
+
 		}
 		break;
+
 	case PROCESS_FLOATING_BIND:
 		if (mode_data_bind.c == mw) {
 			mode_data_bind.c = 0;
 			process_mode = PROCESS_NORMAL;
-			XUngrabPointer(cnx->dpy, CurrentTime);
+
+			if(mode_data_bind.pn0 != 0) {
+				rnd->remove(mode_data_bind.pn0);
+				delete mode_data_bind.pn0;
+			}
+
+			if(mode_data_bind.pn1 != 0) {
+				rnd->remove(mode_data_bind.pn1);
+				delete mode_data_bind.pn1;
+			}
+
+			mode_data_bind.start_x = 0;
+			mode_data_bind.start_y = 0;
+			mode_data_bind.zone = SELECT_NONE;
+			mode_data_bind.c = 0;
+			mode_data_bind.ns = 0;
+			mode_data_bind.pn0 = 0;
+			mode_data_bind.pn1 = 0;
+			mode_data_bind.popup_is_added = false;
+
 		}
 		break;
 	default:

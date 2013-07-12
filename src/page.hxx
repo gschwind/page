@@ -126,6 +126,13 @@ public:
 		box_int_t slider_area;
 		double split_ratio;
 		popup_split_t * p;
+
+		mode_data_split_t() {
+			split = 0;
+			slider_area = box_int_t();
+			split_ratio = 0.5;
+			p = 0;
+		}
 	};
 
 	struct mode_data_notebook_t {
@@ -138,6 +145,19 @@ public:
 		popup_notebook0_t * pn0;
 		popup_notebook1_t * pn1;
 		bool popup_is_added;
+
+		mode_data_notebook_t() {
+			start_x = 0;
+			start_y = 0;
+			zone = SELECT_NONE;
+			c = 0;
+			from = 0;
+			ns = 0;
+			pn0 = 0;
+			pn1 = 0;
+			popup_is_added = false;
+		}
+
 	};
 
 
@@ -150,9 +170,22 @@ public:
 		popup_notebook0_t * pn0;
 		popup_notebook1_t * pn1;
 		bool popup_is_added;
+
+		mode_data_bind_t() {
+			start_x = 0;
+			start_y = 0;
+			zone = SELECT_NONE;
+			c = 0;
+			ns = 0;
+			pn0 = 0;
+			pn1 = 0;
+			popup_is_added = false;
+		}
+
 	};
 
 	enum resize_mode_e {
+		RESIZE_NONE,
 		RESIZE_TOP_LEFT,
 		RESIZE_TOP,
 		RESIZE_TOP_RIGHT,
@@ -174,6 +207,20 @@ public:
 		box_int_t popup_original_position;
 		popup_frame_move_t * pn0;
 		box_int_t final_position;
+
+		mode_data_floating_t() {
+			mode = RESIZE_NONE;
+			x_offset = 0;
+			y_offset = 0;
+			x_root = 0;
+			y_root = 0;
+			original_position = box_int_t();
+			f = 0;
+			popup_original_position = box_int_t();
+			pn0 = 0;
+			final_position = box_int_t();
+		}
+
 	};
 
 	struct fullscreen_data_t {
