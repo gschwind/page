@@ -24,7 +24,7 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-renderable_window_t::renderable_window_t(Display * d, Window w, Visual * v, box_int_t const & p) {
+renderable_window_t::renderable_window_t(Display * d, window_t * w, Visual * v, box_int_t const & p) {
 	dpy = d;
 	window = w;
 	visual = v;
@@ -48,11 +48,11 @@ void renderable_window_t::create_render_context() {
 	if (window_surf == 0 && damage == None) {
 
 		/* create the cairo surface */
-		window_surf = cairo_xlib_surface_create(dpy, window, visual, position.w, position.h);;
+		window_surf = cairo_xlib_surface_create(dpy, window->id, visual, position.w, position.h);;
 		if(!window_surf)
 			printf("WARNING CAIRO FAIL\n");
 		/* track update */
-		damage = XDamageCreate(dpy, window, XDamageReportNonEmpty);
+		damage = XDamageCreate(dpy, window->id, XDamageReportNonEmpty);
 		if (damage) {
 			XserverRegion region = XFixesCreateRegion(dpy, 0, 0);
 			XDamageSubtract(dpy, damage, None, region);
@@ -129,7 +129,7 @@ box_int_t renderable_window_t::get_absolute_extend() {
 }
 
 region_t<int> renderable_window_t::get_area() {
-	return region_t<int>(position);
+	return window->get_region();
 }
 
 void renderable_window_t::mark_dirty() {

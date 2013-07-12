@@ -91,13 +91,14 @@ private:
     page_window_type_e _type;
 
 
+    region_t<int> _region;
 
 private:
 	/* avoid copy */
 	window_t(window_t const &);
 	window_t & operator=(window_t const &);
 public:
-
+    bool has_shape;
 	Window const id;
 
     box_int_t default_position;
@@ -131,6 +132,7 @@ public:
 	void read_transient_for();
 	void read_icon_data();
 	void read_net_wm_desktop();
+	void read_shape();
 
 	/* try to read window atrribute
 	 * @output: return true on success, return false otherwise.
@@ -178,6 +180,7 @@ public:
 	bool is_fullscreen();
 	bool demands_atteniion();
 	bool has_wm_type(Atom x);
+	bool has_wm_state(Atom x);
 
 	bool is_window(Window w);
 	long get_wm_state();
@@ -249,6 +252,10 @@ public:
 
 	void set_managed(bool state);
 	bool is_managed();
+
+	region_t<int> get_region();
+
+	void print_xprop();
 
 };
 

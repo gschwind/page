@@ -39,7 +39,7 @@
 
 #include "tree.hxx"
 #include "renderable.hxx"
-#include "render_context.hxx"
+#include "compositor.hxx"
 #include "box.hxx"
 #include "icon.hxx"
 #include "xconnection.hxx"
@@ -210,7 +210,7 @@ public:
 	static double const OPACITY = 0.95;
 
 	xconnection_t * cnx;
-	render_context_t * rnd;
+	compositor_t * rnd;
 
 	renderable_list_t popups;
 
@@ -274,7 +274,7 @@ public:
 
 	void set_default_pop(notebook_t * x);
 	void set_focus(managed_window_t * w, bool force_focus);
-	render_context_t * get_render_context();
+	compositor_t * get_render_context();
 	xconnection_t * get_xconnection();
 
 

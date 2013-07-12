@@ -6,11 +6,11 @@
  */
 
 #include <algorithm>
-#include "render_context.hxx"
+#include "compositor.hxx"
 
 namespace page {
 
-render_context_t::render_context_t(xconnection_t * cnx) {
+compositor_t::compositor_t(xconnection_t * cnx) {
 	_cnx = cnx;
 
 	fast_region_surf = 0.0;
@@ -39,7 +39,7 @@ render_context_t::render_context_t(xconnection_t * cnx) {
 
 }
 
-void render_context_t::draw_box(box_int_t box, double r, double g, double b) {
+void compositor_t::draw_box(box_int_t box, double r, double g, double b) {
 	cairo_set_source_rgb(composite_overlay_cr, r, g, b);
 	cairo_set_line_width(composite_overlay_cr, 1.0);
 	cairo_rectangle(composite_overlay_cr, box.x + 0.5, box.y + 0.5, box.w - 1.0, box.h - 1.0);
@@ -47,11 +47,11 @@ void render_context_t::draw_box(box_int_t box, double r, double g, double b) {
 	cairo_surface_flush(composite_overlay_s);
 }
 
-void render_context_t::add_damage_area(region_t<int> const & box) {
+void compositor_t::add_damage_area(region_t<int> const & box) {
 	pending_damage = pending_damage + box;
 }
 
-void render_context_t::render_flush() {
+void compositor_t::render_flush() {
 	flush_count += 1;
 
 	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
@@ -83,7 +83,7 @@ void render_context_t::render_flush() {
 	/**
 	 * Find region were windows do not overlap each other.
 	 * i.e. region where only one window will be rendered
-	 * This is about 80% of the screen.
+	 * This is often more than 80% of the screen.
 	 * This kind of region will be directly rendered.
 	 **/
 	region_t<int> region_with_not_overlapped_window;
@@ -91,7 +91,6 @@ void render_context_t::render_flush() {
 	renderable_list_t::iterator i = visible.begin();
 	while (i != visible.end()) {
 		region_t<int> r = (*i)->get_area();
-		/* if we have alpha, we check if there is overlapping windows */
 		renderable_list_t::iterator j = visible.begin();
 		while (j != visible.end()) {
 			if (i != j) {
@@ -163,7 +162,7 @@ void render_context_t::render_flush() {
 		}
 	}
 
-	/* render area where window on the has no alpha */
+	/* directly render area where window on the has no alpha */
 
 	region_with_not_alpha_on_top = (region_with_not_alpha_on_top & pending_damage) - direct_region;
 
@@ -206,7 +205,10 @@ void render_context_t::render_flush() {
 		}
 	}
 
-	/* update back buffer, render area with posible transparency */
+	/**
+	 * To avoid glitch (blinking) I use back buffer to make the composition.
+	 * update back buffer, render area with possible transparency
+	 **/
 	{
 		cairo_reset_clip(pre_back_buffer_cr);
 		cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
@@ -230,7 +232,7 @@ void render_context_t::render_flush() {
 }
 
 
-void render_context_t::repair_buffer(renderable_list_t & visible, cairo_t * cr,
+void compositor_t::repair_buffer(renderable_list_t & visible, cairo_t * cr,
 		box_int_t const & area) {
 	for (renderable_list_t::iterator i = visible.begin(); i != visible.end();
 			++i) {
@@ -247,7 +249,7 @@ void render_context_t::repair_buffer(renderable_list_t & visible, cairo_t * cr,
 }
 
 
-void render_context_t::repair_overlay(box_int_t const & area, cairo_surface_t * src) {
+void compositor_t::repair_overlay(box_int_t const & area, cairo_surface_t * src) {
 
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_identity_matrix(composite_overlay_cr);
@@ -284,15 +286,15 @@ void render_context_t::repair_overlay(box_int_t const & area, cairo_surface_t * 
 
 }
 
-void render_context_t::add(renderable_t * x) {
+void compositor_t::add(renderable_t * x) {
 	list.push_back(x);
 }
 
-void render_context_t::remove(renderable_t * x) {
+void compositor_t::remove(renderable_t * x) {
 	list.remove(x);
 }
 
-void render_context_t::move_above(renderable_t * r, renderable_t * above) {
+void compositor_t::move_above(renderable_t * r, renderable_t * above) {
 	list.remove(r);
 	renderable_list_t::iterator i = std::find(list.begin(), list.end(), above);
 	if(i != list.end()) {
@@ -302,26 +304,26 @@ void render_context_t::move_above(renderable_t * r, renderable_t * above) {
 	}
 }
 
-void render_context_t::raise(renderable_t * r) {
+void compositor_t::raise(renderable_t * r) {
 	list.remove(r);
 	list.push_back(r);
 }
 
-void render_context_t::lower(renderable_t * r) {
+void compositor_t::lower(renderable_t * r) {
 	list.remove(r);
 	list.push_front(r);
 }
 
-renderable_list_t render_context_t::get_renderable_list() {
+renderable_list_t compositor_t::get_renderable_list() {
 	return list;
 }
 
 
-void render_context_t::process_event(XEvent const & e) {
+void compositor_t::process_event(XEvent const & e) {
 
 }
 
-void render_context_t::damage_all() {
+void compositor_t::damage_all() {
 	add_damage_area(_cnx->root_size);
 }
 

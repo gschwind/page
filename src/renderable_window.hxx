@@ -24,7 +24,7 @@ class renderable_window_t: public renderable_t {
 
 public:
 	Display * dpy;
-	Window window;
+	window_t * window;
 	Visual * visual;
 
 	box_int_t position;
@@ -41,7 +41,7 @@ private:
 	renderable_window_t(renderable_window_t const &);
 	renderable_window_t & operator=(renderable_window_t const &);
 public:
-	renderable_window_t(Display *, Window , Visual *, box_int_t const &);
+	renderable_window_t(Display *, window_t *, Visual *, box_int_t const &);
 	virtual ~renderable_window_t();
 
 	void create_render_context();

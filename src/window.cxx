@@ -76,6 +76,10 @@ window_t::window_t(xconnection_t &cnx, Window w) :
 
     _type = PAGE_NORMAL_WINDOW_TYPE;
 
+    XShapeSelectInput(_cnx.dpy, w, ShapeNotifyMask);
+
+    has_shape = false;
+
 
 }
 
@@ -379,6 +383,9 @@ void window_t::read_all() {
 	read_partial_struct();
 	read_net_wm_desktop();
 	read_window_attributes();
+	read_shape();
+
+	print_xprop();
 }
 
 void window_t::read_when_mapped() {
@@ -396,6 +403,9 @@ void window_t::read_when_mapped() {
 	read_icon_data();
 	read_partial_struct();
 	read_net_wm_desktop();
+	read_shape();
+
+	print_xprop();
 }
 
 void window_t::get_icon_data(long const *& data, int & size) {
@@ -568,6 +578,11 @@ bool window_t::is_fullscreen() {
 }
 
 bool window_t::has_wm_type(Atom x) {
+	return find(_net_wm_type.begin(), _net_wm_type.end(), x)
+			!= _net_wm_type.end();
+}
+
+bool window_t::has_wm_state(Atom x) {
 	return _net_wm_state.find(x)
 			!= _net_wm_state.end();
 }
@@ -914,6 +929,62 @@ void window_t::set_managed(bool state) {
 
 bool window_t::is_managed() {
 	return _is_managed;
+}
+
+void window_t::read_shape() {
+	int count, ordering;
+	XRectangle * recs = XShapeGetRectangles(_cnx.dpy, id, ShapeBounding, &count, &ordering);
+
+	_region.clear();
+
+	if(recs != NULL) {
+		has_shape = true;
+		for(int i = 0; i < count; ++i) {
+			_region = _region + box_int_t(recs[i]);
+		}
+		/* In doubt */
+		XFree(recs);
+	} else {
+		has_shape = false;
+	}
+}
+
+region_t<int> window_t::get_region() {
+	region_t<int> region = get_size();
+	if (has_shape) {
+		region_t<int> shape_region = _region;
+		shape_region.translate(_wa.x, _wa.y);
+		region = region & shape_region;
+	}
+	return region;
+}
+
+void window_t::print_xprop() {
+
+	printf("_NET_WM_TYPE = ");
+
+	for(atom_list_t::iterator i = _net_wm_type.begin(); i != _net_wm_type.end(); ++i) {
+		char * name = XGetAtomName(_cnx.dpy, *i);
+		if (name != 0) {
+			printf("%s,", name);
+			XFree(name);
+		}
+	}
+
+	printf("\n");
+
+	printf("_NET_WM_STATE = ");
+
+	for(atom_set_t::iterator i = _net_wm_state.begin(); i != _net_wm_state.end(); ++i) {
+		char * name = XGetAtomName(_cnx.dpy, *i);
+		if (name != 0) {
+			printf("%s,", name);
+			XFree(name);
+		}
+	}
+
+	printf("\n");
+
 }
 
 }

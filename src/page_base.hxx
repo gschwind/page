@@ -11,7 +11,7 @@
 #include "window.hxx"
 #include "tree.hxx"
 #include "xconnection.hxx"
-#include "render_context.hxx"
+#include "compositor.hxx"
 #include "notebook.hxx"
 
 namespace page {

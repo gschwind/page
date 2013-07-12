@@ -209,7 +209,7 @@ void page_t::run() {
 	cnx->init_composite_overlay();
 
 	/* init rander context */
-	rnd = new render_context_t(cnx);
+	rnd = new compositor_t(cnx);
 
 	/* init page render */
 	rpage = new renderable_page_t(theme, rnd->composite_overlay_s,
@@ -1710,7 +1710,8 @@ void page_t::process_event(XMapEvent const & e) {
 
 	safe_raise_window(x);
 
-	if(not x->override_redirect()) {
+	/* Hack: Seems eclipse IDE use SkipTaskBar as override redirect */
+	if(not x->override_redirect() and not x->has_wm_state(cnx->atoms._NET_WM_STATE_SKIP_TASKBAR)) {
 		/* try to manage window here because
 		 * Libre Office doesn't generate MapRequest */
 		check_manage(x);
@@ -2445,6 +2446,12 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == SelectionClear) {
 		printf("SelectionClear\n");
 		running = false;
+	} else if (e.type == cnx->xshape_event + ShapeNotify) {
+		XShapeEvent * se = (XShapeEvent *)&e;
+		if(se->kind == ShapeClip) {
+			window_t * w = get_window_t(se->window);
+			w->read_shape();
+		}
 	}
 
 	//page.rnd->render_flush();
@@ -2590,7 +2597,7 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 
 }
 
-render_context_t * page_t::get_render_context() {
+compositor_t * page_t::get_render_context() {
 	return rnd;
 }
 
@@ -3304,7 +3311,7 @@ void page_t::clear_sibbling_child(Window w) {
 }
 
 void page_t::new_renderable_window(window_t * w) {
-	renderable_window_t * rw = new renderable_window_t(w->get_display(), w->id, w->get_visual(), w->get_size());
+	renderable_window_t * rw = new renderable_window_t(w->get_display(), w, w->get_visual(), w->get_size());
 	window_to_renderable_context[w] = rw;
 	rnd->add(rw);
 	rnd->add_damage_area(rw->get_absolute_extend());

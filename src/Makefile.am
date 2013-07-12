@@ -1,5 +1,4 @@
-bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region page_composite_manager
-
+bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region 
 
 AM_CXXFLAGS =  \
 	-rdynamic \
@@ -28,7 +27,7 @@ page_SOURCES = \
 	popup_notebook0.cxx \
 	popup_notebook1.cxx \
 	popup_split.cxx \
-	render_context.cxx \
+	compositor.cxx \
 	viewport.cxx \
 	default_theme.cxx \
 	minimal_theme.cxx \
@@ -40,44 +39,6 @@ page_SOURCES = \
 	config_handler.cxx
 
 page_LDADD = \
-	$(X11_LIBS) \
-	$(CAIRO_LIBS) \
-	$(XCOMPOSITE_LIBS) \
-	$(XDAMAGE_LIBS) \
-	$(XRENDER_LIBS) \
-	$(XRANDR_LIBS) \
-	$(XEXT_LIBS) \
-	$(XINERAMA_LIBS) \
-	$(FT2_LIBS) \
-	$(GLIB_LIBS) \
-	$(RT_LIBS) \
-	-lbfd \
-	-ldl
-
-page_composite_manager_SOURCES = \
-	page_composite_manager.cxx \
-	tree.cxx notebook.cxx \
-	split.cxx root.cxx \
-	client.cxx \
-	xconnection.cxx \
-	ftrace_function.cxx \
-	window.cxx \
-	popup_frame_move.cxx \
-	popup_notebook0.cxx \
-	popup_notebook1.cxx \
-	popup_split.cxx \
-	render_context.cxx \
-	viewport.cxx \
-	default_theme.cxx \
-	minimal_theme.cxx \
-	simple_theme.cxx \
-	renderable_page.cxx \
-	managed_window.cxx \
-	renderable_window.cxx \
-	window_icon_handler.cxx \
-	config_handler.cxx
-
-page_composite_manager_LDADD = \
 	$(X11_LIBS) \
 	$(CAIRO_LIBS) \
 	$(XCOMPOSITE_LIBS) \

@@ -343,6 +343,15 @@ public:
 
 	}
 
+	void translate(T x, T y) {
+		typename box_list_t::iterator i = box_list_t::begin();
+		while (i != box_list_t::end()) {
+			(*i).x += x;
+			(*i).y += y;
+			++i;
+		}
+	}
+
 };
 
 
