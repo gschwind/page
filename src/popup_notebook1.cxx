@@ -18,6 +18,8 @@ popup_notebook1_t::popup_notebook1_t(cairo_font_face_t * font) : title() {
 	area.w = 200;
 	area.h = 24;
 	cache = 0;
+
+	_show = false;
 }
 
 popup_notebook1_t::~popup_notebook1_t() {
@@ -51,6 +53,12 @@ void popup_notebook1_t::update_data(int x, int y, cairo_surface_t * icon, std::s
 	this->title = title;
 	area.x = x;
 	area.y = y;
+
+	if(cache != 0) {
+		cairo_surface_destroy(cache);
+		cache = 0;
+	}
+
 }
 
 void popup_notebook1_t::repair1(cairo_t * cr, box_int_t const & a) {
@@ -94,7 +102,7 @@ void popup_notebook1_t::repair1(cairo_t * cr, box_int_t const & a) {
 }
 
 bool popup_notebook1_t::is_visible() {
-	return true;
+	return _show;
 }
 
 bool popup_notebook1_t::has_alpha() {
