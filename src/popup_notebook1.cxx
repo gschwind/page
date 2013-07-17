@@ -9,14 +9,12 @@
 
 namespace page {
 
-popup_notebook1_t::popup_notebook1_t(int x, int y, cairo_font_face_t * font,
-		cairo_surface_t * icon, std::string const & title) {
-	this->surf = icon;
+popup_notebook1_t::popup_notebook1_t(cairo_font_face_t * font) : title() {
+	this->surf = 0;
 	this->font = font;
-	this->title = title;
 
-	area.x = x;
-	area.y = y;
+	area.x = 0;
+	area.y = 0;
 	area.w = 200;
 	area.h = 24;
 	cache = 0;
@@ -38,6 +36,21 @@ region_t<int> popup_notebook1_t::get_area() {
 void popup_notebook1_t::reconfigure(box_int_t const & a) {
 	area.x = a.x;
 	area.y = a.y;
+}
+
+void popup_notebook1_t::show() {
+	_show = true;
+}
+
+void popup_notebook1_t::hide() {
+	_show = false;
+}
+
+void popup_notebook1_t::update_data(int x, int y, cairo_surface_t * icon, std::string const & title) {
+	this->surf = icon;
+	this->title = title;
+	area.x = x;
+	area.y = y;
 }
 
 void popup_notebook1_t::repair1(cairo_t * cr, box_int_t const & a) {

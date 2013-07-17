@@ -13,7 +13,7 @@ namespace page {
 
 popup_split_t::popup_split_t(box_t<int> const & area) :
 		area(area) {
-
+	_show = false;
 }
 
 void popup_split_t::repair1(cairo_t * cr, box_int_t const & a) {
@@ -32,6 +32,14 @@ popup_split_t::~popup_split_t() {
 
 }
 
+void popup_split_t::show() {
+	_show = true;
+}
+
+void popup_split_t::hide() {
+	_show = false;
+}
+
 box_int_t popup_split_t::get_absolute_extend() {
 	return area;
 }
@@ -45,7 +53,7 @@ void popup_split_t::reconfigure(box_int_t const & a) {
 }
 
 bool popup_split_t::is_visible() {
-	return true;
+	return _show;
 }
 
 bool popup_split_t::has_alpha() {

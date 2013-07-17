@@ -405,7 +405,7 @@ void window_t::read_when_mapped() {
 	read_net_wm_desktop();
 	read_shape();
 
-	print_xprop();
+	//print_xprop();
 }
 
 void window_t::get_icon_data(long const *& data, int & size) {

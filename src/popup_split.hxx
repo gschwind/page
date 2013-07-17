@@ -15,8 +15,11 @@ namespace page {
 
 struct popup_split_t: public renderable_t {
 	box_t<int> area;
-	popup_split_t(box_t<int> const & area);
+	bool _show;
+	popup_split_t(box_int_t const & area = box_int_t());
 	~popup_split_t();
+	void show();
+	void hide();
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();

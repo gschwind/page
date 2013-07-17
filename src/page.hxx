@@ -102,9 +102,11 @@ inline void print_buffer__(const char * buf, int size) {
 
 class page_t : public xevent_handler_t {
 
-	static long const MANAGED_WINDOW_EVENT_MASK = (ButtonPressMask | ButtonReleaseMask
-			| StructureNotifyMask | PropertyChangeMask
-			| SubstructureRedirectMask | ExposureMask);
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
+			(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask |
+					PropertyChangeMask | SubstructureRedirectMask | ExposureMask);
+	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
+	StructureNotifyMask | PropertyChangeMask;
 
 public:
 
@@ -121,17 +123,22 @@ public:
 		SELECT_CENTER
 	};
 
+	/* popups (overlay) */
+	popup_notebook0_t * pn0;
+	popup_notebook1_t * pn1;
+	popup_frame_move_t * pfm;
+	popup_split_t * ps;
+
 	struct mode_data_split_t {
 		split_t * split;
 		box_int_t slider_area;
 		double split_ratio;
-		popup_split_t * p;
+
 
 		mode_data_split_t() {
 			split = 0;
 			slider_area = box_int_t();
 			split_ratio = 0.5;
-			p = 0;
 		}
 	};
 
@@ -142,9 +149,6 @@ public:
 		managed_window_t * c;
 		notebook_t * from;
 		notebook_t * ns;
-		popup_notebook0_t * pn0;
-		popup_notebook1_t * pn1;
-		bool popup_is_added;
 
 		mode_data_notebook_t() {
 			start_x = 0;
@@ -153,9 +157,6 @@ public:
 			c = 0;
 			from = 0;
 			ns = 0;
-			pn0 = 0;
-			pn1 = 0;
-			popup_is_added = false;
 		}
 
 	};
@@ -167,9 +168,6 @@ public:
 		select_e zone;
 		managed_window_t * c;
 		notebook_t * ns;
-		popup_notebook0_t * pn0;
-		popup_notebook1_t * pn1;
-		bool popup_is_added;
 
 		mode_data_bind_t() {
 			start_x = 0;
@@ -177,9 +175,6 @@ public:
 			zone = SELECT_NONE;
 			c = 0;
 			ns = 0;
-			pn0 = 0;
-			pn1 = 0;
-			popup_is_added = false;
 		}
 
 	};
@@ -205,7 +200,6 @@ public:
 		box_int_t original_position;
 		managed_window_t * f;
 		box_int_t popup_original_position;
-		popup_frame_move_t * pn0;
 		box_int_t final_position;
 
 		mode_data_floating_t() {
@@ -217,7 +211,6 @@ public:
 			original_position = box_int_t();
 			f = 0;
 			popup_original_position = box_int_t();
-			pn0 = 0;
 			final_position = box_int_t();
 		}
 
@@ -419,8 +412,8 @@ public:
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(popup_notebook0_t * p, box_int_t & position, bool show_popup);
-	void update_popup_position(popup_frame_move_t * p, box_int_t & position, bool show_popup);
+	void update_popup_position(popup_notebook0_t * p, box_int_t & position);
+	void update_popup_position(popup_frame_move_t * p, box_int_t & position);
 
 	void fix_allocation(viewport_t & v);
 

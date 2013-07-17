@@ -10,6 +10,23 @@
 
 namespace page {
 
+static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
+		double b) {
+	cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+	cairo_set_line_width(cr, 1.0);
+	cairo_rectangle(cr, box.x + 0.5, box.y + 0.5, box.w - 1.0, box.h - 1.0);
+	cairo_reset_clip(cr);
+	cairo_stroke(cr);
+
+	cairo_new_path(cr);
+	cairo_move_to(cr, box.x + 0.5, box.y + 0.5);
+	cairo_line_to(cr, box.x + box.w - 1.0, box.y + box.h - 1.0);
+
+	cairo_move_to(cr, box.x + box.w - 1.0, box.y + 0.5);
+	cairo_line_to(cr, box.x + 0.5, box.y + box.h - 1.0);
+	cairo_stroke(cr);
+}
+
 compositor_t::compositor_t(xconnection_t * cnx) {
 	_cnx = cnx;
 
@@ -55,7 +72,7 @@ void compositor_t::render_flush() {
 	flush_count += 1;
 
 	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
-	if(last_tic.tv_sec + 5 < curr_tic.tv_sec) {
+	if(last_tic.tv_sec + 30 < curr_tic.tv_sec) {
 
 		double t0 = last_tic.tv_sec + last_tic.tv_nsec / 1.0e9;
 		double t1 = curr_tic.tv_sec + curr_tic.tv_nsec / 1.0e9;
@@ -67,7 +84,6 @@ void compositor_t::render_flush() {
 	}
 
 	/* list content is bottom window to upper window in stack */
-
 	/* a small optimization, because visible are often few */
 	renderable_list_t visible;
 	for(renderable_list_t::iterator i = list.begin(); i != list.end(); ++i) {
@@ -76,13 +92,10 @@ void compositor_t::render_flush() {
 		}
 	}
 
-	/* fast region are region that can be rendered directly on front buffer */
-	/* slow region are region that will be rendered in back buffer before the front */
-
 
 	/**
-	 * Find region were windows do not overlap each other.
-	 * i.e. region where only one window will be rendered
+	 * Find region where windows are not overlap each other. i.e. region where
+	 * only one window will be rendered.
 	 * This is often more than 80% of the screen.
 	 * This kind of region will be directly rendered.
 	 **/
@@ -104,18 +117,20 @@ void compositor_t::render_flush() {
 
 	/**
 	 * Find region where the windows on top is not a window with alpha.
-	 * Small area, often popup menu.
+	 * Small area, often dropdown menu.
 	 * This kind of area will be directly rendered.
 	 **/
 	region_t<int> region_with_not_alpha_on_top;
 
-	/* from bottom to top window */
+	/**
+	 * Walk over all all window from bottom to top one. If window has alpha
+	 * channel remove it from region with no alpha, if window do not have alpha
+	 * add this window to the area.
+	 **/
 	i = visible.begin();
 	while (i != visible.end()) {
 		region_t<int> r = (*i)->get_area();
-		/* if we have alpha, we check if there is overlapping windows */
 		if((*i)->has_alpha()) {
-			/* if has_alpha, remove this region */
 			region_with_not_alpha_on_top = region_with_not_alpha_on_top - r;
 		} else {
 			/* if not has_alpha, add this area */
@@ -124,12 +139,11 @@ void compositor_t::render_flush() {
 		++i;
 	}
 
-	region_t<int> direct_region;
-
-	direct_region = direct_region + region_with_not_overlapped_window;
+	region_t<int> direct_region = region_with_not_overlapped_window;
 
 	direct_region = direct_region & pending_damage;
-	region_t<int> slow_region = (pending_damage - direct_region) - region_with_not_alpha_on_top;
+	region_t<int> slow_region = (pending_damage - direct_region) -
+			region_with_not_alpha_on_top;
 
 	/* direct render, area where there is only one window visible */
 	{
@@ -141,23 +155,8 @@ void compositor_t::render_flush() {
 		while (i != direct_region.end()) {
 			fast_region_surf += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
-			/* this section show direct rendered screen */
-//			cairo_set_source_rgb(composite_overlay_cr, 0.0, 1.0, 0.0);
-//			cairo_set_line_width(composite_overlay_cr, 1.0);
-//			cairo_rectangle(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5, (*i).w - 1.0, (*i).h - 1.0);
-//			//cairo_clip(composite_overlay_cr);
-//			//cairo_paint_with_alpha(composite_overlay_cr, 0.1);
-//			cairo_reset_clip(composite_overlay_cr);
-//			cairo_stroke(composite_overlay_cr);
-//
-//			cairo_new_path(composite_overlay_cr);
-//			cairo_move_to(composite_overlay_cr, (*i).x + 0.5, (*i).y + 0.5);
-//			cairo_line_to(composite_overlay_cr, (*i).x + (*i).w - 1.0, (*i).y + (*i).h - 1.0);
-//
-//			cairo_move_to(composite_overlay_cr, (*i).x + (*i).w - 1.0, (*i).y + 0.5);
-//			cairo_line_to(composite_overlay_cr, (*i).x + 0.5, (*i).y + (*i).h - 1.0);
-//			cairo_stroke(composite_overlay_cr);
-
+			// for debuging
+			//_draw_crossed_box(composite_overlay_cr, (*i), 0.0, 1.0, 0.0);
 			++i;
 		}
 	}
@@ -183,21 +182,7 @@ void compositor_t::render_flush() {
 						r->repair1(composite_overlay_cr, (*j));
 
 						/* this section show direct rendered screen */
-//						cairo_set_source_rgb(composite_overlay_cr, 0.0, 0.0, 1.0);
-//						cairo_set_line_width(composite_overlay_cr, 1.0);
-//						cairo_rectangle(composite_overlay_cr, (*j).x + 0.5, (*j).y + 0.5, (*j).w - 1.0, (*j).h - 1.0);
-//						//cairo_clip(composite_overlay_cr);
-//						//cairo_paint_with_alpha(composite_overlay_cr, 0.1);
-//						cairo_reset_clip(composite_overlay_cr);
-//						cairo_stroke(composite_overlay_cr);
-//
-//						cairo_new_path(composite_overlay_cr);
-//						cairo_move_to(composite_overlay_cr, (*j).x + 0.5, (*j).y + 0.5);
-//						cairo_line_to(composite_overlay_cr, (*j).x + (*j).w - 1.0, (*j).y + (*j).h - 1.0);
-//
-//						cairo_move_to(composite_overlay_cr, (*j).x + (*j).w - 1.0, (*j).y + 0.5);
-//						cairo_line_to(composite_overlay_cr, (*j).x + 0.5, (*j).y + (*j).h - 1.0);
-//						cairo_stroke(composite_overlay_cr);
+						//_draw_crossed_box(composite_overlay_cr, (*j), 0.0, 0.0, 1.0);
 					}
 				}
 			}

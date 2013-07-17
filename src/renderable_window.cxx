@@ -33,7 +33,7 @@ renderable_window_t::renderable_window_t(Display * d, window_t * w, Visual * v, 
 	XRenderPictFormat * format = XRenderFindVisualFormat(d, v);
 
 	_has_alpha = ( format->type == PictTypeDirect && format->direct.alphaMask );
-	printf("HAS_ALPHA = %s\n", _has_alpha?"true":"false");
+	//printf("HAS_ALPHA = %s\n", _has_alpha?"true":"false");
 
 
 	damage = None;

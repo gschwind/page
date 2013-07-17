@@ -14,9 +14,14 @@ namespace page {
 
 struct popup_frame_move_t: public renderable_t {
 	box_t<int> area;
+	bool _show;
 	popup_frame_move_t(int x, int y, int width, int height);
-	popup_frame_move_t(box_int_t x);
+	popup_frame_move_t(box_int_t x = box_int_t());
 	~popup_frame_move_t();
+
+	void show();
+	void hide();
+
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();

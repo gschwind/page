@@ -17,14 +17,20 @@ namespace page {
 
 struct popup_notebook1_t: public renderable_t {
 	box_t<int> area;
+	bool _show;
 	cairo_surface_t * surf;
 	std::string title;
 	cairo_font_face_t * font;
 	cairo_surface_t * cache;
 
-	popup_notebook1_t(int x, int y, cairo_font_face_t * font,
-			cairo_surface_t * icon, std::string const & title);
+	popup_notebook1_t(cairo_font_face_t * font);
 	virtual ~popup_notebook1_t();
+
+	void update_data(int x, int y, cairo_surface_t * icon, std::string const & title);
+
+	void show();
+	void hide();
+
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual box_int_t get_absolute_extend();
 	virtual region_t<int> get_area();

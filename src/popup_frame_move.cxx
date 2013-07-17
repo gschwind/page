@@ -11,12 +11,20 @@ namespace page {
 
 popup_frame_move_t::popup_frame_move_t(int x, int y, int width, int height) :
 		area(x, y, width, height) {
-
+	_show = false;
 }
 
 popup_frame_move_t::popup_frame_move_t(box_int_t x) :
 		area(x) {
+	_show = false;
+}
 
+void popup_frame_move_t::show() {
+	_show = true;
+}
+
+void popup_frame_move_t::hide() {
+	_show = false;
 }
 
 void popup_frame_move_t::repair1(cairo_t * cr, box_int_t const & a) {
@@ -53,7 +61,7 @@ void popup_frame_move_t::reconfigure(box_int_t const & a) {
 }
 
 bool popup_frame_move_t::is_visible() {
-	return true;
+	return _show;
 }
 
 bool popup_frame_move_t::has_alpha() {

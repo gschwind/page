@@ -76,6 +76,8 @@ page_t::page_t(int argc, char ** argv) {
 	mode_data_notebook = mode_data_notebook_t();
 	mode_data_floating = mode_data_floating_t();
 
+
+
 	cnx = new xconnection_t();
 
 	rnd = 0;
@@ -217,6 +219,19 @@ void page_t::run() {
 			viewport_list);
 
 	rnd->add(rpage);
+
+	/* create and add popups (overlay) */
+	pfm = new popup_frame_move_t();
+	rnd->add(pfm);
+
+	pn0 = new popup_notebook0_t();
+	rnd->add(pn0);
+
+	pn1 = new popup_notebook1_t(theme->get_default_font());
+	rnd->add(pn1);
+
+	ps = new popup_split_t();
+	rnd->add(ps);
 
 	int n;
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx->dpy, &n);
@@ -715,8 +730,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
-	printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+	//printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+	//		e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
@@ -781,14 +796,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_bind.c = mw;
 					mode_data_bind.ns = 0;
 					mode_data_bind.zone = SELECT_NONE;
-					mode_data_bind.pn0 = new popup_notebook0_t(mode_data_bind.c->get_base_position());
 
-					mode_data_bind.pn1 = new popup_notebook1_t(
-							mode_data_bind.c->get_base_position().x,
-							mode_data_bind.c->get_base_position().y, theme->get_default_font(),
-							mw->get_icon()->get_cairo_surface(), c->get_title());
+					pn0->reconfigure(mode_data_bind.c->get_base_position());
+					rnd->raise(pn0);
 
-					mode_data_bind.popup_is_added = false;
+					pn1->update_data(mode_data_bind.c->get_base_position().x, mode_data_bind.c->get_base_position().y, mw->get_icon()->get_cairo_surface(), c->get_title());
+					rnd->raise(pn1);
 
 					process_mode = PROCESS_FLOATING_BIND;
 
@@ -805,8 +818,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					//printf("XXXXX size = %s, x: %d, y: %d\n",
 //						size.to_string().c_str(), e.x, e.y);
 
-					mode_data_floating.pn0 = new popup_frame_move_t(mw->base->get_size());
-					rnd->add(mode_data_floating.pn0);
+					//mode_data_floating.pn0 = new popup_frame_move_t(mw->base->get_size());
+					//rnd->add(mode_data_floating.pn0);
+
+					pfm->reconfigure(mw->base->get_size());
+					rnd->raise(pfm);
+					pfm->show();
 
 					if ((e.state & ControlMask)) {
 						process_mode = PROCESS_FLOATING_RESIZE;
@@ -883,7 +900,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		}
 		/* don't keep event and replay events for others clients
 		 * It's like we never Grabed this events. */
-		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
 	} else {
 		_last_button_press = e.time;
 
@@ -895,8 +912,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 }
 
 void page_t::process_event_release(XButtonEvent const & e) {
-	printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root);
+	//printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
+	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
 	if(e.button == Button1) {
 	switch (process_mode) {
@@ -911,8 +928,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_SPLIT_GRAB:
 
 		process_mode = PROCESS_NORMAL;
-		rnd->remove(mode_data_split.p);
-		delete mode_data_split.p;
+		//rnd->remove(mode_data_split.p);
+		//delete mode_data_split.p;
+
+		ps->hide();
+
 		//XUngrabPointer(cnx->dpy, CurrentTime);
 		mode_data_split.split->set_split(mode_data_split.split_ratio);
 		rnd->add_damage_area(mode_data_split.split->_allocation);
@@ -920,7 +940,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		rnd->add_damage_area(rpage->get_area());
 
 		mode_data_split.split = 0;
-		mode_data_split.p = 0;
+		//mode_data_split.p = 0;
 		mode_data_split.slider_area = box_int_t();
 		mode_data_split.split_ratio = 0.5;
 
@@ -928,10 +948,14 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_NOTEBOOK_GRAB:
 
 		process_mode = PROCESS_NORMAL;
-		rnd->remove(mode_data_notebook.pn0);
-		rnd->remove(mode_data_notebook.pn1);
-		delete mode_data_notebook.pn0;
-		delete mode_data_notebook.pn1;
+		//rnd->remove(mode_data_notebook.pn0);
+		//rnd->remove(mode_data_notebook.pn1);
+		//delete mode_data_notebook.pn0;
+		//delete mode_data_notebook.pn1;
+
+		pn0->hide();
+		pn1->hide();
+
 		/* ev is button release
 		 * so set the hidden focus parameter
 		 */
@@ -987,9 +1011,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_notebook.c = 0;
 		mode_data_notebook.from = 0;
 		mode_data_notebook.ns = 0;
-		mode_data_notebook.pn0 = 0;
-		mode_data_notebook.pn1 = 0;
-		mode_data_notebook.popup_is_added = false;
 
 		break;
 	case PROCESS_NOTEBOOK_BUTTON_PRESS:
@@ -1034,19 +1055,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_notebook.c = 0;
 		mode_data_notebook.from = 0;
 		mode_data_notebook.ns = 0;
-		mode_data_notebook.pn0 = 0;
-		mode_data_notebook.pn1 = 0;
-		mode_data_notebook.popup_is_added = false;
 
 		break;
 	case PROCESS_FLOATING_GRAB:
 
-		rnd->remove(mode_data_floating.pn0);
-		delete mode_data_floating.pn0;
-		mode_data_floating.pn0 = 0;
+		pfm->hide();
 
 		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
 		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
+
+		rnd->add_damage_area(cnx->root_size);
 
 		set_focus(mode_data_floating.f, false);
 		process_mode = PROCESS_NORMAL;
@@ -1061,15 +1079,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_floating.original_position = box_int_t();
 		mode_data_floating.f = 0;
 		mode_data_floating.popup_original_position = box_int_t();
-		mode_data_floating.pn0 = 0;
 		mode_data_floating.final_position = box_int_t();
 
 		break;
 	case PROCESS_FLOATING_RESIZE:
 
-		rnd->remove(mode_data_floating.pn0);
-		delete mode_data_floating.pn0;
-		mode_data_floating.pn0 = 0;
+		pfm->hide();
 
 		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
 		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
@@ -1086,7 +1101,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_floating.original_position = box_int_t();
 		mode_data_floating.f = 0;
 		mode_data_floating.popup_original_position = box_int_t();
-		mode_data_floating.pn0 = 0;
 		mode_data_floating.final_position = box_int_t();
 
 		break;
@@ -1114,7 +1128,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_floating.original_position = box_int_t();
 		mode_data_floating.f = 0;
 		mode_data_floating.popup_original_position = box_int_t();
-		mode_data_floating.pn0 = 0;
+		//mode_data_floating.pn0 = 0;
 		mode_data_floating.final_position = box_int_t();
 
 		break;
@@ -1123,10 +1137,14 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_FLOATING_BIND: {
 
 		process_mode = PROCESS_NORMAL;
-		rnd->remove(mode_data_bind.pn0);
-		rnd->remove(mode_data_bind.pn1);
-		delete mode_data_bind.pn0;
-		delete mode_data_bind.pn1;
+		//rnd->remove(mode_data_bind.pn0);
+		//rnd->remove(mode_data_bind.pn1);
+		//delete mode_data_bind.pn0;
+		//delete mode_data_bind.pn1;
+
+		pn0->hide();
+		pn1->hide();
+
 		/* ev is button release
 		 * so set the hidden focus parameter
 		 */
@@ -1178,9 +1196,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		mode_data_bind.zone = SELECT_NONE;
 		mode_data_bind.c = 0;
 		mode_data_bind.ns = 0;
-		mode_data_bind.pn0 = 0;
-		mode_data_bind.pn1 = 0;
-		mode_data_bind.popup_is_added = false;
 
 		break;
 	}
@@ -1230,7 +1245,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_split.split->compute_split_bar_area(mode_data_split.slider_area,
 				mode_data_split.split_ratio);
 
-		mode_data_split.p->area = mode_data_split.slider_area;
+		ps->area = mode_data_split.slider_area;
 
 		rnd->add_damage_area(old_area);
 		rnd->add_damage_area(mode_data_split.slider_area);
@@ -1250,25 +1265,24 @@ void page_t::process_event(XMotionEvent const & e) {
 				|| ev.xmotion.y_root > mode_data_notebook.start_y + 5
 				|| !mode_data_notebook.from->tab_area.is_inside(
 						ev.xmotion.x_root, ev.xmotion.y_root)) {
-			if (!mode_data_notebook.popup_is_added) {
-				rnd->add(mode_data_notebook.pn0);
-				rnd->add(mode_data_notebook.pn1);
-				mode_data_notebook.popup_is_added = true;
-			}
+
+			if(!pn0->is_visible())
+				pn0->show();
+			if(!pn1->is_visible())
+				pn1->show();
+
 		}
 
 		++count;
-		if (mode_data_notebook.popup_is_added && (count % 10) == 0) {
-			box_int_t old_area = mode_data_notebook.pn1->get_absolute_extend();
-			box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
-					old_area.w, old_area.h);
-			mode_data_notebook.pn1->reconfigure(new_area);
-			rnd->add_damage_area(old_area);
-			rnd->add_damage_area(new_area);
-			rpage->mark_durty();
-			rnd->add_damage_area(rpage->get_area());
 
-		}
+		box_int_t old_area = pn1->get_absolute_extend();
+		box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
+				old_area.w, old_area.h);
+		pn1->reconfigure(new_area);
+		rnd->add_damage_area(old_area);
+		rnd->add_damage_area(new_area);
+		rpage->mark_durty();
+		rnd->add_damage_area(rpage->get_area());
 
 
 		list<notebook_t *> ln;
@@ -1281,8 +1295,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_TAB;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->tab_area, mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->tab_area);
 				}
 				break;
 			} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
@@ -1292,9 +1306,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_RIGHT;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_right_area,
-							mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_right_area);
 				}
 				break;
 			} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
@@ -1304,9 +1317,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_TOP;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_top_area,
-							mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_top_area);
 				}
 				break;
 			} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
@@ -1316,9 +1328,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_BOTTOM;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_bottom_area,
-							mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_bottom_area);
 				}
 				break;
 			} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
@@ -1328,9 +1339,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_LEFT;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_left_area,
-							mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_left_area);
 				}
 				break;
 			} else if ((*i)->popup_center_area.is_inside(ev.xmotion.x_root,
@@ -1340,9 +1350,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_notebook.ns != (*i)) {
 					mode_data_notebook.zone = SELECT_CENTER;
 					mode_data_notebook.ns = (*i);
-					update_popup_position(mode_data_notebook.pn0,
-							(*i)->popup_center_area,
-							mode_data_notebook.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_center_area);
 				}
 				break;
 			}
@@ -1364,7 +1373,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		box_int_t popup_new_position = mode_data_floating.popup_original_position;
 		popup_new_position.x += e.x_root - mode_data_floating.x_root;
 		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-		update_popup_position(mode_data_floating.pn0, popup_new_position, true);
+		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1446,7 +1455,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.w += theme->get_theme_layout()->floating_margin.left + theme->get_theme_layout()->floating_margin.right;
 		popup_new_position.h += theme->get_theme_layout()->floating_margin.top + theme->get_theme_layout()->floating_margin.bottom;
 
-		update_popup_position(mode_data_floating.pn0, popup_new_position, true);
+		update_popup_position(pfm, popup_new_position);
 
 
 		//mode_data_floating.f->set_wished_position(size);
@@ -1467,25 +1476,23 @@ void page_t::process_event(XMotionEvent const & e) {
 				|| ev.xmotion.x_root > mode_data_bind.start_x + 5
 				|| ev.xmotion.y_root < mode_data_bind.start_y - 5
 				|| ev.xmotion.y_root > mode_data_bind.start_y + 5) {
-			if (!mode_data_bind.popup_is_added) {
-				rnd->add(mode_data_bind.pn0);
-				rnd->add(mode_data_bind.pn1);
-				mode_data_bind.popup_is_added = true;
-			}
+
+			if(!pn0->is_visible())
+				pn0->show();
+			if(!pn1->is_visible())
+				pn1->show();
 		}
 
 		++count;
-		if (mode_data_bind.popup_is_added && (count % 10) == 0) {
-			box_int_t old_area = mode_data_bind.pn1->get_absolute_extend();
+
+		box_int_t old_area = pn1->get_absolute_extend();
 			box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
 					old_area.w, old_area.h);
-			mode_data_bind.pn1->reconfigure(new_area);
+			pn1->reconfigure(new_area);
 			rnd->add_damage_area(old_area);
 			rnd->add_damage_area(new_area);
 			rpage->mark_durty();
 			rnd->add_damage_area(rpage->get_area());
-
-		}
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -1497,8 +1504,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_TAB;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->tab_area, mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->tab_area);
 				}
 				break;
 			} else if ((*i)->right_area.is_inside(ev.xmotion.x_root,
@@ -1508,9 +1515,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_RIGHT;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->popup_right_area,
-							mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_right_area);
 				}
 				break;
 			} else if ((*i)->top_area.is_inside(ev.xmotion.x_root,
@@ -1520,9 +1526,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_TOP;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->popup_top_area,
-							mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_top_area);
 				}
 				break;
 			} else if ((*i)->bottom_area.is_inside(ev.xmotion.x_root,
@@ -1532,9 +1537,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_BOTTOM;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->popup_bottom_area,
-							mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_bottom_area);
 				}
 				break;
 			} else if ((*i)->left_area.is_inside(ev.xmotion.x_root,
@@ -1544,9 +1548,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_LEFT;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->popup_left_area,
-							mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_left_area);
 				}
 				break;
 			} else if ((*i)->popup_center_area.is_inside(ev.xmotion.x_root,
@@ -1556,9 +1559,8 @@ void page_t::process_event(XMotionEvent const & e) {
 						|| mode_data_bind.ns != (*i)) {
 					mode_data_bind.zone = SELECT_CENTER;
 					mode_data_bind.ns = (*i);
-					update_popup_position(mode_data_bind.pn0,
-							(*i)->popup_center_area,
-							mode_data_bind.popup_is_added);
+					update_popup_position(pn0,
+							(*i)->popup_center_area);
 				}
 				break;
 			}
@@ -1618,6 +1620,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 	}
 
 	window_t * w = get_window_t(e.window);
+	w->read_shape();
 
 	if (w->override_redirect() != (e.override_redirect == True)) {
 		printf("override redirect changed : %s -> %s\n",
@@ -1668,6 +1671,13 @@ void page_t::process_event(XConfigureEvent const & e) {
 			rnd->raise(window_to_renderable_context[get_window_t(*i)]);
 		}
 	}
+
+	/* raise popups */
+	rnd->raise(pfm);
+	rnd->raise(pn0);
+	rnd->raise(pn1);
+	rnd->raise(ps);
+
 
 }
 
@@ -1781,7 +1791,7 @@ void page_t::process_event(XMapEvent const & e) {
 	safe_raise_window(x);
 
 	/* Hack: Seems eclipse IDE use SkipTaskBar as override redirect */
-	if(not x->override_redirect() and not x->has_wm_state(cnx->atoms._NET_WM_STATE_SKIP_TASKBAR)) {
+	if(not x->override_redirect() and not (x->has_wm_state(cnx->atoms._NET_WM_STATE_SKIP_TASKBAR) && x->has_wm_type(cnx->atoms._NET_WM_WINDOW_TYPE_NORMAL))) {
 		/* try to manage window here because
 		 * Libre Office doesn't generate MapRequest */
 		check_manage(x);
@@ -2701,8 +2711,11 @@ bool page_t::check_for_start_split(XButtonEvent const & e) {
 		mode_data_split.split_ratio = x->get_split_ratio();
 		mode_data_split.split = x;
 		mode_data_split.slider_area = mode_data_split.split->get_split_bar_area();
-		mode_data_split.p = new popup_split_t(mode_data_split.slider_area);
-		rnd->add(mode_data_split.p);
+		//mode_data_split.p = new popup_split_t(mode_data_split.slider_area);
+		//rnd->add(mode_data_split.p);
+
+		ps->area = mode_data_split.slider_area;
+		ps->show();
 
 		/* Grab Pointer no other client will get mouse event */
 //		if (XGrabPointer(cnx->dpy, cnx->xroot, False,
@@ -2765,18 +2778,12 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.from = n;
 			mode_data_notebook.ns = 0;
 			mode_data_notebook.zone = SELECT_NONE;
-			mode_data_notebook.pn0 = new popup_notebook0_t(
-					mode_data_notebook.from->tab_area.x,
-					mode_data_notebook.from->tab_area.y,
-					mode_data_notebook.from->tab_area.w,
-					mode_data_notebook.from->tab_area.h);
 
-			mode_data_notebook.pn1 = new popup_notebook1_t(
-					mode_data_notebook.from->_allocation.x,
-					mode_data_notebook.from->_allocation.y, theme->get_default_font(),
-					c->get_icon()->get_cairo_surface(), c->get_title());
+			pn0->reconfigure(mode_data_notebook.from->tab_area);
+			rnd->raise(pn0);
 
-			mode_data_notebook.popup_is_added = false;
+			pn1->update_data(mode_data_notebook.from->_allocation.x, mode_data_notebook.from->_allocation.y, c->get_icon()->get_cairo_surface(), c->get_title());
+			rnd->raise(pn1);
 
 			/* Grab Pointer no other client will get mouse event */
 //			if (XGrabPointer(cnx->dpy, cnx->xroot, False,
@@ -2931,15 +2938,18 @@ void page_t::notebook_close(notebook_t * src) {
 	destroy(ths);
 }
 
-void page_t::update_popup_position(popup_notebook0_t * p, box_int_t & position, bool show_popup) {
-	box_int_t old_area = p->get_absolute_extend();
-	box_int_t new_area = position;
-	p->reconfigure(new_area);
-	rnd->add_damage_area(old_area);
-	rnd->add_damage_area(new_area);
+void page_t::update_popup_position(popup_notebook0_t * p,
+		box_int_t & position) {
+	if (p->is_visible()) {
+		box_int_t old_area = p->get_absolute_extend();
+		box_int_t new_area = position;
+		p->reconfigure(new_area);
+		rnd->add_damage_area(old_area);
+		rnd->add_damage_area(new_area);
+	}
 }
 
-void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position, bool show_popup) {
+void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position) {
 	box_int_t old_area = p->get_absolute_extend();
 	box_int_t new_area = position;
 	p->reconfigure(new_area);
@@ -3400,7 +3410,9 @@ void page_t::destroy_renderable(window_t * w) {
 
 managed_window_t * page_t::new_managed_window(managed_window_type_e type, window_t * orig) {
 
-	/* create the base window, window that will content managed window */
+	/**
+	 * Create the base window, window that will content managed window
+	 **/
 	Visual * v = 0;
 	if(orig->get_depth() == 32 && cnx->root_wa.depth != 32) {
 		v = orig->get_visual();
@@ -3411,22 +3423,26 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	base->read_window_attributes();
 	base->grab_button(Button1);
 
-	/* grab and sync the server before reading and setup select_input
-	 *  to avoid miss of event and to get a valid current state
-	 *  of windows */
+	/**
+	 * Grab and sync the server before reading and setup select_input to not
+	 * miss events and to get the valid state of windows
+	 **/
 	cnx->grab();
-	base->select_input(MANAGED_WINDOW_EVENT_MASK);
-	/* ensure event are listen */
+	base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	/* ensure that events are listen to track window state */
+	orig->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
+	/* read current window state */
 	orig->read_when_mapped();
-	orig->select_input(StructureNotifyMask | PropertyChangeMask | ButtonPressMask | ButtonMotionMask | ButtonReleaseMask);
 
+	/* Grab button click */
 	XGrabButton(cnx->dpy, AnyButton, AnyModifier, base->id, False,
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
 	cnx->ungrab();
 
-	managed_window_t * mw = new managed_window_t(type, orig, base, theme->get_theme_layout());
+	managed_window_t * mw = new managed_window_t(type, orig, base,
+			theme->get_theme_layout());
 	managed_window.insert(mw);
 	return mw;
 }
@@ -3436,7 +3452,7 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	managed_window.erase(mw);
 	fullscreen_client_to_viewport.erase(mw);
 
-	/* Fallback focus to last focuced windows */
+	/* Fallback focus to last focused windows */
 	if(_client_focused.front() == mw) {
 		_client_focused.remove(mw);
 		if(!_client_focused.empty()) {
@@ -3595,7 +3611,10 @@ void page_t::compute_client_size_with_constraint(window_t * c,
 
 	if (size_hints.flags & PAspect) {
 		if (size_hints.flags & PBaseSize) {
-			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
+			/**
+			 * ICCCM say if base is set subtract base before aspect checking
+			 * reference: ICCCM
+			 **/
 			if ((wished_width - size_hints.base_width) * size_hints.min_aspect.y
 					< (wished_height - size_hints.base_height)
 							* size_hints.min_aspect.x) {
@@ -3740,15 +3759,8 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_notebook.c = 0;
 			process_mode = PROCESS_NORMAL;
 
-			if (mode_data_notebook.pn0 != 0) {
-				rnd->remove(mode_data_notebook.pn0);
-				delete mode_data_notebook.pn0;
-			}
-
-			if (mode_data_notebook.pn1 != 0) {
-				rnd->remove(mode_data_notebook.pn1);
-				delete mode_data_notebook.pn1;
-			}
+			pn0->hide();
+			pn1->hide();
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -3756,9 +3768,6 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_notebook.c = 0;
 			mode_data_notebook.from = 0;
 			mode_data_notebook.ns = 0;
-			mode_data_notebook.pn0 = 0;
-			mode_data_notebook.pn1 = 0;
-			mode_data_notebook.popup_is_added = false;
 
 			/* ev is button release
 			 * so set the hidden focus parameter
@@ -3773,10 +3782,7 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 		if (mode_data_floating.f == mw) {
 			process_mode = PROCESS_NORMAL;
 
-			if (mode_data_floating.pn0 != 0) {
-				rnd->remove(mode_data_floating.pn0);
-				delete mode_data_floating.pn0;
-			}
+			pfm->hide();
 
 			mode_data_floating.mode = RESIZE_NONE;
 			mode_data_floating.x_offset = 0;
@@ -3786,7 +3792,6 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_floating.original_position = box_int_t();
 			mode_data_floating.f = 0;
 			mode_data_floating.popup_original_position = box_int_t();
-			mode_data_floating.pn0 = 0;
 			mode_data_floating.final_position = box_int_t();
 
 		}
@@ -3797,24 +3802,15 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_bind.c = 0;
 			process_mode = PROCESS_NORMAL;
 
-			if(mode_data_bind.pn0 != 0) {
-				rnd->remove(mode_data_bind.pn0);
-				delete mode_data_bind.pn0;
-			}
 
-			if(mode_data_bind.pn1 != 0) {
-				rnd->remove(mode_data_bind.pn1);
-				delete mode_data_bind.pn1;
-			}
+			pn0->hide();
+			pn1->hide();
 
 			mode_data_bind.start_x = 0;
 			mode_data_bind.start_y = 0;
 			mode_data_bind.zone = SELECT_NONE;
 			mode_data_bind.c = 0;
 			mode_data_bind.ns = 0;
-			mode_data_bind.pn0 = 0;
-			mode_data_bind.pn1 = 0;
-			mode_data_bind.popup_is_added = false;
 
 		}
 		break;

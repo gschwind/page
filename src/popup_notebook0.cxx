@@ -11,12 +11,12 @@ namespace page {
 
 popup_notebook0_t::popup_notebook0_t(int x, int y, int width, int height) :
 		area(x, y, width, height) {
-
+	_show = false;
 }
 
 popup_notebook0_t::popup_notebook0_t(box_int_t x) :
 		area(x) {
-
+	_show = false;
 }
 
 void popup_notebook0_t::repair1(cairo_t * cr, box_int_t const & a) {
@@ -43,6 +43,14 @@ popup_notebook0_t::~popup_notebook0_t() {
 
 }
 
+void popup_notebook0_t::show() {
+	_show = true;
+}
+
+void popup_notebook0_t::hide() {
+	_show = false;
+}
+
 box_int_t popup_notebook0_t::get_absolute_extend() {
 	return area;
 }
@@ -56,7 +64,7 @@ void popup_notebook0_t::reconfigure(box_int_t const & a) {
 }
 
 bool popup_notebook0_t::is_visible() {
-	return true;
+	return _show;
 }
 
 bool popup_notebook0_t::has_alpha() {
