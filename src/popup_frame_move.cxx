@@ -47,8 +47,4 @@ void popup_frame_move_t::reconfigure(box_int_t const & a) {
 
 }
 
-box_int_t popup_frame_move_t::get_absolute_extend() {
-	return _area;
-}
-
 }

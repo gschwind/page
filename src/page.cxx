@@ -224,8 +224,8 @@ void page_t::run() {
 	pfm = new popup_frame_move_t(cnx);
 	//rnd->add(pfm);
 
-	pn0 = new popup_notebook0_t();
-	rnd->add(pn0);
+	pn0 = new popup_notebook0_t(cnx);
+	//rnd->add(pn0);
 
 	pn1 = new popup_notebook1_t(theme->get_default_font());
 	rnd->add(pn1);
@@ -791,7 +791,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_bind.zone = SELECT_NONE;
 
 					pn0->reconfigure(mode_data_bind.c->get_base_position());
-					rnd->raise(pn0);
+					//rnd->raise(pn0);
 
 					pn1->update_data(mode_data_bind.c->get_base_position().x, mode_data_bind.c->get_base_position().y, mw->get_icon()->get_cairo_surface(), c->get_title());
 					rnd->raise(pn1);
@@ -1630,7 +1630,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 	/* raise popups */
 	//rnd->raise(pfm);
-	rnd->raise(pn0);
+	//rnd->raise(pn0);
 	rnd->raise(pn1);
 	rnd->raise(ps);
 
@@ -2733,7 +2733,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.zone = SELECT_NONE;
 
 			pn0->reconfigure(mode_data_notebook.from->tab_area);
-			rnd->raise(pn0);
+			//rnd->raise(pn0);
 
 			pn1->update_data(mode_data_notebook.from->_allocation.x, mode_data_notebook.from->_allocation.y, c->get_icon()->get_cairo_surface(), c->get_title());
 			rnd->raise(pn1);
@@ -2893,21 +2893,11 @@ void page_t::notebook_close(notebook_t * src) {
 
 void page_t::update_popup_position(popup_notebook0_t * p,
 		box_int_t & position) {
-	if (p->is_visible()) {
-		box_int_t old_area = p->get_absolute_extend();
-		box_int_t new_area = position;
-		p->reconfigure(new_area);
-		rnd->add_damage_area(old_area);
-		rnd->add_damage_area(new_area);
-	}
+		p->reconfigure(position);
 }
 
 void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position) {
-	box_int_t old_area = p->get_absolute_extend();
-	box_int_t new_area = position;
-	p->reconfigure(new_area);
-	rnd->add_damage_area(old_area);
-	rnd->add_damage_area(new_area);
+	p->reconfigure(position);
 }
 
 
@@ -3332,6 +3322,10 @@ void page_t::safe_raise_window(window_t * w) {
 	/* overlay */
 	final_order.remove(pfm->wid);
 	final_order.push_back(pfm->wid);
+
+	final_order.remove(pn0->wid);
+	final_order.push_back(pn0->wid);
+
 
 	final_order.reverse();
 

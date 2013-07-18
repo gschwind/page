@@ -55,7 +55,7 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 		cairo_surface_flush(_surf);
 
 		/* blit result to visible output */
-		cairo_set_operator(_wid_cr, CAIRO_OPERATOR_OVER);
+		cairo_set_operator(_wid_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_wid_cr, 0, 0, _area.w, _area.h);
 		cairo_set_source_surface(_wid_cr, _surf, 0, 0);
 		cairo_paint(_wid_cr);

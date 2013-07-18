@@ -22,8 +22,6 @@ struct popup_frame_move_t: public window_overlay_t {
 	~popup_frame_move_t();
 
 	void reconfigure(box_int_t const & a);
-	box_int_t get_absolute_extend();
-
 };
 
 }
