@@ -10,30 +10,27 @@
 
 #include "default_theme.hxx"
 #include "theme.hxx"
+#include "window_overlay.hxx"
 
 namespace page {
 
+class renderable_page_t : public window_overlay_t {
 
-class renderable_page_t : public renderable_t {
 	bool is_durty;
-	cairo_surface_t * _surf;
-	cairo_t * _cr;
 
 	std::list<viewport_t *> & viewports;
 
 	theme_t * render;
 
-	unsigned int _w, _h;
-
-	cairo_surface_t * _target;
-
 public:
 
+	Window const & wid;
+
 	notebook_t * default_pop;
-	managed_window_t * focuced;
+	managed_window_t * focused;
 
 
-	renderable_page_t(theme_t * render, cairo_surface_t * target, int width, int height,
+	renderable_page_t(xconnection_t * cnx, theme_t * render, cairo_surface_t * target, int width, int height,
 			std::list<viewport_t *> & viewports);
 
 	~renderable_page_t();
@@ -43,15 +40,11 @@ public:
 
 	virtual void repair1(cairo_t * cr, box_int_t const & area);
 	virtual region_t<int> get_area();
-	virtual void reconfigure(box_int_t const & area);
 	virtual bool is_visible();
 	virtual bool has_alpha();
 
 	void render_splits(std::list<split_t *> const & splits);
 	void render_notebooks(std::list<notebook_t *> const & notebooks);
-
-	void rebuild_cairo();
-
 
 	void set_focuced_client(managed_window_t * mw);
 	void set_default_pop(notebook_t * nk);

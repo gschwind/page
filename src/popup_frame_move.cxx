@@ -9,63 +9,46 @@
 
 namespace page {
 
-popup_frame_move_t::popup_frame_move_t(int x, int y, int width, int height) :
-		area(x, y, width, height) {
-	_show = false;
-}
-
-popup_frame_move_t::popup_frame_move_t(box_int_t x) :
-		area(x) {
-	_show = false;
-}
-
-void popup_frame_move_t::show() {
-	_show = true;
-}
-
-void popup_frame_move_t::hide() {
-	_show = false;
-}
-
-void popup_frame_move_t::repair1(cairo_t * cr, box_int_t const & a) {
-	box_int_t i = area & a;
-	if (i.w > 0 && i.h > 0) {
-		cairo_save(cr);
-		cairo_set_line_width(cr, 2.0);
-		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-
-		//3465A4
-		cairo_set_source_rgba(cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 0.7);
-		cairo_rectangle(cr, area.x + 3, area.y + 3, area.w - 6, area.h - 6);
-		cairo_stroke(cr);
-		cairo_restore(cr);
-	}
+popup_frame_move_t::popup_frame_move_t(xconnection_t * cnx) :
+		window_overlay_t(cnx, 32), wid(_wid) {
 }
 
 popup_frame_move_t::~popup_frame_move_t() {
 
 }
 
-box_int_t popup_frame_move_t::get_absolute_extend() {
-	return area;
-}
-
-region_t<int> popup_frame_move_t::get_area() {
-	region_t<int> r(area);
-	r -= box_int_t(area.x + 6, area.y + 6, area.w - 12, area.h - 12);
-	return r;
-}
-
 void popup_frame_move_t::reconfigure(box_int_t const & a) {
-	area = a;
+	move_resize(a);
+
+	/* update back buffer */
+	cairo_set_line_width(_cr, 2.0);
+	cairo_set_antialias(_cr, CAIRO_ANTIALIAS_NONE);
+	cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+
+	cairo_set_source_rgba(_cr, 0.0, 0.0, 0.0, 0.0);
+	cairo_rectangle(_cr, 0, 0, _area.w, _area.h);
+	cairo_paint(_cr);
+
+	//3465A4
+
+	cairo_set_source_rgba(_cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 0.7);
+	cairo_rectangle(_cr, 3, 3, _area.w - 6, _area.h - 6);
+	cairo_stroke(_cr);
+
+	cairo_surface_flush(_surf);
+
+	/* blit back buffer to window */
+	cairo_set_operator(_wid_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_surface(_wid_cr, _surf, 0, 0);
+	cairo_rectangle(_wid_cr, 0, 0, _area.w, _area.h);
+	cairo_paint(_wid_cr);
+
+	cairo_surface_flush(_wid_surf);
+
 }
 
-bool popup_frame_move_t::is_visible() {
-	return _show;
-}
-
-bool popup_frame_move_t::has_alpha() {
-	return true;
+box_int_t popup_frame_move_t::get_absolute_extend() {
+	return _area;
 }
 
 }

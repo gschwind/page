@@ -36,7 +36,8 @@ page_SOURCES = \
 	managed_window.cxx \
 	renderable_window.cxx \
 	window_icon_handler.cxx \
-	config_handler.cxx
+	config_handler.cxx \
+	window_overlay.cxx
 
 page_LDADD = \
 	$(X11_LIBS) \

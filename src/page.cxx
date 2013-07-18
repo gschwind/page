@@ -214,15 +214,15 @@ void page_t::run() {
 	rnd = new compositor_t(cnx);
 
 	/* init page render */
-	rpage = new renderable_page_t(theme, rnd->composite_overlay_s,
+	rpage = new renderable_page_t(cnx, theme, rnd->composite_overlay_s,
 			cnx->root_size.w, cnx->root_size.h,
 			viewport_list);
 
-	rnd->add(rpage);
+	//rnd->add(rpage);
 
 	/* create and add popups (overlay) */
-	pfm = new popup_frame_move_t();
-	rnd->add(pfm);
+	pfm = new popup_frame_move_t(cnx);
+	//rnd->add(pfm);
 
 	pn0 = new popup_notebook0_t();
 	rnd->add(pn0);
@@ -809,7 +809,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.popup_original_position = mw->base->get_size();
 
 					pfm->reconfigure(mw->base->get_size());
-					rnd->raise(pfm);
+					//rnd->raise(pfm);
 					pfm->show();
 
 					if ((e.state & ControlMask)) {
@@ -1549,7 +1549,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 		cnx->root_size.w = e.width;
 		cnx->root_size.h = e.height;
 		update_allocation();
-		rpage->reconfigure(cnx->root_size);
+		rpage->move_resize(cnx->root_size);
 		rpage->mark_durty();
 		rnd->add_damage_area(cnx->root_size);
 		return;
@@ -1629,7 +1629,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 	}
 
 	/* raise popups */
-	rnd->raise(pfm);
+	//rnd->raise(pfm);
 	rnd->raise(pn0);
 	rnd->raise(pn1);
 	rnd->raise(ps);
@@ -2488,6 +2488,11 @@ void page_t::process_event(XEvent const & e) {
 			window_t * w = get_window_t(se->window);
 			w->read_shape();
 		}
+	} else if (e.type == Expose) {
+		rpage->rebuild_cairo();
+		rpage->mark_durty();
+
+		pfm->rebuild_cairo();
 	}
 
 	//page.rnd->render_flush();
@@ -3242,6 +3247,9 @@ void page_t::safe_raise_window(window_t * w) {
 
 	list<Window> final_order;
 
+	final_order.remove(rpage->wid);
+	final_order.push_back(rpage->wid);
+
 	/* 1. raise window in tabs */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
@@ -3296,7 +3304,8 @@ void page_t::safe_raise_window(window_t * w) {
 			i != window_stack.end(); ++i) {
 		window_t * c = find_client_window(*i);
 		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
-				&& (*i)->get_window_type() != PAGE_DOCK_TYPE) {
+				&& (*i)->get_window_type() != PAGE_DOCK_TYPE
+				&& (*i)->id != rpage->wid) {
 			Window w = (*i)->id;
 			final_order.remove(w);
 			final_order.push_back(w);
@@ -3319,6 +3328,10 @@ void page_t::safe_raise_window(window_t * w) {
 			final_order.push_back(w);
 		}
 	}
+
+	/* overlay */
+	final_order.remove(pfm->wid);
+	final_order.push_back(pfm->wid);
 
 	final_order.reverse();
 

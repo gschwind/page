@@ -11,41 +11,21 @@
 
 namespace page {
 
-renderable_page_t::renderable_page_t(theme_t * render, cairo_surface_t * target,
-		int width, int height, std::list<viewport_t *> & viewports) :
+renderable_page_t::renderable_page_t(xconnection_t * cnx, theme_t * render, cairo_surface_t * target,
+		int width, int height, std::list<viewport_t *> & viewports) : window_overlay_t(cnx, 24, box_int_t(0, 0, width, height)), wid(_wid),
 		render(render), viewports(
 				viewports) {
+	window_overlay_t::show();
+
 	is_durty = true;
 	default_pop = 0;
-	focuced = 0;
+	focused = 0;
 
-	_surf = 0;
-	_cr = 0;
-
-	_w = width;
-	_h = height;
-	_target = target;
-
-	rebuild_cairo();
+	mark_durty();
 
 }
 
 renderable_page_t::~renderable_page_t() {
-	if(_cr != 0)
-		cairo_destroy(_cr);
-	if(_surf != 0)
-		cairo_surface_destroy(_surf);
-}
-
-
-void renderable_page_t::rebuild_cairo() {
-	if (_cr != 0)
-		cairo_destroy(_cr);
-	if (_surf != 0)
-		cairo_surface_destroy(_surf);
-
-	_surf = cairo_surface_create_similar(_target, CAIRO_CONTENT_COLOR, _w, _h);
-	_cr = cairo_create(_surf);
 
 }
 
@@ -64,12 +44,23 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 			(*i)->get_notebooks(notebooks);
 		}
 
+		/* off screen render */
 		cairo_reset_clip(_cr);
 		cairo_identity_matrix(_cr);
 		cairo_set_operator(_cr, CAIRO_OPERATOR_OVER);
 		render_splits(splits);
 		render_notebooks(notebooks);
 		printf("CAIRO = %s\n", cairo_status_to_string(cairo_status(_cr)));
+
+		cairo_surface_flush(_surf);
+
+		/* blit result to visible output */
+		cairo_set_operator(_wid_cr, CAIRO_OPERATOR_OVER);
+		cairo_rectangle(_wid_cr, 0, 0, _area.w, _area.h);
+		cairo_set_source_surface(_wid_cr, _surf, 0, 0);
+		cairo_paint(_wid_cr);
+		cairo_surface_flush(_wid_surf);
+
 		is_durty = false;
 	}
 }
@@ -109,14 +100,6 @@ region_t<int> renderable_page_t::get_area() {
 
 }
 
-
-void renderable_page_t::reconfigure(box_int_t const & area) {
-	_w = area.w;
-	_h = area.h;
-	cairo_xlib_surface_set_size(_target, area.w, area.h);
-	rebuild_cairo();
-}
-
 bool renderable_page_t::is_visible() {
 	return true;
 }
@@ -135,12 +118,12 @@ void renderable_page_t::render_splits(std::list<split_t *> const & splits) {
 void renderable_page_t::render_notebooks(std::list<notebook_t *> const & notebooks) {
 	for (std::list<notebook_t *>::const_iterator i = notebooks.begin();
 			i != notebooks.end(); ++i) {
-		render->render_notebook(_cr, *i, focuced, *i == default_pop);
+		render->render_notebook(_cr, *i, focused, *i == default_pop);
 	}
 }
 
 void renderable_page_t::set_focuced_client(managed_window_t * mw) {
-	focuced = mw;
+	focused = mw;
 }
 
 void renderable_page_t::set_default_pop(notebook_t * nk) {
