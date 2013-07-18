@@ -1,4 +1,4 @@
-bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region 
+bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual
 
 AM_CXXFLAGS =  \
 	-rdynamic \
@@ -72,3 +72,7 @@ send_page_quit_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LI
 test_region_SOURCES = test_region.cxx
 test_region_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
 #test_region_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+
+list_visual_SOURCES = list_visual.cxx
+list_visual_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
+
