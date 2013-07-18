@@ -12,7 +12,8 @@ namespace page {
 
 static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
 		double b) {
-	cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+	return;
+	cairo_set_source_rgb(cr, r, g, b);
 	cairo_set_line_width(cr, 1.0);
 	cairo_rectangle(cr, box.x + 0.5, box.y + 0.5, box.w - 1.0, box.h - 1.0);
 	cairo_reset_clip(cr);
@@ -156,7 +157,7 @@ void compositor_t::render_flush() {
 			fast_region_surf += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
 			// for debuging
-			//_draw_crossed_box(composite_overlay_cr, (*i), 0.0, 1.0, 0.0);
+			_draw_crossed_box(composite_overlay_cr, (*i), 0.0, 1.0, 0.0);
 			++i;
 		}
 	}
@@ -182,7 +183,7 @@ void compositor_t::render_flush() {
 						r->repair1(composite_overlay_cr, (*j));
 
 						/* this section show direct rendered screen */
-						//_draw_crossed_box(composite_overlay_cr, (*j), 0.0, 0.0, 1.0);
+						_draw_crossed_box(composite_overlay_cr, (*j), 0.0, 0.0, 1.0);
 					}
 				}
 			}
@@ -210,6 +211,7 @@ void compositor_t::render_flush() {
 		region_t<int>::box_list_t::const_iterator i = slow_region.begin();
 		while (i != slow_region.end()) {
 			repair_overlay(*i, pre_back_buffer_s);
+			_draw_crossed_box(composite_overlay_cr, (*i), 1.0, 0.0, 0.0);
 			++i;
 		}
 	}

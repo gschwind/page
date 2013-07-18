@@ -782,16 +782,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				/* click on close button ? */
 				if (close_position.is_inside(e.x_root, e.y_root)) {
-					/* Grab the pointer */
-					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
-					//grab_pointer();
 					mode_data_floating.f = mw;
 					process_mode = PROCESS_FLOATING_CLOSE;
-					//mw->delete_window(e.time);
 				} else if (dock_position.is_inside(e.x_root, e.y_root)) {
-					/* Grab the pointer */
-					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
-					//grab_pointer();
 
 					mode_data_bind.c = mw;
 					mode_data_bind.ns = 0;
@@ -814,12 +807,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.original_position = mw->get_wished_position();
 					mode_data_floating.final_position = mw->get_wished_position();
 					mode_data_floating.popup_original_position = mw->base->get_size();
-
-					//printf("XXXXX size = %s, x: %d, y: %d\n",
-//						size.to_string().c_str(), e.x, e.y);
-
-					//mode_data_floating.pn0 = new popup_frame_move_t(mw->base->get_size());
-					//rnd->add(mode_data_floating.pn0);
 
 					pfm->reconfigure(mw->base->get_size());
 					rnd->raise(pfm);
@@ -855,10 +842,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					} else {
 						process_mode = PROCESS_FLOATING_GRAB;
 					}
-					/* Grab Pointer no other client will get mouse event */
-					/* Grab the pointer */
-					//XAllowEvents(cnx->dpy, SyncPointer, e.time);
-					//grab_pointer();
 				}
 
 			}
@@ -866,46 +849,39 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		break;
 	case PROCESS_SPLIT_GRAB:
-		/* should never happen */
-		/* AllowEvents, and replay Events */
-		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
-		/* should never happen */
-		/* AllowEvents, and replay Events */
-		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_FLOATING_GRAB:
-		/* should never happen */
-		/* AllowEvents, and replay Events */
-		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	case PROCESS_FLOATING_RESIZE:
-		/* AllowEvents, and replay Events */
-		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	default:
-		/* AllowEvents, and replay Events */
-		//XAllowEvents(cnx->dpy, ReplayPointer, e.time);
 		break;
 	}
 
-	/* if no change in process mode, focus the window under the cursor
-	 * and replay events for the window under cursor */
+	/**
+	 * if no change in process mode, focus the window under the cursor
+	 * and replay events for the window this window.
+	 **/
 	if (process_mode == PROCESS_NORMAL) {
 		if (mw != 0) {
 			set_focus(mw, true);
 		} else if((mw = find_managed_window_with(e.subwindow)) != 0) {
 			set_focus(mw, true);
 		}
-		/* don't keep event and replay events for others clients
-		 * It's like we never Grabed this events. */
+		/**
+		 * don't keep event and replay events for others clients
+		 * It's like we never Grabbed this events.
+		 **/
 		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
 	} else {
 		_last_button_press = e.time;
 
-		/* keep pointer events for page.
-		 * It's like we XGrabButton with GrabModeASync */
+		/**
+		 * keep pointer events for page.
+		 * It's like we XGrabButton with GrabModeASync
+		 **/
 		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
 	}
 
@@ -915,297 +891,277 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	//printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
-	if(e.button == Button1) {
-	switch (process_mode) {
-	case PROCESS_NORMAL:
-	{
-		managed_window_t * mw = find_managed_window_with(e.window);
-		if (mw != 0) {
-			set_focus(mw, false);
-		}
-	}
-		break;
-	case PROCESS_SPLIT_GRAB:
+	if (e.button == Button1) {
+		switch (process_mode) {
+		case PROCESS_NORMAL:
 
-		process_mode = PROCESS_NORMAL;
-		//rnd->remove(mode_data_split.p);
-		//delete mode_data_split.p;
-
-		ps->hide();
-
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-		mode_data_split.split->set_split(mode_data_split.split_ratio);
-		rnd->add_damage_area(mode_data_split.split->_allocation);
-		rpage->mark_durty();
-		rnd->add_damage_area(rpage->get_area());
-
-		mode_data_split.split = 0;
-		//mode_data_split.p = 0;
-		mode_data_split.slider_area = box_int_t();
-		mode_data_split.split_ratio = 0.5;
-
-		break;
-	case PROCESS_NOTEBOOK_GRAB:
-
-		process_mode = PROCESS_NORMAL;
-		//rnd->remove(mode_data_notebook.pn0);
-		//rnd->remove(mode_data_notebook.pn1);
-		//delete mode_data_notebook.pn0;
-		//delete mode_data_notebook.pn1;
-
-		pn0->hide();
-		pn1->hide();
-
-		/* ev is button release
-		 * so set the hidden focus parameter
-		 */
-
-		// Xlib documentation state that: if you release all button, grabpointer terminate
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-
-
-		if (mode_data_notebook.zone == SELECT_TAB && mode_data_notebook.ns != 0
-				&& mode_data_notebook.ns != mode_data_notebook.from) {
-			remove_window_from_tree(mode_data_notebook.c);
-			insert_window_in_tree(mode_data_notebook.c, mode_data_notebook.ns, true);
-		} else if (mode_data_notebook.zone == SELECT_TOP
-				&& mode_data_notebook.ns != 0) {
-			remove_window_from_tree(mode_data_notebook.c);
-			split_top(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_LEFT
-				&& mode_data_notebook.ns != 0) {
-			remove_window_from_tree(mode_data_notebook.c);
-			split_left(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_BOTTOM
-				&& mode_data_notebook.ns != 0) {
-			remove_window_from_tree(mode_data_notebook.c);
-			split_bottom(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_RIGHT
-				&& mode_data_notebook.ns != 0) {
-			remove_window_from_tree(mode_data_notebook.c);
-			split_right(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_CENTER
-				&& mode_data_notebook.ns != 0) {
-			unbind_window(mode_data_notebook.c);
-		} else {
-			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			//set_focus(mode_data_notebook.c, false);
-		}
-
-		/* automaticaly close empty notebook */
-		if (mode_data_notebook.from->_clients.empty()
-				&& mode_data_notebook.from->_parent != 0) {
-			notebook_close(mode_data_notebook.from);
-			update_allocation();
-		} else {
-			rnd->add_damage_area(mode_data_notebook.from->_allocation);
-		}
-
-		set_focus(mode_data_notebook.c, false);
-		rpage->mark_durty();
-		rnd->add_damage_area(rpage->get_area());
-
-		mode_data_notebook.start_x = 0;
-		mode_data_notebook.start_y = 0;
-		mode_data_notebook.zone = SELECT_NONE;
-		mode_data_notebook.c = 0;
-		mode_data_notebook.from = 0;
-		mode_data_notebook.ns = 0;
-
-		break;
-	case PROCESS_NOTEBOOK_BUTTON_PRESS:
-		process_mode = PROCESS_NORMAL;
-
-		if (mode_data_notebook.c != 0) {
-			mode_data_notebook.from->update_close_area();
-			if (mode_data_notebook.from->close_client_area.is_inside(e.x_root, e.y_root)) {
-				mode_data_notebook.c->delete_window(e.time);
-			} else if (mode_data_notebook.from->undck_client_area.is_inside(e.x_root, e.y_root)) {
-				unbind_window(mode_data_notebook.c);
+		{
+			managed_window_t * mw = find_managed_window_with(e.window);
+			if (mw != 0) {
+				set_focus(mw, false);
 			}
-		} else {
-			if(mode_data_notebook.from != 0) {
-				if (mode_data_notebook.from->button_close.is_inside(e.x, e.y)) {
-					notebook_close (mode_data_notebook.from);
-					rpage->mark_durty();
-					rnd->add_damage_area(cnx->root_size);
-				} else if (mode_data_notebook.from->button_vsplit.is_inside(e.x, e.y)) {
-					split(mode_data_notebook.from, VERTICAL_SPLIT);
-					update_allocation();
-					rpage->mark_durty();
-					rnd->add_damage_area(cnx->root_size);
-				} else if (mode_data_notebook.from->button_hsplit.is_inside(e.x, e.y)) {
-					split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-					update_allocation();
-					rpage->mark_durty();
-					rnd->add_damage_area(cnx->root_size);
-				} else if (mode_data_notebook.from->button_pop.is_inside(e.x, e.y)) {
-					default_window_pop = mode_data_notebook.from;
-					rnd->add_damage_area(mode_data_notebook.from->tab_area);
-					update_allocation();
-					rpage->mark_durty();
-					rnd->add_damage_area(cnx->root_size);
+		}
+			break;
+		case PROCESS_SPLIT_GRAB:
+
+			process_mode = PROCESS_NORMAL;
+
+			ps->hide();
+
+			mode_data_split.split->set_split(mode_data_split.split_ratio);
+			rnd->add_damage_area(mode_data_split.split->_allocation);
+			rpage->mark_durty();
+			rnd->add_damage_area(rpage->get_area());
+
+			mode_data_split.split = 0;
+			mode_data_split.slider_area = box_int_t();
+			mode_data_split.split_ratio = 0.5;
+
+			break;
+		case PROCESS_NOTEBOOK_GRAB:
+
+			process_mode = PROCESS_NORMAL;
+
+			pn0->hide();
+			pn1->hide();
+
+			if (mode_data_notebook.zone == SELECT_TAB
+					&& mode_data_notebook.ns != 0
+					&& mode_data_notebook.ns != mode_data_notebook.from) {
+				remove_window_from_tree(mode_data_notebook.c);
+				insert_window_in_tree(mode_data_notebook.c,
+						mode_data_notebook.ns, true);
+			} else if (mode_data_notebook.zone == SELECT_TOP
+					&& mode_data_notebook.ns != 0) {
+				remove_window_from_tree(mode_data_notebook.c);
+				split_top(mode_data_notebook.ns, mode_data_notebook.c);
+			} else if (mode_data_notebook.zone == SELECT_LEFT
+					&& mode_data_notebook.ns != 0) {
+				remove_window_from_tree(mode_data_notebook.c);
+				split_left(mode_data_notebook.ns, mode_data_notebook.c);
+			} else if (mode_data_notebook.zone == SELECT_BOTTOM
+					&& mode_data_notebook.ns != 0) {
+				remove_window_from_tree(mode_data_notebook.c);
+				split_bottom(mode_data_notebook.ns, mode_data_notebook.c);
+			} else if (mode_data_notebook.zone == SELECT_RIGHT
+					&& mode_data_notebook.ns != 0) {
+				remove_window_from_tree(mode_data_notebook.c);
+				split_right(mode_data_notebook.ns, mode_data_notebook.c);
+			} else if (mode_data_notebook.zone == SELECT_CENTER
+					&& mode_data_notebook.ns != 0) {
+				unbind_window(mode_data_notebook.c);
+			} else {
+				mode_data_notebook.from->set_selected(mode_data_notebook.c);
+				//set_focus(mode_data_notebook.c, false);
+			}
+
+			/* automaticaly close empty notebook */
+			if (mode_data_notebook.from->_clients.empty()
+					&& mode_data_notebook.from->_parent != 0) {
+				notebook_close(mode_data_notebook.from);
+				update_allocation();
+			} else {
+				rnd->add_damage_area(mode_data_notebook.from->_allocation);
+			}
+
+			set_focus(mode_data_notebook.c, false);
+			rpage->mark_durty();
+			rnd->add_damage_area(rpage->get_area());
+
+			mode_data_notebook.start_x = 0;
+			mode_data_notebook.start_y = 0;
+			mode_data_notebook.zone = SELECT_NONE;
+			mode_data_notebook.c = 0;
+			mode_data_notebook.from = 0;
+			mode_data_notebook.ns = 0;
+
+			break;
+		case PROCESS_NOTEBOOK_BUTTON_PRESS:
+			process_mode = PROCESS_NORMAL;
+
+			if (mode_data_notebook.c != 0) {
+				mode_data_notebook.from->update_close_area();
+				if (mode_data_notebook.from->close_client_area.is_inside(
+						e.x_root, e.y_root)) {
+					mode_data_notebook.c->delete_window(e.time);
+				} else if (mode_data_notebook.from->undck_client_area.is_inside(
+						e.x_root, e.y_root)) {
+					unbind_window(mode_data_notebook.c);
+				}
+			} else {
+				if (mode_data_notebook.from != 0) {
+					if (mode_data_notebook.from->button_close.is_inside(e.x,
+							e.y)) {
+						notebook_close(mode_data_notebook.from);
+						rpage->mark_durty();
+						rnd->add_damage_area(cnx->root_size);
+					} else if (mode_data_notebook.from->button_vsplit.is_inside(
+							e.x, e.y)) {
+						split(mode_data_notebook.from, VERTICAL_SPLIT);
+						update_allocation();
+						rpage->mark_durty();
+						rnd->add_damage_area(cnx->root_size);
+					} else if (mode_data_notebook.from->button_hsplit.is_inside(
+							e.x, e.y)) {
+						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
+						update_allocation();
+						rpage->mark_durty();
+						rnd->add_damage_area(cnx->root_size);
+					} else if (mode_data_notebook.from->button_pop.is_inside(
+							e.x, e.y)) {
+						default_window_pop = mode_data_notebook.from;
+						rnd->add_damage_area(mode_data_notebook.from->tab_area);
+						update_allocation();
+						rpage->mark_durty();
+						rnd->add_damage_area(cnx->root_size);
+					}
 				}
 			}
-		}
 
-		mode_data_notebook.start_x = 0;
-		mode_data_notebook.start_y = 0;
-		mode_data_notebook.zone = SELECT_NONE;
-		mode_data_notebook.c = 0;
-		mode_data_notebook.from = 0;
-		mode_data_notebook.ns = 0;
+			mode_data_notebook.start_x = 0;
+			mode_data_notebook.start_y = 0;
+			mode_data_notebook.zone = SELECT_NONE;
+			mode_data_notebook.c = 0;
+			mode_data_notebook.from = 0;
+			mode_data_notebook.ns = 0;
 
-		break;
-	case PROCESS_FLOATING_GRAB:
+			break;
+		case PROCESS_FLOATING_GRAB:
 
-		pfm->hide();
+			pfm->hide();
 
-		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
-		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
+			mode_data_floating.f->set_wished_position(
+					mode_data_floating.final_position);
+			theme->render_floating(mode_data_floating.f,
+					is_focussed(mode_data_floating.f));
 
-		rnd->add_damage_area(cnx->root_size);
-
-		set_focus(mode_data_floating.f, false);
-		process_mode = PROCESS_NORMAL;
-		// Xlib documentation state that: if you release all button, grabpointer terminate
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-
-		mode_data_floating.mode = RESIZE_NONE;
-		mode_data_floating.x_offset = 0;
-		mode_data_floating.y_offset = 0;
-		mode_data_floating.x_root = 0;
-		mode_data_floating.y_root = 0;
-		mode_data_floating.original_position = box_int_t();
-		mode_data_floating.f = 0;
-		mode_data_floating.popup_original_position = box_int_t();
-		mode_data_floating.final_position = box_int_t();
-
-		break;
-	case PROCESS_FLOATING_RESIZE:
-
-		pfm->hide();
-
-		mode_data_floating.f->set_wished_position(mode_data_floating.final_position);
-		theme->render_floating(mode_data_floating.f, is_focussed(mode_data_floating.f));
-
-		set_focus(mode_data_floating.f, false);
-		process_mode = PROCESS_NORMAL;
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-
-		mode_data_floating.mode = RESIZE_NONE;
-		mode_data_floating.x_offset = 0;
-		mode_data_floating.y_offset = 0;
-		mode_data_floating.x_root = 0;
-		mode_data_floating.y_root = 0;
-		mode_data_floating.original_position = box_int_t();
-		mode_data_floating.f = 0;
-		mode_data_floating.popup_original_position = box_int_t();
-		mode_data_floating.final_position = box_int_t();
-
-		break;
-	case PROCESS_FLOATING_CLOSE: {
-		managed_window_t * mw = mode_data_floating.f;
-		box_int_t size = mw->get_base_position();
-		box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
-		/* click on close button ? */
-		if (close_position.is_inside(e.x_root, e.y_root)) {
-			mode_data_floating.f = mw;
-			mw->delete_window(e.time);
-		}
-
-		/* cleanup */
-		process_mode = PROCESS_NORMAL;
-
-		// Xlib documentation state that: if you release all button, grabpointer terminate
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-
-		mode_data_floating.mode = RESIZE_NONE;
-		mode_data_floating.x_offset = 0;
-		mode_data_floating.y_offset = 0;
-		mode_data_floating.x_root = 0;
-		mode_data_floating.y_root = 0;
-		mode_data_floating.original_position = box_int_t();
-		mode_data_floating.f = 0;
-		mode_data_floating.popup_original_position = box_int_t();
-		//mode_data_floating.pn0 = 0;
-		mode_data_floating.final_position = box_int_t();
-
-		break;
-	}
-
-	case PROCESS_FLOATING_BIND: {
-
-		process_mode = PROCESS_NORMAL;
-		//rnd->remove(mode_data_bind.pn0);
-		//rnd->remove(mode_data_bind.pn1);
-		//delete mode_data_bind.pn0;
-		//delete mode_data_bind.pn1;
-
-		pn0->hide();
-		pn1->hide();
-
-		/* ev is button release
-		 * so set the hidden focus parameter
-		 */
-
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-
-
-		if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			insert_window_in_tree(mode_data_bind.c, mode_data_bind.ns, true);
-
-			safe_raise_window(mode_data_bind.c->orig);
-
-			rpage->mark_durty();
 			rnd->add_damage_area(cnx->root_size);
-			update_client_list();
 
-		} else if (mode_data_bind.zone == SELECT_TOP
-				&& mode_data_bind.ns != 0) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_top(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_LEFT
-				&& mode_data_bind.ns != 0) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_left(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_BOTTOM
-				&& mode_data_bind.ns != 0) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_bottom(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_RIGHT
-				&& mode_data_bind.ns != 0) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_right(mode_data_bind.ns, mode_data_bind.c);
-		} else {
-			bind_window(mode_data_bind.c);
+			set_focus(mode_data_floating.f, false);
+			process_mode = PROCESS_NORMAL;
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = box_int_t();
+			mode_data_floating.final_position = box_int_t();
+
+			break;
+		case PROCESS_FLOATING_RESIZE:
+
+			pfm->hide();
+
+			mode_data_floating.f->set_wished_position(
+					mode_data_floating.final_position);
+			theme->render_floating(mode_data_floating.f,
+					is_focussed(mode_data_floating.f));
+
+			set_focus(mode_data_floating.f, false);
+			process_mode = PROCESS_NORMAL;
+			//XUngrabPointer(cnx->dpy, CurrentTime);
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = box_int_t();
+			mode_data_floating.final_position = box_int_t();
+
+			break;
+		case PROCESS_FLOATING_CLOSE: {
+			managed_window_t * mw = mode_data_floating.f;
+			box_int_t size = mw->get_base_position();
+			box_int_t close_position =
+					theme->get_theme_layout()->compute_floating_close_position(
+							size);
+			/* click on close button ? */
+			if (close_position.is_inside(e.x_root, e.y_root)) {
+				mode_data_floating.f = mw;
+				mw->delete_window(e.time);
+			}
+
+			/* cleanup */
+			process_mode = PROCESS_NORMAL;
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = box_int_t();
+			mode_data_floating.final_position = box_int_t();
+
+			break;
 		}
 
-		rnd->add_damage_area(mode_data_bind.c->get_base_position());
+		case PROCESS_FLOATING_BIND: {
 
-		set_focus(mode_data_bind.c, false);
-		rpage->mark_durty();
-		rnd->add_damage_area(rpage->get_area());
+			process_mode = PROCESS_NORMAL;
 
+			pn0->hide();
+			pn1->hide();
 
-		process_mode = PROCESS_NORMAL;
+			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
+				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+				insert_window_in_tree(mode_data_bind.c, mode_data_bind.ns,
+						true);
 
-		mode_data_bind.start_x = 0;
-		mode_data_bind.start_y = 0;
-		mode_data_bind.zone = SELECT_NONE;
-		mode_data_bind.c = 0;
-		mode_data_bind.ns = 0;
+				safe_raise_window(mode_data_bind.c->orig);
 
-		break;
-	}
+				rpage->mark_durty();
+				rnd->add_damage_area(cnx->root_size);
+				update_client_list();
 
-	default:
-		process_mode = PROCESS_NORMAL;
-		//XUngrabPointer(cnx->dpy, CurrentTime);
-		break;
+			} else if (mode_data_bind.zone == SELECT_TOP
+					&& mode_data_bind.ns != 0) {
+				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+				split_top(mode_data_bind.ns, mode_data_bind.c);
+			} else if (mode_data_bind.zone == SELECT_LEFT
+					&& mode_data_bind.ns != 0) {
+				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+				split_left(mode_data_bind.ns, mode_data_bind.c);
+			} else if (mode_data_bind.zone == SELECT_BOTTOM
+					&& mode_data_bind.ns != 0) {
+				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+				split_bottom(mode_data_bind.ns, mode_data_bind.c);
+			} else if (mode_data_bind.zone == SELECT_RIGHT
+					&& mode_data_bind.ns != 0) {
+				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+				split_right(mode_data_bind.ns, mode_data_bind.c);
+			} else {
+				bind_window(mode_data_bind.c);
+			}
 
-	}
+			rnd->add_damage_area(mode_data_bind.c->get_base_position());
+
+			set_focus(mode_data_bind.c, false);
+			rpage->mark_durty();
+			rnd->add_damage_area(rpage->get_area());
+
+			process_mode = PROCESS_NORMAL;
+
+			mode_data_bind.start_x = 0;
+			mode_data_bind.start_y = 0;
+			mode_data_bind.zone = SELECT_NONE;
+			mode_data_bind.c = 0;
+			mode_data_bind.ns = 0;
+
+			break;
+		}
+
+		default:
+			process_mode = PROCESS_NORMAL;
+			break;
+		}
 	}
 }
 
@@ -2708,23 +2664,15 @@ bool page_t::check_for_start_split(XButtonEvent const & e) {
 		printf("starting split\n");
 		/* switch process mode */
 		process_mode = PROCESS_SPLIT_GRAB;
+
 		mode_data_split.split_ratio = x->get_split_ratio();
 		mode_data_split.split = x;
 		mode_data_split.slider_area = mode_data_split.split->get_split_bar_area();
-		//mode_data_split.p = new popup_split_t(mode_data_split.slider_area);
-		//rnd->add(mode_data_split.p);
 
+		/* show split overlay */
 		ps->area = mode_data_split.slider_area;
+		rnd->raise(ps);
 		ps->show();
-
-		/* Grab Pointer no other client will get mouse event */
-//		if (XGrabPointer(cnx->dpy, cnx->xroot, False,
-//				(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-//				GrabModeAsync, GrabModeAsync, None, cursor_fleur,
-//				CurrentTime) != GrabSuccess) {
-//			/* bad news */
-//			throw std::runtime_error("fail to grab pointer");
-//		}
 
 	}
 

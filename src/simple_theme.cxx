@@ -366,13 +366,15 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 	cairo_set_line_width(cr, 1.0);
 	cairo_new_path(cr);
 
-//	cairo_rectangle(cr, n->_allocation.x, n->_allocation.y, n->_allocation.w, n->_allocation.h);
-//	if(background_s != 0) {
-//		cairo_set_source_surface(cr, background_s, 0.0, 0.0);
-//	} else {
-//		cairo_set_source_rgb(cr, c_tab_selected_background.r, c_tab_selected_background.g, c_tab_selected_background.b);
-//	}
-//	cairo_fill(cr);
+	cairo_rectangle(cr, n->_allocation.x, n->_allocation.y, n->_allocation.w,
+			n->_allocation.h);
+	if (background_s != 0) {
+		cairo_set_source_surface(cr, background_s, 0.0, 0.0);
+	} else {
+		cairo_set_source_rgb(cr, c_tab_selected_background.r,
+				c_tab_selected_background.g, c_tab_selected_background.b);
+	}
+	cairo_fill(cr);
 
 	{
 		box_int_t b;

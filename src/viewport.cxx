@@ -62,13 +62,13 @@ box_int_t viewport_t::get_absolute_extend() {
 region_t<int> viewport_t::get_area() {
 	if (_is_visible && fullscreen_client == 0) {
 		region_t<int> r(effective_aera);
-		list<notebook_t *> lst;
-		get_notebooks(lst);
-		for (list<notebook_t *>::iterator i = lst.begin(); i != lst.end();
-				++i) {
-			if ((*i)->get_selected() != 0)
-				r = r - ((*i)->get_selected())->get_base_position();
-		}
+//		list<notebook_t *> lst;
+//		get_notebooks(lst);
+//		for (list<notebook_t *>::iterator i = lst.begin(); i != lst.end();
+//				++i) {
+//			if ((*i)->get_selected() != 0)
+//				r = r - ((*i)->get_selected())->get_base_position();
+//		}
 
 		return r;
 	} else {
