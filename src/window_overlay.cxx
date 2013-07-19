@@ -93,6 +93,13 @@ void window_overlay_t::move_resize(box_int_t const & area) {
 
 }
 
+void window_overlay_t::move(int x, int y) {
+	_area.x = x;
+	_area.y = y;
+	XMoveWindow(_cnx->dpy, _wid, _area.x, _area.y);
+}
+
+
 void window_overlay_t::cleanup() {
 	if (_cr != 0)
 		cairo_destroy(_cr);

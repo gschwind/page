@@ -8,24 +8,17 @@
 #ifndef POPUP_SPLIT_HXX_
 #define POPUP_SPLIT_HXX_
 
+#include "window_overlay.hxx"
 #include "box.hxx"
 #include "renderable.hxx"
 
 namespace page {
 
-struct popup_split_t: public renderable_t {
-	box_t<int> area;
-	bool _show;
-	popup_split_t(box_int_t const & area = box_int_t());
+struct popup_split_t: public window_overlay_t {
+	Window const & wid;
+	popup_split_t(xconnection_t * cnx);
 	~popup_split_t();
-	void show();
-	void hide();
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
-	virtual box_int_t get_absolute_extend();
-	virtual region_t<int> get_area();
-	virtual void reconfigure(box_int_t const & area);
-	virtual bool is_visible();
-	virtual bool has_alpha();
+	void move_resize(box_int_t const & a);
 };
 
 }

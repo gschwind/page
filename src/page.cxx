@@ -227,11 +227,11 @@ void page_t::run() {
 	pn0 = new popup_notebook0_t(cnx);
 	//rnd->add(pn0);
 
-	pn1 = new popup_notebook1_t(theme->get_default_font());
-	rnd->add(pn1);
+	pn1 = new popup_notebook1_t(cnx, theme->get_default_font());
+	//rnd->add(pn1);
 
-	ps = new popup_split_t();
-	rnd->add(ps);
+	ps = new popup_split_t(cnx);
+	//rnd->add(ps);
 
 	int n;
 	XineramaScreenInfo * info = XineramaQueryScreens(cnx->dpy, &n);
@@ -793,8 +793,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->reconfigure(mode_data_bind.c->get_base_position());
 					//rnd->raise(pn0);
 
-					pn1->update_data(mode_data_bind.c->get_base_position().x, mode_data_bind.c->get_base_position().y, mw->get_icon()->get_cairo_surface(), c->get_title());
-					rnd->raise(pn1);
+					pn1->update_data(mw->get_icon()->get_cairo_surface(), c->get_title());
+					pn1->move(e.x_root, e.y_root);
 
 					process_mode = PROCESS_FLOATING_BIND;
 
@@ -1201,7 +1201,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_split.split->compute_split_bar_area(mode_data_split.slider_area,
 				mode_data_split.split_ratio);
 
-		ps->area = mode_data_split.slider_area;
+		ps->move_resize(mode_data_split.slider_area);
 
 		rnd->add_damage_area(old_area);
 		rnd->add_damage_area(mode_data_split.slider_area);
@@ -1231,15 +1231,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		box_int_t old_area = pn1->get_absolute_extend();
-		box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
-				old_area.w, old_area.h);
-		pn1->reconfigure(new_area);
-		rnd->add_damage_area(old_area);
-		rnd->add_damage_area(new_area);
-		rpage->mark_durty();
-		rnd->add_damage_area(rpage->get_area());
-
+		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -1441,14 +1433,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		box_int_t old_area = pn1->get_absolute_extend();
-			box_int_t new_area(ev.xmotion.x_root + 10, ev.xmotion.y_root,
-					old_area.w, old_area.h);
-			pn1->reconfigure(new_area);
-			rnd->add_damage_area(old_area);
-			rnd->add_damage_area(new_area);
-			rpage->mark_durty();
-			rnd->add_damage_area(rpage->get_area());
+		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -1631,8 +1616,8 @@ void page_t::process_event(XConfigureEvent const & e) {
 	/* raise popups */
 	//rnd->raise(pfm);
 	//rnd->raise(pn0);
-	rnd->raise(pn1);
-	rnd->raise(ps);
+	//rnd->raise(pn1);
+	//rnd->raise(ps);
 
 
 }
@@ -1681,7 +1666,6 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		std::map<window_t *, renderable_window_t *>::iterator x =
 				window_to_renderable_context.find(c);
 		if (x != window_to_renderable_context.end()) {
-			rnd->remove(x->second);
 			destroy_renderable(x->first);
 		}
 	}
@@ -1798,7 +1782,7 @@ void page_t::process_event(XReparentEvent const & e) {
 void page_t::process_event(XUnmapEvent const & e) {
 	window_t * x = get_window_t(e.window);
 
-	if(has_key(window_to_renderable_context, x) && e.event == cnx->xroot) {
+	if (has_key(window_to_renderable_context, x) && e.event == cnx->xroot) {
 		destroy_renderable(x);
 	}
 
@@ -2675,8 +2659,8 @@ bool page_t::check_for_start_split(XButtonEvent const & e) {
 		mode_data_split.slider_area = mode_data_split.split->get_split_bar_area();
 
 		/* show split overlay */
-		ps->area = mode_data_split.slider_area;
-		rnd->raise(ps);
+		ps->move_resize(mode_data_split.slider_area);
+		//rnd->raise(ps);
 		ps->show();
 
 	}
@@ -2733,19 +2717,10 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.zone = SELECT_NONE;
 
 			pn0->reconfigure(mode_data_notebook.from->tab_area);
-			//rnd->raise(pn0);
 
-			pn1->update_data(mode_data_notebook.from->_allocation.x, mode_data_notebook.from->_allocation.y, c->get_icon()->get_cairo_surface(), c->get_title());
-			rnd->raise(pn1);
+			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
+			pn1->move(e.x_root, e.y_root);
 
-			/* Grab Pointer no other client will get mouse event */
-//			if (XGrabPointer(cnx->dpy, cnx->xroot, False,
-//					(ButtonPressMask | ButtonReleaseMask | PointerMotionMask),
-//					GrabModeAsync, GrabModeAsync, None, cursor_fleur,
-//					CurrentTime) != GrabSuccess) {
-//				/* bad news */
-//				throw std::runtime_error("fail to grab pointer");
-//			}
 		}
 
 	} else {
@@ -3326,6 +3301,11 @@ void page_t::safe_raise_window(window_t * w) {
 	final_order.remove(pn0->wid);
 	final_order.push_back(pn0->wid);
 
+	final_order.remove(pn1->wid);
+	final_order.push_back(pn1->wid);
+
+	final_order.remove(ps->wid);
+	final_order.push_back(ps->wid);
 
 	final_order.reverse();
 

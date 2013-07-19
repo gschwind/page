@@ -10,7 +10,7 @@
 namespace page {
 
 popup_notebook0_t::popup_notebook0_t(xconnection_t * cnx) : window_overlay_t(cnx, 32), wid(_wid) {
-
+	_show = false;
 }
 
 popup_notebook0_t::~popup_notebook0_t() {

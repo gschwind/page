@@ -11,53 +11,32 @@
 
 namespace page {
 
-popup_split_t::popup_split_t(box_t<int> const & area) :
-		area(area) {
-	_show = false;
+popup_split_t::popup_split_t(xconnection_t * cnx) : window_overlay_t(cnx, 32), wid(_wid) {
+
 }
 
-void popup_split_t::repair1(cairo_t * cr, box_int_t const & a) {
-	box_int_t i = area & a;
-	if (!i.is_null()) {
-		cairo_save(cr);
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
-		cairo_rectangle(cr, i.x, i.y, i.w, i.h);
-		cairo_fill(cr);
-		cairo_restore(cr);
-	}
-}
 
 popup_split_t::~popup_split_t() {
 
 }
 
-void popup_split_t::show() {
-	_show = true;
-}
+void popup_split_t::move_resize(box_int_t const & a) {
+	window_overlay_t::move_resize(a);
 
-void popup_split_t::hide() {
-	_show = false;
-}
+	cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(_cr, 0.0, 0.0, 0.0, 0.5);
+	cairo_rectangle(_cr, 0, 0, _area.w, _area.h);
+	cairo_fill(_cr);
 
-box_int_t popup_split_t::get_absolute_extend() {
-	return area;
-}
+	cairo_surface_flush(_surf);
 
-region_t<int> popup_split_t::get_area() {
-	return region_t<int>(area);
-}
+	cairo_set_operator(_wid_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_surface(_wid_cr, _surf, 0.0, 0.0);
+	cairo_rectangle(_wid_cr, 0, 0, _area.w, _area.h);
+	cairo_fill(_wid_cr);
 
-void popup_split_t::reconfigure(box_int_t const & a) {
-	area = a;
-}
+	cairo_surface_flush(_wid_surf);
 
-bool popup_split_t::is_visible() {
-	return _show;
-}
-
-bool popup_split_t::has_alpha() {
-	return true;
 }
 
 }

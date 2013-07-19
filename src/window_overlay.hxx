@@ -44,6 +44,7 @@ public:
 	~window_overlay_t();
 
 	void move_resize(box_int_t const & area);
+	void move(int x, int y);
 	void rebuild_cairo();
 
 	void show();
