@@ -252,8 +252,6 @@ public:
 	xconnection_t * cnx;
 	compositor_t * rnd;
 
-	//renderable_list_t popups;
-
 	/* default cursor */
 	Cursor cursor;
 	Cursor cursor_fleur;
@@ -261,10 +259,6 @@ public:
 	bool running;
 
 	config_handler_t conf;
-
-	std::list<Window> _root_window_stack;
-
-	std::map<window_t *, renderable_window_t *> window_to_renderable_context;
 
 	/* list of view ports */
 	list<viewport_t *> viewport_list;

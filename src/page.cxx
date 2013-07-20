@@ -76,13 +76,9 @@ page_t::page_t(int argc, char ** argv) {
 	mode_data_notebook = mode_data_notebook_t();
 	mode_data_floating = mode_data_floating_t();
 
-
-
 	cnx = new xconnection_t();
 
 	rnd = 0;
-
-	//popups = renderable_list_t();
 
 	cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
 	cursor_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
@@ -90,7 +86,6 @@ page_t::page_t(int argc, char ** argv) {
 	set_window_cursor(cnx->xroot, cursor);
 
 	running = false;
-
 
 	/* load configurations, from lower priority to high one */
 
@@ -112,30 +107,16 @@ page_t::page_t(int argc, char ** argv) {
 		conf.merge_from_file_if_exist(string(argv[1]));
 	}
 
-
-	_root_window_stack = list<Window>();
-	window_to_renderable_context = map<window_t *, renderable_window_t *>();
-
-	//viewport_list = list<viewport_t *>();
-	//split_list = set<split_t *>();
-	//notebook_list = notebook_set_t();
-
 	xwindow_to_window = window_map_t();
 
 	// track where a client is stored
-	//notebook_to_viewport = map<notebook_t *, viewport_t *>();
 	fullscreen_client_to_viewport = map<managed_window_t *, fullscreen_data_t >();
-	//viewport_to_notebooks = map<viewport_t *, notebook_set_t>();
-
-	//client_to_notebook = map<managed_window_t *, notebook_t *>();
 
 	supported_list = list<Atom>();
 
 	default_window_pop = 0;
 
 	page_base_dir = conf.get_string("default", "theme_dir");
-
-
 
 	font = conf.get_string("default", "font_file");
 
@@ -162,11 +143,6 @@ page_t::page_t(int argc, char ** argv) {
 }
 
 page_t::~page_t() {
-
-	map<window_t *, renderable_window_t *> tmp = window_to_renderable_context;
-	for(map<window_t *, renderable_window_t *>::iterator i = tmp.begin(); i != tmp.end(); ++i) {
-		destroy_renderable(i->first);
-	}
 
 	for (map<Window, window_t *>::iterator i = xwindow_to_window.begin();
 			i != xwindow_to_window.end(); ++i) {
@@ -469,17 +445,12 @@ void page_t::scan() {
 					| SubstructureRedirectMask | ButtonReleaseMask
 					| ButtonPressMask | ButtonMotionMask);
 
-	_root_window_stack.clear();
 	xwindow_to_window.clear();
 	//window_to_managed_window.clear();
 	//orig_window_to_floating_window.clear();
 	//orig_window_to_notebook_window.clear();
 
 	if (XQueryTree(cnx->dpy, cnx->xroot, &d1, &d2, &wins, &num)) {
-
-		for (unsigned i = 0; i < num; ++i) {
-			_root_window_stack.push_back(wins[i]);
-		}
 
 		for (unsigned i = 0; i < num; ++i) {
 			window_t * w = get_window_t(wins[i]);
@@ -1537,26 +1508,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 		return;
 	}
 
-	/* update unused stack */
-	if (has_key(_root_window_stack, e.window)) {
-		_root_window_stack.remove(e.window);
-		if (e.above != None) {
-			std::list<Window>::iterator i = std::find(
-					_root_window_stack.begin(), _root_window_stack.end(),
-					e.above);
-			if (i != _root_window_stack.end()) {
-				++i;
-				_root_window_stack.insert(i, e.window);
-			} else {
-
-				printf("SHOULD NEVER HAPPEN\n");
-				_root_window_stack.push_back(e.window);
-			}
-		} else {
-			_root_window_stack.push_front(e.window);
-		}
-	}
-
 	window_t * w = get_window_t(e.window);
 	w->read_shape();
 
@@ -1566,14 +1517,8 @@ void page_t::process_event(XConfigureEvent const & e) {
 				((e.override_redirect == True)) ? "True" : "False");
 	}
 
-	bool is_root_window = has_key(_root_window_stack, e.window);
-
 	/* track window position and stacking */
-	//if (is_root_window)
-	//	rnd->add_damage_area(w->get_size());
 	w->process_configure_notify_event(e);
-	//if (is_root_window)
-	//	rnd->add_damage_area(w->get_size());
 
 	/* enforce the valid position */
 	managed_window_t * mw = find_managed_window_with(e.window);
@@ -1613,8 +1558,6 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	if(e.window == cnx->xroot)
 		return;
 
-	_root_window_stack.push_back(e.window);
-
 	/* check for already created window, if the case that mean floating window */
 	window_t * w = get_window_t(e.window);
 
@@ -1634,24 +1577,8 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
-	//if(rnd != 0)
-	//	rnd->process_event(e);
 
 	window_t * c = get_window_t(e.window);
-
-	if(e.event == cnx->xroot) {
-		_root_window_stack.remove(e.window);
-	}
-
-	/* apply destroy for render */
-	{
-		std::map<window_t *, renderable_window_t *>::iterator x =
-				window_to_renderable_context.find(c);
-		if (x != window_to_renderable_context.end()) {
-			destroy_renderable(x->first);
-		}
-	}
-
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 	if(mw != 0) {
@@ -1661,7 +1588,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	update_client_list();
 	destroy(c);
 	rpage->mark_durty();
-	//rnd->add_damage_area(cnx->root_size);
+
 }
 
 void page_t::process_event(XGravityEvent const & e) {
@@ -1685,12 +1612,6 @@ void page_t::process_event(XMapEvent const & e) {
 	 * the window is alredy destroyed */
 	if(not x->read_window_attributes())
 		return;
-
-	/* add the window to render context if it is not already done */
-	if (not has_key(window_to_renderable_context, x)) {
-		new_renderable_window(x);
-		//window_to_renderable_context[x]->set_opacity(menu_opacity);
-	}
 
 	/* request to redraw the window area */
 	//rnd->add_damage_area(x->get_size());
@@ -1732,12 +1653,6 @@ void page_t::process_event(XReparentEvent const & e) {
 	if(e.window == cnx->xroot)
 		return;
 
-	if(e.parent == cnx->xroot) {
-		_root_window_stack.push_back(e.window);
-	} else {
-		_root_window_stack.remove(e.window);
-	}
-
 	/* TODO: track reparent */
 	window_t * x = get_window_t(e.window);
 
@@ -1747,31 +1662,11 @@ void page_t::process_event(XReparentEvent const & e) {
 	size.y = e.y;
 	x->notify_move_resize(size);
 
-	/* apply reparent for render */
-	{
-		if (e.parent == cnx->xroot) {
-			//rnd->add(new_renderable_window(x));
-		} else {
-			std::map<window_t *, renderable_window_t *>::iterator i =
-					window_to_renderable_context.find(x);
-			if (i != window_to_renderable_context.end()) {
-				renderable_window_t * r = i->second;
-				//rnd->add_damage_area(x->get_size());
-				destroy_renderable(x);
-			}
-		}
-	}
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
-	//if(rnd != 0)
-	//	rnd->process_event(e);
 
 	window_t * x = get_window_t(e.window);
-
-	if (has_key(window_to_renderable_context, x) && e.event == cnx->xroot) {
-		destroy_renderable(x);
-	}
 
 	x->unmap_notify();
 	//rnd->add_damage_area(x->get_size());
@@ -2930,12 +2825,6 @@ void page_t::destroy(notebook_t * x) {
 void page_t::destroy(window_t * c) {
 
 	clear_sibbling_child(c->id);
-
-	if(has_key(window_to_renderable_context, c)) {
-		renderable_window_t * rw = window_to_renderable_context[c];
-		destroy_renderable(c);
-	}
-
 	delete_window(c);
 }
 
@@ -3734,8 +3623,6 @@ void page_t::update_viewport_layout() {
 
 
 void page_t::cleanup_reference(void * ref) {
-
-	window_to_renderable_context.erase(reinterpret_cast<window_t *>(ref));
 	viewport_list.remove(reinterpret_cast<viewport_t *>(ref));
 	fullscreen_client_to_viewport.erase(reinterpret_cast<managed_window_t*>(ref));
 	root_stack.remove(reinterpret_cast<window_t*>(ref));
