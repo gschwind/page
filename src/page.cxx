@@ -208,7 +208,7 @@ void page_t::run() {
 	rnd = new compositor_t();
 
 	/* init page render */
-	rpage = new renderable_page_t(cnx, theme, rnd->composite_overlay_s,
+	rpage = new renderable_page_t(cnx, theme, 0,
 			cnx->root_size.w, cnx->root_size.h,
 			viewport_list);
 
@@ -319,9 +319,9 @@ void page_t::run() {
 			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
 
 	rpage->mark_durty();
-	rnd->add_damage_area(rpage->get_area());
+	//rnd->add_damage_area(rpage->get_area());
 
-	rnd->render_flush();
+	//rnd->render_flush();
 	XSync(cnx->dpy, False);
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask, cnx->xroot,
 			True, GrabModeAsync, GrabModeAsync);
@@ -354,7 +354,7 @@ void page_t::run() {
 	fd_set fds_intr;
 
 	update_allocation();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 	running = true;
 	while (running) {
 
@@ -683,8 +683,8 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
-		printf("fast_region_surf = %g (%.2f)\n", rnd->fast_region_surf, rnd->fast_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
-		printf("slow_region_surf = %g (%.2f)\n", rnd->slow_region_surf, rnd->slow_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
+		//printf("fast_region_surf = %g (%.2f)\n", rnd->fast_region_surf, rnd->fast_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
+		//printf("slow_region_surf = %g (%.2f)\n", rnd->slow_region_surf, rnd->slow_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
 
 
 	}
@@ -697,7 +697,7 @@ void page_t::process_event(XKeyEvent const & e) {
 		printf("rerender background\n");
 		rpage->rebuild_cairo();
 		rpage->mark_durty();
-		rnd->add_damage_area(cnx->root_size);
+		//rnd->add_damage_area(cnx->root_size);
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
@@ -903,9 +903,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			ps->hide();
 
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
-			rnd->add_damage_area(mode_data_split.split->_allocation);
+			//rnd->add_damage_area(mode_data_split.split->_allocation);
 			rpage->mark_durty();
-			rnd->add_damage_area(rpage->get_area());
+			//rnd->add_damage_area(rpage->get_area());
 
 			mode_data_split.split = 0;
 			mode_data_split.slider_area = box_int_t();
@@ -955,12 +955,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				notebook_close(mode_data_notebook.from);
 				update_allocation();
 			} else {
-				rnd->add_damage_area(mode_data_notebook.from->_allocation);
+				//rnd->add_damage_area(mode_data_notebook.from->_allocation);
 			}
 
 			set_focus(mode_data_notebook.c, false);
 			rpage->mark_durty();
-			rnd->add_damage_area(rpage->get_area());
+			//rnd->add_damage_area(rpage->get_area());
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -988,26 +988,26 @@ void page_t::process_event_release(XButtonEvent const & e) {
 							e.y)) {
 						notebook_close(mode_data_notebook.from);
 						rpage->mark_durty();
-						rnd->add_damage_area(cnx->root_size);
+						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_vsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 						update_allocation();
 						rpage->mark_durty();
-						rnd->add_damage_area(cnx->root_size);
+						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_hsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
 						update_allocation();
 						rpage->mark_durty();
-						rnd->add_damage_area(cnx->root_size);
+						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_pop.is_inside(
 							e.x, e.y)) {
 						default_window_pop = mode_data_notebook.from;
-						rnd->add_damage_area(mode_data_notebook.from->tab_area);
+						//rnd->add_damage_area(mode_data_notebook.from->tab_area);
 						update_allocation();
 						rpage->mark_durty();
-						rnd->add_damage_area(cnx->root_size);
+						//rnd->add_damage_area(cnx->root_size);
 					}
 				}
 			}
@@ -1029,7 +1029,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			theme->render_floating(mode_data_floating.f,
 					is_focussed(mode_data_floating.f));
 
-			rnd->add_damage_area(cnx->root_size);
+			//rnd->add_damage_area(cnx->root_size);
 
 			set_focus(mode_data_floating.f, false);
 			process_mode = PROCESS_NORMAL;
@@ -1112,7 +1112,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				safe_raise_window(mode_data_bind.c->orig);
 
 				rpage->mark_durty();
-				rnd->add_damage_area(cnx->root_size);
+				//rnd->add_damage_area(cnx->root_size);
 				update_client_list();
 
 			} else if (mode_data_bind.zone == SELECT_TOP
@@ -1135,11 +1135,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				bind_window(mode_data_bind.c);
 			}
 
-			rnd->add_damage_area(mode_data_bind.c->get_base_position());
+			//rnd->add_damage_area(mode_data_bind.c->get_base_position());
 
 			set_focus(mode_data_bind.c, false);
 			rpage->mark_durty();
-			rnd->add_damage_area(rpage->get_area());
+			//rnd->add_damage_area(rpage->get_area());
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1197,8 +1197,8 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		ps->move_resize(mode_data_split.slider_area);
 
-		rnd->add_damage_area(old_area);
-		rnd->add_damage_area(mode_data_split.slider_area);
+		//rnd->add_damage_area(old_area);
+		//rnd->add_damage_area(mode_data_split.slider_area);
 
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
@@ -1508,8 +1508,6 @@ void page_t::process_event(XMotionEvent const & e) {
 
 void page_t::process_event(XCirculateEvent const & e) {
 
-	if(rnd != 0)
-		rnd->process_event(e);
 
 // this will be handled in configure events
 //	window_t * w = get_window_t(e.window);
@@ -1529,16 +1527,13 @@ void page_t::process_event(XConfigureEvent const & e) {
 	if(e.send_event == True)
 		return;
 
-	if(rnd != 0)
-		rnd->process_event(e);
-
 	if(e.window == cnx->xroot) {
 		cnx->root_size.w = e.width;
 		cnx->root_size.h = e.height;
 		update_allocation();
 		rpage->move_resize(cnx->root_size);
 		rpage->mark_durty();
-		rnd->add_damage_area(cnx->root_size);
+		//rnd->add_damage_area(cnx->root_size);
 		return;
 	}
 
@@ -1574,11 +1569,11 @@ void page_t::process_event(XConfigureEvent const & e) {
 	bool is_root_window = has_key(_root_window_stack, e.window);
 
 	/* track window position and stacking */
-	if (is_root_window)
-		rnd->add_damage_area(w->get_size());
+	//if (is_root_window)
+	//	rnd->add_damage_area(w->get_size());
 	w->process_configure_notify_event(e);
-	if (is_root_window)
-		rnd->add_damage_area(w->get_size());
+	//if (is_root_window)
+	//	rnd->add_damage_area(w->get_size());
 
 	/* enforce the valid position */
 	managed_window_t * mw = find_managed_window_with(e.window);
@@ -1609,8 +1604,8 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	if (e.send_event == True)
 		return;
 
-	if(rnd != 0)
-		rnd->process_event(e);
+	//if(rnd != 0)
+	//	rnd->process_event(e);
 
 	/* Does it come from root window */
 	if (e.parent != cnx->xroot)
@@ -1639,8 +1634,8 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
-	if(rnd != 0)
-		rnd->process_event(e);
+	//if(rnd != 0)
+	//	rnd->process_event(e);
 
 	window_t * c = get_window_t(e.window);
 
@@ -1666,7 +1661,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	update_client_list();
 	destroy(c);
 	rpage->mark_durty();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 }
 
 void page_t::process_event(XGravityEvent const & e) {
@@ -1674,8 +1669,8 @@ void page_t::process_event(XGravityEvent const & e) {
 }
 
 void page_t::process_event(XMapEvent const & e) {
-	if(rnd != 0)
-		rnd->process_event(e);
+	//if(rnd != 0)
+	//	rnd->process_event(e);
 
 	/* find/create window handler */
 	window_t * x = get_window_t(e.window);
@@ -1698,7 +1693,7 @@ void page_t::process_event(XMapEvent const & e) {
 	}
 
 	/* request to redraw the window area */
-	rnd->add_damage_area(x->get_size());
+	//rnd->add_damage_area(x->get_size());
 
 	if(x->is_input_only())
 		return;
@@ -1761,7 +1756,7 @@ void page_t::process_event(XReparentEvent const & e) {
 					window_to_renderable_context.find(x);
 			if (i != window_to_renderable_context.end()) {
 				renderable_window_t * r = i->second;
-				rnd->add_damage_area(x->get_size());
+				//rnd->add_damage_area(x->get_size());
 				destroy_renderable(x);
 			}
 		}
@@ -1769,8 +1764,8 @@ void page_t::process_event(XReparentEvent const & e) {
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
-	if(rnd != 0)
-		rnd->process_event(e);
+	//if(rnd != 0)
+	//	rnd->process_event(e);
 
 	window_t * x = get_window_t(e.window);
 
@@ -1779,7 +1774,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 	}
 
 	x->unmap_notify();
-	rnd->add_damage_area(x->get_size());
+	//rnd->add_damage_area(x->get_size());
 	event_t ex;
 	ex.serial = e.serial;
 	ex.type = e.type;
@@ -1982,7 +1977,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				rpage->mark_durty();
-				rnd->add_damage_area(rpage->get_area());
+				//rnd->add_damage_area(rpage->get_area());
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -1996,7 +1991,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			if (mw != 0) {
 				if (mw->is(MANAGED_NOTEBOOK)) {
 					rpage->mark_durty();
-					rnd->add_damage_area(rpage->get_area());
+					//rnd->add_damage_area(rpage->get_area());
 				}
 
 				if (mw->is(MANAGED_FLOATING)) {
@@ -2008,7 +2003,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_partial_struct();
 		update_allocation();
 		rpage->mark_durty();
-		rnd->add_damage_area(cnx->root_size);
+		//rnd->add_damage_area(cnx->root_size);
 	} else if (e.atom == cnx->atoms._NET_WM_ICON) {
 		x->read_icon_data();
 		/* TODO: durty notebook */
@@ -2028,14 +2023,14 @@ void page_t::process_event(XPropertyEvent const & e) {
 			x->read_wm_normal_hints();
 			if (mw != 0) {
 				if (mw->is(MANAGED_NOTEBOOK)) {
-					rnd->add_damage_area(x->get_size());
+					//rnd->add_damage_area(x->get_size());
 					find_notebook_for(mw)->update_client_position(mw);
-					rnd->add_damage_area(x->get_size());
+					//rnd->add_damage_area(x->get_size());
 				}
 
 				if (mw->is(MANAGED_FLOATING)) {
 
-					rnd->add_damage_area(mw->get_wished_position());
+					//rnd->add_damage_area(mw->get_wished_position());
 
 					/* apply normal hint to floating window */
 					box_int_t new_size = mw->get_wished_position();
@@ -2048,7 +2043,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 					new_size.h = final_height;
 					mw->set_wished_position(new_size);
 					theme->render_floating(mw, is_focussed(mw));
-					rnd->add_damage_area(mw->get_wished_position());
+					//rnd->add_damage_area(mw->get_wished_position());
 
 				}
 			}
@@ -2183,8 +2178,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
 	//printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x, e.area.y);
-	if(rnd != 0)
-		rnd->process_event(e);
+	//if(rnd != 0)
+	//	rnd->process_event(e);
 }
 
 void page_t::fullscreen(managed_window_t * mw) {
@@ -2268,7 +2263,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	mw->orig->unset_fullscreen();
 	set_focus(mw, false);
 	update_allocation();
-	rnd->add_damage_area(cnx->root_size);
+	//nd->add_damage_area(cnx->root_size);
 
 }
 
@@ -2451,12 +2446,12 @@ void page_t::activate_client(managed_window_t * x) {
 		n->activate_client(x);
 		set_focus(x, false);
 		rpage->mark_durty();
-		rnd->add_damage_area(n->get_absolute_extend());
-		rnd->add_damage_area(rpage->get_area());
+		//rnd->add_damage_area(n->get_absolute_extend());
+		//rnd->add_damage_area(rpage->get_area());
 	} else {
 		/* floating window or fullscreen window */
 		set_focus(x, false);
-		rnd->add_damage_area(x->get_base_position());
+		//rnd->add_damage_area(x->get_base_position());
 	}
 }
 
@@ -2469,8 +2464,8 @@ void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool pr
 	n->add_client(x, prefer_activate);
 
 	rpage->mark_durty();
-	rnd->add_damage_area(n->get_absolute_extend());
-	rnd->add_damage_area(rpage->get_area());
+	//rnd->add_damage_area(n->get_absolute_extend());
+	//rnd->add_damage_area(rpage->get_area());
 
 }
 
@@ -2479,8 +2474,8 @@ void page_t::remove_window_from_tree(managed_window_t * x) {
 	notebook_t * n = find_notebook_for(x);
 	n->remove_client(x);
 	rpage->mark_durty();
-	rnd->add_damage_area(n->get_absolute_extend());
-	rnd->add_damage_area(rpage->get_area());
+	//rnd->add_damage_area(n->get_absolute_extend());
+	//rnd->add_damage_area(rpage->get_area());
 
 }
 
@@ -2550,7 +2545,7 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 	printf("focus [%lu] %s\n", focus->orig->id, focus->get_title().c_str());
 
 	rpage->mark_durty();
-	rnd->add_damage_area(rpage->get_area());
+	//rnd->add_damage_area(rpage->get_area());
 
 	_client_focused.remove(focus);
 	_client_focused.push_front(focus);
@@ -2563,7 +2558,7 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 		focus->focus();
 	if (focus->get_type() == MANAGED_FLOATING) {
 		theme->render_floating(focus, true);
-		rnd->add_damage_area(focus->base->get_size());
+		//rnd->add_damage_area(focus->base->get_size());
 	}
 
 	Window xw = focus->orig->id;
@@ -2734,7 +2729,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 }
 
 void page_t::split(notebook_t * nbk, split_type_e type) {
-	rnd->add_damage_area(nbk->_allocation);
+	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(type);
 	nbk->_parent->replace(nbk, split);
 	split->replace(0, nbk);
@@ -2744,7 +2739,7 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 }
 
 void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
-	rnd->add_damage_area(nbk->_allocation);
+	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(VERTICAL_SPLIT);
 	notebook_t * n = new_notebook(find_viewport_for(nbk));
 	nbk->_parent->replace(nbk, split);
@@ -2754,7 +2749,7 @@ void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
-	rnd->add_damage_area(nbk->_allocation);
+	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(VERTICAL_SPLIT);
 	notebook_t * n = new_notebook(find_viewport_for(nbk));
 	nbk->_parent->replace(nbk, split);
@@ -2764,7 +2759,7 @@ void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
-	rnd->add_damage_area(nbk->_allocation);
+	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(HORIZONTAL_SPLIT);
 	notebook_t * n = new_notebook(find_viewport_for(nbk));
 	nbk->_parent->replace(nbk, split);
@@ -2774,7 +2769,7 @@ void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
-	rnd->add_damage_area(nbk->_allocation);
+	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(HORIZONTAL_SPLIT);
 	notebook_t * n = new_notebook(find_viewport_for(nbk));
 	nbk->_parent->replace(nbk, split);
@@ -3422,7 +3417,7 @@ bool page_t::check_manage(window_t * x) {
 	}
 
 	rpage->mark_durty();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 	update_client_list();
 
 	return ret;
@@ -3592,7 +3587,7 @@ void page_t::bind_window(managed_window_t * mw) {
 	safe_raise_window(mw->orig);
 
 	rpage->mark_durty();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 	update_client_list();
 
 }
@@ -3607,7 +3602,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->normalize();
 	safe_raise_window(mw->orig);
 	rpage->mark_durty();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 	update_client_list();
 
 }
@@ -3733,7 +3728,7 @@ void page_t::update_viewport_layout() {
 
 	update_allocation();
 	rpage->mark_durty();
-	rnd->add_damage_area(cnx->root_size);
+	//rnd->add_damage_area(cnx->root_size);
 }
 
 

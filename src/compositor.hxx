@@ -33,7 +33,7 @@ class compositor_t : public xevent_handler_t {
 
 	region_t<int> _desktop_region;
 
-public:
+private:
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
@@ -60,9 +60,6 @@ public:
 	/* damaged region */
 	region_t<int> pending_damage;
 
-	virtual ~compositor_t() { };
-	compositor_t();
-
 	void add_damage_area(region_t<int> const & box);
 
 	//static bool z_comp(renderable_t * x, renderable_t * y);
@@ -77,6 +74,7 @@ public:
 	void repair_buffer(std::list<renderable_window_t *> & visible, cairo_t * cr, box_int_t const & area);
 
 	void damage_all();
+
 
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);
@@ -96,6 +94,13 @@ public:
 
 	void scan();
 
+	void update_layout();
+
+public:
+
+	virtual ~compositor_t() { };
+	compositor_t();
+
 	inline int get_connection_fd() {
 		return _cnx.connection_fd;
 	}
@@ -110,7 +115,7 @@ public:
 		XFlush(_cnx.dpy);
 	}
 
-	void update_layout();
+
 
 };
 
