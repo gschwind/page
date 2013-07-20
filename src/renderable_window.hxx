@@ -11,8 +11,8 @@
 #include <X11/Xlib.h>
 #include <set>
 #include <map>
+
 #include "xconnection.hxx"
-#include "renderable.hxx"
 #include "region.hxx"
 #include "icon.hxx"
 #include "renderable_window.hxx"
@@ -20,44 +20,58 @@
 
 namespace page {
 
-class renderable_window_t: public renderable_t {
+class renderable_window_t {
 
 public:
-	Display * dpy;
-	window_t * window;
+
+	Display * _dpy;
+	Window wid;
 	Visual * visual;
 
-	box_int_t position;
-
 	Damage damage;
-	double opacity;
-	/* window surface */
-	cairo_surface_t * window_surf;
 
 	bool _has_alpha;
 
+	int c_class;
+
+	box_int_t const & position;
+
 private:
+
+	bool has_shape;
+	region_t<int> _region;
+
+	bool _is_map;
+	cairo_surface_t * _surf;
+	box_int_t _position;
+
+
 	/* avoid copy */
 	renderable_window_t(renderable_window_t const &);
 	renderable_window_t & operator=(renderable_window_t const &);
 public:
-	renderable_window_t(Display *, window_t *, Visual *, box_int_t const &);
+	renderable_window_t();
+
 	virtual ~renderable_window_t();
 
-	void create_render_context();
-	void destroy_render_context();
+	void update(Display * dpy, Window w, XWindowAttributes & wa);
 
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
-	virtual box_int_t get_absolute_extend();
-	box_int_t get_requested_size();
-	virtual region_t<int> get_area();
-	virtual void reconfigure(box_int_t const & area);
-	virtual void mark_dirty();
-	virtual void mark_dirty_retangle(box_int_t const & area);
-	virtual bool is_visible();
-	virtual bool has_alpha();
+	void repair1(cairo_t * cr, box_int_t const & area);
+	bool has_alpha();
 
-	void set_opacity(double x);
+	void init_cairo();
+	void destroy_cairo();
+
+	void update_map_state(bool is_map);
+
+	void update_position(box_int_t const & position);
+
+	bool is_visible() {
+		return _is_map && c_class == InputOutput;
+	}
+
+	void read_shape();
+	region_t<int> get_region();
 
 };
 

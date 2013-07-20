@@ -199,6 +199,7 @@ public:
 	void unmap_notify();
 
 	void select_input(long int mask);
+	void add_select_input(long int mask);
 
 	void print_net_wm_window_type();
 

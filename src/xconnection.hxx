@@ -570,8 +570,11 @@ public:
 
 	void init_composite_overlay();
 
+	void add_select_input(Window w, long mask);
+
 private:
 	char * _get_atom_name(Atom atom);
+	static int _return_true(Display * dpy, XEvent * ev, XPointer none);
 
 
 };

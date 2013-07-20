@@ -82,7 +82,7 @@ page_t::page_t(int argc, char ** argv) {
 
 	rnd = 0;
 
-	popups = renderable_list_t();
+	//popups = renderable_list_t();
 
 	cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
 	cursor_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
@@ -197,21 +197,15 @@ void page_t::run() {
 
 	XSelectInput(cnx->dpy, wm_window, StructureNotifyMask);
 
-	if(!cnx->register_cm(true, wm_window)) {
-		printf("cannot register composite manager\n");
-		return;
-	}
+
 
 	if(!cnx->register_wm(true, wm_window)) {
 		printf("Canot register window manager\n");
 		return;
 	}
 
-	/* init composite */
-	cnx->init_composite_overlay();
-
 	/* init rander context */
-	rnd = new compositor_t(cnx);
+	rnd = new compositor_t();
 
 	/* init page render */
 	rpage = new renderable_page_t(cnx, theme, rnd->composite_overlay_s,
@@ -356,45 +350,45 @@ void page_t::run() {
 
 
 
-//	struct timeval next_frame;
-//	next_frame.tv_sec = 0;
-//	next_frame.tv_usec = 1.0 / 60.0 * 1.0e5;
-//	fd_set fds_read;
-//	fd_set fds_intr;
+	fd_set fds_read;
+	fd_set fds_intr;
 
 	update_allocation();
 	rnd->add_damage_area(cnx->root_size);
 	running = true;
 	while (running) {
 
-//		FD_ZERO(&fds_read);
-//		FD_SET(cnx->connection_fd, &fds_read);
-//		FD_ZERO(&fds_intr);
-//		FD_SET(cnx->connection_fd, &fds_intr);
-//
-//		XFlush(cnx->dpy);
-//		int nfd = select(cnx->connection_fd+1, &fds_read, 0, &fds_intr, 0);
-//
-//		if(nfd != 0){
-//			while(cnx->process_check_event()) { }
-//				//rnd->render_flush();
-//			XSync(cnx->dpy, False);
-//		}
+		int max = cnx->connection_fd;
 
-//		if(nfd == 0 || next_frame.tv_usec < 1000) {
-//			next_frame.tv_sec = 0;
-//			next_frame.tv_usec = 1.0/60.0 * 1.0e5;
-//
-//			rnd->render_flush();
-//			XFlush(cnx->dpy);
-//		}
+		FD_ZERO(&fds_read);
+		FD_ZERO(&fds_intr);
 
-		/* process packed events */
-		cnx->process_next_event();
+		FD_SET(cnx->connection_fd, &fds_read);
+		FD_SET(cnx->connection_fd, &fds_intr);
+
+		/** listen for compositor events **/
+		if (rnd != 0) {
+			max = cnx->connection_fd > rnd->get_connection_fd() ?
+					cnx->connection_fd : rnd->get_connection_fd();
+
+			FD_SET(rnd->get_connection_fd(), &fds_read);
+			FD_SET(rnd->get_connection_fd(), &fds_intr);
+
+		}
+
+		XFlush(cnx->dpy);
+		rnd->xflush();
+
+		/**
+		 * wait for data in both X11 connection streams (compositor and page)
+		 **/
+		int nfd = select(max + 1, &fds_read, 0, &fds_intr, 0);
+
 		while(cnx->process_check_event())
 			continue;
 		rpage->render_if_needed(default_window_pop);
-		rnd->render_flush();
+		rnd->process_events();
+
 
 	}
 }
@@ -491,7 +485,7 @@ void page_t::scan() {
 			window_t * w = get_window_t(wins[i]);
 			if(!w->read_window_attributes())
 				continue;
-			w->select_input(PropertyChangeMask | StructureNotifyMask);
+			w->add_select_input(PropertyChangeMask | StructureNotifyMask);
 			w->read_when_mapped();
 			update_transient_for(w);
 
@@ -1513,6 +1507,10 @@ void page_t::process_event(XMotionEvent const & e) {
 }
 
 void page_t::process_event(XCirculateEvent const & e) {
+
+	if(rnd != 0)
+		rnd->process_event(e);
+
 // this will be handled in configure events
 //	window_t * w = get_window_t(e.window);
 //	std::map<window_t *, renderable_window_t *>::iterator x = window_to_renderable_context.find(w);
@@ -1530,6 +1528,10 @@ void page_t::process_event(XConfigureEvent const & e) {
 //			e.height, e.x, e.y, e.above, e.event, e.window, (e.send_event == True)?"true":"false");
 	if(e.send_event == True)
 		return;
+
+	if(rnd != 0)
+		rnd->process_event(e);
+
 	if(e.window == cnx->xroot) {
 		cnx->root_size.w = e.width;
 		cnx->root_size.h = e.height;
@@ -1569,13 +1571,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 				((e.override_redirect == True)) ? "True" : "False");
 	}
 
-	if(has_key(window_to_renderable_context, w)) {
-		renderable_window_t * rw = window_to_renderable_context[w];
-		rnd->add_damage_area(rw->get_absolute_extend());
-		rw->reconfigure(box_int_t(e.x, e.y, e.width, e.height));
-		rnd->add_damage_area(rw->get_absolute_extend());
-	}
-
 	bool is_root_window = has_key(_root_window_stack, e.window);
 
 	/* track window position and stacking */
@@ -1605,21 +1600,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 	}
 
-	/* reorder windows */
-	for (std::list<Window>::iterator i = _root_window_stack.begin();
-			i != _root_window_stack.end(); ++i) {
-		if (has_key(window_to_renderable_context, get_window_t(*i))) {
-			rnd->raise(window_to_renderable_context[get_window_t(*i)]);
-		}
-	}
-
-	/* raise popups */
-	//rnd->raise(pfm);
-	//rnd->raise(pn0);
-	//rnd->raise(pn1);
-	//rnd->raise(ps);
-
-
 }
 
 /* track all created window */
@@ -1628,6 +1608,10 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 	/* Is-it fake event? */
 	if (e.send_event == True)
 		return;
+
+	if(rnd != 0)
+		rnd->process_event(e);
+
 	/* Does it come from root window */
 	if (e.parent != cnx->xroot)
 		return;
@@ -1646,7 +1630,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 		return;
 	}
 
-	w->select_input(PropertyChangeMask | StructureNotifyMask);
+	w->add_select_input(PropertyChangeMask | StructureNotifyMask);
 	update_transient_for(w);
 	w->default_position = w->get_size();
 
@@ -1655,6 +1639,9 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
+	if(rnd != 0)
+		rnd->process_event(e);
+
 	window_t * c = get_window_t(e.window);
 
 	if(e.event == cnx->xroot) {
@@ -1687,6 +1674,9 @@ void page_t::process_event(XGravityEvent const & e) {
 }
 
 void page_t::process_event(XMapEvent const & e) {
+	if(rnd != 0)
+		rnd->process_event(e);
+
 	/* find/create window handler */
 	window_t * x = get_window_t(e.window);
 	/* update map status */
@@ -1771,7 +1761,6 @@ void page_t::process_event(XReparentEvent const & e) {
 					window_to_renderable_context.find(x);
 			if (i != window_to_renderable_context.end()) {
 				renderable_window_t * r = i->second;
-				rnd->remove(r);
 				rnd->add_damage_area(x->get_size());
 				destroy_renderable(x);
 			}
@@ -1780,6 +1769,9 @@ void page_t::process_event(XReparentEvent const & e) {
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
+	if(rnd != 0)
+		rnd->process_event(e);
+
 	window_t * x = get_window_t(e.window);
 
 	if (has_key(window_to_renderable_context, x) && e.event == cnx->xroot) {
@@ -2190,48 +2182,9 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
-
 	//printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x, e.area.y);
-
-	/* create an empty region */
-	XserverRegion region = XFixesCreateRegion(cnx->dpy, 0, 0);
-
-	if (!region)
-		throw std::runtime_error("could not create region");
-
-	/* get damaged region and remove them from damaged status */
-	XDamageSubtract(cnx->dpy, e.damage, None, region);
-
-	window_t * x = get_window_t(e.drawable);
-	if (x) {
-
-		XRectangle * rects;
-		int nb_rects;
-
-		/* get all rectangles for the damaged region */
-		rects = XFixesFetchRegion(cnx->dpy, region, &nb_rects);
-
-		if (rects) {
-			for (int i = 0; i < nb_rects; ++i) {
-				box_int_t box(rects[i]);
-				window_to_renderable_context[x]->mark_dirty_retangle(box);
-				box_int_t _ = x->get_size();
-				/* setup absolute damaged area */
-				box.x += _.x;
-				box.y += _.y;
-				if(x->is_visible())
-					rnd->add_damage_area(box);
-				if(e.more == False)
-					rnd->render_flush();
-
-			}
-			XFree(rects);
-		}
-
-		XFixesDestroyRegion(cnx->dpy, region);
-		//rnd->render_flush();
-	}
-
+	if(rnd != 0)
+		rnd->process_event(e);
 }
 
 void page_t::fullscreen(managed_window_t * mw) {
@@ -2985,7 +2938,6 @@ void page_t::destroy(window_t * c) {
 
 	if(has_key(window_to_renderable_context, c)) {
 		renderable_window_t * rw = window_to_renderable_context[c];
-		rnd->remove(rw);
 		destroy_renderable(c);
 	}
 
@@ -3326,20 +3278,11 @@ void page_t::clear_sibbling_child(Window w) {
 }
 
 void page_t::new_renderable_window(window_t * w) {
-	renderable_window_t * rw = new renderable_window_t(w->get_display(), w, w->get_visual(), w->get_size());
-	window_to_renderable_context[w] = rw;
-	rnd->add(rw);
-	rnd->add_damage_area(rw->get_absolute_extend());
+
 }
 
 void page_t::destroy_renderable(window_t * w) {
-	if (has_key(window_to_renderable_context, w)) {
-		renderable_window_t * rw = window_to_renderable_context[w];
-		window_to_renderable_context.erase(w);
-		rnd->remove(rw);
-		rnd->add_damage_area(rw->get_absolute_extend());
-		delete rw;
-	}
+
 }
 
 
@@ -3363,9 +3306,9 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	 * miss events and to get the valid state of windows
 	 **/
 	cnx->grab();
-	base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	base->add_select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
 	/* ensure that events are listen to track window state */
-	orig->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
+	orig->add_select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
 	/* read current window state */
 	orig->read_when_mapped();
 

@@ -19,95 +19,97 @@
 #include <stdint.h>
 
 #include "renderable_window.hxx"
+#include "compositor.hxx"
 
 namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-renderable_window_t::renderable_window_t(Display * d, window_t * w, Visual * v, box_int_t const & p) {
-	dpy = d;
-	window = w;
-	visual = v;
-	position = p;
-
-	XRenderPictFormat * format = XRenderFindVisualFormat(d, v);
-
-	_has_alpha = ( format->type == PictTypeDirect && format->direct.alphaMask );
-	//printf("HAS_ALPHA = %s\n", _has_alpha?"true":"false");
-
-
+renderable_window_t::renderable_window_t() : position(_position) {
+	_dpy = 0;
+	wid = None;
+	visual = 0;
+	_position = box_int_t(-100, -100, 1, 1);
 	damage = None;
-	window_surf = 0;
-
-	opacity = 1.0;
-
-	create_render_context();
+	_is_map = false;
+	_has_alpha = false;
+	_surf = 0;
+	c_class = InputOnly;
+	_region = region_t<int>();
+	has_shape = false;
 }
 
-void renderable_window_t::create_render_context() {
-	if (window_surf == 0 && damage == None) {
+void renderable_window_t::update(Display * dpy, Window w, XWindowAttributes & wa) {
+	_dpy = dpy;
+	wid = w;
+	visual = wa.visual;
+	_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
 
-		/* create the cairo surface */
-		window_surf = cairo_xlib_surface_create(dpy, window->id, visual, position.w, position.h);;
-		if(!window_surf)
-			printf("WARNING CAIRO FAIL\n");
-		/* track update */
-		damage = XDamageCreate(dpy, window->id, XDamageReportNonEmpty);
-		if (damage) {
-			XserverRegion region = XFixesCreateRegion(dpy, 0, 0);
-			XDamageSubtract(dpy, damage, None, region);
-			XFixesDestroyRegion(dpy, region);
-		} else
-			printf("DAMAGE FAIL.\n");
+	XRenderPictFormat * format = XRenderFindVisualFormat(dpy, visual);
+	_has_alpha = ( format->type == PictTypeDirect && format->direct.alphaMask );
+	c_class = wa.c_class;
+
+	update_map_state(wa.map_state != IsUnmapped);
+
+	if (c_class == InputOutput) {
+		printf("Create damage\n");
+		damage = XDamageCreate(_dpy, wid, XDamageReportNonEmpty);
+		if (damage != None) {
+			XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
+			XDamageSubtract(_dpy, damage, None, region);
+			XFixesDestroyRegion(_dpy, region);
+		} else {
+			printf("Damage fail\n");
+		}
+
+		read_shape();
+		XShapeInputSelected(dpy, wid);
+
+		_surf = cairo_xlib_surface_create(_dpy, wid, visual, _position.w, _position.h);
+
 	}
 
 }
 
-void renderable_window_t::set_opacity(double x) {
-	opacity = x;
-	if (x > 1.0)
-		x = 1.0;
-	if (x < 0.0)
-		x = 0.0;
+void renderable_window_t::init_cairo() {
+	//_surf = cairo_xlib_surface_create(_dpy, wid, visual, position.w, position.h);
 }
 
-void renderable_window_t::destroy_render_context() {
+void renderable_window_t::destroy_cairo() {
+	//cairo_surface_destroy(_surf);
+}
+
+
+renderable_window_t::~renderable_window_t() {
+	printf("Destroy Damage\n");
 	if (damage != None) {
-		XDamageDestroy(dpy, damage);
+		XDamageDestroy(_dpy, damage);
 		damage = None;
 	}
 
-	if (window_surf != 0) {
-		cairo_surface_destroy(window_surf);
-		window_surf = 0;
+	if (_surf != 0) {
+		cairo_surface_destroy(_surf);
 	}
-}
-
-renderable_window_t::~renderable_window_t() {
-	destroy_render_context();
 }
 
 
 void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
-	if(window_surf == 0)
-		return;
-	assert(window_surf != 0);
 
-	box_int_t size = position;
+	box_int_t size = _position;
 	box_int_t clip = area & size;
 
-	cairo_xlib_surface_set_size(window_surf, size.w, size.h);
-	cairo_surface_mark_dirty(window_surf);
+	//cairo_xlib_surface_set_size(_surf, size.w, size.h);
+	//cairo_surface_mark_dirty(_surf);
 	//printf("repair window %s %dx%d+%d+%d\n", get_title().c_str(), clip.w, clip.h, clip.x, clip.y);
 	if (clip.w > 0 && clip.h > 0) {
 		cairo_save(cr);
 		cairo_reset_clip(cr);
 		cairo_identity_matrix(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		cairo_set_source_surface(cr, window_surf, size.x, size.y);
+		cairo_set_source_surface(cr, _surf, size.x, size.y);
 		cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 		cairo_clip(cr);
-		cairo_paint_with_alpha(cr, opacity);
+		cairo_paint(cr);
 //		cairo_reset_clip(cr);
 //		cairo_rectangle(cr, clip.x - 0.5, clip.y - 0.5, clip.w - 0.5, clip.h - 0.5);
 //		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
@@ -124,37 +126,70 @@ void renderable_window_t::repair1(cairo_t * cr, box_int_t const & area) {
 //	cairo_restore(cr);
 }
 
-box_int_t renderable_window_t::get_absolute_extend() {
-	return position;
-}
-
-region_t<int> renderable_window_t::get_area() {
-	return window->get_region();
-}
-
-void renderable_window_t::mark_dirty() {
-	//cairo_surface_flush(window_surf);
-	cairo_surface_mark_dirty(window_surf);
-}
-
-void renderable_window_t::mark_dirty_retangle(box_int_t const & area) {
-	//cairo_surface_flush(window_surf);
-	cairo_surface_mark_dirty_rectangle(window_surf, area.x, area.y, area.w,
-			area.h);
-}
-
-bool renderable_window_t::is_visible() {
-	return true;
-}
 
 bool renderable_window_t::has_alpha() {
 	return _has_alpha;
 }
 
-void renderable_window_t::reconfigure(box_int_t const & area) {
-	position = area;
-	cairo_xlib_surface_set_size(window_surf, area.w, area.h);
+void renderable_window_t::update_map_state(bool is_map) {
+	if (is_map == _is_map)
+		return;
+
+	_is_map = is_map;
+
+	if(c_class != InputOutput || _dpy == 0) {
+		damage = None;
+		return;
+	}
+
+	if (_is_map) {
+
+	} else {
+
+	}
 }
+
+void renderable_window_t::read_shape() {
+	if(c_class != InputOutput) {
+		has_shape = false;
+		return;
+	}
+
+	int count, ordering;
+	XRectangle * recs = XShapeGetRectangles(_dpy, wid, ShapeBounding, &count, &ordering);
+
+	_region.clear();
+
+	if(recs != NULL) {
+		has_shape = true;
+		for(int i = 0; i < count; ++i) {
+			_region = _region + box_int_t(recs[i]);
+		}
+		/* In doubt */
+		XFree(recs);
+	} else {
+		has_shape = false;
+	}
+}
+
+region_t<int> renderable_window_t::get_region() {
+	region_t<int> region = _position;
+	if (has_shape) {
+		region_t<int> shape_region = _region;
+		shape_region.translate(_position.x, _position.y);
+		region = region & shape_region;
+	}
+	return region;
+}
+
+void renderable_window_t::update_position(box_int_t const & position) {
+	_position = position;
+	read_shape();
+
+	if(_surf)
+		cairo_xlib_surface_set_size(_surf, _position.w, _position.h);
+}
+
 
 }
 

@@ -574,9 +574,13 @@ void xconnection_t::process_next_event() {
 	}
 }
 
+int xconnection_t::_return_true(Display * dpy, XEvent * ev, XPointer none) {
+	return True;
+}
+
 bool xconnection_t::process_check_event() {
 	XEvent e;
-	if (XCheckMaskEvent(_dpy, 0xffffffff, &e)) {
+	if (XCheckIfEvent(_dpy, &e, _return_true, 0)) {
 
 		/* update last known time */
 		switch(e.type) {
@@ -786,7 +790,16 @@ void xconnection_t::init_composite_overlay() {
 	/* map & passtrough the overlay */
 	composite_overlay = XCompositeGetOverlayWindow(_dpy, xroot);
 	allow_input_passthrough(composite_overlay);
+
+	/** automaticaly redirect windows, but paint window manually */
 	XCompositeRedirectSubwindows(_dpy, xroot, CompositeRedirectManual);
+}
+
+void xconnection_t::add_select_input(Window w, long mask) {
+	XWindowAttributes wa;
+	if (XGetWindowAttributes(_dpy, w, &wa) != 0) {
+		XSelectInput(_dpy, w, wa.your_event_mask | mask);
+	}
 }
 
 

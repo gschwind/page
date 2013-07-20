@@ -1,4 +1,4 @@
-bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual
+bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual page_internal_compositor
 
 AM_CXXFLAGS =  \
 	-rdynamic \
@@ -40,6 +40,27 @@ page_SOURCES = \
 	window_overlay.cxx
 
 page_LDADD = \
+	$(X11_LIBS) \
+	$(CAIRO_LIBS) \
+	$(XCOMPOSITE_LIBS) \
+	$(XDAMAGE_LIBS) \
+	$(XRENDER_LIBS) \
+	$(XRANDR_LIBS) \
+	$(XEXT_LIBS) \
+	$(XINERAMA_LIBS) \
+	$(FT2_LIBS) \
+	$(GLIB_LIBS) \
+	$(RT_LIBS) \
+	-lbfd \
+	-ldl
+
+page_internal_compositor_SOURCES = \
+	page_internal_compositor.cxx \
+	xconnection.cxx \
+	compositor.cxx \
+	renderable_window.cxx
+
+page_internal_compositor_LDADD = \
 	$(X11_LIBS) \
 	$(CAIRO_LIBS) \
 	$(XCOMPOSITE_LIBS) \

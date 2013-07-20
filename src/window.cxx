@@ -300,6 +300,10 @@ void window_t::select_input(long int mask) {
 	_cnx.select_input(id, mask);
 }
 
+void window_t::add_select_input(long int mask) {
+	_cnx.add_select_input(id, mask);
+}
+
 void window_t::print_net_wm_window_type() {
 	unsigned int num;
 	long * val = get_properties32(_cnx.atoms._NET_WM_WINDOW_TYPE,

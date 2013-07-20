@@ -38,10 +38,10 @@ public:
 	void mark_durty();
 	void render_if_needed(notebook_t *);
 
-	virtual void repair1(cairo_t * cr, box_int_t const & area);
-	virtual region_t<int> get_area();
-	virtual bool is_visible();
-	virtual bool has_alpha();
+	void repair1(cairo_t * cr, box_int_t const & area);
+	region_t<int> get_area();
+	bool is_visible();
+	bool has_alpha();
 
 	void render_splits(std::list<split_t *> const & splits);
 	void render_notebooks(std::list<notebook_t *> const & notebooks);

@@ -252,7 +252,7 @@ public:
 	xconnection_t * cnx;
 	compositor_t * rnd;
 
-	renderable_list_t popups;
+	//renderable_list_t popups;
 
 	/* default cursor */
 	Cursor cursor;
