@@ -580,7 +580,14 @@ int xconnection_t::_return_true(Display * dpy, XEvent * ev, XPointer none) {
 
 bool xconnection_t::process_check_event() {
 	XEvent e;
-	if (XCheckIfEvent(_dpy, &e, _return_true, 0)) {
+
+	/** XCheckIfEvent will not block, but it flush output buffer **/
+	//if (XCheckIfEvent(_dpy, &e, _return_true, 0)) {
+	int x;
+	/** Pasive check of event in queue, never flush any thing **/
+	if ((x = XEventsQueued(dpy, QueuedAlready)) > 0) {
+		/** should not never block or flush **/
+		XNextEvent(dpy, &e);
 
 		/* update last known time */
 		switch(e.type) {

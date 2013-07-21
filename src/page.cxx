@@ -340,15 +340,27 @@ void page_t::run() {
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
+	timespec max_wait;
 	fd_set fds_read;
 	fd_set fds_intr;
 
+	/**
+	 * wait for a maximum of 15 ms
+	 * i.e about 60 times per second.
+	 **/
+	max_wait.tv_sec = 0;
+	max_wait.tv_nsec = 15000000;
+
+	int max = cnx->connection_fd;
+
+	if (rnd != 0) {
+		max = cnx->connection_fd > rnd->get_connection_fd() ?
+				cnx->connection_fd : rnd->get_connection_fd();
+	}
+
 	update_allocation();
-	//rnd->add_damage_area(cnx->root_size);
 	running = true;
 	while (running) {
-
-		int max = cnx->connection_fd;
 
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_intr);
@@ -358,18 +370,14 @@ void page_t::run() {
 
 		/** listen for compositor events **/
 		if (rnd != 0) {
-			max = cnx->connection_fd > rnd->get_connection_fd() ?
-					cnx->connection_fd : rnd->get_connection_fd();
-
 			FD_SET(rnd->get_connection_fd(), &fds_read);
 			FD_SET(rnd->get_connection_fd(), &fds_intr);
-
 		}
 
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
-		int nfd = select(max + 1, &fds_read, 0, &fds_intr, 0);
+		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait, NULL);
 
 		while (cnx->process_check_event())
 			continue;
@@ -827,7 +835,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 	if (process_mode == PROCESS_NORMAL) {
 
-		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
 		XFlush(cnx->dpy);
 
 		/**
@@ -838,13 +846,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 //			mw = find_managed_window_with(e.subwindow);
 //
 		managed_window_t * mw = find_managed_window_with(e.window);
-		if (mw != 0 && mw != _client_focused.front()) {
-			set_focus(mw, e.time, false);
+		if (mw != 0) {
+			set_focus(mw, e.time, true);
 		}
 
-//		fprintf(stderr,
-//				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+		fprintf(stderr,
+				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 
 	} else {
 		/**
@@ -1838,9 +1846,11 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 }
 
 void page_t::process_event(XMapRequestEvent const & e) {
+	fprintf(stderr, "Maprequest\n");
 	/* everything will be done in MapEvent */
 	window_t * a = get_window_t(e.window);
 	a->map();
+	XFlush(cnx->dpy);
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
@@ -3190,7 +3200,7 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	Window wdeco;
 	box_int_t b = orig->get_size();
 
-	/** commun window properties **/
+	/** Common window properties **/
 	unsigned long value_mask = CWOverrideRedirect;
 	wa.override_redirect = True;
 
@@ -3351,7 +3361,8 @@ bool page_t::check_manage(window_t * x) {
 	}
 
 	rpage->mark_durty();
-	//rnd->add_damage_area(cnx->root_size);
+	rpage->render_if_needed(default_window_pop);
+	XFlush(cnx->dpy);
 	update_client_list();
 
 	return ret;
