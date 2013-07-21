@@ -103,10 +103,10 @@ inline void print_buffer__(const char * buf, int size) {
 class page_t : public xevent_handler_t {
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
-			(ButtonPressMask | ButtonReleaseMask | StructureNotifyMask |
-					PropertyChangeMask | SubstructureRedirectMask | ExposureMask);
+			PropertyChangeMask | SubstructureRedirectMask | ExposureMask;
+	static long const MANAGED_DECO_WINDOW_EVENT_MASK = NoEventMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
-	StructureNotifyMask | PropertyChangeMask;
+			StructureNotifyMask | PropertyChangeMask;
 
 public:
 
@@ -237,6 +237,8 @@ public:
 	/* this define the current state of page */
 	process_mode_e process_mode;
 
+	bool use_internal_compositor;
+
 	/* this data are used when you drag&drop a split slider */
 	mode_data_split_t mode_data_split;
 	/* this data are used when you drag&drop a notebook tab */
@@ -245,9 +247,6 @@ public:
 	mode_data_floating_t mode_data_floating;
 	/* this data are used when you bind/drag&drop a floating window */
 	mode_data_bind_t mode_data_bind;
-
-
-	static double const OPACITY = 0.95;
 
 	xconnection_t * cnx;
 	compositor_t * rnd;
@@ -269,8 +268,10 @@ public:
 	/* all managed windows */
 	set<managed_window_t *> managed_window;
 
-	/* store data to allow proper revert fullscreen window to
-	 * their original positions */
+	/**
+	 * Store data to allow proper revert fullscreen window to
+	 * their original positions
+	 **/
 	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
@@ -281,17 +282,14 @@ public:
 	string font;
 	string font_bold;
 
-	list<window_t *> root_stack;
-
 	map<Window, list<Window> > transient_for_map;
-
-	double menu_opacity;
 
 private:
 	Time _last_focus_time;
 	Time _last_button_press;
 	list<managed_window_t *> _client_focused;
 
+	/** this window is a mandatory window to handle the wm session **/
 	Window wm_window;
 
 public:
@@ -307,7 +305,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(managed_window_t * w, bool force_focus);
+	void set_focus(managed_window_t * w, Time tfocus, bool force_focus);
 	compositor_t * get_render_context();
 	xconnection_t * get_xconnection();
 

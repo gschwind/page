@@ -55,8 +55,10 @@ public:
 
 	window_t * const orig;
 	window_t * const base;
+	window_t * const deco;
 
-	managed_window_t(managed_window_type_e initial_type, window_t * w, window_t * border, theme_layout_t const * theme);
+	managed_window_t(managed_window_type_e initial_type, window_t * orig,
+			window_t * base, window_t * deco, theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
 	void normalize();
@@ -82,7 +84,7 @@ public:
 
 	cairo_t * get_cairo_context();
 
-	void focus();
+	void focus(Time t);
 
 	managed_window_type_e get_type();
 

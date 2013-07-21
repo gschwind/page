@@ -51,7 +51,7 @@ window_overlay_t::window_overlay_t(xconnection_t * cnx, int depth,
 
 	XSelectInput(_cnx->dpy, _wid, ExposureMask | StructureNotifyMask);
 
-	_cnx->allow_input_passthrough(_wid);
+	//_cnx->allow_input_passthrough(_wid);
 
 	rebuild_cairo();
 
@@ -123,6 +123,24 @@ void window_overlay_t::show() {
 
 void window_overlay_t::hide() {
 	_cnx->unmap(_wid);
+}
+
+void window_overlay_t::repair(box_int_t const & area) {
+	//region_t<int> r = get_area();
+	//std::cout << r.to_string() << std::endl;
+	//region_t<int>::box_list_t::const_iterator i = r.begin();
+	//while(i != r.end()) {
+		box_int_t clip = _area & area;
+		if (!clip.is_null()) {
+			//std::cout << "yyy: " << clip.to_string() << std::endl;
+			cairo_set_operator(_wid_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_wid_cr, clip.x, clip.y, clip.w, clip.h);
+			cairo_set_source_surface(_wid_cr, _surf, 0, 0);
+			cairo_paint(_wid_cr);
+			cairo_surface_flush(_wid_surf);
+		}
+//		++i;
+//	}
 }
 
 

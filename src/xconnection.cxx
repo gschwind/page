@@ -699,7 +699,8 @@ Status xconnection_t::send_event(Window w, Bool propagate, long event_mask,
 
 int xconnection_t::set_input_focus(Window focus, int revert_to, Time time) {
 	unsigned long serial = XNextRequest(_dpy);
-	printf(">%08lu XSetInputFocus: win = %lu\n", serial, focus);
+	printf(">%08lu XSetInputFocus: win = %lu, time = %lu\n", serial, focus, time);
+	fflush(stdout);
 	return XSetInputFocus(_dpy, focus, revert_to, time);
 }
 

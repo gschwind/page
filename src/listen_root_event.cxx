@@ -29,7 +29,9 @@ int main(int argc, char ** argv) {
 
 	//XSelectInput(dpy, root, SubstructureNotifyMask | SubstructureRedirectMask);
 
-	XSelectInput(dpy, w, SubstructureNotifyMask | SubstructureRedirectMask | ButtonPressMask | ButtonMotionMask | ButtonReleaseMask);
+	//XSelectInput(dpy, w, SubstructureNotifyMask | SubstructureRedirectMask | ButtonPressMask | ButtonMotionMask | ButtonReleaseMask);
+
+	XGrabButton(dpy, AnyButton, AnyModifier, w, False, ButtonPressMask | ButtonMotionMask | ButtonReleaseMask, GrabModeSync, GrabModeAsync, None, None);
 
 	XMapWindow(dpy, w);
 
@@ -66,6 +68,10 @@ int main(int argc, char ** argv) {
 			XDestroyWindowEvent & e = ev.xdestroywindow;
 			printf("%s event: #%lu window #%lu send_event: %d\n",
 					x_event_name[e.type], e.event, e.window, e.send_event);
+		} else if (ev.type == ButtonPress) {
+			printf("%s event: #%lu window #%lu send_event: %d\n",
+					x_event_name[ev.xany.type], ev.xany.serial, ev.xany.window, ev.xany.send_event);
+			XAllowEvents(dpy, AsyncPointer, ev.xbutton.time);
 		} else {
 			printf("%s event: #%lu window #%lu send_event: %d\n",
 					x_event_name[ev.xany.type], ev.xany.serial, ev.xany.window, ev.xany.send_event);

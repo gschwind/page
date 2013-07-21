@@ -159,8 +159,8 @@ public:
 	void unlock();
 	void map();
 	void unmap();
-	void focus();
-	void icccm_focus();
+	void focus(Time t);
+	void icccm_focus(Time t);
 	void move_resize(box_int_t const & location);
 
 	box_int_t get_size();
@@ -257,6 +257,10 @@ public:
 	region_t<int> get_region();
 
 	void print_xprop();
+
+	void ungrab_all_buttons();
+	void grab_all_buttons();
+	void grab_button_unfocused();
 
 };
 

@@ -50,6 +50,8 @@ public:
 	void show();
 	void hide();
 
+	void repair(box_int_t const & area);
+
 };
 
 }

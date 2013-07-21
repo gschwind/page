@@ -12,14 +12,17 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(managed_window_type_e initial_type, window_t * orig, window_t * base, theme_layout_t const * theme) : orig(orig), base(base) {
+managed_window_t::managed_window_t(managed_window_type_e initial_type,
+		window_t * orig, window_t * base, window_t * deco,
+		theme_layout_t const * theme) :
+		orig(orig), base(base), deco(deco) {
 
 	set_theme(theme);
 	init_managed_type(initial_type);
 
 	orig->reparent(base->id, 0, 0);
 
-	_surf = base->create_cairo_surface();
+	_surf = deco->create_cairo_surface();
 	assert(_surf != 0);
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
@@ -42,12 +45,14 @@ managed_window_t::~managed_window_t() {
 }
 
 void managed_window_t::normalize() {
-	base->map();
 	orig->normalize();
+	deco->map();
+	base->map();
 }
 
 void managed_window_t::iconify() {
 	base->unmap();
+	deco->unmap();
 	orig->iconify();
 }
 
@@ -69,6 +74,7 @@ void managed_window_t::reconfigure() {
 	_orig_position.h = _wished_position.h;
 
 	base->move_resize(_base_position);
+	deco->move_resize(box_int_t(0, 0, _base_position.w, _base_position.h));
 	orig->move_resize(_orig_position);
 
 	cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
@@ -156,8 +162,15 @@ cairo_t * managed_window_t::get_cairo_context() {
 	return _cr;
 }
 
-void managed_window_t::focus() {
-	orig->icccm_focus();
+void managed_window_t::focus(Time t) {
+	if(!orig->is_map())
+		return;
+
+	/** when focus a window, disable all button grab **/
+	base->ungrab_all_buttons();
+
+	orig->icccm_focus(t);
+
 }
 
 box_int_t managed_window_t::get_base_position() const {

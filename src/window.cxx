@@ -465,14 +465,17 @@ void window_t::unlock() {
 	_cnx.ungrab();
 }
 
-void window_t::focus() {
-	_cnx.set_input_focus(id, RevertToPointerRoot, CurrentTime);
+void window_t::focus(Time t) {
+	_cnx.set_input_focus(id, RevertToParent, t);
 }
 
-void window_t::icccm_focus() {
+void window_t::icccm_focus(Time t) {
+	fprintf(stderr, "Focus time = %lu\n", t);
+	if (!is_map())
+		return;
 
-	if (is_map() && _wm_input_focus) {
-			focus();
+	if (_wm_input_focus) {
+		focus(t);
 	}
 
 	if (_net_wm_protocols.find(_cnx.atoms.WM_TAKE_FOCUS)
@@ -484,7 +487,7 @@ void window_t::icccm_focus() {
 		ev.xclient.message_type = _cnx.atoms.WM_PROTOCOLS;
 		ev.xclient.window = id;
 		ev.xclient.data.l[0] = _cnx.atoms.WM_TAKE_FOCUS;
-		ev.xclient.data.l[1] = CurrentTime;
+		ev.xclient.data.l[1] = t;
 		_cnx.send_event(id, False, NoEventMask, &ev);
 	}
 
@@ -988,6 +991,31 @@ void window_t::print_xprop() {
 	}
 
 	printf("\n");
+
+}
+
+void window_t::grab_all_buttons() {
+	XGrabButton(_cnx.dpy, AnyButton, AnyModifier, id, False,
+			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+			GrabModeSync, GrabModeAsync, None, None);
+}
+
+void window_t::ungrab_all_buttons() {
+	XUngrabButton(_cnx.dpy, AnyButton, AnyModifier, id);
+}
+
+void window_t::grab_button_unfocused() {
+	XGrabButton(_cnx.dpy, Button1, AnyModifier, id,
+			False, ButtonPressMask, GrabModeSync,
+			GrabModeAsync, None, None);
+
+	XGrabButton(_cnx.dpy, Button2, AnyModifier, id,
+			False, ButtonPressMask, GrabModeSync,
+			GrabModeAsync, None, None);
+
+	XGrabButton(_cnx.dpy, Button3, AnyModifier, id,
+			False, ButtonPressMask, GrabModeSync,
+			GrabModeAsync, None, None);
 
 }
 

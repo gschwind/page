@@ -70,6 +70,23 @@ char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
 
 page_t::page_t(int argc, char ** argv) {
 
+	use_internal_compositor = true;
+	char const * conf_file_name = 0;
+
+	/** parse command line **/
+
+	int k = 1;
+	while(k < argc) {
+		string x = argv[k];
+		if(x == "--disable-compositor") {
+			use_internal_compositor = false;
+		} else {
+			conf_file_name = argv[k];
+		}
+		++k;
+	}
+
+
 	process_mode = PROCESS_NORMAL;
 
 	mode_data_split = mode_data_split_t();
@@ -103,8 +120,8 @@ page_t::page_t(int argc, char ** argv) {
 	}
 
 	/* load file in arguments if provided */
-	if (argc == 2) {
-		conf.merge_from_file_if_exist(string(argv[1]));
+	if (conf_file_name != 0) {
+		conf.merge_from_file_if_exist(string(conf_file_name));
 	}
 
 	xwindow_to_window = window_map_t();
@@ -125,8 +142,6 @@ page_t::page_t(int argc, char ** argv) {
 	_last_focus_time = 0;
 	_last_button_press = 0;
 
-	root_stack = list<window_t *>();
-
 	transient_for_map = map<Window, list<Window> >();
 
 	//theme = new default_theme_t(page_base_dir, font, font_bold);
@@ -134,8 +149,6 @@ page_t::page_t(int argc, char ** argv) {
 	theme = new simple_theme_t(conf);
 
 	rpage = 0;
-
-	menu_opacity = conf.get_double("default", "menu_opacity");
 
 	_client_focused.push_front(0);
 
@@ -151,7 +164,8 @@ page_t::~page_t() {
 
 	delete rpage;
 	delete theme;
-	delete rnd;
+	if(rnd != 0)
+		delete rnd;
 	delete cnx;
 
 }
@@ -180,8 +194,10 @@ void page_t::run() {
 		return;
 	}
 
-	/* init rander context */
-	rnd = new compositor_t();
+	/** load compositor if requested **/
+	if (use_internal_compositor) {
+		rnd = new compositor_t();
+	}
 
 	/* init page render */
 	rpage = new renderable_page_t(cnx, theme, 0,
@@ -279,7 +295,7 @@ void page_t::run() {
 	XSetIconSizes(cnx->dpy, cnx->xroot, &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
-	set_focus(0, false);
+	set_focus(0, 0, false);
 
 	/* add page event handler */
 	cnx->add_event_handler(this);
@@ -320,11 +336,9 @@ void page_t::run() {
 	/* This grab will freeze input for all client, all mouse button, until
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow futher processing by other clients. */
-	XGrabButton(cnx->dpy, AnyButton, AnyModifier, cnx->xroot, False,
+	XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->wid, False,
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
-
-
 
 	fd_set fds_read;
 	fd_set fds_intr;
@@ -352,18 +366,20 @@ void page_t::run() {
 
 		}
 
-		XFlush(cnx->dpy);
-		rnd->xflush();
-
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
 		int nfd = select(max + 1, &fds_read, 0, &fds_intr, 0);
 
-		while(cnx->process_check_event())
+		while (cnx->process_check_event())
 			continue;
 		rpage->render_if_needed(default_window_pop);
-		rnd->process_events();
+		XFlush(cnx->dpy);
+
+		if (rnd != 0) {
+			rnd->process_events();
+			rnd->xflush();
+		}
 
 
 	}
@@ -407,7 +423,7 @@ void page_t::unmanage(managed_window_t * mw) {
 			if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
 				activate_client(_client_focused.front());
 			} else {
-				set_focus(_client_focused.front(), true);
+				//set_focus(_client_focused.front(), true);
 			}
 		}
 
@@ -441,14 +457,11 @@ void page_t::scan() {
 
 	/* start listen root event before anything each event will be stored to right run later */
 	XSelectInput(cnx->dpy, cnx->xroot,
-			KeyPressMask | KeyReleaseMask | SubstructureNotifyMask
-					| SubstructureRedirectMask | ButtonReleaseMask
-					| ButtonPressMask | ButtonMotionMask);
+			  SubstructureNotifyMask
+			| SubstructureRedirectMask
+			| PropertyChangeMask);
 
 	xwindow_to_window.clear();
-	//window_to_managed_window.clear();
-	//orig_window_to_floating_window.clear();
-	//orig_window_to_notebook_window.clear();
 
 	if (XQueryTree(cnx->dpy, cnx->xroot, &d1, &d2, &wins, &num)) {
 
@@ -695,22 +708,15 @@ void page_t::process_event(XKeyEvent const & e) {
 
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
-	//printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-	//		e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+	fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	window_t * c = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
-
-	if(_last_button_press >= e.time) {
-		/* ignore this event */
-		printf("ignore this press event\n");
-		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
-		return;
-	}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e.window == cnx->xroot && e.root == cnx->xroot && e.subwindow == None && e.button == Button1) {
+		if (e.window == rpage->wid && e.subwindow == None && e.button == Button1) {
 		/* split and notebook are mutually exclusive */
 			if (!check_for_start_split(e)) {
 				mode_data_notebook.start_x = e.x_root;
@@ -813,59 +819,62 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		}
 
 		break;
-	case PROCESS_SPLIT_GRAB:
-		break;
-	case PROCESS_NOTEBOOK_GRAB:
-		break;
-	case PROCESS_FLOATING_GRAB:
-		break;
-	case PROCESS_FLOATING_RESIZE:
-		break;
 	default:
+		fprintf(stderr, "XXXXYYYYY\n");
 		break;
 	}
 
-	/**
-	 * if no change in process mode, focus the window under the cursor
-	 * and replay events for the window this window.
-	 **/
-	if (process_mode == PROCESS_NORMAL) {
-		if (mw != 0) {
-			set_focus(mw, true);
-		} else if((mw = find_managed_window_with(e.subwindow)) != 0) {
-			set_focus(mw, true);
-		}
-		/**
-		 * don't keep event and replay events for others clients
-		 * It's like we never Grabbed this events.
-		 **/
-		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
-	} else {
-		_last_button_press = e.time;
 
+	if (process_mode == PROCESS_NORMAL) {
+
+		XAllowEvents(cnx->dpy, ReplayPointer, e.time);
+		XFlush(cnx->dpy);
+
+		/**
+		 * This focus is anoying because, passive grab can the
+		 * focus itself.
+		 **/
+//		if(mw == 0)
+//			mw = find_managed_window_with(e.subwindow);
+//
+		managed_window_t * mw = find_managed_window_with(e.window);
+		if (mw != 0 && mw != _client_focused.front()) {
+			set_focus(mw, e.time, false);
+		}
+
+//		fprintf(stderr,
+//				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+
+	} else {
+		/**
+		 * if no change in process mode, focus the window under the cursor
+		 * and replay events for the window this window.
+		 **/
 		/**
 		 * keep pointer events for page.
 		 * It's like we XGrabButton with GrabModeASync
 		 **/
+
 		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
+		XFlush(cnx->dpy);
+
+		fprintf(stderr,
+				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+
 	}
 
 }
 
 void page_t::process_event_release(XButtonEvent const & e) {
-	//printf("Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
-	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
+	fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
+			e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
 	if (e.button == Button1) {
 		switch (process_mode) {
 		case PROCESS_NORMAL:
-
-		{
-			managed_window_t * mw = find_managed_window_with(e.window);
-			if (mw != 0) {
-				set_focus(mw, false);
-			}
-		}
+			fprintf(stderr, "DDDDDDDDDDD\n");
 			break;
 		case PROCESS_SPLIT_GRAB:
 
@@ -874,9 +883,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			ps->hide();
 
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
-			//rnd->add_damage_area(mode_data_split.split->_allocation);
 			rpage->mark_durty();
-			//rnd->add_damage_area(rpage->get_area());
 
 			mode_data_split.split = 0;
 			mode_data_split.slider_area = box_int_t();
@@ -917,7 +924,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				unbind_window(mode_data_notebook.c);
 			} else {
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
-				//set_focus(mode_data_notebook.c, false);
 			}
 
 			/* automaticaly close empty notebook */
@@ -925,13 +931,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					&& mode_data_notebook.from->_parent != 0) {
 				notebook_close(mode_data_notebook.from);
 				update_allocation();
-			} else {
-				//rnd->add_damage_area(mode_data_notebook.from->_allocation);
 			}
 
-			set_focus(mode_data_notebook.c, false);
+			set_focus(mode_data_notebook.c, e.time, false);
 			rpage->mark_durty();
-			//rnd->add_damage_area(rpage->get_area());
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -959,26 +962,21 @@ void page_t::process_event_release(XButtonEvent const & e) {
 							e.y)) {
 						notebook_close(mode_data_notebook.from);
 						rpage->mark_durty();
-						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_vsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 						update_allocation();
 						rpage->mark_durty();
-						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_hsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
 						update_allocation();
 						rpage->mark_durty();
-						//rnd->add_damage_area(cnx->root_size);
 					} else if (mode_data_notebook.from->button_pop.is_inside(
 							e.x, e.y)) {
 						default_window_pop = mode_data_notebook.from;
-						//rnd->add_damage_area(mode_data_notebook.from->tab_area);
 						update_allocation();
 						rpage->mark_durty();
-						//rnd->add_damage_area(cnx->root_size);
 					}
 				}
 			}
@@ -1000,9 +998,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			theme->render_floating(mode_data_floating.f,
 					is_focussed(mode_data_floating.f));
 
-			//rnd->add_damage_area(cnx->root_size);
-
-			set_focus(mode_data_floating.f, false);
+			set_focus(mode_data_floating.f, e.time, false);
 			process_mode = PROCESS_NORMAL;
 
 			mode_data_floating.mode = RESIZE_NONE;
@@ -1025,9 +1021,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			theme->render_floating(mode_data_floating.f,
 					is_focussed(mode_data_floating.f));
 
-			set_focus(mode_data_floating.f, false);
+			set_focus(mode_data_floating.f, e.time, false);
 			process_mode = PROCESS_NORMAL;
-			//XUngrabPointer(cnx->dpy, CurrentTime);
 
 			mode_data_floating.mode = RESIZE_NONE;
 			mode_data_floating.x_offset = 0;
@@ -1081,9 +1076,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 						true);
 
 				safe_raise_window(mode_data_bind.c->orig);
-
 				rpage->mark_durty();
-				//rnd->add_damage_area(cnx->root_size);
 				update_client_list();
 
 			} else if (mode_data_bind.zone == SELECT_TOP
@@ -1106,11 +1099,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				bind_window(mode_data_bind.c);
 			}
 
-			//rnd->add_damage_area(mode_data_bind.c->get_base_position());
-
-			set_focus(mode_data_bind.c, false);
+			set_focus(mode_data_bind.c, e.time, false);
 			rpage->mark_durty();
-			//rnd->add_damage_area(rpage->get_area());
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1128,9 +1118,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			break;
 		}
 	}
+
 }
 
 void page_t::process_event(XMotionEvent const & e) {
+
 	XEvent ev;
 	box_int_t old_area;
 	box_int_t new_position;
@@ -1138,6 +1130,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	count++;
 	switch (process_mode) {
 	case PROCESS_NORMAL:
+		fprintf(stderr, "EEEEEEEEEE\n");
 		/* should not happen */
 		break;
 	case PROCESS_SPLIT_GRAB:
@@ -1167,9 +1160,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				mode_data_split.split_ratio);
 
 		ps->move_resize(mode_data_split.slider_area);
-
-		//rnd->add_damage_area(old_area);
-		//rnd->add_damage_area(mode_data_split.slider_area);
 
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
@@ -1369,10 +1359,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.h += theme->get_theme_layout()->floating_margin.top + theme->get_theme_layout()->floating_margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
-
-
-		//mode_data_floating.f->set_wished_position(size);
-		//theme->render_floating(mode_data_floating.f);
 
 		break;
 	}
@@ -1629,6 +1615,9 @@ void page_t::process_event(XMapEvent const & e) {
 
 	managed_window_t * wm;
 	if((wm = find_managed_window_with(e.window)) != 0) {
+		//set_focus(wm, true);
+		if(wm == _client_focused.front())
+			wm->focus(_last_focus_time);
 		wm->reconfigure();
 		if(wm->is(MANAGED_FLOATING))
 			theme->render_floating(wm, is_focussed(wm));
@@ -1865,8 +1854,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 	if (e.atom == cnx->atoms._NET_WM_USER_TIME) {
 		x->read_net_wm_user_time();
-		if (_last_focus_time < x->get_net_user_time())
-			_last_focus_time = x->get_net_user_time();
+		//if (_last_focus_time < x->get_net_user_time())
+		//	_last_focus_time = x->get_net_user_time();
 	} else if (e.atom == cnx->atoms._NET_WM_NAME) {
 		x->read_net_vm_name();
 		if (mw != 0) {
@@ -2014,7 +2003,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->normalize();
-				set_focus(mw, false);
+				//set_focus(mw, false);
 			}
 		}
 	} else if (e.message_type == cnx->atoms._NET_WM_STATE) {
@@ -2072,9 +2061,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
+	printf("Should not append\n");
 	//printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x, e.area.y);
-	//if(rnd != 0)
-	//	rnd->process_event(e);
 }
 
 void page_t::fullscreen(managed_window_t * mw) {
@@ -2118,7 +2106,7 @@ void page_t::fullscreen(managed_window_t * mw) {
 	mw->normalize();
 	mw->orig->set_fullscreen();
 	mw->set_wished_position(data.viewport->raw_aera);
-	set_focus(mw, false);
+	//set_focus(mw, false);
 	safe_raise_window(mw->orig);
 }
 
@@ -2156,7 +2144,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	}
 
 	mw->orig->unset_fullscreen();
-	set_focus(mw, false);
+	//set_focus(mw, false);
 	update_allocation();
 	//nd->add_damage_area(cnx->root_size);
 
@@ -2226,29 +2214,29 @@ void page_t::process_event(XEvent const & e) {
 
 
 //	if (e.type == MapNotify) {
-//		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xmap.serial,
-//				x_event_name[e.type], e.xmap.event, e.xmap.window, page.safe_get_window_name(e.xmap.window).c_str());
+//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xmap.serial,
+//				x_event_name[e.type], e.xmap.event, e.xmap.window, safe_get_window_name(e.xmap.window).c_str());
 //	} else if (e.type == DestroyNotify) {
-//		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xdestroywindow.serial,
+//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xdestroywindow.serial,
 //				x_event_name[e.type], e.xdestroywindow.event,
-//				e.xdestroywindow.window, page.safe_get_window_name(e.xdestroywindow.window).c_str());
+//				e.xdestroywindow.window, safe_get_window_name(e.xdestroywindow.window).c_str());
 //	} else if (e.type == MapRequest) {
-//		printf("#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xmaprequest.serial,
+//		fprintf(stderr, "#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xmaprequest.serial,
 //				x_event_name[e.type], e.xmaprequest.parent,
-//				e.xmaprequest.window, page.safe_get_window_name(e.xmaprequest.window).c_str());
+//				e.xmaprequest.window, safe_get_window_name(e.xmaprequest.window).c_str());
 //	} else if (e.type == UnmapNotify) {
-//		printf("#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xunmap.serial,
-//				x_event_name[e.type], e.xunmap.event, e.xunmap.window, page.safe_get_window_name(e.xunmap.window).c_str());
+//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xunmap.serial,
+//				x_event_name[e.type], e.xunmap.event, e.xunmap.window, safe_get_window_name(e.xunmap.window).c_str());
 //	} else if (e.type == CreateNotify) {
-//		printf("#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xcreatewindow.serial,
+//		fprintf(stderr, "#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xcreatewindow.serial,
 //				x_event_name[e.type], e.xcreatewindow.parent,
-//				e.xcreatewindow.window, page.safe_get_window_name(e.xcreatewindow.window).c_str());
+//				e.xcreatewindow.window, safe_get_window_name(e.xcreatewindow.window).c_str());
 //	} else if (e.type < LASTEvent && e.type > 0) {
-//		printf("#%08lu %s: win: #%lu, name=\"%s\"\n", e.xany.serial, x_event_name[e.type],
-//				e.xany.window, page.safe_get_window_name(e.xany.window).c_str());
+//		fprintf(stderr, "#%08lu %s: win: #%lu, name=\"%s\"\n", e.xany.serial, x_event_name[e.type],
+//				e.xany.window, safe_get_window_name(e.xany.window).c_str());
 //	}
 
-	fflush(stdout);
+//	fflush(stdout);
 
 //	page.cnx->grab();
 //
@@ -2316,10 +2304,30 @@ void page_t::process_event(XEvent const & e) {
 			w->read_shape();
 		}
 	} else if (e.type == Expose) {
+		printf("Export Event\n");
+		if(e.xexpose.window == rpage->wid) {
+
+			rpage->repair(
+					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
+							e.xexpose.height));
+
+		}
+
 		rpage->rebuild_cairo();
 		rpage->mark_durty();
 
 		pfm->rebuild_cairo();
+	} else {
+		fprintf(stderr, "Not handled event:\n");
+		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
+			fprintf(stderr, "#%lu type: %s, send_event: %u, window: %lu\n",
+					e.xany.serial, x_event_name[e.xany.type], e.xany.send_event,
+					e.xany.window);
+		} else {
+			fprintf(stderr, "#%lu type: %u, send_event: %u, window: %lu\n",
+					e.xany.serial, e.xany.type, e.xany.send_event,
+					e.xany.window);
+		}
 	}
 
 	//page.rnd->render_flush();
@@ -2339,13 +2347,12 @@ void page_t::activate_client(managed_window_t * x) {
 	notebook_t * n = find_notebook_for(x);
 	if (n != 0) {
 		n->activate_client(x);
-		set_focus(x, false);
+		XFlush(cnx->dpy);
+		//set_focus(x, false);
 		rpage->mark_durty();
-		//rnd->add_damage_area(n->get_absolute_extend());
-		//rnd->add_damage_area(rpage->get_area());
 	} else {
 		/* floating window or fullscreen window */
-		set_focus(x, false);
+		//set_focus(x, false);
 		//rnd->add_damage_area(x->get_base_position());
 	}
 }
@@ -2414,9 +2421,10 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->default_pop = default_window_pop;
 }
 
-void page_t::set_focus(managed_window_t * focus, bool force_focus) {
+void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) {
 
-	_last_focus_time = cnx->last_know_time;
+	_last_focus_time = tfocus;
+	//_last_focus_time = cnx->last_know_time;
 
 	managed_window_t * current_focus = 0;
 
@@ -2429,6 +2437,11 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 		if(current_focus->get_type() == MANAGED_FLOATING) {
 			theme->render_floating(current_focus, false);
 		}
+
+		/** When windows are unfocused grab button 1, 2 and 3 events **/
+		current_focus->base->ungrab_all_buttons();
+		current_focus->base->grab_button_unfocused();
+
 	}
 
 	if(current_focus == focus && !force_focus)
@@ -2438,7 +2451,7 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 		return;
 
 	printf("focus [%lu] %s\n", focus->orig->id, focus->get_title().c_str());
-
+	fflush(stdout);
 	rpage->mark_durty();
 	//rnd->add_damage_area(rpage->get_area());
 
@@ -2449,8 +2462,8 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 	rpage->set_focuced_client(focus);
 	focus->orig->set_focused();
 	safe_raise_window(focus->orig);
-	if (focus->orig->is_map())
-		focus->focus();
+
+	focus->focus(_last_focus_time);
 	if (focus->get_type() == MANAGED_FLOATING) {
 		theme->render_floating(focus, true);
 		//rnd->add_damage_area(focus->base->get_size());
@@ -2463,10 +2476,6 @@ void page_t::set_focus(managed_window_t * focus, bool force_focus) {
 			reinterpret_cast<unsigned char *>(&xw), 1);
 
 
-}
-
-compositor_t * page_t::get_render_context() {
-	return rnd;
 }
 
 xconnection_t * page_t::get_xconnection() {
@@ -3175,37 +3184,73 @@ managed_window_t * page_t::new_managed_window(managed_window_type_e type, window
 	/**
 	 * Create the base window, window that will content managed window
 	 **/
-	Visual * v = 0;
-	if(orig->get_depth() == 32 && cnx->root_wa.depth != 32) {
-		v = orig->get_visual();
+
+	XSetWindowAttributes wa;
+	Window wbase;
+	Window wdeco;
+	box_int_t b = orig->get_size();
+
+	/** commun window properties **/
+	unsigned long value_mask = CWOverrideRedirect;
+	wa.override_redirect = True;
+
+
+	/**
+	 * If window visual is 32 bit (have alpha channel, and root do not
+	 * have alpha channel, use the window visual, other wise, always prefer
+	 * root visual.
+	 **/
+	if (orig->get_depth() == 32 && cnx->root_wa.depth != 32) {
+		/** if visual is 32 bits, this values are mandatory **/
+		Visual * v = orig->get_visual();
+		wa.colormap = XCreateColormap(cnx->dpy, cnx->xroot, v, AllocNone);
+		wa.background_pixel = BlackPixel(cnx->dpy, cnx->screen);
+		wa.border_pixel = BlackPixel(cnx->dpy, cnx->screen);
+		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
+
+		wbase = XCreateWindow(cnx->dpy, cnx->xroot, b.x, b.y, b.w, b.h, 0, 32,
+				InputOutput, v, value_mask, &wa);
+		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
+				InputOutput, v, value_mask, &wa);
+	} else {
+		wbase = XCreateWindow(cnx->dpy, cnx->xroot, b.x, b.y, b.w, b.h, 0,
+				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
+				value_mask, &wa);
+		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0,
+				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
+				value_mask, &wa);
 	}
 
-	Window parent = cnx->create_window(v, 0, 0, 1, 1);
-	window_t * base = get_window_t(parent);
+
+	window_t * base = get_window_t(wbase);
+	window_t * deco = get_window_t(wdeco);
 	base->read_window_attributes();
-	base->grab_button(Button1);
+	deco->read_window_attributes();
 
 	/**
 	 * Grab and sync the server before reading and setup select_input to not
 	 * miss events and to get the valid state of windows
 	 **/
 	cnx->grab();
-	base->add_select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	deco->select_input(MANAGED_DECO_WINDOW_EVENT_MASK);
 	/* ensure that events are listen to track window state */
-	orig->add_select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
+	orig->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
 	/* read current window state */
 	orig->read_when_mapped();
 
 	/* Grab button click */
-	XGrabButton(cnx->dpy, AnyButton, AnyModifier, base->id, False,
-			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-			GrabModeSync, GrabModeAsync, None, None);
+	deco->grab_all_buttons();
+	base->ungrab_all_buttons();
+	base->grab_button_unfocused();
 
 	cnx->ungrab();
 
-	managed_window_t * mw = new managed_window_t(type, orig, base,
+	managed_window_t * mw = new managed_window_t(type, orig, base, deco,
 			theme->get_theme_layout());
 	managed_window.insert(mw);
+
+	XFlush(cnx->dpy);
 	return mw;
 }
 
@@ -3218,7 +3263,7 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	if(_client_focused.front() == mw) {
 		_client_focused.remove(mw);
 		if(!_client_focused.empty()) {
-			set_focus(_client_focused.front(), true);
+			//set_focus(_client_focused.front(), true);
 		}
 	} else {
 		_client_focused.remove(mw);
@@ -3300,7 +3345,7 @@ bool page_t::check_manage(window_t * x) {
 			fw->reconfigure();
 		}
 
-		set_focus(fw, false);
+		//set_focus(fw, false);
 
 		ret = true;
 	}
@@ -3625,7 +3670,6 @@ void page_t::update_viewport_layout() {
 void page_t::cleanup_reference(void * ref) {
 	viewport_list.remove(reinterpret_cast<viewport_t *>(ref));
 	fullscreen_client_to_viewport.erase(reinterpret_cast<managed_window_t*>(ref));
-	root_stack.remove(reinterpret_cast<window_t*>(ref));
 	_client_focused.remove(reinterpret_cast<managed_window_t*>(ref));
 
 }
@@ -3728,7 +3772,7 @@ void page_t::get_managed_windows(list<managed_window_t *> & l) {
 
 managed_window_t * page_t::find_managed_window_with(Window w) {
 	for(set<managed_window_t *>::iterator i = managed_window.begin(); i != managed_window.end(); ++i) {
-		if((*i)->base->id == w or (*i)->orig->id == w)
+		if((*i)->base->id == w or (*i)->orig->id == w or (*i)->deco->id == w)
 			return *i;
 	}
 	return 0;
