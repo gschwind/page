@@ -47,12 +47,10 @@ window_overlay_t::window_overlay_t(xconnection_t * cnx, int depth,
 	wa.colormap = XCreateColormap(_cnx->dpy, _cnx->xroot, _visual, AllocNone);
 
 	_wid = XCreateWindow(_cnx->dpy, _cnx->xroot, _area.x, _area.y, _area.w,
-			_area.h, 0, vinfo.depth, InputOutput, _visual, CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap, &wa);
+			_area.h, 0, vinfo.depth, InputOutput, _visual,
+			CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap, &wa);
 
 	XSelectInput(_cnx->dpy, _wid, ExposureMask | StructureNotifyMask);
-
-	//_cnx->allow_input_passthrough(_wid);
-
 	rebuild_cairo();
 
 }

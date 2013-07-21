@@ -2298,6 +2298,15 @@ void page_t::process_event(XEvent const & e) {
 			if(mw->is(MANAGED_FLOATING))
 				theme->render_floating(mw, is_focussed(mw));
 		}
+
+		if (e.xexpose.window == rpage->wid) {
+			rpage->render_if_needed(default_window_pop);
+			rpage->repair(
+					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
+							e.xexpose.height));
+
+		}
+
 	} else if (e.type == cnx->xinerama_event) {
 		printf("a xinerama event\n");
 	} else if (e.type == cnx->xrandr_event + RRScreenChangeNotify) {
@@ -2313,20 +2322,6 @@ void page_t::process_event(XEvent const & e) {
 			window_t * w = get_window_t(se->window);
 			w->read_shape();
 		}
-	} else if (e.type == Expose) {
-		printf("Export Event\n");
-		if(e.xexpose.window == rpage->wid) {
-
-			rpage->repair(
-					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
-							e.xexpose.height));
-
-		}
-
-		rpage->rebuild_cairo();
-		rpage->mark_durty();
-
-		pfm->rebuild_cairo();
 	} else {
 		fprintf(stderr, "Not handled event:\n");
 		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
@@ -3361,8 +3356,6 @@ bool page_t::check_manage(window_t * x) {
 	}
 
 	rpage->mark_durty();
-	rpage->render_if_needed(default_window_pop);
-	XFlush(cnx->dpy);
 	update_client_list();
 
 	return ret;

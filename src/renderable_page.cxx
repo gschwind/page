@@ -62,29 +62,6 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 	}
 }
 
-void renderable_page_t::repair1(cairo_t * cr, box_int_t const & area) {
-	region_t<int> r = get_area();
-	//std::cout << r.to_string() << std::endl;
-	region_t<int>::box_list_t::const_iterator i = r.begin();
-	while(i != r.end()) {
-		box_int_t clip = *i & area;
-		if (!clip.is_null()) {
-			//std::cout << "yyy: " << clip.to_string() << std::endl;
-			cairo_save(cr);
-			cairo_reset_clip(cr);
-			cairo_identity_matrix(cr);
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(cr, _surf, 0.0, 0.0);
-			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-			cairo_fill(cr);
-			cairo_restore(cr);
-		}
-		++i;
-	}
-}
-
-
-
 region_t<int> renderable_page_t::get_area() {
 	region_t<int> r;
 

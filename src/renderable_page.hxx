@@ -38,7 +38,6 @@ public:
 	void mark_durty();
 	void render_if_needed(notebook_t *);
 
-	void repair1(cairo_t * cr, box_int_t const & area);
 	region_t<int> get_area();
 	bool is_visible();
 	bool has_alpha();

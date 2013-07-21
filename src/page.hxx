@@ -103,8 +103,8 @@ inline void print_buffer__(const char * buf, int size) {
 class page_t : public xevent_handler_t {
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
-			PropertyChangeMask | SubstructureRedirectMask | ExposureMask;
-	static long const MANAGED_DECO_WINDOW_EVENT_MASK = NoEventMask;
+			PropertyChangeMask | SubstructureRedirectMask;
+	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
 			StructureNotifyMask | PropertyChangeMask;
 
