@@ -27,6 +27,11 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type,
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
 
+	_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
+			base->get_size().w, base->get_size().h);
+
+	_back_cr = cairo_create(_back_surf);
+
 	_floating_wished_position = orig->get_size();
 	set_wished_position(orig->get_size());
 
@@ -199,11 +204,19 @@ void managed_window_t::set_theme(theme_layout_t const * theme) {
 }
 
 cairo_t * managed_window_t::get_cairo() {
-	return _cr;
+	return _back_cr;
 }
 
 bool managed_window_t::is(managed_window_type_e type) {
 	return _type == type;
+}
+
+void managed_window_t::expose() {
+	cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+	cairo_rectangle(_cr, 0, 0, deco->get_size().w, deco->get_size().h);
+	cairo_set_source_surface(_cr, _back_surf, 0, 0);
+	cairo_paint(_cr);
+	cairo_surface_flush(_surf);
 }
 
 }

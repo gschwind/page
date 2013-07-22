@@ -43,6 +43,9 @@ private:
 	cairo_t * _cr;
 	cairo_surface_t * _surf;
 
+	cairo_t * _back_cr;
+	cairo_surface_t * _back_surf;
+
 	window_icon_handler_t * icon;
 
 	/* avoid copy */
@@ -96,6 +99,8 @@ public:
 	cairo_t * get_cairo();
 
 	bool is(managed_window_type_e type);
+
+	void expose();
 
 };
 

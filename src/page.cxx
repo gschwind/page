@@ -2295,8 +2295,10 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == Expose) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
 		if(mw != 0) {
-			if(mw->is(MANAGED_FLOATING))
+			if(mw->is(MANAGED_FLOATING)) {
 				theme->render_floating(mw, is_focussed(mw));
+				mw->expose();
+			}
 		}
 
 		if (e.xexpose.window == rpage->wid) {
