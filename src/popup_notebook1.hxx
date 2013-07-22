@@ -21,8 +21,9 @@ struct popup_notebook1_t: public window_overlay_t {
 	Window const & wid;
 
 	bool _show;
-	std::string title;
-	cairo_font_face_t * font;
+	std::string _title;
+	cairo_font_face_t * _font;
+	cairo_surface_t * _icon;
 
 	popup_notebook1_t(xconnection_t * cnx, cairo_font_face_t * font);
 	virtual ~popup_notebook1_t();
@@ -33,9 +34,11 @@ struct popup_notebook1_t: public window_overlay_t {
 	void hide();
 
 	bool is_visible();
+	void expose();
 
 private:
 	void move_resize(box_int_t const & a);
+
 
 };
 

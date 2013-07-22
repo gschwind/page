@@ -2305,6 +2305,8 @@ void page_t::process_event(XEvent const & e) {
 					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
 							e.xexpose.height));
 
+		} else if (e.xexpose.window == pn1->wid) {
+			pn1->expose();
 		}
 
 	} else if (e.type == cnx->xinerama_event) {
