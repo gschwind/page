@@ -84,6 +84,17 @@ void managed_window_t::reconfigure() {
 
 	cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
 
+	/** rebuild back buffer **/
+	if(_back_cr != 0)
+		cairo_destroy(_back_cr);
+	if(_back_surf != 0)
+		cairo_surface_destroy(_back_surf);
+
+	_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
+			base->get_size().w, base->get_size().h);
+
+	_back_cr = cairo_create(_back_surf);
+
 	fake_configure();
 
 }
