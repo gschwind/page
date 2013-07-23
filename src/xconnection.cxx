@@ -136,6 +136,7 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 	ATOM_INIT(_NET_WM_NAME);
 	ATOM_INIT(_NET_WM_STATE);
 	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
+	ATOM_INIT(_NET_WM_STRUT);
 
 	ATOM_INIT(_NET_WM_WINDOW_TYPE);
 	ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
@@ -360,57 +361,32 @@ void xconnection_t::xnextevent(XEvent * ev) {
 	std::remove_if(pending.begin(), pending.end(), filter);
 }
 
-/* this fonction come from xcompmgr
+/* this function come from xcompmgr
  * it is intend to make page as composite manager */
-bool xconnection_t::register_cm(bool replace, Window w) {
+
+/**
+ * Register composite manager. if another one is in place just fail to take
+ * the ownership.
+ */
+bool xconnection_t::register_cm(Window w) {
 	Window current_cm;
 	Atom a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
 	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen);
 	a_cm = XInternAtom(_dpy, net_wm_cm, False);
 
+	/** read if there is a compositor **/
 	current_cm = XGetSelectionOwner(_dpy, a_cm);
 	if (current_cm != None) {
-		if (!replace) {
-			printf("another composite manager is running\n");
-			return false;
-		} else {
-	        /* We want to find out when the current selection owner dies */
-	        XSelectInput(_dpy, current_cm, StructureNotifyMask);
-	        XSync(_dpy, FALSE);
-
-			XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
-
-            if (XGetSelectionOwner(_dpy, a_cm) != w) {
-                printf("Could not acquire window manager selection on screen %d", screen);
-                return false;
-            }
-
-			unsigned long wait = 0;
-			const unsigned long timeout = G_USEC_PER_SEC * 15; /* wait for 15s max */
-
-			XEvent ev;
-
-			while (wait < timeout) {
-				/* Checks the local queue and incoming events for this event */
-				if (XCheckTypedWindowEvent(_dpy, current_cm, DestroyNotify, &ev) == True)
-					break;
-				g_usleep(G_USEC_PER_SEC / 10);
-				wait += G_USEC_PER_SEC / 10;
-			}
-
-			if (wait >= timeout) {
-				printf("The WM on screen %d is not exiting", screen);
-				return false;
-			} else {
-				return true;
-			}
-
-		}
+		printf("Another composite manager is running\n");
+		return false;
 	} else {
+
+		/** become the compositor **/
 		XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
 
-        if (XGetSelectionOwner(_dpy, a_cm) != w) {
+		/** check is we realy are the current compositor **/
+		if (XGetSelectionOwner(_dpy, a_cm) != w) {
             printf("Could not acquire window manager selection on screen %d", screen);
             return false;
         }
@@ -418,7 +394,6 @@ bool xconnection_t::register_cm(bool replace, Window w) {
 		return true;
 	}
 
-	return false;
 }
 
 bool xconnection_t::register_wm(bool replace, Window w) {

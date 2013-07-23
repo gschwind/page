@@ -196,7 +196,12 @@ void page_t::run() {
 
 	/** load compositor if requested **/
 	if (use_internal_compositor) {
-		rnd = new compositor_t();
+		/** try to start compositor, if fail, just ignore it **/
+		try {
+			rnd = new compositor_t();
+		} catch (...) {
+			rnd = 0;
+		}
 	}
 
 	/* init page render */
@@ -1897,7 +1902,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 		x->read_partial_struct();
 		update_allocation();
 		rpage->mark_durty();
-		//rnd->add_damage_area(cnx->root_size);
+	} else if (e.atom == cnx->atoms._NET_WM_STRUT) {
+		x->read_partial_struct();
+		update_allocation();
+		rpage->mark_durty();
 	} else if (e.atom == cnx->atoms._NET_WM_ICON) {
 		x->read_icon_data();
 		/* TODO: durty notebook */
@@ -3670,7 +3678,7 @@ void page_t::update_viewport_layout() {
 
 	update_allocation();
 	rpage->mark_durty();
-	//rnd->add_damage_area(cnx->root_size);
+
 }
 
 

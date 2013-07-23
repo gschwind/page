@@ -345,6 +345,7 @@ public:
 		Atom _NET_WM_NAME;
 		Atom _NET_WM_STATE;
 		Atom _NET_WM_STRUT_PARTIAL;
+		Atom _NET_WM_STRUT;
 
 		Atom _NET_WM_WINDOW_TYPE;
 		Atom _NET_WM_WINDOW_TYPE_DESKTOP;
@@ -521,7 +522,7 @@ public:
 
 	/* this fonction come from xcompmgr
 	 * it is intend to make page as composite manager */
-	bool register_cm(bool replace, Window w);
+	bool register_cm(Window w);
 	bool register_wm(bool replace, Window w);
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);

@@ -88,7 +88,7 @@ compositor_t::compositor_t() : _cnx() {
 			name.length() + 1);
 
 	/* try to register compositor manager */
-	if (!_cnx.register_cm(true, cm_window)) {
+	if (!_cnx.register_cm(cm_window)) {
 		XCloseDisplay(_cnx.dpy);
 		throw compositor_fail_t();
 	}
