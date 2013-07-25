@@ -18,7 +18,7 @@ class renderable_page_t : public window_overlay_t {
 
 	bool is_durty;
 
-	std::list<viewport_t *> & viewports;
+	map<RRCrtc, viewport_t *> & viewports;
 
 	theme_t * render;
 
@@ -30,8 +30,8 @@ public:
 	managed_window_t * focused;
 
 
-	renderable_page_t(xconnection_t * cnx, theme_t * render, cairo_surface_t * target, int width, int height,
-			std::list<viewport_t *> & viewports);
+	renderable_page_t(xconnection_t * cnx, theme_t * render, int width, int height,
+			map<RRCrtc, viewport_t *> & viewports);
 
 	~renderable_page_t();
 

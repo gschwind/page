@@ -27,10 +27,15 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type,
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
 
+	if(initial_type == MANAGED_FLOATING) {
 	_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
 			base->get_size().w, base->get_size().h);
 
 	_back_cr = cairo_create(_back_surf);
+	} else {
+		_back_cr = 0;
+		_back_surf = 0;
+	}
 
 	_floating_wished_position = orig->get_size();
 	set_wished_position(orig->get_size());
@@ -84,16 +89,19 @@ void managed_window_t::reconfigure() {
 
 	cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
 
-	/** rebuild back buffer **/
-	if(_back_cr != 0)
-		cairo_destroy(_back_cr);
-	if(_back_surf != 0)
-		cairo_surface_destroy(_back_surf);
+	if (_type == MANAGED_FLOATING) {
 
-	_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
-			base->get_size().w, base->get_size().h);
+		/** rebuild back buffer **/
+		if (_back_cr != 0)
+			cairo_destroy(_back_cr);
+		if (_back_surf != 0)
+			cairo_surface_destroy(_back_surf);
 
-	_back_cr = cairo_create(_back_surf);
+		_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
+				base->get_size().w, base->get_size().h);
+
+		_back_cr = cairo_create(_back_surf);
+	}
 
 	fake_configure();
 
@@ -148,6 +156,15 @@ void managed_window_t::init_managed_type(managed_window_type_e type) {
 void managed_window_t::set_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
+
+		if (_back_surf == 0)
+			_back_surf = cairo_surface_create_similar(_surf,
+					CAIRO_CONTENT_COLOR, base->get_size().w,
+					base->get_size().h);
+
+		if (_back_cr == 0)
+			_back_cr = cairo_create(_back_surf);
+
 		_margin_top = theme->floating_margin.top;
 		_margin_bottom = theme->floating_margin.bottom;
 		_margin_left = theme->floating_margin.left;
@@ -156,6 +173,13 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
+
+		/** destroy back buffer **/
+		if(_back_cr != 0)
+			cairo_destroy(_back_cr);
+		if(_back_surf != 0)
+			cairo_surface_destroy(_back_surf);
+
 		if(_type == MANAGED_FLOATING)
 			_floating_wished_position = _wished_position;
 		_margin_top = 0;
@@ -223,11 +247,13 @@ bool managed_window_t::is(managed_window_type_e type) {
 }
 
 void managed_window_t::expose() {
-	cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-	cairo_rectangle(_cr, 0, 0, deco->get_size().w, deco->get_size().h);
-	cairo_set_source_surface(_cr, _back_surf, 0, 0);
-	cairo_paint(_cr);
-	cairo_surface_flush(_surf);
+	if (is(MANAGED_FLOATING)) {
+		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_rectangle(_cr, 0, 0, deco->get_size().w, deco->get_size().h);
+		cairo_set_source_surface(_cr, _back_surf, 0, 0);
+		cairo_paint(_cr);
+		cairo_surface_flush(_surf);
+	}
 }
 
 }

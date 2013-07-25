@@ -102,7 +102,38 @@ compositor_t::compositor_t() : _cnx() {
 	flush_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
 
-	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy, _cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width, _cnx.root_wa.height);
+	composite_overlay_s = 0;
+	composite_overlay_cr = 0;
+
+	pre_back_buffer_s = 0;
+	pre_back_buffer_cr = 0;
+
+	rebuild_cairo_context();
+
+	_cnx.grab();
+	XRRSelectInput(_cnx.dpy, _cnx.xroot, RRCrtcChangeNotifyMask);
+	update_layout();
+	_cnx.ungrab();
+
+	_cnx.add_event_handler(this);
+
+	/** update the windows list **/
+	scan();
+
+	XDamageCreate(_cnx.dpy, _cnx.xroot, XDamageReportRawRectangles);
+
+}
+
+void compositor_t::rebuild_cairo_context() {
+
+	if (composite_overlay_cr != 0)
+		cairo_destroy(composite_overlay_cr);
+	if (composite_overlay_s != 0)
+		cairo_surface_destroy(composite_overlay_s);
+
+	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy,
+			_cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width,
+			_cnx.root_wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
 	/* clean up surface */
@@ -111,7 +142,13 @@ compositor_t::compositor_t() : _cnx() {
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_paint(composite_overlay_cr);
 
-	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s, CAIRO_CONTENT_COLOR_ALPHA, _cnx.root_wa.width, _cnx.root_wa.height);
+	if (pre_back_buffer_cr != 0)
+		cairo_destroy(pre_back_buffer_cr);
+	if (pre_back_buffer_s != 0)
+		cairo_surface_destroy(pre_back_buffer_s);
+
+	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
+			CAIRO_CONTENT_COLOR, _cnx.root_wa.width, _cnx.root_wa.height);
 	pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
 
 	/* clean up surface */
@@ -119,15 +156,6 @@ compositor_t::compositor_t() : _cnx() {
 	cairo_set_source_rgba(pre_back_buffer_cr, 0.0, 0.0, 0.0, 1.0);
 	cairo_reset_clip(pre_back_buffer_cr);
 	cairo_paint(pre_back_buffer_cr);
-
-	update_layout();
-
-	_cnx.add_event_handler(this);
-
-	/** update the windows list **/
-	scan();
-
-	XDamageCreate(_cnx.dpy, _cnx.xroot, XDamageReportRawRectangles);
 
 }
 
@@ -399,7 +427,7 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
-	printf("Destroy EVENT\n");
+	//printf("Destroy EVENT\n");
 	try_remove_window(e.window);
 }
 
@@ -564,11 +592,18 @@ void compositor_t::process_event(XEvent const & e) {
 		if(has_key(window_data, sev.window)) {
 			window_data[sev.window]->read_shape();
 		}
-	} else if (e.type == _cnx.xrandr_event + RRNotify) {
+	} else if (e.type == _cnx.xrandr_event + RRNotify || e.type == RRScreenChangeNotify) {
 		printf("RRNotify\n");
-		update_layout();
-
-	}else {
+		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
+		if (ev.subtype == RRNotify_CrtcChange) {
+			/* re-read root window attribute, in particular the size **/
+			XGetWindowAttributes(_cnx.dpy, _cnx.xroot, &_cnx.root_wa);
+			_cnx.root_size.w = _cnx.root_wa.width;
+			_cnx.root_size.h = _cnx.root_wa.height;
+			rebuild_cairo_context();
+			update_layout();
+		}
+	} else {
 		printf("Unhandled event\n");
 		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
 			printf("#%lu type: %s, send_event: %u, window: %lu\n",
@@ -584,27 +619,26 @@ void compositor_t::process_event(XEvent const & e) {
 }
 
 void compositor_t::update_layout() {
-	int n;
-	XineramaScreenInfo * info = XineramaQueryScreens(_cnx.dpy, &n);
 
 	_desktop_region.clear();
-	if (info == NULL) {
-		printf("No Xinerama Layout Found\n");
-		_desktop_region = _desktop_region
-				+ box_t<int>(0, 0, _cnx.root_size.w, _cnx.root_size.h);
-	} else {
 
-		for (int i = 0; i < n; ++i) {
-			box_t<int> rect(info[i].x_org, info[i].y_org, info[i].width,
-					info[i].height);
-			_desktop_region = _desktop_region + rect;
+	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_cnx.dpy,
+			_cnx.xroot);
 
+	for (int i = 0; i < resources->ncrtc; ++i) {
+		XRRCrtcInfo * info = XRRGetCrtcInfo(_cnx.dpy, resources,
+				resources->crtcs[i]);
+
+		/** if the CRTC has at less one output bound **/
+		if(info->noutput > 0) {
+			box_t<int> area(info->x, info->y, info->width, info->height);
+			_desktop_region = _desktop_region + area;
 		}
-
-		XFree(info);
+		XRRFreeCrtcInfo(info);
 	}
+	XRRFreeScreenResources(resources);
 
-	printf("layout = %s\n", _desktop_region.to_string().c_str());
+	//printf("layout = %s\n", _desktop_region.to_string().c_str());
 }
 
 }

@@ -78,16 +78,6 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 		extension_request_name_map[damage_opcode] = xdamage_func;
 	}
 
-	/* No macro for XINERAMA_NAME, use one we know */
-	if (!XQueryExtension(_dpy, "XINERAMA", &xinerama_opcode, &xinerama_event,
-			&xinerama_error)) {
-		throw std::runtime_error("Fixes extension is not supported");
-	} else {
-		int major = 0, minor = 0;
-		XineramaQueryVersion(_dpy, &major, &minor);
-		cnx_printf("Xinerama Extension version %d.%d found\n", major, minor);
-	}
-
 	if (!XQueryExtension(_dpy, SHAPENAME, &xshape_opcode, &xshape_event,
 			&xshape_error)) {
 		throw std::runtime_error(SHAPENAME " extension is not supported");
@@ -106,11 +96,16 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 		cnx_printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
 	}
 
-	XRRSelectInput(_dpy, xroot,
-			RRScreenChangeNotifyMask | RRCrtcChangeNotifyMask
-					| RROutputChangeNotifyMask | RROutputPropertyNotifyMask
-					| RRProviderChangeNotifyMask | RRProviderChangeNotifyMask
-					| RRProviderPropertyNotifyMask | RRResourceChangeNotifyMask);
+	/** listen all possible change in screen layout **/
+//	XRRSelectInput(_dpy, xroot,
+//			  RRScreenChangeNotifyMask
+//			| RRCrtcChangeNotifyMask
+//			| RROutputChangeNotifyMask
+//			| RROutputPropertyNotifyMask
+//			| RRProviderChangeNotifyMask
+//			| RRProviderChangeNotifyMask
+//			| RRProviderPropertyNotifyMask
+//			| RRResourceChangeNotifyMask);
 
 
 	/* initialize all atoms for this connection */
@@ -269,11 +264,11 @@ bool xconnection_t::is_not_grab() {
 }
 
 int xconnection_t::error_handler(Display * dpy, XErrorEvent * ev) {
-	printf("#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
 	if (open_connections.find(dpy) == open_connections.end()) {
-		printf("Error on unknow connection\n");
+		fprintf(stderr, "Error on unknow connection\n");
 		return 0;
 	}
 
@@ -293,9 +288,9 @@ int xconnection_t::error_handler(Display * dpy, XErrorEvent * ev) {
 	}
 
 	if (func != 0) {
-		printf("\e[1;31m%s: %s %lu\e[m\n", func, buffer, ev->serial);
+		fprintf(stderr,"\e[1;31m%s: %s %lu\e[m\n", func, buffer, ev->serial);
 	} else {
-		printf("Error %u: %s %lu\n", (unsigned) ev->request_code, buffer,
+		fprintf(stderr,"Error %u: %s %lu\n", (unsigned) ev->request_code, buffer,
 				ev->serial);
 	}
 

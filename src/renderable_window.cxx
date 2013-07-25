@@ -52,14 +52,14 @@ void renderable_window_t::update(Display * dpy, Window w, XWindowAttributes & wa
 	update_map_state(wa.map_state != IsUnmapped);
 
 	if (c_class == InputOutput) {
-		printf("Create damage\n");
+		//printf("Create damage\n");
 		damage = XDamageCreate(_dpy, wid, XDamageReportNonEmpty);
 		if (damage != None) {
 			XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
 			XDamageSubtract(_dpy, damage, None, region);
 			XFixesDestroyRegion(_dpy, region);
 		} else {
-			printf("Damage fail\n");
+			//printf("Damage fail\n");
 		}
 
 		read_shape();
@@ -81,7 +81,7 @@ void renderable_window_t::destroy_cairo() {
 
 
 renderable_window_t::~renderable_window_t() {
-	printf("Destroy Damage\n");
+	//printf("Destroy Damage\n");
 	if (damage != None) {
 		XDamageDestroy(_dpy, damage);
 		damage = None;

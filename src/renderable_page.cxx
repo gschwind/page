@@ -11,8 +11,8 @@
 
 namespace page {
 
-renderable_page_t::renderable_page_t(xconnection_t * cnx, theme_t * render, cairo_surface_t * target,
-		int width, int height, std::list<viewport_t *> & viewports) : window_overlay_t(cnx, 24, box_int_t(0, 0, width, height)), wid(_wid),
+renderable_page_t::renderable_page_t(xconnection_t * cnx, theme_t * render,
+		int width, int height, map<RRCrtc, viewport_t *> & viewports) : window_overlay_t(cnx, 24, box_int_t(0, 0, width, height)), wid(_wid),
 		render(render), viewports(
 				viewports) {
 	window_overlay_t::show();
@@ -39,9 +39,9 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 		list<split_t *> splits;
 		list<notebook_t *> notebooks;
 
-		for(list<viewport_t *>::iterator i = viewports.begin(); i != viewports.end(); ++i) {
-			(*i)->get_splits(splits);
-			(*i)->get_notebooks(notebooks);
+		for(map<RRCrtc, viewport_t *>::iterator i = viewports.begin(); i != viewports.end(); ++i) {
+			i->second->get_splits(splits);
+			i->second->get_notebooks(notebooks);
 		}
 
 		/* off screen render */
@@ -50,7 +50,7 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 		cairo_set_operator(_cr, CAIRO_OPERATOR_OVER);
 		render_splits(splits);
 		render_notebooks(notebooks);
-		printf("CAIRO = %s\n", cairo_status_to_string(cairo_status(_cr)));
+		//printf("CAIRO = %s\n", cairo_status_to_string(cairo_status(_cr)));
 
 		cairo_surface_flush(_surf);
 
@@ -65,10 +65,10 @@ void renderable_page_t::render_if_needed(notebook_t * default_pop) {
 region_t<int> renderable_page_t::get_area() {
 	region_t<int> r;
 
-	for (std::list<viewport_t *>::iterator v = viewports.begin();
+	for (map<RRCrtc, viewport_t *>::iterator v = viewports.begin();
 			v != viewports.end(); ++v) {
-		if ((*v)->fullscreen_client == 0)
-			r = r + (*v)->get_area();
+		if (v->second->fullscreen_client == 0)
+			r = r + v->second->get_area();
 	}
 
 	return r;

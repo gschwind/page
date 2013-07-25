@@ -9,7 +9,6 @@ AM_CXXFLAGS =  \
 	$(XRENDER_CFLAGS) \
 	$(XRANDR_CFLAGS) \
 	$(XEXT_CFLAGS) \
-	$(XINERAMA_CFLAGS) \
 	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \
 	-fno-strict-aliasing \
@@ -47,7 +46,6 @@ page_LDADD = \
 	$(XRENDER_LIBS) \
 	$(XRANDR_LIBS) \
 	$(XEXT_LIBS) \
-	$(XINERAMA_LIBS) \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) \

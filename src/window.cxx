@@ -226,12 +226,12 @@ void window_t::read_partial_struct() {
 			_cnx.atoms.CARDINAL, &n);
 
 	if (p_struct && n == 12) {
-//		printf(
-//				"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
-//				partial_struct[0], partial_struct[1], partial_struct[2],
-//				partial_struct[3], partial_struct[4], partial_struct[5],
-//				partial_struct[6], partial_struct[7], partial_struct[8],
-//				partial_struct[9], partial_struct[10], partial_struct[11]);
+		printf(
+				"partial struct %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
+				p_struct[0], p_struct[1], p_struct[2],
+				p_struct[3], p_struct[4], p_struct[5],
+				p_struct[6], p_struct[7], p_struct[8],
+				p_struct[9], p_struct[10], p_struct[11]);
 
 		_has_partial_struct = true;
 		memcpy(_partial_struct, p_struct, sizeof(long) * 12);
@@ -329,7 +329,6 @@ void window_t::print_net_wm_state() {
 		for (unsigned i = 0; i < num; ++i) {
 			string name = _cnx.get_atom_name((Atom)val[i]);
 			printf(" \"%s\"", name.c_str());
-			//XFree(name);
 		}
 		delete[] val;
 	}

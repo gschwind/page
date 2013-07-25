@@ -89,10 +89,10 @@ void split_t::update_allocation_pack1() {
 
 void split_t::replace(tree_t * src, tree_t * by) {
 	if (_pack0 == src) {
-		printf("replace %p by %p\n", src, by);
+		//printf("replace %p by %p\n", src, by);
 		set_pack0(by);
 	} else if (_pack1 == src) {
-		printf("replace %p by %p\n", src, by);
+		//printf("replace %p by %p\n", src, by);
 		set_pack1(by);
 	}
 

@@ -259,8 +259,8 @@ public:
 
 	config_handler_t conf;
 
-	/* list of view ports */
-	list<viewport_t *> viewport_list;
+	/** map viewport to real outputs **/
+	map<RRCrtc, viewport_t *> viewport_outputs;
 
 	/* main window data base */
 	window_map_t xwindow_to_window;
@@ -412,7 +412,7 @@ public:
 	split_t * new_split(split_type_e type);
 	void destroy(split_t * x);
 
-	notebook_t * new_notebook(viewport_t * v);
+	notebook_t * new_notebook();
 	void destroy(notebook_t * x);
 
 	viewport_t * new_viewport(box_int_t & area);
@@ -484,6 +484,11 @@ public:
 	void set_window_cursor(Window w, Cursor c);
 
 	bool is_focussed(managed_window_t * mw);
+
+	void update_windows_stack();
+
+	void rr_update_viewport_layout();
+	void destroy_viewport(viewport_t * v);
 
 };
 

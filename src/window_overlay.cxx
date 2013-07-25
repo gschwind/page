@@ -57,6 +57,7 @@ window_overlay_t::window_overlay_t(xconnection_t * cnx, int depth,
 
 window_overlay_t::~window_overlay_t() {
 	cleanup();
+	XDestroyWindow(_cnx->dpy, _wid);
 }
 
 

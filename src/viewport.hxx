@@ -13,12 +13,19 @@
 #include "box.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
+#include "theme.hxx"
 
 using namespace std;
 
 namespace page {
 
 struct viewport_t: public tree_t {
+
+	theme_t * _theme;
+
+	viewport_t(viewport_t const & v);
+	viewport_t & operator= (viewport_t const &);
+
 public:
 	//page_base_t & page;
 	box_t<int> raw_aera;
@@ -31,15 +38,7 @@ public:
 
 	bool _is_visible;
 
-	viewport_t();
-
-	viewport_t(box_t<int> const & area);
-
-	void add_notebook(notebook_t * n) {
-		_subtree = n;
-		_subtree->set_parent(this);
-		_subtree->set_allocation(effective_aera);
-	}
+	viewport_t(theme_t * theme, box_t<int> const & area);
 
 	void reconfigure();
 
@@ -54,7 +53,8 @@ public:
 	virtual region_t<int> get_area();
 	virtual void set_allocation(box_int_t const & area);
 
-	void fix_allocation();
+	void set_raw_area(box_int_t const & area);
+	void set_effective_area(box_int_t const & area);
 
 	virtual bool is_visible() {
 		return true;

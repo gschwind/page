@@ -96,6 +96,8 @@ private:
 
 	void update_layout();
 
+	void rebuild_cairo_context();
+
 public:
 
 	virtual ~compositor_t() { };
