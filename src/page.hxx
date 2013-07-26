@@ -381,7 +381,7 @@ public:
 	void iconify_client(managed_window_t * x);
 	void update_allocation();
 
-	void insert_window_in_stack(renderable_window_t * x);
+	void insert_window_in_stack(composite_window_t * x);
 
 	void delete_window(window_t * w);
 	void destroy(window_t * w);

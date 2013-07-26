@@ -23,7 +23,6 @@
 #include "split.hxx"
 #include "notebook.hxx"
 #include "viewport.hxx"
-#include "renderable_window.hxx"
 #include "managed_window.hxx"
 #include "theme_layout.hxx"
 #include "theme.hxx"

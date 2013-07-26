@@ -190,7 +190,7 @@ void page_t::run() {
 
 
 	if(!cnx->register_wm(true, wm_window)) {
-		printf("Canot register window manager\n");
+		printf("Cannot register window manager\n");
 		return;
 	}
 

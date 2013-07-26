@@ -16,7 +16,7 @@
 #include "xconnection.hxx"
 #include "region.hxx"
 #include "renderable.hxx"
-#include "renderable_window.hxx"
+#include "composite_window.hxx"
 
 using namespace std;
 
@@ -44,7 +44,7 @@ private:
 	 * map do not handle properly objects, it's need copy constructor ...
 	 * Use pointer instead.
 	 **/
-	map<Window, renderable_window_t *> window_data;
+	map<Window, composite_window_t *> window_data;
 
 	/* composite overlay surface (front buffer) */
 	cairo_surface_t * composite_overlay_s;
@@ -67,11 +67,10 @@ private:
 
 	void repair_area(box_int_t const & box);
 	void repair_overlay(box_int_t const & area, cairo_surface_t * src);
-	void repair_buffer(std::list<renderable_window_t *> & visible, cairo_t * cr,
+	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
 			box_int_t const & area);
 
 	void damage_all();
-
 
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);

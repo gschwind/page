@@ -120,14 +120,14 @@ compositor_t::compositor_t() : _cnx() {
 	 **/
 	//printf("Add window %lu\n", _cnx.composite_overlay);
 	window_stack.push_back(_cnx.composite_overlay);
-	window_data[_cnx.composite_overlay] = new renderable_window_t();
+	window_data[_cnx.composite_overlay] = new composite_window_t();
 
 	add_damage_area(_cnx.root_size);
 }
 
 compositor_t::~compositor_t() {
 
-	map<Window, renderable_window_t *>::iterator i = window_data.begin();
+	map<Window, composite_window_t *>::iterator i = window_data.begin();
 	while(i != window_data.end()) {
 		delete i->second;
 		++i;
@@ -159,7 +159,7 @@ void compositor_t::render_flush() {
 	/**
 	 * list content is bottom window to upper window in stack a optimization.
 	 **/
-	std::list<renderable_window_t *> visible;
+	std::list<composite_window_t *> visible;
 	for(std::list<Window>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
 		if(window_data[*i]->is_visible()) {
 			visible.push_back(window_data[*i]);
@@ -178,7 +178,7 @@ void compositor_t::render_flush() {
 			_cnx.composite_overlay, wa.visual, wa.width, wa.height);
 	composite_overlay_cr = cairo_create(composite_overlay_s);
 
-	for (std::list<renderable_window_t *>::iterator i = visible.begin();
+	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
 		(*i)->init_cairo();
 	}
@@ -194,10 +194,10 @@ void compositor_t::render_flush() {
 	 **/
 	region_t<int> region_with_not_overlapped_window;
 
-	std::list<renderable_window_t *>::iterator i = visible.begin();
+	std::list<composite_window_t *>::iterator i = visible.begin();
 	while (i != visible.end()) {
 		region_t<int> r = (*i)->get_region();
-		std::list<renderable_window_t *>::iterator j = visible.begin();
+		std::list<composite_window_t *>::iterator j = visible.begin();
 		while (j != visible.end()) {
 			if (i != j) {
 				r = r - (*j)->get_region();
@@ -264,15 +264,15 @@ void compositor_t::render_flush() {
 		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
 
 		/* from top to bottom */
-		for (std::list<renderable_window_t *>::reverse_iterator i = visible.rbegin(); i != visible.rend();
+		for (std::list<composite_window_t *>::reverse_iterator i = visible.rbegin(); i != visible.rend();
 				++i) {
-			renderable_window_t * r = *i;
+			composite_window_t * r = *i;
 			region_t<int> draw_area = region_with_not_alpha_on_top & r->get_region();
 			if (!draw_area.empty()) {
 				for (region_t<int>::box_list_t::iterator j = draw_area.begin();
 						j != draw_area.end(); ++j) {
 					if (!(*j).is_null()) {
-						r->repair1(composite_overlay_cr, (*j));
+						r->draw_to(composite_overlay_cr, (*j));
 
 						/* this section show direct rendered screen */
 						_draw_crossed_box(composite_overlay_cr, (*j), 0.0, 0.0, 1.0);
@@ -322,7 +322,7 @@ void compositor_t::render_flush() {
 	cairo_destroy(composite_overlay_cr);
 	cairo_surface_destroy(composite_overlay_s);
 
-	for (std::list<renderable_window_t *>::iterator i = visible.begin();
+	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
 		(*i)->destroy_cairo();
 	}
@@ -330,17 +330,17 @@ void compositor_t::render_flush() {
 }
 
 
-void compositor_t::repair_buffer(std::list<renderable_window_t *> & visible, cairo_t * cr,
+void compositor_t::repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
 		box_int_t const & area) {
-	for (std::list<renderable_window_t *>::iterator i = visible.begin(); i != visible.end();
+	for (std::list<composite_window_t *>::iterator i = visible.begin(); i != visible.end();
 			++i) {
-		renderable_window_t * r = *i;
+		composite_window_t * r = *i;
 		region_t<int>::box_list_t barea = r->get_region();
 		for (region_t<int>::box_list_t::iterator j = barea.begin();
 				j != barea.end(); ++j) {
 			box_int_t clip = area & (*j);
 			if (!clip.is_null()) {
-				r->repair1(cr, clip);
+				r->draw_to(cr, clip);
 			}
 		}
 	}
@@ -394,6 +394,7 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 	if(e.parent != _cnx.xroot)
 		return;
 
+	/** grab to read valid shape values **/
 	_cnx.grab();
 	register_window(e.window);
 	_cnx.ungrab();
@@ -428,7 +429,7 @@ void compositor_t::process_event(XDestroyWindowEvent const & e) {
 
 void compositor_t::process_event(XConfigureEvent const & e) {
 	if(has_key(window_data, e.window)) {
-		renderable_window_t * ws = window_data[e.window];
+		composite_window_t * ws = window_data[e.window];
 		add_damage_area(ws->get_region());
 		ws->update_position(box_int_t(e.x, e.y, e.width, e.height));
 		add_damage_area(ws->get_region());
@@ -482,7 +483,7 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
 	if (has_key(window_data, e.drawable)) {
 
-		renderable_window_t * ws = window_data[e.drawable];
+		composite_window_t * ws = window_data[e.drawable];
 		XRectangle * rects;
 		int nb_rects;
 
@@ -493,8 +494,8 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 			for (int i = 0; i < nb_rects; ++i) {
 				box_int_t box(rects[i]);
 				/* setup absolute damaged area */
-				box.x += ws->position.x;
-				box.y += ws->position.y;
+				box.x += ws->position().x;
+				box.y += ws->position().y;
 				if(ws->is_visible())
 					add_damage_area(box);
 				if(e.more == False)
@@ -514,17 +515,19 @@ void compositor_t::register_window(Window w) {
 
 	//printf("Add window %lu\n", w);
 	window_stack.push_back(w);
-	window_data[w] = new renderable_window_t();
+	window_data[w] = new composite_window_t();
 
 	XWindowAttributes wa;
 	if(XGetWindowAttributes(_cnx.dpy, w, &wa) != 0) {
 		window_data[w]->update(_cnx.dpy, w, wa);
+		window_data[w]->create_damage();
 	}
 }
 
 void compositor_t::unregister_window(Window w) {
 	window_stack.remove(w);
 	if(has_key(window_data, w)) {
+		window_data[w]->destroy_damage();
 		delete window_data[w];
 		window_data.erase(w);
 	}

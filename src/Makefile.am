@@ -33,7 +33,7 @@ page_SOURCES = \
 	simple_theme.cxx \
 	renderable_page.cxx \
 	managed_window.cxx \
-	renderable_window.cxx \
+	composite_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
 	window_overlay.cxx
@@ -56,7 +56,7 @@ page_internal_compositor_SOURCES = \
 	page_internal_compositor.cxx \
 	xconnection.cxx \
 	compositor.cxx \
-	renderable_window.cxx
+	composite_window.cxx
 
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \

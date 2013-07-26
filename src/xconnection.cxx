@@ -227,8 +227,6 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 
 	open_connections[_dpy] = this;
 
-	last_know_time = 0;
-
 }
 
 void xconnection_t::grab() {
@@ -362,7 +360,7 @@ void xconnection_t::xnextevent(XEvent * ev) {
 /**
  * Register composite manager. if another one is in place just fail to take
  * the ownership.
- */
+ **/
 bool xconnection_t::register_cm(Window w) {
 	Window current_cm;
 	Atom a_cm;
@@ -548,54 +546,22 @@ void xconnection_t::process_next_event() {
 int xconnection_t::_return_true(Display * dpy, XEvent * ev, XPointer none) {
 	return True;
 }
-
+/**
+ * Check event without blocking.
+ **/
 bool xconnection_t::process_check_event() {
 	XEvent e;
 
-	/** XCheckIfEvent will not block, but it flush output buffer **/
-	//if (XCheckIfEvent(_dpy, &e, _return_true, 0)) {
 	int x;
-	/** Pasive check of event in queue, never flush any thing **/
+	/** Passive check of events in queue, never flush any thing **/
 	if ((x = XEventsQueued(dpy, QueuedAlready)) > 0) {
-		/** should not never block or flush **/
-		XNextEvent(dpy, &e);
+		/** should not block or flush **/
+		xnextevent(&e);
 
-		/* update last known time */
-		switch(e.type) {
-		case KeyPress:
-		case KeyRelease:
-			last_know_time = e.xkey.time;
-			break;
-		case ButtonPress:
-		case ButtonRelease:
-			last_know_time = e.xbutton.time;
-			break;
-		case MotionNotify:
-			last_know_time = e.xmotion.time;
-			break;
-		case EnterNotify:
-		case LeaveNotify:
-			last_know_time = e.xcrossing.time;
-			break;
-		case PropertyNotify:
-			last_know_time = e.xproperty.time;
-			break;
-		case SelectionClear:
-			last_know_time = e.xselectionclear.time;
-			break;
-		case SelectionRequest:
-			last_know_time = e.xselectionrequest.time;
-			break;
-		case SelectionNotify:
-			last_know_time = e.xselection.time;
-			break;
-		default:
-			break;
-		}
-
-		/* since event handler can be removed on event, we copy it
+		/**
+		 * since event handler can be removed on event, we copy it
 		 * and check for event removed each time.
-		 */
+		 **/
 		std::vector<xevent_handler_t *> v(event_handler_list.begin(),
 				event_handler_list.end());
 		for (unsigned int i = 0; i < v.size(); ++i) {

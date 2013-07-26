@@ -33,53 +33,55 @@ private:
 		}
 	}
 
+	class filter_box_t {
+		box_int_t box;
+	public:
+		bool operator() (box_int_t & x) {
+			return x == box;
+		}
+
+		filter_box_t(box_int_t const & x) : box(x) { }
+	};
+
 	/* merge 2 rectangle, not efficiently */
 	static bool merge_area_macro(box_list_t & list) {
-
-		box_list_t result;
-		box_list_t tmp;
 		typename box_list_t::const_iterator i = list.begin();
 		while (i != list.end()) {
 			typename box_list_t::const_iterator j = list.begin();
 			while (j != list.end()) {
 				if (i != j) {
-					if ((*i).x + (*i).w == (*j).x && (*i).y == (*j).y
-							&& (*i).h == (*j).h) {
-						copy_without(i, j, list, tmp);
-						tmp.push_back(
-								box_int_t((*i).x, (*i).y, (*j).w + (*i).w,
-										(*i).h));
-						list = tmp;
+					box_int_t bi = *i;
+					box_int_t bj = *j;
+
+					if (bi.x + bi.w == bj.x && bi.y == bj.y && bi.h == bj.h) {
+						list.remove_if(filter_box_t(bi));
+						list.remove_if(filter_box_t(bj));
+						box_int_t new_box(bi.x, bi.y, bj.w + bi.w, bi.h);
+						list.push_back(new_box);
 						return true;
 					}
 
-					if ((*i).x == (*j).x + (*j).w && (*i).y == (*j).y
-							&& (*i).h == (*j).h) {
-						copy_without(i, j, list, tmp);
-						tmp.push_back(
-								box_int_t((*j).x, (*j).y, (*j).w + (*i).w,
-										(*j).h));
-						list = tmp;
+					if (bi.x == bj.x + bj.w && bi.y == bj.y && bi.h == bj.h) {
+						list.remove_if(filter_box_t(bi));
+						list.remove_if(filter_box_t(bj));
+						box_int_t new_box(bj.x, bj.y, bj.w + bi.w, bj.h);
+						list.push_back(new_box);
 						return true;
 					}
 
-					if ((*i).y == (*j).y + (*j).h && (*i).x == (*j).x
-							&& (*i).w == (*j).w) {
-						copy_without(i, j, list, tmp);
-						tmp.push_back(
-								box_int_t((*j).x, (*j).y, (*j).w,
-										(*j).h + (*i).h));
-						list = tmp;
+					if (bi.y == bj.y + bj.h && bi.x == bj.x && bi.w == bj.w) {
+						list.remove_if(filter_box_t(bi));
+						list.remove_if(filter_box_t(bj));
+						box_int_t new_box(bj.x, bj.y, bj.w, bj.h + bi.h);
+						list.push_back(new_box);
 						return true;
 					}
 
-					if ((*i).y + (*i).h == (*j).y && (*i).x == (*j).x
-							&& (*i).w == (*j).w) {
-						copy_without(i, j, list, tmp);
-						tmp.push_back(
-								box_int_t((*i).x, (*i).y, (*i).w,
-										(*j).h + (*i).h));
-						list = tmp;
+					if (bi.y + bi.h == bj.y && bi.x == bj.x && bi.w == bj.w) {
+						list.remove_if(filter_box_t(bi));
+						list.remove_if(filter_box_t(bj));
+						box_int_t new_box(bi.x, bi.y, bi.w, bj.h + bi.h);
+						list.push_back(new_box);
 						return true;
 					}
 

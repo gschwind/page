@@ -311,8 +311,6 @@ public:
 
 	int grab_count;
 
-	Time last_know_time;
-
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
 	int connection_fd;
