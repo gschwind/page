@@ -93,6 +93,18 @@ private:
 
 	}
 
+	static bool _is_null(box_int_t & b) {
+		return b.is_null();
+	}
+
+	static void remove_empty(box_list_t & list) {
+		list.remove_if(_is_null);
+	}
+
+	bool is_null() {
+		return this->empty();
+	}
+
 	/* box0 - box1 */
 	static region_t::box_list_t substract_box(_box_t const & box0,
 			_box_t const & box1) {
@@ -215,6 +227,8 @@ private:
 		while (merge_area_macro(result))
 			continue;
 
+		remove_empty(result);
+
 		return result;
 
 	}
@@ -259,6 +273,8 @@ public:
 		while (merge_area_macro(result))
 			continue;
 
+		remove_empty(result);
+
 		return result;
 	}
 
@@ -287,6 +303,8 @@ public:
 			//std::cout << "X# this =" << this->to_string() << std::endl;
 			while (merge_area_macro(*this))
 				continue;
+
+			remove_empty(*this);
 		}
 		//std::cout << "X%% this =" << this->to_string() << std::endl;
 		return *this;

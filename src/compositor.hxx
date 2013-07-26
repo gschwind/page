@@ -54,8 +54,8 @@ private:
 	cairo_t * pre_back_buffer_cr;
 	cairo_surface_t * pre_back_buffer_s;
 
-	double fast_region_surf;
-	double slow_region_surf;
+	double fast_region_surf_monitor;
+	double slow_region_surf_monitor;
 
 	/* damaged region */
 	region_t<int> pending_damage;
@@ -66,12 +66,9 @@ private:
 	void render_flush();
 
 	void repair_area(box_int_t const & box);
-
 	void repair_overlay(box_int_t const & area, cairo_surface_t * src);
-
-	void draw_box(box_int_t box, double r, double g, double b);
-
-	void repair_buffer(std::list<renderable_window_t *> & visible, cairo_t * cr, box_int_t const & area);
+	void repair_buffer(std::list<renderable_window_t *> & visible, cairo_t * cr,
+			box_int_t const & area);
 
 	void damage_all();
 
@@ -87,37 +84,27 @@ private:
 
 	virtual void process_event(XEvent const & e);
 
-	renderable_window_t * find_window(Window w);
-
-	void try_add_window(Window w);
-	void try_remove_window(Window w);
+	void register_window(Window w);
+	void unregister_window(Window w);
 
 	void scan();
 
 	void update_layout();
 
-	void rebuild_cairo_context();
-
 public:
 
-	virtual ~compositor_t() { };
+	virtual ~compositor_t();
 	compositor_t();
 
 	inline int get_connection_fd() {
 		return _cnx.connection_fd;
 	}
 
-	inline void process_events() {
-		while(_cnx.process_check_event())
-			continue;
-		render_flush();
-	}
+	void process_events();
 
 	inline void xflush() {
 		XFlush(_cnx.dpy);
 	}
-
-
 
 };
 

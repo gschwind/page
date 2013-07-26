@@ -52,7 +52,6 @@ inline _1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
 
 static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
 		double b) {
-
 	return;
 
 	cairo_set_source_rgb(cr, r, g, b);
@@ -72,7 +71,7 @@ static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, dou
 
 compositor_t::compositor_t() : _cnx() {
 
-	/* create an invisile window to identify page */
+	/* create an invisible window to identify page */
 	cm_window = XCreateSimpleWindow(_cnx.dpy, _cnx.xroot, -100, -100, 1, 1, 0,
 			0, 0);
 	if (cm_window == None) {
@@ -96,19 +95,11 @@ compositor_t::compositor_t() : _cnx() {
 	/* initialize composite */
 	_cnx.init_composite_overlay();
 
-	fast_region_surf = 0.0;
-	slow_region_surf = 0.0;
+	fast_region_surf_monitor = 0.0;
+	slow_region_surf_monitor = 0.0;
 
 	flush_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
-
-	composite_overlay_s = 0;
-	composite_overlay_cr = 0;
-
-	pre_back_buffer_s = 0;
-	pre_back_buffer_cr = 0;
-
-	rebuild_cairo_context();
 
 	_cnx.grab();
 	XRRSelectInput(_cnx.dpy, _cnx.xroot, RRCrtcChangeNotifyMask);
@@ -120,52 +111,30 @@ compositor_t::compositor_t() : _cnx() {
 	/** update the windows list **/
 	scan();
 
-	XDamageCreate(_cnx.dpy, _cnx.xroot, XDamageReportRawRectangles);
+	//printf("Root = %lu\n", _cnx.xroot);
+	//printf("Composite = %lu\n", _cnx.composite_overlay);
 
+	/**
+	 * Add the composite window to the stack as invisible window to tack a
+	 * valid stack. scan() does not report this window.
+	 **/
+	//printf("Add window %lu\n", _cnx.composite_overlay);
+	window_stack.push_back(_cnx.composite_overlay);
+	window_data[_cnx.composite_overlay] = new renderable_window_t();
+
+	add_damage_area(_cnx.root_size);
 }
 
-void compositor_t::rebuild_cairo_context() {
+compositor_t::~compositor_t() {
 
-	if (composite_overlay_cr != 0)
-		cairo_destroy(composite_overlay_cr);
-	if (composite_overlay_s != 0)
-		cairo_surface_destroy(composite_overlay_s);
+	map<Window, renderable_window_t *>::iterator i = window_data.begin();
+	while(i != window_data.end()) {
+		delete i->second;
+		++i;
+	}
 
-	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy,
-			_cnx.composite_overlay, _cnx.root_wa.visual, _cnx.root_wa.width,
-			_cnx.root_wa.height);
-	composite_overlay_cr = cairo_create(composite_overlay_s);
-
-	/* clean up surface */
-	cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_rgba(composite_overlay_cr, 0.0, 0.0, 0.0, 1.0);
-	cairo_reset_clip(composite_overlay_cr);
-	cairo_paint(composite_overlay_cr);
-
-	if (pre_back_buffer_cr != 0)
-		cairo_destroy(pre_back_buffer_cr);
-	if (pre_back_buffer_s != 0)
-		cairo_surface_destroy(pre_back_buffer_s);
-
-	pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
-			CAIRO_CONTENT_COLOR, _cnx.root_wa.width, _cnx.root_wa.height);
-	pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
-
-	/* clean up surface */
-	cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_rgba(pre_back_buffer_cr, 0.0, 0.0, 0.0, 1.0);
-	cairo_reset_clip(pre_back_buffer_cr);
-	cairo_paint(pre_back_buffer_cr);
-
-}
-
-void compositor_t::draw_box(box_int_t box, double r, double g, double b) {
-	cairo_set_source_rgb(composite_overlay_cr, r, g, b);
-	cairo_set_line_width(composite_overlay_cr, 1.0);
-	cairo_rectangle(composite_overlay_cr, box.x + 0.5, box.y + 0.5, box.w - 1.0, box.h - 1.0);
-	cairo_stroke(composite_overlay_cr);
-	cairo_surface_flush(composite_overlay_s);
-}
+	_cnx.remove_event_handler(this);
+};
 
 void compositor_t::add_damage_area(region_t<int> const & box) {
 	//printf("Add %s\n", box.to_string().c_str());
@@ -187,8 +156,9 @@ void compositor_t::render_flush() {
 		flush_count = 0;
 	}
 
-	/* list content is bottom window to upper window in stack */
-	/* a small optimization, because visible are often few */
+	/**
+	 * list content is bottom window to upper window in stack a optimization.
+	 **/
 	std::list<renderable_window_t *> visible;
 	for(std::list<Window>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
 		if(window_data[*i]->is_visible()) {
@@ -196,10 +166,22 @@ void compositor_t::render_flush() {
 		}
 	}
 
-//	for (std::list<renderable_window_t *>::iterator i = visible.begin();
-//			i != visible.end(); ++i) {
-//		(*i)->init_cairo();
-//	}
+	/**
+	 * Asked to cairo community, build/destroy cairo contexts and surfaces
+	 * should not hit too much performance.
+	 **/
+
+	XWindowAttributes wa;
+	XGetWindowAttributes(_cnx.dpy, _cnx.composite_overlay, &wa);
+
+	composite_overlay_s = cairo_xlib_surface_create(_cnx.dpy,
+			_cnx.composite_overlay, wa.visual, wa.width, wa.height);
+	composite_overlay_cr = cairo_create(composite_overlay_s);
+
+	for (std::list<renderable_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		(*i)->init_cairo();
+	}
 
 	/* clip damage region to visible region */
 	pending_damage = pending_damage & _desktop_region;
@@ -264,7 +246,7 @@ void compositor_t::render_flush() {
 
 		region_t<int>::box_list_t::const_iterator i = direct_region.begin();
 		while (i != direct_region.end()) {
-			fast_region_surf += (*i).w * (*i).h;
+			fast_region_surf_monitor += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
 			// for debuging
 			_draw_crossed_box(composite_overlay_cr, (*i), 0.0, 1.0, 0.0);
@@ -305,32 +287,45 @@ void compositor_t::render_flush() {
 	 * To avoid glitch (blinking) I use back buffer to make the composition.
 	 * update back buffer, render area with possible transparency
 	 **/
-	{
-		cairo_reset_clip(pre_back_buffer_cr);
-		cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
-		region_t<int>::box_list_t::const_iterator i = slow_region.begin();
-		while (i != slow_region.end()) {
-			slow_region_surf += (*i).w * (*i).h;
-			repair_buffer(visible, pre_back_buffer_cr, *i);
-			++i;
+	if (!slow_region.empty()) {
+		pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
+				CAIRO_CONTENT_COLOR, wa.width, wa.height);
+		pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
+
+		{
+
+			cairo_reset_clip(pre_back_buffer_cr);
+			cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
+			region_t<int>::box_list_t::const_iterator i = slow_region.begin();
+			while (i != slow_region.end()) {
+				slow_region_surf_monitor += (*i).w * (*i).h;
+				repair_buffer(visible, pre_back_buffer_cr, *i);
+				++i;
+			}
 		}
+
+		{
+			cairo_surface_flush(pre_back_buffer_s);
+			region_t<int>::box_list_t::const_iterator i = slow_region.begin();
+			while (i != slow_region.end()) {
+				repair_overlay(*i, pre_back_buffer_s);
+				_draw_crossed_box(composite_overlay_cr, (*i), 1.0, 0.0, 0.0);
+				++i;
+			}
+		}
+		cairo_destroy(pre_back_buffer_cr);
+		cairo_surface_destroy(pre_back_buffer_s);
 	}
 
-	{
-		cairo_surface_flush(pre_back_buffer_s);
-		region_t<int>::box_list_t::const_iterator i = slow_region.begin();
-		while (i != slow_region.end()) {
-			repair_overlay(*i, pre_back_buffer_s);
-			_draw_crossed_box(composite_overlay_cr, (*i), 1.0, 0.0, 0.0);
-			++i;
-		}
-	}
 	pending_damage.clear();
 
-//	for (std::list<renderable_window_t *>::iterator i = visible.begin();
-//			i != visible.end(); ++i) {
-//		(*i)->destroy_cairo();
-//	}
+	cairo_destroy(composite_overlay_cr);
+	cairo_surface_destroy(composite_overlay_s);
+
+	for (std::list<renderable_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		(*i)->destroy_cairo();
+	}
 
 }
 
@@ -400,15 +395,15 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 		return;
 
 	_cnx.grab();
-	try_add_window(e.window);
+	register_window(e.window);
 	_cnx.ungrab();
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
 	if(e.parent == _cnx.xroot) {
-		try_add_window(e.window);
+		register_window(e.window);
 	} else {
-		try_remove_window(e.window);
+		unregister_window(e.window);
 	}
 }
 
@@ -428,7 +423,7 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
 	//printf("Destroy EVENT\n");
-	try_remove_window(e.window);
+	unregister_window(e.window);
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
@@ -437,12 +432,23 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		add_damage_area(ws->get_region());
 		ws->update_position(box_int_t(e.x, e.y, e.width, e.height));
 		add_damage_area(ws->get_region());
-		window_stack.remove(e.window);
-		std::list<Window>::iterator x = std::find(window_stack.begin(), window_stack.end(), e.above);
-		if(x == window_stack.end()) {
+
+		if (e.above == None) {
+			window_stack.remove(e.window);
 			window_stack.push_front(e.window);
 		} else {
-			window_stack.insert(++x, e.window);
+
+			std::list<Window>::iterator x = std::find(window_stack.begin(),
+					window_stack.end(), e.above);
+
+			if (x == window_stack.end()) {
+				printf("Window not found : %lu for window %lu\n", e.above,
+						e.window);
+			} else {
+				window_stack.remove(e.window);
+				window_stack.insert(++x, e.window);
+			}
+
 		}
 
 		add_damage_area(window_data[e.window]->get_region());
@@ -502,13 +508,11 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
 }
 
-renderable_window_t * compositor_t::find_window(Window w) {
-	return 0;
-}
-
-void compositor_t::try_add_window(Window w) {
+void compositor_t::register_window(Window w) {
 	if(has_key(window_data, w))
 		return;
+
+	//printf("Add window %lu\n", w);
 	window_stack.push_back(w);
 	window_data[w] = new renderable_window_t();
 
@@ -518,12 +522,12 @@ void compositor_t::try_add_window(Window w) {
 	}
 }
 
-void compositor_t::try_remove_window(Window w) {
+void compositor_t::unregister_window(Window w) {
 	window_stack.remove(w);
-	if(window_data[w] != 0) {
+	if(has_key(window_data, w)) {
 		delete window_data[w];
+		window_data.erase(w);
 	}
-	window_data.erase(w);
 }
 
 void compositor_t::scan() {
@@ -547,7 +551,7 @@ void compositor_t::scan() {
 	if (XQueryTree(_cnx.dpy, _cnx.xroot, &d1, &d2, &wins, &num) != 0) {
 
 		for (unsigned i = 0; i < num; ++i) {
-			try_add_window(wins[i]);
+			register_window(wins[i]);
 		}
 
 		XFree(wins);
@@ -585,23 +589,18 @@ void compositor_t::process_event(XEvent const & e) {
 		process_event(e.xunmap);
 	} else if (e.type == _cnx.damage_event + XDamageNotify) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
-	} else if (e.type == _cnx.xinerama_event) {
-		printf("a xinerama event\n");
 	} else if (e.type == _cnx.xshape_event + ShapeNotify) {
 		XShapeEvent const & sev = reinterpret_cast<XShapeEvent const &>(e);
 		if(has_key(window_data, sev.window)) {
 			window_data[sev.window]->read_shape();
 		}
-	} else if (e.type == _cnx.xrandr_event + RRNotify || e.type == RRScreenChangeNotify) {
+	} else if (e.type == _cnx.xrandr_event + RRNotify) {
 		printf("RRNotify\n");
 		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 		if (ev.subtype == RRNotify_CrtcChange) {
 			/* re-read root window attribute, in particular the size **/
-			XGetWindowAttributes(_cnx.dpy, _cnx.xroot, &_cnx.root_wa);
-			_cnx.root_size.w = _cnx.root_wa.width;
-			_cnx.root_size.h = _cnx.root_wa.height;
-			rebuild_cairo_context();
 			update_layout();
+			//rebuild_cairo_context();
 		}
 	} else {
 		printf("Unhandled event\n");
@@ -619,6 +618,12 @@ void compositor_t::process_event(XEvent const & e) {
 }
 
 void compositor_t::update_layout() {
+
+	XGetWindowAttributes(_cnx.dpy, _cnx.xroot, &_cnx.root_wa);
+	_cnx.root_size.w = _cnx.root_wa.width;
+	_cnx.root_size.h = _cnx.root_wa.height;
+	_cnx.root_size.x = 0;
+	_cnx.root_size.y = 0;
 
 	_desktop_region.clear();
 
@@ -638,7 +643,14 @@ void compositor_t::update_layout() {
 	}
 	XRRFreeScreenResources(resources);
 
-	//printf("layout = %s\n", _desktop_region.to_string().c_str());
+	printf("layout = %s\n", _desktop_region.to_string().c_str());
+}
+
+
+void compositor_t::process_events() {
+	while(_cnx.process_check_event())
+		continue;
+	render_flush();
 }
 
 }

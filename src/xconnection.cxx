@@ -382,10 +382,11 @@ bool xconnection_t::register_cm(Window w) {
 
 		/** check is we realy are the current compositor **/
 		if (XGetSelectionOwner(_dpy, a_cm) != w) {
-            printf("Could not acquire window manager selection on screen %d", screen);
+            printf("Could not acquire window manager selection on screen %d\n", screen);
             return false;
         }
 
+		printf("Composite manager is registered on screen %d\n", screen);
 		return true;
 	}
 

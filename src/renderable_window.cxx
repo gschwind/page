@@ -65,31 +65,35 @@ void renderable_window_t::update(Display * dpy, Window w, XWindowAttributes & wa
 		read_shape();
 		XShapeInputSelected(dpy, wid);
 
-		_surf = cairo_xlib_surface_create(_dpy, wid, visual, _position.w, _position.h);
+//		if(_surf != 0)
+//			cairo_surface_destroy(_surf);
+//		_surf = cairo_xlib_surface_create(_dpy, wid, visual, _position.w, _position.h);
 
 	}
 
 }
 
 void renderable_window_t::init_cairo() {
-	//_surf = cairo_xlib_surface_create(_dpy, wid, visual, position.w, position.h);
+	_surf = cairo_xlib_surface_create(_dpy, wid, visual, position.w, position.h);
 }
 
 void renderable_window_t::destroy_cairo() {
-	//cairo_surface_destroy(_surf);
+	cairo_surface_destroy(_surf);
 }
 
 
 renderable_window_t::~renderable_window_t() {
 	//printf("Destroy Damage\n");
-	if (damage != None) {
-		XDamageDestroy(_dpy, damage);
-		damage = None;
-	}
 
-	if (_surf != 0) {
-		cairo_surface_destroy(_surf);
-	}
+	/** damage is destroyed automaticaly when the window is destroyed **/
+//	if (damage != None) {
+//		XDamageDestroy(_dpy, damage);
+//		damage = None;
+//	}
+
+//	if (_surf != 0) {
+//		cairo_surface_destroy(_surf);
+//	}
 }
 
 
@@ -155,12 +159,13 @@ void renderable_window_t::read_shape() {
 		return;
 	}
 
-	int count, ordering;
-	XRectangle * recs = XShapeGetRectangles(_dpy, wid, ShapeBounding, &count, &ordering);
+	int count = 0, ordering = 0;
+	XRectangle * recs = XShapeGetRectangles(_dpy, wid, ShapeBounding, &count,
+			&ordering);
 
 	_region.clear();
 
-	if(recs != NULL) {
+	if(count > 0) {
 		has_shape = true;
 		for(int i = 0; i < count; ++i) {
 			_region = _region + box_int_t(recs[i]);
@@ -186,8 +191,8 @@ void renderable_window_t::update_position(box_int_t const & position) {
 	_position = position;
 	read_shape();
 
-	if(_surf)
-		cairo_xlib_surface_set_size(_surf, _position.w, _position.h);
+//	if(_surf)
+//		cairo_xlib_surface_set_size(_surf, _position.w, _position.h);
 }
 
 
