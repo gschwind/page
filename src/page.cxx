@@ -40,16 +40,24 @@
 #include <vector>
 #include <typeinfo>
 
+
+#include "atoms.hxx"
 #include "page.hxx"
 #include "box.hxx"
 #include "client.hxx"
 #include "root.hxx"
 #include "simple_theme.hxx"
+#include "window_properties_handler.hxx"
 
 /* ICCCM definition */
 #define _NET_WM_STATE_REMOVE 0
 #define _NET_WM_STATE_ADD 1
 #define _NET_WM_STATE_TOGGLE 2
+
+/** xprop exec src **/
+extern "C"	int __main(int argc, char ** argv);
+extern "C" void Show_All_Props2 (Display * _dpy, Window _w);
+extern "C" void init_xprop(Display * __dpy);
 
 using namespace std;
 
@@ -172,18 +180,28 @@ page_t::~page_t() {
 
 void page_t::run() {
 
+	init_xprop(cnx->dpy);
+
 //	printf("root size: %d,%d\n", cnx->root_size.w, cnx->root_size.h);
 
 	/* create an invisile window to identify page */
 	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->xroot, -100, -100, 1, 1, 0, 0,
 			0);
 	std::string name("page");
-	cnx->change_property(wm_window, cnx->atoms._NET_WM_NAME, cnx->atoms.UTF8_STRING, 8,
-			PropModeReplace, reinterpret_cast<unsigned char const *>(name.c_str()), name.length() + 1);
-	cnx->change_property(wm_window, cnx->atoms._NET_SUPPORTING_WM_CHECK,
-			cnx->atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&wm_window), 1);
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_SUPPORTING_WM_CHECK,
-			cnx->atoms.WINDOW, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&wm_window), 1);
+	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8,
+	PropModeReplace, reinterpret_cast<unsigned char const *>(name.c_str()),
+			name.length() + 1);
+	cnx->change_property(wm_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
+			PropModeReplace, reinterpret_cast<unsigned char *>(&wm_window), 1);
+	cnx->change_property(cnx->xroot, _NET_SUPPORTING_WM_CHECK,
+			WINDOW, 32, PropModeReplace,
+			reinterpret_cast<unsigned char *>(&wm_window), 1);
+
+	long pid = getpid();
+
+	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL,
+			32, (PropModeReplace),
+			reinterpret_cast<unsigned char const *>(&pid), 1);
 
 	XSelectInput(cnx->dpy, wm_window, StructureNotifyMask);
 
@@ -241,38 +259,38 @@ void page_t::run() {
 
 	/* update number of desktop */
 	int32_t number_of_desktop = 1;
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_NUMBER_OF_DESKTOPS,
-			cnx->atoms.CARDINAL, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_NUMBER_OF_DESKTOPS,
+			CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
 
 	/* define desktop geometry */
 	long desktop_geometry[2];
 	desktop_geometry[0] = cnx->root_size.w;
 	desktop_geometry[1] = cnx->root_size.h;
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_DESKTOP_GEOMETRY,
-			cnx->atoms.CARDINAL, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_DESKTOP_GEOMETRY,
+			CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_DESKTOP_VIEWPORT,
-			cnx->atoms.CARDINAL, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_DESKTOP_VIEWPORT,
+			CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(viewport), 2);
 
 	/* set current desktop */
 	long current_desktop = 0;
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_CURRENT_DESKTOP,
-			cnx->atoms.CARDINAL, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_CURRENT_DESKTOP,
+			CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&current_desktop), 1);
 
 	long showing_desktop = 0;
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_SHOWING_DESKTOP,
-			cnx->atoms.CARDINAL, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_SHOWING_DESKTOP,
+			CARDINAL, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&showing_desktop), 1);
 
 	char const desktop_name[10] = "NoName";
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_DESKTOP_NAMES,
-			cnx->atoms.UTF8_STRING, 8, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_DESKTOP_NAMES,
+			UTF8_STRING, 8, PropModeReplace,
 			(unsigned char *) desktop_name, (int) (strlen(desktop_name) + 2));
 
 	XIconSize icon_size;
@@ -291,13 +309,14 @@ void page_t::run() {
 	cnx->add_event_handler(this);
 
 	scan();
+	update_windows_stack();
 
 	long workarea[4];
 	workarea[0] = 0;
 	workarea[1] = 0;
 	workarea[2] = cnx->root_size.w;
 	workarea[3] = cnx->root_size.h;
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_WORKAREA, cnx->atoms.CARDINAL,
+	cnx->change_property(cnx->xroot, _NET_WORKAREA, CARDINAL,
 			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
 
 	rpage->mark_durty();
@@ -384,13 +403,13 @@ void page_t::run() {
 	}
 }
 
-managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
-//	printf("manage \n");
-	w->add_to_save_set();
-	w->set_managed(true);
-	w->read_all();
-	w->set_default_action();
-	w->write_net_wm_state();
+managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, window_t * w) {
+	printf("manage \n");
+	cnx->add_to_save_set(w->id);
+	//w->set_managed(true);
+	//w->read_all();
+	//w->set_default_action();
+	//w->write_net_wm_state();
 
 	/* set border to zero */
 	XWindowChanges wc;
@@ -398,18 +417,26 @@ managed_window_t * page_t::manage(managed_window_type_e type, window_t * w) {
 	XConfigureWindow(cnx->dpy, w->id, CWBorderWidth, &wc);
 	XSetWindowBorder(cnx->dpy, w->id, 0);
 
-	w->write_net_frame_extents();
+	//w->write_net_frame_extents();
 
 	/* assign window to desktop 0 */
 	if (!w->has_net_wm_desktop()) {
 		long net_wm_desktop = 0;
-		cnx->change_property(w->id, cnx->atoms._NET_WM_DESKTOP,
-				cnx->atoms.CARDINAL, 32, PropModeReplace,
+		cnx->change_property(w->id, _NET_WM_DESKTOP,
+				CARDINAL, 32, PropModeReplace,
 				(unsigned char *) &net_wm_desktop, 1);
 
 	}
 
-	return new_managed_window(type, w);
+	managed_window_t * mw = new managed_window_t(type, net_wm_type, w,
+			theme->get_theme_layout());
+	managed_window.insert(mw);
+
+	Show_All_Props2(cnx->dpy, w->id);
+
+	printf("WM_TYPE: %s\n", cnx->get_atom_name(net_wm_type).c_str());
+
+	return mw;
 
 }
 
@@ -436,7 +463,7 @@ void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
-	Window base = mw->base->id;
+	Window base = mw->base()->id;
 
 	if (mw->is(MANAGED_NOTEBOOK)) {
 		remove_window_from_tree(mw);
@@ -466,26 +493,23 @@ void page_t::scan() {
 
 		for (unsigned i = 0; i < num; ++i) {
 			window_t * w = get_window_t(wins[i]);
-			if(!w->read_window_attributes())
+			w->mark_durty_all();
+
+			if(!w->has_window_attributes())
 				continue;
-			w->add_select_input(PropertyChangeMask | StructureNotifyMask);
-			w->read_when_mapped();
 			update_transient_for(w);
 
-//			printf("Scan for \"%s\"\n", w->get_title().c_str());
-
-			if(!w->is_input_only() && w->is_map())
-				new_renderable_window(w);
-
-			if (w->is_map()) {
-				check_manage(w);
+			if (w->get_window_attributes().map_state != IsUnmapped) {
+				onmap(w);
 			} else {
-				/* if the window is not map check if previous windows manager has set WM_STATE to iconic
+				/**
+				 * if the window is not map check if previous windows manager has set WM_STATE to iconic
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
-				 */
-				w->read_net_wm_state();
-				if(w->get_has_wm_state() && w->get_wm_state() == IconicState) {
-					check_manage(w);
+				 **/
+				if (w->has_wm_state()) {
+					if (w->get_wm_state() == IconicState) {
+						onmap(w);
+					}
 				}
 			}
 		}
@@ -502,55 +526,55 @@ void page_t::scan() {
 void page_t::update_net_supported() {
 	std::list<Atom> supported_list;
 
-	supported_list.push_back(cnx->atoms._NET_WM_NAME);
-	supported_list.push_back(cnx->atoms._NET_WM_USER_TIME);
-	supported_list.push_back(cnx->atoms._NET_CLIENT_LIST);
-	supported_list.push_back(cnx->atoms._NET_CLIENT_LIST_STACKING);
-	supported_list.push_back(cnx->atoms._NET_WM_STRUT_PARTIAL);
-	supported_list.push_back(cnx->atoms._NET_NUMBER_OF_DESKTOPS);
-	supported_list.push_back(cnx->atoms._NET_DESKTOP_GEOMETRY);
-	supported_list.push_back(cnx->atoms._NET_DESKTOP_VIEWPORT);
-	supported_list.push_back(cnx->atoms._NET_CURRENT_DESKTOP);
-	supported_list.push_back(cnx->atoms._NET_ACTIVE_WINDOW);
-	supported_list.push_back(cnx->atoms._NET_WM_STATE_FULLSCREEN);
-	supported_list.push_back(cnx->atoms._NET_WM_STATE_FOCUSED);
-	supported_list.push_back(cnx->atoms._NET_WM_STATE_DEMANDS_ATTENTION);
-	supported_list.push_back(cnx->atoms._NET_WM_STATE_HIDDEN);
-	supported_list.push_back(cnx->atoms._NET_REQUEST_FRAME_EXTENTS);
-	supported_list.push_back(cnx->atoms._NET_FRAME_EXTENTS);
+	supported_list.push_back(cnx->get_atom(_NET_WM_NAME));
+	supported_list.push_back(cnx->get_atom(_NET_WM_USER_TIME));
+	supported_list.push_back(cnx->get_atom(_NET_CLIENT_LIST));
+	supported_list.push_back(cnx->get_atom(_NET_CLIENT_LIST_STACKING));
+	supported_list.push_back(cnx->get_atom(_NET_WM_STRUT_PARTIAL));
+	supported_list.push_back(cnx->get_atom(_NET_NUMBER_OF_DESKTOPS));
+	supported_list.push_back(cnx->get_atom(_NET_DESKTOP_GEOMETRY));
+	supported_list.push_back(cnx->get_atom(_NET_DESKTOP_VIEWPORT));
+	supported_list.push_back(cnx->get_atom(_NET_CURRENT_DESKTOP));
+	supported_list.push_back(cnx->get_atom(_NET_ACTIVE_WINDOW));
+	supported_list.push_back(cnx->get_atom(_NET_WM_STATE_FULLSCREEN));
+	supported_list.push_back(cnx->get_atom(_NET_WM_STATE_FOCUSED));
+	supported_list.push_back(cnx->get_atom(_NET_WM_STATE_DEMANDS_ATTENTION));
+	supported_list.push_back(cnx->get_atom(_NET_WM_STATE_HIDDEN));
+	supported_list.push_back(cnx->get_atom(_NET_REQUEST_FRAME_EXTENTS));
+	supported_list.push_back(cnx->get_atom(_NET_FRAME_EXTENTS));
 
-	supported_list.push_back(cnx->atoms._NET_WM_ALLOWED_ACTIONS);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_FULLSCREEN);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_ABOVE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_BELOW);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_CHANGE_DESKTOP);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_CLOSE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_FULLSCREEN);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_MAXIMIZE_HORZ);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_MAXIMIZE_VERT);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_MINIMIZE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_MOVE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_RESIZE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_SHADE);
-	supported_list.push_back(cnx->atoms._NET_WM_ACTION_STICK);
+	supported_list.push_back(cnx->get_atom(_NET_WM_ALLOWED_ACTIONS));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_FULLSCREEN));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_ABOVE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_BELOW));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_CHANGE_DESKTOP));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_CLOSE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_FULLSCREEN));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_MAXIMIZE_HORZ));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_MAXIMIZE_VERT));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_MINIMIZE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_MOVE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_RESIZE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_SHADE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_ACTION_STICK));
 
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_COMBO);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_DESKTOP);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_DIALOG);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_DND);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_DOCK);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_DROPDOWN_MENU);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_MENU);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_NORMAL);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_NOTIFICATION);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_POPUP_MENU);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_SPLASH);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_TOOLBAR);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_TOOLTIP);
-	supported_list.push_back(cnx->atoms._NET_WM_WINDOW_TYPE_UTILITY);
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_COMBO));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_DESKTOP));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_DIALOG));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_DND));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_DOCK));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_MENU));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_NORMAL));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_NOTIFICATION));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_POPUP_MENU));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_SPLASH));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_TOOLBAR));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_TOOLTIP));
+	supported_list.push_back(cnx->get_atom(_NET_WM_WINDOW_TYPE_UTILITY));
 
-	supported_list.push_back(cnx->atoms._NET_SUPPORTING_WM_CHECK);
+	supported_list.push_back(cnx->get_atom(_NET_SUPPORTING_WM_CHECK));
 
 	long * list = new long[supported_list.size()];
 	int k = 0;
@@ -559,7 +583,7 @@ void page_t::update_net_supported() {
 		list[k] = *i;
 	}
 
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_SUPPORTED, cnx->atoms.ATOM, 32,
+	cnx->change_property(cnx->xroot, _NET_SUPPORTED, ATOM, 32,
 			PropModeReplace, reinterpret_cast<unsigned char *>(list), k);
 
 	delete[] list;
@@ -578,8 +602,8 @@ void page_t::update_client_list() {
 	for (list<managed_window_t *>::iterator i =
 			lst.begin();
 			i != lst.end(); ++i) {
-		s_client_list.insert((*i)->orig->id);
-		s_client_list_stack.insert((*i)->orig->id);
+		s_client_list.insert((*i)->orig()->id);
+		s_client_list_stack.insert((*i)->orig()->id);
 	}
 
 	vector<Window> client_list(s_client_list.begin(), s_client_list.end());
@@ -599,17 +623,17 @@ void page_t::update_client_list() {
 //		client_list_stack.push_back(i->first->id);
 //	}
 
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_CLIENT_LIST_STACKING,
-			cnx->atoms.WINDOW, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_CLIENT_LIST_STACKING,
+			WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&client_list_stack[0]), client_list_stack.size());
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_CLIENT_LIST, cnx->atoms.WINDOW,
+	cnx->change_property(cnx->xroot, _NET_CLIENT_LIST, WINDOW,
 			32, PropModeReplace, reinterpret_cast<unsigned char *>(&client_list[0]),
 			client_list.size());
 
 }
 
 /* inspired from dwm */
-bool page_t::get_text_prop(Window w, Atom atom, std::string & text) {
+bool page_t::get_text_prop(Window w, char const * atom, std::string & text) {
 	//char **list = NULL;
 	XTextProperty name;
 	cnx->get_text_property(w, &name, atom);
@@ -652,15 +676,15 @@ void page_t::process_event(XKeyEvent const & e) {
 				++i) {
 			switch ((*i)->get_type()) {
 			case MANAGED_NOTEBOOK:
-				printf("[%lu] notebook : %s\n", (*i)->orig->id,
+				printf("[%lu] notebook : %s\n", (*i)->orig()->id,
 						(*i)->get_title().c_str());
 				break;
 			case MANAGED_FLOATING:
-				printf("[%lu] floating : %s\n", (*i)->orig->id,
+				printf("[%lu] floating : %s\n", (*i)->orig()->id,
 						(*i)->get_title().c_str());
 				break;
 			case MANAGED_FULLSCREEN:
-				printf("[%lu] fullscreen : %s\n", (*i)->orig->id,
+				printf("[%lu] fullscreen : %s\n", (*i)->orig()->id,
 						(*i)->get_title().c_str());
 				break;
 			}
@@ -763,7 +787,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->reconfigure(mode_data_bind.c->get_base_position());
 					//rnd->raise(pn0);
 
-					pn1->update_data(mw->get_icon()->get_cairo_surface(), c->get_title());
+					pn1->update_data(mw->get_icon()->get_cairo_surface(), mw->get_title());
 					pn1->move(e.x_root, e.y_root);
 
 					process_mode = PROCESS_FLOATING_BIND;
@@ -776,9 +800,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.f = mw;
 					mode_data_floating.original_position = mw->get_wished_position();
 					mode_data_floating.final_position = mw->get_wished_position();
-					mode_data_floating.popup_original_position = mw->base->get_size();
+					mode_data_floating.popup_original_position = mw->get_base_position();
 
-					pfm->reconfigure(mw->base->get_size());
+					pfm->reconfigure(mw->get_base_position());
 					//rnd->raise(pfm);
 					pfm->show();
 
@@ -1074,7 +1098,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				insert_window_in_tree(mode_data_bind.c, mode_data_bind.ns,
 						true);
 
-				safe_raise_window(mode_data_bind.c->orig);
+				safe_raise_window(mode_data_bind.c->orig());
 				rpage->mark_durty();
 				update_client_list();
 
@@ -1310,7 +1334,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* apply mornal hints */
 		unsigned int final_width = size.w;
 		unsigned int final_height = size.h;
-		compute_client_size_with_constraint(mode_data_floating.f->orig, (unsigned)size.w, (unsigned)size.h, final_width, final_height);
+		compute_client_size_with_constraint(mode_data_floating.f->orig(), (unsigned)size.w, (unsigned)size.h, final_width, final_height);
 		size.w = final_width;
 		size.h = final_height;
 
@@ -1494,13 +1518,6 @@ void page_t::process_event(XConfigureEvent const & e) {
 	}
 
 	window_t * w = get_window_t(e.window);
-	w->read_shape();
-
-	if (w->override_redirect() != (e.override_redirect == True)) {
-		//printf("override redirect changed : %s -> %s\n",
-		//		(w->override_redirect()) ? "True" : "False",
-		//		((e.override_redirect == True)) ? "True" : "False");
-	}
 
 	/* track window position and stacking */
 	w->process_configure_notify_event(e);
@@ -1510,12 +1527,12 @@ void page_t::process_event(XConfigureEvent const & e) {
 	if (mw != 0) {
 		box_int_t x(e.x, e.y, e.width, e.height);
 
-		if(mw->orig == w) {
+		if(mw->orig() == w) {
 			if(!mw->check_orig_position(x))
 				mw->reconfigure();
 		}
 
-		if(mw->base == w) {
+		if(mw->base() == w) {
 			if(!mw->check_base_position(x))
 				mw->reconfigure();
 		}
@@ -1548,14 +1565,14 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 	cnx->grab();
 
-	if (!w->read_window_attributes()) {
+	if (!w->has_window_attributes()) {
 		cnx->ungrab();
 		return;
 	}
 
-	w->add_select_input(PropertyChangeMask | StructureNotifyMask);
+	//w->add_select_input(PropertyChangeMask | StructureNotifyMask);
 	update_transient_for(w);
-	w->default_position = w->get_size();
+	//w->default_position = w->get_size();
 
 	cnx->ungrab();
 
@@ -1570,9 +1587,17 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		unmanage(mw);
 	}
 
+	unmanaged_window_t * uw = find_unmanaged_window_with(e.window);
+	if(uw != 0) {
+		delete uw;
+		unmanaged_window.erase(uw);
+	}
+
 	update_client_list();
 	destroy(c);
 	rpage->mark_durty();
+
+	cnx->destroy_cache(e.window);
 
 }
 
@@ -1581,35 +1606,23 @@ void page_t::process_event(XGravityEvent const & e) {
 }
 
 void page_t::process_event(XMapEvent const & e) {
-	//if(rnd != 0)
-	//	rnd->process_event(e);
 
 	/* find/create window handler */
 	window_t * x = get_window_t(e.window);
-	/* update map status */
-	x->map_notify();
+	x->mark_durty_all();
 
 	/* if map event does not occur within root, ignore it */
 	if (e.event != cnx->xroot)
 		return;
 
-	/* read window attribute, if fail, it's probably because
-	 * the window is alredy destroyed */
-	if(not x->read_window_attributes())
+	/**
+	 * Read window attributes, if fail, it's probably because
+	 * the window is already destroyed.
+	 **/
+	if(not x->has_window_attributes())
 		return;
 
-	/* request to redraw the window area */
-	//rnd->add_damage_area(x->get_size());
-
-	if(x->is_input_only())
-		return;
-
-	/* grab and sync the server to avoid miss of event and to
-	   get a valid current state of windows */
-	//cnx->grab();
-
-	/* update all data about the window */
-	x->read_when_mapped();
+	/** usefull for windows statink **/
 	update_transient_for(x);
 
 	managed_window_t * wm;
@@ -1622,16 +1635,9 @@ void page_t::process_event(XMapEvent const & e) {
 			theme->render_floating(wm, is_focussed(wm));
 	}
 
-	safe_raise_window(x);
+	onmap(x);
 
-	/* Hack: Seems eclipse IDE use SkipTaskBar as override redirect */
-	if(not x->override_redirect() and not (x->has_wm_state(cnx->atoms._NET_WM_STATE_SKIP_TASKBAR) && x->has_wm_type(cnx->atoms._NET_WM_WINDOW_TYPE_NORMAL))) {
-		/* try to manage window here because
-		 * Libre Office doesn't generate MapRequest */
-		check_manage(x);
-	}
-
-	//cnx->ungrab();
+	update_windows_stack();
 
 }
 
@@ -1644,19 +1650,13 @@ void page_t::process_event(XReparentEvent const & e) {
 	/* TODO: track reparent */
 	window_t * x = get_window_t(e.window);
 
-	/* notify the new position */
-	box_int_t size = x->get_size();
-	size.x = e.x;
-	size.y = e.y;
-	x->notify_move_resize(size);
-
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
 
 	window_t * x = get_window_t(e.window);
+	x->mark_durty_window_attributes();
 
-	x->unmap_notify();
 	//rnd->add_damage_area(x->get_size());
 	event_t ex;
 	ex.serial = e.serial;
@@ -1669,12 +1669,12 @@ void page_t::process_event(XUnmapEvent const & e) {
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 	if(mw != 0) {
-		cnx->reparentwindow(mw->orig->id, cnx->xroot, 0, 0);
+		cnx->reparentwindow(mw->orig()->id, cnx->xroot, 0, 0);
 		unmanage(mw);
 	}
 
-	x->set_managed(false);
-	x->write_wm_state(WithdrawnState);
+	//x->set_managed(false);
+	//x->write_wm_state(WithdrawnState);
 
 	clear_sibbling_child(x->id);
 
@@ -1718,43 +1718,22 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //	if (e.value_mask & CWBorderWidth)
 //		printf("has border: %d\n", e.border_width);
 
-	if(c) {
-		box_int_t new_size = c->get_size();
-		if (e.value_mask & CWX) {
-			new_size.x = e.x;
-		}
-
-		if (e.value_mask & CWY) {
-			new_size.y = e.y;
-		}
-
-		if (e.value_mask & CWWidth) {
-			new_size.w = e.width;
-		}
-
-		if (e.value_mask & CWHeight) {
-			new_size.h = e.height;
-		}
-
-		c->default_position = new_size;
-
-	}
-
-
 	managed_window_t * mw = find_managed_window_with(e.window);
+
 	if (mw != 0) {
 
 		switch (mw->get_type()) {
 		case MANAGED_NOTEBOOK:
 		case MANAGED_FULLSCREEN:
-
-			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight))!= 0){
+			/** do not allow resize **/
+			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0){
 				mw->fake_configure();
 			}
 
 			break;
 		case MANAGED_FLOATING:
 
+			/** resize floating **/
 			box_int_t new_size = mw->get_wished_position();
 
 			if (e.value_mask & CWX) {
@@ -1785,7 +1764,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 			unsigned int final_width = new_size.w;
 			unsigned int final_height = new_size.h;
 
-			compute_client_size_with_constraint(mw->orig, (unsigned) new_size.w,
+			compute_client_size_with_constraint(mw->orig(), (unsigned) new_size.w,
 					(unsigned) new_size.h, final_width, final_height);
 
 			new_size.w = final_width;
@@ -1796,44 +1775,26 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 			break;
 		}
 	} else {
-
-		box_int_t size = c->get_size();
-
-		if (e.value_mask & CWX) {
-			size.x = e.x;
-		}
-
-		if (e.value_mask & CWY) {
-			size.y = e.y;
-		}
-
-		if (e.value_mask & CWWidth) {
-			size.w = e.width;
-		}
-
-		if (e.value_mask & CWHeight) {
-			size.h = e.height;
-		}
-
-		/* the configure notify comme to late in some case */
-		c->notify_move_resize(size);
-
-		XWindowChanges ev;
-		ev.x = e.x;
-		ev.y = e.y;
-		ev.width = e.width;
-		ev.height = e.height;
-		ev.sibling = e.above;
-		ev.stack_mode = e.detail;
-		ev.border_width = e.border_width;
-
-		XConfigureWindow(e.display, e.window,
-				e.value_mask
-						& (unsigned long) (CWX | CWY | CWHeight | CWWidth
-								| CWBorderWidth),
-						&ev);
-
+		/** validate configure when window is not managed **/
+		ackwoledge_configure_request(e);
 	}
+
+}
+
+void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
+	static unsigned long CONFIGURE_MASK =
+			(CWX | CWY | CWHeight | CWWidth | CWBorderWidth);
+
+	XWindowChanges ev;
+	ev.x = e.x;
+	ev.y = e.y;
+	ev.width = e.width;
+	ev.height = e.height;
+	ev.sibling = e.above;
+	ev.stack_mode = e.detail;
+	ev.border_width = e.border_width;
+
+	XConfigureWindow(e.display, e.window, e.value_mask & CONFIGURE_MASK, &ev);
 
 }
 
@@ -1841,8 +1802,11 @@ void page_t::process_event(XMapRequestEvent const & e) {
 	fprintf(stderr, "Maprequest\n");
 	/* everything will be done in MapEvent */
 	window_t * a = get_window_t(e.window);
-	a->map();
-	XFlush(cnx->dpy);
+	a->mark_durty_all();
+
+	onmap(a);
+	cnx->map_window(a->id);
+
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
@@ -1854,12 +1818,12 @@ void page_t::process_event(XPropertyEvent const & e) {
 	window_t * x = get_window_t(e.window);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
-	if (e.atom == cnx->atoms._NET_WM_USER_TIME) {
-		x->read_net_wm_user_time();
+	if (e.atom == cnx->get_atom(_NET_WM_USER_TIME)) {
+		x->mark_durty_net_wm_user_time();
 		//if (_last_focus_time < x->get_net_user_time())
 		//	_last_focus_time = x->get_net_user_time();
-	} else if (e.atom == cnx->atoms._NET_WM_NAME) {
-		x->read_net_vm_name();
+	} else if (e.atom == cnx->get_atom(_NET_WM_NAME)) {
+		x->mark_durty_net_wm_name();
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				rpage->mark_durty();
@@ -1870,85 +1834,82 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 		}
 
-	} else if (e.atom == cnx->atoms.WM_NAME) {
-		if (x->is_managed()) {
-			x->read_vm_name();
-			if (mw != 0) {
-				if (mw->is(MANAGED_NOTEBOOK)) {
-					rpage->mark_durty();
-				}
+	} else if (e.atom == cnx->get_atom(WM_NAME)) {
+		x->mark_durty_wm_name();
+		if (mw != 0) {
+			if (mw->is(MANAGED_NOTEBOOK)) {
+				rpage->mark_durty();
+			}
 
-				if (mw->is(MANAGED_FLOATING)) {
-					theme->render_floating(mw, is_focussed(mw));
-				}
+			if (mw->is(MANAGED_FLOATING)) {
+				theme->render_floating(mw, is_focussed(mw));
 			}
 		}
-	} else if (e.atom == cnx->atoms._NET_WM_STRUT_PARTIAL) {
+	} else if (e.atom == cnx->get_atom(_NET_WM_STRUT_PARTIAL)) {
 		printf("UPDATE PARTIAL STRUCT\n");
-		x->read_partial_struct();
+		x->mark_durty_net_wm_partial_struct();
 		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
 			fix_allocation(*(i->second));
 		}
 		rpage->mark_durty();
-	} else if (e.atom == cnx->atoms._NET_WM_STRUT) {
-		x->read_partial_struct();
-		rpage->mark_durty();
-	} else if (e.atom == cnx->atoms._NET_WM_ICON) {
-		x->read_icon_data();
+	} else if (e.atom == cnx->get_atom(_NET_WM_STRUT)) {
+		//x->mark_durty_net_wm_partial_struct();
+		//rpage->mark_durty();
+	} else if (e.atom == cnx->get_atom(_NET_WM_ICON)) {
+		x->mark_durty_net_wm_icon();
 		/* TODO: durty notebook */
-	} else if (e.atom == cnx->atoms._NET_WM_WINDOW_TYPE) {
+	} else if (e.atom == cnx->get_atom(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
+		/* update cache */
+		x->mark_durty_net_wm_type();
 
 		//window_t::page_window_type_e old = x->get_window_type();
-		//x->read_net_wm_type();
 		//x->read_transient_for();
 		//x->find_window_type();
 		/* I do not see something in ICCCM */
 		//if(x->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE && old != window_t::PAGE_NORMAL_WINDOW_TYPE) {
 		//	manage_notebook(x);
 		//}
-	} else if (e.atom == cnx->atoms.WM_NORMAL_HINTS) {
-		if (x->is_managed()) {
-			x->read_wm_normal_hints();
-			if (mw != 0) {
+	} else if (e.atom == cnx->get_atom(WM_NORMAL_HINTS)) {
+		x->mark_durty_wm_normal_hints();
+		if (mw != 0) {
 
-				if (mw->is(MANAGED_NOTEBOOK)) {
-					find_notebook_for(mw)->update_client_position(mw);
-				}
+			if (mw->is(MANAGED_NOTEBOOK)) {
+				find_notebook_for(mw)->update_client_position(mw);
+			}
 
-				if (mw->is(MANAGED_FLOATING)) {
+			if (mw->is(MANAGED_FLOATING)) {
 
-					/* apply normal hint to floating window */
-					box_int_t new_size = mw->get_wished_position();
-					unsigned int final_width = new_size.w;
-					unsigned int final_height = new_size.h;
-					compute_client_size_with_constraint(mw->orig,
-							(unsigned) new_size.w, (unsigned) new_size.h,
-							final_width, final_height);
-					new_size.w = final_width;
-					new_size.h = final_height;
-					mw->set_wished_position(new_size);
-					theme->render_floating(mw, is_focussed(mw));
+				/* apply normal hint to floating window */
+				box_int_t new_size = mw->get_wished_position();
+				unsigned int final_width = new_size.w;
+				unsigned int final_height = new_size.h;
+				compute_client_size_with_constraint(mw->orig(),
+						(unsigned) new_size.w, (unsigned) new_size.h,
+						final_width, final_height);
+				new_size.w = final_width;
+				new_size.h = final_height;
+				mw->set_wished_position(new_size);
+				theme->render_floating(mw, is_focussed(mw));
 
-				}
 			}
 		}
-	} else if (e.atom == cnx->atoms.WM_PROTOCOLS) {
-		x->read_net_wm_protocols();
-	} else if (e.atom == cnx->atoms.WM_TRANSIENT_FOR) {
-		x->read_transient_for();
+	} else if (e.atom == cnx->get_atom(WM_PROTOCOLS)) {
+		x->mark_durty_net_wm_protocols();
+	} else if (e.atom == cnx->get_atom(WM_TRANSIENT_FOR)) {
+		x->mark_durty_wm_transient_for();
 //		printf("TRANSIENT_FOR = #%ld\n", x->transient_for());
 
 		update_transient_for(x);
 		update_windows_stack();
 
-	} else if (e.atom == cnx->atoms.WM_HINTS) {
-		x->read_wm_hints();
-	} else if (e.atom == cnx->atoms._NET_WM_STATE) {
-		x->read_net_wm_state();
-	} else if (e.atom == cnx->atoms.WM_STATE) {
+	} else if (e.atom == cnx->get_atom(WM_HINTS)) {
+		x->mark_durty_wm_hints();
+	} else if (e.atom == cnx->get_atom(_NET_WM_STATE)) {
+		x->mark_durty_net_wm_state();
+	} else if (e.atom == cnx->get_atom(WM_STATE)) {
 		/** this is set by page ... don't read it **/
-	} else if  (e.atom == cnx->atoms._NET_WM_DESKTOP) {
+	} else if (e.atom == cnx->get_atom(_NET_WM_DESKTOP)) {
 		/* this set by page in most case */
 		//x->read_net_wm_desktop();
 	}
@@ -1968,7 +1929,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 
-	if (e.message_type == cnx->atoms._NET_ACTIVE_WINDOW) {
+	if (e.message_type == cnx->get_atom(_NET_ACTIVE_WINDOW)) {
 		//printf("request to activate %lu\n", e.window);
 
 		if (mw != 0) {
@@ -1981,7 +1942,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				//set_focus(mw, false);
 			}
 		}
-	} else if (e.message_type == cnx->atoms._NET_WM_STATE) {
+	} else if (e.message_type == cnx->get_atom(_NET_WM_STATE)) {
 
 		process_net_vm_state_client_message(w, e.data.l[0], e.data.l[1]);
 		process_net_vm_state_client_message(w, e.data.l[0], e.data.l[2]);
@@ -1991,18 +1952,18 @@ void page_t::process_event(XClientMessageEvent const & e) {
 					e.data.l[i]) != supported_list.end()) {
 				switch (e.data.l[0]) {
 				case _NET_WM_STATE_REMOVE:
-					w->unset_net_wm_state(e.data.l[i]);
+					//w->unset_net_wm_state(e.data.l[i]);
 					break;
 				case _NET_WM_STATE_ADD:
-					w->set_net_wm_state(e.data.l[i]);
+					//w->set_net_wm_state(e.data.l[i]);
 					break;
 				case _NET_WM_STATE_TOGGLE:
-					w->toggle_net_wm_state(e.data.l[i]);
+					//w->toggle_net_wm_state(e.data.l[i]);
 					break;
 				}
 			}
 		}
-	} else if (e.message_type == cnx->atoms.WM_CHANGE_STATE) {
+	} else if (e.message_type == cnx->get_atom(WM_CHANGE_STATE)) {
 		/* client should send this message to go iconic */
 		if (e.data.l[0] == IconicState) {
 			//printf("Set to iconic %lu\n", w->id);
@@ -2012,26 +1973,26 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			}
 		}
 
-	} else if (e.message_type == cnx->atoms.PAGE_QUIT) {
+	} else if (e.message_type == cnx->get_atom(PAGE_QUIT)) {
 		running = false;
-	} else if (e.message_type == cnx->atoms.WM_PROTOCOLS) {
+	} else if (e.message_type == cnx->get_atom(WM_PROTOCOLS)) {
 //		char * name = cnx->get_atom_name(e.data.l[0]);
 //		printf("PROTOCOL Atom Name = \"%s\"\n", name);
 //		XFree(name);
-	} else if (e.message_type == cnx->atoms._NET_CLOSE_WINDOW) {
+	} else if (e.message_type == cnx->get_atom(_NET_CLOSE_WINDOW)) {
 
 		XEvent evx;
 		evx.xclient.display = cnx->dpy;
 		evx.xclient.type = ClientMessage;
 		evx.xclient.format = 32;
-		evx.xclient.message_type = cnx->atoms.WM_PROTOCOLS;
+		evx.xclient.message_type = cnx->get_atom(WM_PROTOCOLS);
 		evx.xclient.window = e.window;
-		evx.xclient.data.l[0] = cnx->atoms.WM_DELETE_WINDOW;
+		evx.xclient.data.l[0] = cnx->get_atom(WM_DELETE_WINDOW);
 		evx.xclient.data.l[1] = e.data.l[0];
 
 		cnx->send_event(e.window, False, NoEventMask, &evx);
-	} else if (e.message_type == cnx->atoms._NET_REQUEST_FRAME_EXTENTS) {
-			w->write_net_frame_extents();
+	} else if (e.message_type == cnx->get_atom(_NET_REQUEST_FRAME_EXTENTS)) {
+			//w->write_net_frame_extents();
 	}
 }
 
@@ -2079,10 +2040,10 @@ void page_t::fullscreen(managed_window_t * mw) {
 	data.viewport->fullscreen_client = mw;
 	fullscreen_client_to_viewport[mw] = data;
 	mw->normalize();
-	mw->orig->set_fullscreen();
+	//mw->orig()->set_fullscreen();
 	mw->set_wished_position(data.viewport->raw_aera);
 	//set_focus(mw, false);
-	safe_raise_window(mw->orig);
+	safe_raise_window(mw->orig());
 }
 
 void page_t::unfullscreen(managed_window_t * mw) {
@@ -2118,7 +2079,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 		(*i)->map_all();
 	}
 
-	mw->orig->unset_fullscreen();
+	//mw->orig()->unset_fullscreen();
 	//set_focus(mw, false);
 	update_allocation();
 	//nd->add_damage_area(cnx->root_size);
@@ -2126,10 +2087,10 @@ void page_t::unfullscreen(managed_window_t * mw) {
 }
 
 void page_t::toggle_fullscreen(managed_window_t * c) {
-	if(c->orig->is_fullscreen())
-		unfullscreen(c);
-	else
-		fullscreen(c);
+	//if(c->orig()->is_fullscreen())
+	//	unfullscreen(c);
+	//else
+	//	fullscreen(c);
 }
 
 void page_t::print_window_attributes(Window w, XWindowAttributes & wa) {
@@ -2173,15 +2134,15 @@ void page_t::print_window_attributes(Window w, XWindowAttributes & wa) {
 //	printf("> screen: %p\n", wa.screen);
 }
 
-std::string page_t::safe_get_window_name(Window w) {
-	window_t * x = get_window_t(w);
-	std::string wname = "unknown window";
-	if(x != 0) {
-		wname = x->get_title();
-	}
-
-	return wname;
-}
+//std::string page_t::safe_get_window_name(Window w) {
+//	window_t * x = get_window_t(w);
+//	std::string wname = "unknown window";
+//	if(x != 0) {
+//		wname = x->get_title();
+//	}
+//
+//	return wname;
+//}
 
 void page_t::process_event(XEvent const & e) {
 
@@ -2275,8 +2236,6 @@ void page_t::process_event(XEvent const & e) {
 			pn1->expose();
 		}
 
-	} else if (e.type == cnx->xinerama_event) {
-		printf("a xinerama event\n");
 	} else if (e.type == cnx->xrandr_event + RRNotify) {
 		XRRNotifyEvent const &ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 
@@ -2357,7 +2316,7 @@ void page_t::process_event(XEvent const & e) {
 		XShapeEvent * se = (XShapeEvent *)&e;
 		if(se->kind == ShapeClip) {
 			window_t * w = get_window_t(se->window);
-			w->read_shape();
+			w->mark_durty_shape_region();
 		}
 	} else {
 		fprintf(stderr, "Not handled event:\n");
@@ -2459,14 +2418,10 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 	}
 
 	if(current_focus != focus && current_focus != 0) {
-		current_focus->orig->unset_focused();
-		if(current_focus->get_type() == MANAGED_FLOATING) {
+		current_focus->unset_focused();
+		if(current_focus->is(MANAGED_FLOATING)) {
 			theme->render_floating(current_focus, false);
 		}
-
-		/** When windows are unfocused grab button 1, 2 and 3 events **/
-		current_focus->base->ungrab_all_buttons();
-		current_focus->base->grab_button_unfocused();
 
 	}
 
@@ -2477,7 +2432,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 		return;
 
 	//printf("focus [%lu] %s\n", focus->orig->id, focus->get_title().c_str());
-	fflush(stdout);
+	//fflush(stdout);
 	rpage->mark_durty();
 	//rnd->add_damage_area(rpage->get_area());
 
@@ -2486,8 +2441,8 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 
 	/* focus the selected window */
 	rpage->set_focuced_client(focus);
-	focus->orig->set_focused();
-	safe_raise_window(focus->orig);
+	focus->set_focused();
+	safe_raise_window(focus->orig());
 
 	focus->focus(_last_focus_time);
 	if (focus->get_type() == MANAGED_FLOATING) {
@@ -2495,10 +2450,10 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 		//rnd->add_damage_area(focus->base->get_size());
 	}
 
-	Window xw = focus->orig->id;
+	Window xw = focus->orig()->id;
 	/* update _NET_ACTIVE_WINDOW */
-	cnx->change_property(cnx->xroot, cnx->atoms._NET_ACTIVE_WINDOW,
-			cnx->atoms.WINDOW, 32, PropModeReplace,
+	cnx->change_property(cnx->xroot, _NET_ACTIVE_WINDOW,
+			WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&xw), 1);
 
 
@@ -2510,9 +2465,9 @@ xconnection_t * page_t::get_xconnection() {
 
 /* delete window handler */
 void page_t::delete_window(window_t * x) {
-	assert(has_key(xwindow_to_window, x->id));
-	xwindow_to_window.erase(x->id);
-	delete x;
+//	assert(has_key(xwindow_to_window, x->id));
+//	xwindow_to_window.erase(x->id);
+//	delete x;
 }
 
 bool page_t::check_for_start_split(XButtonEvent const & e) {
@@ -2779,11 +2734,12 @@ void page_t::fix_allocation(viewport_t & v) {
 	long xright = cnx->root_size.w - v.raw_aera.x - v.raw_aera.w;
 	long xbottom = cnx->root_size.h - v.raw_aera.y - v.raw_aera.h;
 
-	std::map<Window, window_t *>::iterator j = xwindow_to_window.begin();
-	while (j != xwindow_to_window.end()) {
-		long const * ps = j->second->get_partial_struct();
+	set<unmanaged_window_t *>::iterator j = unmanaged_window.begin();
+	while (j != unmanaged_window.end()) {
 
-		if (ps != 0) {
+		if ((*j)->orig->has_net_wm_partial_struct()) {
+			vector<long> ps = (*j)->orig->get_net_wm_partial_struct();
+
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
 				box_int_t b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
@@ -2898,7 +2854,7 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 		//printf("process wm_state %s %s\n", action, name);
 		//XFree(name);
 
-		if (state_properties == cnx->atoms._NET_WM_STATE_FULLSCREEN) {
+		if (state_properties == cnx->get_atom(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				//printf("SET normal\n");
@@ -2913,20 +2869,20 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 				break;
 			}
 			update_allocation();
-		} else if (state_properties == cnx->atoms._NET_WM_STATE_HIDDEN) {
+		} else if (state_properties == cnx->get_atom(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				if (find_notebook_for(mw) != 0) {
 					find_notebook_for(mw)->activate_client(mw);
 				} else {
-					c->map();
+					//c->map();
 				}
 				break;
 			case _NET_WM_STATE_ADD:
 				if (find_notebook_for(mw) != 0) {
 					find_notebook_for(mw)->iconify_client(mw);
 				} else {
-					c->unmap();
+					//c->unmap();
 				}
 				break;
 			case _NET_WM_STATE_TOGGLE:
@@ -2937,11 +2893,11 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 						find_notebook_for(mw)->iconify_client(mw);
 					}
 				} else {
-					if (c->is_map()) {
-						c->unmap();
-					} else {
-						c->map();
-					}
+//					if (c->is_map()) {
+//						c->unmap();
+//					} else {
+//						c->map();
+//					}
 				}
 				break;
 			default:
@@ -2953,7 +2909,7 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 		//printf("process wm_state %s %s\n", action, name);
 		//XFree(name);
 
-		if (state_properties == cnx->atoms._NET_WM_STATE_FULLSCREEN) {
+		if (state_properties == cnx->get_atom(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				//printf("SET normal\n");
@@ -2968,7 +2924,7 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 				break;
 			}
 			update_allocation();
-		} else if (state_properties == cnx->atoms._NET_WM_STATE_HIDDEN) {
+		} else if (state_properties == cnx->get_atom(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->normalize();
@@ -2977,18 +2933,18 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 				mw->iconify();
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				if (c->is_map()) {
-					mw->iconify();
-				} else {
-					mw->normalize();
-				}
+//				if (c->is_map()) {
+//					mw->iconify();
+//				} else {
+//					mw->normalize();
+//				}
 				break;
 			default:
 				break;
 			}
 		}
 	} else if (mw->is(MANAGED_FULLSCREEN)) {
-		if (state_properties == cnx->atoms._NET_WM_STATE_FULLSCREEN) {
+		if (state_properties == cnx->get_atom(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				printf("SET normal\n");
@@ -3003,7 +2959,7 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 				break;
 			}
 			update_allocation();
-		} else if (state_properties == cnx->atoms._NET_WM_STATE_HIDDEN) {
+		} else if (state_properties == cnx->get_atom(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->normalize();
@@ -3012,11 +2968,11 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 				mw->iconify();
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				if (c->is_map()) {
-					mw->iconify();
-				} else {
-					mw->normalize();
-				}
+//				if (c->is_map()) {
+//					mw->iconify();
+//				} else {
+//					mw->normalize();
+//				}
 				break;
 			default:
 				break;
@@ -3028,7 +2984,11 @@ void page_t::process_net_vm_state_client_message(window_t * c, long type, Atom s
 void page_t::update_transient_for(window_t * w) {
 	/* remove sibbling_child if needed */
 	clear_sibbling_child(w->id);
-	transient_for_map[w->transient_for()].push_back(w->id);
+	if (w->has_wm_transient_for()) {
+		transient_for_map[w->get_wm_transient_for()].push_back(w->id);
+	} else {
+		transient_for_map[None].push_back(w->id);
+	}
 }
 
 void page_t::safe_raise_window(window_t * w) {
@@ -3047,10 +3007,12 @@ void page_t::safe_raise_window(window_t * w) {
 	set<Window> already_raise;
 	already_raise.insert(None);
 	window_t * w_next = w;
-	while(!has_key(already_raise, w_next->transient_for())) {
+	while(!w_next->has_wm_transient_for()) {
+		if(w_next->get_wm_transient_for() == None)
+			break;
 		update_transient_for(w_next);
-		already_raise.insert(w_next->transient_for());
-		w_next = get_window_t(w_next->transient_for());
+		already_raise.insert(w_next->get_wm_transient_for());
+		w_next = get_window_t(w_next->get_wm_transient_for());
 	}
 
 	update_transient_for(w_next);
@@ -3066,92 +3028,8 @@ void page_t::clear_sibbling_child(Window w) {
 	}
 }
 
-void page_t::new_renderable_window(window_t * w) {
-
-}
-
-void page_t::destroy_renderable(window_t * w) {
-
-}
-
-
-managed_window_t * page_t::new_managed_window(managed_window_type_e type, window_t * orig) {
-
-	/**
-	 * Create the base window, window that will content managed window
-	 **/
-
-	XSetWindowAttributes wa;
-	Window wbase;
-	Window wdeco;
-	box_int_t b = orig->get_size();
-
-	/** Common window properties **/
-	unsigned long value_mask = CWOverrideRedirect;
-	wa.override_redirect = True;
-
-
-	/**
-	 * If window visual is 32 bit (have alpha channel, and root do not
-	 * have alpha channel, use the window visual, other wise, always prefer
-	 * root visual.
-	 **/
-	if (orig->get_depth() == 32 && cnx->root_wa.depth != 32) {
-		/** if visual is 32 bits, this values are mandatory **/
-		Visual * v = orig->get_visual();
-		wa.colormap = XCreateColormap(cnx->dpy, cnx->xroot, v, AllocNone);
-		wa.background_pixel = BlackPixel(cnx->dpy, cnx->screen);
-		wa.border_pixel = BlackPixel(cnx->dpy, cnx->screen);
-		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
-
-		wbase = XCreateWindow(cnx->dpy, cnx->xroot, b.x, b.y, b.w, b.h, 0, 32,
-				InputOutput, v, value_mask, &wa);
-		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
-				InputOutput, v, value_mask, &wa);
-	} else {
-		wbase = XCreateWindow(cnx->dpy, cnx->xroot, b.x, b.y, b.w, b.h, 0,
-				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
-				value_mask, &wa);
-		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0,
-				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
-				value_mask, &wa);
-	}
-
-
-	window_t * base = get_window_t(wbase);
-	window_t * deco = get_window_t(wdeco);
-	base->read_window_attributes();
-	deco->read_window_attributes();
-
-	/**
-	 * Grab and sync the server before reading and setup select_input to not
-	 * miss events and to get the valid state of windows
-	 **/
-	cnx->grab();
-	base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
-	deco->select_input(MANAGED_DECO_WINDOW_EVENT_MASK);
-	/* ensure that events are listen to track window state */
-	orig->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
-	/* read current window state */
-	orig->read_when_mapped();
-
-	/* Grab button click */
-	deco->grab_all_buttons();
-	base->ungrab_all_buttons();
-	base->grab_button_unfocused();
-
-	cnx->ungrab();
-
-	managed_window_t * mw = new managed_window_t(type, orig, base, deco,
-			theme->get_theme_layout());
-	managed_window.insert(mw);
-
-	XFlush(cnx->dpy);
-	return mw;
-}
-
 void page_t::destroy_managed_window(managed_window_t * mw) {
-	clear_sibbling_child(mw->orig->id);
+	clear_sibbling_child(mw->orig()->id);
 	managed_window.erase(mw);
 	fullscreen_client_to_viewport.erase(mw);
 
@@ -3168,111 +3046,14 @@ void page_t::destroy_managed_window(managed_window_t * mw) {
 	delete mw;
 }
 
-bool page_t::check_manage(window_t * x) {
-
-	if(find_managed_window_with(x->id))
-		return true;
-	if(x->is_managed())
-		return true;
-	if(x->override_redirect())
-		return false;
-	if(x->is_input_only())
-		return false;
-
-	bool ret = false;
-
-	/* find the type of current window */
-	page_window_type_e type = x->get_window_type();
-
-	/* make all window with transient_for floating by default */
-	if(type == PAGE_NORMAL_WINDOW_TYPE && x->transient_for() != None)
-		type = PAGE_FLOATING_WINDOW_TYPE;
-
-	/* all floating by default (BAD idea) */
-	//if(type == PAGE_NORMAL_WINDOW_TYPE)
-	//	type = PAGE_FLOATING_WINDOW_TYPE;
-
-	if (type == PAGE_NORMAL_WINDOW_TYPE) {
-//		printf("Fixed window found\n");
-		managed_window_t * fw = manage(MANAGED_NOTEBOOK, x);
-		insert_window_in_tree(fw, 0, fw->orig->get_initial_state() == NormalState && !fw->orig->is_hidden());
-
-		if(x->is_fullscreen()) {
-			fullscreen(fw);
-		} else {
-			fw->reconfigure();
-		}
-
-		ret = true;
-	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
-//		printf("Floating window found\n");
-		managed_window_t * fw = manage(MANAGED_FLOATING, x);
-		/* apply normal hint to floating window */
-		box_int_t new_size = fw->get_wished_position();
-
-		/* do not allow to large windows */
-		if (new_size.w
-				> (cnx->root_size.w
-						- theme->get_theme_layout()->floating_margin.left
-						- theme->get_theme_layout()->floating_margin.right))
-			new_size.w = cnx->root_size.w
-					- theme->get_theme_layout()->floating_margin.left
-					- theme->get_theme_layout()->floating_margin.right;
-		if (new_size.h
-				> cnx->root_size.h
-						- theme->get_theme_layout()->floating_margin.top
-						- theme->get_theme_layout()->floating_margin.bottom)
-			new_size.h = cnx->root_size.h
-					- theme->get_theme_layout()->floating_margin.top
-					- theme->get_theme_layout()->floating_margin.bottom;
-
-		unsigned int final_width = new_size.w;
-		unsigned int final_height = new_size.h;
-		compute_client_size_with_constraint(fw->orig, (unsigned)new_size.w, (unsigned)new_size.h, final_width, final_height);
-		new_size.w = final_width;
-		new_size.h = final_height;
-
-		fw->set_wished_position(new_size);
-		fw->normalize();
-
-		if(x->is_fullscreen()) {
-			fullscreen(fw);
-		} else {
-			fw->reconfigure();
-		}
-
-		//set_focus(fw, false);
-
-		ret = true;
-	} else if (type == PAGE_DOCK_TYPE) {
-		/** track positions and struct change **/
-		x->select_input(StructureNotifyMask | PropertyChangeMask);
-	}
-
-	rpage->mark_durty();
-	update_client_list();
-
-	return ret;
-
-}
-
-
-
 window_t * page_t::get_window_t(Window w) {
-	window_map_t::iterator i = xwindow_to_window.find(w);
-	if(i != xwindow_to_window.end()) {
-		return i->second;
-	} else {
-		window_t * x = new window_t(*cnx, w);
-		xwindow_to_window[w] = x;
-		return x;
-	}
+	return cnx->get_window_t(w);
 }
 
 window_t * page_t::find_root_window(window_t * w) {
 	managed_window_t * mw = find_managed_window_with(w->id);
 	if(mw != 0)
-		return mw->base;
+		return mw->base();
 	return 0;
 
 }
@@ -3280,7 +3061,7 @@ window_t * page_t::find_root_window(window_t * w) {
 window_t * page_t::find_client_window(window_t * w) {
 	managed_window_t * mw = find_managed_window_with(w->id);
 	if(mw != 0)
-		return mw->orig;
+		return mw->orig();
 	return 0;
 
 }
@@ -3289,7 +3070,7 @@ void page_t::compute_client_size_with_constraint(window_t * c,
 		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
 		unsigned int & height) {
 
-	XSizeHints const size_hints = *c->get_wm_normal_hints();
+	XSizeHints const size_hints = c->get_wm_normal_hints();
 
 	/* default size if no size_hints is provided */
 	width = wished_width;
@@ -3404,7 +3185,7 @@ void page_t::print_tree_windows() {
 		}
 
 		window_t * w = get_window_t((*i).second);
-		printf("%d [%lu] %s\n", (*i).first, w->id, w->get_title().c_str());
+		//printf("%d [%lu] %s\n", (*i).first, w->id, w->get_title().c_str());
 	}
 
 
@@ -3416,7 +3197,7 @@ void page_t::bind_window(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_NOTEBOOK);
 	insert_window_in_tree(mw, 0, true);
 
-	safe_raise_window(mw->orig);
+	safe_raise_window(mw->orig());
 
 	rpage->mark_durty();
 	update_client_list();
@@ -3431,7 +3212,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_FLOATING);
 	theme->render_floating(mw, is_focussed(mw));
 	mw->normalize();
-	safe_raise_window(mw->orig);
+	safe_raise_window(mw->orig());
 	rpage->mark_durty();
 	//rnd->add_damage_area(cnx->root_size);
 	update_client_list();
@@ -3567,7 +3348,16 @@ void page_t::get_managed_windows(list<managed_window_t *> & l) {
 
 managed_window_t * page_t::find_managed_window_with(Window w) {
 	for(set<managed_window_t *>::iterator i = managed_window.begin(); i != managed_window.end(); ++i) {
-		if((*i)->base->id == w or (*i)->orig->id == w or (*i)->deco->id == w)
+		if((*i)->base()->id == w or (*i)->orig()->id == w or (*i)->deco()->id == w)
+			return *i;
+	}
+	return 0;
+}
+
+unmanaged_window_t * page_t::find_unmanaged_window_with(Window w) {
+	for (set<unmanaged_window_t *>::iterator i = unmanaged_window.begin();
+			i != unmanaged_window.end(); ++i) {
+		if ((*i)->orig->id == w)
 			return *i;
 	}
 	return 0;
@@ -3627,16 +3417,13 @@ void page_t::update_windows_stack() {
 
 	list<Window> final_order;
 
-	final_order.remove(rpage->wid);
-	final_order.push_back(rpage->wid);
-
 	/* 1. raise window in tabs */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		managed_window_t * mw = find_managed_window_with((*i)->id);
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
-				Window w = mw->base->id;
+				Window w = mw->base()->id;
 				final_order.remove(w);
 				final_order.push_back(w);
 			}
@@ -3649,7 +3436,7 @@ void page_t::update_windows_stack() {
 		managed_window_t * mw = find_managed_window_with((*i)->id);
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING)) {
-				Window w = mw->base->id;
+				Window w = mw->base()->id;
 				final_order.remove(w);
 				final_order.push_back(w);
 			}
@@ -3659,12 +3446,13 @@ void page_t::update_windows_stack() {
 	/* 3. raise docks */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		window_t * c = find_client_window(*i);
-		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
-				&& (*i)->get_window_type() == PAGE_DOCK_TYPE) {
-			Window w = (*i)->id;
-			final_order.remove(w);
-			final_order.push_back(w);
+		unmanaged_window_t * uw = find_unmanaged_window_with((*i)->id);
+		if (uw != 0) {
+			if (uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+				Window w = (*i)->id;
+				final_order.remove(w);
+				final_order.push_back(w);
+			}
 		}
 	}
 
@@ -3673,7 +3461,7 @@ void page_t::update_windows_stack() {
 	for (map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
 			i != viewport_outputs.end(); ++i) {
 		if (i->second->fullscreen_client != 0) {
-			Window w = i->second->fullscreen_client->base->id;
+			Window w = i->second->fullscreen_client->base()->id;
 			final_order.remove(w);
 			final_order.push_back(w);
 		}
@@ -3682,13 +3470,14 @@ void page_t::update_windows_stack() {
 	/* 5. raise other windows */
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		window_t * c = find_client_window(*i);
-		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
-				&& (*i)->get_window_type() != PAGE_DOCK_TYPE
-				&& (*i)->id != rpage->wid) {
-			Window w = (*i)->id;
-			final_order.remove(w);
-			final_order.push_back(w);
+		unmanaged_window_t * uw = find_unmanaged_window_with((*i)->id);
+		if (uw != 0) {
+			if (uw->net_wm_type() != A(_NET_WM_WINDOW_TYPE_DOCK)
+					&& (*i)->id != rpage->wid) {
+				Window w = (*i)->id;
+				final_order.remove(w);
+				final_order.push_back(w);
+			}
 		}
 	}
 
@@ -3696,16 +3485,14 @@ void page_t::update_windows_stack() {
 	for (window_list_t::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
 		window_t * c = find_client_window(*i);
-		if (c == 0 && (*i)->is_map() && !(*i)->is_input_only()
-				&& ((*i)->get_window_type() == PAGE_NOTIFY_TYPE
-						|| (*i)->has_wm_type(
-								cnx->atoms._NET_WM_WINDOW_TYPE_NOTIFICATION)
-						|| (*i)->has_wm_type(
-								cnx->atoms._NET_WM_WINDOW_TYPE_TOOLTIP)
-						|| (*i)->get_window_type() == PAGE_TOOLTIP)) {
-			Window w = (*i)->id;
-			final_order.remove(w);
-			final_order.push_back(w);
+		unmanaged_window_t * uw = find_unmanaged_window_with((*i)->id);
+		if (uw != 0) {
+			if (uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)
+					|| uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+				Window w = (*i)->id;
+				final_order.remove(w);
+				final_order.push_back(w);
+			}
 		}
 	}
 
@@ -3820,6 +3607,272 @@ void  page_t::destroy_viewport(viewport_t * v) {
 		}
 		delete v;
 	}
+}
+
+//void page_t::manage_if_needed(window_t * x) {
+//
+//	if (find_managed_window_with(x->id))
+//		return;
+//
+//	/* find the type of current window */
+//	page_window_type_e type = find_window_type(cnx->dpy, x->id);
+//
+//	if(type == PAGE_OVERLAY_WINDOW_TYPE) {
+//		x->map();
+//		return;
+//	} else if(type == PAGE_UNKNOW_WINDOW_TYPE) {
+//		x->map();
+//		return;
+//	} else if (type == PAGE_NORMAL_WINDOW_TYPE) {
+//		managed_window_t * fw = manage(MANAGED_NOTEBOOK, x);
+//		insert_window_in_tree(fw, 0,
+//				fw->orig()->get_initial_state() == NormalState
+//						&& !fw->orig()->is_hidden());
+//
+//		if (x->is_fullscreen()) {
+//			fullscreen(fw);
+//		} else {
+//			fw->reconfigure();
+//		}
+//
+//	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
+//		managed_window_t * fw = manage(MANAGED_FLOATING, x);
+//		/* apply normal hint to floating window */
+//		box_int_t new_size = fw->get_wished_position();
+//
+//		/* do not allow to large windows */
+//		if (new_size.w
+//				> (cnx->root_size.w
+//						- theme->get_theme_layout()->floating_margin.left
+//						- theme->get_theme_layout()->floating_margin.right))
+//			new_size.w = cnx->root_size.w
+//					- theme->get_theme_layout()->floating_margin.left
+//					- theme->get_theme_layout()->floating_margin.right;
+//		if (new_size.h
+//				> cnx->root_size.h
+//						- theme->get_theme_layout()->floating_margin.top
+//						- theme->get_theme_layout()->floating_margin.bottom)
+//			new_size.h = cnx->root_size.h
+//					- theme->get_theme_layout()->floating_margin.top
+//					- theme->get_theme_layout()->floating_margin.bottom;
+//
+//		unsigned int final_width = new_size.w;
+//		unsigned int final_height = new_size.h;
+//		compute_client_size_with_constraint(fw->orig(), (unsigned) new_size.w,
+//				(unsigned) new_size.h, final_width, final_height);
+//		new_size.w = final_width;
+//		new_size.h = final_height;
+//
+//		fw->set_wished_position(new_size);
+//		fw->normalize();
+//
+//		if (x->is_fullscreen()) {
+//			fullscreen(fw);
+//		} else {
+//			fw->reconfigure();
+//		}
+//
+//	} else if (type == PAGE_DOCK_TYPE) {
+//		/** track positions and struct change **/
+//		x->select_input(StructureNotifyMask | PropertyChangeMask);
+//	}
+//
+//	rpage->mark_durty();
+//	update_client_list();
+//
+//}
+
+void page_t::onmap(window_t * w) {
+
+	if (find_managed_window_with(w->id))
+		return;
+	if (find_unmanaged_window_with(w->id))
+		return;
+	if(w->get_window_attributes().c_class == InputOnly)
+		return;
+
+	Atom type = find_net_wm_type(w);
+
+	if (!w->get_window_attributes().override_redirect) {
+		if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+			create_managed_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+			create_managed_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+			create_managed_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+			create_managed_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+			create_managed_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			create_managed_window(w, type);
+		}
+	} else {
+		if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(w, type);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			create_unmanaged_window(w, type);
+		}
+	}
+
+	rpage->mark_durty();
+	update_client_list();
+
+}
+
+
+void page_t::create_managed_window(window_t * w, Atom type) {
+
+	managed_window_t * mw;
+
+	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+			&& !w->has_wm_transient_for()) {
+
+		mw = manage(MANAGED_NOTEBOOK, type, w);
+		insert_window_in_tree(mw, 0, true);
+
+	} else {
+		mw = manage(MANAGED_FLOATING, type, w);
+		mw->normalize();
+	}
+
+	if (mw->is_fullscreen()) {
+		fullscreen(mw);
+	} else {
+		mw->reconfigure();
+	}
+
+}
+
+void page_t::create_unmanaged_window(window_t * w, Atom type) {
+
+	update_transient_for(w);
+
+	unmanaged_window_t * uw = new unmanaged_window_t(w, type);
+	unmanaged_window.insert(uw);
+}
+
+Atom page_t::find_net_wm_type(window_t * w) {
+
+	list<Atom> net_wm_window_type;
+
+	if(!w->has_net_wm_window_type()) {
+		/**
+		 * Fallback from ICCCM.
+		 **/
+
+		if(!w->get_window_attributes().override_redirect) {
+			/* Managed windows */
+			if(!w->has_wm_transient_for()) {
+				/**
+				 * Extended ICCCM:
+				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
+				 * _NET_WM_WINDOW_TYPE nor WM_TRANSIENT_FOR set MUST be taken
+				 * as this type.
+				 **/
+				net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+			} else {
+				/**
+				 * Extended ICCCM:
+				 * _NET_WM_WINDOW_TYPE_DIALOG [...] If _NET_WM_WINDOW_TYPE is
+				 * not set, then managed windows with WM_TRANSIENT_FOR set MUST
+				 * be taken as this type.
+				 **/
+				net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_DIALOG));
+			}
+
+		} else {
+			/**
+			 * Override-redirected windows.
+			 *
+			 * Extended ICCCM:
+			 * _NET_WM_WINDOW_TYPE_NORMAL [...] Override-redirect windows
+			 * without _NET_WM_WINDOW_TYPE, must be taken as this type, whether
+			 * or not they have WM_TRANSIENT_FOR set.
+			 **/
+			net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+		}
+	} else {
+		net_wm_window_type = w->get_net_wm_window_type();
+	}
+
+	/* always fall back to normal */
+	net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+
+	set<Atom> known_type;
+	known_type.insert(A(_NET_CURRENT_DESKTOP));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLBAR));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_MENU));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_UTILITY));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_SPLASH));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_DIALOG));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_POPUP_MENU));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLTIP));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_NOTIFICATION));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_COMBO));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_DND));
+	known_type.insert(A(_NET_WM_WINDOW_TYPE_NORMAL));
+
+	/** find the first known window type **/
+	std::list<Atom>::iterator i = net_wm_window_type.begin();
+	while (i != net_wm_window_type.end()) {
+		printf("Check for %s\n", cnx->get_atom_name(*i).c_str());
+		if(has_key(known_type, *i))
+			return *i;
+		++i;
+	}
+
+	/* should never happen */
+	return None;
+
 }
 
 }

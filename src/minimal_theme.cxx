@@ -366,7 +366,7 @@ void minimal_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		area.y += layout->notebook_margin.top - 4;
 		area.h -= layout->notebook_margin.top - 4;
 
-		box_int_t bclient = n->_selected.front()->base->get_size();
+		box_int_t bclient = n->_selected.front()->get_base_position();
 
 		{
 			/* left */
@@ -468,7 +468,7 @@ void minimal_theme_t::render_split(cairo_t * cr, split_t * s) {
 void minimal_theme_t::render_floating(managed_window_t * mw) {
 
 	cairo_t * cr = mw->get_cairo();
-	box_int_t _allocation = mw->base->get_size();
+	box_int_t _allocation = mw->get_base_position();
 
 	_allocation.x = 0;
 	_allocation.y = 0;

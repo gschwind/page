@@ -159,7 +159,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 
 void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
-	box_int_t client_size = compute_client_size(c->orig);
+	box_int_t client_size = compute_client_size(c->orig());
 
 	c->set_wished_position(client_size);
 	c->reconfigure();
@@ -206,7 +206,7 @@ box_int_t notebook_t::get_absolute_extend() {
 region_t<int> notebook_t::get_area() {
 	if (!_selected.empty()) {
 		region_t<int> area = _allocation;
-		area -= _selected.front()->base->get_size();
+		area -= _selected.front()->get_base_position();
 		return area;
 	} else {
 		return region_t<int>(_allocation);
@@ -308,7 +308,7 @@ void notebook_t::compute_client_size_with_constraint(window_t * c,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
 
-	XSizeHints const size_hints = *c->get_wm_normal_hints();
+	XSizeHints const size_hints = c->get_wm_normal_hints();
 
 	//printf("XXX max : %d %d\n", max_width, max_height);
 

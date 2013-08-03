@@ -56,9 +56,14 @@
 #include "default_theme.hxx"
 #include "renderable_page.hxx"
 #include "managed_window.hxx"
+#include "unmanaged_window.hxx"
 #include "theme.hxx"
 #include "minimal_theme.hxx"
 #include "config_handler.hxx"
+
+#include "window_properties_handler.hxx"
+
+#include "atoms.hxx"
 
 using namespace std;
 
@@ -102,11 +107,6 @@ inline void print_buffer__(const char * buf, int size) {
 
 class page_t : public xevent_handler_t {
 
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
-			PropertyChangeMask | SubstructureRedirectMask;
-	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
-	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
-			StructureNotifyMask | PropertyChangeMask;
 
 public:
 
@@ -267,6 +267,7 @@ public:
 
 	/* all managed windows */
 	set<managed_window_t *> managed_window;
+	set<unmanaged_window_t *> unmanaged_window;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
@@ -317,7 +318,7 @@ public:
 	void scan();
 
 	long get_window_state(Window w);
-	bool get_text_prop(Window w, Atom atom, std::string & text);
+	bool get_text_prop(Window w, char const * atom, std::string & text);
 
 	void update_page_aera();
 
@@ -366,7 +367,7 @@ public:
 	void update_focus(window_t * c);
 	void read_viewport_layout();
 
-	managed_window_t * manage(managed_window_type_e type, window_t * w);
+	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, window_t * w);
 	void unmanage(managed_window_t * mw);
 
 	void print_state();
@@ -434,7 +435,7 @@ public:
 
 	std::string safe_get_window_name(Window w);
 
-	bool check_manage(window_t * x);
+	void manage_if_needed(window_t * x);
 
 
 	window_t * find_root_window(window_t * w);
@@ -474,6 +475,7 @@ public:
 
 	void get_managed_windows(list<managed_window_t *> & l);
 	managed_window_t * find_managed_window_with(Window w);
+	unmanaged_window_t * find_unmanaged_window_with(Window w);
 
 	viewport_t * find_viewport_for(notebook_t * n);
 
@@ -489,6 +491,22 @@ public:
 
 	void rr_update_viewport_layout();
 	void destroy_viewport(viewport_t * v);
+
+	page_window_type_e find_window_type(Display * dpy, Window w);
+
+	Atom A(char const * aname) {
+		return cnx->get_atom(aname);
+	}
+
+	Atom find_net_wm_type(window_t * w);
+
+	void onmap(window_t * w);
+
+	void create_managed_window(window_t * w, Atom type);
+
+	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
+
+	void create_unmanaged_window(window_t * w, Atom type);
 
 };
 

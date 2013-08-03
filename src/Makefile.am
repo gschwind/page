@@ -33,10 +33,15 @@ page_SOURCES = \
 	simple_theme.cxx \
 	renderable_page.cxx \
 	managed_window.cxx \
+	unmanaged_window.cxx \
 	composite_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
-	window_overlay.cxx
+	window_overlay.cxx \
+	window_properties_handler.cxx \
+	xprop.c \
+	dsimple.c \
+	clientwin.c
 
 page_LDADD = \
 	$(X11_LIBS) \

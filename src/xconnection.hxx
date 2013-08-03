@@ -12,7 +12,6 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
-#include <X11/extensions/Xinerama.h>
 #include <X11/extensions/Xrandr.h>
 
 #include <cassert>
@@ -22,11 +21,12 @@
 #include <algorithm>
 #include <list>
 #include <vector>
-#include "box.hxx"
-#include "atoms.hxx"
 #include <stdexcept>
 #include <map>
 
+#include "box.hxx"
+#include "atoms.hxx"
+#include "window.hxx"
 
 //#define cnx_printf(args...) printf(args)
 
@@ -36,104 +36,9 @@ using namespace std;
 
 namespace page {
 
-
-enum atoms_e {
-	A_CARDINAL,
-	A_ATOM,
-	A_WINDOW,
-	A_UTF8_STRING,
-	A_WM_STATE,
-	A_WM_NAME,
-	A_WM_DELETE_WINDOW,
-	A_WM_PROTOCOLS,
-	A_WM_NORMAL_HINTS,
-	A_WM_TAKE_FOCUS,
-	A_WM_CHANGE_STATE,
-	A_WM_HINTS,
-	A__NET_SUPPORTED,
-	A__NET_WM_NAME,
-	A__NET_WM_STATE,
-	A__NET_WM_STRUT_PARTIAL,
-	A__NET_WM_WINDOW_TYPE,
-	A__NET_WM_WINDOW_TYPE_DESKTOP,
-	A__NET_WM_WINDOW_TYPE_DOCK,
-	A__NET_WM_WINDOW_TYPE_TOOLBAR,
-	A__NET_WM_WINDOW_TYPE_MENU,
-	A__NET_WM_WINDOW_TYPE_UTILITY,
-	A__NET_WM_WINDOW_TYPE_SPLASH,
-	A__NET_WM_WINDOW_TYPE_DIALOG,
-	A__NET_WM_WINDOW_TYPE_DROPDOWN_MENU,
-	A__NET_WM_WINDOW_TYPE_POPUP_MENU,
-	A__NET_WM_WINDOW_TYPE_TOOLTIP,
-	A__NET_WM_WINDOW_TYPE_NOTIFICATION,
-	A__NET_WM_WINDOW_TYPE_COMBO,
-	A__NET_WM_WINDOW_TYPE_DND,
-	A__NET_WM_WINDOW_TYPE_NORMAL,
-	A__NET_WM_USER_TIME,
-	A__NET_CLIENT_LIST,
-	A__NET_CLIENT_LIST_STACKING,
-	A__NET_NUMBER_OF_DESKTOPS,
-	A__NET_DESKTOP_GEOMETRY,
-	A__NET_DESKTOP_VIEWPORT,
-	A__NET_CURRENT_DESKTOP,
-	A__NET_WM_DESKTOP,
-	A__NET_SHOWING_DESKTOP,
-	A__NET_WORKAREA,
-
-	/* _NET_WM_STATE */
-	A__NET_WM_STATE_MODAL,
-	A__NET_WM_STATE_STICKY,
-	A__NET_WM_STATE_MAXIMIZED_VERT,
-	A__NET_WM_STATE_MAXIMIZED_HORZ,
-	A__NET_WM_STATE_SHADED,
-	A__NET_WM_STATE_SKIP_TASKBAR,
-	A__NET_WM_STATE_SKIP_PAGER,
-	A__NET_WM_STATE_HIDDEN,
-	A__NET_WM_STATE_FULLSCREEN,
-	A__NET_WM_STATE_ABOVE,
-	A__NET_WM_STATE_BELOW,
-	A__NET_WM_STATE_DEMANDS_ATTENTION,
-	A__NET_WM_STATE_FOCUSED,
-
-	A__NET_WM_ICON,
-
-	A__NET_WM_ALLOWED_ACTIONS,
-
-	/* _NET_WM_ALLOWED_ACTIONS */
-	A__NET_WM_ACTION_MOVE, /*never allowed */
-	A__NET_WM_ACTION_RESIZE, /* never allowed */
-	A__NET_WM_ACTION_MINIMIZE, /* never allowed */
-	A__NET_WM_ACTION_SHADE, /* never allowed */
-	A__NET_WM_ACTION_STICK, /* never allowed */
-	A__NET_WM_ACTION_MAXIMIZE_HORZ, /* never allowed */
-	A__NET_WM_ACTION_MAXIMIZE_VERT, /* never allowed */
-	A__NET_WM_ACTION_FULLSCREEN, /* allowed */
-	A__NET_WM_ACTION_CHANGE_DESKTOP, /* never allowed */
-	A__NET_WM_ACTION_CLOSE, /* always allowed */
-	A__NET_WM_ACTION_ABOVE, /* never allowed */
-	A__NET_WM_ACTION_BELOW, /* never allowed */
-
-	A__NET_REQUEST_FRAME_EXTENTS,
-	A__NET_FRAME_EXTENTS,
-
-	A__NET_CLOSE_WINDOW,
-
-	A__NET_ACTIVE_WINDOW,
-	/* TODO Atoms for root window */
-	A__NET_DESKTOP_NAMES,
-	A__NET_SUPPORTING_WM_CHECK,
-	A__NET_VIRTUAL_ROOTS,
-	A__NET_DESKTOP_LAYOUT,
-
-	A_WM_TRANSIENT_FOR,
-
-	/* page special protocol */
-	A_PAGE_QUIT /* quit page */
-};
-
-
+/* Datas to print X errors */
 static char const * const x_function_codes[] = { //
-		"", //
+				"", //
 				"X_CreateWindow", //   1
 				"X_ChangeWindowAttributes", //   2
 				"X_GetWindowAttributes", //   3
@@ -317,115 +222,8 @@ public:
 
 	std::list<xevent_handler_t *> event_handler_list;
 
-	map<Atom, string> atom_name_cache;
-
-	struct {
-		/* properties type */
-		Atom CARDINAL;
-		Atom ATOM;
-		Atom WINDOW;
-		Atom UTF8_STRING;
-
-		/* ICCCM atoms */
-		Atom WM_STATE;
-		Atom WM_NAME;
-		Atom WM_DELETE_WINDOW;
-		Atom WM_PROTOCOLS;
-		Atom WM_NORMAL_HINTS;
-		Atom WM_TAKE_FOCUS;
-
-		Atom WM_CHANGE_STATE;
-
-		Atom WM_HINTS;
-
-		/* ICCCM extend atoms */
-		Atom _NET_SUPPORTED;
-		Atom _NET_WM_NAME;
-		Atom _NET_WM_STATE;
-		Atom _NET_WM_STRUT_PARTIAL;
-		Atom _NET_WM_STRUT;
-
-		Atom _NET_WM_WINDOW_TYPE;
-		Atom _NET_WM_WINDOW_TYPE_DESKTOP;
-		Atom _NET_WM_WINDOW_TYPE_DOCK;
-		Atom _NET_WM_WINDOW_TYPE_TOOLBAR;
-		Atom _NET_WM_WINDOW_TYPE_MENU;
-		Atom _NET_WM_WINDOW_TYPE_UTILITY;
-		Atom _NET_WM_WINDOW_TYPE_SPLASH;
-		Atom _NET_WM_WINDOW_TYPE_DIALOG;
-		Atom _NET_WM_WINDOW_TYPE_DROPDOWN_MENU;
-		Atom _NET_WM_WINDOW_TYPE_POPUP_MENU;
-		Atom _NET_WM_WINDOW_TYPE_TOOLTIP;
-		Atom _NET_WM_WINDOW_TYPE_NOTIFICATION;
-		Atom _NET_WM_WINDOW_TYPE_COMBO;
-		Atom _NET_WM_WINDOW_TYPE_DND;
-		Atom _NET_WM_WINDOW_TYPE_NORMAL;
-
-		Atom _NET_WM_USER_TIME;
-
-		Atom _NET_CLIENT_LIST;
-		Atom _NET_CLIENT_LIST_STACKING;
-
-		Atom _NET_NUMBER_OF_DESKTOPS;
-		Atom _NET_DESKTOP_GEOMETRY;
-		Atom _NET_DESKTOP_VIEWPORT;
-		Atom _NET_CURRENT_DESKTOP;
-		Atom _NET_WM_DESKTOP;
-
-		Atom _NET_SHOWING_DESKTOP;
-		Atom _NET_WORKAREA;
-
-		/* _NET_WM_STATE */
-		Atom _NET_WM_STATE_MODAL;
-		Atom _NET_WM_STATE_STICKY;
-		Atom _NET_WM_STATE_MAXIMIZED_VERT;
-		Atom _NET_WM_STATE_MAXIMIZED_HORZ;
-		Atom _NET_WM_STATE_SHADED;
-		Atom _NET_WM_STATE_SKIP_TASKBAR;
-		Atom _NET_WM_STATE_SKIP_PAGER;
-		Atom _NET_WM_STATE_HIDDEN;
-		Atom _NET_WM_STATE_FULLSCREEN;
-		Atom _NET_WM_STATE_ABOVE;
-		Atom _NET_WM_STATE_BELOW;
-		Atom _NET_WM_STATE_DEMANDS_ATTENTION;
-		Atom _NET_WM_STATE_FOCUSED;
-
-		Atom _NET_WM_ICON;
-
-		Atom _NET_WM_ALLOWED_ACTIONS;
-
-		/* _NET_WM_ALLOWED_ACTIONS */
-		Atom _NET_WM_ACTION_MOVE; /*never allowed */
-		Atom _NET_WM_ACTION_RESIZE; /* never allowed */
-		Atom _NET_WM_ACTION_MINIMIZE; /* never allowed */
-		Atom _NET_WM_ACTION_SHADE; /* never allowed */
-		Atom _NET_WM_ACTION_STICK; /* never allowed */
-		Atom _NET_WM_ACTION_MAXIMIZE_HORZ; /* never allowed */
-		Atom _NET_WM_ACTION_MAXIMIZE_VERT; /* never allowed */
-		Atom _NET_WM_ACTION_FULLSCREEN; /* allowed */
-		Atom _NET_WM_ACTION_CHANGE_DESKTOP; /* never allowed */
-		Atom _NET_WM_ACTION_CLOSE; /* always allowed */
-		Atom _NET_WM_ACTION_ABOVE; /* never allowed */
-		Atom _NET_WM_ACTION_BELOW; /* never allowed */
-
-		Atom _NET_REQUEST_FRAME_EXTENTS;
-		Atom _NET_FRAME_EXTENTS;
-
-		Atom _NET_CLOSE_WINDOW;
-
-		Atom _NET_ACTIVE_WINDOW;
-		/* TODO Atoms for root window */
-		Atom _NET_DESKTOP_NAMES;
-		Atom _NET_SUPPORTING_WM_CHECK;
-		Atom _NET_VIRTUAL_ROOTS;
-		Atom _NET_DESKTOP_LAYOUT;
-
-		Atom WM_TRANSIENT_FOR;
-
-		/* page special protocol */
-		Atom PAGE_QUIT; /* quit page */
-
-	} atoms;
+	map<Atom, string> _atom_to_name;
+	map<string, Atom> _name_to_atom;
 
 	/*damage event handler */
 	int damage_opcode, damage_event, damage_error;
@@ -436,14 +234,13 @@ public:
 	/* fixes event handler */
 	int fixes_opcode, fixes_event, fixes_error;
 
-	/* xinerama extension handler */
-	int xinerama_opcode, xinerama_event, xinerama_error;
-
 	/* xshape extension handler */
 	int xshape_opcode, xshape_event, xshape_error;
 
 	/* xrandr extension handler */
 	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	map<Window, window_t *> window_cache;
 
 public:
 
@@ -454,7 +251,7 @@ public:
 	bool is_not_grab();
 
 	template<typename T, unsigned int SIZE>
-	T * get_properties(Window win, Atom prop, Atom type, unsigned int *num) {
+	T * get_properties(Window win, char const * prop, char const * type, unsigned int *num) {
 		int res;
 		unsigned char * xdata = 0;
 		Atom ret_type;
@@ -484,17 +281,17 @@ public:
 		return result;
 	}
 
-	long * get_properties32(Window win, Atom prop, Atom type,
+	long * get_properties32(Window win, char const * prop, char const * type,
 			unsigned int *num) {
 		return this->get_properties<long, 32>(win, prop, type, num);
 	}
 
-	short * get_properties16(Window win, Atom prop, Atom type,
+	short * get_properties16(Window win, char const * prop, char const * type,
 			unsigned int *num) {
 		return this->get_properties<short, 16>(win, prop, type, num);
 	}
 
-	char * get_properties8(Window win, Atom prop, Atom type,
+	char * get_properties8(Window win, char const * prop, char const * type,
 			unsigned int *num) {
 		return this->get_properties<char, 8>(win, prop, type, num);
 	}
@@ -534,14 +331,14 @@ public:
 	void process_next_event();
 	bool process_check_event();
 
-	int change_property(Window w, Atom property, Atom type, int format,
+	int change_property(Window w, char const * property, char const * type, int format,
 			int mode, unsigned char const * data, int nelements);
 
 	Status get_window_attributes(Window w,
 			XWindowAttributes * window_attributes_return);
 
 	Status get_text_property(Window w, XTextProperty * text_prop_return,
-			Atom property);
+			char const * property);
 
 	int lower_window(Window w);
 
@@ -554,8 +351,8 @@ public:
 
 	int set_input_focus(Window focus, int revert_to, Time time);
 
-	int get_window_property(Window w, Atom property, long long_offset,
-			long long_length, Bool c_delete, Atom req_type,
+	int get_window_property(Window w, char const * property, long long_offset,
+			long long_length, Bool c_delete, char const * req_type,
 			Atom* actual_type_return, int* actual_format_return,
 			unsigned long* nitems_return, unsigned long* bytes_after_return,
 			unsigned char** prop_return);
@@ -570,6 +367,34 @@ public:
 	void init_composite_overlay();
 
 	void add_select_input(Window w, long mask);
+
+	Atom get_atom(char const * name);
+
+	string const & atom_to_name(Atom a);
+	Atom const & name_to_atom(char const * name);
+
+	window_t * get_window_t(Window w) {
+		map<Window, window_t *>::iterator i = window_cache.find(w);
+		if(i != window_cache.end()) {
+			return i->second;
+		} else {
+			window_t * x = new window_t(*this, w);
+			window_cache[w] = x;
+			return x;
+		}
+	}
+
+	window_t * destroy_cache(Window w) {
+		map<Window, window_t *>::iterator i = window_cache.find(w);
+		if(i != window_cache.end()) {
+			delete i->second;
+			window_cache.erase(i);
+		}
+	}
+
+	Atom A(char const * name) {
+		return get_atom(name);
+	}
 
 private:
 	char * _get_atom_name(Atom atom);

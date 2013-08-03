@@ -24,16 +24,21 @@ namespace page {
 
 class compositor_t : public xevent_handler_t {
 
+	/** short cut **/
+	typedef region_t<int> _region_t;
+	typedef box_t<int>	_box_t;
+
+
 	Window cm_window;
 	xconnection_t _cnx;
 
+	/** Performance counter **/
 	unsigned int flush_count;
 	struct timespec last_tic;
 	struct timespec curr_tic;
 
+	/** clip region for multi monitor setup **/
 	region_t<int> _desktop_region;
-
-private:
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
@@ -51,24 +56,26 @@ private:
 	/* composite overlay cairo context */
 	cairo_t * composite_overlay_cr;
 
-	cairo_t * pre_back_buffer_cr;
+	/** back buffer **/
 	cairo_surface_t * pre_back_buffer_s;
+	cairo_t * pre_back_buffer_cr;
 
+	/** performance counter **/
 	double fast_region_surf_monitor;
 	double slow_region_surf_monitor;
 
 	/* damaged region */
-	region_t<int> pending_damage;
+	_region_t pending_damage;
 
-	void add_damage_area(region_t<int> const & box);
+	void add_damage_area(_region_t const & box);
 
 	//static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
 
-	void repair_area(box_int_t const & box);
-	void repair_overlay(box_int_t const & area, cairo_surface_t * src);
+	void repair_area(_box_t const & box);
+	void repair_overlay(_box_t const & area, cairo_surface_t * src);
 	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
-			box_int_t const & area);
+			_box_t const & area);
 
 	void damage_all();
 
@@ -95,11 +102,11 @@ public:
 	virtual ~compositor_t();
 	compositor_t();
 
+	void process_events();
+
 	inline int get_connection_fd() {
 		return _cnx.connection_fd;
 	}
-
-	void process_events();
 
 	inline void xflush() {
 		XFlush(_cnx.dpy);

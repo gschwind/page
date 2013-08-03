@@ -13,6 +13,7 @@
 #include "icon.hxx"
 #include "window_icon_handler.hxx"
 #include "theme_layout.hxx"
+#include "window_properties_handler.hxx"
 
 namespace page {
 
@@ -25,9 +26,16 @@ enum managed_window_type_e {
 class managed_window_t {
 private:
 
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
+			PropertyChangeMask | SubstructureRedirectMask;
+	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
+	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
+			StructureNotifyMask | PropertyChangeMask;
+
 	theme_layout_t const * theme;
 
 	managed_window_type_e _type;
+	Atom _net_wm_type;
 
 	unsigned _margin_top;
 	unsigned _margin_bottom;
@@ -54,14 +62,16 @@ private:
 
 	void init_managed_type(managed_window_type_e type);
 
+	xconnection_t * cnx;
+
+	window_t * _orig;
+	window_t * _base;
+	window_t * _deco;
+
 public:
 
-	window_t * const orig;
-	window_t * const base;
-	window_t * const deco;
-
-	managed_window_t(managed_window_type_e initial_type, window_t * orig,
-			window_t * base, window_t * deco, theme_layout_t const * theme);
+	managed_window_t(managed_window_type_e initial_type, Atom net_wm_type, window_t * orig,
+			theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
 	void normalize();
@@ -83,8 +93,6 @@ public:
 
 	void set_managed_type(managed_window_type_e type);
 
-	string get_title();
-
 	cairo_t * get_cairo_context();
 
 	void focus(Time t);
@@ -101,6 +109,113 @@ public:
 	bool is(managed_window_type_e type);
 
 	void expose();
+
+	window_t * orig() {
+		return _orig;
+	}
+
+	window_t * base() {
+		return _base;
+	}
+
+	window_t * deco() {
+		return _deco;
+	}
+
+	Atom A(char const * aname) {
+		return _orig->cnx().get_atom(aname);
+	}
+
+	void icccm_focus(Time t);
+
+	void set_default_action() {
+		list<Atom> _net_wm_allowed_actions;
+		_net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
+		_net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
+		::page::write_net_wm_allowed_actions(_orig->cnx().dpy, _orig->id,
+				_net_wm_allowed_actions);
+	}
+
+	void set_focused() {
+		list<Atom> _net_wm_state;
+		if (_orig->has_net_wm_state()) {
+			_net_wm_state = _orig->get_net_wm_state();
+		}
+
+		_net_wm_state.push_back(A(_NET_WM_STATE_FOCUSED));
+		::page::write_net_wm_state(_orig->cnx().dpy, _orig->id, _net_wm_state);
+
+	}
+
+	void unset_focused() {
+		list<Atom> _net_wm_state;
+		if (_orig->has_net_wm_state()) {
+			_net_wm_state = _orig->get_net_wm_state();
+		}
+
+		_net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
+		::page::write_net_wm_state(_orig->cnx().dpy, _orig->id, _net_wm_state);
+
+		ungrab_all_buttons(_base);
+		grab_button_unfocused(_base);
+
+	}
+
+	string get_title() {
+		std::string name;
+		if (_orig->has_net_wm_name()) {
+			name = _orig->get_net_wm_name();
+			return name;
+		}
+
+		if (_orig->has_wm_name()) {
+			name = _orig->get_wm_name();
+			return name;
+		}
+
+		std::stringstream s(std::stringstream::in | std::stringstream::out);
+		s << "#" << (_orig->id) << " (noname)";
+		name = s.str();
+		return name;
+	}
+
+	void grab_all_buttons(window_t * w) {
+		XGrabButton(cnx->dpy, AnyButton, AnyModifier, w->id, False,
+				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+				GrabModeSync, GrabModeAsync, None, None);
+	}
+
+	void ungrab_all_buttons(window_t * w) {
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, w->id);
+	}
+
+	void grab_button_unfocused(window_t * w) {
+		XGrabButton(cnx->dpy, Button1, AnyModifier, w->id,
+				False, ButtonPressMask, GrabModeSync,
+				GrabModeAsync, None, None);
+
+		XGrabButton(cnx->dpy, Button2, AnyModifier, w->id,
+				False, ButtonPressMask, GrabModeSync,
+				GrabModeAsync, None, None);
+
+		XGrabButton(cnx->dpy, Button3, AnyModifier, w->id,
+				False, ButtonPressMask, GrabModeSync,
+				GrabModeAsync, None, None);
+
+	}
+
+	bool is_fullscreen() {
+		list<Atom> state = _orig->get_net_wm_state();
+		list<Atom>::iterator x = find(state.begin(), state.end(),
+				A(_NET_WM_STATE_FULLSCREEN));
+		return x != state.end();
+	}
+
+	Atom net_wm_type() {
+		return _net_wm_type;
+	}
+
+
 
 };
 

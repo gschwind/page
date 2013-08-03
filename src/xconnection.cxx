@@ -31,6 +31,7 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 		cnx_printf("Open display : Success\n");
 	}
 
+	/** for testing **/
 	//XSynchronize(dpy, True);
 
 	connection_fd = ConnectionNumber(_dpy);
@@ -96,135 +97,6 @@ xconnection_t::xconnection_t() : dpy(_dpy) {
 		cnx_printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
 	}
 
-	/** listen all possible change in screen layout **/
-//	XRRSelectInput(_dpy, xroot,
-//			  RRScreenChangeNotifyMask
-//			| RRCrtcChangeNotifyMask
-//			| RROutputChangeNotifyMask
-//			| RROutputPropertyNotifyMask
-//			| RRProviderChangeNotifyMask
-//			| RRProviderChangeNotifyMask
-//			| RRProviderPropertyNotifyMask
-//			| RRResourceChangeNotifyMask);
-
-
-	/* initialize all atoms for this connection */
-#define ATOM_INIT(name) atoms.name = XInternAtom(dpy, #name, False)
-
-	ATOM_INIT(ATOM);
-	ATOM_INIT(CARDINAL);
-	ATOM_INIT(WINDOW);
-	ATOM_INIT(UTF8_STRING);
-
-	ATOM_INIT(WM_STATE);
-	ATOM_INIT(WM_NAME);
-	ATOM_INIT(WM_DELETE_WINDOW);
-	ATOM_INIT(WM_PROTOCOLS);
-	ATOM_INIT(WM_TAKE_FOCUS);
-
-	ATOM_INIT(WM_NORMAL_HINTS);
-	ATOM_INIT(WM_CHANGE_STATE);
-
-	ATOM_INIT(WM_HINTS);
-
-	ATOM_INIT(_NET_SUPPORTED);
-	ATOM_INIT(_NET_WM_NAME);
-	ATOM_INIT(_NET_WM_STATE);
-	ATOM_INIT(_NET_WM_STRUT_PARTIAL);
-	ATOM_INIT(_NET_WM_STRUT);
-
-	ATOM_INIT(_NET_WM_WINDOW_TYPE);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
-
-	ATOM_INIT(_NET_WM_WINDOW_TYPE);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DESKTOP);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DOCK);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_TOOLBAR);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_MENU);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_UTILITY);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_SPLASH);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DIALOG);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_POPUP_MENU);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_TOOLTIP);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_NOTIFICATION);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_COMBO);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_DND);
-	ATOM_INIT(_NET_WM_WINDOW_TYPE_NORMAL);
-
-	ATOM_INIT(_NET_WM_USER_TIME);
-
-	ATOM_INIT(_NET_CLIENT_LIST);
-	ATOM_INIT(_NET_CLIENT_LIST_STACKING);
-
-	ATOM_INIT(_NET_NUMBER_OF_DESKTOPS);
-	ATOM_INIT(_NET_DESKTOP_GEOMETRY);
-	ATOM_INIT(_NET_DESKTOP_VIEWPORT);
-	ATOM_INIT(_NET_CURRENT_DESKTOP);
-	ATOM_INIT(_NET_WM_DESKTOP);
-
-	ATOM_INIT(_NET_SHOWING_DESKTOP);
-	ATOM_INIT(_NET_WORKAREA);
-
-	ATOM_INIT(_NET_ACTIVE_WINDOW);
-
-	ATOM_INIT(_NET_WM_STATE_MODAL);
-	ATOM_INIT(_NET_WM_STATE_STICKY);
-	ATOM_INIT(_NET_WM_STATE_MAXIMIZED_VERT);
-	ATOM_INIT(_NET_WM_STATE_MAXIMIZED_HORZ);
-	ATOM_INIT(_NET_WM_STATE_SHADED);
-	ATOM_INIT(_NET_WM_STATE_SKIP_TASKBAR);
-	ATOM_INIT(_NET_WM_STATE_SKIP_PAGER);
-	ATOM_INIT(_NET_WM_STATE_HIDDEN);
-	ATOM_INIT(_NET_WM_STATE_FULLSCREEN);
-	ATOM_INIT(_NET_WM_STATE_ABOVE);
-	ATOM_INIT(_NET_WM_STATE_BELOW);
-	ATOM_INIT(_NET_WM_STATE_DEMANDS_ATTENTION);
-	ATOM_INIT(_NET_WM_STATE_FOCUSED);
-
-	ATOM_INIT(_NET_WM_ALLOWED_ACTIONS);
-
-	/* _NET_WM_ALLOWED_ACTIONS */
-	ATOM_INIT(_NET_WM_ACTION_MOVE);
-	/*never allowed */
-	ATOM_INIT(_NET_WM_ACTION_RESIZE);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_MINIMIZE);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_SHADE);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_STICK);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_MAXIMIZE_HORZ);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_MAXIMIZE_VERT);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_FULLSCREEN);
-	/* allowed */
-	ATOM_INIT(_NET_WM_ACTION_CHANGE_DESKTOP);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_CLOSE);
-	/* always allowed */
-	ATOM_INIT(_NET_WM_ACTION_ABOVE);
-	/* never allowed */
-	ATOM_INIT(_NET_WM_ACTION_BELOW);
-	/* never allowed */
-
-	ATOM_INIT(_NET_CLOSE_WINDOW);
-
-	ATOM_INIT(_NET_REQUEST_FRAME_EXTENTS);
-	ATOM_INIT(_NET_FRAME_EXTENTS);
-
-	ATOM_INIT(_NET_WM_ICON);
-
-	ATOM_INIT(WM_TRANSIENT_FOR);
-
-	ATOM_INIT(PAGE_QUIT);
-
-	ATOM_INIT(_NET_SUPPORTING_WM_CHECK);
-
-#undef ATOM_INIT
-
 	open_connections[_dpy] = this;
 
 }
@@ -266,7 +138,7 @@ int xconnection_t::error_handler(Display * dpy, XErrorEvent * ev) {
 			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
 	if (open_connections.find(dpy) == open_connections.end()) {
-		fprintf(stderr, "Error on unknow connection\n");
+		fprintf(stderr, "Error on unknown connection\n");
 		return 0;
 	}
 
@@ -309,7 +181,7 @@ void xconnection_t::allow_input_passthrough(Window w) {
 
 void xconnection_t::unmap(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu X_UnmapWindow: win = %lu\n", serial, w);
+	cnx_printf(">%08lu X_UnmapWindow: win = %lu\n", serial, w);
 	XUnmapWindow(_dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -458,20 +330,20 @@ bool xconnection_t::register_wm(bool replace, Window w) {
 
 void xconnection_t::add_to_save_set(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XAddToSaveSet: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XAddToSaveSet: win = %lu\n", serial, w);
 	XAddToSaveSet(_dpy, w);
 }
 
 void xconnection_t::remove_from_save_set(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XRemoveFromSaveSet: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XRemoveFromSaveSet: win = %lu\n", serial, w);
 	XRemoveFromSaveSet(_dpy, w);
 }
 
 void xconnection_t::select_input(Window w, long int mask) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
-	//		(unsigned long) mask);
+	cnx_printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
+			(unsigned long) mask);
 	XSelectInput(_dpy, w, mask);
 }
 
@@ -497,8 +369,8 @@ void xconnection_t::move_resize(Window w, box_int_t const & size) {
 
 void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XSetWindowBorderWidth: win = %lu, width = %u\n", serial, w,
-	//		width);
+	cnx_printf(">%08lu XSetWindowBorderWidth: win = %lu, width = %u\n", serial, w,
+			width);
 	XSetWindowBorderWidth(_dpy, w, width);
 	event_t e;
 	e.serial = serial;
@@ -508,7 +380,7 @@ void xconnection_t::set_window_border_width(Window w, unsigned int width) {
 
 void xconnection_t::raise_window(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XRaiseWindow: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XRaiseWindow: win = %lu\n", serial, w);
 	XRaiseWindow(_dpy, w);
 	event_t e;
 	e.serial = serial;
@@ -577,31 +449,31 @@ bool xconnection_t::process_check_event() {
 	}
 }
 
-int xconnection_t::change_property(Window w, Atom property, Atom type,
+int xconnection_t::change_property(Window w, char const * property, char const * type,
 		int format, int mode, unsigned char const * data, int nelements) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XChangeProperty: win = %lu\n", serial, w);
-	return XChangeProperty(_dpy, w, property, type, format, mode, data,
+	cnx_printf(">%08lu XChangeProperty: win = %lu\n", serial, w);
+	return XChangeProperty(_dpy, w, get_atom(property), get_atom(type), format, mode, data,
 			nelements);
 }
 
 Status xconnection_t::get_window_attributes(Window w,
 		XWindowAttributes * window_attributes_return) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XGetWindowAttributes: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XGetWindowAttributes: win = %lu\n", serial, w);
 	return XGetWindowAttributes(_dpy, w, window_attributes_return);
 }
 
 Status xconnection_t::get_text_property(Window w,
-		XTextProperty * text_prop_return, Atom property) {
+		XTextProperty * text_prop_return, char const * property) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XGetTextProperty: win = %lu\n", serial, w);
-	return XGetTextProperty(_dpy, w, text_prop_return, property);
+	cnx_printf(">%08lu XGetTextProperty: win = %lu\n", serial, w);
+	return XGetTextProperty(_dpy, w, text_prop_return, get_atom(property));
 }
 
 int xconnection_t::lower_window(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XLowerWindow: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XLowerWindow: win = %lu\n", serial, w);
 	return XLowerWindow(_dpy, w);
 }
 
@@ -630,14 +502,14 @@ int xconnection_t::configure_window(Window w, unsigned int value_mask,
 
 char * xconnection_t::_get_atom_name(Atom atom) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
+	cnx_printf(">%08lu XGetAtomName: atom = %lu\n", serial, atom);
 	return XGetAtomName(_dpy, atom);
 }
 
 Status xconnection_t::send_event(Window w, Bool propagate, long event_mask,
 		XEvent* event_send) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XSendEvent: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XSendEvent: win = %lu\n", serial, w);
 	return XSendEvent(_dpy, w, propagate, event_mask, event_send);
 }
 
@@ -648,8 +520,8 @@ int xconnection_t::set_input_focus(Window focus, int revert_to, Time time) {
 	return XSetInputFocus(_dpy, focus, revert_to, time);
 }
 
-int xconnection_t::get_window_property(Window w, Atom property,
-		long long_offset, long long_length, Bool c_delete, Atom req_type,
+int xconnection_t::get_window_property(Window w, char const * property,
+		long long_offset, long long_length, Bool c_delete, char const * req_type,
 		Atom* actual_type_return, int* actual_format_return,
 		unsigned long* nitems_return, unsigned long* bytes_after_return,
 		unsigned char** prop_return) {
@@ -659,14 +531,17 @@ int xconnection_t::get_window_property(Window w, Atom property,
 	//char * type = get_atom_name(req_type);
 	//cnx_printf(">%08lu XGetWindowProperty: win = %lu, prop = %s, type = %s\n", serial, w, prop, type);
 
-	return XGetWindowProperty(_dpy, w, property, long_offset, long_length,
-			c_delete, req_type, actual_type_return, actual_format_return,
+	Atom aprop = get_atom(property);
+	Atom atype = get_atom(req_type);
+
+	return XGetWindowProperty(_dpy, w, aprop, long_offset, long_length,
+			c_delete, atype, actual_type_return, actual_format_return,
 			nitems_return, bytes_after_return, prop_return);
 }
 
 XWMHints * xconnection_t::get_wm_hints(Window w) {
 	unsigned long serial = XNextRequest(_dpy);
-	//cnx_printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
+	cnx_printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
 	return XGetWMHints(_dpy, w);
 }
 
@@ -714,22 +589,13 @@ void xconnection_t::fake_configure(Window w, box_int_t location, int border_widt
 }
 
 string const & xconnection_t::get_atom_name(Atom a) {
-	std::map<Atom, string>::iterator i = atom_name_cache.find(a);
-	if(i != atom_name_cache.end()) {
-		return i->second;
-	} else {
-		char * name = _get_atom_name(a);
-		if(name == 0) {
-			stringstream os;
-			os << "UNKNOWN_" << hex << a;
-			atom_name_cache[a] = os.str();
-		} else {
-			atom_name_cache[a] = string(name);
-			XFree(name);
-		}
-		return atom_name_cache[a];
-	}
+	return atom_to_name(a);
 }
+
+Atom xconnection_t::get_atom(char const * name) {
+	return name_to_atom(name);
+}
+
 
 void xconnection_t::init_composite_overlay() {
 	/* map & passtrough the overlay */
@@ -744,6 +610,43 @@ void xconnection_t::add_select_input(Window w, long mask) {
 	XWindowAttributes wa;
 	if (XGetWindowAttributes(_dpy, w, &wa) != 0) {
 		XSelectInput(_dpy, w, wa.your_event_mask | mask);
+	}
+}
+
+string const & xconnection_t::atom_to_name(Atom atom) {
+
+	map<Atom, string>::iterator i = _atom_to_name.find(atom);
+	if(i != _atom_to_name.end()) {
+		return i->second;
+	} else {
+		char * name = _get_atom_name(atom);
+		if(name == 0) {
+			stringstream os;
+			os << "UNKNOWN_" << hex << atom;
+			_name_to_atom[os.str()] = atom;
+			_atom_to_name[atom] = os.str();
+		} else {
+			_name_to_atom[string(name)] = atom;
+			_atom_to_name[atom] = string(name);
+			XFree(name);
+		}
+		return _atom_to_name[atom];
+	}
+}
+
+Atom const & xconnection_t::name_to_atom(char const * name) {
+	static Atom none = None;
+	if(name == 0)
+		return none;
+
+	map<string, Atom>::iterator i = _name_to_atom.find(string(name));
+	if(i != _name_to_atom.end()) {
+		return i->second;
+	} else {
+		Atom a = XInternAtom(dpy, name, False);
+		_name_to_atom[string(name)] = a;
+		_atom_to_name[a] = string(name);
+		return _name_to_atom[string(name)];
 	}
 }
 

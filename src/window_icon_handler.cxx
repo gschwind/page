@@ -15,14 +15,10 @@ window_icon_handler_t::window_icon_handler_t(window_t * w) {
 	icon_surf = 0;
 	icon.data = 0;
 
-	/* get icon properties */
-	int icon_data_size = 0;
-	long const * icon_data = 0;
-
-	w->get_icon_data(icon_data, icon_data_size);
-
 	/* if window have icon properties */
-	if (icon_data != 0) {
+	if (w->has_net_wm_icon()) {
+		vector<long> icon_data = w->get_net_wm_icon();
+
 		int32_t * icon_data32 = 0;
 
 		icon_t selected;
@@ -30,13 +26,13 @@ window_icon_handler_t::window_icon_handler_t(window_t * w) {
 		bool has_icon = false;
 
 		/* copy long to 32 bits int, this is needed for 64bits arch (recall: long in 64 bits arch are 64 bits)*/
-		icon_data32 = new int32_t[icon_data_size];
-		for (int i = 0; i < icon_data_size; ++i)
+		icon_data32 = new int32_t[icon_data.size()];
+		for (int i = 0; i < icon_data.size(); ++i)
 			icon_data32[i] = icon_data[i];
 
 		/* find all icons */
 		int offset = 0;
-		while (offset < icon_data_size) {
+		while (offset < icon_data.size()) {
 			icon_t tmp;
 			tmp.width = icon_data[offset + 0];
 			tmp.height = icon_data[offset + 1];

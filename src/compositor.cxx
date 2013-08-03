@@ -53,6 +53,8 @@ inline _1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
 static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
 		double b) {
 	return;
+	cairo_save(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 
 	cairo_set_source_rgb(cr, r, g, b);
 	cairo_set_line_width(cr, 1.0);
@@ -67,6 +69,8 @@ static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, dou
 	cairo_move_to(cr, box.x + box.w - 1.0, box.y + 0.5);
 	cairo_line_to(cr, box.x + 0.5, box.y + box.h - 1.0);
 	cairo_stroke(cr);
+
+	cairo_restore(cr);
 }
 
 compositor_t::compositor_t() : _cnx() {
@@ -80,11 +84,17 @@ compositor_t::compositor_t() : _cnx() {
 	}
 
 	std::string name("page_internal_compositor");
-	_cnx.change_property(cm_window, _cnx.atoms._NET_WM_NAME,
-			_cnx.atoms.UTF8_STRING, 8,
+	_cnx.change_property(cm_window, _NET_WM_NAME,
+			UTF8_STRING, 8,
 			PropModeReplace,
 			reinterpret_cast<unsigned char const *>(name.c_str()),
 			name.length() + 1);
+
+	long pid = getpid();
+
+	_cnx.change_property(cm_window, _NET_WM_PID, CARDINAL,
+			32, (PropModeReplace),
+			reinterpret_cast<unsigned char const *>(&pid), 1);
 
 	/* try to register compositor manager */
 	if (!_cnx.register_cm(cm_window)) {
@@ -136,7 +146,7 @@ compositor_t::~compositor_t() {
 	_cnx.remove_event_handler(this);
 };
 
-void compositor_t::add_damage_area(region_t<int> const & box) {
+void compositor_t::add_damage_area(_region_t const & box) {
 	//printf("Add %s\n", box.to_string().c_str());
 	pending_damage = pending_damage + box;
 }
@@ -192,11 +202,11 @@ void compositor_t::render_flush() {
 	 * This is often more than 80% of the screen.
 	 * This kind of region will be directly rendered.
 	 **/
-	region_t<int> region_with_not_overlapped_window;
+	_region_t region_without_overlapped_window;
 
 	std::list<composite_window_t *>::iterator i = visible.begin();
 	while (i != visible.end()) {
-		region_t<int> r = (*i)->get_region();
+		_region_t r = (*i)->get_region();
 		std::list<composite_window_t *>::iterator j = visible.begin();
 		while (j != visible.end()) {
 			if (i != j) {
@@ -204,7 +214,7 @@ void compositor_t::render_flush() {
 			}
 			++j;
 		}
-		region_with_not_overlapped_window = region_with_not_overlapped_window + r;
+		region_without_overlapped_window += r;
 		++i;
 	}
 
@@ -213,7 +223,7 @@ void compositor_t::render_flush() {
 	 * Small area, often dropdown menu.
 	 * This kind of area will be directly rendered.
 	 **/
-	region_t<int> region_with_not_alpha_on_top;
+	_region_t region_without_alpha_on_top;
 
 	/**
 	 * Walk over all all window from bottom to top one. If window has alpha
@@ -222,21 +232,21 @@ void compositor_t::render_flush() {
 	 **/
 	i = visible.begin();
 	while (i != visible.end()) {
-		region_t<int> r = (*i)->get_region();
+		_region_t r = (*i)->get_region();
 		if((*i)->has_alpha()) {
-			region_with_not_alpha_on_top = region_with_not_alpha_on_top - r;
+			region_without_alpha_on_top = region_without_alpha_on_top - r;
 		} else {
 			/* if not has_alpha, add this area */
-			region_with_not_alpha_on_top = region_with_not_alpha_on_top + r;
+			region_without_alpha_on_top += r;
 		}
 		++i;
 	}
 
-	region_t<int> direct_region = region_with_not_overlapped_window;
+	_region_t direct_region = region_without_overlapped_window;
 
 	direct_region = direct_region & pending_damage;
-	region_t<int> slow_region = (pending_damage - direct_region) -
-			region_with_not_alpha_on_top;
+	_region_t slow_region = (pending_damage - direct_region) -
+			region_without_alpha_on_top;
 
 	/* direct render, area where there is only one window visible */
 	{
@@ -244,7 +254,7 @@ void compositor_t::render_flush() {
 		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
 
-		region_t<int>::box_list_t::const_iterator i = direct_region.begin();
+		_region_t::const_iterator i = direct_region.begin();
 		while (i != direct_region.end()) {
 			fast_region_surf_monitor += (*i).w * (*i).h;
 			repair_buffer(visible, composite_overlay_cr, *i);
@@ -256,7 +266,7 @@ void compositor_t::render_flush() {
 
 	/* directly render area where window on the has no alpha */
 
-	region_with_not_alpha_on_top = (region_with_not_alpha_on_top & pending_damage) - direct_region;
+	region_without_alpha_on_top = (region_without_alpha_on_top & pending_damage) - direct_region;
 
 	{
 		cairo_reset_clip(composite_overlay_cr);
@@ -267,9 +277,9 @@ void compositor_t::render_flush() {
 		for (std::list<composite_window_t *>::reverse_iterator i = visible.rbegin(); i != visible.rend();
 				++i) {
 			composite_window_t * r = *i;
-			region_t<int> draw_area = region_with_not_alpha_on_top & r->get_region();
+			_region_t draw_area = region_without_alpha_on_top & r->get_region();
 			if (!draw_area.empty()) {
-				for (region_t<int>::box_list_t::iterator j = draw_area.begin();
+				for (_region_t::iterator j = draw_area.begin();
 						j != draw_area.end(); ++j) {
 					if (!(*j).is_null()) {
 						r->draw_to(composite_overlay_cr, (*j));
@@ -279,7 +289,7 @@ void compositor_t::render_flush() {
 					}
 				}
 			}
-			region_with_not_alpha_on_top = region_with_not_alpha_on_top - r->get_region();
+			region_without_alpha_on_top = region_without_alpha_on_top - r->get_region();
 		}
 	}
 
@@ -296,7 +306,7 @@ void compositor_t::render_flush() {
 
 			cairo_reset_clip(pre_back_buffer_cr);
 			cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
-			region_t<int>::box_list_t::const_iterator i = slow_region.begin();
+			_region_t::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				slow_region_surf_monitor += (*i).w * (*i).h;
 				repair_buffer(visible, pre_back_buffer_cr, *i);
@@ -306,7 +316,7 @@ void compositor_t::render_flush() {
 
 		{
 			cairo_surface_flush(pre_back_buffer_s);
-			region_t<int>::box_list_t::const_iterator i = slow_region.begin();
+			_region_t::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				repair_overlay(*i, pre_back_buffer_s);
 				_draw_crossed_box(composite_overlay_cr, (*i), 1.0, 0.0, 0.0);
@@ -331,14 +341,14 @@ void compositor_t::render_flush() {
 
 
 void compositor_t::repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
-		box_int_t const & area) {
+		_box_t const & area) {
 	for (std::list<composite_window_t *>::iterator i = visible.begin(); i != visible.end();
 			++i) {
 		composite_window_t * r = *i;
-		region_t<int>::box_list_t barea = r->get_region();
-		for (region_t<int>::box_list_t::iterator j = barea.begin();
+		_region_t barea = r->get_region();
+		for (_region_t::iterator j = barea.begin();
 				j != barea.end(); ++j) {
-			box_int_t clip = area & (*j);
+			_box_t clip = area & (*j);
 			if (!clip.is_null()) {
 				r->draw_to(cr, clip);
 			}
@@ -347,7 +357,7 @@ void compositor_t::repair_buffer(std::list<composite_window_t *> & visible, cair
 }
 
 
-void compositor_t::repair_overlay(box_int_t const & area, cairo_surface_t * src) {
+void compositor_t::repair_overlay(_box_t const & area, cairo_surface_t * src) {
 
 	cairo_reset_clip(composite_overlay_cr);
 	cairo_identity_matrix(composite_overlay_cr);
@@ -431,7 +441,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 	if(has_key(window_data, e.window)) {
 		composite_window_t * ws = window_data[e.window];
 		add_damage_area(ws->get_region());
-		ws->update_position(box_int_t(e.x, e.y, e.width, e.height));
+		ws->update_position(_box_t(e.x, e.y, e.width, e.height));
 		add_damage_area(ws->get_region());
 
 		if (e.above == None) {
@@ -492,7 +502,7 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
 		if (rects) {
 			for (int i = 0; i < nb_rects; ++i) {
-				box_int_t box(rects[i]);
+				_box_t box(rects[i]);
 				/* setup absolute damaged area */
 				box.x += ws->position().x;
 				box.y += ws->position().y;
@@ -639,7 +649,7 @@ void compositor_t::update_layout() {
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
-			box_t<int> area(info->x, info->y, info->width, info->height);
+			_box_t area(info->x, info->y, info->width, info->height);
 			_desktop_region = _desktop_region + area;
 		}
 		XRRFreeCrtcInfo(info);

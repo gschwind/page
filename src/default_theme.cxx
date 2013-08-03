@@ -529,7 +529,7 @@ void default_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
 
-			box_int_t size = c->base->get_size();
+			box_int_t size = c->get_base_position();
 			/* left */
 			cairo_rectangle(cr, n->_allocation.x,
 					n->_allocation.y + layout->notebook_margin.top - 2,
@@ -740,7 +740,7 @@ void default_theme_t::render_notebook(cairo_t * cr, notebook_t * n) {
 			cairo_set_source_rgb(cr, 0xeeU / 255.0, 0xeeU / 255.0,
 					0xecU / 255.0);
 
-			box_int_t size = c->base->get_size();
+			box_int_t size = c->get_base_position();
 			/* left */
 			cairo_rectangle(cr, n->_allocation.x,
 					n->_allocation.y + layout->floating_margin.top,
@@ -823,7 +823,7 @@ void default_theme_t::render_notebook(cairo_t * cr, notebook_t * n) {
 void default_theme_t::render_floating(managed_window_t * mw) {
 
 	cairo_t * cr = mw->get_cairo();
-	box_int_t _allocation = mw->base->get_size();
+	box_int_t _allocation = mw->get_base_position();
 
 	_allocation.x = 0;
 	_allocation.y = 0;
