@@ -15,10 +15,9 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w) {
 	icon_surf = 0;
 	icon.data = 0;
 
+	vector<long> icon_data;
 	/* if window have icon properties */
-	if (cnx->has_net_wm_icon(w)) {
-		vector<long> icon_data = cnx->get_net_wm_icon(w);
-
+	if (cnx->read_net_wm_icon(w, &icon_data)) {
 		int32_t * icon_data32 = 0;
 
 		icon_t selected;

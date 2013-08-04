@@ -308,13 +308,16 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
 
-	XSizeHints const size_hints = c->get_wm_normal_hints();
-
 	//printf("XXX max : %d %d\n", max_width, max_height);
 
 	/* default size if no size_hints is provided */
 	width = max_width;
 	height = max_height;
+
+	XSizeHints size_hints;
+	if(!c->get_wm_normal_hints(&size_hints)) {
+		return;
+	}
 
 	if (size_hints.flags & PMaxSize) {
 		if ((int)max_width > size_hints.max_width)

@@ -26,6 +26,7 @@
 #include <vector>
 #include <stdexcept>
 #include <map>
+#include <cstring>
 
 #include "x11_func_name.hxx"
 #include "utils.hxx"
@@ -225,7 +226,8 @@ public:
 	}
 
 	box_int_t get_window_position(Window w) {
-		XWindowAttributes const & wa = get_window_attributes(w);
+		XWindowAttributes wa;
+		XGetWindowAttributes(dpy, w, &wa);
 		return box_int_t(wa.x, wa.y, wa.width, wa.height);
 	}
 
@@ -247,200 +249,18 @@ private:
 
 public:
 
-
-	XWindowAttributes const & get_window_attributes(Window w) {
-		window_t * wc = get_window_t(w);
-		update_window_attributes(wc);
-		return get_window_t(w)->get_window_attributes();
-	}
-
-	window_t::wm_class_t const & get_wm_class(Window w) {
-		window_t * wc = get_window_t(w);
-		update_wm_class(wc);
-		return get_window_t(w)->get_wm_class();
-	}
-
-	unsigned long const get_wm_state(Window w) {
-		window_t * wc = get_window_t(w);
-		update_wm_class(wc);
-		return get_window_t(w)->get_wm_state();
-	}
-
-	string const & get_wm_name(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_name(wc);
-		return get_window_t(w)->get_wm_name();
-	}
-
-	Window const & get_wm_transient_for(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_transient_for(wc);
-		return get_window_t(w)->get_wm_transient_for();
-	}
-
-	XSizeHints const & get_wm_normal_hints(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_normal_hints(wc);
-		return get_window_t(w)->get_wm_normal_hints();
-	}
-
-	XWMHints const * get_wm_hints(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_hints(wc);
-		return get_window_t(w)->get_wm_hints();
-	}
-
-	string const & get_net_wm_name(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_name(wc);
-		return get_window_t(w)->get_net_wm_name();
-	}
-
-	list<Atom> const & get_net_wm_window_type(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_window_type(wc);
-		return get_window_t(w)->get_net_wm_window_type();
-	}
-
-	list<Atom> const & get_net_wm_state(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_state(wc);
-		return get_window_t(w)->get_net_wm_state();
-	}
-
-	list<Atom> const & get_net_wm_protocols(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_protocols(wc);
-		return get_window_t(w)->get_net_wm_protocols();
-	}
-
-	vector<long> const & get_net_wm_partial_struct(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_partial_struct(wc);
-		return get_window_t(w)->get_net_wm_partial_struct();
-	}
-
-	long const & get_net_wm_desktop(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_desktop(wc);
-		return get_window_t(w)->get_net_wm_desktop();
-	}
-
-	long const & get_net_wm_user_time(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_user_time(wc);
-		return get_window_t(w)->get_net_wm_user_time();
-	}
-
-	vector<long> const & get_net_wm_icon(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_icon(wc);
-		return get_window_t(w)->get_net_wm_icon();
-	}
-
-	region_t<int> const & get_shape_region(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_shape_region(wc);
-		return get_window_t(w)->get_shape_region();
-	}
-
 	bool has_window_attributes(Window w) {
 		window_t * wc = get_window_t(w);
 		update_window_attributes(wc);
 		return wc->has_window_attributes();
 	}
 
-	bool has_wm_class(Window w) {
+	XWindowAttributes const & get_window_attributes(Window w) {
 		window_t * wc = get_window_t(w);
-		update_wm_class(wc);
-		return get_window_t(w)->has_wm_class();
+		update_window_attributes(wc);
+		return wc->get_window_attributes();
 	}
 
-	bool has_wm_state(Window w) {
-		window_t * wc = get_window_t(w);
-		update_wm_state(wc);
-		return get_window_t(w)->has_wm_state();
-	}
-
-	bool has_wm_name(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_name(wc);
-		return get_window_t(w)->has_wm_name();
-	}
-
-	bool has_wm_transient_for(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_transient_for(wc);
-		return get_window_t(w)->has_wm_transient_for();
-	}
-
-	bool has_wm_normal_hints(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_normal_hints(wc);
-		return get_window_t(w)->has_wm_normal_hints();
-	}
-
-	bool has_wm_hints(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_wm_hints(wc);
-		return get_window_t(w)->has_wm_hints();
-	}
-
-	bool has_net_wm_name(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_name(wc);
-		return get_window_t(w)->has_net_wm_name();
-	}
-
-	bool has_net_wm_window_type(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_window_type(wc);
-		return get_window_t(w)->has_net_wm_window_type();
-	}
-
-	bool has_net_wm_state(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_state(wc);
-		return get_window_t(w)->has_net_wm_state();
-	}
-
-	bool has_net_wm_protocols(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_protocols(wc);
-		return get_window_t(w)->has_net_wm_protocols();
-	}
-
-	bool has_net_wm_partial_struct(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_partial_struct(wc);
-		return get_window_t(w)->has_net_wm_partial_struct();
-	}
-
-	bool has_net_wm_desktop(Window w) {
-		window_t * wc = get_window_t(w);
-		update_net_wm_desktop(wc);
-		return get_window_t(w)->has_net_wm_desktop();
-	}
-
-	bool has_net_wm_user_time(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_user_time(wc);
-		return get_window_t(w)->has_net_wm_user_time();
-	}
-
-	bool has_net_wm_icon(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_net_wm_icon(wc);
-		return get_window_t(w)->has_net_wm_icon();
-	}
-
-	bool has_shape_region(Window w)  {
-		window_t * wc = get_window_t(w);
-		update_shape_region(wc);
-		return get_window_t(w)->has_shape_region();
-	}
-
-private:
 
 	template<typename T>
 	void write_window_property(Display * dpy, Window win, Atom prop,
@@ -457,23 +277,35 @@ private:
 	}
 
 	template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
-			Atom type, list<T> & list) {
-		vector<long> tmp;
-		if (_pcache.get_window_property(dpy, w, prop, type, tmp)) {
-			list.clear();
-			list.insert(list.end(), tmp.begin(), tmp.end());
-			return true;
+			Atom type, list<T> * list = 0) {
+		if (list == 0) {
+			if (_pcache.get_window_property<T>(dpy, w, prop, type)) {
+				return true;
+			}
+		} else {
+			vector<long> tmp;
+			if (_pcache.get_window_property(dpy, w, prop, type, &tmp)) {
+				list->clear();
+				list->insert(list->end(), tmp.begin(), tmp.end());
+				return true;
+			}
 		}
 		return false;
 	}
 
 	template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
-			Atom type, T & value) {
-		vector<long> tmp;
-		if (_pcache.get_window_property(dpy, w, prop, type, tmp)) {
-			if (tmp.size() > 0) {
-				value = tmp[0];
+			Atom type, T * value = 0) {
+		if (value == 0) {
+			if (_pcache.get_window_property<T>(dpy, w, prop, type)) {
 				return true;
+			}
+		} else {
+			vector<long> tmp;
+			if (_pcache.get_window_property(dpy, w, prop, type, &tmp)) {
+				if (tmp.size() > 0) {
+					*value = tmp[0];
+					return true;
+				}
 			}
 		}
 		return false;
@@ -491,60 +323,130 @@ private:
 	}
 
 
-	bool read_wm_name(Display * dpy, Window w, string & name) {
+	bool read_wm_name(Window w, string & name) {
 		return read_text(dpy, w, A(WM_NAME), name);
 	}
 
-	bool read_net_wm_name(Display * dpy, Window w, string & name) {
+	bool read_net_wm_name(Window w, string & name) {
 		return read_text(dpy, w, A(_NET_WM_NAME), name);
 	}
 
-	bool read_net_wm_window_type(Display * dpy, Window w, list<Atom> & list) {
+	bool read_net_wm_window_type(Window w, list<Atom> * list = 0) {
 		bool ret = read_list(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM), list);
-		printf("Atom read %lu\n", list.size());
 		return ret;
 	}
 
-	bool read_net_wm_state(Display * dpy, Window w, list<Atom> & list) {
+	bool read_net_wm_state(Window w, list<Atom> * list = 0) {
 		return read_list(dpy, w, A(_NET_WM_STATE), A(ATOM), list);
 	}
 
-	bool read_net_wm_protocols(Display * dpy, Window w, list<Atom> & list) {
+	bool read_net_wm_protocols(Window w, list<Atom> * list = 0) {
 		return read_list(dpy, w, A(WM_PROTOCOLS), A(ATOM), list);
 	}
 
-	bool read_net_wm_partial_struct(Display * dpy, Window w,
-			vector<long> & list) {
+	bool read_net_wm_partial_struct(Window w,
+			vector<long> * list = 0) {
 		return _pcache.get_window_property(dpy, w, A(_NET_WM_STRUT_PARTIAL),
 				A(CARDINAL), list);
 	}
 
-	bool read_net_wm_icon(Display * dpy, Window w, vector<long> & list) {
+	bool read_net_wm_icon(Window w, vector<long> * list = 0) {
 		return _pcache.get_window_property(dpy, w, A(_NET_WM_ICON), A(CARDINAL), list);
 	}
 
-	bool read_net_wm_user_time(Display * dpy, Window w, long & value) {
+	bool read_net_wm_user_time(Window w, long * value = 0) {
 		return read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), value);
 	}
 
-	bool read_net_wm_desktop(Display * dpy, Window w, long & value) {
+	bool read_net_wm_desktop(Window w, long * value = 0) {
 		return read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
 	}
 
-	bool read_wm_state(Display * dpy, Window w, long & value) {
+	bool read_wm_state(Window w, long * value = 0) {
 		return read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
 	}
 
-	bool read_wm_transient_for(Display * dpy, Window w, Window & value) {
+	bool read_wm_transient_for(Window w, Window * value = 0) {
 		return read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
 	}
 
-	bool read_wm_class(Display * dpy, Window w, string & clss, string & name) {
-		XClassHint wm_class_hint;
-		if(XGetClassHint(dpy, w, &wm_class_hint) != 0) {
-			clss = wm_class_hint.res_class;
-			name = wm_class_hint.res_name;
-			return true;
+	struct wm_class {
+		string res_name;
+		string res_class;
+	};
+
+	bool read_wm_class(Window w, wm_class * res = 0) {
+		if(res == 0) {
+			return _pcache.get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING));
+		} else {
+			vector<char> tmp;
+			if(_pcache.get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING), &tmp)) {
+				int x_name = strnlen(&tmp[0], tmp.size());
+				int x_class = 0;
+				if(x_name < tmp.size()) {
+					x_class = strnlen(&tmp[x_name+1], tmp.size() - x_name - 1);
+				}
+
+				if(x_name + x_class + 1 < tmp.size()) {
+					res->res_name = &tmp[0];
+					res->res_class = &tmp[x_name+1];
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool read_wm_hints(Window w, XWMHints * hints = 0) {
+		vector<long> tmp;
+		if (_pcache.get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS),
+				&tmp)) {
+			if (tmp.size() == 9) {
+				if (hints) {
+					hints->flags = tmp[0];
+					hints->input = tmp[1];
+					hints->initial_state = tmp[2];
+					hints->icon_pixmap = tmp[3];
+					hints->icon_window = tmp[4];
+					hints->icon_x = tmp[5];
+					hints->icon_y = tmp[6];
+					hints->icon_mask = tmp[7];
+					hints->window_group = tmp[8];
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool read_wm_normal_hints(Window w, XSizeHints * size_hints = 0) {
+		vector<long> tmp;
+		if (_pcache.get_window_property<long>(dpy, w, A(WM_NORMAL_HINTS),
+				A(WM_SIZE_HINTS), &tmp)) {
+
+			if (tmp.size() == 18) {
+				if (size_hints) {
+					size_hints->flags = tmp[0];
+					size_hints->x = tmp[1];
+					size_hints->y = tmp[2];
+					size_hints->width = tmp[3];
+					size_hints->height = tmp[4];
+					size_hints->min_width = tmp[5];
+					size_hints->min_height = tmp[6];
+					size_hints->max_width = tmp[7];
+					size_hints->max_height = tmp[8];
+					size_hints->width_inc = tmp[9];
+					size_hints->height_inc = tmp[10];
+					size_hints->min_aspect.x = tmp[11];
+					size_hints->min_aspect.y = tmp[12];
+					size_hints->max_aspect.x = tmp[13];
+					size_hints->max_aspect.y = tmp[14];
+					size_hints->base_width = tmp[15];
+					size_hints->base_height = tmp[16];
+					size_hints->win_gravity = tmp[17];
+				}
+				return true;
+			}
 		}
 		return false;
 	}
@@ -572,128 +474,6 @@ public:
 
 private:
 
-	void update_wm_hints(window_t * w) {
-		if(!w->_wm_hints.is_durty)
-			return;
-		w->_wm_hints.is_durty = true;
-
-		if(w->_wm_hints.value != 0)
-			XFree(w->_wm_hints.value);
-		w->_wm_hints.value = XGetWMHints(dpy, w->id);
-	}
-
-	void update_wm_normal_hints(window_t * w) {
-		if(!w->_wm_normal_hints.is_durty)
-			return;
-		w->_wm_normal_hints.is_durty = true;
-
-		long size_hints_flags;
-		if (!XGetWMNormalHints(dpy, w->id, &w->_wm_normal_hints.value,
-				&size_hints_flags)) {
-			w->_wm_normal_hints.value.flags = 0;
-			w->_wm_normal_hints.has_value = false;
-		} else {
-			w->_wm_normal_hints.has_value = true;
-		}
-	}
-
-
-	void update_wm_name(window_t * w) {
-		if(!w->_wm_name.is_durty)
-			return;
-		w->_wm_name.is_durty = true;
-
-		w->_wm_name.has_value = read_wm_name(dpy, w->id, w->_wm_name.value);
-	}
-
-	void update_net_wm_name(window_t * w) {
-		if(!w->_net_wm_name.is_durty)
-			return;
-		w->_net_wm_name.is_durty = true;
-
-		w->_net_wm_name.has_value = read_wm_name(dpy, w->id, w->_net_wm_name.value);
-	}
-
-
-	void update_net_wm_window_type(window_t * w) {
-		if (!w->_net_wm_window_type.is_durty)
-			return;
-		w->_net_wm_window_type.is_durty = true;
-
-		w->_net_wm_window_type.has_value = read_net_wm_window_type(dpy, w->id,
-				w->_net_wm_window_type.value);
-
-	}
-
-	void update_net_wm_state(window_t * w) {
-		if (!w->_net_wm_state.is_durty)
-			return;
-		w->_net_wm_state.is_durty = true;
-
-		w->_net_wm_state.has_value = read_net_wm_state(dpy, w->id,
-				w->_net_wm_state.value);
-	}
-
-
-
-	void update_net_wm_protocols(window_t * w) {
-		if(!w->_net_wm_protocols.is_durty)
-			return;
-		w->_net_wm_protocols.is_durty = true;
-
-		w->_net_wm_protocols.has_value = read_net_wm_protocols(dpy, w->id,
-				w->_net_wm_protocols.value);
-	}
-
-	void update_net_wm_partial_struct(window_t * w) {
-		if(!w->_net_wm_partial_struct.is_durty)
-			return;
-		w->_net_wm_partial_struct.is_durty = true;
-
-		w->_net_wm_partial_struct.has_value = read_net_wm_partial_struct(dpy, w->id,
-				w->_net_wm_partial_struct.value);
-	}
-
-	void update_net_wm_user_time(window_t * w) {
-		if(!w->_net_wm_user_time.is_durty)
-			return;
-		w->_net_wm_user_time.is_durty = true;
-
-		w->_net_wm_user_time.has_value = read_net_wm_user_time(dpy, w->id,
-				w->_net_wm_user_time.value);
-
-	}
-
-
-	void update_net_wm_desktop(window_t * w) {
-		if(!w->_net_wm_desktop.is_durty)
-			return;
-		w->_net_wm_desktop.is_durty = true;
-
-		w->_net_wm_desktop.has_value = read_net_wm_desktop(dpy, w->id,
-				w->_net_wm_desktop.value);
-
-	}
-
-	void update_net_wm_icon(window_t * w) {
-		if (!w->_net_wm_icon.is_durty)
-			return;
-		w->_net_wm_icon.is_durty = true;
-
-		w->_net_wm_icon.has_value = read_net_wm_icon(dpy,
-				w->id, w->_net_wm_icon.value);
-
-	}
-
-	void update_wm_state(window_t * w) {
-		if(!w->_wm_state.is_durty)
-			return;
-		w->_wm_state.is_durty = true;
-
-		w->_wm_state.has_value = read_wm_state(dpy, w->id, w->_wm_state.value);
-
-	}
-
 	void update_process_configure_notify_event(window_t * w, XConfigureEvent const & e) {
 		assert(e.window == w->id);
 		w->_window_attributes.value.x = e.x;
@@ -702,15 +482,6 @@ private:
 		w->_window_attributes.value.height = e.height;
 		w->_window_attributes.value.border_width = e.border_width;
 		w->_window_attributes.value.override_redirect = e.override_redirect;
-	}
-
-	void update_wm_transient_for(window_t * w) {
-		if(!w->_wm_transient_for.is_durty)
-			return;
-		w->_wm_transient_for.is_durty = true;
-
-		w->_wm_transient_for.has_value = read_wm_transient_for(dpy,
-				w->id, w->_wm_transient_for.value);
 	}
 
 	void update_window_attributes(window_t * w) {
@@ -722,46 +493,6 @@ private:
 			w->_window_attributes.has_value = true;
 		} else {
 			w->_window_attributes.has_value = false;
-		}
-	}
-
-	void update_shape_region(window_t * w) {
-		if(!w->_shape_region.is_durty)
-			return;
-		w->_shape_region.is_durty = true;
-
-		int count, ordering;
-		XRectangle * recs = XShapeGetRectangles(dpy, w->id, ShapeBounding, &count, &ordering);
-
-		w->_shape_region.value.clear();
-
-		if(recs != NULL) {
-			w->_shape_region.has_value = true;
-			for(int i = 0; i < count; ++i) {
-				w->_shape_region.value = w->_shape_region.value + box_int_t(recs[i]);
-			}
-			/* In doubt */
-			XFree(recs);
-		} else {
-			w->_shape_region.has_value = false;
-			w->_shape_region.value.clear();
-		}
-	}
-
-	void update_wm_class(window_t * w) {
-		if(!w->_wm_class.is_durty)
-			return;
-		w->_wm_class.is_durty = true;
-
-		XClassHint wm_class_hint;
-		if(XGetClassHint(dpy, w->id, &wm_class_hint) != 0) {
-			w->_wm_class.has_value = true;
-			w->_wm_class.value.res_class = wm_class_hint.res_class;
-			w->_wm_class.value.res_name = wm_class_hint.res_name;
-		} else {
-			w->_wm_class.has_value = false;
-			w->_wm_class.value.res_class.clear();
-			w->_wm_class.value.res_name.clear();
 		}
 	}
 

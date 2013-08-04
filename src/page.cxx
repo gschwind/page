@@ -391,8 +391,8 @@ managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, 
 	//w->write_net_frame_extents();
 
 	/* assign window to desktop 0 */
-	if (!cnx->has_net_wm_desktop(w)) {
-		long net_wm_desktop = 0;
+	if (!cnx->read_net_wm_desktop(w)) {
+		long int net_wm_desktop = 0;
 		cnx->change_property(w, _NET_WM_DESKTOP,
 				CARDINAL, 32, PropModeReplace,
 				(unsigned char *) &net_wm_desktop, 1);
@@ -472,8 +472,9 @@ void page_t::scan() {
 				 * if the window is not map check if previous windows manager has set WM_STATE to iconic
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 				 **/
-				if (cnx->has_wm_state(w)) {
-					if (cnx->get_wm_state(w) == IconicState) {
+				long state = 0;
+				if (cnx->read_wm_state(w, &state)) {
+					if (state == IconicState) {
 						onmap(w);
 					}
 				}
@@ -2679,9 +2680,8 @@ void page_t::fix_allocation(viewport_t & v) {
 
 	set<unmanaged_window_t *>::iterator j = unmanaged_window.begin();
 	while (j != unmanaged_window.end()) {
-
-		if (cnx->has_net_wm_partial_struct((*j)->orig)) {
-			vector<long> ps = cnx->get_net_wm_partial_struct((*j)->orig);
+		vector<long> ps;
+		if (cnx->read_net_wm_partial_struct(((*j)->orig), &ps)) {
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
@@ -2830,11 +2830,11 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				if (find_notebook_for(mw) != 0) {
-					if (cnx->get_wm_state(c) == IconicState) {
-						find_notebook_for(mw)->activate_client(mw);
-					} else {
-						find_notebook_for(mw)->iconify_client(mw);
-					}
+//					if (cnx->get_wm_state(c) == IconicState) {
+//						find_notebook_for(mw)->activate_client(mw);
+//					} else {
+//						find_notebook_for(mw)->iconify_client(mw);
+//					}
 				} else {
 //					if (c->is_map()) {
 //						c->unmap();
@@ -2927,8 +2927,9 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 void page_t::update_transient_for(Window w) {
 	/* remove sibbling_child if needed */
 	clear_sibbling_child(w);
-	if (cnx->has_wm_transient_for(w)) {
-		transient_for_map[cnx->get_wm_transient_for(w)].push_back(w);
+	Window transiant_for = None;
+	if (cnx->read_wm_transient_for(w, &transiant_for)) {
+		transient_for_map[transiant_for].push_back(w);
 	} else {
 		transient_for_map[None].push_back(w);
 	}
@@ -2952,10 +2953,8 @@ void page_t::safe_raise_window(Window w) {
 	Window w_next = w;
 	while(already_raise.find(w_next) == already_raise.end()) {
 		update_transient_for(w_next);
-		already_raise.insert(cnx->get_wm_transient_for(w_next));
-		if(cnx->has_wm_transient_for(w_next)) {
-			w_next = cnx->get_wm_transient_for(w_next);
-		} else {
+		already_raise.insert(w_next);
+		if(!cnx->read_wm_transient_for(w_next, &w_next)) {
 			w_next = None;
 		}
 	}
@@ -3010,7 +3009,8 @@ void page_t::compute_client_size_with_constraint(Window c,
 		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
 		unsigned int & height) {
 
-	XSizeHints const size_hints = cnx->get_wm_normal_hints(c);
+	XSizeHints size_hints;
+	cnx->read_wm_normal_hints(c, &size_hints);
 
 	/* default size if no size_hints is provided */
 	width = wished_width;
@@ -3632,14 +3632,17 @@ void page_t::onmap(Window w) {
 	Atom type = find_net_wm_type(w);
 
 	/** HACK FOR ECLIPSE **/
-	if (cnx->has_wm_class(w) && cnx->has_net_wm_state(w)
-			&& type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-		if (cnx->get_wm_class(w).res_name == "Eclipse") {
-			list<Atom> vm_state = cnx->get_net_wm_state(w);
-			list<Atom>::iterator x = find(vm_state.begin(), vm_state.end(),
-					A(_NET_WM_STATE_SKIP_TASKBAR));
-			if (x != vm_state.end()) {
-				type = A(_NET_WM_WINDOW_TYPE_DND);
+	{
+		list<Atom> wm_state;
+		xconnection_t::wm_class wm_class;
+		if (cnx->read_wm_class(w, &wm_class) && cnx->read_net_wm_state(w, &wm_state)
+				&& type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			if (wm_class.res_name == "Eclipse") {
+				list<Atom>::iterator x = find(wm_state.begin(), wm_state.end(),
+						A(_NET_WM_STATE_SKIP_TASKBAR));
+				if (x != wm_state.end()) {
+					type = A(_NET_WM_WINDOW_TYPE_DND);
+				}
 			}
 		}
 	}
@@ -3719,10 +3722,9 @@ void page_t::onmap(Window w) {
 void page_t::create_managed_window(Window w, Atom type) {
 
 	managed_window_t * mw;
-
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& !cnx->has_wm_transient_for(w)) {
+			&& !cnx->read_wm_transient_for(w)) {
 
 		mw = manage(MANAGED_NOTEBOOK, type, w);
 		insert_window_in_tree(mw, 0, true);
@@ -3752,14 +3754,14 @@ Atom page_t::find_net_wm_type(Window w) {
 
 	list<Atom> net_wm_window_type;
 
-	if(!cnx->has_net_wm_window_type(w)) {
+	if(!cnx->read_net_wm_window_type(w, &net_wm_window_type)) {
 		/**
 		 * Fallback from ICCCM.
 		 **/
 
 		if(!cnx->get_window_attributes(w).override_redirect) {
 			/* Managed windows */
-			if(!cnx->has_wm_transient_for(w)) {
+			if(!cnx->read_wm_transient_for(w)) {
 				/**
 				 * Extended ICCCM:
 				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
@@ -3788,8 +3790,6 @@ Atom page_t::find_net_wm_type(Window w) {
 			 **/
 			net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 		}
-	} else {
-		net_wm_window_type = cnx->get_net_wm_window_type(w);
 	}
 
 	/* always fall back to normal */

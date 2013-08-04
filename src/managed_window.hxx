@@ -135,9 +135,7 @@ public:
 
 	void set_focused() {
 		list<Atom> net_wm_state;
-		if (cnx->has_net_wm_state(_orig)) {
-			net_wm_state = cnx->get_net_wm_state(_orig);
-		}
+		cnx->read_net_wm_state(_orig, &net_wm_state);
 
 		/** remove it if alredy focused **/
 		net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
@@ -150,13 +148,11 @@ public:
 	}
 
 	void unset_focused() {
-		list<Atom> _net_wm_state;
-		if (cnx->has_net_wm_state(_orig)) {
-			_net_wm_state = cnx->get_net_wm_state(_orig);
-		}
+		list<Atom> net_wm_state;
+		cnx->read_net_wm_state(_orig, &net_wm_state);
 
-		_net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
-		cnx->write_net_wm_state(cnx->dpy, _orig, _net_wm_state);
+		net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
+		cnx->write_net_wm_state(cnx->dpy, _orig, net_wm_state);
 
 		ungrab_all_buttons(_base);
 		grab_button_unfocused(_base);
@@ -165,13 +161,11 @@ public:
 
 	string get_title() {
 		std::string name;
-		if (cnx->has_net_wm_name(_orig)) {
-			name = cnx->get_net_wm_name(_orig);
+		if (cnx->read_net_wm_name(_orig, name)) {
 			return name;
 		}
 
-		if (cnx->has_wm_name(_orig)) {
-			name = cnx->get_wm_name(_orig);
+		if (cnx->read_wm_name(_orig, name)) {
 			return name;
 		}
 
@@ -207,7 +201,8 @@ public:
 	}
 
 	bool is_fullscreen() {
-		list<Atom> state = cnx->get_net_wm_state(_orig);
+		list<Atom> state;
+		cnx->read_net_wm_state(_orig, &state);
 		list<Atom>::iterator x = find(state.begin(), state.end(),
 				A(_NET_WM_STATE_FULLSCREEN));
 		return x != state.end();
@@ -217,11 +212,9 @@ public:
 		return _net_wm_type;
 	}
 
-	XSizeHints get_wm_normal_hints() {
-		return cnx->get_wm_normal_hints(_orig);
+	bool get_wm_normal_hints(XSizeHints * size_hints) {
+		return cnx->read_wm_normal_hints(_orig, size_hints);
 	}
-
-
 
 };
 

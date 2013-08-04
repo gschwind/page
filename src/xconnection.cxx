@@ -460,45 +460,14 @@ void xconnection_t::process_cache_event(XEvent const & e) {
 	if(e.type == PropertyNotify) {
 
 		window_t * x = get_window_t(e.xproperty.window);
-
 		_pcache.mark_durty(e.xproperty.window, e.xproperty.atom);
-
-		if (e.xproperty.atom == A(_NET_WM_USER_TIME)) {
-			x->mark_durty_net_wm_user_time();
-		} else if (e.xproperty.atom == A(_NET_WM_NAME)) {
-			x->mark_durty_net_wm_name();
-		} else if (e.xproperty.atom == A(WM_NAME)) {
-			x->mark_durty_wm_name();
-		} else if (e.xproperty.atom == A(_NET_WM_STRUT_PARTIAL)) {
-			x->mark_durty_net_wm_partial_struct();
-		} else if (e.xproperty.atom == A(_NET_WM_STRUT)) {
-			/** TODO **/
-		} else if (e.xproperty.atom == A(_NET_WM_ICON)) {
-			x->mark_durty_net_wm_icon();
-		} else if (e.xproperty.atom == A(_NET_WM_WINDOW_TYPE)) {
-			x->mark_durty_net_wm_type();
-		} else if (e.xproperty.atom == A(WM_NORMAL_HINTS)) {
-			x->mark_durty_wm_hints();
-		} else if (e.xproperty.atom == A(WM_PROTOCOLS)) {
-			x->mark_durty_net_wm_protocols();
-		} else if (e.xproperty.atom == A(WM_TRANSIENT_FOR)) {
-			x->mark_durty_wm_transient_for();
-		} else if (e.xproperty.atom == A(WM_HINTS)) {
-			x->mark_durty_wm_hints();
-		} else if (e.xproperty.atom == A(_NET_WM_STATE)) {
-			x->mark_durty_net_wm_state();
-		} else if (e.xproperty.atom == A(WM_STATE)) {
-
-		} else if (e.xproperty.atom == A(_NET_WM_DESKTOP)) {
-
-		}
 
 	} else if (e.type == ConfigureNotify) {
 		window_t * x = get_window_t(e.xconfigure.window);
 		update_process_configure_notify_event(x, e.xconfigure);
 	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
-		get_window_t(ev->window)->mark_durty_shape_region();
+		//get_window_t(ev->window)->mark_durty_shape_region();
 	} else if (e.type == DestroyNotify) {
 		_pcache.erase(e.xdestroywindow.window);
 	}

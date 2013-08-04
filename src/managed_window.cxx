@@ -335,17 +335,16 @@ void managed_window_t::expose() {
 void managed_window_t::icccm_focus(Time t) {
 	fprintf(stderr, "Focus time = %lu\n", t);
 
-	if (cnx->has_wm_hints(_orig)) {
-		XWMHints const * const hints = cnx->get_wm_hints(_orig);
-		if (hints->input == True) {
+	XWMHints hints;
+
+	if (cnx->read_wm_hints(_orig, &hints)) {
+		if (hints.input == True) {
 			cnx->set_input_focus(_orig, RevertToParent, t);
 		}
 	}
 
-
-	if (cnx->has_net_wm_protocols(_orig)) {
-		list<Atom> protocols = cnx->get_net_wm_protocols(_orig);
-
+	list<Atom> protocols;
+	if (cnx->read_net_wm_protocols(_orig, &protocols)) {
 		if (::std::find(protocols.begin(), protocols.end(), A(WM_TAKE_FOCUS))
 				!= protocols.end()) {
 			XEvent ev;
