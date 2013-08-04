@@ -37,64 +37,30 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "tree.hxx"
-#include "renderable.hxx"
-#include "compositor.hxx"
+#include "utils.hxx"
 #include "box.hxx"
-#include "icon.hxx"
 #include "xconnection.hxx"
-#include "window.hxx"
-#include "region.hxx"
-#include "viewport.hxx"
-#include "split.hxx"
 #include "notebook.hxx"
-#include "popup_split.hxx"
+#include "split.hxx"
+#include "viewport.hxx"
+#include "config_handler.hxx"
+
+#include "unmanaged_window.hxx"
+#include "managed_window.hxx"
+
+#include "renderable_page.hxx"
+
 #include "popup_notebook0.hxx"
 #include "popup_notebook1.hxx"
 #include "popup_frame_move.hxx"
-#include "page_base.hxx"
-#include "default_theme.hxx"
-#include "renderable_page.hxx"
-#include "managed_window.hxx"
-#include "unmanaged_window.hxx"
-#include "theme.hxx"
-#include "minimal_theme.hxx"
-#include "config_handler.hxx"
+#include "popup_split.hxx"
 
-#include "window_properties_handler.hxx"
-
-#include "atoms.hxx"
+#include "simple_theme.hxx"
 
 using namespace std;
 
 namespace page {
 
-template<typename T, typename _>
-bool has_key(std::map<T, _> const & x, T const & key) {
-	typename std::map<T, _>::const_iterator i = x.find(key);
-	return i != x.end();
-}
-
-template<typename T>
-bool has_key(std::set<T> const & x, T const & key) {
-	typename std::set<T>::const_iterator i = x.find(key);
-	return i != x.end();
-}
-
-template<typename T>
-bool has_key(std::list<T> const & x, T const & key) {
-	typename std::list<T>::const_iterator i = std::find(x.begin(), x.end(), key);
-	return i != x.end();
-}
-
-template<typename _0, typename _1>
-_1 get_safe_value(std::map<_0, _1> & map, _0 key, _1 def) {
-	typename std::map<_0, _1>::iterator i = map.find(key);
-	if(i != map.end())
-		return i->second;
-	else
-		return def;
-}
 
 typedef std::list<box_int_t> box_list_t;
 
@@ -110,7 +76,7 @@ class page_t : public xevent_handler_t {
 
 public:
 
-	typedef std::map<Window, window_t *> window_map_t;
+	typedef std::map<Window, Window> window_map_t;
 	typedef std::set<notebook_t *> notebook_set_t;
 
 	enum select_e {
@@ -262,9 +228,6 @@ public:
 	/** map viewport to real outputs **/
 	map<RRCrtc, viewport_t *> viewport_outputs;
 
-	/* main window data base */
-	window_map_t xwindow_to_window;
-
 	/* all managed windows */
 	set<managed_window_t *> managed_window;
 	set<unmanaged_window_t *> unmanaged_window;
@@ -310,6 +273,10 @@ public:
 	compositor_t * get_render_context();
 	xconnection_t * get_xconnection();
 
+	/** short cut **/
+	Atom A(atom_e atom) {
+		return cnx->A(atom);
+	}
 
 	void render(cairo_t * cr);
 	void render();
@@ -318,7 +285,7 @@ public:
 	void scan();
 
 	long get_window_state(Window w);
-	bool get_text_prop(Window w, char const * atom, std::string & text);
+	bool get_text_prop(Window w, atom_e atom, std::string & text);
 
 	void update_page_aera();
 
@@ -360,21 +327,19 @@ public:
 	void update_client_list();
 	void update_net_supported();
 
-	void insert_client(window_t * c);
+	void insert_client(Window c);
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
-	void update_focus(window_t * c);
+	void update_focus(Window c);
 	void read_viewport_layout();
 
-	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, window_t * w);
+	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w);
 	void unmanage(managed_window_t * mw);
 
 	void print_state();
 
-	window_t * get_window_t(Window w);
-
-	void insert_window_above_of(window_t * w, Window above);
+	void insert_window_above_of(Window w, Window above);
 
 	void remove_window_from_tree(managed_window_t * x);
 	void activate_client(managed_window_t * x);
@@ -382,16 +347,14 @@ public:
 	void iconify_client(managed_window_t * x);
 	void update_allocation();
 
-	void insert_window_in_stack(composite_window_t * x);
-
-	void delete_window(window_t * w);
-	void destroy(window_t * w);
+	void delete_window(Window w);
+	void destroy(Window w);
 
 	void fullscreen(managed_window_t * c);
 	void unfullscreen(managed_window_t * c);
 	void toggle_fullscreen(managed_window_t * c);
 
-	static bool user_time_comp(window_t *, window_t *);
+	static bool user_time_comp(Window, Window);
 	void restack_all_window();
 
 
@@ -418,34 +381,34 @@ public:
 
 	viewport_t * new_viewport(box_int_t & area);
 
-	void new_renderable_window(window_t * w);
-	void destroy_renderable(window_t * w);
+	void new_renderable_window(Window w);
+	void destroy_renderable(Window w);
 
-	managed_window_t * new_managed_window(managed_window_type_e type, window_t * orig);
+	managed_window_t * new_managed_window(managed_window_type_e type, Window orig);
 	void destroy_managed_window(managed_window_t * mw);
 
-	viewport_t * find_viewport(window_t * w);
+	viewport_t * find_viewport(Window w);
 
-	void process_net_vm_state_client_message(window_t * c, long type, Atom state_properties);
+	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
-	void update_transient_for(window_t * w);
+	void update_transient_for(Window w);
 
-	void safe_raise_window(window_t * w);
+	void safe_raise_window(Window w);
 	void clear_sibbling_child(Window w);
 
 	std::string safe_get_window_name(Window w);
 
-	void manage_if_needed(window_t * x);
+	void manage_if_needed(Window x);
 
 
-	window_t * find_root_window(window_t * w);
-	window_t * find_client_window(window_t * w);
+	Window find_root_window(Window w);
+	Window find_client_window(Window w);
 
-	void compute_client_size_with_constraint(window_t * c,
+	void compute_client_size_with_constraint(Window c,
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
 
-	void apply_transient_for(list<window_t *> & l);
+	void apply_transient_for(list<Window> & l);
 
 	void print_tree_windows();
 
@@ -492,21 +455,19 @@ public:
 	void rr_update_viewport_layout();
 	void destroy_viewport(viewport_t * v);
 
-	page_window_type_e find_window_type(Display * dpy, Window w);
-
 	Atom A(char const * aname) {
 		return cnx->get_atom(aname);
 	}
 
-	Atom find_net_wm_type(window_t * w);
+	Atom find_net_wm_type(Window w);
 
-	void onmap(window_t * w);
+	void onmap(Window w);
 
-	void create_managed_window(window_t * w, Atom type);
+	void create_managed_window(Window w, Atom type);
 
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 
-	void create_unmanaged_window(window_t * w, Atom type);
+	void create_unmanaged_window(Window w, Atom type);
 
 };
 

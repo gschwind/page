@@ -8,9 +8,7 @@
 #ifndef POPUP_FRAME_MOVE_HXX_
 #define POPUP_FRAME_MOVE_HXX_
 
-#include "xconnection.hxx"
 #include "window_overlay.hxx"
-#include "renderable.hxx"
 
 namespace page {
 

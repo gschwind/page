@@ -27,7 +27,7 @@ window_overlay_t::window_overlay_t(xconnection_t * cnx, int depth,
 	 **/
 
 	XVisualInfo vinfo;
-	if (XMatchVisualInfo(_cnx->dpy, _cnx->screen, depth, TrueColor, &vinfo)
+	if (XMatchVisualInfo(_cnx->dpy, _cnx->screen(), depth, TrueColor, &vinfo)
 			== 0) {
 		throw std::runtime_error(
 				"Unable to find valid visual for background windows");
@@ -44,13 +44,13 @@ window_overlay_t::window_overlay_t(xconnection_t * cnx, int depth,
 	 **/
 	wa.border_pixel = 0;
 	wa.background_pixel = 0;
-	wa.colormap = XCreateColormap(_cnx->dpy, _cnx->xroot, _visual, AllocNone);
+	wa.colormap = XCreateColormap(_cnx->dpy, _cnx->get_root_window(), _visual, AllocNone);
 
-	_wid = XCreateWindow(_cnx->dpy, _cnx->xroot, _area.x, _area.y, _area.w,
+	_wid = XCreateWindow(_cnx->dpy, _cnx->get_root_window(), _area.x, _area.y, _area.w,
 			_area.h, 0, vinfo.depth, InputOutput, _visual,
 			CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap, &wa);
 
-	XSelectInput(_cnx->dpy, _wid, ExposureMask | StructureNotifyMask);
+	_cnx->select_input(_wid, ExposureMask | StructureNotifyMask);
 	rebuild_cairo();
 
 }

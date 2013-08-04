@@ -9,7 +9,6 @@
 #define POPUP_NOTEBOOK0_HXX_
 
 #include "window_overlay.hxx"
-#include "renderable.hxx"
 
 namespace page {
 

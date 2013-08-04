@@ -9,12 +9,11 @@
 #include <cairo-xlib.h>
 #include "managed_window.hxx"
 #include "notebook.hxx"
-#include "window_properties_handler.hxx"
 
 namespace page {
 
-managed_window_t::managed_window_t(managed_window_type_e initial_type, Atom net_wm_type,
-		window_t * orig, theme_layout_t const * theme) {
+managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
+		Atom net_wm_type, Window orig, theme_layout_t const * theme) : cnx(cnx) {
 
 	_net_wm_type = net_wm_type;
 
@@ -25,43 +24,45 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, Atom net_
 	XSetWindowAttributes wa;
 	Window wbase;
 	Window wdeco;
-	box_int_t b = orig->get_size();
+	box_int_t b = cnx->get_window_position(orig);
 
 	/** Common window properties **/
 	unsigned long value_mask = CWOverrideRedirect;
 	wa.override_redirect = True;
 
-	cnx = &orig->cnx();
+	Visual * root_visual =
+			cnx->get_window_attributes(cnx->get_root_window()).visual;
+	int root_depth = cnx->get_window_attributes(cnx->get_root_window()).depth;
 
 	/**
 	 * If window visual is 32 bit (have alpha channel, and root do not
 	 * have alpha channel, use the window visual, other wise, always prefer
 	 * root visual.
 	 **/
-	if (orig->get_window_attributes().depth == 32 && cnx->root_wa.depth != 32) {
+	if (cnx->get_window_attributes(orig).depth == 32 && root_depth != 32) {
 		/** if visual is 32 bits, this values are mandatory **/
-		Visual * v = orig->get_window_attributes().visual;
-		wa.colormap = XCreateColormap(cnx->dpy, cnx->xroot, v, AllocNone);
-		wa.background_pixel = BlackPixel(cnx->dpy, cnx->screen);
-		wa.border_pixel = BlackPixel(cnx->dpy, cnx->screen);
+		Visual * v = cnx->get_window_attributes(orig).visual;
+		wa.colormap = XCreateColormap(cnx->dpy, cnx->get_root_window(), v,
+				AllocNone);
+		wa.background_pixel = BlackPixel(cnx->dpy, cnx->screen());
+		wa.border_pixel = BlackPixel(cnx->dpy, cnx->screen());
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(cnx->dpy, cnx->xroot, -10, -10, 1, 1, 0, 32,
+		wbase = XCreateWindow(cnx->dpy, cnx->get_root_window(), -10, -10, 1, 1,
+				0, 32,
 				InputOutput, v, value_mask, &wa);
 		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
-				InputOutput, v, value_mask, &wa);
+		InputOutput, v, value_mask, &wa);
 	} else {
-		wbase = XCreateWindow(cnx->dpy, cnx->xroot, -10, -10, 1, 1, 0,
-				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
-				value_mask, &wa);
+		wbase = XCreateWindow(cnx->dpy, cnx->get_root_window(), -10, -10, 1, 1,
+				0, root_depth, InputOutput, root_visual, value_mask, &wa);
 		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0,
-				cnx->root_wa.depth, InputOutput, cnx->root_wa.visual,
-				value_mask, &wa);
+				root_depth, InputOutput, root_visual, value_mask, &wa);
 	}
 
 	_orig = orig;
-	_base = cnx->get_window_t(wbase);
-	_deco = cnx->get_window_t(wdeco);
+	_base = wbase;
+	_deco = wdeco;
 
 	/**
 	 * Grab and sync the server before reading and setup select_input to not
@@ -69,9 +70,9 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, Atom net_
 	 **/
 	cnx->grab();
 
-	cnx->select_input(_base->id, MANAGED_BASE_WINDOW_EVENT_MASK);
-	cnx->select_input(_deco->id, MANAGED_DECO_WINDOW_EVENT_MASK);
-	cnx->select_input(_orig->id, MANAGED_ORIG_WINDOW_EVENT_MASK);
+	cnx->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	cnx->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
+	cnx->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
 
 	/* Grab button click */
 	grab_all_buttons(_deco);
@@ -83,20 +84,20 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, Atom net_
 	set_theme(theme);
 	init_managed_type(initial_type);
 
-	cnx->reparentwindow(_orig->id, _base->id, 0, 0);
+	cnx->reparentwindow(_orig, _base, 0, 0);
 
-	_surf = cairo_xlib_surface_create(cnx->dpy, _deco->id,
-			_deco->get_window_attributes().visual,
-			_deco->get_window_attributes().width,
-			_deco->get_window_attributes().height);
+	_surf = cairo_xlib_surface_create(cnx->dpy, _deco,
+			cnx->get_window_attributes(_deco).visual,
+			cnx->get_window_attributes(_deco).width,
+			cnx->get_window_attributes(_deco).height);
 	assert(_surf != 0);
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
 
 	if (initial_type == MANAGED_FLOATING) {
 		_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
-				_base->get_window_attributes().width,
-				_base->get_window_attributes().height);
+				cnx->get_window_attributes(_base).width,
+				cnx->get_window_attributes(_base).height);
 
 		_back_cr = cairo_create(_back_surf);
 	} else {
@@ -104,8 +105,8 @@ managed_window_t::managed_window_t(managed_window_type_e initial_type, Atom net_
 		_back_surf = 0;
 	}
 
-	_floating_wished_position = orig->get_size();
-	set_wished_position(orig->get_size());
+	_floating_wished_position = cnx->get_window_position(orig);
+	set_wished_position(cnx->get_window_position(orig));
 
 	icon = 0;
 
@@ -122,17 +123,17 @@ managed_window_t::~managed_window_t() {
 }
 
 void managed_window_t::normalize() {
-	::page::write_wm_state(cnx->dpy, _orig->id, NormalState, None);
-	cnx->map_window(_orig->id);
-	cnx->map_window(_deco->id);
-	cnx->map_window(_base->id);
+	cnx->write_wm_state(cnx->dpy, _orig, NormalState, None);
+	cnx->map_window(_orig);
+	cnx->map_window(_deco);
+	cnx->map_window(_base);
 }
 
 void managed_window_t::iconify() {
-	cnx->unmap(_base->id);
-	cnx->unmap(_deco->id);
-	cnx->unmap(_orig->id);
-	::page::write_wm_state(cnx->dpy, _orig->id, IconicState, None);
+	cnx->unmap(_base);
+	cnx->unmap(_deco);
+	cnx->unmap(_orig);
+	cnx->write_wm_state(cnx->dpy, _orig, IconicState, None);
 }
 
 void managed_window_t::reconfigure() {
@@ -152,9 +153,9 @@ void managed_window_t::reconfigure() {
 	_orig_position.w = _wished_position.w;
 	_orig_position.h = _wished_position.h;
 
-	cnx->move_resize(_base->id, _base_position);
-	cnx->move_resize(_deco->id, box_int_t(0, 0, _base_position.w, _base_position.h));
-	cnx->move_resize(_orig->id, _orig_position);
+	cnx->move_resize(_base, _base_position);
+	cnx->move_resize(_deco, box_int_t(0, 0, _base_position.w, _base_position.h));
+	cnx->move_resize(_orig, _orig_position);
 
 	cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
 
@@ -167,7 +168,8 @@ void managed_window_t::reconfigure() {
 			cairo_surface_destroy(_back_surf);
 
 		_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
-				_base->get_window_attributes().width, _base->get_window_attributes().height);
+				cnx->get_window_attributes(_base).width,
+				cnx->get_window_attributes(_base).height);
 
 		_back_cr = cairo_create(_back_surf);
 	}
@@ -186,7 +188,7 @@ box_int_t const & managed_window_t::get_wished_position() const {
 }
 
 void managed_window_t::fake_configure() {
-	cnx->fake_configure(_orig->id, _wished_position, 0);
+	cnx->fake_configure(_orig, _wished_position, 0);
 }
 
 void managed_window_t::delete_window(Time t) {
@@ -195,10 +197,10 @@ void managed_window_t::delete_window(Time t) {
 	ev.xclient.type = ClientMessage;
 	ev.xclient.format = 32;
 	ev.xclient.message_type = A(WM_PROTOCOLS);
-	ev.xclient.window = _orig->id;
+	ev.xclient.window = _orig;
 	ev.xclient.data.l[0] = A(WM_DELETE_WINDOW);
 	ev.xclient.data.l[1] = t;
-	cnx->send_event(_orig->id, False, NoEventMask, &ev);
+	cnx->send_event(_orig, False, NoEventMask, &ev);
 }
 
 bool managed_window_t::check_orig_position(box_int_t const & position) {
@@ -236,8 +238,8 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 
 		if (_back_surf == 0)
 			_back_surf = cairo_surface_create_similar(_surf,
-					CAIRO_CONTENT_COLOR, _base->get_window_attributes().width,
-					_base->get_window_attributes().height);
+					CAIRO_CONTENT_COLOR, cnx->get_window_attributes(_base).width,
+					cnx->get_window_attributes(_base).height);
 
 		if (_back_cr == 0)
 			_back_cr = cairo_create(_back_surf);
@@ -276,7 +278,7 @@ cairo_t * managed_window_t::get_cairo_context() {
 }
 
 void managed_window_t::focus(Time t) {
-	if(!_orig->get_window_attributes().map_state == IsUnmapped)
+	if(cnx->get_window_attributes(_orig).map_state == IsUnmapped)
 		return;
 
 	/** when focus a window, disable all button grab **/
@@ -287,7 +289,8 @@ void managed_window_t::focus(Time t) {
 }
 
 box_int_t managed_window_t::get_base_position() const {
-	return _base_position;
+	XWindowAttributes const & wa = cnx->get_window_attributes(_base);
+	return box_int_t(wa.x, wa.y, wa.width, wa.height);
 }
 
 managed_window_type_e managed_window_t::get_type() {
@@ -296,7 +299,7 @@ managed_window_type_e managed_window_t::get_type() {
 
 window_icon_handler_t * managed_window_t::get_icon() {
 	if(icon == 0) {
-		icon = new window_icon_handler_t(_orig);
+		icon = new window_icon_handler_t(cnx, _orig);
 	}
 	return icon;
 }
@@ -304,7 +307,7 @@ window_icon_handler_t * managed_window_t::get_icon() {
 void managed_window_t::update_icon() {
 	if(icon != 0)
 		delete icon;
-	icon = new window_icon_handler_t(_orig);
+	icon = new window_icon_handler_t(cnx, _orig);
 }
 
 void managed_window_t::set_theme(theme_layout_t const * theme) {
@@ -322,7 +325,7 @@ bool managed_window_t::is(managed_window_type_e type) {
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0, 0, _deco->get_window_attributes().width, _deco->get_window_attributes().height);
+		cairo_rectangle(_cr, 0, 0, cnx->get_window_attributes(_deco).width, cnx->get_window_attributes(_deco).height);
 		cairo_set_source_surface(_cr, _back_surf, 0, 0);
 		cairo_paint(_cr);
 		cairo_surface_flush(_surf);
@@ -332,33 +335,30 @@ void managed_window_t::expose() {
 void managed_window_t::icccm_focus(Time t) {
 	fprintf(stderr, "Focus time = %lu\n", t);
 
-	if (_orig->has_wm_hints()) {
-		XWMHints const * const hints = _orig->get_wm_hints();
+	if (cnx->has_wm_hints(_orig)) {
+		XWMHints const * const hints = cnx->get_wm_hints(_orig);
 		if (hints->input == True) {
-			cnx->set_input_focus(_orig->id, RevertToParent, t);
+			cnx->set_input_focus(_orig, RevertToParent, t);
 		}
 	}
 
 
-	if (_orig->has_net_wm_protocols()) {
-		list<Atom> protocols = _orig->get_net_wm_protocols();
+	if (cnx->has_net_wm_protocols(_orig)) {
+		list<Atom> protocols = cnx->get_net_wm_protocols(_orig);
 
 		if (::std::find(protocols.begin(), protocols.end(), A(WM_TAKE_FOCUS))
 				!= protocols.end()) {
 			XEvent ev;
-			ev.xclient.display = _orig->cnx().dpy;
+			ev.xclient.display = cnx->dpy;
 			ev.xclient.type = ClientMessage;
 			ev.xclient.format = 32;
 			ev.xclient.message_type = A(WM_PROTOCOLS);
-			ev.xclient.window = _orig->id;
+			ev.xclient.window = _orig;
 			ev.xclient.data.l[0] = A(WM_TAKE_FOCUS);
 			ev.xclient.data.l[1] = t;
-			_orig->cnx().send_event(_orig->id, False, NoEventMask, &ev);
+			cnx->send_event(_orig, False, NoEventMask, &ev);
 		}
 	}
-
-	//_net_wm_state.value.push_back(_cnx.get_atom(_NET_WM_STATE_FOCUSED));
-	//write_net_wm_state();
 
 }
 

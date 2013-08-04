@@ -77,9 +77,6 @@ public:
 	}
 };
 
-typedef std::list<window_t *> window_list_t;
-typedef std::set<window_t *> window_set_t;
-
 }
 
 

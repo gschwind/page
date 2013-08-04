@@ -30,7 +30,7 @@ class compositor_t : public xevent_handler_t {
 
 
 	Window cm_window;
-	xconnection_t _cnx;
+	xconnection_t * _cnx;
 
 	/** Performance counter **/
 	unsigned int flush_count;
@@ -105,11 +105,11 @@ public:
 	void process_events();
 
 	inline int get_connection_fd() {
-		return _cnx.connection_fd;
+		return _cnx->fd();
 	}
 
 	inline void xflush() {
-		XFlush(_cnx.dpy);
+		XFlush(_cnx->dpy);
 	}
 
 };

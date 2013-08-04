@@ -8,6 +8,9 @@
 #ifndef XCONNECTION_HXX_
 #define XCONNECTION_HXX_
 
+#include <X11/X.h>
+#include <X11/Xutil.h>
+
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xfixes.h>
@@ -24,9 +27,10 @@
 #include <stdexcept>
 #include <map>
 
-#include "box.hxx"
-#include "atoms.hxx"
+#include "x11_func_name.hxx"
+#include "utils.hxx"
 #include "window.hxx"
+#include "properties_cache.hxx"
 
 //#define cnx_printf(args...) printf(args)
 
@@ -35,142 +39,6 @@
 using namespace std;
 
 namespace page {
-
-/* Datas to print X errors */
-static char const * const x_function_codes[] = { //
-				"", //
-				"X_CreateWindow", //   1
-				"X_ChangeWindowAttributes", //   2
-				"X_GetWindowAttributes", //   3
-				"X_DestroyWindow", //   4
-				"X_DestroySubwindows", //   5
-				"X_ChangeSaveSet", //   6
-				"X_ReparentWindow", //   7
-				"X_MapWindow", //   8
-				"X_MapSubwindows", //   9
-				"X_UnmapWindow", //  10
-				"X_UnmapSubwindows", //  11
-				"X_ConfigureWindow", //  12
-				"X_CirculateWindow", //  13
-				"X_GetGeometry", //  14
-				"X_QueryTree", //  15
-				"X_InternAtom", //  16
-				"X_GetAtomName", //  17
-				"X_ChangeProperty", //  18
-				"X_DeleteProperty", //  19
-				"X_GetProperty", //  20
-				"X_ListProperties", //  21
-				"X_SetSelectionOwner", //  22
-				"X_GetSelectionOwner", //  23
-				"X_ConvertSelection", //  24
-				"X_SendEvent", //  25
-				"X_GrabPointer", //  26
-				"X_UngrabPointer", //                27
-				"X_GrabButton", //                   28
-				"X_UngrabButton", //                 29
-				"X_ChangeActivePointerGrab", //      30
-				"X_GrabKeyboard", //                 31
-				"X_UngrabKeyboard", //               32
-				"X_GrabKey", //                      33
-				"X_UngrabKey", //                    34
-				"X_AllowEvents", //                  35
-				"X_GrabServer", //                   36
-				"X_UngrabServer", //                 37
-				"X_QueryPointer", //                 38
-				"X_GetMotionEvents", //              39
-				"X_TranslateCoords", //              40
-				"X_WarpPointer", //                  41
-				"X_SetInputFocus", //                42
-				"X_GetInputFocus", //                43
-				"X_QueryKeymap", //                  44
-				"X_OpenFont", //                     45
-				"X_CloseFont", //                    46
-				"X_QueryFont", //                    47
-				"X_QueryTextExtents", //             48
-				"X_ListFonts", //                    49
-				"X_ListFontsWithInfo", //    	    50
-				"X_SetFontPath", //                  51
-				"X_GetFontPath", //                  52
-				"X_CreatePixmap", //                 53
-				"X_FreePixmap", //                   54
-				"X_CreateGC", //                     55
-				"X_ChangeGC", //                     56
-				"X_CopyGC", //                       57
-				"X_SetDashes", //                    58
-				"X_SetClipRectangles", //            59
-				"X_FreeGC", //                       60
-				"X_ClearArea", //                    61
-				"X_CopyArea", //                     62
-				"X_CopyPlane", //                    63
-				"X_PolyPoint", //                    64
-				"X_PolyLine", //                     65
-				"X_PolySegment", //                  66
-				"X_PolyRectangle", //                67
-				"X_PolyArc", //                      68
-				"X_FillPoly", //                     69
-				"X_PolyFillRectangle", //            70
-				"X_PolyFillArc", //                  71
-				"X_PutImage", //                     72
-				"X_GetImage", //                     73
-				"X_PolyText8", //                    74
-				"X_PolyText16", //                   75
-				"X_ImageText8", //                   76
-				"X_ImageText16", //                  77
-				"X_CreateColormap", //               78
-				"X_FreeColormap", //                 79
-				"X_CopyColormapAndFree", //          80
-				"X_InstallColormap", //              81
-				"X_UninstallColormap", //            82
-				"X_ListInstalledColormaps", //       83
-				"X_AllocColor", //                   84
-				"X_AllocNamedColor", //              85
-				"X_AllocColorCells", //              86
-				"X_AllocColorPlanes", //             87
-				"X_FreeColors", //                   88
-				"X_StoreColors", //                  89
-				"X_StoreNamedColor", //              90
-				"X_QueryColors", //                  91
-				"X_LookupColor", //                  92
-				"X_CreateCursor", //                 93
-				"X_CreateGlyphCursor", //            94
-				"X_FreeCursor", //                   95
-				"X_RecolorCursor", //                96
-				"X_QueryBestSize", //                97
-				"X_QueryExtension", //               98
-				"X_ListExtensions", //               99
-				"X_ChangeKeyboardMapping", //        100
-				"X_GetKeyboardMapping", //           101
-				"X_ChangeKeyboardControl", //        102
-				"X_GetKeyboardControl", //           103
-				"X_Bell", //                         104
-				"X_ChangePointerControl", //         105
-				"X_GetPointerControl", //            106
-				"X_SetScreenSaver", //               107
-				"X_GetScreenSaver", //               108
-				"X_ChangeHosts", //                  109
-				"X_ListHosts", //                    110
-				"X_SetAccessControl", //             111
-				"X_SetCloseDownMode", //             112
-				"X_KillClient", //                   113
-				"X_RotateProperties", //	            114
-				"X_ForceScreenSaver", //	            115
-				"X_SetPointerMapping", //            116
-				"X_GetPointerMapping", //            117
-				"X_SetModifierMapping", //	        118
-				"X_GetModifierMapping", //	        119
-				"X_NoOperation" //                   127
-
-		};
-
-static char const * const xdamage_func[] = { "X_DamageQueryVersion",
-		"X_DamageCreate", "X_DamageDestroy", "X_DamageSubtract", "X_DamageAdd" };
-
-static char const * const xcomposite_request_name[] = {
-		"X_CompositeQueryVersion", "X_CompositeRedirectWindow",
-		"X_CompositeRedirectSubwindows", "X_CompositeUnredirectWindow",
-		"X_CompositeUnredirectSubwindows",
-		"X_CompositeCreateRegionFromBorderClip", "X_CompositeNameWindowPixmap",
-		"X_CompositeGetOverlayWindow", "X_CompositeReleaseOverlayWindow" };
 
 struct event_t {
 	unsigned long serial;
@@ -189,24 +57,42 @@ struct xevent_handler_t {
  */
 struct xconnection_t {
 
+	Display * dpy;
+
+	/* overlay composite */
+	Window composite_overlay;
+
+	/*damage event handler */
+	int damage_opcode, damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_opcode, composite_event, composite_error;
+
+	/* fixes event handler */
+	int fixes_opcode, fixes_event, fixes_error;
+
+	/* xshape extension handler */
+	int xshape_opcode, xshape_event, xshape_error;
+
+	/* xrandr extension handler */
+	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	atom_handler_t _A;
+
 private:
 	/* that allow error_handler to bind display to connection */
 	static std::map<Display *, xconnection_t *> open_connections;
 	std::map<int, char const * const *> extension_request_name_map;
 
-	/* main display connection */
-	Display * _dpy;
+	properties_cache_t _pcache;
 
 public:
 
-	Display * const & dpy;
-
 	/* main screen */
-	int screen;
+	int _screen;
 	/* the root window ID */
 	Window xroot;
-	/* overlay composite */
-	Window composite_overlay;
+
 	/* root window atributes */
 	XWindowAttributes root_wa;
 	/* size of default root window */
@@ -225,21 +111,6 @@ public:
 	map<Atom, string> _atom_to_name;
 	map<string, Atom> _name_to_atom;
 
-	/*damage event handler */
-	int damage_opcode, damage_event, damage_error;
-
-	/* composite event handler */
-	int composite_opcode, composite_event, composite_error;
-
-	/* fixes event handler */
-	int fixes_opcode, fixes_event, fixes_error;
-
-	/* xshape extension handler */
-	int xshape_opcode, xshape_event, xshape_error;
-
-	/* xrandr extension handler */
-	int xrandr_opcode, xrandr_event, xrandr_error;
-
 	map<Window, window_t *> window_cache;
 
 public:
@@ -249,52 +120,6 @@ public:
 	void grab();
 	void ungrab();
 	bool is_not_grab();
-
-	template<typename T, unsigned int SIZE>
-	T * get_properties(Window win, char const * prop, char const * type, unsigned int *num) {
-		int res;
-		unsigned char * xdata = 0;
-		Atom ret_type;
-		int ret_size;
-		unsigned long int ret_items, bytes_left;
-		T * result = 0;
-		T * data;
-
-		res = get_window_property(win, prop, 0L,
-				std::numeric_limits<int>::max(), False, type, &ret_type,
-				&ret_size, &ret_items, &bytes_left, &xdata);
-		if (res == Success) {
-			if (bytes_left != 0)
-				printf("some bits lefts\n");
-			if (ret_size == SIZE && ret_items > 0) {
-				result = new T[ret_items];
-				data = reinterpret_cast<T*>(xdata);
-				for (unsigned int i = 0; i < ret_items; ++i) {
-					result[i] = data[i];
-					//printf("%d %p\n", data[i], &data[i]);
-				}
-			}
-			if (num)
-				*num = ret_items;
-			XFree(xdata);
-		}
-		return result;
-	}
-
-	long * get_properties32(Window win, char const * prop, char const * type,
-			unsigned int *num) {
-		return this->get_properties<long, 32>(win, prop, type, num);
-	}
-
-	short * get_properties16(Window win, char const * prop, char const * type,
-			unsigned int *num) {
-		return this->get_properties<short, 16>(win, prop, type, num);
-	}
-
-	char * get_properties8(Window win, char const * prop, char const * type,
-			unsigned int *num) {
-		return this->get_properties<char, 8>(win, prop, type, num);
-	}
 
 	static int error_handler(Display * dpy, XErrorEvent * ev);
 	void allow_input_passthrough(Window w);
@@ -331,14 +156,14 @@ public:
 	void process_next_event();
 	bool process_check_event();
 
-	int change_property(Window w, char const * property, char const * type, int format,
+	int change_property(Window w, atom_e property, atom_e type, int format,
 			int mode, unsigned char const * data, int nelements);
 
 	Status get_window_attributes(Window w,
 			XWindowAttributes * window_attributes_return);
 
 	Status get_text_property(Window w, XTextProperty * text_prop_return,
-			char const * property);
+			atom_e property);
 
 	int lower_window(Window w);
 
@@ -350,14 +175,6 @@ public:
 			XEvent* event_send);
 
 	int set_input_focus(Window focus, int revert_to, Time time);
-
-	int get_window_property(Window w, char const * property, long long_offset,
-			long long_length, Bool c_delete, char const * req_type,
-			Atom* actual_type_return, int* actual_format_return,
-			unsigned long* nitems_return, unsigned long* bytes_after_return,
-			unsigned char** prop_return);
-
-	XWMHints * get_wm_hints(Window w);
 
 	Window create_window(Visual * visual, int x, int y, unsigned w, unsigned h);
 
@@ -378,13 +195,16 @@ public:
 		if(i != window_cache.end()) {
 			return i->second;
 		} else {
-			window_t * x = new window_t(*this, w);
+			window_t * x = new window_t(w);
+			XShapeSelectInput(dpy, w, ShapeNotifyMask);
+			/** add our mask to update properties cache **/
+			unsigned long mask = x->get_window_attributes().your_event_mask;
 			window_cache[w] = x;
 			return x;
 		}
 	}
 
-	window_t * destroy_cache(Window w) {
+	void destroy_cache(Window w) {
 		map<Window, window_t *>::iterator i = window_cache.find(w);
 		if(i != window_cache.end()) {
 			delete i->second;
@@ -392,17 +212,564 @@ public:
 		}
 	}
 
-	Atom A(char const * name) {
-		return get_atom(name);
+	int fd() {
+		return connection_fd;
 	}
+
+	Window get_root_window() {
+		return xroot;
+	}
+
+	Atom A(atom_e atom) {
+		return _A(atom);
+	}
+
+	box_int_t get_window_position(Window w) {
+		XWindowAttributes const & wa = get_window_attributes(w);
+		return box_int_t(wa.x, wa.y, wa.width, wa.height);
+	}
+
+	box_int_t get_root_size() {
+		return get_window_position(xroot);
+	}
+
+	int screen() {
+		return _screen;
+	}
+
+	void process_cache_event(XEvent const & e);
 
 private:
 	char * _get_atom_name(Atom atom);
 	static int _return_true(Display * dpy, XEvent * ev, XPointer none);
 
+	XWMHints * _get_wm_hints(Window w);
+
+public:
+
+
+	XWindowAttributes const & get_window_attributes(Window w) {
+		window_t * wc = get_window_t(w);
+		update_window_attributes(wc);
+		return get_window_t(w)->get_window_attributes();
+	}
+
+	window_t::wm_class_t const & get_wm_class(Window w) {
+		window_t * wc = get_window_t(w);
+		update_wm_class(wc);
+		return get_window_t(w)->get_wm_class();
+	}
+
+	unsigned long const get_wm_state(Window w) {
+		window_t * wc = get_window_t(w);
+		update_wm_class(wc);
+		return get_window_t(w)->get_wm_state();
+	}
+
+	string const & get_wm_name(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_name(wc);
+		return get_window_t(w)->get_wm_name();
+	}
+
+	Window const & get_wm_transient_for(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_transient_for(wc);
+		return get_window_t(w)->get_wm_transient_for();
+	}
+
+	XSizeHints const & get_wm_normal_hints(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_normal_hints(wc);
+		return get_window_t(w)->get_wm_normal_hints();
+	}
+
+	XWMHints const * get_wm_hints(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_hints(wc);
+		return get_window_t(w)->get_wm_hints();
+	}
+
+	string const & get_net_wm_name(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_name(wc);
+		return get_window_t(w)->get_net_wm_name();
+	}
+
+	list<Atom> const & get_net_wm_window_type(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_window_type(wc);
+		return get_window_t(w)->get_net_wm_window_type();
+	}
+
+	list<Atom> const & get_net_wm_state(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_state(wc);
+		return get_window_t(w)->get_net_wm_state();
+	}
+
+	list<Atom> const & get_net_wm_protocols(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_protocols(wc);
+		return get_window_t(w)->get_net_wm_protocols();
+	}
+
+	vector<long> const & get_net_wm_partial_struct(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_partial_struct(wc);
+		return get_window_t(w)->get_net_wm_partial_struct();
+	}
+
+	long const & get_net_wm_desktop(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_desktop(wc);
+		return get_window_t(w)->get_net_wm_desktop();
+	}
+
+	long const & get_net_wm_user_time(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_user_time(wc);
+		return get_window_t(w)->get_net_wm_user_time();
+	}
+
+	vector<long> const & get_net_wm_icon(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_icon(wc);
+		return get_window_t(w)->get_net_wm_icon();
+	}
+
+	region_t<int> const & get_shape_region(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_shape_region(wc);
+		return get_window_t(w)->get_shape_region();
+	}
+
+	bool has_window_attributes(Window w) {
+		window_t * wc = get_window_t(w);
+		update_window_attributes(wc);
+		return wc->has_window_attributes();
+	}
+
+	bool has_wm_class(Window w) {
+		window_t * wc = get_window_t(w);
+		update_wm_class(wc);
+		return get_window_t(w)->has_wm_class();
+	}
+
+	bool has_wm_state(Window w) {
+		window_t * wc = get_window_t(w);
+		update_wm_state(wc);
+		return get_window_t(w)->has_wm_state();
+	}
+
+	bool has_wm_name(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_name(wc);
+		return get_window_t(w)->has_wm_name();
+	}
+
+	bool has_wm_transient_for(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_transient_for(wc);
+		return get_window_t(w)->has_wm_transient_for();
+	}
+
+	bool has_wm_normal_hints(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_normal_hints(wc);
+		return get_window_t(w)->has_wm_normal_hints();
+	}
+
+	bool has_wm_hints(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_wm_hints(wc);
+		return get_window_t(w)->has_wm_hints();
+	}
+
+	bool has_net_wm_name(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_name(wc);
+		return get_window_t(w)->has_net_wm_name();
+	}
+
+	bool has_net_wm_window_type(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_window_type(wc);
+		return get_window_t(w)->has_net_wm_window_type();
+	}
+
+	bool has_net_wm_state(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_state(wc);
+		return get_window_t(w)->has_net_wm_state();
+	}
+
+	bool has_net_wm_protocols(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_protocols(wc);
+		return get_window_t(w)->has_net_wm_protocols();
+	}
+
+	bool has_net_wm_partial_struct(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_partial_struct(wc);
+		return get_window_t(w)->has_net_wm_partial_struct();
+	}
+
+	bool has_net_wm_desktop(Window w) {
+		window_t * wc = get_window_t(w);
+		update_net_wm_desktop(wc);
+		return get_window_t(w)->has_net_wm_desktop();
+	}
+
+	bool has_net_wm_user_time(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_user_time(wc);
+		return get_window_t(w)->has_net_wm_user_time();
+	}
+
+	bool has_net_wm_icon(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_net_wm_icon(wc);
+		return get_window_t(w)->has_net_wm_icon();
+	}
+
+	bool has_shape_region(Window w)  {
+		window_t * wc = get_window_t(w);
+		update_shape_region(wc);
+		return get_window_t(w)->has_shape_region();
+	}
+
+private:
+
+	template<typename T>
+	void write_window_property(Display * dpy, Window win, Atom prop,
+			Atom type, vector<T> & v) {
+
+		printf("try write win = %lu, %lu(%lu)\n", win, prop, type);
+		if(_pcache.miss() != 0)
+		printf("HIT/MISS %f %d %d\n", (double)_pcache.hit()/(_pcache.miss()+_pcache.hit()), _pcache.hit(), _pcache.miss());
+		fflush(stdout);
+
+		XChangeProperty(dpy, win, prop, type, _format<T>::size,
+		PropModeReplace, (unsigned char *) &v[0], v.size());
+
+	}
+
+	template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
+			Atom type, list<T> & list) {
+		vector<long> tmp;
+		if (_pcache.get_window_property(dpy, w, prop, type, tmp)) {
+			list.clear();
+			list.insert(list.end(), tmp.begin(), tmp.end());
+			return true;
+		}
+		return false;
+	}
+
+	template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
+			Atom type, T & value) {
+		vector<long> tmp;
+		if (_pcache.get_window_property(dpy, w, prop, type, tmp)) {
+			if (tmp.size() > 0) {
+				value = tmp[0];
+				return true;
+			}
+		}
+		return false;
+	}
+
+	inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {
+		XTextProperty xname;
+		XGetTextProperty(dpy, w, &xname, prop);
+		if (xname.nitems != 0) {
+			value = (char *)xname.value;
+			XFree(xname.value);
+			return true;
+		}
+		return false;
+	}
+
+
+	bool read_wm_name(Display * dpy, Window w, string & name) {
+		return read_text(dpy, w, A(WM_NAME), name);
+	}
+
+	bool read_net_wm_name(Display * dpy, Window w, string & name) {
+		return read_text(dpy, w, A(_NET_WM_NAME), name);
+	}
+
+	bool read_net_wm_window_type(Display * dpy, Window w, list<Atom> & list) {
+		bool ret = read_list(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM), list);
+		printf("Atom read %lu\n", list.size());
+		return ret;
+	}
+
+	bool read_net_wm_state(Display * dpy, Window w, list<Atom> & list) {
+		return read_list(dpy, w, A(_NET_WM_STATE), A(ATOM), list);
+	}
+
+	bool read_net_wm_protocols(Display * dpy, Window w, list<Atom> & list) {
+		return read_list(dpy, w, A(WM_PROTOCOLS), A(ATOM), list);
+	}
+
+	bool read_net_wm_partial_struct(Display * dpy, Window w,
+			vector<long> & list) {
+		return _pcache.get_window_property(dpy, w, A(_NET_WM_STRUT_PARTIAL),
+				A(CARDINAL), list);
+	}
+
+	bool read_net_wm_icon(Display * dpy, Window w, vector<long> & list) {
+		return _pcache.get_window_property(dpy, w, A(_NET_WM_ICON), A(CARDINAL), list);
+	}
+
+	bool read_net_wm_user_time(Display * dpy, Window w, long & value) {
+		return read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), value);
+	}
+
+	bool read_net_wm_desktop(Display * dpy, Window w, long & value) {
+		return read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
+	}
+
+	bool read_wm_state(Display * dpy, Window w, long & value) {
+		return read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
+	}
+
+	bool read_wm_transient_for(Display * dpy, Window w, Window & value) {
+		return read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
+	}
+
+	bool read_wm_class(Display * dpy, Window w, string & clss, string & name) {
+		XClassHint wm_class_hint;
+		if(XGetClassHint(dpy, w, &wm_class_hint) != 0) {
+			clss = wm_class_hint.res_class;
+			name = wm_class_hint.res_name;
+			return true;
+		}
+		return false;
+	}
+
+	void write_net_wm_allowed_actions(Display * dpy, Window w, list<Atom> & list) {
+		vector<long> v(list.begin(), list.end());
+		write_window_property(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
+	}
+
+public:
+	void write_net_wm_state(Display * dpy, Window w, list<Atom> & list) {
+		vector<long> v(list.begin(), list.end());
+		char const * prop = XGetAtomName(dpy, A(_NET_WM_STATE));
+		printf("XXXX %s\n", prop);
+
+		write_window_property(dpy, w, A(_NET_WM_STATE), A(ATOM), v);
+	}
+
+	void write_wm_state(Display * dpy, Window w, long state, Window icon) {
+		vector<long> v(2);
+		v[0] = state;
+		v[1] = icon;
+		write_window_property(dpy, w, A(WM_STATE), A(WM_STATE), v);
+	}
+
+private:
+
+	void update_wm_hints(window_t * w) {
+		if(!w->_wm_hints.is_durty)
+			return;
+		w->_wm_hints.is_durty = true;
+
+		if(w->_wm_hints.value != 0)
+			XFree(w->_wm_hints.value);
+		w->_wm_hints.value = XGetWMHints(dpy, w->id);
+	}
+
+	void update_wm_normal_hints(window_t * w) {
+		if(!w->_wm_normal_hints.is_durty)
+			return;
+		w->_wm_normal_hints.is_durty = true;
+
+		long size_hints_flags;
+		if (!XGetWMNormalHints(dpy, w->id, &w->_wm_normal_hints.value,
+				&size_hints_flags)) {
+			w->_wm_normal_hints.value.flags = 0;
+			w->_wm_normal_hints.has_value = false;
+		} else {
+			w->_wm_normal_hints.has_value = true;
+		}
+	}
+
+
+	void update_wm_name(window_t * w) {
+		if(!w->_wm_name.is_durty)
+			return;
+		w->_wm_name.is_durty = true;
+
+		w->_wm_name.has_value = read_wm_name(dpy, w->id, w->_wm_name.value);
+	}
+
+	void update_net_wm_name(window_t * w) {
+		if(!w->_net_wm_name.is_durty)
+			return;
+		w->_net_wm_name.is_durty = true;
+
+		w->_net_wm_name.has_value = read_wm_name(dpy, w->id, w->_net_wm_name.value);
+	}
+
+
+	void update_net_wm_window_type(window_t * w) {
+		if (!w->_net_wm_window_type.is_durty)
+			return;
+		w->_net_wm_window_type.is_durty = true;
+
+		w->_net_wm_window_type.has_value = read_net_wm_window_type(dpy, w->id,
+				w->_net_wm_window_type.value);
+
+	}
+
+	void update_net_wm_state(window_t * w) {
+		if (!w->_net_wm_state.is_durty)
+			return;
+		w->_net_wm_state.is_durty = true;
+
+		w->_net_wm_state.has_value = read_net_wm_state(dpy, w->id,
+				w->_net_wm_state.value);
+	}
+
+
+
+	void update_net_wm_protocols(window_t * w) {
+		if(!w->_net_wm_protocols.is_durty)
+			return;
+		w->_net_wm_protocols.is_durty = true;
+
+		w->_net_wm_protocols.has_value = read_net_wm_protocols(dpy, w->id,
+				w->_net_wm_protocols.value);
+	}
+
+	void update_net_wm_partial_struct(window_t * w) {
+		if(!w->_net_wm_partial_struct.is_durty)
+			return;
+		w->_net_wm_partial_struct.is_durty = true;
+
+		w->_net_wm_partial_struct.has_value = read_net_wm_partial_struct(dpy, w->id,
+				w->_net_wm_partial_struct.value);
+	}
+
+	void update_net_wm_user_time(window_t * w) {
+		if(!w->_net_wm_user_time.is_durty)
+			return;
+		w->_net_wm_user_time.is_durty = true;
+
+		w->_net_wm_user_time.has_value = read_net_wm_user_time(dpy, w->id,
+				w->_net_wm_user_time.value);
+
+	}
+
+
+	void update_net_wm_desktop(window_t * w) {
+		if(!w->_net_wm_desktop.is_durty)
+			return;
+		w->_net_wm_desktop.is_durty = true;
+
+		w->_net_wm_desktop.has_value = read_net_wm_desktop(dpy, w->id,
+				w->_net_wm_desktop.value);
+
+	}
+
+	void update_net_wm_icon(window_t * w) {
+		if (!w->_net_wm_icon.is_durty)
+			return;
+		w->_net_wm_icon.is_durty = true;
+
+		w->_net_wm_icon.has_value = read_net_wm_icon(dpy,
+				w->id, w->_net_wm_icon.value);
+
+	}
+
+	void update_wm_state(window_t * w) {
+		if(!w->_wm_state.is_durty)
+			return;
+		w->_wm_state.is_durty = true;
+
+		w->_wm_state.has_value = read_wm_state(dpy, w->id, w->_wm_state.value);
+
+	}
+
+	void update_process_configure_notify_event(window_t * w, XConfigureEvent const & e) {
+		assert(e.window == w->id);
+		w->_window_attributes.value.x = e.x;
+		w->_window_attributes.value.y = e.y;
+		w->_window_attributes.value.width = e.width;
+		w->_window_attributes.value.height = e.height;
+		w->_window_attributes.value.border_width = e.border_width;
+		w->_window_attributes.value.override_redirect = e.override_redirect;
+	}
+
+	void update_wm_transient_for(window_t * w) {
+		if(!w->_wm_transient_for.is_durty)
+			return;
+		w->_wm_transient_for.is_durty = true;
+
+		w->_wm_transient_for.has_value = read_wm_transient_for(dpy,
+				w->id, w->_wm_transient_for.value);
+	}
+
+	void update_window_attributes(window_t * w) {
+		if(!w->_window_attributes.is_durty)
+			return;
+		w->_window_attributes.is_durty = true;
+
+		if(XGetWindowAttributes(dpy, w->id, &w->_window_attributes.value)) {
+			w->_window_attributes.has_value = true;
+		} else {
+			w->_window_attributes.has_value = false;
+		}
+	}
+
+	void update_shape_region(window_t * w) {
+		if(!w->_shape_region.is_durty)
+			return;
+		w->_shape_region.is_durty = true;
+
+		int count, ordering;
+		XRectangle * recs = XShapeGetRectangles(dpy, w->id, ShapeBounding, &count, &ordering);
+
+		w->_shape_region.value.clear();
+
+		if(recs != NULL) {
+			w->_shape_region.has_value = true;
+			for(int i = 0; i < count; ++i) {
+				w->_shape_region.value = w->_shape_region.value + box_int_t(recs[i]);
+			}
+			/* In doubt */
+			XFree(recs);
+		} else {
+			w->_shape_region.has_value = false;
+			w->_shape_region.value.clear();
+		}
+	}
+
+	void update_wm_class(window_t * w) {
+		if(!w->_wm_class.is_durty)
+			return;
+		w->_wm_class.is_durty = true;
+
+		XClassHint wm_class_hint;
+		if(XGetClassHint(dpy, w->id, &wm_class_hint) != 0) {
+			w->_wm_class.has_value = true;
+			w->_wm_class.value.res_class = wm_class_hint.res_class;
+			w->_wm_class.value.res_name = wm_class_hint.res_name;
+		} else {
+			w->_wm_class.has_value = false;
+			w->_wm_class.value.res_class.clear();
+			w->_wm_class.value.res_name.clear();
+		}
+	}
+
+
 
 };
 
 }
+
 
 #endif /* XCONNECTION_HXX_ */

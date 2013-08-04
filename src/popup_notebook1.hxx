@@ -8,11 +8,11 @@
 #ifndef POPUP_NOTEBOOK1_HXX_
 #define POPUP_NOTEBOOK1_HXX_
 
-#include "window_overlay.hxx"
 #include <string>
 #include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
-#include "renderable.hxx"
+
+#include "window_overlay.hxx"
 
 namespace page {
 

@@ -10,14 +10,14 @@
 
 namespace page {
 
-window_icon_handler_t::window_icon_handler_t(window_t * w) {
+window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w) {
 
 	icon_surf = 0;
 	icon.data = 0;
 
 	/* if window have icon properties */
-	if (w->has_net_wm_icon()) {
-		vector<long> icon_data = w->get_net_wm_icon();
+	if (cnx->has_net_wm_icon(w)) {
+		vector<long> icon_data = cnx->get_net_wm_icon(w);
 
 		int32_t * icon_data32 = 0;
 

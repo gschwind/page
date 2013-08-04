@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <sstream>
+
 #include "box.hxx"
 
 namespace page {

@@ -41,8 +41,9 @@ simple_theme_layout_t::~simple_theme_layout_t() {
 
 }
 
-list<box_int_t> simple_theme_layout_t::compute_client_tab(box_int_t const & allocation,
-		int number_of_client, int selected_client_index) const {
+list<box_int_t> simple_theme_layout_t::compute_client_tab(
+		box_int_t const & allocation, int number_of_client,
+		int selected_client_index) const {
 	list<box_int_t> result;
 
 	if (number_of_client != 0) {
@@ -55,11 +56,13 @@ list<box_int_t> simple_theme_layout_t::compute_client_tab(box_int_t const & allo
 		for (int i = 0; i < number_of_client; ++i) {
 			if (i == selected_client_index) {
 				b = box_int_t(floor(offset), allocation.y,
-						floor(offset + 2.0 * box_width) - floor(offset), notebook_margin.top - 4);
+						floor(offset + 2.0 * box_width) - floor(offset),
+						notebook_margin.top - 4);
 				result.push_back(b);
 				offset += box_width * 2;
 			} else {
-				b = box_int_t(floor(offset), allocation.y, floor(offset + box_width) - floor(offset),
+				b = box_int_t(floor(offset), allocation.y,
+						floor(offset + box_width) - floor(offset),
 						notebook_margin.top - 4);
 				result.push_back(b);
 				offset += box_width;

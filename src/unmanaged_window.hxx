@@ -9,7 +9,8 @@
 #define UNMANAGED_WINDOW_HXX_
 
 #include <X11/X.h>
-#include "window.hxx"
+
+#include "xconnection.hxx"
 
 namespace page {
 
@@ -28,9 +29,9 @@ private:
 	unmanaged_window_t & operator=(unmanaged_window_t const &);
 
 public:
-	window_t * const orig;
+	Window const orig;
 
-	unmanaged_window_t(window_t * orig, Atom type);
+	unmanaged_window_t(xconnection_t * cnx, Window orig, Atom type);
 	~unmanaged_window_t() { }
 
 	Atom net_wm_type() {

@@ -10,14 +10,11 @@
 
 namespace page {
 
-unmanaged_window_t::unmanaged_window_t(window_t * orig, Atom type) :
-		orig(orig), _net_wm_type(type) {
-
-	cnx = &orig->cnx();
+unmanaged_window_t::unmanaged_window_t(xconnection_t * cnx, Window orig, Atom type) :
+		orig(orig), _net_wm_type(type), cnx(cnx) {
 
 	cnx->grab();
-	orig->mark_durty_all();
-	cnx->select_input(orig->id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+	cnx->select_input(orig, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 	cnx->ungrab();
 
 }

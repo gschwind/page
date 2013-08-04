@@ -159,7 +159,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 
 void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
-	box_int_t client_size = compute_client_size(c->orig());
+	box_int_t client_size = compute_client_size(c);
 
 	c->set_wished_position(client_size);
 	c->reconfigure();
@@ -304,7 +304,7 @@ void notebook_t::set_allocation(box_int_t const & area) {
 }
 
 
-void notebook_t::compute_client_size_with_constraint(window_t * c,
+void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
 
@@ -387,7 +387,7 @@ void notebook_t::compute_client_size_with_constraint(window_t * c,
 	//printf("XXX result : %d %d\n", width, height);
 }
 
-box_int_t notebook_t::compute_client_size(window_t * c) {
+box_int_t notebook_t::compute_client_size(managed_window_t * c) {
 	unsigned int height, width;
 	compute_client_size_with_constraint(c, _allocation.w - layout->notebook_margin.left - layout->notebook_margin.right,
 			_allocation.h - layout->notebook_margin.top - layout->notebook_margin.bottom, width, height);

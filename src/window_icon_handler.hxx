@@ -10,7 +10,7 @@
 
 #include <cairo.h>
 #include "icon.hxx"
-#include "window.hxx"
+#include "xconnection.hxx"
 
 namespace page {
 
@@ -20,7 +20,7 @@ class window_icon_handler_t {
 	/* icon surface */
 	cairo_surface_t * icon_surf;
 public:
-	window_icon_handler_t(window_t * w);
+	window_icon_handler_t(xconnection_t * cnx, Window w);
 	~window_icon_handler_t();
 	cairo_surface_t * get_cairo_surface();
 
