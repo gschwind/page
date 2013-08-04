@@ -28,9 +28,10 @@
 #include <map>
 #include <cstring>
 
+#include "box.hxx"
+#include "atoms.hxx"
 #include "x11_func_name.hxx"
 #include "utils.hxx"
-#include "window.hxx"
 #include "properties_cache.hxx"
 #include "window_attributes_cache.hxx"
 
@@ -96,11 +97,6 @@ public:
 	/* the root window ID */
 	Window xroot;
 
-	/* root window atributes */
-	XWindowAttributes root_wa;
-	/* size of default root window */
-	box_t<int> root_size;
-
 	std::list<event_t> pending;
 
 	int grab_count;
@@ -113,8 +109,6 @@ public:
 
 	map<Atom, string> _atom_to_name;
 	map<string, Atom> _name_to_atom;
-
-	map<Window, window_t *> window_cache;
 
 public:
 
@@ -192,28 +186,6 @@ public:
 
 	string const & atom_to_name(Atom a);
 	Atom const & name_to_atom(char const * name);
-
-	window_t * get_window_t(Window w) {
-		map<Window, window_t *>::iterator i = window_cache.find(w);
-		if(i != window_cache.end()) {
-			return i->second;
-		} else {
-			window_t * x = new window_t(w);
-			XShapeSelectInput(dpy, w, ShapeNotifyMask);
-			/** add our mask to update properties cache **/
-			unsigned long mask = x->get_window_attributes().your_event_mask;
-			window_cache[w] = x;
-			return x;
-		}
-	}
-
-	void destroy_cache(Window w) {
-		map<Window, window_t *>::iterator i = window_cache.find(w);
-		if(i != window_cache.end()) {
-			delete i->second;
-			window_cache.erase(i);
-		}
-	}
 
 	int fd() {
 		return connection_fd;

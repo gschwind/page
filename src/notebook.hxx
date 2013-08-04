@@ -9,9 +9,7 @@
 #define NOTEBOOK_HXX_
 
 #include "box.hxx"
-#include "client.hxx"
 #include "tree.hxx"
-#include "window.hxx"
 #include "window_icon_handler.hxx"
 #include "managed_window.hxx"
 #include "theme_layout.hxx"
@@ -122,8 +120,6 @@ public:
 	static void compute_client_size_with_constraint(managed_window_t * c,
 			unsigned int max_width, unsigned int max_height,
 			unsigned int & width, unsigned int & height);
-
-	cairo_surface_t * get_icon_surface(window_t * w);
 
 	box_int_t compute_client_size(managed_window_t * c);
 	box_int_t const & get_allocation();

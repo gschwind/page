@@ -16,7 +16,6 @@
 #include "region.hxx"
 #include "icon.hxx"
 #include "composite_window.hxx"
-#include "window.hxx"
 
 namespace page {
 

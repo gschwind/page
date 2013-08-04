@@ -8,7 +8,6 @@
 #ifndef PAGE_BASE_HXX_
 #define PAGE_BASE_HXX_
 
-#include "window.hxx"
 #include "tree.hxx"
 #include "xconnection.hxx"
 #include "compositor.hxx"

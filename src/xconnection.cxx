@@ -39,16 +39,8 @@ xconnection_t::xconnection_t() {
 	grab_count = 0;
 	_screen = DefaultScreen(dpy);
 	xroot = DefaultRootWindow(dpy) ;
-	if (!get_window_attributes(xroot, &root_wa)) {
-		throw std::runtime_error("Cannot get root window attributes");
-	} else {
-		cnx_printf("Get root windows attribute Success\n");
-	}
 
-	root_size.x = 0;
-	root_size.y = 0;
-	root_size.w = root_wa.width;
-	root_size.h = root_wa.height;
+	select_input(xroot, SubstructureNotifyMask);
 
 	// Check if composite is supported.
 	if (XQueryExtension(dpy, COMPOSITE_NAME, &composite_opcode,
@@ -346,7 +338,7 @@ void xconnection_t::select_input(Window w, long int mask) {
 	unsigned long serial = XNextRequest(dpy);
 	cnx_printf(">%08lu XSelectInput: win = %lu, mask = %08lx\n", serial, w,
 			(unsigned long) mask);
-	get_window_t(w)->mark_durty_window_attributes();
+	_acache.mark_durty(w);
 	/** add StructureNotifyMask and PropertyNotify to manage properties cache **/
 	mask |= StructureNotifyMask | PropertyChangeMask;
 	XSelectInput(dpy, w, mask);
@@ -458,7 +450,6 @@ bool xconnection_t::process_check_event() {
 
 void xconnection_t::process_cache_event(XEvent const & e) {
 	if(e.type == PropertyNotify) {
-		window_t * x = get_window_t(e.xproperty.window);
 		_pcache.mark_durty(e.xproperty.window, e.xproperty.atom);
 	} else if (e.type == ConfigureNotify) {
 		update_process_configure_notify_event(e.xconfigure);
@@ -466,7 +457,11 @@ void xconnection_t::process_cache_event(XEvent const & e) {
 		XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
 		//get_window_t(ev->window)->mark_durty_shape_region();
 	} else if (e.type == DestroyNotify) {
+		_acache.mark_durty(e.xdestroywindow.window);
 		_pcache.erase(e.xdestroywindow.window);
+	} else if (e.type == CreateNotify) {
+		/** select default inputs **/
+		select_input(e.xcreatewindow.window, 0);
 	}
 
 
@@ -547,22 +542,6 @@ XWMHints * xconnection_t::_get_wm_hints(Window w) {
 	unsigned long serial = XNextRequest(dpy);
 	cnx_printf(">%08lu XGetWMHints: win = %lu\n", serial, w);
 	return XGetWMHints(dpy, w);
-}
-
-Window xconnection_t::create_window(Visual * visual, int x, int y, unsigned w, unsigned h) {
-	XSetWindowAttributes wa;
-	unsigned long value_mask = CWOverrideRedirect;
-	wa.override_redirect = True;
-
-	if(visual != 0) {
-		wa.colormap = XCreateColormap(dpy, xroot, visual, AllocNone);
-		wa.background_pixel = BlackPixel(dpy, _screen);
-		wa.border_pixel = BlackPixel(dpy, _screen);
-		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
-	}
-
-	return XCreateWindow(dpy, xroot, x, y, w, h, 0, (visual == 0)? root_wa.depth : 32 , InputOutput, (visual == 0)? root_wa.visual : visual, value_mask, &wa);
-
 }
 
 void xconnection_t::fake_configure(Window w, box_int_t location, int border_width) {
