@@ -371,8 +371,9 @@ void compositor_t::repair_overlay(_box_t const & area, cairo_surface_t * src) {
 
 
 void compositor_t::damage_all() {
-	XWindowAttributes wa = _cnx->get_window_attributes(_cnx->get_root_window());
-	add_damage_area(box_int_t(wa.x, wa.y, wa.width, wa.height));
+	XWindowAttributes const * wa = _cnx->get_window_attributes(
+			_cnx->get_root_window());
+	add_damage_area(box_int_t(wa->x, wa->y, wa->width, wa->height));
 }
 
 

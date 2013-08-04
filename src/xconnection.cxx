@@ -458,13 +458,10 @@ bool xconnection_t::process_check_event() {
 
 void xconnection_t::process_cache_event(XEvent const & e) {
 	if(e.type == PropertyNotify) {
-
 		window_t * x = get_window_t(e.xproperty.window);
 		_pcache.mark_durty(e.xproperty.window, e.xproperty.atom);
-
 	} else if (e.type == ConfigureNotify) {
-		window_t * x = get_window_t(e.xconfigure.window);
-		update_process_configure_notify_event(x, e.xconfigure);
+		update_process_configure_notify_event(e.xconfigure);
 	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
 		//get_window_t(ev->window)->mark_durty_shape_region();

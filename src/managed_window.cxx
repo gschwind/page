@@ -31,17 +31,17 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	wa.override_redirect = True;
 
 	Visual * root_visual =
-			cnx->get_window_attributes(cnx->get_root_window()).visual;
-	int root_depth = cnx->get_window_attributes(cnx->get_root_window()).depth;
+			cnx->get_window_attributes(cnx->get_root_window())->visual;
+	int root_depth = cnx->get_window_attributes(cnx->get_root_window())->depth;
 
 	/**
 	 * If window visual is 32 bit (have alpha channel, and root do not
 	 * have alpha channel, use the window visual, other wise, always prefer
 	 * root visual.
 	 **/
-	if (cnx->get_window_attributes(orig).depth == 32 && root_depth != 32) {
+	if (cnx->get_window_attributes(orig)->depth == 32 && root_depth != 32) {
 		/** if visual is 32 bits, this values are mandatory **/
-		Visual * v = cnx->get_window_attributes(orig).visual;
+		Visual * v = cnx->get_window_attributes(orig)->visual;
 		wa.colormap = XCreateColormap(cnx->dpy, cnx->get_root_window(), v,
 				AllocNone);
 		wa.background_pixel = BlackPixel(cnx->dpy, cnx->screen());
@@ -87,17 +87,17 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	cnx->reparentwindow(_orig, _base, 0, 0);
 
 	_surf = cairo_xlib_surface_create(cnx->dpy, _deco,
-			cnx->get_window_attributes(_deco).visual,
-			cnx->get_window_attributes(_deco).width,
-			cnx->get_window_attributes(_deco).height);
+			cnx->get_window_attributes(_deco)->visual,
+			cnx->get_window_attributes(_deco)->width,
+			cnx->get_window_attributes(_deco)->height);
 	assert(_surf != 0);
 	_cr = cairo_create(_surf);
 	assert(_cr != 0);
 
 	if (initial_type == MANAGED_FLOATING) {
 		_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
-				cnx->get_window_attributes(_base).width,
-				cnx->get_window_attributes(_base).height);
+				cnx->get_window_attributes(_base)->width,
+				cnx->get_window_attributes(_base)->height);
 
 		_back_cr = cairo_create(_back_surf);
 	} else {
@@ -168,8 +168,8 @@ void managed_window_t::reconfigure() {
 			cairo_surface_destroy(_back_surf);
 
 		_back_surf = cairo_surface_create_similar(_surf, CAIRO_CONTENT_COLOR,
-				cnx->get_window_attributes(_base).width,
-				cnx->get_window_attributes(_base).height);
+				cnx->get_window_attributes(_base)->width,
+				cnx->get_window_attributes(_base)->height);
 
 		_back_cr = cairo_create(_back_surf);
 	}
@@ -238,8 +238,8 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 
 		if (_back_surf == 0)
 			_back_surf = cairo_surface_create_similar(_surf,
-					CAIRO_CONTENT_COLOR, cnx->get_window_attributes(_base).width,
-					cnx->get_window_attributes(_base).height);
+					CAIRO_CONTENT_COLOR, cnx->get_window_attributes(_base)->width,
+					cnx->get_window_attributes(_base)->height);
 
 		if (_back_cr == 0)
 			_back_cr = cairo_create(_back_surf);
@@ -278,7 +278,7 @@ cairo_t * managed_window_t::get_cairo_context() {
 }
 
 void managed_window_t::focus(Time t) {
-	if(cnx->get_window_attributes(_orig).map_state == IsUnmapped)
+	if(cnx->get_window_attributes(_orig)->map_state == IsUnmapped)
 		return;
 
 	/** when focus a window, disable all button grab **/
@@ -289,8 +289,8 @@ void managed_window_t::focus(Time t) {
 }
 
 box_int_t managed_window_t::get_base_position() const {
-	XWindowAttributes const & wa = cnx->get_window_attributes(_base);
-	return box_int_t(wa.x, wa.y, wa.width, wa.height);
+	XWindowAttributes const * wa = cnx->get_window_attributes(_base);
+	return box_int_t(wa->x, wa->y, wa->width, wa->height);
 }
 
 managed_window_type_e managed_window_t::get_type() {
@@ -325,7 +325,7 @@ bool managed_window_t::is(managed_window_type_e type) {
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0, 0, cnx->get_window_attributes(_deco).width, cnx->get_window_attributes(_deco).height);
+		cairo_rectangle(_cr, 0, 0, cnx->get_window_attributes(_deco)->width, cnx->get_window_attributes(_deco)->height);
 		cairo_set_source_surface(_cr, _back_surf, 0, 0);
 		cairo_paint(_cr);
 		cairo_surface_flush(_surf);

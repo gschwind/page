@@ -461,11 +461,11 @@ void page_t::scan() {
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
 
-			if(!cnx->has_window_attributes(w))
+			if(!cnx->get_window_attributes(w))
 				continue;
 			update_transient_for(w);
 
-			if (cnx->get_window_attributes(w).map_state != IsUnmapped) {
+			if (cnx->get_window_attributes(w)->map_state != IsUnmapped) {
 				onmap(w);
 			} else {
 				/**
@@ -1528,7 +1528,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 	cnx->grab();
 
-	if (!cnx->has_window_attributes(w)) {
+	if (!cnx->get_window_attributes(w)) {
 		cnx->ungrab();
 		return;
 	}
@@ -1579,7 +1579,7 @@ void page_t::process_event(XMapEvent const & e) {
 	 * Read window attributes, if fail, it's probably because
 	 * the window is already destroyed.
 	 **/
-	if(not cnx->has_window_attributes(x))
+	if(not cnx->get_window_attributes(x))
 		return;
 
 	/** usefull for windows statink **/
@@ -2218,11 +2218,11 @@ void page_t::process_event(XEvent const & e) {
 			update_allocation();
 		}
 
-		XWindowAttributes rwa = cnx->get_window_attributes(cnx->get_root_window());
+		XWindowAttributes const * rwa = cnx->get_window_attributes(cnx->get_root_window());
 
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
-				rwa.width, rwa.height,
+				rwa->width, rwa->height,
 				viewport_outputs);
 		rpage->mark_durty();
 
@@ -2239,11 +2239,11 @@ void page_t::process_event(XEvent const & e) {
 
 		printf("RRScreenChangeNotify heigth = %d, width = %d, mheight = %d, mwidth = %d\n", ev.height, ev.width, ev.mheight, ev.mwidth);
 
-		XWindowAttributes rwa = cnx->get_window_attributes(cnx->get_root_window());
+		XWindowAttributes const * rwa = cnx->get_window_attributes(cnx->get_root_window());
 
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
-				rwa.width, rwa.height,
+				rwa->width, rwa->height,
 				viewport_outputs);
 		rpage->mark_durty();
 
@@ -3626,7 +3626,7 @@ void page_t::onmap(Window w) {
 		return;
 	if (find_unmanaged_window_with(w))
 		return;
-	if(cnx->get_window_attributes(w).c_class == InputOnly)
+	if(cnx->get_window_attributes(w)->c_class == InputOnly)
 		return;
 
 	Atom type = find_net_wm_type(w);
@@ -3647,7 +3647,7 @@ void page_t::onmap(Window w) {
 		}
 	}
 
-	if (!cnx->get_window_attributes(w).override_redirect) {
+	if (!cnx->get_window_attributes(w)->override_redirect) {
 		if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 			create_managed_window(w, type);
 		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
@@ -3759,7 +3759,7 @@ Atom page_t::find_net_wm_type(Window w) {
 		 * Fallback from ICCCM.
 		 **/
 
-		if(!cnx->get_window_attributes(w).override_redirect) {
+		if(!cnx->get_window_attributes(w)->override_redirect) {
 			/* Managed windows */
 			if(!cnx->read_wm_transient_for(w)) {
 				/**

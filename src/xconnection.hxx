@@ -32,6 +32,7 @@
 #include "utils.hxx"
 #include "window.hxx"
 #include "properties_cache.hxx"
+#include "window_attributes_cache.hxx"
 
 //#define cnx_printf(args...) printf(args)
 
@@ -86,6 +87,7 @@ private:
 	std::map<int, char const * const *> extension_request_name_map;
 
 	properties_cache_t _pcache;
+	window_attributes_cache_t _acache;
 
 public:
 
@@ -226,9 +228,12 @@ public:
 	}
 
 	box_int_t get_window_position(Window w) {
-		XWindowAttributes wa;
-		XGetWindowAttributes(dpy, w, &wa);
-		return box_int_t(wa.x, wa.y, wa.width, wa.height);
+		XWindowAttributes const * wa = _acache.get_window_attributes(dpy, w);
+		if (wa != 0) {
+			return box_int_t(wa->x, wa->y, wa->width, wa->height);
+		} else {
+			return box_int_t();
+		}
 	}
 
 	box_int_t get_root_size() {
@@ -249,18 +254,9 @@ private:
 
 public:
 
-	bool has_window_attributes(Window w) {
-		window_t * wc = get_window_t(w);
-		update_window_attributes(wc);
-		return wc->has_window_attributes();
+	XWindowAttributes const * get_window_attributes(Window w) {
+		return _acache.get_window_attributes(dpy, w);
 	}
-
-	XWindowAttributes const & get_window_attributes(Window w) {
-		window_t * wc = get_window_t(w);
-		update_window_attributes(wc);
-		return wc->get_window_attributes();
-	}
-
 
 	template<typename T>
 	void write_window_property(Display * dpy, Window win, Atom prop,
@@ -456,7 +452,6 @@ public:
 		write_window_property(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
 	}
 
-public:
 	void write_net_wm_state(Display * dpy, Window w, list<Atom> & list) {
 		vector<long> v(list.begin(), list.end());
 		char const * prop = XGetAtomName(dpy, A(_NET_WM_STATE));
@@ -474,29 +469,18 @@ public:
 
 private:
 
-	void update_process_configure_notify_event(window_t * w, XConfigureEvent const & e) {
-		assert(e.window == w->id);
-		w->_window_attributes.value.x = e.x;
-		w->_window_attributes.value.y = e.y;
-		w->_window_attributes.value.width = e.width;
-		w->_window_attributes.value.height = e.height;
-		w->_window_attributes.value.border_width = e.border_width;
-		w->_window_attributes.value.override_redirect = e.override_redirect;
-	}
+	void update_process_configure_notify_event(XConfigureEvent const & e) {
 
-	void update_window_attributes(window_t * w) {
-		if(!w->_window_attributes.is_durty)
-			return;
-		w->_window_attributes.is_durty = true;
-
-		if(XGetWindowAttributes(dpy, w->id, &w->_window_attributes.value)) {
-			w->_window_attributes.has_value = true;
-		} else {
-			w->_window_attributes.has_value = false;
+		XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.window);
+		if (wa != 0) {
+			wa->x = e.x;
+			wa->y = e.y;
+			wa->width = e.width;
+			wa->height= e.height;
+			wa->border_width = e.border_width;
+			wa->override_redirect = e.override_redirect;
 		}
 	}
-
-
 
 };
 
