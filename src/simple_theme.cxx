@@ -1099,6 +1099,81 @@ cairo_font_face_t * simple_theme_t::get_default_font() {
 	return font;
 }
 
+void simple_theme_t::render_popup_notebook0(cairo_t * cr, unsigned int width,
+		unsigned int height) {
+
+	cairo_reset_clip(cr);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+	cairo_paint(cr);
+
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
+
+}
+
+void simple_theme_t::render_popup_move_frame(cairo_t * cr, unsigned int width,
+		unsigned int height) {
+
+	cairo_reset_clip(cr);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+	cairo_paint(cr);
+
+	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
+
+}
+
+void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) {
+
+	cairo_save(cr);
+	int left_bound = x;
+	int right_bound = x + w;
+	int top_bound = y;
+	int bottom_bound = y + h;
+
+	int count = (right_bound - left_bound) / space + (bottom_bound - top_bound) / space;
+
+	cairo_new_path(cr);
+
+	for(int i = 0; i < count; ++i) {
+
+		/** clip left/right **/
+
+		int x0 = left_bound;
+		int y0 = top_bound + space * i;
+		int x1 = right_bound;
+		int y1 = y0 - (right_bound - left_bound);
+
+		/** clip top **/
+		if(y1 < top_bound) {
+			y1 = top_bound;
+			x1 = left_bound + (y0 - top_bound);
+		}
+
+		/** clip bottom **/
+		if(y0 > bottom_bound) {
+			x0 = left_bound + (y0 - (bottom_bound - top_bound));
+			y0 = bottom_bound;
+		}
+
+		cairo_move_to(cr, x0, y0);
+		cairo_line_to(cr, x1, y1);
+
+	}
+
+//	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 1.0);
+	cairo_stroke(cr);
+
+	cairo_rectangle(cr, left_bound, top_bound, right_bound - left_bound, bottom_bound - top_bound);
+//	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 2.0);
+	cairo_stroke(cr);
+
+	cairo_restore(cr);
+
+}
+
 }
 
 

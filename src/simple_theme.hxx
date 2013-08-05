@@ -68,8 +68,6 @@ public:
 	virtual box_int_t compute_floating_bind_position(
 			box_int_t const & _allocation) const;
 
-
-
 };
 
 
@@ -137,6 +135,13 @@ public:
 	virtual void render_split(cairo_t * cr, split_t * s);
 	virtual void render_floating(managed_window_t * mw, bool is_focus);
 	virtual cairo_font_face_t * get_default_font();
+
+	virtual void render_popup_notebook0(cairo_t * cr, unsigned int width,
+			unsigned int height);
+	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width,
+			unsigned int height);
+
+	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h);
 
 };
 

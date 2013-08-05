@@ -109,8 +109,6 @@ struct xconnection_t {
 	atom_handler_t _A;
 
 private:
-	/* that allow error_handler to bind display to connection */
-	std::map<int, char const * const *> extension_request_name_map;
 
 	properties_cache_t _pcache;
 	window_attributes_cache_t _acache;
@@ -449,8 +447,6 @@ public:
 				throw std::runtime_error("X Server doesn't support Composite 0.4");
 			} else {
 				cnx_printf("using composite %d.%d\n", major, minor);
-				extension_request_name_map[composite_opcode] =
-						xcomposite_request_name;
 			}
 		} else {
 			throw std::runtime_error("X Server doesn't support Composite");
@@ -466,7 +462,6 @@ public:
 			cnx_printf("Damage Extension version %d.%d found\n", major, minor);
 			cnx_printf("Damage error %d, Damage event %d\n", damage_error,
 					damage_event);
-			extension_request_name_map[damage_opcode] = xdamage_func;
 		}
 
 		if (!XQueryExtension(dpy, SHAPENAME, &xshape_opcode, &xshape_event,
@@ -522,55 +517,6 @@ public:
 	static int error_handler(Display * dpy, XErrorEvent * ev) {
 		fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 				ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-
-		int damage_opcode, damage_event, damage_error;
-		int composite_opcode, composite_event, composite_error;
-		std::map<int, char const * const *> extension_request_name_map;
-
-		// Check if composite is supported.
-		if (XQueryExtension(dpy, COMPOSITE_NAME, &composite_opcode,
-				&composite_event, &composite_error)) {
-			int major = 0, minor = 0; // The highest version we support
-			XCompositeQueryVersion(dpy, &major, &minor);
-			if (major != 0 || minor < 4) {
-				throw std::runtime_error("X Server doesn't support Composite 0.4");
-			} else {
-				extension_request_name_map[composite_opcode] =
-						xcomposite_request_name;
-			}
-		} else {
-			throw std::runtime_error("X Server doesn't support Composite");
-		}
-
-		// check/init Damage.
-		if (!XQueryExtension(dpy, DAMAGE_NAME, &damage_opcode, &damage_event,
-				&damage_error)) {
-			throw std::runtime_error("Damage extension is not supported");
-		} else {
-			int major = 0, minor = 0;
-			XDamageQueryVersion(dpy, &major, &minor);
-			extension_request_name_map[damage_opcode] = xdamage_func;
-		}
-
-
-		/* TODO: dump some use full information */
-		char buffer[1024];
-		XGetErrorText(dpy, ev->error_code, buffer, 1024);
-
-		char const * func = 0;
-		if (ev->request_code < 127 && ev->request_code > 0) {
-			func = x_function_codes[ev->request_code];
-		} else if (extension_request_name_map.find(ev->request_code)
-				!= extension_request_name_map.end()) {
-			func = extension_request_name_map[ev->request_code][ev->minor_code];
-		}
-
-		if (func != 0) {
-			fprintf(stderr,"\e[1;31m%s: %s %lu\e[m\n", func, buffer, ev->serial);
-		} else {
-			fprintf(stderr,"Error %u: %s %lu\n", (unsigned) ev->request_code, buffer,
-					ev->serial);
-		}
 
 		return 0;
 	}
@@ -931,16 +877,9 @@ public:
 	}
 
 	int set_input_focus(Window focus, int revert_to, Time time) {
-
-		printf("XSetInputFocus: win = %lu, time = %lu\n", focus, time);
+		cnx_printf("XSetInputFocus: win = %lu, time = %lu\n", focus, time);
 		fflush(stdout);
 		return XSetInputFocus(dpy, focus, revert_to, time);
-	}
-
-	XWMHints * _get_wm_hints(Window w) {
-
-		cnx_printf("XGetWMHints: win = %lu\n", w);
-		return XGetWMHints(dpy, w);
 	}
 
 	void fake_configure(Window w, box_int_t location, int border_width) {
@@ -1043,6 +982,7 @@ private:
 
 
 	void cnx_printf(char const * str, ...) {
+		return;
 		va_list args;
 		va_start(args, str);
 		char buffer[1024];

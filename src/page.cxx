@@ -198,8 +198,8 @@ void page_t::run() {
 			cnx->get_root_size().w, cnx->get_root_size().h);
 
 	/* create and add popups (overlay) */
-	pfm = new popup_frame_move_t(cnx);
-	pn0 = new popup_notebook0_t(cnx);
+	pfm = new popup_frame_move_t(cnx, theme);
+	pn0 = new popup_notebook0_t(cnx, theme);
 	pn1 = new popup_notebook1_t(cnx, theme->get_default_font());
 	ps = new popup_split_t(cnx);
 
