@@ -18,7 +18,6 @@ page_SOURCES = \
 	main.cxx page.cxx \
 	tree.cxx notebook.cxx \
 	split.cxx root.cxx \
-	xconnection.cxx \
 	ftrace_function.cxx \
 	compositor.cxx \
 	viewport.cxx \
@@ -51,7 +50,6 @@ page_LDADD = \
 
 page_internal_compositor_SOURCES = \
 	page_internal_compositor.cxx \
-	xconnection.cxx \
 	compositor.cxx \
 	composite_window.cxx
 

@@ -320,7 +320,7 @@ void page_t::run() {
 	 * i.e about 60 times per second.
 	 **/
 	max_wait.tv_sec = 0;
-	max_wait.tv_nsec = 5000000;
+	max_wait.tv_nsec = 15000000;
 
 	int max = cnx->fd();
 
@@ -1600,11 +1600,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 
 	Window x = e.window;
 
-	//rnd->add_damage_area(x->get_size());
-	event_t ex;
-	ex.serial = e.serial;
-	ex.type = e.type;
-	bool expected_event = cnx->find_pending_event(ex);
+	bool expected_event = cnx->find_pending_event(event_t(e.serial, e.type));
 	if (expected_event)
 		return;
 
