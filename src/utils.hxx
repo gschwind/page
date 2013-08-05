@@ -21,6 +21,25 @@ using namespace std;
 
 namespace page {
 
+
+/**
+ * TRICK to compile time checking.
+ **/
+// Use of ctassert<E>, where E is a constant expression,
+// will cause a compile-time error unless E evaulates to
+// a nonzero integral value.
+
+template <bool t>
+struct ctassert {
+  enum { N = 1 - 2 * int(!t) };
+    // 1 if t is true, -1 if t is false.
+  static char A[N];
+};
+
+template <bool t>
+char ctassert<t>::A[N];
+
+
 template<typename T, typename _>
 bool has_key(map<T, _> const & x, T const & key) {
 	typename map<T, _>::const_iterator i = x.find(key);
@@ -37,6 +56,18 @@ template<typename T>
 bool has_key(list<T> const & x, T const & key) {
 	typename list<T>::const_iterator i = find(x.begin(), x.end(), key);
 	return i != x.end();
+}
+
+template<typename K, typename V>
+list<V> list_values(map<K, V> const & x) {
+	list<V> ret;
+	typename map<K, V>::const_iterator i = x.begin();
+	while(i != x.end()) {
+		ret.push_back(i->second);
+		++i;
+	}
+
+	return ret;
 }
 
 template<typename _0, typename _1>
@@ -56,13 +87,27 @@ template<> struct _format<long> {
 	static const int size = 32;
 };
 
+template<> struct _format<unsigned long> {
+	static const int size = 32;
+};
+
 template<> struct _format<short> {
+	static const int size = 16;
+};
+
+template<> struct _format<unsigned short> {
 	static const int size = 16;
 };
 
 template<> struct _format<char> {
 	static const int size = 8;
 };
+
+template<> struct _format<unsigned char> {
+	static const int size = 8;
+};
+
+
 
 template<typename T>
 bool get_window_property(Display * dpy, Window win, Atom prop,
@@ -114,6 +159,9 @@ bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
 	*nitems = 0;
 	*data = 0;
 
+	/** compile time check for size value **/
+	ctassert< _format<T>::size != 0 > format_size_check;
+
 	res = XGetWindowProperty(dpy, win, prop, 0L,
 			std::numeric_limits<long int>::max(), False, type, &ret_type,
 			&ret_size, &ret_items, &bytes_left, &xdata);
@@ -133,13 +181,8 @@ bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
 template<typename T>
 void write_window_property(Display * dpy, Window win, Atom prop,
 		Atom type, vector<T> & v) {
-
-	printf("try write win = %lu, %lu(%lu)\n", win, prop, type);
-	fflush(stdout);
-
 	XChangeProperty(dpy, win, prop, type, _format<T>::size,
 	PropModeReplace, (unsigned char *) &v[0], v.size());
-
 }
 
 template<typename T> bool read_list(Display * dpy, Window w, Atom prop,

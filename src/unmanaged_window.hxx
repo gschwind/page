@@ -18,7 +18,7 @@ class unmanaged_window_t {
 private:
 
 	static unsigned long const UNMANAGED_ORIG_WINDOW_EVENT_MASK =
-			StructureNotifyMask | PropertyChangeMask;
+	StructureNotifyMask | PropertyChangeMask;
 
 	xconnection_t * cnx;
 
@@ -31,8 +31,17 @@ private:
 public:
 	Window const orig;
 
-	unmanaged_window_t(xconnection_t * cnx, Window orig, Atom type);
-	~unmanaged_window_t() { }
+	unmanaged_window_t(xconnection_t * cnx, Window orig, Atom type) :
+			cnx(cnx), _net_wm_type(type), orig(orig) {
+
+		cnx->grab();
+		cnx->select_input(orig, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+		cnx->ungrab();
+
+	}
+
+	~unmanaged_window_t() {
+	}
 
 	Atom net_wm_type() {
 		return _net_wm_type;

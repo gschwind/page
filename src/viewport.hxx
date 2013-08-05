@@ -21,6 +21,7 @@ namespace page {
 
 struct viewport_t: public tree_t {
 
+private:
 	theme_t * _theme;
 
 	viewport_t(viewport_t const & v);

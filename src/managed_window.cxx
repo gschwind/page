@@ -122,19 +122,6 @@ managed_window_t::~managed_window_t() {
 	}
 }
 
-void managed_window_t::normalize() {
-	cnx->write_wm_state(cnx->dpy, _orig, NormalState, None);
-	cnx->map_window(_orig);
-	cnx->map_window(_deco);
-	cnx->map_window(_base);
-}
-
-void managed_window_t::iconify() {
-	cnx->unmap(_base);
-	cnx->unmap(_deco);
-	cnx->unmap(_orig);
-	cnx->write_wm_state(cnx->dpy, _orig, IconicState, None);
-}
 
 void managed_window_t::reconfigure() {
 
@@ -236,6 +223,13 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	switch(type) {
 	case MANAGED_FLOATING:
 
+	{
+		list<Atom> net_wm_allowed_actions;
+		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
+		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
+		cnx->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
+	}
+
 		if (_back_surf == 0)
 			_back_surf = cairo_surface_create_similar(_surf,
 					CAIRO_CONTENT_COLOR, cnx->get_window_attributes(_base)->width,
@@ -252,6 +246,13 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 		break;
 	case MANAGED_NOTEBOOK:
 	case MANAGED_FULLSCREEN:
+
+	{
+		list<Atom> net_wm_allowed_actions;
+		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
+		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
+		cnx->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
+	}
 
 		/** destroy back buffer **/
 		if(_back_cr != 0)
@@ -281,9 +282,9 @@ void managed_window_t::focus(Time t) {
 	if(cnx->get_window_attributes(_orig)->map_state == IsUnmapped)
 		return;
 
+	net_wm_state_add(_NET_WM_STATE_FOCUSED);
 	/** when focus a window, disable all button grab **/
 	ungrab_all_buttons(_base);
-
 	icccm_focus(t);
 
 }

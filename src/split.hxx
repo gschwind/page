@@ -8,6 +8,8 @@
 #ifndef SPLIT_HXX_
 #define SPLIT_HXX_
 
+#include <cmath>
+
 #include "box.hxx"
 #include "tree.hxx"
 #include "theme_layout.hxx"
@@ -68,6 +70,44 @@ public:
 
 	void set_pack0(tree_t * x);
 	void set_pack1(tree_t * x);
+
+
+	/* compute the slider area */
+	void compute_split_location(double split, int & x, int & y) const {
+
+		if (_split_type == VERTICAL_SPLIT) {
+
+			int w = _allocation.w - 2 * theme->split_margin.left
+					- 2 * theme->split_margin.right - theme->split_width;
+			int w0 = floor(w * split + 0.5);
+
+			x = _allocation.x + theme->split_margin.left + w0
+					+ theme->split_margin.right;
+			y = _allocation.y;
+
+		} else {
+
+			int h = _allocation.h - 2 * theme->split_margin.top
+					- 2 * theme->split_margin.bottom - theme->split_width;
+			int h0 = floor(h * split + 0.5);
+
+			x = _allocation.x;
+			y = _allocation.y + theme->split_margin.top + h0
+					+ theme->split_margin.bottom;
+		}
+	}
+
+	/* compute the slider area */
+	void compute_split_size(double split, int & w, int & h) const {
+
+		if (_split_type == VERTICAL_SPLIT) {
+			w = theme->split_width;
+			h = _allocation.h;
+		} else {
+			w = _allocation.w;
+			h = theme->split_width;
+		}
+	}
 
 };
 

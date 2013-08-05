@@ -15,10 +15,31 @@
 namespace page {
 
 struct popup_split_t: public window_overlay_t {
-	Window const & wid;
-	popup_split_t(xconnection_t * cnx);
-	~popup_split_t();
-	void move_resize(box_int_t const & a);
+
+	popup_split_t(xconnection_t * cnx) : window_overlay_t(cnx, 32) {
+
+	}
+
+
+	~popup_split_t() {
+
+	}
+
+	void repair_back_buffer() {
+		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
+		assert(wa != 0);
+
+		cairo_t * cr = cairo_create(_back_surf);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 0.5);
+		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+		cairo_fill(cr);
+
+		cairo_destroy(cr);
+
+	}
+
 };
 
 }

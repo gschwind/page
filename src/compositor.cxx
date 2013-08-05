@@ -593,16 +593,16 @@ void compositor_t::process_event(XEvent const & e) {
 			//rebuild_cairo_context();
 		}
 	} else {
-		printf("Unhandled event\n");
-		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
-			printf("#%lu type: %s, send_event: %u, window: %lu\n",
-					e.xany.serial, x_event_name[e.xany.type], e.xany.send_event,
-					e.xany.window);
-		} else {
-			printf("#%lu type: %u, send_event: %u, window: %lu\n",
-					e.xany.serial, e.xany.type, e.xany.send_event,
-					e.xany.window);
-		}
+//		printf("Unhandled event\n");
+//		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
+//			printf("#%lu type: %s, send_event: %u, window: %lu\n",
+//					e.xany.serial, x_event_name[e.xany.type], e.xany.send_event,
+//					e.xany.window);
+//		} else {
+//			printf("#%lu type: %u, send_event: %u, window: %lu\n",
+//					e.xany.serial, e.xany.type, e.xany.send_event,
+//					e.xany.window);
+//		}
 	}
 
 }

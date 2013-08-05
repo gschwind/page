@@ -20,10 +20,6 @@ page_SOURCES = \
 	split.cxx root.cxx \
 	xconnection.cxx \
 	ftrace_function.cxx \
-	popup_frame_move.cxx \
-	popup_notebook0.cxx \
-	popup_notebook1.cxx \
-	popup_split.cxx \
 	compositor.cxx \
 	viewport.cxx \
 	default_theme.cxx \
@@ -35,7 +31,6 @@ page_SOURCES = \
 	composite_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
-	window_overlay.cxx \
 	xprop.c \
 	dsimple.c \
 	clientwin.c

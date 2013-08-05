@@ -14,19 +14,53 @@ namespace page {
 
 struct popup_notebook0_t : public window_overlay_t {
 
-	Window const & wid;
-
 	bool _show;
 
-	popup_notebook0_t(xconnection_t * cnx);
-	~popup_notebook0_t();
+	popup_notebook0_t(xconnection_t * cnx) : window_overlay_t(cnx, 32) {
+		_show = false;
+	}
 
-	void reconfigure(box_int_t const & area);
+	~popup_notebook0_t() {
 
-	bool is_visible();
+	}
 
-	void show();
-	void hide();
+	void show() {
+		window_overlay_t::show();
+		_show = true;
+	}
+
+	void hide() {
+		window_overlay_t::hide();
+		_show = false;
+	}
+
+	bool is_visible() {
+		return _show;
+	}
+
+	void repair_back_buffer() {
+		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
+		assert(wa != 0);
+
+		cairo_t * cr = cairo_create(_back_surf);
+
+		cairo_set_line_width(cr, 2.0);
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+
+		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+		cairo_paint(cr);
+
+		cairo_set_source_rgba(cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 0.15);
+		cairo_rectangle(cr, 3, 3, wa->width - 6, wa->height - 6);
+		cairo_fill(cr);
+		cairo_set_source_rgba(cr, 0x34 / 255.0, 0x65 / 255.0, 0xA4 / 255.0, 1.0);
+		cairo_rectangle(cr, 3, 3, wa->width - 6, wa->height - 6);
+		cairo_stroke(cr);
+
+		cairo_destroy(cr);
+
+	}
 
 };
 

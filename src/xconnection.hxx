@@ -233,15 +233,8 @@ public:
 	template<typename T>
 	void write_window_property(Display * dpy, Window win, Atom prop,
 			Atom type, vector<T> & v) {
-
-		printf("try write win = %lu, %lu(%lu)\n", win, prop, type);
-		if(_pcache.miss() != 0)
-		printf("HIT/MISS %f %d %d\n", (double)_pcache.hit()/(_pcache.miss()+_pcache.hit()), _pcache.hit(), _pcache.miss());
-		fflush(stdout);
-
 		XChangeProperty(dpy, win, prop, type, _format<T>::size,
 		PropModeReplace, (unsigned char *) &v[0], v.size());
-
 	}
 
 	template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
@@ -279,7 +272,7 @@ public:
 		return false;
 	}
 
-	inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {
+	bool read_text(Display * dpy, Window w, Atom prop, string & value) {
 		XTextProperty xname;
 		XGetTextProperty(dpy, w, &xname, prop);
 		if (xname.nitems != 0) {
@@ -291,12 +284,33 @@ public:
 	}
 
 
+	bool read_utf8_string(Display * dpy, Window w, Atom prop, string * value = 0) {
+		if (value != 0) {
+			vector<char> data;
+			bool ret = _pcache.get_window_property(dpy, w, prop, A(UTF8_STRING), &data);
+			data.resize(data.size() + 1, 0);
+			*value = &data[0];
+			return ret;
+		} else {
+			return _pcache.get_window_property<char>(dpy, w, prop, A(UTF8_STRING));
+		}
+	}
+
+
 	bool read_wm_name(Window w, string & name) {
 		return read_text(dpy, w, A(WM_NAME), name);
 	}
 
-	bool read_net_wm_name(Window w, string & name) {
-		return read_text(dpy, w, A(_NET_WM_NAME), name);
+	bool read_net_wm_name(Window w, string * name = 0) {
+		return read_utf8_string(dpy, w, A(_NET_WM_NAME), name);
+	}
+
+	bool read_wm_state(Window w, long * value = 0) {
+		return read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
+	}
+
+	bool read_wm_transient_for(Window w, Window * value = 0) {
+		return read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
 	}
 
 	bool read_net_wm_window_type(Window w, list<Atom> * list = 0) {
@@ -330,12 +344,8 @@ public:
 		return read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
 	}
 
-	bool read_wm_state(Window w, long * value = 0) {
-		return read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
-	}
-
-	bool read_wm_transient_for(Window w, Window * value = 0) {
-		return read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
+	bool read_net_wm_allowed_actions(Window w, list<Atom> * list = 0) {
+		return read_list(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), list);
 	}
 
 	struct wm_class {
@@ -349,8 +359,8 @@ public:
 		} else {
 			vector<char> tmp;
 			if(_pcache.get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING), &tmp)) {
-				int x_name = strnlen(&tmp[0], tmp.size());
-				int x_class = 0;
+				unsigned int x_name = strnlen(&tmp[0], tmp.size());
+				unsigned int x_class = 0;
 				if(x_name < tmp.size()) {
 					x_class = strnlen(&tmp[x_name+1], tmp.size() - x_name - 1);
 				}
@@ -419,24 +429,34 @@ public:
 		return false;
 	}
 
-	void write_net_wm_allowed_actions(Display * dpy, Window w, list<Atom> & list) {
+	void write_net_wm_allowed_actions(Window w, list<Atom> & list) {
 		vector<long> v(list.begin(), list.end());
 		write_window_property(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
 	}
 
-	void write_net_wm_state(Display * dpy, Window w, list<Atom> & list) {
+	void write_net_wm_state(Window w, list<Atom> & list) {
 		vector<long> v(list.begin(), list.end());
-		char const * prop = XGetAtomName(dpy, A(_NET_WM_STATE));
-		printf("XXXX %s\n", prop);
-
 		write_window_property(dpy, w, A(_NET_WM_STATE), A(ATOM), v);
 	}
 
-	void write_wm_state(Display * dpy, Window w, long state, Window icon) {
+	void write_wm_state(Window w, long state, Window icon) {
 		vector<long> v(2);
 		v[0] = state;
 		v[1] = icon;
 		write_window_property(dpy, w, A(WM_STATE), A(WM_STATE), v);
+	}
+
+	void write_net_active_window(Window w) {
+		vector<long> v(1);
+		v[0] = w;
+		write_window_property(dpy, xroot, A(_NET_ACTIVE_WINDOW), A(WINDOW), v);
+	}
+
+	int move_window(Window w, int x, int y) {
+		XWindowAttributes * wa = _acache.get_window_attributes(dpy, w);
+		wa->x = x;
+		wa->y = y;
+		return XMoveWindow(dpy, w, x, y);
 	}
 
 private:

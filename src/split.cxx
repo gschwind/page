@@ -112,31 +112,7 @@ void split_t::replace(tree_t * src, tree_t * by) {
 //	return list;
 //}
 
-/* compute the slider area */
-void split_t::compute_split_bar_area(box_int_t & area, double split) const {
 
-	if (_split_type == VERTICAL_SPLIT) {
-
-		int w = _allocation.w - 2 * theme->split_margin.left - 2 * theme->split_margin.right - theme->split_width;
-		int w0 = floor(w * split + 0.5);
-		int w1 = w - w0;
-
-		area.x = _allocation.x + theme->split_margin.left + w0 + theme->split_margin.right;
-		area.y = _allocation.y;
-		area.w = theme->split_width;
-		area.h = _allocation.h;
-	} else {
-
-		int h = _allocation.h - 2 * theme->split_margin.top - 2 * theme->split_margin.bottom - theme->split_width;
-		int h0 = floor(h * split + 0.5);
-		int h1 = h - h0;
-
-		area.x = _allocation.x;
-		area.y = _allocation.y + theme->split_margin.top + h0 + theme->split_margin.bottom;
-		area.w = _allocation.w;
-		area.h = theme->split_width;
-	}
-}
 
 box_int_t split_t::get_absolute_extend() {
 	return _allocation;
@@ -177,7 +153,8 @@ split_type_e split_t::get_split_type() {
 }
 
 void split_t::update_allocation() {
-	compute_split_bar_area(_split_bar_area, _split);
+	compute_split_location(_split, _split_bar_area.x, _split_bar_area.y);
+	compute_split_size(_split, _split_bar_area.w, _split_bar_area.h);
 
 	if (_split_type == VERTICAL_SPLIT) {
 

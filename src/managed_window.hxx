@@ -71,9 +71,6 @@ public:
 			Atom net_wm_type, Window orig, theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
-	void normalize();
-	void iconify();
-
 	void reconfigure();
 	void fake_configure();
 
@@ -133,35 +130,29 @@ public:
 //				_net_wm_allowed_actions);
 //	}
 
+
+	void net_wm_allowed_actions_add(atom_e atom) {
+		list<Atom> net_allowed_actions;
+		cnx->read_net_wm_allowed_actions(_orig, &net_allowed_actions);
+		net_allowed_actions.remove(A(atom));
+		net_allowed_actions.push_back(A(atom));
+		cnx->write_net_wm_allowed_actions(_orig, net_allowed_actions);
+	}
+
 	void set_focused() {
-		list<Atom> net_wm_state;
-		cnx->read_net_wm_state(_orig, &net_wm_state);
-
-		/** remove it if alredy focused **/
-		net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
-		/** add it **/
-		net_wm_state.push_back(A(_NET_WM_STATE_FOCUSED));
-		cnx->write_net_wm_state(cnx->dpy, _orig, net_wm_state);
-
+		net_wm_state_add(_NET_WM_STATE_FOCUSED);
 		ungrab_all_buttons(_base);
-
 	}
 
 	void unset_focused() {
-		list<Atom> net_wm_state;
-		cnx->read_net_wm_state(_orig, &net_wm_state);
-
-		net_wm_state.remove(A(_NET_WM_STATE_FOCUSED));
-		cnx->write_net_wm_state(cnx->dpy, _orig, net_wm_state);
-
+		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 		ungrab_all_buttons(_base);
 		grab_button_unfocused(_base);
-
 	}
 
 	string get_title() {
 		std::string name;
-		if (cnx->read_net_wm_name(_orig, name)) {
+		if (cnx->read_net_wm_name(_orig, &name)) {
 			return name;
 		}
 
@@ -215,6 +206,41 @@ public:
 	bool get_wm_normal_hints(XSizeHints * size_hints) {
 		return cnx->read_wm_normal_hints(_orig, size_hints);
 	}
+
+	void net_wm_state_add(atom_e atom) {
+		list<Atom> net_wm_state;
+		cnx->read_net_wm_state(_orig, &net_wm_state);
+		/** remove it if alredy focused **/
+		net_wm_state.remove(A(atom));
+		/** add it **/
+		net_wm_state.push_back(A(atom));
+		cnx->write_net_wm_state(_orig, net_wm_state);
+	}
+
+	void net_wm_state_remove(atom_e atom) {
+		list<Atom> net_wm_state;
+		cnx->read_net_wm_state(_orig, &net_wm_state);
+		net_wm_state.remove(A(atom));
+		cnx->write_net_wm_state(_orig, net_wm_state);
+	}
+
+
+	void normalize() {
+		cnx->write_wm_state(_orig, NormalState, None);
+		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+		cnx->map_window(_orig);
+		cnx->map_window(_deco);
+		cnx->map_window(_base);
+	}
+
+	void iconify() {
+		net_wm_state_add(_NET_WM_STATE_HIDDEN);
+		cnx->write_wm_state(_orig, IconicState, None);
+		cnx->unmap(_base);
+		cnx->unmap(_deco);
+		cnx->unmap(_orig);
+	}
+
 
 };
 

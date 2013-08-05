@@ -349,19 +349,13 @@ void xconnection_t::move_resize(Window w, box_int_t const & size) {
 	cnx_printf(">%08lu XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", serial, w,
 			size.w, size.h, size.x, size.y);
 
-	XWindowChanges ev;
-	ev.x = size.x;
-	ev.y = size.y;
-	ev.width = size.w;
-	ev.height = size.h;
-	ev.border_width = 0;
+	XWindowAttributes * wa = _acache.get_window_attributes(dpy, w);
+	wa->x = size.x;
+	wa->y = size.y;
+	wa->width = size.w;
+	wa->height = size.h;
+	XMoveResizeWindow(dpy, w, size.x, size.y, size.w, size.h);
 
-	XConfigureWindow(dpy, w, (CWX | CWY | CWHeight | CWWidth | CWBorderWidth), &ev);
-
-	event_t e;
-	e.serial = serial;
-	e.type = ConfigureNotify;
-	pending.push_back(e);
 }
 
 void xconnection_t::set_window_border_width(Window w, unsigned int width) {
@@ -454,7 +448,7 @@ void xconnection_t::process_cache_event(XEvent const & e) {
 	} else if (e.type == ConfigureNotify) {
 		update_process_configure_notify_event(e.xconfigure);
 	} else if (e.type == xshape_event + ShapeNotify) {
-		XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
+		//XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
 		//get_window_t(ev->window)->mark_durty_shape_region();
 	} else if (e.type == DestroyNotify) {
 		_acache.mark_durty(e.xdestroywindow.window);
@@ -462,6 +456,16 @@ void xconnection_t::process_cache_event(XEvent const & e) {
 	} else if (e.type == CreateNotify) {
 		/** select default inputs **/
 		select_input(e.xcreatewindow.window, 0);
+	} else if (e.type == MapNotify) {
+		XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.xmap.window);
+		if (wa != 0) {
+			wa->map_state = IsViewable;
+		}
+	} else if (e.type == UnmapNotify) {
+		XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.xunmap.window);
+		if (wa != 0) {
+			wa->map_state = IsUnmapped;
+		}
 	}
 
 

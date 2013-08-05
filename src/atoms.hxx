@@ -277,7 +277,7 @@ public:
 			_name[i] = 0;
 		}
 
-		for (int i = 0; i < n_items; ++i) {
+		for (unsigned int i = 0; i < n_items; ++i) {
 			_data[atom_name[i].id] = XInternAtom(dpy, atom_name[i].name, False);
 			_name[atom_name[i].id] = atom_name[i].name;
 		}

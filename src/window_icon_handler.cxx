@@ -26,11 +26,11 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w) {
 
 		/* copy long to 32 bits int, this is needed for 64bits arch (recall: long in 64 bits arch are 64 bits)*/
 		icon_data32 = new int32_t[icon_data.size()];
-		for (int i = 0; i < icon_data.size(); ++i)
+		for (unsigned int i = 0; i < icon_data.size(); ++i)
 			icon_data32[i] = icon_data[i];
 
 		/* find all icons */
-		int offset = 0;
+		unsigned int offset = 0;
 		while (offset < icon_data.size()) {
 			icon_t tmp;
 			tmp.width = icon_data[offset + 0];
