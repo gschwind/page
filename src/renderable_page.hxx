@@ -36,10 +36,6 @@ public:
 
 	}
 
-	bool is_visible() {
-		return true;
-	}
-
 	void render_splits(cairo_t * _cr, std::list<split_t *> const & splits) {
 		for (std::list<split_t *>::const_iterator i = splits.begin();
 				i != splits.end(); ++i) {
@@ -74,8 +70,6 @@ public:
 
 		for (list<viewport_t *>::iterator i = viewports.begin();
 				i != viewports.end(); ++i) {
-			if(*i == 0)
-				continue;
 			(*i)->get_splits(splits);
 			(*i)->get_notebooks(notebooks);
 		}
@@ -91,17 +85,20 @@ public:
 
 	}
 
-	void expose (list<viewport_t *> viewports) {
+	void expose(list<viewport_t *> viewports) {
+
+		if(!_is_durty || !_is_visible)
+			return;
+		_is_durty = false;
+
 		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
 		assert(wa != 0);
 
-		if(_back_surf == 0) {
-			create_back_buffer();
-			repair_back_buffer(viewports);
-		}
+		cairo_xlib_surface_set_size(_front_surf, wa->width, wa->height);
 
-		cairo_surface_t * front_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, wa->visual, wa->width, wa->height);
-		cairo_t * cr = cairo_create(front_surf);
+		repair_back_buffer(viewports);
+
+		cairo_t * cr = cairo_create(_front_surf);
 
 		box_int_t clip = box_int_t(wa->x, wa->y, wa->width, wa->height);
 		if (!clip.is_null()) {
@@ -112,11 +109,14 @@ public:
 		}
 
 		cairo_destroy(cr);
-		cairo_surface_destroy(front_surf);
 
 	}
 
-
+	void render_if_needed(list<viewport_t *> viewports) {
+		if(_is_durty) {
+			expose(viewports);
+		}
+	}
 
 };
 

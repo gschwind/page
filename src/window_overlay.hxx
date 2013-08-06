@@ -12,6 +12,7 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 
+#include "cairo_surface_type_name.hxx"
 #include "xconnection.hxx"
 
 namespace page {
@@ -21,8 +22,13 @@ class window_overlay_t {
 
 protected:
 	xconnection_t * _cnx;
+	cairo_surface_t * _front_surf;
 	cairo_surface_t * _back_surf;
 	Window _wid;
+
+	bool _has_alpha;
+	bool _is_durty;
+	bool _is_visible;
 
 public:
 	window_overlay_t(xconnection_t * cnx, int depth, box_int_t position = box_int_t(-10,-10, 1, 1)) {
@@ -60,37 +66,56 @@ public:
 
 		_cnx->select_input(_wid, ExposureMask | StructureNotifyMask);
 
+		_front_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, vinfo.visual,
+				position.w, position.h);
 
+		_back_surf = 0;
+
+		if(vinfo.depth == 32) {
+			_has_alpha = true;
+		} else {
+			_has_alpha = false;
+		}
+
+		/** if cairo surface are not of this type ... am I paranoid ? **/
+		assert(cairo_surface_get_type(_front_surf) == CAIRO_SURFACE_TYPE_XLIB);
+		_is_durty = true;
+		_is_visible = false;
+
+	}
+
+	void mark_durty() {
+		_is_durty = true;
 	}
 
 	void create_back_buffer() {
-		if (_back_surf != 0)
-			return;
-		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
-		assert(wa != 0);
-
-		cairo_surface_t * tmp = cairo_xlib_surface_create(_cnx->dpy, _wid,
-				wa->visual, wa->width, wa->height);
-		_back_surf = cairo_surface_create_similar(tmp,
-				CAIRO_CONTENT_COLOR_ALPHA, wa->width, wa->height);
-		cairo_surface_destroy(tmp);
-	}
-
-	void destroy_back_buffer() {
-		if (_back_surf != 0) {
-			cairo_surface_destroy(_back_surf);
-			_back_surf = 0;
+		if (_back_surf == 0) {
+			if (_has_alpha) {
+				_back_surf = cairo_surface_create_similar(_front_surf,
+						CAIRO_CONTENT_COLOR_ALPHA, _cnx->get_root_size().w,
+						_cnx->get_root_size().h);
+			} else {
+				_back_surf = cairo_surface_create_similar(_front_surf,
+						CAIRO_CONTENT_COLOR, _cnx->get_root_size().w,
+						_cnx->get_root_size().h);
+			}
 		}
 	}
 
+	void destroy_back_buffer() {
+		cairo_surface_destroy(_back_surf);
+		_back_surf = 0;
+	}
+
 	virtual ~window_overlay_t() {
-		destroy_back_buffer();
+		cairo_surface_destroy(_front_surf);
+		cairo_surface_destroy(_back_surf);
 		XDestroyWindow(_cnx->dpy, _wid);
 	}
 
 	void move_resize(box_int_t const & area) {
 		_cnx->move_resize(_wid, box_int_t(area.x, area.y, area.w, area.h));
-		destroy_back_buffer();
+		mark_durty();
 	}
 
 	void move(int x, int y) {
@@ -100,10 +125,14 @@ public:
 
 	void show() {
 		_cnx->map_window(_wid);
+		_is_visible = true;
+		create_back_buffer();
+		mark_durty();
 	}
 
 	void hide() {
 		_cnx->unmap(_wid);
+		_is_visible = false;
 		destroy_back_buffer();
 	}
 
@@ -121,17 +150,19 @@ public:
 	}
 
 	void expose () {
+
+		if(!_is_durty || !_is_visible)
+			return;
+		_is_durty = false;
+
 		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
 		assert(wa != 0);
 
-		if(_back_surf == 0) {
-			create_back_buffer();
-			repair_back_buffer();
-		}
+		cairo_xlib_surface_set_size(_front_surf, wa->width, wa->height);
 
-		cairo_surface_t * front_surf = cairo_xlib_surface_create(_cnx->dpy,
-				_wid, wa->visual, wa->width, wa->height);
-		cairo_t * cr = cairo_create(front_surf);
+		repair_back_buffer();
+
+		cairo_t * cr = cairo_create(_front_surf);
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
@@ -144,8 +175,6 @@ public:
 		cairo_stroke(cr);
 
 		cairo_destroy(cr);
-		cairo_surface_flush(front_surf);
-		cairo_surface_destroy(front_surf);
 
 	}
 

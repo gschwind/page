@@ -58,17 +58,6 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
-		"ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify",
-		"LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose",
-		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
-		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
-		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
-		"GravityNotify", "ResizeRequest", "CirculateNotify", "CirculateRequest",
-		"PropertyNotify", "SelectionClear", "SelectionRequest",
-		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
-		"GenericEvent" };
-
 page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	use_internal_compositor = true;
@@ -282,7 +271,7 @@ void page_t::run() {
 	cnx->change_property(cnx->get_root_window(), _NET_WORKAREA, CARDINAL,
 			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
 
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask, cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
@@ -353,7 +342,7 @@ void page_t::run() {
 
 		while (cnx->process_check_event())
 			continue;
-		rpage->expose(list_values(viewport_outputs));
+		rpage->render_if_needed(list_values(viewport_outputs));
 		XFlush(cnx->dpy);
 
 		if (rnd != 0) {
@@ -655,7 +644,7 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		printf("rerender background\n");
-		rpage->destroy_back_buffer();
+		rpage->mark_durty();
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
@@ -705,23 +694,57 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				box_int_t size = mw->get_base_position();
 
-				box_int_t close_position = theme->get_theme_layout()->compute_floating_close_position(size);
-				box_int_t dock_position = theme->get_theme_layout()->compute_floating_bind_position(size);
+				box_int_t close_position =
+						theme->get_theme_layout()->compute_floating_close_position(
+								size);
+				box_int_t dock_position =
+						theme->get_theme_layout()->compute_floating_bind_position(
+								size);
 
 
 				theme_layout_t const * layout = theme->get_theme_layout();
 
 				/* TODO: NEED TO FIX "- 20" in top margin */
-				box_int_t resize_position_top_left(size.x, size.y, layout->floating_margin.left, layout->floating_margin.top - 20);
-				box_int_t resize_position_top(size.x + layout->floating_margin.left, size.y, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.top - 20);
-				box_int_t resize_position_top_right(size.x + size.w - layout->floating_margin.right, size.y, layout->floating_margin.right, layout->floating_margin.top - 20);
+				box_int_t resize_position_top_left(size.x, size.y,
+						layout->floating_margin.left,
+						layout->floating_margin.top - 20);
+				box_int_t resize_position_top(
+						size.x + layout->floating_margin.left, size.y,
+						size.w - layout->floating_margin.left
+								- layout->floating_margin.right,
+						layout->floating_margin.top - 20);
+				box_int_t resize_position_top_right(
+						size.x + size.w - layout->floating_margin.right, size.y,
+						layout->floating_margin.right,
+						layout->floating_margin.top - 20);
 
-				box_int_t resize_position_left(size.x, size.y + layout->floating_margin.top, layout->floating_margin.left, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
-				box_int_t resize_position_right(size.x + size.w - layout->floating_margin.right, size.y + layout->floating_margin.top, layout->floating_margin.right, size.h - layout->floating_margin.top - layout->floating_margin.bottom);
+				box_int_t resize_position_left(size.x,
+						size.y + layout->floating_margin.top,
+						layout->floating_margin.left,
+						size.h - layout->floating_margin.top
+								- layout->floating_margin.bottom);
+				box_int_t resize_position_right(
+						size.x + size.w - layout->floating_margin.right,
+						size.y + layout->floating_margin.top,
+						layout->floating_margin.right,
+						size.h - layout->floating_margin.top
+								- layout->floating_margin.bottom);
 
-				box_int_t resize_position_bottom_left(size.x, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.left, layout->floating_margin.bottom);
-				box_int_t resize_position_bottom(size.x + layout->floating_margin.left, size.y + size.h - layout->floating_margin.bottom, size.w - layout->floating_margin.left - layout->floating_margin.right, layout->floating_margin.bottom);
-				box_int_t resize_position_bottom_right(size.x + size.w - layout->floating_margin.right, size.y + size.h - layout->floating_margin.bottom, layout->floating_margin.right, layout->floating_margin.bottom);
+				box_int_t resize_position_bottom_left(size.x,
+						size.y + size.h - layout->floating_margin.bottom,
+						layout->floating_margin.left,
+						layout->floating_margin.bottom);
+				box_int_t resize_position_bottom(
+						size.x + layout->floating_margin.left,
+						size.y + size.h - layout->floating_margin.bottom,
+						size.w - layout->floating_margin.left
+								- layout->floating_margin.right,
+						layout->floating_margin.bottom);
+				box_int_t resize_position_bottom_right(
+						size.x + size.w - layout->floating_margin.right,
+						size.y + size.h - layout->floating_margin.bottom,
+						layout->floating_margin.right,
+						layout->floating_margin.bottom);
 
 
 				/* click on close button ? */
@@ -792,7 +815,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		break;
 	default:
-		fprintf(stderr, "XXXXYYYYY\n");
 		break;
 	}
 
@@ -814,9 +836,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			set_focus(mw, e.time, true);
 		}
 
-		fprintf(stderr,
-				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+//		fprintf(stderr,
+//				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 
 	} else {
 		/**
@@ -831,10 +853,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
 		XFlush(cnx->dpy);
 
-		fprintf(stderr,
-				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
-
+//		fprintf(stderr,
+//				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+//
 	}
 
 }
@@ -855,7 +877,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			ps->hide();
 
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
-			rpage->destroy_back_buffer();
+			rpage->mark_durty();
 
 			mode_data_split.split = 0;
 			mode_data_split.slider_area = box_int_t();
@@ -906,7 +928,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 
 			set_focus(mode_data_notebook.c, e.time, false);
-			rpage->destroy_back_buffer();
+			rpage->mark_durty();
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -933,22 +955,22 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					if (mode_data_notebook.from->button_close.is_inside(e.x,
 							e.y)) {
 						notebook_close(mode_data_notebook.from);
-						rpage->destroy_back_buffer();
+						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_vsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 						update_allocation();
-						rpage->destroy_back_buffer();
+						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_hsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
 						update_allocation();
-						rpage->destroy_back_buffer();
+						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_pop.is_inside(
 							e.x, e.y)) {
 						default_window_pop = mode_data_notebook.from;
 						update_allocation();
-						rpage->destroy_back_buffer();
+						rpage->mark_durty();
 					}
 				}
 			}
@@ -1049,7 +1071,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 						true);
 
 				safe_raise_window(mode_data_bind.c->orig());
-				rpage->destroy_back_buffer();
+				rpage->mark_durty();
 				update_client_list();
 
 			} else if (mode_data_bind.zone == SELECT_TOP
@@ -1073,7 +1095,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 
 			set_focus(mode_data_bind.c, e.time, false);
-			rpage->destroy_back_buffer();
+			rpage->mark_durty();
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1286,7 +1308,9 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* apply mornal hints */
 		unsigned int final_width = size.w;
 		unsigned int final_height = size.h;
-		compute_client_size_with_constraint(mode_data_floating.f->orig(), (unsigned)size.w, (unsigned)size.h, final_width, final_height);
+		compute_client_size_with_constraint(mode_data_floating.f->orig(),
+				(unsigned) size.w, (unsigned) size.h, final_width,
+				final_height);
 		size.w = final_width;
 		size.h = final_height;
 
@@ -1542,7 +1566,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 
 	update_client_list();
 	destroy(c);
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 
 }
 
@@ -1761,7 +1785,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == A(_NET_WM_NAME)) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
-				rpage->destroy_back_buffer();
+				rpage->mark_durty();
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -1772,7 +1796,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == A(WM_NAME)) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
-				rpage->destroy_back_buffer();
+				rpage->mark_durty();
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -1784,7 +1808,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
 			fix_allocation(*(i->second));
 		}
-		rpage->destroy_back_buffer();
+		rpage->mark_durty();
 	} else if (e.atom == A(_NET_WM_STRUT)) {
 		//x->mark_durty_net_wm_partial_struct();
 		//rpage->mark_durty();
@@ -2009,7 +2033,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	}
 
 	update_allocation();
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 
 }
 
@@ -2203,6 +2227,7 @@ void page_t::process_event(XEvent const & e) {
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
 				rwa->width, rwa->height);
+		rpage->show();
 
 		XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
 				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
@@ -2222,6 +2247,7 @@ void page_t::process_event(XEvent const & e) {
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
 				rwa->width, rwa->height);
+		rpage->show();
 
 		XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
 				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
@@ -2270,7 +2296,7 @@ void page_t::activate_client(managed_window_t * x) {
 		n->activate_client(x);
 		XFlush(cnx->dpy);
 		//set_focus(x, false);
-		rpage->destroy_back_buffer();
+		rpage->mark_durty();
 	} else {
 		/* floating window or fullscreen window */
 		//set_focus(x, false);
@@ -2286,7 +2312,7 @@ void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool pr
 	assert(n != 0);
 	n->add_client(x, prefer_activate);
 
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 
 }
 
@@ -2294,7 +2320,7 @@ void page_t::remove_window_from_tree(managed_window_t * x) {
 	assert(find_notebook_for(x) != 0);
 	notebook_t * n = find_notebook_for(x);
 	n->remove_client(x);
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 	//rnd->add_damage_area(n->get_absolute_extend());
 	//rnd->add_damage_area(rpage->get_area());
 
@@ -2349,7 +2375,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 
 	//printf("focus [%lu] %s\n", focus->orig, focus->get_title().c_str());
 	//fflush(stdout);
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 
 	_client_focused.remove(focus);
 	_client_focused.push_front(focus);
@@ -2463,7 +2489,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			pn1->move(e.x_root, e.y_root);
 
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			rpage->destroy_back_buffer();
+			rpage->mark_durty();
 
 		}
 
@@ -3115,7 +3141,7 @@ void page_t::bind_window(managed_window_t * mw) {
 
 	safe_raise_window(mw->orig());
 
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 	update_client_list();
 
 }
@@ -3129,7 +3155,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	theme->render_floating(mw, is_focussed(mw));
 	mw->normalize();
 	safe_raise_window(mw->orig());
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 	//rnd->add_damage_area(cnx->get_root_size());
 	update_client_list();
 
@@ -3688,7 +3714,7 @@ void page_t::onmap(Window w) {
 		}
 	}
 
-	rpage->destroy_back_buffer();
+	rpage->mark_durty();
 	update_client_list();
 
 }

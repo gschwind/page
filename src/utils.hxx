@@ -159,8 +159,11 @@ bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
 	*nitems = 0;
 	*data = 0;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
 	/** compile time check for size value **/
 	ctassert< _format<T>::size != 0 > format_size_check;
+#pragma GCC diagnostic pop
 
 	res = XGetWindowProperty(dpy, win, prop, 0L,
 			std::numeric_limits<long int>::max(), False, type, &ret_type,

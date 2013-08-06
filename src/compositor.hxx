@@ -51,14 +51,10 @@ class compositor_t : public xevent_handler_t {
 	 **/
 	map<Window, composite_window_t *> window_data;
 
-	/* composite overlay surface (front buffer) */
-	cairo_surface_t * composite_overlay_s;
-	/* composite overlay cairo context */
-	cairo_t * composite_overlay_cr;
-
-	/** back buffer **/
-	cairo_surface_t * pre_back_buffer_s;
-	cairo_t * pre_back_buffer_cr;
+	/* composite overlay surface */
+	cairo_surface_t * _front_buffer;
+	/** back buffer, used when omposition is needed (i.e. transparency) **/
+	cairo_surface_t * _bask_buffer;
 
 	/** performance counter **/
 	double fast_region_surf_monitor;
@@ -73,7 +69,7 @@ class compositor_t : public xevent_handler_t {
 	void render_flush();
 
 	void repair_area(_box_t const & box);
-	void repair_overlay(_box_t const & area, cairo_surface_t * src);
+	void repair_overlay(cairo_t * cr, _box_t const & area, cairo_surface_t * src);
 	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
 			_box_t const & area);
 

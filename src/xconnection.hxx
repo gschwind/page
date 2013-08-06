@@ -38,9 +38,6 @@
 #include "properties_cache.hxx"
 #include "window_attributes_cache.hxx"
 
-
-//#define cnx_printf(args...) do { } while(false)
-
 using namespace std;
 
 namespace page {
@@ -518,6 +515,17 @@ public:
 		fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 				ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
+		static const unsigned int XFUNCSIZE= (sizeof(x_function_codes)/sizeof(char *));
+
+		printf("XXXX %d\n", XFUNCSIZE);
+
+		if (ev->request_code < 127) {
+			char const * func_name = x_function_codes[ev->request_code];
+			char error_text[1024];
+			error_text[0] = 0;
+			XGetErrorText(dpy, ev->error_code, error_text, 1024);
+			fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+		}
 		return 0;
 	}
 
@@ -671,13 +679,11 @@ public:
 
 
 	void add_to_save_set(Window w) {
-
 		cnx_printf("XAddToSaveSet: win = %lu\n", w);
 		XAddToSaveSet(dpy, w);
 	}
 
 	void remove_from_save_set(Window w) {
-
 		cnx_printf("XRemoveFromSaveSet: win = %lu\n", w);
 		XRemoveFromSaveSet(dpy, w);
 	}
@@ -822,7 +828,6 @@ public:
 
 	Status get_window_attributes(Window w,
 			XWindowAttributes * window_attributes_return) {
-
 		cnx_printf("XGetWindowAttributes: win = %lu\n", w);
 		return XGetWindowAttributes(dpy, w, window_attributes_return);
 	}
@@ -982,7 +987,6 @@ private:
 
 
 	void cnx_printf(char const * str, ...) {
-		return;
 		va_list args;
 		va_start(args, str);
 		char buffer[1024];

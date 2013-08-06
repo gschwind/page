@@ -12,17 +12,6 @@
 
 #include "xconnection.hxx"
 
-char const * x_event_name[LASTEvent] = { 0, 0, "KeyPress", "KeyRelease",
-		"ButtonPress", "ButtonRelease", "MotionNotify", "EnterNotify",
-		"LeaveNotify", "FocusIn", "FocusOut", "KeymapNotify", "Expose",
-		"GraphicsExpose", "NoExpose", "VisibilityNotify", "CreateNotify",
-		"DestroyNotify", "UnmapNotify", "MapNotify", "MapRequest",
-		"ReparentNotify", "ConfigureNotify", "ConfigureRequest",
-		"GravityNotify", "ResizeRequest", "CirculateNotify", "CirculateRequest",
-		"PropertyNotify", "SelectionClear", "SelectionRequest",
-		"SelectionNotify", "ColormapNotify", "ClientMessage", "MappingNotify",
-		"GenericEvent" };
-
 namespace page {
 
 static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
@@ -107,6 +96,13 @@ compositor_t::compositor_t() : _cnx(new xconnection_t()) {
 	window_stack.push_back(_cnx->composite_overlay);
 	window_data[_cnx->composite_overlay] = new composite_window_t();
 
+	XWindowAttributes const * wa = _cnx->get_window_attributes(_cnx->get_root_window());
+
+	_front_buffer = cairo_xlib_surface_create(_cnx->dpy,
+			_cnx->composite_overlay, wa->visual, wa->width, wa->height);
+	_bask_buffer = cairo_surface_create_similar(_front_buffer,
+			CAIRO_CONTENT_COLOR, wa->width, wa->height);
+
 	damage_all();
 }
 
@@ -156,12 +152,8 @@ void compositor_t::render_flush() {
 	 * should not hit too much performance.
 	 **/
 
-	XWindowAttributes wa;
-	XGetWindowAttributes(_cnx->dpy, _cnx->composite_overlay, &wa);
 
-	composite_overlay_s = cairo_xlib_surface_create(_cnx->dpy,
-			_cnx->composite_overlay, wa.visual, wa.width, wa.height);
-	composite_overlay_cr = cairo_create(composite_overlay_s);
+	cairo_t * front_cr = cairo_create(_front_buffer);
 
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
@@ -225,16 +217,16 @@ void compositor_t::render_flush() {
 
 	/* direct render, area where there is only one window visible */
 	{
-		cairo_reset_clip(composite_overlay_cr);
-		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
+		cairo_reset_clip(front_cr);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
 
 		_region_t::const_iterator i = direct_region.begin();
 		while (i != direct_region.end()) {
 			fast_region_surf_monitor += (*i).w * (*i).h;
-			repair_buffer(visible, composite_overlay_cr, *i);
+			repair_buffer(visible, front_cr, *i);
 			// for debuging
-			_draw_crossed_box(composite_overlay_cr, (*i), 0.0, 1.0, 0.0);
+			_draw_crossed_box(front_cr, (*i), 0.0, 1.0, 0.0);
 			++i;
 		}
 	}
@@ -244,9 +236,9 @@ void compositor_t::render_flush() {
 	region_without_alpha_on_top = (region_without_alpha_on_top & pending_damage) - direct_region;
 
 	{
-		cairo_reset_clip(composite_overlay_cr);
-		cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_antialias(composite_overlay_cr, CAIRO_ANTIALIAS_NONE);
+		cairo_reset_clip(front_cr);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
 
 		/* from top to bottom */
 		for (std::list<composite_window_t *>::reverse_iterator i = visible.rbegin(); i != visible.rend();
@@ -257,10 +249,10 @@ void compositor_t::render_flush() {
 				for (_region_t::iterator j = draw_area.begin();
 						j != draw_area.end(); ++j) {
 					if (!(*j).is_null()) {
-						r->draw_to(composite_overlay_cr, (*j));
+						r->draw_to(front_cr, (*j));
 
 						/* this section show direct rendered screen */
-						_draw_crossed_box(composite_overlay_cr, (*j), 0.0, 0.0, 1.0);
+						_draw_crossed_box(front_cr, (*j), 0.0, 0.0, 1.0);
 					}
 				}
 			}
@@ -273,39 +265,37 @@ void compositor_t::render_flush() {
 	 * update back buffer, render area with possible transparency
 	 **/
 	if (!slow_region.empty()) {
-		pre_back_buffer_s = cairo_surface_create_similar(composite_overlay_s,
-				CAIRO_CONTENT_COLOR, wa.width, wa.height);
-		pre_back_buffer_cr = cairo_create(pre_back_buffer_s);
+
+		cairo_t * back_cr = cairo_create(_bask_buffer);
 
 		{
 
-			cairo_reset_clip(pre_back_buffer_cr);
-			cairo_set_operator(pre_back_buffer_cr, CAIRO_OPERATOR_OVER);
+			cairo_reset_clip(back_cr);
+			cairo_set_operator(back_cr, CAIRO_OPERATOR_OVER);
 			_region_t::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				slow_region_surf_monitor += (*i).w * (*i).h;
-				repair_buffer(visible, pre_back_buffer_cr, *i);
+				repair_buffer(visible, back_cr, *i);
 				++i;
 			}
 		}
 
 		{
-			cairo_surface_flush(pre_back_buffer_s);
+			cairo_surface_flush(_bask_buffer);
 			_region_t::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
-				repair_overlay(*i, pre_back_buffer_s);
-				_draw_crossed_box(composite_overlay_cr, (*i), 1.0, 0.0, 0.0);
+				repair_overlay(front_cr, *i, _bask_buffer);
+				_draw_crossed_box(front_cr, (*i), 1.0, 0.0, 0.0);
 				++i;
 			}
 		}
-		cairo_destroy(pre_back_buffer_cr);
-		cairo_surface_destroy(pre_back_buffer_s);
+		cairo_destroy(back_cr);
+
 	}
 
 	pending_damage.clear();
 
-	cairo_destroy(composite_overlay_cr);
-	cairo_surface_destroy(composite_overlay_s);
+	cairo_destroy(front_cr);
 
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
@@ -332,35 +322,37 @@ void compositor_t::repair_buffer(std::list<composite_window_t *> & visible, cair
 }
 
 
-void compositor_t::repair_overlay(_box_t const & area, cairo_surface_t * src) {
+void compositor_t::repair_overlay(cairo_t * cr, _box_t const & area,
+		cairo_surface_t * src) {
 
-	cairo_reset_clip(composite_overlay_cr);
-	cairo_identity_matrix(composite_overlay_cr);
-	cairo_set_operator(composite_overlay_cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(composite_overlay_cr, src, 0, 0);
-	cairo_rectangle(composite_overlay_cr, area.x, area.y, area.w, area.h);
-	cairo_fill(composite_overlay_cr);
+	cairo_reset_clip(cr);
+	cairo_identity_matrix(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_surface(cr, src, 0, 0);
+	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	cairo_fill(cr);
 
 	/* for debug purpose */
 	if (false) {
 		static int color = 0;
 		switch (color % 3) {
 		case 0:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 0.0);
+			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 			break;
 		case 1:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 1.0, 0.0);
+			cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
 			break;
 		case 2:
-			cairo_set_source_rgb(composite_overlay_cr, 1.0, 0.0, 1.0);
+			cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
 			break;
 		}
 		//++color;
-		cairo_set_line_width(composite_overlay_cr, 1.0);
-		cairo_rectangle(composite_overlay_cr, area.x + 0.5, area.y + 0.5, area.w - 1.0, area.h - 1.0);
-		cairo_clip(composite_overlay_cr);
-		cairo_paint_with_alpha(composite_overlay_cr, 0.3);
-		cairo_reset_clip(composite_overlay_cr);
+		cairo_set_line_width(cr, 1.0);
+		cairo_rectangle(cr, area.x + 0.5, area.y + 0.5, area.w - 1.0,
+				area.h - 1.0);
+		cairo_clip(cr);
+		cairo_paint_with_alpha(cr, 0.3);
+		cairo_reset_clip(cr);
 		//cairo_stroke(composite_overlay_cr);
 	}
 

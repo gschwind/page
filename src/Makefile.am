@@ -24,7 +24,6 @@ page_SOURCES = \
 	default_theme.cxx \
 	minimal_theme.cxx \
 	simple_theme.cxx \
-	renderable_page.cxx \
 	managed_window.cxx \
 	unmanaged_window.cxx \
 	composite_window.cxx \

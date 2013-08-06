@@ -52,7 +52,7 @@ struct popup_notebook1_t: public window_overlay_t {
 	void update_data(cairo_surface_t * icon, std::string const & title) {
 		_icon = icon;
 		_title = title;
-		destroy_back_buffer();
+		mark_durty();
 	}
 
 	void repair_back_buffer() {
