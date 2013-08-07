@@ -33,3 +33,8 @@ tab_boder_normal = babdb6
 
 tab_selected_background = d3d7cf
 tab_normal_background = 000000
+
+#posible mode are : *tile, zoom, center, scale, stretch, span (==scale)
+scale_mode = stretch
+
+

@@ -28,6 +28,7 @@
 #include "theme_layout.hxx"
 #include "theme.hxx"
 #include "config_handler.hxx"
+#include "xconnection.hxx"
 
 using namespace std;
 
@@ -75,6 +76,8 @@ public:
 class simple_theme_t : public theme_t {
 public:
 
+	xconnection_t * _cnx;
+
 	bool ft_is_loaded;
 	FT_Library library; /* handle to library */
 	FT_Face face; /* handle to face object */
@@ -120,9 +123,10 @@ public:
 	color_t color_font;
 	color_t color_font_selected;
 
+	Pixmap px;
 
 
-	simple_theme_t(config_handler_t & conf);
+	simple_theme_t(xconnection_t * cnx, config_handler_t & conf);
 
 	virtual ~simple_theme_t();
 

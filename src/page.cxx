@@ -120,7 +120,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	_last_focus_time = 0;
 	_last_button_press = 0;
 
-	theme = new simple_theme_t(conf);
+	theme = 0;
 
 	rpage = 0;
 
@@ -132,8 +132,9 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 page_t::~page_t() {
 
 	delete rpage;
-	delete theme;
-	if(rnd != 0)
+	if (theme != 0)
+		delete theme;
+	if (rnd != 0)
 		delete rnd;
 	delete cnx;
 
@@ -181,6 +182,8 @@ void page_t::run() {
 			rnd = 0;
 		}
 	}
+
+	theme = new simple_theme_t(cnx, conf);
 
 	/* init page render */
 	rpage = new renderable_page_t(cnx, theme,
