@@ -377,9 +377,6 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
 			}
 
-
-
-
 		}
 		cairo_surface_destroy(tmp);
 
@@ -1266,7 +1263,7 @@ cairo_font_face_t * simple_theme_t::get_default_font() {
 	return font;
 }
 
-void simple_theme_t::render_popup_notebook0(cairo_t * cr, unsigned int width,
+void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 		unsigned int height) {
 
 	cairo_reset_clip(cr);
@@ -1275,6 +1272,16 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, unsigned int width,
 
 	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
+
+
+	if (icon != 0) {
+		double x_offset = (width - 64) / 2.0;
+		double y_offset = (height - 64) / 2.0;
+
+		cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
+		cairo_rectangle(cr, x_offset, y_offset, 64, 64);
+		cairo_fill(cr);
+	}
 
 }
 

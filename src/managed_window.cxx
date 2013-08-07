@@ -300,7 +300,7 @@ managed_window_type_e managed_window_t::get_type() {
 
 window_icon_handler_t * managed_window_t::get_icon() {
 	if(icon == 0) {
-		icon = new window_icon_handler_t(cnx, _orig);
+		icon = new window_icon_handler_t(cnx, _orig, 16, 16);
 	}
 	return icon;
 }
@@ -308,7 +308,7 @@ window_icon_handler_t * managed_window_t::get_icon() {
 void managed_window_t::update_icon() {
 	if(icon != 0)
 		delete icon;
-	icon = new window_icon_handler_t(cnx, _orig);
+	icon = new window_icon_handler_t(cnx, _orig, 16, 16);
 }
 
 void managed_window_t::set_theme(theme_layout_t const * theme) {

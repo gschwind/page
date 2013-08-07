@@ -140,7 +140,7 @@ public:
 	virtual void render_floating(managed_window_t * mw, bool is_focus);
 	virtual cairo_font_face_t * get_default_font();
 
-	virtual void render_popup_notebook0(cairo_t * cr, unsigned int width,
+	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height);
 	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width,
 			unsigned int height);

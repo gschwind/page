@@ -761,7 +761,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_bind.zone = SELECT_NONE;
 
 					pn0->move_resize(mode_data_bind.c->get_base_position());
-					//rnd->raise(pn0);
+					pn0->update_window(mw->orig());
 
 					pn1->update_data(mw->get_icon()->get_cairo_surface(), mw->get_title());
 					pn1->move(e.x_root, e.y_root);
@@ -2487,6 +2487,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.zone = SELECT_NONE;
 
 			pn0->move_resize(mode_data_notebook.from->tab_area);
+			pn0->update_window(c->orig());
 
 			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
 			pn1->move(e.x_root, e.y_root);
