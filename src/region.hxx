@@ -24,8 +24,7 @@ class region_t: public std::list<box_t<T> > {
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
 		remove_empty(lst);
-		while (merge_area_macro(lst))
-			continue;
+		merge_area_macro(lst);
 		return lst;
 	}
 
@@ -42,55 +41,61 @@ class region_t: public std::list<box_t<T> > {
 	};
 
 	/** merge 2 rectangles when it is possible **/
-	static bool merge_area_macro(region_t & list) {
-		typename region_t::const_iterator i = list.begin();
+	static void merge_area_macro(region_t & list) {
+		typename region_t::iterator i = list.begin();
 		while (i != list.end()) {
-			typename region_t::const_iterator j = list.begin();
+			bool have_removed = false;
+			typename region_t::iterator j = i;
+			++j;
 			while (j != list.end()) {
-				if (i != j) {
-					_box_t bi = *i;
-					_box_t bj = *j;
+				_box_t & bi = *i;
+				_box_t & bj = *j;
 
-					/** left/right **/
-					if (bi.x + bi.w == bj.x && bi.y == bj.y && bi.h == bj.h) {
-						list.remove_if(_filter_box_t(bi, bj));
-						_box_t new_box(bi.x, bi.y, bj.w + bi.w, bi.h);
-						list.push_back(new_box);
-						return true;
-					}
-
-					/** right/left **/
-					if (bi.x == bj.x + bj.w && bi.y == bj.y && bi.h == bj.h) {
-						list.remove_if(_filter_box_t(bi, bj));
-						_box_t new_box(bj.x, bj.y, bj.w + bi.w, bj.h);
-						list.push_back(new_box);
-						return true;
-					}
-
-					/** top/bottom **/
-					if (bi.y == bj.y + bj.h && bi.x == bj.x && bi.w == bj.w) {
-						list.remove_if(_filter_box_t(bi, bj));
-						_box_t new_box(bj.x, bj.y, bj.w, bj.h + bi.h);
-						list.push_back(new_box);
-						return true;
-					}
-
-					/** bottom/top **/
-					if (bi.y + bi.h == bj.y && bi.x == bj.x && bi.w == bj.w) {
-						list.remove_if(_filter_box_t(bi, bj));
-						_box_t new_box(bi.x, bi.y, bi.w, bj.h + bi.h);
-						list.push_back(new_box);
-						return true;
-					}
-
+				/** left/right **/
+				if (bi.x + bi.w == bj.x && bi.y == bj.y && bi.h == bj.h) {
+					_box_t new_box(bi.x, bi.y, bj.w + bi.w, bi.h);
+					list.push_back(new_box);
+					list.erase(j);
+					have_removed = true;
+					break;
 				}
+
+				/** right/left **/
+				if (bi.x == bj.x + bj.w && bi.y == bj.y && bi.h == bj.h) {
+					_box_t new_box(bj.x, bj.y, bj.w + bi.w, bj.h);
+					list.push_back(new_box);
+					list.erase(j);
+					have_removed = true;
+					break;
+				}
+
+				/** top/bottom **/
+				if (bi.y == bj.y + bj.h && bi.x == bj.x && bi.w == bj.w) {
+					_box_t new_box(bj.x, bj.y, bj.w, bj.h + bi.h);
+					list.push_back(new_box);
+					list.erase(j);
+					have_removed = true;
+					break;
+				}
+
+				/** bottom/top **/
+				if (bi.y + bi.h == bj.y && bi.x == bj.x && bi.w == bj.w) {
+					_box_t new_box(bi.x, bi.y, bi.w, bj.h + bi.h);
+					list.push_back(new_box);
+					list.erase(j);
+					have_removed = true;
+					break;
+				}
+
 				++j;
 			}
-			++i;
+
+			if(have_removed) {
+				i = list.erase(i);
+			} else {
+				++i;
+			}
 		}
-
-		return false;
-
 	}
 
 	static bool _is_null(_box_t const & b) {
