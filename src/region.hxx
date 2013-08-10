@@ -28,18 +28,6 @@ class region_t: public std::list<box_t<T> > {
 		return lst;
 	}
 
-	class _filter_box_t {
-		_box_t box0;
-		_box_t box1;
-	public:
-		bool operator() (_box_t const & x) {
-			return x == box0 || x == box1;
-		}
-
-		_filter_box_t(_box_t const & x, _box_t const & y) : box0(x), box1(y) { }
-
-	};
-
 	/** merge 2 rectangles when it is possible **/
 	static void merge_area_macro(region_t & list) {
 		typename region_t::iterator i = list.begin();
@@ -234,7 +222,7 @@ class region_t: public std::list<box_t<T> > {
 public:
 
 	/** create an empty region **/
-	region_t() { }
+	region_t() : _superior_t() { }
 
 	region_t(region_t const & r) :
 			_superior_t(r) {
@@ -260,7 +248,9 @@ public:
 
 	region_t & operator =(region_t const & r) {
 		/** call the superior class assign operator **/
-		this->_superior_t::operator =(r);
+		if (this != &r) {
+			this->_superior_t::operator =(r);
+		}
 		return *this;
 	}
 
@@ -364,15 +354,15 @@ public:
 		for(typename region_t::const_iterator i = this->begin(); i != this->end(); ++i) {
 			if (i != this->begin())
 				os << ",";
-			os << (*i).to_string();
+			os << i->to_string();
 		}
 		return os.str();
 	}
 
 	void translate(T x, T y) {
 		for(typename region_t::iterator i = this->begin(); i != this->end(); ++i) {
-			(*i).x += x;
-			(*i).y += y;
+			i->x += x;
+			i->y += y;
 		}
 	}
 

@@ -113,7 +113,7 @@ template<typename T>
 bool get_window_property(Display * dpy, Window win, Atom prop,
 		Atom type, vector<T> & v) {
 
-	printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
+	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
 
 	int res;
 	unsigned char * xdata = 0;
@@ -146,7 +146,7 @@ template<typename T>
 bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
 		unsigned long int * nitems, void ** data) {
 
-	printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
+	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
 
 	int res;
 	unsigned char * xdata = 0;

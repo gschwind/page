@@ -22,19 +22,21 @@ int main(int argc, char * * argv) {
 
 	while (true) {
 
-		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_intr);
-
-		FD_SET(compositor->get_connection_fd(), &fds_read);
-		FD_SET(compositor->get_connection_fd(), &fds_intr);
-
-		/**
-		 * wait for data in both X11 connection streams (compositor and page)
-		 **/
-		int nfd = pselect(max + 1, &fds_read, 0,
-				&fds_intr, &max_wait, NULL);
+//		FD_ZERO(&fds_read);
+//		FD_ZERO(&fds_intr);
+//
+//		FD_SET(compositor->get_connection_fd(), &fds_read);
+//		FD_SET(compositor->get_connection_fd(), &fds_intr);
+//
+//		/**
+//		 * wait for data in both X11 connection streams (compositor and page)
+//		 **/
+//		int nfd = pselect(max + 1, &fds_read, 0,
+//				&fds_intr, &max_wait, NULL);
 		compositor->process_events();
 		compositor->xflush();
+		/* about 60 fps */
+		usleep(15000);
 
 	}
 }

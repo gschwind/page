@@ -26,7 +26,6 @@ page_SOURCES = \
 	simple_theme.cxx \
 	managed_window.cxx \
 	unmanaged_window.cxx \
-	composite_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
 	xprop.c \
@@ -49,8 +48,7 @@ page_LDADD = \
 
 page_internal_compositor_SOURCES = \
 	page_internal_compositor.cxx \
-	compositor.cxx \
-	composite_window.cxx
+	compositor.cxx 
 
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \

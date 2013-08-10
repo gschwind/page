@@ -60,8 +60,8 @@ public:
 
 
 	void repair_back_buffer(list<viewport_t *> & viewports) {
-		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
-		assert(wa != 0);
+		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
+		assert(wa->is_valid);
 
 		cairo_t * cr = cairo_create(_back_surf);
 
@@ -91,8 +91,8 @@ public:
 			return;
 		_is_durty = false;
 
-		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
-		assert(wa != 0);
+		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
+		assert(wa->is_valid);
 
 		cairo_xlib_surface_set_size(_front_surf, wa->width, wa->height);
 

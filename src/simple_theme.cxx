@@ -227,7 +227,7 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
 				conf.get_string("simple_theme", "background_png").c_str());
 
-		XWindowAttributes const * wa = cnx->get_window_attributes(cnx->get_root_window());
+		p_window_attribute_t wa = cnx->get_window_attributes(cnx->get_root_window());
 
 		Pixmap px = XCreatePixmap(cnx->dpy, cnx->get_root_window(), wa->width, wa->height, wa->depth);
 		background_s = cairo_xlib_surface_create(cnx->dpy, px, wa->visual, wa->width, wa->height);
@@ -1278,6 +1278,7 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t 
 		double x_offset = (width - 64) / 2.0;
 		double y_offset = (height - 64) / 2.0;
 
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
 		cairo_rectangle(cr, x_offset, y_offset, 64, 64);
 		cairo_fill(cr);
@@ -1341,7 +1342,7 @@ void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int 
 
 	cairo_rectangle(cr, left_bound, top_bound, right_bound - left_bound, bottom_bound - top_bound);
 //	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 2.0);
+	cairo_set_line_width(cr, 3.0);
 	cairo_stroke(cr);
 
 	cairo_restore(cr);

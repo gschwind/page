@@ -290,7 +290,7 @@ void managed_window_t::focus(Time t) {
 }
 
 box_int_t managed_window_t::get_base_position() const {
-	XWindowAttributes const * wa = cnx->get_window_attributes(_base);
+	p_window_attribute_t wa = cnx->get_window_attributes(_base);
 	return box_int_t(wa->x, wa->y, wa->width, wa->height);
 }
 

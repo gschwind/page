@@ -56,8 +56,8 @@ struct popup_notebook1_t: public window_overlay_t {
 	}
 
 	void repair_back_buffer() {
-		XWindowAttributes const * wa = _cnx->get_window_attributes(_wid);
-		assert(wa != 0);
+		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
+		assert(wa->is_valid);
 
 		cairo_t * cr = cairo_create(_back_surf);
 

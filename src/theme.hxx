@@ -32,12 +32,16 @@ protected:
 
 public:
 
-	theme_t() { layout = 0; }
+	theme_t() {
+		layout = 0;
+	}
 
-	virtual ~theme_t() { }
+	virtual ~theme_t() {
+	}
 
 	virtual void render_split(cairo_t * cr, split_t * s) = 0;
-	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default) = 0;
+	virtual void render_notebook(cairo_t * cr, notebook_t * n,
+			managed_window_t * focuced, bool is_default) = 0;
 
 	virtual void render_floating(managed_window_t * nw, bool is_focus) = 0;
 
@@ -47,8 +51,11 @@ public:
 		return layout;
 	}
 
-	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width, unsigned int height) = 0;
-	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width, unsigned int height) = 0;
+	virtual void render_popup_notebook0(cairo_t * cr,
+			window_icon_handler_t * icon, unsigned int width,
+			unsigned int height) = 0;
+	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width,
+			unsigned int height) = 0;
 
 };
 

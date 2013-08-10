@@ -160,8 +160,8 @@ public:
 	}
 
 	box_int_t get_window_position(Window w) {
-		XWindowAttributes const * wa = _acache.get_window_attributes(dpy, w);
-		if (wa != 0) {
+		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
+		if (wa->is_valid) {
 			return box_int_t(wa->x, wa->y, wa->width, wa->height);
 		} else {
 			return box_int_t();
@@ -178,7 +178,7 @@ public:
 
 public:
 
-	XWindowAttributes const * get_window_attributes(Window w) {
+	p_window_attribute_t get_window_attributes(Window w) {
 		return _acache.get_window_attributes(dpy, w);
 	}
 
@@ -405,7 +405,7 @@ public:
 	}
 
 	int move_window(Window w, int x, int y) {
-		XWindowAttributes * wa = _acache.get_window_attributes(dpy, w);
+		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
 		wa->x = x;
 		wa->y = y;
 		return XMoveWindow(dpy, w, x, y);
@@ -515,11 +515,9 @@ public:
 		fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 				ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
-		static const unsigned int XFUNCSIZE= (sizeof(x_function_codes)/sizeof(char *));
+		static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
 
-		printf("XXXX %d\n", XFUNCSIZE);
-
-		if (ev->request_code < 127) {
+		if (ev->request_code < XFUNCSIZE) {
 			char const * func_name = x_function_codes[ev->request_code];
 			char error_text[1024];
 			error_text[0] = 0;
@@ -703,7 +701,7 @@ public:
 		cnx_printf("XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", w,
 				size.w, size.h, size.x, size.y);
 
-		XWindowAttributes * wa = _acache.get_window_attributes(dpy, w);
+		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
 		wa->x = size.x;
 		wa->y = size.y;
 		wa->width = size.w;
@@ -798,19 +796,19 @@ public:
 			//XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
 			//get_window_t(ev->window)->mark_durty_shape_region();
 		} else if (e.type == DestroyNotify) {
-			_acache.mark_durty(e.xdestroywindow.window);
+			_acache.destroy(e.xdestroywindow.window);
 			_pcache.erase(e.xdestroywindow.window);
 		} else if (e.type == CreateNotify) {
 			/** select default inputs **/
 			select_input(e.xcreatewindow.window, 0);
 		} else if (e.type == MapNotify) {
-			XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.xmap.window);
-			if (wa != 0) {
+			p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.xmap.window);
+			if (wa->is_valid) {
 				wa->map_state = IsViewable;
 			}
 		} else if (e.type == UnmapNotify) {
-			XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.xunmap.window);
-			if (wa != 0) {
+			p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.xunmap.window);
+			if (wa->is_valid) {
 				wa->map_state = IsUnmapped;
 			}
 		}
@@ -969,13 +967,26 @@ public:
 		}
 	}
 
+	box_int_t get_window_size(Window w) {
+		p_window_attribute_t wa = get_window_attributes(w);
+		if(wa->is_valid) {
+			return box_int_t(wa->x, wa->y, wa->width, wa->height);
+		} else {
+			return box_int_t();
+		}
+	}
+
 
 private:
 
 	void update_process_configure_notify_event(XConfigureEvent const & e) {
+		if(e.send_event)
+			return;
+		if(e.event == e.window && e.window != xroot)
+			return;
 
-		XWindowAttributes * wa = _acache.get_window_attributes(dpy, e.window);
-		if (wa != 0) {
+		p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.window);
+		if (wa->is_valid) {
 			wa->x = e.x;
 			wa->y = e.y;
 			wa->width = e.width;
@@ -987,14 +998,16 @@ private:
 
 
 	void cnx_printf(char const * str, ...) {
-		va_list args;
-		va_start(args, str);
-		char buffer[1024];
-		unsigned long serial = XNextRequest(dpy);
-		snprintf(buffer, 1024, ">%08lu ", serial);
-		unsigned int len = strnlen(buffer, 1024);
-		vsnprintf(&buffer[len], 1024 - len, str, args);
-		printf("%s", buffer);
+		if (false) {
+			va_list args;
+			va_start(args, str);
+			char buffer[1024];
+			unsigned long serial = XNextRequest(dpy);
+			snprintf(buffer, 1024, ">%08lu ", serial);
+			unsigned int len = strnlen(buffer, 1024);
+			vsnprintf(&buffer[len], 1024 - len, str, args);
+			printf("%s", buffer);
+		}
 	}
 
 };

@@ -34,6 +34,7 @@ class compositor_t : public xevent_handler_t {
 
 	/** Performance counter **/
 	unsigned int flush_count;
+	unsigned int damage_count;
 	struct timespec last_tic;
 	struct timespec curr_tic;
 
@@ -42,8 +43,11 @@ class compositor_t : public xevent_handler_t {
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
+
+	/** list that track window stack order **/
 	std::list<Window> window_stack;
 
+	map<Window, region_t<int> > compositor_window_state;
 
 	/**
 	 * map do not handle properly objects, it's need copy constructor ...
@@ -53,7 +57,7 @@ class compositor_t : public xevent_handler_t {
 
 	/* composite overlay surface */
 	cairo_surface_t * _front_buffer;
-	/** back buffer, used when omposition is needed (i.e. transparency) **/
+	/** back buffer, used when composition is needed (i.e. transparency) **/
 	cairo_surface_t * _bask_buffer;
 
 	/** performance counter **/
@@ -63,7 +67,11 @@ class compositor_t : public xevent_handler_t {
 	/* damaged region */
 	_region_t pending_damage;
 
-	void add_damage_area(_region_t const & box);
+	//void add_damage_area(_region_t const & box);
+
+	void repair_damaged_window(Window w, region_t<int> area);
+	void repair_moved_window(Window w, region_t<int> from, region_t<int> to);
+
 
 	//static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
@@ -92,6 +100,18 @@ class compositor_t : public xevent_handler_t {
 	void scan();
 
 	void update_layout();
+
+	void stack_window_update(Window window, Window above);
+	void stack_window_place_on_top(Window w);
+	void stack_window_place_on_bottom(Window w);
+	void stack_window_remove(Window w);
+
+	void save_state();
+
+	region_t<int> read_damaged_region(Damage d);
+
+
+	void compute_pending_damage();
 
 public:
 

@@ -442,7 +442,7 @@ void page_t::scan() {
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
 
-			if(!cnx->get_window_attributes(w))
+			if(!cnx->get_window_attributes(w)->is_valid)
 				continue;
 			update_transient_for(w);
 
@@ -1539,7 +1539,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 	cnx->grab();
 
-	if (!cnx->get_window_attributes(w)) {
+	if (!cnx->get_window_attributes(w)->is_valid) {
 		cnx->ungrab();
 		return;
 	}
@@ -1590,7 +1590,7 @@ void page_t::process_event(XMapEvent const & e) {
 	 * Read window attributes, if fail, it's probably because
 	 * the window is already destroyed.
 	 **/
-	if(not cnx->get_window_attributes(x))
+	if(not cnx->get_window_attributes(x)->is_valid)
 		return;
 
 	/** usefull for windows statink **/
@@ -2225,7 +2225,7 @@ void page_t::process_event(XEvent const & e) {
 			update_allocation();
 		}
 
-		XWindowAttributes const * rwa = cnx->get_window_attributes(cnx->get_root_window());
+		p_window_attribute_t rwa = cnx->get_window_attributes(cnx->get_root_window());
 
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
@@ -2245,7 +2245,7 @@ void page_t::process_event(XEvent const & e) {
 
 		printf("RRScreenChangeNotify heigth = %d, width = %d, mheight = %d, mwidth = %d\n", ev.height, ev.width, ev.mheight, ev.mwidth);
 
-		XWindowAttributes const * rwa = cnx->get_window_attributes(cnx->get_root_window());
+		p_window_attribute_t rwa = cnx->get_window_attributes(cnx->get_root_window());
 
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme,
