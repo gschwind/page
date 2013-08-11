@@ -67,17 +67,46 @@ struct box_t {
 		return result;
 	}
 
-	box_t operator&(box_t const & b) const {
+	bool has_intersection(box_t const & b) const {
+		T left = std::max(x, b.x);
+		T right = std::min(x + w, b.x + b.w);
+
+		if(right <= left)
+			return false;
+
+		T top = std::max(y, b.y);
+		T bottom = std::min(y + h, b.y + b.h);
+
+		if(bottom <= top)
+			return false;
+
+		return true;
+
+	}
+
+	box_t & operator&=(box_t const & b) {
+		if(this == &b) {
+			*this = box_t<T>(0, 0, 0, 0);
+			return *this;
+		}
+
 		T left = std::max(x, b.x);
 		T right = std::min(x + w, b.x + b.w);
 		T top = std::max(y, b.y);
 		T bottom = std::min(y + h, b.y + b.h);
 
 		if (right <= left || bottom <= top) {
-			return box_t<T>(0, 0, 0, 0);
+			*this = box_t<T>(0, 0, 0, 0);
 		} else {
-			return box_t<T>(left, top, right - left, bottom - top);
+			*this = box_t<T>(left, top, right - left, bottom - top);
 		}
+
+		return *this;
+	}
+
+	box_t operator&(box_t const & b) const {
+		box_t<T> x = *this;
+		return (x &= b);
 	}
 };
 

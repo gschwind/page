@@ -254,27 +254,41 @@ public:
 		return *this;
 	}
 
-	region_t operator -(_box_t const & box1) const {
-		region_t result;
-		for(typename region_t::const_iterator i = this->begin(); i != this->end(); ++i) {
-			region_t x = substract_box(*i, box1);
-			result.insert(result.end(), x.begin(), x.end());
+	region_t & operator -=(_box_t const & box1) {
+		for(typename region_t::iterator i = this->begin(); i != this->end(); ) {
+			if ((*i).has_intersection(box1)) {
+				region_t x = substract_box(*i, box1);
+				i = this->erase(i);
+				this->insert(this->begin(), x.begin(), x.end());
+			} else {
+				++i;
+			}
 		}
-		return clean_up(result);
+		return clean_up(*this);
 	}
 
-	region_t & operator -=(_box_t const & b) {
-		*this = *this - b;
+	region_t operator -(_box_t const & b) {
+		region_t r = *this;
+		return (r -= b);
+	}
+
+	region_t & operator -=(region_t const & b) {
+
+		if(this == &b) {
+			this->clear();
+			return *this;
+		}
+
+		for (typename region_t::const_iterator i = b.begin(); i != b.end(); ++i) {
+			*this -= *i;
+		}
+
 		return *this;
 	}
 
 	region_t operator -(region_t const & b) const {
 		region_t result = *this;
-		for (typename region_t::const_iterator i = b.begin(); i != b.end(); ++i) {
-			result -= *i;
-		}
-
-		return result;
+		return (result -= b);
 	}
 
 	region_t & operator +=(_box_t const & b) {
