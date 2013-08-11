@@ -1345,16 +1345,9 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t 
 
 }
 
-void simple_theme_t::render_popup_move_frame(cairo_t * cr, unsigned int width,
-		unsigned int height) {
-
-	cairo_reset_clip(cr);
-	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-	cairo_paint(cr);
-
-	cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
-
+void simple_theme_t::render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
+		unsigned int height, string const & title) {
+	render_popup_notebook0(cr, icon, width, height, title);
 }
 
 void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) {

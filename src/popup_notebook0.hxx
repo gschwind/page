@@ -15,7 +15,6 @@ namespace page {
 
 struct popup_notebook0_t : public window_overlay_t {
 
-	xconnection_t * _cnx;
 	theme_t * _theme;
 
 	window_icon_handler_t * icon;
@@ -26,7 +25,6 @@ struct popup_notebook0_t : public window_overlay_t {
 	popup_notebook0_t(xconnection_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
 
-		_cnx = cnx;
 		icon = 0;
 
 		_show = false;

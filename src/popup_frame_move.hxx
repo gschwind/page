@@ -16,12 +16,24 @@ struct popup_frame_move_t: public window_overlay_t {
 
 	theme_t * _theme;
 
+	window_icon_handler_t * icon;
+	string title;
+
 	popup_frame_move_t(xconnection_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
+
+		icon = 0;
 	}
 
 	~popup_frame_move_t() {
 
+	}
+
+	void update_window(Window w, string title) {
+		if (icon != 0)
+			delete icon;
+		icon = new window_icon_handler_t(_cnx, w, 64, 64);
+		this->title = title;
 	}
 
 	void repair_back_buffer() {
@@ -35,7 +47,7 @@ struct popup_frame_move_t: public window_overlay_t {
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_fill(cr);
 
-		_theme->render_popup_move_frame(cr, wa->width, wa->height);
+		_theme->render_popup_move_frame(cr, icon, wa->width, wa->height, title);
 
 		cairo_destroy(cr);
 

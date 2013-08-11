@@ -146,8 +146,8 @@ public:
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);
-	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width,
-			unsigned int height);
+	virtual void render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
+			unsigned int height, string const & title);
 
 	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h);
 
