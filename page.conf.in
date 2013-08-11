@@ -38,5 +38,5 @@ tab_normal_background = 000000
 scale_mode = stretch
 
 pango_font=Sans Bold 10
-
+pango_popup_font=Sans Bold 20
 

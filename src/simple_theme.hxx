@@ -86,6 +86,7 @@ public:
 //	cairo_font_face_t * font_bold;
 
 	PangoFontDescription * pango_font;
+	PangoFontDescription * pango_popup_font;
 
 	cairo_surface_t * vsplit_button_s;
 	cairo_surface_t * hsplit_button_s;
@@ -144,7 +145,7 @@ public:
 	virtual PangoFontDescription * get_pango_font();
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
-			unsigned int height);
+			unsigned int height, string const & title);
 	virtual void render_popup_move_frame(cairo_t * cr, unsigned int width,
 			unsigned int height);
 

@@ -51,7 +51,6 @@
 #include "renderable_page.hxx"
 
 #include "popup_notebook0.hxx"
-#include "popup_notebook1.hxx"
 #include "popup_frame_move.hxx"
 #include "popup_split.hxx"
 
@@ -91,7 +90,6 @@ public:
 
 	/* popups (overlay) */
 	popup_notebook0_t * pn0;
-	popup_notebook1_t * pn1;
 	popup_frame_move_t * pfm;
 	popup_split_t * ps;
 

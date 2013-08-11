@@ -19,6 +19,7 @@ struct popup_notebook0_t : public window_overlay_t {
 	theme_t * _theme;
 
 	window_icon_handler_t * icon;
+	string title;
 
 	bool _show;
 
@@ -36,10 +37,11 @@ struct popup_notebook0_t : public window_overlay_t {
 			delete icon;
 	}
 
-	void update_window(Window w) {
+	void update_window(Window w, string title) {
 		if (icon != 0)
 			delete icon;
 		icon = new window_icon_handler_t(_cnx, w, 64, 64);
+		this->title = title;
 	}
 
 	void show() {
@@ -67,7 +69,7 @@ struct popup_notebook0_t : public window_overlay_t {
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		_theme->render_popup_notebook0(cr, icon,  wa->width, wa->height);
+		_theme->render_popup_notebook0(cr, icon,  wa->width, wa->height, title);
 
 		cairo_destroy(cr);
 

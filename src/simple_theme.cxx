@@ -475,7 +475,7 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 //	}
 
 	pango_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_font").c_str());
-
+	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
 
 
 }
@@ -532,6 +532,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 
 	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 	pango_layout_set_font_description(pango_layout, pango_font);
+	pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+	pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+
 
 	bool has_focuced_client = false;
 	color_t c_selected_bg = c_tab_normal_background;
@@ -697,6 +700,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
 			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
@@ -728,6 +732,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
 			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
@@ -995,6 +1000,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 		cairo_stroke(cr);
 		cairo_path_destroy(selected_path);
 	}
+
+
+	g_object_unref (pango_layout);
 
 }
 
@@ -1284,7 +1292,10 @@ cairo_font_face_t * simple_theme_t::get_default_font() {
 }
 
 void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
-		unsigned int height) {
+		unsigned int height, string const & title) {
+
+	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+	pango_layout_set_font_description(pango_layout, pango_popup_font);
 
 	cairo_reset_clip(cr);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
@@ -1302,7 +1313,35 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t 
 		cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
 		cairo_rectangle(cr, x_offset, y_offset, 64, 64);
 		cairo_fill(cr);
+
+
+		/* draw tittle */
+		cairo_translate(cr, 0.0, y_offset + 68.0);
+
+		cairo_new_path(cr);
+		pango_cairo_update_layout(cr, pango_layout);
+		pango_layout_set_text(pango_layout, title.c_str(), -1);
+		pango_layout_set_width(pango_layout, width * PANGO_SCALE);
+		pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
+		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+		pango_cairo_layout_path(cr, pango_layout);
+
+		cairo_set_line_width(cr, 5.0);
+		cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+
+		cairo_set_source_rgba(cr, c_selected_highlight2.r, c_selected_highlight2.g, c_selected_highlight2.b, 1.0);
+
+		cairo_stroke_preserve(cr);
+
+		cairo_set_line_width(cr, 1.0);
+		cairo_set_source_rgba(cr, c_selected_highlight1.r, c_selected_highlight1.g, c_selected_highlight1.b, 1.0);
+		cairo_fill(cr);
+
+
 	}
+
+	g_object_unref(pango_layout);
 
 }
 

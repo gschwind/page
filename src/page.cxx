@@ -192,7 +192,7 @@ void page_t::run() {
 	/* create and add popups (overlay) */
 	pfm = new popup_frame_move_t(cnx, theme);
 	pn0 = new popup_notebook0_t(cnx, theme);
-	pn1 = new popup_notebook1_t(cnx, theme->get_default_font());
+//	pn1 = new popup_notebook1_t(cnx, theme->get_default_font());
 	ps = new popup_split_t(cnx);
 
 
@@ -763,10 +763,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_bind.zone = SELECT_NONE;
 
 					pn0->move_resize(mode_data_bind.c->get_base_position());
-					pn0->update_window(mw->orig());
+					pn0->update_window(mw->orig(), mw->get_title());
 
-					pn1->update_data(mw->get_icon()->get_cairo_surface(), mw->get_title());
-					pn1->move(e.x_root, e.y_root);
+//					pn1->update_data(mw->get_icon()->get_cairo_surface(), mw->get_title());
+//					pn1->move(e.x_root, e.y_root);
 
 					process_mode = PROCESS_FLOATING_BIND;
 
@@ -894,7 +894,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
-			pn1->hide();
+//			pn1->hide();
 
 			if (mode_data_notebook.zone == SELECT_TAB
 					&& mode_data_notebook.ns != 0
@@ -1068,7 +1068,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
-			pn1->hide();
+//			pn1->hide();
 
 			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
@@ -1181,14 +1181,14 @@ void page_t::process_event(XMotionEvent const & e) {
 
 			if(!pn0->is_visible())
 				pn0->show();
-			if(!pn1->is_visible())
-				pn1->show();
+//			if(!pn1->is_visible())
+//				pn1->show();
 
 		}
 
 		++count;
 
-		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
+//		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -1382,13 +1382,13 @@ void page_t::process_event(XMotionEvent const & e) {
 
 			if(!pn0->is_visible())
 				pn0->show();
-			if(!pn1->is_visible())
-				pn1->show();
+//			if(!pn1->is_visible())
+//				pn1->show();
 		}
 
 		++count;
 
-		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
+//		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -2184,8 +2184,8 @@ void page_t::process_event(XEvent const & e) {
 
 		if (e.xexpose.window == rpage->id()) {
 			rpage->expose(list_values(viewport_outputs));
-		} else if (e.xexpose.window == pn1->id()) {
-			pn1->expose();
+//		} else if (e.xexpose.window == pn1->id()) {
+//			pn1->expose();
 		} else if (e.xexpose.window == pfm->id()) {
 			pfm->expose();
 		} else if (e.xexpose.window == ps->id()) {
@@ -2489,10 +2489,10 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.zone = SELECT_NONE;
 
 			pn0->move_resize(mode_data_notebook.from->tab_area);
-			pn0->update_window(c->orig());
+			pn0->update_window(c->orig(), c->get_title());
 
-			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
-			pn1->move(e.x_root, e.y_root);
+//			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
+//			pn1->move(e.x_root, e.y_root);
 
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			rpage->mark_durty();
@@ -3193,7 +3193,7 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
-			pn1->hide();
+//			pn1->hide();
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -3237,7 +3237,7 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 
 
 			pn0->hide();
-			pn1->hide();
+//			pn1->hide();
 
 			mode_data_bind.start_x = 0;
 			mode_data_bind.start_y = 0;
@@ -3451,8 +3451,8 @@ void page_t::update_windows_stack() {
 	final_order.remove(pn0->id());
 	final_order.push_back(pn0->id());
 
-	final_order.remove(pn1->id());
-	final_order.push_back(pn1->id());
+//	final_order.remove(pn1->id());
+//	final_order.push_back(pn1->id());
 
 	final_order.remove(ps->id());
 	final_order.push_back(ps->id());
