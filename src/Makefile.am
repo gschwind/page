@@ -4,6 +4,7 @@ AM_CXXFLAGS =  \
 	-rdynamic \
 	$(X11_CFLAGS) \
 	$(CAIRO_CFLAGS) \
+	$(PANGO_CFLAGS) \
 	$(XCOMPOSITE_CFLAGS) \
 	$(XDAMAGE_CFLAGS) \
 	$(XRENDER_CFLAGS) \
@@ -35,6 +36,7 @@ page_SOURCES = \
 page_LDADD = \
 	$(X11_LIBS) \
 	$(CAIRO_LIBS) \
+	$(PANGO_LIBS) \
 	$(XCOMPOSITE_LIBS) \
 	$(XDAMAGE_LIBS) \
 	$(XRENDER_LIBS) \
@@ -53,6 +55,7 @@ page_internal_compositor_SOURCES = \
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \
 	$(CAIRO_LIBS) \
+	$(PANGO_LIBS) \
 	$(XCOMPOSITE_LIBS) \
 	$(XDAMAGE_LIBS) \
 	$(XRENDER_LIBS) \
@@ -66,25 +69,20 @@ page_internal_compositor_LDADD = \
 	-ldl
 
 query_tree_SOURCES = query_tree.cxx
-query_tree_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
-#query_tree_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+query_tree_LDADD = $(X11_LIBS) 
 
 listen_root_event_SOURCES = listen_root_event.cxx
-listen_root_event_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS) 
-#listen_root_event_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+listen_root_event_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
 
 simple_window_test_SOURCES = simple_window_test.cxx
-simple_window_test_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
-#simple_window_test_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+simple_window_test_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
 
 send_page_quit_SOURCES = send_page_quit.cxx
-send_page_quit_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
-#send_page_quit_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+send_page_quit_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) 
 
 test_region_SOURCES = test_region.cxx
-test_region_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
-#test_region_CXXFLAGS = $(X11_CXXFLAGS) $(CAIRO_CFLAGS) $(XCOMPOSITE_CFLAGS) $(XDAMAGE_CFLAGS) $(XRENDER_CFLAGS) $(XINERAMA_CFLAGS) -fno-strict-aliasing
+test_region_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) 
 
 list_visual_SOURCES = list_visual.cxx
-list_visual_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) $(XINERAMA_LIBS)
+list_visual_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) 
 

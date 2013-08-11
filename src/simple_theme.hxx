@@ -78,12 +78,14 @@ public:
 
 	xconnection_t * _cnx;
 
-	bool ft_is_loaded;
-	FT_Library library; /* handle to library */
-	FT_Face face; /* handle to face object */
-	cairo_font_face_t * font;
-	FT_Face face_bold; /* handle to face object */
-	cairo_font_face_t * font_bold;
+//	bool ft_is_loaded;
+//	FT_Library library; /* handle to library */
+//	FT_Face face; /* handle to face object */
+//	cairo_font_face_t * font;
+//	FT_Face face_bold; /* handle to face object */
+//	cairo_font_face_t * font_bold;
+
+	PangoFontDescription * pango_font;
 
 	cairo_surface_t * vsplit_button_s;
 	cairo_surface_t * hsplit_button_s;
@@ -139,6 +141,7 @@ public:
 	virtual void render_split(cairo_t * cr, split_t * s);
 	virtual void render_floating(managed_window_t * mw, bool is_focus);
 	virtual cairo_font_face_t * get_default_font();
+	virtual PangoFontDescription * get_pango_font();
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height);

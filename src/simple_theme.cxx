@@ -209,7 +209,7 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
 	layout = new simple_theme_layout_t();
 
-	ft_is_loaded = false;
+	//ft_is_loaded = false;
 
 	vsplit_button_s = 0;
 	hsplit_button_s = 0;
@@ -441,37 +441,42 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 			throw std::runtime_error("file not found!");
 	}
 
-	/* load fonts */
-	if (!ft_is_loaded) {
-		FT_Error error = FT_Init_FreeType(&library);
-		if (error) {
-			throw std::runtime_error("unable to init freetype");
-		}
+//	/* load fonts */
+//	if (!ft_is_loaded) {
+//		FT_Error error = FT_Init_FreeType(&library);
+//		if (error) {
+//			throw std::runtime_error("unable to init freetype");
+//		}
+//
+//		printf("Load: %s\n", font.c_str());
+//
+//		error = FT_New_Face(library, font.c_str(), 0, &face);
+//
+//		if (error != FT_Err_Ok)
+//			throw std::runtime_error("unable to load default font");
+//
+//		this->font = cairo_ft_font_face_create_for_ft_face(face, FT_LOAD_DEFAULT);
+//		if (!this->font)
+//			throw std::runtime_error("unable to load default font");
+//
+//		printf("Load: %s\n", font_bold.c_str());
+//
+//		error = FT_New_Face(library, font_bold.c_str(), 0, &face_bold);
+//
+//		if (error != FT_Err_Ok)
+//			throw std::runtime_error("unable to load default bold font");
+//
+//		this->font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, FT_LOAD_DEFAULT);
+//		if (!this->font_bold)
+//			throw std::runtime_error("unable to load default bold font");
+//
+//
+//		ft_is_loaded = true;
+//	}
 
-		printf("Load: %s\n", font.c_str());
+	pango_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_font").c_str());
 
-		error = FT_New_Face(library, font.c_str(), 0, &face);
 
-		if (error != FT_Err_Ok)
-			throw std::runtime_error("unable to load default font");
-
-		this->font = cairo_ft_font_face_create_for_ft_face(face, FT_LOAD_DEFAULT);
-		if (!this->font)
-			throw std::runtime_error("unable to load default font");
-
-		printf("Load: %s\n", font_bold.c_str());
-
-		error = FT_New_Face(library, font_bold.c_str(), 0, &face_bold);
-
-		if (error != FT_Err_Ok)
-			throw std::runtime_error("unable to load default bold font");
-
-		this->font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, FT_LOAD_DEFAULT);
-		if (!this->font_bold)
-			throw std::runtime_error("unable to load default bold font");
-
-		ft_is_loaded = true;
-	}
 
 }
 
@@ -487,15 +492,15 @@ simple_theme_t::~simple_theme_t() {
 	cairo_surface_destroy(unbind_button_s);
 	cairo_surface_destroy(bind_button_s);
 
-	if(this->font != 0)
-		cairo_font_face_destroy(this->font);
-
-	if(this->font_bold != 0)
-		cairo_font_face_destroy(this->font_bold);
-
-	FT_Done_Face(face);
-	FT_Done_Face(face_bold);
-	FT_Done_FreeType(library);
+//	if(this->font != 0)
+//		cairo_font_face_destroy(this->font);
+//
+//	if(this->font_bold != 0)
+//		cairo_font_face_destroy(this->font_bold);
+//
+//	FT_Done_Face(face);
+//	FT_Done_Face(face_bold);
+//	FT_Done_FreeType(library);
 
 	if(px != None) {
 		XFreePixmap(_cnx->dpy, px);
@@ -524,6 +529,9 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 
 void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focussed,
 		bool is_default) {
+
+	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+	pango_layout_set_font_description(pango_layout, pango_font);
 
 	bool has_focuced_client = false;
 	color_t c_selected_bg = c_tab_normal_background;
@@ -685,14 +693,15 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 
 		if (*c == n->_selected.front()) {
 
-			/* draw selectected tittle */
-			cairo_set_font_face(cr, font_bold);
-
-			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
+			/* draw tittle */
+			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			cairo_text_path(cr, (*c)->get_title().c_str());
-			cairo_set_line_width(cr, 3.0);
+			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_cairo_layout_path(cr, pango_layout);
+
+			cairo_set_line_width(cr, 5.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 			if(*c == focussed) {
@@ -703,6 +712,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 
 			cairo_stroke_preserve(cr);
 
+			cairo_set_line_width(cr, 1.0);
 			if(*c == focussed) {
 				cairo_set_source_rgb(cr, c_selected_highlight1.r, c_selected_highlight1.g, c_selected_highlight1.b);
 			} else {
@@ -713,19 +723,22 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n, managed_windo
 		} else {
 
 			/* draw tittle */
-			cairo_set_font_face(cr, font);
 			cairo_set_source_rgb(cr, c_normal2.r, c_normal2.g, c_normal2.b);
 
-			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 7);
+			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			cairo_text_path(cr, (*c)->get_title().c_str());
+			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_cairo_layout_path(cr, pango_layout);
+
 			cairo_set_line_width(cr, 3.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 
 			cairo_stroke_preserve(cr);
 
+			cairo_set_line_width(cr, 1.0);
 			cairo_set_source_rgb(cr, c_normal1.r, c_normal1.g, c_normal1.b);
 			cairo_fill(cr);
 		}
@@ -1028,6 +1041,9 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 	cairo_t * cr = mw->get_cairo();
 	box_int_t _allocation = mw->get_base_position();
 
+	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+	pango_layout_set_font_description(pango_layout, pango_font);
+
 	_allocation.x = 0;
 	_allocation.y = 0;
 
@@ -1087,13 +1103,15 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		if (is_focussed) {
 
 			/* draw selectected tittle */
-			cairo_set_font_face(cr, font_bold);
-
-			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 4);
+			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			cairo_text_path(cr, mw->get_title().c_str());
-			cairo_set_line_width(cr, 3.0);
+			pango_layout_set_text(pango_layout, mw->get_title().c_str(), -1);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_cairo_layout_path(cr, pango_layout);
+
+
+			cairo_set_line_width(cr, 5.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 			if(true) {
@@ -1114,13 +1132,15 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		} else {
 
 			/* draw tittle */
-			cairo_set_font_face(cr, font);
 			cairo_set_source_rgb(cr, c_normal2.r, c_normal2.g, c_normal2.b);
 
-			cairo_translate(cr, btext.x + 2, btext.y + btext.h - 4);
+			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			cairo_text_path(cr, mw->get_title().c_str());
+			pango_layout_set_text(pango_layout, mw->get_title().c_str(), -1);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_cairo_layout_path(cr, pango_layout);
+
 			cairo_set_line_width(cr, 3.0);
 			cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND);
 			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
@@ -1260,7 +1280,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 }
 
 cairo_font_face_t * simple_theme_t::get_default_font() {
-	return font;
+	return 0;
 }
 
 void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
@@ -1347,6 +1367,10 @@ void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int 
 
 	cairo_restore(cr);
 
+}
+
+PangoFontDescription * simple_theme_t::get_pango_font() {
+	return pango_font;
 }
 
 }

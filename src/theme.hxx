@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include <pango/pangocairo.h>
+
 #include "theme_layout.hxx"
 #include "split.hxx"
 #include "notebook.hxx"
@@ -46,6 +48,7 @@ public:
 	virtual void render_floating(managed_window_t * nw, bool is_focus) = 0;
 
 	virtual cairo_font_face_t * get_default_font() = 0;
+	virtual PangoFontDescription * get_pango_font() = 0;
 
 	virtual theme_layout_t const * get_theme_layout() const {
 		return layout;
