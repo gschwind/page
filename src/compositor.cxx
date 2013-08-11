@@ -190,7 +190,7 @@ void compositor_t::render_flush() {
 		for (list<composite_window_t *>::iterator j = visible.begin();
 				j != visible.end(); ++j) {
 			if (i != j) {
-				r = r - (*j)->get_region();
+				r -= (*j)->get_region();
 			}
 		}
 		region_without_overlapped_window += r;
@@ -214,8 +214,7 @@ void compositor_t::render_flush() {
 	for (list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
 		if ((*i)->has_alpha()) {
-			region_without_alpha_on_top = region_without_alpha_on_top
-					- (*i)->get_region();
+			region_without_alpha_on_top -= (*i)->get_region();
 		} else {
 			/* if not has_alpha, add this area */
 			region_without_alpha_on_top += (*i)->get_region();
@@ -223,13 +222,12 @@ void compositor_t::render_flush() {
 	}
 
 	region_without_alpha_on_top = region_without_alpha_on_top & pending_damage;
-	region_without_alpha_on_top = region_without_alpha_on_top
-			- region_without_overlapped_window;
+	region_without_alpha_on_top -= region_without_overlapped_window;
 
 
 	_region_t slow_region = pending_damage;
-	slow_region = slow_region - region_without_overlapped_window;
-	slow_region = slow_region - region_without_alpha_on_top;
+	slow_region -= region_without_overlapped_window;
+	slow_region -= region_without_alpha_on_top;
 
 
 	/* direct render, area where there is only one window visible */
@@ -270,8 +268,7 @@ void compositor_t::render_flush() {
 					}
 				}
 			}
-			region_without_alpha_on_top = region_without_alpha_on_top
-					- r->get_region();
+			region_without_alpha_on_top -= r->get_region();
 		}
 	}
 

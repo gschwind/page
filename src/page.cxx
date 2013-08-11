@@ -326,22 +326,22 @@ void page_t::run() {
 	running = true;
 	while (running) {
 
-		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_intr);
-
-		FD_SET(cnx->fd(), &fds_read);
-		FD_SET(cnx->fd(), &fds_intr);
-
-		/** listen for compositor events **/
-		if (rnd != 0) {
-			FD_SET(rnd->get_connection_fd(), &fds_read);
-			FD_SET(rnd->get_connection_fd(), &fds_intr);
-		}
-
-		/**
-		 * wait for data in both X11 connection streams (compositor and page)
-		 **/
-		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait, NULL);
+//		FD_ZERO(&fds_read);
+//		FD_ZERO(&fds_intr);
+//
+//		FD_SET(cnx->fd(), &fds_read);
+//		FD_SET(cnx->fd(), &fds_intr);
+//
+//		/** listen for compositor events **/
+//		if (rnd != 0) {
+//			FD_SET(rnd->get_connection_fd(), &fds_read);
+//			FD_SET(rnd->get_connection_fd(), &fds_intr);
+//		}
+//
+//		/**
+//		 * wait for data in both X11 connection streams (compositor and page)
+//		 **/
+//		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait, NULL);
 
 		while (cnx->process_check_event())
 			continue;
@@ -353,6 +353,8 @@ void page_t::run() {
 			rnd->xflush();
 		}
 
+		/** wait for 15 millisecond (~60 fps) **/
+		usleep(15000);
 
 	}
 }
