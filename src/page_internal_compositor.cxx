@@ -36,7 +36,7 @@ int main(int argc, char * * argv) {
 		compositor->process_events();
 		compositor->xflush();
 		/* about 60 fps */
-		usleep(15000);
+		usleep(16666);
 
 	}
 }

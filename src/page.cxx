@@ -17,7 +17,6 @@
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/Xrender.h>
-#include <X11/extensions/Xinerama.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
@@ -314,12 +313,12 @@ void page_t::run() {
 	max_wait.tv_sec = 0;
 	max_wait.tv_nsec = 15000000;
 
-	int max = cnx->fd();
-
-	if (rnd != 0) {
-		max = cnx->fd() > rnd->get_connection_fd() ?
-				cnx->fd() : rnd->get_connection_fd();
-	}
+//	int max = cnx->fd();
+//
+//	if (rnd != 0) {
+//		max = cnx->fd() > rnd->get_connection_fd() ?
+//				cnx->fd() : rnd->get_connection_fd();
+//	}
 
 	update_allocation();
 	XFlush(cnx->dpy);
@@ -354,7 +353,7 @@ void page_t::run() {
 		}
 
 		/** wait for 15 millisecond (~60 fps) **/
-		usleep(15000);
+		usleep(16666);
 
 	}
 }

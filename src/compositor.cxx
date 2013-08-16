@@ -157,7 +157,10 @@ void compositor_t::render_flush() {
 			i != window_stack.end(); ++i) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
 		if (x != window_data.end()) {
-			visible.push_back(x->second);
+			if (x->second->map_state() != IsUnmapped
+					and x->second->c_class() == InputOutput) {
+				visible.push_back(x->second);
+			}
 		}
 	}
 
@@ -170,7 +173,7 @@ void compositor_t::render_flush() {
 
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
-		(*i)->init_cairo();
+		(*i)->update_cairo();
 	}
 
 	/* clip damage region to visible region */
@@ -309,10 +312,10 @@ void compositor_t::render_flush() {
 
 	cairo_destroy(front_cr);
 
-	for (std::list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		(*i)->destroy_cairo();
-	}
+//	for (std::list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		(*i)->destroy_cairo();
+//	}
 
 }
 
@@ -384,14 +387,25 @@ void compositor_t::damage_all() {
 void compositor_t::process_event(XCreateWindowEvent const & e) {
 	if (e.window == _cnx->composite_overlay)
 		return;
-	if(e.parent != _cnx->get_root_window())
+	if (e.parent != _cnx->get_root_window())
 		return;
+
+	XWindowAttributes wa;
+	if (XGetWindowAttributes(_cnx->dpy, e.window, &wa)) {
+		window_data[e.window] = new composite_window_t(_cnx, e.window, &wa,
+				window_stack.empty() ? None : window_stack.back());
+	}
 	stack_window_place_on_top(e.window);
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
-	if(e.parent == _cnx->get_root_window()) {
+	if (e.parent == _cnx->get_root_window()) {
 		/** will be followed by map **/
+		XWindowAttributes wa;
+		if (XGetWindowAttributes(_cnx->dpy, e.window, &wa)) {
+			window_data[e.window] = new composite_window_t(_cnx, e.window, &wa,
+					window_stack.empty() ? None : window_stack.back());
+		}
 		stack_window_place_on_top(e.window);
 	} else {
 		stack_window_remove(e.window);
@@ -408,19 +422,16 @@ void compositor_t::process_event(XMapEvent const & e) {
 	if (e.window == _cnx->composite_overlay)
 		return;
 
-	p_window_attribute_t wa = _cnx->get_window_attributes(e.window);
-	if (wa->is_valid) {
-		if (wa->c_class == InputOutput) {
-			window_data[e.window] = new composite_window_t(_cnx, e.window, wa);
-		}
+	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
+	if(x != window_data.end()) {
+		x->second->update_map_state(IsViewable);
 	}
 }
 
 void compositor_t::process_event(XUnmapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
-		delete x->second;
-		window_data.erase(x);
+		x->second->update_map_state(IsUnmapped);
 	}
 }
 
@@ -446,9 +457,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(
 				e.window);
 		if (x != window_data.end()) {
-			x->second->moved();
-			//x->second->update_shape();
-			//printf("XXXXX %s %s\n", old.to_string().c_str(), cur.to_string().c_str());
+			x->second->update_position(e);
 		}
 	}
 }
@@ -549,13 +558,12 @@ void compositor_t::scan() {
 			window_stack.insert(window_stack.end(), &wins[0], &wins[num]);
 
 		for (unsigned i = 0; i < num; ++i) {
-			p_window_attribute_t wa = _cnx->get_window_attributes(wins[i]);
-			if (wa->is_valid and wins[i] != _cnx->composite_overlay
-					and wins[i] != _cnx->get_root_window()) {
-				if (wa->c_class == InputOutput && wa->map_state != IsUnmapped) {
-					window_data[wins[i]] = new composite_window_t(_cnx, wins[i],
-							wa);
-				}
+			if(wins[i] == _cnx->composite_overlay)
+				continue;
+			XWindowAttributes wa;
+			if (XGetWindowAttributes(_cnx->dpy, wins[i], &wa)) {
+				window_data[wins[i]] = new composite_window_t(_cnx, wins[i],
+						&wa, i == 0 ? None : wins[i - 1]);
 			}
 		}
 
@@ -702,30 +710,38 @@ void compositor_t::compute_pending_damage() {
 	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
 			i != window_data.end(); ++i) {
 
-		map<Window, region_t<int> >::iterator x = compositor_window_state.find(
-				i->first);
+		composite_window_t * cw = i->second;
 
-		/**
-		 * if moved or re-stacked, add previous location and current
-		 * location as damaged.
-		 **/
-		if (i->second->has_moved()) {
-
-			if (x != compositor_window_state.end()) {
-				pending_damage += x->second;
-			}
-
-			i->second->update_shape();
-			pending_damage += i->second->get_region();
+		if (cw->c_class() != InputOutput) {
+			continue;
 		}
 
-		/**
-		 * What ever is happen, add damaged area
-		 **/
-		pending_damage += i->second->get_damaged_region();
-
-		if (x != compositor_window_state.end()) {
-			compositor_window_state.erase(x);
+		if (cw->old_map_state() == IsUnmapped) {
+			if(cw->map_state() == IsUnmapped) {
+				continue;
+			} else {
+				/** was mapped **/
+				pending_damage += cw->get_region();
+			}
+		} else {
+			if(cw->map_state() == IsUnmapped) {
+				/** was unmapped **/
+				pending_damage += cw->old_region();
+			} else {
+				if (cw->has_moved()) {
+					/**
+					 * if moved or re-stacked, add previous location and current
+					 * location as damaged.
+					 **/
+					pending_damage += cw->old_region();
+					pending_damage += cw->get_region();
+				} else {
+					/**
+					 * What ever is happen, add damaged area
+					 **/
+					pending_damage += cw->get_damaged_region();
+				}
+			}
 		}
 
 		/**
@@ -734,18 +750,6 @@ void compositor_t::compute_pending_damage() {
 		i->second->clear_state();
 
 	}
-
-	/**
-	 * if compositor state is not empty, that mean this window where
-	 * unmapped. repair corresponding area.
-	 **/
-	for (map<Window, region_t<int> >::iterator x =
-			compositor_window_state.begin(); x != compositor_window_state.end();
-			++x) {
-		pending_damage += x->second;
-	}
-
-	compositor_window_state.clear();
 
 }
 

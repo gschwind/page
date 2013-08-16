@@ -54,7 +54,11 @@ struct box_t {
 	}
 
 	bool operator==(box_t const & b) const {
-		return (b.x == x && b.y == y && b.w == w && b.h == h);
+		return (b.x == x and b.y == y and b.w == w and b.h == h);
+	}
+
+	bool operator!=(box_t const & b) const {
+		return (b.x != x or b.y != y or b.w != w or b.h != h);
 	}
 
 	/* compute the smallest area that include 2 boxes */

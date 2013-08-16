@@ -33,14 +33,25 @@ class composite_window_t {
 
 	Window _wid;
 	Damage _damage;
-	_region_t _region;
+
+	box_int_t _position;
+	int _depth;
+	Visual * _visual;
+	int _c_class;
+	unsigned int _map_state;
+
+	Window _above;
 
 	cairo_surface_t * _surf;
 
 	bool _has_alpha;
-	bool _has_shape;
 
-	p_window_attribute_t _wa;
+	_region_t _region;
+
+
+	unsigned int _old_map_state;
+	_region_t _old_region;
+
 
 	_region_t damaged_region;
 
@@ -55,60 +66,91 @@ public:
 			| PropertyChangeMask);
 
 	composite_window_t(xconnection_t * cnx, Window w,
-			p_window_attribute_t const & wa) {
+			XWindowAttributes const * wa, Window above) {
 		assert(cnx != 0);
-		assert(wa->is_valid);
-		assert(wa->c_class == InputOutput);
 
 		_cnx = cnx;
 		_wid = w;
+
+		/** copy usefull window attributes **/
+		_position = box_int_t(wa->x, wa->y, wa->width, wa->height);
+		_depth = wa->depth;
+		_visual = wa->visual;
+		_c_class = wa->c_class;
+		_map_state = wa->map_state;
+
+		_above = above;
+
 		_damage = None;
-		_has_alpha = false;
 		_surf = 0;
-		_has_shape = false;
 		_has_moved = true;
-		_wa = wa;
+
+		_old_region = _region_t();
+		_old_map_state = IsUnmapped;
 
 		damaged_region.clear();
 
-		XRenderPictFormat * format =
-				XRenderFindVisualFormat(cnx->dpy, _wa->visual);
+		/** guess if window has alpha channel **/
+		_has_alpha = false;
+		if (_c_class == InputOutput) {
+			XRenderPictFormat * format = XRenderFindVisualFormat(cnx->dpy,
+					_visual);
+			if (format != 0) {
+				_has_alpha = (format->type == PictTypeDirect
+						&& format->direct.alphaMask);
+			}
+		}
 
-		_has_alpha =
-				(format->type == PictTypeDirect && format->direct.alphaMask);
-
+		/** read shape date **/
 		XShapeInputSelected(cnx->dpy, _wid);
 		update_shape();
 
-		create_damage();
-
-		_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, _wa->visual,
-				_wa->width, _wa->height);
+		/** if window is mapped, create cairo surface and damage **/
+		if (_map_state != IsUnmapped and _c_class == InputOutput) {
+			create_damage();
+			create_cairo();
+		}
 
 	}
 
-	void init_cairo() {
-		cairo_xlib_surface_set_size(_surf, _wa->width, _wa->height);
+	void create_cairo() {
+		if (_surf == 0 and _c_class == InputOutput) {
+			_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, _visual,
+					_position.w, _position.h);
+		}
+	}
+
+	void update_cairo() {
+		if (_surf != 0) {
+			cairo_xlib_surface_set_size(_surf, _position.w, _position.h);
+		}
 	}
 
 	void destroy_cairo() {
+		if (_surf != 0) {
+			cairo_surface_destroy(_surf);
+			_surf = 0;
+		}
 	}
 
 	~composite_window_t() {
-		cairo_surface_destroy(_surf);
+		destroy_cairo();
 		destroy_damage();
 	}
 
 	void draw_to(cairo_t * cr, box_int_t const & area) {
+		if (_surf == 0)
+			return;
 
-		box_int_t clip = area & box_int_t(_wa->x, _wa->y, _wa->width, _wa->height);
+		box_int_t clip = area
+				& box_int_t(_position.x, _position.y, _position.w, _position.h);
 
 		if (clip.w > 0 && clip.h > 0) {
 			cairo_save(cr);
 			cairo_reset_clip(cr);
 			cairo_identity_matrix(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-			cairo_set_source_surface(cr, _surf, _wa->x, _wa->y);
+			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_clip(cr);
 			cairo_paint(cr);
@@ -134,12 +176,13 @@ public:
 				_region += box_int_t(recs[i]);
 			}
 
-			_region.translate(_wa->x, _wa->y);
+			_region.translate(_position.x, _position.y);
 
 			/* In doubt */
 			XFree(recs);
 		} else {
-			_region = box_int_t(_wa->x, _wa->y, _wa->width, _wa->height);
+			_region = box_int_t(_position.x, _position.y, _position.w,
+					_position.h);
 		}
 	}
 
@@ -171,7 +214,7 @@ public:
 
 	region_t<int> get_damaged_region() {
 		region_t<int> r = damaged_region;
-		r.translate(_wa->x, _wa->y);
+		r.translate(_position.x, _position.y);
 		r &= _region;
 		return r;
 	}
@@ -185,6 +228,10 @@ public:
 	void clear_state() {
 		damaged_region.clear();
 		_has_moved = false;
+
+		_old_region = _region;
+		_old_map_state = _map_state;
+
 	}
 
 	bool has_moved() {
@@ -194,6 +241,52 @@ public:
 	Window get_w() {
 		return _wid;
 	}
+
+	_region_t const & old_region() {
+		return _old_region;
+	}
+
+	unsigned int old_map_state() {
+		return _old_map_state;
+	}
+
+	box_int_t const & position() {
+		return _position;
+	}
+
+	unsigned int map_state() {
+		return _map_state;
+	}
+
+	void update_position(XConfigureEvent const & ev) {
+		if (_position != box_int_t(ev.x, ev.y, ev.width, ev.height)) {
+			_has_moved = true;
+			_position = box_int_t(ev.x, ev.y, ev.width, ev.height);
+			update_shape();
+		}
+
+		if(ev.above != _above) {
+			_has_moved = true;
+			_above = ev.above;
+		}
+
+	}
+
+	void update_map_state(int state) {
+		_map_state = state;
+		if(state != IsUnmapped) {
+			create_cairo();
+			create_damage();
+		} else {
+			destroy_cairo();
+			destroy_damage();
+		}
+	}
+
+	int c_class() {
+		return _c_class;
+	}
+
 
 };
 
