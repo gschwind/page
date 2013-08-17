@@ -13,6 +13,8 @@
 #include <ctime>
 #include <cairo.h>
 #include <cairo-xlib.h>
+
+#include "utils.hxx"
 #include "xconnection.hxx"
 #include "region.hxx"
 #include "renderable.hxx"
@@ -24,13 +26,31 @@ namespace page {
 
 class compositor_t : public xevent_handler_t {
 
-	/** short cut **/
-	typedef region_t<int> _region_t;
-	typedef box_t<int>	_box_t;
-
+	Display * _dpy;
 
 	Window cm_window;
-	xconnection_t * _cnx;
+	Window composite_overlay;
+
+	XWindowAttributes root_attributes;
+
+	/*damage event handler */
+	int damage_opcode, damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_opcode, composite_event, composite_error;
+
+	/* fixes event handler */
+	int fixes_opcode, fixes_event, fixes_error;
+
+	/* xshape extension handler */
+	int xshape_opcode, xshape_event, xshape_error;
+
+	/* xrandr extension handler */
+	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
+
+	atom_handler_t A;
 
 	/** Performance counter **/
 	unsigned int flush_count;
@@ -65,7 +85,7 @@ class compositor_t : public xevent_handler_t {
 	double slow_region_surf_monitor;
 
 	/* damaged region */
-	_region_t pending_damage;
+	region_t<int> pending_damage;
 
 	//void add_damage_area(_region_t const & box);
 
@@ -76,10 +96,10 @@ class compositor_t : public xevent_handler_t {
 	//static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
 
-	void repair_area(_box_t const & box);
-	void repair_overlay(cairo_t * cr, _box_t const & area, cairo_surface_t * src);
+	void repair_area(box_t<int> const & box);
+	void repair_overlay(cairo_t * cr, box_t<int> const & area, cairo_surface_t * src);
 	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
-			_box_t const & area);
+			box_t<int> const & area);
 
 	void damage_all();
 
@@ -113,6 +133,10 @@ class compositor_t : public xevent_handler_t {
 
 	void compute_pending_damage();
 
+	bool register_cm(Window w);
+	void init_composite_overlay();
+	bool process_check_event();
+
 public:
 
 	virtual ~compositor_t();
@@ -120,12 +144,12 @@ public:
 
 	void process_events();
 
-	inline int get_connection_fd() {
-		return _cnx->fd();
+	int get_connection_fd() {
+		return ConnectionNumber(_dpy);
 	}
 
-	inline void xflush() {
-		XFlush(_cnx->dpy);
+	void xflush() {
+		XFlush(_dpy);
 	}
 
 };

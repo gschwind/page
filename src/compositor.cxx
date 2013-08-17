@@ -14,7 +14,7 @@
 
 namespace page {
 
-static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, double g,
+static void _draw_crossed_box(cairo_t * cr, box_t<int> const & box, double r, double g,
 		double b) {
 
 	return;
@@ -40,38 +40,113 @@ static void _draw_crossed_box(cairo_t * cr, box_int_t const & box, double r, dou
 	cairo_restore(cr);
 }
 
-compositor_t::compositor_t() : _cnx(new xconnection_t()) {
+/**
+ * Register composite manager. if another one is in place just fail to take
+ * the ownership.
+ **/
+bool compositor_t::register_cm(Window w) {
+	Window current_cm;
+	Atom a_cm;
+	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
+	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d",
+			DefaultScreen(_dpy));
+	a_cm = XInternAtom(_dpy, net_wm_cm, False);
+
+	/** read if there is a compositor **/
+	current_cm = XGetSelectionOwner(_dpy, a_cm);
+	if (current_cm != None) {
+		printf("Another composite manager is running\n");
+		return false;
+	} else {
+
+		/** become the compositor **/
+		XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
+
+		/** check is we realy are the current compositor **/
+		if (XGetSelectionOwner(_dpy, a_cm) != w) {
+			printf("Could not acquire window manager selection on screen %d\n",
+					DefaultScreen(_dpy));
+			return false;
+		}
+
+		printf("Composite manager is registered on screen %d\n",
+				DefaultScreen(_dpy));
+		return true;
+	}
+
+}
+
+void compositor_t::init_composite_overlay() {
+	/* map & passthrough the overlay */
+	composite_overlay = XCompositeGetOverlayWindow(_dpy, DefaultRootWindow(_dpy));
+	allow_input_passthrough(_dpy, composite_overlay);
+
+	/** Automatically redirect windows, but paint window manually */
+	XCompositeRedirectSubwindows(_dpy, DefaultRootWindow(_dpy), CompositeRedirectManual);
+}
+
+compositor_t::compositor_t() {
+
+	old_error_handler = XSetErrorHandler(error_handler);
+
+	_dpy = XOpenDisplay(0);
+	if (_dpy == NULL) {
+		throw std::runtime_error("Could not open display");
+	} else {
+		printf("Open display : Success\n");
+	}
+
+	if (!check_composite_extension(_dpy, &composite_opcode, &composite_event,
+			&composite_error)) {
+		throw std::runtime_error("X Server doesn't support Composite 0.4");
+	}
+
+	if (!check_damage_extension(_dpy, &damage_opcode, &damage_event,
+			&damage_error)) {
+		throw std::runtime_error("Damage extension is not supported");
+	}
+
+	if (!check_shape_extension(_dpy, &xshape_opcode, &xshape_event,
+			&xshape_error)) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (!check_randr_extension(_dpy, &xrandr_opcode, &xrandr_event,
+			&xrandr_error)) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
 
 	/* create an invisible window to identify page */
-	cm_window = XCreateSimpleWindow(_cnx->dpy, _cnx->get_root_window(), -100,
+	cm_window = XCreateSimpleWindow(_dpy, DefaultRootWindow(_dpy), -100,
 			-100, 1, 1, 0, 0, 0);
 	if (cm_window == None) {
-		XCloseDisplay(_cnx->dpy);
+		XCloseDisplay(_dpy);
 		throw compositor_fail_t();
 	}
 
 	std::string name("page_internal_compositor");
-	_cnx->change_property(cm_window, _NET_WM_NAME,
-			UTF8_STRING, 8,
-			PropModeReplace,
-			reinterpret_cast<unsigned char const *>(name.c_str()),
+	XChangeProperty(_dpy, cm_window, A(_NET_WM_NAME), A(UTF8_STRING), 8,
+	PropModeReplace, reinterpret_cast<unsigned char const *>(name.c_str()),
 			name.length() + 1);
 
 	long pid = getpid();
 
-	_cnx->change_property(cm_window, _NET_WM_PID, CARDINAL,
-			32, (PropModeReplace),
-			reinterpret_cast<unsigned char const *>(&pid), 1);
+	XChangeProperty(_dpy, cm_window, A(_NET_WM_PID), A(CARDINAL), 32,
+			(PropModeReplace), reinterpret_cast<unsigned char const *>(&pid),
+			1);
 
 	/* try to register compositor manager */
-	if (!_cnx->register_cm(cm_window)) {
-		XCloseDisplay(_cnx->dpy);
+	if (!register_cm(cm_window)) {
+		XCloseDisplay(_dpy);
 		throw compositor_fail_t();
 	}
 
-	/* initialize composite */
-	_cnx->init_composite_overlay();
 
+
+	/* initialize composite */
+	init_composite_overlay();
+
+	/** some performance counter **/
 	fast_region_surf_monitor = 0.0;
 	slow_region_surf_monitor = 0.0;
 
@@ -79,16 +154,11 @@ compositor_t::compositor_t() : _cnx(new xconnection_t()) {
 	damage_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
 
-	XRRSelectInput(_cnx->dpy, _cnx->get_root_window(), RRCrtcChangeNotifyMask);
+	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
 	update_layout();
-
-	_cnx->add_event_handler(this);
 
 	/** update the windows list **/
 	scan();
-
-	//printf("Root = %lu\n", _cnx->get_root_window());
-	//printf("Composite = %lu\n", _cnx->composite_overlay);
 
 	/**
 	 * Add the composite window to the stack as invisible window to track a
@@ -96,16 +166,15 @@ compositor_t::compositor_t() : _cnx(new xconnection_t()) {
 	 * line, in case of scan will report it.
 	 **/
 
-	stack_window_place_on_top(_cnx->composite_overlay);
+	stack_window_place_on_top(composite_overlay);
 
-	p_window_attribute_t wa = _cnx->get_window_attributes(_cnx->get_root_window());
+	XGetWindowAttributes(_dpy, DefaultRootWindow(_dpy), &root_attributes);
 
-	_front_buffer = cairo_xlib_surface_create(_cnx->dpy,
-			_cnx->composite_overlay, wa->visual, wa->width, wa->height);
+	_front_buffer = cairo_xlib_surface_create(_dpy, composite_overlay,
+			root_attributes.visual, root_attributes.width,
+			root_attributes.height);
 	_bask_buffer = cairo_surface_create_similar(_front_buffer,
-			CAIRO_CONTENT_COLOR, wa->width, wa->height);
-
-
+			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
 
 	damage_all();
 }
@@ -118,7 +187,6 @@ compositor_t::~compositor_t() {
 		++i;
 	}
 
-	_cnx->remove_event_handler(this);
 };
 
 //void compositor_t::add_damage_area(_region_t const & box) {
@@ -186,10 +254,10 @@ void compositor_t::render_flush() {
 	 * This kind of region will be directly rendered.
 	 **/
 
-	_region_t region_without_overlapped_window;
+	region_t<int> region_without_overlapped_window;
 	for (list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
-		_region_t r = (*i)->get_region();
+		region_t<int> r = (*i)->get_region();
 		for (list<composite_window_t *>::iterator j = visible.begin();
 				j != visible.end(); ++j) {
 			if (i != j) {
@@ -207,7 +275,7 @@ void compositor_t::render_flush() {
 	 * Small area, often dropdown menu.
 	 * This kind of area will be directly rendered.
 	 **/
-	_region_t region_without_alpha_on_top;
+	region_t<int> region_without_alpha_on_top;
 
 	/**
 	 * Walk over all all window from bottom to top one. If window has alpha
@@ -228,7 +296,7 @@ void compositor_t::render_flush() {
 	region_without_alpha_on_top -= region_without_overlapped_window;
 
 
-	_region_t slow_region = pending_damage;
+	region_t<int> slow_region = pending_damage;
 	slow_region -= region_without_overlapped_window;
 	slow_region -= region_without_alpha_on_top;
 
@@ -239,7 +307,7 @@ void compositor_t::render_flush() {
 		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
 
-		_region_t::const_iterator i = region_without_overlapped_window.begin();
+		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
 		while (i != region_without_overlapped_window.end()) {
 			fast_region_surf_monitor += i->w * i->h;
 			repair_buffer(visible, front_cr, *i);
@@ -260,9 +328,9 @@ void compositor_t::render_flush() {
 		for (list<composite_window_t *>::reverse_iterator i =
 				visible.rbegin(); i != visible.rend(); ++i) {
 			composite_window_t * r = *i;
-			_region_t draw_area = region_without_alpha_on_top & r->get_region();
+			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
 			if (!draw_area.empty()) {
-				for (_region_t::const_iterator j = draw_area.begin();
+				for (region_t<int>::const_iterator j = draw_area.begin();
 						j != draw_area.end(); ++j) {
 					if (!j->is_null()) {
 						r->draw_to(front_cr, *j);
@@ -287,7 +355,7 @@ void compositor_t::render_flush() {
 
 			cairo_reset_clip(back_cr);
 			cairo_set_operator(back_cr, CAIRO_OPERATOR_OVER);
-			_region_t::const_iterator i = slow_region.begin();
+			region_t<int>::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				slow_region_surf_monitor += (*i).w * (*i).h;
 				repair_buffer(visible, back_cr, *i);
@@ -297,7 +365,7 @@ void compositor_t::render_flush() {
 
 		{
 			cairo_surface_flush(_bask_buffer);
-			_region_t::const_iterator i = slow_region.begin();
+			region_t<int>::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				repair_overlay(front_cr, *i, _bask_buffer);
 				//_draw_crossed_box(front_cr, (*i), 1.0, 0.0, 0.0);
@@ -321,14 +389,14 @@ void compositor_t::render_flush() {
 
 
 void compositor_t::repair_buffer(std::list<composite_window_t *> & visible,
-		cairo_t * cr, _box_t const & area) {
+		cairo_t * cr, box_t<int> const & area) {
 	for (list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
 		composite_window_t * r = *i;
-		_region_t const & barea = r->get_region();
-		for (_region_t::const_iterator j = barea.begin(); j != barea.end();
+		region_t<int> const & barea = r->get_region();
+		for (region_t<int>::const_iterator j = barea.begin(); j != barea.end();
 				++j) {
-			_box_t clip = area & (*j);
+			box_t<int> clip = area & (*j);
 			if (!clip.is_null()) {
 				r->draw_to(cr, clip);
 			}
@@ -337,7 +405,7 @@ void compositor_t::repair_buffer(std::list<composite_window_t *> & visible,
 }
 
 
-void compositor_t::repair_overlay(cairo_t * cr, _box_t const & area,
+void compositor_t::repair_overlay(cairo_t * cr, box_t<int> const & area,
 		cairo_surface_t * src) {
 
 	cairo_reset_clip(cr);
@@ -378,32 +446,31 @@ void compositor_t::repair_overlay(cairo_t * cr, _box_t const & area,
 
 
 void compositor_t::damage_all() {
-	p_window_attribute_t wa = _cnx->get_window_attributes(
-			_cnx->get_root_window());
-	pending_damage += (box_int_t(wa->x, wa->y, wa->width, wa->height));
+	pending_damage += (box_int_t(root_attributes.x, root_attributes.y,
+			root_attributes.width, root_attributes.height));
 }
 
 
 void compositor_t::process_event(XCreateWindowEvent const & e) {
-	if (e.window == _cnx->composite_overlay)
+	if (e.window == composite_overlay)
 		return;
-	if (e.parent != _cnx->get_root_window())
+	if (e.parent != DefaultRootWindow(_dpy))
 		return;
 
 	XWindowAttributes wa;
-	if (XGetWindowAttributes(_cnx->dpy, e.window, &wa)) {
-		window_data[e.window] = new composite_window_t(_cnx, e.window, &wa,
+	if (XGetWindowAttributes(_dpy, e.window, &wa)) {
+		window_data[e.window] = new composite_window_t(_dpy, e.window, &wa,
 				window_stack.empty() ? None : window_stack.back());
 	}
 	stack_window_place_on_top(e.window);
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
-	if (e.parent == _cnx->get_root_window()) {
+	if (e.parent == DefaultRootWindow(_dpy)) {
 		/** will be followed by map **/
 		XWindowAttributes wa;
-		if (XGetWindowAttributes(_cnx->dpy, e.window, &wa)) {
-			window_data[e.window] = new composite_window_t(_cnx, e.window, &wa,
+		if (XGetWindowAttributes(_dpy, e.window, &wa)) {
+			window_data[e.window] = new composite_window_t(_dpy, e.window, &wa,
 					window_stack.empty() ? None : window_stack.back());
 		}
 		stack_window_place_on_top(e.window);
@@ -415,11 +482,11 @@ void compositor_t::process_event(XReparentEvent const & e) {
 void compositor_t::process_event(XMapEvent const & e) {
 	if(e.send_event)
 		return;
-	if(e.event != _cnx->get_root_window())
+	if(e.event != DefaultRootWindow(_dpy))
 		return;
 
 	/** don't make composite overlay visible **/
-	if (e.window == _cnx->composite_overlay)
+	if (e.window == composite_overlay)
 		return;
 
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
@@ -449,8 +516,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 	if (e.send_event)
 		return;
 
-	if (e.event == _cnx->get_root_window()
-			&& e.window != _cnx->get_root_window()) {
+	if (e.event == DefaultRootWindow(_dpy)
+			&& e.window != DefaultRootWindow(_dpy)) {
 
 		stack_window_update(e.window, e.above);
 
@@ -464,7 +531,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 
 
 void compositor_t::process_event(XCirculateEvent const & e) {
-	if(e.event != _cnx->get_root_window())
+	if(e.event != DefaultRootWindow(_dpy))
 		return;
 
 	if(e.place == PlaceOnTop) {
@@ -490,8 +557,8 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
 	region_t<int> r = read_damaged_region(e.damage);
 
-	if (e.drawable == _cnx->composite_overlay
-			|| e.drawable == _cnx->get_root_window())
+	if (e.drawable == composite_overlay
+			|| e.drawable == DefaultRootWindow(_dpy))
 		return;
 
 	map<Window, composite_window_t *>::iterator x = window_data.find(
@@ -508,19 +575,19 @@ region_t<int> compositor_t::read_damaged_region(Damage d) {
 	region_t<int> result;
 
 	/* create an empty region */
-	XserverRegion region = XFixesCreateRegion(_cnx->dpy, 0, 0);
+	XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
 
 	if (!region)
 		throw std::runtime_error("could not create region");
 
 	/* get damaged region and remove them from damaged status */
-	XDamageSubtract(_cnx->dpy, d, None, region);
+	XDamageSubtract(_dpy, d, None, region);
 
 	XRectangle * rects;
 	int nb_rects;
 
 	/* get all rectangles for the damaged region */
-	rects = XFixesFetchRegion(_cnx->dpy, region, &nb_rects);
+	rects = XFixesFetchRegion(_dpy, region, &nb_rects);
 
 	if (rects) {
 		for (int i = 0; i < nb_rects; ++i) {
@@ -530,7 +597,7 @@ region_t<int> compositor_t::read_damaged_region(Damage d) {
 		XFree(rects);
 	}
 
-	XFixesDestroyRegion(_cnx->dpy, region);
+	XFixesDestroyRegion(_dpy, region);
 
 	return result;
 }
@@ -540,29 +607,28 @@ void compositor_t::scan() {
 	unsigned int num = 0;
 	Window d1, d2, *wins = 0;
 
-
 	/**
 	 * Start listen root event before anything each event will be stored to
 	 * right run later.
 	 **/
-	XSelectInput(_cnx->dpy, _cnx->get_root_window(), SubstructureNotifyMask);
+	XSelectInput(_dpy, DefaultRootWindow(_dpy), SubstructureNotifyMask);
 
 	window_stack.clear();
 	window_data.clear();
 
 	/** read all current root window **/
-	if (XQueryTree(_cnx->dpy, _cnx->get_root_window(), &d1, &d2, &wins, &num)
+	if (XQueryTree(_dpy, DefaultRootWindow(_dpy), &d1, &d2, &wins, &num)
 			!= 0) {
 
 		if (num > 0)
 			window_stack.insert(window_stack.end(), &wins[0], &wins[num]);
 
 		for (unsigned i = 0; i < num; ++i) {
-			if(wins[i] == _cnx->composite_overlay)
+			if(wins[i] == composite_overlay)
 				continue;
 			XWindowAttributes wa;
-			if (XGetWindowAttributes(_cnx->dpy, wins[i], &wa)) {
-				window_data[wins[i]] = new composite_window_t(_cnx, wins[i],
+			if (XGetWindowAttributes(_dpy, wins[i], &wa)) {
+				window_data[wins[i]] = new composite_window_t(_dpy, wins[i],
 						&wa, i == 0 ? None : wins[i - 1]);
 			}
 		}
@@ -597,14 +663,14 @@ void compositor_t::process_event(XEvent const & e) {
 		process_event(e.xreparent);
 	} else if (e.type == UnmapNotify) {
 		process_event(e.xunmap);
-	} else if (e.type == _cnx->damage_event + XDamageNotify) {
+	} else if (e.type == damage_event + XDamageNotify) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
-	} else if (e.type == _cnx->xshape_event + ShapeNotify) {
+	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent const & sev = reinterpret_cast<XShapeEvent const &>(e);
 		if(has_key(window_data, sev.window)) {
 			window_data[sev.window]->update_shape();
 		}
-	} else if (e.type == _cnx->xrandr_event + RRNotify) {
+	} else if (e.type == xrandr_event + RRNotify) {
 		printf("RRNotify\n");
 		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 		if (ev.subtype == RRNotify_CrtcChange) {
@@ -631,16 +697,16 @@ void compositor_t::update_layout() {
 
 	_desktop_region.clear();
 
-	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_cnx->dpy,
-			_cnx->get_root_window());
+	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_dpy,
+			DefaultRootWindow(_dpy));
 
 	for (int i = 0; i < resources->ncrtc; ++i) {
-		XRRCrtcInfo * info = XRRGetCrtcInfo(_cnx->dpy, resources,
+		XRRCrtcInfo * info = XRRGetCrtcInfo(_dpy, resources,
 				resources->crtcs[i]);
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
-			_box_t area(info->x, info->y, info->width, info->height);
+			box_t<int> area(info->x, info->y, info->width, info->height);
 			_desktop_region = _desktop_region + area;
 		}
 		XRRFreeCrtcInfo(info);
@@ -653,7 +719,7 @@ void compositor_t::update_layout() {
 
 void compositor_t::process_events() {
 	save_state();
-	while(_cnx->process_check_event())
+	while(process_check_event())
 		continue;
 	render_flush();
 }
@@ -751,6 +817,25 @@ void compositor_t::compute_pending_damage() {
 
 	}
 
+}
+
+
+/**
+ * Check event without blocking.
+ **/
+bool compositor_t::process_check_event() {
+	XEvent e;
+
+	int x;
+	/** Passive check of events in queue, never flush any thing **/
+	if ((x = XEventsQueued(_dpy, QueuedAlready)) > 0) {
+		/** should not block or flush **/
+		XNextEvent(_dpy, &e);
+		process_event(e);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 }

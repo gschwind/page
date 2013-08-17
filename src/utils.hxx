@@ -8,14 +8,26 @@
 #ifndef UTILS_HXX_
 #define UTILS_HXX_
 
-#include <X11/X.h>
-#include <X11/Xutil.h>
+#include <cstdio>
 
 #include <map>
 #include <set>
 #include <list>
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <string>
+
+#include <X11/X.h>
+#include <X11/Xutil.h>
+
+#include <X11/extensions/Xcomposite.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/shape.h>
+#include <X11/extensions/Xrandr.h>
+
+#include "x11_func_name.hxx"
 
 using namespace std;
 
@@ -222,6 +234,91 @@ inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {
 	return false;
 }
 
+/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
+inline void allow_input_passthrough(Display * dpy, Window w) {
+	XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
+	/**
+	 * Shape for the entire of window.
+	 **/
+	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, 0);
+	/**
+	 * input shape was introduced by Keith Packard to define an input area of
+	 * window by default is the ShapeBounding which is used. here we set input
+	 * area an empty region.
+	 **/
+	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
+	XFixesDestroyRegion(dpy, region);
+}
+
+inline bool check_composite_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	// Check if composite is supported.
+	if (XQueryExtension(dpy, COMPOSITE_NAME, opcode, event, error)) {
+		int major = 0, minor = 0; // The highest version we support
+		XCompositeQueryVersion(dpy, &major, &minor);
+		if (major != 0 || minor < 4) {
+			return false;
+		} else {
+			printf("using composite %d.%d\n", major, minor);
+			return true;
+		}
+	} else {
+		return false;
+	}
+}
+
+inline bool check_damage_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	if (!XQueryExtension(dpy, DAMAGE_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XDamageQueryVersion(dpy, &major, &minor);
+		printf("Damage Extension version %d.%d found\n", major, minor);
+		printf("Damage error %d, Damage event %d\n", *error, *event);
+		return true;
+	}
+}
+
+inline bool check_shape_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	if (!XQueryExtension(dpy, SHAPENAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XShapeQueryVersion(dpy, &major, &minor);
+		printf("Shape Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+inline bool check_randr_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	if (!XQueryExtension(dpy, RANDR_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(dpy, &major, &minor);
+		printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+static int error_handler(Display * dpy, XErrorEvent * ev) {
+	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
+
+	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
+
+	if (ev->request_code < XFUNCSIZE) {
+		char const * func_name = x_function_codes[ev->request_code];
+		char error_text[1024];
+		error_text[0] = 0;
+		XGetErrorText(dpy, ev->error_code, error_text, 1024);
+		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+	}
+	return 0;
+}
 
 
 }

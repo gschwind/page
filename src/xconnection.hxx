@@ -436,47 +436,28 @@ public:
 		select_input(xroot, SubstructureNotifyMask);
 
 		// Check if composite is supported.
-		if (XQueryExtension(dpy, COMPOSITE_NAME, &composite_opcode,
-				&composite_event, &composite_error)) {
-			int major = 0, minor = 0; // The highest version we support
-			XCompositeQueryVersion(dpy, &major, &minor);
-			if (major != 0 || minor < 4) {
-				throw std::runtime_error("X Server doesn't support Composite 0.4");
-			} else {
-				cnx_printf("using composite %d.%d\n", major, minor);
-			}
-		} else {
-			throw std::runtime_error("X Server doesn't support Composite");
+
+
+
+		if (!check_composite_extension(dpy, &composite_opcode, &composite_event,
+				&composite_error)) {
+			throw std::runtime_error("X Server doesn't support Composite 0.4");
 		}
 
 		// check/init Damage.
-		if (!XQueryExtension(dpy, DAMAGE_NAME, &damage_opcode, &damage_event,
+		if (!check_damage_extension(dpy, &damage_opcode, &damage_event,
 				&damage_error)) {
 			throw std::runtime_error("Damage extension is not supported");
-		} else {
-			int major = 0, minor = 0;
-			XDamageQueryVersion(dpy, &major, &minor);
-			cnx_printf("Damage Extension version %d.%d found\n", major, minor);
-			cnx_printf("Damage error %d, Damage event %d\n", damage_error,
-					damage_event);
 		}
 
-		if (!XQueryExtension(dpy, SHAPENAME, &xshape_opcode, &xshape_event,
+		if (!check_shape_extension(dpy, &xshape_opcode, &xshape_event,
 				&xshape_error)) {
 			throw std::runtime_error(SHAPENAME " extension is not supported");
-		} else {
-			int major = 0, minor = 0;
-			XShapeQueryVersion(dpy, &major, &minor);
-			cnx_printf("Shape Extension version %d.%d found\n", major, minor);
 		}
 
-		if (!XQueryExtension(dpy, RANDR_NAME, &xrandr_opcode, &xrandr_event,
+		if (!check_randr_extension(dpy, &xrandr_opcode, &xrandr_event,
 				&xrandr_error)) {
 			throw std::runtime_error(RANDR_NAME " extension is not supported");
-		} else {
-			int major = 0, minor = 0;
-			XRRQueryVersion(dpy, &major, &minor);
-			cnx_printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
 		}
 
 		_A = atom_handler_t(dpy);
@@ -509,34 +490,6 @@ public:
 
 	bool is_not_grab() {
 		return grab_count == 0;
-	}
-
-	static int error_handler(Display * dpy, XErrorEvent * ev) {
-		fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
-				ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-
-		static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
-
-		if (ev->request_code < XFUNCSIZE) {
-			char const * func_name = x_function_codes[ev->request_code];
-			char error_text[1024];
-			error_text[0] = 0;
-			XGetErrorText(dpy, ev->error_code, error_text, 1024);
-			fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
-		}
-		return 0;
-	}
-
-	void allow_input_passthrough(Window w) {
-		// undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html
-		XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
-		// Shape for the entire of window.
-		XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, 0);
-		// input shape was introduced by Keith Packard to define an input area of window
-		// by default is the ShapeBounding which is used.
-		// here we set input area an empty region.
-		XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
-		XFixesDestroyRegion(dpy, region);
 	}
 
 	void unmap(Window w) {
@@ -577,38 +530,7 @@ public:
 	/* this function come from xcompmgr
 	 * it is intend to make page as composite manager */
 
-	/**
-	 * Register composite manager. if another one is in place just fail to take
-	 * the ownership.
-	 **/
-	bool register_cm(Window w) {
-		Window current_cm;
-		Atom a_cm;
-		static char net_wm_cm[] = "_NET_WM_CM_Sxx";
-		snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", _screen);
-		a_cm = XInternAtom(dpy, net_wm_cm, False);
 
-		/** read if there is a compositor **/
-		current_cm = XGetSelectionOwner(dpy, a_cm);
-		if (current_cm != None) {
-			printf("Another composite manager is running\n");
-			return false;
-		} else {
-
-			/** become the compositor **/
-			XSetSelectionOwner(dpy, a_cm, w, CurrentTime);
-
-			/** check is we realy are the current compositor **/
-			if (XGetSelectionOwner(dpy, a_cm) != w) {
-	            printf("Could not acquire window manager selection on screen %d\n", _screen);
-	            return false;
-	        }
-
-			printf("Composite manager is registered on screen %d\n", _screen);
-			return true;
-		}
-
-	}
 
 	bool register_wm(bool replace, Window w) {
 	    Atom wm_sn_atom;
@@ -918,16 +840,6 @@ public:
 
 	Atom get_atom(char const * name) {
 		return name_to_atom(name);
-	}
-
-
-	void init_composite_overlay() {
-		/* map & passtrough the overlay */
-		composite_overlay = XCompositeGetOverlayWindow(dpy, xroot);
-		allow_input_passthrough(composite_overlay);
-
-		/** automaticaly redirect windows, but paint window manually */
-		XCompositeRedirectSubwindows(dpy, xroot, CompositeRedirectManual);
 	}
 
 	string const & atom_to_name(Atom atom) {

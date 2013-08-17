@@ -29,7 +29,7 @@ class composite_window_t {
 	typedef region_t<int> _region_t;
 	typedef box_t<int> _box_t;
 
-	xconnection_t * _cnx;
+	Display * dpy;
 
 	Window _wid;
 	Damage _damage;
@@ -65,11 +65,11 @@ public:
 	static long int const ClientEventMask = (StructureNotifyMask
 			| PropertyChangeMask);
 
-	composite_window_t(xconnection_t * cnx, Window w,
+	composite_window_t(Display * dpy, Window w,
 			XWindowAttributes const * wa, Window above) {
-		assert(cnx != 0);
+		assert(dpy != 0);
 
-		_cnx = cnx;
+		this->dpy = dpy;
 		_wid = w;
 
 		/** copy usefull window attributes **/
@@ -93,7 +93,7 @@ public:
 		/** guess if window has alpha channel **/
 		_has_alpha = false;
 		if (_c_class == InputOutput) {
-			XRenderPictFormat * format = XRenderFindVisualFormat(cnx->dpy,
+			XRenderPictFormat * format = XRenderFindVisualFormat(dpy,
 					_visual);
 			if (format != 0) {
 				_has_alpha = (format->type == PictTypeDirect
@@ -102,7 +102,7 @@ public:
 		}
 
 		/** read shape date **/
-		XShapeInputSelected(cnx->dpy, _wid);
+		XShapeInputSelected(dpy, _wid);
 		update_shape();
 
 		/** if window is mapped, create cairo surface and damage **/
@@ -115,7 +115,7 @@ public:
 
 	void create_cairo() {
 		if (_surf == 0 and _c_class == InputOutput) {
-			_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, _visual,
+			_surf = cairo_xlib_surface_create(dpy, _wid, _visual,
 					_position.w, _position.h);
 		}
 	}
@@ -166,7 +166,7 @@ public:
 	void update_shape() {
 
 		int count = 0, ordering = 0;
-		XRectangle * recs = XShapeGetRectangles(_cnx->dpy, _wid, ShapeBounding,
+		XRectangle * recs = XShapeGetRectangles(dpy, _wid, ShapeBounding,
 				&count, &ordering);
 
 		_region.clear();
@@ -193,17 +193,17 @@ public:
 	void create_damage() {
 		destroy_damage();
 
-		_damage = XDamageCreate(_cnx->dpy, _wid, XDamageReportNonEmpty);
+		_damage = XDamageCreate(dpy, _wid, XDamageReportNonEmpty);
 		if (_damage != None) {
-			XserverRegion region = XFixesCreateRegion(_cnx->dpy, 0, 0);
-			XDamageSubtract(_cnx->dpy, _damage, None, region);
-			XFixesDestroyRegion(_cnx->dpy, region);
+			XserverRegion region = XFixesCreateRegion(dpy, 0, 0);
+			XDamageSubtract(dpy, _damage, None, region);
+			XFixesDestroyRegion(dpy, region);
 		}
 	}
 
 	void destroy_damage() {
 		if (_damage != None) {
-			XDamageDestroy(_cnx->dpy, _damage);
+			XDamageDestroy(dpy, _damage);
 			_damage = None;
 		}
 	}
