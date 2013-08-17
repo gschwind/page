@@ -340,6 +340,9 @@ void managed_window_t::icccm_focus(Time t) {
 		if (hints.input == True) {
 			cnx->set_input_focus(_orig, RevertToParent, t);
 		}
+	} else {
+		/** no VM_HINTS, guess hints.input == True **/
+		cnx->set_input_focus(_orig, RevertToParent, t);
 	}
 
 	list<Atom> protocols;

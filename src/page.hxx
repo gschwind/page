@@ -180,6 +180,11 @@ public:
 
 	};
 
+	struct mode_data_fullscreen_t {
+		managed_window_t * mw;
+		viewport_t * v;
+	};
+
 	struct fullscreen_data_t {
 		managed_window_t * window;
 		viewport_t * viewport;
@@ -192,10 +197,11 @@ public:
 		PROCESS_SPLIT_GRAB,		// Process event when split is moving
 		PROCESS_NOTEBOOK_GRAB,	// Process event when notebook tab is moved
 		PROCESS_NOTEBOOK_BUTTON_PRESS,
-		PROCESS_FLOATING_GRAB,	// Process event when a floating window is moved
+		PROCESS_FLOATING_MOVE,	// Process event when a floating window is moved
 		PROCESS_FLOATING_RESIZE,
 		PROCESS_FLOATING_CLOSE,
-		PROCESS_FLOATING_BIND
+		PROCESS_FLOATING_BIND,
+		PROCESS_FULLSCREEN_MOVE // Alt + click to change fullscreen screen to another one
 	};
 
 	/* this define the current state of page */
@@ -211,6 +217,8 @@ public:
 	mode_data_floating_t mode_data_floating;
 	/* this data are used when you bind/drag&drop a floating window */
 	mode_data_bind_t mode_data_bind;
+
+	mode_data_fullscreen_t mode_data_fullscreen;
 
 	xconnection_t * cnx;
 	compositor_t * rnd;
@@ -348,7 +356,7 @@ public:
 	void delete_window(Window w);
 	void destroy(Window w);
 
-	void fullscreen(managed_window_t * c);
+	void fullscreen(managed_window_t * c, viewport_t * v = 0);
 	void unfullscreen(managed_window_t * c);
 	void toggle_fullscreen(managed_window_t * c);
 
@@ -384,8 +392,6 @@ public:
 
 	managed_window_t * new_managed_window(managed_window_type_e type, Window orig);
 	void destroy_managed_window(managed_window_t * mw);
-
-	viewport_t * find_viewport(Window w);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
@@ -466,7 +472,7 @@ public:
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 
 	void create_unmanaged_window(Window w, Atom type);
-
+	viewport_t * find_mouse_viewport(int x, int y);
 };
 
 

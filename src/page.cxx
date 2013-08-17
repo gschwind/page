@@ -410,8 +410,15 @@ void page_t::unmanage(managed_window_t * mw) {
 		_client_focused.remove(mw);
 	}
 
-	if (has_key(fullscreen_client_to_viewport, mw))
+	if (has_key(fullscreen_client_to_viewport, mw)) {
 		unfullscreen(mw);
+		if(process_mode == PROCESS_FULLSCREEN_MOVE) {
+			process_mode = PROCESS_NORMAL;
+			pn0->hide();
+			mode_data_fullscreen.v = 0;
+			mode_data_fullscreen.mw = 0;
+		}
+	}
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
@@ -760,9 +767,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->move_resize(mode_data_bind.c->get_base_position());
 					pn0->update_window(mw->orig(), mw->get_title());
 
-//					pn1->update_data(mw->get_icon()->get_cairo_surface(), mw->get_title());
-//					pn1->move(e.x_root, e.y_root);
-
 					process_mode = PROCESS_FLOATING_BIND;
 
 				} else {
@@ -807,10 +811,26 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						process_mode = PROCESS_FLOATING_RESIZE;
 						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					} else {
-						process_mode = PROCESS_FLOATING_GRAB;
+						process_mode = PROCESS_FLOATING_MOVE;
 					}
 				}
 
+			} else if (mw->is(MANAGED_FULLSCREEN) and e.button == (Button1)
+					and (e.state & (Mod1Mask))) {
+				fprintf(stderr, "start FULLSCREEN MOVE\n");
+				/** start moving fullscreen window **/
+				viewport_t * v = find_mouse_viewport(e.x_root, e.y_root);
+
+				if (v != 0) {
+					fprintf(stderr, "start FULLSCREEN MOVE\n");
+					process_mode = PROCESS_FULLSCREEN_MOVE;
+					mode_data_fullscreen.mw = mw;
+					mode_data_fullscreen.v = v;
+					pn0->update_window(mw->orig(), mw->get_title());
+					pn0->show();
+					pn0->move_resize(v->raw_aera);
+					pn0->expose();
+				}
 			}
 		}
 
@@ -984,7 +1004,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_notebook.ns = 0;
 
 			break;
-		case PROCESS_FLOATING_GRAB:
+		case PROCESS_FLOATING_MOVE:
 
 			pfm->hide();
 
@@ -1109,6 +1129,36 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			break;
 		}
 
+		case PROCESS_FULLSCREEN_MOVE:  {
+
+			process_mode = PROCESS_NORMAL;
+
+			viewport_t * v = find_mouse_viewport(e.x_root, e.y_root);
+
+			if (v != 0) {
+				if (v != mode_data_fullscreen.v) {
+					pn0->move_resize(v->raw_aera);
+					mode_data_fullscreen.v = v;
+				}
+			}
+
+			pn0->hide();
+
+			if (mode_data_fullscreen.v != 0 and mode_data_fullscreen.mw != 0) {
+				if (mode_data_fullscreen.v->fullscreen_client
+						!= mode_data_fullscreen.mw) {
+					unfullscreen(mode_data_fullscreen.mw);
+					fullscreen(mode_data_fullscreen.mw, mode_data_fullscreen.v);
+				}
+			}
+
+			mode_data_fullscreen.v = 0;
+			mode_data_fullscreen.mw = 0;
+
+			break;
+		}
+
+
 		default:
 			process_mode = PROCESS_NORMAL;
 			break;
@@ -1177,14 +1227,9 @@ void page_t::process_event(XMotionEvent const & e) {
 
 			if(!pn0->is_visible())
 				pn0->show();
-//			if(!pn1->is_visible())
-//				pn1->show();
-
 		}
 
 		++count;
-
-//		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		list<notebook_t *> ln;
 		get_notebooks(ln);
@@ -1260,7 +1305,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 
 		break;
-	case PROCESS_FLOATING_GRAB: {
+	case PROCESS_FLOATING_MOVE: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
@@ -1460,6 +1505,27 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 
 		break;
+	case PROCESS_FULLSCREEN_MOVE: {
+		/* get lastest know motion event */
+		ev.xmotion = e;
+		while (XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev))
+			continue;
+
+		viewport_t * v = find_mouse_viewport(ev.xmotion.x_root,
+				ev.xmotion.y_root);
+
+		if (v != 0) {
+			if (v != mode_data_fullscreen.v) {
+				pn0->move_resize(v->raw_aera);
+				pn0->expose();
+				mode_data_fullscreen.v = v;
+			}
+
+		}
+
+		break;
+	}
+
 	default:
 		break;
 	}
@@ -1954,7 +2020,7 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 	//printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x, e.area.y);
 }
 
-void page_t::fullscreen(managed_window_t * mw) {
+void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 
 	mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 	if(mw->is(MANAGED_FULLSCREEN))
@@ -1966,13 +2032,21 @@ void page_t::fullscreen(managed_window_t * mw) {
 	if(mw->is(MANAGED_NOTEBOOK)) {
 		data.revert_notebook = find_notebook_for(mw);
 		data.revert_type = MANAGED_NOTEBOOK;
-		data.viewport = find_viewport_for(data.revert_notebook);
+		if (v == 0) {
+			data.viewport = find_viewport_for(data.revert_notebook);
+		} else {
+			data.viewport = v;
+		}
 		assert(data.viewport != 0);
 		remove_window_from_tree(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
 		data.revert_type = MANAGED_FLOATING;
 		data.revert_notebook = 0;
-		data.viewport = viewport_outputs.begin()->second;
+		if (v == 0) {
+			data.viewport = viewport_outputs.begin()->second;
+		} else {
+			data.viewport = v;
+		}
 	}
 
 
@@ -3208,7 +3282,7 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 		}
 		break;
 
-	case PROCESS_FLOATING_GRAB:
+	case PROCESS_FLOATING_MOVE:
 	case PROCESS_FLOATING_RESIZE:
 	case PROCESS_FLOATING_CLOSE:
 		if (mode_data_floating.f == mw) {
@@ -3830,6 +3904,17 @@ Atom page_t::find_net_wm_type(Window w) {
 	/* should never happen */
 	return None;
 
+}
+
+
+viewport_t * page_t::find_mouse_viewport(int x, int y) {
+	map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
+	while (i != viewport_outputs.end()) {
+		if (i->second->raw_aera.is_inside(x, y))
+			return i->second;
+		++i;
+	}
+	return 0;
 }
 
 }
