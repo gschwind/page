@@ -68,7 +68,7 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	 * Grab and sync the server before reading and setup select_input to not
 	 * miss events and to get the valid state of windows
 	 **/
-	cnx->grab();
+	//cnx->grab();
 
 	cnx->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 	cnx->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
@@ -79,7 +79,7 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	ungrab_all_buttons(_base);
 	grab_button_unfocused(_base);
 
-	cnx->ungrab();
+	//cnx->ungrab();
 
 	set_theme(theme);
 	init_managed_type(initial_type);

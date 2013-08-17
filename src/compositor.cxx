@@ -116,6 +116,8 @@ compositor_t::compositor_t() {
 		throw std::runtime_error(RANDR_NAME " extension is not supported");
 	}
 
+	A = atom_handler_t(_dpy);
+
 	/* create an invisible window to identify page */
 	cm_window = XCreateSimpleWindow(_dpy, DefaultRootWindow(_dpy), -100,
 			-100, 1, 1, 0, 0, 0);
@@ -124,10 +126,10 @@ compositor_t::compositor_t() {
 		throw compositor_fail_t();
 	}
 
-	std::string name("page_internal_compositor");
+	char const * name = "page_internal_compositor";
 	XChangeProperty(_dpy, cm_window, A(_NET_WM_NAME), A(UTF8_STRING), 8,
-	PropModeReplace, reinterpret_cast<unsigned char const *>(name.c_str()),
-			name.length() + 1);
+	PropModeReplace, reinterpret_cast<unsigned char const *>(name),
+			strlen(name) + 1);
 
 	long pid = getpid();
 
@@ -154,27 +156,23 @@ compositor_t::compositor_t() {
 	damage_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
 
-	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
-	update_layout();
 
 	/** update the windows list **/
 	scan();
+
+
+	_front_buffer = 0;
+	_bask_buffer = 0;
+
+	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
+	update_layout();
 
 	/**
 	 * Add the composite window to the stack as invisible window to track a
 	 * valid stack. scan() currently does not report this window, I add remove
 	 * line, in case of scan will report it.
 	 **/
-
 	stack_window_place_on_top(composite_overlay);
-
-	XGetWindowAttributes(_dpy, DefaultRootWindow(_dpy), &root_attributes);
-
-	_front_buffer = cairo_xlib_surface_create(_dpy, composite_overlay,
-			root_attributes.visual, root_attributes.width,
-			root_attributes.height);
-	_bask_buffer = cairo_surface_create_similar(_front_buffer,
-			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
 
 	damage_all();
 }
@@ -186,6 +184,8 @@ compositor_t::~compositor_t() {
 		delete i->second;
 		++i;
 	}
+
+	XCloseDisplay(_dpy);
 
 };
 
@@ -695,6 +695,11 @@ void compositor_t::process_event(XEvent const & e) {
 
 void compositor_t::update_layout() {
 
+	XGetWindowAttributes(_dpy, DefaultRootWindow(_dpy), &root_attributes);
+
+	destroy_cairo();
+	init_cairo();
+
 	_desktop_region.clear();
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_dpy,
@@ -836,6 +841,26 @@ bool compositor_t::process_check_event() {
 	} else {
 		return false;
 	}
+}
+
+void compositor_t::destroy_cairo() {
+	if(_front_buffer != 0) {
+		cairo_surface_destroy(_front_buffer);
+		_front_buffer = 0;
+	}
+
+	if(_bask_buffer != 0) {
+		cairo_surface_destroy(_bask_buffer);
+		_bask_buffer = 0;
+	}
+}
+
+void compositor_t::init_cairo() {
+	_front_buffer = cairo_xlib_surface_create(_dpy, composite_overlay,
+			root_attributes.visual, root_attributes.width,
+			root_attributes.height);
+	_bask_buffer = cairo_surface_create_similar(_front_buffer,
+			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
 }
 
 }

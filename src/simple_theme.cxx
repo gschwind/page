@@ -221,168 +221,13 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
 	px = None;
 
-	if (conf.has_key("simple_theme", "background_png")) {
-		string scale_mode = conf.get_string("simple_theme", "scale_mode");
+	has_background = conf.has_key("simple_theme", "background_png");
+	background_file = conf.get_string("simple_theme", "background_png");
+	scale_mode = "center";
+	if(conf.has_key("simple_theme", "scale_mode"))
+		scale_mode = conf.get_string("simple_theme", "scale_mode");
 
-		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
-				conf.get_string("simple_theme", "background_png").c_str());
-
-		p_window_attribute_t wa = cnx->get_window_attributes(cnx->get_root_window());
-
-		Pixmap px = XCreatePixmap(cnx->dpy, cnx->get_root_window(), wa->width, wa->height, wa->depth);
-		background_s = cairo_xlib_surface_create(cnx->dpy, px, wa->visual, wa->width, wa->height);
-
-		/**
-		 * WARNING: transform order and set_source_surface have huge
-		 * Consequence.
-		 **/
-
-		double src_width = cairo_image_surface_get_width(tmp);
-		double src_height = cairo_image_surface_get_height(tmp);
-
-		if (src_width > 0 and src_height > 0) {
-
-
-			if (scale_mode == "stretch") {
-				cairo_t * cr = cairo_create(background_s);
-
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-				cairo_fill(cr);
-
-				double x_ratio = wa->width / src_width;
-				double y_ratio = wa->height / src_height;
-				cairo_scale(cr, x_ratio, y_ratio);
-				cairo_set_source_surface(cr, tmp, 0, 0);
-				cairo_rectangle(cr, 0, 0, src_width, src_height);
-				cairo_fill(cr);
-
-				cairo_destroy(cr);
-
-			} else if (scale_mode == "zoom") {
-				cairo_t * cr = cairo_create(background_s);
-
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-				cairo_fill(cr);
-
-				double x_ratio = wa->width / (double)src_width;
-				double y_ratio = wa->height / (double)src_height;
-
-				double x_offset;
-				double y_offset;
-
-				if (x_ratio > y_ratio) {
-
-					double yp = wa->height / x_ratio;
-
-					x_offset = 0;
-					y_offset = (yp - src_height) / 2.0;
-
-					cairo_scale(cr, x_ratio, x_ratio);
-					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
-					cairo_rectangle(cr, 0, 0, src_width, yp);
-					cairo_fill(cr);
-
-				} else {
-
-					double xp = wa->width / y_ratio;
-
-					x_offset = (xp - src_width) / 2.0;
-					y_offset = 0;
-
-					cairo_scale(cr, y_ratio, y_ratio);
-					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
-					cairo_rectangle(cr, 0, 0, xp, src_height);
-					cairo_fill(cr);
-				}
-
-				cairo_destroy(cr);
-
-			} else if (scale_mode == "center") {
-				cairo_t * cr = cairo_create(background_s);
-
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-				cairo_fill(cr);
-
-				double x_offset = (wa->width - src_width) / 2.0;
-				double y_offset = (wa->height - src_height) / 2.0;
-
-				cairo_set_source_surface(cr, tmp, x_offset, y_offset);
-				cairo_rectangle(cr, max<double>(0.0, x_offset),
-						max<double>(0.0, y_offset),
-						min<double>(src_width, wa->width),
-						min<double>(src_height, wa->height));
-				cairo_fill(cr);
-
-				cairo_destroy(cr);
-
-			} else if (scale_mode == "scale" || scale_mode == "span") {
-				cairo_t * cr = cairo_create(background_s);
-
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-				cairo_fill(cr);
-
-				double x_ratio = wa->width / src_width;
-				double y_ratio = wa->height / src_height;
-
-				double x_offset, y_offset;
-
-				if (x_ratio < y_ratio) {
-
-					double yp = wa->height / x_ratio;
-
-					x_offset = 0;
-					y_offset = (yp - src_height) / 2.0;
-
-					cairo_scale(cr, x_ratio, x_ratio);
-					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
-					cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-					cairo_fill(cr);
-
-				} else {
-					double xp = wa->width / y_ratio;
-
-					y_offset = 0;
-					x_offset = (xp - src_width) / 2.0;
-
-					cairo_scale(cr, y_ratio, y_ratio);
-					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
-					cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-					cairo_fill(cr);
-				}
-
-				cairo_destroy(cr);
-
-			} else if (scale_mode == "tile") {
-
-				cairo_t * cr = cairo_create(background_s);
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
-				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-				cairo_fill(cr);
-
-				for (double x = 0; x < wa->width; x += src_width) {
-					for (double y = 0; y < wa->height; y += src_height) {
-						cairo_identity_matrix(cr);
-						cairo_translate(cr, x, y);
-						cairo_set_source_surface(cr, tmp, 0, 0);
-						cairo_rectangle(cr, 0, 0, wa->width, wa->height);
-						cairo_fill(cr);
-					}
-				}
-
-				cairo_destroy(cr);
-
-			}
-
-		}
-		cairo_surface_destroy(tmp);
-
-	} else {
-		background_s = 0;
-	}
+	create_background_img();
 
 	/* open icons */
 	if (hsplit_button_s == 0) {
@@ -1362,7 +1207,7 @@ void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int 
 
 	cairo_new_path(cr);
 
-	for(int i = 0; i < count; ++i) {
+	for(int i = 0; i <= count; ++i) {
 
 		/** clip left/right **/
 
@@ -1403,6 +1248,187 @@ void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int 
 
 PangoFontDescription * simple_theme_t::get_pango_font() {
 	return pango_font;
+}
+
+void simple_theme_t::update() {
+
+	if(background_s != 0) {
+		cairo_surface_destroy(background_s);
+		background_s = 0;
+	}
+
+	if(px != None) {
+		XFreePixmap(_cnx->dpy, px);
+		px = None;
+	}
+
+	create_background_img();
+
+}
+
+void simple_theme_t::create_background_img() {
+
+	if (has_background) {
+
+		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
+				background_file.c_str());
+
+		p_window_attribute_t wa = _cnx->get_window_attributes(_cnx->get_root_window());
+
+		px = XCreatePixmap(_cnx->dpy, _cnx->get_root_window(), wa->width, wa->height, wa->depth);
+		background_s = cairo_xlib_surface_create(_cnx->dpy, px, wa->visual, wa->width, wa->height);
+
+		/**
+		 * WARNING: transform order and set_source_surface have huge
+		 * Consequence.
+		 **/
+
+		double src_width = cairo_image_surface_get_width(tmp);
+		double src_height = cairo_image_surface_get_height(tmp);
+
+		if (src_width > 0 and src_height > 0) {
+
+
+			if (scale_mode == "stretch") {
+				cairo_t * cr = cairo_create(background_s);
+
+				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+				cairo_fill(cr);
+
+				double x_ratio = wa->width / src_width;
+				double y_ratio = wa->height / src_height;
+				cairo_scale(cr, x_ratio, y_ratio);
+				cairo_set_source_surface(cr, tmp, 0, 0);
+				cairo_rectangle(cr, 0, 0, src_width, src_height);
+				cairo_fill(cr);
+
+				cairo_destroy(cr);
+
+			} else if (scale_mode == "zoom") {
+				cairo_t * cr = cairo_create(background_s);
+
+				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+				cairo_fill(cr);
+
+				double x_ratio = wa->width / (double)src_width;
+				double y_ratio = wa->height / (double)src_height;
+
+				double x_offset;
+				double y_offset;
+
+				if (x_ratio > y_ratio) {
+
+					double yp = wa->height / x_ratio;
+
+					x_offset = 0;
+					y_offset = (yp - src_height) / 2.0;
+
+					cairo_scale(cr, x_ratio, x_ratio);
+					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
+					cairo_rectangle(cr, 0, 0, src_width, yp);
+					cairo_fill(cr);
+
+				} else {
+
+					double xp = wa->width / y_ratio;
+
+					x_offset = (xp - src_width) / 2.0;
+					y_offset = 0;
+
+					cairo_scale(cr, y_ratio, y_ratio);
+					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
+					cairo_rectangle(cr, 0, 0, xp, src_height);
+					cairo_fill(cr);
+				}
+
+				cairo_destroy(cr);
+
+			} else if (scale_mode == "center") {
+				cairo_t * cr = cairo_create(background_s);
+
+				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+				cairo_fill(cr);
+
+				double x_offset = (wa->width - src_width) / 2.0;
+				double y_offset = (wa->height - src_height) / 2.0;
+
+				cairo_set_source_surface(cr, tmp, x_offset, y_offset);
+				cairo_rectangle(cr, max<double>(0.0, x_offset),
+						max<double>(0.0, y_offset),
+						min<double>(src_width, wa->width),
+						min<double>(src_height, wa->height));
+				cairo_fill(cr);
+
+				cairo_destroy(cr);
+
+			} else if (scale_mode == "scale" || scale_mode == "span") {
+				cairo_t * cr = cairo_create(background_s);
+
+				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+				cairo_fill(cr);
+
+				double x_ratio = wa->width / src_width;
+				double y_ratio = wa->height / src_height;
+
+				double x_offset, y_offset;
+
+				if (x_ratio < y_ratio) {
+
+					double yp = wa->height / x_ratio;
+
+					x_offset = 0;
+					y_offset = (yp - src_height) / 2.0;
+
+					cairo_scale(cr, x_ratio, x_ratio);
+					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
+					cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+					cairo_fill(cr);
+
+				} else {
+					double xp = wa->width / y_ratio;
+
+					y_offset = 0;
+					x_offset = (xp - src_width) / 2.0;
+
+					cairo_scale(cr, y_ratio, y_ratio);
+					cairo_set_source_surface(cr, tmp, x_offset, y_offset);
+					cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+					cairo_fill(cr);
+				}
+
+				cairo_destroy(cr);
+
+			} else if (scale_mode == "tile") {
+
+				cairo_t * cr = cairo_create(background_s);
+				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+				cairo_fill(cr);
+
+				for (double x = 0; x < wa->width; x += src_width) {
+					for (double y = 0; y < wa->height; y += src_height) {
+						cairo_identity_matrix(cr);
+						cairo_translate(cr, x, y);
+						cairo_set_source_surface(cr, tmp, 0, 0);
+						cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+						cairo_fill(cr);
+					}
+				}
+
+				cairo_destroy(cr);
+
+			}
+
+		}
+		cairo_surface_destroy(tmp);
+
+	} else {
+		background_s = 0;
+	}
 }
 
 }

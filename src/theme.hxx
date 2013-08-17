@@ -61,6 +61,8 @@ public:
 			window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title) = 0;
 
+	virtual void update() = 0;
+
 };
 
 }

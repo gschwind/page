@@ -2225,14 +2225,17 @@ void page_t::process_event(XEvent const & e) {
 		if (ev.subtype == RRNotify_CrtcChange) {
 			rr_update_viewport_layout();
 			update_allocation();
+
+			theme->update();
+
+			p_window_attribute_t rwa = cnx->get_window_attributes(cnx->get_root_window());
+
+			delete rpage;
+			rpage = new renderable_page_t(cnx, theme,
+					rwa->width, rwa->height);
+			rpage->show();
+
 		}
-
-		p_window_attribute_t rwa = cnx->get_window_attributes(cnx->get_root_window());
-
-		delete rpage;
-		rpage = new renderable_page_t(cnx, theme,
-				rwa->width, rwa->height);
-		rpage->show();
 
 		XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
 				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,

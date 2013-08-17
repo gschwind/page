@@ -137,6 +137,9 @@ class compositor_t : public xevent_handler_t {
 	void init_composite_overlay();
 	bool process_check_event();
 
+	void destroy_cairo();
+	void init_cairo();
+
 public:
 
 	virtual ~compositor_t();

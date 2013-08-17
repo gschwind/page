@@ -78,13 +78,6 @@ public:
 
 	xconnection_t * _cnx;
 
-//	bool ft_is_loaded;
-//	FT_Library library; /* handle to library */
-//	FT_Face face; /* handle to face object */
-//	cairo_font_face_t * font;
-//	FT_Face face_bold; /* handle to face object */
-//	cairo_font_face_t * font_bold;
-
 	PangoFontDescription * pango_font;
 	PangoFontDescription * pango_popup_font;
 
@@ -128,6 +121,10 @@ public:
 
 	Pixmap px;
 
+	bool has_background;
+	string background_file;
+	string scale_mode;
+
 
 	simple_theme_t(xconnection_t * cnx, config_handler_t & conf);
 
@@ -137,6 +134,8 @@ public:
 			double h, double r);
 	void draw_unselected_tab(cairo_t * cr, managed_window_t * nw, box_int_t location);
 	void draw_selected_tab(cairo_t * cr, managed_window_t * nw, box_int_t location);
+
+	void create_background_img();
 
 	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default);
 	virtual void render_split(cairo_t * cr, split_t * s);
@@ -150,6 +149,8 @@ public:
 			unsigned int height, string const & title);
 
 	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h);
+
+	void update();
 
 };
 
