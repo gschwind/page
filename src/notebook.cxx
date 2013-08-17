@@ -319,73 +319,8 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 		return;
 	}
 
-	if (size_hints.flags & PMaxSize) {
-		if ((int)max_width > size_hints.max_width)
-			max_width = size_hints.max_width;
-		if ((int)max_height > size_hints.max_height)
-			max_height = size_hints.max_height;
-	}
-
-	if (size_hints.flags & PBaseSize) {
-		if ((int)max_width < size_hints.base_width)
-			max_width = size_hints.base_width;
-		if ((int)max_height < size_hints.base_height)
-			max_height = size_hints.base_height;
-	} else if (size_hints.flags & PMinSize) {
-		if ((int)max_width < size_hints.min_width)
-			max_width = size_hints.min_width;
-		if ((int)max_height < size_hints.min_height)
-			max_height = size_hints.min_height;
-	}
-
-	if (size_hints.flags & PAspect) {
-		if (size_hints.flags & PBaseSize) {
-			/* ICCCM say if base is set substract base before aspect checking ref : ICCCM*/
-			if ((max_width - size_hints.base_width) * size_hints.min_aspect.y
-					< (max_height - size_hints.base_height)
-							* size_hints.min_aspect.x) {
-				/* reduce h */
-				max_height = size_hints.base_height
-						+ ((max_width - size_hints.base_width)
-								* size_hints.min_aspect.y)
-								/ size_hints.min_aspect.x;
-
-			} else if ((max_width - size_hints.base_width)
-					* size_hints.max_aspect.y
-					> (max_height - size_hints.base_height)
-							* size_hints.max_aspect.x) {
-				/* reduce w */
-				max_width = size_hints.base_width
-						+ ((max_height - size_hints.base_height)
-								* size_hints.max_aspect.x)
-								/ size_hints.max_aspect.y;
-			}
-		} else {
-			if (max_width * size_hints.min_aspect.y
-					< max_height * size_hints.min_aspect.x) {
-				/* reduce h */
-				max_height = (max_width * size_hints.min_aspect.y)
-						/ size_hints.min_aspect.x;
-
-			} else if (max_width * size_hints.max_aspect.y
-					> max_height * size_hints.max_aspect.x) {
-				/* reduce w */
-				max_width = (max_height * size_hints.max_aspect.x)
-						/ size_hints.max_aspect.y;
-			}
-		}
-
-	}
-
-	if (size_hints.flags & PResizeInc) {
-		max_width -=
-				((max_width - size_hints.base_width) % size_hints.width_inc);
-		max_height -= ((max_height - size_hints.base_height)
-				% size_hints.height_inc);
-	}
-
-	width = max_width;
-	height = max_height;
+	::page::compute_client_size_with_constraint(size_hints, max_width,
+			max_height, width, height);
 
 	//printf("XXX result : %d %d\n", width, height);
 }

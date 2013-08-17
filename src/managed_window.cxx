@@ -9,6 +9,7 @@
 #include <cairo-xlib.h>
 #include "managed_window.hxx"
 #include "notebook.hxx"
+#include "utils.hxx"
 
 namespace page {
 
@@ -17,6 +18,19 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 
 	_net_wm_type = net_wm_type;
 
+	_floating_wished_position = cnx->get_window_position(orig);
+
+
+	XSizeHints size_hints;
+	if (cnx->read_wm_normal_hints(orig, &size_hints)) {
+		unsigned w, h;
+
+		::page::compute_client_size_with_constraint(size_hints, 1, 1, w, h);
+
+		_floating_wished_position.w = w;
+		_floating_wished_position.h = h;
+	}
+
 	/**
 	 * Create the base window, window that will content managed window
 	 **/
@@ -24,7 +38,7 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	XSetWindowAttributes wa;
 	Window wbase;
 	Window wdeco;
-	box_int_t b = cnx->get_window_position(orig);
+	box_int_t b = _floating_wished_position;
 
 	/** Common window properties **/
 	unsigned long value_mask = CWOverrideRedirect;
@@ -98,13 +112,23 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 				cnx->get_window_attributes(_base)->height);
 
 		_back_cr = cairo_create(_back_surf);
+
+		if (_floating_wished_position.x == 0) {
+			_floating_wished_position.x = (cnx->get_root_size().w
+					- _floating_wished_position.w) / 2;
+		}
+
+		if (_floating_wished_position.y == 0) {
+			_floating_wished_position.y = (cnx->get_root_size().h
+					- _floating_wished_position.h) / 2;
+		}
+
+		set_wished_position(_floating_wished_position);
+
 	} else {
 		_back_cr = 0;
 		_back_surf = 0;
 	}
-
-	_floating_wished_position = cnx->get_window_position(orig);
-	set_wished_position(cnx->get_window_position(orig));
 
 	icon = 0;
 

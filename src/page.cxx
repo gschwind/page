@@ -361,18 +361,12 @@ void page_t::run() {
 managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, Window w) {
 	printf("manage \n");
 	cnx->add_to_save_set(w);
-	//w->set_managed(true);
-	//w->read_all();
-	//w->set_default_action();
-	//w->write_net_wm_state();
 
 	/* set border to zero */
 	XWindowChanges wc;
 	wc.border_width = 0;
 	XConfigureWindow(cnx->dpy, w, CWBorderWidth, &wc);
 	XSetWindowBorder(cnx->dpy, w, 0);
-
-	//w->write_net_frame_extents();
 
 	/* assign window to desktop 0 */
 	if (!cnx->read_net_wm_desktop(w)) {
@@ -831,6 +825,23 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->move_resize(v->raw_aera);
 					pn0->expose();
 				}
+			} else if (mw->is(MANAGED_NOTEBOOK) and e.button == (Button1)
+					and (e.state & (Mod1Mask))) {
+
+				notebook_t * n = find_notebook_for(mw);
+
+				process_mode = PROCESS_NOTEBOOK_GRAB;
+				mode_data_notebook.c = mw;
+				mode_data_notebook.from = n;
+				mode_data_notebook.ns = 0;
+				mode_data_notebook.zone = SELECT_NONE;
+
+				pn0->move_resize(mode_data_notebook.from->tab_area);
+				pn0->update_window(mw->orig(), mw->get_title());
+
+				mode_data_notebook.from->set_selected(mode_data_notebook.c);
+				rpage->mark_durty();
+
 			}
 		}
 
@@ -910,7 +921,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
-//			pn1->hide();
 
 			if (mode_data_notebook.zone == SELECT_TAB
 					&& mode_data_notebook.ns != 0
@@ -1084,7 +1094,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
-//			pn1->hide();
 
 			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
@@ -3093,80 +3102,8 @@ void page_t::compute_client_size_with_constraint(Window c,
 		return;
 	}
 
-	/* default size if no size_hints is provided */
-	width = wished_width;
-	height = wished_height;
-
-	if (size_hints.flags & PMaxSize) {
-		if ((int)wished_width > size_hints.max_width)
-			wished_width = size_hints.max_width;
-		if ((int)wished_height > size_hints.max_height)
-			wished_height = size_hints.max_height;
-	}
-
-	if (size_hints.flags & PBaseSize) {
-		if ((int)wished_width < size_hints.base_width)
-			wished_width = size_hints.base_width;
-		if ((int)wished_height < size_hints.base_height)
-			wished_height = size_hints.base_height;
-	} else if (size_hints.flags & PMinSize) {
-		if ((int)wished_width < size_hints.min_width)
-			wished_width = size_hints.min_width;
-		if ((int)wished_height < size_hints.min_height)
-			wished_height = size_hints.min_height;
-	}
-
-	if (size_hints.flags & PAspect) {
-		if (size_hints.flags & PBaseSize) {
-			/**
-			 * ICCCM say if base is set subtract base before aspect checking
-			 * reference: ICCCM
-			 **/
-			if ((wished_width - size_hints.base_width) * size_hints.min_aspect.y
-					< (wished_height - size_hints.base_height)
-							* size_hints.min_aspect.x) {
-				/* reduce h */
-				wished_height = size_hints.base_height
-						+ ((wished_width - size_hints.base_width)
-								* size_hints.min_aspect.y)
-								/ size_hints.min_aspect.x;
-
-			} else if ((wished_width - size_hints.base_width)
-					* size_hints.max_aspect.y
-					> (wished_height - size_hints.base_height)
-							* size_hints.max_aspect.x) {
-				/* reduce w */
-				wished_width = size_hints.base_width
-						+ ((wished_height - size_hints.base_height)
-								* size_hints.max_aspect.x)
-								/ size_hints.max_aspect.y;
-			}
-		} else {
-			if (wished_width * size_hints.min_aspect.y
-					< wished_height * size_hints.min_aspect.x) {
-				/* reduce h */
-				wished_height = (wished_width * size_hints.min_aspect.y)
-						/ size_hints.min_aspect.x;
-
-			} else if (wished_width * size_hints.max_aspect.y
-					> wished_height * size_hints.max_aspect.x) {
-				/* reduce w */
-				wished_width = (wished_height * size_hints.max_aspect.x)
-						/ size_hints.max_aspect.y;
-			}
-		}
-
-	}
-
-	if (size_hints.flags & PResizeInc) {
-		wished_width -=
-				((wished_width - size_hints.base_width) % size_hints.width_inc);
-		wished_height -= ((wished_height - size_hints.base_height)
-				% size_hints.height_inc);
-	}
-
-	width = wished_width;
-	height = wished_height;
+	::page::compute_client_size_with_constraint(size_hints, wished_width, wished_height,
+			width, height);
 
 }
 
