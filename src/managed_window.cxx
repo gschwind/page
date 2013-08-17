@@ -75,9 +75,7 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	cnx->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
 
 	/* Grab button click */
-	grab_all_buttons(_deco);
-	ungrab_all_buttons(_base);
-	grab_button_unfocused(_base);
+	grab_button_focused();
 
 	//cnx->ungrab();
 
@@ -284,7 +282,7 @@ void managed_window_t::focus(Time t) {
 
 	net_wm_state_add(_NET_WM_STATE_FOCUSED);
 	/** when focus a window, disable all button grab **/
-	ungrab_all_buttons(_base);
+	grab_button_focused();
 	icccm_focus(t);
 
 }

@@ -302,16 +302,16 @@ void page_t::run() {
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
-	timespec max_wait;
-	fd_set fds_read;
-	fd_set fds_intr;
+//	timespec max_wait;
+//	fd_set fds_read;
+//	fd_set fds_intr;
 
 	/**
 	 * wait for a maximum of 15 ms
 	 * i.e about 60 times per second.
 	 **/
-	max_wait.tv_sec = 0;
-	max_wait.tv_nsec = 15000000;
+//	max_wait.tv_sec = 0;
+//	max_wait.tv_nsec = 15000000;
 
 //	int max = cnx->fd();
 //
@@ -403,8 +403,6 @@ void page_t::unmanage(managed_window_t * mw) {
 		if(_client_focused.front() != 0) {
 			if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
 				activate_client(_client_focused.front());
-			} else {
-				//set_focus(_client_focused.front(), true);
 			}
 		}
 
@@ -692,9 +690,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		}
 
 		if (mw != 0) {
-			if (mw->is(MANAGED_FLOATING)
-					&& (e.subwindow == (None)
-			|| (e.state & (Mod1Mask)) || (e.state & (ControlMask))) && e.button == Button1) {
+			if (mw->is(MANAGED_FLOATING) and e.button == Button1) {
 
 				box_int_t size = mw->get_base_position();
 
@@ -1996,9 +1992,9 @@ void page_t::fullscreen(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_FULLSCREEN);
 	data.viewport->fullscreen_client = mw;
 	fullscreen_client_to_viewport[mw] = data;
-	mw->normalize();
 	mw->set_wished_position(data.viewport->raw_aera);
-	//set_focus(mw, false);
+	printf("FULLSCREEN TO %dx%d+%d+%d\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
+	mw->normalize();
 	safe_raise_window(mw->orig());
 }
 

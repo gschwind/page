@@ -141,13 +141,12 @@ public:
 
 	void set_focused() {
 		net_wm_state_add(_NET_WM_STATE_FOCUSED);
-		ungrab_all_buttons(_base);
+		grab_button_focused();
 	}
 
 	void unset_focused() {
 		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-		ungrab_all_buttons(_base);
-		grab_button_unfocused(_base);
+		grab_button_unfocused();
 	}
 
 	string get_title() {
@@ -166,28 +165,68 @@ public:
 		return name;
 	}
 
-	void grab_all_buttons(Window w) {
-		XGrabButton(cnx->dpy, AnyButton, AnyModifier, w, False,
-				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-				GrabModeSync, GrabModeAsync, None, None);
+public:
+	void grab_button_focused() {
+		/** First ungrab all **/
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _orig);
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _base);
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _deco);
+
+		/** for decoration, grab all **/
+		XGrabButton(cnx->dpy, (Button1), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		XGrabButton(cnx->dpy, (Button2), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		XGrabButton(cnx->dpy, (Button3), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		/** for base, just grab some modified buttons **/
+		XGrabButton(cnx->dpy, Button1, (Mod1Mask), _base, False,
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		/** for base, just grab some modified buttons **/
+		XGrabButton(cnx->dpy, Button1, (ControlMask), _base, False,
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
 	}
 
-	void ungrab_all_buttons(Window w) {
-		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, w);
-	}
+	void grab_button_unfocused() {
+		/** First ungrab all **/
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _orig);
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _base);
+		XUngrabButton(cnx->dpy, AnyButton, AnyModifier, _deco);
 
-	void grab_button_unfocused(Window w) {
-		XGrabButton(cnx->dpy, Button1, AnyModifier, w,
-				False, ButtonPressMask, GrabModeSync,
-				GrabModeAsync, None, None);
+		XGrabButton(cnx->dpy, (Button1), (AnyModifier), _base, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(cnx->dpy, Button2, AnyModifier, w,
-				False, ButtonPressMask, GrabModeSync,
-				GrabModeAsync, None, None);
+		XGrabButton(cnx->dpy, (Button2), (AnyModifier), _base, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(cnx->dpy, Button3, AnyModifier, w,
-				False, ButtonPressMask, GrabModeSync,
-				GrabModeAsync, None, None);
+		XGrabButton(cnx->dpy, (Button3), (AnyModifier), _base, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		/** for decoration, grab all **/
+		XGrabButton(cnx->dpy, (Button1), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		XGrabButton(cnx->dpy, (Button2), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		XGrabButton(cnx->dpy, (Button3), (AnyModifier), _deco, (False),
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
 
 	}
 
