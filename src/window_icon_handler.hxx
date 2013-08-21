@@ -20,8 +20,6 @@ class window_icon_handler_t {
 	/* icon surface */
 	cairo_surface_t * icon_surf;
 
-	Pixmap _px;
-
 	xconnection_t * _cnx;
 
 public:

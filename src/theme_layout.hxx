@@ -21,6 +21,10 @@ struct margin_t {
 	unsigned char bottom;
 };
 
+union theme_box_u {
+
+};
+
 struct theme_layout_t {
 	margin_t notebook_margin;
 	margin_t split_margin;

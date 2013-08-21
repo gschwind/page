@@ -147,7 +147,7 @@ public:
 
 	void process_events();
 
-	int get_connection_fd() {
+	int fd() {
 		return ConnectionNumber(_dpy);
 	}
 

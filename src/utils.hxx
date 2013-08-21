@@ -123,7 +123,7 @@ template<> struct _format<unsigned char> {
 
 template<typename T>
 bool get_window_property(Display * dpy, Window win, Atom prop,
-		Atom type, vector<T> & v) {
+		Atom type, vector<T> * v = 0) {
 
 	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
 
@@ -143,9 +143,10 @@ bool get_window_property(Display * dpy, Window win, Atom prop,
 		if (bytes_left != 0)
 			printf("some bits lefts\n");
 		if (ret_size == _format<T>::size && ret_items > 0) {
-			v.clear();
 			data = reinterpret_cast<T*>(xdata);
-			v.assign(&data[0], &data[ret_items]);
+			if (v != 0) {
+				v->assign(&data[0], &data[ret_items]);
+			}
 			ret = true;
 		}
 		XFree(xdata);
@@ -171,12 +172,6 @@ bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
 	*nitems = 0;
 	*data = 0;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wall"
-	/** compile time check for size value **/
-	ctassert< _format<T>::size != 0 > format_size_check;
-#pragma GCC diagnostic pop
-
 	res = XGetWindowProperty(dpy, win, prop, 0L,
 			std::numeric_limits<long int>::max(), False, type, &ret_type,
 			&ret_size, &ret_items, &bytes_left, &xdata);
@@ -201,26 +196,34 @@ void write_window_property(Display * dpy, Window win, Atom prop,
 }
 
 template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
-		Atom type, list<T> & list) {
-	vector<long> tmp;
-	if (get_window_property(dpy, w, prop, type, tmp)) {
-		list.clear();
-		list.insert(list.end(), tmp.begin(), tmp.end());
-		return true;
+		Atom type, list<T> * list = 0) {
+	if (list != 0) {
+		vector<T> tmp;
+		if (get_window_property<T>(dpy, w, prop, type, &tmp)) {
+			list->clear();
+			list->insert(list->end(), tmp.begin(), tmp.end());
+			return true;
+		}
+		return false;
+	} else {
+		return get_window_property<T>(dpy, w, prop, type);
 	}
-	return false;
 }
 
 template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
-		Atom type, T & value) {
-	vector<long> tmp;
-	if (get_window_property(dpy, w, prop, type, tmp)) {
-		if (tmp.size() > 0) {
-			value = tmp[0];
-			return true;
+		Atom type, T * value = 0) {
+	if (value != 0) {
+		vector<T> tmp;
+		if (get_window_property<T>(dpy, w, prop, type, &tmp)) {
+			if (tmp.size() > 0) {
+				*value = tmp[0];
+				return true;
+			}
 		}
+		return false;
+	} else {
+		return get_window_property<T>(dpy, w, prop, type);
 	}
-	return false;
 }
 
 inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {

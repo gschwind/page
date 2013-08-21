@@ -66,7 +66,7 @@ void print_net_wm_window_type(Display * dpy, Window w) {
 }
 
 void print_window_attributes(Window w, XWindowAttributes & wa) {
-	//return;
+	return;
 	printf(">>> Window: #%lu\n", w);
 	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
 	printf("> border_width: %d\n", wa.border_width);

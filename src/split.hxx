@@ -11,6 +11,7 @@
 #include <cmath>
 
 #include "box.hxx"
+#include "tree_base.hxx"
 #include "tree.hxx"
 #include "theme_layout.hxx"
 
@@ -20,9 +21,7 @@ using namespace std;
 
 namespace page {
 
-enum split_type_e {
-	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
-};
+
 
 class split_t : public tree_t {
 

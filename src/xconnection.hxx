@@ -105,17 +105,7 @@ struct xconnection_t {
 
 	atom_handler_t _A;
 
-private:
-
-	properties_cache_t _pcache;
-	window_attributes_cache_t _acache;
-
 public:
-
-	/* main screen */
-	int _screen;
-	/* the root window ID */
-	Window xroot;
 
 	std::list<event_t> pending;
 
@@ -152,105 +142,34 @@ public:
 	}
 
 	Window get_root_window() {
-		return xroot;
+		return DefaultRootWindow(dpy);
 	}
 
 	Atom A(atom_e atom) {
 		return _A(atom);
 	}
 
-	box_int_t get_window_position(Window w) {
-		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
-		if (wa->is_valid) {
-			return box_int_t(wa->x, wa->y, wa->width, wa->height);
-		} else {
-			return box_int_t();
-		}
-	}
-
-	box_int_t get_root_size() {
-		return get_window_position(xroot);
-	}
-
 	int screen() {
-		return _screen;
+		return DefaultScreen(dpy);
 	}
 
 public:
 
-	p_window_attribute_t get_window_attributes(Window w) {
-		return _acache.get_window_attributes(dpy, w);
-	}
-
-	template<typename T>
-	void write_window_property(Display * dpy, Window win, Atom prop,
-			Atom type, vector<T> & v) {
-		XChangeProperty(dpy, win, prop, type, _format<T>::size,
-		PropModeReplace, (unsigned char *) &v[0], v.size());
-	}
-
-	template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
-			Atom type, list<T> * list = 0) {
-		if (list == 0) {
-			if (_pcache.get_window_property<T>(dpy, w, prop, type)) {
-				return true;
-			}
-		} else {
-			vector<long> tmp;
-			if (_pcache.get_window_property(dpy, w, prop, type, &tmp)) {
-				list->clear();
-				list->insert(list->end(), tmp.begin(), tmp.end());
-				return true;
-			}
-		}
-		return false;
-	}
-
-	template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
-			Atom type, T * value = 0) {
-		if (value == 0) {
-			if (_pcache.get_window_property<T>(dpy, w, prop, type)) {
-				return true;
-			}
-		} else {
-			vector<long> tmp;
-			if (_pcache.get_window_property(dpy, w, prop, type, &tmp)) {
-				if (tmp.size() > 0) {
-					*value = tmp[0];
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	bool read_text(Display * dpy, Window w, Atom prop, string & value) {
-		XTextProperty xname;
-		XGetTextProperty(dpy, w, &xname, prop);
-		if (xname.nitems != 0) {
-			value = (char *)xname.value;
-			XFree(xname.value);
-			return true;
-		}
-		return false;
-	}
-
-
 	bool read_utf8_string(Display * dpy, Window w, Atom prop, string * value = 0) {
 		if (value != 0) {
 			vector<char> data;
-			bool ret = _pcache.get_window_property(dpy, w, prop, A(UTF8_STRING), &data);
+			bool ret = ::page::get_window_property<char>(dpy, w, prop, A(UTF8_STRING), &data);
 			data.resize(data.size() + 1, 0);
 			*value = &data[0];
 			return ret;
 		} else {
-			return _pcache.get_window_property<char>(dpy, w, prop, A(UTF8_STRING));
+			return ::page::get_window_property<char>(dpy, w, prop, A(UTF8_STRING));
 		}
 	}
 
 
 	bool read_wm_name(Window w, string & name) {
-		return read_text(dpy, w, A(WM_NAME), name);
+		return ::page::read_text(dpy, w, A(WM_NAME), name);
 	}
 
 	bool read_net_wm_name(Window w, string * name = 0) {
@@ -258,47 +177,54 @@ public:
 	}
 
 	bool read_wm_state(Window w, long * value = 0) {
-		return read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
+		return ::page::read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
 	}
 
 	bool read_wm_transient_for(Window w, Window * value = 0) {
-		return read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
+		return ::page::read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
 	}
 
 	bool read_net_wm_window_type(Window w, list<Atom> * list = 0) {
-		bool ret = read_list(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM), list);
-		return ret;
+		return ::page::read_list(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM), list);
 	}
 
 	bool read_net_wm_state(Window w, list<Atom> * list = 0) {
-		return read_list(dpy, w, A(_NET_WM_STATE), A(ATOM), list);
+		return ::page::read_list(dpy, w, A(_NET_WM_STATE), A(ATOM), list);
 	}
 
 	bool read_net_wm_protocols(Window w, list<Atom> * list = 0) {
-		return read_list(dpy, w, A(WM_PROTOCOLS), A(ATOM), list);
+		return ::page::read_list(dpy, w, A(WM_PROTOCOLS), A(ATOM), list);
 	}
 
-	bool read_net_wm_partial_struct(Window w,
-			vector<long> * list = 0) {
-		return _pcache.get_window_property(dpy, w, A(_NET_WM_STRUT_PARTIAL),
-				A(CARDINAL), list);
+	bool read_net_wm_partial_struct(Window w, vector<long> * list = 0) {
+		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_STRUT_PARTIAL), A(CARDINAL),
+				list);
 	}
 
 	bool read_net_wm_icon(Window w, vector<long> * list = 0) {
-		return _pcache.get_window_property(dpy, w, A(_NET_WM_ICON), A(CARDINAL), list);
+		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_ICON), A(CARDINAL), list);
 	}
 
 	bool read_net_wm_user_time(Window w, long * value = 0) {
-		return read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), value);
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), value);
 	}
 
 	bool read_net_wm_desktop(Window w, long * value = 0) {
-		return read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
+		return ::page::read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
 	}
 
 	bool read_net_wm_allowed_actions(Window w, list<Atom> * list = 0) {
-		return read_list(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), list);
+		return ::page::read_list(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), list);
 	}
+
+	bool read_net_wm_user_time(Window w, Time * time) {
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), time);
+	}
+
+	bool read_net_wm_user_time_window(Window w, Window * time_window) {
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME_WINDOW), A(WINDOW), time_window);
+	}
+
 
 	struct wm_class {
 		string res_name;
@@ -307,10 +233,10 @@ public:
 
 	bool read_wm_class(Window w, wm_class * res = 0) {
 		if(res == 0) {
-			return _pcache.get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING));
+			return ::page::get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING));
 		} else {
 			vector<char> tmp;
-			if(_pcache.get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING), &tmp)) {
+			if(::page::get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING), &tmp)) {
 				unsigned int x_name = strnlen(&tmp[0], tmp.size());
 				unsigned int x_class = 0;
 				if(x_name < tmp.size()) {
@@ -329,7 +255,7 @@ public:
 
 	bool read_wm_hints(Window w, XWMHints * hints = 0) {
 		vector<long> tmp;
-		if (_pcache.get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS),
+		if (::page::get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS),
 				&tmp)) {
 			if (tmp.size() == 9) {
 				if (hints) {
@@ -351,7 +277,7 @@ public:
 
 	bool read_wm_normal_hints(Window w, XSizeHints * size_hints = 0) {
 		vector<long> tmp;
-		if (_pcache.get_window_property<long>(dpy, w, A(WM_NORMAL_HINTS),
+		if (::page::get_window_property<long>(dpy, w, A(WM_NORMAL_HINTS),
 				A(WM_SIZE_HINTS), &tmp)) {
 
 			if (tmp.size() == 18) {
@@ -401,13 +327,10 @@ public:
 	void write_net_active_window(Window w) {
 		vector<long> v(1);
 		v[0] = w;
-		write_window_property(dpy, xroot, A(_NET_ACTIVE_WINDOW), A(WINDOW), v);
+		write_window_property(dpy, DefaultRootWindow(dpy), A(_NET_ACTIVE_WINDOW), A(WINDOW), v);
 	}
 
 	int move_window(Window w, int x, int y) {
-		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
-		wa->x = x;
-		wa->y = y;
 		return XMoveWindow(dpy, w, x, y);
 	}
 
@@ -430,10 +353,8 @@ public:
 		connection_fd = ConnectionNumber(dpy);
 
 		grab_count = 0;
-		_screen = DefaultScreen(dpy);
-		xroot = DefaultRootWindow(dpy) ;
 
-		select_input(xroot, SubstructureNotifyMask);
+		select_input(DefaultRootWindow(dpy), SubstructureNotifyMask);
 
 		// Check if composite is supported.
 
@@ -537,7 +458,7 @@ public:
 	    Window current_wm_sn_owner;
 
 	    static char wm_sn[] = "WM_Sxx";
-	    snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", _screen);
+	    snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", DefaultScreen(dpy));
 	    wm_sn_atom = XInternAtom(dpy, wm_sn, FALSE);
 
 	    current_wm_sn_owner = XGetSelectionOwner(dpy, wm_sn_atom);
@@ -546,7 +467,7 @@ public:
 	    if (current_wm_sn_owner != None) {
 	        if (!replace) {
 	            printf("A window manager is already running on screen %d",
-	                      _screen);
+	            		DefaultScreen(dpy));
 	            return false;
 	        } else {
 	            /* We want to find out when the current selection owner dies */
@@ -557,7 +478,7 @@ public:
 
 	            if (XGetSelectionOwner(dpy, wm_sn_atom) != w) {
 	                printf("Could not acquire window manager selection on screen %d",
-	                          _screen);
+	                		DefaultScreen(dpy));
 	                return false;
 	            }
 
@@ -577,7 +498,7 @@ public:
 	              }
 
 	              if (wait >= timeout) {
-	                  printf("The WM on screen %d is not exiting", _screen);
+	                  printf("The WM on screen %d is not exiting", DefaultScreen(dpy));
 	                  return false;
 	              }
 	            }
@@ -589,7 +510,7 @@ public:
 
 	        if (XGetSelectionOwner(dpy, wm_sn_atom) != w) {
 	            printf("Could not acquire window manager selection on screen %d",
-	                      _screen);
+	            		DefaultScreen(dpy));
 	            return false;
 	        }
 	    }
@@ -612,7 +533,6 @@ public:
 
 		cnx_printf("XSelectInput: win = %lu, mask = %08lx\n", w,
 				(unsigned long) mask);
-		_acache.mark_durty(w);
 		/** add StructureNotifyMask and PropertyNotify to manage properties cache **/
 		mask |= StructureNotifyMask | PropertyChangeMask;
 		XSelectInput(dpy, w, mask);
@@ -623,11 +543,6 @@ public:
 		cnx_printf("XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", w,
 				size.w, size.h, size.x, size.y);
 
-		p_window_attribute_t wa = _acache.get_window_attributes(dpy, w);
-		wa->x = size.x;
-		wa->y = size.y;
-		wa->width = size.w;
-		wa->height = size.h;
 		XMoveResizeWindow(dpy, w, size.x, size.y, size.w, size.h);
 
 	}
@@ -688,8 +603,6 @@ public:
 			/** should not block or flush **/
 			xnextevent(&e);
 
-			process_cache_event(e);
-
 			/**
 			 * since event handler can be removed on event, we copy it
 			 * and check for event removed each time.
@@ -707,35 +620,6 @@ public:
 		} else {
 			return false;
 		}
-	}
-
-	void process_cache_event(XEvent const & e) {
-		if(e.type == PropertyNotify) {
-			_pcache.mark_durty(e.xproperty.window, e.xproperty.atom);
-		} else if (e.type == ConfigureNotify) {
-			update_process_configure_notify_event(e.xconfigure);
-		} else if (e.type == xshape_event + ShapeNotify) {
-			//XShapeEvent const * ev = reinterpret_cast<XShapeEvent const *>(&e);
-			//get_window_t(ev->window)->mark_durty_shape_region();
-		} else if (e.type == DestroyNotify) {
-			_acache.destroy(e.xdestroywindow.window);
-			_pcache.erase(e.xdestroywindow.window);
-		} else if (e.type == CreateNotify) {
-			/** select default inputs **/
-			select_input(e.xcreatewindow.window, 0);
-		} else if (e.type == MapNotify) {
-			p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.xmap.window);
-			if (wa->is_valid) {
-				wa->map_state = IsViewable;
-			}
-		} else if (e.type == UnmapNotify) {
-			p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.xunmap.window);
-			if (wa->is_valid) {
-				wa->map_state = IsUnmapped;
-			}
-		}
-
-
 	}
 
 	int change_property(Window w, atom_e property, atom_e type,
@@ -879,35 +763,7 @@ public:
 		}
 	}
 
-	box_int_t get_window_size(Window w) {
-		p_window_attribute_t wa = get_window_attributes(w);
-		if(wa->is_valid) {
-			return box_int_t(wa->x, wa->y, wa->width, wa->height);
-		} else {
-			return box_int_t();
-		}
-	}
-
-
 private:
-
-	void update_process_configure_notify_event(XConfigureEvent const & e) {
-		if(e.send_event)
-			return;
-		if(e.event == e.window && e.window != xroot)
-			return;
-
-		p_window_attribute_t wa = _acache.get_window_attributes(dpy, e.window);
-		if (wa->is_valid) {
-			wa->x = e.x;
-			wa->y = e.y;
-			wa->width = e.width;
-			wa->height= e.height;
-			wa->border_width = e.border_width;
-			wa->override_redirect = e.override_redirect;
-		}
-	}
-
 
 	void cnx_printf(char const * str, ...) {
 		if (false) {

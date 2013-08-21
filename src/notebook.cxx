@@ -161,9 +161,8 @@ void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
 	box_int_t client_size = compute_client_size(c);
 
-	c->set_wished_position(client_size);
+	c->set_notebook_wished_position(client_size);
 	c->reconfigure();
-	c->fake_configure();
 }
 
 void notebook_t::iconify_client(managed_window_t * x) {

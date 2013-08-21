@@ -26,6 +26,11 @@ protected:
 	cairo_surface_t * _back_surf;
 	Window _wid;
 
+	box_t<int> _position;
+
+	Visual * _visual;
+	int _depth;
+
 	bool _has_alpha;
 	bool _is_durty;
 	bool _is_visible;
@@ -34,6 +39,8 @@ public:
 	window_overlay_t(xconnection_t * cnx, int depth, box_int_t position = box_int_t(-10,-10, 1, 1)) {
 		_cnx = cnx;
 		_back_surf = 0;
+
+		_position = position;
 
 		/**
 		 * Create RGB window for back ground
@@ -45,6 +52,9 @@ public:
 			throw std::runtime_error(
 					"Unable to find valid visual for background windows");
 		}
+
+		_depth = depth;
+		_visual = vinfo.visual;
 
 		XSetWindowAttributes wa;
 		wa.override_redirect = True;
@@ -77,8 +87,6 @@ public:
 			_has_alpha = false;
 		}
 
-		/** if cairo surface are not of this type ... am I paranoid ? **/
-		assert(cairo_surface_get_type(_front_surf) == CAIRO_SURFACE_TYPE_XLIB);
 		_is_durty = true;
 		_is_visible = false;
 
@@ -91,30 +99,35 @@ public:
 	void create_back_buffer() {
 		if (_back_surf == 0) {
 			if (_has_alpha) {
-				_back_surf = cairo_surface_create_similar(_front_surf,
-						CAIRO_CONTENT_COLOR_ALPHA, _cnx->get_root_size().w,
-						_cnx->get_root_size().h);
+				_back_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+						_position.w, _position.h);
 			} else {
-				_back_surf = cairo_surface_create_similar(_front_surf,
-						CAIRO_CONTENT_COLOR, _cnx->get_root_size().w,
-						_cnx->get_root_size().h);
+				_back_surf = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+						_position.w, _position.h);
 			}
 		}
 	}
 
 	void destroy_back_buffer() {
-		cairo_surface_destroy(_back_surf);
-		_back_surf = 0;
+		if (_back_surf != 0) {
+			cairo_surface_destroy(_back_surf);
+			_back_surf = 0;
+		}
 	}
 
 	virtual ~window_overlay_t() {
 		cairo_surface_destroy(_front_surf);
-		cairo_surface_destroy(_back_surf);
+		destroy_back_buffer();
 		XDestroyWindow(_cnx->dpy, _wid);
 	}
 
 	void move_resize(box_int_t const & area) {
-		_cnx->move_resize(_wid, box_int_t(area.x, area.y, area.w, area.h));
+		_position = area;
+		_cnx->move_resize(_wid, _position);
+		if (_is_visible) {
+			destroy_back_buffer();
+			create_back_buffer();
+		}
 		mark_durty();
 	}
 
@@ -137,11 +150,9 @@ public:
 	}
 
 	virtual void repair_back_buffer() {
-		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
-		assert(wa->is_valid);
 
 		cairo_t * cr = cairo_create(_back_surf);
-		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_fill(cr);
@@ -155,24 +166,21 @@ public:
 			return;
 		_is_durty = false;
 
-		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
-		assert(wa->is_valid);
-
-		cairo_xlib_surface_set_size(_front_surf, wa->width, wa->height);
+		cairo_xlib_surface_set_size(_front_surf, _position.w, _position.h);
 
 		repair_back_buffer();
 
 		cairo_t * cr = cairo_create(_front_surf);
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_set_source_surface(cr, _back_surf, 0, 0);
 		cairo_fill(cr);
 
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		cairo_rectangle(cr, 0 + 0.5, 0 + 0.5, wa->width - 1, wa->height - 1);
-		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
-		cairo_stroke(cr);
+//		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+//		cairo_rectangle(cr, 0 + 0.5, 0 + 0.5, wa->width - 1, wa->height - 1);
+//		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+//		cairo_stroke(cr);
 
 		cairo_destroy(cr);
 

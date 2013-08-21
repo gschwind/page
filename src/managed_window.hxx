@@ -8,6 +8,7 @@
 #ifndef MANAGED_WINDOW_HXX_
 #define MANAGED_WINDOW_HXX_
 
+#include "tree_base.hxx"
 #include "theme_layout.hxx"
 #include "xconnection.hxx"
 #include "window_icon_handler.hxx"
@@ -20,36 +21,35 @@ enum managed_window_type_e {
 	MANAGED_FULLSCREEN
 };
 
-class managed_window_t {
+class managed_window_t : public managed_window_base_t {
 private:
 
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK =
-			PropertyChangeMask | SubstructureRedirectMask;
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK = 0;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
-	static long const MANAGED_ORIG_WINDOW_EVENT_MASK =
-			StructureNotifyMask | PropertyChangeMask;
+	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
+			| (PropertyChangeMask);
 
-	theme_layout_t const * theme;
+	theme_layout_t const * theme_layout;
 
 	managed_window_type_e _type;
 	Atom _net_wm_type;
 
-	unsigned _margin_top;
-	unsigned _margin_bottom;
-	unsigned _margin_left;
-	unsigned _margin_right;
-
+	/** hold floating possition **/
 	box_int_t _floating_wished_position;
+
+	/** hold notebook possition **/
+	box_int_t _notebook_wished_position;
 
 	box_int_t _wished_position;
 	box_int_t _orig_position;
 	box_int_t _base_position;
 
-	cairo_t * _cr;
 	cairo_surface_t * _surf;
 
-	cairo_t * _back_cr;
-	cairo_surface_t * _back_surf;
+	cairo_surface_t * _top_buffer;
+	cairo_surface_t * _bottom_buffer;
+	cairo_surface_t * _left_buffer;
+	cairo_surface_t * _right_buffer;
 
 	window_icon_handler_t * icon;
 
@@ -61,6 +61,12 @@ private:
 
 	xconnection_t * cnx;
 
+	Visual * _orig_visual;
+	int _orig_depth;
+
+	Visual * _deco_visual;
+	int _deco_depth;
+
 	Window _orig;
 	Window _base;
 	Window _deco;
@@ -68,7 +74,7 @@ private:
 public:
 
 	managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
-			Atom net_wm_type, Window orig, theme_layout_t const * theme);
+			Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_layout_t const * theme);
 	virtual ~managed_window_t();
 
 	void reconfigure();
@@ -99,6 +105,23 @@ public:
 	void set_theme(theme_layout_t const * theme);
 
 	cairo_t * get_cairo();
+
+	cairo_t * get_cairo_top() {
+		return cairo_create(_top_buffer);
+	}
+
+	cairo_t * get_cairo_bottom() {
+		return cairo_create(_bottom_buffer);
+	}
+
+	cairo_t * get_cairo_left() {
+		return cairo_create(_left_buffer);
+	}
+
+	cairo_t * get_cairo_right() {
+		return cairo_create(_right_buffer);
+	}
+
 
 	bool is(managed_window_type_e type);
 
@@ -280,6 +303,68 @@ public:
 		cnx->unmap(_orig);
 	}
 
+	void set_floating_wished_position(box_t<int> & pos) {
+		_floating_wished_position = pos;
+		if(is(MANAGED_FLOATING)) {
+			reconfigure();
+		}
+	}
+
+	void set_notebook_wished_position(box_t<int> & pos) {
+		_notebook_wished_position = pos;
+		if(!is(MANAGED_FLOATING)) {
+			reconfigure();
+		}
+	}
+
+	box_int_t const & get_wished_position() {
+		return _wished_position;
+	}
+
+	box_int_t const & get_floating_wished_position() {
+		return _floating_wished_position;
+	}
+
+	void destroy_back_buffer() {
+
+		if(_top_buffer != 0) {
+			cairo_surface_destroy(_top_buffer);
+			_top_buffer = 0;
+		}
+
+		if(_bottom_buffer != 0) {
+			cairo_surface_destroy(_bottom_buffer);
+			_bottom_buffer = 0;
+		}
+
+		if(_left_buffer != 0) {
+			cairo_surface_destroy(_left_buffer);
+			_left_buffer = 0;
+		}
+
+		if(_right_buffer != 0) {
+			cairo_surface_destroy(_right_buffer);
+			_right_buffer = 0;
+		}
+
+	}
+
+	void create_back_buffer() {
+
+		_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+				_base_position.w, theme_layout->floating_margin.top);
+		_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+				_base_position.w, theme_layout->floating_margin.bottom);
+		_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+				theme_layout->floating_margin.left,
+				_base_position.h - theme_layout->floating_margin.top
+						- theme_layout->floating_margin.bottom);
+		_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+				theme_layout->floating_margin.right,
+				_base_position.h - theme_layout->floating_margin.top
+						- theme_layout->floating_margin.bottom);
+
+	}
 
 };
 

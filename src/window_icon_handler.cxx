@@ -20,7 +20,6 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w, unsi
 	_cnx = cnx;
 	icon_surf = 0;
 	icon.data = 0;
-	_px = None;
 
 	vector<long> icon_data;
 	/* if window have icon properties */
@@ -103,11 +102,8 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w, unsi
 						"Unable to find valid visual for background windows");
 			}
 
-			_px = XCreatePixmap(cnx->dpy, cnx->get_root_window(), xsize,
-					ysize, 32);
-
-			icon_surf = cairo_xlib_surface_create(cnx->dpy, _px, vinfo.visual,
-					xsize, ysize);
+			icon_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, xsize,
+					ysize);
 
 			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
 					selected.width);
@@ -157,9 +153,6 @@ window_icon_handler_t::~window_icon_handler_t() {
 		icon.data = 0;
 	}
 
-	if(_px != None) {
-		XFreePixmap(_cnx->dpy, _px);
-	}
 }
 
 cairo_surface_t * window_icon_handler_t::get_cairo_surface() {

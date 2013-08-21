@@ -8,7 +8,6 @@
 #ifndef RENDERABLE_PAGE_HXX_
 #define RENDERABLE_PAGE_HXX_
 
-#include "default_theme.hxx"
 #include "theme.hxx"
 #include "window_overlay.hxx"
 
@@ -60,8 +59,10 @@ public:
 
 
 	void repair_back_buffer(list<viewport_t *> & viewports) {
-		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
-		assert(wa->is_valid);
+
+		if(!_is_durty)
+			return;
+		_is_durty = false;
 
 		cairo_t * cr = cairo_create(_back_surf);
 
@@ -85,22 +86,18 @@ public:
 
 	}
 
-	void expose(list<viewport_t *> viewports) {
+	void expose(list<viewport_t *> viewports, box_int_t area) {
 
-		if(!_is_durty || !_is_visible)
+		if(!_is_visible)
 			return;
-		_is_durty = false;
 
-		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
-		assert(wa->is_valid);
-
-		cairo_xlib_surface_set_size(_front_surf, wa->width, wa->height);
+		cairo_xlib_surface_set_size(_front_surf, _position.w, _position.h);
 
 		repair_back_buffer(viewports);
 
 		cairo_t * cr = cairo_create(_front_surf);
 
-		box_int_t clip = box_int_t(wa->x, wa->y, wa->width, wa->height);
+		box_int_t clip = _position & area;
 		if (!clip.is_null()) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
@@ -114,7 +111,7 @@ public:
 
 	void render_if_needed(list<viewport_t *> viewports) {
 		if(_is_durty) {
-			expose(viewports);
+			expose(viewports, _position);
 		}
 	}
 

@@ -119,7 +119,7 @@ public:
 	color_t color_font;
 	color_t color_font_selected;
 
-	Pixmap px;
+	color_t popup_color;
 
 	bool has_background;
 	string background_file;

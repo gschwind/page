@@ -480,9 +480,9 @@ void compositor_t::process_event(XReparentEvent const & e) {
 }
 
 void compositor_t::process_event(XMapEvent const & e) {
-	if(e.send_event)
+	if (e.send_event)
 		return;
-	if(e.event != DefaultRootWindow(_dpy))
+	if (e.event != DefaultRootWindow(_dpy))
 		return;
 
 	/** don't make composite overlay visible **/
@@ -490,7 +490,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 		return;
 
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
-	if(x != window_data.end()) {
+	if (x != window_data.end()) {
 		x->second->update_map_state(IsViewable);
 	}
 }
@@ -671,7 +671,7 @@ void compositor_t::process_event(XEvent const & e) {
 			window_data[sev.window]->update_shape();
 		}
 	} else if (e.type == xrandr_event + RRNotify) {
-		printf("RRNotify\n");
+		//printf("RRNotify\n");
 		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 		if (ev.subtype == RRNotify_CrtcChange) {
 			/* re-read root window attribute, in particular the size **/
@@ -723,9 +723,12 @@ void compositor_t::update_layout() {
 
 
 void compositor_t::process_events() {
+	XEvent ev;
 	save_state();
-	while(process_check_event())
-		continue;
+	while(XPending(_dpy)) {
+		XNextEvent(_dpy, &ev);
+		process_event(ev);
+	}
 	render_flush();
 }
 
@@ -859,8 +862,12 @@ void compositor_t::init_cairo() {
 	_front_buffer = cairo_xlib_surface_create(_dpy, composite_overlay,
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
-	_bask_buffer = cairo_surface_create_similar(_front_buffer,
-			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
+
+	/** do not use X11 pixmap, they are about twise slower than cairo software
+	 * render backend.
+	 **/
+	_bask_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+			root_attributes.width, root_attributes.height);
 }
 
 }

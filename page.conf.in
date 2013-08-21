@@ -40,3 +40,5 @@ scale_mode = stretch
 pango_font=Sans Bold 10
 pango_popup_font=Sans Bold 20
 
+popup_color = ff0000
+

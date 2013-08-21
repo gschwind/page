@@ -14,44 +14,50 @@ namespace page {
 
 template<typename T>
 class smart_pointer_t {
-	unsigned int * _nref;
-	T * value;
+
+	struct _intern_pointer {
+		unsigned int nref;
+		T * value;
+	};
+
+
+	_intern_pointer * p;
 
 	void _incr_ref() {
-		*_nref += 1;
+		p->nref += 1;
 	}
 
 	void _decr_ref() {
-		*_nref -= 1;
-		if (_nref == 0) {
-			delete value;
-			delete _nref;
+		p->nref -= 1;
+		if (p->nref == 0) {
+			delete p->value;
+			delete p;
 		}
 	}
 
 public:
 
 	smart_pointer_t() {
-		value = new T();
-		_nref = new unsigned int(1);
+		p = new _intern_pointer;
+		p->value = new T();
+		p->nref = 1;
 	}
 
 	smart_pointer_t(T * x) {
-		value = x;
-		_nref = new unsigned int(1);
+		p = new _intern_pointer;
+		p->value = x;
+		p->nref = 1;
 	}
 
 	smart_pointer_t(smart_pointer_t<T> const & x) {
-		_nref = x._nref;
-		value = x.value;
+		p = x.p;
 		_incr_ref();
 	}
 
 	smart_pointer_t & operator=(smart_pointer_t const & x) {
 		if (&x != this) {
 			_decr_ref();
-			_nref = x._nref;
-			value = x.value;
+			p = x.p;
 			_incr_ref();
 		}
 
@@ -59,23 +65,23 @@ public:
 	}
 
 	T * operator->() {
-		return value;
+		return p->value;
 	}
 
 	T const * operator->() const {
-		return value;
+		return p->value;
 	}
 
 	T & operator*() {
-		return *value;
+		return *(p->value);
 	}
 
 	T const & operator*() const {
-		return *value;
+		return *(p->value);
 	}
 
 	T * get() const {
-		return value;
+		return (p->value);
 	}
 
 };

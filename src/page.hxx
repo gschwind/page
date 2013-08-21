@@ -262,6 +262,8 @@ private:
 	/** this window is a mandatory window to handle the wm session **/
 	Window wm_window;
 
+	box_t<int> _root_position;
+
 public:
 
 	theme_t * theme;
@@ -340,7 +342,7 @@ public:
 	void update_focus(Window c);
 	void read_viewport_layout();
 
-	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w);
+	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w, XWindowAttributes const & wa);
 	void unmanage(managed_window_t * mw);
 
 	void print_state();
@@ -463,11 +465,11 @@ public:
 		return cnx->get_atom(aname);
 	}
 
-	Atom find_net_wm_type(Window w);
+	Atom find_net_wm_type(Window w, bool override_redirect);
 
-	void onmap(Window w);
+	bool onmap(Window w);
 
-	void create_managed_window(Window w, Atom type);
+	void create_managed_window(Window w, Atom type, XWindowAttributes const & wa);
 
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 

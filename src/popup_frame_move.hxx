@@ -37,17 +37,15 @@ struct popup_frame_move_t: public window_overlay_t {
 	}
 
 	void repair_back_buffer() {
-		p_window_attribute_t wa = _cnx->get_window_attributes(_wid);
-		assert(wa->is_valid);
 
 		cairo_t * cr = cairo_create(_back_surf);
 
-		cairo_rectangle(cr, 0, 0, wa->width, wa->height);
+		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_fill(cr);
 
-		_theme->render_popup_move_frame(cr, icon, wa->width, wa->height, title);
+		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h, title);
 
 		cairo_destroy(cr);
 
