@@ -252,7 +252,13 @@ public:
 	string font;
 	string font_bold;
 
-	map<Window, list<Window> > transient_for_map;
+	map<Window, smart_pointer_t<list<Window> > > transient_for_tree;
+
+	/**
+	 * Cache transient for to avoid heavy read on safe_raise window
+	 * key is a window, value is WM_TRANSIENT_FOR for this window.
+	 **/
+	map<Window, Window> transient_for_cache;
 
 private:
 	Time _last_focus_time;
@@ -398,9 +404,10 @@ public:
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void update_transient_for(Window w);
+	void cleanup_transient_for_for_window(Window w);
 
 	void safe_raise_window(Window w);
-	void clear_sibbling_child(Window w);
+	void clear_transient_for_sibbling_child(Window w);
 
 	std::string safe_get_window_name(Window w);
 
@@ -475,6 +482,12 @@ public:
 
 	void create_unmanaged_window(Window w, Atom type);
 	viewport_t * find_mouse_viewport(int x, int y);
+
+	bool get_safe_net_wm_user_time(Window w, Time & time);
+
+	void xxx_print(smart_pointer_t<list<Window> > & l, int lvl);
+
+
 };
 
 

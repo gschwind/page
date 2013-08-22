@@ -691,7 +691,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		}
 
 		if (mw != 0) {
-			if (mw->is(MANAGED_FLOATING) and e.button == Button1) {
+			if (mw->is(MANAGED_FLOATING) and e.button == Button1
+					and (e.subwindow != mw->orig()
+							or (e.state & (Mod1Mask | ControlMask)))) {
 
 				box_int_t size = mw->get_base_position();
 
@@ -805,6 +807,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						process_mode = PROCESS_FLOATING_RESIZE;
 						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					} else {
+						safe_raise_window(mw->orig());
 						process_mode = PROCESS_FLOATING_MOVE;
 					}
 				}
@@ -865,6 +868,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 //
 		managed_window_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
+			safe_raise_window(mw->orig());
 			set_focus(mw, e.time, true);
 		}
 
@@ -1645,6 +1649,8 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		unmanaged_window.erase(uw);
 	}
 
+	cleanup_transient_for_for_window(e.window);
+
 	update_client_list();
 	destroy(c);
 	rpage->mark_durty();
@@ -1716,7 +1722,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 	//x->set_managed(false);
 	//x->write_wm_state(WithdrawnState);
 
-	clear_sibbling_child(x);
+	cleanup_transient_for_for_window(x);
 
 	update_client_list();
 
@@ -2446,6 +2452,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 		current_focus->unset_focused();
 		if (current_focus->is(MANAGED_FLOATING)) {
 			theme->render_floating(current_focus, false);
+			current_focus->expose();
 		}
 	}
 
@@ -2460,6 +2467,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 	focus->focus(_last_focus_time);
 	if (focus->get_type() == MANAGED_FLOATING) {
 		theme->render_floating(focus, true);
+		focus->expose();
 	}
 
 	cnx->write_net_active_window(focus->orig());
@@ -2835,7 +2843,7 @@ void page_t::destroy(notebook_t * x) {
 
 void page_t::destroy(Window c) {
 
-	clear_sibbling_child(c);
+	clear_transient_for_sibbling_child(c);
 	delete_window(c);
 }
 
@@ -2999,13 +3007,48 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 }
 
 void page_t::update_transient_for(Window w) {
-	/* remove sibbling_child if needed */
-	clear_sibbling_child(w);
-	Window transiant_for = None;
-	if (cnx->read_wm_transient_for(w, &transiant_for)) {
-		transient_for_map[transiant_for].push_back(w);
-	} else {
-		transient_for_map[None].push_back(w);
+
+	map<Window, Window>::iterator x = transient_for_cache.find(w);
+
+	/** if there is an old transient for, clear childs **/
+	if(x != transient_for_cache.end()) {
+		transient_for_tree[x->second]->remove(w);
+	}
+
+	/** read newer transient for **/
+	Window transient_for;
+	if (!cnx->read_wm_transient_for(w, &transient_for)) {
+		transient_for = None;
+	}
+
+	/** store it in cache **/
+	transient_for_cache[w] = transient_for;
+
+	/** update the logical tree of windows **/
+	transient_for_tree[transient_for]->push_back(w);
+
+}
+
+void page_t::cleanup_transient_for_for_window(Window w) {
+	map<Window, Window>::iterator x = transient_for_cache.find(w);
+
+	/** if there is an old transient for, clear childs **/
+	if(x != transient_for_cache.end()) {
+		transient_for_tree[x->second]->remove(w);
+	}
+
+	transient_for_cache.erase(w);
+
+}
+
+void page_t::xxx_print(smart_pointer_t<list<Window> > & l, int lvl) {
+	char y[] = "                  ";
+	y[lvl] = 0;
+	list<Window>::iterator i = l ->begin();
+	while(i != l->end()) {
+		printf("YY %s %d\n", y, *i);
+		xxx_print(transient_for_tree[*i], lvl+1);
+		++i;
 	}
 }
 
@@ -3026,27 +3069,47 @@ void page_t::safe_raise_window(Window w) {
 	already_raise.insert(None);
 	Window w_next = w;
 	while(already_raise.find(w_next) == already_raise.end()) {
-		update_transient_for(w_next);
 		already_raise.insert(w_next);
-		if(!cnx->read_wm_transient_for(w_next, &w_next)) {
-			w_next = None;
+
+		map<Window, Window>::iterator x = transient_for_cache.find(w_next);
+
+		if(x == transient_for_cache.end()) {
+			update_transient_for(w_next);
+		}
+
+		x = transient_for_cache.find(w_next);
+
+		transient_for_tree[x->second]->remove(w_next);
+		transient_for_tree[x->second]->push_back(w_next);
+
+		printf("CCC raise %lu -> %lu\n", x->first, x->second);
+
+		if (x != transient_for_cache.end()) {
+			w_next = x->second;
+		} else {
+			break;
 		}
 	}
+
+	printf("==========\n");
+	xxx_print(transient_for_tree[None], 0);
+	printf("==========\n");
+
 
 	/** apply change **/
 	update_windows_stack();
 
 }
 
-void page_t::clear_sibbling_child(Window w) {
-	for (map<Window, list<Window> >::iterator i = transient_for_map.begin();
-			i != transient_for_map.end(); ++i) {
-		i->second.remove(w);
+void page_t::clear_transient_for_sibbling_child(Window w) {
+	for (map<Window, smart_pointer_t<list<Window> > >::iterator i =
+			transient_for_tree.begin(); i != transient_for_tree.end(); ++i) {
+		i->second->remove(w);
 	}
 }
 
 void page_t::destroy_managed_window(managed_window_t * mw) {
-	clear_sibbling_child(mw->orig());
+	clear_transient_for_sibbling_child(mw->orig());
 	managed_window.erase(mw);
 	fullscreen_client_to_viewport.erase(mw);
 
@@ -3115,10 +3178,10 @@ void page_t::print_tree_windows() {
 		if (!has_key(raised_window, cur.second)) {
 			raised_window.insert(cur.second);
 			window_stack.push_back(cur);
-			if (has_key(transient_for_map, cur.second)) {
-				list<Window> childs = transient_for_map[cur.second];
-				for (list<Window>::reverse_iterator j = childs.rbegin();
-						j != childs.rend(); ++j) {
+			if (has_key(transient_for_tree, cur.second)) {
+				smart_pointer_t<list<Window> > childs = transient_for_tree[cur.second];
+				for (list<Window>::reverse_iterator j = childs->rbegin();
+						j != childs->rend(); ++j) {
 					nxt.push(item(cur.first + 1, *j));
 				}
 			}
@@ -3356,10 +3419,10 @@ void page_t::update_windows_stack() {
 		if (!has_key(raised_window, cur)) {
 			raised_window.insert(cur);
 			window_stack.push_back(cur);
-			if (has_key(transient_for_map, cur)) {
-				list<Window> childs = transient_for_map[cur];
-				for (list<Window>::reverse_iterator j = childs.rbegin();
-						j != childs.rend(); ++j) {
+			if (has_key(transient_for_tree, cur)) {
+				smart_pointer_t<list<Window> > childs = transient_for_tree[cur];
+				for (list<Window>::reverse_iterator j = childs->rbegin();
+						j != childs->rend(); ++j) {
 					nxt.push(*j);
 				}
 			}
@@ -3786,18 +3849,7 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 
 		/** TODO function **/
 		Time time = 0;
-		bool has_time = false;
-		Window time_window;
-
-		if (cnx->read_net_wm_user_time(w, &time)) {
-			has_time = true;
-		} else {
-			if (cnx->read_net_wm_user_time_window(w, &time_window)) {
-				has_time = cnx->read_net_wm_user_time(time_window, &time);
-			}
-		}
-
-		if(has_time) {
+		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time, true);
 		}
 
@@ -3805,16 +3857,8 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		mw = manage(MANAGED_FLOATING, type, w, wa);
 		mw->normalize();
 
-		Time time;
-		bool has_time;
-		Window time_window;
-		if(cnx->read_net_wm_user_time_window(w, &time_window)) {
-			has_time = cnx->read_net_wm_user_time(time_window, &time);
-		} else {
-			has_time = cnx->read_net_wm_user_time(w, &time);
-		}
-
-		if(has_time) {
+		Time time = 0;
+		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time, true);
 		}
 
@@ -3921,6 +3965,28 @@ viewport_t * page_t::find_mouse_viewport(int x, int y) {
 		++i;
 	}
 	return 0;
+}
+
+/**
+ * Read user time with proper fallback
+ * @return: true if successfully find usertime, otherwise false.
+ * @output time: if time is found time is set to the found value.
+ * @input w: X11 Window ID.
+ */
+bool page_t::get_safe_net_wm_user_time(Window w, Time & time) {
+	/** TODO function **/
+	bool has_time = false;
+	Window time_window;
+
+	if (cnx->read_net_wm_user_time(w, &time)) {
+		has_time = true;
+	} else {
+		if (cnx->read_net_wm_user_time_window(w, &time_window)) {
+			has_time = cnx->read_net_wm_user_time(time_window, &time);
+		}
+	}
+
+	return has_time;
 }
 
 }
