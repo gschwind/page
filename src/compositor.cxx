@@ -174,7 +174,6 @@ compositor_t::compositor_t() {
 	 **/
 	stack_window_place_on_top(composite_overlay);
 
-	damage_all();
 }
 
 compositor_t::~compositor_t() {
@@ -189,29 +188,202 @@ compositor_t::~compositor_t() {
 
 };
 
-//void compositor_t::add_damage_area(_region_t const & box) {
-//	//printf("Add damage %s\n", box.to_string().c_str());
-//	pending_damage = pending_damage + box;
+//void compositor_t::render_flush() {
+//	flush_count += 1;
+//
+//	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
+//	if (last_tic.tv_sec + 30 < curr_tic.tv_sec) {
+//
+//		double t0 = last_tic.tv_sec + last_tic.tv_nsec / 1.0e9;
+//		double t1 = curr_tic.tv_sec + curr_tic.tv_nsec / 1.0e9;
+//
+//		printf("render flush per second : %0.2f\n", flush_count / (t1 - t0));
+//		printf("damage per second : %0.2f\n", damage_count / (t1 - t0));
+//
+//		last_tic = curr_tic;
+//		flush_count = 0;
+//		damage_count = 0;
+//	}
+//
+//	compute_pending_damage();
+//
+//	/** this line divide page cpu cost by 4.0 ... O_O it's insane **/
+//	if(pending_damage.empty())
+//		return;
+//
+//	/**
+//	 * list content is bottom window to upper window in stack a optimization.
+//	 **/
+//	std::list<composite_window_t *> visible;
+//	for (std::list<Window>::iterator i = window_stack.begin();
+//			i != window_stack.end(); ++i) {
+//		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
+//		if (x != window_data.end()) {
+//			if (x->second->map_state() != IsUnmapped
+//					and x->second->c_class() == InputOutput) {
+//				visible.push_back(x->second);
+//			}
+//		}
+//	}
+//
+//	/**
+//	 * Asked to cairo community, build/destroy cairo contexts and surfaces
+//	 * should not hit too much performance.
+//	 **/
+//
+//	cairo_t * front_cr = cairo_create(_front_buffer);
+//
+//	for (std::list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		(*i)->update_cairo();
+//	}
+//
+//	/* clip damage region to visible region */
+//	pending_damage = pending_damage & _desktop_region;
+//
+//	/**
+//	 * Find region where windows are not overlap each other. i.e. region where
+//	 * only one window will be rendered.
+//	 * This is often more than 80% of the screen.
+//	 * This kind of region will be directly rendered.
+//	 **/
+//
+//	region_t<int> region_without_overlapped_window;
+//	for (list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		region_t<int> r = (*i)->get_region();
+//		for (list<composite_window_t *>::iterator j = visible.begin();
+//				j != visible.end(); ++j) {
+//			if (i != j) {
+//				r -= (*j)->get_region();
+//			}
+//		}
+//		region_without_overlapped_window += r;
+//	}
+//
+//	region_without_overlapped_window = region_without_overlapped_window
+//			& pending_damage;
+//
+//	/**
+//	 * Find region where the windows on top is not a window with alpha.
+//	 * Small area, often dropdown menu.
+//	 * This kind of area will be directly rendered.
+//	 **/
+//	region_t<int> region_without_alpha_on_top;
+//
+//	/**
+//	 * Walk over all all window from bottom to top one. If window has alpha
+//	 * channel remove it from region with no alpha, if window do not have alpha
+//	 * add this window to the area.
+//	 **/
+//	for (list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		if ((*i)->has_alpha()) {
+//			region_without_alpha_on_top -= (*i)->get_region();
+//		} else {
+//			/* if not has_alpha, add this area */
+//			region_without_alpha_on_top += (*i)->get_region();
+//		}
+//	}
+//
+//	region_without_alpha_on_top = region_without_alpha_on_top & pending_damage;
+//	region_without_alpha_on_top -= region_without_overlapped_window;
+//
+//
+//	region_t<int> slow_region = pending_damage;
+//	slow_region -= region_without_overlapped_window;
+//	slow_region -= region_without_alpha_on_top;
+//
+//
+//	/* direct render, area where there is only one window visible */
+//	{
+//		cairo_reset_clip(front_cr);
+//		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+//		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
+//
+//		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
+//		while (i != region_without_overlapped_window.end()) {
+//			fast_region_surf_monitor += i->w * i->h;
+//			repair_buffer(visible, front_cr, *i);
+//			// for debuging
+//			_draw_crossed_box(front_cr, (*i), 0.0, 1.0, 0.0);
+//			++i;
+//		}
+//	}
+//
+//	/* directly render area where window on the has no alpha */
+//
+//	{
+//		cairo_reset_clip(front_cr);
+//		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+//		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
+//
+//		/* from top to bottom */
+//		for (list<composite_window_t *>::reverse_iterator i =
+//				visible.rbegin(); i != visible.rend(); ++i) {
+//			composite_window_t * r = *i;
+//			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
+//			if (!draw_area.empty()) {
+//				for (region_t<int>::const_iterator j = draw_area.begin();
+//						j != draw_area.end(); ++j) {
+//					if (!j->is_null()) {
+//						r->draw_to(front_cr, *j);
+//						/* this section show direct rendered screen */
+//						_draw_crossed_box(front_cr, *j, 0.0, 0.0, 1.0);
+//					}
+//				}
+//			}
+//			region_without_alpha_on_top -= r->get_region();
+//		}
+//	}
+//
+//	/**
+//	 * To avoid glitch (blinking) I use back buffer to make the composition.
+//	 * update back buffer, render area with possible transparency
+//	 **/
+//	if (!slow_region.empty()) {
+//
+//		cairo_t * back_cr = cairo_create(_bask_buffer);
+//
+//		{
+//
+//			cairo_reset_clip(back_cr);
+//			cairo_set_operator(back_cr, CAIRO_OPERATOR_OVER);
+//			region_t<int>::const_iterator i = slow_region.begin();
+//			while (i != slow_region.end()) {
+//				slow_region_surf_monitor += (*i).w * (*i).h;
+//				repair_buffer(visible, back_cr, *i);
+//				++i;
+//			}
+//		}
+//
+//		{
+//			cairo_surface_flush(_bask_buffer);
+//			region_t<int>::const_iterator i = slow_region.begin();
+//			while (i != slow_region.end()) {
+//				repair_overlay(front_cr, *i, _bask_buffer);
+//				//_draw_crossed_box(front_cr, (*i), 1.0, 0.0, 0.0);
+//				++i;
+//			}
+//		}
+//		cairo_destroy(back_cr);
+//
+//	}
+//
+//	pending_damage.clear();
+//
+//	cairo_destroy(front_cr);
+//
+////	for (std::list<composite_window_t *>::iterator i = visible.begin();
+////			i != visible.end(); ++i) {
+////		(*i)->destroy_cairo();
+////	}
+//
 //}
 
-void compositor_t::render_flush() {
-	flush_count += 1;
+void compositor_t::repair_area_region(region_t<int> const & repair) {
 
-	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
-	if (last_tic.tv_sec + 30 < curr_tic.tv_sec) {
-
-		double t0 = last_tic.tv_sec + last_tic.tv_nsec / 1.0e9;
-		double t1 = curr_tic.tv_sec + curr_tic.tv_nsec / 1.0e9;
-
-		printf("render flush per second : %0.2f\n", flush_count / (t1 - t0));
-		printf("damage per second : %0.2f\n", damage_count / (t1 - t0));
-
-		last_tic = curr_tic;
-		flush_count = 0;
-		damage_count = 0;
-	}
-
-	compute_pending_damage();
+	region_t<int> pending_damage = repair;
 
 	/** this line divide page cpu cost by 4.0 ... O_O it's insane **/
 	if(pending_damage.empty())
@@ -232,6 +404,8 @@ void compositor_t::render_flush() {
 		}
 	}
 
+	//printf("SIZE = %d\n", visible.size());
+
 	/**
 	 * Asked to cairo community, build/destroy cairo contexts and surfaces
 	 * should not hit too much performance.
@@ -242,6 +416,7 @@ void compositor_t::render_flush() {
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
 		(*i)->update_cairo();
+
 	}
 
 	/* clip damage region to visible region */
@@ -445,12 +620,6 @@ void compositor_t::repair_overlay(cairo_t * cr, box_t<int> const & area,
 }
 
 
-void compositor_t::damage_all() {
-	pending_damage += (box_int_t(root_attributes.x, root_attributes.y,
-			root_attributes.width, root_attributes.height));
-}
-
-
 void compositor_t::process_event(XCreateWindowEvent const & e) {
 	if (e.window == composite_overlay)
 		return;
@@ -472,6 +641,7 @@ void compositor_t::process_event(XReparentEvent const & e) {
 		if (XGetWindowAttributes(_dpy, e.window, &wa)) {
 			window_data[e.window] = new composite_window_t(_dpy, e.window, &wa,
 					window_stack.empty() ? None : window_stack.back());
+			repair_area_region(window_data[e.window]->position());
 		}
 		stack_window_place_on_top(e.window);
 	} else {
@@ -492,6 +662,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->update_map_state(IsViewable);
+		repair_area_region(x->second->position());
 	}
 }
 
@@ -499,6 +670,7 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->update_map_state(IsUnmapped);
+		repair_area_region(x->second->position());
 	}
 }
 
@@ -524,7 +696,11 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(
 				e.window);
 		if (x != window_data.end()) {
+			region_t<int> r = x->second->position();
 			x->second->update_position(e);
+			r += x->second->position();
+			if (x->second->map_state() != IsUnmapped)
+				repair_area_region(r);
 		}
 	}
 }
@@ -542,7 +718,12 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 
 	if(has_key(window_data, e.window)) {
 		window_data[e.window]->moved();
+
+		if (window_data[e.window]->map_state() != IsUnmapped)
+			repair_area_region(window_data[e.window]->position());
 	}
+
+
 
 }
 
@@ -566,7 +747,10 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 	if (x == window_data.end())
 		return;
 
-	x->second->add_damaged_region(r);
+	//x->second->add_damaged_region(r);
+
+	r.translate(x->second->position().x, x->second->position().y);
+	repair_area_region(r);
 
 }
 
@@ -724,12 +908,10 @@ void compositor_t::update_layout() {
 
 void compositor_t::process_events() {
 	XEvent ev;
-	save_state();
 	while(XPending(_dpy)) {
 		XNextEvent(_dpy, &ev);
 		process_event(ev);
 	}
-	render_flush();
 }
 
 void compositor_t::stack_window_update(Window window, Window above) {
@@ -764,68 +946,68 @@ void compositor_t::stack_window_remove(Window w) {
 	window_stack.remove(w);
 }
 
-void compositor_t::save_state() {
-
-	compositor_window_state.clear();
-
-	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
-			i != window_data.end(); ++i) {
-		compositor_window_state[i->first] = i->second->get_region();
-	}
-
-
-}
+//void compositor_t::save_state() {
+//
+//	compositor_window_state.clear();
+//
+//	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
+//			i != window_data.end(); ++i) {
+//		compositor_window_state[i->first] = i->second->get_region();
+//	}
+//
+//
+//}
 
 /**
  * Compute damaged area from last render_flush
  **/
-void compositor_t::compute_pending_damage() {
-
-	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
-			i != window_data.end(); ++i) {
-
-		composite_window_t * cw = i->second;
-
-		if (cw->c_class() != InputOutput) {
-			continue;
-		}
-
-		if (cw->old_map_state() == IsUnmapped) {
-			if(cw->map_state() == IsUnmapped) {
-				continue;
-			} else {
-				/** was mapped **/
-				pending_damage += cw->get_region();
-			}
-		} else {
-			if(cw->map_state() == IsUnmapped) {
-				/** was unmapped **/
-				pending_damage += cw->old_region();
-			} else {
-				if (cw->has_moved()) {
-					/**
-					 * if moved or re-stacked, add previous location and current
-					 * location as damaged.
-					 **/
-					pending_damage += cw->old_region();
-					pending_damage += cw->get_region();
-				} else {
-					/**
-					 * What ever is happen, add damaged area
-					 **/
-					pending_damage += cw->get_damaged_region();
-				}
-			}
-		}
-
-		/**
-		 * reset damaged, and moved flags
-		 **/
-		i->second->clear_state();
-
-	}
-
-}
+//void compositor_t::compute_pending_damage() {
+//
+//	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
+//			i != window_data.end(); ++i) {
+//
+//		composite_window_t * cw = i->second;
+//
+//		if (cw->c_class() != InputOutput) {
+//			continue;
+//		}
+//
+//		if (cw->old_map_state() == IsUnmapped) {
+//			if(cw->map_state() == IsUnmapped) {
+//				continue;
+//			} else {
+//				/** was mapped **/
+//				pending_damage += cw->get_region();
+//			}
+//		} else {
+//			if(cw->map_state() == IsUnmapped) {
+//				/** was unmapped **/
+//				pending_damage += cw->old_region();
+//			} else {
+//				if (cw->has_moved()) {
+//					/**
+//					 * if moved or re-stacked, add previous location and current
+//					 * location as damaged.
+//					 **/
+//					pending_damage += cw->old_region();
+//					pending_damage += cw->get_region();
+//				} else {
+//					/**
+//					 * What ever is happen, add damaged area
+//					 **/
+//					pending_damage += cw->get_damaged_region();
+//				}
+//			}
+//		}
+//
+//		/**
+//		 * reset damaged, and moved flags
+//		 **/
+//		i->second->clear_state();
+//
+//	}
+//
+//}
 
 
 /**
@@ -863,11 +1045,9 @@ void compositor_t::init_cairo() {
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
-	/** do not use X11 pixmap, they are about twise slower than cairo software
-	 * render backend.
-	 **/
-	_bask_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-			root_attributes.width, root_attributes.height);
+	_bask_buffer = cairo_surface_create_similar(_front_buffer,
+			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
+
 }
 
 }

@@ -254,7 +254,7 @@ void page_t::run() {
 	XSetIconSizes(cnx->dpy, cnx->get_root_window(), &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
-	set_focus(0, 0, false);
+	set_focus(0, 0);
 
 	scan();
 	update_windows_stack();
@@ -684,10 +684,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			box_any_t * b = 0;
 			for (list<box_any_t *>::iterator i = page_areas.begin();
 					i != page_areas.end(); ++i) {
-				printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
+				//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
 				if((*i)->position.is_inside(e.x, e.y)) {
 					b = *i;
-					//break;
+					break;
 				}
 			}
 
@@ -710,6 +710,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 							mode_data_notebook.c->title());
 
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
+					set_focus(mode_data_notebook.c, e.time);
 					rpage->repair_notebook_border(mode_data_notebook.from);
 
 				} else if (dynamic_cast<box_notebook_close_t *>(b)) {
@@ -827,12 +828,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			} else if (mw->is(MANAGED_FLOATING) and e.button == Button1
 					and e.subwindow != mw->orig()) {
 
-				list<box_any_t *> l = theme->compute_floating_areas(mw);
+				mw->update_floating_areas();
+				list<box_any_t *> l = mw->floating_areas();
 
 				box_any_t * b = 0;
 				for (list<box_any_t *>::iterator i = l.begin();
 						i != l.end(); ++i) {
-					printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
+					//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
 					if((*i)->position.is_inside(e.x, e.y)) {
 						b = *i;
 						break;
@@ -975,7 +977,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		managed_window_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
 			safe_raise_window(mw->orig());
-			set_focus(mw, e.time, true);
+			set_focus(mw, e.time);
 		}
 
 //		fprintf(stderr,
@@ -1068,7 +1070,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				update_allocation();
 			}
 
-			set_focus(mode_data_notebook.c, e.time, false);
+			set_focus(mode_data_notebook.c, e.time);
 			if (mode_data_notebook.from != 0)
 				rpage->repair_notebook_border(mode_data_notebook.from);
 			if (mode_data_notebook.ns != 0)
@@ -1135,7 +1137,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time, false);
+			set_focus(mode_data_floating.f, e.time);
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1158,7 +1160,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time, false);
+			set_focus(mode_data_floating.f, e.time);
 			process_mode = PROCESS_NORMAL;
 
 			mode_data_floating.mode = RESIZE_NONE;
@@ -1198,7 +1200,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			pn0->hide();
 
-			set_focus(mode_data_bind.c, e.time, false);
+			set_focus(mode_data_bind.c, e.time);
 
 			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
@@ -2510,7 +2512,7 @@ void page_t::set_default_pop(notebook_t * x) {
 	default_window_pop = x;
 }
 
-void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) {
+void page_t::set_focus(managed_window_t * focus, Time tfocus) {
 
 	_last_focus_time = tfocus;
 
@@ -2522,6 +2524,13 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 
 	if (current_focus != 0) {
 		current_focus->set_focus_state(false);
+
+		if (current_focus->is(MANAGED_NOTEBOOK)) {
+			notebook_t * n = find_notebook_for(current_focus);
+			if (n != 0) {
+				rpage->repair_notebook_border(n);
+			}
+		}
 	}
 
 	if(focus == 0)
@@ -3905,7 +3914,7 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		/** TODO function **/
 		Time time = 0;
 		if(get_safe_net_wm_user_time(w, time)) {
-			set_focus(mw, time, true);
+			set_focus(mw, time);
 		}
 
 	} else {
@@ -3914,7 +3923,7 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 
 		Time time = 0;
 		if(get_safe_net_wm_user_time(w, time)) {
-			set_focus(mw, time, true);
+			set_focus(mw, time);
 		}
 
 

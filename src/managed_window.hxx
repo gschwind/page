@@ -71,6 +71,8 @@ private:
 	Window _base;
 	Window _deco;
 
+	list<box_any_t *> _floating_area;
+
 	bool _is_durty;
 
 	bool _is_focused;
@@ -413,6 +415,19 @@ public:
 				_base_position.h - _theme->floating_margin.top
 						- _theme->floating_margin.bottom);
 
+	}
+
+	list<box_any_t *> const & floating_areas() {
+		return _floating_area;
+	}
+
+	void update_floating_areas() {
+		for (list<box_any_t *>::iterator i = _floating_area.begin();
+				i != _floating_area.end(); ++i) {
+			delete *i;
+		}
+
+		_floating_area = _theme->compute_floating_areas(this);
 	}
 
 };

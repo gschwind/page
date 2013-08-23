@@ -67,8 +67,6 @@ class compositor_t : public xevent_handler_t {
 	/** list that track window stack order **/
 	std::list<Window> window_stack;
 
-	map<Window, region_t<int> > compositor_window_state;
-
 	/**
 	 * map do not handle properly objects, it's need copy constructor ...
 	 * Use pointer instead.
@@ -84,10 +82,6 @@ class compositor_t : public xevent_handler_t {
 	double fast_region_surf_monitor;
 	double slow_region_surf_monitor;
 
-	/* damaged region */
-	region_t<int> pending_damage;
-
-	//void add_damage_area(_region_t const & box);
 
 	void repair_damaged_window(Window w, region_t<int> area);
 	void repair_moved_window(Window w, region_t<int> from, region_t<int> to);
@@ -101,8 +95,6 @@ class compositor_t : public xevent_handler_t {
 	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
 			box_t<int> const & area);
 
-	void damage_all();
-
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);
 	void process_event(XMapEvent const & e);
@@ -114,9 +106,6 @@ class compositor_t : public xevent_handler_t {
 
 	virtual void process_event(XEvent const & e);
 
-	void register_window(Window w);
-	void unregister_window(Window w);
-
 	void scan();
 
 	void update_layout();
@@ -126,12 +115,7 @@ class compositor_t : public xevent_handler_t {
 	void stack_window_place_on_bottom(Window w);
 	void stack_window_remove(Window w);
 
-	void save_state();
-
 	region_t<int> read_damaged_region(Damage d);
-
-
-	void compute_pending_damage();
 
 	bool register_cm(Window w);
 	void init_composite_overlay();
@@ -139,6 +123,8 @@ class compositor_t : public xevent_handler_t {
 
 	void destroy_cairo();
 	void init_cairo();
+
+	void repair_area_region(region_t<int> const & repair);
 
 public:
 

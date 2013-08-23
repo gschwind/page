@@ -288,7 +288,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(managed_window_t * w, Time tfocus, bool force_focus);
+	void set_focus(managed_window_t * w, Time tfocus);
 	compositor_t * get_render_context();
 	xconnection_t * get_xconnection();
 

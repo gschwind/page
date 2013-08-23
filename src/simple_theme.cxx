@@ -1357,6 +1357,15 @@ list<box_any_t *> simple_theme_t::compute_page_areas(
 			split_base_t const * s = dynamic_cast<split_base_t const *>(*i);
 			box_split_t * bsplit = new box_split_t();
 			bsplit->position = compute_split_bar_location(s);
+
+			if(s->type() == VERTICAL_SPLIT) {
+				bsplit->position.w += notebook_margin.right + notebook_margin.left;
+				bsplit->position.x -= notebook_margin.right;
+			} else {
+				bsplit->position.h += notebook_margin.bottom;
+				bsplit->position.y -= notebook_margin.bottom;
+			}
+
 			bsplit->split = s;
 			ret.push_back(bsplit);
 		} else if (dynamic_cast<notebook_base_t const *>(*i)) {
