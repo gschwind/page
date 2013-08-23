@@ -24,7 +24,7 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t : public tree_t {
+class notebook_t : public notebook_base_t {
 
 	theme_layout_t const * layout;
 
@@ -128,6 +128,18 @@ public:
 	void set_theme(theme_layout_t const * theme);
 
 	virtual void get_childs(list<tree_t *> & lst);
+
+	virtual list<managed_window_base_t const *> clients() const {
+		return list<managed_window_base_t const *>(_clients.begin(), _clients.end());
+	}
+
+	virtual managed_window_base_t const * selected() const {
+		if(_selected.empty()) {
+			return 0;
+		} else {
+			return _selected.front();
+		}
+	}
 
 };
 

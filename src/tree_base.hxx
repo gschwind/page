@@ -11,9 +11,8 @@
 #include <list>
 #include <string>
 
-#include "window_icon_handler.hxx"
-#include "icon.hxx"
-#include "box.hxx"
+#include "managed_window_base.hxx"
+#include "tree.hxx"
 
 using namespace std;
 
@@ -31,51 +30,7 @@ enum box_type_e {
 	THEME_SPLIT
 };
 
-enum split_type_e {
-	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
-};
 
-struct managed_window_base_t {
-
-	virtual ~managed_window_base_t() { }
-
-	virtual box_t<int> const & base_position() = 0;
-	virtual window_icon_handler_t * icon() = 0;
-	virtual char const * title() = 0;
-
-	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
-	virtual cairo_t * cairo_top() = 0;
-	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
-	virtual cairo_t * cairo_bottom() = 0;
-	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
-	virtual cairo_t * cairo_left() = 0;
-	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
-	virtual cairo_t * cairo_right() = 0;
-
-	virtual bool is_focused() = 0;
-};
-
-struct notebook_base_t {
-	box_t<int> allocation;
-	list<managed_window_base_t const *> clients;
-	managed_window_base_t const * selected;
-};
-
-struct split_base_t {
-	box_t<int> allocation;
-	split_type_e type;
-	double split;
-};
-
-struct viewport_base_t {
-	box_t<int> allocation;
-};
-
-struct page_base_t {
-	list<viewport_base_t const *> viewports;
-	list<split_base_t const *> splits;
-	list<notebook_base_t const *> notebooks;
-};
 
 
 struct box_any_t {

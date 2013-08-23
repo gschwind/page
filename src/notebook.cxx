@@ -19,7 +19,7 @@ notebook_t::~notebook_t() {
 }
 
 managed_window_t * notebook_t::find_client_tab(int x, int y) {
-	if (_allocation.is_inside(x, y)) {
+	if (allocation().is_inside(x, y)) {
 		if (!_clients.empty()) {
 
 			int number_of_client = _clients.size();
@@ -30,7 +30,7 @@ managed_window_t * notebook_t::find_client_tab(int x, int y) {
 				selected_index = distance(_clients.begin(), i);
 			}
 
-			list<box_int_t> tabs = layout->compute_client_tab(_allocation, number_of_client, selected_index);
+			list<box_int_t> tabs = layout->compute_client_tab(allocation(), number_of_client, selected_index);
 
 			list<box_int_t>::iterator i = tabs.begin();
 			while(i != tabs.end()) {
@@ -62,8 +62,8 @@ void notebook_t::update_close_area() {
 		selected_index = distance(_clients.begin(), i);
 	}
 
-	close_client_area = layout->compute_notebook_close_window_position(_allocation, number_of_client, selected_index);
-	undck_client_area = layout->compute_notebook_unbind_window_position(_allocation, number_of_client, selected_index);
+	close_client_area = layout->compute_notebook_close_window_position(allocation(), number_of_client, selected_index);
+	undck_client_area = layout->compute_notebook_unbind_window_position(allocation(), number_of_client, selected_index);
 
 }
 
@@ -91,10 +91,10 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 }
 
 box_int_t notebook_t::get_new_client_size() {
-	return box_int_t(_allocation.x + layout->notebook_margin.left,
-			_allocation.y + layout->notebook_margin.top,
-			_allocation.w - layout->notebook_margin.right - layout->notebook_margin.left,
-			_allocation.h - layout->notebook_margin.top - layout->notebook_margin.bottom);
+	return box_int_t(allocation().x + layout->notebook_margin.left,
+			allocation().y + layout->notebook_margin.top,
+			allocation().w - layout->notebook_margin.right - layout->notebook_margin.left,
+			allocation().h - layout->notebook_margin.top - layout->notebook_margin.bottom);
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
@@ -199,24 +199,24 @@ void notebook_t::map_all() {
 }
 
 box_int_t notebook_t::get_absolute_extend() {
-	return _allocation;
+	return allocation();
 }
 
 region_t<int> notebook_t::get_area() {
 	if (!_selected.empty()) {
-		region_t<int> area = _allocation;
+		region_t<int> area = allocation();
 		area -= _selected.front()->get_base_position();
 		return area;
 	} else {
-		return region_t<int>(_allocation);
+		return region_t<int>(allocation());
 	}
 }
 
 void notebook_t::set_allocation(box_int_t const & area) {
-	if (area == _allocation)
+	if (area == allocation())
 		return;
 
-	_allocation = area;
+	tree_t::set_allocation(area);
 
 	int number_of_client = _clients.size();
 	int selected_index = -1;
@@ -226,66 +226,66 @@ void notebook_t::set_allocation(box_int_t const & area) {
 		selected_index = distance(_clients.begin(), i);
 	}
 
-	button_close = layout->compute_notebook_close_position(_allocation, number_of_client, selected_index);
-	button_vsplit = layout->compute_notebook_vsplit_position(_allocation, number_of_client, selected_index);
-	button_hsplit = layout->compute_notebook_hsplit_position(_allocation, number_of_client, selected_index);
-	button_pop = layout->compute_notebook_bookmark_position(_allocation, number_of_client, selected_index);
+	button_close = layout->compute_notebook_close_position(allocation(), number_of_client, selected_index);
+	button_vsplit = layout->compute_notebook_vsplit_position(allocation(), number_of_client, selected_index);
+	button_hsplit = layout->compute_notebook_hsplit_position(allocation(), number_of_client, selected_index);
+	button_pop = layout->compute_notebook_bookmark_position(allocation(), number_of_client, selected_index);
 
-	tab_area.x = _allocation.x;
-	tab_area.y = _allocation.y;
-	tab_area.w = _allocation.w;
+	tab_area.x = allocation().x;
+	tab_area.y = allocation().y;
+	tab_area.w = allocation().w;
 	tab_area.h = layout->notebook_margin.top;
 
-	top_area.x = _allocation.x;
-	top_area.y = _allocation.y + layout->notebook_margin.top;
-	top_area.w = _allocation.w;
-	top_area.h = (_allocation.h - layout->notebook_margin.top) * 0.2;
+	top_area.x = allocation().x;
+	top_area.y = allocation().y + layout->notebook_margin.top;
+	top_area.w = allocation().w;
+	top_area.h = (allocation().h - layout->notebook_margin.top) * 0.2;
 
-	bottom_area.x = _allocation.x;
-	bottom_area.y = _allocation.y + layout->notebook_margin.top + (0.8 * (_allocation.h - layout->notebook_margin.top));
-	bottom_area.w = _allocation.w;
-	bottom_area.h = (_allocation.h - layout->notebook_margin.top) * 0.2;
+	bottom_area.x = allocation().x;
+	bottom_area.y = allocation().y + layout->notebook_margin.top + (0.8 * (allocation().h - layout->notebook_margin.top));
+	bottom_area.w = allocation().w;
+	bottom_area.h = (allocation().h - layout->notebook_margin.top) * 0.2;
 
-	left_area.x = _allocation.x;
-	left_area.y = _allocation.y + layout->notebook_margin.top;
-	left_area.w = _allocation.w * 0.2;
-	left_area.h = (_allocation.h - layout->notebook_margin.top);
+	left_area.x = allocation().x;
+	left_area.y = allocation().y + layout->notebook_margin.top;
+	left_area.w = allocation().w * 0.2;
+	left_area.h = (allocation().h - layout->notebook_margin.top);
 
-	right_area.x = _allocation.x + _allocation.w * 0.8;
-	right_area.y = _allocation.y + layout->notebook_margin.top;
-	right_area.w = _allocation.w * 0.2;
-	right_area.h = (_allocation.h - layout->notebook_margin.top);
+	right_area.x = allocation().x + allocation().w * 0.8;
+	right_area.y = allocation().y + layout->notebook_margin.top;
+	right_area.w = allocation().w * 0.2;
+	right_area.h = (allocation().h - layout->notebook_margin.top);
 
-	popup_top_area.x = _allocation.x;
-	popup_top_area.y = _allocation.y + layout->notebook_margin.top;
-	popup_top_area.w = _allocation.w;
-	popup_top_area.h = (_allocation.h - layout->notebook_margin.top) * 0.5;
+	popup_top_area.x = allocation().x;
+	popup_top_area.y = allocation().y + layout->notebook_margin.top;
+	popup_top_area.w = allocation().w;
+	popup_top_area.h = (allocation().h - layout->notebook_margin.top) * 0.5;
 
-	popup_bottom_area.x = _allocation.x;
-	popup_bottom_area.y = _allocation.y + layout->notebook_margin.top
-			+ (0.5 * (_allocation.h - layout->notebook_margin.top));
-	popup_bottom_area.w = _allocation.w;
-	popup_bottom_area.h = (_allocation.h - layout->notebook_margin.top) * 0.5;
+	popup_bottom_area.x = allocation().x;
+	popup_bottom_area.y = allocation().y + layout->notebook_margin.top
+			+ (0.5 * (allocation().h - layout->notebook_margin.top));
+	popup_bottom_area.w = allocation().w;
+	popup_bottom_area.h = (allocation().h - layout->notebook_margin.top) * 0.5;
 
-	popup_left_area.x = _allocation.x;
-	popup_left_area.y = _allocation.y + layout->notebook_margin.top;
-	popup_left_area.w = _allocation.w * 0.5;
-	popup_left_area.h = (_allocation.h - layout->notebook_margin.top);
+	popup_left_area.x = allocation().x;
+	popup_left_area.y = allocation().y + layout->notebook_margin.top;
+	popup_left_area.w = allocation().w * 0.5;
+	popup_left_area.h = (allocation().h - layout->notebook_margin.top);
 
-	popup_right_area.x = _allocation.x + _allocation.w * 0.5;
-	popup_right_area.y = _allocation.y + layout->notebook_margin.top;
-	popup_right_area.w = _allocation.w * 0.5;
-	popup_right_area.h = (_allocation.h - layout->notebook_margin.top);
+	popup_right_area.x = allocation().x + allocation().w * 0.5;
+	popup_right_area.y = allocation().y + layout->notebook_margin.top;
+	popup_right_area.w = allocation().w * 0.5;
+	popup_right_area.h = (allocation().h - layout->notebook_margin.top);
 
-	popup_center_area.x = _allocation.x + _allocation.w * 0.2;
-	popup_center_area.y = _allocation.y + layout->notebook_margin.top + (_allocation.h - layout->notebook_margin.top) * 0.2;
-	popup_center_area.w = _allocation.w * 0.6;
-	popup_center_area.h = (_allocation.h - layout->notebook_margin.top) * 0.6;
+	popup_center_area.x = allocation().x + allocation().w * 0.2;
+	popup_center_area.y = allocation().y + layout->notebook_margin.top + (allocation().h - layout->notebook_margin.top) * 0.2;
+	popup_center_area.w = allocation().w * 0.6;
+	popup_center_area.h = (allocation().h - layout->notebook_margin.top) * 0.6;
 
-	client_area.x = _allocation.x + layout->notebook_margin.left;
-	client_area.y = _allocation.y + layout->notebook_margin.top;
-	client_area.w = _allocation.w - layout->notebook_margin.left - layout->notebook_margin.right;
-	client_area.h = _allocation.h - layout->notebook_margin.top - layout->notebook_margin.bottom;
+	client_area.x = allocation().x + layout->notebook_margin.left;
+	client_area.y = allocation().y + layout->notebook_margin.top;
+	client_area.w = allocation().w - layout->notebook_margin.left - layout->notebook_margin.right;
+	client_area.h = allocation().h - layout->notebook_margin.top - layout->notebook_margin.bottom;
 
 //	printf("update client area xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
 //			client_area.y);
@@ -326,8 +326,8 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 
 box_int_t notebook_t::compute_client_size(managed_window_t * c) {
 	unsigned int height, width;
-	compute_client_size_with_constraint(c, _allocation.w - layout->notebook_margin.left - layout->notebook_margin.right,
-			_allocation.h - layout->notebook_margin.top - layout->notebook_margin.bottom, width, height);
+	compute_client_size_with_constraint(c, allocation().w - layout->notebook_margin.left - layout->notebook_margin.right,
+			allocation().h - layout->notebook_margin.top - layout->notebook_margin.bottom, width, height);
 
 	/* compute the window placement within notebook */
 	box_int_t client_size;
@@ -354,7 +354,7 @@ box_int_t notebook_t::compute_client_size(managed_window_t * c) {
 }
 
 box_int_t const & notebook_t::get_allocation() {
-	return _allocation;
+	return allocation();
 }
 
 managed_window_t const * notebook_t::get_selected() {

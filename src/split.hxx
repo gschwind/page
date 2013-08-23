@@ -23,7 +23,7 @@ namespace page {
 
 
 
-class split_t : public tree_t {
+class split_t : public split_base_t {
 
 	theme_layout_t const * theme;
 
@@ -74,38 +74,49 @@ public:
 	/* compute the slider area */
 	void compute_split_location(double split, int & x, int & y) const {
 
+		box_int_t const & alloc = allocation();
+
 		if (_split_type == VERTICAL_SPLIT) {
 
-			int w = _allocation.w - 2 * theme->split_margin.left
+
+			int w = alloc.w - 2 * theme->split_margin.left
 					- 2 * theme->split_margin.right - theme->split_width;
 			int w0 = floor(w * split + 0.5);
 
-			x = _allocation.x + theme->split_margin.left + w0
+			x = alloc.x + theme->split_margin.left + w0
 					+ theme->split_margin.right;
-			y = _allocation.y;
+			y = alloc.y;
 
 		} else {
 
-			int h = _allocation.h - 2 * theme->split_margin.top
+			int h = alloc.h - 2 * theme->split_margin.top
 					- 2 * theme->split_margin.bottom - theme->split_width;
 			int h0 = floor(h * split + 0.5);
 
-			x = _allocation.x;
-			y = _allocation.y + theme->split_margin.top + h0
+			x = alloc.x;
+			y = alloc.y + theme->split_margin.top + h0
 					+ theme->split_margin.bottom;
 		}
 	}
 
 	/* compute the slider area */
 	void compute_split_size(double split, int & w, int & h) const {
-
+		box_int_t const & alloc = allocation();
 		if (_split_type == VERTICAL_SPLIT) {
 			w = theme->split_width;
-			h = _allocation.h;
+			h = alloc.h;
 		} else {
-			w = _allocation.w;
+			w = alloc.w;
 			h = theme->split_width;
 		}
+	}
+
+	double split() const {
+		return _split;
+	}
+
+	split_type_e type() const {
+		return _split_type;
 	}
 
 };

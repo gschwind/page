@@ -8,10 +8,9 @@
 #ifndef MANAGED_WINDOW_HXX_
 #define MANAGED_WINDOW_HXX_
 
-#include "tree_base.hxx"
+#include "managed_window_base.hxx"
 #include "theme_layout.hxx"
 #include "xconnection.hxx"
-#include "window_icon_handler.hxx"
 
 namespace page {
 
@@ -51,8 +50,8 @@ private:
 	cairo_surface_t * _left_buffer;
 	cairo_surface_t * _right_buffer;
 
-	window_icon_handler_t * _icon;
-	string * _title;
+	mutable window_icon_handler_t * _icon;
+	mutable string * _title;
 
 	/* avoid copy */
 	managed_window_t(managed_window_t const &);
@@ -104,7 +103,7 @@ public:
 
 	managed_window_type_e get_type();
 
-	window_icon_handler_t * icon() {
+	window_icon_handler_t * icon() const {
 		if (_icon == 0) {
 			_icon = new window_icon_handler_t(cnx, _orig, 16, 16);
 		}
@@ -120,19 +119,19 @@ public:
 
 	void set_theme(theme_layout_t const * theme);
 
-	cairo_t * cairo_top() {
+	cairo_t * cairo_top() const {
 		return cairo_create(_top_buffer);
 	}
 
-	cairo_t * cairo_bottom() {
+	cairo_t * cairo_bottom() const {
 		return cairo_create(_bottom_buffer);
 	}
 
-	cairo_t * cairo_left() {
+	cairo_t * cairo_left() const {
 		return cairo_create(_left_buffer);
 	}
 
-	cairo_t * cairo_right() {
+	cairo_t * cairo_right() const {
 		return cairo_create(_right_buffer);
 	}
 
@@ -171,7 +170,7 @@ public:
 		return _is_durty;
 	}
 
-	bool is_focused() {
+	bool is_focused() const {
 		return _is_focused;
 	}
 
@@ -204,7 +203,7 @@ public:
 		}
 	}
 
-	char const * title() {
+	char const * title() const {
 		if (_title == 0) {
 			string name;
 			if (cnx->read_net_wm_name(_orig, &name)) {
@@ -229,7 +228,7 @@ public:
 		}
 	}
 
-	box_t<int> const & base_position() {
+	box_t<int> const & base_position() const {
 		return _base_position;
 	}
 

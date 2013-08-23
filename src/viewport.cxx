@@ -17,7 +17,7 @@ viewport_t::viewport_t(theme_t * theme, box_t<int> const & area) : raw_aera(area
 	_subtree = 0;
 	_is_visible = true;
 	_theme = theme;
-	_subtree = new notebook_t(_theme->get_theme_layout());
+	_subtree = new notebook_t(_theme->layout());
 	_subtree->set_parent(this);
 	_subtree->set_allocation(effective_aera);
 

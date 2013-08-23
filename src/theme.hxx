@@ -31,28 +31,24 @@ namespace page {
 class theme_t {
 
 protected:
-	theme_layout_t * layout;
+	theme_layout_t * _layout;
 
 public:
 
 	theme_t() {
-		layout = 0;
+		_layout = 0;
 	}
 
 	virtual ~theme_t() {
 	}
 
-	virtual void render_split(cairo_t * cr, split_t * s) = 0;
-	virtual void render_notebook(cairo_t * cr, notebook_t * n,
-			managed_window_t * focuced, bool is_default) = 0;
+	virtual void render_split(cairo_t * cr, split_base_t * s) = 0;
+	virtual void render_notebook(cairo_t * cr, notebook_base_t * n) = 0;
 
 	virtual void render_floating(managed_window_base_t * nw) = 0;
 
-	virtual cairo_font_face_t * get_default_font() = 0;
-	virtual PangoFontDescription * get_pango_font() = 0;
-
-	virtual theme_layout_t const * get_theme_layout() const {
-		return layout;
+	virtual theme_layout_t const * layout() const {
+		return _layout;
 	}
 
 	virtual void render_popup_notebook0(cairo_t * cr,

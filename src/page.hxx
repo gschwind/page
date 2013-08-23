@@ -37,8 +37,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+
 #include "utils.hxx"
 #include "box.hxx"
+
+#include "tree_base.hxx"
+
 #include "xconnection.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
@@ -70,7 +74,7 @@ inline void print_buffer__(const char * buf, int size) {
 	printf("\n");
 }
 
-class page_t : public xevent_handler_t {
+class page_t {
 
 
 public:
@@ -484,6 +488,18 @@ public:
 	viewport_t * find_mouse_viewport(int x, int y);
 
 	bool get_safe_net_wm_user_time(Window w, Time & time);
+
+	virtual list<viewport_base_t const *> const & viewports() const {
+
+	}
+
+	virtual list<split_base_t const *> const & splits() const {
+
+	}
+
+	virtual list<notebook_base_t const *> const & notebooks() const {
+
+	}
 
 
 };

@@ -45,7 +45,7 @@ public:
 	void render_notebooks(cairo_t * _cr,  std::list<notebook_t *> const & notebooks) {
 		for (std::list<notebook_t *>::const_iterator i = notebooks.begin();
 				i != notebooks.end(); ++i) {
-			render->render_notebook(_cr, *i, focused, *i == default_pop);
+			render->render_notebook(_cr, *i);
 		}
 	}
 

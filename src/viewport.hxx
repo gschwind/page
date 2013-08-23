@@ -19,7 +19,7 @@ using namespace std;
 
 namespace page {
 
-struct viewport_t: public tree_t {
+struct viewport_t: public viewport_base_t {
 
 private:
 	theme_t * _theme;

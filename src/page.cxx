@@ -256,9 +256,6 @@ void page_t::run() {
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0, 0, false);
 
-	/* add page event handler */
-	cnx->add_event_handler(this);
-
 	scan();
 	update_windows_stack();
 
@@ -375,7 +372,7 @@ managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, 
 	}
 
 	managed_window_t * mw = new managed_window_t(cnx, type, net_wm_type, w, wa,
-			theme->get_theme_layout());
+			theme->layout());
 	managed_window.insert(mw);
 
 	//Show_All_Props2(cnx->dpy, w);
@@ -698,14 +695,14 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				box_int_t size = mw->get_base_position();
 
 				box_int_t close_position =
-						theme->get_theme_layout()->compute_floating_close_position(
+						theme->layout()->compute_floating_close_position(
 								size);
 				box_int_t dock_position =
-						theme->get_theme_layout()->compute_floating_bind_position(
+						theme->layout()->compute_floating_bind_position(
 								size);
 
 
-				theme_layout_t const * layout = theme->get_theme_layout();
+				theme_layout_t const * layout = theme->layout();
 
 				/* TODO: NEED TO FIX "- 20" in top margin */
 				box_int_t resize_position_top_left(size.x, size.y,
@@ -957,7 +954,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			/* automaticaly close empty notebook */
 			if (mode_data_notebook.from->_clients.empty()
-					&& mode_data_notebook.from->_parent != 0) {
+					&& mode_data_notebook.from->parent() != 0) {
 				notebook_close(mode_data_notebook.from);
 				update_allocation();
 			}
@@ -1069,7 +1066,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			managed_window_t * mw = mode_data_floating.f;
 			box_int_t size = mw->get_base_position();
 			box_int_t close_position =
-					theme->get_theme_layout()->compute_floating_close_position(
+					theme->layout()->compute_floating_close_position(
 							size);
 			/* click on close button ? */
 			if (close_position.is_inside(e.x_root, e.y_root)) {
@@ -1200,12 +1197,12 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
 			mode_data_split.split_ratio = (ev.xmotion.x
-					- mode_data_split.split->_allocation.x)
-					/ (double) (mode_data_split.split->_allocation.w);
+					- mode_data_split.split->allocation().x)
+					/ (double) (mode_data_split.split->allocation().w);
 		} else {
 			mode_data_split.split_ratio = (ev.xmotion.y
-					- mode_data_split.split->_allocation.y)
-					/ (double) (mode_data_split.split->_allocation.h);
+					- mode_data_split.split->allocation().y)
+					/ (double) (mode_data_split.split->allocation().h);
 		}
 
 		if (mode_data_split.split_ratio > 0.95)
@@ -1411,10 +1408,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = size;
 
 		box_int_t popup_new_position = size;
-		popup_new_position.x -= theme->get_theme_layout()->floating_margin.left;
-		popup_new_position.y -= theme->get_theme_layout()->floating_margin.top;
-		popup_new_position.w += theme->get_theme_layout()->floating_margin.left + theme->get_theme_layout()->floating_margin.right;
-		popup_new_position.h += theme->get_theme_layout()->floating_margin.top + theme->get_theme_layout()->floating_margin.bottom;
+		popup_new_position.x -= theme->layout()->floating_margin.left;
+		popup_new_position.y -= theme->layout()->floating_margin.top;
+		popup_new_position.w += theme->layout()->floating_margin.left + theme->layout()->floating_margin.right;
+		popup_new_position.h += theme->layout()->floating_margin.top + theme->layout()->floating_margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
 
@@ -2617,7 +2614,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 void page_t::split(notebook_t * nbk, split_type_e type) {
 	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(type);
-	nbk->_parent->replace(nbk, split);
+	nbk->parent()->replace(nbk, split);
 	split->replace(0, nbk);
 	notebook_t * n = new_notebook();
 	split->replace(0, n);
@@ -2628,7 +2625,7 @@ void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
 	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(VERTICAL_SPLIT);
 	notebook_t * n = new_notebook();
-	nbk->_parent->replace(nbk, split);
+	nbk->parent()->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	insert_window_in_tree(c, n, true);
@@ -2638,7 +2635,7 @@ void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
 	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(VERTICAL_SPLIT);
 	notebook_t * n = new_notebook();
-	nbk->_parent->replace(nbk, split);
+	nbk->parent()->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	insert_window_in_tree(c, n, true);
@@ -2648,7 +2645,7 @@ void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
 	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(HORIZONTAL_SPLIT);
 	notebook_t * n = new_notebook();
-	nbk->_parent->replace(nbk, split);
+	nbk->parent()->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	insert_window_in_tree(c, n, true);
@@ -2658,7 +2655,7 @@ void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
 	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(HORIZONTAL_SPLIT);
 	notebook_t * n = new_notebook();
-	nbk->_parent->replace(nbk, split);
+	nbk->parent()->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	insert_window_in_tree(c, n, true);
@@ -2666,7 +2663,7 @@ void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
 
 void page_t::notebook_close(notebook_t * src) {
 
-	split_t * ths = dynamic_cast<split_t *>(src->_parent);
+	split_t * ths = dynamic_cast<split_t *>(src->parent());
 
 	/* if parent is viewport return */
 	if(ths == 0)
@@ -2691,9 +2688,9 @@ void page_t::notebook_close(notebook_t * src) {
 		insert_window_in_tree((*i), 0, false);
 	}
 
-	assert(ths->_parent != 0);
+	assert(ths->parent() != 0);
 	/* remove this split from tree */
-	ths->_parent->replace(ths, dst);
+	ths->parent()->replace(ths, dst);
 
 	/* cleanup */
 	destroy(src);
@@ -2802,12 +2799,12 @@ void page_t::fix_allocation(viewport_t & v) {
 }
 
 split_t * page_t::new_split(split_type_e type) {
-	split_t * x = new split_t(type, theme->get_theme_layout());
+	split_t * x = new split_t(type, theme->layout());
 	return x;
 }
 
 notebook_t * page_t::new_notebook() {
-	notebook_t * x = new notebook_t(theme->get_theme_layout());
+	notebook_t * x = new notebook_t(theme->layout());
 	return x;
 }
 
@@ -3344,7 +3341,7 @@ viewport_t * page_t::find_viewport_for(notebook_t * n) {
 	while (x != 0) {
 		if (typeid(*x) == typeid(viewport_t))
 			return dynamic_cast<viewport_t *>(x);
-		x = (x->_parent);
+		x = (x->parent());
 	}
 	return 0;
 }

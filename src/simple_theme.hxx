@@ -137,11 +137,10 @@ public:
 
 	void create_background_img();
 
-	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default);
-	virtual void render_split(cairo_t * cr, split_t * s);
+	virtual void render_notebook(cairo_t * cr, notebook_base_t * n);
+	virtual void render_split(cairo_t * cr, split_base_t * s);
 	virtual void render_floating(managed_window_base_t * mw);
-	virtual cairo_font_face_t * get_default_font();
-	virtual PangoFontDescription * get_pango_font();
+
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);
@@ -151,6 +150,46 @@ public:
 	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h);
 
 	void update();
+
+
+	box_int_t compute_split_bar_location(split_base_t const * s) {
+
+		box_int_t ret;
+		box_int_t const & alloc = s->allocation();
+
+		if (s->type() == VERTICAL_SPLIT) {
+
+			int w = alloc.w - 2 * _layout->split_margin.left
+					- 2 * _layout->split_margin.right - _layout->split_width;
+			int w0 = floor(w * s->split() + 0.5);
+
+			ret.x = alloc.x + _layout->split_margin.left + w0
+					+ _layout->split_margin.right;
+			ret.y = alloc.y;
+
+		} else {
+
+			int h = alloc.h - 2 * _layout->split_margin.top
+					- 2 * _layout->split_margin.bottom - _layout->split_width;
+			int h0 = floor(h * s->split() + 0.5);
+
+			ret.x = alloc.x;
+			ret.y = alloc.y + _layout->split_margin.top + h0
+					+ _layout->split_margin.bottom;
+		}
+
+		if (s->type() == VERTICAL_SPLIT) {
+			ret.w = _layout->split_width;
+			ret.h = alloc.h;
+		} else {
+			ret.w = alloc.w;
+			ret.h = _layout->split_width;
+		}
+
+		return ret;
+
+	}
+
 
 };
 
