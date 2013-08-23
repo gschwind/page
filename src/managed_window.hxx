@@ -401,17 +401,17 @@ public:
 	void create_back_buffer() {
 
 		_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, _theme->layout()->floating_margin.top);
+				_base_position.w, _theme->floating_margin.top);
 		_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, _theme->layout()->floating_margin.bottom);
+				_base_position.w, _theme->floating_margin.bottom);
 		_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_theme->layout()->floating_margin.left,
-				_base_position.h - _theme->layout()->floating_margin.top
-						- _theme->layout()->floating_margin.bottom);
+				_theme->floating_margin.left,
+				_base_position.h - _theme->floating_margin.top
+						- _theme->floating_margin.bottom);
 		_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_theme->layout()->floating_margin.right,
-				_base_position.h - _theme->layout()->floating_margin.top
-						- _theme->layout()->floating_margin.bottom);
+				_theme->floating_margin.right,
+				_base_position.h - _theme->floating_margin.top
+						- _theme->floating_margin.bottom);
 
 	}
 

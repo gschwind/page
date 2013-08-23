@@ -143,20 +143,20 @@ void managed_window_t::reconfigure() {
 	if(is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
 
-		_base_position.x = _wished_position.x - _theme->layout()->floating_margin.left;
-		_base_position.y = _wished_position.y - _theme->layout()->floating_margin.top;
-		_base_position.w = _wished_position.w + _theme->layout()->floating_margin.left
-				+ _theme->layout()->floating_margin.right;
-		_base_position.h = _wished_position.h + _theme->layout()->floating_margin.top
-				+ _theme->layout()->floating_margin.bottom;
+		_base_position.x = _wished_position.x - _theme->floating_margin.left;
+		_base_position.y = _wished_position.y - _theme->floating_margin.top;
+		_base_position.w = _wished_position.w + _theme->floating_margin.left
+				+ _theme->floating_margin.right;
+		_base_position.h = _wished_position.h + _theme->floating_margin.top
+				+ _theme->floating_margin.bottom;
 
 		if(_base_position.x < 0)
 			_base_position.x = 0;
 		if(_base_position.y < 0)
 			_base_position.y = 0;
 
-		_orig_position.x = _theme->layout()->floating_margin.left;
-		_orig_position.y = _theme->layout()->floating_margin.top;
+		_orig_position.x = _theme->floating_margin.left;
+		_orig_position.y = _theme->floating_margin.top;
 		_orig_position.w = _wished_position.w;
 		_orig_position.h = _wished_position.h;
 
@@ -266,40 +266,40 @@ void managed_window_t::expose() {
 		/** top **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr, 0, 0, _base_position.w,
-				_theme->layout()->floating_margin.top);
+				_theme->floating_margin.top);
 		cairo_set_source_surface(_cr, _top_buffer, 0, 0);
 		cairo_fill(_cr);
 
 		/** bottom **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr, 0,
-				_base_position.h - _theme->layout()->floating_margin.bottom,
-				_base_position.w, _theme->layout()->floating_margin.bottom);
+				_base_position.h - _theme->floating_margin.bottom,
+				_base_position.w, _theme->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _bottom_buffer, 0,
-				_base_position.h - _theme->layout()->floating_margin.bottom);
+				_base_position.h - _theme->floating_margin.bottom);
 		cairo_fill(_cr);
 
 		/** left **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0.0, _theme->layout()->floating_margin.top,
-				_theme->layout()->floating_margin.left,
-				_base_position.h - _theme->layout()->floating_margin.top
-						- _theme->layout()->floating_margin.bottom);
+		cairo_rectangle(_cr, 0.0, _theme->floating_margin.top,
+				_theme->floating_margin.left,
+				_base_position.h - _theme->floating_margin.top
+						- _theme->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _left_buffer, 0.0,
-				_theme->layout()->floating_margin.top);
+				_theme->floating_margin.top);
 		cairo_fill(_cr);
 
 		/** right **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr,
-				_base_position.w - _theme->layout()->floating_margin.right,
-				_theme->layout()->floating_margin.top,
-				_theme->layout()->floating_margin.right,
-				_base_position.h - _theme->layout()->floating_margin.top
-						- _theme->layout()->floating_margin.bottom);
+				_base_position.w - _theme->floating_margin.right,
+				_theme->floating_margin.top,
+				_theme->floating_margin.right,
+				_base_position.h - _theme->floating_margin.top
+						- _theme->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _right_buffer,
-				_base_position.w - _theme->layout()->floating_margin.right,
-				_theme->layout()->floating_margin.top);
+				_base_position.w - _theme->floating_margin.right,
+				_theme->floating_margin.top);
 		cairo_fill(_cr);
 
 		cairo_surface_flush(_surf);

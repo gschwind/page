@@ -678,90 +678,170 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	case PROCESS_NORMAL:
 
 		if (e.window == rpage->id() && e.subwindow == None && e.button == Button1) {
-		/* split and notebook are mutually exclusive */
-			if (!check_for_start_split(e)) {
-				mode_data_notebook.start_x = e.x_root;
-				mode_data_notebook.start_y = e.y_root;
-				check_for_start_notebook(e);
+
+			update_page_areas();
+
+			box_any_t * b = 0;
+			for (list<box_any_t *>::iterator i = page_areas.begin();
+					i != page_areas.end(); ++i) {
+				printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
+				if((*i)->position.is_inside(e.x, e.y)) {
+					b = *i;
+					//break;
+				}
 			}
+
+			if (b != 0) {
+				if (dynamic_cast<box_notebook_client_t *>(b)) {
+
+					box_notebook_client_t * c =
+							dynamic_cast<box_notebook_client_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_GRAB;
+					mode_data_notebook.c =
+							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+					mode_data_notebook.zone = SELECT_NONE;
+
+					pn0->move_resize(mode_data_notebook.from->tab_area);
+					pn0->update_window(mode_data_notebook.c->orig(),
+							mode_data_notebook.c->title());
+
+					mode_data_notebook.from->set_selected(mode_data_notebook.c);
+					rpage->repair_notebook_border(mode_data_notebook.from);
+
+				} else if (dynamic_cast<box_notebook_close_t *>(b)) {
+					box_notebook_close_t * c =
+							dynamic_cast<box_notebook_close_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c = 0;
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_notebook_hsplit_t *>(b)) {
+					box_notebook_hsplit_t * c =
+							dynamic_cast<box_notebook_hsplit_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c = 0;
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_notebook_vsplit_t *>(b)) {
+					box_notebook_vsplit_t * c =
+							dynamic_cast<box_notebook_vsplit_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c = 0;
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_notebook_mark_t *>(b)) {
+					box_notebook_mark_t * c =
+							dynamic_cast<box_notebook_mark_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c = 0;
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_notebook_client_close_t *>(b)) {
+
+					box_notebook_client_close_t * c =
+							dynamic_cast<box_notebook_client_close_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c =
+							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_notebook_client_unbind_t *>(b)) {
+
+					box_notebook_client_unbind_t * c =
+							dynamic_cast<box_notebook_client_unbind_t *>(b);
+
+					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+					mode_data_notebook.c =
+							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
+					mode_data_notebook.from =
+							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.ns = 0;
+
+				} else if (dynamic_cast<box_split_t *>(b)) {
+					box_split_t * c = dynamic_cast<box_split_t *>(b);
+
+					process_mode = PROCESS_SPLIT_GRAB;
+
+					mode_data_split.split_ratio = c->split->split();
+					mode_data_split.split =
+							dynamic_cast<split_t *>(const_cast<split_base_t *>(c->split));
+					mode_data_split.slider_area =
+							mode_data_split.split->get_split_bar_area();
+
+					/* show split overlay */
+					ps->move_resize(mode_data_split.slider_area);
+					ps->show();
+					ps->expose();
+				}
+			}
+
 		}
 
+
 		if (mw != 0) {
+
 			if (mw->is(MANAGED_FLOATING) and e.button == Button1
-					and (e.subwindow != mw->orig()
-							or (e.state & (Mod1Mask | ControlMask)))) {
+					and (e.state & (Mod1Mask | ControlMask))) {
 
-				box_int_t size = mw->get_base_position();
+				mode_data_floating.x_offset = e.x;
+				mode_data_floating.y_offset = e.y;
+				mode_data_floating.x_root = e.x_root;
+				mode_data_floating.y_root = e.y_root;
+				mode_data_floating.f = mw;
+				mode_data_floating.original_position = mw->get_floating_wished_position();
+				mode_data_floating.final_position = mw->get_floating_wished_position();
+				mode_data_floating.popup_original_position = mw->get_base_position();
 
-				box_int_t close_position =
-						theme->layout()->compute_floating_close_position(
-								size);
-				box_int_t dock_position =
-						theme->layout()->compute_floating_bind_position(
-								size);
+				pfm->move_resize(mw->get_base_position());
+				pfm->update_window(mw->orig(), mw->title());
+				pfm->show();
 
-
-				theme_layout_t const * layout = theme->layout();
-
-				/* TODO: NEED TO FIX "- 20" in top margin */
-				box_int_t resize_position_top_left(size.x, size.y,
-						layout->floating_margin.left,
-						layout->floating_margin.top - 20);
-				box_int_t resize_position_top(
-						size.x + layout->floating_margin.left, size.y,
-						size.w - layout->floating_margin.left
-								- layout->floating_margin.right,
-						layout->floating_margin.top - 20);
-				box_int_t resize_position_top_right(
-						size.x + size.w - layout->floating_margin.right, size.y,
-						layout->floating_margin.right,
-						layout->floating_margin.top - 20);
-
-				box_int_t resize_position_left(size.x,
-						size.y + layout->floating_margin.top,
-						layout->floating_margin.left,
-						size.h - layout->floating_margin.top
-								- layout->floating_margin.bottom);
-				box_int_t resize_position_right(
-						size.x + size.w - layout->floating_margin.right,
-						size.y + layout->floating_margin.top,
-						layout->floating_margin.right,
-						size.h - layout->floating_margin.top
-								- layout->floating_margin.bottom);
-
-				box_int_t resize_position_bottom_left(size.x,
-						size.y + size.h - layout->floating_margin.bottom,
-						layout->floating_margin.left,
-						layout->floating_margin.bottom);
-				box_int_t resize_position_bottom(
-						size.x + layout->floating_margin.left,
-						size.y + size.h - layout->floating_margin.bottom,
-						size.w - layout->floating_margin.left
-								- layout->floating_margin.right,
-						layout->floating_margin.bottom);
-				box_int_t resize_position_bottom_right(
-						size.x + size.w - layout->floating_margin.right,
-						size.y + size.h - layout->floating_margin.bottom,
-						layout->floating_margin.right,
-						layout->floating_margin.bottom);
-
-
-				/* click on close button ? */
-				if (close_position.is_inside(e.x_root, e.y_root)) {
-					mode_data_floating.f = mw;
-					process_mode = PROCESS_FLOATING_CLOSE;
-				} else if (dock_position.is_inside(e.x_root, e.y_root)) {
-
-					mode_data_bind.c = mw;
-					mode_data_bind.ns = 0;
-					mode_data_bind.zone = SELECT_NONE;
-
-					pn0->move_resize(mode_data_bind.c->get_base_position());
-					pn0->update_window(mw->orig(), mw->title());
-
-					process_mode = PROCESS_FLOATING_BIND;
-
+				if ((e.state & ControlMask)) {
+					process_mode = PROCESS_FLOATING_RESIZE;
+					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 				} else {
+					safe_raise_window(mw->orig());
+					process_mode = PROCESS_FLOATING_MOVE;
+				}
+
+
+			} else if (mw->is(MANAGED_FLOATING) and e.button == Button1
+					and e.subwindow != mw->orig()) {
+
+				list<box_any_t *> l = theme->compute_floating_areas(mw);
+
+				box_any_t * b = 0;
+				for (list<box_any_t *>::iterator i = l.begin();
+						i != l.end(); ++i) {
+					printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
+					if((*i)->position.is_inside(e.x, e.y)) {
+						b = *i;
+						break;
+					}
+				}
+
+
+				if (b != 0) {
+
 					mode_data_floating.x_offset = e.x;
 					mode_data_floating.y_offset = e.y;
 					mode_data_floating.x_root = e.x_root;
@@ -771,41 +851,71 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.final_position = mw->get_floating_wished_position();
 					mode_data_floating.popup_original_position = mw->get_base_position();
 
-					pfm->move_resize(mw->get_base_position());
-					pfm->update_window(mw->orig(), mw->title());
-					pfm->show();
+					if (dynamic_cast<box_floating_close_t *>(b)) {
 
-					if ((e.state & ControlMask)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					} else if (resize_position_top_left.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_TOP_LEFT;
-					} else if (resize_position_top.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_TOP;
-					} else if (resize_position_top_right.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_TOP_RIGHT;
-					} else if (resize_position_left.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_LEFT;
-					} else if (resize_position_right.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_RIGHT;
-					} else if (resize_position_bottom_left.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-					} else if (resize_position_bottom.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_BOTTOM;
-					} else if (resize_position_bottom_right.is_inside(e.x_root, e.y_root)) {
-						process_mode = PROCESS_FLOATING_RESIZE;
-						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					} else {
+						mode_data_floating.f = mw;
+						process_mode = PROCESS_FLOATING_CLOSE;
+
+					} else if (dynamic_cast<box_floating_bind_t *>(b)) {
+
+						mode_data_bind.c = mw;
+						mode_data_bind.ns = 0;
+						mode_data_bind.zone = SELECT_NONE;
+
+						pn0->move_resize(mode_data_bind.c->get_base_position());
+						pn0->update_window(mw->orig(), mw->title());
+
+						process_mode = PROCESS_FLOATING_BIND;
+
+					} else if (dynamic_cast<box_floating_title_t *>(b)) {
+
+						pfm->move_resize(mw->get_base_position());
+						pfm->update_window(mw->orig(), mw->title());
+						pfm->show();
+
 						safe_raise_window(mw->orig());
 						process_mode = PROCESS_FLOATING_MOVE;
+					} else {
+
+						pfm->move_resize(mw->get_base_position());
+						pfm->update_window(mw->orig(), mw->title());
+						pfm->show();
+
+						if (dynamic_cast<box_floating_grip_top_t * >(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP;
+						} else if (dynamic_cast<box_floating_grip_bottom_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM;
+						} else if (dynamic_cast<box_floating_grip_left_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_LEFT;
+						} else if (dynamic_cast<box_floating_grip_right_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_RIGHT;
+						} else if (dynamic_cast<box_floating_grip_top_left_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP_LEFT;
+						} else if (dynamic_cast<box_floating_grip_top_right_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_TOP_RIGHT;
+						} else if (dynamic_cast<box_floating_grip_bottom_left_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+						} else if (dynamic_cast<box_floating_grip_bottom_right_t *>(b)) {
+							process_mode = PROCESS_FLOATING_RESIZE;
+							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+						} else {
+							safe_raise_window(mw->orig());
+							process_mode = PROCESS_FLOATING_MOVE;
+						}
 					}
+
+				}
+
+				for (list<box_any_t *>::iterator i = l.begin();
+						i != l.end(); ++i) {
+					delete *i;
 				}
 
 			} else if (mw->is(MANAGED_FULLSCREEN) and e.button == (Button1)
@@ -951,7 +1061,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			}
 
-			/* automaticaly close empty notebook */
+			/* Automatically close empty notebook */
 			if (mode_data_notebook.from->_clients.empty()
 					&& mode_data_notebook.from->parent() != 0) {
 				notebook_close(mode_data_notebook.from);
@@ -975,30 +1085,36 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		case PROCESS_NOTEBOOK_BUTTON_PRESS:
 			process_mode = PROCESS_NORMAL;
 
-			if (mode_data_notebook.c != 0) {
-				mode_data_notebook.from->update_close_area();
-				if (mode_data_notebook.from->close_client_area.is_inside(
-						e.x_root, e.y_root)) {
-					mode_data_notebook.c->delete_window(e.time);
-				} else if (mode_data_notebook.from->undck_client_area.is_inside(
-						e.x_root, e.y_root)) {
-					unbind_window(mode_data_notebook.c);
+			{
+				box_any_t * b = 0;
+				for (list<box_any_t *>::iterator i = page_areas.begin();
+						i != page_areas.end(); ++i) {
+					printf("box = %s => %s\n",
+							(*i)->position.to_string().c_str(),
+							typeid(**i).name());
+					if ((*i)->position.is_inside(e.x, e.y)) {
+						b = *i;
+						break;
+					}
 				}
-			} else {
-				if (mode_data_notebook.from != 0) {
-					if (mode_data_notebook.from->button_close.is_inside(e.x,
-							e.y)) {
+
+				if (b != 0) {
+					if (dynamic_cast<box_notebook_client_t *>(b)) {
+						/** do noting **/
+					} else if (dynamic_cast<box_notebook_close_t *>(b)) {
 						notebook_close(mode_data_notebook.from);
-					} else if (mode_data_notebook.from->button_vsplit.is_inside(
-							e.x, e.y)) {
-						split(mode_data_notebook.from, VERTICAL_SPLIT);
-					} else if (mode_data_notebook.from->button_hsplit.is_inside(
-							e.x, e.y)) {
+					} else if (dynamic_cast<box_notebook_hsplit_t *>(b)) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-					} else if (mode_data_notebook.from->button_pop.is_inside(
-							e.x, e.y)) {
+					} else if (dynamic_cast<box_notebook_vsplit_t *>(b)) {
+						split(mode_data_notebook.from, VERTICAL_SPLIT);
+					} else if (dynamic_cast<box_notebook_mark_t *>(b)) {
 						default_window_pop = mode_data_notebook.from;
-						rpage->repair_notebook_border(mode_data_notebook.from);
+					} else if (dynamic_cast<box_notebook_client_close_t *>(b)) {
+						mode_data_notebook.c->delete_window(e.time);
+					} else if (dynamic_cast<box_notebook_client_unbind_t *>(b)) {
+						unbind_window(mode_data_notebook.c);
+					} else if (dynamic_cast<box_split_t *>(b)) {
+						/** do nothing **/
 					}
 				}
 			}
@@ -1058,15 +1174,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			break;
 		case PROCESS_FLOATING_CLOSE: {
 			managed_window_t * mw = mode_data_floating.f;
-			box_int_t size = mw->get_base_position();
-			box_int_t close_position =
-					theme->layout()->compute_floating_close_position(
-							size);
-			/* click on close button ? */
-			if (close_position.is_inside(e.x_root, e.y_root)) {
-				mode_data_floating.f = mw;
-				mw->delete_window(e.time);
-			}
+			mw->delete_window(e.time);
 
 			/* cleanup */
 			process_mode = PROCESS_NORMAL;
@@ -1401,10 +1509,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = size;
 
 		box_int_t popup_new_position = size;
-		popup_new_position.x -= theme->layout()->floating_margin.left;
-		popup_new_position.y -= theme->layout()->floating_margin.top;
-		popup_new_position.w += theme->layout()->floating_margin.left + theme->layout()->floating_margin.right;
-		popup_new_position.h += theme->layout()->floating_margin.top + theme->layout()->floating_margin.bottom;
+		popup_new_position.x -= theme->floating_margin.left;
+		popup_new_position.y -= theme->floating_margin.top;
+		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
+		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
 
@@ -3610,18 +3718,18 @@ void  page_t::destroy_viewport(viewport_t * v) {
 //		/* do not allow to large windows */
 //		if (new_size.w
 //				> (cnx->get_root_size().w
-//						- theme->get_theme_layout()->floating_margin.left
-//						- theme->get_theme_layout()->floating_margin.right))
+//						- theme->get_theme_floating_margin.left
+//						- theme->get_theme_floating_margin.right))
 //			new_size.w = cnx->get_root_size().w
-//					- theme->get_theme_layout()->floating_margin.left
-//					- theme->get_theme_layout()->floating_margin.right;
+//					- theme->get_theme_floating_margin.left
+//					- theme->get_theme_floating_margin.right;
 //		if (new_size.h
 //				> cnx->get_root_size().h
-//						- theme->get_theme_layout()->floating_margin.top
-//						- theme->get_theme_layout()->floating_margin.bottom)
+//						- theme->get_theme_floating_margin.top
+//						- theme->get_theme_floating_margin.bottom)
 //			new_size.h = cnx->get_root_size().h
-//					- theme->get_theme_layout()->floating_margin.top
-//					- theme->get_theme_layout()->floating_margin.bottom;
+//					- theme->get_theme_floating_margin.top
+//					- theme->get_theme_floating_margin.bottom;
 //
 //		unsigned int final_width = new_size.w;
 //		unsigned int final_height = new_size.h;

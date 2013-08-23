@@ -273,6 +273,8 @@ private:
 
 	box_t<int> _root_position;
 
+	list<box_any_t *> page_areas;
+
 public:
 
 	theme_t * theme;
@@ -499,6 +501,19 @@ public:
 			i->second->get_childs(l);
 		}
 		return l;
+	}
+
+	void update_page_areas() {
+
+		for(list<box_any_t *>::iterator i = page_areas.begin(); i != page_areas.end(); ++i) {
+			delete *i;
+		}
+		page_areas.clear();
+
+		list<tree_t *> xl = childs();
+		list<tree_t const *> l(xl.begin(), xl.end());
+		page_areas = theme->compute_page_areas(list<tree_t const *>(xl.begin(), xl.end()));
+
 	}
 
 };

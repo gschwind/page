@@ -33,12 +33,12 @@ public:
 	void repair_notebook_border(notebook_t * n) {
 		region_t<int> r = n->allocation();
 		box_int_t b;
-		b.x = n->allocation().x + _theme->layout()->notebook_margin.left;
-		b.y = n->allocation().y + _theme->layout()->notebook_margin.top;
-		b.w = n->allocation().w - _theme->layout()->notebook_margin.left
-				- _theme->layout()->notebook_margin.right;
-		b.h = n->allocation().h - _theme->layout()->notebook_margin.top
-				- _theme->layout()->notebook_margin.bottom;
+		b.x = n->allocation().x + _theme->notebook_margin.left;
+		b.y = n->allocation().y + _theme->notebook_margin.top;
+		b.w = n->allocation().w - _theme->notebook_margin.left
+				- _theme->notebook_margin.right;
+		b.h = n->allocation().h - _theme->notebook_margin.top
+				- _theme->notebook_margin.bottom;
 		r -= b;
 
 		damaged += r;

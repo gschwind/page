@@ -25,17 +25,41 @@ namespace page {
 
 class theme_t {
 
-protected:
-	theme_layout_t * _layout;
-
 public:
 
+	margin_t notebook_margin;
+	margin_t split_margin;
+	margin_t floating_margin;
+
+	unsigned char split_width;
+
 	theme_t() {
-		_layout = 0;
+
+		notebook_margin.top = 0;
+		notebook_margin.bottom = 0;
+		notebook_margin.left = 0;
+		notebook_margin.right = 0;
+
+		split_margin.top = 0;
+		split_margin.bottom = 0;
+		split_margin.left = 0;
+		split_margin.right = 0;
+
+		floating_margin.top = 0;
+		floating_margin.bottom = 0;
+		floating_margin.left = 0;
+		floating_margin.right = 0;
+
+		split_width = 0;
 	}
 
 	virtual ~theme_t() {
 	}
+
+	virtual list<box_any_t *> compute_page_areas(
+			list<tree_t const *> const & page) const = 0;
+	virtual list<box_any_t *> compute_floating_areas(
+			managed_window_base_t * mw) const = 0;
 
 	virtual void render_split(cairo_t * cr, split_base_t const * s,
 			box_int_t const & area) const = 0;
@@ -43,10 +67,6 @@ public:
 			box_int_t const & area) const = 0;
 
 	virtual void render_floating(managed_window_base_t * nw) const = 0;
-
-	virtual theme_layout_t const * layout() const {
-		return _layout;
-	}
 
 	virtual void render_popup_notebook0(cairo_t * cr,
 			window_icon_handler_t * icon, unsigned int width,

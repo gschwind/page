@@ -27,45 +27,6 @@ using namespace std;
 
 namespace page {
 
-class simple_theme_layout_t : public theme_layout_t {
-
-public:
-
-	simple_theme_layout_t();
-
-	virtual ~simple_theme_layout_t();
-
-	virtual list<box_int_t> compute_client_tab(box_int_t const & allocation,
-			int number_of_client, int selected_client_index) const;
-	virtual box_int_t compute_notebook_close_window_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-	virtual box_int_t compute_notebook_unbind_window_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-
-	virtual box_int_t compute_notebook_bookmark_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-	virtual box_int_t compute_notebook_vsplit_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-	virtual box_int_t compute_notebook_hsplit_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-	virtual box_int_t compute_notebook_close_position(
-			box_int_t const & allocation, int number_of_client,
-			int selected_client_index) const;
-
-	virtual box_int_t compute_floating_close_position(
-			box_int_t const & _allocation) const;
-	virtual box_int_t compute_floating_bind_position(
-			box_int_t const & _allocation) const;
-
-};
-
-
-
 class simple_theme_t : public theme_t {
 public:
 
@@ -123,6 +84,27 @@ public:
 
 	virtual ~simple_theme_t();
 
+	box_int_t compute_notebook_close_window_position(
+			box_int_t const & allocation, int number_of_client,
+			int selected_client_index) const;
+	box_int_t compute_notebook_unbind_window_position(
+			box_int_t const & allocation, int number_of_client,
+			int selected_client_index) const;
+
+	box_int_t compute_notebook_bookmark_position(
+			box_int_t const & allocation) const;
+	box_int_t compute_notebook_vsplit_position(
+			box_int_t const & allocation) const;
+	box_int_t compute_notebook_hsplit_position(
+			box_int_t const & allocation) const;
+	box_int_t compute_notebook_close_position(
+			box_int_t const & allocation) const;
+
+	box_int_t compute_floating_close_position(
+			box_int_t const & _allocation) const;
+	box_int_t compute_floating_bind_position(
+			box_int_t const & _allocation) const;
+
 	static void rounded_rectangle(cairo_t * cr, double x, double y, double w,
 			double h, double r);
 
@@ -138,6 +120,12 @@ public:
 	virtual void render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);
 
+	virtual list<box_any_t *> compute_page_areas(list<tree_t const *> const & page) const;
+	virtual list<box_any_t *> compute_floating_areas(managed_window_base_t * mw) const;
+
+
+	void compute_areas_for_notebook(notebook_base_t const * n, list<box_any_t *> & l) const;
+
 	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) const;
 
 	void update();
@@ -150,36 +138,37 @@ public:
 
 		if (s->type() == VERTICAL_SPLIT) {
 
-			int w = alloc.w - 2 * _layout->split_margin.left
-					- 2 * _layout->split_margin.right - _layout->split_width;
+			int w = alloc.w - 2 * split_margin.left
+					- 2 * split_margin.right - split_width;
 			int w0 = floor(w * s->split() + 0.5);
 
-			ret.x = alloc.x + _layout->split_margin.left + w0
-					+ _layout->split_margin.right;
+			ret.x = alloc.x + split_margin.left + w0
+					+ split_margin.right;
 			ret.y = alloc.y;
 
 		} else {
 
-			int h = alloc.h - 2 * _layout->split_margin.top
-					- 2 * _layout->split_margin.bottom - _layout->split_width;
+			int h = alloc.h - 2 * split_margin.top
+					- 2 * split_margin.bottom - split_width;
 			int h0 = floor(h * s->split() + 0.5);
 
 			ret.x = alloc.x;
-			ret.y = alloc.y + _layout->split_margin.top + h0
-					+ _layout->split_margin.bottom;
+			ret.y = alloc.y + split_margin.top + h0
+					+ split_margin.bottom;
 		}
 
 		if (s->type() == VERTICAL_SPLIT) {
-			ret.w = _layout->split_width;
+			ret.w = split_width;
 			ret.h = alloc.h;
 		} else {
 			ret.w = alloc.w;
-			ret.h = _layout->split_width;
+			ret.h = split_width;
 		}
 
 		return ret;
 
 	}
+
 
 
 };

@@ -45,7 +45,6 @@ public:
 	virtual void replace(tree_t * src, tree_t * by);
 	virtual void remove(tree_t * src);
 	virtual void close(tree_t * src);
-	//virtual tab_window_set_t get_windows();
 
 	notebook_t * get_nearest_notebook();
 

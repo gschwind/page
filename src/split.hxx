@@ -78,23 +78,23 @@ public:
 		if (_split_type == VERTICAL_SPLIT) {
 
 
-			int w = alloc.w - 2 * _theme->layout()->split_margin.left
-					- 2 * _theme->layout()->split_margin.right - _theme->layout()->split_width;
+			int w = alloc.w - 2 * _theme->split_margin.left
+					- 2 * _theme->split_margin.right - _theme->split_width;
 			int w0 = floor(w * split + 0.5);
 
-			x = alloc.x + _theme->layout()->split_margin.left + w0
-					+ _theme->layout()->split_margin.right;
+			x = alloc.x + _theme->split_margin.left + w0
+					+ _theme->split_margin.right;
 			y = alloc.y;
 
 		} else {
 
-			int h = alloc.h - 2 * _theme->layout()->split_margin.top
-					- 2 * _theme->layout()->split_margin.bottom - _theme->layout()->split_width;
+			int h = alloc.h - 2 * _theme->split_margin.top
+					- 2 * _theme->split_margin.bottom - _theme->split_width;
 			int h0 = floor(h * split + 0.5);
 
 			x = alloc.x;
-			y = alloc.y + _theme->layout()->split_margin.top + h0
-					+ _theme->layout()->split_margin.bottom;
+			y = alloc.y + _theme->split_margin.top + h0
+					+ _theme->split_margin.bottom;
 		}
 	}
 
@@ -102,11 +102,11 @@ public:
 	void compute_split_size(double split, int & w, int & h) const {
 		box_int_t const & alloc = allocation();
 		if (_split_type == VERTICAL_SPLIT) {
-			w = _theme->layout()->split_width;
+			w = _theme->split_width;
 			h = alloc.h;
 		} else {
 			w = alloc.w;
-			h = _theme->layout()->split_width;
+			h = _theme->split_width;
 		}
 	}
 
