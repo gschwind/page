@@ -139,7 +139,7 @@ public:
 
 	virtual void render_notebook(cairo_t * cr, notebook_t * n, managed_window_t * focuced, bool is_default);
 	virtual void render_split(cairo_t * cr, split_t * s);
-	virtual void render_floating(managed_window_t * mw, bool is_focus);
+	virtual void render_floating(managed_window_base_t * mw);
 	virtual cairo_font_face_t * get_default_font();
 	virtual PangoFontDescription * get_pango_font();
 

@@ -21,6 +21,9 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 
 	_net_wm_type = net_wm_type;
 
+	_is_focused = false;
+	_title = 0;
+
 	_floating_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
 	_notebook_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
 
@@ -120,7 +123,8 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	_left_buffer = 0;
 	_right_buffer = 0;
 
-	icon = 0;
+
+	_icon = 0;
 
 	reconfigure();
 
@@ -221,11 +225,8 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 }
 
 void managed_window_t::focus(Time t) {
-	net_wm_state_add(_NET_WM_STATE_FOCUSED);
+	set_focus_state(true);
 	icccm_focus(t);
-	/** when focus a window, disable all button grab **/
-	grab_button_focused();
-
 }
 
 box_int_t managed_window_t::get_base_position() const {
@@ -234,19 +235,6 @@ box_int_t managed_window_t::get_base_position() const {
 
 managed_window_type_e managed_window_t::get_type() {
 	return _type;
-}
-
-window_icon_handler_t * managed_window_t::get_icon() {
-	if(icon == 0) {
-		icon = new window_icon_handler_t(cnx, _orig, 16, 16);
-	}
-	return icon;
-}
-
-void managed_window_t::update_icon() {
-	if(icon != 0)
-		delete icon;
-	icon = new window_icon_handler_t(cnx, _orig, 16, 16);
 }
 
 void managed_window_t::set_theme(theme_layout_t const * theme) {

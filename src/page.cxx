@@ -622,15 +622,15 @@ void page_t::process_event(XKeyEvent const & e) {
 			switch ((*i)->get_type()) {
 			case MANAGED_NOTEBOOK:
 				printf("[%lu] notebook : %s\n", (*i)->orig(),
-						(*i)->get_title().c_str());
+						(*i)->title());
 				break;
 			case MANAGED_FLOATING:
 				printf("[%lu] floating : %s\n", (*i)->orig(),
-						(*i)->get_title().c_str());
+						(*i)->title());
 				break;
 			case MANAGED_FULLSCREEN:
 				printf("[%lu] fullscreen : %s\n", (*i)->orig(),
-						(*i)->get_title().c_str());
+						(*i)->title());
 				break;
 			}
 		}
@@ -761,7 +761,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_bind.zone = SELECT_NONE;
 
 					pn0->move_resize(mode_data_bind.c->get_base_position());
-					pn0->update_window(mw->orig(), mw->get_title());
+					pn0->update_window(mw->orig(), mw->title());
 
 					process_mode = PROCESS_FLOATING_BIND;
 
@@ -776,7 +776,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.popup_original_position = mw->get_base_position();
 
 					pfm->move_resize(mw->get_base_position());
-					pfm->update_window(mw->orig(), mw->get_title());
+					pfm->update_window(mw->orig(), mw->title());
 					pfm->show();
 
 					if ((e.state & ControlMask)) {
@@ -823,7 +823,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					process_mode = PROCESS_FULLSCREEN_MOVE;
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
-					pn0->update_window(mw->orig(), mw->get_title());
+					pn0->update_window(mw->orig(), mw->title());
 					pn0->show();
 					pn0->move_resize(v->raw_aera);
 					pn0->expose();
@@ -840,7 +840,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_notebook.zone = SELECT_NONE;
 
 				pn0->move_resize(mode_data_notebook.from->tab_area);
-				pn0->update_window(mw->orig(), mw->get_title());
+				pn0->update_window(mw->orig(), mw->title());
 
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				rpage->mark_durty();
@@ -1027,8 +1027,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->reconfigure();
 
 			set_focus(mode_data_floating.f, e.time, false);
-			theme->render_floating(mode_data_floating.f,
-					is_focussed(mode_data_floating.f));
+			theme->render_floating(mode_data_floating.f);
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1050,8 +1049,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
-			theme->render_floating(mode_data_floating.f,
-					is_focussed(mode_data_floating.f));
+			theme->render_floating(mode_data_floating.f);
 
 			set_focus(mode_data_floating.f, e.time, false);
 			process_mode = PROCESS_NORMAL;
@@ -1876,27 +1874,19 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 	if (e.atom == A(_NET_WM_USER_TIME)) {
 
-	} else if (e.atom == A(_NET_WM_NAME)) {
+	} else if (e.atom == A(_NET_WM_NAME) || e.atom == A(WM_NAME)) {
 		if (mw != 0) {
+			mw->mark_title_durty();
+
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				rpage->mark_durty();
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw, is_focussed(mw));
+				theme->render_floating(mw);
 			}
 		}
 
-	} else if (e.atom == A(WM_NAME)) {
-		if (mw != 0) {
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				rpage->mark_durty();
-			}
-
-			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw, is_focussed(mw));
-			}
-		}
 	} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
 		//printf("UPDATE PARTIAL STRUCT\n");
 		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
@@ -1907,7 +1897,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 		//x->mark_durty_net_wm_partial_struct();
 		//rpage->mark_durty();
 	} else if (e.atom == A(_NET_WM_ICON)) {
-		/* TODO: durty notebook */
+		if (mw != 0)
+			mw->mark_icon_durty();
 	} else if (e.atom == A(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
 		/* update cache */
@@ -2263,7 +2254,7 @@ void page_t::process_event(XEvent const & e) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw, is_focussed(mw));
+				theme->render_floating(mw);
 				mw->expose();
 			}
 		}
@@ -2436,9 +2427,9 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 	}
 
 	if (current_focus != 0) {
-		current_focus->unset_focused();
+		current_focus->set_focus_state(false);
 		if (current_focus->is(MANAGED_FLOATING)) {
-			theme->render_floating(current_focus, false);
+			theme->render_floating(current_focus);
 			current_focus->expose();
 		}
 	}
@@ -2453,7 +2444,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 
 	focus->focus(_last_focus_time);
 	if (focus->get_type() == MANAGED_FLOATING) {
-		theme->render_floating(focus, true);
+		theme->render_floating(focus);
 		focus->expose();
 	}
 
@@ -2556,7 +2547,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 			mode_data_notebook.zone = SELECT_NONE;
 
 			pn0->move_resize(mode_data_notebook.from->tab_area);
-			pn0->update_window(c->orig(), c->get_title());
+			pn0->update_window(c->orig(), c->title());
 
 //			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
 //			pn1->move(e.x_root, e.y_root);
@@ -3190,7 +3181,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 
 	/* update database */
 	mw->set_managed_type(MANAGED_FLOATING);
-	theme->render_floating(mw, is_focussed(mw));
+	theme->render_floating(mw);
 	mw->normalize();
 	safe_raise_window(mw->orig());
 	rpage->mark_durty();

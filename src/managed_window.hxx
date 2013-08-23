@@ -51,7 +51,8 @@ private:
 	cairo_surface_t * _left_buffer;
 	cairo_surface_t * _right_buffer;
 
-	window_icon_handler_t * icon;
+	window_icon_handler_t * _icon;
+	string * _title;
 
 	/* avoid copy */
 	managed_window_t(managed_window_t const &);
@@ -72,6 +73,8 @@ private:
 	Window _deco;
 
 	bool _is_durty;
+
+	bool _is_focused;
 
 public:
 
@@ -101,26 +104,35 @@ public:
 
 	managed_window_type_e get_type();
 
-	window_icon_handler_t * get_icon();
-	void update_icon();
+	window_icon_handler_t * icon() {
+		if (_icon == 0) {
+			_icon = new window_icon_handler_t(cnx, _orig, 16, 16);
+		}
+		return _icon;
+	}
+
+	void mark_icon_durty() {
+		if (_icon != 0) {
+			delete _icon;
+			_icon = 0;
+		}
+	}
 
 	void set_theme(theme_layout_t const * theme);
 
-	cairo_t * get_cairo();
-
-	cairo_t * get_cairo_top() {
+	cairo_t * cairo_top() {
 		return cairo_create(_top_buffer);
 	}
 
-	cairo_t * get_cairo_bottom() {
+	cairo_t * cairo_bottom() {
 		return cairo_create(_bottom_buffer);
 	}
 
-	cairo_t * get_cairo_left() {
+	cairo_t * cairo_left() {
 		return cairo_create(_left_buffer);
 	}
 
-	cairo_t * get_cairo_right() {
+	cairo_t * cairo_right() {
 		return cairo_create(_right_buffer);
 	}
 
@@ -159,6 +171,10 @@ public:
 		return _is_durty;
 	}
 
+	bool is_focused() {
+		return _is_focused;
+	}
+
 //	void set_default_action() {
 //		list<Atom> _net_wm_allowed_actions;
 //		_net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
@@ -176,30 +192,45 @@ public:
 		cnx->write_net_wm_allowed_actions(_orig, net_allowed_actions);
 	}
 
-	void set_focused() {
-		net_wm_state_add(_NET_WM_STATE_FOCUSED);
-		grab_button_focused();
+	void set_focus_state(bool is_focused) {
+		_is_focused = is_focused;
+
+		if(_is_focused) {
+			net_wm_state_add(_NET_WM_STATE_FOCUSED);
+			grab_button_focused();
+		} else {
+			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
+			grab_button_unfocused();
+		}
 	}
 
-	void unset_focused() {
-		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-		grab_button_unfocused();
+	char const * title() {
+		if (_title == 0) {
+			string name;
+			if (cnx->read_net_wm_name(_orig, &name)) {
+				_title = new string(name);
+			} else if (cnx->read_wm_name(_orig, name)) {
+				_title = new string(name);
+			} else {
+				std::stringstream s(
+						std::stringstream::in | std::stringstream::out);
+				s << "#" << (_orig) << " (noname)";
+				_title = new string(s.str());
+			}
+		}
+
+		return _title->c_str();
 	}
 
-	string get_title() {
-		std::string name;
-		if (cnx->read_net_wm_name(_orig, &name)) {
-			return name;
+	void mark_title_durty() {
+		if(_title != 0) {
+			delete _title;
+			_title = 0;
 		}
+	}
 
-		if (cnx->read_wm_name(_orig, name)) {
-			return name;
-		}
-
-		std::stringstream s(std::stringstream::in | std::stringstream::out);
-		s << "#" << (_orig) << " (noname)";
-		name = s.str();
-		return name;
+	box_t<int> const & base_position() {
+		return _base_position;
 	}
 
 public:

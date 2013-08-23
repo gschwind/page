@@ -464,11 +464,11 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 		cairo_save(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		if ((*c)->get_icon() != 0) {
-			if ((*c)->get_icon()->get_cairo_surface() != 0) {
+		if ((*c)->icon() != 0) {
+			if ((*c)->icon()->get_cairo_surface() != 0) {
 				cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 				cairo_set_source_surface(cr,
-						(*c)->get_icon()->get_cairo_surface(), bicon.x,
+						(*c)->icon()->get_cairo_surface(), bicon.x,
 						bicon.y);
 				if (*c == n->_selected.front()) {
 					cairo_paint_with_alpha(cr, 1.0);
@@ -507,7 +507,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 			cairo_new_path(cr);
 			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
+			pango_layout_set_text(pango_layout, (*c)->title(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
 
@@ -543,7 +543,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 			cairo_new_path(cr);
 			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-			pango_layout_set_text(pango_layout, (*c)->get_title().c_str(), -1);
+			pango_layout_set_text(pango_layout, (*c)->title(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
 
@@ -859,13 +859,13 @@ void simple_theme_t::render_split(cairo_t * cr, split_t * s) {
 
 
 
-void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
+void simple_theme_t::render_floating(managed_window_base_t * mw) {
 
-	box_int_t _allocation = mw->get_base_position();
+	box_int_t _allocation = mw->base_position();
 
 
 	{
-		cairo_t * cr = mw->get_cairo_top();
+		cairo_t * cr = mw->cairo_top();
 		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 		pango_layout_set_font_description(pango_layout, pango_font);
 
@@ -888,11 +888,11 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-		if (mw->get_icon() != 0) {
-			if (mw->get_icon()->get_cairo_surface() != 0) {
+		if (mw->icon() != 0) {
+			if (mw->icon()->get_cairo_surface() != 0) {
 				cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 				cairo_set_source_surface(cr,
-						mw->get_icon()->get_cairo_surface(), bicon.x, bicon.y);
+						mw->icon()->get_cairo_surface(), bicon.x, bicon.y);
 				cairo_paint(cr);
 			}
 		}
@@ -922,13 +922,13 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 
 		cairo_set_font_size(cr, 13);
 
-		if (is_focussed) {
+		if (mw->is_focused()) {
 
 			/* draw selectected tittle */
 			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			pango_layout_set_text(pango_layout, mw->get_title().c_str(), -1);
+			pango_layout_set_text(pango_layout, mw->title(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
 
@@ -962,7 +962,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);
-			pango_layout_set_text(pango_layout, mw->get_title().c_str(), -1);
+			pango_layout_set_text(pango_layout, mw->title(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_cairo_layout_path(cr, pango_layout);
 
@@ -985,7 +985,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		cairo_line_to(cr, b.w - 1.0, b.y + 1.0);
 		cairo_line_to(cr, b.w - 1.0, b.y + b.h);
 		cairo_set_line_width(cr, 2.0);
-		if (is_focussed) {
+		if (mw->is_focused()) {
 			cairo_set_source_rgb(cr, c_tab_boder_highlight.r,
 					c_tab_boder_highlight.g, c_tab_boder_highlight.b);
 		} else {
@@ -1001,7 +1001,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 	}
 
 	{
-		cairo_t * cr = mw->get_cairo_bottom();
+		cairo_t * cr = mw->cairo_bottom();
 		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 		pango_layout_set_font_description(pango_layout, pango_font);
 
@@ -1017,7 +1017,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h - 1.0);
 		cairo_line_to(cr, b.x + b.w - 1.0, b.y);
 		cairo_set_line_width(cr, 2.0);
-		if (is_focussed) {
+		if (mw->is_focused()) {
 			cairo_set_source_rgb(cr, c_tab_boder_highlight.r,
 					c_tab_boder_highlight.g, c_tab_boder_highlight.b);
 		} else {
@@ -1032,7 +1032,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 	}
 
 	{
-		cairo_t * cr = mw->get_cairo_right();
+		cairo_t * cr = mw->cairo_right();
 		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 		pango_layout_set_font_description(pango_layout, pango_font);
 
@@ -1048,7 +1048,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		cairo_move_to(cr, b.x + b.w - 1.0, b.y);
 		cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h);
 		cairo_set_line_width(cr, 2.0);
-		if (is_focussed) {
+		if (mw->is_focused()) {
 			cairo_set_source_rgb(cr, c_tab_boder_highlight.r,
 					c_tab_boder_highlight.g, c_tab_boder_highlight.b);
 		} else {
@@ -1063,7 +1063,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 	}
 
 	{
-		cairo_t * cr = mw->get_cairo_left();
+		cairo_t * cr = mw->cairo_left();
 		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 		pango_layout_set_font_description(pango_layout, pango_font);
 
@@ -1079,7 +1079,7 @@ void simple_theme_t::render_floating(managed_window_t * mw, bool is_focussed) {
 		cairo_move_to(cr, b.x + 1.0, b.y);
 		cairo_line_to(cr, b.x + 1.0, b.y + b.h);
 		cairo_set_line_width(cr, 2.0);
-		if (is_focussed) {
+		if (mw->is_focused()) {
 			cairo_set_source_rgb(cr, c_tab_boder_highlight.r,
 					c_tab_boder_highlight.g, c_tab_boder_highlight.b);
 		} else {

@@ -17,6 +17,7 @@
 
 #include <pango/pangocairo.h>
 
+#include "tree_base.hxx"
 #include "theme_layout.hxx"
 #include "split.hxx"
 #include "notebook.hxx"
@@ -45,7 +46,7 @@ public:
 	virtual void render_notebook(cairo_t * cr, notebook_t * n,
 			managed_window_t * focuced, bool is_default) = 0;
 
-	virtual void render_floating(managed_window_t * nw, bool is_focus) = 0;
+	virtual void render_floating(managed_window_base_t * nw) = 0;
 
 	virtual cairo_font_face_t * get_default_font() = 0;
 	virtual PangoFontDescription * get_pango_font() = 0;

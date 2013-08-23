@@ -36,9 +36,23 @@ enum split_type_e {
 };
 
 struct managed_window_base_t {
-	string title;
-	box_t<int> position;
-	window_icon_handler_t * icon;
+
+	virtual ~managed_window_base_t() { }
+
+	virtual box_t<int> const & base_position() = 0;
+	virtual window_icon_handler_t * icon() = 0;
+	virtual char const * title() = 0;
+
+	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
+	virtual cairo_t * cairo_top() = 0;
+	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
+	virtual cairo_t * cairo_bottom() = 0;
+	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
+	virtual cairo_t * cairo_left() = 0;
+	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
+	virtual cairo_t * cairo_right() = 0;
+
+	virtual bool is_focused() = 0;
 };
 
 struct notebook_base_t {
