@@ -58,6 +58,8 @@ class compositor_t : public xevent_handler_t {
 	struct timespec last_tic;
 	struct timespec curr_tic;
 
+	double cur_t;
+
 	/** clip region for multi monitor setup **/
 	region_t<int> _desktop_region;
 

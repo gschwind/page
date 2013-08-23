@@ -459,7 +459,7 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 	 **/
 	for (list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
-		if ((*i)->has_alpha()) {
+		if ((*i)->has_alpha() or (*i)->fade_in_step < 1.0) {
 			region_without_alpha_on_top -= (*i)->get_region();
 		} else {
 			/* if not has_alpha, add this area */
@@ -662,7 +662,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->update_map_state(IsViewable);
-		repair_area_region(x->second->position());
+		//repair_area_region(x->second->position());
 	}
 }
 
@@ -698,9 +698,10 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		if (x != window_data.end()) {
 			region_t<int> r = x->second->position();
 			x->second->update_position(e);
-			r += x->second->position();
-			if (x->second->map_state() != IsUnmapped)
+			r -= x->second->position();
+			if (x->second->map_state() != IsUnmapped) {
 				repair_area_region(r);
+			}
 		}
 	}
 }
@@ -907,6 +908,7 @@ void compositor_t::update_layout() {
 
 
 void compositor_t::process_events() {
+
 	XEvent ev;
 	while(XPending(_dpy)) {
 		XNextEvent(_dpy, &ev);

@@ -57,10 +57,15 @@ class composite_window_t {
 
 	bool _has_moved;
 
+
 	/* avoid copy */
 	composite_window_t(composite_window_t const &);
 	composite_window_t & operator=(composite_window_t const &);
 public:
+
+
+	timespec fade_start;
+	double fade_in_step;
 
 	static long int const ClientEventMask = (StructureNotifyMask
 			| PropertyChangeMask);

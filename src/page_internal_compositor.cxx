@@ -15,8 +15,7 @@ int main(int argc, char * * argv) {
 	fd_set fds_intr;
 
 	timespec max_wait;
-	max_wait.tv_sec = 1;
-	max_wait.tv_nsec = 0;
+
 
 	int max = compositor->fd();
 
@@ -27,6 +26,9 @@ int main(int argc, char * * argv) {
 
 		FD_SET(compositor->fd(), &fds_read);
 		FD_SET(compositor->fd(), &fds_intr);
+
+		max_wait.tv_sec = 0;
+		max_wait.tv_nsec = 60000000;
 
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
