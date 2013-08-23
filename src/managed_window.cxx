@@ -260,6 +260,8 @@ bool managed_window_t::is(managed_window_type_e type) {
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 
+		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
+
 		cairo_t * _cr = cairo_create(_surf);
 
 		/** top **/

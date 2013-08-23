@@ -18,10 +18,10 @@ namespace page {
 
 simple_theme_layout_t::simple_theme_layout_t() {
 
-		notebook_margin.top = 24;
-		notebook_margin.bottom = 4;
-		notebook_margin.left = 4;
-		notebook_margin.right = 4;
+		notebook_margin.top = 26;
+		notebook_margin.bottom = 6;
+		notebook_margin.left = 6;
+		notebook_margin.right = 6;
 
 		split_margin.top = 0;
 		split_margin.bottom = 0;
@@ -84,7 +84,7 @@ box_int_t simple_theme_layout_t::compute_notebook_close_window_position(
 		box_t<int> b;
 
 		b.x = allocation.x + box_width * (selected_client_index + 2) - 1 * 17 - 3;
-		b.y = allocation.y + 2;
+		b.y = allocation.y + 4;
 		b.w = 16;
 		b.h = 16;
 
@@ -103,7 +103,7 @@ box_int_t simple_theme_layout_t::compute_notebook_unbind_window_position(box_int
 		box_t<int> b;
 
 		b.x = allocation.x + box_width * (selected_client_index + 2) - 2 * 17 - 3;
-		b.y = allocation.y + 2;
+		b.y = allocation.y + 4;
 		b.w = 16;
 		b.h = 16;
 
@@ -287,39 +287,6 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 			throw std::runtime_error("file not found!");
 	}
 
-//	/* load fonts */
-//	if (!ft_is_loaded) {
-//		FT_Error error = FT_Init_FreeType(&library);
-//		if (error) {
-//			throw std::runtime_error("unable to init freetype");
-//		}
-//
-//		printf("Load: %s\n", font.c_str());
-//
-//		error = FT_New_Face(library, font.c_str(), 0, &face);
-//
-//		if (error != FT_Err_Ok)
-//			throw std::runtime_error("unable to load default font");
-//
-//		this->font = cairo_ft_font_face_create_for_ft_face(face, FT_LOAD_DEFAULT);
-//		if (!this->font)
-//			throw std::runtime_error("unable to load default font");
-//
-//		printf("Load: %s\n", font_bold.c_str());
-//
-//		error = FT_New_Face(library, font_bold.c_str(), 0, &face_bold);
-//
-//		if (error != FT_Err_Ok)
-//			throw std::runtime_error("unable to load default bold font");
-//
-//		this->font_bold = cairo_ft_font_face_create_for_ft_face(face_bold, FT_LOAD_DEFAULT);
-//		if (!this->font_bold)
-//			throw std::runtime_error("unable to load default bold font");
-//
-//
-//		ft_is_loaded = true;
-//	}
-
 	pango_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_font").c_str());
 	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
 
@@ -337,16 +304,6 @@ simple_theme_t::~simple_theme_t() {
 	cairo_surface_destroy(pops_button_s);
 	cairo_surface_destroy(unbind_button_s);
 	cairo_surface_destroy(bind_button_s);
-
-//	if(this->font != 0)
-//		cairo_font_face_destroy(this->font);
-//
-//	if(this->font_bold != 0)
-//		cairo_font_face_destroy(this->font_bold);
-//
-//	FT_Done_Face(face);
-//	FT_Done_Face(face_bold);
-//	FT_Done_FreeType(library);
 
 }
 
@@ -397,25 +354,6 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-//	{
-//		box_int_t b;
-//		b.y = n->_allocation.y;
-//		b.h = layout->notebook_margin.top - 4;
-//
-//		b.x = n->_allocation.x;
-//		b.w = n->_allocation.x + n->_allocation.w;
-//
-//		if (background_s != 0) {
-//			cairo_set_source_surface(cr, background_s, 0.0, 0.0);
-//		} else {
-//			cairo_set_source_rgb(cr, grey0.r, grey0.g, grey0.b);
-//		}
-//		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//		//cairo_set_source_rgb(cr, grey1.r, grey1.g, grey1.b);
-//		cairo_fill(cr);
-//
-//	}
-
 	int number_of_client = n->_clients.size();
 	int selected_index = -1;
 
@@ -447,46 +385,60 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 
 		if (*c == n->_selected.front()) {
 
-//			if (background_s != 0) {
-//				cairo_set_source_surface(cr, background_s, 0.0, 0.0);
-//			} else {
-//				cairo_set_source_rgb(cr, grey0.r, grey0.g, grey0.b);
-//			}
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
+			if (has_focuced_client) {
+				cairo_new_path(cr);
+				cairo_move_to(cr, b.x + 1.0, b.y + b.h + 2.0);
+				/** tab left **/
+				cairo_line_to(cr, b.x + 1.0, b.y + 1.0);
+				/** tab top **/
+				cairo_line_to(cr, b.x + b.w - 1.0, b.y + 1.0);
+				/** tab right **/
+				cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h + 1.0);
+				/** top right **/
+				cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 1.0,
+						b.y + b.h + 1.0);
+				/** right **/
+				cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 1.0,
+						n->_allocation.y + n->_allocation.h - 1.0);
+				/** bottom **/
+				cairo_line_to(cr, n->_allocation.x + 1.0,
+						n->_allocation.y + n->_allocation.h - 1.0);
+				/** left **/
+				cairo_line_to(cr, n->_allocation.x + 1.0, b.y + b.h + 1.0);
+				/** top left **/
+				cairo_line_to(cr, b.x + 1.0, b.y + b.h + 1.0);
+				selected_path = cairo_copy_path(cr);
+			} else {
+				cairo_new_path(cr);
+				cairo_move_to(cr, b.x + 0.5, b.y + b.h + 1.0);
+				/** tab left **/
+				cairo_line_to(cr, b.x + 0.5, b.y + 0.5);
+				/** tab top **/
+				cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5);
+				/** tab right **/
+				cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5);
+				/** top right **/
+				cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 0.5,
+						b.y + b.h + 0.5);
+				/** right **/
+				cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 0.5,
+						n->_allocation.y + n->_allocation.h - 0.5);
+				/** bottom **/
+				cairo_line_to(cr, n->_allocation.x + 0.5,
+						n->_allocation.y + n->_allocation.h - 0.5);
+				/** left **/
+				cairo_line_to(cr, n->_allocation.x + 0.5, b.y + b.h + 0.5);
+				/** top left **/
+				cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
+				selected_path = cairo_copy_path(cr);
 
-//			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.2);
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
-
-			cairo_new_path(cr);
-			cairo_move_to(cr, b.x + 1.0, b.y + b.h + 2.0);
-			cairo_line_to(cr, b.x + 1.0, b.y + 1.0);
-			cairo_line_to(cr, b.x + b.w - 1.0, b.y + 1.0);
-			cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h + 1.0);
-			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 2.0,
-					b.y + b.h + 1.0);
-			cairo_line_to(cr, n->_allocation.x + n->_allocation.w - 2.0,
-					n->_allocation.y + n->_allocation.h - 2.0);
-			cairo_line_to(cr, n->_allocation.x + 2.0,
-					n->_allocation.y + n->_allocation.h - 2.0);
-			cairo_line_to(cr, n->_allocation.x + 2.0, b.y + b.h + 2.0);
-			cairo_line_to(cr, b.x + 1.0, b.y + b.h + 2.0);
-			selected_path = cairo_copy_path(cr);
+			}
 
 		} else {
 			b.x += 1;
 			b.w -= 2;
 			b.y += 1;
 			b.h -= 1;
-
-//			if (background_s != 0) {
-//				cairo_set_source_surface(cr, background_s, 0.0, 0.0);
-//			} else {
-//				cairo_set_source_rgb(cr, grey2.r, grey2.g, grey2.b);
-//			}
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
 
 			cairo_new_path(cr);
 			cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5);
@@ -498,10 +450,17 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		}
 
 		box_int_t bicon = b;
-		bicon.h = 16;
-		bicon.w = 16;
-		bicon.x += 3;
-		bicon.y += 2;
+		if (*c == n->_selected.front()) {
+			bicon.h = 16;
+			bicon.w = 16;
+			bicon.x += 3;
+			bicon.y += 4;
+		} else {
+			bicon.h = 16;
+			bicon.w = 16;
+			bicon.x += 3;
+			bicon.y += 2;
+		}
 
 		cairo_save(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -526,7 +485,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 			btext.h -= 0;
 			btext.w -= 3 * 16 + 12;
 			btext.x += 3 + 16 + 2;
-			btext.y += 2;
+			btext.y += 4;
 		} else {
 			btext.h -= 0;
 			btext.w -= 1 * 16 + 8;
@@ -540,11 +499,10 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_t * n,
 		cairo_new_path(cr);
 		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
 		cairo_clip(cr);
-		cairo_set_font_size(cr, 13);
 
 		if (*c == n->_selected.front()) {
 
-			/* draw tittle */
+			/** draw title **/
 			cairo_translate(cr, btext.x + 2, btext.y);
 
 			cairo_new_path(cr);

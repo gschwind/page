@@ -252,7 +252,7 @@ public:
 	string font;
 	string font_bold;
 
-	map<Window, smart_pointer_t<list<Window> > > transient_for_tree;
+	map<Window, list<Window> > transient_for_tree;
 
 	/**
 	 * Cache transient for to avoid heavy read on safe_raise window
@@ -484,8 +484,6 @@ public:
 	viewport_t * find_mouse_viewport(int x, int y);
 
 	bool get_safe_net_wm_user_time(Window w, Time & time);
-
-	void xxx_print(smart_pointer_t<list<Window> > & l, int lvl);
 
 
 };

@@ -1050,7 +1050,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
-
 			theme->render_floating(mode_data_floating.f,
 					is_focussed(mode_data_floating.f));
 
@@ -1663,24 +1662,16 @@ void page_t::process_event(XGravityEvent const & e) {
 
 void page_t::process_event(XMapEvent const & e) {
 
-	if(e.override_redirect)
-		return;
-
 	/* if map event does not occur within root, ignore it */
 	if (e.event != cnx->get_root_window())
 		return;
 
-
-	/* find/create window handler */
-	Window x = e.window;
-
 	/** usefull for windows statink **/
-	update_transient_for(x);
+	update_transient_for(e.window);
 
-	managed_window_t * wm;
-	if((wm = find_managed_window_with(e.window)) != 0) {
-		if(wm->is(MANAGED_FLOATING))
-			theme->render_floating(wm, is_focussed(wm));
+	if(e.override_redirect) {
+		update_windows_stack();
+		return;
 	}
 
 	if (onmap(e.window)) {
@@ -1947,9 +1938,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 			mw->set_floating_wished_position(new_size);
 			mw->reconfigure();
 
-			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw, is_focussed(mw));
-			}
 		}
 	} else if (e.atom == A(WM_PROTOCOLS)) {
 	} else if (e.atom == A(WM_TRANSIENT_FOR)) {
@@ -2122,7 +2110,6 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	} else {
 		mw->set_managed_type(MANAGED_FLOATING);
 		mw->reconfigure();
-		theme->render_floating(mw, is_focussed(mw));
 	}
 
 	v->fullscreen_client = 0;
@@ -2274,8 +2261,8 @@ void page_t::process_event(XEvent const & e) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
 	} else if (e.type == Expose) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
-		if(mw != 0) {
-			if(mw->is(MANAGED_FLOATING)) {
+		if (mw != 0) {
+			if (mw->is(MANAGED_FLOATING)) {
 				theme->render_floating(mw, is_focussed(mw));
 				mw->expose();
 			}
@@ -2735,8 +2722,8 @@ void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position)
 
 
 void page_t::fix_allocation(viewport_t & v) {
-	//printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
-	//		v.raw_aera.x, v.raw_aera.y);
+	printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
+			v.raw_aera.x, v.raw_aera.y);
 
 	/* Partial struct content definition */
 	enum {
@@ -2813,14 +2800,14 @@ void page_t::fix_allocation(viewport_t & v) {
 	box_int_t final_size;
 
 	final_size.x = xleft;
-	final_size.w = _root_position.w - xright - xleft + 1;
+	final_size.w = _root_position.w - xright - xleft;
 	final_size.y = xtop;
-	final_size.h = _root_position.h - xbottom - xtop + 1;
+	final_size.h = _root_position.h - xbottom - xtop;
 
 	v.set_effective_area(final_size);
 
-	//printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
-	//		v.effective_aera.x, v.effective_aera.y);
+	printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
+			v.effective_aera.x, v.effective_aera.y);
 }
 
 split_t * page_t::new_split(split_type_e type) {
@@ -3012,7 +2999,7 @@ void page_t::update_transient_for(Window w) {
 
 	/** if there is an old transient for, clear childs **/
 	if(x != transient_for_cache.end()) {
-		transient_for_tree[x->second]->remove(w);
+		transient_for_tree[x->second].remove(w);
 	}
 
 	/** read newer transient for **/
@@ -3025,7 +3012,7 @@ void page_t::update_transient_for(Window w) {
 	transient_for_cache[w] = transient_for;
 
 	/** update the logical tree of windows **/
-	transient_for_tree[transient_for]->push_back(w);
+	transient_for_tree[transient_for].push_back(w);
 
 }
 
@@ -3034,22 +3021,11 @@ void page_t::cleanup_transient_for_for_window(Window w) {
 
 	/** if there is an old transient for, clear childs **/
 	if(x != transient_for_cache.end()) {
-		transient_for_tree[x->second]->remove(w);
+		transient_for_tree[x->second].remove(w);
 	}
 
 	transient_for_cache.erase(w);
 
-}
-
-void page_t::xxx_print(smart_pointer_t<list<Window> > & l, int lvl) {
-	char y[] = "                  ";
-	y[lvl] = 0;
-	list<Window>::iterator i = l ->begin();
-	while(i != l->end()) {
-		printf("YY %s %d\n", y, *i);
-		xxx_print(transient_for_tree[*i], lvl+1);
-		++i;
-	}
 }
 
 void page_t::safe_raise_window(Window w) {
@@ -3079,10 +3055,8 @@ void page_t::safe_raise_window(Window w) {
 
 		x = transient_for_cache.find(w_next);
 
-		transient_for_tree[x->second]->remove(w_next);
-		transient_for_tree[x->second]->push_back(w_next);
-
-		printf("CCC raise %lu -> %lu\n", x->first, x->second);
+		transient_for_tree[x->second].remove(w_next);
+		transient_for_tree[x->second].push_back(w_next);
 
 		if (x != transient_for_cache.end()) {
 			w_next = x->second;
@@ -3091,20 +3065,15 @@ void page_t::safe_raise_window(Window w) {
 		}
 	}
 
-	printf("==========\n");
-	xxx_print(transient_for_tree[None], 0);
-	printf("==========\n");
-
-
 	/** apply change **/
 	update_windows_stack();
 
 }
 
 void page_t::clear_transient_for_sibbling_child(Window w) {
-	for (map<Window, smart_pointer_t<list<Window> > >::iterator i =
+	for (map<Window, list<Window> >::iterator i =
 			transient_for_tree.begin(); i != transient_for_tree.end(); ++i) {
-		i->second->remove(w);
+		i->second.remove(w);
 	}
 }
 
@@ -3179,9 +3148,9 @@ void page_t::print_tree_windows() {
 			raised_window.insert(cur.second);
 			window_stack.push_back(cur);
 			if (has_key(transient_for_tree, cur.second)) {
-				smart_pointer_t<list<Window> > childs = transient_for_tree[cur.second];
-				for (list<Window>::reverse_iterator j = childs->rbegin();
-						j != childs->rend(); ++j) {
+				list<Window> childs = transient_for_tree[cur.second];
+				for (list<Window>::reverse_iterator j = childs.rbegin();
+						j != childs.rend(); ++j) {
 					nxt.push(item(cur.first + 1, *j));
 				}
 			}
@@ -3225,7 +3194,6 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->normalize();
 	safe_raise_window(mw->orig());
 	rpage->mark_durty();
-	//rnd->add_damage_area(cnx->get_root_size());
 	update_client_list();
 
 }
@@ -3420,9 +3388,9 @@ void page_t::update_windows_stack() {
 			raised_window.insert(cur);
 			window_stack.push_back(cur);
 			if (has_key(transient_for_tree, cur)) {
-				smart_pointer_t<list<Window> > childs = transient_for_tree[cur];
-				for (list<Window>::reverse_iterator j = childs->rbegin();
-						j != childs->rend(); ++j) {
+				list<Window> childs = transient_for_tree[cur];
+				for (list<Window>::reverse_iterator j = childs.rbegin();
+						j != childs.rend(); ++j) {
 					nxt.push(*j);
 				}
 			}
@@ -3861,6 +3829,8 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time, true);
 		}
+
+
 
 	}
 

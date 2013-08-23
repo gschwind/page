@@ -24,7 +24,7 @@ enum managed_window_type_e {
 class managed_window_t : public managed_window_base_t {
 private:
 
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK = 0;
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
 			| (PropertyChangeMask);
@@ -70,6 +70,8 @@ private:
 	Window _orig;
 	Window _base;
 	Window _deco;
+
+	bool _is_durty;
 
 public:
 
@@ -144,6 +146,18 @@ public:
 	}
 
 	void icccm_focus(Time t);
+
+	void mark_durty() {
+		_is_durty = true;
+	}
+
+	void mark_clean() {
+		_is_durty = false;
+	}
+
+	bool is_durty() {
+		return _is_durty;
+	}
 
 //	void set_default_action() {
 //		list<Atom> _net_wm_allowed_actions;
