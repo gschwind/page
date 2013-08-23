@@ -15,13 +15,19 @@
 #include <string>
 #include <vector>
 
+#include "tree_base.hxx"
 #include "tree.hxx"
-#include "theme_layout.hxx"
 
 using namespace std;
 
 namespace page {
 
+struct margin_t {
+	int top;
+	int bottom;
+	int left;
+	int right;
+};
 
 class theme_t {
 
