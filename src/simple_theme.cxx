@@ -325,7 +325,7 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	cairo_restore(cr);
 }
 
-void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) {
+void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 
 	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 	pango_layout_set_font_description(pango_layout, pango_font);
@@ -822,7 +822,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) {
 
 
 
-void simple_theme_t::render_split(cairo_t * cr, split_base_t * s) {
+void simple_theme_t::render_split(cairo_t * cr, split_base_t * s) const {
 
 	cairo_reset_clip(cr);
 	cairo_identity_matrix(cr);
@@ -860,7 +860,7 @@ void simple_theme_t::render_split(cairo_t * cr, split_base_t * s) {
 
 
 
-void simple_theme_t::render_floating(managed_window_base_t * mw) {
+void simple_theme_t::render_floating(managed_window_base_t * mw) const {
 
 	box_int_t allocation = mw->base_position();
 
@@ -875,10 +875,6 @@ void simple_theme_t::render_floating(managed_window_base_t * mw) {
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_rgb(cr, plum0.r, plum0.g, plum0.b);
 		cairo_fill(cr);
-
-		//cairo_rectangle(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0);
-		//cairo_set_source_rgb(cr, 0.5, 0.0, 0.0);
-		//cairo_stroke(cr);
 
 		box_int_t bicon = b;
 		bicon.h = 16;
@@ -1154,7 +1150,7 @@ void simple_theme_t::render_popup_move_frame(cairo_t * cr, window_icon_handler_t
 	render_popup_notebook0(cr, icon, width, height, title);
 }
 
-void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) {
+void simple_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) const {
 
 	cairo_save(cr);
 	int left_bound = x;

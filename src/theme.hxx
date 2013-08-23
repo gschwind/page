@@ -37,10 +37,10 @@ public:
 	virtual ~theme_t() {
 	}
 
-	virtual void render_split(cairo_t * cr, split_base_t * s) = 0;
-	virtual void render_notebook(cairo_t * cr, notebook_base_t * n) = 0;
+	virtual void render_split(cairo_t * cr, split_base_t * s) const = 0;
+	virtual void render_notebook(cairo_t * cr, notebook_base_t * n) const = 0;
 
-	virtual void render_floating(managed_window_base_t * nw) = 0;
+	virtual void render_floating(managed_window_base_t * nw) const = 0;
 
 	virtual theme_layout_t const * layout() const {
 		return _layout;

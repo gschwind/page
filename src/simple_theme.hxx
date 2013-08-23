@@ -128,9 +128,9 @@ public:
 
 	void create_background_img();
 
-	virtual void render_notebook(cairo_t * cr, notebook_base_t * n);
-	virtual void render_split(cairo_t * cr, split_base_t * s);
-	virtual void render_floating(managed_window_base_t * mw);
+	virtual void render_notebook(cairo_t * cr, notebook_base_t * n) const;
+	virtual void render_split(cairo_t * cr, split_base_t * s) const;
+	virtual void render_floating(managed_window_base_t * mw) const;
 
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
@@ -138,12 +138,12 @@ public:
 	virtual void render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);
 
-	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h);
+	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) const;
 
 	void update();
 
 
-	box_int_t compute_split_bar_location(split_base_t const * s) {
+	box_int_t compute_split_bar_location(split_base_t const * s) const {
 
 		box_int_t ret;
 		box_int_t const & alloc = s->allocation();

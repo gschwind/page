@@ -1023,7 +1023,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->reconfigure();
 
 			set_focus(mode_data_floating.f, e.time, false);
-			theme->render_floating(mode_data_floating.f);
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1045,7 +1044,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
-			theme->render_floating(mode_data_floating.f);
 
 			set_focus(mode_data_floating.f, e.time, false);
 			process_mode = PROCESS_NORMAL;
@@ -1879,7 +1877,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw);
+				mw->expose();
 			}
 		}
 
@@ -2250,7 +2248,6 @@ void page_t::process_event(XEvent const & e) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING)) {
-				theme->render_floating(mw);
 				mw->expose();
 			}
 		}
@@ -2424,10 +2421,6 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 
 	if (current_focus != 0) {
 		current_focus->set_focus_state(false);
-		if (current_focus->is(MANAGED_FLOATING)) {
-			theme->render_floating(current_focus);
-			current_focus->expose();
-		}
 	}
 
 	if(focus == 0)
@@ -2439,10 +2432,6 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 	safe_raise_window(focus->orig());
 
 	focus->focus(_last_focus_time);
-	if (focus->get_type() == MANAGED_FLOATING) {
-		theme->render_floating(focus);
-		focus->expose();
-	}
 
 	cnx->write_net_active_window(focus->orig());
 
@@ -3177,7 +3166,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 
 	/* update database */
 	mw->set_managed_type(MANAGED_FLOATING);
-	theme->render_floating(mw);
+	mw->expose();
 	mw->normalize();
 	safe_raise_window(mw->orig());
 	rpage->mark_durty();

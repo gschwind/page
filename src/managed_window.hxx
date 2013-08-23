@@ -28,7 +28,7 @@ private:
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
 			| (PropertyChangeMask);
 
-	theme_t const * theme;
+	theme_t const * _theme;
 
 	managed_window_type_e _type;
 	Atom _net_wm_type;
@@ -111,6 +111,7 @@ public:
 	}
 
 	void mark_icon_durty() {
+		mark_durty();
 		if (_icon != 0) {
 			delete _icon;
 			_icon = 0;
@@ -201,6 +202,9 @@ public:
 			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			grab_button_unfocused();
 		}
+
+		mark_durty();
+		expose();
 	}
 
 	char const * title() const {
@@ -222,6 +226,7 @@ public:
 	}
 
 	void mark_title_durty() {
+		mark_durty();
 		if(_title != 0) {
 			delete _title;
 			_title = 0;
@@ -396,17 +401,17 @@ public:
 	void create_back_buffer() {
 
 		_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, theme->layout()->floating_margin.top);
+				_base_position.w, _theme->layout()->floating_margin.top);
 		_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, theme->layout()->floating_margin.bottom);
+				_base_position.w, _theme->layout()->floating_margin.bottom);
 		_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				theme->layout()->floating_margin.left,
-				_base_position.h - theme->layout()->floating_margin.top
-						- theme->layout()->floating_margin.bottom);
+				_theme->layout()->floating_margin.left,
+				_base_position.h - _theme->layout()->floating_margin.top
+						- _theme->layout()->floating_margin.bottom);
 		_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				theme->layout()->floating_margin.right,
-				_base_position.h - theme->layout()->floating_margin.top
-						- theme->layout()->floating_margin.bottom);
+				_theme->layout()->floating_margin.right,
+				_base_position.h - _theme->layout()->floating_margin.top
+						- _theme->layout()->floating_margin.bottom);
 
 	}
 
