@@ -8,8 +8,8 @@
 #ifndef MANAGED_WINDOW_HXX_
 #define MANAGED_WINDOW_HXX_
 
+#include "theme.hxx"
 #include "managed_window_base.hxx"
-#include "theme_layout.hxx"
 #include "xconnection.hxx"
 
 namespace page {
@@ -28,7 +28,7 @@ private:
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
 			| (PropertyChangeMask);
 
-	theme_layout_t const * theme_layout;
+	theme_t const * theme;
 
 	managed_window_type_e _type;
 	Atom _net_wm_type;
@@ -78,7 +78,7 @@ private:
 public:
 
 	managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
-			Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_layout_t const * theme);
+			Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_t const * theme);
 	virtual ~managed_window_t();
 
 	void reconfigure();
@@ -117,7 +117,7 @@ public:
 		}
 	}
 
-	void set_theme(theme_layout_t const * theme);
+	void set_theme(theme_t const * theme);
 
 	cairo_t * cairo_top() const {
 		return cairo_create(_top_buffer);
@@ -396,17 +396,17 @@ public:
 	void create_back_buffer() {
 
 		_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, theme_layout->floating_margin.top);
+				_base_position.w, theme->layout()->floating_margin.top);
 		_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				_base_position.w, theme_layout->floating_margin.bottom);
+				_base_position.w, theme->layout()->floating_margin.bottom);
 		_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				theme_layout->floating_margin.left,
-				_base_position.h - theme_layout->floating_margin.top
-						- theme_layout->floating_margin.bottom);
+				theme->layout()->floating_margin.left,
+				_base_position.h - theme->layout()->floating_margin.top
+						- theme->layout()->floating_margin.bottom);
 		_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-				theme_layout->floating_margin.right,
-				_base_position.h - theme_layout->floating_margin.top
-						- theme_layout->floating_margin.bottom);
+				theme->layout()->floating_margin.right,
+				_base_position.h - theme->layout()->floating_margin.top
+						- theme->layout()->floating_margin.bottom);
 
 	}
 

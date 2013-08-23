@@ -11,24 +11,17 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
-#include <ft2build.h>
-#include <freetype/freetype.h>
-#include FT_FREETYPE_H
 
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 #include <cairo/cairo-ft.h>
 
+#include <pango/pangocairo.h>
+
+#include "theme.hxx"
 #include "color.hxx"
 #include "box.hxx"
-#include "split.hxx"
-#include "notebook.hxx"
-#include "viewport.hxx"
-#include "managed_window.hxx"
-#include "theme_layout.hxx"
-#include "theme.hxx"
 #include "config_handler.hxx"
-#include "xconnection.hxx"
 
 using namespace std;
 
@@ -132,8 +125,6 @@ public:
 
 	static void rounded_rectangle(cairo_t * cr, double x, double y, double w,
 			double h, double r);
-	void draw_unselected_tab(cairo_t * cr, managed_window_t * nw, box_int_t location);
-	void draw_selected_tab(cairo_t * cr, managed_window_t * nw, box_int_t location);
 
 	void create_background_img();
 

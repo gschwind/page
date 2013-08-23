@@ -489,19 +489,6 @@ public:
 
 	bool get_safe_net_wm_user_time(Window w, Time & time);
 
-	virtual list<viewport_base_t const *> const & viewports() const {
-
-	}
-
-	virtual list<split_base_t const *> const & splits() const {
-
-	}
-
-	virtual list<notebook_base_t const *> const & notebooks() const {
-
-	}
-
-
 };
 
 

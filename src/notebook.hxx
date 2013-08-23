@@ -8,12 +8,8 @@
 #ifndef NOTEBOOK_HXX_
 #define NOTEBOOK_HXX_
 
-#include "box.hxx"
 #include "tree.hxx"
-#include "window_icon_handler.hxx"
 #include "managed_window.hxx"
-#include "theme_layout.hxx"
-
 
 namespace page {
 

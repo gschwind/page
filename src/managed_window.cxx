@@ -14,7 +14,7 @@
 namespace page {
 
 managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
-		Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_layout_t const * theme) : cnx(cnx) {
+		Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_t const * theme) : cnx(cnx) {
 
 	XWindowAttributes rwa;
 	XGetWindowAttributes(cnx->dpy, DefaultRootWindow(cnx->dpy), &rwa);
@@ -142,20 +142,20 @@ void managed_window_t::reconfigure() {
 	if(is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
 
-		_base_position.x = _wished_position.x - theme_layout->floating_margin.left;
-		_base_position.y = _wished_position.y - theme_layout->floating_margin.top;
-		_base_position.w = _wished_position.w + theme_layout->floating_margin.left
-				+ theme_layout->floating_margin.right;
-		_base_position.h = _wished_position.h + theme_layout->floating_margin.top
-				+ theme_layout->floating_margin.bottom;
+		_base_position.x = _wished_position.x - theme->layout()->floating_margin.left;
+		_base_position.y = _wished_position.y - theme->layout()->floating_margin.top;
+		_base_position.w = _wished_position.w + theme->layout()->floating_margin.left
+				+ theme->layout()->floating_margin.right;
+		_base_position.h = _wished_position.h + theme->layout()->floating_margin.top
+				+ theme->layout()->floating_margin.bottom;
 
 		if(_base_position.x < 0)
 			_base_position.x = 0;
 		if(_base_position.y < 0)
 			_base_position.y = 0;
 
-		_orig_position.x = theme_layout->floating_margin.left;
-		_orig_position.y = theme_layout->floating_margin.top;
+		_orig_position.x = theme->layout()->floating_margin.left;
+		_orig_position.y = theme->layout()->floating_margin.top;
 		_orig_position.w = _wished_position.w;
 		_orig_position.h = _wished_position.h;
 
@@ -237,8 +237,8 @@ managed_window_type_e managed_window_t::get_type() {
 	return _type;
 }
 
-void managed_window_t::set_theme(theme_layout_t const * theme) {
-	this->theme_layout = theme;
+void managed_window_t::set_theme(theme_t const * theme) {
+	this->theme = theme;
 }
 
 bool managed_window_t::is(managed_window_type_e type) {
@@ -255,40 +255,40 @@ void managed_window_t::expose() {
 		/** top **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr, 0, 0, _base_position.w,
-				theme_layout->floating_margin.top);
+				theme->layout()->floating_margin.top);
 		cairo_set_source_surface(_cr, _top_buffer, 0, 0);
 		cairo_fill(_cr);
 
 		/** bottom **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr, 0,
-				_base_position.h - theme_layout->floating_margin.bottom,
-				_base_position.w, theme_layout->floating_margin.bottom);
+				_base_position.h - theme->layout()->floating_margin.bottom,
+				_base_position.w, theme->layout()->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _bottom_buffer, 0,
-				_base_position.h - theme_layout->floating_margin.bottom);
+				_base_position.h - theme->layout()->floating_margin.bottom);
 		cairo_fill(_cr);
 
 		/** left **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0.0, theme_layout->floating_margin.top,
-				theme_layout->floating_margin.left,
-				_base_position.h - theme_layout->floating_margin.top
-						- theme_layout->floating_margin.bottom);
+		cairo_rectangle(_cr, 0.0, theme->layout()->floating_margin.top,
+				theme->layout()->floating_margin.left,
+				_base_position.h - theme->layout()->floating_margin.top
+						- theme->layout()->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _left_buffer, 0.0,
-				theme_layout->floating_margin.top);
+				theme->layout()->floating_margin.top);
 		cairo_fill(_cr);
 
 		/** right **/
 		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(_cr,
-				_base_position.w - theme_layout->floating_margin.right,
-				theme_layout->floating_margin.top,
-				theme_layout->floating_margin.right,
-				_base_position.h - theme_layout->floating_margin.top
-						- theme_layout->floating_margin.bottom);
+				_base_position.w - theme->layout()->floating_margin.right,
+				theme->layout()->floating_margin.top,
+				theme->layout()->floating_margin.right,
+				_base_position.h - theme->layout()->floating_margin.top
+						- theme->layout()->floating_margin.bottom);
 		cairo_set_source_surface(_cr, _right_buffer,
-				_base_position.w - theme_layout->floating_margin.right,
-				theme_layout->floating_margin.top);
+				_base_position.w - theme->layout()->floating_margin.right,
+				theme->layout()->floating_margin.top);
 		cairo_fill(_cr);
 
 		cairo_surface_flush(_surf);

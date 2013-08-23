@@ -371,8 +371,7 @@ managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, 
 
 	}
 
-	managed_window_t * mw = new managed_window_t(cnx, type, net_wm_type, w, wa,
-			theme->layout());
+	managed_window_t * mw = new managed_window_t(cnx, type, net_wm_type, w, wa, theme);
 	managed_window.insert(mw);
 
 	//Show_All_Props2(cnx->dpy, w);

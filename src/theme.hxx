@@ -15,13 +15,8 @@
 #include <string>
 #include <vector>
 
-#include <pango/pangocairo.h>
-
-#include "tree_base.hxx"
+#include "tree.hxx"
 #include "theme_layout.hxx"
-#include "split.hxx"
-#include "notebook.hxx"
-#include "managed_window.hxx"
 
 using namespace std;
 
