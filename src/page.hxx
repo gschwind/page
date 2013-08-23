@@ -41,8 +41,7 @@
 #include "utils.hxx"
 #include "box.hxx"
 
-#include "tree_base.hxx"
-
+#include "compositor.hxx"
 #include "xconnection.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
@@ -488,6 +487,19 @@ public:
 	viewport_t * find_mouse_viewport(int x, int y);
 
 	bool get_safe_net_wm_user_time(Window w, Time & time);
+
+	list<viewport_t *> viewports() {
+		return list_values(viewport_outputs);
+	}
+
+	list<tree_t *> childs() {
+		list<tree_t *> l;
+		for (map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
+				i != viewport_outputs.end(); ++i) {
+			i->second->get_childs(l);
+		}
+		return l;
+	}
 
 };
 

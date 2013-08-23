@@ -128,8 +128,8 @@ public:
 
 	void create_background_img();
 
-	virtual void render_notebook(cairo_t * cr, notebook_base_t * n) const;
-	virtual void render_split(cairo_t * cr, split_base_t * s) const;
+	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n, box_int_t const & area) const;
+	virtual void render_split(cairo_t * cr, split_base_t const * s, box_int_t const & area) const;
 	virtual void render_floating(managed_window_base_t * mw) const;
 
 

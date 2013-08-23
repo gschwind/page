@@ -10,10 +10,9 @@
 
 #include <cmath>
 
-#include "box.hxx"
-#include "tree_base.hxx"
 #include "tree.hxx"
-#include "theme_layout.hxx"
+#include "tree_renderable.hxx"
+#include "theme.hxx"
 
 #include <set>
 
@@ -23,9 +22,9 @@ namespace page {
 
 
 
-class split_t : public split_base_t {
+class split_t : public split_base_t, public tree_renderable_t {
 
-	theme_layout_t const * theme;
+	theme_t const * _theme;
 
 	box_int_t _split_bar_area;
 	split_type_e _split_type;
@@ -44,7 +43,7 @@ class split_t : public split_base_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_layout_t const * theme);
+	split_t(split_type_e type, theme_t const * theme);
 	~split_t();
 
 	void replace(tree_t * src, tree_t * by);
@@ -63,7 +62,7 @@ public:
 
 	double get_split_ratio();
 
-	void set_theme(theme_layout_t const * theme);
+	void set_theme(theme_t const * theme);
 
 	virtual void get_childs(list<tree_t *> & lst);
 
@@ -79,23 +78,23 @@ public:
 		if (_split_type == VERTICAL_SPLIT) {
 
 
-			int w = alloc.w - 2 * theme->split_margin.left
-					- 2 * theme->split_margin.right - theme->split_width;
+			int w = alloc.w - 2 * _theme->layout()->split_margin.left
+					- 2 * _theme->layout()->split_margin.right - _theme->layout()->split_width;
 			int w0 = floor(w * split + 0.5);
 
-			x = alloc.x + theme->split_margin.left + w0
-					+ theme->split_margin.right;
+			x = alloc.x + _theme->layout()->split_margin.left + w0
+					+ _theme->layout()->split_margin.right;
 			y = alloc.y;
 
 		} else {
 
-			int h = alloc.h - 2 * theme->split_margin.top
-					- 2 * theme->split_margin.bottom - theme->split_width;
+			int h = alloc.h - 2 * _theme->layout()->split_margin.top
+					- 2 * _theme->layout()->split_margin.bottom - _theme->layout()->split_width;
 			int h0 = floor(h * split + 0.5);
 
 			x = alloc.x;
-			y = alloc.y + theme->split_margin.top + h0
-					+ theme->split_margin.bottom;
+			y = alloc.y + _theme->layout()->split_margin.top + h0
+					+ _theme->layout()->split_margin.bottom;
 		}
 	}
 
@@ -103,11 +102,11 @@ public:
 	void compute_split_size(double split, int & w, int & h) const {
 		box_int_t const & alloc = allocation();
 		if (_split_type == VERTICAL_SPLIT) {
-			w = theme->split_width;
+			w = _theme->layout()->split_width;
 			h = alloc.h;
 		} else {
 			w = alloc.w;
-			h = theme->split_width;
+			h = _theme->layout()->split_width;
 		}
 	}
 
@@ -117,6 +116,10 @@ public:
 
 	split_type_e type() const {
 		return _split_type;
+	}
+
+	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+		_theme->render_split(cr, this, area);
 	}
 
 };

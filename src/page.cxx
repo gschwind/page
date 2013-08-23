@@ -267,7 +267,7 @@ void page_t::run() {
 	cnx->change_property(cnx->get_root_window(), _NET_WORKAREA, CARDINAL,
 			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
 
-	rpage->mark_durty();
+	rpage->add_damaged(_root_position);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask, cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
@@ -341,7 +341,7 @@ void page_t::run() {
 			process_event(ev);
 		}
 
-		rpage->render_if_needed(list_values(viewport_outputs));
+		rpage->repair_damaged(childs());
 		XFlush(cnx->dpy);
 
 		if (rnd != 0) {
@@ -643,7 +643,7 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		printf("rerender background\n");
-		rpage->mark_durty();
+		rpage->add_damaged(_root_position);
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
@@ -839,7 +839,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				pn0->update_window(mw->orig(), mw->title());
 
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
-				rpage->mark_durty();
+				rpage->repair_notebook_border(mode_data_notebook.from);
 
 			}
 		}
@@ -909,7 +909,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			ps->hide();
 
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
-			rpage->mark_durty();
+			rpage->add_damaged(mode_data_split.split->allocation());
 
 			mode_data_split.split = 0;
 			mode_data_split.slider_area = box_int_t();
@@ -959,7 +959,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 
 			set_focus(mode_data_notebook.c, e.time, false);
-			rpage->mark_durty();
+			if (mode_data_notebook.from != 0)
+				rpage->repair_notebook_border(mode_data_notebook.from);
+			if (mode_data_notebook.ns != 0)
+				rpage->repair_notebook_border(mode_data_notebook.ns);
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -986,22 +989,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					if (mode_data_notebook.from->button_close.is_inside(e.x,
 							e.y)) {
 						notebook_close(mode_data_notebook.from);
-						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_vsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
-						update_allocation();
-						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_hsplit.is_inside(
 							e.x, e.y)) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-						update_allocation();
-						rpage->mark_durty();
 					} else if (mode_data_notebook.from->button_pop.is_inside(
 							e.x, e.y)) {
 						default_window_pop = mode_data_notebook.from;
-						update_allocation();
-						rpage->mark_durty();
+						rpage->repair_notebook_border(mode_data_notebook.from);
 					}
 				}
 			}
@@ -1093,13 +1090,15 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			pn0->hide();
 
+			set_focus(mode_data_bind.c, e.time, false);
+
 			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 				insert_window_in_tree(mode_data_bind.c, mode_data_bind.ns,
 						true);
 
 				safe_raise_window(mode_data_bind.c->orig());
-				rpage->mark_durty();
+				rpage->repair_notebook_border(mode_data_bind.ns);
 				update_client_list();
 
 			} else if (mode_data_bind.zone == SELECT_TOP
@@ -1121,9 +1120,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			} else {
 				bind_window(mode_data_bind.c);
 			}
-
-			set_focus(mode_data_bind.c, e.time, false);
-			rpage->mark_durty();
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1873,7 +1869,8 @@ void page_t::process_event(XPropertyEvent const & e) {
 			mw->mark_title_durty();
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
-				rpage->mark_durty();
+				notebook_t * n = find_notebook_for(mw);
+				rpage->repair_notebook_border(n);
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -2253,7 +2250,7 @@ void page_t::process_event(XEvent const & e) {
 		}
 
 		if (e.xexpose.window == rpage->id()) {
-			rpage->expose(list_values(viewport_outputs),
+			rpage->expose(
 					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
 							e.xexpose.height));
 		} else if (e.xexpose.window == pfm->id()) {
@@ -2355,7 +2352,7 @@ void page_t::activate_client(managed_window_t * x) {
 		n->activate_client(x);
 		XFlush(cnx->dpy);
 		//set_focus(x, false);
-		rpage->mark_durty();
+		rpage->repair_notebook_border(n);
 	} else {
 		/* floating window or fullscreen window */
 		//set_focus(x, false);
@@ -2371,7 +2368,7 @@ void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool pr
 	assert(n != 0);
 	n->add_client(x, prefer_activate);
 
-	rpage->mark_durty();
+	rpage->repair_notebook_border(n);
 
 }
 
@@ -2379,10 +2376,7 @@ void page_t::remove_window_from_tree(managed_window_t * x) {
 	assert(find_notebook_for(x) != 0);
 	notebook_t * n = find_notebook_for(x);
 	n->remove_client(x);
-	rpage->mark_durty();
-	//rnd->add_damage_area(n->get_absolute_extend());
-	//rnd->add_damage_area(rpage->get_area());
-
+	rpage->repair_notebook_border(n);
 }
 
 void page_t::iconify_client(managed_window_t * x) {
@@ -2406,7 +2400,6 @@ void page_t::update_allocation() {
 
 void page_t::set_default_pop(notebook_t * x) {
 	default_window_pop = x;
-	rpage->default_pop = default_window_pop;
 }
 
 void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) {
@@ -2436,7 +2429,6 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus, bool force_focus) 
 	cnx->write_net_active_window(focus->orig());
 
 	/* focus the selected window */
-	rpage->set_focuced_client(focus);
 	rpage->mark_durty();
 
 }
@@ -2538,7 +2530,7 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 //			pn1->move(e.x_root, e.y_root);
 
 			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			rpage->mark_durty();
+			rpage->repair_notebook_border(mode_data_notebook.from);
 
 		}
 
@@ -2600,13 +2592,14 @@ bool page_t::check_for_start_notebook(XButtonEvent const & e) {
 }
 
 void page_t::split(notebook_t * nbk, split_type_e type) {
-	//rnd->add_damage_area(nbk->_allocation);
 	split_t * split = new_split(type);
 	nbk->parent()->replace(nbk, split);
 	split->replace(0, nbk);
 	notebook_t * n = new_notebook();
 	split->replace(0, n);
 
+	update_allocation();
+	rpage->add_damaged(split->allocation());
 }
 
 void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
@@ -2617,6 +2610,9 @@ void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	insert_window_in_tree(c, n, true);
+
+	update_allocation();
+	rpage->add_damaged(split->allocation());
 }
 
 void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
@@ -2627,6 +2623,9 @@ void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	insert_window_in_tree(c, n, true);
+
+	update_allocation();
+	rpage->add_damaged(split->allocation());
 }
 
 void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
@@ -2637,6 +2636,9 @@ void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	insert_window_in_tree(c, n, true);
+
+	update_allocation();
+	rpage->add_damaged(split->allocation());
 }
 
 void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
@@ -2647,6 +2649,9 @@ void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	insert_window_in_tree(c, n, true);
+
+	update_allocation();
+	rpage->add_damaged(split->allocation());
 }
 
 void page_t::notebook_close(notebook_t * src) {
@@ -2679,6 +2684,8 @@ void page_t::notebook_close(notebook_t * src) {
 	assert(ths->parent() != 0);
 	/* remove this split from tree */
 	ths->parent()->replace(ths, dst);
+
+	rpage->add_damaged(ths->parent()->allocation());
 
 	/* cleanup */
 	destroy(src);
@@ -2787,12 +2794,12 @@ void page_t::fix_allocation(viewport_t & v) {
 }
 
 split_t * page_t::new_split(split_type_e type) {
-	split_t * x = new split_t(type, theme->layout());
+	split_t * x = new split_t(type, theme);
 	return x;
 }
 
 notebook_t * page_t::new_notebook() {
-	notebook_t * x = new notebook_t(theme->layout());
+	notebook_t * x = new notebook_t(theme);
 	return x;
 }
 
@@ -3152,10 +3159,7 @@ void page_t::bind_window(managed_window_t * mw) {
 	/* update database */
 	mw->set_managed_type(MANAGED_NOTEBOOK);
 	insert_window_in_tree(mw, 0, true);
-
 	safe_raise_window(mw->orig());
-
-	rpage->mark_durty();
 	update_client_list();
 
 }
@@ -3169,7 +3173,6 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->expose();
 	mw->normalize();
 	safe_raise_window(mw->orig());
-	rpage->mark_durty();
 	update_client_list();
 
 }

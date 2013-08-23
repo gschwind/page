@@ -38,7 +38,6 @@ public:
 		return _allocation;
 	}
 
-
 	virtual void replace(tree_t * src, tree_t * by) = 0;
 	virtual void get_childs(list<tree_t *> & lst) = 0;
 	virtual void set_allocation(box_int_t const & area) {

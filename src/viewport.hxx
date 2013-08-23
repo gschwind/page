@@ -8,9 +8,8 @@
 #ifndef VIEWPORT_HXX_
 #define VIEWPORT_HXX_
 
-#include "page_base.hxx"
 #include "tree.hxx"
-#include "box.hxx"
+#include "tree_renderable.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
 #include "theme.hxx"
@@ -19,7 +18,7 @@ using namespace std;
 
 namespace page {
 
-struct viewport_t: public viewport_base_t {
+struct viewport_t: public viewport_base_t, public tree_renderable_t {
 
 private:
 	theme_t * _theme;
@@ -72,6 +71,10 @@ public:
 
 	void get_notebooks(list<notebook_t *> & l);
 	void get_splits(list<split_t *> & l);
+
+	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+
+	}
 
 };
 

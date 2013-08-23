@@ -9,6 +9,7 @@
 #define NOTEBOOK_HXX_
 
 #include "tree.hxx"
+#include "tree_renderable.hxx"
 #include "managed_window.hxx"
 
 namespace page {
@@ -20,9 +21,9 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t : public notebook_base_t {
+class notebook_t : public notebook_base_t, public tree_renderable_t {
 
-	theme_layout_t const * layout;
+	theme_t const * _theme;
 
 public:
 
@@ -70,7 +71,7 @@ public:
 	void update_client_position(managed_window_t * c);
 
 public:
-	notebook_t(theme_layout_t const * theme);
+	notebook_t(theme_t const * theme);
 	~notebook_t();
 	void update_allocation(box_t<int> & allocation);
 
@@ -121,7 +122,7 @@ public:
 	box_int_t const & get_allocation();
 	managed_window_t const * get_selected();
 
-	void set_theme(theme_layout_t const * theme);
+	void set_theme(theme_t const * theme);
 
 	virtual void get_childs(list<tree_t *> & lst);
 
@@ -135,6 +136,10 @@ public:
 		} else {
 			return _selected.front();
 		}
+	}
+
+	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+		_theme->render_notebook(cr, this, area);
 	}
 
 };

@@ -325,7 +325,10 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	cairo_restore(cr);
 }
 
-void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
+void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
+		box_int_t const & area) const {
+
+	cairo_save(cr);
 
 	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 	pango_layout_set_font_description(pango_layout, pango_font);
@@ -339,6 +342,10 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 	cairo_identity_matrix(cr);
 	cairo_set_line_width(cr, 1.0);
 	cairo_new_path(cr);
+
+	/** hope to optimize things **/
+	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	cairo_clip(cr);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_rectangle(cr, n->allocation().x, n->allocation().y, n->allocation().w,
@@ -468,9 +475,8 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 		if ((*c)->icon() != 0) {
 			if ((*c)->icon()->get_cairo_surface() != 0) {
 				cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
-				cairo_set_source_surface(cr,
-						(*c)->icon()->get_cairo_surface(), bicon.x,
-						bicon.y);
+				cairo_set_source_surface(cr, (*c)->icon()->get_cairo_surface(),
+						bicon.x, bicon.y);
 				if (*c == n->selected()) {
 					cairo_paint_with_alpha(cr, 1.0);
 				} else {
@@ -498,8 +504,8 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 
 		cairo_reset_clip(cr);
 		cairo_new_path(cr);
-		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
-		cairo_clip(cr);
+//		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
+//		cairo_clip(cr);
 
 		if (*c == n->selected()) {
 
@@ -625,11 +631,11 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 	}
 
 	{
-		box_int_t b = _layout->compute_notebook_bookmark_position(n->allocation(),
-				number_of_client, selected_index);
+		box_int_t b = _layout->compute_notebook_bookmark_position(
+				n->allocation(), number_of_client, selected_index);
 
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-		if (/** TODO: is_default **/ false) {
+		if (/** TODO: is_default **/false) {
 			cairo_set_source_surface(cr, pops_button_s, b.x, b.y);
 		} else {
 			cairo_set_source_surface(cr, pop_button_s, b.x, b.y);
@@ -817,45 +823,28 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t * n) const {
 	}
 
 	g_object_unref(pango_layout);
+	cairo_restore(cr);
 
 }
 
-
-
-void simple_theme_t::render_split(cairo_t * cr, split_base_t * s) const {
-
+void simple_theme_t::render_split(cairo_t * cr, split_base_t const * s, box_int_t const & area) const {
+	cairo_save(cr);
 	cairo_reset_clip(cr);
 	cairo_identity_matrix(cr);
 	cairo_set_line_width(cr, 1.0);
 
-	box_int_t area = compute_split_bar_location(s);
-	//cairo_set_source_rgb(cr, grey0.r, grey0.g, grey0.b);
+	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	cairo_clip(cr);
+
+	box_int_t sarea = compute_split_bar_location(s);
 	if(background_s != 0) {
 		cairo_set_source_surface(cr, background_s, 0.0, 0.0);
 	} else {
 		cairo_set_source_rgb(cr, grey0.r, grey0.g, grey0.b);
 	}
-	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	cairo_rectangle(cr, sarea.x, sarea.y, sarea.w, sarea.h);
 	cairo_fill(cr);
-
-//	cairo_new_path(cr);
-//
-//	if(s->get_split_type() == VERTICAL_SPLIT) {
-//		cairo_move_to(cr, area.x + layout->split_width / 2, area.y);
-//		cairo_line_to(cr, area.x + layout->split_width / 2, area.y + area.h);
-//	} else {
-//		cairo_move_to(cr, area.x, area.y + layout->split_width / 2);
-//		cairo_line_to(cr, area.x + area.w, area.y + layout->split_width / 2);
-//	}
-//
-//	cairo_set_line_width(cr, layout->split_width / 2 - 2.0);
-//	cairo_set_source_rgb(cr, grey2.r, grey2.g, grey2.b);
-//
-//	static const double dashed3[] = {1.0};
-//	cairo_set_dash(cr, dashed3, 1, 0);
-//
-//	cairo_stroke(cr);
-
+	cairo_restore(cr);
 }
 
 
@@ -913,8 +902,8 @@ void simple_theme_t::render_floating(managed_window_base_t * mw) const {
 
 		cairo_save(cr);
 		cairo_new_path(cr);
-		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
-		cairo_clip(cr);
+//		cairo_rectangle(cr, btext.x, btext.y, btext.w, btext.h);
+//		cairo_clip(cr);
 
 		cairo_set_font_size(cr, 13);
 
