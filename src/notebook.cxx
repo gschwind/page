@@ -18,55 +18,6 @@ notebook_t::~notebook_t() {
 
 }
 
-managed_window_t * notebook_t::find_client_tab(int x, int y) {
-//	if (allocation().is_inside(x, y)) {
-//		if (!_clients.empty()) {
-//
-//			int number_of_client = _clients.size();
-//			int selected_index = -1;
-//
-//			if(!_selected.empty()) {
-//				list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
-//				selected_index = distance(_clients.begin(), i);
-//			}
-//
-//			list<box_int_t> tabs = _theme->compute_client_tab(allocation(), number_of_client, selected_index);
-//
-//			list<box_int_t>::iterator i = tabs.begin();
-//			while(i != tabs.end()) {
-//				if((*i).is_inside(x, y))
-//					break;
-//				++i;
-//			}
-//
-//			if (i != tabs.end()) {
-//				int index = distance(tabs.begin(), i);
-//				list<managed_window_t *>::iterator x = _clients.begin();
-//				advance(x, index);
-//				return *x;
-//			}
-//		}
-//	}
-//
-//	return 0;
-
-}
-
-void notebook_t::update_close_area() {
-
-//	int number_of_client = _clients.size();
-//	int selected_index = -1;
-//
-//	if(!_selected.empty()) {
-//		list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
-//		selected_index = distance(_clients.begin(), i);
-//	}
-//
-//	close_client_area = _theme->compute_notebook_close_window_position(allocation(), number_of_client, selected_index);
-//	undck_client_area = _theme->compute_notebook_unbind_window_position(allocation(), number_of_client, selected_index);
-
-}
-
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	_clients.push_front(x);
 	_client_map.insert(x);

@@ -210,6 +210,20 @@ public:
 	/* this define the current state of page */
 	process_mode_e process_mode;
 
+
+	enum key_press_mode_e {
+		KEY_PRESS_NORMAL,			// Process event as usual
+		KEY_PRESS_ALT_TAB,
+	};
+
+	key_press_mode_e key_press_mode;
+
+	struct key_mode_data_t {
+		managed_window_t * selected;
+	};
+
+	key_mode_data_t key_mode_data;
+
 	bool use_internal_compositor;
 
 	/* this data are used when you drag&drop a split slider */
@@ -297,19 +311,9 @@ public:
 		return cnx->A(atom);
 	}
 
-	void render(cairo_t * cr);
-	void render();
 	void run();
-
 	void scan();
 
-	long get_window_state(Window w);
-	bool get_text_prop(Window w, atom_e atom, std::string & text);
-
-	void update_page_aera();
-
-	bool get_all(Window win, Atom prop, Atom type, int size,
-			unsigned char **data, unsigned int *num);
 
 	void process_event(XKeyEvent const & e);
 	void process_event_press(XButtonEvent const & e);
@@ -341,44 +345,25 @@ public:
 
 	void process_event(XEvent const & e);
 
-	void drag_and_drop_loop();
-
 	void update_client_list();
 	void update_net_supported();
 
-	void insert_client(Window c);
-
 	void print_window_attributes(Window w, XWindowAttributes &wa);
-
-	void update_focus(Window c);
-	void read_viewport_layout();
 
 	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w, XWindowAttributes const & wa);
 	void unmanage(managed_window_t * mw);
 
-	void print_state();
-
-	void insert_window_above_of(Window w, Window above);
-
 	void remove_window_from_tree(managed_window_t * x);
-	void activate_client(managed_window_t * x);
+	void activate_client(managed_window_t * x, Time t);
 	void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
 	void iconify_client(managed_window_t * x);
 	void update_allocation();
 
-	void delete_window(Window w);
 	void destroy(Window w);
 
 	void fullscreen(managed_window_t * c, viewport_t * v = 0);
 	void unfullscreen(managed_window_t * c);
 	void toggle_fullscreen(managed_window_t * c);
-
-	static bool user_time_comp(Window, Window);
-	void restack_all_window();
-
-
-	bool check_for_start_split(XButtonEvent const & e);
-	bool check_for_start_notebook(XButtonEvent const & e);
 
 	void split(notebook_t * nbk, split_type_e type);
 	void split_left(notebook_t * nbk, managed_window_t * c);
@@ -398,12 +383,6 @@ public:
 	notebook_t * new_notebook();
 	void destroy(notebook_t * x);
 
-	viewport_t * new_viewport(box_int_t & area);
-
-	void new_renderable_window(Window w);
-	void destroy_renderable(Window w);
-
-	managed_window_t * new_managed_window(managed_window_type_e type, Window orig);
 	void destroy_managed_window(managed_window_t * mw);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
@@ -414,11 +393,6 @@ public:
 	void safe_raise_window(Window w);
 	void clear_transient_for_sibbling_child(Window w);
 
-	std::string safe_get_window_name(Window w);
-
-	void manage_if_needed(Window x);
-
-
 	Window find_root_window(Window w);
 	Window find_client_window(Window w);
 
@@ -426,7 +400,6 @@ public:
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
 
-	void apply_transient_for(list<Window> & l);
 
 	void print_tree_windows();
 
@@ -436,15 +409,6 @@ public:
 	void grab_pointer();
 
 	void cleanup_grab(managed_window_t * mw);
-
-	managed_window_t * get_managed(Window w);
-
-	void update_viewport_layout();
-
-	/* cleanup unknown reference type from all indexes/cache
-	 * the ugly safe way.
-	 **/
-	void cleanup_reference(void * ref);
 
 	notebook_t * get_another_notebook(tree_t * x = 0);
 
@@ -461,8 +425,6 @@ public:
 	viewport_t * find_viewport_for(notebook_t * n);
 
 	bool is_valid_notebook(notebook_t * n);
-
-	void update_viewport_number(unsigned int n);
 
 	void set_window_cursor(Window w, Cursor c);
 

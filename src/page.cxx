@@ -78,6 +78,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	}
 
 	process_mode = PROCESS_NORMAL;
+	key_press_mode = KEY_PRESS_NORMAL;
 
 	cnx = new xconnection_t();
 
@@ -314,7 +315,7 @@ void page_t::run() {
 			True, GrabModeAsync, GrabModeAsync);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask, cnx->get_root_window(),
-			True, GrabModeAsync, GrabModeAsync);
+			True, GrabModeAsync, GrabModeSync);
 
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
@@ -418,7 +419,11 @@ void page_t::unmanage(managed_window_t * mw) {
 		_client_focused.remove(mw);
 		if(_client_focused.front() != 0) {
 			if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
-				activate_client(_client_focused.front());
+				Time t;
+				if (get_safe_net_wm_user_time(_client_focused.front()->orig(),
+						t)) {
+					activate_client(_client_focused.front(), t);
+				}
 			}
 		}
 
@@ -602,17 +607,6 @@ void page_t::update_client_list() {
 
 }
 
-/* inspired from dwm */
-bool page_t::get_text_prop(Window w, atom_e atom, std::string & text) {
-	//char **list = NULL;
-	XTextProperty name;
-	cnx->get_text_property(w, &name, atom);
-	if (!name.nitems)
-		return false;
-	text = (char const *) name.value;
-	return true;
-}
-
 void page_t::process_event(XKeyEvent const & e) {
 	int n;
 	KeySym * k = XGetKeyboardMapping(cnx->dpy, e.keycode, 1, &n);
@@ -677,20 +671,32 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
 
-		if(!managed_window.empty()) {
-			managed_window_t * mw = _client_focused.front();
-			set<managed_window_t *>::iterator x = managed_window.find(mw);
-			if(x == managed_window.end()) {
-				activate_client(*managed_window.begin());
+		if(key_press_mode == KEY_PRESS_NORMAL) {
+			/** grab this events **/
+			XAllowEvents(e.display, AsyncKeyboard, e.time);
+			key_press_mode = KEY_PRESS_ALT_TAB;
+			key_mode_data.selected = _client_focused.front();
+		}
+
+		if (!managed_window.empty()) {
+			set<managed_window_t *>::iterator x = managed_window.find(key_mode_data.selected);
+			if (x == managed_window.end()) {
+				key_mode_data.selected = *managed_window.begin();
+				activate_client(*managed_window.begin(), e.time);
 			} else {
 				++x;
-				if(x == managed_window.end()) {
-					activate_client(*managed_window.begin());
+				if (x == managed_window.end()) {
+					activate_client(*managed_window.begin(), e.time);
 				} else {
-					activate_client(*x);
+					activate_client(*x, e.time);
 				}
 			}
 		}
+
+	}
+
+	if (XK_Tab == k[0] && e.type == KeyRelease && (e.state & Mod1Mask)) {
+		key_press_mode = KEY_PRESS_NORMAL;
 	}
 
 	XFree(k);
@@ -978,7 +984,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		 **/
 
 		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
-		XFlush(cnx->dpy);
 
 //		fprintf(stderr,
 //				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
@@ -2041,7 +2046,10 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
-				activate_client(mw);
+				Time t;
+				if (get_safe_net_wm_user_time(mw->orig(), t)) {
+					activate_client(mw, t);
+				}
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -2434,18 +2442,18 @@ void page_t::process_event(XEvent const & e) {
 
 }
 
-void page_t::activate_client(managed_window_t * x) {
+void page_t::activate_client(managed_window_t * x, Time t) {
 	if(x == 0)
 		return;
 	notebook_t * n = find_notebook_for(x);
 	if (n != 0) {
 		n->activate_client(x);
 		XFlush(cnx->dpy);
-		//set_focus(x, false);
+		set_focus(x, t);
 		rpage->repair_notebook_border(n);
 	} else {
 		/* floating window or fullscreen window */
-		//set_focus(x, false);
+		set_focus(x, t);
 		//rnd->add_damage_area(x->get_base_position());
 	}
 }
@@ -2532,160 +2540,6 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus) {
 
 xconnection_t * page_t::get_xconnection() {
 	return cnx;
-}
-
-/* delete window handler */
-void page_t::delete_window(Window x) {
-//	assert(has_key(xwindow_to_window, x));
-//	xwindow_to_window.erase(x);
-//	delete x;
-}
-
-bool page_t::check_for_start_split(XButtonEvent const & e) {
-	//printf("call %s\n", __FUNCTION__);
-	split_t * x = 0;
-	list<split_t *> lst;
-	get_splits(lst);
-	for(list<split_t *>::iterator i = lst.begin(); i != lst.end(); ++i) {
-		if ((*i)->get_split_bar_area().is_inside(e.x_root, e.y_root)) {
-			x = (*i);
-			break;
-		}
-	}
-
-	if (x != 0) {
-		//printf("starting split\n");
-		/* switch process mode */
-		process_mode = PROCESS_SPLIT_GRAB;
-
-		mode_data_split.split_ratio = x->get_split_ratio();
-		mode_data_split.split = x;
-		mode_data_split.slider_area = mode_data_split.split->get_split_bar_area();
-
-		/* show split overlay */
-		ps->move_resize(mode_data_split.slider_area);
-		ps->show();
-		ps->expose();
-
-	}
-
-	//printf("exit %s\n", __FUNCTION__);
-	return x != 0;
-}
-
-bool page_t::check_for_start_notebook(XButtonEvent const & e) {
-	//printf("call %s\n", __FUNCTION__);
-	managed_window_t * c = 0;
-	notebook_t * n = 0;
-	list<notebook_t *> lst;
-	get_notebooks(lst);
-
-	for(list<notebook_t *>::iterator i = lst.begin(); i != lst.end(); ++i) {
-		c = (*i)->find_client_tab(e.x_root, e.y_root);
-		if (c) {
-			n = *i;
-			break;
-		}
-	}
-
-	if (c != 0) {
-
-		n->update_close_area();
-		if (n->close_client_area.is_inside(e.x_root, e.y_root)) {
-
-			/* apply change on button release */
-			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-			mode_data_notebook.c = c;
-			mode_data_notebook.from = n;
-			mode_data_notebook.ns = 0;
-
-			/* TODO: on release */
-			//c->delete_window(e.time);
-		} else if (n->undck_client_area.is_inside(e.x_root, e.y_root)) {
-
-			/* apply change on button release */
-			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-			mode_data_notebook.c = c;
-			mode_data_notebook.from = n;
-			mode_data_notebook.ns = 0;
-
-			/* TODO: on release */
-			//unbind_window(c);
-		} else {
-
-//			printf("starting notebook\n");
-			process_mode = PROCESS_NOTEBOOK_GRAB;
-			mode_data_notebook.c = c;
-			mode_data_notebook.from = n;
-			mode_data_notebook.ns = 0;
-			mode_data_notebook.zone = SELECT_NONE;
-
-			pn0->move_resize(mode_data_notebook.from->tab_area);
-			pn0->update_window(c->orig(), c->title());
-
-//			pn1->update_data(c->get_icon()->get_cairo_surface(), c->get_title());
-//			pn1->move(e.x_root, e.y_root);
-
-			mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			rpage->repair_notebook_border(mode_data_notebook.from);
-
-		}
-
-	} else {
-
-		notebook_t * x = 0;
-		for (list<notebook_t *>::iterator i = lst.begin(); i != lst.end();
-				++i) {
-			notebook_t * n = (*i);
-			if (n->button_close.is_inside(e.x, e.y)) {
-				x = n;
-				break;
-			} else if (n->button_vsplit.is_inside(e.x, e.y)) {
-				x = n;
-				break;
-			} else if (n->button_hsplit.is_inside(e.x, e.y)) {
-				x = n;
-				break;
-			} else if (n->button_pop.is_inside(e.x, e.y)) {
-				x = n;
-				break;
-			}
-		}
-
-		if (x != 0) {
-			/* apply change on button release */
-			process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-			mode_data_notebook.c = 0;
-			mode_data_notebook.from = x;
-			mode_data_notebook.ns = 0;
-
-			/* TODO: in release button */
-//			if (x->button_close.is_inside(e.x, e.y)) {
-//				notebook_close(x);
-//				rpage->mark_durty();
-//				rnd->add_damage_area(cnx->get_root_size());
-//			} else if (x->button_vsplit.is_inside(e.x, e.y)) {
-//				split(x, VERTICAL_SPLIT);
-//				update_allocation();
-//				rpage->mark_durty();
-//				rnd->add_damage_area(cnx->get_root_size());
-//			} else if (x->button_hsplit.is_inside(e.x, e.y)) {
-//				split(x, HORIZONTAL_SPLIT);
-//				update_allocation();
-//				rpage->mark_durty();
-//				rnd->add_damage_area(cnx->get_root_size());
-//			} else if (x->button_pop.is_inside(e.x, e.y)) {
-//				default_window_pop = x;
-//				rnd->add_damage_area(x->tab_area);
-//				update_allocation();
-//				rpage->mark_durty();
-//				rnd->add_damage_area(cnx->get_root_size());
-//			}
-		}
-
-	}
-	//printf("exit %s\n", __FUNCTION__);
-	return c != 0;
 }
 
 void page_t::split(notebook_t * nbk, split_type_e type) {
@@ -2909,9 +2763,7 @@ void page_t::destroy(notebook_t * x) {
 }
 
 void page_t::destroy(Window c) {
-
 	clear_transient_for_sibbling_child(c);
-	delete_window(c);
 }
 
 void page_t::process_net_vm_state_client_message(Window c, long type, Atom state_properties) {
@@ -3808,11 +3660,12 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 
 		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
 		insert_window_in_tree(mw, 0, true);
-		activate_client(mw);
+
 
 		/** TODO function **/
 		Time time = 0;
 		if(get_safe_net_wm_user_time(w, time)) {
+			activate_client(mw, time);
 			set_focus(mw, time);
 		}
 

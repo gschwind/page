@@ -398,7 +398,10 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 			if (has_focuced_client) {
 				cairo_new_path(cr);
-				cairo_move_to(cr, b.x + 1.0, b.y + b.h + 2.0);
+
+				cairo_move_to(cr, n->allocation().x + 1.0, b.y + b.h + 1.0);
+				/** top left **/
+				cairo_line_to(cr, b.x + 1.0, b.y + b.h + 1.0);
 				/** tab left **/
 				cairo_line_to(cr, b.x + 1.0, b.y + 1.0);
 				/** tab top **/
@@ -408,20 +411,22 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 				/** top right **/
 				cairo_line_to(cr, n->allocation().x + n->allocation().w - 1.0,
 						b.y + b.h + 1.0);
-				/** right **/
-				cairo_line_to(cr, n->allocation().x + n->allocation().w - 1.0,
-						n->allocation().y + n->allocation().h - 1.0);
-				/** bottom **/
-				cairo_line_to(cr, n->allocation().x + 1.0,
-						n->allocation().y + n->allocation().h - 1.0);
-				/** left **/
-				cairo_line_to(cr, n->allocation().x + 1.0, b.y + b.h + 1.0);
-				/** top left **/
-				cairo_line_to(cr, b.x + 1.0, b.y + b.h + 1.0);
+//				/** right **/
+//				cairo_move_to(cr, n->allocation().x + n->allocation().w - 1.0,
+//						n->allocation().y + n->allocation().h - 1.0);
+//				/** bottom **/
+//				cairo_move_to(cr, n->allocation().x + 1.0,
+//						n->allocation().y + n->allocation().h - 1.0);
+//				/** left **/
+//				cairo_move_to(cr, n->allocation().x + 1.0, b.y + b.h + 1.0);
+
 				selected_path = cairo_copy_path(cr);
 			} else {
 				cairo_new_path(cr);
-				cairo_move_to(cr, b.x + 0.5, b.y + b.h + 1.0);
+
+				cairo_move_to(cr, n->allocation().x + 0.5, b.y + b.h + 0.5);
+				/** top left **/
+				cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
 				/** tab left **/
 				cairo_line_to(cr, b.x + 0.5, b.y + 0.5);
 				/** tab top **/
@@ -431,16 +436,16 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 				/** top right **/
 				cairo_line_to(cr, n->allocation().x + n->allocation().w - 0.5,
 						b.y + b.h + 0.5);
-				/** right **/
-				cairo_line_to(cr, n->allocation().x + n->allocation().w - 0.5,
-						n->allocation().y + n->allocation().h - 0.5);
-				/** bottom **/
-				cairo_line_to(cr, n->allocation().x + 0.5,
-						n->allocation().y + n->allocation().h - 0.5);
-				/** left **/
-				cairo_line_to(cr, n->allocation().x + 0.5, b.y + b.h + 0.5);
-				/** top left **/
-				cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
+//				/** right **/
+//				cairo_move_to(cr, n->allocation().x + n->allocation().w - 0.5,
+//						n->allocation().y + n->allocation().h - 0.5);
+//				/** bottom **/
+//				cairo_move_to(cr, n->allocation().x + 0.5,
+//						n->allocation().y + n->allocation().h - 0.5);
+//				/** left **/
+//				cairo_move_to(cr, n->allocation().x + 0.5, b.y + b.h + 0.5);
+
+
 				selected_path = cairo_copy_path(cr);
 
 			}

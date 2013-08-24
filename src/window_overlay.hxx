@@ -99,12 +99,14 @@ public:
 	void create_back_buffer() {
 		if (_back_surf == 0) {
 			if (_has_alpha) {
-				_back_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-						_position.w, _position.h);
+				_back_surf = cairo_surface_create_similar(_front_surf,
+						CAIRO_CONTENT_COLOR_ALPHA, _position.w, _position.h);
 			} else {
-				_back_surf = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
-						_position.w, _position.h);
+				_back_surf = cairo_surface_create_similar(_front_surf,
+						CAIRO_CONTENT_COLOR, _position.w, _position.h);
 			}
+			printf("CAIRO SURF TYPE = %s\n", cairo_surface_type_name[cairo_surface_get_type(_back_surf)]);
+
 		}
 	}
 
