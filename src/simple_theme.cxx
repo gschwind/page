@@ -210,6 +210,9 @@ simple_theme_t::~simple_theme_t() {
 	cairo_surface_destroy(unbind_button_s);
 	cairo_surface_destroy(bind_button_s);
 
+	pango_font_description_free(pango_font);
+	pango_font_description_free(pango_popup_font);
+
 }
 
 void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
@@ -230,28 +233,30 @@ void simple_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	cairo_restore(cr);
 }
 
-void simple_theme_t::compute_areas_for_notebook(notebook_base_t const * n, list<box_any_t *> & l) const {
+void simple_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
+		vector<box_page_event_t> * l) const {
 
-	box_notebook_close_t * nc = new box_notebook_close_t();
-	nc->position = compute_notebook_close_position(n->allocation());
-	nc->notebook = n;
-	l.push_back(nc);
+	{
+		box_page_event_t nc(THEME_NOTEBOOK_CLOSE);
+		nc.position = compute_notebook_close_position(n->allocation());
+		nc.nbk = n;
+		l->push_back(nc);
 
-	box_notebook_hsplit_t * nhs = new box_notebook_hsplit_t();
-	nhs->position = compute_notebook_hsplit_position(n->allocation());
-	nhs->notebook = n;
-	l.push_back(nhs);
+		box_page_event_t nhs(THEME_NOTEBOOK_HSPLIT);
+		nhs.position = compute_notebook_hsplit_position(n->allocation());
+		nhs.nbk = n;
+		l->push_back(nhs);
 
-	box_notebook_vsplit_t * nvs = new box_notebook_vsplit_t();
-	nvs->position = compute_notebook_vsplit_position(n->allocation());
-	nvs->notebook = n;
-	l.push_back(nvs);
+		box_page_event_t nvs(THEME_NOTEBOOK_VSPLIT);
+		nvs.position = compute_notebook_vsplit_position(n->allocation());
+		nvs.nbk = n;
+		l->push_back(nvs);
 
-	box_notebook_mark_t * nm = new box_notebook_mark_t();
-	nm->position = compute_notebook_bookmark_position(n->allocation());
-	nm->notebook = n;
-	l.push_back(nm);
-
+		box_page_event_t nm(THEME_NOTEBOOK_MARK);
+		nm.position = compute_notebook_bookmark_position(n->allocation());
+		nm.nbk = n;
+		l->push_back(nm);
+	}
 
 	list<managed_window_base_t const *> clist = n->clients();
 
@@ -268,29 +273,29 @@ void simple_theme_t::compute_areas_for_notebook(notebook_base_t const * n, list<
 						floor(offset + 2.0 * box_width) - floor(offset),
 						notebook_margin.top - 4);
 
-				box_notebook_client_close_t * ncclose = new box_notebook_client_close_t();
-				ncclose->position.x = b.x + b.w - 1 * 17 - 3;
-				ncclose->position.y = b.y + 4;
-				ncclose->position.w = 16;
-				ncclose->position.h = 16;
-				ncclose->notebook = n;
-				ncclose->client = *i;
-				l.push_back(ncclose);
+				box_page_event_t ncclose(THEME_NOTEBOOK_CLIENT_CLOSE);
+				ncclose.position.x = b.x + b.w - 1 * 17 - 3;
+				ncclose.position.y = b.y + 4;
+				ncclose.position.w = 16;
+				ncclose.position.h = 16;
+				ncclose.nbk = n;
+				ncclose.clt = *i;
+				l->push_back(ncclose);
 
-				box_notebook_client_unbind_t * ncub = new box_notebook_client_unbind_t();
-				ncub->position.x = b.x + b.w - 2 * 17 - 3;
-				ncub->position.y = b.y + 4;
-				ncub->position.w = 16;
-				ncub->position.h = 16;
-				ncub->notebook = n;
-				ncub->client = *i;
-				l.push_back(ncub);
+				box_page_event_t ncub(THEME_NOTEBOOK_CLIENT_UNBIND);
+				ncub.position.x = b.x + b.w - 2 * 17 - 3;
+				ncub.position.y = b.y + 4;
+				ncub.position.w = 16;
+				ncub.position.h = 16;
+				ncub.nbk = n;
+				ncub.clt = *i;
+				l->push_back(ncub);
 
-				box_notebook_client_t * nc = new box_notebook_client_t();
-				nc->position = b;
-				nc->notebook = n;
-				nc->client = *i;
-				l.push_back(nc);
+				box_page_event_t nc(THEME_NOTEBOOK_CLIENT);
+				nc.position = b;
+				nc.nbk = n;
+				nc.clt = *i;
+				l->push_back(nc);
 
 				offset += box_width * 2;
 
@@ -299,11 +304,11 @@ void simple_theme_t::compute_areas_for_notebook(notebook_base_t const * n, list<
 						floor(offset + box_width) - floor(offset),
 						notebook_margin.top - 4);
 
-				box_notebook_client_t * nc = new box_notebook_client_t();
-				nc->position = b;
-				nc->notebook = n;
-				nc->client = *i;
-				l.push_back(nc);
+				box_page_event_t nc(THEME_NOTEBOOK_CLIENT);
+				nc.position = b;
+				nc.nbk = n;
+				nc.clt = *i;
+				l->push_back(nc);
 
 				offset += box_width;
 			}
@@ -350,16 +355,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	list<managed_window_base_t const *> clients = n->clients();
 
-	int number_of_client = clients.size();
-	int selected_index = -1;
-
-	if (n->selected() != 0) {
-		list<managed_window_base_t const *>::iterator i = find(clients.begin(),
-				clients.end(), n->selected());
-		selected_index = distance(clients.begin(), i);
-	}
-
-	list<box_any_t *> tabs;
+	vector<box_page_event_t> * tabs = new vector<box_page_event_t>();
 	compute_areas_for_notebook(n, tabs);
 
 	cairo_path_t * selected_path = 0;
@@ -374,36 +370,29 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		}
 	}
 
-	list<box_any_t *> l;
-
-	for (list<box_any_t *>::iterator i = tabs.begin(); i != tabs.end();
+	for (
+			vector<box_page_event_t>::iterator i = tabs->begin();
+			i != tabs->end();
 			++i) {
-		box_notebook_client_t * x = 0;
 
-		if(dynamic_cast<box_notebook_client_close_t *>(*i)) {
-			box_int_t b = (*i)->position;
+		if((*i).type == THEME_NOTEBOOK_CLIENT_CLOSE) {
+			box_int_t b = (*i).position;
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_set_source_surface(cr, close_button_s, b.x, b.y);
 			cairo_paint(cr);
-
-			delete *i;
 			continue;
-		} else if (dynamic_cast<box_notebook_client_unbind_t *>(*i)) {
-			box_int_t b = (*i)->position;
+		} else if ((*i).type == THEME_NOTEBOOK_CLIENT_UNBIND) {
+			box_int_t b = (*i).position;
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_set_source_surface(cr, unbind_button_s, b.x, b.y);
 			cairo_paint(cr);
-
-			delete *i;
 			continue;
-		} else if(not (x = dynamic_cast<box_notebook_client_t *>(*i))) {
-
-			delete *i;
+		} else if(not ((*i).type == THEME_NOTEBOOK_CLIENT)) {
 			continue;
 		}
 
-		box_int_t b = x->position;
-		managed_window_base_t const * c = x->client;
+		box_int_t b = (*i).position;
+		managed_window_base_t const * c = (*i).clt;
 
 		if (c == n->selected()) {
 
@@ -581,7 +570,6 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 		cairo_restore(cr);
 
-		delete *i;
 	}
 
 	cairo_set_line_width(cr, 1.0);
@@ -591,7 +579,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		b.y = n->allocation().y;
 		b.h = notebook_margin.top - 4;
 
-		if (tabs.empty()) {
+		if (tabs->empty()) {
 			b.x = n->allocation().x;
 			b.w = n->allocation().x + n->allocation().w;
 		} else {
@@ -799,6 +787,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		cairo_stroke(cr);
 		cairo_path_destroy(selected_path);
 	}
+
+
+	delete tabs;
 
 	g_object_unref(pango_layout);
 	cairo_restore(cr);
@@ -1345,29 +1336,29 @@ void simple_theme_t::create_background_img() {
 	}
 }
 
-list<box_any_t *> simple_theme_t::compute_page_areas(
+vector<box_page_event_t> * simple_theme_t::compute_page_areas(
 		list<tree_t const *> const & page) const {
 
-	list<box_any_t *> ret;
+	vector<box_page_event_t> * ret = new vector<box_page_event_t>();
 
-	for (list<tree_t const *>::const_iterator i = page.begin(); i != page.end();
-			++i) {
+	for (list<tree_t const *>::const_iterator i = page.begin();
+			i != page.end(); ++i) {
 
 		if(dynamic_cast<split_base_t const *>(*i)) {
 			split_base_t const * s = dynamic_cast<split_base_t const *>(*i);
-			box_split_t * bsplit = new box_split_t();
-			bsplit->position = compute_split_bar_location(s);
+			box_page_event_t bsplit(THEME_SPLIT);
+			bsplit.position = compute_split_bar_location(s);
 
 			if(s->type() == VERTICAL_SPLIT) {
-				bsplit->position.w += notebook_margin.right + notebook_margin.left;
-				bsplit->position.x -= notebook_margin.right;
+				bsplit.position.w += notebook_margin.right + notebook_margin.left;
+				bsplit.position.x -= notebook_margin.right;
 			} else {
-				bsplit->position.h += notebook_margin.bottom;
-				bsplit->position.y -= notebook_margin.bottom;
+				bsplit.position.h += notebook_margin.bottom;
+				bsplit.position.y -= notebook_margin.bottom;
 			}
 
-			bsplit->split = s;
-			ret.push_back(bsplit);
+			bsplit.spt = s;
+			ret->push_back(bsplit);
 		} else if (dynamic_cast<notebook_base_t const *>(*i)) {
 			notebook_base_t const * n = dynamic_cast<notebook_base_t const *>(*i);
 			compute_areas_for_notebook(n, ret);
@@ -1379,18 +1370,18 @@ list<box_any_t *> simple_theme_t::compute_page_areas(
 	return ret;
 }
 
-list<box_any_t *> simple_theme_t::compute_floating_areas(
+vector<box_floating_event_t> * simple_theme_t::compute_floating_areas(
 		managed_window_base_t * mw) const {
 
-	list<box_any_t *> ret;
+	vector<box_floating_event_t> * ret = new vector<box_floating_event_t>();
 
-	box_floating_close_t * fc = new box_floating_close_t();
-	fc->position = compute_floating_close_position(mw->base_position());
-	ret.push_back(fc);
+	box_floating_event_t fc(THEME_FLOATING_CLOSE);
+	fc.position = compute_floating_close_position(mw->base_position());
+	ret->push_back(fc);
 
-	box_floating_bind_t * fb = new box_floating_bind_t();
-	fb->position = compute_floating_bind_position(mw->base_position());
-	ret.push_back(fb);
+	box_floating_event_t fb(THEME_FLOATING_BIND);
+	fb.position = compute_floating_bind_position(mw->base_position());
+	ret->push_back(fb);
 
 	int x0 = floating_margin.left;
 	int x1 = mw->base_position().w - floating_margin.right;
@@ -1403,48 +1394,46 @@ list<box_any_t *> simple_theme_t::compute_floating_areas(
 	int h0 = mw->base_position().h - floating_margin.bottom
 			- floating_margin.bottom;
 
-	box_floating_title_t * ft = new box_floating_title_t();
-	ft->position = box_int_t(x0, y0, w0,
+	box_floating_event_t ft(THEME_FLOATING_TITLE);
+	ft.position = box_int_t(x0, y0, w0,
 			floating_margin.top - floating_margin.bottom);
-	ret.push_back(ft);
+	ret->push_back(ft);
 
-	box_floating_grip_top_t * fgt = new box_floating_grip_top_t();
-	fgt->position = box_int_t(x0, 0, w0, floating_margin.bottom);
-	ret.push_back(fgt);
+	box_floating_event_t fgt(THEME_FLOATING_GRIP_TOP);
+	fgt.position = box_int_t(x0, 0, w0, floating_margin.bottom);
+	ret->push_back(fgt);
 
-	box_floating_grip_bottom_t * fgb = new box_floating_grip_bottom_t();
-	fgb->position = box_int_t(x0, y1, w0, floating_margin.bottom);
-	ret.push_back(fgb);
+	box_floating_event_t fgb(THEME_FLOATING_GRIP_BOTTOM);
+	fgb.position = box_int_t(x0, y1, w0, floating_margin.bottom);
+	ret->push_back(fgb);
 
-	box_floating_grip_left_t * fgl = new box_floating_grip_left_t();
-	fgl->position = box_int_t(0, y0, floating_margin.left, h0);
-	ret.push_back(fgl);
+	box_floating_event_t fgl(THEME_FLOATING_GRIP_LEFT);
+	fgl.position = box_int_t(0, y0, floating_margin.left, h0);
+	ret->push_back(fgl);
 
-	box_floating_grip_right_t * fgr = new box_floating_grip_right_t();
-	fgr->position = box_int_t(x1, y0, floating_margin.right, h0);
-	ret.push_back(fgr);
+	box_floating_event_t fgr(THEME_FLOATING_GRIP_RIGHT);
+	fgr.position = box_int_t(x1, y0, floating_margin.right, h0);
+	ret->push_back(fgr);
 
-	box_floating_grip_top_left_t * fgtl = new box_floating_grip_top_left_t();
-	fgtl->position = box_int_t(0, 0, floating_margin.left,
+	box_floating_event_t fgtl(THEME_FLOATING_GRIP_TOP_LEFT);
+	fgtl.position = box_int_t(0, 0, floating_margin.left,
 			floating_margin.bottom);
-	ret.push_back(fgtl);
+	ret->push_back(fgtl);
 
-	box_floating_grip_top_right_t * fgtr = new box_floating_grip_top_right_t();
-	fgtr->position = box_int_t(x1, 0, floating_margin.right,
+	box_floating_event_t fgtr(THEME_FLOATING_GRIP_TOP_RIGHT);
+	fgtr.position = box_int_t(x1, 0, floating_margin.right,
 			floating_margin.bottom);
-	ret.push_back(fgtr);
+	ret->push_back(fgtr);
 
-	box_floating_grip_bottom_left_t * fgbl =
-			new box_floating_grip_bottom_left_t();
-	fgbl->position = box_int_t(0, y1, floating_margin.left,
+	box_floating_event_t fgbl(THEME_FLOATING_GRIP_BOTTOM_LEFT);
+	fgbl.position = box_int_t(0, y1, floating_margin.left,
 			floating_margin.bottom);
-	ret.push_back(fgbl);
+	ret->push_back(fgbl);
 
-	box_floating_grip_bottom_right_t * fgbr =
-			new box_floating_grip_bottom_right_t();
-	fgbr->position = box_int_t(x1, y1, floating_margin.right,
+	box_floating_event_t fgbr(THEME_FLOATING_GRIP_BOTTOM_RIGHT);
+	fgbr.position = box_int_t(x1, y1, floating_margin.right,
 			floating_margin.bottom);
-	ret.push_back(fgbr);
+	ret->push_back(fgbr);
 
 	return ret;
 

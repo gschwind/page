@@ -62,9 +62,9 @@ public:
 	virtual ~theme_t() {
 	}
 
-	virtual list<box_any_t *> compute_page_areas(
+	virtual vector<box_page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const = 0;
-	virtual list<box_any_t *> compute_floating_areas(
+	virtual vector<box_floating_event_t> * compute_floating_areas(
 			managed_window_base_t * mw) const = 0;
 
 	virtual void render_split(cairo_t * cr, split_base_t const * s,

@@ -19,7 +19,6 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w, unsi
 
 	_cnx = cnx;
 	icon_surf = 0;
-	icon.data = 0;
 
 	vector<long> icon_data;
 	/* if window have icon properties */
@@ -147,12 +146,6 @@ window_icon_handler_t::~window_icon_handler_t() {
 		cairo_surface_destroy(icon_surf);
 		icon_surf = 0;
 	}
-
-	if (icon.data != 0) {
-		free(icon.data);
-		icon.data = 0;
-	}
-
 }
 
 cairo_surface_t * window_icon_handler_t::get_cairo_surface() {

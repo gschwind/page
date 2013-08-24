@@ -698,7 +698,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		if (x != window_data.end()) {
 			region_t<int> r = x->second->position();
 			x->second->update_position(e);
-			r -= x->second->position();
+			r += x->second->position();
 			if (x->second->map_state() != IsUnmapped) {
 				repair_area_region(r);
 			}

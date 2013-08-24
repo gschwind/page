@@ -59,6 +59,8 @@ long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
+	page_areas = 0;
+
 	use_internal_compositor = true;
 	char const * conf_file_name = 0;
 
@@ -135,6 +137,29 @@ page_t::~page_t() {
 		delete theme;
 	if (rnd != 0)
 		delete rnd;
+
+
+	if(pfm != 0)
+		delete pfm;
+	if(pn0 != 0)
+		delete pn0;
+	if(ps != 0)
+		delete ps;
+
+	set<managed_window_t *>::iterator i = managed_window.begin();
+	while(i != managed_window.end()) {
+		delete *i;
+		++i;
+	}
+	managed_window.clear();
+
+	set<unmanaged_window_t *>::iterator j = unmanaged_window.begin();
+	while(j != unmanaged_window.end()) {
+		delete *j;
+		++j;
+	}
+	unmanaged_window.clear();
+
 	delete cnx;
 
 }
@@ -681,27 +706,22 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 			update_page_areas();
 
-			box_any_t * b = 0;
-			for (list<box_any_t *>::iterator i = page_areas.begin();
-					i != page_areas.end(); ++i) {
+			box_page_event_t * b;
+			for (vector<box_page_event_t>::iterator i = page_areas->begin();
+					i != page_areas->end(); ++i) {
 				//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
-				if((*i)->position.is_inside(e.x, e.y)) {
-					b = *i;
+				if ((*i).position.is_inside(e.x, e.y)) {
+					b = &(*i);
 					break;
 				}
 			}
 
 			if (b != 0) {
-				if (dynamic_cast<box_notebook_client_t *>(b)) {
 
-					box_notebook_client_t * c =
-							dynamic_cast<box_notebook_client_t *>(b);
-
+				if (b->type == THEME_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
-					mode_data_notebook.c =
-							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
 					mode_data_notebook.zone = SELECT_NONE;
 
@@ -712,79 +732,43 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 					set_focus(mode_data_notebook.c, e.time);
 					rpage->repair_notebook_border(mode_data_notebook.from);
-
-				} else if (dynamic_cast<box_notebook_close_t *>(b)) {
-					box_notebook_close_t * c =
-							dynamic_cast<box_notebook_close_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-
-				} else if (dynamic_cast<box_notebook_hsplit_t *>(b)) {
-					box_notebook_hsplit_t * c =
-							dynamic_cast<box_notebook_hsplit_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_HSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-
-				} else if (dynamic_cast<box_notebook_vsplit_t *>(b)) {
-					box_notebook_vsplit_t * c =
-							dynamic_cast<box_notebook_vsplit_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_VSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-
-				} else if (dynamic_cast<box_notebook_mark_t *>(b)) {
-					box_notebook_mark_t * c =
-							dynamic_cast<box_notebook_mark_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_MARK) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-
-				} else if (dynamic_cast<box_notebook_client_close_t *>(b)) {
-
-					box_notebook_client_close_t * c =
-							dynamic_cast<box_notebook_client_close_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_CLIENT_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					mode_data_notebook.c =
-							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-
-				} else if (dynamic_cast<box_notebook_client_unbind_t *>(b)) {
-
-					box_notebook_client_unbind_t * c =
-							dynamic_cast<box_notebook_client_unbind_t *>(b);
-
+				} else if (b->type == THEME_NOTEBOOK_CLIENT_UNBIND) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					mode_data_notebook.c =
-							dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(c->client));
-					mode_data_notebook.from =
-							dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(c->notebook));
+					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
 
-				} else if (dynamic_cast<box_split_t *>(b)) {
-					box_split_t * c = dynamic_cast<box_split_t *>(b);
+				} else if (b->type == THEME_SPLIT) {
 
 					process_mode = PROCESS_SPLIT_GRAB;
 
-					mode_data_split.split_ratio = c->split->split();
-					mode_data_split.split =
-							dynamic_cast<split_t *>(const_cast<split_base_t *>(c->split));
+					mode_data_split.split_ratio = b->spt->split();
+					mode_data_split.split = _upgrade(b->spt);
 					mode_data_split.slider_area =
 							mode_data_split.split->get_split_bar_area();
 
@@ -829,14 +813,14 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					and e.subwindow != mw->orig()) {
 
 				mw->update_floating_areas();
-				list<box_any_t *> l = mw->floating_areas();
+				vector<box_floating_event_t> const * l = mw->floating_areas();
 
-				box_any_t * b = 0;
-				for (list<box_any_t *>::iterator i = l.begin();
-						i != l.end(); ++i) {
+				box_floating_event_t const * b = 0;
+				for (vector<box_floating_event_t>::const_iterator i = l->begin();
+						i != l->end(); ++i) {
 					//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
-					if((*i)->position.is_inside(e.x, e.y)) {
-						b = *i;
+					if((*i).position.is_inside(e.x, e.y)) {
+						b = &(*i);
 						break;
 					}
 				}
@@ -853,12 +837,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.final_position = mw->get_floating_wished_position();
 					mode_data_floating.popup_original_position = mw->get_base_position();
 
-					if (dynamic_cast<box_floating_close_t *>(b)) {
+					if (b->type == THEME_FLOATING_CLOSE) {
 
 						mode_data_floating.f = mw;
 						process_mode = PROCESS_FLOATING_CLOSE;
 
-					} else if (dynamic_cast<box_floating_bind_t *>(b)) {
+					} else if (b->type == THEME_FLOATING_BIND) {
 
 						mode_data_bind.c = mw;
 						mode_data_bind.ns = 0;
@@ -869,7 +853,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 						process_mode = PROCESS_FLOATING_BIND;
 
-					} else if (dynamic_cast<box_floating_title_t *>(b)) {
+					} else if (b->type == THEME_FLOATING_TITLE) {
 
 						pfm->move_resize(mw->get_base_position());
 						pfm->update_window(mw->orig(), mw->title());
@@ -883,28 +867,28 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						pfm->update_window(mw->orig(), mw->title());
 						pfm->show();
 
-						if (dynamic_cast<box_floating_grip_top_t * >(b)) {
+						if (b->type == THEME_FLOATING_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP;
-						} else if (dynamic_cast<box_floating_grip_bottom_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM;
-						} else if (dynamic_cast<box_floating_grip_left_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_LEFT;
-						} else if (dynamic_cast<box_floating_grip_right_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_RIGHT;
-						} else if (dynamic_cast<box_floating_grip_top_left_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-						} else if (dynamic_cast<box_floating_grip_top_right_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-						} else if (dynamic_cast<box_floating_grip_bottom_left_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-						} else if (dynamic_cast<box_floating_grip_bottom_right_t *>(b)) {
+						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 						} else {
@@ -913,11 +897,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						}
 					}
 
-				}
-
-				for (list<box_any_t *>::iterator i = l.begin();
-						i != l.end(); ++i) {
-					delete *i;
 				}
 
 			} else if (mw->is(MANAGED_FULLSCREEN) and e.button == (Button1)
@@ -1088,34 +1067,31 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			{
-				box_any_t * b = 0;
-				for (list<box_any_t *>::iterator i = page_areas.begin();
-						i != page_areas.end(); ++i) {
-					printf("box = %s => %s\n",
-							(*i)->position.to_string().c_str(),
-							typeid(**i).name());
-					if ((*i)->position.is_inside(e.x, e.y)) {
-						b = *i;
+				box_page_event_t * b = 0;
+				for (vector<box_page_event_t>::iterator i = page_areas->begin();
+						i != page_areas->end(); ++i) {
+					if ((*i).position.is_inside(e.x, e.y)) {
+						b = &(*i);
 						break;
 					}
 				}
 
 				if (b != 0) {
-					if (dynamic_cast<box_notebook_client_t *>(b)) {
+					if (b->type == THEME_NOTEBOOK_CLIENT) {
 						/** do noting **/
-					} else if (dynamic_cast<box_notebook_close_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_CLOSE) {
 						notebook_close(mode_data_notebook.from);
-					} else if (dynamic_cast<box_notebook_hsplit_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_HSPLIT) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-					} else if (dynamic_cast<box_notebook_vsplit_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
-					} else if (dynamic_cast<box_notebook_mark_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_MARK) {
 						default_window_pop = mode_data_notebook.from;
-					} else if (dynamic_cast<box_notebook_client_close_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_CLIENT_CLOSE) {
 						mode_data_notebook.c->delete_window(e.time);
-					} else if (dynamic_cast<box_notebook_client_unbind_t *>(b)) {
+					} else if (b->type == THEME_NOTEBOOK_CLIENT_UNBIND) {
 						unbind_window(mode_data_notebook.c);
-					} else if (dynamic_cast<box_split_t *>(b)) {
+					} else if (b->type == THEME_SPLIT) {
 						/** do nothing **/
 					}
 				}
@@ -3328,10 +3304,6 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_notebook.from = 0;
 			mode_data_notebook.ns = 0;
 
-			/* ev is button release
-			 * so set the hidden focus parameter
-			 */
-			//XUngrabPointer(cnx->dpy, CurrentTime);
 		}
 		break;
 
@@ -3583,9 +3555,6 @@ void page_t::update_windows_stack() {
 	final_order.remove(pn0->id());
 	final_order.push_back(pn0->id());
 
-//	final_order.remove(pn1->id());
-//	final_order.push_back(pn1->id());
-
 	final_order.remove(ps->id());
 	final_order.push_back(ps->id());
 
@@ -3692,80 +3661,6 @@ void  page_t::destroy_viewport(viewport_t * v) {
 		delete v;
 	}
 }
-
-//void page_t::manage_if_needed(Window x) {
-//
-//	if (find_managed_window_with(x))
-//		return;
-//
-//	/* find the type of current window */
-//	page_window_type_e type = find_window_type(cnx->dpy, x);
-//
-//	if(type == PAGE_OVERLAY_WINDOW_TYPE) {
-//		x->map();
-//		return;
-//	} else if(type == PAGE_UNKNOW_WINDOW_TYPE) {
-//		x->map();
-//		return;
-//	} else if (type == PAGE_NORMAL_WINDOW_TYPE) {
-//		managed_window_t * fw = manage(MANAGED_NOTEBOOK, x);
-//		insert_window_in_tree(fw, 0,
-//				fw->orig()->get_initial_state() == NormalState
-//						&& !fw->orig()->is_hidden());
-//
-//		if (x->is_fullscreen()) {
-//			fullscreen(fw);
-//		} else {
-//			fw->reconfigure();
-//		}
-//
-//	} else if (type == PAGE_FLOATING_WINDOW_TYPE) {
-//		managed_window_t * fw = manage(MANAGED_FLOATING, x);
-//		/* apply normal hint to floating window */
-//		box_int_t new_size = fw->get_wished_position();
-//
-//		/* do not allow to large windows */
-//		if (new_size.w
-//				> (cnx->get_root_size().w
-//						- theme->get_theme_floating_margin.left
-//						- theme->get_theme_floating_margin.right))
-//			new_size.w = cnx->get_root_size().w
-//					- theme->get_theme_floating_margin.left
-//					- theme->get_theme_floating_margin.right;
-//		if (new_size.h
-//				> cnx->get_root_size().h
-//						- theme->get_theme_floating_margin.top
-//						- theme->get_theme_floating_margin.bottom)
-//			new_size.h = cnx->get_root_size().h
-//					- theme->get_theme_floating_margin.top
-//					- theme->get_theme_floating_margin.bottom;
-//
-//		unsigned int final_width = new_size.w;
-//		unsigned int final_height = new_size.h;
-//		compute_client_size_with_constraint(fw->orig(), (unsigned) new_size.w,
-//				(unsigned) new_size.h, final_width, final_height);
-//		new_size.w = final_width;
-//		new_size.h = final_height;
-//
-//		fw->set_wished_position(new_size);
-//		fw->normalize();
-//
-//		if (x->is_fullscreen()) {
-//			fullscreen(fw);
-//		} else {
-//			fw->reconfigure();
-//		}
-//
-//	} else if (type == PAGE_DOCK_TYPE) {
-//		/** track positions and struct change **/
-//		x->select_input(StructureNotifyMask | PropertyChangeMask);
-//	}
-//
-//	rpage->mark_durty();
-//	update_client_list();
-//
-//}
-
 
 /**
  * this function will check if a window must be managed or not.
@@ -4038,7 +3933,7 @@ viewport_t * page_t::find_mouse_viewport(int x, int y) {
  * @return: true if successfully find usertime, otherwise false.
  * @output time: if time is found time is set to the found value.
  * @input w: X11 Window ID.
- */
+ **/
 bool page_t::get_safe_net_wm_user_time(Window w, Time & time) {
 	/** TODO function **/
 	bool has_time = false;

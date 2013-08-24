@@ -385,6 +385,11 @@ public:
 
 	}
 
+
+	~xconnection_t() {
+		XCloseDisplay(dpy);
+	}
+
 	void grab() {
 		if (grab_count == 0) {
 			cnx_printf("XGrabServer\n");

@@ -273,7 +273,7 @@ private:
 
 	box_t<int> _root_position;
 
-	list<box_any_t *> page_areas;
+	vector<box_page_event_t> * page_areas;
 
 public:
 
@@ -505,16 +505,30 @@ public:
 
 	void update_page_areas() {
 
-		for(list<box_any_t *>::iterator i = page_areas.begin(); i != page_areas.end(); ++i) {
-			delete *i;
+		if (page_areas != 0) {
+			delete page_areas;
 		}
-		page_areas.clear();
 
 		list<tree_t *> xl = childs();
 		list<tree_t const *> l(xl.begin(), xl.end());
-		page_areas = theme->compute_page_areas(list<tree_t const *>(xl.begin(), xl.end()));
+		page_areas = theme->compute_page_areas(
+				list<tree_t const *>(xl.begin(), xl.end()));
 
 	}
+
+	static managed_window_t * _upgrade(managed_window_base_t const * x) {
+		return dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(x));
+	}
+
+	static notebook_t * _upgrade(notebook_base_t const * x) {
+		return dynamic_cast<notebook_t *>(const_cast<notebook_base_t *>(x));
+	}
+
+	static split_t * _upgrade(split_base_t const * x) {
+		return dynamic_cast<split_t *>(const_cast<split_base_t *>(x));
+	}
+
+
 
 };
 

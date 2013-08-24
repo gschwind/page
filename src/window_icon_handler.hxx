@@ -15,8 +15,6 @@
 namespace page {
 
 class window_icon_handler_t {
-	/* icon data */
-	icon_t icon;
 	/* icon surface */
 	cairo_surface_t * icon_surf;
 

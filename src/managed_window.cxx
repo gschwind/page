@@ -13,17 +13,41 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
-		Atom net_wm_type, Window orig, XWindowAttributes const & wa, theme_t const * theme) : cnx(cnx) {
+managed_window_t::managed_window_t(xconnection_t * cnx,
+		managed_window_type_e initial_type, Atom net_wm_type, Window orig,
+		XWindowAttributes const & wa, theme_t const * theme) :
+
+_theme(theme),
+_type(initial_type),
+_net_wm_type(net_wm_type),
+_floating_wished_position(),
+_notebook_wished_position(),
+_wished_position(),
+_orig_position(),
+_base_position(),
+_surf(0),
+_top_buffer(0),
+_bottom_buffer(0),
+_left_buffer(0),
+_right_buffer(0),
+_icon(0),
+_title(0),
+_cnx(cnx),
+_orig_visual(0),
+_orig_depth(-1),
+_deco_visual(0),
+_deco_depth(-1),
+_orig(None),
+_base(None),
+_deco(None),
+_floating_area(0),
+_is_durty(true),
+_is_focused(false)
+
+{
 
 	XWindowAttributes rwa;
 	XGetWindowAttributes(cnx->dpy, DefaultRootWindow(cnx->dpy), &rwa);
-
-	_net_wm_type = net_wm_type;
-
-	_is_durty = true;
-	_is_focused = false;
-	_title = 0;
 
 	_floating_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
 	_notebook_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
@@ -111,21 +135,9 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 	/* Grab button click */
 	grab_button_unfocused();
 
-	set_theme(theme);
-	init_managed_type(initial_type);
-
 	cnx->reparentwindow(_orig, _base, 0, 0);
 
 	_surf = cairo_xlib_surface_create(cnx->dpy, _deco, _deco_visual, b.w, b.h);
-	assert(_surf != 0);
-
-	_top_buffer = 0;
-	_bottom_buffer = 0;
-	_left_buffer = 0;
-	_right_buffer = 0;
-
-
-	_icon = 0;
 
 	reconfigure();
 
@@ -134,6 +146,18 @@ managed_window_t::managed_window_t(xconnection_t * cnx, managed_window_type_e in
 managed_window_t::~managed_window_t() {
 	if(_surf != 0) {
 		cairo_surface_destroy(_surf);
+	}
+
+	if(_icon != 0) {
+		delete _icon;
+	}
+
+	if(_title != 0) {
+		delete _title;
+	}
+
+	if (_floating_area != 0) {
+		delete _floating_area;
 	}
 }
 
@@ -175,9 +199,9 @@ void managed_window_t::reconfigure() {
 
 	}
 
-	cnx->move_resize(_base, _base_position);
-	cnx->move_resize(_deco, box_int_t(0, 0, _base_position.w, _base_position.h));
-	cnx->move_resize(_orig, _orig_position);
+	_cnx->move_resize(_base, _base_position);
+	_cnx->move_resize(_deco, box_int_t(0, 0, _base_position.w, _base_position.h));
+	_cnx->move_resize(_orig, _orig_position);
 
 	fake_configure();
 
@@ -189,19 +213,19 @@ void managed_window_t::reconfigure() {
 void managed_window_t::fake_configure() {
 	//printf("fake_reconfigure = %dx%d+%d+%d\n", _wished_position.w,
 	//		_wished_position.h, _wished_position.x, _wished_position.y);
-	cnx->fake_configure(_orig, _wished_position, 0);
+	_cnx->fake_configure(_orig, _wished_position, 0);
 }
 
 void managed_window_t::delete_window(Time t) {
 	XEvent ev;
-	ev.xclient.display = cnx->dpy;
+	ev.xclient.display = _cnx->dpy;
 	ev.xclient.type = ClientMessage;
 	ev.xclient.format = 32;
 	ev.xclient.message_type = A(WM_PROTOCOLS);
 	ev.xclient.window = _orig;
 	ev.xclient.data.l[0] = A(WM_DELETE_WINDOW);
 	ev.xclient.data.l[1] = t;
-	cnx->send_event(_orig, False, NoEventMask, &ev);
+	_cnx->send_event(_orig, False, NoEventMask, &ev);
 }
 
 bool managed_window_t::check_orig_position(box_int_t const & position) {
@@ -223,7 +247,7 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	list<Atom> net_wm_allowed_actions;
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
-	cnx->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
+	_cnx->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
 
 	_type = type;
 	reconfigure();
@@ -264,43 +288,50 @@ void managed_window_t::expose() {
 		cairo_t * _cr = cairo_create(_surf);
 
 		/** top **/
-		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0, 0, _base_position.w,
-				_theme->floating_margin.top);
-		cairo_set_source_surface(_cr, _top_buffer, 0, 0);
-		cairo_fill(_cr);
+		if (_top_buffer != 0) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0, 0, _base_position.w,
+					_theme->floating_margin.top);
+			cairo_set_source_surface(_cr, _top_buffer, 0, 0);
+			cairo_fill(_cr);
+		}
 
 		/** bottom **/
-		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0,
-				_base_position.h - _theme->floating_margin.bottom,
-				_base_position.w, _theme->floating_margin.bottom);
-		cairo_set_source_surface(_cr, _bottom_buffer, 0,
-				_base_position.h - _theme->floating_margin.bottom);
-		cairo_fill(_cr);
+		if (_bottom_buffer != 0) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0,
+					_base_position.h - _theme->floating_margin.bottom,
+					_base_position.w, _theme->floating_margin.bottom);
+			cairo_set_source_surface(_cr, _bottom_buffer, 0,
+					_base_position.h - _theme->floating_margin.bottom);
+			cairo_fill(_cr);
+		}
 
 		/** left **/
-		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr, 0.0, _theme->floating_margin.top,
-				_theme->floating_margin.left,
-				_base_position.h - _theme->floating_margin.top
-						- _theme->floating_margin.bottom);
-		cairo_set_source_surface(_cr, _left_buffer, 0.0,
-				_theme->floating_margin.top);
-		cairo_fill(_cr);
+		if (_left_buffer != 0) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0.0, _theme->floating_margin.top,
+					_theme->floating_margin.left,
+					_base_position.h - _theme->floating_margin.top
+							- _theme->floating_margin.bottom);
+			cairo_set_source_surface(_cr, _left_buffer, 0.0,
+					_theme->floating_margin.top);
+			cairo_fill(_cr);
+		}
 
 		/** right **/
-		cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(_cr,
-				_base_position.w - _theme->floating_margin.right,
-				_theme->floating_margin.top,
-				_theme->floating_margin.right,
-				_base_position.h - _theme->floating_margin.top
-						- _theme->floating_margin.bottom);
-		cairo_set_source_surface(_cr, _right_buffer,
-				_base_position.w - _theme->floating_margin.right,
-				_theme->floating_margin.top);
-		cairo_fill(_cr);
+		if (_right_buffer != 0) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr,
+					_base_position.w - _theme->floating_margin.right,
+					_theme->floating_margin.top, _theme->floating_margin.right,
+					_base_position.h - _theme->floating_margin.top
+							- _theme->floating_margin.bottom);
+			cairo_set_source_surface(_cr, _right_buffer,
+					_base_position.w - _theme->floating_margin.right,
+					_theme->floating_margin.top);
+			cairo_fill(_cr);
+		}
 
 		cairo_surface_flush(_surf);
 	}
@@ -311,28 +342,28 @@ void managed_window_t::icccm_focus(Time t) {
 
 	XWMHints hints;
 
-	if (cnx->read_wm_hints(_orig, &hints)) {
+	if (_cnx->read_wm_hints(_orig, &hints)) {
 		if (hints.input == True) {
-			cnx->set_input_focus(_orig, RevertToParent, t);
+			_cnx->set_input_focus(_orig, RevertToParent, t);
 		}
 	} else {
 		/** no WM_HINTS, guess hints.input == True **/
-		cnx->set_input_focus(_orig, RevertToParent, t);
+		_cnx->set_input_focus(_orig, RevertToParent, t);
 	}
 
 	list<Atom> protocols;
-	if (cnx->read_net_wm_protocols(_orig, &protocols)) {
+	if (_cnx->read_net_wm_protocols(_orig, &protocols)) {
 		if (::std::find(protocols.begin(), protocols.end(), A(WM_TAKE_FOCUS))
 				!= protocols.end()) {
 			XEvent ev;
-			ev.xclient.display = cnx->dpy;
+			ev.xclient.display = _cnx->dpy;
 			ev.xclient.type = ClientMessage;
 			ev.xclient.format = 32;
 			ev.xclient.message_type = A(WM_PROTOCOLS);
 			ev.xclient.window = _orig;
 			ev.xclient.data.l[0] = A(WM_TAKE_FOCUS);
 			ev.xclient.data.l[1] = t;
-			cnx->send_event(_orig, False, NoEventMask, &ev);
+			_cnx->send_event(_orig, False, NoEventMask, &ev);
 		}
 	}
 

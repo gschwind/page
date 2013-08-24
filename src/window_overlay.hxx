@@ -116,8 +116,8 @@ public:
 	}
 
 	virtual ~window_overlay_t() {
-		cairo_surface_destroy(_front_surf);
 		destroy_back_buffer();
+		cairo_surface_destroy(_front_surf);
 		XDestroyWindow(_cnx->dpy, _wid);
 	}
 

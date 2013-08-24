@@ -26,7 +26,8 @@ struct popup_frame_move_t: public window_overlay_t {
 	}
 
 	~popup_frame_move_t() {
-
+		if (icon != 0)
+			delete icon;
 	}
 
 	void update_window(Window w, string title) {
@@ -45,7 +46,8 @@ struct popup_frame_move_t: public window_overlay_t {
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_fill(cr);
 
-		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h, title);
+		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h,
+				title);
 
 		cairo_destroy(cr);
 
