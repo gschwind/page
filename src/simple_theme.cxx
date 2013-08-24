@@ -71,9 +71,9 @@ inline string get_value_string(GKeyFile * conf, string const & group, string con
 simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
 	notebook_margin.top = 26;
-	notebook_margin.bottom = 6;
-	notebook_margin.left = 6;
-	notebook_margin.right = 6;
+	notebook_margin.bottom = 2;
+	notebook_margin.left = 2;
+	notebook_margin.right = 2;
 
 	split_margin.top = 0;
 	split_margin.bottom = 0;
@@ -85,7 +85,7 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	floating_margin.left = 8;
 	floating_margin.right = 8;
 
-	split_width = 8;
+	split_width = 14;
 
 	_cnx = cnx;
 
@@ -411,14 +411,14 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 				/** top right **/
 				cairo_line_to(cr, n->allocation().x + n->allocation().w - 1.0,
 						b.y + b.h + 1.0);
-//				/** right **/
-//				cairo_move_to(cr, n->allocation().x + n->allocation().w - 1.0,
-//						n->allocation().y + n->allocation().h - 1.0);
-//				/** bottom **/
-//				cairo_move_to(cr, n->allocation().x + 1.0,
-//						n->allocation().y + n->allocation().h - 1.0);
-//				/** left **/
-//				cairo_move_to(cr, n->allocation().x + 1.0, b.y + b.h + 1.0);
+				/** right **/
+				cairo_line_to(cr, n->allocation().x + n->allocation().w - 1.0,
+						n->allocation().y + n->allocation().h - 1.0);
+				/** bottom **/
+				cairo_line_to(cr, n->allocation().x + 1.0,
+						n->allocation().y + n->allocation().h - 1.0);
+				/** left **/
+				cairo_line_to(cr, n->allocation().x + 1.0, b.y + b.h + 1.0);
 
 				selected_path = cairo_copy_path(cr);
 			} else {
@@ -436,14 +436,14 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 				/** top right **/
 				cairo_line_to(cr, n->allocation().x + n->allocation().w - 0.5,
 						b.y + b.h + 0.5);
-//				/** right **/
-//				cairo_move_to(cr, n->allocation().x + n->allocation().w - 0.5,
-//						n->allocation().y + n->allocation().h - 0.5);
-//				/** bottom **/
-//				cairo_move_to(cr, n->allocation().x + 0.5,
-//						n->allocation().y + n->allocation().h - 0.5);
-//				/** left **/
-//				cairo_move_to(cr, n->allocation().x + 0.5, b.y + b.h + 0.5);
+				/** right **/
+				cairo_line_to(cr, n->allocation().x + n->allocation().w - 0.5,
+						n->allocation().y + n->allocation().h - 0.5);
+				/** bottom **/
+				cairo_line_to(cr, n->allocation().x + 0.5,
+						n->allocation().y + n->allocation().h - 0.5);
+				/** left **/
+				cairo_line_to(cr, n->allocation().x + 0.5, b.y + b.h + 0.5);
 
 
 				selected_path = cairo_copy_path(cr);
@@ -609,7 +609,7 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 				n->allocation());
 
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-		if (/** TODO: is_default **/false) {
+		if (n->is_default()) {
 			cairo_set_source_surface(cr, pops_button_s, b.x, b.y);
 		} else {
 			cairo_set_source_surface(cr, pop_button_s, b.x, b.y);

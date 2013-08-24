@@ -25,6 +25,8 @@ class notebook_t : public notebook_base_t, public tree_renderable_t {
 
 	theme_t const * _theme;
 
+	bool _is_default;
+
 public:
 
 	enum select_e {
@@ -140,6 +142,14 @@ public:
 
 	virtual void render(cairo_t * cr, box_t<int> const & area) const {
 		_theme->render_notebook(cr, this, area);
+	}
+
+	virtual bool is_default() const {
+		return _is_default;
+	}
+
+	void set_default(bool x) {
+		_is_default = x;
 	}
 
 };

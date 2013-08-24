@@ -236,6 +236,9 @@ void page_t::run() {
 	if(default_window_pop == 0)
 		throw std::runtime_error("very bad error");
 
+	if(default_window_pop != 0)
+		default_window_pop->set_default(true);
+
 	update_net_supported();
 
 	/* update number of desktop */
@@ -1095,7 +1098,13 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
+						if(default_window_pop != 0) {
+							default_window_pop->set_default(false);
+							rpage->add_damaged(default_window_pop->allocation());
+						}
 						default_window_pop = mode_data_notebook.from;
+						default_window_pop->set_default(true);
+						rpage->add_damaged(default_window_pop->allocation());
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 						mode_data_notebook.c->delete_window(e.time);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
@@ -2497,7 +2506,13 @@ void page_t::update_allocation() {
 }
 
 void page_t::set_default_pop(notebook_t * x) {
+	if(default_window_pop != 0) {
+		default_window_pop->set_default(false);
+		rpage->add_damaged(default_window_pop->allocation());
+	}
 	default_window_pop = x;
+	default_window_pop->set_default(true);
+	rpage->add_damaged(default_window_pop->allocation());
 }
 
 void page_t::set_focus(managed_window_t * focus, Time tfocus) {
@@ -2619,6 +2634,8 @@ void page_t::notebook_close(notebook_t * src) {
 	if (default_window_pop == src) {
 		/* if notebook list is empty we probably did something wrong */
 		default_window_pop = get_another_notebook(src);
+		default_window_pop->set_default(true);
+		rpage->add_damaged(default_window_pop->allocation());
 		/* put it back temporary since destroy will remove it */
 	}
 
@@ -3499,6 +3516,8 @@ void  page_t::destroy_viewport(viewport_t * v) {
 			++i) {
 		if (default_window_pop == *i)
 			default_window_pop = get_another_notebook(*i);
+		default_window_pop->set_default(true);
+		rpage->add_damaged(default_window_pop->allocation());
 		list<managed_window_t *> lc = (*i)->get_clients();
 		for (list<managed_window_t *>::iterator i = lc.begin();
 				i != lc.end(); ++i) {

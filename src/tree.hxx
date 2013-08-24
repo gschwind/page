@@ -53,6 +53,7 @@ struct notebook_base_t : public tree_t {
 	virtual ~notebook_base_t() { }
 	virtual list<managed_window_base_t const *> clients() const = 0;
 	virtual managed_window_base_t const * selected() const = 0;
+	virtual bool is_default() const = 0;
 };
 
 struct split_base_t : public tree_t {
