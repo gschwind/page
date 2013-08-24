@@ -396,6 +396,10 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 		if (c == n->selected()) {
 
+			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.7);
+			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+			cairo_fill(cr);
+
 			if (has_focuced_client) {
 				cairo_new_path(cr);
 
@@ -686,9 +690,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_fill(cr);
 
-//			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.2);
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
+			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.7);
+			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+			cairo_fill(cr);
 
 		}
 
@@ -706,9 +710,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_fill(cr);
 
-//			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.2);
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
+			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.7);
+			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+			cairo_fill(cr);
 
 		}
 
@@ -725,9 +729,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_fill(cr);
 
-//			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.2);
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
+			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.7);
+			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+			cairo_fill(cr);
 
 		}
 
@@ -745,9 +749,9 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 			cairo_fill(cr);
 
-//			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.2);
-//			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-//			cairo_fill(cr);
+			cairo_set_source_rgba(cr, c_selected_bg.r, c_selected_bg.g, c_selected_bg.b, 0.7);
+			cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+			cairo_fill(cr);
 
 		}
 
