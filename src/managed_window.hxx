@@ -71,7 +71,7 @@ private:
 	Window _base;
 	Window _deco;
 
-	vector<box_floating_event_t> * _floating_area;
+	vector<floating_event_t> * _floating_area;
 
 	bool _is_durty;
 
@@ -429,7 +429,7 @@ public:
 
 	}
 
-	vector<box_floating_event_t> const * floating_areas() {
+	vector<floating_event_t> const * floating_areas() {
 		return _floating_area;
 	}
 

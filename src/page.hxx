@@ -273,7 +273,7 @@ private:
 
 	box_t<int> _root_position;
 
-	vector<box_page_event_t> * page_areas;
+	vector<page_event_t> * page_areas;
 
 public:
 

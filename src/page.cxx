@@ -160,6 +160,10 @@ page_t::~page_t() {
 	}
 	unmanaged_window.clear();
 
+	if(page_areas != 0) {
+		delete page_areas;
+	}
+
 	delete cnx;
 
 }
@@ -706,8 +710,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 			update_page_areas();
 
-			box_page_event_t * b;
-			for (vector<box_page_event_t>::iterator i = page_areas->begin();
+			page_event_t * b;
+			for (vector<page_event_t>::iterator i = page_areas->begin();
 					i != page_areas->end(); ++i) {
 				//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
 				if ((*i).position.is_inside(e.x, e.y)) {
@@ -718,7 +722,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 			if (b != 0) {
 
-				if (b->type == THEME_NOTEBOOK_CLIENT) {
+				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
 					mode_data_notebook.c = _upgrade(b->clt);
 					mode_data_notebook.from = _upgrade(b->nbk);
@@ -732,38 +736,38 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 					set_focus(mode_data_notebook.c, e.time);
 					rpage->repair_notebook_border(mode_data_notebook.from);
-				} else if (b->type == THEME_NOTEBOOK_CLOSE) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-				} else if (b->type == THEME_NOTEBOOK_HSPLIT) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-				} else if (b->type == THEME_NOTEBOOK_VSPLIT) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-				} else if (b->type == THEME_NOTEBOOK_MARK) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-				} else if (b->type == THEME_NOTEBOOK_CLIENT_CLOSE) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = _upgrade(b->clt);
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
-				} else if (b->type == THEME_NOTEBOOK_CLIENT_UNBIND) {
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = _upgrade(b->clt);
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
 
-				} else if (b->type == THEME_SPLIT) {
+				} else if (b->type == PAGE_EVENT_SPLIT) {
 
 					process_mode = PROCESS_SPLIT_GRAB;
 
@@ -813,10 +817,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					and e.subwindow != mw->orig()) {
 
 				mw->update_floating_areas();
-				vector<box_floating_event_t> const * l = mw->floating_areas();
+				vector<floating_event_t> const * l = mw->floating_areas();
 
-				box_floating_event_t const * b = 0;
-				for (vector<box_floating_event_t>::const_iterator i = l->begin();
+				floating_event_t const * b = 0;
+				for (vector<floating_event_t>::const_iterator i = l->begin();
 						i != l->end(); ++i) {
 					//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
 					if((*i).position.is_inside(e.x, e.y)) {
@@ -837,12 +841,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.final_position = mw->get_floating_wished_position();
 					mode_data_floating.popup_original_position = mw->get_base_position();
 
-					if (b->type == THEME_FLOATING_CLOSE) {
+					if (b->type == FLOATING_EVENT_CLOSE) {
 
 						mode_data_floating.f = mw;
 						process_mode = PROCESS_FLOATING_CLOSE;
 
-					} else if (b->type == THEME_FLOATING_BIND) {
+					} else if (b->type == FLOATING_EVENT_BIND) {
 
 						mode_data_bind.c = mw;
 						mode_data_bind.ns = 0;
@@ -853,7 +857,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 						process_mode = PROCESS_FLOATING_BIND;
 
-					} else if (b->type == THEME_FLOATING_TITLE) {
+					} else if (b->type == FLOATING_EVENT_TITLE) {
 
 						pfm->move_resize(mw->get_base_position());
 						pfm->update_window(mw->orig(), mw->title());
@@ -867,28 +871,28 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						pfm->update_window(mw->orig(), mw->title());
 						pfm->show();
 
-						if (b->type == THEME_FLOATING_GRIP_TOP) {
+						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP;
-						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM) {
+						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM;
-						} else if (b->type == THEME_FLOATING_GRIP_LEFT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_LEFT;
-						} else if (b->type == THEME_FLOATING_GRIP_RIGHT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_RIGHT;
-						} else if (b->type == THEME_FLOATING_GRIP_TOP_LEFT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-						} else if (b->type == THEME_FLOATING_GRIP_TOP_RIGHT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM_LEFT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-						} else if (b->type == THEME_FLOATING_GRIP_BOTTOM_RIGHT) {
+						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 						} else {
@@ -1067,8 +1071,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			process_mode = PROCESS_NORMAL;
 
 			{
-				box_page_event_t * b = 0;
-				for (vector<box_page_event_t>::iterator i = page_areas->begin();
+				page_event_t * b = 0;
+				for (vector<page_event_t>::iterator i = page_areas->begin();
 						i != page_areas->end(); ++i) {
 					if ((*i).position.is_inside(e.x, e.y)) {
 						b = &(*i);
@@ -1077,21 +1081,21 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				}
 
 				if (b != 0) {
-					if (b->type == THEME_NOTEBOOK_CLIENT) {
+					if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 						/** do noting **/
-					} else if (b->type == THEME_NOTEBOOK_CLOSE) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 						notebook_close(mode_data_notebook.from);
-					} else if (b->type == THEME_NOTEBOOK_HSPLIT) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
 						split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-					} else if (b->type == THEME_NOTEBOOK_VSPLIT) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
-					} else if (b->type == THEME_NOTEBOOK_MARK) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 						default_window_pop = mode_data_notebook.from;
-					} else if (b->type == THEME_NOTEBOOK_CLIENT_CLOSE) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 						mode_data_notebook.c->delete_window(e.time);
-					} else if (b->type == THEME_NOTEBOOK_CLIENT_UNBIND) {
+					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 						unbind_window(mode_data_notebook.c);
-					} else if (b->type == THEME_SPLIT) {
+					} else if (b->type == PAGE_EVENT_SPLIT) {
 						/** do nothing **/
 					}
 				}

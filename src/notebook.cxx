@@ -141,7 +141,6 @@ void notebook_t::select_next() {
 }
 
 void notebook_t::set_selected(managed_window_t * c) {
-	assert(std::find(_clients.begin(), _clients.end(), c) != _clients.end());
 	update_client_position(c);
 	c->normalize();
 
@@ -218,19 +217,6 @@ void notebook_t::set_allocation(box_int_t const & area) {
 
 	tree_t::set_allocation(area);
 
-	int number_of_client = _clients.size();
-	int selected_index = -1;
-
-	if(!_selected.empty()) {
-		list<managed_window_t *>::iterator i = find(_clients.begin(), _clients.end(), _selected.front());
-		selected_index = distance(_clients.begin(), i);
-	}
-
-//	button_close = _theme->compute_notebook_close_position(allocation(), number_of_client, selected_index);
-//	button_vsplit = _theme->compute_notebook_vsplit_position(allocation(), number_of_client, selected_index);
-//	button_hsplit = _theme->compute_notebook_hsplit_position(allocation(), number_of_client, selected_index);
-//	button_pop = _theme->compute_notebook_bookmark_position(allocation(), number_of_client, selected_index);
-
 	tab_area.x = allocation().x;
 	tab_area.y = allocation().y;
 	tab_area.w = allocation().w;
@@ -286,9 +272,6 @@ void notebook_t::set_allocation(box_int_t const & area) {
 	client_area.y = allocation().y + _theme->notebook_margin.top;
 	client_area.w = allocation().w - _theme->notebook_margin.left - _theme->notebook_margin.right;
 	client_area.h = allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom;
-
-//	printf("update client area xx %dx%d+%d+%d\n", client_area.w, client_area.h, client_area.x,
-//			client_area.y);
 
 	if (_selected.empty()) {
 		if (!_clients.empty()) {

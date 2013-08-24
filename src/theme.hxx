@@ -15,7 +15,8 @@
 #include <string>
 #include <vector>
 
-#include "tree_base.hxx"
+#include "floating_event.hxx"
+#include "page_event.hxx"
 #include "tree.hxx"
 
 using namespace std;
@@ -62,9 +63,9 @@ public:
 	virtual ~theme_t() {
 	}
 
-	virtual vector<box_page_event_t> * compute_page_areas(
+	virtual vector<page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const = 0;
-	virtual vector<box_floating_event_t> * compute_floating_areas(
+	virtual vector<floating_event_t> * compute_floating_areas(
 			managed_window_base_t * mw) const = 0;
 
 	virtual void render_split(cairo_t * cr, split_base_t const * s,

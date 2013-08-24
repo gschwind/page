@@ -120,14 +120,14 @@ public:
 	virtual void render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);
 
-	virtual vector<box_page_event_t> * compute_page_areas(
+	virtual vector<page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const;
-	virtual vector<box_floating_event_t> * compute_floating_areas(
+	virtual vector<floating_event_t> * compute_floating_areas(
 			managed_window_base_t * mw) const;
 
 
 	void compute_areas_for_notebook(notebook_base_t const * n,
-			vector<box_page_event_t> * l) const;
+			vector<page_event_t> * l) const;
 
 	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;
