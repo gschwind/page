@@ -443,14 +443,11 @@ void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
-	Window base = mw->base();
-
 	if (mw->is(MANAGED_NOTEBOOK)) {
 		remove_window_from_tree(mw);
 	}
 
 	destroy_managed_window(mw);
-	XDestroyWindow(cnx->dpy, base);
 	update_client_list();
 }
 
