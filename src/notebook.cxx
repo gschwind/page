@@ -11,7 +11,7 @@
 namespace page {
 
 notebook_t::notebook_t(theme_t const * theme) : _theme(theme) {
-
+	_is_default = false;
 }
 
 notebook_t::~notebook_t() {
