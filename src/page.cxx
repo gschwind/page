@@ -744,7 +744,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 					set_focus(mode_data_notebook.c, e.time);
-					rpage->repair_notebook_border(mode_data_notebook.from);
+					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
@@ -943,7 +943,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				pn0->update_window(mw->orig(), mw->title());
 
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
-				rpage->repair_notebook_border(mode_data_notebook.from);
+				rpage->add_damaged(mode_data_notebook.from->allocation());
 
 			}
 		}
@@ -1054,18 +1054,18 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			}
 
-			/* Automatically close empty notebook */
-			if (mode_data_notebook.from->_clients.empty()
-					&& mode_data_notebook.from->parent() != 0) {
-				notebook_close(mode_data_notebook.from);
-				update_allocation();
-			}
+			/* Automatically close empty notebook (disabled) */
+//			if (mode_data_notebook.from->_clients.empty()
+//					&& mode_data_notebook.from->parent() != 0) {
+//				notebook_close(mode_data_notebook.from);
+//				update_allocation();
+//			}
 
 			set_focus(mode_data_notebook.c, e.time);
 			if (mode_data_notebook.from != 0)
-				rpage->repair_notebook_border(mode_data_notebook.from);
+				rpage->add_damaged(mode_data_notebook.from->allocation());
 			if (mode_data_notebook.ns != 0)
-				rpage->repair_notebook_border(mode_data_notebook.ns);
+				rpage->add_damaged(mode_data_notebook.ns->allocation());
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -1202,7 +1202,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 						true);
 
 				safe_raise_window(mode_data_bind.c->orig());
-				rpage->repair_notebook_border(mode_data_bind.ns);
+				rpage->add_damaged(mode_data_bind.ns->allocation());
 				update_client_list();
 
 			} else if (mode_data_bind.zone == SELECT_TOP
@@ -1974,7 +1974,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				notebook_t * n = find_notebook_for(mw);
-				rpage->repair_notebook_border(n);
+				rpage->add_damaged(n->allocation());
 			}
 
 			if (mw->is(MANAGED_FLOATING)) {
@@ -2459,7 +2459,7 @@ void page_t::activate_client(managed_window_t * x, Time t) {
 		n->activate_client(x);
 		XFlush(cnx->dpy);
 		set_focus(x, t);
-		rpage->repair_notebook_border(n);
+		rpage->add_damaged(n->allocation());
 	} else {
 		/* floating window or fullscreen window */
 		set_focus(x, t);
@@ -2475,7 +2475,7 @@ void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool pr
 	assert(n != 0);
 	n->add_client(x, prefer_activate);
 
-	rpage->repair_notebook_border(n);
+	rpage->add_damaged(n->allocation());
 
 }
 
@@ -2483,7 +2483,7 @@ void page_t::remove_window_from_tree(managed_window_t * x) {
 	assert(find_notebook_for(x) != 0);
 	notebook_t * n = find_notebook_for(x);
 	n->remove_client(x);
-	rpage->repair_notebook_border(n);
+	rpage->add_damaged(n->allocation());
 }
 
 void page_t::iconify_client(managed_window_t * x) {
@@ -2531,7 +2531,7 @@ void page_t::set_focus(managed_window_t * focus, Time tfocus) {
 		if (current_focus->is(MANAGED_NOTEBOOK)) {
 			notebook_t * n = find_notebook_for(current_focus);
 			if (n != 0) {
-				rpage->repair_notebook_border(n);
+				rpage->add_damaged(n->allocation());
 			}
 		}
 	}
@@ -3673,22 +3673,22 @@ bool page_t::onmap(Window w) {
 void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const & wa) {
 
 	managed_window_t * mw;
-	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& !cnx->read_wm_transient_for(w)) {
-
-		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
-		insert_window_in_tree(mw, 0, true);
-
-
-		/** TODO function **/
-		Time time = 0;
-		if(get_safe_net_wm_user_time(w, time)) {
-			activate_client(mw, time);
-			set_focus(mw, time);
-		}
-
-	} else {
+//	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+//			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+//			&& !cnx->read_wm_transient_for(w)) {
+//
+//		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
+//		insert_window_in_tree(mw, 0, true);
+//
+//
+//		/** TODO function **/
+//		Time time = 0;
+//		if(get_safe_net_wm_user_time(w, time)) {
+//			activate_client(mw, time);
+//			set_focus(mw, time);
+//		}
+//
+//	} else {
 		mw = manage(MANAGED_FLOATING, type, w, wa);
 		mw->normalize();
 
@@ -3696,10 +3696,10 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time);
 		}
-
-
-
-	}
+//
+//
+//
+//	}
 
 	if (mw->is_fullscreen()) {
 		fullscreen(mw);
