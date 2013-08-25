@@ -45,35 +45,36 @@ public:
 
 	cairo_surface_t * background_s;
 
-	color_t grey0;
-	color_t grey1;
-	color_t grey2;
-	color_t grey3;
-	color_t grey5;
+	color_t default_background_color;
 
-	color_t plum0;
-	color_t plum1;
-	color_t plum2;
+	color_t popup_text_color;
+	color_t popup_outline_color;
+	color_t popup_background_color;
 
-	color_t c_selected1;
-	color_t c_selected2;
+	color_t notebook_active_text_color;
+	color_t notebook_active_outline_color;
+	color_t notebook_active_border_color;
+	color_t notebook_active_background_color;
 
-	color_t c_selected_highlight1;
-	color_t c_selected_highlight2;
+	color_t notebook_selected_text_color;
+	color_t notebook_selected_outline_color;
+	color_t notebook_selected_border_color;
+	color_t notebook_selected_background_color;
 
-	color_t c_normal1;
-	color_t c_normal2;
+	color_t notebook_normal_text_color;
+	color_t notebook_normal_outline_color;
+	color_t notebook_normal_border_color;
+	color_t notebook_normal_background_color;
 
-	color_t c_tab_boder_highlight;
-	color_t c_tab_boder_normal;
+	color_t floating_active_text_color;
+	color_t floating_active_outline_color;
+	color_t floating_active_border_color;
+	color_t floating_active_background_color;
 
-	color_t c_tab_selected_background;
-	color_t c_tab_normal_background;
-
-	color_t color_font;
-	color_t color_font_selected;
-
-	color_t popup_color;
+	color_t floating_normal_text_color;
+	color_t floating_normal_outline_color;
+	color_t floating_normal_border_color;
+	color_t floating_normal_background_color;
 
 	bool has_background;
 	string background_file;
@@ -114,6 +115,34 @@ public:
 	virtual void render_split(cairo_t * cr, split_base_t const * s, box_int_t const & area) const;
 	virtual void render_floating(managed_window_base_t * mw) const;
 
+
+	void render_notebook_selected(
+			cairo_t * cr,
+			page_event_t const & data,
+			color_t const & text_color,
+			color_t const & outline_color,
+			color_t const & border_color,
+			color_t const & background_color,
+			double border_width
+	) const;
+
+	void render_notebook_normal(
+			cairo_t * cr,
+			page_event_t const & data,
+			color_t const & text_color,
+			color_t const & outline_color,
+			color_t const & border_color,
+			color_t const & background_color
+	) const;
+
+	void render_floating_base(
+			managed_window_base_t * mw,
+			color_t const & text_color,
+			color_t const & outline_color,
+			color_t const & border_color,
+			color_t const & background_color,
+			double border_width
+	) const;
 
 	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title);

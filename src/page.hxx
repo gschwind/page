@@ -266,8 +266,6 @@ public:
 	notebook_t * default_window_pop;
 
 	string page_base_dir;
-	string font;
-	string font_bold;
 
 	map<Window, list<Window> > transient_for_tree;
 

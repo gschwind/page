@@ -115,10 +115,6 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	page_base_dir = conf.get_string("default", "theme_dir");
 
-	font = conf.get_string("default", "font_file");
-
-	font_bold = conf.get_string("default", "font_bold_file");
-
 	_last_focus_time = 0;
 	_last_button_press = 0;
 

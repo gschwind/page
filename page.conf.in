@@ -2,43 +2,80 @@
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
 
-font_file=@prefix@/share/page/data/DejaVuSans.ttf
-font_bold_file=@prefix@/share/page/data/DejaVuSans-Bold.ttf
-
-menu_opacity = 1.0
-
 [simple_theme]
 
-grey0 = eeeeec
-grey1 = d3d7cf
-grey2 = babdb6
-grey3 = 888a85
-grey5 = 2e3436
-
-plum0 = ad7fa8
-plum1 = 75507b
-plum2 = 5c3566
-
-selected1 = ffffff
-selected2 = 000000
-
-selected_highlight1 = ffffff
-selected_highlight2 = 000000
-
-normal1 = ffffff
-normal2 = 000000
-
-tab_boder_highlight = d3d7cf
-tab_boder_normal = babdb6
-
-tab_selected_background = d3d7cf
-tab_normal_background = 000000
+# set background image (optional)
+#
+#background_png=/home/user/pictures/1361665890_96572.png
 
 #possible mode are : *tile, zoom, center, scale, stretch, span (==scale)
-scale_mode = stretch
+scale_mode=zoom
 
-pango_font=Sans Bold 10
-pango_popup_font=Sans Bold 20
+pango_font = Ubuntu Bold 10
+pango_popup_font = Ubuntu Bold 20
 
-popup_color = ff0000
+# color used when no backgroun imgage is set.
+default_background_color = 000000
+
+# popup colors
+popup_text_color = FFFFFF
+popup_outline_color = 000000
+popup_background_color = 8ae234
+
+# active notebook is the notebook that have the focus.
+#
+# active notebook text color.
+notebook_active_text_color         = FFFFFF
+# active notebook text outline color
+notebook_active_outline_color      = c4a000
+# active notebook color border
+notebook_active_border_color       = FF0000
+# active notebook background
+notebook_active_background_color   = DDFF0000
+
+# selected notebook is the notebook currently selected for a group of notebook
+# but that do not have the focus.
+#
+# selected notebook (not active one) title text color
+notebook_selected_text_color       = FFFFFF
+# selected notebook (not active one) title text outline color
+notebook_selected_outline_color    = 3A5885
+# selected notebook (not active one) border color
+notebook_selected_border_color     = 3DADD6
+# selected notebook (not active one) background
+notebook_selected_background_color = 883DADD6
+
+# inactive notebook are all not active and not selected notebook.
+#
+# inactive notebook text color
+notebook_normal_text_color = FFFFFF
+# inactive notebook text outline color
+notebook_normal_outline_color = 3A5885
+# inactive notebook border color.
+notebook_normal_border_color = 729fcf
+# inactive notebook text background
+notebook_normal_background_color = 88204a87
+
+
+# active floating window.
+#
+# active floating text color.
+floating_active_text_color         = FFFFFF
+# active floating text outline color
+floating_active_outline_color      = FF0000
+# active floating color border
+floating_active_border_color       = ef2929
+# active floating background
+floating_active_background_color   = a40000
+
+# inactive floating.
+#
+# inactive floating text color
+floating_normal_text_color = FFFFFF
+# inactive floating text outline color
+floating_normal_outline_color = 3A5885
+# inactive floating border color.
+floating_normal_border_color = 729fcf
+# inactive floating text background
+floating_normal_background_color = 204a87
 
