@@ -2456,11 +2456,11 @@ void page_t::activate_client(managed_window_t * x, Time t) {
 	if (n != 0) {
 		n->activate_client(x);
 		XFlush(cnx->dpy);
-		set_focus(x, t);
+		//set_focus(x, t);
 		rpage->add_damaged(n->allocation());
 	} else {
 		/* floating window or fullscreen window */
-		set_focus(x, t);
+		//set_focus(x, t);
 		//rnd->add_damage_area(x->get_base_position());
 	}
 }
@@ -2651,7 +2651,7 @@ void page_t::notebook_close(notebook_t * src) {
 	/* remove this split from tree */
 	ths->parent()->replace(ths, dst);
 
-	rpage->add_damaged(ths->parent()->allocation());
+	rpage->add_damaged(ths->allocation());
 
 	/* cleanup */
 	destroy(src);
