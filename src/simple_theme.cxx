@@ -21,6 +21,10 @@ inline void cairo_set_source_rgba(cairo_t * cr, color_t const & color) {
 	::cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 }
 
+inline void cairo_set_source_rgb(cairo_t * cr, color_t const & color) {
+	::cairo_set_source_rgba(cr, color.r, color.g, color.b, 1.0);
+}
+
 box_int_t simple_theme_t::compute_notebook_bookmark_position(
 		box_int_t const & allocation) const {
 	return box_int_t(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
@@ -162,8 +166,10 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	bind_button_s = 0;
 
 	has_background = conf.has_key("simple_theme", "background_png");
-	background_file = conf.get_string("simple_theme", "background_png");
+	if(has_background)
+		background_file = conf.get_string("simple_theme", "background_png");
 	scale_mode = "center";
+
 	if(conf.has_key("simple_theme", "scale_mode"))
 		scale_mode = conf.get_string("simple_theme", "scale_mode");
 
@@ -416,6 +422,8 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	}
 
+	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+
 	{
 		box_int_t b = compute_notebook_bookmark_position(n->allocation());
 
@@ -513,11 +521,9 @@ void simple_theme_t::render_notebook_selected(
 
 	/** draw the tab background **/
 	box_int_t b = tab_area;
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(cr, background_color);
 	cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 	cairo_fill(cr);
-
 
 	/** draw application icon **/
 	box_int_t bicon = tab_area;
@@ -530,14 +536,11 @@ void simple_theme_t::render_notebook_selected(
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if ((c)->icon() != 0) {
 		if ((c)->icon()->get_cairo_surface() != 0) {
+			::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 			cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 			cairo_set_source_surface(cr, (c)->icon()->get_cairo_surface(),
 					bicon.x, bicon.y);
-			if (c == n->selected()) {
-				cairo_paint_with_alpha(cr, 1.0);
-			} else {
-				cairo_paint_with_alpha(cr, 1.0);
-			}
+			cairo_fill(cr);
 		}
 	}
 	cairo_restore(cr);
@@ -580,9 +583,10 @@ void simple_theme_t::render_notebook_selected(
 	ncclose.w = 16;
 	ncclose.h = 16;
 
+	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 	cairo_rectangle(cr, ncclose.x, ncclose.y, ncclose.w, ncclose.h);
 	cairo_set_source_surface(cr, close_button_s, ncclose.x, ncclose.y);
-	cairo_paint(cr);
+	cairo_fill(cr);
 
 	/** draw unbind button **/
 	box_t<int> ncub;
@@ -591,9 +595,10 @@ void simple_theme_t::render_notebook_selected(
 	ncub.w = 16;
 	ncub.h = 16;
 
+	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 	cairo_rectangle(cr, ncub.x, ncub.y, ncub.w, ncub.h);
 	cairo_set_source_surface(cr, unbind_button_s, ncub.x, ncub.y);
-	cairo_paint(cr);
+	cairo_fill(cr);
 
 	box_int_t area = n->allocation();
 	area.y += notebook_margin.top - 4;
@@ -685,6 +690,7 @@ void simple_theme_t::render_notebook_normal(
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if ((c)->icon() != 0) {
 		if ((c)->icon()->get_cairo_surface() != 0) {
+			::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 			cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 			cairo_set_source_surface(cr, (c)->icon()->get_cairo_surface(),
 					bicon.x, bicon.y);
@@ -811,6 +817,7 @@ void simple_theme_t::render_floating_base(
 
 		if (mw->icon() != 0) {
 			if (mw->icon()->get_cairo_surface() != 0) {
+				::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 				cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 				cairo_set_source_surface(cr,
 						mw->icon()->get_cairo_surface(), bicon.x, bicon.y);
@@ -819,11 +826,13 @@ void simple_theme_t::render_floating_base(
 		}
 
 		box_int_t bbind = compute_floating_bind_position(b);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, bbind.x, bbind.y, bbind.w, bbind.h);
 		cairo_set_source_surface(cr, bind_button_s, bbind.x, bbind.y);
 		cairo_paint(cr);
 
 		box_int_t bclose = compute_floating_close_position(b);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, bclose.x, bclose.y, bclose.w, bclose.h);
 		cairo_set_source_surface(cr, close_button_s, bclose.x, bclose.y);
 		cairo_paint(cr);
@@ -972,6 +981,7 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t 
 		double y_offset = (height - 64) / 2.0;
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
 		cairo_rectangle(cr, x_offset, y_offset, 64, 64);
 		cairo_fill(cr);
@@ -1101,7 +1111,7 @@ void simple_theme_t::create_background_img() {
 			if (scale_mode == "stretch") {
 				cairo_t * cr = cairo_create(background_s);
 
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 				cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 				cairo_fill(cr);
 
@@ -1117,7 +1127,7 @@ void simple_theme_t::create_background_img() {
 			} else if (scale_mode == "zoom") {
 				cairo_t * cr = cairo_create(background_s);
 
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 				cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 				cairo_fill(cr);
 
@@ -1157,7 +1167,7 @@ void simple_theme_t::create_background_img() {
 			} else if (scale_mode == "center") {
 				cairo_t * cr = cairo_create(background_s);
 
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 				cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 				cairo_fill(cr);
 
@@ -1176,7 +1186,7 @@ void simple_theme_t::create_background_img() {
 			} else if (scale_mode == "scale" || scale_mode == "span") {
 				cairo_t * cr = cairo_create(background_s);
 
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 				cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 				cairo_fill(cr);
 
@@ -1214,7 +1224,7 @@ void simple_theme_t::create_background_img() {
 			} else if (scale_mode == "tile") {
 
 				cairo_t * cr = cairo_create(background_s);
-				cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
+				::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5);
 				cairo_rectangle(cr, 0, 0, wa.width, wa.height);
 				cairo_fill(cr);
 

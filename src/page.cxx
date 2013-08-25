@@ -950,7 +950,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	if (process_mode == PROCESS_NORMAL) {
 
 		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
-		XFlush(cnx->dpy);
 
 		/**
 		 * This focus is anoying because, passive grab can the
@@ -963,6 +962,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		if (mw != 0) {
 			safe_raise_window(mw->orig());
 			set_focus(mw, e.time);
+
+			if (mw->is(MANAGED_NOTEBOOK)) {
+				notebook_t * n = find_notebook_for(mw);
+				rpage->add_damaged(n->allocation());
+			}
+
 		}
 
 //		fprintf(stderr,
@@ -3666,22 +3671,22 @@ bool page_t::onmap(Window w) {
 void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const & wa) {
 
 	managed_window_t * mw;
-//	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-//			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-//			&& !cnx->read_wm_transient_for(w)) {
-//
-//		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
-//		insert_window_in_tree(mw, 0, true);
-//
-//
-//		/** TODO function **/
-//		Time time = 0;
-//		if(get_safe_net_wm_user_time(w, time)) {
-//			activate_client(mw, time);
-//			set_focus(mw, time);
-//		}
-//
-//	} else {
+	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+			&& !cnx->read_wm_transient_for(w)) {
+
+		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
+		insert_window_in_tree(mw, 0, true);
+
+
+		/** TODO function **/
+		Time time = 0;
+		if(get_safe_net_wm_user_time(w, time)) {
+			activate_client(mw, time);
+			set_focus(mw, time);
+		}
+
+	} else {
 		mw = manage(MANAGED_FLOATING, type, w, wa);
 		mw->normalize();
 
@@ -3689,10 +3694,10 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time);
 		}
-//
-//
-//
-//	}
+
+
+
+	}
 
 	if (mw->is_fullscreen()) {
 		fullscreen(mw);
