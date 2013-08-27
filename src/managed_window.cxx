@@ -163,10 +163,10 @@ managed_window_t::~managed_window_t() {
 		delete _floating_area;
 	}
 
+	_cnx->unmap(_orig);
 	_cnx->reparentwindow(_orig, _cnx->get_root_window(), _wished_position.x,
 			_wished_position.y);
 	XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));
-	XMapWindow(_cnx->dpy, _orig);
 	XDestroyWindow(_cnx->dpy, _deco);
 	XDestroyWindow(_cnx->dpy, _base);
 

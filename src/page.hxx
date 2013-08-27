@@ -352,7 +352,6 @@ public:
 	void unmanage(managed_window_t * mw);
 
 	void remove_window_from_tree(managed_window_t * x);
-	void activate_client(managed_window_t * x, Time t);
 	void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
 	void iconify_client(managed_window_t * x);
 	void update_allocation();

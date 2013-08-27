@@ -145,7 +145,9 @@ page_t::~page_t() {
 
 	set<managed_window_t *>::iterator i = managed_window.begin();
 	while(i != managed_window.end()) {
+		Window orig = (*i)->orig();
 		delete *i;
+		XMapWindow(cnx->dpy, orig);
 		++i;
 	}
 	managed_window.clear();
@@ -412,17 +414,15 @@ managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, 
 }
 
 void page_t::unmanage(managed_window_t * mw) {
-//	printf("unamage\n");
 
-	if(mw == _client_focused.front()) {
+	printf("unmanage %lu\n", mw->orig());
+
+	if (mw == _client_focused.front()) {
 		_client_focused.remove(mw);
-		if(_client_focused.front() != 0) {
-			if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
-				Time t;
-				if (get_safe_net_wm_user_time(_client_focused.front()->orig(),
-						t)) {
-					activate_client(_client_focused.front(), t);
-				}
+		if (_client_focused.front() != 0) {
+			Time t;
+			if (get_safe_net_wm_user_time(_client_focused.front()->orig(), t)) {
+				set_focus(_client_focused.front(), t);
 			}
 		}
 
@@ -432,12 +432,6 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		unfullscreen(mw);
-		if(process_mode == PROCESS_FULLSCREEN_MOVE) {
-			process_mode = PROCESS_NORMAL;
-			pn0->hide();
-			mode_data_fullscreen.v = 0;
-			mode_data_fullscreen.mw = 0;
-		}
 	}
 
 	/* if window is in move/resize/notebook move, do cleanup */
@@ -678,13 +672,13 @@ void page_t::process_event(XKeyEvent const & e) {
 			set<managed_window_t *>::iterator x = managed_window.find(key_mode_data.selected);
 			if (x == managed_window.end()) {
 				key_mode_data.selected = *managed_window.begin();
-				activate_client(*managed_window.begin(), e.time);
+				set_focus(*managed_window.begin(), e.time);
 			} else {
 				++x;
 				if (x == managed_window.end()) {
-					activate_client(*managed_window.begin(), e.time);
+					set_focus(*managed_window.begin(), e.time);
 				} else {
-					activate_client(*x, e.time);
+					set_focus(*x, e.time);
 				}
 			}
 		}
@@ -734,8 +728,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->move_resize(mode_data_notebook.from->tab_area);
 					pn0->update_window(mode_data_notebook.c->orig(),
 							mode_data_notebook.c->title());
-
-					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 					set_focus(mode_data_notebook.c, e.time);
 					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
@@ -960,14 +952,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 //
 		managed_window_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
-			safe_raise_window(mw->orig());
 			set_focus(mw, e.time);
-
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				notebook_t * n = find_notebook_for(mw);
-				rpage->add_damaged(n->allocation());
-			}
-
 		}
 
 //		fprintf(stderr,
@@ -1638,88 +1623,14 @@ void page_t::process_event(XMotionEvent const & e) {
 
 void page_t::process_event(XCirculateEvent const & e) {
 
-
-// this will be handled in configure events
-//	Window w = e.window;
-//	std::map<Window, renderable_Window>::iterator x = window_to_renderable_context.find(w);
-//	if(x != window_to_renderable_context.end()) {
-//		if (e.place == PlaceOnTop) {
-//			rnd->raise(x->second);
-//		} else if (e.place == PlaceOnBottom) {
-//			rnd->lower(x->second);
-//		}
-//	}
 }
 
 void page_t::process_event(XConfigureEvent const & e) {
-//	printf("Configure %dx%d+%d+%d above:%lu, event:%lu, window:%lu, send_event: %s \n", e.width,
-//			e.height, e.x, e.y, e.above, e.event, e.window, (e.send_event == True)?"true":"false");
-//	if(e.send_event)
-//		return;
-//	if(e.override_redirect)
-//		return;
-//
-////	if(e.window == cnx->get_root_window()) {
-////		update_allocation();
-////		rpage->move_resize(cnx->get_root_size());
-////		return;
-////	}
-//
-//	Window w = e.window;
-//
-//	/* enforce the valid position */
-//	managed_window_t * mw = find_managed_window_with(e.window);
-//	if (mw != 0) {
-//		box_int_t x(e.x, e.y, e.width, e.height);
-//
-////		if(mw->orig() == w) {
-////			if(!mw->check_orig_position(x))
-////				mw->reconfigure();
-////		}
-////
-////		if(mw->base() == w) {
-////			if(!mw->check_base_position(x))
-////				mw->reconfigure();
-////		}
-//
-//		if(mw->is(MANAGED_FLOATING))
-//			theme->render_floating(mw, is_focussed(mw));
-//
-//	}
 
 }
 
 /* track all created window */
 void page_t::process_event(XCreateWindowEvent const & e) {
-////	printf("Create window %lu\n", e.window);
-//	/* Is-it fake event? */
-//	if (e.send_event == True)
-//		return;
-//
-//	//if(rnd != 0)
-//	//	rnd->process_event(e);
-//
-//	/* Does it come from root window */
-//	if (e.parent != cnx->get_root_window())
-//		return;
-//	if(e.window == cnx->get_root_window())
-//		return;
-//
-//	/* check for already created window, if the case that mean floating window */
-//	Window w = e.window;
-//
-//	cnx->grab();
-//
-//	if (!cnx->get_window_attributes(w)->is_valid) {
-//		cnx->ungrab();
-//		return;
-//	}
-//
-//	//w->add_select_input(PropertyChangeMask | StructureNotifyMask);
-//	update_transient_for(w);
-//	//w->default_position = w->get_size();
-//
-//	cnx->ungrab();
 
 }
 
@@ -1741,7 +1652,6 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	cleanup_transient_for_for_window(e.window);
 
 	update_client_list();
-	destroy(c);
 	rpage->mark_durty();
 
 }
@@ -1779,15 +1689,15 @@ void page_t::process_event(XReparentEvent const & e) {
 	if(e.window == cnx->get_root_window())
 		return;
 
-	/* TODO: track reparent */
-	//Window x = e.window;
-
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
 
 	Window x = e.window;
 
+	/**
+	 * Filter own unmap.
+	 **/
 	bool expected_event = cnx->find_pending_event(event_t(e.serial, e.type));
 	if (expected_event)
 		return;
@@ -1796,12 +1706,8 @@ void page_t::process_event(XUnmapEvent const & e) {
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 	if(mw != 0) {
-		cnx->reparentwindow(mw->orig(), cnx->get_root_window(), 0, 0);
 		unmanage(mw);
 	}
-
-	//x->set_managed(false);
-	//x->write_wm_state(WithdrawnState);
 
 	cleanup_transient_for_for_window(x);
 
@@ -2049,20 +1955,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	managed_window_t * mw = find_managed_window_with(e.window);
 
 	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
-		//printf("request to activate %lu\n", e.window);
-
 		if (mw != 0) {
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				Time t;
-				if (get_safe_net_wm_user_time(mw->orig(), t)) {
-					activate_client(mw, t);
-				}
-			}
-
-			if (mw->is(MANAGED_FLOATING)) {
-				mw->normalize();
-				//set_focus(mw, false);
-			}
+			set_focus(mw, e.data.l[1]);
 		}
 	} else if (e.message_type == A(_NET_WM_STATE)) {
 
@@ -2086,15 +1980,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			}
 		}
 	} else if (e.message_type == A(WM_CHANGE_STATE)) {
-		/* client should send this message to go iconic */
-		if (e.data.l[0] == IconicState) {
-			//printf("Set to iconic %lu\n", w);
-			if (mw != 0) {
-				if (mw->is(MANAGED_NOTEBOOK))
-					iconify_client (mw);
-			}
-		}
-
+		/** client currently cannot change the window state **/
 	} else if (e.message_type == A(PAGE_QUIT)) {
 		running = false;
 	} else if (e.message_type == A(WM_PROTOCOLS)) {
@@ -2449,22 +2335,6 @@ void page_t::process_event(XEvent const & e) {
 
 }
 
-void page_t::activate_client(managed_window_t * x, Time t) {
-	if(x == 0)
-		return;
-	notebook_t * n = find_notebook_for(x);
-	if (n != 0) {
-		n->activate_client(x);
-		XFlush(cnx->dpy);
-		//set_focus(x, t);
-		rpage->add_damaged(n->allocation());
-	} else {
-		/* floating window or fullscreen window */
-		//set_focus(x, t);
-		//rnd->add_damage_area(x->get_base_position());
-	}
-}
-
 void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate) {
 	assert(x != 0);
 	assert(find_notebook_for(x) == 0);
@@ -2478,8 +2348,8 @@ void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool pr
 }
 
 void page_t::remove_window_from_tree(managed_window_t * x) {
-	assert(find_notebook_for(x) != 0);
 	notebook_t * n = find_notebook_for(x);
+	assert(n != 0);
 	n->remove_client(x);
 	rpage->add_damaged(n->allocation());
 }
@@ -2513,41 +2383,72 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->add_damaged(default_window_pop->allocation());
 }
 
-void page_t::set_focus(managed_window_t * focus, Time tfocus) {
+void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
+
+	/** ignore focus if time is too old **/
+	if(tfocus <= _last_focus_time)
+		return;
 
 	_last_focus_time = tfocus;
 
-	managed_window_t * current_focus = 0;
+	managed_window_t * old_focus = 0;
 
-	if(!_client_focused.empty()) {
-		current_focus = _client_focused.front();
-	}
+	/** NULL pointer is always in the list **/
+	old_focus = _client_focused.front();
 
-	if (current_focus != 0) {
-		current_focus->set_focus_state(false);
+	if (old_focus != 0) {
+		/**
+		 * update _NET_WM_STATE and grab button mode and mark decoration
+		 * durty (for floating window only)
+		 **/
+		old_focus->set_focus_state(false);
 
-		if (current_focus->is(MANAGED_NOTEBOOK)) {
-			notebook_t * n = find_notebook_for(current_focus);
-			if (n != 0) {
-				rpage->add_damaged(n->allocation());
-			}
+		/**
+		 * if this is a notebook, mark the area for updates.
+		 **/
+		if (old_focus->is(MANAGED_NOTEBOOK)) {
+			notebook_t * n = find_notebook_for(old_focus);
+			assert(n != 0);
+			rpage->add_damaged(n->allocation());
 		}
 	}
 
-	if(focus == 0)
+	/**
+	 * put this managed window in front of list
+	 **/
+	_client_focused.remove(new_focus);
+	_client_focused.push_front(new_focus);
+
+	if(new_focus == 0)
 		return;
 
-	_client_focused.remove(focus);
-	_client_focused.push_front(focus);
+	/**
+	 * raise the newly focused window at top, in respect of transient for.
+	 **/
+	safe_raise_window(new_focus->orig());
 
-	safe_raise_window(focus->orig());
+	/**
+	 * if this is a notebook, mark the area for updates and activated the
+	 * notebook
+	 **/
+	if(new_focus->is(MANAGED_NOTEBOOK)) {
+		notebook_t * n = find_notebook_for(new_focus);
+		assert(n != 0);
+		n->activate_client(new_focus);
+		rpage->add_damaged(n->allocation());
+	}
 
-	focus->focus(_last_focus_time);
 
-	cnx->write_net_active_window(focus->orig());
+	/**
+	 * change root window properties to the current focused window.
+	 **/
+	cnx->write_net_active_window(new_focus->orig());
 
-	/* focus the selected window */
-	rpage->mark_durty();
+	/**
+	 * update the focus status
+	 **/
+	new_focus->focus(_last_focus_time);
+
 
 }
 
@@ -2775,10 +2676,6 @@ void page_t::destroy(split_t * x) {
 
 void page_t::destroy(notebook_t * x) {
 	delete x;
-}
-
-void page_t::destroy(Window c) {
-	clear_transient_for_sibbling_child(c);
 }
 
 void page_t::process_net_vm_state_client_message(Window c, long type, Atom state_properties) {
@@ -3017,28 +2914,9 @@ void page_t::safe_raise_window(Window w) {
 
 }
 
-void page_t::clear_transient_for_sibbling_child(Window w) {
-	for (map<Window, list<Window> >::iterator i =
-			transient_for_tree.begin(); i != transient_for_tree.end(); ++i) {
-		i->second.remove(w);
-	}
-}
-
 void page_t::destroy_managed_window(managed_window_t * mw) {
-	clear_transient_for_sibbling_child(mw->orig());
 	managed_window.erase(mw);
 	fullscreen_client_to_viewport.erase(mw);
-
-	/* Fallback focus to last focused windows */
-	if(_client_focused.front() == mw) {
-		_client_focused.remove(mw);
-		if(!_client_focused.empty()) {
-			//set_focus(_client_focused.front(), true);
-		}
-	} else {
-		_client_focused.remove(mw);
-	}
-
 	delete mw;
 }
 
@@ -3670,6 +3548,8 @@ bool page_t::onmap(Window w) {
 
 void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const & wa) {
 
+	printf("manage window %d\n", w);
+
 	managed_window_t * mw;
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
@@ -3682,7 +3562,6 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		/** TODO function **/
 		Time time = 0;
 		if(get_safe_net_wm_user_time(w, time)) {
-			activate_client(mw, time);
 			set_focus(mw, time);
 		}
 
@@ -3694,8 +3573,6 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 		if(get_safe_net_wm_user_time(w, time)) {
 			set_focus(mw, time);
 		}
-
-
 
 	}
 
