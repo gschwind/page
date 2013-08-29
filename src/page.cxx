@@ -147,6 +147,10 @@ page_t::~page_t() {
 	while(i != managed_window.end()) {
 		Window orig = (*i)->orig();
 		delete *i;
+		/**
+		 * Map managed window to allow next window manager to not confuse
+		 * this window with WithDraw window.
+		 **/
 		XMapWindow(cnx->dpy, orig);
 		++i;
 	}

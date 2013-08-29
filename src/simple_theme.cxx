@@ -422,6 +422,8 @@ void simple_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	}
 
+	delete tabs;
+
 	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 
 	{
