@@ -258,7 +258,7 @@ public:
 		if (::page::get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS),
 				&tmp)) {
 			if (tmp.size() == 9) {
-				if (hints) {
+				if (hints != 0) {
 					hints->flags = tmp[0];
 					hints->input = tmp[1];
 					hints->initial_state = tmp[2];

@@ -126,7 +126,7 @@ public:
 
 	void set_theme(theme_t const * theme);
 
-	virtual void get_childs(list<tree_t *> & lst);
+	virtual void get_childs(vector<tree_t *> & lst);
 
 	virtual list<managed_window_base_t const *> clients() const {
 		return list<managed_window_base_t const *>(_clients.begin(), _clients.end());

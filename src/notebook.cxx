@@ -49,7 +49,7 @@ box_int_t notebook_t::get_new_client_size() {
 }
 
 void notebook_t::replace(tree_t * src, tree_t * by) {
-
+	throw std::runtime_error("cannot replace in notebook");
 }
 
 void notebook_t::close(tree_t * src) {
@@ -247,7 +247,7 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 	width = max_width;
 	height = max_height;
 
-	XSizeHints size_hints;
+	XSizeHints size_hints = { 0 };
 	if(!c->get_wm_normal_hints(&size_hints)) {
 		return;
 	}
@@ -302,7 +302,7 @@ void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-void notebook_t::get_childs(list<tree_t *> & lst) {
+void notebook_t::get_childs(vector<tree_t *> & lst) {
 	/* has no child */
 }
 

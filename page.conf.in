@@ -24,6 +24,8 @@ popup_background_color = 8ae234
 
 # active notebook is the notebook that have the focus.
 #
+# active notebook text font.
+notebook_active_font               = Ubuntu Bold 10
 # active notebook text color.
 notebook_active_text_color         = FFFFFF
 # active notebook text outline color
@@ -36,6 +38,8 @@ notebook_active_background_color   = DDFF0000
 # selected notebook is the notebook currently selected for a group of notebook
 # but that do not have the focus.
 #
+# selected notebook text font.
+notebook_selected_font             = Ubuntu Bold 10
 # selected notebook (not active one) title text color
 notebook_selected_text_color       = FFFFFF
 # selected notebook (not active one) title text outline color
@@ -47,6 +51,8 @@ notebook_selected_background_color = 883DADD6
 
 # inactive notebook are all not active and not selected notebook.
 #
+# inactive notebook text font.
+notebook_normal_font               = Ubuntu Regular 10
 # inactive notebook text color
 notebook_normal_text_color = FFFFFF
 # inactive notebook text outline color
@@ -59,6 +65,8 @@ notebook_normal_background_color = 88204a87
 
 # active floating window.
 #
+# active floating text font.
+floating_active_font               = Ubuntu Bold 10
 # active floating text color.
 floating_active_text_color         = FFFFFF
 # active floating text outline color
@@ -70,6 +78,8 @@ floating_active_background_color   = a40000
 
 # inactive floating.
 #
+# innactive floating text font.
+floating_normal_font               = Ubuntu Regular 10
 # inactive floating text color
 floating_normal_text_color = FFFFFF
 # inactive floating text outline color

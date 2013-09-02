@@ -15,15 +15,19 @@
 
 namespace page {
 
-split_t::split_t(split_type_e type, theme_t const * theme) :
+split_t::split_t(split_type_e type, theme_t const * theme, tree_t * p0, tree_t * p1) :
 	split_base_t(),
 	_theme(theme),
 	_split_bar_area(),
 	_split_type(type),
 	_split(0.5),
-	_pack0(0),
-	_pack1(0)
+	_pack0(p0),
+	_pack1(p1)
 {
+	if(p0 != 0)
+		p0->set_parent(this);
+	if(p1 != 0)
+		p1->set_parent(this);
 
 }
 
@@ -95,6 +99,8 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	} else if (_pack1 == src) {
 		//printf("replace %p by %p\n", src, by);
 		set_pack1(by);
+	} else {
+		throw std::runtime_error("split: bad child replacement!");
 	}
 
 	update_allocation();
@@ -205,7 +211,7 @@ void split_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-void split_t::get_childs(list<tree_t *> & lst) {
+void split_t::get_childs(vector<tree_t *> & lst) {
 
 	if(_pack0 != 0) {
 		_pack0->get_childs(lst);

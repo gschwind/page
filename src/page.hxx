@@ -241,8 +241,8 @@ public:
 	compositor_t * rnd;
 
 	/* default cursor */
-	Cursor cursor;
-	Cursor cursor_fleur;
+//	Cursor cursor;
+//	Cursor cursor_fleur;
 
 	bool running;
 
@@ -407,11 +407,11 @@ public:
 
 	void cleanup_grab(managed_window_t * mw);
 
-	notebook_t * get_another_notebook(tree_t * x = 0);
+	notebook_t * get_another_notebook(tree_t * base = 0, tree_t * nbk = 0);
 
 
-	void get_notebooks(list<notebook_t *> & l);
-	void get_splits(list<split_t *> & l);
+	void get_notebooks(vector<notebook_t *> & l);
+	void get_splits(vector<split_t *> & l);
 
 	notebook_t * find_notebook_for(managed_window_t * mw);
 
@@ -430,6 +430,7 @@ public:
 	void update_windows_stack();
 
 	void rr_update_viewport_layout();
+	void remove_viewport(viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 
 	Atom A(char const * aname) {
@@ -453,8 +454,8 @@ public:
 		return list_values(viewport_outputs);
 	}
 
-	list<tree_t *> childs() {
-		list<tree_t *> l;
+	vector<tree_t *> childs() {
+		vector<tree_t *> l;
 		for (map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
 				i != viewport_outputs.end(); ++i) {
 			i->second->get_childs(l);
@@ -468,7 +469,7 @@ public:
 			delete page_areas;
 		}
 
-		list<tree_t *> xl = childs();
+		vector<tree_t *> xl = childs();
 		list<tree_t const *> l(xl.begin(), xl.end());
 		page_areas = theme->compute_page_areas(
 				list<tree_t const *>(xl.begin(), xl.end()));
@@ -487,6 +488,8 @@ public:
 		return dynamic_cast<split_t *>(const_cast<split_base_t *>(x));
 	}
 
+	static void get_notebooks(tree_t * base, vector<notebook_t *> & l);
+	static void get_splits(tree_t * base, vector<split_t *> & l);
 
 
 };

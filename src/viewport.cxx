@@ -30,6 +30,8 @@ void viewport_t::replace(tree_t * src, tree_t * by) {
 		_subtree = by;
 		_subtree->set_parent(this);
 		_subtree->set_allocation(effective_aera);
+	} else {
+		throw std::runtime_error("viewport: bad child replacement!");
 	}
 }
 
@@ -75,27 +77,11 @@ region_t<int> viewport_t::get_area() {
 	}
 }
 
-void viewport_t::get_childs(list<tree_t *> & lst) {
+void viewport_t::get_childs(vector<tree_t *> & lst) {
 	if(_subtree != 0) {
 		_subtree->get_childs(lst);
 		lst.push_back(_subtree);
 	}
-}
-
-void viewport_t::get_notebooks(list<notebook_t *> & l) {
-	list<tree_t *> lt;
-	get_childs(lt);
-	for (list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i)
-		l.push_back(dynamic_cast<notebook_t *>(*i));
-	l.remove(0);
-}
-
-void viewport_t::get_splits(list<split_t *> & l) {
-	list<tree_t *> lt;
-	get_childs(lt);
-	for (list<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i)
-		l.push_back(dynamic_cast<split_t *>(*i));
-	l.remove(0);
 }
 
 }

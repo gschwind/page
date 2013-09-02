@@ -145,8 +145,6 @@ _is_focused(false)
 
 managed_window_t::~managed_window_t() {
 
-
-
 	if(_surf != 0) {
 		cairo_surface_destroy(_surf);
 	}
@@ -162,6 +160,8 @@ managed_window_t::~managed_window_t() {
 	if (_floating_area != 0) {
 		delete _floating_area;
 	}
+
+	destroy_back_buffer();
 
 	_cnx->unmap(_orig);
 	_cnx->reparentwindow(_orig, _cnx->get_root_window(), _wished_position.x,

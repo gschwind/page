@@ -33,10 +33,11 @@ public:
 	tree_t * _subtree;
 	managed_window_t * fullscreen_client;
 
-	set<notebook_t *> _notebook_set;
-	set<split_t *> _split_set;
-
 	bool _is_visible;
+
+	virtual tree_t * parent() const {
+		throw std::runtime_error("viewport has no parent");
+	}
 
 	viewport_t(theme_t * theme, box_t<int> const & area);
 
@@ -66,10 +67,7 @@ public:
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
-	virtual void get_childs(list<tree_t *> & lst);
-
-	void get_notebooks(list<notebook_t *> & l);
-	void get_splits(list<split_t *> & l);
+	virtual void get_childs(vector<tree_t *> & lst);
 
 	virtual void render(cairo_t * cr, box_t<int> const & area) const {
 

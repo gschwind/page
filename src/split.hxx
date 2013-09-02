@@ -43,7 +43,7 @@ class split_t : public split_base_t, public tree_renderable_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_t const * theme);
+	split_t(split_type_e type, theme_t const * theme, tree_t * p0 = 0, tree_t * p1 = 0);
 	~split_t();
 
 	void replace(tree_t * src, tree_t * by);
@@ -64,7 +64,7 @@ public:
 
 	void set_theme(theme_t const * theme);
 
-	virtual void get_childs(list<tree_t *> & lst);
+	virtual void get_childs(vector<tree_t *> & lst);
 
 	void set_pack0(tree_t * x);
 	void set_pack1(tree_t * x);

@@ -149,8 +149,9 @@ bool get_window_property(Display * dpy, Window win, Atom prop,
 			}
 			ret = true;
 		}
-		XFree(xdata);
 	}
+
+	XFree(xdata);
 
 	return ret;
 }

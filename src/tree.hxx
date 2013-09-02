@@ -11,6 +11,7 @@
 #include <X11/Xlib.h>
 #include <cairo.h>
 #include <list>
+#include <vector>
 #include "region.hxx"
 
 #include "managed_window_base.hxx"
@@ -30,7 +31,7 @@ public:
 	tree_t(tree_t * parent = 0, box_int_t allocation = box_int_t());
 	virtual ~tree_t() { }
 
-	tree_t * parent() const {
+	virtual tree_t * parent() const {
 		return _parent;
 	}
 
@@ -39,7 +40,7 @@ public:
 	}
 
 	virtual void replace(tree_t * src, tree_t * by) = 0;
-	virtual void get_childs(list<tree_t *> & lst) = 0;
+	virtual void get_childs(vector<tree_t *> & lst) = 0;
 	virtual void set_allocation(box_int_t const & area) {
 		_allocation = area;
 	}
