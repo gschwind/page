@@ -72,7 +72,7 @@ public:
 
 	composite_window_t(Display * dpy, Window w,
 			XWindowAttributes const * wa, Window above) {
-		assert(dpy != 0);
+		page_assert(dpy != 0);
 
 		this->dpy = dpy;
 		_wid = w;

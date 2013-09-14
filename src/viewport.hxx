@@ -73,6 +73,12 @@ public:
 
 	}
 
+	virtual vector<tree_t *> get_direct_childs() const {
+		vector<tree_t *> ret;
+		ret.push_back(_subtree);
+		return ret;
+	}
+
 };
 
 }

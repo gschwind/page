@@ -15,7 +15,6 @@
 #include <ctime>
 #include <X11/X.h>
 #include <X11/cursorfont.h>
-#include <assert.h>
 #include <unistd.h>
 #include <cairo.h>
 #include <cairo-xlib.h>
@@ -56,8 +55,11 @@
 #include "popup_notebook0.hxx"
 #include "popup_frame_move.hxx"
 #include "popup_split.hxx"
+#include "popup_alt_tab.hxx"
 
 #include "simple_theme.hxx"
+
+#include "page_exception.hxx"
 
 using namespace std;
 
@@ -95,6 +97,7 @@ public:
 	popup_notebook0_t * pn0;
 	popup_frame_move_t * pfm;
 	popup_split_t * ps;
+	popup_alt_tab_t * pat;
 
 	struct mode_data_split_t {
 		split_t * split;
@@ -243,6 +246,8 @@ public:
 	/* default cursor */
 //	Cursor cursor;
 //	Cursor cursor_fleur;
+
+	Cursor default_cursor;
 
 	bool running;
 
@@ -491,6 +496,17 @@ public:
 	static void get_notebooks(tree_t * base, vector<notebook_t *> & l);
 	static void get_splits(tree_t * base, vector<split_t *> & l);
 
+
+	void print_tree() {
+
+		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
+				i != viewport_outputs.end(); ++i) {
+			i->second->print_tree();
+		}
+
+		fflush(stdout);
+
+	}
 
 };
 

@@ -71,24 +71,20 @@ list<managed_window_t *> const & notebook_t::get_clients() {
 }
 
 void notebook_t::remove_client(managed_window_t * x) {
-	if (x == _selected.front())
-		select_next();
+	page_assert(has_key(_clients, x));
 
-	// cleanup
-	_selected.remove(x);
-	_clients.remove(x);
-	_client_map.erase(x);
-}
-
-void notebook_t::select_next() {
-	if (!_selected.empty()) {
-		_selected.pop_front();
-		if (!_selected.empty()) {
-			managed_window_t * x = _selected.front();
-			update_client_position(x);
-			x->normalize();
+	/** update selection **/
+	if (not _selected.empty()) {
+		_selected.remove(x);
+		if (not _selected.empty()) {
+			update_client_position(_selected.front());
+			_selected.front()->normalize();
 		}
 	}
+
+	// cleanup
+	_clients.remove(x);
+	_client_map.erase(x);
 }
 
 void notebook_t::set_selected(managed_window_t * c) {

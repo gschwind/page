@@ -30,6 +30,28 @@ struct margin_t {
 	int right;
 };
 
+struct cycle_window_entry_t {
+	window_icon_handler_t * icon;
+	string title;
+	managed_window_base_t * id;
+
+	cycle_window_entry_t(cycle_window_entry_t const &);
+	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
+
+public:
+	cycle_window_entry_t(managed_window_base_t * mw,
+			window_icon_handler_t * icon) :
+			icon(icon), title(mw->title()), id(mw) {
+	}
+
+	~cycle_window_entry_t() {
+		if(icon != 0) {
+			delete icon;
+		}
+	}
+
+};
+
 class theme_t {
 
 public:

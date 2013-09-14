@@ -84,10 +84,11 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	rnd = 0;
 
-//	cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
+	default_cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
+
 //	cursor_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
 
-	//set_window_cursor(cnx->get_root_window(), None);
+	set_window_cursor(cnx->get_root_window(), default_cursor);
 
 	running = false;
 
@@ -142,6 +143,8 @@ page_t::~page_t() {
 		delete pn0;
 	if(ps != 0)
 		delete ps;
+	if(pat != 0)
+		delete pat;
 
 	set<managed_window_t *>::iterator i = managed_window.begin();
 	while(i != managed_window.end()) {
@@ -239,6 +242,7 @@ void page_t::run() {
 	pfm = new popup_frame_move_t(cnx, theme);
 	pn0 = new popup_notebook0_t(cnx, theme);
 	ps = new popup_split_t(cnx);
+	pat = new popup_alt_tab_t(cnx, theme);
 
 	default_window_pop = 0;
 
@@ -322,12 +326,23 @@ void page_t::run() {
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* print state info */
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_s), Mod4Mask, cnx->get_root_window(),
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_s), Mod4Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Tab), Mod1Mask, cnx->get_root_window(),
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Tab), Mod1Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask, cnx->get_root_window(),
+	/** get Alt release **/
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Alt_L), AnyModifier,
+			cnx->get_root_window(),
+			True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Alt_R), AnyModifier,
+			cnx->get_root_window(),
+			True, GrabModeAsync, GrabModeAsync);
+
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeSync);
 
 	/**
@@ -429,6 +444,10 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	printf("unmanage %lu\n", mw->orig());
 
+	if (has_key(fullscreen_client_to_viewport, mw)) {
+		unfullscreen(mw);
+	}
+
 	if (mw == _client_focused.front()) {
 		_client_focused.remove(mw);
 		if (_client_focused.front() != 0) {
@@ -442,16 +461,11 @@ void page_t::unmanage(managed_window_t * mw) {
 		_client_focused.remove(mw);
 	}
 
-	if (has_key(fullscreen_client_to_viewport, mw)) {
-		unfullscreen(mw);
-	}
-
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
-	if (mw->is(MANAGED_NOTEBOOK)) {
-		remove_window_from_tree(mw);
-	}
+	/** try to remove it from tree **/
+	remove_window_from_tree(mw);
 
 	destroy_managed_window(mw);
 	update_client_list();
@@ -586,20 +600,6 @@ void page_t::update_client_list() {
 	vector<Window> client_list(s_client_list.begin(), s_client_list.end());
 	vector<Window> client_list_stack(s_client_list_stack.begin(), s_client_list_stack.end());
 
-//	for (map<Window, managed_window_t *>::iterator i =
-//			orig_window_to_notebook_window.begin();
-//			i != orig_window_to_notebook_window.end(); ++i) {
-//		client_list.push_back(i->first);
-//		client_list_stack.push_back(i->first);
-//	}
-//
-//	for (map<Window, managed_window_t *>::iterator i =
-//			orig_window_to_floating_window.begin();
-//			i != orig_window_to_floating_window.end(); ++i) {
-//		client_list.push_back(i->first);
-//		client_list_stack.push_back(i->first);
-//	}
-
 	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST_STACKING,
 			WINDOW, 32, PropModeReplace,
 			reinterpret_cast<unsigned char *>(&client_list_stack[0]), client_list_stack.size());
@@ -610,6 +610,17 @@ void page_t::update_client_list() {
 }
 
 void page_t::process_event(XKeyEvent const & e) {
+
+	if (e.type == KeyPress) {
+		fprintf(stderr, "KeyPress key = %d, mod4 = %s, mod1 = %s\n", e.keycode,
+				e.state & Mod4Mask ? "true" : "false",
+				e.state & Mod1Mask ? "true" : "false");
+	} else {
+		fprintf(stderr, "KeyRelease key = %d, mod4 = %s, mod1 = %s\n",
+				e.keycode, e.state & Mod4Mask ? "true" : "false",
+				e.state & Mod1Mask ? "true" : "false");
+	}
+
 	int n;
 	KeySym * k = XGetKeyboardMapping(cnx->dpy, e.keycode, 1, &n);
 
@@ -673,32 +684,66 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
 
-		if(key_press_mode == KEY_PRESS_NORMAL) {
+		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
 			/** grab this events **/
 			XAllowEvents(e.display, AsyncKeyboard, e.time);
 			key_press_mode = KEY_PRESS_ALT_TAB;
 			key_mode_data.selected = _client_focused.front();
+
+			int sel = 0;
+
+			vector<cycle_window_entry_t *> v;
+			int s = 0;
+			for(set<managed_window_t *>::iterator i = managed_window.begin();
+					i != managed_window.end(); ++i) {
+				window_icon_handler_t * icon = new window_icon_handler_t(cnx, (*i)->orig(), 64, 64);
+				cycle_window_entry_t * cy = new cycle_window_entry_t(*i, icon);
+				v.push_back(cy);
+
+				if(*i == _client_focused.front()) {
+					sel = s;
+				}
+
+				++s;
+
+			}
+
+			pat->update_window(v, sel);
+
+			viewport_t * viewport = viewport_outputs.begin()->second;
+
+			int y = v.size() / 4 + 1;
+
+			pat->move_resize(
+					box_int_t(
+							viewport->raw_aera.x
+									+ (viewport->raw_aera.w - 80 * 4) / 2,
+							viewport->raw_aera.y
+									+ (viewport->raw_aera.h - y * 80) / 2,
+							80 * 4, y * 80));
+			pat->show();
+
 		}
 
-		if (!managed_window.empty()) {
-			set<managed_window_t *>::iterator x = managed_window.find(key_mode_data.selected);
-			if (x == managed_window.end()) {
-				key_mode_data.selected = *managed_window.begin();
-				set_focus(*managed_window.begin(), e.time);
-			} else {
-				++x;
-				if (x == managed_window.end()) {
-					set_focus(*managed_window.begin(), e.time);
-				} else {
-					set_focus(*x, e.time);
-				}
-			}
-		}
+		pat->select_next();
+		pat->mark_durty();
+		pat->expose();
+		pat->mark_durty();
 
 	}
 
-	if (XK_Tab == k[0] && e.type == KeyRelease && (e.state & Mod1Mask)) {
+	if ((XK_Alt_L == k[0] || XK_Alt_R == k[0]) && e.type == KeyRelease
+			&& key_press_mode == KEY_PRESS_ALT_TAB) {
 		key_press_mode = KEY_PRESS_NORMAL;
+
+		/**
+		 * do not use dynamic_cast because managed window can be already
+		 * destroyed.
+		 **/
+		managed_window_t * mw = reinterpret_cast<managed_window_t *> (pat->get_selected());
+		set_focus(mw, e.time);
+
+		pat->hide();
 	}
 
 	XFree(k);
@@ -1648,8 +1693,6 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
 
-	Window c = e.window;
-
 	managed_window_t * mw = find_managed_window_with(e.window);
 	if(mw != 0) {
 		unmanage(mw);
@@ -2030,15 +2073,24 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	/* WARNING: Call order is important, change it with caution */
 	fullscreen_data_t data;
 
+
 	if(mw->is(MANAGED_NOTEBOOK)) {
+		/**
+		 * if the current window is managed in notebook:
+		 *
+		 * 1. search for the current notebook,
+		 * 2. search the viewport for this notebook, and use it as default
+		 *    fullscreen host or use the first available viewport.
+		 **/
 		data.revert_notebook = find_notebook_for(mw);
+		page_assert(data.revert_notebook != 0);
 		data.revert_type = MANAGED_NOTEBOOK;
 		if (v == 0) {
 			data.viewport = find_viewport_for(data.revert_notebook);
 		} else {
 			data.viewport = v;
 		}
-		assert(data.viewport != 0);
+		page_assert(data.viewport != 0);
 		remove_window_from_tree(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
 		data.revert_type = MANAGED_FLOATING;
@@ -2080,7 +2132,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	if(!has_key(fullscreen_client_to_viewport, mw))
 		return;
 
-	fullscreen_data_t data = fullscreen_client_to_viewport[mw];
+	fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
 
 	viewport_t * v = data.viewport;
 
@@ -2258,6 +2310,8 @@ void page_t::process_event(XEvent const & e) {
 			pfm->expose();
 		} else if (e.xexpose.window == ps->id()) {
 			ps->expose();
+		} else if (e.xexpose.window == pat->id()) {
+			pat->expose();
 		}
 
 	} else if (e.type == cnx->xrandr_event + RRNotify) {
@@ -2346,22 +2400,23 @@ void page_t::process_event(XEvent const & e) {
 }
 
 void page_t::insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate) {
-	assert(x != 0);
-	assert(find_notebook_for(x) == 0);
+	page_assert(x != 0);
+	page_assert(find_notebook_for(x) == 0);
 	if (n == 0)
 		n = default_window_pop;
-	assert(n != 0);
+	page_assert(n != 0);
+	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
-
 	rpage->add_damaged(n->allocation());
 
 }
 
 void page_t::remove_window_from_tree(managed_window_t * x) {
 	notebook_t * n = find_notebook_for(x);
-	assert(n != 0);
-	n->remove_client(x);
-	rpage->add_damaged(n->allocation());
+	if (n != 0) {
+		n->remove_client(x);
+		rpage->add_damaged(n->allocation());
+	}
 }
 
 void page_t::iconify_client(managed_window_t * x) {
@@ -2399,6 +2454,14 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 	if(tfocus <= _last_focus_time)
 		return;
 
+	/**
+	 * Try to focus unknown window, this can happen on alt-tab when
+	 * selectect window is destroyed
+	 **/
+	if(not has_key(managed_window, new_focus)) {
+		return;
+	}
+
 	_last_focus_time = tfocus;
 
 	managed_window_t * old_focus = 0;
@@ -2418,7 +2481,7 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 		 **/
 		if (old_focus->is(MANAGED_NOTEBOOK)) {
 			notebook_t * n = find_notebook_for(old_focus);
-			assert(n != 0);
+			page_assert(n != 0);
 			rpage->add_damaged(n->allocation());
 		}
 	}
@@ -2443,7 +2506,7 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 	 **/
 	if(new_focus->is(MANAGED_NOTEBOOK)) {
 		notebook_t * n = find_notebook_for(new_focus);
-		assert(n != 0);
+		page_assert(n != 0);
 		n->activate_client(new_focus);
 		rpage->add_damaged(n->allocation());
 	}
@@ -2475,6 +2538,9 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+
+	print_tree();
+
 }
 
 void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
@@ -2485,6 +2551,9 @@ void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
 	insert_window_in_tree(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+
+	print_tree();
+
 }
 
 void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
@@ -2495,6 +2564,9 @@ void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
 	insert_window_in_tree(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+
+	print_tree();
+
 }
 
 void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
@@ -2505,6 +2577,9 @@ void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
 	insert_window_in_tree(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+
+	print_tree();
+
 }
 
 void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
@@ -2515,9 +2590,17 @@ void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
 	insert_window_in_tree(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+
+	print_tree();
+
 }
 
 void page_t::notebook_close(notebook_t * src) {
+
+	printf("start close notebook\n");
+	printf("current notebook stase\n");
+	print_tree();
+
 
 	split_t * ths = dynamic_cast<split_t *>(src->parent());
 
@@ -2528,12 +2611,13 @@ void page_t::notebook_close(notebook_t * src) {
 	tree_t * dst = (src == ths->get_pack0()) ? ths->get_pack1() : ths->get_pack0();
 
 
-	assert(src == ths->get_pack0() || src == ths->get_pack1());
+	page_assert(src == ths->get_pack0() || src == ths->get_pack1());
 
 	/* if notebook is default_pop, select another one */
 	if (default_window_pop == src) {
 		/* if notebook list is empty we probably did something wrong */
-		default_window_pop = get_another_notebook(dst, src);
+		default_window_pop = get_another_notebook(ths, src);
+		page_assert(default_window_pop != 0);
 		default_window_pop->set_default(true);
 		rpage->add_damaged(default_window_pop->allocation());
 		/* put it back temporary since destroy will remove it */
@@ -2556,7 +2640,7 @@ void page_t::notebook_close(notebook_t * src) {
 	}
 
 
-	assert(ths->parent() != 0);
+	page_assert(ths->parent() != 0);
 	/* remove this split from tree */
 	ths->parent()->replace(ths, dst);
 
@@ -2565,6 +2649,11 @@ void page_t::notebook_close(notebook_t * src) {
 	/* cleanup */
 	destroy(src);
 	destroy(ths);
+
+	printf("new state for tree\n");
+	print_tree();
+	printf("finish close_notenook\n");
+
 }
 
 void page_t::update_popup_position(popup_notebook0_t * p,
@@ -2670,19 +2759,23 @@ void page_t::fix_allocation(viewport_t & v) {
 
 split_t * page_t::new_split(split_type_e type) {
 	split_t * x = new split_t(type, theme);
+	printf("create %s\n", x->get_node_name().c_str());
 	return x;
 }
 
 notebook_t * page_t::new_notebook() {
 	notebook_t * x = new notebook_t(theme);
+	printf("create %s\n", x->get_node_name().c_str());
 	return x;
 }
 
 void page_t::destroy(split_t * x) {
+	printf("destroy %s\n", x->get_node_name().c_str());
 	delete x;
 }
 
 void page_t::destroy(notebook_t * x) {
+	printf("destroy %s\n", x->get_node_name().c_str());
 	delete x;
 }
 
@@ -2715,8 +2808,6 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		return;
 
 	if (mw->is(MANAGED_NOTEBOOK)) {
-
-;
 
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
@@ -3315,6 +3406,9 @@ void page_t::update_windows_stack() {
 	final_order.remove(ps->id());
 	final_order.push_back(ps->id());
 
+	final_order.remove(pat->id());
+	final_order.push_back(pat->id());
+
 	final_order.remove(rpage->id());
 	final_order.push_front(rpage->id());
 
@@ -3558,7 +3652,7 @@ bool page_t::onmap(Window w) {
 
 void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const & wa) {
 
-	printf("manage window %d\n", w);
+	printf("manage window %u\n", w);
 
 	managed_window_t * mw;
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
@@ -3712,12 +3806,19 @@ bool page_t::get_safe_net_wm_user_time(Window w, Time & time) {
 }
 
 void page_t::get_notebooks(tree_t * base, vector<notebook_t *> & l) {
-	vector<tree_t *> lt;
-	base->get_childs(lt);
-	for (vector<tree_t *>::iterator i = lt.begin(); i != lt.end(); ++i) {
-		notebook_t * n = dynamic_cast<notebook_t *>(*i);
-		if(n != 0) {
+	stack<tree_t *> st;
+	st.push(base);
+	while (not st.empty()) {
+		vector<tree_t *> childs = st.top()->get_direct_childs();
+		notebook_t * n = dynamic_cast<notebook_t *>(st.top());
+		if (n != 0) {
 			l.push_back(n);
+		}
+		st.pop();
+
+		for (vector<tree_t *>::iterator i = childs.begin(); i != childs.end();
+				++i) {
+			st.push(*i);
 		}
 	}
 }

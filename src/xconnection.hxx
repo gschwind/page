@@ -20,7 +20,6 @@
 #include <glib.h>
 
 #include <cstdarg>
-#include <cassert>
 #include <cstdlib>
 #include <cstdio>
 #include <limits>
@@ -31,12 +30,15 @@
 #include <map>
 #include <cstring>
 
+#include "page_exception.hxx"
+
 #include "box.hxx"
 #include "atoms.hxx"
 #include "x11_func_name.hxx"
 #include "utils.hxx"
 #include "properties_cache.hxx"
 #include "window_attributes_cache.hxx"
+
 
 using namespace std;
 
@@ -571,7 +573,7 @@ public:
 	}
 
 	void remove_event_handler(xevent_handler_t * func) {
-		assert(
+		page_assert(
 				std::find(event_handler_list.begin(), event_handler_list.end(), func) != event_handler_list.end());
 		event_handler_list.remove(func);
 	}

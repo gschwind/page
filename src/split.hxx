@@ -122,6 +122,13 @@ public:
 		_theme->render_split(cr, this, area);
 	}
 
+	virtual vector<tree_t *> get_direct_childs() const {
+		vector<tree_t *> ret;
+		ret.push_back(_pack0);
+		ret.push_back(_pack1);
+		return ret;
+	}
+
 };
 
 }

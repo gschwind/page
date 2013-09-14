@@ -9,7 +9,6 @@
 #define ATOMS_HXX_
 
 #include <cstdio>
-#include <cassert>
 #include <X11/Xatom.h>
 
 namespace page {

@@ -123,7 +123,7 @@ window_icon_handler_t::window_icon_handler_t(xconnection_t * cnx, Window w, unsi
 			cairo_set_source_surface(cr, tmp, 0.0, 0.0);
 			cairo_rectangle(cr, 0, 0, selected.width, selected.height);
 			cairo_pattern_set_filter(cairo_get_source(cr),
-					CAIRO_FILTER_GAUSSIAN);
+					CAIRO_FILTER_NEAREST);
 			cairo_fill(cr);
 
 			cairo_destroy(cr);

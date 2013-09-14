@@ -152,6 +152,11 @@ public:
 		_is_default = x;
 	}
 
+	virtual vector<tree_t *> get_direct_childs() const {
+		vector<tree_t *> ret;
+		return ret;
+	}
+
 };
 
 }

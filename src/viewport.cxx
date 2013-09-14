@@ -5,7 +5,6 @@
  *
  */
 
-#include <cassert>
 #include <algorithm>
 #include <typeinfo>
 #include "notebook.hxx"

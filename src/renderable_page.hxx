@@ -78,7 +78,7 @@ public:
 					++j) {
 				tree_renderable_t * rtree =
 						dynamic_cast<tree_renderable_t *>(*j);
-				assert(rtree != 0);
+				page_assert(rtree != 0);
 				rtree->render(cr, *i);
 			}
 

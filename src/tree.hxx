@@ -8,6 +8,8 @@
 #ifndef TREE_HXX_
 #define TREE_HXX_
 
+#include <stdint.h>
+
 #include <X11/Xlib.h>
 #include <cairo.h>
 #include <list>
@@ -48,6 +50,21 @@ public:
 	void set_parent(tree_t * parent);
 	void set_allocation(int x, int y, int w, int h);
 
+	virtual string get_node_name() const = 0;
+
+	virtual vector<tree_t *> get_direct_childs() const = 0;
+
+	void print_tree(unsigned level = 0) {
+		char clevel[] = "                ";
+		if(level < sizeof(clevel))
+			clevel[level] = 0;
+		printf("%s%s\n", clevel, get_node_name().c_str());
+		vector<tree_t *> v = get_direct_childs();
+		for(vector<tree_t *>::iterator i = v.begin(); i != v.end(); ++i) {
+			(*i)->print_tree(level + 1);
+		}
+	}
+
 };
 
 struct notebook_base_t : public tree_t {
@@ -55,16 +72,38 @@ struct notebook_base_t : public tree_t {
 	virtual list<managed_window_base_t const *> clients() const = 0;
 	virtual managed_window_base_t const * selected() const = 0;
 	virtual bool is_default() const = 0;
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "N #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
 };
 
 struct split_base_t : public tree_t {
 	virtual ~split_base_t() { }
 	virtual split_type_e type() const = 0;
 	virtual double split() const = 0;
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "S #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
 };
 
 struct viewport_base_t : public tree_t {
 	virtual ~viewport_base_t() { }
+
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "V #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
 };
 
 

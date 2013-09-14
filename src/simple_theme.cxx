@@ -19,7 +19,7 @@ namespace page {
 
 inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	cairo_status_t s = cairo_status(cr);
-	printf("Cairo status %s:%d = %s\n", file, line, cairo_status_to_string(s));
+	//printf("Cairo status %s:%d = %s\n", file, line, cairo_status_to_string(s));
 }
 
 inline void cairo_set_source_rgba(cairo_t * cr, color_t const & color) {
@@ -558,10 +558,10 @@ void simple_theme_t::render_notebook_selected(
 	if ((c)->icon() != 0) {
 		if ((c)->icon()->get_cairo_surface() != 0) {
 			::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-			cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 			cairo_set_source_surface(cr, (c)->icon()->get_cairo_surface(),
 					bicon.x, bicon.y);
-			cairo_fill(cr);
+			cairo_mask_surface(cr, (c)->icon()->get_cairo_surface(),
+					bicon.x, bicon.y);
 		}
 	}
 
@@ -715,14 +715,14 @@ void simple_theme_t::render_notebook_normal(
 	bicon.y += 2;
 
 	cairo_save(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	if ((c)->icon() != 0) {
 		if ((c)->icon()->get_cairo_surface() != 0) {
 			::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-			cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 			cairo_set_source_surface(cr, (c)->icon()->get_cairo_surface(),
 					bicon.x, bicon.y);
-				cairo_paint(cr);
+			cairo_mask_surface(cr, (c)->icon()->get_cairo_surface(),
+					bicon.x, bicon.y);
 		}
 	}
 	cairo_restore(cr);
@@ -852,10 +852,10 @@ void simple_theme_t::render_floating_base(
 		if (mw->icon() != 0) {
 			if (mw->icon()->get_cairo_surface() != 0) {
 				::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-				cairo_rectangle(cr, bicon.x, bicon.y, bicon.w, bicon.h);
 				cairo_set_source_surface(cr,
 						mw->icon()->get_cairo_surface(), bicon.x, bicon.y);
-				cairo_paint(cr);
+				cairo_mask_surface(cr,
+						mw->icon()->get_cairo_surface(), bicon.x, bicon.y);
 			}
 		}
 
@@ -1005,11 +1005,10 @@ void simple_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t 
 		double x_offset = (width - 64) / 2.0;
 		double y_offset = (height - 64) / 2.0;
 
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
-		cairo_rectangle(cr, x_offset, y_offset, 64, 64);
-		cairo_fill(cr);
+		cairo_mask_surface(cr, icon->get_cairo_surface(), x_offset, y_offset);
 
 
 		/* draw tittle */

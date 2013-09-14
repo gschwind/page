@@ -15,11 +15,16 @@
 
 int main(int argc, char * * argv) {
 
-	signal(SIGSEGV, sig_handler);
-	signal(SIGABRT, sig_handler);
+	//signal(SIGSEGV, sig_handler);
+	//signal(SIGABRT, sig_handler);
 
-	page::page_t * m = new page::page_t(argc, argv);
-	m->run();
-	delete m;
+	try {
+		page::page_t * m = new page::page_t(argc, argv);
+		m->run();
+		delete m;
+	} catch (page::exception & e) {
+		fprintf(stdout, "%s\n", e.what());
+		fprintf(stderr, "%s\n", e.what());
+	}
 	return 0;
 }
