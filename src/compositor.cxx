@@ -87,7 +87,8 @@ void compositor_t::init_composite_overlay() {
 
 compositor_t::compositor_t() {
 
-	fade_length = new_timespec(0, 500000000);
+	fade_in_length = new_timespec(0, 500000000);
+	fade_out_length = new_timespec(0, 1000000000);
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
@@ -399,7 +400,7 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 			i != window_stack.end(); ++i) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
 		if (x != window_data.end()) {
-			if (x->second->map_state() != IsUnmapped
+			if ((x->second->map_state() != IsUnmapped or x->second->fade_mode != x->second->FADE_NONE)
 					and x->second->c_class() == InputOutput) {
 				visible.push_back(x->second);
 			}
@@ -461,7 +462,7 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 	 **/
 	for (list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
-		if ((*i)->has_alpha() or (*i)->fade_in_step < 1.0) {
+		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
 			region_without_alpha_on_top -= (*i)->get_region();
 		} else {
 			/* if not has_alpha, add this area */
@@ -663,9 +664,10 @@ void compositor_t::process_event(XMapEvent const & e) {
 
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
+		x->second->update_back_pixmap();
 		x->second->update_map_state(IsViewable);
-		x->second->fade_in_step = 0.0;
 		x->second->fade_start = curr_tic;
+		x->second->fade_mode = composite_window_t::FADE_IN;
 		repair_area_region(x->second->position());
 	}
 }
@@ -673,9 +675,9 @@ void compositor_t::process_event(XMapEvent const & e) {
 void compositor_t::process_event(XUnmapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
+		x->second->fade_start = curr_tic;
+		x->second->fade_mode = composite_window_t::FADE_OUT;
 		x->second->update_map_state(IsUnmapped);
-		x->second->fade_in_step = 0.0;
-		x->second->fade_start = new_timespec(0, 0);
 		repair_area_region(x->second->position());
 	}
 }
@@ -702,6 +704,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(
 				e.window);
 		if (x != window_data.end()) {
+			x->second->update_back_pixmap();
+
 			region_t<int> r = x->second->position();
 			x->second->update_position(e);
 			r += x->second->position();
@@ -926,18 +930,40 @@ void compositor_t::process_events() {
 
 	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
 			i != window_data.end(); ++i) {
-		if(i->second->map_state() == IsUnmapped)
+		if(i->second->fade_mode == composite_window_t::FADE_NONE) {
 			continue;
+		} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
+			if (i->second->fade_start + fade_in_length > curr_tic) {
+				struct timespec diff = pdiff(curr_tic, i->second->fade_start);
+				double alpha = 0.0;
+				alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
+						/ (fade_in_length.tv_sec
+								+ fade_in_length.tv_nsec / 1.0e9);
+				i->second->fade_step = alpha;
+				repair_area_region(i->second->get_region());
+			} else {
+				i->second->fade_step = 1.0;
+				i->second->fade_mode = composite_window_t::FADE_NONE;
+				repair_area_region(i->second->get_region());
+			}
 
-		if (i->second->fade_start + fade_length > curr_tic) {
-			struct timespec diff = pdiff(curr_tic, i->second->fade_start);
-			double alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
-					/ (fade_length.tv_sec + fade_length.tv_nsec / 1.0e9);
-			i->second->fade_in_step = alpha;
-			repair_area_region(i->second->get_region());
-		} else if (i->second->fade_in_step < 1.0) {
-			i->second->fade_in_step = 1.0;
-			repair_area_region(i->second->get_region());
+		} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
+			if (i->second->fade_start + fade_out_length > curr_tic) {
+				struct timespec diff = pdiff(curr_tic, i->second->fade_start);
+				double alpha = 0.0;
+				alpha = 1.0
+						- ((diff.tv_sec + diff.tv_nsec / 1.0e9)
+								/ (fade_out_length.tv_sec
+										+ fade_out_length.tv_nsec / 1.0e9));
+				i->second->fade_step = alpha;
+				repair_area_region(i->second->get_region());
+			} else {
+				i->second->fade_step = 0.0;
+				i->second->fade_mode = composite_window_t::FADE_NONE;
+				i->second->destroy_cairo();
+				i->second->destroy_back_pixmap();
+				repair_area_region(i->second->get_region());
+			}
 		}
 	}
 

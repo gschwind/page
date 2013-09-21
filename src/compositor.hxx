@@ -58,7 +58,8 @@ class compositor_t : public xevent_handler_t {
 	struct timespec last_tic;
 	struct timespec curr_tic;
 
-	struct timespec fade_length;
+	struct timespec fade_in_length;
+	struct timespec fade_out_length;
 
 	double cur_t;
 

@@ -48,7 +48,6 @@ class composite_window_t {
 
 	_region_t _region;
 
-
 	unsigned int _old_map_state;
 	_region_t _old_region;
 
@@ -57,15 +56,24 @@ class composite_window_t {
 
 	bool _has_moved;
 
+	Pixmap back_pixmap;
+
+
 
 	/* avoid copy */
 	composite_window_t(composite_window_t const &);
 	composite_window_t & operator=(composite_window_t const &);
 public:
 
+	enum fade_mode_e {
+		FADE_NONE,
+		FADE_OUT,
+		FADE_IN
+	};
 
 	timespec fade_start;
-	double fade_in_step;
+	double fade_step;
+	fade_mode_e fade_mode;
 
 	static long int const ClientEventMask = (StructureNotifyMask
 			| PropertyChangeMask);
@@ -116,8 +124,11 @@ public:
 			create_cairo();
 		}
 
-		fade_in_step = 0.0;
+		fade_step = 0.0;
 		fade_start = new_timespec(0, 0);
+		fade_mode = FADE_NONE;
+
+		back_pixmap = None;
 
 	}
 
@@ -161,8 +172,8 @@ public:
 			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_clip(cr);
-			if(fade_in_step < 1.0) {
-				cairo_paint_with_alpha(cr, fade_in_step);
+			if(fade_mode != FADE_NONE) {
+				cairo_paint_with_alpha(cr, fade_step);
 			} else {
 				cairo_paint(cr);
 			}
@@ -292,12 +303,31 @@ public:
 		} else {
 			destroy_cairo();
 			destroy_damage();
+			if (_surf == 0 and _c_class == InputOutput) {
+				_surf = cairo_xlib_surface_create(dpy, back_pixmap, _visual,
+						_position.w, _position.h);
+			}
 		}
 	}
 
 	int c_class() {
 		return _c_class;
 	}
+
+	void update_back_pixmap() {
+		destroy_back_pixmap();
+		if (_c_class == InputOutput) {
+			back_pixmap = XCompositeNameWindowPixmap(dpy, _wid);
+		}
+	}
+
+	void destroy_back_pixmap() {
+		if(back_pixmap != None) {
+			XFreePixmap(dpy, back_pixmap);
+			back_pixmap = None;
+		}
+	}
+
 
 
 };

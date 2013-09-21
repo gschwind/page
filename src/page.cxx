@@ -363,7 +363,7 @@ void page_t::run() {
 	 * i.e about 60 times per second.
 	 **/
 	max_wait.tv_sec = 0;
-	max_wait.tv_nsec = 15000000;
+	max_wait.tv_nsec = 30000000;
 
 	int max = cnx->fd();
 
