@@ -87,6 +87,8 @@ void compositor_t::init_composite_overlay() {
 
 compositor_t::compositor_t() {
 
+	fade_length = new_timespec(0, 500000000);
+
 	old_error_handler = XSetErrorHandler(error_handler);
 
 	_dpy = XOpenDisplay(0);
@@ -662,7 +664,9 @@ void compositor_t::process_event(XMapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->update_map_state(IsViewable);
-		//repair_area_region(x->second->position());
+		x->second->fade_in_step = 0.0;
+		x->second->fade_start = curr_tic;
+		repair_area_region(x->second->position());
 	}
 }
 
@@ -670,6 +674,8 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->update_map_state(IsUnmapped);
+		x->second->fade_in_step = 0.0;
+		x->second->fade_start = new_timespec(0, 0);
 		repair_area_region(x->second->position());
 	}
 }
@@ -909,11 +915,32 @@ void compositor_t::update_layout() {
 
 void compositor_t::process_events() {
 
+	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
+
 	XEvent ev;
 	while(XPending(_dpy)) {
 		XNextEvent(_dpy, &ev);
 		process_event(ev);
 	}
+
+
+	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
+			i != window_data.end(); ++i) {
+		if(i->second->map_state() == IsUnmapped)
+			continue;
+
+		if (i->second->fade_start + fade_length > curr_tic) {
+			struct timespec diff = pdiff(curr_tic, i->second->fade_start);
+			double alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
+					/ (fade_length.tv_sec + fade_length.tv_nsec / 1.0e9);
+			i->second->fade_in_step = alpha;
+			repair_area_region(i->second->get_region());
+		} else if (i->second->fade_in_step < 1.0) {
+			i->second->fade_in_step = 1.0;
+			repair_area_region(i->second->get_region());
+		}
+	}
+
 }
 
 void compositor_t::stack_window_update(Window window, Window above) {

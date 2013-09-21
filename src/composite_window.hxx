@@ -116,6 +116,9 @@ public:
 			create_cairo();
 		}
 
+		fade_in_step = 0.0;
+		fade_start = new_timespec(0, 0);
+
 	}
 
 	void create_cairo() {
@@ -158,7 +161,11 @@ public:
 			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_clip(cr);
-			cairo_paint(cr);
+			if(fade_in_step < 1.0) {
+				cairo_paint_with_alpha(cr, fade_in_step);
+			} else {
+				cairo_paint(cr);
+			}
 			cairo_restore(cr);
 		}
 

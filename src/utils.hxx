@@ -406,6 +406,55 @@ inline void compute_client_size_with_constraint(XSizeHints & size_hints,
 }
 
 
+inline struct timespec operator +(struct timespec const & a,
+		struct timespec const & b) {
+	struct timespec ret;
+	ret.tv_nsec = (a.tv_nsec + b.tv_nsec) % 1000000000L;
+	ret.tv_sec = (a.tv_sec + b.tv_sec)
+			+ ((a.tv_nsec + b.tv_nsec) / 1000000000L);
+	return ret;
+}
+
+inline bool operator <(struct timespec const & a, struct timespec const & b) {
+	return (a.tv_sec < b.tv_sec)
+			|| (a.tv_sec == b.tv_sec and a.tv_nsec < b.tv_nsec);
+}
+
+inline bool operator >(struct timespec const & a, struct timespec const & b) {
+	return b < a;
+}
+
+inline struct timespec new_timespec(long sec, long nsec) {
+	struct timespec ret;
+	ret.tv_nsec = nsec % 1000000000L;
+	ret.tv_sec = sec + (nsec / 1000000000L);
+	return ret;
+}
+
+/** positive diff **/
+inline struct timespec pdiff(struct timespec const & a,
+		struct timespec const & b) {
+	struct timespec ret;
+
+	if(b < a) {
+		ret.tv_nsec = (a.tv_nsec - b.tv_nsec);
+		ret.tv_sec = (a.tv_sec - b.tv_sec);
+		if(ret.tv_nsec < 0) {
+			ret.tv_sec -= 1;
+			ret.tv_nsec += 1000000000L;
+		}
+	} else {
+		ret.tv_nsec = (b.tv_nsec - a.tv_nsec);
+		ret.tv_sec = (b.tv_sec - a.tv_sec);
+		if(ret.tv_nsec < 0) {
+			ret.tv_sec -= 1;
+			ret.tv_nsec += 1000000000L;
+		}
+	}
+
+	return ret;
+}
+
 }
 
 

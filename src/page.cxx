@@ -362,8 +362,8 @@ void page_t::run() {
 	 * wait for a maximum of 15 ms
 	 * i.e about 60 times per second.
 	 **/
-	max_wait.tv_sec = 1;
-	max_wait.tv_nsec = 0;
+	max_wait.tv_sec = 0;
+	max_wait.tv_nsec = 15000000;
 
 	int max = cnx->fd();
 
