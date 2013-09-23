@@ -685,6 +685,7 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
+		repair_area_region(x->second->get_region());
 		delete x->second;
 		window_data.erase(x);
 	}
@@ -709,9 +710,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 			region_t<int> r = x->second->position();
 			x->second->update_position(e);
 			r += x->second->position();
-			if (x->second->map_state() != IsUnmapped) {
-				repair_area_region(r);
-			}
+			repair_area_region(r);
 		}
 	}
 }

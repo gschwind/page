@@ -155,6 +155,7 @@ public:
 	~composite_window_t() {
 		destroy_cairo();
 		destroy_damage();
+		destroy_back_pixmap();
 	}
 
 	void draw_to(cairo_t * cr, box_int_t const & area) {
