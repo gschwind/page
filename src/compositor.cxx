@@ -88,7 +88,7 @@ void compositor_t::init_composite_overlay() {
 compositor_t::compositor_t() {
 
 	fade_in_length = new_timespec(0, 500000000);
-	fade_out_length = new_timespec(0, 1000000000);
+	fade_out_length = new_timespec(0, 300000000);
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
@@ -683,14 +683,14 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
+	stack_window_remove(e.window);
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
-		repair_area_region(x->second->get_region());
-		delete x->second;
+		composite_window_t * cw = x->second;
 		window_data.erase(x);
+		repair_area_region(cw->get_region());
+		delete cw;
 	}
-
-	stack_window_remove(e.window);
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
@@ -728,9 +728,7 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 
 	if(has_key(window_data, e.window)) {
 		window_data[e.window]->moved();
-
-		if (window_data[e.window]->map_state() != IsUnmapped)
-			repair_area_region(window_data[e.window]->position());
+		repair_area_region(window_data[e.window]->position());
 	}
 
 
