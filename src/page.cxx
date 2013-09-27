@@ -225,7 +225,7 @@ void page_t::run() {
 		}
 	}
 
-	theme = new simple_theme_t(cnx, conf);
+	theme = new simple2_theme_t(cnx, conf);
 
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.

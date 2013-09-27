@@ -22,6 +22,7 @@ page_SOURCES = \
 	ftrace_function.cxx \
 	compositor.cxx \
 	viewport.cxx \
+	simple2_theme.cxx \
 	simple_theme.cxx \
 	managed_window.cxx \
 	unmanaged_window.cxx \
