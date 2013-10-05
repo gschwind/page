@@ -5,6 +5,7 @@
  *
  */
 
+#include <unistd.h>
 #include <algorithm>
 #include <list>
 #include "compositor.hxx"
@@ -925,6 +926,8 @@ void compositor_t::process_events() {
 	}
 
 
+	region_t<int> pending_damage;
+
 	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
 			i != window_data.end(); ++i) {
 		if(i->second->fade_mode == composite_window_t::FADE_NONE) {
@@ -937,11 +940,11 @@ void compositor_t::process_events() {
 						/ (fade_in_length.tv_sec
 								+ fade_in_length.tv_nsec / 1.0e9);
 				i->second->fade_step = alpha;
-				repair_area_region(i->second->get_region());
+				pending_damage += i->second->get_region();
 			} else {
 				i->second->fade_step = 1.0;
 				i->second->fade_mode = composite_window_t::FADE_NONE;
-				repair_area_region(i->second->get_region());
+				pending_damage += i->second->get_region();
 			}
 
 		} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
@@ -953,16 +956,18 @@ void compositor_t::process_events() {
 								/ (fade_out_length.tv_sec
 										+ fade_out_length.tv_nsec / 1.0e9));
 				i->second->fade_step = alpha;
-				repair_area_region(i->second->get_region());
+				pending_damage += i->second->get_region();
 			} else {
 				i->second->fade_step = 0.0;
 				i->second->fade_mode = composite_window_t::FADE_NONE;
 				i->second->destroy_cairo();
 				i->second->destroy_back_pixmap();
-				repair_area_region(i->second->get_region());
+				pending_damage += i->second->get_region();
 			}
 		}
 	}
+
+	repair_area_region(pending_damage);
 
 }
 
