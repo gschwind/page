@@ -91,6 +91,9 @@ compositor_t::compositor_t() {
 	fade_in_length = new_timespec(0, 500000000);
 	fade_out_length = new_timespec(0, 300000000);
 
+	/* about 30 per second */
+	fade_framerate_limit = new_timespec(0, 30000000);
+
 	old_error_handler = XSetErrorHandler(error_handler);
 
 	_dpy = XOpenDisplay(0);
@@ -159,6 +162,7 @@ compositor_t::compositor_t() {
 	flush_count = 0;
 	damage_count = 0;
 	clock_gettime(CLOCK_MONOTONIC, &last_tic);
+	last_render = last_tic;
 
 
 	/** update the windows list **/
@@ -925,49 +929,55 @@ void compositor_t::process_events() {
 		process_event(ev);
 	}
 
+	if (last_render + fade_framerate_limit < curr_tic) {
+		last_render = curr_tic;
 
-	region_t<int> pending_damage;
+		region_t<int> pending_damage;
 
-	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
-			i != window_data.end(); ++i) {
-		if(i->second->fade_mode == composite_window_t::FADE_NONE) {
-			continue;
-		} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
-			if (i->second->fade_start + fade_in_length > curr_tic) {
-				struct timespec diff = pdiff(curr_tic, i->second->fade_start);
-				double alpha = 0.0;
-				alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
-						/ (fade_in_length.tv_sec
-								+ fade_in_length.tv_nsec / 1.0e9);
-				i->second->fade_step = alpha;
-				pending_damage += i->second->get_region();
-			} else {
-				i->second->fade_step = 1.0;
-				i->second->fade_mode = composite_window_t::FADE_NONE;
-				pending_damage += i->second->get_region();
-			}
+		for (map<Window, composite_window_t *>::iterator i =
+				window_data.begin(); i != window_data.end(); ++i) {
+			if (i->second->fade_mode == composite_window_t::FADE_NONE) {
+				continue;
+			} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
+				if (i->second->fade_start + fade_in_length > curr_tic) {
+					struct timespec diff = pdiff(curr_tic,
+							i->second->fade_start);
+					double alpha = 0.0;
+					alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
+							/ (fade_in_length.tv_sec
+									+ fade_in_length.tv_nsec / 1.0e9);
+					i->second->fade_step = alpha;
+					pending_damage += i->second->get_region();
+				} else {
+					i->second->fade_step = 1.0;
+					i->second->fade_mode = composite_window_t::FADE_NONE;
+					pending_damage += i->second->get_region();
+				}
 
-		} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
-			if (i->second->fade_start + fade_out_length > curr_tic) {
-				struct timespec diff = pdiff(curr_tic, i->second->fade_start);
-				double alpha = 0.0;
-				alpha = 1.0
-						- ((diff.tv_sec + diff.tv_nsec / 1.0e9)
-								/ (fade_out_length.tv_sec
-										+ fade_out_length.tv_nsec / 1.0e9));
-				i->second->fade_step = alpha;
-				pending_damage += i->second->get_region();
-			} else {
-				i->second->fade_step = 0.0;
-				i->second->fade_mode = composite_window_t::FADE_NONE;
-				i->second->destroy_cairo();
-				i->second->destroy_back_pixmap();
-				pending_damage += i->second->get_region();
+			} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
+				if (i->second->fade_start + fade_out_length > curr_tic) {
+					struct timespec diff = pdiff(curr_tic,
+							i->second->fade_start);
+					double alpha = 0.0;
+					alpha = 1.0
+							- ((diff.tv_sec + diff.tv_nsec / 1.0e9)
+									/ (fade_out_length.tv_sec
+											+ fade_out_length.tv_nsec / 1.0e9));
+					i->second->fade_step = alpha;
+					pending_damage += i->second->get_region();
+				} else {
+					i->second->fade_step = 0.0;
+					i->second->fade_mode = composite_window_t::FADE_NONE;
+					i->second->destroy_cairo();
+					i->second->destroy_back_pixmap();
+					pending_damage += i->second->get_region();
+				}
 			}
 		}
-	}
 
-	repair_area_region(pending_damage);
+		repair_area_region(pending_damage);
+
+	}
 
 }
 

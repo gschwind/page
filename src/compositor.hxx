@@ -57,9 +57,12 @@ class compositor_t : public xevent_handler_t {
 	unsigned int damage_count;
 	struct timespec last_tic;
 	struct timespec curr_tic;
+	struct timespec last_render;
 
 	struct timespec fade_in_length;
 	struct timespec fade_out_length;
+
+	struct timespec fade_framerate_limit;
 
 	double cur_t;
 
