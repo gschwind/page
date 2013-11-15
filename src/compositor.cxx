@@ -88,8 +88,8 @@ void compositor_t::init_composite_overlay() {
 
 compositor_t::compositor_t() {
 
-	fade_in_length = new_timespec(0, 500000000);
-	fade_out_length = new_timespec(0, 300000000);
+	fade_in_length = new_timespec(0, 250000000);
+	fade_out_length = new_timespec(0, 150000000);
 
 	/* about 30 per second */
 	fade_framerate_limit = new_timespec(0, 30000000);

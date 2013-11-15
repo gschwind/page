@@ -435,7 +435,7 @@ public:
 
 	void update_windows_stack();
 
-	void rr_update_viewport_layout();
+	void update_viewport_layout();
 	void remove_viewport(viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 
@@ -507,6 +507,16 @@ public:
 
 		fflush(stdout);
 
+	}
+
+	void set_desktop_geometry(long width, long height) {
+		/* define desktop geometry */
+		long desktop_geometry[2];
+		desktop_geometry[0] = width;
+		desktop_geometry[1] = height;
+		cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY,
+				CARDINAL, 32, PropModeReplace,
+				reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 	}
 
 };

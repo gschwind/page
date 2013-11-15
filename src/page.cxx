@@ -232,7 +232,7 @@ void page_t::run() {
 	 **/
 	XRRSelectInput(cnx->dpy, cnx->get_root_window(), RRCrtcChangeNotifyMask);
 
-	rr_update_viewport_layout();
+	update_viewport_layout();
 
 	/* init page render */
 	rpage = new renderable_page_t(cnx, theme,
@@ -262,12 +262,7 @@ void page_t::run() {
 			reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
 
 	/* define desktop geometry */
-	long desktop_geometry[2];
-	desktop_geometry[0] = _root_position.w;
-	desktop_geometry[1] = _root_position.h;
-	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
+	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
@@ -448,6 +443,7 @@ void page_t::unmanage(managed_window_t * mw) {
 		unfullscreen(mw);
 	}
 
+	/** if the window is destroyed, this not work, see fix on destroy **/
 	if (mw == _client_focused.front()) {
 		_client_focused.remove(mw);
 		if (_client_focused.front() != 0) {
@@ -1704,6 +1700,12 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 		unmanaged_window.erase(uw);
 	}
 
+	if(!_client_focused.empty()) {
+		if(_client_focused.front() != 0) {
+			set_focus(_client_focused.front(), CurrentTime);
+		}
+	}
+
 	cleanup_transient_for_for_window(e.window);
 
 	update_client_list();
@@ -2345,7 +2347,7 @@ void page_t::process_event(XEvent const & e) {
 		//printf("RRNotify : %s\n", s_subtype);
 
 		if (ev.subtype == RRNotify_CrtcChange) {
-			rr_update_viewport_layout();
+			update_viewport_layout();
 			update_allocation();
 
 			theme->update();
@@ -2451,7 +2453,7 @@ void page_t::set_default_pop(notebook_t * x) {
 void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
 	/** ignore focus if time is too old **/
-	if(tfocus <= _last_focus_time)
+	if(tfocus <= _last_focus_time and tfocus != CurrentTime)
 		return;
 
 	/**
@@ -2462,7 +2464,8 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 		return;
 	}
 
-	_last_focus_time = tfocus;
+	if(tfocus != CurrentTime)
+		_last_focus_time = tfocus;
 
 	managed_window_t * old_focus = 0;
 
@@ -3421,7 +3424,7 @@ void page_t::update_windows_stack() {
 	XRestackWindows(cnx->dpy, &v_order[0], v_order.size());
 }
 
-void page_t::rr_update_viewport_layout() {
+void page_t::update_viewport_layout() {
 
 	/** update root size infos **/
 
@@ -3431,6 +3434,7 @@ void page_t::rr_update_viewport_layout() {
 	}
 
 	_root_position = box_t<int>(rwa.x, rwa.y, rwa.width, rwa.height);
+	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	/** store the newer layout, to cleanup obsolet viewport **/
 	map<RRCrtc, viewport_t *> new_layout;

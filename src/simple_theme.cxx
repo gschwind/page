@@ -198,7 +198,7 @@ simple_theme_t::simple_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	}
 
 	if (close_button_s == 0) {
-		std::string filename = conf_img_dir + "/window-close.png";
+		std::string filename = conf_img_dir + "/window-close-1.png";
 		printf("Load: %s\n", filename.c_str());
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == 0)
