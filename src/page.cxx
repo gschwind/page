@@ -324,21 +324,15 @@ void page_t::run() {
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_s), Mod4Mask,
 			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
+
+	/* Alt-Tab */
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Tab), Mod1Mask,
 			cnx->get_root_window(),
-			True, GrabModeAsync, GrabModeAsync);
-
-	/** get Alt release **/
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Alt_L), AnyModifier,
-			cnx->get_root_window(),
-			True, GrabModeAsync, GrabModeAsync);
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Alt_R), AnyModifier,
-			cnx->get_root_window(),
-			True, GrabModeAsync, GrabModeAsync);
+			False, GrabModeAsync, GrabModeSync);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask,
 			cnx->get_root_window(),
-			True, GrabModeAsync, GrabModeSync);
+			True, GrabModeAsync, GrabModeAsync);
 
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
@@ -678,11 +672,17 @@ void page_t::process_event(XKeyEvent const & e) {
 		rpage->add_damaged(_root_position);
 	}
 
-	if (XK_Tab == k[0] && e.type == KeyPress && (e.state & Mod1Mask)) {
+	if (XK_Tab == k[0] && e.type == KeyPress && ((e.state & 0x0f) == Mod1Mask)) {
 
 		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
-			/** grab this events **/
+
+			/* Grab keyboard */
+			XGrabKeyboard(e.display, cnx->get_root_window(), False, GrabModeAsync, GrabModeAsync,
+					e.time);
+
+			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
 			XAllowEvents(e.display, AsyncKeyboard, e.time);
+
 			key_press_mode = KEY_PRESS_ALT_TAB;
 			key_mode_data.selected = _client_focused.front();
 
@@ -719,7 +719,10 @@ void page_t::process_event(XKeyEvent const & e) {
 							80 * 4, y * 80));
 			pat->show();
 
+		} else {
+			XAllowEvents(e.display, ReplayKeyboard, e.time);
 		}
+
 
 		pat->select_next();
 		pat->mark_durty();
@@ -728,8 +731,14 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	}
 
-	if ((XK_Alt_L == k[0] || XK_Alt_R == k[0]) && e.type == KeyRelease
+
+
+	if ((XK_Alt_L == k[0] or XK_Alt_R == k[0]) && e.type == KeyRelease
 			&& key_press_mode == KEY_PRESS_ALT_TAB) {
+
+		/** Ungrab Keyboard **/
+		XUngrabKeyboard(e.display, e.time);
+
 		key_press_mode = KEY_PRESS_NORMAL;
 
 		/**

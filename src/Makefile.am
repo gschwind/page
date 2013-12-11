@@ -1,4 +1,4 @@
-bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual page_internal_compositor
+bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual page_internal_compositor test_grab_key
 
 AM_CXXFLAGS =  \
 	-rdynamic \
@@ -84,4 +84,7 @@ test_region_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIB
 
 list_visual_SOURCES = list_visual.cxx
 list_visual_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) 
+
+test_grab_key_SOURCES = test_grab_key.cxx
+test_grab_key_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
 
