@@ -9,6 +9,8 @@
 #define PAGE_HXX_
 
 
+#include "config.hxx"
+
 #include <glib.h>
 
 #include <features.h>

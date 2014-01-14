@@ -8,6 +8,9 @@
 #ifndef FTRACE_FUNCTION_HXX_
 #define FTRACE_FUNCTION_HXX_
 
+
+#include "config.hxx"
+
 #include <string>
 
 extern "C" void trace_init();

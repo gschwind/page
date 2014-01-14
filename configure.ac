@@ -1,10 +1,24 @@
 AC_INIT([page], [0.9.5])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
-#AC_CONFIG_HEADERS([src/config.h])
+AC_CONFIG_HEADERS([src/config.hxx])
 AC_CONFIG_MACRO_DIR([m4])
 
 AC_ARG_ENABLE([trace], [AS_HELP_STRING([--enable-trace],[enable trace feature with gcc])], [CXXFLAGS="-g -finstrument-functions -finstrument-functions-exclude-file-list=x86_64-pc-linux-gnu,X11 -DENABLE_TRACE $CXXFLAGS"], [])
+
+# define custom macro to setup dir from datadir
+
+AC_DEFUN([AC_DEFINE_DIR], [
+ # expand 4 times ... with some hope that enough
+ eval ac_define_dir="\"[$]$2\""
+ eval ac_define_dir="\"$ac_define_dir\""
+ eval ac_define_dir="\"$ac_define_dir\""
+ eval ac_define_dir="\"$ac_define_dir\""
+ AC_SUBST($1, "$ac_define_dir")
+ AC_DEFINE_UNQUOTED($1, "$ac_define_dir", [$3])
+])
+
+
 
 # Check for programs
 AC_PROG_CC
@@ -65,6 +79,8 @@ AC_CHECK_LIB(rt, clock_gettime,
      AC_DEFINE(HAVE_CLOCK_GETTIME, 1,
 	       [Define to 1 if you have the `clock_gettime` function.])])
 AC_SUBST(RT_LIBS)
+
+AC_DEFINE_DIR([DATA_DIR], [datadir], [Data directory (/usr/share)])
 
 AC_CONFIG_FILES([
   page.conf

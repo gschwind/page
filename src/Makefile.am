@@ -12,8 +12,7 @@ AM_CXXFLAGS =  \
 	$(XEXT_CFLAGS) \
 	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \
-	-fno-strict-aliasing \
-	-DDATA_DIR="\"$(datadir)\""
+	-fno-strict-aliasing
 
 page_SOURCES = \
 	main.cxx page.cxx \
