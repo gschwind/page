@@ -178,6 +178,9 @@ page_t::~page_t() {
 		delete page_areas;
 	}
 
+	// cleanup cairo, for valgrind happiness.
+	cairo_debug_reset_static_data();
+
 	delete cnx;
 
 }
@@ -431,7 +434,7 @@ managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type, 
 
 void page_t::unmanage(managed_window_t * mw) {
 
-	printf("unmanage %lu\n", mw->orig());
+	//printf("unmanage %lu\n", mw->orig());
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		unfullscreen(mw);
@@ -500,6 +503,7 @@ void page_t::scan() {
 	}
 
 	update_client_list();
+	update_allocation();
 //	printf("return %s\n", __PRETTY_FUNCTION__);
 }
 
@@ -757,8 +761,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
-	fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
+	//fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+	//		e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
 	switch (process_mode) {
@@ -1042,8 +1046,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 }
 
 void page_t::process_event_release(XButtonEvent const & e) {
-	fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root);
+	//fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
+	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
 	if (e.button == Button1) {
 		switch (process_mode) {
@@ -2386,6 +2390,10 @@ void page_t::process_event(XEvent const & e) {
 		if(se->kind == ShapeClip) {
 			//Window w = se->window;
 		}
+	} else if (e.type == FocusOut) {
+		//printf("FocusOut %lu\n", e.xfocus.window);
+	} else if (e.type == FocusIn) {
+		//printf("FocusIn %lu\n", e.xfocus.window);
 	} else {
 //		fprintf(stderr, "Not handled event:\n");
 //		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
@@ -2680,9 +2688,12 @@ void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position)
 }
 
 
+/*
+ * Compute the usable desktop area and dock allocation.
+ */
 void page_t::fix_allocation(viewport_t & v) {
-	printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
-			v.raw_aera.x, v.raw_aera.y);
+	//printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
+	//		v.raw_aera.x, v.raw_aera.y);
 
 	/* Partial struct content definition */
 	enum {
@@ -2765,8 +2776,8 @@ void page_t::fix_allocation(viewport_t & v) {
 
 	v.set_effective_area(final_size);
 
-	printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
-			v.effective_aera.x, v.effective_aera.y);
+	//printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
+	//		v.effective_aera.x, v.effective_aera.y);
 }
 
 split_t * page_t::new_split(split_type_e type) {
@@ -3590,6 +3601,7 @@ bool page_t::onmap(Window w) {
 			return true;
 		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			create_unmanaged_window(w, type);
+			update_allocation();
 		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 			create_managed_window(w, type, wa);
 			return true;
@@ -3627,6 +3639,7 @@ bool page_t::onmap(Window w) {
 			create_unmanaged_window(w, type);
 		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			create_unmanaged_window(w, type);
+			update_allocation();
 		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 			create_unmanaged_window(w, type);
 		} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
@@ -3665,7 +3678,7 @@ bool page_t::onmap(Window w) {
 
 void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const & wa) {
 
-	printf("manage window %u\n", w);
+	//printf("manage window %lu\n", w);
 
 	managed_window_t * mw;
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)

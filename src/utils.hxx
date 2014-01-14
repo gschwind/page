@@ -9,6 +9,7 @@
 #define UTILS_HXX_
 
 #include <cstdio>
+#include <cstring>
 
 #include <map>
 #include <set>
@@ -229,12 +230,20 @@ template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
 
 inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {
 	XTextProperty xname;
-	XGetTextProperty(dpy, w, &xname, prop);
-	if (xname.nitems != 0) {
-		value = (char *)xname.value;
-		XFree(xname.value);
-		return true;
+	memset(&xname, 0, sizeof(xname));
+
+	if (XGetTextProperty(dpy, w, &xname, prop) != 0) {
+		if (xname.nitems != 0) {
+			value = (char *) xname.value;
+			XFree(xname.value);
+			return true;
+		}
 	}
+
+	// for safety.
+	if (xname.value != 0)
+		XFree(xname.value);
+
 	return false;
 }
 
@@ -309,18 +318,18 @@ inline bool check_randr_extension(Display * dpy, int * opcode, int * event,
 }
 
 static int error_handler(Display * dpy, XErrorEvent * ev) {
-	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
-			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-
-	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
-
-	if (ev->request_code < XFUNCSIZE) {
-		char const * func_name = x_function_codes[ev->request_code];
-		char error_text[1024];
-		error_text[0] = 0;
-		XGetErrorText(dpy, ev->error_code, error_text, 1024);
-		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
-	}
+//	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+//			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
+//
+//	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
+//
+//	if (ev->request_code < XFUNCSIZE) {
+//		char const * func_name = x_function_codes[ev->request_code];
+//		char error_text[1024];
+//		error_text[0] = 0;
+//		XGetErrorText(dpy, ev->error_code, error_text, 1024);
+//		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+//	}
 	return 0;
 }
 

@@ -97,7 +97,7 @@ simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	floating_margin.left = 8;
 	floating_margin.right = 8;
 
-	split_width = 14;
+	split_width = 10;
 
 	_cnx = cnx;
 

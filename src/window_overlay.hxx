@@ -105,7 +105,7 @@ public:
 				_back_surf = cairo_surface_create_similar(_front_surf,
 						CAIRO_CONTENT_COLOR, _position.w, _position.h);
 			}
-			printf("CAIRO SURF TYPE = %s\n", cairo_surface_type_name[cairo_surface_get_type(_back_surf)]);
+			//printf("CAIRO SURF TYPE = %s\n", cairo_surface_type_name[cairo_surface_get_type(_back_surf)]);
 
 		}
 	}

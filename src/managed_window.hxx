@@ -26,39 +26,45 @@ private:
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
-			| (PropertyChangeMask);
+			| (PropertyChangeMask) | (FocusChangeMask);
 
+	// theme used for window decoration
 	theme_t const * _theme;
 
 	managed_window_type_e _type;
 	Atom _net_wm_type;
 
-	/** hold floating possition **/
+	/** hold floating position **/
 	box_int_t _floating_wished_position;
 
-	/** hold notebook possition **/
+	/** hold notebook position **/
 	box_int_t _notebook_wished_position;
 
 	box_int_t _wished_position;
 	box_int_t _orig_position;
 	box_int_t _base_position;
 
+	// the window surface
 	cairo_surface_t * _surf;
 
+	// border surface of floating window
 	cairo_surface_t * _top_buffer;
 	cairo_surface_t * _bottom_buffer;
 	cairo_surface_t * _left_buffer;
 	cairo_surface_t * _right_buffer;
 
+	// icon cache
 	mutable window_icon_handler_t * _icon;
+	// window title cache
 	mutable string * _title;
 
-	/* avoid copy */
+	/* private to avoid copy */
 	managed_window_t(managed_window_t const &);
 	managed_window_t & operator=(managed_window_t const &);
 
 	void init_managed_type(managed_window_type_e type);
 
+	// the connection where the windows is linked to
 	xconnection_t * _cnx;
 
 	Visual * _orig_visual;
@@ -406,11 +412,15 @@ public:
 		if (_theme->floating_margin.top > 0) {
 			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
 					_base_position.w, _theme->floating_margin.top);
+		} else {
+			_top_buffer = 0;
 		}
 
 		if (_theme->floating_margin.bottom > 0) {
 			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
 					_base_position.w, _theme->floating_margin.bottom);
+		} else {
+			_bottom_buffer = 0;
 		}
 
 		if (_theme->floating_margin.left > 0) {
@@ -418,6 +428,8 @@ public:
 					_theme->floating_margin.left,
 					_base_position.h - _theme->floating_margin.top
 							- _theme->floating_margin.bottom);
+		} else {
+			_left_buffer = 0;
 		}
 
 		if (_theme->floating_margin.right > 0) {
@@ -425,6 +437,8 @@ public:
 					_theme->floating_margin.right,
 					_base_position.h - _theme->floating_margin.top
 							- _theme->floating_margin.bottom);
+		} else {
+			_right_buffer = 0;
 		}
 
 	}

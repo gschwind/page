@@ -500,12 +500,12 @@ public:
 
 	void print_tree() {
 
-		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
-				i != viewport_outputs.end(); ++i) {
-			i->second->print_tree();
-		}
-
-		fflush(stdout);
+//		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
+//				i != viewport_outputs.end(); ++i) {
+//			i->second->print_tree();
+//		}
+//
+//		fflush(stdout);
 
 	}
 
