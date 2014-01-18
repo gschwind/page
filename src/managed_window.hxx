@@ -344,6 +344,9 @@ public:
 		_cnx->write_net_wm_state(_orig, net_wm_state);
 	}
 
+	void net_wm_state_delete() {
+		XDeleteProperty(_cnx->dpy, _orig, A(_NET_WM_STATE));
+	}
 
 	void normalize() {
 		_cnx->write_wm_state(_orig, NormalState, None);
@@ -363,16 +366,10 @@ public:
 
 	void set_floating_wished_position(box_t<int> & pos) {
 		_floating_wished_position = pos;
-		if(is(MANAGED_FLOATING)) {
-			reconfigure();
-		}
 	}
 
 	void set_notebook_wished_position(box_t<int> & pos) {
 		_notebook_wished_position = pos;
-		if(!is(MANAGED_FLOATING)) {
-			reconfigure();
-		}
 	}
 
 	box_int_t const & get_wished_position() {

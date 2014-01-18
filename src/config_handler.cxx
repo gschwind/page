@@ -14,6 +14,10 @@ config_handler_t::config_handler_t() {
 
 }
 
+config_handler_t::~config_handler_t() {
+	_data.clear();
+}
+
 /* this function merge config file, the last one override previous loaded files */
 void config_handler_t::merge_from_file_if_exist(string const & f) {
 
@@ -47,8 +51,9 @@ void config_handler_t::merge_from_file_if_exist(string const & f) {
 					gchar * value = g_key_file_get_value(kf, groups[g], keys[k],
 							0);
 					if (value != 0) {
+						string svalue(value);
 						_data[pair<string, string>(groups[g], keys[k])] =
-								string(value);
+								svalue;
 						g_free(value);
 					}
 				}

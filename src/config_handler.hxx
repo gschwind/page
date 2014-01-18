@@ -24,6 +24,7 @@ class config_handler_t {
 
 public:
 	config_handler_t();
+	~config_handler_t();
 	void merge_from_file_if_exist(string const & f);
 
 	bool has_key(char const * groups, char const * key);

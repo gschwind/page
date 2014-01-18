@@ -389,6 +389,10 @@ public:
 
 
 	~xconnection_t() {
+
+		_atom_to_name.clear();
+		_name_to_atom.clear();
+
 		XCloseDisplay(dpy);
 	}
 
@@ -746,8 +750,9 @@ public:
 				_name_to_atom[os.str()] = atom;
 				_atom_to_name[atom] = os.str();
 			} else {
-				_name_to_atom[string(name)] = atom;
-				_atom_to_name[atom] = string(name);
+				string sname(name);
+				_name_to_atom[sname] = atom;
+				_atom_to_name[atom] = sname;
 				XFree(name);
 			}
 			return _atom_to_name[atom];
