@@ -109,7 +109,8 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	/* load file in arguments if provided */
 	if (conf_file_name != 0) {
-		conf.merge_from_file_if_exist(string(conf_file_name));
+		string s(conf_file_name);
+		conf.merge_from_file_if_exist(s);
 	}
 
 	default_window_pop = 0;
@@ -191,7 +192,7 @@ void page_t::run() {
 
 //	printf("root size: %d,%d\n", cnx->get_root_size().w, cnx->get_root_size().h);
 
-	/* create an invisile window to identify page */
+	/* create an invisible window to identify page */
 	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0,
 			0);
 	std::string name("page");
@@ -228,6 +229,7 @@ void page_t::run() {
 		}
 	}
 
+	/** initialise theme **/
 	theme = new simple2_theme_t(cnx, conf);
 
 	/**
@@ -340,7 +342,7 @@ void page_t::run() {
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
-	 * grabbing events or release event and allow futher processing by other clients.
+	 * grabbing events or release event and allow further processing by other clients.
 	 **/
 	XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
@@ -458,6 +460,7 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	/* as recommended by EWMH delete _NET_WM_STATE when window become unmanaged */
 	mw->net_wm_state_delete();
+	mw->wm_state_delete();
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
@@ -3601,6 +3604,22 @@ bool page_t::onmap(Window w) {
 			}
 		}
 	}
+
+	/** MOTIF HACK **/
+	{
+		motif_wm_hints_t motif_hints;
+		if (cnx->read_motif_wm_hints(w, &motif_hints)) {
+			if (motif_hints.flags & MWM_HINTS_DECORATIONS) {
+				if (not (motif_hints.decorations & MWM_DECOR_BORDER)
+						and not ((motif_hints.decorations & MWM_DECOR_ALL))) {
+					type = A(_NET_WM_WINDOW_TYPE_TOOLTIP);
+				}
+
+			}
+		}
+
+	}
+
 
 	/** HACK FOR ECLIPSE **/
 	{

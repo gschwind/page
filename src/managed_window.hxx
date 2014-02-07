@@ -364,6 +364,10 @@ public:
 		_cnx->unmap(_orig);
 	}
 
+	void wm_state_delete() {
+		XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));
+	}
+
 	void set_floating_wished_position(box_t<int> & pos) {
 		_floating_wished_position = pos;
 	}

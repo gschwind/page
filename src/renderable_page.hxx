@@ -61,9 +61,9 @@ public:
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_set_source_surface(cr, _back_surf, 0, 0);
-			cairo_paint(cr);
+			cairo_fill(cr);
 		}
-
+		cairo_surface_flush(_front_surf);
 		cairo_destroy(cr);
 
 	}
