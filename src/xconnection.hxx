@@ -828,6 +828,19 @@ public:
 		}
 	}
 
+	bool motif_has_border(Window w) {
+		motif_wm_hints_t motif_hints;
+		if (read_motif_wm_hints(w, &motif_hints)) {
+			if (motif_hints.flags & MWM_HINTS_DECORATIONS) {
+				if (not (motif_hints.decorations & MWM_DECOR_BORDER)
+						and not ((motif_hints.decorations & MWM_DECOR_ALL))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 private:
 
 	void cnx_printf(char const * str, ...) {

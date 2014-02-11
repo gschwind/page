@@ -76,6 +76,11 @@ _is_focused(false)
 				- _floating_wished_position.h) / 2;
 	}
 
+	/** check if the window has motif no border **/
+	{
+		_motif_has_border = cnx->motif_has_border(orig);
+	}
+
 	/**
 	 * Create the base window, window that will content managed window
 	 **/
@@ -178,23 +183,38 @@ void managed_window_t::reconfigure() {
 	if(is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
 
-		_base_position.x = _wished_position.x - _theme->floating_margin.left;
-		_base_position.y = _wished_position.y - _theme->floating_margin.top;
-		_base_position.w = _wished_position.w + _theme->floating_margin.left
-				+ _theme->floating_margin.right;
-		_base_position.h = _wished_position.h + _theme->floating_margin.top
-				+ _theme->floating_margin.bottom;
+		if (_motif_has_border) {
+			_base_position.x = _wished_position.x
+					- _theme->floating_margin.left;
+			_base_position.y = _wished_position.y - _theme->floating_margin.top;
+			_base_position.w = _wished_position.w + _theme->floating_margin.left
+					+ _theme->floating_margin.right;
+			_base_position.h = _wished_position.h + _theme->floating_margin.top
+					+ _theme->floating_margin.bottom;
 
-		if(_base_position.x < 0)
-			_base_position.x = 0;
-		if(_base_position.y < 0)
-			_base_position.y = 0;
+			if (_base_position.x < 0)
+				_base_position.x = 0;
+			if (_base_position.y < 0)
+				_base_position.y = 0;
 
-		_orig_position.x = _theme->floating_margin.left;
-		_orig_position.y = _theme->floating_margin.top;
-		_orig_position.w = _wished_position.w;
-		_orig_position.h = _wished_position.h;
+			_orig_position.x = _theme->floating_margin.left;
+			_orig_position.y = _theme->floating_margin.top;
+			_orig_position.w = _wished_position.w;
+			_orig_position.h = _wished_position.h;
 
+		} else {
+			_base_position = _wished_position;
+
+			if (_base_position.x < 0)
+				_base_position.x = 0;
+			if (_base_position.y < 0)
+				_base_position.y = 0;
+
+			_orig_position.x = 0;
+			_orig_position.y = 0;
+			_orig_position.w = _wished_position.w;
+			_orig_position.h = _wished_position.h;
+		}
 
 		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
 

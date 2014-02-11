@@ -3605,20 +3605,31 @@ bool page_t::onmap(Window w) {
 		}
 	}
 
-	/** MOTIF HACK **/
-	{
-		motif_wm_hints_t motif_hints;
-		if (cnx->read_motif_wm_hints(w, &motif_hints)) {
-			if (motif_hints.flags & MWM_HINTS_DECORATIONS) {
-				if (not (motif_hints.decorations & MWM_DECOR_BORDER)
-						and not ((motif_hints.decorations & MWM_DECOR_ALL))) {
-					type = A(_NET_WM_WINDOW_TYPE_TOOLTIP);
-				}
-
-			}
-		}
-
-	}
+//	/** MOTIF HACK **/
+//	{
+//		motif_wm_hints_t motif_hints;
+//		if (cnx->read_motif_wm_hints(w, &motif_hints)) {
+//			bool is_fullscreen = false;
+//
+//			list<Atom> state;
+//			cnx->read_net_wm_state(w, &state);
+//			list<Atom>::iterator x = find(state.begin(), state.end(),
+//					A(_NET_WM_STATE_FULLSCREEN));
+//			is_fullscreen = (x != state.end());
+//
+//
+//			if (motif_hints.flags & MWM_HINTS_DECORATIONS) {
+//				if (not (motif_hints.decorations & MWM_DECOR_BORDER)
+//						and not ((motif_hints.decorations & MWM_DECOR_ALL))
+//				/* fullscreen windows has no border but are not TOOLTIP */
+//				and not is_fullscreen) {
+//					type = A(_NET_WM_WINDOW_TYPE_TOOLTIP);
+//				}
+//
+//			}
+//		}
+//
+//	}
 
 
 	/** HACK FOR ECLIPSE **/
@@ -3735,7 +3746,8 @@ void page_t::create_managed_window(Window w, Atom type, XWindowAttributes const 
 	managed_window_t * mw;
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& !cnx->read_wm_transient_for(w)) {
+			&& !cnx->read_wm_transient_for(w)
+			&& cnx->motif_has_border(w)) {
 
 		mw = manage(MANAGED_NOTEBOOK, type, w, wa);
 		insert_window_in_tree(mw, 0, true);

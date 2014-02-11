@@ -83,6 +83,8 @@ private:
 
 	bool _is_focused;
 
+	bool _motif_has_border;
+
 public:
 
 	managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
@@ -182,6 +184,10 @@ public:
 
 	bool is_focused() const {
 		return _is_focused;
+	}
+
+	bool motif_has_border() {
+		return _motif_has_border;
 	}
 
 //	void set_default_action() {
