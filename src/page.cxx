@@ -246,7 +246,7 @@ void page_t::run() {
 	/* create and add popups (overlay) */
 	pfm = new popup_frame_move_t(cnx, theme);
 	pn0 = new popup_notebook0_t(cnx, theme);
-	ps = new popup_split_t(cnx);
+	ps = new popup_split_t(cnx, theme);
 	pat = new popup_alt_tab_t(cnx, theme);
 
 	default_window_pop = 0;
