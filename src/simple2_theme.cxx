@@ -82,7 +82,7 @@ inline string get_value_string(GKeyFile * conf, string const & group, string con
 
 simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
-	notebook_margin.top = 20;
+	notebook_margin.top = 19;
 	notebook_margin.bottom = 2;
 	notebook_margin.left = 2;
 	notebook_margin.right = 2;
@@ -329,7 +329,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 			if ((*i) == n->selected()) {
 				b = box_int_t(floor(offset), n->allocation().y,
 						floor(offset + 2.0 * box_width) - floor(offset),
-						notebook_margin.top - 4);
+						notebook_margin.top - 1);
 
 				page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
 				ncclose.position.x = b.x + b.w - 1 * 17 - 3;
@@ -360,7 +360,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 			} else {
 				b = box_int_t(floor(offset), n->allocation().y,
 						floor(offset + box_width) - floor(offset),
-						notebook_margin.top - 4);
+						notebook_margin.top - 1);
 
 				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
 				nc.position = b;
@@ -498,18 +498,20 @@ static void draw_notebook_border(cairo_t * cr, box_int_t const & alloc,
 
 	double half = border_width / 2.0;
 
-	cairo_new_path(cr);
+	simple2_theme_t::cairo_rounded_tab(cr, tab_area.x + 0.5, tab_area.y + 0.5, tab_area.w - 1.0, tab_area.h - 1.0, 7.0);
 
-	cairo_move_to(cr, tab_area.x + half, tab_area.y + tab_area.h + half);
-	/** tab left **/
-	cairo_line_to(cr, tab_area.x + half, tab_area.y + half);
-	/** tab top **/
-	cairo_line_to(cr, tab_area.x + tab_area.w - half, tab_area.y + half);
-	/** tab right **/
-	cairo_line_to(cr, tab_area.x + tab_area.w - half,
-			tab_area.y + tab_area.h + half);
-	/** tab bottom **/
-	cairo_line_to(cr, tab_area.x + half, tab_area.y + tab_area.h + half);
+//	cairo_new_path(cr);
+//
+//	cairo_move_to(cr, tab_area.x + half, tab_area.y + tab_area.h + half);
+//	/** tab left **/
+//	cairo_line_to(cr, tab_area.x + half, tab_area.y + half);
+//	/** tab top **/
+//	cairo_line_to(cr, tab_area.x + tab_area.w - half, tab_area.y + half);
+//	/** tab right **/
+//	cairo_line_to(cr, tab_area.x + tab_area.w - half,
+//			tab_area.y + tab_area.h + half);
+//	/** tab bottom **/
+//	cairo_line_to(cr, tab_area.x + half, tab_area.y + tab_area.h + half);
 
 	cairo_set_line_width(cr, border_width);
 	cairo_set_source_rgba(cr, color);
@@ -542,14 +544,15 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw the tab background **/
 	box_int_t b = tab_area;
 	cairo_set_source_rgba(cr, background_color);
-	cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+	cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0);
+	//cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 	cairo_fill(cr);
 
 	/** draw application icon **/
 	box_int_t bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
-	bicon.x += 3;
+	bicon.x += 7;
 	bicon.y += 2;
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -566,8 +569,8 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw application title **/
 	box_int_t btext = tab_area;
 	btext.h -= 0;
-	btext.w -= 3 * 16 + 12;
-	btext.x += 3 + 16 + 2;
+	btext.w -= 3 * 16 + 12 + 4;
+	btext.x += 7 + 16 + 2;
 	btext.y += 2;
 
 	/** draw title **/
@@ -604,8 +607,8 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw close button **/
 
 	box_t<int> ncclose;
-	ncclose.x = tab_area.x + tab_area.w - 1 * 17 - 3;
-	ncclose.y = tab_area.y + 0;
+	ncclose.x = tab_area.x + tab_area.w - 1 * 17 - 4;
+	ncclose.y = tab_area.y + 2;
 	ncclose.w = 16;
 	ncclose.h = 16;
 
@@ -616,8 +619,8 @@ void simple2_theme_t::render_notebook_selected(
 
 	/** draw unbind button **/
 	box_t<int> ncub;
-	ncub.x = tab_area.x + tab_area.w - 2 * 17 - 3;
-	ncub.y = tab_area.y + 0;
+	ncub.x = tab_area.x + tab_area.w - 2 * 17 - 4;
+	ncub.y = tab_area.y + 2;
 	ncub.w = 16;
 	ncub.h = 16;
 
@@ -703,7 +706,9 @@ void simple2_theme_t::render_notebook_normal(
 	box_int_t b = tab_area;
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(cr, background_color);
-	cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+	//cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+	cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0);
+
 	cairo_fill(cr);
 
 	box_int_t bicon = tab_area;
@@ -760,12 +765,14 @@ void simple2_theme_t::render_notebook_normal(
 	{
 		box_int_t b = tab_area;
 
-		cairo_new_path(cr);
-		cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5);
-		cairo_line_to(cr, b.x + 0.5, b.y + 0.5);
-		cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5);
-		cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5);
-		cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
+//		cairo_new_path(cr);
+//		cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5);
+//		cairo_line_to(cr, b.x + 0.5, b.y + 0.5);
+//		cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5);
+//		cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5);
+//		cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5);
+//
+		cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0);
 		cairo_set_source_rgba(cr, border_color);
 		cairo_stroke(cr);
 	}
@@ -1417,6 +1424,19 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsig
 	cairo_stroke(cr);
 }
 
+void simple2_theme_t::cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius) {
+
+	cairo_new_path(cr);
+	cairo_move_to(cr, x, y + h);
+	cairo_line_to(cr, x, y + radius);
+	cairo_arc(cr, x + radius, y + radius, radius, 2.0 * M_PI_2, 3.0 * M_PI_2);
+	cairo_line_to(cr, x + w - radius, y);
+	cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2);
+	cairo_line_to(cr, x + w, y + h);
+	cairo_close_path(cr);
+
+
+}
 
 
 }
