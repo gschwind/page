@@ -348,7 +348,7 @@ void page_t::run() {
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
-	timespec const default_wait = new_timespec(0, 1000000000/30);
+	timespec const default_wait = new_timespec(0, 1000000000/60);
 	timespec max_wait = default_wait;
 	timespec next_frame;
 

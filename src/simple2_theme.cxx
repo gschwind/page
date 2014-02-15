@@ -666,6 +666,23 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw border **/
 	draw_notebook_border(cr, n->allocation(), tab_area, border_color, border_width);
 
+
+	/** draw gradient under tab **/
+
+	cairo_save(cr);
+	cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h);
+	cairo_rectangle(cr, 0.0, 0.0, tab_area.w, 100.0);
+	cairo_clip(cr);
+	cairo_pattern_t * gradient;
+	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
+	cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0);
+	cairo_pattern_add_color_stop_rgba(gradient, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_set_source_rgba(cr, border_color);
+	cairo_mask(cr, gradient);
+	cairo_fill(cr);
+	cairo_pattern_destroy(gradient);
+	cairo_restore(cr);
+
 }
 
 
@@ -777,8 +794,26 @@ void simple2_theme_t::render_notebook_normal(
 		cairo_stroke(cr);
 	}
 
+
+	/** draw gradient under tabs **/
+	cairo_save(cr);
+	cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h);
+	cairo_rectangle(cr, 0.0, 0.0, tab_area.w, 100.0);
+	cairo_clip(cr);
+	cairo_pattern_t * gradient;
+	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
+	cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0);
+	cairo_pattern_add_color_stop_rgba(gradient, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_set_source_rgba(cr, border_color);
+	cairo_mask(cr, gradient);
+	cairo_fill(cr);
+	cairo_pattern_destroy(gradient);
+	cairo_restore(cr);
+
 	g_object_unref(pango_layout);
 	cairo_restore(cr);
+
+
 
 }
 
