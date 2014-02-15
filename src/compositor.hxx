@@ -26,10 +26,13 @@ namespace page {
 
 class compositor_t : public xevent_handler_t {
 
+	static char const * const require_glx_extensions[];
+
 	Display * _dpy;
 
 	Window cm_window;
 	Window composite_overlay;
+	XdbeBackBuffer composite_back_buffer;
 
 	XWindowAttributes root_attributes;
 
@@ -47,6 +50,9 @@ class compositor_t : public xevent_handler_t {
 
 	/* xrandr extension handler */
 	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	/* GLX extension handler */
+	int glx_opcode, glx_event, glx_error;
 
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
@@ -69,6 +75,8 @@ class compositor_t : public xevent_handler_t {
 	/** clip region for multi monitor setup **/
 	region_t<int> _desktop_region;
 
+	region_t<int> _pending_damage;
+
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
@@ -84,11 +92,13 @@ class compositor_t : public xevent_handler_t {
 	/* composite overlay surface */
 	cairo_surface_t * _front_buffer;
 	/** back buffer, used when composition is needed (i.e. transparency) **/
-	cairo_surface_t * _bask_buffer;
+	cairo_surface_t * _back_buffer;
 
 	/** performance counter **/
 	double fast_region_surf_monitor;
 	double slow_region_surf_monitor;
+
+	GLXContext glx_ctx;
 
 
 	void repair_damaged_window(Window w, region_t<int> area);
@@ -129,10 +139,16 @@ class compositor_t : public xevent_handler_t {
 	void init_composite_overlay();
 	bool process_check_event();
 
+	bool check_glx_context();
+
 	void destroy_cairo();
 	void init_cairo();
 
 	void repair_area_region(region_t<int> const & repair);
+
+	bool check_glx_for_extensions(char const * const * ext);
+
+
 
 public:
 
@@ -148,6 +164,9 @@ public:
 	void xflush() {
 		XFlush(_dpy);
 	}
+
+	void render();
+	void render_simple();
 
 };
 

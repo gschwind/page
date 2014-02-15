@@ -12,6 +12,7 @@ AM_CXXFLAGS =  \
 	$(XEXT_CFLAGS) \
 	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \
+	$(GL_CFLAGS) \
 	-fno-strict-aliasing
 
 page_SOURCES = \
@@ -43,6 +44,7 @@ page_LDADD = \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) \
+	$(GL_LIBS) \
 	-lbfd \
 	-ldl
 
@@ -63,6 +65,7 @@ page_internal_compositor_LDADD = \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) \
+	$(GL_LIBS) \
 	-lbfd \
 	-ldl
 

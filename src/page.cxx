@@ -348,16 +348,15 @@ void page_t::run() {
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
-	timespec max_wait;
+	timespec const default_wait = new_timespec(0, 1000000000/30);
+	timespec max_wait = default_wait;
+	timespec next_frame;
+
+	clock_gettime(CLOCK_MONOTONIC, &next_frame);
+
+
 	fd_set fds_read;
 	fd_set fds_intr;
-
-	/**
-	 * wait for a maximum of 15 ms
-	 * i.e about 60 times per second.
-	 **/
-	max_wait.tv_sec = 0;
-	max_wait.tv_nsec = 30000000;
 
 	int max = cnx->fd();
 
@@ -369,6 +368,21 @@ void page_t::run() {
 	XFlush(cnx->dpy);
 	running = true;
 	while (running) {
+
+		timespec cur_tic;
+
+		clock_gettime(CLOCK_MONOTONIC, &cur_tic);
+
+		if(cur_tic > next_frame) {
+			next_frame = cur_tic + default_wait;
+			max_wait = default_wait;
+			if (rnd != 0) {
+				rnd->render_simple();
+				rnd->xflush();
+			}
+		} else {
+			max_wait = pdiff(cur_tic, next_frame);
+		}
 
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_intr);

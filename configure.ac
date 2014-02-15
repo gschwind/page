@@ -66,6 +66,10 @@ PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.0.0)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
 
+PKG_CHECK_MODULES(GL, gl >= 0.28)
+AC_SUBST(GL_CFLAGS)
+AC_SUBST(GL_LIBS)
+
 AC_CHECK_HEADER([bfd.h],
                 [AC_DEFINE([HAVE_BFD_H], [1], [BFD Headers])],
                 [AC_MSG_ERROR([Header "bfd.h" from the binutils not found!])])

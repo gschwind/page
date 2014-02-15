@@ -8,12 +8,23 @@
 #include <unistd.h>
 #include <algorithm>
 #include <list>
+
+#include <cstring>
+
 #include "compositor.hxx"
 #include "atoms.hxx"
 
 #include "xconnection.hxx"
 
 namespace page {
+
+
+char const * const compositor_t::require_glx_extensions[] = {
+		"GLX_EXT_texture_from_pixmap",
+		"GL_ARB_texture_non_power_of_two",
+		0
+	};
+
 
 static void _draw_crossed_box(cairo_t * cr, box_t<int> const & box, double r, double g,
 		double b) {
@@ -123,6 +134,16 @@ compositor_t::compositor_t() {
 		throw std::runtime_error(RANDR_NAME " extension is not supported");
 	}
 
+	if (!check_glx_extension(_dpy, &glx_opcode, &glx_event,
+			&glx_error)) {
+		throw std::runtime_error(GLX_EXTENSION_NAME " extension is not supported");
+	}
+
+	if (!check_dbe_extension(_dpy, &glx_opcode, &glx_event,
+			&glx_error)) {
+		throw std::runtime_error(DBE_PROTOCOL_NAME " extension is not supported");
+	}
+
 	A = atom_handler_t(_dpy);
 
 	/* create an invisible window to identify page */
@@ -155,6 +176,10 @@ compositor_t::compositor_t() {
 	/* initialize composite */
 	init_composite_overlay();
 
+//	if(not check_glx_context()) {
+//		throw std::runtime_error("Cannot create GLX extension.");
+//	}
+
 	/** some performance counter **/
 	fast_region_surf_monitor = 0.0;
 	slow_region_surf_monitor = 0.0;
@@ -170,7 +195,7 @@ compositor_t::compositor_t() {
 
 
 	_front_buffer = 0;
-	_bask_buffer = 0;
+	_back_buffer = 0;
 
 	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
 	update_layout();
@@ -181,6 +206,201 @@ compositor_t::compositor_t() {
 	 * line, in case of scan will report it.
 	 **/
 	stack_window_place_on_top(composite_overlay);
+
+}
+
+bool compositor_t::check_glx_for_extensions(char const * const * const extension_list) {
+	if(extension_list == NULL)
+		return false;
+
+	char const * gl_exts = (char*) glGetString(GL_EXTENSIONS);
+	char const * glx_exts = (char*) glGetString(GL_EXTENSIONS);
+
+	fprintf(stderr, "%s\n", gl_exts);
+	fprintf(stderr, "%s\n", glx_exts);
+
+	int k = 0;
+	while(extension_list[k] != NULL) {
+		fprintf(stderr, "Check for %s\n", extension_list[k]);
+		bool has_extension = false;
+		if (strstr(gl_exts, extension_list[k]) != 0) {
+			has_extension = true;
+		} else  if (strstr(glx_exts, extension_list[k]) != 0) {
+			has_extension = true;
+		}
+
+
+		if(not has_extension)
+			return false;
+
+		++k;
+	}
+	return true;
+}
+
+bool compositor_t::check_glx_context() {
+
+
+	/** Get composite wimdow XVisualInfo **/
+	XWindowAttributes wa;
+	XGetWindowAttributes(_dpy, composite_overlay, &wa);
+	XVisualInfo * vis_info = NULL;
+	int nitems = 0;
+	XVisualInfo vreq = { 0 };
+	vreq.visualid = XVisualIDFromVisual(wa.visual);
+	vis_info = XGetVisualInfo(_dpy, VisualIDMask, &vreq, &nitems);
+
+	if (!vis_info) {
+		fprintf(stderr, "Failed to acquire XVisualInfo for current visual.\n");
+		return false;
+	}
+
+	/** Check that the visual is double-buffered **/
+	int value = 0;
+	if (Success != glXGetConfig(_dpy, vis_info, GLX_USE_GL, &value)) {
+		fprintf(stderr, "Composite window do not use GL.\n");
+		return false;
+	}
+
+	if(value == 0) {
+		fprintf(stderr, "Composite window do not use GL.\n");
+		return false;
+	}
+
+
+	if (Success != glXGetConfig(_dpy, vis_info, GLX_DOUBLEBUFFER, &value)) {
+		fprintf(stderr, "Composite window is not a double buffered.\n");
+		return false;
+	}
+
+	if(value == 0) {
+		fprintf(stderr, "Composite window is not a double buffered.\n");
+		return false;
+	}
+
+	glx_ctx = glXCreateContext(_dpy, vis_info, None, GL_TRUE);
+
+	if(glx_ctx == NULL) {
+		fprintf(stderr, "Failed to get GLX context.\n");
+		return false;
+	}
+
+	if (!glXMakeCurrent(_dpy, composite_overlay, glx_ctx)) {
+		fprintf(stderr, "Failed to attach GLX context to composite window.\n");
+		return false;
+	}
+
+	if(not check_glx_for_extensions(require_glx_extensions)) {
+		fprintf(stderr, "Require GLX extension not found.\n");
+		return false;
+	}
+
+	return true;
+
+
+//
+//	  // Ensure GLX_EXT_texture_from_pixmap exists
+//	  if (need_render && !glx_hasglxext(ps, "GLX_EXT_texture_from_pixmap"))
+//	    goto glx_init_end;
+//
+//	  if (!ps->glx_context) {
+//	    // Get GLX context
+//	    ps->glx_context = glXCreateContext(ps->dpy, pvis, None, GL_TRUE);
+//
+//	    if (!ps->glx_context) {
+//	      printf_errf("(): Failed to get GLX context.");
+//	      goto glx_init_end;
+//	    }
+//
+//	    // Attach GLX context
+//	    if (!glXMakeCurrent(ps->dpy, get_tgt_window(ps), ps->glx_context)) {
+//	      printf_errf("(): Failed to attach GLX context.");
+//	      goto glx_init_end;
+//	    }
+//	  }
+//
+//	  // Ensure we have a stencil buffer. X Fixes does not guarantee rectangles
+//	  // in regions don't overlap, so we must use stencil buffer to make sure
+//	  // we don't paint a region for more than one time, I think?
+//	  if (need_render && !ps->o.glx_no_stencil) {
+//	    GLint val = 0;
+//	    glGetIntegerv(GL_STENCIL_BITS, &val);
+//	    if (!val) {
+//	      printf_errf("(): Target window doesn't have stencil buffer.");
+//	      goto glx_init_end;
+//	    }
+//	  }
+//
+//	  // Check GL_ARB_texture_non_power_of_two, requires a GLX context and
+//	  // must precede FBConfig fetching
+//	  if (need_render)
+//	    ps->glx_has_texture_non_power_of_two = glx_hasglext(ps,
+//	        "GL_ARB_texture_non_power_of_two");
+//
+//	  // Acquire function addresses
+//	  if (need_render) {
+//	#ifdef DEBUG_GLX_MARK
+//	    ps->glStringMarkerGREMEDY = (f_StringMarkerGREMEDY)
+//	      glXGetProcAddress((const GLubyte *) "glStringMarkerGREMEDY");
+//	    ps->glFrameTerminatorGREMEDY = (f_FrameTerminatorGREMEDY)
+//	      glXGetProcAddress((const GLubyte *) "glFrameTerminatorGREMEDY");
+//	#endif
+//
+//	    ps->glXBindTexImageProc = (f_BindTexImageEXT)
+//	      glXGetProcAddress((const GLubyte *) "glXBindTexImageEXT");
+//	    ps->glXReleaseTexImageProc = (f_ReleaseTexImageEXT)
+//	      glXGetProcAddress((const GLubyte *) "glXReleaseTexImageEXT");
+//	    if (!ps->glXBindTexImageProc || !ps->glXReleaseTexImageProc) {
+//	      printf_errf("(): Failed to acquire glXBindTexImageEXT() / glXReleaseTexImageEXT().");
+//	      goto glx_init_end;
+//	    }
+//
+//	    if (ps->o.glx_use_copysubbuffermesa) {
+//	      ps->glXCopySubBufferProc = (f_CopySubBuffer)
+//	        glXGetProcAddress((const GLubyte *) "glXCopySubBufferMESA");
+//	      if (!ps->glXCopySubBufferProc) {
+//	        printf_errf("(): Failed to acquire glXCopySubBufferMESA().");
+//	        goto glx_init_end;
+//	      }
+//	    }
+//	  }
+//
+//	  // Acquire FBConfigs
+//	  if (need_render && !glx_update_fbconfig(ps))
+//	    goto glx_init_end;
+//
+//	  // Render preparations
+//	  if (need_render) {
+//	    glx_on_root_change(ps);
+//
+//	    glDisable(GL_DEPTH_TEST);
+//	    glDepthMask(GL_FALSE);
+//	    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+//	    glDisable(GL_BLEND);
+//
+//	    if (!ps->o.glx_no_stencil) {
+//	      // Initialize stencil buffer
+//	      glClear(GL_STENCIL_BUFFER_BIT);
+//	      glDisable(GL_STENCIL_TEST);
+//	      glStencilMask(0x1);
+//	      glStencilFunc(GL_EQUAL, 0x1, 0x1);
+//	    }
+//
+//	    // Clear screen
+//	    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//	    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//	    // glXSwapBuffers(ps->dpy, get_tgt_window(ps));
+//	  }
+//
+//	  success = true;
+//
+//	glx_init_end:
+//	  cxfree(pvis);
+//
+//	  if (!success)
+//	    glx_destroy(ps);
+//
+//	  return success;
 
 }
 
@@ -390,8 +610,13 @@ compositor_t::~compositor_t() {
 //}
 
 void compositor_t::repair_area_region(region_t<int> const & repair) {
+	_pending_damage += repair;
+}
 
-	region_t<int> pending_damage = repair;
+
+void compositor_t::render() {
+
+	region_t<int> pending_damage = _desktop_region;
 
 	/** this line divide page cpu cost by 4.0 ... O_O it's insane **/
 	if(pending_damage.empty())
@@ -419,7 +644,9 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 	 * should not hit too much performance.
 	 **/
 
-	cairo_t * front_cr = cairo_create(_front_buffer);
+	//cairo_t * front_cr = cairo_create(_front_buffer);
+	/** double buffer hehe **/
+	cairo_t * front_cr = cairo_create(_back_buffer);
 
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
@@ -532,7 +759,7 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 	 **/
 	if (!slow_region.empty()) {
 
-		cairo_t * back_cr = cairo_create(_bask_buffer);
+		cairo_t * back_cr = cairo_create(_back_buffer);
 
 		{
 
@@ -547,10 +774,10 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 		}
 
 		{
-			cairo_surface_flush(_bask_buffer);
+			cairo_surface_flush(_back_buffer);
 			region_t<int>::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
-				repair_overlay(front_cr, *i, _bask_buffer);
+				repair_overlay(front_cr, *i, _back_buffer);
 				//_draw_crossed_box(front_cr, (*i), 1.0, 0.0, 0.0);
 				++i;
 			}
@@ -563,10 +790,162 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 
 	cairo_destroy(front_cr);
 
+
+	XdbeSwapInfo si;
+	si.swap_window = composite_overlay;
+	si.swap_action = None;
+	XdbeSwapBuffers(_dpy, &si, 1);
+
 //	for (std::list<composite_window_t *>::iterator i = visible.begin();
 //			i != visible.end(); ++i) {
 //		(*i)->destroy_cairo();
 //	}
+
+}
+
+
+void compositor_t::render_simple() {
+
+	/**
+	 * list content is bottom window to upper window in stack a optimization.
+	 **/
+	std::list<composite_window_t *> visible;
+	for (std::list<Window>::iterator i = window_stack.begin();
+			i != window_stack.end(); ++i) {
+		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
+		if (x != window_data.end()) {
+			if ((x->second->map_state() != IsUnmapped or x->second->fade_mode != x->second->FADE_NONE)
+					and x->second->c_class() == InputOutput) {
+				visible.push_back(x->second);
+			}
+		}
+	}
+
+	cairo_t * front_cr = cairo_create(_back_buffer);
+
+	for (std::list<composite_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		(*i)->update_cairo();
+
+	}
+
+	/**
+	 * Find region where windows are not overlap each other. i.e. region where
+	 * only one window will be rendered.
+	 * This is often more than 80% of the screen.
+	 * This kind of region will be directly rendered.
+	 **/
+
+	region_t<int> region_without_overlapped_window;
+	for (list<composite_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		region_t<int> r = (*i)->get_region();
+		for (list<composite_window_t *>::iterator j = visible.begin();
+				j != visible.end(); ++j) {
+			if (i != j) {
+				r -= (*j)->get_region();
+			}
+		}
+		region_without_overlapped_window += r;
+	}
+
+	/**
+	 * Find region where the windows on top is not a window with alpha.
+	 * Small area, often dropdown menu.
+	 * This kind of area will be directly rendered.
+	 **/
+	region_t<int> region_without_alpha_on_top;
+
+	/**
+	 * Walk over all all window from bottom to top one. If window has alpha
+	 * channel remove it from region with no alpha, if window do not have alpha
+	 * add this window to the area.
+	 **/
+	for (list<composite_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
+			region_without_alpha_on_top -= (*i)->get_region();
+		} else {
+			/* if not has_alpha, add this area */
+			region_without_alpha_on_top += (*i)->get_region();
+		}
+	}
+
+	region_without_alpha_on_top -= region_without_overlapped_window;
+
+
+	region_t<int> slow_region = _desktop_region;
+	slow_region -= region_without_overlapped_window;
+	slow_region -= region_without_alpha_on_top;
+
+
+	/* direct render, area where there is only one window visible */
+	{
+		cairo_reset_clip(front_cr);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
+
+		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
+		while (i != region_without_overlapped_window.end()) {
+			fast_region_surf_monitor += i->w * i->h;
+			repair_buffer(visible, front_cr, *i);
+			// for debuging
+			_draw_crossed_box(front_cr, (*i), 0.0, 1.0, 0.0);
+			++i;
+		}
+	}
+
+	/* directly render area where window on the has no alpha */
+
+	{
+		cairo_reset_clip(front_cr);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
+
+		/* from top to bottom */
+		for (list<composite_window_t *>::reverse_iterator i =
+				visible.rbegin(); i != visible.rend(); ++i) {
+			composite_window_t * r = *i;
+			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
+			if (!draw_area.empty()) {
+				for (region_t<int>::const_iterator j = draw_area.begin();
+						j != draw_area.end(); ++j) {
+					if (!j->is_null()) {
+						r->draw_to(front_cr, *j);
+						/* this section show direct rendered screen */
+						_draw_crossed_box(front_cr, *j, 0.0, 0.0, 1.0);
+					}
+				}
+			}
+			region_without_alpha_on_top -= r->get_region();
+		}
+	}
+
+	if (!slow_region.empty()) {
+
+		{
+
+			cairo_reset_clip(front_cr);
+			cairo_set_operator(front_cr, CAIRO_OPERATOR_OVER);
+			region_t<int>::const_iterator i = slow_region.begin();
+			while (i != slow_region.end()) {
+				slow_region_surf_monitor += (*i).w * (*i).h;
+				repair_buffer(visible, front_cr, *i);
+				++i;
+			}
+		}
+
+		cairo_surface_flush(_back_buffer);
+
+	}
+
+	cairo_destroy(front_cr);
+
+
+	XdbeSwapInfo si;
+	si.swap_window = composite_overlay;
+	si.swap_action = None;
+	XdbeSwapBuffers(_dpy, &si, 1);
 
 }
 
@@ -929,8 +1308,8 @@ void compositor_t::process_events() {
 		process_event(ev);
 	}
 
-	if (last_render + fade_framerate_limit < curr_tic) {
-		last_render = curr_tic;
+//	if (last_render + fade_framerate_limit < curr_tic) {
+//		last_render = curr_tic;
 
 		region_t<int> pending_damage;
 
@@ -977,7 +1356,7 @@ void compositor_t::process_events() {
 
 		repair_area_region(pending_damage);
 
-	}
+	//}
 
 }
 
@@ -1101,10 +1480,12 @@ void compositor_t::destroy_cairo() {
 		_front_buffer = 0;
 	}
 
-	if(_bask_buffer != 0) {
-		cairo_surface_destroy(_bask_buffer);
-		_bask_buffer = 0;
+	if(_back_buffer != 0) {
+		cairo_surface_destroy(_back_buffer);
+		_back_buffer = 0;
 	}
+
+	XdbeDeallocateBackBufferName(_dpy, composite_back_buffer);
 }
 
 void compositor_t::init_cairo() {
@@ -1112,8 +1493,11 @@ void compositor_t::init_cairo() {
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
-	_bask_buffer = cairo_surface_create_similar(_front_buffer,
-			CAIRO_CONTENT_COLOR, root_attributes.width, root_attributes.height);
+	composite_back_buffer = XdbeAllocateBackBufferName(_dpy, composite_overlay, None);
+
+	_back_buffer = cairo_xlib_surface_create(_dpy, composite_back_buffer,
+			root_attributes.visual, root_attributes.width,
+			root_attributes.height);
 
 }
 

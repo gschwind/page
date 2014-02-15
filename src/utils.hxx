@@ -27,6 +27,8 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
+#include <X11/extensions/Xdbe.h>
+#include <GL/glx.h>
 
 #include "x11_func_name.hxx"
 
@@ -313,6 +315,31 @@ inline bool check_randr_extension(Display * dpy, int * opcode, int * event,
 		int major = 0, minor = 0;
 		XRRQueryVersion(dpy, &major, &minor);
 		printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+
+inline bool check_glx_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	if (!XQueryExtension(dpy, GLX_EXTENSION_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(dpy, &major, &minor);
+		printf(GLX_EXTENSION_NAME " Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+inline bool check_dbe_extension(Display * dpy, int * opcode, int * event,
+		int * error) {
+	if (!XQueryExtension(dpy, DBE_PROTOCOL_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(dpy, &major, &minor);
+		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major, minor);
 		return true;
 	}
 }

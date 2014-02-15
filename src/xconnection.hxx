@@ -16,6 +16,8 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
 
 #include <glib.h>
 
@@ -139,6 +141,9 @@ struct xconnection_t {
 
 	/* xrandr extension handler */
 	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	/* GLX extension handler */
+	int glx_opcode, glx_event, glx_error;
 
 	atom_handler_t _A;
 
