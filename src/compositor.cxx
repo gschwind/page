@@ -806,6 +806,12 @@ void compositor_t::render() {
 
 void compositor_t::render_simple() {
 
+	if(_pending_damage.empty()) {
+		return;
+	}
+
+	_pending_damage.clear();
+
 	/**
 	 * list content is bottom window to upper window in stack a optimization.
 	 **/
