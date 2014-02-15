@@ -59,12 +59,12 @@ box_int_t simple2_theme_t::compute_notebook_close_position(
 }
 
 box_int_t simple2_theme_t::compute_floating_close_position(box_int_t const & allocation) const {
-	return box_int_t(allocation.w - 1 * 17 - 8, 8, 16, 16);
+	return box_int_t(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
 }
 
 box_int_t simple2_theme_t::compute_floating_bind_position(
 		box_int_t const & allocation) const {
-	return box_int_t(allocation.w - 2 * 17 - 8, 8, 16, 16);
+	return box_int_t(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
 }
 
 
@@ -92,10 +92,10 @@ simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	split_margin.left = 0;
 	split_margin.right = 0;
 
-	floating_margin.top = 28;
-	floating_margin.bottom = 8;
-	floating_margin.left = 8;
-	floating_margin.right = 8;
+	floating_margin.top = 32;
+	floating_margin.bottom = 12;
+	floating_margin.left = 12;
+	floating_margin.right = 12;
 
 	split_width = 10;
 
@@ -451,10 +451,16 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	delete tabs;
 
 	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 
 	{
 		box_int_t b = compute_notebook_bookmark_position(n->allocation());
 
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source_rgb(cr, notebook_normal_background_color);
+		cairo_fill(cr);
+
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		if (n->is_default()) {
 			cairo_set_source_surface(cr, pops_button_s, b.x, b.y);
@@ -468,6 +474,12 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	{
 		box_int_t b = compute_notebook_vsplit_position(n->allocation());
+
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source_rgb(cr, notebook_normal_background_color);
+		cairo_fill(cr);
+
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_surface(cr, vsplit_button_s, b.x, b.y);
 		cairo_mask_surface(cr, vsplit_button_s, b.x, b.y);
@@ -475,6 +487,12 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	{
 		box_int_t b = compute_notebook_hsplit_position(n->allocation());
+
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source_rgb(cr, notebook_normal_background_color);
+		cairo_fill(cr);
+
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_surface(cr, hsplit_button_s, b.x, b.y);
 		cairo_mask_surface(cr, hsplit_button_s, b.x, b.y);
@@ -482,6 +500,12 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	{
 		box_int_t b = compute_notebook_close_position(n->allocation());
+
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source_rgb(cr, notebook_normal_background_color);
+		cairo_fill(cr);
+
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_set_source_surface(cr, close_button_s, b.x, b.y);
 		cairo_mask_surface(cr, close_button_s, b.x, b.y);
@@ -676,7 +700,7 @@ void simple2_theme_t::render_notebook_selected(
 	cairo_pattern_t * gradient;
 	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
 	cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0);
-	cairo_pattern_add_color_stop_rgba(gradient, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0);
 	cairo_set_source_rgba(cr, border_color);
 	cairo_mask(cr, gradient);
 	cairo_fill(cr);
@@ -877,16 +901,71 @@ void simple2_theme_t::render_floating_base(
 
 		box_int_t b(0, 0, allocation.w, floating_margin.top);
 
+		cairo_reset_clip(cr);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+		cairo_fill(cr);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad0 = cairo_pattern_create_linear(b.x, 0.0, b.x + floating_margin.left, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_rectangle(cr, b.x, b.y + floating_margin.bottom, floating_margin.left, floating_margin.top - floating_margin.bottom);
+		cairo_set_source(cr, grad0);
+		cairo_fill(cr);
+		cairo_pattern_destroy(grad0);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad1 = cairo_pattern_create_linear(b.x + b.w - floating_margin.right, 0.0, b.x + b.w, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right, floating_margin.top - floating_margin.bottom);
+		cairo_set_source(cr, grad1);
+		cairo_fill(cr);
+		cairo_pattern_destroy(grad1);
+
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, b.y, 0.0, b.y + floating_margin.bottom);
+		cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.right - floating_margin.left, floating_margin.bottom);
+		cairo_set_source(cr, grad2);
+		cairo_fill(cr);
+		cairo_pattern_destroy(grad2);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y + floating_margin.bottom, 0.0, b.x + floating_margin.left, b.y + floating_margin.bottom, floating_margin.left);
+		cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_source(cr, r0grad);
+		cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom);
+		cairo_fill(cr);
+		cairo_pattern_destroy(r0grad);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, 0.0, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right);
+		cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_source(cr, r1grad);
+		cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.right, floating_margin.bottom);
+		cairo_fill(cr);
+		cairo_pattern_destroy(r1grad);
+
+		box_int_t b1(b.x + floating_margin.left, b.y + floating_margin.bottom, b.w - floating_margin.left - floating_margin.right, b.h - floating_margin.bottom);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_rectangle(cr, b1.x, b1.y, b1.w, b1.h);
+		//cairo_rounded_tab(cr, b.x, b.y, b.w, b.h, 7.0);
 		cairo_set_source_rgba(cr, background_color);
 		cairo_fill(cr);
 
-		box_int_t bicon = b;
+		box_int_t bicon = b1;
 		bicon.h = 16;
 		bicon.w = 16;
-		bicon.x += 8;
-		bicon.y += 8;
+		bicon.x += 2;
+		bicon.y += 2;
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
@@ -912,11 +991,11 @@ void simple2_theme_t::render_floating_base(
 		cairo_set_source_surface(cr, close_button_s, bclose.x, bclose.y);
 		cairo_paint(cr);
 
-		box_int_t btext = b;
+		box_int_t btext = b1;
 		btext.h -= 4;
 		btext.w -= 3 * 16 - 8;
 		btext.x += 8 + 16 + 2;
-		btext.y += 8;
+		btext.y += 2;
 
 		cairo_reset_clip(cr);
 
@@ -947,14 +1026,14 @@ void simple2_theme_t::render_floating_base(
 		cairo_restore(cr);
 		cairo_reset_clip(cr);
 
-		cairo_new_path(cr);
-		cairo_move_to(cr, b.x + 1.0, b.y + b.h);
-		cairo_line_to(cr, b.x + 1.0, b.y + 1.0);
-		cairo_line_to(cr, b.w - 1.0, b.y + 1.0);
-		cairo_line_to(cr, b.w - 1.0, b.y + b.h);
-		cairo_set_line_width(cr, 2.0);
-		cairo_set_source_rgba(cr, border_color);
-		cairo_stroke(cr);
+//		cairo_new_path(cr);
+//		cairo_move_to(cr, b.x + 1.0, b.y + b.h);
+//		cairo_line_to(cr, b.x + 1.0, b.y + 1.0);
+//		cairo_line_to(cr, b.w - 1.0, b.y + 1.0);
+//		cairo_line_to(cr, b.w - 1.0, b.y + b.h);
+//		cairo_set_line_width(cr, 2.0);
+//		cairo_set_source_rgba(cr, border_color);
+//		cairo_stroke(cr);
 
 		g_object_unref(pango_layout);
 		cairo_destroy(cr);
@@ -965,18 +1044,43 @@ void simple2_theme_t::render_floating_base(
 
 		box_int_t b(0, 0, allocation.w, floating_margin.bottom);
 
+		/** clear **/
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-		cairo_set_source_rgba(cr, background_color);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		cairo_new_path(cr);
-		cairo_move_to(cr, b.x + 1.0, b.y);
-		cairo_line_to(cr, b.x + 1.0, b.y + b.h - 1.0);
-		cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h - 1.0);
-		cairo_line_to(cr, b.x + b.w - 1.0, b.y);
-		cairo_set_line_width(cr, 2.0);
-		cairo_set_source_rgba(cr, border_color);
-		cairo_stroke(cr);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, 0.0, floating_margin.bottom);
+		cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_source(cr, grad);
+		cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.left - floating_margin.right, b.h);
+		cairo_fill(cr);
+
+		cairo_pattern_destroy(grad);
+
+		cairo_reset_clip(cr);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y, 0.0, b.x + floating_margin.left, b.y, floating_margin.left);
+		cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_source(cr, r0grad);
+		cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom);
+		cairo_fill(cr);
+
+		cairo_pattern_destroy(r0grad);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y, 0.0, b.x + b.w - floating_margin.right, b.y, floating_margin.right);
+		cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_set_source(cr, r1grad);
+		cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.left, floating_margin.bottom);
+		cairo_fill(cr);
+
+		cairo_pattern_destroy(r1grad);
 
 		cairo_destroy(cr);
 
@@ -989,16 +1093,21 @@ void simple2_theme_t::render_floating_base(
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
+		/** clear **/
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-		cairo_set_source_rgba(cr, background_color);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		cairo_new_path(cr);
-		cairo_move_to(cr, b.x + b.w - 1.0, b.y);
-		cairo_line_to(cr, b.x + b.w - 1.0, b.y + b.h);
-		cairo_set_line_width(cr, 2.0);
-		cairo_set_source_rgba(cr, border_color);
-		cairo_stroke(cr);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.right, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source(cr, grad);
+		cairo_fill(cr);
+
+		cairo_pattern_destroy(grad);
 
 		cairo_destroy(cr);
 	}
@@ -1010,16 +1119,21 @@ void simple2_theme_t::render_floating_base(
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
+		/** clear **/
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
-		cairo_set_source_rgba(cr, background_color);
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		cairo_new_path(cr);
-		cairo_move_to(cr, b.x + 1.0, b.y);
-		cairo_line_to(cr, b.x + 1.0, b.y + b.h);
-		cairo_set_line_width(cr, 2.0);
-		cairo_set_source_rgba(cr, border_color);
-		cairo_stroke(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.left, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.0);
+		cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.5);
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_set_source(cr, grad);
+		cairo_fill(cr);
+
+		cairo_pattern_destroy(grad);
+
 
 		cairo_destroy(cr);
 

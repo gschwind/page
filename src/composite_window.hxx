@@ -169,7 +169,7 @@ public:
 			cairo_save(cr);
 			cairo_reset_clip(cr);
 			cairo_identity_matrix(cr);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			//cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 			cairo_clip(cr);

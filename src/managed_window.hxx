@@ -417,21 +417,21 @@ public:
 	void create_back_buffer() {
 
 		if (_theme->floating_margin.top > 0) {
-			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating_margin.top);
 		} else {
 			_top_buffer = 0;
 		}
 
 		if (_theme->floating_margin.bottom > 0) {
-			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating_margin.bottom);
 		} else {
 			_bottom_buffer = 0;
 		}
 
 		if (_theme->floating_margin.left > 0) {
-			_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+			_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_theme->floating_margin.left,
 					_base_position.h - _theme->floating_margin.top
 							- _theme->floating_margin.bottom);
@@ -440,7 +440,7 @@ public:
 		}
 
 		if (_theme->floating_margin.right > 0) {
-			_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_RGB24,
+			_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_theme->floating_margin.right,
 					_base_position.h - _theme->floating_margin.top
 							- _theme->floating_margin.bottom);

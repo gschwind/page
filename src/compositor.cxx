@@ -822,6 +822,8 @@ void compositor_t::render_simple() {
 	}
 
 	cairo_t * front_cr = cairo_create(_back_buffer);
+	cairo_set_source_rgba(front_cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_paint(front_cr);
 
 	for (std::list<composite_window_t *>::iterator i = visible.begin();
 			i != visible.end(); ++i) {
@@ -882,7 +884,7 @@ void compositor_t::render_simple() {
 	/* direct render, area where there is only one window visible */
 	{
 		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
 		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
 
 		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
@@ -899,7 +901,7 @@ void compositor_t::render_simple() {
 
 	{
 		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
 		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
 
 		/* from top to bottom */
@@ -926,7 +928,7 @@ void compositor_t::render_simple() {
 		{
 
 			cairo_reset_clip(front_cr);
-			cairo_set_operator(front_cr, CAIRO_OPERATOR_OVER);
+			cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
 			region_t<int>::const_iterator i = slow_region.begin();
 			while (i != slow_region.end()) {
 				slow_region_surf_monitor += (*i).w * (*i).h;

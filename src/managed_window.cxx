@@ -118,15 +118,38 @@ _is_focused(false)
 				InputOutput, _orig_visual, value_mask, &swa);
 		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
 		InputOutput, _orig_visual, value_mask, &swa);
+
 	} else {
 
-		_deco_visual = root_visual;
-		_deco_depth = root_depth;
+		/**
+		 * Create RGB window for back ground
+		 **/
+
+		XVisualInfo vinfo;
+		if (XMatchVisualInfo(cnx->dpy, cnx->screen(), 32, TrueColor,
+				&vinfo) == 0) {
+			throw std::runtime_error(
+					"Unable to find valid visual for background windows");
+		}
+
+
+		/**
+		 * To create RGBA window, the following field MUST bet set, for unknown
+		 * reason. i.e. border_pixel, background_pixel and colormap.
+		 **/
+		swa.border_pixel = 0;
+		swa.background_pixel = 0;
+		swa.colormap = XCreateColormap(_cnx->dpy, _cnx->get_root_window(),
+				vinfo.visual, AllocNone);
+
+		_deco_visual = vinfo.visual;
+		_deco_depth = 32;
+		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
 		wbase = XCreateWindow(cnx->dpy, cnx->get_root_window(), -10, -10, 1, 1,
-				0, root_depth, InputOutput, root_visual, value_mask, &swa);
+				0, 32, InputOutput, vinfo.visual, value_mask, &swa);
 		wdeco = XCreateWindow(cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0,
-				root_depth, InputOutput, root_visual, value_mask, &swa);
+				32, InputOutput, vinfo.visual, value_mask, &swa);
 	}
 
 	_orig = orig;
