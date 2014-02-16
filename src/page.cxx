@@ -2080,7 +2080,14 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			}
 		}
 	} else if (e.message_type == A(WM_CHANGE_STATE)) {
-		/** client currently cannot change the window state **/
+
+		/** When window want to become iconic, just bind them **/
+		if (mw != 0) {
+			if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
+				bind_window(mw);
+			}
+		}
+
 	} else if (e.message_type == A(PAGE_QUIT)) {
 		running = false;
 	} else if (e.message_type == A(WM_PROTOCOLS)) {
