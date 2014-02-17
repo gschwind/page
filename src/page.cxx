@@ -1820,8 +1820,8 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 }
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
-//	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
-//			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
+	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
+			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
 
 //	printf("name = %s\n", c->get_title().c_str());
 //
