@@ -882,9 +882,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.final_position = mw->get_floating_wished_position();
 				mode_data_floating.popup_original_position = mw->get_base_position();
 
-				pfm->move_resize(mw->get_base_position());
-				pfm->update_window(mw->orig(), mw->title());
-				pfm->show();
+//				pfm->move_resize(mw->get_base_position());
+//				pfm->update_window(mw->orig(), mw->title());
+//				pfm->show();
 
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
@@ -941,17 +941,17 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
-						pfm->move_resize(mw->get_base_position());
-						pfm->update_window(mw->orig(), mw->title());
-						pfm->show();
+//						pfm->move_resize(mw->get_base_position());
+//						pfm->update_window(mw->orig(), mw->title());
+//						pfm->show();
 
 						safe_raise_window(mw->orig());
 						process_mode = PROCESS_FLOATING_MOVE;
 					} else {
 
-						pfm->move_resize(mw->get_base_position());
-						pfm->update_window(mw->orig(), mw->title());
-						pfm->show();
+//						pfm->move_resize(mw->get_base_position());
+//						pfm->update_window(mw->orig(), mw->title());
+//						pfm->show();
 
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
@@ -1196,7 +1196,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			break;
 		case PROCESS_FLOATING_MOVE:
 
-			pfm->hide();
+			//pfm->hide();
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1219,7 +1219,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			break;
 		case PROCESS_FLOATING_RESIZE:
 
-			pfm->hide();
+			//pfm->hide();
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1492,11 +1492,13 @@ void page_t::process_event(XMotionEvent const & e) {
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
+		mode_data_floating.f->set_floating_wished_position(new_position);
+		mode_data_floating.f->reconfigure();
 
-		box_int_t popup_new_position = mode_data_floating.popup_original_position;
-		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-		update_popup_position(pfm, popup_new_position);
+//		box_int_t popup_new_position = mode_data_floating.popup_original_position;
+//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+//		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1574,13 +1576,16 @@ void page_t::process_event(XMotionEvent const & e) {
 		size.y += y_diff;
 		mode_data_floating.final_position = size;
 
-		box_int_t popup_new_position = size;
-		popup_new_position.x -= theme->floating_margin.left;
-		popup_new_position.y -= theme->floating_margin.top;
-		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
-		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+		mode_data_floating.f->set_floating_wished_position(size);
+		mode_data_floating.f->reconfigure();
 
-		update_popup_position(pfm, popup_new_position);
+//		box_int_t popup_new_position = size;
+//		popup_new_position.x -= theme->floating_margin.left;
+//		popup_new_position.y -= theme->floating_margin.top;
+//		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
+//		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+//
+//		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1784,26 +1789,25 @@ void page_t::process_event(XReparentEvent const & e) {
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
+	//printf("Unmap event %lu is send event = %d\n", e.window, e.send_event);
 
 	Window x = e.window;
 
 	/**
 	 * Filter own unmap.
 	 **/
-	bool expected_event = cnx->find_pending_event(event_t(e.serial, e.type));
-	if (expected_event)
-		return;
+//	bool expected_event = cnx->find_pending_event(event_t(e.serial, e.type));
+//	if (expected_event)
+//		return;
 
 	/* if client is managed */
 
 	managed_window_t * mw = find_managed_window_with(e.window);
-	if(mw != 0) {
+	if(mw != 0 and e.send_event == True) {
 		unmanage(mw);
+		cleanup_transient_for_for_window(x);
+		update_client_list();
 	}
-
-	cleanup_transient_for_for_window(x);
-
-	update_client_list();
 
 }
 
