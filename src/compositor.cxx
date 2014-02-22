@@ -1016,6 +1016,9 @@ void compositor_t::repair_overlay(cairo_t * cr, box_t<int> const & area,
 
 
 void compositor_t::process_event(XCreateWindowEvent const & e) {
+	if(e.send_event == True)
+		return;
+
 	if (e.window == composite_overlay)
 		return;
 	if (e.parent != DefaultRootWindow(_dpy))
@@ -1030,6 +1033,8 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
+	if(e.send_event == True)
+		return;
 	if (e.parent == DefaultRootWindow(_dpy)) {
 		/** will be followed by map **/
 		XWindowAttributes wa;
@@ -1045,7 +1050,7 @@ void compositor_t::process_event(XReparentEvent const & e) {
 }
 
 void compositor_t::process_event(XMapEvent const & e) {
-	if (e.send_event)
+	if (e.send_event == True)
 		return;
 	if (e.event != DefaultRootWindow(_dpy))
 		return;
@@ -1065,6 +1070,8 @@ void compositor_t::process_event(XMapEvent const & e) {
 }
 
 void compositor_t::process_event(XUnmapEvent const & e) {
+	if(e.send_event == True)
+		return;
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->fade_start = curr_tic;
@@ -1075,6 +1082,8 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
+	if(e.send_event == True)
+		return;
 	stack_window_remove(e.window);
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
@@ -1086,7 +1095,7 @@ void compositor_t::process_event(XDestroyWindowEvent const & e) {
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
-	if (e.send_event)
+	if (e.send_event == True)
 		return;
 
 	if (e.event == DefaultRootWindow(_dpy)
@@ -1109,6 +1118,9 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 
 
 void compositor_t::process_event(XCirculateEvent const & e) {
+	if(e.send_event == True)
+		return;
+
 	if(e.event != DefaultRootWindow(_dpy))
 		return;
 
