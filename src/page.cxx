@@ -405,6 +405,7 @@ void page_t::run() {
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
 		_max_wait = max_wait;
+		//printf("%ld %ld\n", _max_wait.tv_sec, _max_wait.tv_nsec);
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait, NULL);
 
 		while (XPending(cnx->dpy)) {
@@ -3546,7 +3547,18 @@ void page_t::update_viewport_layout() {
 	XRRFreeScreenResources(resources);
 
 	if(new_layout.size() < 1) {
-		throw std::runtime_error("No output screen found\n");
+		/** fallback to one screen **/
+		box_t<int> area(rwa.x, rwa.y, rwa.width, rwa.height);
+		/** if this crtc do not has a viewport **/
+		if (!has_key(viewport_outputs, (XID)None)) {
+			/** then create a new one, and store it in new_layout **/
+			new_layout[None] = new viewport_t(theme, area);
+		} else {
+			/** update allocation, and store it to new_layout **/
+			viewport_outputs[None]->set_raw_area(area);
+			new_layout[None] = viewport_outputs[None];
+		}
+		fix_allocation(*(new_layout[0]));
 	}
 
 	/** clean up old layout **/

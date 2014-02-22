@@ -36,6 +36,7 @@ public:
 		timespec t;
 		t.tv_nsec = nsec % 1000000000L;
 		t.tv_sec = nsec / 1000000000L;
+		return t;
 	}
 
 	operator double() {
@@ -50,6 +51,7 @@ public:
 		timespec cur_tic;
 		clock_gettime(CLOCK_MONOTONIC, &cur_tic);
 		nsec = cur_tic.tv_sec * 1000000000L + cur_tic.tv_nsec;
+		//printf("time = %ld, %ld %ld\n", nsec, cur_tic.tv_sec, cur_tic.tv_nsec);
 		// May be for safe truncate
 		// nsec = (cur_tic.tv_sec - ((cur_tic.tv_sec / 1000000000L) * 1000000000L)) * 1000000000L + cur_tic.tv_nsec;
 	}

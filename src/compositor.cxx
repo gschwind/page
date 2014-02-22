@@ -26,6 +26,12 @@ char const * const compositor_t::require_glx_extensions[] = {
 	};
 
 
+#define CHECK_CAIRO(x) do { \
+	x;\
+	print_cairo_status(cr, __FILE__, __LINE__); \
+} while(false)
+
+
 static void _draw_crossed_box(cairo_t * cr, box_t<int> const & box, double r, double g,
 		double b) {
 
@@ -100,11 +106,8 @@ void compositor_t::init_composite_overlay() {
 compositor_t::compositor_t() {
 	render_mode = COMPOSITOR_MODE_AUTO;
 
-	fade_in_length = 250000000L;
-	fade_out_length = 150000000L;
-
-	/* about 30 per second */
-	fade_framerate_limit = 30000000;
+	fade_in_length = 1000000000L;
+	fade_out_length = 1000000000L;
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
@@ -137,7 +140,7 @@ compositor_t::compositor_t() {
 
 	if (!check_glx_extension(_dpy, &glx_opcode, &glx_event,
 			&glx_error)) {
-		throw std::runtime_error(GLX_EXTENSION_NAME " extension is not supported");
+		//throw std::runtime_error(GLX_EXTENSION_NAME " extension is not supported");
 	}
 
 	if (!check_dbe_extension(_dpy, &glx_opcode, &glx_event,
@@ -187,15 +190,12 @@ compositor_t::compositor_t() {
 
 	flush_count = 0;
 	damage_count = 0;
-	last_tic.get_time();
-	last_render = last_tic;
 
 
 	/** update the windows list **/
 	scan();
 
 
-	_front_buffer = 0;
 	_back_buffer = 0;
 
 	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
@@ -617,6 +617,55 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 
 void compositor_t::render() {
 
+	region_t<int> pending_damage;
+	time_t tick;
+	tick.get_time();
+
+	for (map<Window, composite_window_t *>::iterator i =
+			window_data.begin(); i != window_data.end(); ++i) {
+		if (i->second->fade_mode == composite_window_t::FADE_NONE) {
+			continue;
+		} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
+			if (i->second->fade_start + fade_in_length > tick) {
+				time_t diff = tick - i->second->fade_start;
+				double alpha = 0.0;
+				/* compute alpha with enough precision without reach bound */
+				alpha = static_cast<double>(diff) / static_cast<double>(fade_in_length);
+
+				//printf("%ld %ld %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_in_length), alpha);
+
+				i->second->fade_step = alpha;
+				pending_damage += i->second->get_region();
+			} else {
+				i->second->fade_step = 1.0;
+				i->second->fade_mode = composite_window_t::FADE_NONE;
+				pending_damage += i->second->get_region();
+			}
+
+		} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
+			if (i->second->fade_start + fade_out_length > tick) {
+				time_t diff = tick - i->second->fade_start;
+				double alpha = 0.0;
+				/* compute alpha with enough precision without reach bound */
+				alpha = static_cast<double>(diff) / static_cast<double>(fade_out_length);
+
+				//printf("%lu %lu %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_out_length), alpha);
+
+				i->second->fade_step = 1.0 - alpha;
+				pending_damage += i->second->get_region();
+			} else {
+				pending_damage += i->second->get_region();
+				destroy_composite_surface(i->second->get_surf()->wid());
+				delete i->second;
+				window_data.erase(i);
+			}
+		} else {
+			continue;
+		}
+	}
+
+	repair_area_region(pending_damage);
+
 	if(render_mode == COMPOSITOR_MODE_AUTO) {
 		render_auto();
 	} else {
@@ -636,7 +685,7 @@ void compositor_t::render_auto() {
 		return;
 	}
 
-	_pending_damage.clear();
+	//_pending_damage.clear();
 
 	/**
 	 * list content is bottom window to upper window in stack a optimization.
@@ -646,22 +695,17 @@ void compositor_t::render_auto() {
 			i != window_stack.end(); ++i) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
 		if (x != window_data.end()) {
-			if ((x->second->map_state() != IsUnmapped or x->second->fade_mode != x->second->FADE_NONE)
-					and x->second->c_class() == InputOutput) {
-				visible.push_back(x->second);
-			}
+			visible.push_back(x->second);
 		}
 	}
 
-	cairo_t * front_cr = cairo_create(_back_buffer);
-	cairo_set_source_rgba(front_cr, 0.0, 0.0, 0.0, 1.0);
-	cairo_paint(front_cr);
+	_back_buffer = cairo_xlib_surface_create(_dpy, composite_back_buffer,
+			root_attributes.visual, root_attributes.width,
+			root_attributes.height);
 
-	for (std::list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		(*i)->update_cairo();
-
-	}
+	cairo_t * cr = cairo_create(_back_buffer);
+	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+	CHECK_CAIRO(cairo_paint(cr));
 
 	/**
 	 * Find region where windows are not overlap each other. i.e. region where
@@ -670,116 +714,119 @@ void compositor_t::render_auto() {
 	 * This kind of region will be directly rendered.
 	 **/
 
-	region_t<int> region_without_overlapped_window;
-	for (list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		region_t<int> r = (*i)->get_region();
-		for (list<composite_window_t *>::iterator j = visible.begin();
-				j != visible.end(); ++j) {
-			if (i != j) {
-				r -= (*j)->get_region();
-			}
-		}
-		region_without_overlapped_window += r;
-	}
+//	region_t<int> region_without_overlapped_window;
+//	for (list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		region_t<int> r = (*i)->get_region();
+//		for (list<composite_window_t *>::iterator j = visible.begin();
+//				j != visible.end(); ++j) {
+//			if (i != j) {
+//				r -= (*j)->get_region();
+//			}
+//		}
+//		region_without_overlapped_window += r;
+//	}
+//
+//	//region_without_overlapped_window = region_without_overlapped_window;
+//
+//	/**
+//	 * Find region where the windows on top is not a window with alpha.
+//	 * Small area, often dropdown menu.
+//	 * This kind of area will be directly rendered.
+//	 **/
+//	region_t<int> region_without_alpha_on_top;
+//
+//	/**
+//	 * Walk over all all window from bottom to top one. If window has alpha
+//	 * channel remove it from region with no alpha, if window do not have alpha
+//	 * add this window to the area.
+//	 **/
+//	for (list<composite_window_t *>::iterator i = visible.begin();
+//			i != visible.end(); ++i) {
+//		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
+//			region_without_alpha_on_top -= (*i)->get_region();
+//		} else {
+//			/* if not has_alpha, add this area */
+//			region_without_alpha_on_top += (*i)->get_region();
+//		}
+//	}
+//
+//	//region_without_alpha_on_top = region_without_alpha_on_top;
+//	region_without_alpha_on_top -= region_without_overlapped_window;
+//
+//
+//	region_t<int> slow_region = _desktop_region;
+//	slow_region -= region_without_overlapped_window;
+//	slow_region -= region_without_alpha_on_top;
+//
+//
+//	/* direct render, area where there is only one window visible */
+//	{
+//		CHECK_CAIRO(cairo_reset_clip(cr));
+//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_ATOP));
+//		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+//
+//		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
+//		while (i != region_without_overlapped_window.end()) {
+//			fast_region_surf_monitor += i->w * i->h;
+//			repair_buffer(visible, cr, *i);
+//			// for debuging
+//			_draw_crossed_box(cr, (*i), 0.0, 1.0, 0.0);
+//			++i;
+//		}
+//	}
+//
+//	/* directly render area where window on the has no alpha */
+//
+//	{
+//		CHECK_CAIRO(cairo_reset_clip(cr));
+//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_ATOP));
+//		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+//
+//		/* from top to bottom */
+//		for (list<composite_window_t *>::reverse_iterator i =
+//				visible.rbegin(); i != visible.rend(); ++i) {
+//			composite_window_t * r = *i;
+//			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
+//			if (!draw_area.empty()) {
+//				for (region_t<int>::const_iterator j = draw_area.begin();
+//						j != draw_area.end(); ++j) {
+//					if (!j->is_null()) {
+//						r->draw_to(cr, *j);
+//						/* this section show direct rendered screen */
+//						_draw_crossed_box(cr, *j, 0.0, 0.0, 1.0);
+//					}
+//				}
+//			}
+//			region_without_alpha_on_top -= r->get_region();
+//		}
+//	}
 
-	/**
-	 * Find region where the windows on top is not a window with alpha.
-	 * Small area, often dropdown menu.
-	 * This kind of area will be directly rendered.
-	 **/
-	region_t<int> region_without_alpha_on_top;
-
-	/**
-	 * Walk over all all window from bottom to top one. If window has alpha
-	 * channel remove it from region with no alpha, if window do not have alpha
-	 * add this window to the area.
-	 **/
-	for (list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
-			region_without_alpha_on_top -= (*i)->get_region();
-		} else {
-			/* if not has_alpha, add this area */
-			region_without_alpha_on_top += (*i)->get_region();
-		}
-	}
-
-	region_without_alpha_on_top -= region_without_overlapped_window;
-
-
-	region_t<int> slow_region = _desktop_region;
-	slow_region -= region_without_overlapped_window;
-	slow_region -= region_without_alpha_on_top;
-
-
-	/* direct render, area where there is only one window visible */
+	//if (!slow_region.empty()) {
 	{
-		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
-		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
-
-		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
-		while (i != region_without_overlapped_window.end()) {
-			fast_region_surf_monitor += i->w * i->h;
-			repair_buffer(visible, front_cr, *i);
-			// for debuging
-			_draw_crossed_box(front_cr, (*i), 0.0, 1.0, 0.0);
+		region_t<int> slow_region = _desktop_region;
+		CHECK_CAIRO(cairo_reset_clip(cr));
+		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+		region_t<int>::const_iterator i = slow_region.begin();
+		while (i != slow_region.end()) {
+			slow_region_surf_monitor += (*i).w * (*i).h;
+			repair_buffer(visible, cr, *i);
+			_draw_crossed_box(cr, *i, 0.0, 1.0, 1.0);
 			++i;
 		}
 	}
+	//}
 
-	/* directly render area where window on the has no alpha */
-
-	{
-		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
-		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
-
-		/* from top to bottom */
-		for (list<composite_window_t *>::reverse_iterator i =
-				visible.rbegin(); i != visible.rend(); ++i) {
-			composite_window_t * r = *i;
-			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
-			if (!draw_area.empty()) {
-				for (region_t<int>::const_iterator j = draw_area.begin();
-						j != draw_area.end(); ++j) {
-					if (!j->is_null()) {
-						r->draw_to(front_cr, *j);
-						/* this section show direct rendered screen */
-						_draw_crossed_box(front_cr, *j, 0.0, 0.0, 1.0);
-					}
-				}
-			}
-			region_without_alpha_on_top -= r->get_region();
-		}
-	}
-
-	if (!slow_region.empty()) {
-
-		{
-
-			cairo_reset_clip(front_cr);
-			cairo_set_operator(front_cr, CAIRO_OPERATOR_ATOP);
-			region_t<int>::const_iterator i = slow_region.begin();
-			while (i != slow_region.end()) {
-				slow_region_surf_monitor += (*i).w * (*i).h;
-				repair_buffer(visible, front_cr, *i);
-				++i;
-			}
-		}
-
-		cairo_surface_flush(_back_buffer);
-
-	}
-
-	cairo_destroy(front_cr);
-
+	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
+	cairo_destroy(cr);
+	cairo_surface_destroy(_back_buffer);
 
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
 	si.swap_action = None;
 	XdbeSwapBuffers(_dpy, &si, 1);
+
+	_pending_damage.clear();
 
 }
 
@@ -850,11 +897,6 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 	if (e.parent != DefaultRootWindow(_dpy))
 		return;
 
-	XWindowAttributes wa;
-	if (XGetWindowAttributes(_dpy, e.window, &wa)) {
-		window_data[e.window] = new composite_window_t(_dpy, e.window, &wa,
-				window_stack.empty() ? None : window_stack.back());
-	}
 	stack_window_place_on_top(e.window);
 }
 
@@ -862,16 +904,28 @@ void compositor_t::process_event(XReparentEvent const & e) {
 	if(e.send_event == True)
 		return;
 	if (e.parent == DefaultRootWindow(_dpy)) {
+
 		/** will be followed by map **/
-		XWindowAttributes wa;
-		if (XGetWindowAttributes(_dpy, e.window, &wa)) {
-			window_data[e.window] = new composite_window_t(_dpy, e.window, &wa,
-					window_stack.empty() ? None : window_stack.back());
-			repair_area_region(window_data[e.window]->position());
-		}
+//		XWindowAttributes wa;
+//		if (XGetWindowAttributes(_dpy, e.window, &wa)) {
+//
+//			if (wa.c_class == InputOutput) {
+//				create_damage(e.window, wa);
+//				create_composite_surface(e.window, wa);
+//
+//				window_data[e.window] = new composite_window_t(_dpy, e.window,
+//						&wa, create_composite_surface(e.window, wa));
+//				repair_area_region(window_data[e.window]->position());
+//			}
+//
+//		}
 		stack_window_place_on_top(e.window);
 	} else {
 		stack_window_remove(e.window);
+
+		//destroy_damage(e.window);
+		//destroy_composite_surface(e.window);
+
 	}
 }
 
@@ -885,13 +939,32 @@ void compositor_t::process_event(XMapEvent const & e) {
 	if (e.window == composite_overlay)
 		return;
 
-	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
-	if (x != window_data.end()) {
-		x->second->update_back_pixmap();
-		x->second->update_map_state(IsViewable);
-		x->second->fade_start = curr_tic;
-		x->second->fade_mode = composite_window_t::FADE_IN;
-		repair_area_region(x->second->position());
+	XWindowAttributes wa;
+	if (XGetWindowAttributes(_dpy, e.window, &wa)) {
+		if (wa.c_class == InputOutput) {
+
+			create_damage(e.window, wa);
+			create_composite_surface(e.window, wa);
+
+			_pending_damage += box_int_t(wa.x, wa.y, wa.width, wa.height);
+
+			composite_surface_t * x = create_composite_surface(e.window, wa);
+			if(has_key(window_data, e.window)) {
+				delete window_data[e.window];
+				window_data.erase(e.window);
+			}
+			composite_window_t * w = new composite_window_t(_dpy, e.window, &wa, x);;
+			window_data[e.window] = w;
+			w->fade_start.get_time();
+			w->fade_mode = composite_window_t::FADE_IN;
+			repair_area_region(w->get_region());
+
+		}
+	}
+
+	map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(e.window);
+	if(i != window_to_composite_surface.end()) {
+		i->second->onmap();
 	}
 }
 
@@ -900,24 +973,29 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 		return;
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
-		x->second->fade_start = curr_tic;
+		x->second->fade_start.get_time();
 		x->second->fade_mode = composite_window_t::FADE_OUT;
-		x->second->update_map_state(IsUnmapped);
-		repair_area_region(x->second->position());
+		repair_area_region(x->second->get_region());
 	}
+
+	destroy_damage(e.window);
+	destroy_composite_surface(e.window);
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
 	if(e.send_event == True)
 		return;
-	stack_window_remove(e.window);
+
+
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
-		composite_window_t * cw = x->second;
-		window_data.erase(x);
-		repair_area_region(cw->get_region());
-		delete cw;
+		if (x->second->fade_mode == composite_window_t::FADE_NONE) {
+			x->second->fade_start.get_time();
+			x->second->fade_mode = composite_window_t::FADE_OUT;
+			repair_area_region(x->second->get_region());
+		}
 	}
+
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
@@ -932,13 +1010,17 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		map<Window, composite_window_t *>::iterator x = window_data.find(
 				e.window);
 		if (x != window_data.end()) {
-			x->second->update_back_pixmap();
-
 			region_t<int> r = x->second->position();
 			x->second->update_position(e);
 			r += x->second->position();
 			repair_area_region(r);
 		}
+
+		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(e.window);
+		if(i != window_to_composite_surface.end()) {
+			i->second->onresize(e.width, e.height);
+		}
+
 	}
 }
 
@@ -957,7 +1039,6 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 	}
 
 	if(has_key(window_data, e.window)) {
-		window_data[e.window]->moved();
 		repair_area_region(window_data[e.window]->position());
 	}
 
@@ -987,7 +1068,7 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
 	//x->second->add_damaged_region(r);
 
-	r.translate(x->second->position().x, x->second->position().y);
+	r.translate(e.geometry.x, e.geometry.y);
 	repair_area_region(r);
 
 }
@@ -1050,8 +1131,14 @@ void compositor_t::scan() {
 				continue;
 			XWindowAttributes wa;
 			if (XGetWindowAttributes(_dpy, wins[i], &wa)) {
-				window_data[wins[i]] = new composite_window_t(_dpy, wins[i],
-						&wa, i == 0 ? None : wins[i - 1]);
+				if(wa.c_class == InputOutput) {
+					if (wa.map_state != IsUnmapped) {
+						create_damage(wins[i], wa);
+						create_composite_surface(wins[i], wa);
+						window_data[wins[i]] = new composite_window_t(_dpy, wins[i],
+								&wa, create_composite_surface(wins[i], wa));
+					}
+				}
 			}
 		}
 
@@ -1140,71 +1227,22 @@ void compositor_t::update_layout() {
 	}
 	XRRFreeScreenResources(resources);
 
+	if(_desktop_region.empty()) {
+		/** fall back to one screen **/
+		_desktop_region = box_int_t(root_attributes.x, root_attributes.y, root_attributes.width, root_attributes.height);
+
+	}
+
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
 }
 
 
 void compositor_t::process_events() {
-
-	curr_tic.get_time();
-
 	XEvent ev;
 	while(XPending(_dpy)) {
 		XNextEvent(_dpy, &ev);
 		process_event(ev);
 	}
-
-//	if (last_render + fade_framerate_limit < curr_tic) {
-//		last_render = curr_tic;
-
-		region_t<int> pending_damage;
-
-		for (map<Window, composite_window_t *>::iterator i =
-				window_data.begin(); i != window_data.end(); ++i) {
-			if (i->second->fade_mode == composite_window_t::FADE_NONE) {
-				continue;
-			} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
-				if (i->second->fade_start + fade_in_length > curr_tic) {
-					time_t diff = curr_tic - i->second->fade_start;
-					double alpha = 0.0;
-					/* compute alpha with enough precision without reach bound */
-					alpha = static_cast<double>(diff) / static_cast<double>(fade_in_length);
-
-					//printf("%ld %ld %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_in_length), alpha);
-
-					i->second->fade_step = alpha;
-					pending_damage += i->second->get_region();
-				} else {
-					i->second->fade_step = 1.0;
-					i->second->fade_mode = composite_window_t::FADE_NONE;
-					pending_damage += i->second->get_region();
-				}
-
-			} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
-				if (i->second->fade_start + fade_out_length > curr_tic) {
-					time_t diff = curr_tic - i->second->fade_start;
-					double alpha = 0.0;
-					/* compute alpha with enough precision without reach bound */
-					alpha = static_cast<double>(diff) / static_cast<double>(fade_out_length);
-
-					//printf("%lu %lu %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_out_length), alpha);
-
-					i->second->fade_step = alpha;
-					pending_damage += i->second->get_region();
-				} else {
-					i->second->fade_step = 0.0;
-					i->second->fade_mode = composite_window_t::FADE_NONE;
-					i->second->destroy_cairo();
-					i->second->destroy_back_pixmap();
-					pending_damage += i->second->get_region();
-				}
-			}
-		}
-
-		repair_area_region(pending_damage);
-
-	//}
-
 }
 
 void compositor_t::stack_window_update(Window window, Window above) {
@@ -1322,10 +1360,6 @@ bool compositor_t::process_check_event() {
 }
 
 void compositor_t::destroy_cairo() {
-	if(_front_buffer != 0) {
-		cairo_surface_destroy(_front_buffer);
-		_front_buffer = 0;
-	}
 
 	if(_back_buffer != 0) {
 		cairo_surface_destroy(_back_buffer);
@@ -1336,17 +1370,13 @@ void compositor_t::destroy_cairo() {
 }
 
 void compositor_t::init_cairo() {
-	_front_buffer = cairo_xlib_surface_create(_dpy, composite_overlay,
-			root_attributes.visual, root_attributes.width,
-			root_attributes.height);
 
 	composite_back_buffer = XdbeAllocateBackBufferName(_dpy, composite_overlay, None);
 
-	_back_buffer = cairo_xlib_surface_create(_dpy, composite_back_buffer,
-			root_attributes.visual, root_attributes.width,
-			root_attributes.height);
-
 }
+
+
+
 
 }
 

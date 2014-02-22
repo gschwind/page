@@ -18,8 +18,26 @@
 #include "region.hxx"
 #include "icon.hxx"
 #include "composite_window.hxx"
+#include "composite_surface.hxx"
+
+
 
 namespace page {
+
+inline static void print_cairo_status(cairo_t * cr, char const * file, int line) {
+	cairo_status_t s = cairo_status(cr);
+	if (s != CAIRO_STATUS_SUCCESS) {
+		printf("Cairo status %s:%d = %s\n", file, line,
+				cairo_status_to_string(s));
+	}
+}
+
+
+#define CHECK_CAIRO(x) do { \
+	x;\
+	print_cairo_status(cr, __FILE__, __LINE__); \
+} while(false)
+
 
 /**
  * This class is an handler of window, it just store some data cache about
@@ -27,40 +45,17 @@ namespace page {
  **/
 
 class composite_window_t {
+	composite_surface_t * _surf;
 	/** short cut **/
 	typedef region_t<int> _region_t;
 	typedef box_t<int> _box_t;
 
 	Display * dpy;
-
 	Window _wid;
-	Damage _damage;
-
 	box_int_t _position;
-	int _depth;
-	Visual * _visual;
-	int _c_class;
-	unsigned int _map_state;
-
-	Window _above;
-
-	cairo_surface_t * _surf;
-
 	bool _has_alpha;
 
 	_region_t _region;
-
-	unsigned int _old_map_state;
-	_region_t _old_region;
-
-
-	_region_t damaged_region;
-
-	bool _has_moved;
-
-	Pixmap back_pixmap;
-
-
 
 	/* avoid copy */
 	composite_window_t(composite_window_t const &);
@@ -70,7 +65,8 @@ public:
 	enum fade_mode_e {
 		FADE_NONE,
 		FADE_OUT,
-		FADE_IN
+		FADE_IN,
+		FADE_DESTROY
 	};
 
 	time_t fade_start;
@@ -81,83 +77,36 @@ public:
 			| PropertyChangeMask);
 
 	composite_window_t(Display * dpy, Window w,
-			XWindowAttributes const * wa, Window above) {
+			XWindowAttributes const * wa, composite_surface_t * surf) {
 		page_assert(dpy != 0);
+
+		_surf = surf;
 
 		this->dpy = dpy;
 		_wid = w;
 
 		/** copy usefull window attributes **/
 		_position = box_int_t(wa->x, wa->y, wa->width, wa->height);
-		_depth = wa->depth;
-		_visual = wa->visual;
-		_c_class = wa->c_class;
-		_map_state = wa->map_state;
-
-		_above = above;
-
-		_damage = None;
-		_surf = 0;
-		_has_moved = true;
-
-		_old_region = _region_t();
-		_old_map_state = IsUnmapped;
-
-		damaged_region.clear();
 
 		/** guess if window has alpha channel **/
 		_has_alpha = false;
-		if (_c_class == InputOutput) {
-			XRenderPictFormat * format = XRenderFindVisualFormat(dpy,
-					_visual);
-			if (format != 0) {
-				_has_alpha = (format->type == PictTypeDirect
-						&& format->direct.alphaMask);
-			}
+		XRenderPictFormat * format = XRenderFindVisualFormat(dpy, wa->visual);
+		if (format != 0) {
+			_has_alpha = (format->type == PictTypeDirect
+					&& format->direct.alphaMask);
 		}
 
 		/** read shape date **/
 		XShapeInputSelected(dpy, _wid);
 		update_shape();
 
-		/** if window is mapped, create cairo surface and damage **/
-		if (_map_state != IsUnmapped and _c_class == InputOutput) {
-			create_damage();
-			create_cairo();
-		}
-
 		fade_step = 0.0;
-		fade_start;
 		fade_mode = FADE_NONE;
 
-		back_pixmap = None;
-
-	}
-
-	void create_cairo() {
-		if (_surf == 0 and _c_class == InputOutput) {
-			_surf = cairo_xlib_surface_create(dpy, _wid, _visual,
-					_position.w, _position.h);
-		}
-	}
-
-	void update_cairo() {
-		if (_surf != 0) {
-			cairo_xlib_surface_set_size(_surf, _position.w, _position.h);
-		}
-	}
-
-	void destroy_cairo() {
-		if (_surf != 0) {
-			cairo_surface_destroy(_surf);
-			_surf = 0;
-		}
 	}
 
 	~composite_window_t() {
-		destroy_cairo();
-		destroy_damage();
-		destroy_back_pixmap();
+
 	}
 
 	void draw_to(cairo_t * cr, box_int_t const & area) {
@@ -168,19 +117,24 @@ public:
 				& box_int_t(_position.x, _position.y, _position.w, _position.h);
 
 		if (clip.w > 0 && clip.h > 0) {
-			cairo_save(cr);
-			cairo_reset_clip(cr);
-			cairo_identity_matrix(cr);
-			//cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
-			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-			cairo_clip(cr);
-			if(fade_mode != FADE_NONE) {
-				cairo_paint_with_alpha(cr, fade_step);
+			CHECK_CAIRO(cairo_save(cr));
+			CHECK_CAIRO(cairo_reset_clip(cr));
+			CHECK_CAIRO(cairo_identity_matrix(cr));
+			CHECK_CAIRO(cairo_set_source_surface(cr, _surf->get_surf(), _position.x, _position.y));
+			if (fade_mode != FADE_NONE) {
+				cairo_pattern_t * pat = cairo_pattern_create_rgba(0.0, 0.0, 0.0,
+						fade_step);
+				CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
+				CHECK_CAIRO(cairo_mask(cr, pat));
+				//CHECK_CAIRO(cairo_fill(cr));
+				CHECK_CAIRO(cairo_pattern_destroy(pat));
 			} else {
-				cairo_paint(cr);
+				CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
+				CHECK_CAIRO(cairo_fill(cr));
 			}
-			cairo_restore(cr);
+
+			CHECK_CAIRO(cairo_restore(cr));
+
 		}
 
 	}
@@ -216,122 +170,25 @@ public:
 		return _region;
 	}
 
-	void create_damage() {
-		destroy_damage();
-
-		_damage = XDamageCreate(dpy, _wid, XDamageReportNonEmpty);
-		if (_damage != None) {
-			XserverRegion region = XFixesCreateRegion(dpy, 0, 0);
-			XDamageSubtract(dpy, _damage, None, region);
-			XFixesDestroyRegion(dpy, region);
-		}
-	}
-
-	void destroy_damage() {
-		if (_damage != None) {
-			XDamageDestroy(dpy, _damage);
-			_damage = None;
-		}
-	}
-
-	void add_damaged_region(region_t<int> const & r) {
-		damaged_region += r;
-	}
-
-	region_t<int> get_damaged_region() {
-		region_t<int> r = damaged_region;
-		r.translate(_position.x, _position.y);
-		r &= _region;
-		return r;
-	}
-
-
-
-	void moved() {
-		_has_moved = true;
-	}
-
-	void clear_state() {
-		damaged_region.clear();
-		_has_moved = false;
-
-		_old_region = _region;
-		_old_map_state = _map_state;
-
-	}
-
-	bool has_moved() {
-		return _has_moved;
-	}
-
 	Window get_w() {
 		return _wid;
-	}
-
-	_region_t const & old_region() {
-		return _old_region;
-	}
-
-	unsigned int old_map_state() {
-		return _old_map_state;
 	}
 
 	box_int_t const & position() {
 		return _position;
 	}
 
-	unsigned int map_state() {
-		return _map_state;
-	}
-
 	void update_position(XConfigureEvent const & ev) {
 		if (_position != box_int_t(ev.x, ev.y, ev.width, ev.height)) {
-			_has_moved = true;
 			_position = box_int_t(ev.x, ev.y, ev.width, ev.height);
 			update_shape();
 		}
 
-		if(ev.above != _above) {
-			_has_moved = true;
-			_above = ev.above;
-		}
-
 	}
 
-	void update_map_state(int state) {
-		_map_state = state;
-		if(state != IsUnmapped) {
-			create_cairo();
-			create_damage();
-		} else {
-			destroy_cairo();
-			destroy_damage();
-			if (_surf == 0 and _c_class == InputOutput) {
-				_surf = cairo_xlib_surface_create(dpy, back_pixmap, _visual,
-						_position.w, _position.h);
-			}
-		}
+	composite_surface_t * get_surf() {
+		return _surf;
 	}
-
-	int c_class() {
-		return _c_class;
-	}
-
-	void update_back_pixmap() {
-		destroy_back_pixmap();
-		if (_c_class == InputOutput) {
-			back_pixmap = XCompositeNameWindowPixmap(dpy, _wid);
-		}
-	}
-
-	void destroy_back_pixmap() {
-		if(back_pixmap != None) {
-			XFreePixmap(dpy, back_pixmap);
-			back_pixmap = None;
-		}
-	}
-
-
 
 };
 

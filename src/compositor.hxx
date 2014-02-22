@@ -9,6 +9,7 @@
 #define RENDER_CONTEXT_HXX_
 
 #include <list>
+#include <cassert>
 
 #include <ctime>
 #include <cairo.h>
@@ -19,6 +20,7 @@
 #include "region.hxx"
 #include "renderable.hxx"
 #include "composite_window.hxx"
+#include "composite_surface.hxx"
 
 #include "time.hxx"
 
@@ -26,7 +28,7 @@ using namespace std;
 
 namespace page {
 
-class compositor_t : public xevent_handler_t {
+class compositor_t {
 
 	static char const * const require_glx_extensions[];
 
@@ -63,14 +65,9 @@ class compositor_t : public xevent_handler_t {
 	/** Performance counter **/
 	unsigned int flush_count;
 	unsigned int damage_count;
-	time_t last_tic;
-	time_t curr_tic;
-	time_t last_render;
 
 	time_t fade_in_length;
 	time_t fade_out_length;
-
-	time_t fade_framerate_limit;
 
 	double cur_t;
 
@@ -91,8 +88,10 @@ class compositor_t : public xevent_handler_t {
 	 **/
 	map<Window, composite_window_t *> window_data;
 
-	/* composite overlay surface */
-	cairo_surface_t * _front_buffer;
+	map<Window, composite_surface_t *> window_to_composite_surface;
+
+	map<Window, Damage> damage_map;
+
 	/** back buffer, used when composition is needed (i.e. transparency) **/
 	cairo_surface_t * _back_buffer;
 
@@ -187,6 +186,65 @@ public:
 	render_mode_e get_render_mode() {
 		return render_mode;
 	}
+
+	composite_surface_t * create_composite_surface(Window w,
+			XWindowAttributes & wa) {
+		assert(w != None);
+		assert(wa.c_class == InputOutput);
+
+		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(w);
+		if (i != window_to_composite_surface.end()) {
+			i->second->incr_ref();
+			return i->second;
+		} else {
+			printf("number of surfaces = %lu\n", window_to_composite_surface.size());
+			composite_surface_t * x = new composite_surface_t(_dpy, w, wa);
+			window_to_composite_surface[w] = x;
+			return x;
+		}
+	}
+
+
+	void destroy_composite_surface(Window w) {
+		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(w);
+		if(i != window_to_composite_surface.end()) {
+			i->second->decr_ref();
+			if(i->second->nref() == 0) {
+				printf("number of surfaces = %lu\n", window_to_composite_surface.size());
+				composite_surface_t * x = i->second;
+				window_to_composite_surface.erase(i);
+				delete x;
+			}
+		}
+	}
+
+
+	void destroy_composite_surface(composite_surface_t * x) {
+		destroy_composite_surface(x->wid());
+	}
+
+	void create_damage(Window w, XWindowAttributes & wa) {
+		assert(wa.c_class == InputOutput);
+		assert(w != None);
+
+		Damage damage = XDamageCreate(_dpy, w, XDamageReportNonEmpty);
+		if (damage != None) {
+			damage_map[w] = damage;
+			XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
+			XDamageSubtract(_dpy, damage, None, region);
+			XFixesDestroyRegion(_dpy, region);
+		}
+	}
+
+	void destroy_damage(Window w) {
+		map<Window, Damage>::iterator x = damage_map.find(w);
+		if (x != damage_map.end()) {
+			XDamageDestroy(_dpy, x->second);
+			damage_map.erase(x);
+		}
+	}
+
+
 
 };
 
