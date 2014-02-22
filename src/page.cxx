@@ -39,6 +39,8 @@
 #include <vector>
 #include <typeinfo>
 
+
+
 #include "page.hxx"
 
 /* ICCCM definition */
@@ -339,6 +341,10 @@ void page_t::run() {
 			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
 
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_z), Mod4Mask,
+			cnx->get_root_window(),
+			True, GrabModeAsync, GrabModeAsync);
+
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
@@ -348,12 +354,12 @@ void page_t::run() {
 			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 			GrabModeSync, GrabModeAsync, None, None);
 
-	timespec const default_wait = new_timespec(0, 1000000000/60);
-	timespec max_wait = default_wait;
-	timespec next_frame;
+	timespec _max_wait;
+	time_t const default_wait = 1000000000L/60L;
+	time_t max_wait = default_wait;
+	time_t next_frame;
 
-	clock_gettime(CLOCK_MONOTONIC, &next_frame);
-
+	next_frame.get_time();
 
 	fd_set fds_read;
 	fd_set fds_intr;
@@ -369,19 +375,18 @@ void page_t::run() {
 	running = true;
 	while (running) {
 
-		timespec cur_tic;
-
-		clock_gettime(CLOCK_MONOTONIC, &cur_tic);
+		time_t cur_tic;
+		cur_tic.get_time();
 
 		if(cur_tic > next_frame) {
 			next_frame = cur_tic + default_wait;
 			max_wait = default_wait;
 			if (rnd != 0) {
-				rnd->render_simple();
+				rnd->render();
 				rnd->xflush();
 			}
 		} else {
-			max_wait = pdiff(cur_tic, next_frame);
+			max_wait = next_frame - cur_tic;
 		}
 
 		FD_ZERO(&fds_read);
@@ -399,7 +404,8 @@ void page_t::run() {
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
-		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait, NULL);
+		_max_wait = max_wait;
+		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait, NULL);
 
 		while (XPending(cnx->dpy)) {
 			XEvent ev;
@@ -696,6 +702,16 @@ void page_t::process_event(XKeyEvent const & e) {
 	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
 		printf("rerender background\n");
 		rpage->add_damaged(_root_position);
+	}
+
+	if (XK_z == k[0] and e.type == KeyPress and (e.state & Mod4Mask)) {
+		if(rnd != 0) {
+			if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
+				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
+			} else {
+				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
+			}
+		}
 	}
 
 	if (XK_Tab == k[0] && e.type == KeyPress && ((e.state & 0x0f) == Mod1Mask)) {
@@ -1824,8 +1840,8 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 }
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
-	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
-			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
+//	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
+//			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
 
 //	printf("name = %s\n", c->get_title().c_str());
 //

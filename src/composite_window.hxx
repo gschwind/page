@@ -12,6 +12,8 @@
 #include <set>
 #include <map>
 
+#include "time.hxx"
+
 #include "xconnection.hxx"
 #include "region.hxx"
 #include "icon.hxx"
@@ -71,7 +73,7 @@ public:
 		FADE_IN
 	};
 
-	timespec fade_start;
+	time_t fade_start;
 	double fade_step;
 	fade_mode_e fade_mode;
 
@@ -125,7 +127,7 @@ public:
 		}
 
 		fade_step = 0.0;
-		fade_start = new_timespec(0, 0);
+		fade_start;
 		fade_mode = FADE_NONE;
 
 		back_pixmap = None;

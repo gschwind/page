@@ -36,7 +36,7 @@ int main(int argc, char * * argv) {
 		if(cur_tic > next_frame) {
 			next_frame = cur_tic + default_wait;
 			max_wait = default_wait;
-			compositor->render_simple();
+			compositor->render_auto();
 		} else {
 			max_wait = pdiff(cur_tic, next_frame);
 		}

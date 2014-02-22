@@ -98,12 +98,13 @@ void compositor_t::init_composite_overlay() {
 }
 
 compositor_t::compositor_t() {
+	render_mode = COMPOSITOR_MODE_AUTO;
 
-	fade_in_length = new_timespec(0, 250000000);
-	fade_out_length = new_timespec(0, 150000000);
+	fade_in_length = 250000000L;
+	fade_out_length = 150000000L;
 
 	/* about 30 per second */
-	fade_framerate_limit = new_timespec(0, 30000000);
+	fade_framerate_limit = 30000000;
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
@@ -186,7 +187,7 @@ compositor_t::compositor_t() {
 
 	flush_count = 0;
 	damage_count = 0;
-	clock_gettime(CLOCK_MONOTONIC, &last_tic);
+	last_tic.get_time();
 	last_render = last_tic;
 
 
@@ -616,195 +617,20 @@ void compositor_t::repair_area_region(region_t<int> const & repair) {
 
 void compositor_t::render() {
 
-	region_t<int> pending_damage = _desktop_region;
-
-	/** this line divide page cpu cost by 4.0 ... O_O it's insane **/
-	if(pending_damage.empty())
-		return;
-
-	/**
-	 * list content is bottom window to upper window in stack a optimization.
-	 **/
-	std::list<composite_window_t *> visible;
-	for (std::list<Window>::iterator i = window_stack.begin();
-			i != window_stack.end(); ++i) {
-		map<Window, composite_window_t *>::iterator x = window_data.find(*i);
-		if (x != window_data.end()) {
-			if ((x->second->map_state() != IsUnmapped or x->second->fade_mode != x->second->FADE_NONE)
-					and x->second->c_class() == InputOutput) {
-				visible.push_back(x->second);
-			}
-		}
+	if(render_mode == COMPOSITOR_MODE_AUTO) {
+		render_auto();
+	} else {
+		render_managed();
 	}
 
-	//printf("SIZE = %d\n", visible.size());
+}
 
-	/**
-	 * Asked to cairo community, build/destroy cairo contexts and surfaces
-	 * should not hit too much performance.
-	 **/
-
-	//cairo_t * front_cr = cairo_create(_front_buffer);
-	/** double buffer hehe **/
-	cairo_t * front_cr = cairo_create(_back_buffer);
-
-	for (std::list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		(*i)->update_cairo();
-
-	}
-
-	/* clip damage region to visible region */
-	pending_damage = pending_damage & _desktop_region;
-
-	/**
-	 * Find region where windows are not overlap each other. i.e. region where
-	 * only one window will be rendered.
-	 * This is often more than 80% of the screen.
-	 * This kind of region will be directly rendered.
-	 **/
-
-	region_t<int> region_without_overlapped_window;
-	for (list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		region_t<int> r = (*i)->get_region();
-		for (list<composite_window_t *>::iterator j = visible.begin();
-				j != visible.end(); ++j) {
-			if (i != j) {
-				r -= (*j)->get_region();
-			}
-		}
-		region_without_overlapped_window += r;
-	}
-
-	region_without_overlapped_window = region_without_overlapped_window
-			& pending_damage;
-
-	/**
-	 * Find region where the windows on top is not a window with alpha.
-	 * Small area, often dropdown menu.
-	 * This kind of area will be directly rendered.
-	 **/
-	region_t<int> region_without_alpha_on_top;
-
-	/**
-	 * Walk over all all window from bottom to top one. If window has alpha
-	 * channel remove it from region with no alpha, if window do not have alpha
-	 * add this window to the area.
-	 **/
-	for (list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
-			region_without_alpha_on_top -= (*i)->get_region();
-		} else {
-			/* if not has_alpha, add this area */
-			region_without_alpha_on_top += (*i)->get_region();
-		}
-	}
-
-	region_without_alpha_on_top = region_without_alpha_on_top & pending_damage;
-	region_without_alpha_on_top -= region_without_overlapped_window;
-
-
-	region_t<int> slow_region = pending_damage;
-	slow_region -= region_without_overlapped_window;
-	slow_region -= region_without_alpha_on_top;
-
-
-	/* direct render, area where there is only one window visible */
-	{
-		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
-
-		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
-		while (i != region_without_overlapped_window.end()) {
-			fast_region_surf_monitor += i->w * i->h;
-			repair_buffer(visible, front_cr, *i);
-			// for debuging
-			_draw_crossed_box(front_cr, (*i), 0.0, 1.0, 0.0);
-			++i;
-		}
-	}
-
-	/* directly render area where window on the has no alpha */
-
-	{
-		cairo_reset_clip(front_cr);
-		cairo_set_operator(front_cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_antialias(front_cr, CAIRO_ANTIALIAS_NONE);
-
-		/* from top to bottom */
-		for (list<composite_window_t *>::reverse_iterator i =
-				visible.rbegin(); i != visible.rend(); ++i) {
-			composite_window_t * r = *i;
-			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
-			if (!draw_area.empty()) {
-				for (region_t<int>::const_iterator j = draw_area.begin();
-						j != draw_area.end(); ++j) {
-					if (!j->is_null()) {
-						r->draw_to(front_cr, *j);
-						/* this section show direct rendered screen */
-						_draw_crossed_box(front_cr, *j, 0.0, 0.0, 1.0);
-					}
-				}
-			}
-			region_without_alpha_on_top -= r->get_region();
-		}
-	}
-
-	/**
-	 * To avoid glitch (blinking) I use back buffer to make the composition.
-	 * update back buffer, render area with possible transparency
-	 **/
-	if (!slow_region.empty()) {
-
-		cairo_t * back_cr = cairo_create(_back_buffer);
-
-		{
-
-			cairo_reset_clip(back_cr);
-			cairo_set_operator(back_cr, CAIRO_OPERATOR_OVER);
-			region_t<int>::const_iterator i = slow_region.begin();
-			while (i != slow_region.end()) {
-				slow_region_surf_monitor += (*i).w * (*i).h;
-				repair_buffer(visible, back_cr, *i);
-				++i;
-			}
-		}
-
-		{
-			cairo_surface_flush(_back_buffer);
-			region_t<int>::const_iterator i = slow_region.begin();
-			while (i != slow_region.end()) {
-				repair_overlay(front_cr, *i, _back_buffer);
-				//_draw_crossed_box(front_cr, (*i), 1.0, 0.0, 0.0);
-				++i;
-			}
-		}
-		cairo_destroy(back_cr);
-
-	}
-
-	pending_damage.clear();
-
-	cairo_destroy(front_cr);
-
-
-	XdbeSwapInfo si;
-	si.swap_window = composite_overlay;
-	si.swap_action = None;
-	XdbeSwapBuffers(_dpy, &si, 1);
-
-//	for (std::list<composite_window_t *>::iterator i = visible.begin();
-//			i != visible.end(); ++i) {
-//		(*i)->destroy_cairo();
-//	}
+void compositor_t::render_managed() {
 
 }
 
 
-void compositor_t::render_simple() {
+void compositor_t::render_auto() {
 
 	if(_pending_damage.empty()) {
 		return;
@@ -1320,7 +1146,7 @@ void compositor_t::update_layout() {
 
 void compositor_t::process_events() {
 
-	clock_gettime(CLOCK_MONOTONIC, &curr_tic);
+	curr_tic.get_time();
 
 	XEvent ev;
 	while(XPending(_dpy)) {
@@ -1339,12 +1165,13 @@ void compositor_t::process_events() {
 				continue;
 			} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
 				if (i->second->fade_start + fade_in_length > curr_tic) {
-					struct timespec diff = pdiff(curr_tic,
-							i->second->fade_start);
+					time_t diff = curr_tic - i->second->fade_start;
 					double alpha = 0.0;
-					alpha = (diff.tv_sec + diff.tv_nsec / 1.0e9)
-							/ (fade_in_length.tv_sec
-									+ fade_in_length.tv_nsec / 1.0e9);
+					/* compute alpha with enough precision without reach bound */
+					alpha = static_cast<double>(diff) / static_cast<double>(fade_in_length);
+
+					//printf("%ld %ld %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_in_length), alpha);
+
 					i->second->fade_step = alpha;
 					pending_damage += i->second->get_region();
 				} else {
@@ -1355,13 +1182,13 @@ void compositor_t::process_events() {
 
 			} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
 				if (i->second->fade_start + fade_out_length > curr_tic) {
-					struct timespec diff = pdiff(curr_tic,
-							i->second->fade_start);
+					time_t diff = curr_tic - i->second->fade_start;
 					double alpha = 0.0;
-					alpha = 1.0
-							- ((diff.tv_sec + diff.tv_nsec / 1.0e9)
-									/ (fade_out_length.tv_sec
-											+ fade_out_length.tv_nsec / 1.0e9));
+					/* compute alpha with enough precision without reach bound */
+					alpha = static_cast<double>(diff) / static_cast<double>(fade_out_length);
+
+					//printf("%lu %lu %f\n", static_cast<int64_t>(diff), static_cast<int64_t>(fade_out_length), alpha);
+
 					i->second->fade_step = alpha;
 					pending_damage += i->second->get_region();
 				} else {

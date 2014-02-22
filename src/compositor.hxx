@@ -20,6 +20,8 @@
 #include "renderable.hxx"
 #include "composite_window.hxx"
 
+#include "time.hxx"
+
 using namespace std;
 
 namespace page {
@@ -61,14 +63,14 @@ class compositor_t : public xevent_handler_t {
 	/** Performance counter **/
 	unsigned int flush_count;
 	unsigned int damage_count;
-	struct timespec last_tic;
-	struct timespec curr_tic;
-	struct timespec last_render;
+	time_t last_tic;
+	time_t curr_tic;
+	time_t last_render;
 
-	struct timespec fade_in_length;
-	struct timespec fade_out_length;
+	time_t fade_in_length;
+	time_t fade_out_length;
 
-	struct timespec fade_framerate_limit;
+	time_t fade_framerate_limit;
 
 	double cur_t;
 
@@ -100,6 +102,15 @@ class compositor_t : public xevent_handler_t {
 
 	GLXContext glx_ctx;
 
+public:
+
+	enum render_mode_e {
+		COMPOSITOR_MODE_AUTO,
+		COMPOSITOR_MODE_MANAGED
+	};
+
+private:
+	render_mode_e render_mode;
 
 	void repair_damaged_window(Window w, region_t<int> area);
 	void repair_moved_window(Window w, region_t<int> from, region_t<int> to);
@@ -166,7 +177,16 @@ public:
 	}
 
 	void render();
-	void render_simple();
+	void render_auto();
+	void render_managed();
+
+	void set_render_mode(render_mode_e mode) {
+		render_mode = mode;
+	}
+
+	render_mode_e get_render_mode() {
+		return render_mode;
+	}
 
 };
 

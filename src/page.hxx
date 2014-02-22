@@ -42,6 +42,8 @@
 #include "utils.hxx"
 #include "box.hxx"
 
+#include "time.hxx"
+
 #include "compositor.hxx"
 #include "xconnection.hxx"
 #include "notebook.hxx"
