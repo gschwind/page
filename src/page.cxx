@@ -355,7 +355,7 @@ void page_t::run() {
 			GrabModeSync, GrabModeAsync, None, None);
 
 	timespec _max_wait;
-	time_t const default_wait = 1000000000L/60L;
+	time_t const default_wait = 1000000000L/30L;
 	time_t max_wait = default_wait;
 	time_t next_frame;
 
@@ -1959,7 +1959,7 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 
 void page_t::process_event(XMapRequestEvent const & e) {
 
-	if (e.send_event || e.parent != cnx->get_root_window()) {
+	if (e.send_event == True || e.parent != cnx->get_root_window()) {
 		XMapWindow(e.display, e.window);
 		return;
 	}
@@ -3986,6 +3986,22 @@ void page_t::get_splits(tree_t * base, vector<split_t *> & l) {
 			l.push_back(s);
 		}
 	}
+}
+
+
+void page_t::set_opaque_region(Window w, region_t<int> & region) {
+	vector<long> data(region.size() * 4);
+	region_t<int>::iterator i = region.begin();
+	int k = 0;
+	while(i != region.end()) {
+		data[k++] = (*i).x;
+		data[k++] = (*i).y;
+		data[k++] = (*i).w;
+		data[k++] = (*i).h;
+	}
+
+	cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&data[0]), data.size());
+
 }
 
 }

@@ -38,6 +38,7 @@ static void _draw_crossed_box(cairo_t * cr, box_t<int> const & box, double r, do
 	return;
 
 	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 	cairo_identity_matrix(cr);
 
@@ -705,118 +706,123 @@ void compositor_t::render_auto() {
 			root_attributes.height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
+	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_paint(cr));
 
-//	/**
-//	 * Find region where windows are not overlap each other. i.e. region where
-//	 * only one window will be rendered.
-//	 * This is often more than 80% of the screen.
-//	 * This kind of region will be directly rendered.
-//	 **/
-//
-//	region_t<int> region_without_overlapped_window;
-//	for (list<composite_window_t *>::iterator i = visible.begin();
-//			i != visible.end(); ++i) {
-//		region_t<int> r = (*i)->get_region();
-//		for (list<composite_window_t *>::iterator j = visible.begin();
-//				j != visible.end(); ++j) {
-//			if (i != j) {
-//				r -= (*j)->get_region();
-//			}
-//		}
-//		region_without_overlapped_window += r;
-//	}
-//
-//	//region_without_overlapped_window = region_without_overlapped_window;
-//
-//	/**
-//	 * Find region where the windows on top is not a window with alpha.
-//	 * Small area, often dropdown menu.
-//	 * This kind of area will be directly rendered.
-//	 **/
-//	region_t<int> region_without_alpha_on_top;
-//
-//	/**
-//	 * Walk over all all window from bottom to top one. If window has alpha
-//	 * channel remove it from region with no alpha, if window do not have alpha
-//	 * add this window to the area.
-//	 **/
-//	for (list<composite_window_t *>::iterator i = visible.begin();
-//			i != visible.end(); ++i) {
-//		if ((*i)->has_alpha() or (*i)->fade_mode != composite_window_t::FADE_NONE) {
-//			region_without_alpha_on_top -= (*i)->get_region();
-//		} else {
-//			/* if not has_alpha, add this area */
-//			region_without_alpha_on_top += (*i)->get_region();
-//		}
-//	}
-//
-//	//region_without_alpha_on_top = region_without_alpha_on_top;
-//	region_without_alpha_on_top -= region_without_overlapped_window;
-//
-//
-//	region_t<int> slow_region = _desktop_region;
-//	slow_region -= region_without_overlapped_window;
-//	slow_region -= region_without_alpha_on_top;
-//
-//
-//	/* direct render, area where there is only one window visible */
-//	{
-//		CHECK_CAIRO(cairo_reset_clip(cr));
-//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-//		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
-//
-//		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
-//		while (i != region_without_overlapped_window.end()) {
-//			fast_region_surf_monitor += i->w * i->h;
-//			repair_buffer(visible, cr, *i);
-//			// for debuging
-//			_draw_crossed_box(cr, (*i), 0.0, 1.0, 0.0);
-//			++i;
-//		}
-//	}
-//
-//	/* directly render area where window on the has no alpha */
-//
-//	{
-//		CHECK_CAIRO(cairo_reset_clip(cr));
-//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-//		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
-//
-//		/* from top to bottom */
-//		for (list<composite_window_t *>::reverse_iterator i =
-//				visible.rbegin(); i != visible.rend(); ++i) {
-//			composite_window_t * r = *i;
-//			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
-//			if (!draw_area.empty()) {
-//				for (region_t<int>::const_iterator j = draw_area.begin();
-//						j != draw_area.end(); ++j) {
-//					if (!j->is_null()) {
-//						r->draw_to(cr, *j);
-//						/* this section show direct rendered screen */
-//						_draw_crossed_box(cr, *j, 0.0, 0.0, 1.0);
-//					}
-//				}
-//			}
-//			region_without_alpha_on_top -= r->get_region();
-//		}
-//	}
+	/**
+	 * Find region where windows are not overlap each other. i.e. region where
+	 * only one window will be rendered.
+	 * This is often more than 80% of the screen.
+	 * This kind of region will be directly rendered.
+	 **/
 
-//	if (!slow_region.empty()) {
+	region_t<int> region_without_overlapped_window;
+	for (list<composite_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		region_t<int> r = (*i)->get_region();
+		for (list<composite_window_t *>::iterator j = visible.begin();
+				j != visible.end(); ++j) {
+			if (i != j) {
+				r -= (*j)->get_region();
+			}
+		}
+		region_without_overlapped_window += r;
+	}
+
+	//region_without_overlapped_window = region_without_overlapped_window;
+
+	/**
+	 * Find region where the windows on top is not a window with alpha.
+	 * Small area, often dropdown menu.
+	 * This kind of area will be directly rendered.
+	 **/
+	region_t<int> region_without_alpha_on_top;
+
+	/**
+	 * Walk over all all window from bottom to top one. If window has alpha
+	 * channel remove it from region with no alpha, if window do not have alpha
+	 * add this window to the area.
+	 **/
+	for (list<composite_window_t *>::iterator i = visible.begin();
+			i != visible.end(); ++i) {
+		if ((*i)->fade_mode != composite_window_t::FADE_NONE) {
+			region_without_alpha_on_top -= (*i)->get_region();
+		} else {
+			/* if not has_alpha, add this area */
+			region_without_alpha_on_top -= (*i)->get_region();
+			region_without_alpha_on_top += (*i)->get_opaque_region();
+		}
+	}
+
+	//region_without_alpha_on_top = region_without_alpha_on_top;
+	region_without_alpha_on_top -= region_without_overlapped_window;
+
+
+	region_t<int> slow_region = _desktop_region;
+	slow_region -= region_without_overlapped_window;
+	slow_region -= region_without_alpha_on_top;
+
+
+	/* direct render, area where there is only one window visible */
 	{
-		region_t<int> slow_region = _desktop_region;
+		CHECK_CAIRO(cairo_reset_clip(cr));
+		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+
+		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
+		while (i != region_without_overlapped_window.end()) {
+			fast_region_surf_monitor += i->w * i->h;
+			repair_buffer(visible, cr, *i);
+			cairo_surface_flush(_back_buffer);
+			// for debuging
+			_draw_crossed_box(cr, (*i), 0.0, 1.0, 0.0);
+			++i;
+		}
+	}
+
+	/* directly render area where window on the has no alpha */
+
+	{
+		CHECK_CAIRO(cairo_reset_clip(cr));
+		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+
+		/* from top to bottom */
+		for (list<composite_window_t *>::reverse_iterator i =
+				visible.rbegin(); i != visible.rend(); ++i) {
+			composite_window_t * r = *i;
+			region_t<int> draw_area = region_without_alpha_on_top & r->get_region();
+			if (!draw_area.empty()) {
+				for (region_t<int>::const_iterator j = draw_area.begin();
+						j != draw_area.end(); ++j) {
+					if (!j->is_null()) {
+						r->draw_to(cr, *j);
+						cairo_surface_flush(_back_buffer);
+						/* this section show direct rendered screen */
+						_draw_crossed_box(cr, *j, 0.0, 0.0, 1.0);
+					}
+				}
+			}
+			region_without_alpha_on_top -= r->get_region();
+		}
+	}
+
+	if (!slow_region.empty()) {
+	{
+		//region_t<int> slow_region = _desktop_region;
 		CHECK_CAIRO(cairo_reset_clip(cr));
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 		region_t<int>::const_iterator i = slow_region.begin();
 		while (i != slow_region.end()) {
 			slow_region_surf_monitor += (*i).w * (*i).h;
 			repair_buffer(visible, cr, *i);
-			_draw_crossed_box(cr, *i, 0.0, 1.0, 1.0);
+			cairo_surface_flush(_back_buffer);
+			_draw_crossed_box(cr, *i, 1.0, 0.0, 0.0);
 			++i;
 		}
 	}
-//	}
+	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 	cairo_destroy(cr);
@@ -902,31 +908,24 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
+
+	/** Ignore fake event **/
 	if(e.send_event == True)
 		return;
-	if (e.parent == DefaultRootWindow(_dpy)) {
 
-		/** will be followed by map **/
-//		XWindowAttributes wa;
-//		if (XGetWindowAttributes(_dpy, e.window, &wa)) {
-//
-//			if (wa.c_class == InputOutput) {
-//				create_damage(e.window, wa);
-//				create_composite_surface(e.window, wa);
-//
-//				window_data[e.window] = new composite_window_t(_dpy, e.window,
-//						&wa, create_composite_surface(e.window, wa));
-//				repair_area_region(window_data[e.window]->position());
-//			}
-//
-//		}
+
+	/**
+	 * Reparent are preceded by UnmapWindow and followed by MapWindow when
+	 * needed.
+	 *
+	 * Reparent notify is usefull to maintaint window stack at root window level.
+	 *
+	 **/
+
+	if (e.parent == DefaultRootWindow(_dpy)) {
 		stack_window_place_on_top(e.window);
 	} else {
 		stack_window_remove(e.window);
-
-		//destroy_damage(e.window);
-		//destroy_composite_surface(e.window);
-
 	}
 }
 
@@ -1111,6 +1110,8 @@ void compositor_t::scan() {
 	unsigned int num = 0;
 	Window d1, d2, *wins = 0;
 
+
+	XGrabServer(_dpy);
 	/**
 	 * Start listen root event before anything each event will be stored to
 	 * right run later.
@@ -1146,6 +1147,8 @@ void compositor_t::scan() {
 		XFree(wins);
 	}
 
+	XUngrabServer(_dpy);
+
 }
 
 void compositor_t::process_event(XEvent const & e) {
@@ -1179,6 +1182,7 @@ void compositor_t::process_event(XEvent const & e) {
 		XShapeEvent const & sev = reinterpret_cast<XShapeEvent const &>(e);
 		if(has_key(window_data, sev.window)) {
 			window_data[sev.window]->update_shape();
+			window_data[sev.window]->update_opaque_region();
 		}
 	} else if (e.type == xrandr_event + RRNotify) {
 		//printf("RRNotify\n");

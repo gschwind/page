@@ -463,6 +463,8 @@ public:
 		_floating_area = _theme->compute_floating_areas(this);
 	}
 
+	void set_opaque_region(Window w, region_t<int> & region);
+
 };
 
 }

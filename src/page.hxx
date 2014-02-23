@@ -523,6 +523,8 @@ public:
 				reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 	}
 
+	void set_opaque_region(Window w, region_t<int> & region);
+
 };
 
 

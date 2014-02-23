@@ -56,6 +56,9 @@ class composite_window_t {
 	bool _has_alpha;
 
 	_region_t _region;
+	_region_t _opaque_region;
+
+	atom_handler_t A;
 
 	/* avoid copy */
 	composite_window_t(composite_window_t const &);
@@ -77,7 +80,7 @@ public:
 			| PropertyChangeMask);
 
 	composite_window_t(Display * dpy, Window w,
-			XWindowAttributes const * wa, composite_surface_t * surf) {
+			XWindowAttributes const * wa, composite_surface_t * surf) : A(dpy) {
 		page_assert(dpy != 0);
 
 		_surf = surf;
@@ -99,6 +102,7 @@ public:
 		/** read shape date **/
 		XShapeInputSelected(dpy, _wid);
 		update_shape();
+		update_opaque_region();
 
 		fade_step = 0.0;
 		fade_mode = FADE_NONE;
@@ -120,17 +124,17 @@ public:
 			CHECK_CAIRO(cairo_save(cr));
 			CHECK_CAIRO(cairo_reset_clip(cr));
 			CHECK_CAIRO(cairo_identity_matrix(cr));
+			CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
+			CHECK_CAIRO(cairo_clip(cr));
+
 			CHECK_CAIRO(cairo_set_source_surface(cr, _surf->get_surf(), _position.x, _position.y));
 			if (fade_mode != FADE_NONE) {
 				cairo_pattern_t * pat = cairo_pattern_create_rgba(0.0, 0.0, 0.0,
 						fade_step);
-				CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
 				CHECK_CAIRO(cairo_mask(cr, pat));
-				//CHECK_CAIRO(cairo_fill(cr));
 				CHECK_CAIRO(cairo_pattern_destroy(pat));
 			} else {
-				CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
-				CHECK_CAIRO(cairo_fill(cr));
+				CHECK_CAIRO(cairo_paint(cr));
 			}
 
 			CHECK_CAIRO(cairo_restore(cr));
@@ -166,8 +170,37 @@ public:
 		}
 	}
 
+	region_t<int> read_opaque_region(Window w) {
+		region_t<int> ret;
+		std::vector<long> data;
+		if(get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL), &data)) {
+			for(int i = 0; i < data.size() / 4; ++i) {
+				ret += box_int_t(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
+			}
+		}
+		return ret;
+	}
+
+	void update_opaque_region() {
+		if (not has_alpha()) {
+			_opaque_region.clear();
+			_opaque_region += _position;
+
+		} else {
+			_opaque_region.clear();
+			_opaque_region = read_opaque_region(_wid);
+			_opaque_region.translate(_position.x, _position.y);
+		}
+
+		_opaque_region = _opaque_region & _region;
+	}
+
 	region_t<int> const & get_region() {
 		return _region;
+	}
+
+	region_t<int> const & get_opaque_region() {
+		return _opaque_region;
 	}
 
 	Window get_w() {
@@ -182,6 +215,7 @@ public:
 		if (_position != box_int_t(ev.x, ev.y, ev.width, ev.height)) {
 			_position = box_int_t(ev.x, ev.y, ev.width, ev.height);
 			update_shape();
+			update_opaque_region();
 		}
 
 	}

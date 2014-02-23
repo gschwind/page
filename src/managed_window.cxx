@@ -244,12 +244,18 @@ void managed_window_t::reconfigure() {
 		destroy_back_buffer();
 		create_back_buffer();
 
+		region_t<int> r(_orig_position);
+		set_opaque_region(_base, r);
+
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
 		_orig_position = box_int_t(0, 0, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
+
+		region_t<int> r(_orig_position);
+		set_opaque_region(_base, r);
 
 	}
 
@@ -420,6 +426,22 @@ void managed_window_t::icccm_focus(Time t) {
 			_cnx->send_event(_orig, False, NoEventMask, &ev);
 		}
 	}
+
+}
+
+void managed_window_t::set_opaque_region(Window w, region_t<int> & region) {
+	vector<long> data(region.size() * 4);
+	region_t<int>::iterator i = region.begin();
+	int k = 0;
+	while(i != region.end()) {
+		data[k++] = (*i).x;
+		data[k++] = (*i).y;
+		data[k++] = (*i).w;
+		data[k++] = (*i).h;
+		++i;
+	}
+
+	_cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&data[0]), data.size());
 
 }
 
