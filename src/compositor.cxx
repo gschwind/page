@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <list>
 
-#include <cstring>
+#include <cstdlib>
 
 #include "compositor.hxx"
 #include "atoms.hxx"

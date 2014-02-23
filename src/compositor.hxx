@@ -257,6 +257,14 @@ public:
 	}
 
 
+	void set_fade_in_time(int nsec) {
+		fade_in_length = nsec;
+	}
+
+	void set_fade_out_time(int nsec) {
+		fade_out_length = nsec;
+	}
+
 
 };
 

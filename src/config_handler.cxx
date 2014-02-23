@@ -7,6 +7,8 @@
 
 #include "config_handler.hxx"
 #include <stdexcept>
+#include <sstream>
+#include <string>
 
 namespace page {
 
@@ -86,6 +88,18 @@ double config_handler_t::get_double(char const * group, char const * key) {
 	} else {
 		throw runtime_error("group:key not found");
 	}
+}
+
+long config_handler_t::get_long(char const * group, char const * key) {
+	long ret = 0;
+	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
+	if(i != _data.end()) {
+		std::istringstream ( i->second ) >> ret;
+	} else {
+		throw runtime_error("group:key not found");
+	}
+
+	return ret;
 }
 
 bool config_handler_t::has_key(char const * group, char const * key) {

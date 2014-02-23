@@ -2,6 +2,15 @@
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
 
+[compositor]
+
+# Compositor fade in time in nano second
+fade_in_time = 300000000
+
+# Compositor fade out time in nano second
+fade_out_time = 300000000
+
+
 [simple_theme]
 
 # set background image (optional)

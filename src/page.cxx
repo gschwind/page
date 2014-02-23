@@ -226,6 +226,15 @@ void page_t::run() {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
 			rnd = new compositor_t();
+
+			if(conf.has_key("compositor", "fade_in_time")) {
+				rnd->set_fade_in_time(conf.get_long("compositor", "fade_in_time"));
+			}
+
+			if(conf.has_key("compositor", "fade_out_time")) {
+				rnd->set_fade_out_time(conf.get_long("compositor", "fade_out_time"));
+			}
+
 		} catch (...) {
 			rnd = 0;
 		}

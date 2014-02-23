@@ -31,6 +31,7 @@ public:
 
 	string get_string(char const * groups, char const * key);
 	double get_double(char const * groups, char const * key);
+	long get_long(char const * group, char const * key);
 
 };
 
