@@ -64,7 +64,10 @@ public:
 	}
 
 	void onmap() {
-		destroy_cache();
+		if(_pixmap_id != None) {
+			XFreePixmap(_dpy, _pixmap_id);
+			_pixmap_id = None;
+		}
 		_pixmap_id = XCompositeNameWindowPixmap(_dpy, _window_id);
 
 	}

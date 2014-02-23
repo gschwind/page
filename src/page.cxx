@@ -668,7 +668,7 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	if (XK_w == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		//print_tree_windows();
+		print_tree_windows();
 
 		list<managed_window_t *> lst;
 		get_managed_windows(lst);
@@ -3167,11 +3167,12 @@ void page_t::print_tree_windows() {
 
 	for(list<item>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
 		for(int k = 0; k < (*i).first; ++k) {
-			//printf("    ");
+			printf("    ");
 		}
 
-		//Window w = (*i).second;
-		//printf("%d [%lu] %s\n", (*i).first, w, w->get_title().c_str());
+		Window w = (*i).second;
+		managed_window_t * wm = find_managed_window_with(w);
+		printf("%d [%lu] %s\n", (*i).first, w, wm?wm->title():"none");
 	}
 
 
@@ -3437,6 +3438,15 @@ void page_t::update_windows_stack() {
 				final_order.push_back(w);
 			}
 		}
+
+		managed_window_t * mw = find_managed_window_with((*i));
+		if (mw != 0) {
+			if (mw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+				Window w = (*i);
+				final_order.remove(w);
+				final_order.push_back(w);
+			}
+		}
 	}
 
 	/* 4. raise fullscreen window */
@@ -3491,6 +3501,7 @@ void page_t::update_windows_stack() {
 	final_order.remove(pat->id());
 	final_order.push_back(pat->id());
 
+	/* page on bottom */
 	final_order.remove(rpage->id());
 	final_order.push_front(rpage->id());
 

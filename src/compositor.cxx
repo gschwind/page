@@ -656,6 +656,7 @@ void compositor_t::render() {
 			} else {
 				pending_damage += i->second->get_region();
 				destroy_composite_surface(i->second->get_surf()->wid());
+				//stack_window_remove(i->second->get_w());
 				delete i->second;
 				window_data.erase(i);
 			}
@@ -685,7 +686,7 @@ void compositor_t::render_auto() {
 		return;
 	}
 
-	//_pending_damage.clear();
+	_pending_damage.clear();
 
 	/**
 	 * list content is bottom window to upper window in stack a optimization.
@@ -707,13 +708,13 @@ void compositor_t::render_auto() {
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_paint(cr));
 
-	/**
-	 * Find region where windows are not overlap each other. i.e. region where
-	 * only one window will be rendered.
-	 * This is often more than 80% of the screen.
-	 * This kind of region will be directly rendered.
-	 **/
-
+//	/**
+//	 * Find region where windows are not overlap each other. i.e. region where
+//	 * only one window will be rendered.
+//	 * This is often more than 80% of the screen.
+//	 * This kind of region will be directly rendered.
+//	 **/
+//
 //	region_t<int> region_without_overlapped_window;
 //	for (list<composite_window_t *>::iterator i = visible.begin();
 //			i != visible.end(); ++i) {
@@ -763,7 +764,7 @@ void compositor_t::render_auto() {
 //	/* direct render, area where there is only one window visible */
 //	{
 //		CHECK_CAIRO(cairo_reset_clip(cr));
-//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_ATOP));
+//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 //		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 //
 //		region_t<int>::const_iterator i = region_without_overlapped_window.begin();
@@ -780,7 +781,7 @@ void compositor_t::render_auto() {
 //
 //	{
 //		CHECK_CAIRO(cairo_reset_clip(cr));
-//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_ATOP));
+//		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 //		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 //
 //		/* from top to bottom */
@@ -802,7 +803,7 @@ void compositor_t::render_auto() {
 //		}
 //	}
 
-	//if (!slow_region.empty()) {
+//	if (!slow_region.empty()) {
 	{
 		region_t<int> slow_region = _desktop_region;
 		CHECK_CAIRO(cairo_reset_clip(cr));
@@ -815,7 +816,7 @@ void compositor_t::render_auto() {
 			++i;
 		}
 	}
-	//}
+//	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 	cairo_destroy(cr);
@@ -960,6 +961,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 			repair_area_region(w->get_region());
 
 		}
+
 	}
 
 	map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(e.window);
@@ -985,7 +987,6 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
 	if(e.send_event == True)
 		return;
-
 
 	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
 	if (x != window_data.end()) {
