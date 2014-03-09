@@ -209,7 +209,7 @@ public:
 			i->second->incr_ref();
 			return i->second;
 		} else {
-			printf("number of surfaces = %lu\n", window_to_composite_surface.size());
+			//printf("number of surfaces = %lu\n", window_to_composite_surface.size());
 			composite_surface_t * x = new composite_surface_t(_dpy, w, wa);
 			window_to_composite_surface[w] = x;
 			return x;
@@ -263,6 +263,10 @@ public:
 
 	void set_fade_out_time(int nsec) {
 		fade_out_length = nsec;
+	}
+
+	Window get_composite_overlay() {
+		return composite_overlay;
 	}
 
 

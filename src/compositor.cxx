@@ -1135,10 +1135,31 @@ void compositor_t::scan() {
 			if (XGetWindowAttributes(_dpy, wins[i], &wa)) {
 				if(wa.c_class == InputOutput) {
 					if (wa.map_state != IsUnmapped) {
+
 						create_damage(wins[i], wa);
 						create_composite_surface(wins[i], wa);
-						window_data[wins[i]] = new composite_window_t(_dpy, wins[i],
-								&wa, create_composite_surface(wins[i], wa));
+
+						_pending_damage += box_int_t(wa.x, wa.y, wa.width,
+								wa.height);
+
+						composite_surface_t * x = create_composite_surface(
+								wins[i], wa);
+						if (has_key(window_data, wins[i])) {
+							delete window_data[wins[i]];
+							window_data.erase(wins[i]);
+						}
+						composite_window_t * w = new composite_window_t(_dpy,
+								wins[i], &wa, x);
+						window_data[wins[i]] = w;
+						w->fade_start.get_time();
+						w->fade_mode = composite_window_t::FADE_IN;
+						repair_area_region(w->get_region());
+
+						map<Window, composite_surface_t *>::iterator k =
+								window_to_composite_surface.find(wins[i]);
+						if (k != window_to_composite_surface.end()) {
+							k->second->onmap();
+						}
 					}
 				}
 			}

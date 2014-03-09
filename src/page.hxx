@@ -66,6 +66,8 @@
 
 #include "page_exception.hxx"
 
+#include "window_handler.hxx"
+
 using namespace std;
 
 namespace page {
@@ -285,6 +287,8 @@ public:
 	 **/
 	map<Window, Window> transient_for_cache;
 
+	map<Window, window_handler_t *> window_list;
+
 private:
 	Time _last_focus_time;
 	Time _last_button_press;
@@ -292,6 +296,26 @@ private:
 
 	/** this window is a mandatory window to handle the wm session **/
 	Window wm_window;
+
+	/**
+	 * this window are made to reserver X window IDs, they will be used
+	 * to maintain a logical window tree, each of this window will be
+	 * the logical root window of corresponding layer.
+	 *
+	 * For example, notebook_layer is the window that content all notebook
+	 * window.
+	 *
+	 * This window will be used in in transient_for tree.
+	 *
+	 */
+	Window page_layer;
+	Window notebook_layer;
+	Window floating_layer;
+	Window dock_layer;
+	Window unknow_layer;
+	Window fullscreen_layer;
+	Window overlay_layer;
+	Window notification_layer;
 
 	box_t<int> _root_position;
 
@@ -395,7 +419,11 @@ public:
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void update_transient_for(Window w);
+	Window get_transient_for(Window w);
+	void logical_raise(Window w);
 	void cleanup_transient_for_for_window(Window w);
+
+
 
 	void safe_raise_window(Window w);
 	void clear_transient_for_sibbling_child(Window w);
@@ -524,6 +552,11 @@ public:
 	}
 
 	void set_opaque_region(Window w, region_t<int> & region);
+
+
+	string get_window_string(Window w);
+
+
 
 };
 

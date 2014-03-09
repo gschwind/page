@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <cstring>
 
+#include <cstring>
 #include <sstream>
 #include <limits>
 #include <stdint.h>
@@ -250,6 +251,7 @@ void page_t::run() {
 
 	update_viewport_layout();
 
+
 	/* init page render */
 	rpage = new renderable_page_t(cnx, theme,
 			_root_position.w, _root_position.h);
@@ -259,6 +261,38 @@ void page_t::run() {
 	pn0 = new popup_notebook0_t(cnx, theme);
 	ps = new popup_split_t(cnx, theme);
 	pat = new popup_alt_tab_t(cnx, theme);
+
+	page_layer = rpage->id();
+
+	notebook_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(notebook_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notebook_layer")), strlen("page_notebook_layer") + 1);
+
+
+	dock_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(dock_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_dock_layer")), strlen("page_dock_layer") + 1);
+
+	floating_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(floating_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_floating_layer")), strlen("page_floating_layer") + 1);
+
+	unknow_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(unknow_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_unknown_layer")), strlen("page_unknown_layer") + 1);
+
+
+	fullscreen_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(fullscreen_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_fullscreen_layer")), strlen("page_fullscreen_layer") + 1);
+
+	notification_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+	cnx->change_property(notification_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notification_layer")), strlen("page_notification_layer") + 1);
+
+
+	update_transient_for(page_layer);
+	update_transient_for(notebook_layer);
+	update_transient_for(dock_layer);
+	update_transient_for(floating_layer);
+	update_transient_for(unknow_layer);
+	update_transient_for(fullscreen_layer);
+	update_transient_for(notification_layer);
+
 
 	default_window_pop = 0;
 
@@ -677,6 +711,7 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	if (XK_w == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
+		update_windows_stack();
 		print_tree_windows();
 
 		list<managed_window_t *> lst;
@@ -1785,11 +1820,15 @@ void page_t::process_event(XGravityEvent const & e) {
 
 void page_t::process_event(XMapEvent const & e) {
 
+	{
+		string s = get_window_string(e.window);
+		printf("map : %s\n", s.c_str());
+	}
 	/* if map event does not occur within root, ignore it */
 	if (e.event != cnx->get_root_window())
 		return;
 
-	/** usefull for windows statink **/
+	/** usefull for windows stacking **/
 	update_transient_for(e.window);
 
 	if(e.override_redirect) {
@@ -2205,6 +2244,7 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	mw->reconfigure();
 	//printf("FULLSCREEN TO %dx%d+%d+%d\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
 	mw->normalize();
+	update_transient_for(mw->orig());
 	safe_raise_window(mw->orig());
 }
 
@@ -2221,11 +2261,13 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	if (data.revert_type == MANAGED_NOTEBOOK) {
 		notebook_t * old = data.revert_notebook;
 		mw->set_managed_type(MANAGED_NOTEBOOK);
+		update_transient_for(mw->orig());
 		insert_window_in_tree(mw, old, true);
 		old->activate_client(mw);
 		mw->reconfigure();
 	} else {
 		mw->set_managed_type(MANAGED_FLOATING);
+		update_transient_for(mw->orig());
 		mw->reconfigure();
 	}
 
@@ -3042,12 +3084,40 @@ void page_t::update_transient_for(Window w) {
 		transient_for = None;
 	}
 
+	if(transient_for == cnx->get_root_window()) {
+		transient_for = None;
+	}
+
 	/** store it in cache **/
 	transient_for_cache[w] = transient_for;
-
-	/** update the logical tree of windows **/
 	transient_for_tree[transient_for].push_back(w);
+}
 
+Window page_t::get_transient_for(Window w) {
+	map<Window, Window>::iterator x = transient_for_cache.find(w);
+	if(x != transient_for_cache.end()) {
+		return x->second;
+	} else {
+		update_transient_for(w);
+		return transient_for_cache[w];
+	}
+}
+
+void page_t::logical_raise(Window w) {
+	/* avoid tree loop */
+	set<Window> already_raise;
+	/* None is root for all transient_for window */
+	already_raise.insert(None);
+	/* current window to process */
+	Window w_next = w;
+	while(not has_key(already_raise, w_next)) {
+		already_raise.insert(w_next);
+		Window transient_for = get_transient_for(w_next);
+		/* update the stacking of current window, back of list is on top */
+		transient_for_tree[transient_for].remove(w_next);
+		transient_for_tree[transient_for].push_back(w_next);
+		w_next = transient_for;
+	}
 }
 
 void page_t::cleanup_transient_for_for_window(Window w) {
@@ -3068,36 +3138,10 @@ void page_t::safe_raise_window(Window w) {
 		return;
 
 	Window c = find_client_window(w);
-	if(c == 0)
+	if(c == None)
 		c = w;
 
-	/**
-	 * For each child list put the current client and it ancestor
-	 * in back of the child list where they are.
-	 **/
-	set<Window> already_raise;
-	already_raise.insert(None);
-	Window w_next = w;
-	while(not has_key(already_raise, w_next)) {
-		already_raise.insert(w_next);
-
-		map<Window, Window>::iterator x = transient_for_cache.find(w_next);
-
-		if(x == transient_for_cache.end()) {
-			update_transient_for(w_next);
-		}
-
-		x = transient_for_cache.find(w_next);
-
-		transient_for_tree[x->second].remove(w_next);
-		transient_for_tree[x->second].push_back(w_next);
-
-		if (x != transient_for_cache.end()) {
-			w_next = x->second;
-		} else {
-			break;
-		}
-	}
+	logical_raise(c);
 
 	/** apply change **/
 	update_windows_stack();
@@ -3180,8 +3224,8 @@ void page_t::print_tree_windows() {
 		}
 
 		Window w = (*i).second;
-		managed_window_t * wm = find_managed_window_with(w);
-		printf("%d [%lu] %s\n", (*i).first, w, wm?wm->title():"none");
+		string s = get_window_string(w);
+		printf("%d %s\n", i->first, s.c_str());
 	}
 
 
@@ -3192,6 +3236,7 @@ void page_t::bind_window(managed_window_t * mw) {
 	/* update database */
 	mw->set_managed_type(MANAGED_NOTEBOOK);
 	insert_window_in_tree(mw, 0, true);
+	update_transient_for(mw->orig());
 	safe_raise_window(mw->orig());
 	update_client_list();
 
@@ -3205,6 +3250,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_FLOATING);
 	mw->expose();
 	mw->normalize();
+	update_transient_for(mw->orig());
 	safe_raise_window(mw->orig());
 	update_client_list();
 
@@ -3383,6 +3429,7 @@ bool page_t::is_focussed(managed_window_t * mw) {
 }
 
 void page_t::update_windows_stack() {
+
 	/* recreate the stack order */
 	set<Window> raised_window;
 	list<Window> window_stack;
@@ -3409,7 +3456,9 @@ void page_t::update_windows_stack() {
 	window_stack.pop_front();
 
 	list<Window> final_order;
+	list<Window> tmp;
 
+	tmp.clear();
 	/* 1. raise window in tabs */
 	for (list<Window>::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
@@ -3417,11 +3466,17 @@ void page_t::update_windows_stack() {
 		if (mw != 0) {
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				Window w = mw->base();
-				final_order.remove(w);
 				final_order.push_back(w);
+			} else {
+				tmp.push_back(*i);
 			}
+		} else {
+			tmp.push_back(*i);
 		}
 	}
+
+	window_stack = tmp;
+	tmp.clear();
 
 	/* 2. raise floating windows */
 	for (list<Window>::iterator i = window_stack.begin();
@@ -3430,71 +3485,87 @@ void page_t::update_windows_stack() {
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING)) {
 				Window w = mw->base();
-				final_order.remove(w);
 				final_order.push_back(w);
+			} else {
+				tmp.push_back(*i);
 			}
+		} else {
+			tmp.push_back(*i);
 		}
 	}
+
+	window_stack = tmp;
+	tmp.clear();
 
 	/* 3. raise docks */
 	for (list<Window>::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		unmanaged_window_t * uw = find_unmanaged_window_with((*i));
-		if (uw != 0) {
-			if (uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-				Window w = (*i);
-				final_order.remove(w);
-				final_order.push_back(w);
-			}
-		}
 
-		managed_window_t * mw = find_managed_window_with((*i));
-		if (mw != 0) {
-			if (mw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-				Window w = (*i);
-				final_order.remove(w);
-				final_order.push_back(w);
-			}
+		XWindowAttributes wa;
+		XGetWindowAttributes(cnx->dpy, *i, &wa);
+		Atom type = find_net_wm_type(*i, wa.override_redirect);
+
+		if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			Window w = (*i);
+			final_order.push_back(w);
+		} else {
+			tmp.push_back(*i);
 		}
 	}
+
+	window_stack = tmp;
+	tmp.clear();
 
 	/* 4. raise fullscreen window */
-	set<Window> fullsceen_window;
-	for (map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
-			i != viewport_outputs.end(); ++i) {
-		if (i->second->fullscreen_client != 0) {
-			Window w = i->second->fullscreen_client->base();
-			final_order.remove(w);
-			final_order.push_back(w);
+	for (list<Window>::iterator i = window_stack.begin();
+			i != window_stack.end(); ++i) {
+		managed_window_t * mw = find_managed_window_with((*i));
+		if (mw != 0) {
+			if (mw->is(MANAGED_FULLSCREEN)) {
+				Window w = mw->base();
+				final_order.push_back(w);
+			} else {
+				tmp.push_back(*i);
+			}
+		} else {
+			tmp.push_back(*i);
 		}
 	}
 
-	/* 5. raise other windows */
-	for (list<Window>::iterator i = window_stack.begin();
-			i != window_stack.end(); ++i) {
-		unmanaged_window_t * uw = find_unmanaged_window_with((*i));
-		if (uw != 0) {
-			if (uw->net_wm_type() != A(_NET_WM_WINDOW_TYPE_DOCK)
-					&& (*i) != rpage->id()) {
-				Window w = (*i);
-				final_order.remove(w);
-				final_order.push_back(w);
-			}
-		}
-	}
+	window_stack = tmp;
+	tmp.clear();
 
-	/* 6. raise notify windows */
+//	/* 5. raise notify windows */
+//	for (list<Window>::iterator i = window_stack.begin();
+//			i != window_stack.end(); ++i) {
+//
+//		XWindowAttributes wa;
+//		XGetWindowAttributes(cnx->dpy, *i, &wa);
+//		Atom type = find_net_wm_type(*i, wa.override_redirect);
+//
+//		if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)
+//			or type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)
+//			or type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)
+//			or type == A(_NET_WM_WINDOW_TYPE_DND)
+//			or type == A(_NET_WM_WINDOW_TYPE_SPLASH)
+//			or type == A(_NET_WM_WINDOW_TYPE_MENU)
+//			or type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
+//		) {
+//			Window w = (*i);
+//			final_order.push_back(w);
+//		} else {
+//			tmp.push_back(*i);
+//		}
+//	}
+//
+//	window_stack = tmp;
+//	tmp.clear();
+
+	/* 6. lower other windows */
 	for (list<Window>::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		unmanaged_window_t * uw = find_unmanaged_window_with((*i));
-		if (uw != 0) {
-			if (uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)
-					|| uw->net_wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				Window w = (*i);
-				final_order.remove(w);
-				final_order.push_back(w);
-			}
-		}
+		Window w = (*i);
+		final_order.push_back(w);
 	}
 
 	/* overlay */
@@ -3514,8 +3585,13 @@ void page_t::update_windows_stack() {
 	final_order.remove(rpage->id());
 	final_order.push_front(rpage->id());
 
+	if(rnd != 0) {
+		final_order.push_back(rnd->get_composite_overlay());
+	}
+
 	final_order.reverse();
 
+	XRaiseWindow(cnx->dpy, final_order.front());
 	/**
 	 * convert list to C array, see std::vector API.
 	 **/
@@ -4010,6 +4086,71 @@ void page_t::set_opaque_region(Window w, region_t<int> & region) {
 	}
 
 	cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, PropModeReplace, reinterpret_cast<unsigned char *>(&data[0]), data.size());
+
+}
+
+string page_t::get_window_string(Window w) {
+	list<Atom> type;
+	cnx->read_net_wm_window_type(w, &type);
+	string s_type;
+	list<Atom>::iterator j = type.begin();
+	while(j != type.end()) {
+		static unsigned int const l = strlen("_NET_WM_WINDOW_TYPE_");
+		string s = cnx->get_atom_name(*j);
+		if(s.size() > l) {
+			s = s.substr(l, s.size() - l);
+			s_type = s_type + s + ",";
+		}
+		++j;
+	}
+
+	if(s_type.size() != 0) {
+		s_type = s_type.substr(0, s_type.size() - 1);
+	} else {
+		s_type = "TYPE_NONE";
+	}
+
+	string title;
+	string name;
+	if (cnx->read_net_wm_name(w, &name)) {
+		title = name;
+	} else if (cnx->read_wm_name(w, name)) {
+		title = name;
+	} else {
+		std::stringstream s(std::stringstream::in | std::stringstream::out);
+		s << "#" << (w);
+		title = s.str();
+	}
+
+	/** read newer transient for **/
+	Window transient_for;
+	string s_transient;
+	if (!cnx->read_wm_transient_for(w, &transient_for)) {
+		s_transient = "undefined";
+	} else {
+		char buffer[1024];
+		snprintf(buffer, 1024, "%lu", transient_for);
+		s_transient = buffer;
+	}
+
+	XWindowAttributes wa;
+	XGetWindowAttributes(cnx->dpy, w, &wa);
+
+	Window root;
+	Window parent;
+	Window * childs;
+	unsigned int n;
+
+	XQueryTree(cnx->dpy, w, &root, &parent, &childs, &n);
+
+	char buffer[1024];
+	snprintf(buffer, 1024, "[%lu] %s, type: %s, transiant_for: %s, overide: %s, parrent: %lu", w, title.c_str(), s_type.c_str(), s_transient.c_str(), wa.override_redirect?"true":"false", parent);
+
+	if(childs != 0) {
+		XFree(childs);
+	}
+
+	return string(buffer);
 
 }
 

@@ -43,11 +43,11 @@ public:
 		_surf = 0;
 		_pixmap_id = None;
 
-		printf("create %lu\n", _window_id);
+		//printf("create %lu\n", _window_id);
 	}
 
 	~composite_surface_t() {
-		printf("destroy %lu\n", _window_id);
+		//printf("destroy %lu\n", _window_id);
 		destroy_cache();
 	}
 
