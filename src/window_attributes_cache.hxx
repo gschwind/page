@@ -1,8 +1,10 @@
 /*
  * window_attributes_cache.hxx
  *
- *  Created on: 4 août 2013
- *      Author: bg
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #ifndef WINDOW_ATTRIBUTES_CACHE_HXX_

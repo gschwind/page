@@ -1,9 +1,12 @@
 /*
  * smart_pointer.hxx
  *
- *  Created on: 9 août 2013
- *      Author: bg
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
+
 
 #ifndef SMART_POINTER_HXX_
 #define SMART_POINTER_HXX_

@@ -1,8 +1,10 @@
 /*
  * list_visual.cxx
  *
- *  Created on: 18 juil. 2013
- *      Author: bg
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #include <X11/Xlib.h>

@@ -1,8 +1,10 @@
 /*
  * theme.hxx
  *
- *  Created on: 23 mars 2013
- *      Author: gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #ifndef THEME_HXX_

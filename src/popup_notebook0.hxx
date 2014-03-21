@@ -1,9 +1,12 @@
 /*
  * popup_notebook0.hxx
  *
- * copyright (2012) Benoit Gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
  *
  */
+
 
 #ifndef POPUP_NOTEBOOK0_HXX_
 #define POPUP_NOTEBOOK0_HXX_

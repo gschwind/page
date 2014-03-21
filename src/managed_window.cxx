@@ -1,8 +1,10 @@
 /*
  * managed_window.cxx
  *
- *  Created on: 16 mars 2013
- *      Author: gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #include <cairo.h>

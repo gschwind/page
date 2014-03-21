@@ -1,9 +1,12 @@
 /*
  * popup_frame_move.hxx
  *
- * copyright (2012) Benoit Gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
  *
  */
+
 
 #ifndef POPUP_FRAME_MOVE_HXX_
 #define POPUP_FRAME_MOVE_HXX_

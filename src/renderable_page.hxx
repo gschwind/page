@@ -1,9 +1,12 @@
 /*
  * renderable_page.hxx
  *
- *  Created on: 27 déc. 2012
- *      Author: gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
+
 
 #ifndef RENDERABLE_PAGE_HXX_
 #define RENDERABLE_PAGE_HXX_

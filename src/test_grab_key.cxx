@@ -1,8 +1,10 @@
 /*
  * test_grab_key.cxx
  *
- *  Created on: 11 déc. 2013
- *      Author: benoit.gschwind
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #include <X11/Xlib.h>

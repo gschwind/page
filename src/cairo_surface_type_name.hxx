@@ -1,8 +1,10 @@
 /*
  * cairo_surface_type_name.hxx
  *
- *  Created on: 6 août 2013
- *      Author: bg
+ * copyright (2010-2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
  */
 
 #ifndef CAIRO_SURFACE_TYPE_NAME_HXX_
