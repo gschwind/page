@@ -45,21 +45,21 @@ inline void cairo_set_source_rgb(cairo_t * cr, color_t const & color) {
 rectangle simple2_theme_t::compute_notebook_bookmark_position(
 		rectangle const & allocation) const {
 	return rectangle(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
-			16, 16);
+			16, 16).floor();
 }
 
 rectangle simple2_theme_t::compute_notebook_vsplit_position(
 		rectangle const & allocation) const {
 
 	return rectangle(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
-			16, 16);
+			16, 16).floor();
 }
 
 rectangle simple2_theme_t::compute_notebook_hsplit_position(
 		rectangle const & allocation) const {
 
 	return rectangle(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
-			16, 16);
+			16, 16).floor();
 
 }
 
@@ -67,16 +67,16 @@ rectangle simple2_theme_t::compute_notebook_close_position(
 		rectangle const & allocation) const {
 
 	return rectangle(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
-			16, 16);
+			16, 16).floor();
 }
 
 rectangle simple2_theme_t::compute_floating_close_position(rectangle const & allocation) const {
-	return rectangle(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
+	return rectangle(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16).floor();
 }
 
 rectangle simple2_theme_t::compute_floating_bind_position(
 		rectangle const & allocation) const {
-	return rectangle(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
+	return rectangle(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16).floor();
 }
 
 

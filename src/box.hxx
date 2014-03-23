@@ -12,6 +12,8 @@
 
 #include <X11/Xlib.h>
 
+#include <cmath>
+
 #include <algorithm>
 #include <list>
 #include <sstream>
@@ -88,6 +90,30 @@ struct rectangle_t {
 
 		return true;
 
+	}
+
+	rectangle_t & floor() {
+		x = ::floor(x);
+		y = ::floor(y);
+		w = ::floor(w);
+		h = ::floor(h);
+		return *this;
+	}
+
+	rectangle_t & round() {
+		x = ::floor(x+0.5);
+		y = ::floor(y+0.5);
+		w = ::floor(w+0.5);
+		h = ::floor(h+0.5);
+		return *this;
+	}
+
+	rectangle_t & ceil() {
+		x = ::ceil(x);
+		y = ::ceil(y);
+		w = ::ceil(w);
+		h = ::ceil(h);
+		return *this;
 	}
 
 	rectangle_t & operator&=(rectangle_t const & b) {
