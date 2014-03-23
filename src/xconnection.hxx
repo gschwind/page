@@ -609,7 +609,7 @@ public:
 		XSelectInput(dpy, w, mask);
 	}
 
-	void move_resize(Window w, box_int_t const & size) {
+	void move_resize(Window w, rectangle const & size) {
 
 		cnx_printf("XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", w,
 				size.w, size.h, size.x, size.y);
@@ -762,7 +762,7 @@ public:
 		return XSetInputFocus(dpy, focus, revert_to, time);
 	}
 
-	void fake_configure(Window w, box_int_t location, int border_width) {
+	void fake_configure(Window w, rectangle location, int border_width) {
 		XEvent ev;
 		ev.xconfigure.type = ConfigureNotify;
 		ev.xconfigure.display = dpy;

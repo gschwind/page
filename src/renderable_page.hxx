@@ -18,12 +18,12 @@ namespace page {
 
 class renderable_page_t: public window_overlay_t {
 	theme_t * _theme;
-	region_t<int> damaged;
+	region damaged;
 public:
 
 	renderable_page_t(xconnection_t * cnx, theme_t * render, int width,
 			int height) :
-			window_overlay_t(cnx, 24, box_int_t(0, 0, width, height)), _theme(
+			window_overlay_t(cnx, 24, rectangle(0, 0, width, height)), _theme(
 					render) {
 		window_overlay_t::show();
 
@@ -34,11 +34,11 @@ public:
 	}
 
 	void repair_notebook_border(notebook_t * n) {
-		region_t<int> r = n->allocation();
+		region r = n->allocation();
 
 		if (n->selected() == 0) {
 
-			box_int_t b;
+			rectangle b;
 			b.x = n->allocation().x + _theme->notebook_margin.left;
 			b.y = n->allocation().y + _theme->notebook_margin.top;
 			b.w = n->allocation().w - _theme->notebook_margin.left
@@ -55,11 +55,11 @@ public:
 	}
 
 
-	void expose(box_int_t area) {
+	void expose(rectangle area) {
 
 		cairo_t * cr = cairo_create(_front_surf);
 
-		box_int_t clip = _position & area;
+		rectangle clip = _position & area;
 		if (!clip.is_null()) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
@@ -75,7 +75,7 @@ public:
 
 		cairo_t * cr = cairo_create(_back_surf);
 
-		for (region_t<int>::iterator i = damaged.begin(); i != damaged.end();
+		for (region::iterator i = damaged.begin(); i != damaged.end();
 				++i) {
 			for (vector<tree_t *>::iterator j = tree.begin(); j != tree.end();
 					++j) {
@@ -90,9 +90,9 @@ public:
 		cairo_destroy(cr);
 
 		cr = cairo_create(_front_surf);
-		for (region_t<int>::iterator i = damaged.begin(); i != damaged.end();
+		for (region::iterator i = damaged.begin(); i != damaged.end();
 				++i) {
-			box_int_t clip = _position & *i;
+			rectangle clip = _position & *i;
 			if (!clip.is_null()) {
 				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 				cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
@@ -106,7 +106,7 @@ public:
 
 	}
 
-	void add_damaged(box_t<int> area) {
+	void add_damaged(rectangle area) {
 		damaged += area;
 	}
 

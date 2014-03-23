@@ -48,17 +48,14 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 
 class composite_window_t {
 	composite_surface_t * _surf;
-	/** short cut **/
-	typedef region_t<int> _region_t;
-	typedef box_t<int> _box_t;
 
 	Display * dpy;
 	Window _wid;
-	box_int_t _position;
+	rectangle _position;
 	bool _has_alpha;
 
-	_region_t _region;
-	_region_t _opaque_region;
+	region _region;
+	region _opaque_region;
 
 	atom_handler_t A;
 
@@ -91,7 +88,7 @@ public:
 		_wid = w;
 
 		/** copy usefull window attributes **/
-		_position = box_int_t(wa->x, wa->y, wa->width, wa->height);
+		_position = rectangle(wa->x, wa->y, wa->width, wa->height);
 
 		/** guess if window has alpha channel **/
 		_has_alpha = false;
@@ -115,12 +112,12 @@ public:
 
 	}
 
-	void draw_to(cairo_t * cr, box_int_t const & area) {
+	void draw_to(cairo_t * cr, rectangle const & area) {
 		if (_surf == 0)
 			return;
 
-		box_int_t clip = area
-				& box_int_t(_position.x, _position.y, _position.w, _position.h);
+		rectangle clip = area
+				& rectangle(_position.x, _position.y, _position.w, _position.h);
 
 		if (clip.w > 0 && clip.h > 0) {
 			CHECK_CAIRO(cairo_save(cr));
@@ -159,7 +156,7 @@ public:
 
 		if (count > 0) {
 			for (int i = 0; i < count; ++i) {
-				_region += box_int_t(recs[i]);
+				_region += rectangle(recs[i]);
 			}
 
 			_region.translate(_position.x, _position.y);
@@ -167,17 +164,17 @@ public:
 			/* In doubt */
 			XFree(recs);
 		} else {
-			_region = box_int_t(_position.x, _position.y, _position.w,
+			_region = rectangle(_position.x, _position.y, _position.w,
 					_position.h);
 		}
 	}
 
-	region_t<int> read_opaque_region(Window w) {
-		region_t<int> ret;
+	region read_opaque_region(Window w) {
+		region ret;
 		std::vector<long> data;
 		if(get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL), &data)) {
 			for(int i = 0; i < data.size() / 4; ++i) {
-				ret += box_int_t(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
+				ret += rectangle(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
 			}
 		}
 		return ret;
@@ -197,11 +194,11 @@ public:
 		_opaque_region = _opaque_region & _region;
 	}
 
-	region_t<int> const & get_region() {
+	region const & get_region() {
 		return _region;
 	}
 
-	region_t<int> const & get_opaque_region() {
+	region const & get_opaque_region() {
 		return _opaque_region;
 	}
 
@@ -209,13 +206,13 @@ public:
 		return _wid;
 	}
 
-	box_int_t const & position() {
+	rectangle const & position() {
 		return _position;
 	}
 
 	void update_position(XConfigureEvent const & ev) {
-		if (_position != box_int_t(ev.x, ev.y, ev.width, ev.height)) {
-			_position = box_int_t(ev.x, ev.y, ev.width, ev.height);
+		if (_position != rectangle(ev.x, ev.y, ev.width, ev.height)) {
+			_position = rectangle(ev.x, ev.y, ev.width, ev.height);
 			update_shape();
 			update_opaque_region();
 		}

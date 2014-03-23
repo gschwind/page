@@ -93,9 +93,9 @@ public:
 			managed_window_base_t * mw) const = 0;
 
 	virtual void render_split(cairo_t * cr, split_base_t const * s,
-			box_int_t const & area) const = 0;
+			rectangle const & area) const = 0;
 	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n,
-			box_int_t const & area) const = 0;
+			rectangle const & area) const = 0;
 
 	virtual void render_floating(managed_window_base_t * nw) const = 0;
 

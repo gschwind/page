@@ -14,7 +14,7 @@
 
 namespace page {
 
-viewport_t::viewport_t(theme_t * theme, box_t<int> const & area) : raw_aera(area), effective_aera(area), fullscreen_client(0) {
+viewport_t::viewport_t(theme_t * theme, rectangle const & area) : raw_aera(area), effective_aera(area), fullscreen_client(0) {
 	_subtree = 0;
 	_is_visible = true;
 	_theme = theme;
@@ -50,31 +50,31 @@ void viewport_t::reconfigure() {
 	}
 }
 
-void viewport_t::set_allocation(box_int_t const & area) {
+void viewport_t::set_allocation(rectangle const & area) {
 	set_effective_area(area);
 }
 
-void viewport_t::set_raw_area(box_int_t const & area) {
+void viewport_t::set_raw_area(rectangle const & area) {
 	raw_aera = area;
 }
 
-void viewport_t::set_effective_area(box_int_t const & area) {
+void viewport_t::set_effective_area(rectangle const & area) {
 	effective_aera = area;
 	if(_subtree != 0) {
 		_subtree->set_allocation(effective_aera);
 	}
 }
 
-box_int_t viewport_t::get_absolute_extend() {
+rectangle viewport_t::get_absolute_extend() {
 	return raw_aera;
 }
 
-region_t<int> viewport_t::get_area() {
+region viewport_t::get_area() {
 	if (_is_visible && fullscreen_client == 0) {
-		region_t<int> r(effective_aera);
+		region r(effective_aera);
 		return r;
 	} else {
-		return box_int_t();
+		return rectangle();
 	}
 }
 

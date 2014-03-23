@@ -43,8 +43,8 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	return true;
 }
 
-box_int_t notebook_t::get_new_client_size() {
-	return box_int_t(allocation().x + _theme->notebook_margin.left,
+rectangle notebook_t::get_new_client_size() {
+	return rectangle(allocation().x + _theme->notebook_margin.left,
 			allocation().y + _theme->notebook_margin.top,
 			allocation().w - _theme->notebook_margin.right - _theme->notebook_margin.left,
 			allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom);
@@ -107,7 +107,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 
 void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
-	box_int_t client_size = compute_client_size(c);
+	rectangle client_size = compute_client_size(c);
 
 	c->set_notebook_wished_position(client_size);
 	c->reconfigure();
@@ -146,21 +146,21 @@ void notebook_t::map_all() {
 	}
 }
 
-box_int_t notebook_t::get_absolute_extend() {
+rectangle notebook_t::get_absolute_extend() {
 	return allocation();
 }
 
-region_t<int> notebook_t::get_area() {
+region notebook_t::get_area() {
 	if (!_selected.empty()) {
-		region_t<int> area = allocation();
+		region area = allocation();
 		area -= _selected.front()->get_base_position();
 		return area;
 	} else {
-		return region_t<int>(allocation());
+		return region(allocation());
 	}
 }
 
-void notebook_t::set_allocation(box_int_t const & area) {
+void notebook_t::set_allocation(rectangle const & area) {
 	if (area == allocation())
 		return;
 
@@ -256,13 +256,13 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 	//printf("XXX result : %d %d\n", width, height);
 }
 
-box_int_t notebook_t::compute_client_size(managed_window_t * c) {
+rectangle notebook_t::compute_client_size(managed_window_t * c) {
 	unsigned int height, width;
 	compute_client_size_with_constraint(c, allocation().w - _theme->notebook_margin.left - _theme->notebook_margin.right,
 			allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom, width, height);
 
 	/* compute the window placement within notebook */
-	box_int_t client_size;
+	rectangle client_size;
 	client_size.x = (client_area.w - (int)width) / 2;
 	client_size.y = (client_area.h - (int)height) / 2;
 	client_size.w = (int)width;
@@ -285,7 +285,7 @@ box_int_t notebook_t::compute_client_size(managed_window_t * c) {
 
 }
 
-box_int_t const & notebook_t::get_allocation() {
+rectangle const & notebook_t::get_allocation() {
 	return allocation();
 }
 

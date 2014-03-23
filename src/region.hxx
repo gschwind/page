@@ -19,10 +19,10 @@
 namespace page {
 
 template<typename T>
-class region_t: public std::list<box_t<T> > {
+class region_t: public std::list<rectangle_t<T> > {
 	/** short cut for the superior class **/
-	typedef std::list<box_t<T> > _superior_t;
-	typedef box_t<T> _box_t;
+	typedef std::list<rectangle_t<T> > _superior_t;
+	typedef rectangle_t<T> _box_t;
 
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
@@ -385,9 +385,7 @@ public:
 
 };
 
-/** instanciate template for checking purpose **/
-template class region_t<int>;
-template class region_t<double>;
+typedef region_t<double> region;
 
 }
 

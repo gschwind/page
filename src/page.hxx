@@ -75,7 +75,7 @@ using namespace std;
 namespace page {
 
 
-typedef std::list<box_int_t> box_list_t;
+typedef std::list<rectangle> box_list_t;
 
 inline void print_buffer__(const char * buf, int size) {
 	for (int i = 0; i < size; ++i) {
@@ -110,13 +110,13 @@ public:
 
 	struct mode_data_split_t {
 		split_t * split;
-		box_int_t slider_area;
+		rectangle slider_area;
 		double split_ratio;
 
 
 		mode_data_split_t() {
 			split = 0;
-			slider_area = box_int_t();
+			slider_area = rectangle();
 			split_ratio = 0.5;
 		}
 	};
@@ -176,10 +176,10 @@ public:
 		int y_offset;
 		int x_root;
 		int y_root;
-		box_int_t original_position;
+		rectangle original_position;
 		managed_window_t * f;
-		box_int_t popup_original_position;
-		box_int_t final_position;
+		rectangle popup_original_position;
+		rectangle final_position;
 
 		mode_data_floating_t() {
 			mode = RESIZE_NONE;
@@ -187,10 +187,10 @@ public:
 			y_offset = 0;
 			x_root = 0;
 			y_root = 0;
-			original_position = box_int_t();
+			original_position = rectangle();
 			f = 0;
-			popup_original_position = box_int_t();
-			final_position = box_int_t();
+			popup_original_position = rectangle();
+			final_position = rectangle();
 		}
 
 	};
@@ -319,7 +319,7 @@ private:
 	Window overlay_layer;
 	Window notification_layer;
 
-	box_t<int> _root_position;
+	rectangle _root_position;
 
 	vector<page_event_t> * page_areas;
 
@@ -405,8 +405,8 @@ public:
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(popup_notebook0_t * p, box_int_t & position);
-	void update_popup_position(popup_frame_move_t * p, box_int_t & position);
+	void update_popup_position(popup_notebook0_t * p, rectangle & position);
+	void update_popup_position(popup_frame_move_t * p, rectangle & position);
 
 	void fix_allocation(viewport_t & v);
 
@@ -553,7 +553,7 @@ public:
 				reinterpret_cast<unsigned char *>(desktop_geometry), 2);
 	}
 
-	void set_opaque_region(Window w, region_t<int> & region);
+	void set_opaque_region(Window w, region & region);
 
 
 	string get_window_string(Window w);

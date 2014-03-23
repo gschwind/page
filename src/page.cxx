@@ -800,7 +800,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			int y = v.size() / 4 + 1;
 
 			pat->move_resize(
-					box_int_t(
+					rectangle(
 							viewport->raw_aera.x
 									+ (viewport->raw_aera.w - 80 * 4) / 2,
 							viewport->raw_aera.y
@@ -1149,7 +1149,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			rpage->add_damaged(mode_data_split.split->allocation());
 
 			mode_data_split.split = 0;
-			mode_data_split.slider_area = box_int_t();
+			mode_data_split.slider_area = rectangle();
 			mode_data_split.split_ratio = 0.5;
 
 			break;
@@ -1274,10 +1274,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.original_position = rectangle();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = box_int_t();
-			mode_data_floating.final_position = box_int_t();
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
 
 			break;
 		case PROCESS_FLOATING_RESIZE:
@@ -1296,10 +1296,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.original_position = rectangle();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = box_int_t();
-			mode_data_floating.final_position = box_int_t();
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
 
 			break;
 		case PROCESS_FLOATING_CLOSE: {
@@ -1314,10 +1314,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.original_position = rectangle();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = box_int_t();
-			mode_data_floating.final_position = box_int_t();
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
 
 			break;
 		}
@@ -1411,8 +1411,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 void page_t::process_event(XMotionEvent const & e) {
 
 	XEvent ev;
-	box_int_t old_area;
-	box_int_t new_position;
+	rectangle old_area;
+	rectangle new_position;
 	static int count = 0;
 	count++;
 	switch (process_mode) {
@@ -1551,7 +1551,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
 
 		/* compute new window position */
-		box_int_t new_position = mode_data_floating.original_position;
+		rectangle new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
@@ -1569,7 +1569,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
-		box_int_t size = mode_data_floating.original_position;
+		rectangle size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
 			size.w -= e.x_root - mode_data_floating.x_root;
@@ -1920,7 +1920,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
 			/** compute floating size **/
-			box_int_t new_size = mw->get_floating_wished_position();
+			rectangle new_size = mw->get_floating_wished_position();
 
 			if (e.value_mask & CWX) {
 				new_size.x = e.x;
@@ -1943,7 +1943,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 			if ((e.value_mask & (CWX)) and (e.value_mask & (CWY)) and e.x == 0
 					and e.y == 0 and !viewport_outputs.empty()) {
 				viewport_t * v = viewport_outputs.begin()->second;
-				box_int_t b = v->get_absolute_extend();
+				rectangle b = v->get_absolute_extend();
 				/* place on center */
 				new_size.x = (b.w - new_size.w) / 2 + b.x;
 				new_size.y = (b.h - new_size.h) / 2 + b.y;
@@ -2080,7 +2080,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 
 			/* apply normal hint to floating window */
-			box_int_t new_size = mw->get_wished_position();
+			rectangle new_size = mw->get_wished_position();
 			unsigned int final_width = new_size.w;
 			unsigned int final_height = new_size.h;
 			compute_client_size_with_constraint(mw->orig(),
@@ -2430,7 +2430,7 @@ void page_t::process_event(XEvent const & e) {
 
 		if (e.xexpose.window == rpage->id()) {
 			rpage->expose(
-					box_int_t(e.xexpose.x, e.xexpose.y, e.xexpose.width,
+					rectangle(e.xexpose.x, e.xexpose.y, e.xexpose.width,
 							e.xexpose.height));
 		} else if (e.xexpose.window == pfm->id()) {
 			pfm->expose();
@@ -2788,12 +2788,12 @@ void page_t::notebook_close(notebook_t * src) {
 }
 
 void page_t::update_popup_position(popup_notebook0_t * p,
-		box_int_t & position) {
+		rectangle & position) {
 		p->move_resize(position);
 		p->expose();
 }
 
-void page_t::update_popup_position(popup_frame_move_t * p, box_int_t & position) {
+void page_t::update_popup_position(popup_frame_move_t * p, rectangle & position) {
 	p->move_resize(position);
 	p->expose();
 }
@@ -2834,9 +2834,9 @@ void page_t::fix_allocation(viewport_t & v) {
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
-				box_int_t b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
+				rectangle b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
-				box_int_t x = v.raw_aera & b;
+				rectangle x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xleft = std::max(xleft, ps[PS_LEFT]);
 				}
@@ -2844,10 +2844,10 @@ void page_t::fix_allocation(viewport_t & v) {
 
 			if (ps[PS_RIGHT] > 0) {
 				/* check if raw area intersect current viewport */
-				box_int_t b(_root_position.w - ps[PS_RIGHT],
+				rectangle b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
-				box_int_t x = v.raw_aera & b;
+				rectangle x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xright = std::max(xright, ps[PS_RIGHT]);
 				}
@@ -2855,9 +2855,9 @@ void page_t::fix_allocation(viewport_t & v) {
 
 			if (ps[PS_TOP] > 0) {
 				/* check if raw area intersect current viewport */
-				box_int_t b(ps[PS_TOP_START_X], 0,
+				rectangle b(ps[PS_TOP_START_X], 0,
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
-				box_int_t x = v.raw_aera & b;
+				rectangle x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xtop = std::max(xtop, ps[PS_TOP]);
 				}
@@ -2865,11 +2865,11 @@ void page_t::fix_allocation(viewport_t & v) {
 
 			if (ps[PS_BOTTOM] > 0) {
 				/* check if raw area intersect current viewport */
-				box_int_t b(ps[PS_BOTTOM_START_X],
+				rectangle b(ps[PS_BOTTOM_START_X],
 						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
-				box_int_t x = v.raw_aera & b;
+				rectangle x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xbottom = std::max(xbottom, ps[PS_BOTTOM]);
 				}
@@ -2878,7 +2878,7 @@ void page_t::fix_allocation(viewport_t & v) {
 		++j;
 	}
 
-	box_int_t final_size;
+	rectangle final_size;
 
 	final_size.x = xleft;
 	final_size.w = _root_position.w - xright - xleft;
@@ -3308,10 +3308,10 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = box_int_t();
+			mode_data_floating.original_position = rectangle();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = box_int_t();
-			mode_data_floating.final_position = box_int_t();
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
 
 		}
 		break;
@@ -3610,7 +3610,7 @@ void page_t::update_viewport_layout() {
 		throw std::runtime_error("FATAL: cannot read root window attributes\n");
 	}
 
-	_root_position = box_t<int>(rwa.x, rwa.y, rwa.width, rwa.height);
+	_root_position = rectangle(rwa.x, rwa.y, rwa.width, rwa.height);
 	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	/** store the newer layout, to cleanup obsolet viewport **/
@@ -3628,7 +3628,7 @@ void page_t::update_viewport_layout() {
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
-			box_t<int> area(info->x, info->y, info->width, info->height);
+			rectangle area(info->x, info->y, info->width, info->height);
 			/** if this crtc do not has a viewport **/
 			if (!has_key(viewport_outputs, resources->crtcs[i])) {
 				/** then create a new one, and store it in new_layout **/
@@ -3646,7 +3646,7 @@ void page_t::update_viewport_layout() {
 
 	if(new_layout.size() < 1) {
 		/** fallback to one screen **/
-		box_t<int> area(rwa.x, rwa.y, rwa.width, rwa.height);
+		rectangle area(rwa.x, rwa.y, rwa.width, rwa.height);
 		/** if this crtc do not has a viewport **/
 		if (!has_key(viewport_outputs, (XID)None)) {
 			/** then create a new one, and store it in new_layout **/
@@ -4076,9 +4076,9 @@ void page_t::get_splits(tree_t * base, vector<split_t *> & l) {
 }
 
 
-void page_t::set_opaque_region(Window w, region_t<int> & region) {
+void page_t::set_opaque_region(Window w, region & region) {
 	vector<long> data(region.size() * 4);
-	region_t<int>::iterator i = region.begin();
+	region::iterator i = region.begin();
 	int k = 0;
 	while(i != region.end()) {
 		data[k++] = (*i).x;

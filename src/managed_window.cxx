@@ -51,8 +51,8 @@ _is_focused(false)
 	XWindowAttributes rwa;
 	XGetWindowAttributes(cnx->dpy, DefaultRootWindow(cnx->dpy), &rwa);
 
-	_floating_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
-	_notebook_wished_position = box_int_t(wa.x, wa.y, wa.width, wa.height);
+	_floating_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
+	_notebook_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
 
 	_orig_visual = wa.visual;
 	_orig_depth = wa.depth;
@@ -90,7 +90,7 @@ _is_focused(false)
 	XSetWindowAttributes swa;
 	Window wbase;
 	Window wdeco;
-	box_int_t b = _floating_wished_position;
+	rectangle b = _floating_wished_position;
 
 	/** Common window properties **/
 	unsigned long value_mask = CWOverrideRedirect;
@@ -246,23 +246,23 @@ void managed_window_t::reconfigure() {
 		destroy_back_buffer();
 		create_back_buffer();
 
-		region_t<int> r(_orig_position);
+		region r(_orig_position);
 		set_opaque_region(_base, r);
 
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
-		_orig_position = box_int_t(0, 0, _base_position.w, _base_position.h);
+		_orig_position = rectangle(0, 0, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
 
-		region_t<int> r(_orig_position);
+		region r(_orig_position);
 		set_opaque_region(_base, r);
 
 	}
 
 	_cnx->move_resize(_base, _base_position);
-	_cnx->move_resize(_deco, box_int_t(0, 0, _base_position.w, _base_position.h));
+	_cnx->move_resize(_deco, rectangle(0, 0, _base_position.w, _base_position.h));
 	_cnx->move_resize(_orig, _orig_position);
 
 	fake_configure();
@@ -290,11 +290,11 @@ void managed_window_t::delete_window(Time t) {
 	_cnx->send_event(_orig, False, NoEventMask, &ev);
 }
 
-bool managed_window_t::check_orig_position(box_int_t const & position) {
+bool managed_window_t::check_orig_position(rectangle const & position) {
 	return position == _orig_position;
 }
 
-bool managed_window_t::check_base_position(box_int_t const & position) {
+bool managed_window_t::check_base_position(rectangle const & position) {
 	return position == _base_position;
 }
 
@@ -321,7 +321,7 @@ void managed_window_t::focus(Time t) {
 	icccm_focus(t);
 }
 
-box_int_t managed_window_t::get_base_position() const {
+rectangle managed_window_t::get_base_position() const {
 	return _base_position;
 }
 
@@ -431,9 +431,9 @@ void managed_window_t::icccm_focus(Time t) {
 
 }
 
-void managed_window_t::set_opaque_region(Window w, region_t<int> & region) {
+void managed_window_t::set_opaque_region(Window w, region & region) {
 	vector<long> data(region.size() * 4);
-	region_t<int>::iterator i = region.begin();
+	region::iterator i = region.begin();
 	int k = 0;
 	while(i != region.end()) {
 		data[k++] = (*i).x;

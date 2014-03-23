@@ -42,41 +42,41 @@ inline void cairo_set_source_rgb(cairo_t * cr, color_t const & color) {
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, color.r, color.g, color.b, 1.0));
 }
 
-box_int_t simple2_theme_t::compute_notebook_bookmark_position(
-		box_int_t const & allocation) const {
-	return box_int_t(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
+rectangle simple2_theme_t::compute_notebook_bookmark_position(
+		rectangle const & allocation) const {
+	return rectangle(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
 			16, 16);
 }
 
-box_int_t simple2_theme_t::compute_notebook_vsplit_position(
-		box_int_t const & allocation) const {
+rectangle simple2_theme_t::compute_notebook_vsplit_position(
+		rectangle const & allocation) const {
 
-	return box_int_t(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
+	return rectangle(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
 			16, 16);
 }
 
-box_int_t simple2_theme_t::compute_notebook_hsplit_position(
-		box_int_t const & allocation) const {
+rectangle simple2_theme_t::compute_notebook_hsplit_position(
+		rectangle const & allocation) const {
 
-	return box_int_t(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
+	return rectangle(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
 			16, 16);
 
 }
 
-box_int_t simple2_theme_t::compute_notebook_close_position(
-		box_int_t const & allocation) const {
+rectangle simple2_theme_t::compute_notebook_close_position(
+		rectangle const & allocation) const {
 
-	return box_int_t(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
+	return rectangle(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
 			16, 16);
 }
 
-box_int_t simple2_theme_t::compute_floating_close_position(box_int_t const & allocation) const {
-	return box_int_t(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
+rectangle simple2_theme_t::compute_floating_close_position(rectangle const & allocation) const {
+	return rectangle(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
 }
 
-box_int_t simple2_theme_t::compute_floating_bind_position(
-		box_int_t const & allocation) const {
-	return box_int_t(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
+rectangle simple2_theme_t::compute_floating_bind_position(
+		rectangle const & allocation) const {
+	return rectangle(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16);
 }
 
 
@@ -335,11 +335,11 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				/ (clist.size() + 1.0));
 		double offset = n->allocation().x;
 
-		box_t<int> b;
+		rectangle b;
 
 		for(list<managed_window_base_t const *>::iterator i = clist.begin(); i != clist.end(); ++i) {
 			if ((*i) == n->selected()) {
-				b = box_int_t(floor(offset), n->allocation().y,
+				b = rectangle(floor(offset), n->allocation().y,
 						floor(offset + 2.0 * box_width) - floor(offset),
 						notebook_margin.top - 1);
 
@@ -370,7 +370,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				offset += box_width * 2;
 
 			} else {
-				b = box_int_t(floor(offset), n->allocation().y,
+				b = rectangle(floor(offset), n->allocation().y,
 						floor(offset + box_width) - floor(offset),
 						notebook_margin.top - 1);
 
@@ -389,7 +389,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 }
 
 void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
-		box_int_t const & area) const {
+		rectangle const & area) const {
 
 	CHECK_CAIRO(cairo_save(cr));
 
@@ -468,7 +468,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 
 	{
-		box_int_t b = compute_notebook_bookmark_position(n->allocation());
+		rectangle b = compute_notebook_bookmark_position(n->allocation());
 
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
@@ -487,7 +487,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	}
 
 	{
-		box_int_t b = compute_notebook_vsplit_position(n->allocation());
+		rectangle b = compute_notebook_vsplit_position(n->allocation());
 
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
@@ -500,7 +500,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	}
 
 	{
-		box_int_t b = compute_notebook_hsplit_position(n->allocation());
+		rectangle b = compute_notebook_hsplit_position(n->allocation());
 
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
@@ -513,7 +513,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	}
 
 	{
-		box_int_t b = compute_notebook_close_position(n->allocation());
+		rectangle b = compute_notebook_close_position(n->allocation());
 
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
@@ -530,8 +530,8 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 }
 
 
-static void draw_notebook_border(cairo_t * cr, box_int_t const & alloc,
-		box_int_t const & tab_area, color_t const & color,
+static void draw_notebook_border(cairo_t * cr, rectangle const & alloc,
+		rectangle const & tab_area, color_t const & color,
 		double border_width) {
 
 	double half = border_width / 2.0;
@@ -570,7 +570,7 @@ void simple2_theme_t::render_notebook_selected(
 
 	notebook_base_t const * n = data.nbk;
 	managed_window_base_t const * c = data.clt;
-	box_int_t tab_area = data.position;
+	rectangle tab_area = data.position;
 
 	tab_area.x += 2;
 	tab_area.w -= 4;
@@ -580,14 +580,14 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 
 	/** draw the tab background **/
-	box_int_t b = tab_area;
+	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 	CHECK_CAIRO(cairo_fill(cr));
 
 	/** draw application icon **/
-	box_int_t bicon = tab_area;
+	rectangle bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
 	bicon.x += 7;
@@ -605,7 +605,7 @@ void simple2_theme_t::render_notebook_selected(
 	}
 
 	/** draw application title **/
-	box_int_t btext = tab_area;
+	rectangle btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 3 * 16 + 12 + 4;
 	btext.x += 7 + 16 + 2;
@@ -643,7 +643,7 @@ void simple2_theme_t::render_notebook_selected(
 
 	/** draw close button **/
 
-	box_t<int> ncclose;
+	rectangle ncclose;
 	ncclose.x = tab_area.x + tab_area.w - 1 * 17 - 4;
 	ncclose.y = tab_area.y + 2;
 	ncclose.w = 16;
@@ -655,7 +655,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, ncclose.x, ncclose.y));
 
 	/** draw unbind button **/
-	box_t<int> ncub;
+	rectangle ncub;
 	ncub.x = tab_area.x + tab_area.w - 2 * 17 - 4;
 	ncub.y = tab_area.y + 2;
 	ncub.w = 16;
@@ -666,11 +666,11 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_source_surface(cr, unbind_button_s, ncub.x, ncub.y));
 	CHECK_CAIRO(cairo_mask_surface(cr, unbind_button_s, ncub.x, ncub.y));
 
-	box_int_t area = n->allocation();
+	rectangle area = n->allocation();
 	area.y += notebook_margin.top - 4;
 	area.h -= notebook_margin.top - 4;
 
-	box_int_t bclient = n->selected()->base_position();
+	rectangle bclient = n->selected()->base_position();
 
 //	/* left */
 //	box_int_t bleft(area.x, area.y, bclient.x - area.x, area.h);
@@ -734,7 +734,7 @@ void simple2_theme_t::render_notebook_normal(
 		color_t const & background_color
 ) const {
 
-	box_int_t tab_area = data.position;
+	rectangle tab_area = data.position;
 	tab_area.x += 2;
 	tab_area.w -= 4;
 	tab_area.y += 1;
@@ -757,7 +757,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 
 	/** draw the tab background **/
-	box_int_t b = tab_area;
+	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
@@ -765,7 +765,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	CHECK_CAIRO(cairo_fill(cr));
 
-	box_int_t bicon = tab_area;
+	rectangle bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
 	bicon.x += 3;
@@ -784,7 +784,7 @@ void simple2_theme_t::render_notebook_normal(
 	}
 	CHECK_CAIRO(cairo_restore(cr));
 
-	box_int_t btext = tab_area;
+	rectangle btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 1 * 16 + 8;
 	btext.x += 3 + 16 + 2;
@@ -817,7 +817,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_restore(cr));
 
 	{
-		box_int_t b = tab_area;
+		rectangle b = tab_area;
 
 //		CHECK_CAIRO(cairo_new_path(cr));
 //		CHECK_CAIRO(cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5));
@@ -855,7 +855,7 @@ void simple2_theme_t::render_notebook_normal(
 }
 
 void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
-		box_int_t const & area) const {
+		rectangle const & area) const {
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_reset_clip(cr));
 	CHECK_CAIRO(cairo_identity_matrix(cr));
@@ -864,7 +864,7 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	CHECK_CAIRO(cairo_rectangle(cr, area.x, area.y, area.w, area.h));
 	CHECK_CAIRO(cairo_clip(cr));
 
-	box_int_t sarea = compute_split_bar_location(s);
+	rectangle sarea = compute_split_bar_location(s);
 	if (background_s != 0) {
 		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, 0.0, 0.0));
 	} else {
@@ -905,14 +905,14 @@ void simple2_theme_t::render_floating_base(
 		double border_width
 ) const {
 
-	box_int_t allocation = mw->base_position();
+	rectangle allocation = mw->base_position();
 
 	{
 		cairo_t * cr = mw->cairo_top();
 		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
 		pango_layout_set_font_description(pango_layout, pango_font);
 
-		box_int_t b(0, 0, allocation.w, floating_margin.top);
+		rectangle b(0, 0, allocation.w, floating_margin.top);
 
 		CHECK_CAIRO(cairo_reset_clip(cr));
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
@@ -966,7 +966,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_fill(cr));
 		CHECK_CAIRO(cairo_pattern_destroy(r1grad));
 
-		box_int_t b1(b.x + floating_margin.left, b.y + floating_margin.bottom, b.w - floating_margin.left - floating_margin.right, b.h - floating_margin.bottom);
+		rectangle b1(b.x + floating_margin.left, b.y + floating_margin.bottom, b.w - floating_margin.left - floating_margin.right, b.h - floating_margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		CHECK_CAIRO(cairo_rectangle(cr, b1.x, b1.y, b1.w, b1.h));
@@ -974,7 +974,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 		CHECK_CAIRO(cairo_fill(cr));
 
-		box_int_t bicon = b1;
+		rectangle bicon = b1;
 		bicon.h = 16;
 		bicon.w = 16;
 		bicon.x += 2;
@@ -992,19 +992,19 @@ void simple2_theme_t::render_floating_base(
 			}
 		}
 
-		box_int_t bbind = compute_floating_bind_position(b);
+		rectangle bbind = compute_floating_bind_position(b);
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, bbind.x, bbind.y, bbind.w, bbind.h));
 		CHECK_CAIRO(cairo_set_source_surface(cr, bind_button_s, bbind.x, bbind.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, bind_button_s, bbind.x, bbind.y));
 
-		box_int_t bclose = compute_floating_close_position(b);
+		rectangle bclose = compute_floating_close_position(b);
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, bclose.x, bclose.y, bclose.w, bclose.h));
 		CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, bclose.x, bclose.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, bclose.x, bclose.y));
 
-		box_int_t btext = b1;
+		rectangle btext = b1;
 		btext.h -= 4;
 		btext.w -= 3 * 16 - 8;
 		btext.x += 8 + 16 + 2;
@@ -1055,7 +1055,7 @@ void simple2_theme_t::render_floating_base(
 	{
 		cairo_t * cr = mw->cairo_bottom();
 
-		box_int_t b(0, 0, allocation.w, floating_margin.bottom);
+		rectangle b(0, 0, allocation.w, floating_margin.bottom);
 
 		/** clear **/
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
@@ -1102,7 +1102,7 @@ void simple2_theme_t::render_floating_base(
 	{
 		cairo_t * cr = mw->cairo_right();
 
-		box_int_t b(0, 0, floating_margin.right,
+		rectangle b(0, 0, floating_margin.right,
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
@@ -1128,7 +1128,7 @@ void simple2_theme_t::render_floating_base(
 	{
 		cairo_t * cr = mw->cairo_left();
 
-		box_int_t b(0, 0, floating_margin.left,
+		rectangle b(0, 0, floating_margin.left,
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
@@ -1505,43 +1505,43 @@ vector<floating_event_t> * simple2_theme_t::compute_floating_areas(
 			- floating_margin.bottom;
 
 	floating_event_t ft(FLOATING_EVENT_TITLE);
-	ft.position = box_int_t(x0, y0, w0,
+	ft.position = rectangle(x0, y0, w0,
 			floating_margin.top - floating_margin.bottom);
 	ret->push_back(ft);
 
 	floating_event_t fgt(FLOATING_EVENT_GRIP_TOP);
-	fgt.position = box_int_t(x0, 0, w0, floating_margin.bottom);
+	fgt.position = rectangle(x0, 0, w0, floating_margin.bottom);
 	ret->push_back(fgt);
 
 	floating_event_t fgb(FLOATING_EVENT_GRIP_BOTTOM);
-	fgb.position = box_int_t(x0, y1, w0, floating_margin.bottom);
+	fgb.position = rectangle(x0, y1, w0, floating_margin.bottom);
 	ret->push_back(fgb);
 
 	floating_event_t fgl(FLOATING_EVENT_GRIP_LEFT);
-	fgl.position = box_int_t(0, y0, floating_margin.left, h0);
+	fgl.position = rectangle(0, y0, floating_margin.left, h0);
 	ret->push_back(fgl);
 
 	floating_event_t fgr(FLOATING_EVENT_GRIP_RIGHT);
-	fgr.position = box_int_t(x1, y0, floating_margin.right, h0);
+	fgr.position = rectangle(x1, y0, floating_margin.right, h0);
 	ret->push_back(fgr);
 
 	floating_event_t fgtl(FLOATING_EVENT_GRIP_TOP_LEFT);
-	fgtl.position = box_int_t(0, 0, floating_margin.left,
+	fgtl.position = rectangle(0, 0, floating_margin.left,
 			floating_margin.bottom);
 	ret->push_back(fgtl);
 
 	floating_event_t fgtr(FLOATING_EVENT_GRIP_TOP_RIGHT);
-	fgtr.position = box_int_t(x1, 0, floating_margin.right,
+	fgtr.position = rectangle(x1, 0, floating_margin.right,
 			floating_margin.bottom);
 	ret->push_back(fgtr);
 
 	floating_event_t fgbl(FLOATING_EVENT_GRIP_BOTTOM_LEFT);
-	fgbl.position = box_int_t(0, y1, floating_margin.left,
+	fgbl.position = rectangle(0, y1, floating_margin.left,
 			floating_margin.bottom);
 	ret->push_back(fgbl);
 
 	floating_event_t fgbr(FLOATING_EVENT_GRIP_BOTTOM_RIGHT);
-	fgbr.position = box_int_t(x1, y1, floating_margin.right,
+	fgbr.position = rectangle(x1, y1, floating_margin.right,
 			floating_margin.bottom);
 	ret->push_back(fgbr);
 

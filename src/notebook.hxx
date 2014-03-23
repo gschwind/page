@@ -48,27 +48,27 @@ public:
 	// set of map for fast check is window is in this notebook
 	set<managed_window_t *> _client_map;
 
-	box_int_t client_area;
+	rectangle client_area;
 
-	box_t<int> button_close;
-	box_t<int> button_vsplit;
-	box_t<int> button_hsplit;
-	box_t<int> button_pop;
+	rectangle button_close;
+	rectangle button_vsplit;
+	rectangle button_hsplit;
+	rectangle button_pop;
 
-	box_t<int> tab_area;
-	box_t<int> top_area;
-	box_t<int> bottom_area;
-	box_t<int> left_area;
-	box_t<int> right_area;
+	rectangle tab_area;
+	rectangle top_area;
+	rectangle bottom_area;
+	rectangle left_area;
+	rectangle right_area;
 
-	box_t<int> popup_top_area;
-	box_t<int> popup_bottom_area;
-	box_t<int> popup_left_area;
-	box_t<int> popup_right_area;
-	box_t<int> popup_center_area;
+	rectangle popup_top_area;
+	rectangle popup_bottom_area;
+	rectangle popup_left_area;
+	rectangle popup_right_area;
+	rectangle popup_center_area;
 
-	box_t<int> close_client_area;
-	box_t<int> undck_client_area;
+	rectangle close_client_area;
+	rectangle undck_client_area;
 
 	void set_selected(managed_window_t * c);
 
@@ -77,7 +77,7 @@ public:
 public:
 	notebook_t(theme_t const * theme);
 	~notebook_t();
-	void update_allocation(box_t<int> & allocation);
+	void update_allocation(rectangle & allocation);
 
 	bool process_button_press_event(XEvent const * e);
 
@@ -93,7 +93,7 @@ public:
 	void activate_client(managed_window_t * x);
 	void iconify_client(managed_window_t * x);
 
-	box_int_t get_new_client_size();
+	rectangle get_new_client_size();
 
 	void select_next();
 	void delete_all();
@@ -103,9 +103,9 @@ public:
 
 	notebook_t * get_nearest_notebook();
 
-	virtual box_int_t get_absolute_extend();
-	virtual region_t<int> get_area();
-	virtual void set_allocation(box_int_t const & area);
+	virtual rectangle get_absolute_extend();
+	virtual region get_area();
+	virtual void set_allocation(rectangle const & area);
 
 	managed_window_t * find_client_tab(int x, int y);
 
@@ -122,8 +122,8 @@ public:
 			unsigned int max_width, unsigned int max_height,
 			unsigned int & width, unsigned int & height);
 
-	box_int_t compute_client_size(managed_window_t * c);
-	box_int_t const & get_allocation();
+	rectangle compute_client_size(managed_window_t * c);
+	rectangle const & get_allocation();
 	managed_window_t const * get_selected();
 
 	void set_theme(theme_t const * theme);
@@ -142,7 +142,7 @@ public:
 		}
 	}
 
-	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+	virtual void render(cairo_t * cr, rectangle const & area) const {
 		_theme->render_notebook(cr, this, area);
 	}
 

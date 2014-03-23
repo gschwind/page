@@ -28,14 +28,14 @@ class split_t : public split_base_t, public tree_renderable_t {
 
 	theme_t const * _theme;
 
-	box_int_t _split_bar_area;
+	rectangle _split_bar_area;
 	split_type_e _split_type;
 	double _split;
 	tree_t * _pack0;
 	tree_t * _pack1;
 
-	box_int_t bpack0;
-	box_int_t bpack1;
+	rectangle bpack0;
+	rectangle bpack1;
 
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
@@ -50,13 +50,13 @@ public:
 
 	void replace(tree_t * src, tree_t * by);
 
-	void compute_split_bar_area(box_int_t & area, double split) const;
+	void compute_split_bar_area(rectangle & area, double split) const;
 
-	box_int_t get_absolute_extend();
-	void set_allocation(box_int_t const & area);
+	rectangle get_absolute_extend();
+	void set_allocation(rectangle const & area);
 
 	void set_split(double split);
-	box_int_t const & get_split_bar_area() const;
+	rectangle const & get_split_bar_area() const;
 
 	tree_t * get_pack0();
 	tree_t * get_pack1();
@@ -73,9 +73,9 @@ public:
 
 
 	/* compute the slider area */
-	void compute_split_location(double split, int & x, int & y) const {
+	void compute_split_location(double split, double & x, double & y) const {
 
-		box_int_t const & alloc = allocation();
+		rectangle const & alloc = allocation();
 
 		if (_split_type == VERTICAL_SPLIT) {
 
@@ -101,8 +101,8 @@ public:
 	}
 
 	/* compute the slider area */
-	void compute_split_size(double split, int & w, int & h) const {
-		box_int_t const & alloc = allocation();
+	void compute_split_size(double split, double & w, double & h) const {
+		rectangle const & alloc = allocation();
 		if (_split_type == VERTICAL_SPLIT) {
 			w = _theme->split_width;
 			h = alloc.h;
@@ -120,7 +120,7 @@ public:
 		return _split_type;
 	}
 
-	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+	virtual void render(cairo_t * cr, rectangle const & area) const {
 		_theme->render_split(cr, this, area);
 	}
 

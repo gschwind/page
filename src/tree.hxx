@@ -30,27 +30,27 @@ enum split_type_e {
 
 class tree_t {
 	tree_t * _parent;
-	box_int_t _allocation;
+	rectangle _allocation;
 public:
-	tree_t(tree_t * parent = 0, box_int_t allocation = box_int_t());
+	tree_t(tree_t * parent = 0, rectangle allocation = rectangle());
 	virtual ~tree_t() { }
 
 	virtual tree_t * parent() const {
 		return _parent;
 	}
 
-	box_int_t const & allocation() const {
+	rectangle const & allocation() const {
 		return _allocation;
 	}
 
 	virtual void replace(tree_t * src, tree_t * by) = 0;
 	virtual void get_childs(vector<tree_t *> & lst) = 0;
-	virtual void set_allocation(box_int_t const & area) {
+	virtual void set_allocation(rectangle const & area) {
 		_allocation = area;
 	}
 
 	void set_parent(tree_t * parent);
-	void set_allocation(int x, int y, int w, int h);
+	void set_allocation(double x, double y, double w, double h);
 
 	virtual string get_node_name() const = 0;
 

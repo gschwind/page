@@ -28,7 +28,7 @@ protected:
 	cairo_surface_t * _back_surf;
 	Window _wid;
 
-	box_t<int> _position;
+	rectangle _position;
 
 	Visual * _visual;
 	int _depth;
@@ -38,7 +38,7 @@ protected:
 	bool _is_visible;
 
 public:
-	window_overlay_t(xconnection_t * cnx, int depth, box_int_t position = box_int_t(-10,-10, 1, 1)) {
+	window_overlay_t(xconnection_t * cnx, int depth, rectangle position = rectangle(-10,-10, 1, 1)) {
 		_cnx = cnx;
 		_back_surf = 0;
 
@@ -125,7 +125,7 @@ public:
 		XDestroyWindow(_cnx->dpy, _wid);
 	}
 
-	void move_resize(box_int_t const & area) {
+	void move_resize(rectangle const & area) {
 		_position = area;
 		_cnx->move_resize(_wid, _position);
 		if (_is_visible) {

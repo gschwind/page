@@ -31,7 +31,7 @@ enum floating_event_type_e {
 
 struct floating_event_t {
 	floating_event_type_e type;
-	box_t<int> position;
+	rectangle position;
 
 	floating_event_t(floating_event_type_e type = FLOATING_EVENT_NONE) :
 			type(type), position() {

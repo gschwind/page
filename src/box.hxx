@@ -20,7 +20,7 @@
 namespace page {
 
 template<typename T>
-struct box_t {
+struct rectangle_t {
 	T x, y;
 	T w, h;
 
@@ -28,19 +28,19 @@ struct box_t {
 		return (x <= _x && _x < x + w && y <= _y && _y < y + h);
 	}
 
-	box_t(box_t const & b) :
+	rectangle_t(rectangle_t const & b) :
 			x(b.x), y(b.y), w(b.w), h(b.h) {
 	}
 
-	box_t() :
+	rectangle_t() :
 			x(), y(), w(), h() {
 	}
 
-	box_t(T x, T y, T w, T h) :
+	rectangle_t(T x, T y, T w, T h) :
 			x(x), y(y), w(w), h(h) {
 	}
 
-	box_t(XRectangle const & rec) :
+	rectangle_t(XRectangle const & rec) :
 			x(rec.x), y(rec.y), w(rec.width), h(rec.height) {
 	}
 
@@ -55,17 +55,17 @@ struct box_t {
 		return os.str();
 	}
 
-	bool operator==(box_t const & b) const {
+	bool operator==(rectangle_t const & b) const {
 		return (b.x == x and b.y == y and b.w == w and b.h == h);
 	}
 
-	bool operator!=(box_t const & b) const {
+	bool operator!=(rectangle_t const & b) const {
 		return (b.x != x or b.y != y or b.w != w or b.h != h);
 	}
 
 	/* compute the smallest area that include 2 boxes */
-	box_t get_max_extand(box_t const & b) const {
-		box_t<T> result;
+	rectangle_t get_max_extand(rectangle_t const & b) const {
+		rectangle_t<T> result;
 		result.x = std::min(x, b.x);
 		result.y = std::min(y, b.y);
 		result.w = std::max(x + w, b.x + b.w) - result.x;
@@ -73,7 +73,7 @@ struct box_t {
 		return result;
 	}
 
-	bool has_intersection(box_t const & b) const {
+	bool has_intersection(rectangle_t const & b) const {
 		T left = std::max(x, b.x);
 		T right = std::min(x + w, b.x + b.w);
 
@@ -90,9 +90,9 @@ struct box_t {
 
 	}
 
-	box_t & operator&=(box_t const & b) {
+	rectangle_t & operator&=(rectangle_t const & b) {
 		if(this == &b) {
-			*this = box_t<T>(0, 0, 0, 0);
+			*this = rectangle_t<T>(0, 0, 0, 0);
 			return *this;
 		}
 
@@ -102,21 +102,21 @@ struct box_t {
 		T bottom = std::min(y + h, b.y + b.h);
 
 		if (right <= left || bottom <= top) {
-			*this = box_t<T>(0, 0, 0, 0);
+			*this = rectangle_t<T>(0, 0, 0, 0);
 		} else {
-			*this = box_t<T>(left, top, right - left, bottom - top);
+			*this = rectangle_t<T>(left, top, right - left, bottom - top);
 		}
 
 		return *this;
 	}
 
-	box_t operator&(box_t const & b) const {
-		box_t<T> x = *this;
+	rectangle_t operator&(rectangle_t const & b) const {
+		rectangle_t<T> x = *this;
 		return (x &= b);
 	}
 };
 
-typedef box_t<int> box_int_t;
+typedef rectangle_t<double> rectangle;
 
 }
 

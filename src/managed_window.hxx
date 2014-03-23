@@ -37,14 +37,14 @@ private:
 	Atom _net_wm_type;
 
 	/** hold floating position **/
-	box_int_t _floating_wished_position;
+	rectangle _floating_wished_position;
 
 	/** hold notebook position **/
-	box_int_t _notebook_wished_position;
+	rectangle _notebook_wished_position;
 
-	box_int_t _wished_position;
-	box_int_t _orig_position;
-	box_int_t _base_position;
+	rectangle _wished_position;
+	rectangle _orig_position;
+	rectangle _base_position;
 
 	// the window surface
 	cairo_surface_t * _surf;
@@ -97,16 +97,16 @@ public:
 	void reconfigure();
 	void fake_configure();
 
-	void set_wished_position(box_int_t const & position);
-	box_int_t const & get_wished_position() const;
+	void set_wished_position(rectangle const & position);
+	rectangle const & get_wished_position() const;
 
 	void delete_window(Time t);
 
-	bool check_orig_position(box_int_t const & position);
-	bool check_base_position(box_int_t const & position);
+	bool check_orig_position(rectangle const & position);
+	bool check_base_position(rectangle const & position);
 
 
-	box_int_t get_base_position() const;
+	rectangle get_base_position() const;
 
 	void set_managed_type(managed_window_type_e type);
 
@@ -250,7 +250,7 @@ public:
 		}
 	}
 
-	box_t<int> const & base_position() const {
+	rectangle const & base_position() const {
 		return _base_position;
 	}
 
@@ -376,19 +376,19 @@ public:
 		XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));
 	}
 
-	void set_floating_wished_position(box_t<int> & pos) {
+	void set_floating_wished_position(rectangle & pos) {
 		_floating_wished_position = pos;
 	}
 
-	void set_notebook_wished_position(box_t<int> & pos) {
+	void set_notebook_wished_position(rectangle & pos) {
 		_notebook_wished_position = pos;
 	}
 
-	box_int_t const & get_wished_position() {
+	rectangle const & get_wished_position() {
 		return _wished_position;
 	}
 
-	box_int_t const & get_floating_wished_position() {
+	rectangle const & get_floating_wished_position() {
 		return _floating_wished_position;
 	}
 
@@ -465,7 +465,7 @@ public:
 		_floating_area = _theme->compute_floating_areas(this);
 	}
 
-	void set_opaque_region(Window w, region_t<int> & region);
+	void set_opaque_region(Window w, region & region);
 
 };
 

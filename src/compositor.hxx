@@ -74,9 +74,9 @@ class compositor_t {
 	double cur_t;
 
 	/** clip region for multi monitor setup **/
-	region_t<int> _desktop_region;
+	region _desktop_region;
 
-	region_t<int> _pending_damage;
+	region _pending_damage;
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
@@ -103,6 +103,8 @@ class compositor_t {
 
 	GLXContext glx_ctx;
 
+	renderable_list_t _graph_scene;
+
 public:
 
 	enum render_mode_e {
@@ -113,17 +115,17 @@ public:
 private:
 	render_mode_e render_mode;
 
-	void repair_damaged_window(Window w, region_t<int> area);
-	void repair_moved_window(Window w, region_t<int> from, region_t<int> to);
+	void repair_damaged_window(Window w, region area);
+	void repair_moved_window(Window w, region from, region to);
 
 
 	//static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
 
-	void repair_area(box_t<int> const & box);
-	void repair_overlay(cairo_t * cr, box_t<int> const & area, cairo_surface_t * src);
+	void repair_area(rectangle const & box);
+	void repair_overlay(cairo_t * cr, rectangle const & area, cairo_surface_t * src);
 	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
-			box_t<int> const & area);
+			rectangle const & area);
 
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);
@@ -145,7 +147,7 @@ private:
 	void stack_window_place_on_bottom(Window w);
 	void stack_window_remove(Window w);
 
-	region_t<int> read_damaged_region(Damage d);
+	region read_damaged_region(Damage d);
 
 	bool register_cm(Window w);
 	void init_composite_overlay();
@@ -156,7 +158,7 @@ private:
 	void destroy_cairo();
 	void init_cairo();
 
-	void repair_area_region(region_t<int> const & repair);
+	void repair_area_region(region const & repair);
 
 	bool check_glx_for_extensions(char const * const * ext);
 
@@ -189,12 +191,12 @@ public:
 		return render_mode;
 	}
 
-	region_t<int> read_opaque_region(Window w) {
-		region_t<int> ret;
+	region read_opaque_region(Window w) {
+		region ret;
 		std::vector<long> data;
 		if(get_window_property<long>(_dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL), &data)) {
 			for(int i = 0; i < data.size() / 4; ++i) {
-				ret += box_int_t(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
+				ret += rectangle(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
 			}
 		}
 		return ret;

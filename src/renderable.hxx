@@ -15,6 +15,7 @@
 #include <cairo.h>
 #include "box.hxx"
 #include "region.hxx"
+#include "utils.hxx"
 
 namespace page {
 
@@ -23,6 +24,10 @@ namespace page {
  */
 class renderable_t {
 public:
+
+	/* level to draw, lower value mean draw at bottom */
+
+	double z;
 	/**
 	 * renderable default constructor.
 	 */
@@ -38,7 +43,7 @@ public:
 	 * @param cr the destination surface context
 	 * @param area the area to redraw
 	 */
-	virtual void render(cairo_t * cr) = 0;
+	virtual void render(cairo_t * cr, time_t time) = 0;
 
 };
 

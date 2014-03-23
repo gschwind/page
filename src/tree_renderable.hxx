@@ -18,7 +18,7 @@ namespace page {
 
 struct tree_renderable_t {
 	virtual ~tree_renderable_t() { }
-	virtual void render(cairo_t * cr, box_t<int> const & area) const = 0;
+	virtual void render(cairo_t * cr, rectangle const & area) const = 0;
 };
 
 }

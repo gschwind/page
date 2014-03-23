@@ -24,7 +24,7 @@ struct managed_window_base_t {
 
 	virtual ~managed_window_base_t() { }
 
-	virtual box_t<int> const & base_position() const = 0;
+	virtual rectangle const & base_position() const = 0;
 	virtual window_icon_handler_t * icon() const = 0;
 	virtual char const * title() const = 0;
 

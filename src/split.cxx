@@ -36,18 +36,18 @@ split_t::~split_t() {
 
 }
 
-void split_t::set_allocation(box_t<int> const & allocation) {
+void split_t::set_allocation(rectangle const & allocation) {
 	tree_t::set_allocation(allocation);
 	update_allocation();
 }
 
 void split_t::update_allocation_pack0() {
 
-	box_t<int> b;
+	rectangle b;
 	if (_split_type == VERTICAL_SPLIT) {
 
-		box_int_t bpack0;
-		box_int_t bpack1;
+		rectangle bpack0;
+		rectangle bpack1;
 
 		int w = allocation().w - 2 * _theme->split_margin.left - 2 * _theme->split_margin.right - _theme->split_width;
 		int w0 = floor(w * _split + 0.5);
@@ -81,7 +81,7 @@ void split_t::update_allocation_pack0() {
 void split_t::update_allocation_pack1() {
 	if (!_pack1)
 		return;
-	box_t<int> b;
+	rectangle b;
 	if (_split_type == VERTICAL_SPLIT) {
 
 	} else {
@@ -120,7 +120,7 @@ void split_t::replace(tree_t * src, tree_t * by) {
 //	return list;
 //}
 
-box_int_t split_t::get_absolute_extend() {
+rectangle split_t::get_absolute_extend() {
 	return allocation();
 }
 
@@ -143,7 +143,7 @@ void split_t::set_split(double split) {
 	update_allocation();
 }
 
-box_int_t const & split_t::get_split_bar_area() const {
+rectangle const & split_t::get_split_bar_area() const {
 	return _split_bar_area;
 }
 

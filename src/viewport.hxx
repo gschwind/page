@@ -30,8 +30,8 @@ private:
 
 public:
 	//page_base_t & page;
-	box_t<int> raw_aera;
-	box_t<int> effective_aera;
+	rectangle raw_aera;
+	rectangle effective_aera;
 	tree_t * _subtree;
 	managed_window_t * fullscreen_client;
 
@@ -41,7 +41,7 @@ public:
 		throw std::runtime_error("viewport has no parent");
 	}
 
-	viewport_t(theme_t * theme, box_t<int> const & area);
+	viewport_t(theme_t * theme, rectangle const & area);
 
 	void reconfigure();
 
@@ -51,12 +51,12 @@ public:
 
 	notebook_t * get_nearest_notebook();
 
-	virtual box_int_t get_absolute_extend();
-	virtual region_t<int> get_area();
-	virtual void set_allocation(box_int_t const & area);
+	virtual rectangle get_absolute_extend();
+	virtual region get_area();
+	virtual void set_allocation(rectangle const & area);
 
-	void set_raw_area(box_int_t const & area);
-	void set_effective_area(box_int_t const & area);
+	void set_raw_area(rectangle const & area);
+	void set_effective_area(rectangle const & area);
 
 	virtual bool is_visible() {
 		return true;
@@ -71,7 +71,7 @@ public:
 
 	virtual void get_childs(vector<tree_t *> & lst);
 
-	virtual void render(cairo_t * cr, box_t<int> const & area) const {
+	virtual void render(cairo_t * cr, rectangle const & area) const {
 
 	}
 
