@@ -125,6 +125,75 @@ template<> struct _format<unsigned char> {
 };
 
 
+
+template<typename T>
+bool get_window_property(Display * dpy, Window win, Atom prop,
+		Atom type, vector<T> * v = 0) {
+
+	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
+
+	int res;
+	unsigned char * xdata = 0;
+	Atom ret_type;
+	int ret_size;
+	unsigned long int ret_items, bytes_left;
+	T * data;
+
+	bool ret = false;
+
+	res = XGetWindowProperty(dpy, win, prop, 0L,
+			std::numeric_limits<long int>::max(), False, type, &ret_type,
+			&ret_size, &ret_items, &bytes_left, &xdata);
+	if (res == Success) {
+		if (bytes_left != 0)
+			printf("some bits lefts\n");
+		if (ret_size == _format<T>::size && ret_items > 0) {
+			data = reinterpret_cast<T*>(xdata);
+			if (v != 0) {
+				v->assign(&data[0], &data[ret_items]);
+			}
+			ret = true;
+		}
+	}
+
+	XFree(xdata);
+
+	return ret;
+}
+
+template<typename T>
+bool get_window_property_void(Display * dpy, Window win, Atom prop, Atom type,
+		unsigned long int * nitems, void ** data) {
+
+	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
+
+	int res;
+	unsigned char * xdata = 0;
+	Atom ret_type;
+	int ret_size;
+	unsigned long int ret_items, bytes_left;
+
+	bool ret = false;
+
+	*nitems = 0;
+	*data = 0;
+
+	res = XGetWindowProperty(dpy, win, prop, 0L,
+			std::numeric_limits<long int>::max(), False, type, &ret_type,
+			&ret_size, &ret_items, &bytes_left, &xdata);
+	if (res == Success) {
+		if (bytes_left != 0)
+			printf("some bits lefts\n");
+		if (ret_size == _format<T>::size && ret_items > 0) {
+			*nitems = ret_items;
+			*data = reinterpret_cast<void*>(xdata);
+			ret = true;
+		}
+	}
+
+	return ret;
+}
+
 template<typename T>
 void write_window_property(Display * dpy, Window win, Atom prop,
 		Atom type, vector<T> & v) {
@@ -132,6 +201,55 @@ void write_window_property(Display * dpy, Window win, Atom prop,
 	PropModeReplace, (unsigned char *) &v[0], v.size());
 }
 
+template<typename T> bool read_list(Display * dpy, Window w, Atom prop,
+		Atom type, list<T> * list = 0) {
+	if (list != 0) {
+		vector<T> tmp;
+		if (get_window_property<T>(dpy, w, prop, type, &tmp)) {
+			list->clear();
+			list->insert(list->end(), tmp.begin(), tmp.end());
+			return true;
+		}
+		return false;
+	} else {
+		return get_window_property<T>(dpy, w, prop, type);
+	}
+}
+
+template<typename T> bool read_value(Display * dpy, Window w, Atom prop,
+		Atom type, T * value = 0) {
+	if (value != 0) {
+		vector<T> tmp;
+		if (get_window_property<T>(dpy, w, prop, type, &tmp)) {
+			if (tmp.size() > 0) {
+				*value = tmp[0];
+				return true;
+			}
+		}
+		return false;
+	} else {
+		return get_window_property<T>(dpy, w, prop, type);
+	}
+}
+
+inline bool read_text(Display * dpy, Window w, Atom prop, string & value) {
+	XTextProperty xname;
+	memset(&xname, 0, sizeof(xname));
+
+	if (XGetTextProperty(dpy, w, &xname, prop) != 0) {
+		if (xname.nitems != 0) {
+			value = (char *) xname.value;
+			XFree(xname.value);
+			return true;
+		}
+	}
+
+	// for safety.
+	if (xname.value != 0)
+		XFree(xname.value);
+
+	return false;
+}
 
 /** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
 inline void allow_input_passthrough(Display * dpy, Window w) {
@@ -374,118 +492,6 @@ inline struct timespec pdiff(struct timespec const & a,
 
 	return ret;
 }
-
-
-
-template<typename T>
-vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type) {
-
-	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
-
-	int status;
-	Atom actual_type;
-	int actual_format; /* can be 8, 16 or 32 */
-	unsigned long int nitems;
-	unsigned long int bytes_left;
-	long int offset = 0L;
-
-	vector<T> * buffer = new vector<T>();
-
-	do {
-		unsigned char * tbuff;
-
-		status = XGetWindowProperty(dpy, win, prop, offset,
-				std::numeric_limits<long int>::max(), False, type, &actual_type,
-				&actual_format, &nitems, &bytes_left, &tbuff);
-
-		if (status == Success) {
-
-			if (actual_format == _format<T>::size && nitems > 0) {
-				T * data = reinterpret_cast<T*>(tbuff);
-				buffer->insert(buffer->end(), &data[0], &data[nitems]);
-			} else {
-				status = BadValue;
-				XFree(tbuff);
-				break;
-			}
-
-			if (bytes_left != 0) {
-				printf("some bits lefts\n");
-				//assert((nitems * actual_format % 32) == 0);
-				//assert(bytes_left % (actual_format/4) == 0);
-				offset += (nitems * actual_format) / 32;
-			}
-
-			XFree(tbuff);
-		} else {
-			break;
-		}
-
-	} while (bytes_left != 0);
-
-
-	if (status == Success) {
-		return buffer;
-	} else {
-		delete buffer;
-		return 0;
-	}
-}
-
-template<typename T> void safe_delete(T & p) {
-	if (p != 0) {
-		delete p;
-		p = 0;
-	}
-}
-
-template<typename T> T * safe_copy(T * p) {
-	if (p != 0) {
-		return new T(*p);
-	} else {
-		return 0;
-	}
-}
-
-template<typename T>
-list<T> * read_list(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-	if (tmp != 0) {
-		list<T> * ret = new list<T>(tmp->begin(), tmp->end());
-		delete tmp;
-		return ret;
-	} else {
-		return 0;
-	}
-}
-
-template<typename T>
-T * read_value(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-	if (tmp != 0) {
-		if (tmp->size() > 0) {
-			T * ret = new T(tmp->front());
-			delete tmp;
-			return ret;
-		} else {
-			return 0;
-		}
-	} else {
-		return 0;
-	}
-}
-
-inline string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<char> * tmp = get_window_property<char>(dpy, w, prop, type);
-	if (tmp != 0) {
-		string * ret = new string(tmp->begin(), tmp->end());
-		delete tmp;
-		return ret;
-	} else {
-		return 0;
-	}
-}
-
 
 }
 

@@ -678,40 +678,7 @@ void compositor_t::render() {
 
 }
 
-struct _comp {
-	bool operator()(renderable_t * a, renderable_t * b) {
-		return a->z < b->z;
-	}
-};
-
-
 void compositor_t::render_managed() {
-
-	_comp compare;
-
-	_graph_scene.sort(compare);
-
-	_back_buffer = cairo_xlib_surface_create(_dpy, composite_back_buffer,
-			root_attributes.visual, root_attributes.width,
-			root_attributes.height);
-	cairo_t * cr = cairo_create(_back_buffer);
-	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-	CHECK_CAIRO(cairo_paint(cr));
-
-	region area(0, 0, root_attributes.width, root_attributes.height);
-	for(renderable_list_t::iterator i = _graph_scene.begin(); i != _graph_scene.end(); ++i) {
-		(*i)->render(cr, area);
-	}
-
-	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
-	cairo_destroy(cr);
-	cairo_surface_destroy(_back_buffer);
-
-	XdbeSwapInfo si;
-	si.swap_window = composite_overlay;
-	si.swap_action = None;
-	XdbeSwapBuffers(_dpy, &si, 1);
 
 }
 

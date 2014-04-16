@@ -171,12 +171,11 @@ public:
 
 	region read_opaque_region(Window w) {
 		region ret;
-		std::vector<long> * data = get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL));
-		if(data != 0) {
-			for(int i = 0; i < data->size() / 4; ++i) {
-				ret += rectangle((*data)[i*4+0],(*data)[i*4+1],(*data)[i*4+2],(*data)[i*4+3]);
+		std::vector<long> data;
+		if(get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL), &data)) {
+			for(int i = 0; i < data.size() / 4; ++i) {
+				ret += rectangle(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
 			}
-			delete data;
 		}
 		return ret;
 	}

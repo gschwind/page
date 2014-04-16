@@ -66,6 +66,9 @@ private:
 
 	void init_managed_type(managed_window_type_e type);
 
+	// the connection where the windows is linked to
+	xconnection_t * _cnx;
+
 	Visual * _orig_visual;
 	int _orig_depth;
 
@@ -84,12 +87,10 @@ private:
 
 	bool _motif_has_border;
 
-	list<managed_window_t *> sub_window;
-
 public:
 
-	managed_window_t(managed_window_type_e initial_type,
-			Atom net_wm_type, client_base_t * c,
+	managed_window_t(xconnection_t * cnx, managed_window_type_e initial_type,
+			Atom net_wm_type, Window orig, XWindowAttributes const & wa,
 			theme_t const * theme);
 	virtual ~managed_window_t();
 
@@ -153,15 +154,15 @@ public:
 
 	void expose();
 
-	Window orig() const {
+	Window orig() {
 		return _orig;
 	}
 
-	Window base() const {
+	Window base() {
 		return _base;
 	}
 
-	Window deco() const {
+	Window deco() {
 		return _deco;
 	}
 
@@ -201,13 +202,11 @@ public:
 
 
 	void net_wm_allowed_actions_add(atom_e atom) {
-		if(_net_wm_allowed_actions == 0) {
-			_net_wm_allowed_actions = new list<Atom>;
-		}
-
-		_net_wm_allowed_actions->remove(A(atom));
-		_net_wm_allowed_actions->push_back(A(atom));
-		_cnx->write_net_wm_allowed_actions(_orig, *(_net_wm_allowed_actions));
+		list<Atom> net_allowed_actions;
+		_cnx->read_net_wm_allowed_actions(_orig, &net_allowed_actions);
+		net_allowed_actions.remove(A(atom));
+		net_allowed_actions.push_back(A(atom));
+		_cnx->write_net_wm_allowed_actions(_orig, net_allowed_actions);
 	}
 
 	void set_focus_state(bool is_focused) {
@@ -228,10 +227,10 @@ public:
 	char const * title() const {
 		if (_title == 0) {
 			string name;
-			if (_net_wm_name != 0) {
-				_title = new string(*(_net_wm_name));
-			} else if (wm_name != 0) {
-				_title = new string(*(wm_name));
+			if (_cnx->read_net_wm_name(_orig, &name)) {
+				_title = new string(name);
+			} else if (_cnx->read_wm_name(_orig, name)) {
+				_title = new string(name);
 			} else {
 				std::stringstream s(
 						std::stringstream::in | std::stringstream::out);
@@ -321,12 +320,11 @@ public:
 	}
 
 	bool is_fullscreen() {
-		if (_net_wm_state != 0) {
-			list<Atom>::iterator x = find(_net_wm_state->begin(),
-					_net_wm_state->end(), A(_NET_WM_STATE_FULLSCREEN));
-			return x != _net_wm_state->end();
-		}
-		return false;
+		list<Atom> state;
+		_cnx->read_net_wm_state(_orig, &state);
+		list<Atom>::iterator x = find(state.begin(), state.end(),
+				A(_NET_WM_STATE_FULLSCREEN));
+		return x != state.end();
 	}
 
 	Atom net_wm_type() {
@@ -334,32 +332,24 @@ public:
 	}
 
 	bool get_wm_normal_hints(XSizeHints * size_hints) {
-		if(wm_normal_hints != 0) {
-			*size_hints = *(wm_normal_hints);
-			return true;
-		} else {
-			return false;
-		}
+		return _cnx->read_wm_normal_hints(_orig, size_hints);
 	}
 
 	void net_wm_state_add(atom_e atom) {
-		if(_net_wm_state == 0) {
-			_net_wm_state = new list<Atom>;
-		}
+		list<Atom> net_wm_state;
+		_cnx->read_net_wm_state(_orig, &net_wm_state);
 		/** remove it if alredy focused **/
-		_net_wm_state->remove(A(atom));
+		net_wm_state.remove(A(atom));
 		/** add it **/
-		_net_wm_state->push_back(A(atom));
-		_cnx->write_net_wm_state(_orig, *(_net_wm_state));
+		net_wm_state.push_back(A(atom));
+		_cnx->write_net_wm_state(_orig, net_wm_state);
 	}
 
 	void net_wm_state_remove(atom_e atom) {
-		if(_net_wm_state == 0) {
-			_net_wm_state = new list<Atom>;
-		}
-
-		_net_wm_state->remove(A(atom));
-		_cnx->write_net_wm_state(_orig, *(_net_wm_state));
+		list<Atom> net_wm_state;
+		_cnx->read_net_wm_state(_orig, &net_wm_state);
+		net_wm_state.remove(A(atom));
+		_cnx->write_net_wm_state(_orig, net_wm_state);
 	}
 
 	void net_wm_state_delete() {
@@ -476,10 +466,6 @@ public:
 	}
 
 	void set_opaque_region(Window w, region & region);
-
-	virtual bool has_window(Window w) {
-		return w == _id or w == _base or w == _deco;
-	}
 
 };
 

@@ -42,12 +42,46 @@
 #include "utils.hxx"
 #include "properties_cache.hxx"
 #include "window_attributes_cache.hxx"
-#include "motif_hints.hxx"
 
 
 using namespace std;
 
 namespace page {
+
+
+#define MWM_HINTS_FUNCTIONS     (1L << 0)
+#define MWM_HINTS_DECORATIONS   (1L << 1)
+#define MWM_HINTS_INPUT_MODE    (1L << 2)
+#define MWM_HINTS_STATUS        (1L << 3)
+
+#define MWM_FUNC_ALL            (1L << 0)
+#define MWM_FUNC_RESIZE         (1L << 1)
+#define MWM_FUNC_MOVE           (1L << 2)
+#define MWM_FUNC_MINIMIZE       (1L << 3)
+#define MWM_FUNC_MAXIMIZE       (1L << 4)
+#define MWM_FUNC_CLOSE          (1L << 5)
+
+#define MWM_DECOR_ALL           (1L << 0)
+#define MWM_DECOR_BORDER        (1L << 1)
+#define MWM_DECOR_RESIZEH       (1L << 2)
+#define MWM_DECOR_TITLE         (1L << 3)
+#define MWM_DECOR_MENU          (1L << 4)
+#define MWM_DECOR_MINIMIZE      (1L << 5)
+#define MWM_DECOR_MAXIMIZE      (1L << 6)
+
+#define MWM_INPUT_MODELESS 0
+#define MWM_INPUT_PRIMARY_APPLICATION_MODAL 1
+#define MWM_INPUT_SYSTEM_MODAL 2
+#define MWM_INPUT_FULL_APPLICATION_MODAL 3
+#define MWM_INPUT_APPLICATION_MODAL MWM_INPUT_PRIMARY_APPLICATION_MODAL
+
+struct motif_wm_hints_t {
+	unsigned long flags;
+	unsigned long functions;
+	unsigned long decorations;
+	long input_mode;
+	unsigned long status;
+};
 
 struct event_t {
 	unsigned long serial;
@@ -164,108 +198,175 @@ public:
 	}
 
 public:
+
+	bool read_utf8_string(Display * dpy, Window w, Atom prop, string * value = 0) {
+		if (value != 0) {
+			vector<char> data;
+			bool ret = ::page::get_window_property<char>(dpy, w, prop, A(UTF8_STRING), &data);
+			data.resize(data.size() + 1, 0);
+			*value = &data[0];
+			return ret;
+		} else {
+			return ::page::get_window_property<char>(dpy, w, prop, A(UTF8_STRING));
+		}
+	}
+
+
+	bool read_wm_name(Window w, string & name) {
+		return ::page::read_text(dpy, w, A(WM_NAME), name);
+	}
+
+	bool read_net_wm_name(Window w, string * name = 0) {
+		return read_utf8_string(dpy, w, A(_NET_WM_NAME), name);
+	}
+
+	bool read_wm_state(Window w, long * value = 0) {
+		return ::page::read_value(dpy, w, A(WM_STATE), A(WM_STATE), value);
+	}
+
+	bool read_wm_transient_for(Window w, Window * value = 0) {
+		return ::page::read_value(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW), value);
+	}
+
+	bool read_net_wm_window_type(Window w, list<Atom> * list = 0) {
+		return ::page::read_list(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM), list);
+	}
+
+	bool read_net_wm_state(Window w, list<Atom> * list = 0) {
+		return ::page::read_list(dpy, w, A(_NET_WM_STATE), A(ATOM), list);
+	}
+
+	bool read_net_wm_protocols(Window w, list<Atom> * list = 0) {
+		return ::page::read_list(dpy, w, A(WM_PROTOCOLS), A(ATOM), list);
+	}
+
+	bool read_net_wm_partial_struct(Window w, vector<long> * list = 0) {
+		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_STRUT_PARTIAL), A(CARDINAL),
+				list);
+	}
+
+	bool read_net_wm_icon(Window w, vector<long> * list = 0) {
+		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_ICON), A(CARDINAL), list);
+	}
+
+	bool read_net_wm_user_time(Window w, long * value = 0) {
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), value);
+	}
+
+	bool read_net_wm_desktop(Window w, long * value = 0) {
+		return ::page::read_value(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL), value);
+	}
+
+	bool read_net_wm_allowed_actions(Window w, list<Atom> * list = 0) {
+		return ::page::read_list(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), list);
+	}
+
+	bool read_net_wm_user_time(Window w, Time * time) {
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL), time);
+	}
+
+	bool read_net_wm_user_time_window(Window w, Window * time_window) {
+		return ::page::read_value(dpy, w, A(_NET_WM_USER_TIME_WINDOW), A(WINDOW), time_window);
+	}
+
+
 	struct wm_class {
 		string res_name;
 		string res_class;
 	};
 
-	vector<string> * read_wm_class(Window w) {
-		vector<char> * tmp = ::page::get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING));
-
-		if(tmp == 0)
-			return 0;
-
-		vector<char>::iterator x = find(tmp->begin(), tmp->end(), 0);
-
-		if(x != tmp->end()) {
-			vector<string> * ret = new vector<string>;
-			x++;
-			ret->push_back(string(tmp->begin(), x));
-			ret->push_back(string(x, tmp->end()));
-			delete tmp;
-			return ret;
-		}
-
-		delete tmp;
-		return 0;
-	}
-
-	XWMHints * read_wm_hints(Window w) {
-		vector<long> * tmp = ::page::get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS));
-		if (tmp != 0) {
-			if (tmp->size() == 9) {
-				XWMHints * hints = new XWMHints;
-				if (hints != 0) {
-					hints->flags = (*tmp)[0];
-					hints->input = (*tmp)[1];
-					hints->initial_state = (*tmp)[2];
-					hints->icon_pixmap = (*tmp)[3];
-					hints->icon_window = (*tmp)[4];
-					hints->icon_x = (*tmp)[5];
-					hints->icon_y = (*tmp)[6];
-					hints->icon_mask = (*tmp)[7];
-					hints->window_group = (*tmp)[8];
+	bool read_wm_class(Window w, wm_class * res = 0) {
+		if(res == 0) {
+			return ::page::get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING));
+		} else {
+			vector<char> tmp;
+			if(::page::get_window_property<char>(dpy, w, A(WM_CLASS), A(STRING), &tmp)) {
+				unsigned int x_name = strnlen(&tmp[0], tmp.size());
+				unsigned int x_class = 0;
+				if(x_name < tmp.size()) {
+					x_class = strnlen(&tmp[x_name+1], tmp.size() - x_name - 1);
 				}
-				delete tmp;
-				return hints;
-			}
-			delete tmp;
-		}
-		return 0;
-	}
 
-	motif_wm_hints_t * read_motif_wm_hints(Window w) {
-		vector<long> * tmp = ::page::get_window_property<long>(dpy, w, A(_MOTIF_WM_HINTS), A(_MOTIF_WM_HINTS));
-		if (tmp != 0) {
-			motif_wm_hints_t * hints = new motif_wm_hints_t;
-			if (tmp->size() == 5) {
-				if (hints != 0) {
-					hints->flags = (*tmp)[0];
-					hints->functions = (*tmp)[1];
-					hints->decorations = (*tmp)[2];
-					hints->input_mode = (*tmp)[3];
-					hints->status = (*tmp)[4];
+				if(x_name + x_class + 1 < tmp.size()) {
+					res->res_name = &tmp[0];
+					res->res_class = &tmp[x_name+1];
+					return true;
 				}
-				delete tmp;
-				return hints;
 			}
-			delete tmp;
 		}
-		return 0;
+		return false;
 	}
 
-	XSizeHints * read_wm_normal_hints(Window w) {
-		vector<long> * tmp = ::page::get_window_property<long>(dpy, w, A(WM_NORMAL_HINTS),
-				A(WM_SIZE_HINTS));
-		if (tmp != 0) {
-			if (tmp->size() == 18) {
-				XSizeHints * size_hints = new XSizeHints;
+	bool read_wm_hints(Window w, XWMHints * hints = 0) {
+		vector<long> tmp;
+		if (::page::get_window_property<long>(dpy, w, A(WM_HINTS), A(WM_HINTS),
+				&tmp)) {
+			if (tmp.size() == 9) {
+				if (hints != 0) {
+					hints->flags = tmp[0];
+					hints->input = tmp[1];
+					hints->initial_state = tmp[2];
+					hints->icon_pixmap = tmp[3];
+					hints->icon_window = tmp[4];
+					hints->icon_x = tmp[5];
+					hints->icon_y = tmp[6];
+					hints->icon_mask = tmp[7];
+					hints->window_group = tmp[8];
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool read_motif_wm_hints(Window w, motif_wm_hints_t * hints = 0) {
+		vector<long> tmp;
+		if (::page::get_window_property<long>(dpy, w, A(_MOTIF_WM_HINTS), A(_MOTIF_WM_HINTS),
+				&tmp)) {
+			if (tmp.size() == 5) {
+				if (hints != 0) {
+					hints->flags = tmp[0];
+					hints->functions = tmp[1];
+					hints->decorations = tmp[2];
+					hints->input_mode = tmp[3];
+					hints->status = tmp[4];
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool read_wm_normal_hints(Window w, XSizeHints * size_hints = 0) {
+		vector<long> tmp;
+		if (::page::get_window_property<long>(dpy, w, A(WM_NORMAL_HINTS),
+				A(WM_SIZE_HINTS), &tmp)) {
+
+			if (tmp.size() == 18) {
 				if (size_hints) {
-					size_hints->flags = (*tmp)[0];
-					size_hints->x = (*tmp)[1];
-					size_hints->y = (*tmp)[2];
-					size_hints->width = (*tmp)[3];
-					size_hints->height = (*tmp)[4];
-					size_hints->min_width = (*tmp)[5];
-					size_hints->min_height = (*tmp)[6];
-					size_hints->max_width = (*tmp)[7];
-					size_hints->max_height = (*tmp)[8];
-					size_hints->width_inc = (*tmp)[9];
-					size_hints->height_inc = (*tmp)[10];
-					size_hints->min_aspect.x = (*tmp)[11];
-					size_hints->min_aspect.y = (*tmp)[12];
-					size_hints->max_aspect.x = (*tmp)[13];
-					size_hints->max_aspect.y = (*tmp)[14];
-					size_hints->base_width = (*tmp)[15];
-					size_hints->base_height = (*tmp)[16];
-					size_hints->win_gravity = (*tmp)[17];
+					size_hints->flags = tmp[0];
+					size_hints->x = tmp[1];
+					size_hints->y = tmp[2];
+					size_hints->width = tmp[3];
+					size_hints->height = tmp[4];
+					size_hints->min_width = tmp[5];
+					size_hints->min_height = tmp[6];
+					size_hints->max_width = tmp[7];
+					size_hints->max_height = tmp[8];
+					size_hints->width_inc = tmp[9];
+					size_hints->height_inc = tmp[10];
+					size_hints->min_aspect.x = tmp[11];
+					size_hints->min_aspect.y = tmp[12];
+					size_hints->max_aspect.x = tmp[13];
+					size_hints->max_aspect.y = tmp[14];
+					size_hints->base_width = tmp[15];
+					size_hints->base_height = tmp[16];
+					size_hints->win_gravity = tmp[17];
 				}
-				delete tmp;
-				return size_hints;
+				return true;
 			}
-			delete tmp;
 		}
-		return 0;
+		return false;
 	}
 
 	void write_net_wm_allowed_actions(Window w, list<Atom> & list) {
@@ -735,16 +836,14 @@ public:
 	}
 
 	bool motif_has_border(Window w) {
-		motif_wm_hints_t * motif_hints = read_motif_wm_hints(w);
-		if (motif_hints != 0) {
-			if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
-				if (not (motif_hints->decorations & MWM_DECOR_BORDER)
-						and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
-					delete motif_hints;
+		motif_wm_hints_t motif_hints;
+		if (read_motif_wm_hints(w, &motif_hints)) {
+			if (motif_hints.flags & MWM_HINTS_DECORATIONS) {
+				if (not (motif_hints.decorations & MWM_DECOR_BORDER)
+						and not ((motif_hints.decorations & MWM_DECOR_ALL))) {
 					return false;
 				}
 			}
-			delete motif_hints;
 		}
 		return true;
 	}
@@ -763,111 +862,6 @@ private:
 			printf("%s", buffer);
 		}
 	}
-
-public:
-
-	string * read_wm_name(Window w) {
-		return ::page::read_text(dpy, w, A(WM_NAME), A(STRING));
-	}
-
-	string * read_wm_icon_name(Window w) {
-		return ::page::read_text(dpy, w, A(WM_ICON_NAME), A(STRING));
-	}
-
-	vector<Window> * read_wm_colormap_windows(Window w) {
-		return ::page::get_window_property<Window>(dpy, w, A(WM_COLORMAP_WINDOWS), A(WINDOW));
-	}
-
-	string * read_wm_client_machine(Window w) {
-		return ::page::read_text(dpy, w, A(WM_CLIENT_MACHINE), A(STRING));
-	}
-
-	string * read_net_wm_name(Window w) {
-		return ::page::read_text(dpy, w, A(_NET_WM_NAME), A(UTF8_STRING));
-	}
-
-	string * read_net_wm_visible_name(Window w) {
-		return ::page::read_text(dpy, w, A(_NET_WM_VISIBLE_NAME), A(UTF8_STRING));
-	}
-
-	string * read_net_wm_icon_name(Window w) {
-		return ::page::read_text(dpy, w, A(_NET_WM_ICON_NAME), A(UTF8_STRING));
-	}
-
-	string * read_net_wm_visible_icon_name(Window w) {
-		return ::page::read_text(dpy, w, A(_NET_WM_VISIBLE_ICON_NAME), A(UTF8_STRING));
-	}
-
-	long * read_wm_state(Window w) {
-		return ::page::read_value<long>(dpy, w, A(WM_STATE), A(WM_STATE));
-	}
-
-	Window * read_wm_transient_for(Window w) {
-		return ::page::read_value<Window>(dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW));
-	}
-
-	list<Atom> * read_net_wm_window_type(Window w) {
-		return ::page::read_list<Atom>(dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM));
-	}
-
-	list<Atom> * read_net_wm_state(Window w) {
-		return ::page::read_list<Atom>(dpy, w, A(_NET_WM_STATE), A(ATOM));
-	}
-
-	list<Atom> * read_net_wm_protocols(Window w) {
-		return ::page::read_list<Atom>(dpy, w, A(WM_PROTOCOLS), A(ATOM));
-	}
-
-	vector<long> * read_net_wm_struct(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_STRUT), A(CARDINAL));
-	}
-
-	vector<long> * read_net_wm_struct_partial(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_STRUT_PARTIAL), A(CARDINAL));
-	}
-
-	vector<long> * read_net_wm_icon_geometry(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_ICON_GEOMETRY), A(CARDINAL));
-	}
-
-	vector<long> * read_net_wm_icon(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_ICON), A(CARDINAL));
-	}
-
-	vector<long> * read_net_wm_opaque_region(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL));
-	}
-
-	vector<long> * read_net_frame_extents(Window w) {
-		return ::page::get_window_property<long>(dpy, w, A(_NET_FRAME_EXTENTS), A(CARDINAL));
-	}
-
-	unsigned long * read_net_wm_desktop(Window w) {
-		return ::page::read_value<unsigned long>(dpy, w, A(_NET_WM_DESKTOP), A(CARDINAL));
-	}
-
-	unsigned long * read_net_wm_pid(Window w) {
-		return ::page::read_value<unsigned long>(dpy, w, A(_NET_WM_PID), A(CARDINAL));
-	}
-
-	unsigned long * read_net_wm_bypass_compositor(Window w) {
-		return ::page::read_value<unsigned long>(dpy, w, A(_NET_WM_BYPASS_COMPOSITOR), A(CARDINAL));
-	}
-
-	list<Atom> * read_net_wm_allowed_actions(Window w) {
-		return ::page::read_list<Atom>(dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM));
-	}
-
-	Time * read_net_wm_user_time(Window w) {
-		return ::page::read_value<Time>(dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL));
-	}
-
-	Window * read_net_wm_user_time_window(Window w) {
-		return ::page::read_value<Window>(dpy, w, A(_NET_WM_USER_TIME_WINDOW), A(WINDOW));
-	}
-
-
-
 
 };
 
