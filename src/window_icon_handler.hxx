@@ -14,6 +14,7 @@
 #include <cairo.h>
 #include "icon.hxx"
 #include "xconnection.hxx"
+#include "client_base.hxx"
 
 namespace page {
 
@@ -21,10 +22,10 @@ class window_icon_handler_t {
 	/* icon surface */
 	cairo_surface_t * icon_surf;
 
-	xconnection_t * _cnx;
+	client_base_t const * _c;
 
 public:
-	window_icon_handler_t(xconnection_t * cnx, Window w, unsigned int xsize, unsigned int ysize);
+	window_icon_handler_t(client_base_t const * c, unsigned int xsize, unsigned int ysize);
 	~window_icon_handler_t();
 	cairo_surface_t * get_cairo_surface();
 

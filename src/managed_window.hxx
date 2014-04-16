@@ -117,7 +117,7 @@ public:
 
 	window_icon_handler_t * icon() const {
 		if (_icon == 0) {
-			_icon = new window_icon_handler_t(_cnx, _orig, 16, 16);
+			_icon = new window_icon_handler_t(this, 16, 16);
 		}
 		return _icon;
 	}

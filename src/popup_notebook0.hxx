@@ -38,10 +38,10 @@ struct popup_notebook0_t : public window_overlay_t {
 			delete icon;
 	}
 
-	void update_window(Window w, string title) {
+	void update_window(client_base_t * c, string title) {
 		if (icon != 0)
 			delete icon;
-		icon = new window_icon_handler_t(_cnx, w, 64, 64);
+		icon = new window_icon_handler_t(c, 64, 64);
 		this->title = title;
 	}
 

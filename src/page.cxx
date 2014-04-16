@@ -802,7 +802,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			int s = 0;
 			for(set<managed_window_t *>::iterator i = managed_window.begin();
 					i != managed_window.end(); ++i) {
-				window_icon_handler_t * icon = new window_icon_handler_t(cnx, (*i)->orig(), 64, 64);
+				window_icon_handler_t * icon = new window_icon_handler_t(*i, 64, 64);
 				cycle_window_entry_t * cy = new cycle_window_entry_t(*i, icon);
 				v.push_back(cy);
 
@@ -898,7 +898,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.zone = SELECT_NONE;
 
 					pn0->move_resize(mode_data_notebook.from->tab_area);
-					pn0->update_window(mode_data_notebook.c->orig(),
+					pn0->update_window(mode_data_notebook.c,
 							mode_data_notebook.c->title());
 					set_focus(mode_data_notebook.c, e.time);
 					rpage->add_damaged(mode_data_notebook.from->allocation());
@@ -1019,7 +1019,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						mode_data_bind.zone = SELECT_NONE;
 
 						pn0->move_resize(mode_data_bind.c->get_base_position());
-						pn0->update_window(mw->orig(), mw->title());
+						pn0->update_window(mw, mw->title());
 
 						process_mode = PROCESS_FLOATING_BIND;
 
@@ -1080,7 +1080,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					process_mode = PROCESS_FULLSCREEN_MOVE;
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
-					pn0->update_window(mw->orig(), mw->title());
+					pn0->update_window(mw, mw->title());
 					pn0->show();
 					pn0->move_resize(v->raw_aera);
 					pn0->expose();
@@ -1097,7 +1097,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_notebook.zone = SELECT_NONE;
 
 				pn0->move_resize(mode_data_notebook.from->tab_area);
-				pn0->update_window(mw->orig(), mw->title());
+				pn0->update_window(mw, mw->title());
 
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				rpage->add_damaged(mode_data_notebook.from->allocation());
