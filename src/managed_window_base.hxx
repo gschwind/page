@@ -13,6 +13,7 @@
 #include <list>
 #include <string>
 
+#include "client_base.hxx"
 #include "box.hxx"
 #include "window_icon_handler.hxx"
 
@@ -20,7 +21,11 @@ using namespace std;
 
 namespace page {
 
-struct managed_window_base_t {
+struct managed_window_base_t : public client_base_t {
+
+	managed_window_base_t(client_base_t const & c) : client_base_t(c) {
+
+	}
 
 	virtual ~managed_window_base_t() { }
 
