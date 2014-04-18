@@ -181,6 +181,7 @@ public:
 		managed_window_t * f;
 		rectangle popup_original_position;
 		rectangle final_position;
+		unsigned int button;
 
 		mode_data_floating_t() {
 			mode = RESIZE_NONE;
@@ -192,6 +193,7 @@ public:
 			f = 0;
 			popup_original_position = rectangle();
 			final_position = rectangle();
+			button = Button1;
 		}
 
 	};
@@ -217,7 +219,10 @@ public:
 		PROCESS_FLOATING_RESIZE,
 		PROCESS_FLOATING_CLOSE,
 		PROCESS_FLOATING_BIND,
-		PROCESS_FULLSCREEN_MOVE // Alt + click to change fullscreen screen to another one
+		PROCESS_FULLSCREEN_MOVE, // Alt + click to change fullscreen screen to another one
+		PROCESS_FLOATING_MOVE_BY_CLIENT, // Move requested by client
+		PROCESS_FLOATING_RESIZE_BY_CLIENT // Resize requested by client
+
 	};
 
 	/* this define the current state of page */

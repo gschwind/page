@@ -955,6 +955,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.original_position = mw->get_floating_wished_position();
 				mode_data_floating.final_position = mw->get_floating_wished_position();
 				mode_data_floating.popup_original_position = mw->get_base_position();
+				mode_data_floating.button = Button1;
 
 //				pfm->move_resize(mw->get_base_position());
 //				pfm->update_window(mw->orig(), mw->title());
@@ -996,6 +997,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_floating.original_position = mw->get_floating_wished_position();
 					mode_data_floating.final_position = mw->get_floating_wished_position();
 					mode_data_floating.popup_original_position = mw->get_base_position();
+					mode_data_floating.button = Button1;
 
 					if (b->type == FLOATING_EVENT_CLOSE) {
 
@@ -1145,13 +1147,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	//fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
-	if (e.button == Button1) {
-		switch (process_mode) {
-		case PROCESS_NORMAL:
-			fprintf(stderr, "DDDDDDDDDDD\n");
-			break;
-		case PROCESS_SPLIT_GRAB:
-
+	switch (process_mode) {
+	case PROCESS_NORMAL:
+		fprintf(stderr, "Warning: release and normal mode are incompatible\n");
+		break;
+	case PROCESS_SPLIT_GRAB:
+		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
 
 			ps->hide();
@@ -1162,10 +1163,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_split.split = 0;
 			mode_data_split.slider_area = rectangle();
 			mode_data_split.split_ratio = 0.5;
-
-			break;
-		case PROCESS_NOTEBOOK_GRAB:
-
+		}
+		break;
+	case PROCESS_NOTEBOOK_GRAB:
+		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
@@ -1205,7 +1206,6 @@ void page_t::process_event_release(XButtonEvent const & e) {
 //				notebook_close(mode_data_notebook.from);
 //				update_allocation();
 //			}
-
 			set_focus(mode_data_notebook.c, e.time);
 			if (mode_data_notebook.from != 0)
 				rpage->add_damaged(mode_data_notebook.from->allocation());
@@ -1218,9 +1218,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_notebook.c = 0;
 			mode_data_notebook.from = 0;
 			mode_data_notebook.ns = 0;
-
-			break;
-		case PROCESS_NOTEBOOK_BUTTON_PRESS:
+		}
+		break;
+	case PROCESS_NOTEBOOK_BUTTON_PRESS:
+		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
 
 			{
@@ -1243,9 +1244,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-						if(default_window_pop != 0) {
+						if (default_window_pop != 0) {
 							default_window_pop->set_default(false);
-							rpage->add_damaged(default_window_pop->allocation());
+							rpage->add_damaged(
+									default_window_pop->allocation());
 						}
 						default_window_pop = mode_data_notebook.from;
 						default_window_pop->set_default(true);
@@ -1266,10 +1268,33 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_notebook.c = 0;
 			mode_data_notebook.from = 0;
 			mode_data_notebook.ns = 0;
+		}
+		break;
+	case PROCESS_FLOATING_MOVE:
+		if (e.button == Button1) {
+			//pfm->hide();
 
-			break;
-		case PROCESS_FLOATING_MOVE:
+			mode_data_floating.f->set_floating_wished_position(
+					mode_data_floating.final_position);
+			mode_data_floating.f->reconfigure();
 
+			set_focus(mode_data_floating.f, e.time);
+
+			process_mode = PROCESS_NORMAL;
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = rectangle();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
+		}
+		break;
+	case PROCESS_FLOATING_MOVE_BY_CLIENT:
+		if (e.button == mode_data_floating.button) {
 			//pfm->hide();
 
 			mode_data_floating.f->set_floating_wished_position(
@@ -1290,9 +1315,34 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.popup_original_position = rectangle();
 			mode_data_floating.final_position = rectangle();
 
-			break;
-		case PROCESS_FLOATING_RESIZE:
+			XUngrabPointer(cnx->dpy, e.time);
 
+		}
+		break;
+	case PROCESS_FLOATING_RESIZE:
+		if (e.button == Button1) {
+			//pfm->hide();
+
+			mode_data_floating.f->set_floating_wished_position(
+					mode_data_floating.final_position);
+			mode_data_floating.f->reconfigure();
+
+			set_focus(mode_data_floating.f, e.time);
+			process_mode = PROCESS_NORMAL;
+
+			mode_data_floating.mode = RESIZE_NONE;
+			mode_data_floating.x_offset = 0;
+			mode_data_floating.y_offset = 0;
+			mode_data_floating.x_root = 0;
+			mode_data_floating.y_root = 0;
+			mode_data_floating.original_position = rectangle();
+			mode_data_floating.f = 0;
+			mode_data_floating.popup_original_position = rectangle();
+			mode_data_floating.final_position = rectangle();
+		}
+		break;
+	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
+		if (e.button == mode_data_floating.button) {
 			//pfm->hide();
 
 			mode_data_floating.f->set_floating_wished_position(
@@ -1312,8 +1362,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.popup_original_position = rectangle();
 			mode_data_floating.final_position = rectangle();
 
-			break;
-		case PROCESS_FLOATING_CLOSE: {
+			XUngrabPointer(cnx->dpy, e.time);
+		}
+		break;
+	case PROCESS_FLOATING_CLOSE:
+
+		if (e.button == Button1) {
 			managed_window_t * mw = mode_data_floating.f;
 			mw->delete_window(e.time);
 
@@ -1330,11 +1384,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.popup_original_position = rectangle();
 			mode_data_floating.final_position = rectangle();
 
-			break;
 		}
 
-		case PROCESS_FLOATING_BIND: {
+		break;
 
+	case PROCESS_FLOATING_BIND:
+		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
@@ -1378,10 +1433,13 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_bind.c = 0;
 			mode_data_bind.ns = 0;
 
-			break;
 		}
 
-		case PROCESS_FULLSCREEN_MOVE:  {
+		break;
+
+	case PROCESS_FULLSCREEN_MOVE:
+
+		if (e.button == Button1) {
 
 			process_mode = PROCESS_NORMAL;
 
@@ -1407,16 +1465,16 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_fullscreen.v = 0;
 			mode_data_fullscreen.mw = 0;
 
-			break;
 		}
 
+		break;
 
-		default:
+	default:
+		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
-			break;
 		}
+		break;
 	}
-
 }
 
 void page_t::process_event(XMotionEvent const & e) {
@@ -1576,10 +1634,117 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		break;
 	}
+	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
+		/* get lastest know motion event */
+		ev.xmotion = e;
+		while(XCheckMaskEvent(cnx->dpy, ButtonMotionMask, &ev));
+
+		/* compute new window position */
+		rectangle new_position = mode_data_floating.original_position;
+		new_position.x += e.x_root - mode_data_floating.x_root;
+		new_position.y += e.y_root - mode_data_floating.y_root;
+		mode_data_floating.final_position = new_position;
+		mode_data_floating.f->set_floating_wished_position(new_position);
+		mode_data_floating.f->reconfigure();
+
+//		box_int_t popup_new_position = mode_data_floating.popup_original_position;
+//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+//		update_popup_position(pfm, popup_new_position);
+
+		break;
+	}
 	case PROCESS_FLOATING_RESIZE: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
+		rectangle size = mode_data_floating.original_position;
+
+		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_TOP) {
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+			size.h -= e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+			size.w -= e.x_root - mode_data_floating.x_root;
+			size.h += e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+			size.h += e.y_root - mode_data_floating.y_root;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+			size.w += e.x_root - mode_data_floating.x_root;
+			size.h += e.y_root - mode_data_floating.y_root;
+		}
+
+		/* apply mornal hints */
+		unsigned int final_width = size.w;
+		unsigned int final_height = size.h;
+		compute_client_size_with_constraint(mode_data_floating.f->orig(),
+				(unsigned) size.w, (unsigned) size.h, final_width,
+				final_height);
+		size.w = final_width;
+		size.h = final_height;
+
+		if(size.h < 1)
+			size.h = 1;
+		if(size.w < 1)
+			size.w = 1;
+
+		/* do not allow to large windows */
+		if(size.w > _root_position.w - 100)
+			size.w = _root_position.w - 100;
+		if(size.h > _root_position.h - 100)
+			size.h = _root_position.h - 100;
+
+		int x_diff = 0;
+		int y_diff = 0;
+
+		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
+			x_diff = mode_data_floating.original_position.w - size.w;
+			y_diff = mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_TOP) {
+			y_diff = mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+			y_diff = mode_data_floating.original_position.h - size.h;
+		} else if (mode_data_floating.mode == RESIZE_LEFT) {
+			x_diff = mode_data_floating.original_position.w - size.w;
+		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+			x_diff = mode_data_floating.original_position.w - size.w;
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+
+		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+
+		}
+
+		size.x += x_diff;
+		size.y += y_diff;
+		mode_data_floating.final_position = size;
+
+		mode_data_floating.f->set_floating_wished_position(size);
+		mode_data_floating.f->reconfigure();
+
+//		box_int_t popup_new_position = size;
+//		popup_new_position.x -= theme->floating_margin.left;
+//		popup_new_position.y -= theme->floating_margin.top;
+//		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
+//		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+//
+//		update_popup_position(pfm, popup_new_position);
+
+		break;
+	}
+	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
+		/* get lastest know motion event */
+		ev.xmotion = e;
+		while(XCheckMaskEvent(cnx->dpy, ButtonMotionMask, &ev));
 		rectangle size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
@@ -1920,27 +2085,27 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
 
-//	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
-//			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
+	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
+			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
 
-//	printf("name = %s\n", c->get_title().c_str());
-//
-//	printf("send event: %s\n", e.send_event ? "true" : "false");
-//
-//	if (e.value_mask & CWX)
-//		printf("has x: %d\n", e.x);
-//	if (e.value_mask & CWY)
-//		printf("has y: %d\n", e.y);
-//	if (e.value_mask & CWWidth)
-//		printf("has width: %d\n", e.width);
-//	if (e.value_mask & CWHeight)
-//		printf("has height: %d\n", e.height);
-//	if (e.value_mask & CWSibling)
-//		printf("has sibling: %lu\n", e.above);
-//	if (e.value_mask & CWStackMode)
-//		printf("has stack mode: %d\n", e.detail);
-//	if (e.value_mask & CWBorderWidth)
-//		printf("has border: %d\n", e.border_width);
+	//printf("name = %s\n", c->get_title().c_str());
+
+	printf("send event: %s\n", e.send_event ? "true" : "false");
+
+	if (e.value_mask & CWX)
+		printf("has x: %d\n", e.x);
+	if (e.value_mask & CWY)
+		printf("has y: %d\n", e.y);
+	if (e.value_mask & CWWidth)
+		printf("has width: %d\n", e.width);
+	if (e.value_mask & CWHeight)
+		printf("has height: %d\n", e.height);
+	if (e.value_mask & CWSibling)
+		printf("has sibling: %lu\n", e.above);
+	if (e.value_mask & CWStackMode)
+		printf("has stack mode: %d\n", e.detail);
+	if (e.value_mask & CWBorderWidth)
+		printf("has border: %d\n", e.border_width);
 
 	client_base_t * c = find_client(e.window);
 
@@ -1949,7 +2114,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 
-			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
+			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0 or true) {
 
 				/** compute floating size **/
 				rectangle new_size = mw->get_floating_wished_position();
@@ -2243,6 +2408,11 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 void page_t::process_event(XClientMessageEvent const & e) {
 
+	char * name = XGetAtomName(cnx->dpy, e.message_type);
+	printf("ClientMessage type = %s", name);
+	XFree(name);
+
+
 	Window w = e.window;
 	if(w == 0)
 		return;
@@ -2309,7 +2479,78 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		cnx->send_event(e.window, False, NoEventMask, &evx);
 	} else if (e.message_type == A(_NET_REQUEST_FRAME_EXTENTS)) {
 			//w->write_net_frame_extents();
+	} else if (e.message_type == A(_NET_WM_MOVERESIZE)) {
+		if (mw != 0) {
+			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
+
+				long x_root = e.data.l[0];
+				long y_root = e.data.l[1];
+				long direction = e.data.l[2];
+				long button = e.data.l[3];
+				long source = e.data.l[4];
+
+				mode_data_floating.x_offset = x_root
+						- mw->get_base_position().x;
+				mode_data_floating.y_offset = y_root
+						- mw->get_base_position().y;
+				;
+				mode_data_floating.x_root = x_root;
+				mode_data_floating.y_root = y_root;
+				mode_data_floating.f = mw;
+				mode_data_floating.original_position =
+						mw->get_floating_wished_position();
+				mode_data_floating.final_position =
+						mw->get_floating_wished_position();
+				mode_data_floating.popup_original_position =
+						mw->get_base_position();
+				mode_data_floating.button = button;
+
+				if (direction == _NET_WM_MOVERESIZE_MOVE) {
+					safe_raise_window(mw->orig());
+					process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+				} else {
+
+					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_TOP;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_BOTTOM;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_LEFT;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_RIGHT;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_TOP_LEFT;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_TOP_RIGHT;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
+						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+					} else {
+						safe_raise_window(mw->orig());
+						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+					}
+				}
+
+				if (process_mode != PROCESS_NORMAL) {
+					XGrabPointer(cnx->dpy, cnx->get_root_window(), False,
+							ButtonPressMask | ButtonMotionMask
+									| ButtonReleaseMask, GrabModeAsync,
+							GrabModeAsync, None, None, CurrentTime);
+				}
+
+			}
+		}
 	}
+
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
