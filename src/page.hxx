@@ -268,10 +268,6 @@ public:
 	/** map viewport to real outputs **/
 	map<RRCrtc, viewport_t *> viewport_outputs;
 
-	/* all managed windows */
-	set<managed_window_t *> managed_window;
-	set<unmanaged_window_t *> unmanaged_window;
-
 	/**
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
@@ -381,7 +377,7 @@ public:
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
-	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w, client_base_t * wa);
+	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, client_base_t * wa);
 	void unmanage(managed_window_t * mw);
 
 	void remove_window_from_tree(managed_window_t * x);
@@ -476,16 +472,16 @@ public:
 
 	Atom find_net_wm_type(client_base_t * c);
 
-	bool onmap(Window w);
+	bool onmap(client_base_t * c);
 
-	void create_managed_window(Window w, Atom type, client_base_t * c);
+	void create_managed_window(client_base_t * c, Atom type);
 
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 
-	void create_unmanaged_window(Window w, Atom type, client_base_t * c);
+	void create_unmanaged_window(client_base_t * c, Atom type);
 	viewport_t * find_mouse_viewport(int x, int y);
 
-	bool get_safe_net_wm_user_time(Window w, Time & time);
+	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);
 
 	list<viewport_t *> viewports() {
 		return list_values(viewport_outputs);
@@ -574,16 +570,17 @@ public:
 		return 0;
 	}
 
-	void remove_client(Window w) {
-		map<Window, client_base_t *>::iterator i = clients.find(w);
-		if(i != clients.end()) {
-			delete i->second;
-			clients.erase(i);
-		}
+	void remove_client(client_base_t * c) {
+		clients.erase(c->_id);
+		delete c;
 	}
 
 	void add_client(client_base_t * c) {
-		remove_client(c->_id);
+		map<Window, client_base_t *>::iterator i = clients.find(c->orig());
+		if(i != clients.end() and c != i->second) {
+			delete i->second;
+			clients.erase(i);
+		}
 		clients[c->_id] = c;
 	}
 

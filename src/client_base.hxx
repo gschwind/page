@@ -22,79 +22,48 @@ typedef long card32;
 
 using namespace std;
 
-//enum __client_type_e {
-//	UNKNOWN, FLOATING, NOTEBOOK, FULLSCREEN, UNMANAGED,
-//};
-
 class client_base_t {
 public:
 	xconnection_t * _cnx;
 	Window _id;
 
+	bool has_valid_window_attributes;
 	XWindowAttributes wa;
 
 	/* ICCCM */
-	/* ro */
+
 	string * wm_name;
-	/* ro */
 	string * wm_icon_name;
-	/* ro */
 	XSizeHints * wm_normal_hints;
-	/* ro */
 	XWMHints * wm_hints;
-	/* ro */
 	vector<string> * wm_class;
-	/* ro */
 	Window * wm_transient_for;
-	/* ro */
 	list<Atom> * wm_protocols;
-	/* ro */
 	vector<Window> * wm_colormap_windows;
-	/* ro */
 	string * wm_client_machine;
 
-	/* rw */
 	card32 * wm_state;
 
 	/* EWMH */
 
-	/* ro */
 	string * _net_wm_name;
-	/* ro */
 	string * _net_wm_visible_name;
-	/* ro */
 	string * _net_wm_icon_name;
-	/* ro */
 	string * _net_wm_visible_icon_name;
-	/* rw */
 	unsigned long * _net_wm_desktop;
-	/* ro */
 	list<Atom> * _net_wm_window_type;
-	/* rw */
 	list<Atom> * _net_wm_state;
-	/* ro */
 	list<Atom> * _net_wm_allowed_actions;
-	/* ro */
 	vector<card32> * _net_wm_struct;
-	/* ro */
 	vector<card32> * _net_wm_struct_partial;
-	/* ro */
 	vector<card32> * _net_wm_icon_geometry;
-	/* ro */
 	vector<card32> * _net_wm_icon;
-	/* ro */
 	unsigned long * _net_wm_pid;
-	/* ro */
 	bool _net_wm_handled_icons;
-	/* ro */
 	Time * _net_wm_user_time;
-	/* ro */
 	Window * _net_wm_user_time_window;
-	/* rw */
 	vector<card32> * _net_frame_extents;
-	/* ro */
 	vector<card32> * _net_wm_opaque_region;
-	/* ro */
 	unsigned long * _net_wm_bypass_compositor;
 
 	/* OTHERs */
@@ -149,7 +118,8 @@ public:
 	client_base_t(xconnection_t * cnx, Window id) :
 			_cnx(cnx), _id(id) {
 
-		_cnx->get_window_attributes(id, &wa);
+		has_valid_window_attributes = false;
+		bzero(&wa, sizeof(XWindowAttributes));
 
 		/* ICCCM */
 		wm_name = 0;
@@ -164,7 +134,6 @@ public:
 		wm_state = 0;
 
 		/* EWMH */
-
 		_net_wm_name = 0;
 		_net_wm_visible_name = 0;
 		_net_wm_icon_name = 0;
@@ -190,10 +159,10 @@ public:
 	}
 
 	virtual ~client_base_t() {
-		delete_all();
+		delete_all_properties();
 	}
 
-	void read_all() {
+	void read_all_properties() {
 
 		/* ICCCM */
 		update_wm_name();
@@ -208,7 +177,6 @@ public:
 		update_wm_state();
 
 		/* EWMH */
-
 		update_net_wm_name();
 		update_net_wm_visible_name();
 		update_net_wm_icon_name();
@@ -233,7 +201,7 @@ public:
 
 	}
 
-	void delete_all() {
+	void delete_all_properties() {
 
 		/* ICCCM */
 		safe_delete(wm_name);
@@ -272,6 +240,11 @@ public:
 
 	}
 
+	bool read_window_attributes() {
+		has_valid_window_attributes = (_cnx->get_window_attributes(_id, &wa) != 0);
+		return has_valid_window_attributes;
+	}
+
 	void update_wm_name() {
 		safe_delete(wm_name);
 		wm_name = _cnx->read_wm_name(_id);
@@ -300,13 +273,6 @@ public:
 	void update_wm_transient_for() {
 		safe_delete(wm_transient_for);
 		wm_transient_for = _cnx->read_wm_transient_for(_id);
-
-		if(wm_transient_for == 0) {
-			printf("transient_for not set %lu\n", _id);
-		} else {
-			printf("transient_for %lu => %lu\n", _id, *wm_transient_for);
-		}
-
 	}
 
 	void update_wm_protocols() {
@@ -429,6 +395,20 @@ public:
 	}
 
 
+	bool has_motif_border() {
+		if (motif_hints != 0) {
+			if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
+				if (not (motif_hints->decorations & MWM_DECOR_BORDER)
+						and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
+					delete motif_hints;
+					return false;
+				}
+			}
+			delete motif_hints;
+		}
+		return true;
+	}
+
 public:
 
 	bool is_window(Window w) {
@@ -446,7 +426,6 @@ public:
 	virtual Window orig() const {
 		return _id;
 	}
-
 
 };
 
