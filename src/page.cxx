@@ -291,6 +291,17 @@ void page_t::run() {
 	xc_left_ptr = XCreateFontCursor(cnx->dpy, XC_left_ptr);
 	xc_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
 
+	xc_bottom_left_corner = XCreateFontCursor(cnx->dpy, XC_bottom_left_corner);
+	xc_bottom_righ_corner = XCreateFontCursor(cnx->dpy, XC_bottom_right_corner);
+	xc_bottom_side = XCreateFontCursor(cnx->dpy, XC_bottom_side);
+
+	xc_left_side = XCreateFontCursor(cnx->dpy, XC_left_side);
+	xc_right_side = XCreateFontCursor(cnx->dpy, XC_right_side);
+
+	xc_top_right_corner = XCreateFontCursor(cnx->dpy, XC_top_right_corner);
+	xc_top_left_corner = XCreateFontCursor(cnx->dpy, XC_top_left_corner);
+	xc_top_side = XCreateFontCursor(cnx->dpy, XC_top_side);
+
 	XDefineCursor(cnx->dpy, cnx->get_root_window(), xc_left_ptr);
 
 	default_window_pop = 0;
@@ -944,10 +955,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+					XDefineCursor(cnx->dpy, mw->base(), xc_bottom_righ_corner);
+					XDefineCursor(cnx->dpy, mw->orig(), xc_bottom_righ_corner);
 				} else {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE;
 					XDefineCursor(cnx->dpy, mw->base(), xc_fleur);
+					XDefineCursor(cnx->dpy, mw->orig(), xc_fleur);
 				}
 
 
@@ -1014,27 +1028,35 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP;
+							XDefineCursor(cnx->dpy, mw->base(), xc_top_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM;
+							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_LEFT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_left_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_RIGHT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_right_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_top_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_top_right_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_righ_corner);
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
@@ -1258,6 +1280,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			//pfm->hide();
 
 			XUndefineCursor(cnx->dpy, mode_data_floating.f->base());
+			XUndefineCursor(cnx->dpy, mode_data_floating.f->orig());
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1307,6 +1330,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_FLOATING_RESIZE:
 		if (e.button == Button1) {
 			//pfm->hide();
+
+			XUndefineCursor(cnx->dpy, mode_data_floating.f->base());
+			XUndefineCursor(cnx->dpy, mode_data_floating.f->orig());
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -2392,6 +2418,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
 
+				Cursor xc = None;
+
 				long x_root = e.data.l[0];
 				long y_root = e.data.l[1];
 				long direction = e.data.l[2];
@@ -2417,35 +2445,45 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				if (direction == _NET_WM_MOVERESIZE_MOVE) {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+					xc = xc_fleur;
 				} else {
 
 					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_TOP;
+						xc = xc_top_side;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_BOTTOM;
+						xc = xc_bottom_side;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_LEFT;
+						xc = xc_left_side;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_RIGHT;
+						xc = xc_right_side;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_TOP_LEFT;
+						xc = xc_top_left_corner;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_TOP_RIGHT;
+						xc = xc_top_right_corner;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+						xc = xc_bottom_left_corner;
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
 						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+						xc = xc_bottom_righ_corner;
 					} else {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+						xc = xc_fleur;
 					}
 				}
 
@@ -2453,7 +2491,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 					XGrabPointer(cnx->dpy, cnx->get_root_window(), False,
 							ButtonPressMask | ButtonMotionMask
 									| ButtonReleaseMask, GrabModeAsync,
-							GrabModeAsync, None, xc_fleur, CurrentTime);
+							GrabModeAsync, None, xc, CurrentTime);
 				}
 
 			}

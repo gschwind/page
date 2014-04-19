@@ -325,6 +325,18 @@ private:
 	Cursor xc_left_ptr;
 	Cursor xc_fleur;
 
+	Cursor xc_bottom_left_corner;
+	Cursor xc_bottom_righ_corner;
+	Cursor xc_bottom_side;
+
+	Cursor xc_left_side;
+	Cursor xc_right_side;
+
+	Cursor xc_top_right_corner;
+	Cursor xc_top_left_corner;
+	Cursor xc_top_side;
+
+
 public:
 
 	theme_t * theme;
