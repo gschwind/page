@@ -321,6 +321,10 @@ private:
 
 	vector<page_event_t> * page_areas;
 
+
+	Cursor xc_left_ptr;
+	Cursor xc_fleur;
+
 public:
 
 	theme_t * theme;
@@ -414,7 +418,7 @@ public:
 	notebook_t * new_notebook();
 	void destroy(notebook_t * x);
 
-	void destroy_managed_window(managed_window_t * mw);
+	void destroy_client(client_base_t * c);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
@@ -425,7 +429,7 @@ public:
 
 
 
-	void safe_raise_window(Window w);
+	void safe_raise_window(client_base_t * c);
 	void clear_transient_for_sibbling_child(Window w);
 
 	Window find_root_window(Window w);
@@ -477,7 +481,7 @@ public:
 
 	Atom find_net_wm_type(client_base_t * c);
 
-	bool onmap(client_base_t * c);
+	bool onmap(Window w);
 
 	void create_managed_window(client_base_t * c, Atom type);
 

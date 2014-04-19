@@ -1,8 +1,14 @@
 /*
  * client.hxx
  *
- *  Created on: 5 avr. 2014
- *      Author: gschwind
+ * copyright (2014) Benoit Gschwind
+ *
+ * This code is licensed under the GPLv3. see COPYING file for more details.
+ *
+ * client_base store/cache all client windows properties define in ICCCM or EWMH.
+ *
+ * most of them are store with pointer which is null if the properties is not set on client.
+ *
  */
 
 #ifndef CLIENT_BASE_HXX_
@@ -24,55 +30,58 @@ using namespace std;
 
 class client_base_t {
 public:
-	xconnection_t * _cnx;
-	Window _id;
+	xconnection_t *              _cnx;
+	Window                       _id;
 
-	bool has_valid_window_attributes;
-	XWindowAttributes wa;
+	bool                         has_valid_window_attributes;
+	XWindowAttributes            wa;
 
 	/* ICCCM */
 
-	string * wm_name;
-	string * wm_icon_name;
-	XSizeHints * wm_normal_hints;
-	XWMHints * wm_hints;
-	vector<string> * wm_class;
-	Window * wm_transient_for;
-	list<Atom> * wm_protocols;
-	vector<Window> * wm_colormap_windows;
-	string * wm_client_machine;
+	string *                     wm_name;
+	string *                     wm_icon_name;
+	XSizeHints *                 wm_normal_hints;
+	XWMHints *                   wm_hints;
+	vector<string> *             wm_class;
+	Window *                     wm_transient_for;
+	list<Atom> *                 wm_protocols;
+	vector<Window> *             wm_colormap_windows;
+	string *                     wm_client_machine;
 
-	card32 * wm_state;
+	/* wm_state is writen by WM */
+	card32 *                     wm_state;
 
 	/* EWMH */
 
-	string * _net_wm_name;
-	string * _net_wm_visible_name;
-	string * _net_wm_icon_name;
-	string * _net_wm_visible_icon_name;
-	unsigned long * _net_wm_desktop;
-	list<Atom> * _net_wm_window_type;
-	list<Atom> * _net_wm_state;
-	list<Atom> * _net_wm_allowed_actions;
-	vector<card32> * _net_wm_struct;
-	vector<card32> * _net_wm_struct_partial;
-	vector<card32> * _net_wm_icon_geometry;
-	vector<card32> * _net_wm_icon;
-	unsigned long * _net_wm_pid;
-	bool _net_wm_handled_icons;
-	Time * _net_wm_user_time;
-	Window * _net_wm_user_time_window;
-	vector<card32> * _net_frame_extents;
-	vector<card32> * _net_wm_opaque_region;
-	unsigned long * _net_wm_bypass_compositor;
+	string *                     _net_wm_name;
+	string *                     _net_wm_visible_name;
+	string *                     _net_wm_icon_name;
+	string *                     _net_wm_visible_icon_name;
+	unsigned long *              _net_wm_desktop;
+	list<Atom> *                 _net_wm_window_type;
+	list<Atom> *                 _net_wm_state;
+	list<Atom> *                 _net_wm_allowed_actions;
+	vector<card32> *             _net_wm_struct;
+	vector<card32> *             _net_wm_struct_partial;
+	vector<card32> *             _net_wm_icon_geometry;
+	vector<card32> *             _net_wm_icon;
+	unsigned long *              _net_wm_pid;
+	bool                         _net_wm_handled_icons;
+	Time *                       _net_wm_user_time;
+	Window *                     _net_wm_user_time_window;
+	vector<card32> *             _net_frame_extents;
+	vector<card32> *             _net_wm_opaque_region;
+	unsigned long *              _net_wm_bypass_compositor;
 
 	/* OTHERs */
 
-	motif_wm_hints_t * motif_hints;
+	motif_wm_hints_t *           motif_hints;
 
 public:
 
 	client_base_t(client_base_t const & c) {
+
+		has_valid_window_attributes = c.has_valid_window_attributes;
 		memcpy(&wa, &c.wa, sizeof(XWindowAttributes));
 
 		_id = c._id;
@@ -400,11 +409,9 @@ public:
 			if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
 				if (not (motif_hints->decorations & MWM_DECOR_BORDER)
 						and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
-					delete motif_hints;
 					return false;
 				}
 			}
-			delete motif_hints;
 		}
 		return true;
 	}
