@@ -398,7 +398,7 @@ public:
 
 	void print_window_attributes(Window w, XWindowAttributes &wa);
 
-	managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, client_base_t * wa);
+	managed_window_t * manage(Atom net_wm_type, client_base_t * wa);
 	void unmanage(managed_window_t * mw);
 
 	void remove_window_from_tree(managed_window_t * x);

@@ -478,26 +478,17 @@ void page_t::run() {
 	}
 }
 
-managed_window_t * page_t::manage(managed_window_type_e type, Atom net_wm_type,
-		client_base_t * c) {
+managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 
 	cnx->add_to_save_set(c->orig());
 
 	/* set border to zero */
-	XWindowChanges wc;
-	wc.border_width = 0;
-	XConfigureWindow(cnx->dpy, c->orig(), CWBorderWidth, &wc);
 	XSetWindowBorder(cnx->dpy, c->orig(), 0);
 
 	/* assign window to desktop 0 */
-	if (c->_net_wm_desktop == 0) {
-		long int net_wm_desktop = 0;
-		cnx->change_property(c->orig(), _NET_WM_DESKTOP, CARDINAL, 32, PropModeReplace,
-				(unsigned char *) &net_wm_desktop, 1);
+	c->set_net_wm_desktop(0);
 
-	}
-
-	managed_window_t * mw = new managed_window_t(type, net_wm_type, c, theme);
+	managed_window_t * mw = new managed_window_t(net_wm_type, c, theme);
 	add_client(mw);
 
 	return mw;
@@ -565,7 +556,6 @@ void page_t::scan() {
 				 * if the window is not map check if previous windows manager has set WM_STATE to iconic
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 				 **/
-				long state = 0;
 				if (c->wm_state != 0) {
 					if (*(c->wm_state) == IconicState) {
 						onmap(w);
@@ -4029,30 +4019,21 @@ bool page_t::onmap(Window w) {
 
 			Atom type = find_net_wm_type(c);
 
-			/* if the window has transient_for and is normal make it floating */
-			if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				if (c->wm_transient_for != 0) {
-					if (*(c->wm_transient_for) != None) {
-						type = A(_NET_WM_WINDOW_TYPE_UTILITY);
+			/** HACK FOR ECLIPSE **/
+			{
+				list<Atom> wm_state;
+				xconnection_t::wm_class wm_class;
+				if (c->wm_class != 0 and c->wm_state != 0
+						and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+					if ((*(c->wm_class))[0] == "Eclipse") {
+						list<Atom>::iterator x = find(wm_state.begin(),
+								wm_state.end(), A(_NET_WM_STATE_SKIP_TASKBAR));
+						if (x != wm_state.end()) {
+							type = A(_NET_WM_WINDOW_TYPE_DND);
+						}
 					}
 				}
 			}
-
-			/** HACK FOR ECLIPSE **/
-//			{
-//				list<Atom> wm_state;
-//				xconnection_t::wm_class wm_class;
-//				if (c->wm_class != 0 and c->wm_state != 0
-//						and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-//					if ((*(c->wm_class))[0] == "Eclipse") {
-//						list<Atom>::iterator x = find(wm_state.begin(),
-//								wm_state.end(), A(_NET_WM_STATE_SKIP_TASKBAR));
-//						if (x != wm_state.end()) {
-//							type = A(_NET_WM_WINDOW_TYPE_DND);
-//						}
-//					}
-//				}
-//			}
 
 			if (!c->wa.override_redirect) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
@@ -4152,34 +4133,19 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 
 	//printf("manage window %lu\n", w);
 
-	/* make managed window floating when they have parent */
-	if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-		if (c->wm_transient_for != 0) {
-			if (*(c->wm_transient_for) != None
-					and *(c->wm_transient_for) != cnx->get_root_window()) {
-				type = A(_NET_WM_WINDOW_TYPE_UTILITY);
-			}
-		}
-	}
+	/* manage will destroy c */
+	managed_window_t * mw = manage(type, c);
 
-	managed_window_t * mw;
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& c->wm_transient_for == 0
-			&& c->has_motif_border()) {
+			&& get_transient_for(mw->_id) == None
+			&& mw->has_motif_border()) {
 
-		mw = manage(MANAGED_NOTEBOOK, type, c);
-		insert_window_in_tree(mw, 0, true);
+		bind_window(mw);
 
-
-		/** TODO function **/
-		Time time = 0;
-		if(get_safe_net_wm_user_time(mw, time)) {
-			set_focus(mw, time);
-		}
-
+	} else if (mw->is_fullscreen()) {
+		fullscreen(mw);
 	} else {
-		mw = manage(MANAGED_FLOATING, type, c);
 		mw->normalize();
 
 		Time time = 0;
@@ -4187,11 +4153,6 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 			set_focus(mw, time);
 		}
 
-	}
-
-	if (mw->is_fullscreen()) {
-		fullscreen(mw);
-	} else {
 		mw->reconfigure();
 	}
 

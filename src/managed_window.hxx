@@ -88,8 +88,7 @@ private:
 
 public:
 
-	managed_window_t(managed_window_type_e initial_type,
-			Atom net_wm_type, client_base_t * c,
+	managed_window_t(Atom net_wm_type, client_base_t * c,
 			theme_t const * theme);
 	virtual ~managed_window_t();
 

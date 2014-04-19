@@ -15,11 +15,10 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(managed_window_type_e initial_type,
-		Atom net_wm_type, client_base_t * c,
+managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		theme_t const * theme) : managed_window_base_t(*c),
 
-		_theme(theme), _type(initial_type), _net_wm_type(net_wm_type), _floating_wished_position(), _notebook_wished_position(), _wished_position(), _orig_position(), _base_position(), _surf(
+		_theme(theme), _type(MANAGED_FLOATING), _net_wm_type(net_wm_type), _floating_wished_position(), _notebook_wished_position(), _wished_position(), _orig_position(), _base_position(), _surf(
 				0), _top_buffer(0), _bottom_buffer(0), _left_buffer(0), _right_buffer(
 				0), _icon(0), _title(0), _orig_visual(0), _orig_depth(
 				-1), _deco_visual(0), _deco_depth(-1), _orig(_id), _base(None), _deco(
