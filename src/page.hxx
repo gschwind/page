@@ -90,7 +90,6 @@ class page_t {
 
 public:
 
-	typedef std::map<Window, Window> window_map_t;
 	typedef std::set<notebook_t *> notebook_set_t;
 
 	enum select_e {

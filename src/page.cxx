@@ -753,64 +753,67 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 	}
 
-//	if (XK_Tab == k[0] && e.type == KeyPress && ((e.state & 0x0f) == Mod1Mask)) {
-//
-//		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
-//
-//			/* Grab keyboard */
-//			XGrabKeyboard(e.display, cnx->get_root_window(), False, GrabModeAsync, GrabModeAsync,
-//					e.time);
-//
-//			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-//			XAllowEvents(e.display, AsyncKeyboard, e.time);
-//
-//			key_press_mode = KEY_PRESS_ALT_TAB;
-//			key_mode_data.selected = _client_focused.front();
-//
-//			int sel = 0;
-//
-//			vector<cycle_window_entry_t *> v;
-//			int s = 0;
-//			for(set<managed_window_t *>::iterator i = managed_window.begin();
-//					i != managed_window.end(); ++i) {
-//				window_icon_handler_t * icon = new window_icon_handler_t(*i, 64, 64);
-//				cycle_window_entry_t * cy = new cycle_window_entry_t(*i, icon);
-//				v.push_back(cy);
-//
-//				if(*i == _client_focused.front()) {
-//					sel = s;
-//				}
-//
-//				++s;
-//
-//			}
-//
-//			pat->update_window(v, sel);
-//
-//			viewport_t * viewport = viewport_outputs.begin()->second;
-//
-//			int y = v.size() / 4 + 1;
-//
-//			pat->move_resize(
-//					rectangle(
-//							viewport->raw_aera.x
-//									+ (viewport->raw_aera.w - 80 * 4) / 2,
-//							viewport->raw_aera.y
-//									+ (viewport->raw_aera.h - y * 80) / 2,
-//							80 * 4, y * 80));
-//			pat->show();
-//
-//		} else {
-//			XAllowEvents(e.display, ReplayKeyboard, e.time);
-//		}
-//
-//
-//		pat->select_next();
-//		pat->mark_durty();
-//		pat->expose();
-//		pat->mark_durty();
-//
-//	}
+	if (XK_Tab == k[0] && e.type == KeyPress && ((e.state & 0x0f) == Mod1Mask)) {
+
+		list<managed_window_t *> managed_window;
+		get_managed_windows(managed_window);
+
+		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
+
+			/* Grab keyboard */
+			XGrabKeyboard(e.display, cnx->get_root_window(), False, GrabModeAsync, GrabModeAsync,
+					e.time);
+
+			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
+			XAllowEvents(e.display, AsyncKeyboard, e.time);
+
+			key_press_mode = KEY_PRESS_ALT_TAB;
+			key_mode_data.selected = _client_focused.front();
+
+			int sel = 0;
+
+			vector<cycle_window_entry_t *> v;
+			int s = 0;
+			for(list<managed_window_t *>::iterator i = managed_window.begin();
+					i != managed_window.end(); ++i) {
+				window_icon_handler_t * icon = new window_icon_handler_t(*i, 64, 64);
+				cycle_window_entry_t * cy = new cycle_window_entry_t(*i, icon);
+				v.push_back(cy);
+
+				if(*i == _client_focused.front()) {
+					sel = s;
+				}
+
+				++s;
+
+			}
+
+			pat->update_window(v, sel);
+
+			viewport_t * viewport = viewport_outputs.begin()->second;
+
+			int y = v.size() / 4 + 1;
+
+			pat->move_resize(
+					rectangle(
+							viewport->raw_aera.x
+									+ (viewport->raw_aera.w - 80 * 4) / 2,
+							viewport->raw_aera.y
+									+ (viewport->raw_aera.h - y * 80) / 2,
+							80 * 4, y * 80));
+			pat->show();
+
+		} else {
+			XAllowEvents(e.display, ReplayKeyboard, e.time);
+		}
+
+
+		pat->select_next();
+		pat->mark_durty();
+		pat->expose();
+		pat->mark_durty();
+
+	}
 
 
 
