@@ -217,7 +217,7 @@ void page_t::run() {
 	}
 
 	/** load compositor if requested **/
-	if (use_internal_compositor and false /** DISABLE COMPOSITOR UNTIL PAGE IS FULLY DEBUGGED */) {
+	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
 			rnd = new compositor_t();
