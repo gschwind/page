@@ -77,6 +77,9 @@ public:
 
 	motif_wm_hints_t *           motif_hints;
 
+
+	list<client_base_t *> subclients;
+
 public:
 
 	client_base_t(client_base_t const & c) {

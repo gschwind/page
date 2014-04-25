@@ -259,6 +259,7 @@ public:
 	compositor_t * rnd;
 
 	map<Window, client_base_t *> clients;
+	list<client_base_t *> root_subclients;
 
 	/* default cursor */
 //	Cursor cursor;
@@ -285,8 +286,6 @@ public:
 
 	string page_base_dir;
 
-	map<Window, list<Window> > transient_for_tree;
-
 	map<Window, window_handler_t *> window_list;
 
 private:
@@ -296,26 +295,6 @@ private:
 
 	/** this window is a mandatory window to handle the wm session **/
 	Window wm_window;
-
-	/**
-	 * this window are made to reserver X window IDs, they will be used
-	 * to maintain a logical window tree, each of this window will be
-	 * the logical root window of corresponding layer.
-	 *
-	 * For example, notebook_layer is the window that content all notebook
-	 * window.
-	 *
-	 * This window will be used in in transient_for tree.
-	 *
-	 */
-	Window page_layer;
-	Window notebook_layer;
-	Window floating_layer;
-	Window dock_layer;
-	Window unknow_layer;
-	Window fullscreen_layer;
-	Window overlay_layer;
-	Window notification_layer;
 
 	rectangle _root_position;
 
@@ -434,10 +413,10 @@ public:
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
-	void update_transient_for(Window w);
-	Window get_transient_for(Window w);
-	void logical_raise(Window w);
-	void cleanup_transient_for_for_window(Window w);
+	void update_transient_for(client_base_t * c);
+	client_base_t * get_transient_for(client_base_t * c);
+	void logical_raise(client_base_t * c);
+	void cleanup_transient_for_for_window(client_base_t * c);
 
 
 
@@ -599,6 +578,7 @@ public:
 	void add_client(client_base_t * c) {
 		map<Window, client_base_t *>::iterator i = clients.find(c->orig());
 		if(i != clients.end() and c != i->second) {
+			cleanup_transient_for_for_window(i->second);
 			delete i->second;
 			clients.erase(i);
 		}

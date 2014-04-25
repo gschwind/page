@@ -256,36 +256,36 @@ void page_t::run() {
 	ps = new popup_split_t(cnx, theme);
 	pat = new popup_alt_tab_t(cnx, theme);
 
-	page_layer = rpage->id();
+//	page_layer = rpage->id();
+//
+//	notebook_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(notebook_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notebook_layer")), strlen("page_notebook_layer") + 1);
+//
+//
+//	dock_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(dock_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_dock_layer")), strlen("page_dock_layer") + 1);
+//
+//	floating_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(floating_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_floating_layer")), strlen("page_floating_layer") + 1);
+//
+//	unknow_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(unknow_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_unknown_layer")), strlen("page_unknown_layer") + 1);
+//
+//
+//	fullscreen_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(fullscreen_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_fullscreen_layer")), strlen("page_fullscreen_layer") + 1);
+//
+//	notification_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
+//	cnx->change_property(notification_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notification_layer")), strlen("page_notification_layer") + 1);
 
-	notebook_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(notebook_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notebook_layer")), strlen("page_notebook_layer") + 1);
 
-
-	dock_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(dock_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_dock_layer")), strlen("page_dock_layer") + 1);
-
-	floating_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(floating_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_floating_layer")), strlen("page_floating_layer") + 1);
-
-	unknow_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(unknow_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_unknown_layer")), strlen("page_unknown_layer") + 1);
-
-
-	fullscreen_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(fullscreen_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_fullscreen_layer")), strlen("page_fullscreen_layer") + 1);
-
-	notification_layer = XCreateWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0, InputOnly, 0, 0, 0);
-	cnx->change_property(notification_layer, _NET_WM_NAME, UTF8_STRING, 8, PropModeReplace, const_cast<unsigned char *>(reinterpret_cast<unsigned char const *>("page_notification_layer")), strlen("page_notification_layer") + 1);
-
-
-	update_transient_for(page_layer);
-	update_transient_for(notebook_layer);
-	update_transient_for(dock_layer);
-	update_transient_for(floating_layer);
-	update_transient_for(unknow_layer);
-	update_transient_for(fullscreen_layer);
-	update_transient_for(notification_layer);
+//	update_transient_for(page_layer);
+//	update_transient_for(notebook_layer);
+//	update_transient_for(dock_layer);
+//	update_transient_for(floating_layer);
+//	update_transient_for(unknow_layer);
+//	update_transient_for(fullscreen_layer);
+//	update_transient_for(notification_layer);
 
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy, XC_left_ptr);
@@ -2316,8 +2316,10 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == A(WM_TRANSIENT_FOR)) {
 //		printf("TRANSIENT_FOR = #%ld\n", x->transient_for());
 
-		update_transient_for(x);
-		update_windows_stack();
+		if (c != 0) {
+			update_transient_for(c);
+			update_windows_stack();
+		}
 
 	} else if (e.atom == A(WM_HINTS)) {
 	} else if (e.atom == A(_NET_WM_STATE)) {
@@ -2554,7 +2556,7 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	mw->reconfigure();
 	//printf("FULLSCREEN TO %dx%d+%d+%d\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
 	mw->normalize();
-	update_transient_for(mw->orig());
+	update_transient_for(mw);
 	safe_raise_window(mw);
 }
 
@@ -2571,13 +2573,13 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	if (data.revert_type == MANAGED_NOTEBOOK) {
 		notebook_t * old = data.revert_notebook;
 		mw->set_managed_type(MANAGED_NOTEBOOK);
-		update_transient_for(mw->orig());
+		update_transient_for(mw);
 		insert_window_in_tree(mw, old, true);
 		old->activate_client(mw);
 		mw->reconfigure();
 	} else {
 		mw->set_managed_type(MANAGED_FLOATING);
-		update_transient_for(mw->orig());
+		update_transient_for(mw);
 		mw->reconfigure();
 	}
 
@@ -3380,55 +3382,63 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 	}
 }
 
-void page_t::update_transient_for(Window w) {
+void page_t::update_transient_for(client_base_t * c) {
 
-	cleanup_transient_for_for_window(w);
+	cleanup_transient_for_for_window(c);
 
-	Window transient_for = get_transient_for(w);
+	client_base_t * transient_for = get_transient_for(c);
 
-	if(transient_for == cnx->get_root_window()) {
-		transient_for = None;
+	if (transient_for != 0) {
+		printf("transient_for %lu -> %lu\n", c->orig(), transient_for->orig());
+		transient_for->subclients.push_back(c);
+	} else {
+		root_subclients.push_back(c);
 	}
-
-	printf("transient_for %lu -> %lu\n", w, transient_for);
-	transient_for_tree[transient_for].push_back(w);
 }
 
-Window page_t::get_transient_for(Window w) {
-	client_base_t * c = find_client_with(w);
-
-	Window transient_for = None;
+client_base_t * page_t::get_transient_for(client_base_t * c) {
+	client_base_t * transient_for = 0;
 	if(c != 0) {
 		if(c->wm_transient_for != 0) {
-			transient_for = *(c->wm_transient_for);
+			transient_for = find_client_with(*(c->wm_transient_for));
+			if(transient_for == 0)
+				printf("Warning transiant for an unknown client\n");
 		}
 	}
 	return transient_for;
 }
 
-void page_t::logical_raise(Window w) {
+void page_t::logical_raise(client_base_t * c) {
+
 	/* avoid tree loop */
-	set<Window> already_raise;
+	set<client_base_t *> already_raise;
 	/* None is root for all transient_for window */
-	already_raise.insert(None);
+	already_raise.insert(0);
 	/* current window to process */
-	Window w_next = w;
-	while(not has_key(already_raise, w_next)) {
-		already_raise.insert(w_next);
-		Window transient_for = get_transient_for(w_next);
+	client_base_t * c_next = c;
+	while(not has_key(already_raise, c_next)) {
+		already_raise.insert(c_next);
+		client_base_t * transient_for = get_transient_for(c_next);
 		/* update the stacking of current window, back of list is on top */
-		transient_for_tree[transient_for].remove(w_next);
-		transient_for_tree[transient_for].push_back(w_next);
-		w_next = transient_for;
+		if (transient_for != 0) {
+			transient_for->subclients.remove(c_next);
+			transient_for->subclients.push_back(c_next);
+		} else {
+			root_subclients.remove(c_next);
+			root_subclients.push_back(c_next);
+		}
+		c_next = transient_for;
 	}
 }
 
-void page_t::cleanup_transient_for_for_window(Window w) {
-	map<Window, list<Window> >::iterator i = transient_for_tree.begin();
-	while(i != transient_for_tree.end()) {
-		i->second.remove(w);
+void page_t::cleanup_transient_for_for_window(client_base_t * c) {
+	map<Window, client_base_t *>::iterator i = clients.begin();
+	while(i != clients.end()) {
+		i->second->subclients.remove(c);
 		++i;
 	}
+
+	root_subclients.remove(c);
 }
 
 void page_t::safe_raise_window(client_base_t * c) {
@@ -3436,7 +3446,7 @@ void page_t::safe_raise_window(client_base_t * c) {
 	if(process_mode != PROCESS_NORMAL)
 		return;
 
-	logical_raise(c->_id);
+	logical_raise(c);
 
 	/** apply change **/
 	update_windows_stack();
@@ -3481,44 +3491,44 @@ void page_t::compute_client_size_with_constraint(Window c,
 }
 
 void page_t::print_tree_windows() {
-	printf("print tree \n");
-
-	typedef pair<int, Window> item;
-
-	set<Window> raised_window;
-	list<item> window_stack;
-	stack<item > nxt;
-
-	nxt.push(item(0, None));
-
-	while (!nxt.empty()) {
-		item cur = nxt.top();
-		nxt.pop();
-
-		if (!has_key(raised_window, cur.second)) {
-			raised_window.insert(cur.second);
-			window_stack.push_back(cur);
-			if (has_key(transient_for_tree, cur.second)) {
-				list<Window> childs = transient_for_tree[cur.second];
-				for (list<Window>::reverse_iterator j = childs.rbegin();
-						j != childs.rend(); ++j) {
-					nxt.push(item(cur.first + 1, *j));
-				}
-			}
-		}
-	}
-
-	window_stack.pop_front();
-
-	for(list<item>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
-		for(int k = 0; k < (*i).first; ++k) {
-			printf("    ");
-		}
-
-		Window w = (*i).second;
-		//string s = get_window_string(w);
-		printf("%d %lu %s\n", i->first, i->second, "none");
-	}
+//	printf("print tree \n");
+//
+//	typedef pair<int, client_base_t *> item;
+//
+//	set<client_base_t *> raised_window;
+//	list<item> window_stack;
+//	stack<item > nxt;
+//
+//	nxt.push(item(0, 0));
+//
+//	while (!nxt.empty()) {
+//		item cur = nxt.top();
+//		nxt.pop();
+//
+//		if (!has_key(raised_window, cur.second)) {
+//			raised_window.insert(cur.second);
+//			window_stack.push_back(cur);
+//			if (has_key(transient_for_tree, cur.second)) {
+//				list<Window> childs = transient_for_tree[cur.second];
+//				for (list<Window>::reverse_iterator j = childs.rbegin();
+//						j != childs.rend(); ++j) {
+//					nxt.push(item(cur.first + 1, *j));
+//				}
+//			}
+//		}
+//	}
+//
+//	window_stack.pop_front();
+//
+//	for(list<item>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
+//		for(int k = 0; k < (*i).first; ++k) {
+//			printf("    ");
+//		}
+//
+//		Window w = (*i).second;
+//		//string s = get_window_string(w);
+//		printf("%d %lu %s\n", i->first, i->second, "none");
+//	}
 
 
 }
@@ -3528,7 +3538,7 @@ void page_t::bind_window(managed_window_t * mw) {
 	/* update database */
 	mw->set_managed_type(MANAGED_NOTEBOOK);
 	insert_window_in_tree(mw, 0, true);
-	update_transient_for(mw->orig());
+	update_transient_for(mw);
 	safe_raise_window(mw);
 	update_client_list();
 
@@ -3542,7 +3552,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 	mw->set_managed_type(MANAGED_FLOATING);
 	mw->expose();
 	mw->normalize();
-	update_transient_for(mw->orig());
+	update_transient_for(mw);
 	safe_raise_window(mw);
 	update_client_list();
 
@@ -3703,24 +3713,25 @@ bool page_t::is_focussed(managed_window_t * mw) {
 void page_t::update_windows_stack() {
 
 	/* recreate the stack order */
-	set<Window> raised_window;
-	list<Window> window_stack;
-	stack<Window> nxt;
-	nxt.push(None);
+	set<client_base_t *> raised_window;
+	list<client_base_t *> window_stack;
+	stack<client_base_t *> nxt;
+
+	for(list<client_base_t *>::reverse_iterator i = root_subclients.rbegin(); i != root_subclients.rend(); ++i) {
+		nxt.push(*i);
+	}
 
 	while (!nxt.empty()) {
-		Window cur = nxt.top();
+		client_base_t * cur = nxt.top();
 		nxt.pop();
 
 		if (!has_key(raised_window, cur)) {
 			raised_window.insert(cur);
 			window_stack.push_back(cur);
-			if (has_key(transient_for_tree, cur)) {
-				list<Window> childs = transient_for_tree[cur];
-				for (list<Window>::reverse_iterator j = childs.rbegin();
-						j != childs.rend(); ++j) {
-					nxt.push(*j);
-				}
+			list<client_base_t *> & childs = cur->subclients;
+			for (list<client_base_t *>::reverse_iterator j = childs.rbegin();
+					j != childs.rend(); ++j) {
+				nxt.push(*j);
 			}
 		}
 	}
@@ -3730,12 +3741,9 @@ void page_t::update_windows_stack() {
 
 	list<client_base_t *> tmp;
 
-	for(list<Window>::iterator i = window_stack.begin();
+	for (list<client_base_t *>::iterator i = window_stack.begin();
 			i != window_stack.end(); ++i) {
-		client_base_t * c = find_client_with(*i);
-		if(c != 0) {
-			tmp.push_back(c);
-		}
+		tmp.push_back(*i);
 	}
 
 	list<Window> final_order;
@@ -4111,17 +4119,12 @@ bool page_t::onmap(Window w) {
 
 			return false;
 
-			rpage->mark_durty();
-			update_transient_for(w);
-			update_client_list();
-			update_windows_stack();
-
 		} else {
 			delete c;
 		}
 	} else {
 		c->read_all_properties();
-		update_transient_for(w);
+		update_transient_for(c);
 		update_windows_stack();
 	}
 
@@ -4138,7 +4141,7 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& get_transient_for(mw->_id) == None
+			&& get_transient_for(mw) == None
 			&& mw->has_motif_border()) {
 
 		bind_window(mw);
@@ -4159,7 +4162,7 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 }
 
 void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
-	update_transient_for(c->orig());
+	update_transient_for(c);
 	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
 	add_client(uw);
 }
@@ -4370,13 +4373,13 @@ string page_t::get_window_string(Window w) {
 //	}
 
 	/** read newer transient for **/
-	Window transient_for = get_transient_for(w);
+	client_base_t * transient_for = get_transient_for(c);
 	string s_transient;
 	if (c->wm_transient_for == 0) {
 		s_transient = "undefined";
 	} else {
 		char buffer[1024];
-		snprintf(buffer, 1024, "%lu", transient_for);
+		snprintf(buffer, 1024, "%lu", transient_for->orig());
 		s_transient = buffer;
 	}
 
@@ -4423,11 +4426,14 @@ managed_window_t * page_t::find_managed_window_with(Window w) {
 
 
 void page_t::destroy_client(client_base_t * c) {
+
+	cleanup_transient_for_for_window(c);
+
 	if(typeid(*c) == typeid(managed_window_t)) {
 		managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 		unmanage(mw);
 	}
-	cleanup_transient_for_for_window(c->_id);
+
 	update_client_list();
 	rpage->mark_durty();
 	remove_client(c);
