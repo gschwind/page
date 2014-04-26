@@ -570,6 +570,7 @@ void page_t::scan() {
 
 	update_client_list();
 	update_allocation();
+	update_windows_stack();
 //	printf("return %s\n", __PRETTY_FUNCTION__);
 }
 
@@ -3892,7 +3893,7 @@ void page_t::update_viewport_layout() {
 	/** update root size infos **/
 
 	XWindowAttributes rwa;
-	if(!XGetWindowAttributes(cnx->dpy, DefaultRootWindow(cnx->dpy), &rwa)) {
+	if(!XGetWindowAttributes(cnx->dpy, cnx->get_root_window(), &rwa)) {
 		throw std::runtime_error("FATAL: cannot read root window attributes\n");
 	}
 
@@ -4162,12 +4163,18 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		mw->reconfigure();
 	}
 
+	update_transient_for(mw);
+	update_client_list();
+	update_windows_stack();
+
 }
 
 void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
 	update_transient_for(c);
 	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
 	add_client(uw);
+	update_transient_for(uw);
+	update_windows_stack();
 }
 
 Atom page_t::find_net_wm_type(client_base_t * c) {
