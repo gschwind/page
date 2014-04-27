@@ -78,7 +78,11 @@ public:
 	motif_wm_hints_t *           motif_hints;
 
 
+	/** derived properties **/
+
 	list<client_base_t *> subclients;
+	// window title cache
+	string _title;
 
 public:
 
@@ -89,6 +93,8 @@ public:
 
 		_id = c._id;
 		_cnx = c._cnx;
+		_title = c._title;
+		subclients = c.subclients;
 
 		/* ICCCM */
 		wm_name = safe_copy(c.wm_name);
@@ -210,6 +216,8 @@ public:
 		update_net_wm_bypass_compositor();
 
 		update_motif_hints();
+
+		update_title();
 
 	}
 
@@ -427,6 +435,24 @@ public:
 	}
 
 public:
+
+
+	void update_title() {
+			string name;
+			if (_net_wm_name != 0) {
+				_title = *(_net_wm_name);
+			} else if (wm_name != 0) {
+				_title = *(wm_name);
+			} else {
+				std::stringstream s(std::stringstream::in | std::stringstream::out);
+				s << "#" << (_id) << " (noname)";
+				_title = s.str();
+			}
+	}
+
+	string const & title() const {
+		return _title;
+	}
 
 	bool is_window(Window w) {
 		return w == _id;

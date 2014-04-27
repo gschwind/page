@@ -471,7 +471,7 @@ public:
 
 	Atom find_net_wm_type(client_base_t * c);
 
-	bool onmap(Window w);
+	void onmap(Window w);
 
 	void create_managed_window(client_base_t * c, Atom type);
 

@@ -640,7 +640,7 @@ void simple2_theme_t::render_notebook_selected(
 		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
 		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-		pango_layout_set_text(pango_layout, (c)->title(), -1);
+		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
 		pango_cairo_update_layout(cr, pango_layout);
 		pango_cairo_layout_path(cr, pango_layout);
 
@@ -830,7 +830,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	CHECK_CAIRO(cairo_new_path(cr));
 	pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-	pango_layout_set_text(pango_layout, (c)->title(), -1);
+	pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
 	pango_cairo_update_layout(cr, pango_layout);
 	pango_cairo_layout_path(cr, pango_layout);
 
@@ -1021,7 +1021,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
 
 		CHECK_CAIRO(cairo_new_path(cr));
-		pango_layout_set_text(pango_layout, mw->title(), -1);
+		pango_layout_set_text(pango_layout, mw->title().c_str(), -1);
 		pango_cairo_update_layout(cr, pango_layout);
 		pango_cairo_layout_path(cr, pango_layout);
 

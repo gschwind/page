@@ -20,7 +20,7 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 		_theme(theme), _type(MANAGED_FLOATING), _net_wm_type(net_wm_type), _floating_wished_position(), _notebook_wished_position(), _wished_position(), _orig_position(), _base_position(), _surf(
 				0), _top_buffer(0), _bottom_buffer(0), _left_buffer(0), _right_buffer(
-				0), _icon(0), _title(0), _orig_visual(0), _orig_depth(
+				0), _icon(0), _orig_visual(0), _orig_depth(
 				-1), _deco_visual(0), _deco_depth(-1), _orig(_id), _base(None), _deco(
 				None), _floating_area(0), _is_durty(true), _is_focused(false)
 
@@ -157,10 +157,6 @@ managed_window_t::~managed_window_t() {
 
 	if(_icon != 0) {
 		delete _icon;
-	}
-
-	if(_title != 0) {
-		delete _title;
 	}
 
 	if (_floating_area != 0) {

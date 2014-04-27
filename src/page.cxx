@@ -715,16 +715,13 @@ void page_t::process_event(XKeyEvent const & e) {
 				++i) {
 			switch ((*i)->get_type()) {
 			case MANAGED_NOTEBOOK:
-				printf("[%lu] notebook : %s\n", (*i)->orig(),
-						(*i)->title());
+				cout << "[" << (*i)->orig() << "] notebook : " << (*i)->title() << endl;
 				break;
 			case MANAGED_FLOATING:
-				printf("[%lu] floating : %s\n", (*i)->orig(),
-						(*i)->title());
+				cout << "[" << (*i)->orig() << "] floating : " << (*i)->title() << endl;
 				break;
 			case MANAGED_FULLSCREEN:
-				printf("[%lu] fullscreen : %s\n", (*i)->orig(),
-						(*i)->title());
+				cout << "[" << (*i)->orig() << "] fullscreen : " << (*i)->title() << endl;
 				break;
 			}
 		}
@@ -2261,7 +2258,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 
 		if (mw != 0) {
-			mw->mark_title_durty();
+			mw->update_title();
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				notebook_t * n = find_notebook_for(mw);
@@ -2894,17 +2891,12 @@ void page_t::set_default_pop(notebook_t * x) {
 
 void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
+	if (new_focus != 0)
+		cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
+
 	/** ignore focus if time is too old **/
 	if(tfocus <= _last_focus_time and tfocus != CurrentTime)
 		return;
-
-//	/**
-//	 * Try to focus unknown window, this can happen on alt-tab when
-//	 * selected window is destroyed
-//	 **/
-//	if(not has_key(managed_window, new_focus)) {
-//		return;
-//	}
 
 	if(tfocus != CurrentTime)
 		_last_focus_time = tfocus;
@@ -3425,10 +3417,10 @@ void page_t::logical_raise(client_base_t * c) {
 		client_base_t * transient_for = get_transient_for(c_next);
 		/* update the stacking of current window, back of list is on top */
 		if (transient_for != 0) {
-			transient_for->subclients.remove(c_next);
+			cleanup_transient_for_for_window(c_next);
 			transient_for->subclients.push_back(c_next);
 		} else {
-			root_subclients.remove(c_next);
+			cleanup_transient_for_for_window(c_next);
 			root_subclients.push_back(c_next);
 		}
 		c_next = transient_for;
@@ -3495,44 +3487,37 @@ void page_t::compute_client_size_with_constraint(Window c,
 }
 
 void page_t::print_tree_windows() {
-//	printf("print tree \n");
-//
-//	typedef pair<int, client_base_t *> item;
-//
-//	set<client_base_t *> raised_window;
-//	list<item> window_stack;
-//	stack<item > nxt;
-//
-//	nxt.push(item(0, 0));
-//
-//	while (!nxt.empty()) {
-//		item cur = nxt.top();
-//		nxt.pop();
-//
-//		if (!has_key(raised_window, cur.second)) {
-//			raised_window.insert(cur.second);
-//			window_stack.push_back(cur);
-//			if (has_key(transient_for_tree, cur.second)) {
-//				list<Window> childs = transient_for_tree[cur.second];
-//				for (list<Window>::reverse_iterator j = childs.rbegin();
-//						j != childs.rend(); ++j) {
-//					nxt.push(item(cur.first + 1, *j));
-//				}
-//			}
-//		}
-//	}
-//
-//	window_stack.pop_front();
-//
-//	for(list<item>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
-//		for(int k = 0; k < (*i).first; ++k) {
-//			printf("    ");
-//		}
-//
-//		Window w = (*i).second;
-//		//string s = get_window_string(w);
-//		printf("%d %lu %s\n", i->first, i->second, "none");
-//	}
+	printf("print tree \n");
+
+	typedef pair<int, client_base_t *> item;
+
+	list<item> window_stack;
+	stack<item > nxt;
+
+	for (list<client_base_t *>::reverse_iterator j = root_subclients.rbegin();
+			j != root_subclients.rend(); ++j) {
+		nxt.push(item(0, *j));
+	}
+
+	while (!nxt.empty()) {
+		item cur = nxt.top();
+		nxt.pop();
+		window_stack.push_back(cur);
+		for (list<client_base_t *>::reverse_iterator j =
+				cur.second->subclients.rbegin();
+				j != cur.second->subclients.rend(); ++j) {
+			nxt.push(item(cur.first + 1, *j));
+		}
+	}
+
+	for(list<item>::iterator i = window_stack.begin(); i != window_stack.end(); ++i) {
+		for(int k = 0; k < (*i).first; ++k) {
+			printf("    ");
+		}
+
+		//string s = get_window_string(w);
+		printf("%d %lu %s\n", i->first, i->second->orig(), i->second->title().c_str());
+	}
 
 
 }
@@ -3540,7 +3525,9 @@ void page_t::print_tree_windows() {
 
 void page_t::bind_window(managed_window_t * mw) {
 	/* update database */
-	mw->set_managed_type(MANAGED_NOTEBOOK);
+
+	cout << "bind: " << mw->title() << endl;
+
 	insert_window_in_tree(mw, 0, true);
 	update_transient_for(mw);
 	safe_raise_window(mw);
@@ -3739,9 +3726,6 @@ void page_t::update_windows_stack() {
 			}
 		}
 	}
-
-	/* remove the None window */
-	window_stack.pop_front();
 
 	list<client_base_t *> tmp;
 
@@ -4001,7 +3985,22 @@ void  page_t::destroy_viewport(viewport_t * v) {
  * If a window have to be managed, this function manage this window, if not
  * The function create unmanaged window.
  **/
-bool page_t::onmap(Window w) {
+void page_t::onmap(Window w) {
+
+	cout << "enter onmap (" << w << ")" << endl;
+
+	/** ignore page windows **/
+	if(w == rpage->id())
+		return;
+	if(w == pfm->id())
+		return;
+	if(w == pn0->id())
+		return;
+	if(w == ps->id())
+		return;
+	if(w == pat->id())
+		return;
+
 
 	/**
 	 * XSync here is mandatory.
@@ -4017,6 +4016,7 @@ bool page_t::onmap(Window w) {
 	 * managed this window and the window have not the right default size.
 	 *
 	 **/
+	cnx->grab();
 	XSync(cnx->dpy, False);
 
 	client_base_t * c = find_client_with(w);
@@ -4047,27 +4047,26 @@ bool page_t::onmap(Window w) {
 				}
 			}
 
+
+			string xn = cnx->get_atom_name(type);
+			cout << "Window type = " << xn << endl;
+
 			if (!c->wa.override_redirect) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 					create_managed_window(c, type);
-					return true;
 				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 					create_unmanaged_window(c, type);
 					update_allocation();
 				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 					create_managed_window(c, type);
-					return true;
 				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
 					create_managed_window(c, type);
-					return true;
 				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
 					create_managed_window(c, type);
-					return true;
 				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
 					create_unmanaged_window(c, type);
 				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
 					create_managed_window(c, type);
-					return true;
 				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
 					create_unmanaged_window(c, type);
 				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
@@ -4084,7 +4083,6 @@ bool page_t::onmap(Window w) {
 					create_unmanaged_window(c, type);
 				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 					create_managed_window(c, type);
-					return true;
 				}
 			} else {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
@@ -4121,8 +4119,6 @@ bool page_t::onmap(Window w) {
 				}
 			}
 
-			return false;
-
 		} else {
 			delete c;
 		}
@@ -4132,7 +4128,10 @@ bool page_t::onmap(Window w) {
 		update_windows_stack();
 	}
 
-	return false;
+	cnx->ungrab();
+
+	cout << "exit onmap (" << w << ")" << endl;
+
 }
 
 
@@ -4144,9 +4143,9 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 	managed_window_t * mw = manage(type, c);
 
 	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-			|| type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			&& get_transient_for(mw) == None
-			&& mw->has_motif_border()) {
+			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+			and get_transient_for(mw) == 0
+			and mw->has_motif_border()) {
 
 		bind_window(mw);
 
@@ -4154,13 +4153,11 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		fullscreen(mw);
 	} else {
 		mw->normalize();
-
+		mw->reconfigure();
 		Time time = 0;
 		if(get_safe_net_wm_user_time(mw, time)) {
 			set_focus(mw, time);
 		}
-
-		mw->reconfigure();
 	}
 
 	update_transient_for(mw);
@@ -4175,6 +4172,7 @@ void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
 	add_client(uw);
 	uw->map();
 	update_transient_for(uw);
+	safe_raise_window(uw);
 	update_windows_stack();
 }
 
@@ -4219,6 +4217,8 @@ Atom page_t::find_net_wm_type(client_base_t * c) {
 			 **/
 			net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 		}
+	} else {
+		net_wm_window_type = *(c->_net_wm_window_type);
 	}
 
 	/* always fall back to normal */
@@ -4290,8 +4290,8 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 					if(*xtime != 0) {
 						time = *(xtime);
 						has_time = true;
-						delete xtime;
 					}
+					delete xtime;
 				}
 			}
 		}

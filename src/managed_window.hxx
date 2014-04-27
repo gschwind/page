@@ -57,8 +57,7 @@ private:
 
 	// icon cache
 	mutable window_icon_handler_t * _icon;
-	// window title cache
-	mutable string * _title;
+
 
 	/* private to avoid copy */
 	managed_window_t(managed_window_t const &);
@@ -222,32 +221,6 @@ public:
 
 		mark_durty();
 		expose();
-	}
-
-	char const * title() const {
-		if (_title == 0) {
-			string name;
-			if (_net_wm_name != 0) {
-				_title = new string(*(_net_wm_name));
-			} else if (wm_name != 0) {
-				_title = new string(*(wm_name));
-			} else {
-				std::stringstream s(
-						std::stringstream::in | std::stringstream::out);
-				s << "#" << (_orig) << " (noname)";
-				_title = new string(s.str());
-			}
-		}
-
-		return _title->c_str();
-	}
-
-	void mark_title_durty() {
-		mark_durty();
-		if(_title != 0) {
-			delete _title;
-			_title = 0;
-		}
 	}
 
 	rectangle const & base_position() const {
