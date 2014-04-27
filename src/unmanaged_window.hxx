@@ -50,6 +50,10 @@ public:
 		return w == _id;
 	}
 
+	void map() {
+		_cnx->map_window(_id);
+	}
+
 
 };
 

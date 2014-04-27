@@ -4173,6 +4173,7 @@ void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
 	update_transient_for(c);
 	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
 	add_client(uw);
+	uw->map();
 	update_transient_for(uw);
 	update_windows_stack();
 }
