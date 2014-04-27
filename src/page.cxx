@@ -157,8 +157,9 @@ page_t::~page_t() {
 
 	map<Window, client_base_t *>::iterator i = clients.begin();
 	while(i != clients.end()) {
-		XMapWindow(cnx->dpy, i->second->orig());
+		Window w = i->second->orig();
 		delete i->second;
+		XMapWindow(cnx->dpy, i->second->orig());
 		++i;
 	}
 
@@ -491,6 +492,10 @@ managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 	managed_window_t * mw = new managed_window_t(net_wm_type, c, theme);
 	add_client(mw);
 
+	update_transient_for(mw);
+	update_client_list();
+	update_windows_stack();
+
 	return mw;
 
 }
@@ -499,7 +504,7 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	//printf("unmanage %lu\n", mw->orig());
 
-	if (has_key(fullscreen_client_to_viewport, mw)) {
+	if (has_key(fullscreen_client_to_viewport, mw->orig())) {
 		unfullscreen(mw);
 	}
 
@@ -519,7 +524,7 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	/** try to remove it from tree **/
 	remove_window_from_tree(mw);
-	fullscreen_client_to_viewport.erase(mw);
+	fullscreen_client_to_viewport.erase(mw->orig());
 }
 
 void page_t::scan() {
@@ -671,6 +676,10 @@ void page_t::update_client_list() {
 }
 
 void page_t::process_event(XKeyEvent const & e) {
+
+	if(_last_focus_time > e.time) {
+		_last_focus_time = e.time;
+	}
 
 	if (e.type == KeyPress) {
 		fprintf(stderr, "KeyPress key = %d, mod4 = %s, mod1 = %s\n", e.keycode,
@@ -839,6 +848,11 @@ void page_t::process_event(XKeyEvent const & e) {
 
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
+
+	if(_last_focus_time > e.time) {
+		_last_focus_time = e.time;
+	}
+
 	//fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	managed_window_t * mw = find_managed_window_with(e.window);
@@ -1142,6 +1156,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 void page_t::process_event_release(XButtonEvent const & e) {
 	//fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
+
+	if(_last_focus_time > e.time) {
+		_last_focus_time = e.time;
+	}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -1483,6 +1501,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 }
 
 void page_t::process_event(XMotionEvent const & e) {
+
+	if(_last_focus_time > e.time) {
+		_last_focus_time = e.time;
+	}
 
 	XEvent ev;
 	rectangle old_area;
@@ -2552,10 +2574,10 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 
 	mw->set_managed_type(MANAGED_FULLSCREEN);
 	data.viewport->fullscreen_client = mw;
-	fullscreen_client_to_viewport[mw] = data;
+	fullscreen_client_to_viewport[mw->orig()] = data;
 	mw->set_notebook_wished_position(data.viewport->raw_aera);
 	mw->reconfigure();
-	//printf("FULLSCREEN TO %dx%d+%d+%d\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
+	printf("FULLSCREEN TO %fx%f+%f+%f\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
 	mw->normalize();
 	update_transient_for(mw);
 	safe_raise_window(mw);
@@ -2564,10 +2586,10 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 void page_t::unfullscreen(managed_window_t * mw) {
 	/* WARNING: Call order is important, change it with caution */
 	mw->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
-	if(!has_key(fullscreen_client_to_viewport, mw))
+	if(!has_key(fullscreen_client_to_viewport, mw->orig()))
 		return;
 
-	fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
+	fullscreen_data_t & data = fullscreen_client_to_viewport[mw->orig()];
 
 	viewport_t * v = data.viewport;
 
@@ -2585,7 +2607,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 	}
 
 	v->fullscreen_client = 0;
-	fullscreen_client_to_viewport.erase(mw);
+	fullscreen_client_to_viewport.erase(mw->orig());
 	v->_is_visible = true;
 
 	/* map all notebook window */
@@ -3069,9 +3091,10 @@ void page_t::notebook_close(notebook_t * src) {
 	}
 
 	/* if full want revert to this notebook, update it */
-	for(map<managed_window_t *, fullscreen_data_t>::iterator i = fullscreen_client_to_viewport.begin();
+	for (map<Window, fullscreen_data_t>::iterator i =
+			fullscreen_client_to_viewport.begin();
 			i != fullscreen_client_to_viewport.end(); ++i) {
-		if(i->second.revert_notebook == src) {
+		if (i->second.revert_notebook == src) {
 			i->second.revert_notebook = default_window_pop;
 		}
 	}
@@ -3242,7 +3265,7 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 	}
 
 	string name = cnx->get_atom_name(state_properties);
-	//printf("_NET_WM_STATE %s %s from %lu\n", action, name.c_str(), c);
+	printf("_NET_WM_STATE %s %s from %lu\n", action, name.c_str(), c);
 
 	managed_window_t * mw = find_managed_window_with(c);
 	if(mw == 0)
@@ -4141,28 +4164,40 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 
 	/* manage will destroy c */
 	managed_window_t * mw = manage(type, c);
+	c = mw;
 
-	if((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+	if(mw->_net_wm_state != 0) {
+
+		cout << "_NET_WM_STATE = ";
+		for (list<Atom>::iterator i = mw->_net_wm_state->begin();
+				i != mw->_net_wm_state->end(); ++i) {
+			string x = cnx->get_atom_name(*i);
+			cout << x << " ";
+		}
+
+		cout << endl;
+	}
+
+
+
+	if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			and get_transient_for(mw) == 0
-			and mw->has_motif_border()) {
+			and get_transient_for(mw) == 0 and mw->has_motif_border()) {
 
 		bind_window(mw);
 
-	} else if (mw->is_fullscreen()) {
-		fullscreen(mw);
 	} else {
 		mw->normalize();
 		mw->reconfigure();
 		Time time = 0;
-		if(get_safe_net_wm_user_time(mw, time)) {
+		if (get_safe_net_wm_user_time(mw, time)) {
 			set_focus(mw, time);
 		}
 	}
 
-	update_transient_for(mw);
-	update_client_list();
-	update_windows_stack();
+	if (mw->is_fullscreen()) {
+		fullscreen(mw);
+	}
 
 }
 
@@ -4277,22 +4312,21 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 	bool has_time = false;
 	Window time_window;
 
-	if (c != 0) {
-		if (c->_net_wm_user_time != 0) {
-			time = *(c->_net_wm_user_time);
-			has_time = true;
-		} else {
-			/* if no time window try to go on referenced window */
-			if (c->_net_wm_user_time_window != 0) {
-				/* do not use client because referenced window may not be managed ? */
-				Time * xtime = cnx->read_net_wm_user_time(*(c->_net_wm_user_time_window));
-				if(xtime != 0) {
-					if(*xtime != 0) {
-						time = *(xtime);
-						has_time = true;
-					}
-					delete xtime;
+	if (c->_net_wm_user_time != 0) {
+		time = *(c->_net_wm_user_time);
+		has_time = true;
+	} else {
+		/* if no time window try to go on referenced window */
+		if (c->_net_wm_user_time_window != 0) {
+
+			Time * xtime = cnx->read_net_wm_user_time(
+					*(c->_net_wm_user_time_window));
+			if (xtime != 0) {
+				if (*xtime != 0) {
+					time = *(xtime);
+					has_time = true;
 				}
+				delete xtime;
 			}
 		}
 	}
@@ -4438,12 +4472,12 @@ managed_window_t * page_t::find_managed_window_with(Window w) {
 
 void page_t::destroy_client(client_base_t * c) {
 
-	cleanup_transient_for_for_window(c);
-
 	if(typeid(*c) == typeid(managed_window_t)) {
 		managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 		unmanage(mw);
 	}
+
+	cleanup_transient_for_for_window(c);
 
 	update_client_list();
 	rpage->mark_durty();

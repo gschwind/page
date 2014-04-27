@@ -203,7 +203,6 @@ public:
 	};
 
 	struct fullscreen_data_t {
-		managed_window_t * window;
 		viewport_t * viewport;
 		managed_window_type_e revert_type;
 		notebook_t * revert_notebook;
@@ -277,7 +276,7 @@ public:
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
+	map<Window, fullscreen_data_t> fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
 
