@@ -1,6 +1,7 @@
 bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_quit test_region list_visual page_internal_compositor test_grab_key
 
 AM_CXXFLAGS =  \
+	-std=c++11 \
 	-rdynamic \
 	$(X11_CFLAGS) \
 	$(XCB_CFLAGS) \
