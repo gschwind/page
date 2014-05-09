@@ -740,6 +740,9 @@ void compositor_t::render_auto() {
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
+	if(_back_buffer == 0)
+		return;
+
 	cairo_t * cr = cairo_create(_back_buffer);
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
@@ -1269,6 +1272,12 @@ void compositor_t::update_layout() {
 
 	destroy_cairo();
 	init_cairo();
+
+	for (map<Window, composite_surface_t *>::iterator i =
+			window_to_composite_surface.begin();
+			i != window_to_composite_surface.end(); ++i) {
+		i->second->onmap();
+	}
 
 	_desktop_region.clear();
 

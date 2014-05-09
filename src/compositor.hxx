@@ -17,6 +17,7 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 
+#include "smart_pointer.hxx"
 #include "utils.hxx"
 #include "xconnection.hxx"
 #include "region.hxx"
