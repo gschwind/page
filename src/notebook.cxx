@@ -21,6 +21,8 @@ notebook_t::~notebook_t() {
 }
 
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
+	_childs.push_back(x);
+	x->set_parent(this);
 	_clients.push_front(x);
 	_client_map.insert(x);
 
@@ -85,6 +87,8 @@ void notebook_t::remove_client(managed_window_t * x) {
 	}
 
 	// cleanup
+	_childs.remove(x);
+	x->set_parent(nullptr);
 	_clients.remove(x);
 	_client_map.erase(x);
 }

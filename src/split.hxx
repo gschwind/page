@@ -22,8 +22,6 @@ using namespace std;
 
 namespace page {
 
-
-
 class split_t : public split_base_t, public tree_renderable_t {
 
 	theme_t const * _theme;
@@ -37,6 +35,8 @@ class split_t : public split_base_t, public tree_renderable_t {
 	rectangle bpack0;
 	rectangle bpack1;
 
+	list<tree_t *> _children;
+
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
 
@@ -47,89 +47,28 @@ class split_t : public split_base_t, public tree_renderable_t {
 public:
 	split_t(split_type_e type, theme_t const * theme, tree_t * p0 = 0, tree_t * p1 = 0);
 	~split_t();
-
 	void replace(tree_t * src, tree_t * by);
-
 	void compute_split_bar_area(rectangle & area, double split) const;
-
 	rectangle get_absolute_extend();
 	void set_allocation(rectangle const & area);
-
 	void set_split(double split);
 	rectangle const & get_split_bar_area() const;
-
 	tree_t * get_pack0();
 	tree_t * get_pack1();
 	split_type_e get_split_type();
-
 	double get_split_ratio();
-
 	void set_theme(theme_t const * theme);
-
-	virtual void get_childs(vector<tree_t *> & lst);
-
 	void set_pack0(tree_t * x);
 	void set_pack1(tree_t * x);
-
-
 	/* compute the slider area */
-	void compute_split_location(double split, double & x, double & y) const {
-
-		rectangle const & alloc = allocation();
-
-		if (_split_type == VERTICAL_SPLIT) {
-
-
-			int w = alloc.w - 2 * _theme->split_margin.left
-					- 2 * _theme->split_margin.right - _theme->split_width;
-			int w0 = floor(w * split + 0.5);
-
-			x = alloc.x + _theme->split_margin.left + w0
-					+ _theme->split_margin.right;
-			y = alloc.y;
-
-		} else {
-
-			int h = alloc.h - 2 * _theme->split_margin.top
-					- 2 * _theme->split_margin.bottom - _theme->split_width;
-			int h0 = floor(h * split + 0.5);
-
-			x = alloc.x;
-			y = alloc.y + _theme->split_margin.top + h0
-					+ _theme->split_margin.bottom;
-		}
-	}
-
+	void compute_split_location(double split, double & x, double & y) const;
 	/* compute the slider area */
-	void compute_split_size(double split, double & w, double & h) const {
-		rectangle const & alloc = allocation();
-		if (_split_type == VERTICAL_SPLIT) {
-			w = _theme->split_width;
-			h = alloc.h;
-		} else {
-			w = alloc.w;
-			h = _theme->split_width;
-		}
-	}
-
-	double split() const {
-		return _split;
-	}
-
-	split_type_e type() const {
-		return _split_type;
-	}
-
-	virtual void render(cairo_t * cr, rectangle const & area) const {
-		_theme->render_split(cr, this, area);
-	}
-
-	virtual vector<tree_t *> get_direct_childs() const {
-		vector<tree_t *> ret;
-		ret.push_back(_pack0);
-		ret.push_back(_pack1);
-		return ret;
-	}
+	void compute_split_size(double split, double & w, double & h) const;
+	double split() const;
+	split_type_e type() const;
+	void render(cairo_t * cr, rectangle const & area) const;
+	list<tree_t *> childs() const;
+	void raise_child(tree_t * t);
 
 };
 

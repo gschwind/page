@@ -12,9 +12,12 @@
 
 #include "tree.hxx"
 #include "tree_renderable.hxx"
+#include "viewport_base.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
 #include "theme.hxx"
+#include "unmanaged_window.hxx"
+
 
 using namespace std;
 
@@ -34,6 +37,8 @@ public:
 	rectangle effective_aera;
 	tree_t * _subtree;
 	managed_window_t * fullscreen_client;
+
+	list<unmanaged_window_t *> docks;
 
 	bool _is_visible;
 
@@ -69,16 +74,32 @@ public:
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
 	void notebook_close(notebook_t * src);
 
-	virtual void get_childs(vector<tree_t *> & lst);
-
 	virtual void render(cairo_t * cr, rectangle const & area) const {
 
 	}
 
-	virtual vector<tree_t *> get_direct_childs() const {
-		vector<tree_t *> ret;
-		ret.push_back(_subtree);
+	virtual list<tree_t *> childs() const {
+		list<tree_t *> ret;
+
+		if (_subtree != nullptr) {
+			ret.push_back(_subtree);
+		}
+
+		for(auto x: docks) {
+			ret.push_back(x);
+		}
+
+		if (fullscreen_client != nullptr) {
+			ret.push_back(fullscreen_client);
+		}
+
 		return ret;
+	}
+
+	void raise_child(tree_t * t) {
+		if(_parent != nullptr) {
+			_parent->raise_child(this);
+		}
 	}
 
 };

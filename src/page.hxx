@@ -78,19 +78,9 @@ namespace page {
 
 typedef std::list<rectangle> box_list_t;
 
-inline void print_buffer__(const char * buf, int size) {
-	for (int i = 0; i < size; ++i) {
-		printf("%02x", buf[i]);
-	}
-	printf("\n");
-}
-
-class page_t {
-
+class page_t : public tree_t {
 
 public:
-
-	typedef std::set<notebook_t *> notebook_set_t;
 
 	enum select_e {
 		SELECT_NONE,
@@ -259,10 +249,6 @@ public:
 	map<Window, client_base_t *> clients;
 	list<client_base_t *> root_subclients;
 
-	/* default cursor */
-//	Cursor cursor;
-//	Cursor cursor_fleur;
-
 	Cursor default_cursor;
 
 	bool running;
@@ -412,11 +398,11 @@ public:
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void update_transient_for(client_base_t * c);
+
+
 	client_base_t * get_transient_for(client_base_t * c);
 	void logical_raise(client_base_t * c);
 	void cleanup_transient_for_for_window(client_base_t * c);
-
-
 
 	void safe_raise_window(client_base_t * c);
 	void clear_transient_for_sibbling_child(Window w);
@@ -441,8 +427,8 @@ public:
 	notebook_t * get_another_notebook(tree_t * base = 0, tree_t * nbk = 0);
 
 
-	void get_notebooks(vector<notebook_t *> & l);
-	void get_splits(vector<split_t *> & l);
+	list<notebook_t *> get_notebooks(tree_t * base = nullptr);
+	list<split_t *>  get_splits();
 
 	notebook_t * find_notebook_for(managed_window_t * mw);
 
@@ -485,26 +471,15 @@ public:
 		return list_values(viewport_outputs);
 	}
 
-	vector<tree_t *> childs() {
-		vector<tree_t *> l;
-		for (map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
-				i != viewport_outputs.end(); ++i) {
-			i->second->get_childs(l);
-		}
-		return l;
-	}
-
 	void update_page_areas() {
 
 		if (page_areas != 0) {
 			delete page_areas;
 		}
 
-		vector<tree_t *> xl = childs();
-		list<tree_t const *> l(xl.begin(), xl.end());
-		page_areas = theme->compute_page_areas(
-				list<tree_t const *>(xl.begin(), xl.end()));
-
+		list<tree_t *> l = get_all_childs();
+		list<tree_t const *> lc(l.begin(), l.end());
+		page_areas = theme->compute_page_areas(lc);
 	}
 
 	static managed_window_t * _upgrade(managed_window_base_t const * x) {
@@ -569,7 +544,17 @@ public:
 	}
 
 	void remove_client(client_base_t * c) {
+
 		clients.erase(c->_id);
+		root_subclients.remove(c);
+
+		list<tree_t *> subclient = c->childs();
+		for(auto i: subclient) {
+			client_base_t * c = dynamic_cast<client_base_t *>(i);
+			if(c != nullptr) {
+				update_transient_for(c);
+			}
+		}
 		delete c;
 	}
 
@@ -581,6 +566,41 @@ public:
 			clients.erase(i);
 		}
 		clients[c->_id] = c;
+	}
+
+
+	list<tree_t *> childs() const {
+		list<tree_t *> ret;
+		for (auto &i : viewport_outputs) {
+			if (i.second != nullptr) {
+				ret.push_back(i.second);
+			}
+		}
+
+		for(auto x: root_subclients) {
+			ret.push_back(x);
+		}
+
+		return ret;
+	}
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "R #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
+	virtual void replace(tree_t * src, tree_t * by) {
+		printf("Unexpectected use of page::replace function\n");
+	}
+
+	virtual void raise_child(tree_t * t) {
+		/* do nothing, not needed at this level */
+		client_base_t * x = dynamic_cast<client_base_t *>(t);
+		if(has_key(root_subclients, x)) {
+			root_subclients.remove(x);
+			root_subclients.push_back(x);
+		}
 	}
 
 };

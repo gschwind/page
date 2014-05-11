@@ -78,11 +78,4 @@ region viewport_t::get_area() {
 	}
 }
 
-void viewport_t::get_childs(vector<tree_t *> & lst) {
-	if(_subtree != 0) {
-		_subtree->get_childs(lst);
-		lst.push_back(_subtree);
-	}
-}
-
 }

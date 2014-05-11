@@ -10,6 +10,7 @@
 #ifndef RENDER_CONTEXT_HXX_
 #define RENDER_CONTEXT_HXX_
 
+#include <memory>
 #include <list>
 #include <cassert>
 
@@ -91,7 +92,7 @@ class compositor_t {
 	 **/
 	map<Window, composite_window_t *> window_data;
 
-	map<Window, composite_surface_t *> window_to_composite_surface;
+	map<Window, p_composite_surface_t> window_to_composite_surface;
 
 	map<Window, Damage> damage_map;
 
@@ -192,18 +193,17 @@ public:
 		return render_mode;
 	}
 
-	composite_surface_t * create_composite_surface(Window w,
+	p_composite_surface_t create_composite_surface(Window w,
 			XWindowAttributes const & wa) {
 		assert(w != None);
 		assert(wa.c_class == InputOutput);
 
-		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(w);
+		auto i = window_to_composite_surface.find(w);
 		if (i != window_to_composite_surface.end()) {
-			i->second->incr_ref();
 			return i->second;
 		} else {
 			//printf("number of surfaces = %lu\n", window_to_composite_surface.size());
-			composite_surface_t * x = new composite_surface_t(_dpy, w, wa);
+			p_composite_surface_t x(new composite_surface_t(_dpy, w, wa));
 			window_to_composite_surface[w] = x;
 			return x;
 		}
@@ -211,15 +211,13 @@ public:
 
 
 	void destroy_composite_surface(Window w) {
-		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(w);
-		if(i != window_to_composite_surface.end()) {
-			i->second->decr_ref();
-			if(i->second->nref() == 0) {
-				printf("number of surfaces = %lu\n", window_to_composite_surface.size());
-				composite_surface_t * x = i->second;
-				window_to_composite_surface.erase(i);
-				delete x;
-			}
+		auto i = window_to_composite_surface.find(w);
+		if (i != window_to_composite_surface.end()) {
+			printf("number of surfaces = %lu\n",
+					window_to_composite_surface.size());
+			cout << "try to destroy " << i->first << " with "
+					<< i->second.use_count() << endl;
+			window_to_composite_surface.erase(i);
 		}
 	}
 
@@ -264,6 +262,15 @@ public:
 
 	void add_render(renderable_t * r) {
 		_graph_scene.push_back(r);
+	}
+
+	void clear() {
+		for(auto &i : window_data) {
+			delete i.second;
+		}
+
+		window_to_composite_surface.clear();
+
 	}
 
 

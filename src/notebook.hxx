@@ -29,6 +29,9 @@ class notebook_t : public notebook_base_t, public tree_renderable_t {
 
 	bool _is_default;
 
+	/* child stack order */
+	list<tree_t *> _childs;
+
 public:
 
 	enum select_e {
@@ -39,7 +42,6 @@ public:
 		SELECT_LEFT,
 		SELECT_RIGHT
 	};
-
 	// list of client to maintain tab order
 	list<managed_window_t *> _clients;
 	// list of selected to have smart unselect (when window is closed we
@@ -157,6 +159,19 @@ public:
 	virtual vector<tree_t *> get_direct_childs() const {
 		vector<tree_t *> ret;
 		return ret;
+	}
+
+	virtual list<tree_t *> childs() const {
+		list<tree_t *> ret(_childs.begin(), _childs.end());
+		return ret;
+	}
+
+	virtual void raise_child(tree_t * t) {
+		managed_window_t * _t = dynamic_cast<managed_window_t *>(t);
+		assert(_t != nullptr);
+		assert(has_key(_clients, _t));
+		_clients.remove(_t);
+		_clients.push_back(_t);
 	}
 
 };

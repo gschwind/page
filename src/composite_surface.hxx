@@ -11,6 +11,8 @@
 #define COMPOSITE_SURFACE_HXX_
 
 #include <X11/Xlib.h>
+
+#include <memory>
 #include <set>
 #include <map>
 
@@ -23,9 +25,9 @@
 
 namespace page {
 
+
 class composite_surface_t {
 
-	int _nref;
 	Display * _dpy;
 	Visual * _vis;
 	Window _window_id;
@@ -39,7 +41,6 @@ public:
 		_window_id = w;
 		_dpy = dpy;
 		_vis = wa.visual;
-		_nref = 1;
 		_width = wa.width;
 		_height = wa.height;
 		_surf = 0;
@@ -82,18 +83,6 @@ public:
 		}
 	}
 
-	void incr_ref() {
-		++_nref;
-	}
-
-	void decr_ref() {
-		--_nref;
-	}
-
-	int nref() {
-		return _nref;
-	}
-
 	Window wid() {
 		return _window_id;
 	}
@@ -109,6 +98,7 @@ public:
 
 };
 
+typedef std::shared_ptr<composite_surface_t> p_composite_surface_t;
 
 
 }

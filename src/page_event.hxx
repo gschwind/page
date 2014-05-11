@@ -13,6 +13,9 @@
 
 #include "box.hxx"
 #include "tree.hxx"
+#include "notebook_base.hxx"
+#include "managed_window_base.hxx"
+#include "split_base.hxx"
 
 using namespace std;
 

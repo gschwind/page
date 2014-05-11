@@ -97,9 +97,13 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	if (_pack0 == src) {
 		//printf("replace %p by %p\n", src, by);
 		set_pack0(by);
+		_children.remove(src);
+		_children.push_back(by);
 	} else if (_pack1 == src) {
 		//printf("replace %p by %p\n", src, by);
 		set_pack1(by);
+		_children.remove(src);
+		_children.push_back(by);
 	} else {
 		throw std::runtime_error("split: bad child replacement!");
 	}
@@ -107,32 +111,9 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	update_allocation();
 }
 
-//tab_window_set_t split_t::get_windows() {
-//	tab_window_set_t list;
-//	if (_pack0) {
-//		tab_window_set_t pack0_list = _pack0->get_windows();
-//		list.insert(pack0_list.begin(), pack0_list.end());
-//	}
-//	if (_pack1) {
-//		tab_window_set_t pack1_list = _pack0->get_windows();
-//		list.insert(pack1_list.begin(), pack1_list.end());
-//	}
-//	return list;
-//}
-
 rectangle split_t::get_absolute_extend() {
 	return allocation();
 }
-
-//region_t<int> split_t::get_area() {
-//	region_t<int> area;
-//	if (_pack0)
-//		area = area + _pack0->get_area();
-//	if (_pack1)
-//		area = area + _pack1->get_area();
-//	area = area + _split_bar_area;
-//	return area;
-//}
 
 void split_t::set_split(double split) {
 	if(split < 0.05)
@@ -212,20 +193,6 @@ void split_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-void split_t::get_childs(vector<tree_t *> & lst) {
-
-	if(_pack0 != 0) {
-		_pack0->get_childs(lst);
-		lst.push_back(_pack0);
-	}
-
-	if(_pack1 != 0) {
-		_pack1->get_childs(lst);
-		lst.push_back(_pack1);
-	}
-
-}
-
 void split_t::set_pack0(tree_t * x) {
 	_pack0 = x;
 	x->set_parent(this);
@@ -236,6 +203,85 @@ void split_t::set_pack1(tree_t * x) {
 	_pack1 = x;
 	x->set_parent(this);
 	update_allocation();
+}
+
+/* compute the slider area */
+void split_t::compute_split_location(double split, double & x, double & y) const {
+
+	rectangle const & alloc = allocation();
+
+	if (_split_type == VERTICAL_SPLIT) {
+
+
+		int w = alloc.w - 2 * _theme->split_margin.left
+				- 2 * _theme->split_margin.right - _theme->split_width;
+		int w0 = floor(w * split + 0.5);
+
+		x = alloc.x + _theme->split_margin.left + w0
+				+ _theme->split_margin.right;
+		y = alloc.y;
+
+	} else {
+
+		int h = alloc.h - 2 * _theme->split_margin.top
+				- 2 * _theme->split_margin.bottom - _theme->split_width;
+		int h0 = floor(h * split + 0.5);
+
+		x = alloc.x;
+		y = alloc.y + _theme->split_margin.top + h0
+				+ _theme->split_margin.bottom;
+	}
+}
+
+/* compute the slider area */
+void split_t::compute_split_size(double split, double & w, double & h) const {
+	rectangle const & alloc = allocation();
+	if (_split_type == VERTICAL_SPLIT) {
+		w = _theme->split_width;
+		h = alloc.h;
+	} else {
+		w = alloc.w;
+		h = _theme->split_width;
+	}
+}
+
+double split_t::split() const {
+	return _split;
+}
+
+split_type_e split_t::type() const {
+	return _split_type;
+}
+
+void split_t::render(cairo_t * cr, rectangle const & area) const {
+	_theme->render_split(cr, this, area);
+}
+
+list<tree_t *> split_t::childs() const {
+	list<tree_t *> ret;
+
+	if (_pack0 != nullptr) {
+		ret.push_back(_pack0);
+	}
+
+	if (_pack1 != nullptr) {
+		ret.push_back(_pack1);
+	}
+
+	return ret;
+}
+
+void split_t::raise_child(tree_t * t) {
+
+	if(has_key(_children, t)) {
+		_children.remove(t);
+		_children.push_back(t);
+	}
+
+	if(_parent != nullptr) {
+		_parent->raise_child(this);
+	}
+
 }
 
 }

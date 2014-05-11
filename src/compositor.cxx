@@ -847,19 +847,16 @@ void compositor_t::render_auto() {
 	}
 
 	if (!slow_region.empty()) {
-	{
 		//region_t<int> slow_region = _desktop_region;
 		CHECK_CAIRO(cairo_reset_clip(cr));
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-		region::const_iterator i = slow_region.begin();
-		while (i != slow_region.end()) {
-			slow_region_surf_monitor += (*i).w * (*i).h;
-			repair_buffer(visible, cr, *i);
+
+		for (auto & i : slow_region) {
+			slow_region_surf_monitor += i.w * i.h;
+			repair_buffer(visible, cr, i);
 			cairo_surface_flush(_back_buffer);
-			_draw_crossed_box(cr, *i, 1.0, 0.0, 0.0);
-			++i;
+			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
 		}
-	}
 	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
@@ -878,13 +875,11 @@ void compositor_t::render_auto() {
 
 void compositor_t::repair_buffer(std::list<composite_window_t *> & visible,
 		cairo_t * cr, rectangle const & area) {
-	for (list<composite_window_t *>::iterator i = visible.begin();
-			i != visible.end(); ++i) {
-		composite_window_t * r = *i;
+	for (auto i : visible) {
+		composite_window_t * r = i;
 		region const & barea = r->get_region();
-		for (region::const_iterator j = barea.begin(); j != barea.end();
-				++j) {
-			rectangle clip = area & (*j);
+		for (auto & j : barea) {
+			rectangle clip = area & (j);
 			if (!clip.is_null()) {
 				r->draw_to(cr, clip);
 			}
@@ -986,7 +981,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 
 			_pending_damage += rectangle(wa.x, wa.y, wa.width, wa.height);
 
-			composite_surface_t * x = create_composite_surface(e.window, wa);
+			p_composite_surface_t x = create_composite_surface(e.window, wa);
 			if(has_key(window_data, e.window)) {
 				delete window_data[e.window];
 				window_data.erase(e.window);
@@ -996,36 +991,33 @@ void compositor_t::process_event(XMapEvent const & e) {
 			w->fade_start.get_time();
 			w->fade_mode = composite_window_t::FADE_IN;
 			repair_area_region(w->get_region());
-
 		}
-
 	}
 
-	map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(e.window);
+	auto i = window_to_composite_surface.find(e.window);
 	if(i != window_to_composite_surface.end()) {
 		i->second->onmap();
 	}
 }
 
 void compositor_t::process_event(XUnmapEvent const & e) {
-	if(e.send_event == True)
+	if (e.send_event == True)
 		return;
-	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
+	auto x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		x->second->fade_start.get_time();
 		x->second->fade_mode = composite_window_t::FADE_OUT;
 		repair_area_region(x->second->get_region());
 	}
-
 	destroy_damage(e.window);
 	destroy_composite_surface(e.window);
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
-	if(e.send_event == True)
+	if (e.send_event == True)
 		return;
 
-	map<Window, composite_window_t *>::iterator x = window_data.find(e.window);
+	auto x = window_data.find(e.window);
 	if (x != window_data.end()) {
 		if (x->second->fade_mode == composite_window_t::FADE_NONE) {
 			x->second->fade_start.get_time();
@@ -1033,7 +1025,6 @@ void compositor_t::process_event(XDestroyWindowEvent const & e) {
 			repair_area_region(x->second->get_region());
 		}
 	}
-
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
@@ -1045,8 +1036,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 
 		stack_window_update(e.window, e.above);
 
-		map<Window, composite_window_t *>::iterator x = window_data.find(
-				e.window);
+		auto x = window_data.find(e.window);
 		if (x != window_data.end()) {
 			region r = x->second->position();
 			x->second->update_position(e);
@@ -1054,8 +1044,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 			repair_area_region(r);
 		}
 
-		map<Window, composite_surface_t *>::iterator i = window_to_composite_surface.find(e.window);
-		if(i != window_to_composite_surface.end()) {
+		auto i = window_to_composite_surface.find(e.window);
+		if (i != window_to_composite_surface.end()) {
 			i->second->onresize(e.width, e.height);
 		}
 
@@ -1180,7 +1170,7 @@ void compositor_t::scan() {
 						_pending_damage += rectangle(wa.x, wa.y, wa.width,
 								wa.height);
 
-						composite_surface_t * x = create_composite_surface(
+						p_composite_surface_t x = create_composite_surface(
 								wins[i], wa);
 						if (has_key(window_data, wins[i])) {
 							delete window_data[wins[i]];
@@ -1193,8 +1183,7 @@ void compositor_t::scan() {
 						w->fade_mode = composite_window_t::FADE_IN;
 						repair_area_region(w->get_region());
 
-						map<Window, composite_surface_t *>::iterator k =
-								window_to_composite_surface.find(wins[i]);
+						auto k = window_to_composite_surface.find(wins[i]);
 						if (k != window_to_composite_surface.end()) {
 							k->second->onmap();
 						}
@@ -1273,12 +1262,6 @@ void compositor_t::update_layout() {
 	destroy_cairo();
 	init_cairo();
 
-	for (map<Window, composite_surface_t *>::iterator i =
-			window_to_composite_surface.begin();
-			i != window_to_composite_surface.end(); ++i) {
-		i->second->onmap();
-	}
-
 	_desktop_region.clear();
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_dpy,
@@ -1304,6 +1287,10 @@ void compositor_t::update_layout() {
 	}
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
+
+	clear();
+	scan();
+
 }
 
 
@@ -1321,8 +1308,7 @@ void compositor_t::stack_window_update(Window window, Window above) {
 		window_stack.push_front(window);
 	} else {
 
-		std::list<Window>::iterator x = find(window_stack.begin(),
-				window_stack.end(), above);
+		auto x = find(window_stack.begin(), window_stack.end(), above);
 
 		if (x == window_stack.end()) {
 			printf("Window not found : %lu for window %lu\n", above, window);

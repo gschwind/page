@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <iostream>
 
+#include <viewport_base.hxx>
+
 using namespace std;
 
 namespace page {

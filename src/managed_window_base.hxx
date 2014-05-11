@@ -42,6 +42,22 @@ struct managed_window_base_t : public client_base_t {
 	virtual cairo_t * cairo_right() const = 0;
 
 	virtual bool is_focused() const = 0;
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "M #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
+	virtual void replace(tree_t * src, tree_t * by) {
+		printf("Unexpected use of managed_window_base_t::replace\n");
+	}
+
+	virtual list<tree_t *> childs() const {
+		list<tree_t *> ret(_childen.begin(), _childen.end());
+		return ret;
+	}
+
 };
 
 }

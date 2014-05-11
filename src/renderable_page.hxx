@@ -71,20 +71,17 @@ public:
 
 	}
 
-	void repair_damaged(vector<tree_t *> tree) {
+	void repair_damaged(list<tree_t *> tree) {
 
 		cairo_t * cr = cairo_create(_back_surf);
 
-		for (region::iterator i = damaged.begin(); i != damaged.end();
-				++i) {
-			for (vector<tree_t *>::iterator j = tree.begin(); j != tree.end();
-					++j) {
-				tree_renderable_t * rtree =
-						dynamic_cast<tree_renderable_t *>(*j);
-				page_assert(rtree != 0);
-				rtree->render(cr, *i);
+		for (auto &i : damaged) {
+			for (auto &j : tree) {
+				tree_renderable_t * rtree = dynamic_cast<tree_renderable_t *>(j);
+				if (rtree != nullptr) {
+					rtree->render(cr, i);
+				}
 			}
-
 		}
 
 		cairo_destroy(cr);

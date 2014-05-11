@@ -486,6 +486,40 @@ inline string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
 	}
 }
 
+/* C++11 reverse iterators */
+template <typename T>
+class reverse_range {
+	T& _x;
+public:
+	reverse_range(T & x) : _x(x) { }
+
+	auto begin() const -> decltype(_x.rbegin()) {
+		return _x.rbegin();
+	}
+
+	auto end() const -> decltype(_x.rend()) {
+		return _x.rend();
+	}
+};
+
+template <typename T>
+reverse_range<T> reverse_iterate (T& x)
+{
+  return reverse_range<T> (x);
+}
+
+
+template<typename T0, typename T1>
+list<T0 *> filter_class(list<T1 *> x) {
+	list<T0 *> ret;
+	for (auto i : x) {
+		T0 * n = dynamic_cast<T0 *>(i);
+		if (n != nullptr) {
+			ret.push_back(n);
+		}
+	}
+	return ret;
+}
 
 }
 

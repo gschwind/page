@@ -14,6 +14,7 @@
 #ifndef CLIENT_BASE_HXX_
 #define CLIENT_BASE_HXX_
 
+#include <cassert>
 #include <typeinfo>
 
 #include <X11/X.h>
@@ -21,6 +22,7 @@
 #include "utils.hxx"
 #include "motif_hints.hxx"
 #include "xconnection.hxx"
+#include "tree.hxx"
 
 namespace page {
 
@@ -28,7 +30,7 @@ typedef long card32;
 
 using namespace std;
 
-class client_base_t {
+class client_base_t : public tree_t {
 public:
 	xconnection_t *              _cnx;
 	Window                       _id;
@@ -80,9 +82,10 @@ public:
 
 	/** derived properties **/
 
-	list<client_base_t *> subclients;
+	list<tree_t *> _childen;
+
 	// window title cache
-	string _title;
+	string                       _title;
 
 public:
 
@@ -94,7 +97,7 @@ public:
 		_id = c._id;
 		_cnx = c._cnx;
 		_title = c._title;
-		subclients = c.subclients;
+		_childen = c._childen;
 
 		/* ICCCM */
 		wm_name = safe_copy(c.wm_name);
@@ -450,6 +453,16 @@ public:
 			}
 	}
 
+	void add_subclient(client_base_t * s) {
+		_childen.push_back(s);
+		s->set_parent(this);
+	}
+
+	void remove_subclient(client_base_t * s) {
+		_childen.remove(s);
+		s->set_parent(nullptr);
+	}
+
 	string const & title() const {
 		return _title;
 	}
@@ -468,6 +481,35 @@ public:
 
 	virtual Window orig() const {
 		return _id;
+	}
+
+	virtual string get_node_name() const {
+		char buffer[32];
+		snprintf(buffer, 32, "C #%016lx", (uintptr_t)this);
+		return string(buffer);
+	}
+
+	virtual void replace(tree_t * src, tree_t * by) {
+		printf("Unexpected use of managed_window_base_t::replace\n");
+	}
+
+	virtual list<tree_t *> childs() const {
+		list<tree_t *> ret(_childen.begin(), _childen.end());
+		return ret;
+	}
+
+
+	void raise_child(tree_t * t) {
+
+		if(has_key(_childen, t)) {
+			_childen.remove(t);
+			_childen.push_back(t);
+		}
+
+		if(_parent != nullptr) {
+			_parent->raise_child(this);
+		}
+
 	}
 
 };
