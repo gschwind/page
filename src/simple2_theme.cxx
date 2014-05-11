@@ -584,7 +584,7 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw the tab background **/
 	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w - 1.0, b.h - 1.0, 7.0));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 	CHECK_CAIRO(cairo_fill(cr));
 
@@ -764,12 +764,12 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y + 1.0, b.w, b.h - 1.0, 7.0));
 
 	CHECK_CAIRO(cairo_fill(cr));
 
 	{
-		rectangle b = tab_area;
+//		rectangle b = tab_area;
 
 //		CHECK_CAIRO(cairo_new_path(cr));
 //		CHECK_CAIRO(cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5));
@@ -778,9 +778,9 @@ void simple2_theme_t::render_notebook_normal(
 //		CHECK_CAIRO(cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5));
 //		CHECK_CAIRO(cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5));
 //
-		CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
-		CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
-		CHECK_CAIRO(cairo_stroke(cr));
+//		CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
+//		CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
+//		CHECK_CAIRO(cairo_stroke(cr));
 	}
 
 	/** draw gradient under tabs **/
