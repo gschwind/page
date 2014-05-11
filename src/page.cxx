@@ -4061,7 +4061,7 @@ void page_t::onmap(Window w) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 					create_managed_window(c, type);
 				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_unmanaged_window(c, type);
+					create_dock_window(c, type);
 					update_allocation();
 				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 					create_managed_window(c, type);
@@ -4094,7 +4094,7 @@ void page_t::onmap(Window w) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 					create_unmanaged_window(c, type);
 				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_unmanaged_window(c, type);
+					create_dock_window(c, type);
 					update_allocation();
 				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 					create_unmanaged_window(c, type);
@@ -4195,6 +4195,35 @@ void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
 	update_transient_for(uw);
 	safe_raise_window(uw);
 	update_windows_stack();
+}
+
+void page_t::create_dock_window(client_base_t * c, Atom type) {
+	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
+	add_client(uw);
+	uw->map();
+
+	/**
+	 * Attach dock to viewport by checking where the center of dock is
+	 * located. This is a tweak.
+	 **/
+	double center_x = c->wa.width / 2.0 + c->wa.x;
+	double center_y = c->wa.height / 2.0 + c->wa.y;
+
+	bool is_attached = false;
+	for(auto &i: viewport_outputs) {
+		if(i.second->raw_aera.is_inside(center_x, center_y)) {
+			i.second->attach_dock(uw);
+			is_attached = true;
+		}
+	}
+
+	/* if no view port is found just attached to the first one */
+	if(not is_attached) {
+		viewport_outputs.begin()->second->attach_dock(uw);
+	}
+
+	safe_raise_window(uw);
+
 }
 
 Atom page_t::find_net_wm_type(client_base_t * c) {

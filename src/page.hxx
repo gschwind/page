@@ -463,6 +463,9 @@ public:
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 
 	void create_unmanaged_window(client_base_t * c, Atom type);
+
+	void create_dock_window(client_base_t * c, Atom type);
+
 	viewport_t * find_mouse_viewport(int x, int y);
 
 	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);

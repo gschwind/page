@@ -102,6 +102,14 @@ public:
 		}
 	}
 
+	void attach_dock(unmanaged_window_t * uw) {
+		docks.push_back(uw);
+	}
+
+	void detach_dock(unmanaged_window_t * uw) {
+		docks.remove(uw);
+	}
+
 };
 
 }

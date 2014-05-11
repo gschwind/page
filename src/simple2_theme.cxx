@@ -597,7 +597,7 @@ void simple2_theme_t::render_notebook_selected(
 	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 	CHECK_CAIRO(cairo_fill(cr));
 	CHECK_CAIRO(cairo_pattern_destroy(gradient));
@@ -792,7 +792,7 @@ void simple2_theme_t::render_notebook_normal(
 	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 0.0, 0.0, 0.0, 0.0));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 	CHECK_CAIRO(cairo_fill(cr));
 	CHECK_CAIRO(cairo_pattern_destroy(gradient));
