@@ -20,9 +20,7 @@ struct notebook_base_t : public tree_t {
 	virtual bool is_default() const = 0;
 
 	virtual string get_node_name() const {
-		char buffer[32];
-		snprintf(buffer, 32, "N #%016lx", (uintptr_t)this);
-		return string(buffer);
+		return _get_node_name<'n'>();
 	}
 
 };

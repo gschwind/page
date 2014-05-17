@@ -45,7 +45,8 @@ class split_t : public split_base_t, public tree_renderable_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_t const * theme, tree_t * p0 = 0, tree_t * p1 = 0);
+	split_t(split_type_e type, theme_t const * theme, tree_t * p0 = nullptr,
+			tree_t * p1 = nullptr);
 	~split_t();
 	void replace(tree_t * src, tree_t * by);
 	void compute_split_bar_area(rectangle & area, double split) const;
@@ -69,6 +70,12 @@ public:
 	void render(cairo_t * cr, rectangle const & area) const;
 	list<tree_t *> childs() const;
 	void raise_child(tree_t * t);
+
+	virtual string get_node_name() const {
+		return _get_node_name<'S'>();
+	}
+
+	void remove(tree_t * t);
 
 };
 

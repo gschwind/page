@@ -248,6 +248,7 @@ public:
 
 	map<Window, client_base_t *> clients;
 	list<client_base_t *> root_subclients;
+	list<unmanaged_window_t *> tooltips;
 
 	Cursor default_cursor;
 
@@ -364,8 +365,7 @@ public:
 	managed_window_t * manage(Atom net_wm_type, client_base_t * wa);
 	void unmanage(managed_window_t * mw);
 
-	void remove_window_from_tree(managed_window_t * x);
-	void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
+	void insert_window_in_notebook(managed_window_t * x, notebook_t * n, bool prefer_activate);
 	void iconify_client(managed_window_t * x);
 	void update_allocation();
 
@@ -397,12 +397,13 @@ public:
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
-	void update_transient_for(client_base_t * c);
+	void insert_in_tree_using_transient_for(client_base_t * c);
 
+	void safe_update_transient_for(client_base_t * c);
 
 	client_base_t * get_transient_for(client_base_t * c);
 	void logical_raise(client_base_t * c);
-	void cleanup_transient_for_for_window(client_base_t * c);
+	void detach(tree_t * t);
 
 	void safe_raise_window(client_base_t * c);
 	void clear_transient_for_sibbling_child(Window w);
@@ -500,18 +501,6 @@ public:
 	static void get_notebooks(tree_t * base, vector<notebook_t *> & l);
 	static void get_splits(tree_t * base, vector<split_t *> & l);
 
-
-	void print_tree() {
-
-//		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin();
-//				i != viewport_outputs.end(); ++i) {
-//			i->second->print_tree();
-//		}
-//
-//		fflush(stdout);
-
-	}
-
 	void set_desktop_geometry(long width, long height) {
 		/* define desktop geometry */
 		long desktop_geometry[2];
@@ -529,42 +518,45 @@ public:
 
 
 	client_base_t * find_client_with(Window w) {
-		map<Window, client_base_t *>::iterator i = clients.begin();
-		while(i != clients.end()) {
-			if(i->second->has_window(w)) {
-				return i->second;
+		for(auto &i: clients) {
+			if(i.second->has_window(w)) {
+				return i.second;
 			}
-			++i;
 		}
-		return 0;
+		return nullptr;
 	}
 
 	client_base_t * find_client(Window w) {
-		map<Window, client_base_t *>::iterator i = clients.find(w);
-		if(i != clients.end())
+		auto i = clients.find(w);
+		if (i != clients.end())
 			return i->second;
-		return 0;
+		return nullptr;
 	}
 
 	void remove_client(client_base_t * c) {
 
 		clients.erase(c->_id);
-		root_subclients.remove(c);
+
+		if(typeid(*c->parent()) == typeid(notebook_t)) {
+			rpage->add_damaged(c->parent()->allocation());
+		}
+
+		detach(c);
 
 		list<tree_t *> subclient = c->childs();
 		for(auto i: subclient) {
 			client_base_t * c = dynamic_cast<client_base_t *>(i);
 			if(c != nullptr) {
-				update_transient_for(c);
+				insert_in_tree_using_transient_for(c);
 			}
 		}
 		delete c;
 	}
 
 	void add_client(client_base_t * c) {
-		map<Window, client_base_t *>::iterator i = clients.find(c->orig());
+		auto i = clients.find(c->orig());
 		if(i != clients.end() and c != i->second) {
-			cleanup_transient_for_for_window(i->second);
+			detach(i->second);
 			delete i->second;
 			clients.erase(i);
 		}
@@ -584,13 +576,15 @@ public:
 			ret.push_back(x);
 		}
 
+		for(auto x: tooltips) {
+			ret.push_back(x);
+		}
+
 		return ret;
 	}
 
 	virtual string get_node_name() const {
-		char buffer[32];
-		snprintf(buffer, 32, "R #%016lx", (uintptr_t)this);
-		return string(buffer);
+		return _get_node_name<'P'>();
 	}
 
 	virtual void replace(tree_t * src, tree_t * by) {
@@ -603,7 +597,29 @@ public:
 		if(has_key(root_subclients, x)) {
 			root_subclients.remove(x);
 			root_subclients.push_back(x);
+			x->set_parent(this);
 		}
+
+		unmanaged_window_t * y = dynamic_cast<unmanaged_window_t *>(t);
+		if(has_key(tooltips, y)) {
+			tooltips.remove(y);
+			tooltips.push_back(y);
+			y->set_parent(this);
+		}
+	}
+
+	void remove(tree_t * t) {
+
+		for(auto &i: viewport_outputs) {
+			if(i.second == t) {
+				cout << "WARNING: using page::remove to remove viewport is not recommended, use page::remove_viewport instead" << endl;
+				remove_viewport(i.second);
+				return;
+			}
+		}
+
+		root_subclients.remove(dynamic_cast<client_base_t *>(t));
+		tooltips.remove(dynamic_cast<unmanaged_window_t *>(t));
 	}
 
 };

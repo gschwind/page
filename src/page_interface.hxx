@@ -142,8 +142,6 @@ public:
 
 	virtual list<viewport_t *> viewports();
 
-	virtual vector<tree_t *> childs();
-
 	virtual void update_page_areas();
 
 	static void get_notebooks(tree_t * base, vector<notebook_t *> & l);

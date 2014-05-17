@@ -21,7 +21,7 @@ notebook_t::~notebook_t() {
 }
 
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
-	_childs.push_back(x);
+	_children.push_back(x);
 	x->set_parent(this);
 	_clients.push_front(x);
 	_client_map.insert(x);
@@ -61,7 +61,11 @@ void notebook_t::close(tree_t * src) {
 }
 
 void notebook_t::remove(tree_t * src) {
-
+	managed_window_t * mw = dynamic_cast<managed_window_t*>(src);
+	if (has_key(_clients, mw) and mw != nullptr) {
+		cout << "WARNING: do not use notebook_t::remove to remove client, prefert notebook_t::remove_client" << endl;
+		remove_client(mw);
+	}
 }
 
 void notebook_t::activate_client(managed_window_t * x) {
@@ -87,7 +91,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 	}
 
 	// cleanup
-	_childs.remove(x);
+	_children.remove(x);
 	x->set_parent(nullptr);
 	_clients.remove(x);
 	_client_map.erase(x);
@@ -302,10 +306,6 @@ managed_window_t const * notebook_t::get_selected() {
 
 void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
-}
-
-void notebook_t::get_childs(vector<tree_t *> & lst) {
-	/* has no child */
 }
 
 

@@ -16,19 +16,13 @@
 
 namespace page {
 
-split_t::split_t(split_type_e type, theme_t const * theme, tree_t * p0, tree_t * p1) :
-	split_base_t(),
-	_theme(theme),
-	_split_bar_area(),
-	_split_type(type),
-	_split(0.5),
-	_pack0(p0),
-	_pack1(p1)
-{
-	if(p0 != 0)
-		p0->set_parent(this);
-	if(p1 != 0)
-		p1->set_parent(this);
+split_t::split_t(split_type_e type, theme_t const * theme, tree_t * p0,
+		tree_t * p1) :
+		split_base_t(), _theme(theme), _split_bar_area(), _split_type(type), _split(
+				0.5), _pack0(nullptr), _pack1(nullptr) {
+
+	set_pack0(p0);
+	set_pack1(p1);
 
 }
 
@@ -79,7 +73,7 @@ void split_t::update_allocation_pack0() {
 }
 
 void split_t::update_allocation_pack1() {
-	if (!_pack1)
+	if (_pack1 == nullptr)
 		return;
 	rectangle b;
 	if (_split_type == VERTICAL_SPLIT) {
@@ -95,15 +89,11 @@ void split_t::update_allocation_pack1() {
 
 void split_t::replace(tree_t * src, tree_t * by) {
 	if (_pack0 == src) {
-		//printf("replace %p by %p\n", src, by);
+		printf("replace %p by %p\n", src, by);
 		set_pack0(by);
-		_children.remove(src);
-		_children.push_back(by);
 	} else if (_pack1 == src) {
-		//printf("replace %p by %p\n", src, by);
+		printf("replace %p by %p\n", src, by);
 		set_pack1(by);
-		_children.remove(src);
-		_children.push_back(by);
 	} else {
 		throw std::runtime_error("split: bad child replacement!");
 	}
@@ -178,9 +168,9 @@ void split_t::update_allocation() {
 
 	}
 
-	if(_pack0 != 0)
+	if(_pack0 != nullptr)
 		_pack0->set_allocation(bpack0);
-	if(_pack1 != 0)
+	if(_pack1 != nullptr)
 		_pack1->set_allocation(bpack1);
 
 }
@@ -194,39 +184,40 @@ void split_t::set_theme(theme_t const * theme) {
 }
 
 void split_t::set_pack0(tree_t * x) {
+	_children.remove(_pack0);
 	_pack0 = x;
-	x->set_parent(this);
-	update_allocation();
+	if (_pack0 != nullptr) {
+		_pack0->set_parent(this);
+		_children.push_back(_pack0);
+		update_allocation();
+	}
 }
 
 void split_t::set_pack1(tree_t * x) {
+	_children.remove(_pack1);
 	_pack1 = x;
-	x->set_parent(this);
-	update_allocation();
+	if (_pack1 != nullptr) {
+		_pack1->set_parent(this);
+		_children.push_back(_pack1);
+		update_allocation();
+	}
 }
 
 /* compute the slider area */
-void split_t::compute_split_location(double split, double & x, double & y) const {
-
+void split_t::compute_split_location(double split, double & x,
+		double & y) const {
 	rectangle const & alloc = allocation();
-
 	if (_split_type == VERTICAL_SPLIT) {
-
-
 		int w = alloc.w - 2 * _theme->split_margin.left
 				- 2 * _theme->split_margin.right - _theme->split_width;
 		int w0 = floor(w * split + 0.5);
-
 		x = alloc.x + _theme->split_margin.left + w0
 				+ _theme->split_margin.right;
 		y = alloc.y;
-
 	} else {
-
 		int h = alloc.h - 2 * _theme->split_margin.top
 				- 2 * _theme->split_margin.bottom - _theme->split_width;
 		int h0 = floor(h * split + 0.5);
-
 		x = alloc.x;
 		y = alloc.y + _theme->split_margin.top + h0
 				+ _theme->split_margin.bottom;
@@ -258,16 +249,7 @@ void split_t::render(cairo_t * cr, rectangle const & area) const {
 }
 
 list<tree_t *> split_t::childs() const {
-	list<tree_t *> ret;
-
-	if (_pack0 != nullptr) {
-		ret.push_back(_pack0);
-	}
-
-	if (_pack1 != nullptr) {
-		ret.push_back(_pack1);
-	}
-
+	list<tree_t *> ret(_children.begin(), _children.end());
 	return ret;
 }
 
@@ -282,6 +264,14 @@ void split_t::raise_child(tree_t * t) {
 		_parent->raise_child(this);
 	}
 
+}
+
+void split_t::remove(tree_t * t) {
+	if (_pack0 == t) {
+		set_pack0(nullptr);
+	} else if (_pack1 == t) {
+		set_pack1(nullptr);
+	}
 }
 
 }

@@ -743,10 +743,7 @@ void simple2_theme_t::render_notebook_normal(
 	tab_area.y += 1;
 	tab_area.h -= 1;
 
-
 	managed_window_base_t const * c = data.clt;
-
-
 
 	CHECK_CAIRO(cairo_save(cr));
 

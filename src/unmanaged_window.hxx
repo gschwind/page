@@ -54,6 +54,10 @@ public:
 		_cnx->map_window(_id);
 	}
 
+	virtual string get_node_name() const {
+		return _get_node_name<'U'>();
+	}
+
 
 };
 

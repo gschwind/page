@@ -41,7 +41,16 @@ void viewport_t::close(tree_t * src) {
 }
 
 void viewport_t::remove(tree_t * src) {
-
+	if(src == fullscreen_client) {
+		cout << "WARNING: do not use viewport_t::remove to remove fullscreen windows" << endl;
+		fullscreen_client = nullptr;
+		return;
+	}
+	if(src == _subtree) {
+		cout << "WARNING do not use viewport_t::remove to remove subtree element" << endl;
+		_subtree = nullptr;
+		return;
+	}
 }
 
 void viewport_t::reconfigure() {

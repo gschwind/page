@@ -110,6 +110,10 @@ public:
 		docks.remove(uw);
 	}
 
+	virtual string get_node_name() const {
+		return _get_node_name<'V'>();
+	}
+
 };
 
 }

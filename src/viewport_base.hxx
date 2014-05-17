@@ -17,9 +17,7 @@ struct viewport_base_t : public tree_t {
 
 
 	virtual string get_node_name() const {
-		char buffer[32];
-		snprintf(buffer, 32, "V #%016lx", (uintptr_t)this);
-		return string(buffer);
+		return _get_node_name<'v'>();
 	}
 
 };

@@ -82,10 +82,15 @@ public:
 
 	/** derived properties **/
 
-	list<tree_t *> _childen;
+	list<tree_t *>               _childen;
 
 	// window title cache
 	string                       _title;
+
+	/** short cut **/
+	Atom A(atom_e atom) {
+		return _cnx->A(atom);
+	}
 
 public:
 
@@ -484,9 +489,7 @@ public:
 	}
 
 	virtual string get_node_name() const {
-		char buffer[32];
-		snprintf(buffer, 32, "C #%016lx", (uintptr_t)this);
-		return string(buffer);
+		return _get_node_name<'c'>();
 	}
 
 	virtual void replace(tree_t * src, tree_t * by) {
@@ -511,6 +514,110 @@ public:
 		}
 
 	}
+
+	Atom type() {
+		Atom type = None;
+
+		list<Atom> net_wm_window_type;
+		bool override_redirect = (wa.override_redirect == True)?true:false;
+
+		if(_net_wm_window_type == 0) {
+			/**
+			 * Fallback from ICCCM.
+			 **/
+
+			if(!override_redirect) {
+				/* Managed windows */
+				if(wm_transient_for == 0) {
+					/**
+					 * Extended ICCCM:
+					 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
+					 * _NET_WM_WINDOW_TYPE nor WM_TRANSIENT_FOR set MUST be taken
+					 * as this type.
+					 **/
+					net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+				} else {
+					/**
+					 * Extended ICCCM:
+					 * _NET_WM_WINDOW_TYPE_DIALOG [...] If _NET_WM_WINDOW_TYPE is
+					 * not set, then managed windows with WM_TRANSIENT_FOR set MUST
+					 * be taken as this type.
+					 **/
+					net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_DIALOG));
+				}
+
+			} else {
+				/**
+				 * Override-redirected windows.
+				 *
+				 * Extended ICCCM:
+				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Override-redirect windows
+				 * without _NET_WM_WINDOW_TYPE, must be taken as this type, whether
+				 * or not they have WM_TRANSIENT_FOR set.
+				 **/
+				net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+			}
+		} else {
+			net_wm_window_type = *(_net_wm_window_type);
+		}
+
+		/* always fall back to normal */
+		net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
+
+		/* TODO: make this ones */
+		static set<Atom> known_type;
+		if (known_type.size() == 0) {
+			known_type.insert(A(_NET_CURRENT_DESKTOP));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLBAR));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_MENU));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_UTILITY));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_SPLASH));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_DIALOG));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_POPUP_MENU));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLTIP));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_NOTIFICATION));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_COMBO));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_DND));
+			known_type.insert(A(_NET_WM_WINDOW_TYPE_NORMAL));
+		}
+
+		/** find the first known window type **/
+		for (auto i : net_wm_window_type) {
+			//printf("Check for %s\n", cnx->get_atom_name(*i).c_str());
+			if (has_key(known_type, i)) {
+				type = i;
+				break;
+			}
+		}
+
+		/** HACK FOR ECLIPSE **/
+		{
+			list<Atom> wm_state;
+			xconnection_t::wm_class wm_class;
+			if (this->wm_class != 0 and this->wm_state != 0
+					and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+				if ((*(this->wm_class))[0] == "Eclipse") {
+					auto x = find(wm_state.begin(), wm_state.end(),
+							A(_NET_WM_STATE_SKIP_TASKBAR));
+					if (x != wm_state.end()) {
+						type = A(_NET_WM_WINDOW_TYPE_DND);
+					}
+				}
+			}
+		}
+
+		return type;
+
+	}
+
+	void remove(tree_t * t) {
+		_childen.remove(t);
+	}
+
+
 
 };
 

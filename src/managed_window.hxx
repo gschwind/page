@@ -453,6 +453,10 @@ public:
 		return w == _id or w == _base or w == _deco;
 	}
 
+	virtual string get_node_name() const {
+		return _get_node_name<'M'>();
+	}
+
 };
 
 }

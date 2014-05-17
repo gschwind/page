@@ -22,9 +22,7 @@ struct split_base_t : public tree_t {
 	virtual double split() const = 0;
 
 	virtual string get_node_name() const {
-		char buffer[32];
-		snprintf(buffer, 32, "S #%016lx", (uintptr_t)this);
-		return string(buffer);
+		return _get_node_name<'s'>();
 	}
 
 };

@@ -17,7 +17,7 @@
 namespace page {
 
 tree_t::tree_t(tree_t * parent, rectangle allocation) :
-		_parent(parent), _allocation(allocation) {
+		_parent(parent), _allocation(allocation), _type(TYPE_UNDEF) {
 }
 
 tree_t::~tree_t() {
@@ -62,6 +62,10 @@ rectangle const & tree_t::allocation() const {
 
 tree_t * tree_t::parent() const {
 	return _parent;
+}
+
+tree_type_e tree_t::type() {
+	return _type;
 }
 
 

@@ -30,7 +30,7 @@ class notebook_t : public notebook_base_t, public tree_renderable_t {
 	bool _is_default;
 
 	/* child stack order */
-	list<tree_t *> _childs;
+	list<tree_t *> _children;
 
 public:
 
@@ -130,15 +130,13 @@ public:
 
 	void set_theme(theme_t const * theme);
 
-	virtual void get_childs(vector<tree_t *> & lst);
-
 	virtual list<managed_window_base_t const *> clients() const {
 		return list<managed_window_base_t const *>(_clients.begin(), _clients.end());
 	}
 
 	virtual managed_window_base_t const * selected() const {
 		if(_selected.empty()) {
-			return 0;
+			return nullptr;
 		} else {
 			return _selected.front();
 		}
@@ -156,23 +154,29 @@ public:
 		_is_default = x;
 	}
 
-	virtual vector<tree_t *> get_direct_childs() const {
-		vector<tree_t *> ret;
-		return ret;
-	}
-
 	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret(_childs.begin(), _childs.end());
+		list<tree_t *> ret(_children.begin(), _children.end());
 		return ret;
 	}
 
 	virtual void raise_child(tree_t * t) {
-		managed_window_t * _t = dynamic_cast<managed_window_t *>(t);
-		assert(_t != nullptr);
-		assert(has_key(_clients, _t));
-		_clients.remove(_t);
-		_clients.push_back(_t);
+
+		if (has_key(_children, t)) {
+			_children.remove(t);
+			_children.push_back(t);
+		}
+
+		if(_parent != nullptr) {
+			_parent->raise_child(this);
+		}
+
 	}
+
+
+	virtual string get_node_name() const {
+		return _get_node_name<'N'>();
+	}
+
 
 };
 
