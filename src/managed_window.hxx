@@ -83,8 +83,6 @@ private:
 
 	bool _motif_has_border;
 
-	list<managed_window_t *> sub_window;
-
 public:
 
 	managed_window_t(Atom net_wm_type, client_base_t * c,
@@ -344,6 +342,14 @@ public:
 		_cnx->map_window(_orig);
 		_cnx->map_window(_deco);
 		_cnx->map_window(_base);
+
+		for(auto c: _childen) {
+			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			if(mw != nullptr) {
+				mw->normalize();
+			}
+		}
+
 	}
 
 	void iconify() {
@@ -352,6 +358,14 @@ public:
 		_cnx->unmap(_base);
 		_cnx->unmap(_deco);
 		_cnx->unmap(_orig);
+
+		for(auto c: _childen) {
+			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			if(mw != nullptr) {
+				mw->iconify();
+			}
+		}
+
 	}
 
 	void wm_state_delete() {
