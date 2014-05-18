@@ -214,32 +214,32 @@ compositor_t::compositor_t() {
 }
 
 bool compositor_t::check_glx_for_extensions(char const * const * const extension_list) {
-	if(extension_list == NULL)
-		return false;
-
-	char const * gl_exts = (char*) glGetString(GL_EXTENSIONS);
-	char const * glx_exts = (char*) glGetString(GL_EXTENSIONS);
-
-	fprintf(stderr, "%s\n", gl_exts);
-	fprintf(stderr, "%s\n", glx_exts);
-
-	int k = 0;
-	while(extension_list[k] != NULL) {
-		fprintf(stderr, "Check for %s\n", extension_list[k]);
-		bool has_extension = false;
-		if (strstr(gl_exts, extension_list[k]) != 0) {
-			has_extension = true;
-		} else  if (strstr(glx_exts, extension_list[k]) != 0) {
-			has_extension = true;
-		}
-
-
-		if(not has_extension)
-			return false;
-
-		++k;
-	}
-	return true;
+//	if(extension_list == NULL)
+//		return false;
+//
+//	char const * gl_exts = (char*) glGetString(GL_EXTENSIONS);
+//	char const * glx_exts = (char*) glGetString(GL_EXTENSIONS);
+//
+//	fprintf(stderr, "%s\n", gl_exts);
+//	fprintf(stderr, "%s\n", glx_exts);
+//
+//	int k = 0;
+//	while(extension_list[k] != NULL) {
+//		fprintf(stderr, "Check for %s\n", extension_list[k]);
+//		bool has_extension = false;
+//		if (strstr(gl_exts, extension_list[k]) != 0) {
+//			has_extension = true;
+//		} else  if (strstr(glx_exts, extension_list[k]) != 0) {
+//			has_extension = true;
+//		}
+//
+//
+//		if(not has_extension)
+//			return false;
+//
+//		++k;
+//	}
+//	return true;
 }
 
 bool compositor_t::check_glx_context() {
@@ -261,21 +261,21 @@ bool compositor_t::check_glx_context() {
 
 	/** Check that the visual is double-buffered **/
 	int value = 0;
-	if (Success != glXGetConfig(_dpy, vis_info, GLX_USE_GL, &value)) {
-		fprintf(stderr, "Composite window do not use GL.\n");
-		return false;
-	}
-
-	if(value == 0) {
-		fprintf(stderr, "Composite window do not use GL.\n");
-		return false;
-	}
-
-
-	if (Success != glXGetConfig(_dpy, vis_info, GLX_DOUBLEBUFFER, &value)) {
-		fprintf(stderr, "Composite window is not a double buffered.\n");
-		return false;
-	}
+//	if (Success != glXGetConfig(_dpy, vis_info, GLX_USE_GL, &value)) {
+//		fprintf(stderr, "Composite window do not use GL.\n");
+//		return false;
+//	}
+//
+//	if(value == 0) {
+//		fprintf(stderr, "Composite window do not use GL.\n");
+//		return false;
+//	}
+//
+//
+//	if (Success != glXGetConfig(_dpy, vis_info, GLX_DOUBLEBUFFER, &value)) {
+//		fprintf(stderr, "Composite window is not a double buffered.\n");
+//		return false;
+//	}
 
 	if(value == 0) {
 		fprintf(stderr, "Composite window is not a double buffered.\n");

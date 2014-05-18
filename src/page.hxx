@@ -323,9 +323,15 @@ public:
 		return cnx->A(atom);
 	}
 
-	void run();
-	void scan();
+	Atom A(char const * aname) {
+		return cnx->get_atom(aname);
+	}
 
+	/* run page main loop */
+	void run();
+
+	/* scan current root window status, finding mapped windows */
+	void scan();
 
 	void process_event(XKeyEvent const & e);
 	void process_event_press(XButtonEvent const & e);
@@ -357,48 +363,57 @@ public:
 
 	void process_event(XEvent const & e);
 
+	/* update _NET_CLIENT_LIST_STACKING and _NET_CLIENT_LIST */
 	void update_client_list();
+
+	/* update _NET_SUPPORTED */
 	void update_net_supported();
 
-	void print_window_attributes(Window w, XWindowAttributes &wa);
+	/* print some window attributes for debuging */
+	void debug_print_window_attributes(Window w, XWindowAttributes &wa);
 
+	/* setup and create managed window */
 	managed_window_t * manage(Atom net_wm_type, client_base_t * wa);
+
+	/* unmanage a managed window */
 	void unmanage(managed_window_t * mw);
 
+	/* put a managed window into a given notebook */
 	void insert_window_in_notebook(managed_window_t * x, notebook_t * n, bool prefer_activate);
-	void iconify_client(managed_window_t * x);
+
+	/* update viewport and childs allocation */
 	void update_allocation();
 
-	void destroy(Window w);
+	/* turn a managed window into fullscreen */
+	void fullscreen(managed_window_t * c, viewport_t * v = nullptr);
 
-	void fullscreen(managed_window_t * c, viewport_t * v = 0);
+	/* switch a fullscreened and managed window into floating or notebook window */
 	void unfullscreen(managed_window_t * c);
+
+	/* toggle fullscreen */
 	void toggle_fullscreen(managed_window_t * c);
 
+	/* split a notebook into two notebook */
 	void split(notebook_t * nbk, split_type_e type);
 	void split_left(notebook_t * nbk, managed_window_t * c);
 	void split_right(notebook_t * nbk, managed_window_t * c);
 	void split_top(notebook_t * nbk, managed_window_t * c);
 	void split_bottom(notebook_t * nbk, managed_window_t * c);
+
+	/* close a notebook and unsplit the parent */
 	void notebook_close(notebook_t * src);
 
 	void update_popup_position(popup_notebook0_t * p, rectangle & position);
 	void update_popup_position(popup_frame_move_t * p, rectangle & position);
 
-	void fix_allocation(viewport_t & v);
-
-	split_t * new_split(split_type_e type);
-	void destroy(split_t * x);
-
-	notebook_t * new_notebook();
-	void destroy(notebook_t * x);
+	/* compute the allocation of viewport taking in account DOCKs */
+	void compute_viewport_allocation(viewport_t & v);
 
 	void destroy_client(client_base_t * c);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void insert_in_tree_using_transient_for(client_base_t * c);
-
 	void safe_update_transient_for(client_base_t * c);
 
 	client_base_t * get_transient_for(client_base_t * c);
@@ -406,85 +421,50 @@ public:
 	void detach(tree_t * t);
 
 	void safe_raise_window(client_base_t * c);
-	void clear_transient_for_sibbling_child(Window w);
 
-	Window find_root_window(Window w);
-	Window find_client_window(Window w);
-
+	/** move to client_base **/
 	void compute_client_size_with_constraint(Window c,
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
-
-
-	void print_tree_windows();
-
+	/* attach floating window in a notebook */
 	void bind_window(managed_window_t * mw);
+	/* detach notebooked window to a floating window */
 	void unbind_window(managed_window_t * mw);
-
 	void grab_pointer();
-
+	/* if grab is linked to a given window remove this grab */
 	void cleanup_grab(managed_window_t * mw);
-
-	notebook_t * get_another_notebook(tree_t * base = 0, tree_t * nbk = 0);
-
-
+	/* find a valid notebook, that is in subtree base and that is no nbk */
+	notebook_t * get_another_notebook(tree_t * base = nullptr, tree_t * nbk = nullptr);
+	/* get all available notebooks with page */
 	list<notebook_t *> get_notebooks(tree_t * base = nullptr);
-	list<split_t *>  get_splits();
-
-	notebook_t * find_notebook_for(managed_window_t * mw);
-
-	void get_managed_windows(list<managed_window_t *> & l);
+	/* find where the managed window is */
+	notebook_t * find_parent_notebook_for(managed_window_t * mw);
+	list<managed_window_t*> get_managed_windows();
 	managed_window_t * find_managed_window_with(Window w);
-	unmanaged_window_t * find_unmanaged_window_with(Window w);
-
 	viewport_t * find_viewport_for(notebook_t * n);
-
-	bool is_valid_notebook(notebook_t * n);
-
 	void set_window_cursor(Window w, Cursor c);
-
-	bool is_focussed(managed_window_t * mw);
-
 	void update_windows_stack();
-
 	void update_viewport_layout();
 	void remove_viewport(viewport_t * v);
 	void destroy_viewport(viewport_t * v);
-
-	Atom A(char const * aname) {
-		return cnx->get_atom(aname);
-	}
-
-	Atom find_net_wm_type(client_base_t * c);
-
 	void onmap(Window w);
-
 	void create_managed_window(client_base_t * c, Atom type);
-
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
-
 	void create_unmanaged_window(client_base_t * c, Atom type);
-
 	void create_dock_window(client_base_t * c, Atom type);
-
 	viewport_t * find_mouse_viewport(int x, int y);
-
 	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);
-
-	list<viewport_t *> viewports() {
-		return list_values(viewport_outputs);
-	}
-
-	void update_page_areas() {
-
-		if (page_areas != 0) {
-			delete page_areas;
-		}
-
-		list<tree_t *> l = get_all_childs();
-		list<tree_t const *> lc(l.begin(), l.end());
-		page_areas = theme->compute_page_areas(lc);
-	}
+	void update_page_areas();
+	void set_desktop_geometry(long width, long height);
+	client_base_t * find_client_with(Window w);
+	client_base_t * find_client(Window w);
+	void remove_client(client_base_t * c);
+	void add_client(client_base_t * c);
+	list<tree_t *> childs() const;
+	virtual string get_node_name() const;
+	virtual void replace(tree_t * src, tree_t * by);
+	virtual void raise_child(tree_t * t);
+	void remove(tree_t * t);
 
 	static managed_window_t * _upgrade(managed_window_base_t const * x) {
 		return dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(x));
@@ -496,130 +476,6 @@ public:
 
 	static split_t * _upgrade(split_base_t const * x) {
 		return dynamic_cast<split_t *>(const_cast<split_base_t *>(x));
-	}
-
-	static void get_notebooks(tree_t * base, vector<notebook_t *> & l);
-	static void get_splits(tree_t * base, vector<split_t *> & l);
-
-	void set_desktop_geometry(long width, long height) {
-		/* define desktop geometry */
-		long desktop_geometry[2];
-		desktop_geometry[0] = width;
-		desktop_geometry[1] = height;
-		cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY,
-				CARDINAL, 32, PropModeReplace,
-				reinterpret_cast<unsigned char *>(desktop_geometry), 2);
-	}
-
-	void set_opaque_region(Window w, region & region);
-
-
-	string get_window_string(Window w);
-
-
-	client_base_t * find_client_with(Window w) {
-		for(auto &i: clients) {
-			if(i.second->has_window(w)) {
-				return i.second;
-			}
-		}
-		return nullptr;
-	}
-
-	client_base_t * find_client(Window w) {
-		auto i = clients.find(w);
-		if (i != clients.end())
-			return i->second;
-		return nullptr;
-	}
-
-	void remove_client(client_base_t * c) {
-
-		clients.erase(c->_id);
-
-		if(typeid(*c->parent()) == typeid(notebook_t)) {
-			rpage->add_damaged(c->parent()->allocation());
-		}
-
-		detach(c);
-
-		list<tree_t *> subclient = c->childs();
-		for(auto i: subclient) {
-			client_base_t * c = dynamic_cast<client_base_t *>(i);
-			if(c != nullptr) {
-				insert_in_tree_using_transient_for(c);
-			}
-		}
-		delete c;
-	}
-
-	void add_client(client_base_t * c) {
-		auto i = clients.find(c->orig());
-		if(i != clients.end() and c != i->second) {
-			detach(i->second);
-			delete i->second;
-			clients.erase(i);
-		}
-		clients[c->_id] = c;
-	}
-
-
-	list<tree_t *> childs() const {
-		list<tree_t *> ret;
-		for (auto &i : viewport_outputs) {
-			if (i.second != nullptr) {
-				ret.push_back(i.second);
-			}
-		}
-
-		for(auto x: root_subclients) {
-			ret.push_back(x);
-		}
-
-		for(auto x: tooltips) {
-			ret.push_back(x);
-		}
-
-		return ret;
-	}
-
-	virtual string get_node_name() const {
-		return _get_node_name<'P'>();
-	}
-
-	virtual void replace(tree_t * src, tree_t * by) {
-		printf("Unexpectected use of page::replace function\n");
-	}
-
-	virtual void raise_child(tree_t * t) {
-		/* do nothing, not needed at this level */
-		client_base_t * x = dynamic_cast<client_base_t *>(t);
-		if(has_key(root_subclients, x)) {
-			root_subclients.remove(x);
-			root_subclients.push_back(x);
-			x->set_parent(this);
-		}
-
-		unmanaged_window_t * y = dynamic_cast<unmanaged_window_t *>(t);
-		if(has_key(tooltips, y)) {
-			tooltips.remove(y);
-			tooltips.push_back(y);
-			y->set_parent(this);
-		}
-	}
-
-	void remove(tree_t * t) {
-
-		for(auto &i: viewport_outputs) {
-			if(i.second == t) {
-				cout << "WARNING: using page::remove to remove viewport is not recommended, use page::remove_viewport instead" << endl;
-				remove_viewport(i.second);
-				return;
-			}
-		}
-
-		root_subclients.remove(dynamic_cast<client_base_t *>(t));
-		tooltips.remove(dynamic_cast<unmanaged_window_t *>(t));
 	}
 
 };

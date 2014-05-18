@@ -866,9 +866,6 @@ public:
 		return ::page::read_value<Window>(dpy, w, A(_NET_WM_USER_TIME_WINDOW), A(WINDOW));
 	}
 
-
-
-
 };
 
 }
