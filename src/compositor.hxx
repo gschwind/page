@@ -193,7 +193,7 @@ public:
 		return render_mode;
 	}
 
-	p_composite_surface_t create_composite_surface(Window w,
+	p_composite_surface_t get_composite_surface(Window w,
 			XWindowAttributes const & wa) {
 		assert(w != None);
 		assert(wa.c_class == InputOutput);
@@ -209,7 +209,6 @@ public:
 		}
 	}
 
-
 	void destroy_composite_surface(Window w) {
 		auto i = window_to_composite_surface.find(w);
 		if (i != window_to_composite_surface.end()) {
@@ -219,11 +218,6 @@ public:
 					<< i->second.use_count() << endl;
 			window_to_composite_surface.erase(i);
 		}
-	}
-
-
-	void destroy_composite_surface(composite_surface_t * x) {
-		destroy_composite_surface(x->wid());
 	}
 
 	void create_damage(Window w, XWindowAttributes & wa) {

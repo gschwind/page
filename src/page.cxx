@@ -66,8 +66,7 @@ long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
-	page_areas = 0;
-
+	page_areas = nullptr;
 	use_internal_compositor = true;
 	char const * conf_file_name = 0;
 
@@ -88,12 +87,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	key_press_mode = KEY_PRESS_NORMAL;
 
 	cnx = new xconnection_t();
-
-	rnd = 0;
-
-	default_cursor = XCreateFontCursor(cnx->dpy, XC_arrow);
-
-//	cursor_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
+	rnd = nullptr;
 
 	set_window_cursor(cnx->get_root_window(), default_cursor);
 
@@ -120,19 +114,17 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 		conf.merge_from_file_if_exist(s);
 	}
 
-	default_window_pop = 0;
+	default_window_pop = nullptr;
 
 	page_base_dir = conf.get_string("default", "theme_dir");
 
 	_last_focus_time = 0;
 	_last_button_press = 0;
 
-	theme = 0;
+	theme = nullptr;
+	rpage = nullptr;
 
-	rpage = 0;
-
-	_client_focused.push_front(0);
-
+	_client_focused.push_front(nullptr);
 
 }
 
@@ -180,36 +172,12 @@ page_t::~page_t() {
 
 void page_t::run() {
 
-	init_xprop(cnx->dpy);
+//	init_xprop(cnx->dpy);
 
 //	printf("root size: %d,%d\n", cnx->get_root_size().w, cnx->get_root_size().h);
 
-	/* create an invisible window to identify page */
-	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->get_root_window(), -100, -100, 1, 1, 0, 0,
-			0);
-	std::string name("page");
-	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8,
-	PropModeReplace, reinterpret_cast<unsigned char const *>(name.c_str()),
-			name.length() + 1);
-	cnx->change_property(wm_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(&wm_window), 1);
-	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTING_WM_CHECK,
-			WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&wm_window), 1);
-
-	long pid = getpid();
-
-	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL,
-			32, (PropModeReplace),
-			reinterpret_cast<unsigned char const *>(&pid), 1);
-
-	cnx->select_input(wm_window, StructureNotifyMask);
-
-
-	if(!cnx->register_wm(true, wm_window)) {
-		printf("Cannot register window manager\n");
-		return;
-	}
+	/** initialise theme **/
+	theme = new simple2_theme_t(cnx, conf);
 
 	/** load compositor if requested **/
 	if (use_internal_compositor) {
@@ -217,21 +185,38 @@ void page_t::run() {
 		try {
 			rnd = new compositor_t();
 
-			if(conf.has_key("compositor", "fade_in_time")) {
-				rnd->set_fade_in_time(conf.get_long("compositor", "fade_in_time"));
+			if (conf.has_key("compositor", "fade_in_time")) {
+				rnd->set_fade_in_time(
+						conf.get_long("compositor", "fade_in_time"));
 			}
 
-			if(conf.has_key("compositor", "fade_out_time")) {
-				rnd->set_fade_out_time(conf.get_long("compositor", "fade_out_time"));
+			if (conf.has_key("compositor", "fade_out_time")) {
+				rnd->set_fade_out_time(
+						conf.get_long("compositor", "fade_out_time"));
 			}
 
 		} catch (...) {
-			rnd = 0;
+			rnd = nullptr;
 		}
 	}
 
-	/** initialise theme **/
-	theme = new simple2_theme_t(cnx, conf);
+	/* create an invisible window to identify page */
+	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->get_root_window(), -100,
+			-100, 1, 1, 0, 0, 0);
+	std::string name("page");
+	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
+			name.length() + 1);
+	cnx->change_property(wm_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
+			&wm_window, 1);
+	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTING_WM_CHECK,
+			WINDOW, 32, &wm_window, 1);
+	long pid = getpid();
+	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
+	cnx->select_input(wm_window, StructureNotifyMask);
+	if (!cnx->register_wm(true, wm_window)) {
+		printf("Cannot register window manager\n");
+		return;
+	}
 
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
@@ -240,10 +225,9 @@ void page_t::run() {
 
 	update_viewport_layout();
 
-
 	/* init page render */
-	rpage = new renderable_page_t(cnx, theme,
-			_root_position.w, _root_position.h);
+	rpage = new renderable_page_t(cnx, theme, _root_position.w,
+			_root_position.h);
 
 	/* create and add popups (overlay) */
 	pfm = new popup_frame_move_t(cnx, theme);
@@ -270,10 +254,10 @@ void page_t::run() {
 	default_window_pop = 0;
 
 	default_window_pop = get_another_notebook();
-	if(default_window_pop == 0)
+	if (default_window_pop == 0)
 		throw std::runtime_error("very bad error");
 
-	if(default_window_pop != 0)
+	if (default_window_pop != 0)
 		default_window_pop->set_default(true);
 
 	update_net_supported();
@@ -281,8 +265,7 @@ void page_t::run() {
 	/* update number of desktop */
 	int32_t number_of_desktop = 1;
 	cnx->change_property(cnx->get_root_window(), _NET_NUMBER_OF_DESKTOPS,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&number_of_desktop), 1);
+			CARDINAL, 32, &number_of_desktop, 1);
 
 	/* define desktop geometry */
 	set_desktop_geometry(_root_position.w, _root_position.h);
@@ -290,24 +273,20 @@ void page_t::run() {
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
 	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_VIEWPORT,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(viewport), 2);
+			CARDINAL, 32, viewport, 2);
 
 	/* set current desktop */
 	long current_desktop = 0;
-	cnx->change_property(cnx->get_root_window(), _NET_CURRENT_DESKTOP,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&current_desktop), 1);
+	cnx->change_property(cnx->get_root_window(), _NET_CURRENT_DESKTOP, CARDINAL,
+			32, &current_desktop, 1);
 
 	long showing_desktop = 0;
-	cnx->change_property(cnx->get_root_window(), _NET_SHOWING_DESKTOP,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&showing_desktop), 1);
+	cnx->change_property(cnx->get_root_window(), _NET_SHOWING_DESKTOP, CARDINAL,
+			32, &showing_desktop, 1);
 
 	char const desktop_name[10] = "NoName";
 	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_NAMES,
-			UTF8_STRING, 8, PropModeReplace,
-			(unsigned char *) desktop_name, (int) (strlen(desktop_name) + 2));
+			UTF8_STRING, 8, desktop_name, (strlen(desktop_name) + 2));
 
 	XIconSize icon_size;
 	icon_size.min_width = 16;
@@ -329,18 +308,21 @@ void page_t::run() {
 	workarea[1] = 0;
 	workarea[2] = _root_position.w;
 	workarea[3] = _root_position.h;
-	cnx->change_property(cnx->get_root_window(), _NET_WORKAREA, CARDINAL,
-			32, PropModeReplace, reinterpret_cast<unsigned char*>(workarea), 4);
+	cnx->change_property(cnx->get_root_window(), _NET_WORKAREA, CARDINAL, 32,
+			workarea, 4);
 
 	rpage->add_damaged(_root_position);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask, cnx->get_root_window(),
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
 	/* quit page */
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_q), Mod4Mask, cnx->get_root_window(),
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_q), Mod4Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_r), Mod4Mask, cnx->get_root_window(),
+	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_r), Mod4Mask,
+			cnx->get_root_window(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* print state info */
@@ -367,11 +349,11 @@ void page_t::run() {
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
 	XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
-			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-			GrabModeSync, GrabModeAsync, None, None);
+	ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+	GrabModeSync, GrabModeAsync, None, None);
 
 	timespec _max_wait;
-	time_t const default_wait = 1000000000L/30L;
+	time_t const default_wait = 1000000000L / 30L;
 	time_t max_wait = default_wait;
 	time_t next_frame;
 
@@ -382,28 +364,20 @@ void page_t::run() {
 
 	int max = cnx->fd();
 
-	if (rnd != 0) {
+	if (rnd != nullptr) {
 		max = cnx->fd() > rnd->fd() ? cnx->fd() : rnd->fd();
+	}
+
+	if (rnd != nullptr) {
+		rnd->process_events();
+		rnd->render();
+		rnd->xflush();
 	}
 
 	update_allocation();
 	XFlush(cnx->dpy);
 	running = true;
 	while (running) {
-
-		time_t cur_tic;
-		cur_tic.get_time();
-
-		if(cur_tic > next_frame) {
-			next_frame = cur_tic + default_wait;
-			max_wait = default_wait;
-			if (rnd != 0) {
-				rnd->render();
-				rnd->xflush();
-			}
-		} else {
-			max_wait = next_frame - cur_tic;
-		}
 
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_intr);
@@ -412,7 +386,7 @@ void page_t::run() {
 		FD_SET(cnx->fd(), &fds_intr);
 
 		/** listen for compositor events **/
-		if (rnd != 0) {
+		if (rnd != nullptr) {
 			FD_SET(rnd->fd(), &fds_read);
 			FD_SET(rnd->fd(), &fds_intr);
 		}
@@ -422,7 +396,8 @@ void page_t::run() {
 		 **/
 		_max_wait = max_wait;
 		//printf("%ld %ld\n", _max_wait.tv_sec, _max_wait.tv_nsec);
-		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait, NULL);
+		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
+		NULL);
 
 		while (XPending(cnx->dpy)) {
 			XEvent ev;
@@ -435,6 +410,18 @@ void page_t::run() {
 
 		if (rnd != 0) {
 			rnd->process_events();
+			/** limit FPS **/
+			time_t cur_tic;
+			cur_tic.get_time();
+			if (cur_tic > next_frame) {
+				next_frame = cur_tic + default_wait;
+				max_wait = default_wait;
+				if (rnd != 0) {
+					rnd->render();
+				}
+			} else {
+				max_wait = next_frame - cur_tic;
+			}
 			rnd->xflush();
 		}
 
@@ -483,6 +470,7 @@ void page_t::scan() {
 	unsigned int num;
 	Window d1, d2, *wins = 0;
 
+	cnx->grab();
 	/* start listen root event before anything each event will be stored to right run later */
 	cnx->select_input(cnx->get_root_window(),
 	SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask);
@@ -527,6 +515,9 @@ void page_t::scan() {
 	update_client_list();
 	update_allocation();
 	update_windows_stack();
+
+	cnx->ungrab();
+
 //	printf("return %s\n", __PRETTY_FUNCTION__);
 }
 
@@ -591,8 +582,7 @@ void page_t::update_net_supported() {
 		++k;
 	}
 
-	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTED, ATOM, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(list), k);
+	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTED, ATOM, 32, list, k);
 
 	delete[] list;
 
@@ -609,14 +599,13 @@ void page_t::update_client_list() {
 	}
 
 	vector<Window> client_list(s_client_list.begin(), s_client_list.end());
-	vector<Window> client_list_stack(s_client_list_stack.begin(), s_client_list_stack.end());
+	vector<Window> client_list_stack(s_client_list_stack.begin(),
+			s_client_list_stack.end());
 
 	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST_STACKING,
-			WINDOW, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(&client_list_stack[0]), client_list_stack.size());
-	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST, WINDOW,
-			32, PropModeReplace, reinterpret_cast<unsigned char *>(&client_list[0]),
-			client_list.size());
+			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
+	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST, WINDOW, 32,
+			&client_list[0], client_list.size());
 
 }
 
@@ -4013,8 +4002,7 @@ void page_t::set_desktop_geometry(long width, long height) {
 	desktop_geometry[0] = width;
 	desktop_geometry[1] = height;
 	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY,
-			CARDINAL, 32, PropModeReplace,
-			reinterpret_cast<unsigned char *>(desktop_geometry), 2);
+			CARDINAL, 32, desktop_geometry, 2);
 }
 
 client_base_t * page_t::find_client_with(Window w) {

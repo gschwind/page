@@ -147,9 +147,9 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 }
 
 window_icon_handler_t::~window_icon_handler_t() {
-	if (icon_surf != 0) {
+	if (icon_surf != nullptr) {
 		cairo_surface_destroy(icon_surf);
-		icon_surf = 0;
+		icon_surf = nullptr;
 	}
 }
 

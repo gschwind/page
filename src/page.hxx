@@ -461,9 +461,9 @@ public:
 	void remove_client(client_base_t * c);
 	void add_client(client_base_t * c);
 	list<tree_t *> childs() const;
-	virtual string get_node_name() const;
-	virtual void replace(tree_t * src, tree_t * by);
-	virtual void raise_child(tree_t * t);
+	string get_node_name() const;
+	void replace(tree_t * src, tree_t * by);
+	void raise_child(tree_t * t);
 	void remove(tree_t * t);
 
 	static managed_window_t * _upgrade(managed_window_base_t const * x) {

@@ -436,8 +436,7 @@ public:
 	}
 
 	void set_net_wm_desktop(unsigned long n) {
-		_cnx->change_property(_id, _NET_WM_DESKTOP, CARDINAL, 32,
-				PropModeReplace, (unsigned char *) &n, 1);
+		_cnx->change_property(_id, _NET_WM_DESKTOP, CARDINAL, 32, &n, 1);
 		safe_delete(_net_wm_desktop);
 		_net_wm_desktop = new unsigned long(n);
 	}

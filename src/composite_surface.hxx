@@ -55,9 +55,9 @@ public:
 	}
 
 	void destroy_cache() {
-		if (_surf != 0) {
+		if (_surf != nullptr) {
 			cairo_surface_destroy(_surf);
-			_surf = 0;
+			_surf = nullptr;
 		}
 
 		if(_pixmap_id != None) {
@@ -88,9 +88,9 @@ public:
 	}
 
 	cairo_surface_t * get_surf() {
-		if (_surf != 0) {
+		if (_surf != nullptr) {
 			cairo_surface_destroy(_surf);
-			_surf = 0;
+			_surf = nullptr;
 		}
 		_surf = cairo_xlib_surface_create(_dpy, _pixmap_id, _vis, _width, _height);
 		return _surf;

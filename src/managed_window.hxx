@@ -390,24 +390,24 @@ public:
 
 	void destroy_back_buffer() {
 
-		if(_top_buffer != 0) {
+		if(_top_buffer != nullptr) {
 			cairo_surface_destroy(_top_buffer);
-			_top_buffer = 0;
+			_top_buffer = nullptr;
 		}
 
-		if(_bottom_buffer != 0) {
+		if(_bottom_buffer != nullptr) {
 			cairo_surface_destroy(_bottom_buffer);
-			_bottom_buffer = 0;
+			_bottom_buffer = nullptr;
 		}
 
-		if(_left_buffer != 0) {
+		if(_left_buffer != nullptr) {
 			cairo_surface_destroy(_left_buffer);
-			_left_buffer = 0;
+			_left_buffer = nullptr;
 		}
 
-		if(_right_buffer != 0) {
+		if(_right_buffer != nullptr) {
 			cairo_surface_destroy(_right_buffer);
-			_right_buffer = 0;
+			_right_buffer = nullptr;
 		}
 
 	}

@@ -265,9 +265,9 @@ simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 
 simple2_theme_t::~simple2_theme_t() {
 
-	if(background_s != 0) {
+	if(background_s != nullptr) {
 		cairo_surface_destroy(background_s);
-		background_s = 0;
+		background_s = nullptr;
 	}
 
 	cairo_surface_destroy(hsplit_button_s);
@@ -1270,9 +1270,9 @@ void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int
 
 void simple2_theme_t::update() {
 
-	if(background_s != 0) {
+	if(background_s != nullptr) {
 		cairo_surface_destroy(background_s);
-		background_s = 0;
+		background_s = nullptr;
 	}
 
 	create_background_img();
@@ -1301,7 +1301,6 @@ void simple2_theme_t::create_background_img() {
 		double src_height = cairo_image_surface_get_height(tmp);
 
 		if (src_width > 0 and src_height > 0) {
-
 
 			if (scale_mode == "stretch") {
 				cairo_t * cr = cairo_create(background_s);
@@ -1441,7 +1440,7 @@ void simple2_theme_t::create_background_img() {
 		cairo_surface_destroy(tmp);
 
 	} else {
-		background_s = 0;
+		background_s = nullptr;
 	}
 }
 

@@ -9,6 +9,7 @@
 
 #include "utils.hxx"
 #include "compositor.hxx"
+#include "time.hxx"
 
 using namespace page;
 
@@ -19,43 +20,43 @@ int main(int argc, char * * argv) {
 	fd_set fds_read;
 	fd_set fds_intr;
 
-	timespec default_wait = new_timespec(0, 1000000000/30);
-	timespec next_frame;
+	page::time_t default_wait(1000000000/30);
+	page::time_t next_frame;
+	next_frame.get_time();
 
-	clock_gettime(CLOCK_MONOTONIC, &next_frame);
+	timespec _max_wait;
 
-
-	timespec max_wait;
-
-
-	int max = compositor->fd();
-
-	while (true) {
-		timespec cur_tic;
-
-		clock_gettime(CLOCK_MONOTONIC, &cur_tic);
-
-		if(cur_tic > next_frame) {
-			next_frame = cur_tic + default_wait;
-			max_wait = default_wait;
-			compositor->render_auto();
-		} else {
-			max_wait = pdiff(cur_tic, next_frame);
-		}
-
-		compositor->xflush();
+	bool running = true;
+	while (running) {
 
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_intr);
 
+		/** listen for compositor events **/
 		FD_SET(compositor->fd(), &fds_read);
 		FD_SET(compositor->fd(), &fds_intr);
 
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
-		int nfd = pselect(max + 1, &fds_read, 0, &fds_intr, &max_wait, NULL);
+		_max_wait = default_wait;
+		//printf("%ld %ld\n", _max_wait.tv_sec, _max_wait.tv_nsec);
+		int nfd = pselect(compositor->fd() + 1, &fds_read, NULL, &fds_intr, &_max_wait,
+		NULL);
+
 		compositor->process_events();
+		/** limit FPS **/
+		page::time_t cur_tic;
+		cur_tic.get_time();
+		if (cur_tic > next_frame) {
+			next_frame = cur_tic + default_wait;
+			_max_wait = default_wait;
+			compositor->render();
+		} else {
+			_max_wait = next_frame - cur_tic;
+		}
+		compositor->xflush();
+
 
 	}
 }

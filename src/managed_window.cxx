@@ -151,16 +151,19 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 managed_window_t::~managed_window_t() {
 
-	if(_surf != 0) {
+	if(_surf != nullptr) {
 		cairo_surface_destroy(_surf);
+		_surf = nullptr;
 	}
 
-	if(_icon != 0) {
+	if(_icon != nullptr) {
 		delete _icon;
+		_icon = nullptr;
 	}
 
-	if (_floating_area != 0) {
+	if (_floating_area != nullptr) {
 		delete _floating_area;
+		_floating_area = nullptr;
 	}
 
 	destroy_back_buffer();
@@ -414,8 +417,7 @@ void managed_window_t::set_opaque_region(Window w, region & region) {
 		++i;
 	}
 
-	_cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32,
-			PropModeReplace, reinterpret_cast<unsigned char *>(&data[0]),
+	_cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
 			data.size());
 
 }

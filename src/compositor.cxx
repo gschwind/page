@@ -114,7 +114,7 @@ compositor_t::compositor_t() {
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
-	_dpy = XOpenDisplay(0);
+	_dpy = XOpenDisplay(NULL);
 	if (_dpy == NULL) {
 		throw std::runtime_error("Could not open display");
 	} else {
@@ -177,8 +177,6 @@ compositor_t::compositor_t() {
 		XCloseDisplay(_dpy);
 		throw compositor_fail_t();
 	}
-
-
 
 	/* initialize composite */
 	init_composite_overlay();
@@ -658,7 +656,6 @@ void compositor_t::render() {
 				pending_damage += i->second->get_region();
 			} else {
 				pending_damage += i->second->get_region();
-				destroy_composite_surface(i->second->get_surf()->wid());
 				//stack_window_remove(i->second->get_w());
 				delete i->second;
 				window_data.erase(i);
@@ -707,6 +704,7 @@ void compositor_t::render_managed() {
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 	cairo_destroy(cr);
 	cairo_surface_destroy(_back_buffer);
+	_back_buffer = nullptr;
 
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
@@ -862,6 +860,7 @@ void compositor_t::render_auto() {
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 	cairo_destroy(cr);
 	cairo_surface_destroy(_back_buffer);
+	_back_buffer = nullptr;
 
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
@@ -977,11 +976,9 @@ void compositor_t::process_event(XMapEvent const & e) {
 		if (wa.c_class == InputOutput) {
 
 			create_damage(e.window, wa);
-			create_composite_surface(e.window, wa);
-
 			_pending_damage += rectangle(wa.x, wa.y, wa.width, wa.height);
 
-			p_composite_surface_t x = create_composite_surface(e.window, wa);
+			p_composite_surface_t x = get_composite_surface(e.window, wa);
 			if(has_key(window_data, e.window)) {
 				delete window_data[e.window];
 				window_data.erase(e.window);
@@ -1140,6 +1137,7 @@ void compositor_t::scan() {
 
 
 	XGrabServer(_dpy);
+	cout << "XGrabServer(" << _dpy << ")" << endl;
 	/**
 	 * Start listen root event before anything each event will be stored to
 	 * right run later.
@@ -1165,12 +1163,10 @@ void compositor_t::scan() {
 					if (wa.map_state != IsUnmapped) {
 
 						create_damage(wins[i], wa);
-						create_composite_surface(wins[i], wa);
-
 						_pending_damage += rectangle(wa.x, wa.y, wa.width,
 								wa.height);
 
-						p_composite_surface_t x = create_composite_surface(
+						p_composite_surface_t x = get_composite_surface(
 								wins[i], wa);
 						if (has_key(window_data, wins[i])) {
 							delete window_data[wins[i]];
@@ -1196,6 +1192,8 @@ void compositor_t::scan() {
 	}
 
 	XUngrabServer(_dpy);
+	cout << "XUngrabServer(" << _dpy << ")" << endl;
+	xflush();
 
 }
 
@@ -1260,6 +1258,7 @@ void compositor_t::update_layout() {
 	XGetWindowAttributes(_dpy, DefaultRootWindow(_dpy), &root_attributes);
 
 	destroy_cairo();
+
 	init_cairo();
 
 	_desktop_region.clear();
@@ -1417,9 +1416,9 @@ bool compositor_t::process_check_event() {
 
 void compositor_t::destroy_cairo() {
 
-	if(_back_buffer != 0) {
+	if(_back_buffer != nullptr) {
 		cairo_surface_destroy(_back_buffer);
-		_back_buffer = 0;
+		_back_buffer = nullptr;
 	}
 
 	XdbeDeallocateBackBufferName(_dpy, composite_back_buffer);

@@ -113,9 +113,9 @@ public:
 	}
 
 	void destroy_back_buffer() {
-		if (_back_surf != 0) {
+		if (_back_surf != nullptr) {
 			cairo_surface_destroy(_back_surf);
-			_back_surf = 0;
+			_back_surf = nullptr;
 		}
 	}
 

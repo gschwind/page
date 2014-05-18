@@ -359,6 +359,7 @@ public:
 		if (grab_count == 0) {
 			cnx_printf("XGrabServer\n");
 			XGrabServer(dpy);
+			cout << "XGrabServer(" << dpy << ")" << endl;
 			cnx_printf("XSync\n");
 			XSync(dpy, False);
 		}
@@ -374,6 +375,7 @@ public:
 		if (grab_count == 0) {
 			cnx_printf("XUngrabServer\n");
 			XUngrabServer(dpy);
+			cout << "XUngrabServer(" << dpy << ")" << endl;
 			cnx_printf("XFlush\n");
 			XFlush(dpy);
 		}
@@ -592,11 +594,12 @@ public:
 		}
 	}
 
-	int change_property(Window w, atom_e property, atom_e type,
-			int format, int mode, unsigned char const * data, int nelements) {
-
+	template<typename T>
+	int change_property(Window w, atom_e property, atom_e type, int format,
+			T data, int nelements) {
 		cnx_printf("XChangeProperty: win = %lu\n", w);
-		return XChangeProperty(dpy, w, A(property), A(type), format, mode, data,
+		return XChangeProperty(dpy, w, A(property), A(type), format,
+				PropModeReplace, reinterpret_cast<unsigned char const *>(data),
 				nelements);
 	}
 
