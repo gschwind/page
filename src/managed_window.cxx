@@ -145,8 +145,6 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 	_surf = cairo_xlib_surface_create(_cnx->dpy, _deco, _deco_visual, b.w, b.h);
 
-	reconfigure();
-
 }
 
 managed_window_t::~managed_window_t() {

@@ -424,7 +424,7 @@ public:
 
 
 	bool has_motif_border() {
-		if (motif_hints != 0) {
+		if (motif_hints != nullptr) {
 			if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
 				if (not (motif_hints->decorations & MWM_DECOR_BORDER)
 						and not ((motif_hints->decorations & MWM_DECOR_ALL))) {

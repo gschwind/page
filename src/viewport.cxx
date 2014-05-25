@@ -14,8 +14,8 @@
 
 namespace page {
 
-viewport_t::viewport_t(theme_t * theme, rectangle const & area) : raw_aera(area), effective_aera(area), fullscreen_client(0) {
-	_subtree = 0;
+viewport_t::viewport_t(theme_t * theme, rectangle const & area) : raw_aera(area), effective_aera(area) {
+	_subtree = nullptr;
 	_is_visible = true;
 	_theme = theme;
 	_subtree = new notebook_t(_theme);
@@ -41,11 +41,6 @@ void viewport_t::close(tree_t * src) {
 }
 
 void viewport_t::remove(tree_t * src) {
-	if(src == fullscreen_client) {
-		cout << "WARNING: do not use viewport_t::remove to remove fullscreen windows" << endl;
-		fullscreen_client = nullptr;
-		return;
-	}
 	if(src == _subtree) {
 		cout << "WARNING do not use viewport_t::remove to remove subtree element" << endl;
 		_subtree = nullptr;
@@ -76,15 +71,6 @@ void viewport_t::set_effective_area(rectangle const & area) {
 
 rectangle viewport_t::get_absolute_extend() {
 	return raw_aera;
-}
-
-region viewport_t::get_area() {
-	if (_is_visible && fullscreen_client == 0) {
-		region r(effective_aera);
-		return r;
-	} else {
-		return rectangle();
-	}
 }
 
 }

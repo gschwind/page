@@ -222,6 +222,7 @@ public:
 		viewport_t * viewport;
 		managed_window_type_e revert_type;
 		notebook_t * revert_notebook;
+
 	};
 
 	enum process_mode_e {
@@ -289,7 +290,7 @@ public:
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<Window, fullscreen_data_t> fullscreen_client_to_viewport;
+	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
 

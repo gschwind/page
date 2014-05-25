@@ -443,7 +443,7 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	//printf("unmanage %lu\n", mw->orig());
 
-	if (has_key(fullscreen_client_to_viewport, mw->orig())) {
+	if (has_key(fullscreen_client_to_viewport, mw)) {
 		unfullscreen(mw);
 	}
 
@@ -462,7 +462,7 @@ void page_t::unmanage(managed_window_t * mw) {
 	cleanup_grab(mw);
 
 	/* try to remove it from tree */
-	fullscreen_client_to_viewport.erase(mw->orig());
+	fullscreen_client_to_viewport.erase(mw);
 }
 
 void page_t::scan() {
@@ -1335,10 +1335,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			pn0->hide();
 
-			if (mode_data_fullscreen.v != 0 and mode_data_fullscreen.mw != 0) {
-				if (mode_data_fullscreen.v->fullscreen_client
-						!= mode_data_fullscreen.mw) {
-					unfullscreen(mode_data_fullscreen.mw);
+			if (mode_data_fullscreen.v != nullptr
+					and mode_data_fullscreen.mw != nullptr) {
+				// check if we realy need to move
+				if (mode_data_fullscreen.v
+						!= fullscreen_client_to_viewport[mode_data_fullscreen.mw].viewport) {
+					// finally fullscreen the client.
 					fullscreen(mode_data_fullscreen.mw, mode_data_fullscreen.v);
 				}
 			}
@@ -2373,9 +2375,8 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 		return;
 
 	/* WARNING: Call order is important, change it with caution */
+
 	fullscreen_data_t data;
-
-
 	if(mw->is(MANAGED_NOTEBOOK)) {
 		/**
 		 * if the current window is managed in notebook:
@@ -2399,15 +2400,20 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 		data.revert_type = MANAGED_FLOATING;
 		data.revert_notebook = nullptr;
 		if (v == nullptr) {
+			// TODO: find a free viewport
 			data.viewport = viewport_outputs.begin()->second;
 		} else {
 			data.viewport = v;
 		}
 	}
 
-
-	if (data.viewport->fullscreen_client != nullptr) {
-		unfullscreen(data.viewport->fullscreen_client);
+	// unfullscreen client that already use this screen
+	for (auto &x : fullscreen_client_to_viewport) {
+		if (x.second.viewport == mode_data_fullscreen.v) {
+			unfullscreen(
+					dynamic_cast<managed_window_t *>(x.first));
+			break;
+		}
 	}
 
 	data.viewport->_is_visible = false;
@@ -2419,9 +2425,8 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	}
 
 	mw->set_managed_type(MANAGED_FULLSCREEN);
-	data.viewport->fullscreen_client = mw;
 	mw->set_parent(data.viewport);
-	fullscreen_client_to_viewport[mw->orig()] = data;
+	fullscreen_client_to_viewport[mw] = data;
 	mw->set_notebook_wished_position(data.viewport->raw_aera);
 	mw->reconfigure();
 	printf("FULLSCREEN TO %fx%f+%f+%f\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
@@ -2433,10 +2438,10 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 void page_t::unfullscreen(managed_window_t * mw) {
 	/* WARNING: Call order is important, change it with caution */
 	mw->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
-	if(!has_key(fullscreen_client_to_viewport, mw->orig()))
+	if(!has_key(fullscreen_client_to_viewport, mw))
 		return;
 
-	fullscreen_data_t & data = fullscreen_client_to_viewport[mw->orig()];
+	fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
 
 	viewport_t * v = data.viewport;
 
@@ -2452,8 +2457,7 @@ void page_t::unfullscreen(managed_window_t * mw) {
 		mw->reconfigure();
 	}
 
-	v->fullscreen_client = nullptr;
-	fullscreen_client_to_viewport.erase(mw->orig());
+	fullscreen_client_to_viewport.erase(mw);
 	v->_is_visible = true;
 
 	/* map all notebook window */
@@ -3573,8 +3577,13 @@ void page_t::update_viewport_layout() {
 void page_t::remove_viewport(viewport_t * v) {
 
 	/* remove fullscreened clients if needed */
-	if (v->fullscreen_client != 0) {
-		unfullscreen(v->fullscreen_client);
+
+	// unfullscreen client that already use this screen
+	for (auto &x : fullscreen_client_to_viewport) {
+		if (x.second.viewport == v) {
+			unfullscreen(dynamic_cast<managed_window_t *>(x.first));
+			break;
+		}
 	}
 
 	/* Transfer clients to a valid notebook */
@@ -3761,11 +3770,20 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 
 
 
-	if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+	if (mw->is_fullscreen()) {
+		mw->normalize();
+		fullscreen(mw);
+		mw->reconfigure();
+		Time time = 0;
+		if (get_safe_net_wm_user_time(mw, time)) {
+			set_focus(mw, time);
+		}
+	} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			and get_transient_for(mw) == 0 and mw->has_motif_border()) {
+			and get_transient_for(mw) == nullptr and mw->has_motif_border()) {
 
 		bind_window(mw);
+		mw->reconfigure();
 
 	} else {
 		mw->normalize();
@@ -3776,9 +3794,7 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		}
 	}
 
-	if (mw->is_fullscreen()) {
-		fullscreen(mw);
-	}
+
 
 }
 
@@ -3986,6 +4002,10 @@ list<tree_t *> page_t::childs() const {
 		ret.push_back(x);
 	}
 
+	for(auto x: fullscreen_client_to_viewport) {
+		ret.push_back(x.first);
+	}
+
 	for(auto x: tooltips) {
 		ret.push_back(x);
 	}
@@ -4030,6 +4050,7 @@ void page_t::remove(tree_t * t) {
 
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
 	tooltips.remove(dynamic_cast<unmanaged_window_t *>(t));
+	fullscreen_client_to_viewport.erase(dynamic_cast<managed_window_t *>(t));
 }
 
 }

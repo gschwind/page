@@ -36,8 +36,6 @@ public:
 	rectangle raw_aera;
 	rectangle effective_aera;
 	tree_t * _subtree;
-	managed_window_t * fullscreen_client;
-
 	list<unmanaged_window_t *> docks;
 
 	bool _is_visible;
@@ -57,7 +55,6 @@ public:
 	notebook_t * get_nearest_notebook();
 
 	virtual rectangle get_absolute_extend();
-	virtual region get_area();
 	virtual void set_allocation(rectangle const & area);
 
 	void set_raw_area(rectangle const & area);
@@ -87,10 +84,6 @@ public:
 
 		for(auto x: docks) {
 			ret.push_back(x);
-		}
-
-		if (fullscreen_client != nullptr) {
-			ret.push_back(fullscreen_client);
 		}
 
 		return ret;
