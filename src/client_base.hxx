@@ -148,39 +148,39 @@ public:
 		bzero(&wa, sizeof(XWindowAttributes));
 
 		/* ICCCM */
-		wm_name = 0;
-		wm_icon_name = 0;
-		wm_normal_hints = 0;
-		wm_hints = 0;
-		wm_class = 0;
-		wm_transient_for = 0;
-		wm_protocols = 0;
-		wm_colormap_windows = 0;
-		wm_client_machine = 0;
-		wm_state = 0;
+		wm_name = nullptr;
+		wm_icon_name = nullptr;
+		wm_normal_hints = nullptr;
+		wm_hints = nullptr;
+		wm_class = nullptr;
+		wm_transient_for = nullptr;
+		wm_protocols = nullptr;
+		wm_colormap_windows = nullptr;
+		wm_client_machine = nullptr;
+		wm_state = nullptr;
 
 		/* EWMH */
-		_net_wm_name = 0;
-		_net_wm_visible_name = 0;
-		_net_wm_icon_name = 0;
-		_net_wm_visible_icon_name = 0;
-		_net_wm_desktop = 0;
-		_net_wm_window_type = 0;
-		_net_wm_state = 0;
-		_net_wm_allowed_actions = 0;
-		_net_wm_struct = 0;
-		_net_wm_struct_partial = 0;
-		_net_wm_icon_geometry = 0;
-		_net_wm_icon = 0;
-		_net_wm_pid = 0;
+		_net_wm_name = nullptr;
+		_net_wm_visible_name = nullptr;
+		_net_wm_icon_name = nullptr;
+		_net_wm_visible_icon_name = nullptr;
+		_net_wm_desktop = nullptr;
+		_net_wm_window_type = nullptr;
+		_net_wm_state = nullptr;
+		_net_wm_allowed_actions = nullptr;
+		_net_wm_struct = nullptr;
+		_net_wm_struct_partial = nullptr;
+		_net_wm_icon_geometry = nullptr;
+		_net_wm_icon = nullptr;
+		_net_wm_pid = nullptr;
 		_net_wm_handled_icons = false;
-		_net_wm_user_time = 0;
-		_net_wm_user_time_window = 0;
-		_net_frame_extents = 0;
-		_net_wm_opaque_region = 0;
-		_net_wm_bypass_compositor = 0;
+		_net_wm_user_time = nullptr;
+		_net_wm_user_time_window = nullptr;
+		_net_frame_extents = nullptr;
+		_net_wm_opaque_region = nullptr;
+		_net_wm_bypass_compositor = nullptr;
 
-		motif_hints = 0;
+		motif_hints = nullptr;
 
 	}
 

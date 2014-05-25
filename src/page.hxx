@@ -103,12 +103,16 @@ public:
 		rectangle slider_area;
 		double split_ratio;
 
-
 		mode_data_split_t() {
-			split = 0;
+			reset();
+		}
+
+		void reset() {
+			split = nullptr;
 			slider_area = rectangle();
 			split_ratio = 0.5;
 		}
+
 	};
 
 	struct mode_data_notebook_t {
@@ -120,12 +124,16 @@ public:
 		notebook_t * ns;
 
 		mode_data_notebook_t() {
+			reset();
+		}
+
+		void reset() {
 			start_x = 0;
 			start_y = 0;
 			zone = SELECT_NONE;
-			c = 0;
-			from = 0;
-			ns = 0;
+			c = nullptr;
+			from = nullptr;
+			ns = nullptr;
 		}
 
 	};
@@ -139,11 +147,15 @@ public:
 		notebook_t * ns;
 
 		mode_data_bind_t() {
+			reset();
+		}
+
+		void reset() {
 			start_x = 0;
 			start_y = 0;
 			zone = SELECT_NONE;
-			c = 0;
-			ns = 0;
+			c = nullptr;
+			ns = nullptr;
 		}
 
 	};
@@ -173,13 +185,17 @@ public:
 		unsigned int button;
 
 		mode_data_floating_t() {
+			reset();
+		}
+
+		void reset() {
 			mode = RESIZE_NONE;
 			x_offset = 0;
 			y_offset = 0;
 			x_root = 0;
 			y_root = 0;
 			original_position = rectangle();
-			f = 0;
+			f = nullptr;
 			popup_original_position = rectangle();
 			final_position = rectangle();
 			button = Button1;
@@ -190,6 +206,16 @@ public:
 	struct mode_data_fullscreen_t {
 		managed_window_t * mw;
 		viewport_t * v;
+
+		mode_data_fullscreen_t() {
+			reset();
+		}
+
+		void reset() {
+			mw = nullptr;
+			v = nullptr;
+		}
+
 	};
 
 	struct fullscreen_data_t {

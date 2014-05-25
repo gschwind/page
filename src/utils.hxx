@@ -433,17 +433,17 @@ vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type)
 }
 
 template<typename T> void safe_delete(T & p) {
-	if (p != 0) {
+	if (p != nullptr) {
 		delete p;
-		p = 0;
+		p = nullptr;
 	}
 }
 
 template<typename T> T * safe_copy(T * p) {
-	if (p != 0) {
+	if (p != nullptr) {
 		return new T(*p);
 	} else {
-		return 0;
+		return nullptr;
 	}
 }
 
@@ -477,12 +477,12 @@ T * read_value(Display * dpy, Window w, Atom prop, Atom type) {
 
 inline string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
 	vector<char> * tmp = get_window_property<char>(dpy, w, prop, type);
-	if (tmp != 0) {
+	if (tmp != nullptr) {
 		string * ret = new string(tmp->begin(), tmp->end());
 		delete tmp;
 		return ret;
 	} else {
-		return 0;
+		return nullptr;
 	}
 }
 

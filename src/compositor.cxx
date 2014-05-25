@@ -242,63 +242,63 @@ bool compositor_t::check_glx_for_extensions(char const * const * const extension
 
 bool compositor_t::check_glx_context() {
 
-
-	/** Get composite wimdow XVisualInfo **/
-	XWindowAttributes wa;
-	XGetWindowAttributes(_dpy, composite_overlay, &wa);
-	XVisualInfo * vis_info = NULL;
-	int nitems = 0;
-	XVisualInfo vreq = { 0 };
-	vreq.visualid = XVisualIDFromVisual(wa.visual);
-	vis_info = XGetVisualInfo(_dpy, VisualIDMask, &vreq, &nitems);
-
-	if (!vis_info) {
-		fprintf(stderr, "Failed to acquire XVisualInfo for current visual.\n");
-		return false;
-	}
-
-	/** Check that the visual is double-buffered **/
-	int value = 0;
-//	if (Success != glXGetConfig(_dpy, vis_info, GLX_USE_GL, &value)) {
-//		fprintf(stderr, "Composite window do not use GL.\n");
+//
+//	/** Get composite wimdow XVisualInfo **/
+//	XWindowAttributes wa;
+//	XGetWindowAttributes(_dpy, composite_overlay, &wa);
+//	XVisualInfo * vis_info = NULL;
+//	int nitems = 0;
+//	XVisualInfo vreq = { 0 };
+//	vreq.visualid = XVisualIDFromVisual(wa.visual);
+//	vis_info = XGetVisualInfo(_dpy, VisualIDMask, &vreq, &nitems);
+//
+//	if (!vis_info) {
+//		fprintf(stderr, "Failed to acquire XVisualInfo for current visual.\n");
 //		return false;
 //	}
+//
+//	/** Check that the visual is double-buffered **/
+//	int value = 0;
+////	if (Success != glXGetConfig(_dpy, vis_info, GLX_USE_GL, &value)) {
+////		fprintf(stderr, "Composite window do not use GL.\n");
+////		return false;
+////	}
+////
+////	if(value == 0) {
+////		fprintf(stderr, "Composite window do not use GL.\n");
+////		return false;
+////	}
+////
+////
+////	if (Success != glXGetConfig(_dpy, vis_info, GLX_DOUBLEBUFFER, &value)) {
+////		fprintf(stderr, "Composite window is not a double buffered.\n");
+////		return false;
+////	}
 //
 //	if(value == 0) {
-//		fprintf(stderr, "Composite window do not use GL.\n");
-//		return false;
-//	}
-//
-//
-//	if (Success != glXGetConfig(_dpy, vis_info, GLX_DOUBLEBUFFER, &value)) {
 //		fprintf(stderr, "Composite window is not a double buffered.\n");
 //		return false;
 //	}
-
-	if(value == 0) {
-		fprintf(stderr, "Composite window is not a double buffered.\n");
-		return false;
-	}
-
-	glx_ctx = glXCreateContext(_dpy, vis_info, None, GL_TRUE);
-
-	if(glx_ctx == NULL) {
-		fprintf(stderr, "Failed to get GLX context.\n");
-		return false;
-	}
-
-	if (!glXMakeCurrent(_dpy, composite_overlay, glx_ctx)) {
-		fprintf(stderr, "Failed to attach GLX context to composite window.\n");
-		return false;
-	}
-
-	if(not check_glx_for_extensions(require_glx_extensions)) {
-		fprintf(stderr, "Require GLX extension not found.\n");
-		return false;
-	}
-
-	return true;
-
+//
+//	glx_ctx = glXCreateContext(_dpy, vis_info, None, GL_TRUE);
+//
+//	if(glx_ctx == NULL) {
+//		fprintf(stderr, "Failed to get GLX context.\n");
+//		return false;
+//	}
+//
+//	if (!glXMakeCurrent(_dpy, composite_overlay, glx_ctx)) {
+//		fprintf(stderr, "Failed to attach GLX context to composite window.\n");
+//		return false;
+//	}
+//
+//	if(not check_glx_for_extensions(require_glx_extensions)) {
+//		fprintf(stderr, "Require GLX extension not found.\n");
+//		return false;
+//	}
+//
+//	return true;
+//
 
 //
 //	  // Ensure GLX_EXT_texture_from_pixmap exists
@@ -413,6 +413,8 @@ compositor_t::~compositor_t() {
 		delete i->second;
 		++i;
 	}
+
+	window_data.clear();
 
 	XCloseDisplay(_dpy);
 

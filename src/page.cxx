@@ -522,7 +522,7 @@ void page_t::scan() {
 }
 
 void page_t::update_net_supported() {
-	std::list<Atom> supported_list;
+	list<Atom> supported_list;
 
 	supported_list.push_back(A(_NET_WM_NAME));
 	supported_list.push_back(A(_NET_WM_USER_TIME));
@@ -907,16 +907,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 			} else if (mw->is(MANAGED_FLOATING) and e.button == Button1
 					and e.subwindow != mw->orig()) {
-
 				mw->update_floating_areas();
-				vector<floating_event_t> const * l = mw->floating_areas();
-
+				auto const * l = mw->floating_areas();
 				floating_event_t const * b = 0;
-				for (vector<floating_event_t>::const_iterator i = l->begin();
-						i != l->end(); ++i) {
-					//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
-					if((*i).position.is_inside(e.x, e.y)) {
-						b = &(*i);
+				for (auto &i : (*l)) {
+					if(i.position.is_inside(e.x, e.y)) {
+						b = &i;
 						break;
 					}
 				}
@@ -1103,15 +1099,10 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_SPLIT_GRAB:
 		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
-
 			ps->hide();
-
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
 			rpage->add_damaged(mode_data_split.split->allocation());
-
-			mode_data_split.split = 0;
-			mode_data_split.slider_area = rectangle();
-			mode_data_split.split_ratio = 0.5;
+			mode_data_split.reset();
 		}
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
@@ -1157,12 +1148,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			if (mode_data_notebook.ns != nullptr)
 				rpage->add_damaged(mode_data_notebook.ns->allocation());
 
-			mode_data_notebook.start_x = 0;
-			mode_data_notebook.start_y = 0;
-			mode_data_notebook.zone = SELECT_NONE;
-			mode_data_notebook.c = 0;
-			mode_data_notebook.from = 0;
-			mode_data_notebook.ns = 0;
+			mode_data_notebook.reset();
 		}
 		break;
 	case PROCESS_NOTEBOOK_BUTTON_PRESS:
@@ -1171,10 +1157,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			{
 				page_event_t * b = 0;
-				for (vector<page_event_t>::iterator i = page_areas->begin();
-						i != page_areas->end(); ++i) {
-					if ((*i).position.is_inside(e.x, e.y)) {
-						b = &(*i);
+				for (auto &i : *page_areas) {
+					if (i.position.is_inside(e.x, e.y)) {
+						b = &i;
 						break;
 					}
 				}
@@ -1207,12 +1192,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				}
 			}
 
-			mode_data_notebook.start_x = 0;
-			mode_data_notebook.start_y = 0;
-			mode_data_notebook.zone = SELECT_NONE;
-			mode_data_notebook.c = 0;
-			mode_data_notebook.from = 0;
-			mode_data_notebook.ns = 0;
+			mode_data_notebook.reset();
+
 		}
 		break;
 	case PROCESS_FLOATING_MOVE:
@@ -1229,16 +1210,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			set_focus(mode_data_floating.f, e.time);
 
 			process_mode = PROCESS_NORMAL;
-
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_MOVE_BY_CLIENT:
@@ -1254,17 +1226,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			set_focus(mode_data_floating.f, e.time);
 
 			process_mode = PROCESS_NORMAL;
-
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
-
+			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_RESIZE:
@@ -1281,15 +1243,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			set_focus(mode_data_floating.f, e.time);
 			process_mode = PROCESS_NORMAL;
 
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
@@ -1303,20 +1257,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			mode_data_floating.f->reconfigure();
 
 			set_focus(mode_data_floating.f, e.time);
+
 			process_mode = PROCESS_NORMAL;
-
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
-
-
-
+			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_CLOSE:
@@ -1324,20 +1267,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == Button1) {
 			managed_window_t * mw = mode_data_floating.f;
 			mw->delete_window(e.time);
-
 			/* cleanup */
 			process_mode = PROCESS_NORMAL;
-
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
-
+			mode_data_floating.reset();
 		}
 
 		break;
@@ -1380,12 +1312,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 
 			process_mode = PROCESS_NORMAL;
-
-			mode_data_bind.start_x = 0;
-			mode_data_bind.start_y = 0;
-			mode_data_bind.zone = SELECT_NONE;
-			mode_data_bind.c = 0;
-			mode_data_bind.ns = 0;
+			mode_data_bind.reset();
 
 		}
 
@@ -1416,8 +1343,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				}
 			}
 
-			mode_data_fullscreen.v = 0;
-			mode_data_fullscreen.mw = 0;
+			mode_data_fullscreen.reset();
 
 		}
 
@@ -1498,8 +1424,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		list<notebook_t *> ln = get_notebooks();
-
+		auto ln = get_notebooks();
 		for (auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
 				//printf("tab\n");
@@ -1803,7 +1728,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 //		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
-		list<notebook_t *> ln = get_notebooks();
+		auto ln = get_notebooks();
 
 		for(auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root,
@@ -2013,7 +1938,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 	client_base_t * c = find_client(e.window);
 
-	if (c != 0) {
+	if (c != nullptr) {
 		if(typeid(*c) == typeid(managed_window_t)) {
 
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
@@ -2132,7 +2057,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 	client_base_t * c = find_client(e.window);
 
-	if(c != 0) {
+	if(c != nullptr) {
 		if(e.atom == A(WM_NAME)) {
 			c->update_wm_name();
 		} else if (e.atom == A(WM_ICON_NAME)) {
@@ -2203,7 +2128,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 	} else if (e.atom == A(_NET_WM_NAME) || e.atom == A(WM_NAME)) {
 
 
-		if (mw != 0) {
+		if (mw != nullptr) {
 			mw->update_title();
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
@@ -2240,7 +2165,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		//	manage_notebook(x);
 		//}
 	} else if (e.atom == A(WM_NORMAL_HINTS)) {
-		if (mw != 0) {
+		if (mw != nullptr) {
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				find_parent_notebook_for(mw)->update_client_position(mw);
@@ -2284,9 +2209,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	printf("ClientMessage type = %s\n", name);
 	XFree(name);
 
-
 	Window w = e.window;
-	if(w == 0)
+	if(w == None)
 		return;
 
 	managed_window_t * mw = find_managed_window_with(e.window);
@@ -2325,7 +2249,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == A(WM_CHANGE_STATE)) {
 
 		/** When window want to become iconic, just bind them **/
-		if (mw != 0) {
+		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
 				bind_window(mw);
 			}
@@ -2461,20 +2385,20 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 		 *    fullscreen host or use the first available viewport.
 		 **/
 		data.revert_notebook = find_parent_notebook_for(mw);
-		page_assert(data.revert_notebook != 0);
+		page_assert(data.revert_notebook != nullptr);
 		data.revert_type = MANAGED_NOTEBOOK;
-		if (v == 0) {
+		if (v == nullptr) {
 			data.viewport = find_viewport_for(data.revert_notebook);
 		} else {
 			data.viewport = v;
 		}
-		page_assert(data.viewport != 0);
+		page_assert(data.viewport != nullptr);
 		detach(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
 		detach(mw);
 		data.revert_type = MANAGED_FLOATING;
-		data.revert_notebook = 0;
-		if (v == 0) {
+		data.revert_notebook = nullptr;
+		if (v == nullptr) {
 			data.viewport = viewport_outputs.begin()->second;
 		} else {
 			data.viewport = v;
@@ -2482,7 +2406,7 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	}
 
 
-	if (data.viewport->fullscreen_client != 0) {
+	if (data.viewport->fullscreen_client != nullptr) {
 		unfullscreen(data.viewport->fullscreen_client);
 	}
 
@@ -2528,12 +2452,12 @@ void page_t::unfullscreen(managed_window_t * mw) {
 		mw->reconfigure();
 	}
 
-	v->fullscreen_client = 0;
+	v->fullscreen_client = nullptr;
 	fullscreen_client_to_viewport.erase(mw->orig());
 	v->_is_visible = true;
 
 	/* map all notebook window */
-	list<notebook_t *> ns = get_notebooks(v);
+	auto ns = get_notebooks(v);
 	for (auto i : ns) {
 		i->map_all();
 	}
@@ -2676,7 +2600,7 @@ void page_t::process_event(XEvent const & e) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
 	} else if (e.type == Expose) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
-		if (mw != 0) {
+		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->expose();
 			}
@@ -2783,12 +2707,13 @@ void page_t::process_event(XEvent const & e) {
 
 }
 
-void page_t::insert_window_in_notebook(managed_window_t * x, notebook_t * n, bool prefer_activate) {
+void page_t::insert_window_in_notebook(managed_window_t * x, notebook_t * n,
+		bool prefer_activate) {
 	page_assert(x != nullptr);
 	page_assert(find_parent_notebook_for(x) == nullptr);
-	if (n == 0)
+	if (n == nullptr)
 		n = default_window_pop;
-	page_assert(n != 0);
+	page_assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
 	rpage->add_damaged(n->allocation());
@@ -2804,7 +2729,7 @@ void page_t::update_allocation() {
 }
 
 void page_t::set_default_pop(notebook_t * x) {
-	if(default_window_pop != 0) {
+	if(default_window_pop != nullptr) {
 		default_window_pop->set_default(false);
 		rpage->add_damaged(default_window_pop->allocation());
 	}
@@ -2815,7 +2740,7 @@ void page_t::set_default_pop(notebook_t * x) {
 
 void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
-	if (new_focus != 0)
+	if (new_focus != nullptr)
 		cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
 
 	/** ignore focus if time is too old **/
@@ -2825,12 +2750,12 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 	if(tfocus != CurrentTime)
 		_last_focus_time = tfocus;
 
-	managed_window_t * old_focus = 0;
+	managed_window_t * old_focus = nullptr;
 
 	/** NULL pointer is always in the list **/
 	old_focus = _client_focused.front();
 
-	if (old_focus != 0) {
+	if (old_focus != nullptr) {
 		/**
 		 * update _NET_WM_STATE and grab button mode and mark decoration
 		 * durty (for floating window only)
@@ -2854,7 +2779,7 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 	_client_focused.remove(new_focus);
 	_client_focused.push_front(new_focus);
 
-	if(new_focus == 0)
+	if(new_focus == nullptr)
 		return;
 
 	/**
@@ -2989,7 +2914,7 @@ void page_t::notebook_close(notebook_t * src) {
 	}
 
 	/* move all windows from src to default_window_pop */
-	list<managed_window_t *> windows = src->get_clients();
+	auto windows = src->get_clients();
 	for(auto i : windows) {
 		detach(i);
 		insert_window_in_notebook(i, 0, false);
@@ -3026,7 +2951,8 @@ void page_t::update_popup_position(popup_notebook0_t * p,
 	p->expose();
 }
 
-void page_t::update_popup_position(popup_frame_move_t * p, rectangle & position) {
+void page_t::update_popup_position(popup_frame_move_t * p,
+		rectangle & position) {
 	p->move_resize(position);
 	p->expose();
 }
@@ -3148,7 +3074,7 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 	printf("_NET_WM_STATE %s %s from %lu\n", action, name.c_str(), c);
 
 	managed_window_t * mw = find_managed_window_with(c);
-	if(mw == 0)
+	if(mw == nullptr)
 		return;
 
 	if (mw->is(MANAGED_NOTEBOOK)) {
@@ -3284,7 +3210,7 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 	detach(c);
 	client_base_t * transient_for = get_transient_for(c);
-	if (transient_for != 0) {
+	if (transient_for != nullptr) {
 		printf("transient_for %lu -> %lu\n", c->orig(), transient_for->orig());
 		transient_for->add_subclient(c);
 	} else {
@@ -3294,11 +3220,11 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 }
 
 client_base_t * page_t::get_transient_for(client_base_t * c) {
-	client_base_t * transient_for = 0;
-	if(c != 0) {
-		if(c->wm_transient_for != 0) {
+	client_base_t * transient_for = nullptr;
+	if(c != nullptr) {
+		if(c->wm_transient_for != nullptr) {
 			transient_for = find_client_with(*(c->wm_transient_for));
-			if(transient_for == 0)
+			if(transient_for == nullptr)
 				printf("Warning transiant for an unknown client\n");
 		}
 	}
@@ -3874,8 +3800,8 @@ void page_t::create_dock_window(client_base_t * c, Atom type) {
 	 * Attach dock to viewport by checking where the center of dock is
 	 * located. This is a tweak.
 	 **/
-	double center_x = c->wa.width / 2.0 + c->wa.x;
-	double center_y = c->wa.height / 2.0 + c->wa.y;
+	double center_x = c->wa.width / 2.0 + c->wa.x; // uninitialize read
+	double center_y = c->wa.height / 2.0 + c->wa.y; // uninitialize read
 
 	bool is_attached = false;
 	for(auto &i: viewport_outputs) {
@@ -4040,8 +3966,9 @@ void page_t::remove_client(client_base_t * c) {
 void page_t::add_client(client_base_t * c) {
 	auto i = clients.find(c->orig());
 	if(i != clients.end() and c != i->second) {
-		detach(i->second);
-		delete i->second;
+		auto x = i->second;
+		detach(x);
+		delete x;
 		clients.erase(i);
 	}
 	clients[c->_id] = c;
