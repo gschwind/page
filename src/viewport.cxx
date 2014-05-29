@@ -47,9 +47,6 @@ void viewport_t::remove(tree_t * src) {
 		return;
 	}
 
-	if(has_key(docks, dynamic_cast<unmanaged_window_t*>(src))) {
-		docks.remove(dynamic_cast<unmanaged_window_t*>(src));
-	}
 }
 
 void viewport_t::reconfigure() {

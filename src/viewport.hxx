@@ -36,7 +36,6 @@ public:
 	rectangle raw_aera;
 	rectangle effective_aera;
 	tree_t * _subtree;
-	list<unmanaged_window_t *> docks;
 
 	bool _is_visible;
 
@@ -82,10 +81,6 @@ public:
 			ret.push_back(_subtree);
 		}
 
-		for(auto x: docks) {
-			ret.push_back(x);
-		}
-
 		return ret;
 	}
 
@@ -93,14 +88,6 @@ public:
 		if(_parent != nullptr) {
 			_parent->raise_child(this);
 		}
-	}
-
-	void attach_dock(unmanaged_window_t * uw) {
-		docks.push_back(uw);
-	}
-
-	void detach_dock(unmanaged_window_t * uw) {
-		docks.remove(uw);
 	}
 
 	virtual string get_node_name() const {

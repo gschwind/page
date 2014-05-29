@@ -3811,29 +3811,8 @@ void page_t::create_dock_window(client_base_t * c, Atom type) {
 	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
 	add_client(uw);
 	uw->map();
-
-	/**
-	 * Attach dock to viewport by checking where the center of dock is
-	 * located. This is a tweak.
-	 **/
-	double center_x = c->wa.width / 2.0 + c->wa.x; // uninitialize read
-	double center_y = c->wa.height / 2.0 + c->wa.y; // uninitialize read
-
-	bool is_attached = false;
-	for(auto &i: viewport_outputs) {
-		if(i.second->raw_aera.is_inside(center_x, center_y)) {
-			i.second->attach_dock(uw);
-			is_attached = true;
-		}
-	}
-
-	/* if no view port is found just attached to the first one */
-	if(not is_attached) {
-		viewport_outputs.begin()->second->attach_dock(uw);
-	}
-
+	attach_dock(uw);
 	safe_raise_window(uw);
-
 }
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {
@@ -4002,6 +3981,10 @@ list<tree_t *> page_t::childs() const {
 		ret.push_back(x);
 	}
 
+	for(auto x: docks) {
+		ret.push_back(x);
+	}
+
 	for(auto x: fullscreen_client_to_viewport) {
 		ret.push_back(x.first);
 	}
@@ -4036,6 +4019,12 @@ void page_t::raise_child(tree_t * t) {
 		tooltips.push_back(y);
 		y->set_parent(this);
 	}
+
+	if(has_key(docks, y)) {
+		docks.remove(y);
+		docks.push_back(y);
+		y->set_parent(this);
+	}
 }
 
 void page_t::remove(tree_t * t) {
@@ -4051,6 +4040,8 @@ void page_t::remove(tree_t * t) {
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
 	tooltips.remove(dynamic_cast<unmanaged_window_t *>(t));
 	fullscreen_client_to_viewport.erase(dynamic_cast<managed_window_t *>(t));
+	docks.remove(dynamic_cast<unmanaged_window_t*>(t));
+
 }
 
 }

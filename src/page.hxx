@@ -275,6 +275,7 @@ public:
 
 	map<Window, client_base_t *> clients;
 	list<client_base_t *> root_subclients;
+	list<unmanaged_window_t *> docks;
 	list<unmanaged_window_t *> tooltips;
 
 	Cursor default_cursor;
@@ -503,6 +504,14 @@ public:
 
 	static split_t * _upgrade(split_base_t const * x) {
 		return dynamic_cast<split_t *>(const_cast<split_base_t *>(x));
+	}
+
+	void attach_dock(unmanaged_window_t * uw) {
+		docks.push_back(uw);
+	}
+
+	void detach_dock(unmanaged_window_t * uw) {
+		docks.remove(uw);
 	}
 
 };
