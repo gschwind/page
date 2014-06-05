@@ -34,8 +34,6 @@ namespace page {
 
 class compositor_t {
 
-	static char const * const require_glx_extensions[];
-
 	Display * _dpy;
 
 	Window cm_window;
@@ -58,9 +56,6 @@ class compositor_t {
 
 	/* xrandr extension handler */
 	int xrandr_opcode, xrandr_event, xrandr_error;
-
-	/* GLX extension handler */
-	int glx_opcode, glx_event, glx_error;
 
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
