@@ -3,6 +3,7 @@ bin_PROGRAMS = page query_tree listen_root_event simple_window_test send_page_qu
 AM_CXXFLAGS =  \
 	-rdynamic \
 	$(X11_CFLAGS) \
+	$(XCB_CFLAGS) \
 	$(CAIRO_CFLAGS) \
 	$(PANGO_CFLAGS) \
 	$(XCOMPOSITE_CFLAGS) \
@@ -34,6 +35,7 @@ page_SOURCES = \
 
 page_LDADD = \
 	$(X11_LIBS) \
+	$(XCB_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
 	$(XCOMPOSITE_LIBS) \
@@ -54,6 +56,7 @@ page_internal_compositor_SOURCES = \
 
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \
+	$(XCB_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
 	$(XCOMPOSITE_LIBS) \

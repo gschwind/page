@@ -12,17 +12,16 @@
 
 #include <X11/X.h>
 
+#include "client_base.hxx"
 #include "xconnection.hxx"
 
 namespace page {
 
-class unmanaged_window_t {
+class unmanaged_window_t : public client_base_t {
 private:
 
 	static unsigned long const UNMANAGED_ORIG_WINDOW_EVENT_MASK =
 	StructureNotifyMask | PropertyChangeMask;
-
-	xconnection_t * cnx;
 
 	Atom _net_wm_type;
 
@@ -31,23 +30,26 @@ private:
 	unmanaged_window_t & operator=(unmanaged_window_t const &);
 
 public:
-	Window const orig;
 
-	unmanaged_window_t(xconnection_t * cnx, Window orig, Atom type) :
-			cnx(cnx), _net_wm_type(type), orig(orig) {
-
-		cnx->grab();
-		cnx->select_input(orig, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-		cnx->ungrab();
-
+	unmanaged_window_t(Atom type, client_base_t * c) : client_base_t(*c),
+			 _net_wm_type(type) {
+		_cnx->grab();
+		_cnx->select_input(_id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+		_cnx->ungrab();
 	}
 
 	~unmanaged_window_t() {
+
 	}
 
 	Atom net_wm_type() {
 		return _net_wm_type;
 	}
+
+	virtual bool has_window(Window w) {
+		return w == _id;
+	}
+
 
 };
 

@@ -35,7 +35,7 @@ class composite_surface_t {
 
 public:
 
-	composite_surface_t(Display * dpy, Window w, XWindowAttributes & wa) {
+	composite_surface_t(Display * dpy, Window w, XWindowAttributes const & wa) {
 		_window_id = w;
 		_dpy = dpy;
 		_vis = wa.visual;

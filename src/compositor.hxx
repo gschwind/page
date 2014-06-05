@@ -191,20 +191,8 @@ public:
 		return render_mode;
 	}
 
-	region read_opaque_region(Window w) {
-		region ret;
-		std::vector<long> data;
-		if(get_window_property<long>(_dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL), &data)) {
-			for(int i = 0; i < data.size() / 4; ++i) {
-				ret += rectangle(data[i*4+0],data[i*4+1],data[i*4+2],data[i*4+3]);
-			}
-		}
-		return ret;
-	}
-
-
 	composite_surface_t * create_composite_surface(Window w,
-			XWindowAttributes & wa) {
+			XWindowAttributes const & wa) {
 		assert(w != None);
 		assert(wa.c_class == InputOutput);
 
@@ -271,6 +259,10 @@ public:
 
 	Window get_composite_overlay() {
 		return composite_overlay;
+	}
+
+	void add_render(renderable_t * r) {
+		_graph_scene.push_back(r);
 	}
 
 
