@@ -3055,8 +3055,8 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		break;
 	}
 
-	string name = cnx->get_atom_name(state_properties);
-	printf("_NET_WM_STATE %s %s from %lu\n", action, name.c_str(), c);
+	auto name = cnx->get_atom_name(state_properties);
+	printf("_NET_WM_STATE %s %s from %lu\n", action, name.get(), c);
 
 	managed_window_t * mw = find_managed_window_with(c);
 	if(mw == nullptr)
@@ -3622,8 +3622,8 @@ void page_t::onmap(Window w) {
 
 			Atom type = c->type();
 
-			string xn = cnx->get_atom_name(type);
-			cout << "Window type = " << xn << endl;
+			auto xn = cnx->get_atom_name(type);
+			cout << "Window type = " << xn.get() << endl;
 
 			if (!c->wa.override_redirect) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
@@ -3727,8 +3727,8 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		cout << "_NET_WM_STATE = ";
 		for (list<Atom>::iterator i = mw->_net_wm_state->begin();
 				i != mw->_net_wm_state->end(); ++i) {
-			string x = cnx->get_atom_name(*i);
-			cout << x << " ";
+			auto x = cnx->get_atom_name(*i);
+			cout << x.get() << " ";
 		}
 		cout << endl;
 	}

@@ -157,6 +157,8 @@ public:
 		return DefaultRootWindow(dpy);
 	}
 
+
+	/* conveniant macro to get atom XID */
 	Atom A(atom_e atom) {
 		return (*_A)(atom);
 	}
@@ -652,10 +654,15 @@ public:
 		return XConfigureWindow(dpy, w, value_mask, values);
 	}
 
-	char * _get_atom_name(Atom atom) {
+	static void _safe_xfree(void * x) {
+		if(x != NULL)
+			XFree(x);
+	}
 
+	/* used for debuging, do not optimize with some cache */
+	shared_ptr<char> get_atom_name(Atom atom) {
 		cnx_printf("XGetAtomName: atom = %lu\n", atom);
-		return XGetAtomName(dpy, atom);
+		return shared_ptr<char>(XGetAtomName(dpy, atom), _safe_xfree);
 	}
 
 	Status send_event(Window w, Bool propagate, long event_mask,
@@ -696,52 +703,6 @@ public:
 		//send_event(xroot, False, SubstructureNotifyMask, &ev);
 
 
-	}
-
-	string const & get_atom_name(Atom a) {
-		return atom_to_name(a);
-	}
-
-	Atom get_atom(char const * name) {
-		return name_to_atom(name);
-	}
-
-	string const & atom_to_name(Atom atom) {
-
-		map<Atom, string>::iterator i = _atom_to_name.find(atom);
-		if(i != _atom_to_name.end()) {
-			return i->second;
-		} else {
-			char * name = _get_atom_name(atom);
-			if(name == 0) {
-				stringstream os;
-				os << "UNKNOWN_" << hex << atom;
-				_name_to_atom[os.str()] = atom;
-				_atom_to_name[atom] = os.str();
-			} else {
-				string sname(name);
-				_name_to_atom[sname] = atom;
-				_atom_to_name[atom] = sname;
-				XFree(name);
-			}
-			return _atom_to_name[atom];
-		}
-	}
-
-	Atom const & name_to_atom(char const * name) {
-		static Atom none = None;
-		if(name == 0)
-			return none;
-
-		map<string, Atom>::iterator i = _name_to_atom.find(string(name));
-		if(i != _name_to_atom.end()) {
-			return i->second;
-		} else {
-			Atom a = XInternAtom(dpy, name, False);
-			_name_to_atom[string(name)] = a;
-			_atom_to_name[a] = string(name);
-			return _name_to_atom[string(name)];
-		}
 	}
 
 	bool motif_has_border(Window w) {

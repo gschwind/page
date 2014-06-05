@@ -351,10 +351,6 @@ public:
 		return cnx->A(atom);
 	}
 
-	Atom A(char const * aname) {
-		return cnx->get_atom(aname);
-	}
-
 	/* run page main loop */
 	void run();
 
