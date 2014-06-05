@@ -23,6 +23,8 @@
 
 #include <glib.h>
 
+#include <memory>
+
 #include <cstdarg>
 #include <cstdlib>
 #include <cstdio>
@@ -113,7 +115,7 @@ struct xconnection_t {
 	/* GLX extension handler */
 	int glx_opcode, glx_event, glx_error;
 
-	atom_handler_t _A;
+	shared_ptr<atom_handler_t> _A;
 
 public:
 
@@ -156,7 +158,7 @@ public:
 	}
 
 	Atom A(atom_e atom) {
-		return _A(atom);
+		return (*_A)(atom);
 	}
 
 	int screen() {
@@ -342,7 +344,8 @@ public:
 			throw std::runtime_error(RANDR_NAME " extension is not supported");
 		}
 
-		_A = atom_handler_t(dpy);
+
+		_A = shared_ptr<atom_handler_t>(new atom_handler_t(dpy));
 
 	}
 

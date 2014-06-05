@@ -133,7 +133,7 @@ compositor_t::compositor_t() {
 		throw std::runtime_error(RANDR_NAME " extension is not supported");
 	}
 
-	A = atom_handler_t(_dpy);
+	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_dpy));
 
 	/* create an invisible window to identify page */
 	cm_window = XCreateSimpleWindow(_dpy, DefaultRootWindow(_dpy), -100,

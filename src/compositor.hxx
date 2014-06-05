@@ -59,7 +59,7 @@ class compositor_t {
 
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
-	atom_handler_t A;
+	shared_ptr<atom_handler_t> _A;
 
 	/** Performance counter **/
 	unsigned int flush_count;
@@ -260,6 +260,10 @@ public:
 
 		window_to_composite_surface.clear();
 
+	}
+
+	Atom A(atom_e a) {
+		return (*_A)(a);
 	}
 
 

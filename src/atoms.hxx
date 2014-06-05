@@ -279,46 +279,23 @@ ATOM_ITEM(PAGE_QUIT)
 class atom_handler_t {
 	Atom * _data;
 	char const ** _name;
-	unsigned int * _nbref;
 
-	void decrement_ref() {
-		/** decrement current ref, and clean if needed **/
-		--(*_nbref);
-		if(*_nbref == 0) {
-			delete [] _data;
-			delete [] _name;
-			delete _nbref;
-		}
-	}
-
-	void unsafe_copy(atom_handler_t const & a) {
-		_data = a._data;
-		_name = a._name;
-		_nbref = a._nbref;
-		++(*_nbref);
-	}
+	/** cannot be moved or copied **/
+	atom_handler_t(atom_handler_t const & a);
+	atom_handler_t(atom_handler_t const && a);
+	atom_handler_t & operator=(atom_handler_t const & a);
 
 public:
 
-	atom_handler_t() {
-		_data = new Atom[0];
-		_name = new char const *[0];
-		_nbref = new unsigned int;
-		*_nbref = 1;
-	}
-
 	atom_handler_t(Display * dpy) {
-
 		unsigned const n_items = sizeof(atom_name) / sizeof(atom_item_t);
 
 		_data = new Atom[LAST_ATOM];
 		_name = new char const *[LAST_ATOM];
-		_nbref = new unsigned int;
-		*_nbref = 1;
 
 		for (int i = 0; i < LAST_ATOM; ++i) {
 			_data[i] = None;
-			_name[i] = 0;
+			_name[i] = nullptr;
 		}
 
 		for (unsigned int i = 0; i < n_items; ++i) {
@@ -326,28 +303,15 @@ public:
 			_name[atom_name[i].id] = atom_name[i].name;
 		}
 
-		for (int i = 0; i < LAST_ATOM; ++i) {
+		for (unsigned int i = 0; i < LAST_ATOM; ++i) {
 			if(_data[i] == None)
 				printf("FAIL INIT ATOM %d\n", i);
 		}
 	}
 
-	/** copy **/
-	atom_handler_t(atom_handler_t const & a) {
-		unsafe_copy(a);
-	}
-
-	/** assign **/
-	atom_handler_t & operator=(atom_handler_t const & a) {
-		if (this != &a) {
-			decrement_ref();
-			unsafe_copy(a);
-		}
-		return *this;
-	}
-
 	~atom_handler_t() {
-		decrement_ref();
+		delete [] _data;
+		delete [] _name;
 	}
 
 	Atom operator() (int id) {
