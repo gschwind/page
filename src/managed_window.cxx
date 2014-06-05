@@ -148,6 +148,7 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 }
 
 managed_window_t::~managed_window_t() {
+	cout << "call " << __FUNCTION__ << endl;
 
 	if(_surf != nullptr) {
 		cairo_surface_destroy(_surf);
@@ -173,6 +174,8 @@ managed_window_t::~managed_window_t() {
 	XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));
 	XDestroyWindow(_cnx->dpy, _deco);
 	XDestroyWindow(_cnx->dpy, _base);
+
+	XMapWindow(_cnx->dpy, _id);
 
 }
 

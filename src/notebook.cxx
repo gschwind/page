@@ -116,7 +116,6 @@ void notebook_t::set_selected(managed_window_t * c) {
 void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
 	rectangle client_size = compute_client_size(c);
-
 	c->set_notebook_wished_position(client_size);
 	c->reconfigure();
 }

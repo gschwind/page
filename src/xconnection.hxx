@@ -603,6 +603,10 @@ public:
 				nelements);
 	}
 
+	void delete_property(Window w, atom_e property) {
+		XDeleteProperty(dpy, w, A(property));
+	}
+
 	Status get_window_attributes(Window w,
 			XWindowAttributes * window_attributes_return) {
 		cnx_printf("XGetWindowAttributes: win = %lu\n", w);

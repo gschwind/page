@@ -195,59 +195,59 @@ simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
 	create_background_img();
 
 	/* open icons */
-	if (hsplit_button_s == 0) {
+	if (hsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (hsplit_button_s == 0)
+		if (hsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (vsplit_button_s == 0) {
+	if (vsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (vsplit_button_s == 0)
+		if (vsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (close_button_s == 0) {
+	if (close_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-1.png";
 		printf("Load: %s\n", filename.c_str());
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (close_button_s == 0)
+		if (close_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (pop_button_s == 0) {
+	if (pop_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop.png";
 		printf("Load: %s\n", filename.c_str());
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (pop_button_s == 0)
+		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (pops_button_s == 0) {
+	if (pops_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop_selected.png";
 		printf("Load: %s\n", filename.c_str());
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (pop_button_s == 0)
+		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (unbind_button_s == 0) {
+	if (unbind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/media-eject.png";
 		printf("Load: %s\n", filename.c_str());
 		unbind_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (unbind_button_s == 0)
+		if (unbind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	if (bind_button_s == 0) {
+	if (bind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/view-restore.png";
 		printf("Load: %s\n", filename.c_str());
 		bind_button_s = cairo_image_surface_create_from_png(filename.c_str());
-		if (bind_button_s == 0)
+		if (bind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
@@ -610,7 +610,7 @@ void simple2_theme_t::render_notebook_selected(
 	rectangle bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
-	bicon.x += 7;
+	bicon.x += 10;
 	bicon.y += 2;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
@@ -628,8 +628,8 @@ void simple2_theme_t::render_notebook_selected(
 	rectangle btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 3 * 16 + 12 + 4;
-	btext.x += 7 + 16 + 2;
-	btext.y += 2;
+	btext.x += 7 + 16 + 6;
+	btext.y += 1;
 
 	/** draw title **/
 	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
@@ -798,7 +798,7 @@ void simple2_theme_t::render_notebook_normal(
 	rectangle bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
-	bicon.x += 3;
+	bicon.x += 6;
 	bicon.y += 2;
 
 	CHECK_CAIRO(cairo_save(cr));
@@ -817,8 +817,8 @@ void simple2_theme_t::render_notebook_normal(
 	rectangle btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 1 * 16 + 8;
-	btext.x += 3 + 16 + 2;
-	btext.y += 2;
+	btext.x += 3 + 16 + 6;
+	btext.y += 1;
 
 	CHECK_CAIRO(cairo_save(cr));
 
@@ -871,6 +871,17 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	}
 	CHECK_CAIRO(cairo_rectangle(cr, sarea.x, sarea.y, sarea.w, sarea.h));
 	CHECK_CAIRO(cairo_fill(cr));
+
+	rectangle grip;
+	grip.x = sarea.x+(sarea.w/2.0) - 4.0;
+	grip.y = sarea.y+(sarea.h/2.0) - 4.0;
+	grip.w = 8.0;
+	grip.h = 8.0;
+
+	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_rectangle(cr, grip.x, grip.y, grip.w, grip.h));
+	CHECK_CAIRO(cairo_fill(cr));
+
 	CHECK_CAIRO(cairo_restore(cr));
 }
 

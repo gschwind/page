@@ -185,6 +185,7 @@ public:
 	}
 
 	virtual ~client_base_t() {
+		cout << "call " << __FUNCTION__ << endl;
 		delete_all_properties();
 	}
 
@@ -616,6 +617,179 @@ public:
 		_childen.remove(t);
 	}
 
+
+	void print_window_attributes() {
+		printf(">>> Window: #%lu\n", _id);
+		printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
+		printf("> border_width: %d\n", wa.border_width);
+		printf("> depth: %d\n", wa.depth);
+		printf("> visual #%p\n", wa.visual);
+		printf("> root: #%lu\n", wa.root);
+		if (wa.c_class == CopyFromParent) {
+			printf("> class: CopyFromParent\n");
+		} else if (wa.c_class == InputOutput) {
+			printf("> class: InputOutput\n");
+		} else if (wa.c_class == InputOnly) {
+			printf("> class: InputOnly\n");
+		} else {
+			printf("> class: Unknown\n");
+		}
+
+		if (wa.map_state == IsViewable) {
+			printf("> map_state: IsViewable\n");
+		} else if (wa.map_state == IsUnviewable) {
+			printf("> map_state: IsUnviewable\n");
+		} else if (wa.map_state == IsUnmapped) {
+			printf("> map_state: IsUnmapped\n");
+		} else {
+			printf("> map_state: Unknown\n");
+		}
+
+		printf("> bit_gravity: %d\n", wa.bit_gravity);
+		printf("> win_gravity: %d\n", wa.win_gravity);
+		printf("> backing_store: %dlx\n", wa.backing_store);
+		printf("> backing_planes: %lx\n", wa.backing_planes);
+		printf("> backing_pixel: %lx\n", wa.backing_pixel);
+		printf("> save_under: %d\n", wa.save_under);
+		printf("> colormap: ?\n");
+		printf("> all_event_masks: %08lx\n", wa.all_event_masks);
+		printf("> your_event_mask: %08lx\n", wa.your_event_mask);
+		printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
+		printf("> override_redirect: %d\n", wa.override_redirect);
+		printf("> screen: %p\n", wa.screen);
+	}
+
+
+	void print_properties() {
+		/* ICCCM */
+		if(wm_name != nullptr)
+			cout << "* WM_NAME = " << *wm_name << endl;
+
+		if(wm_icon_name != nullptr)
+			cout << "* WM_ICON_NAME = " << *wm_icon_name << endl;
+
+		//if(wm_normal_hints != nullptr)
+		//	cout << "WM_NORMAL_HINTS = " << *wm_normal_hints << endl;
+
+		//if(wm_hints != nullptr)
+		//	cout << "WM_HINTS = " << *wm_hints << endl;
+
+		if(wm_class != nullptr)
+			cout << "* WM_CLASS = " << (*wm_class)[0] << "," << (*wm_class)[1] << endl;
+
+		if(wm_transient_for != nullptr)
+			cout << "* WM_TRANSIENT_FOR = " << *wm_transient_for << endl;
+
+		if(wm_protocols != nullptr) {
+			cout << "* WM_PROTOCOLS = ";
+			for(auto x: *wm_protocols) {
+				cout << _cnx->get_atom_name(x) << " ";
+			}
+			cout << endl;
+		}
+
+		if(wm_colormap_windows != nullptr)
+			cout << "WM_COLORMAP_WINDOWS = " << (*wm_colormap_windows)[0] << endl;
+
+		if(wm_client_machine != nullptr)
+			cout << "* WM_CLIENT_MACHINE = " << *wm_client_machine << endl;
+
+		if(wm_state != nullptr) {
+			cout << "* WM_STATE = " << *wm_state << endl;
+		}
+
+
+		/* EWMH */
+		if(_net_wm_name != nullptr)
+			cout << "* _NET_WM_NAME = " << *_net_wm_name << endl;
+
+		if(_net_wm_visible_name != nullptr)
+			cout << "* _NET_WM_VISIBLE_NAME = " << *_net_wm_visible_name << endl;
+
+		if(_net_wm_icon_name != nullptr)
+			cout << "* _NET_WM_ICON_NAME = " << *_net_wm_icon_name << endl;
+
+		if(_net_wm_visible_icon_name != nullptr)
+			cout << "* _NET_WM_VISIBLE_ICON_NAME = " << *_net_wm_visible_icon_name << endl;
+
+		if(_net_wm_desktop != nullptr)
+			cout << "* _NET_WM_DESKTOP = " << *_net_wm_desktop << endl;
+
+		if(_net_wm_window_type != nullptr) {
+			cout << "* _NET_WM_WINDOW_TYPE = ";
+			for(auto x: *_net_wm_window_type) {
+				cout << _cnx->get_atom_name(x) << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_state != nullptr) {
+			cout << "* _NET_WM_STATE = ";
+			for(auto x: *_net_wm_state) {
+				cout << _cnx->get_atom_name(x) << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_allowed_actions != nullptr) {
+			cout << "* _NET_WM_ALLOWED_ACTIONS = ";
+			for(auto x: *_net_wm_allowed_actions) {
+				cout << _cnx->get_atom_name(x) << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_struct != nullptr) {
+			cout << "* _NET_WM_STRUCT = ";
+			for(auto x: *_net_wm_struct) {
+				cout << x << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_struct_partial != nullptr) {
+			cout << "* _NET_WM_PARTIAL_STRUCT = ";
+			for(auto x: *_net_wm_struct_partial) {
+				cout << x << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_icon_geometry != nullptr) {
+			cout << "* _NET_WM_ICON_GEOMETRY = ";
+			for(auto x: *_net_wm_struct_partial) {
+				cout << x << " ";
+			}
+			cout << endl;
+		}
+
+		if(_net_wm_icon != nullptr)
+			cout << "* _NET_WM_ICON = " << "TODO" << endl;
+
+		if(_net_wm_pid != nullptr)
+			cout << "* _NET_WM_PID = " << *_net_wm_pid << endl;
+
+		//if(_net_wm_handled_icons != false)
+		//	;
+
+		if(_net_wm_user_time != nullptr)
+			cout << "* _NET_WM_USER_TIME = " << *_net_wm_user_time << endl;
+
+		if(_net_wm_user_time_window != nullptr)
+			cout << "* _NET_WM_USER_TIME_WINDOW = " << *_net_wm_user_time_window << endl;
+
+		if(_net_frame_extents != nullptr) {
+			cout << "* _NET_FRAME_EXTENTS = ";
+			for(auto x: *_net_frame_extents) {
+				cout << x << " ";
+			}
+			cout << endl;
+		}
+
+		//_net_wm_opaque_region = nullptr;
+		//_net_wm_bypass_compositor = nullptr;
+		//motif_hints = nullptr;
+	}
 
 
 };
