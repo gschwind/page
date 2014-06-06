@@ -13,7 +13,7 @@
 #include <X11/X.h>
 
 #include "client_base.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 
 namespace page {
 

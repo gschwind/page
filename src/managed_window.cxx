@@ -86,14 +86,14 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		_deco_depth = _orig_depth;
 
 		/** if visual is 32 bits, this values are mandatory **/
-		swa.colormap = XCreateColormap(_cnx->dpy, _cnx->get_root_window(),
+		swa.colormap = XCreateColormap(_cnx->dpy, _cnx->root(),
 				_orig_visual,
 				AllocNone);
 		swa.background_pixel = BlackPixel(_cnx->dpy, _cnx->screen());
 		swa.border_pixel = BlackPixel(_cnx->dpy, _cnx->screen());
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_cnx->dpy, _cnx->get_root_window(), -10, -10, 1, 1,
+		wbase = XCreateWindow(_cnx->dpy, _cnx->root(), -10, -10, 1, 1,
 				0, 32,
 				InputOutput, _orig_visual, value_mask, &swa);
 		wdeco = XCreateWindow(_cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
@@ -118,14 +118,14 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		 **/
 		swa.border_pixel = 0;
 		swa.background_pixel = 0;
-		swa.colormap = XCreateColormap(_cnx->dpy, _cnx->get_root_window(),
+		swa.colormap = XCreateColormap(_cnx->dpy, _cnx->root(),
 				vinfo.visual, AllocNone);
 
 		_deco_visual = vinfo.visual;
 		_deco_depth = 32;
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_cnx->dpy, _cnx->get_root_window(), -10, -10, 1, 1,
+		wbase = XCreateWindow(_cnx->dpy, _cnx->root(), -10, -10, 1, 1,
 				0, 32, InputOutput, vinfo.visual, value_mask, &swa);
 		wdeco = XCreateWindow(_cnx->dpy, wbase, b.x, b.y, b.w, b.h, 0, 32,
 				InputOutput, vinfo.visual, value_mask, &swa);
@@ -168,7 +168,7 @@ managed_window_t::~managed_window_t() {
 	destroy_back_buffer();
 
 	_cnx->unmap(_orig);
-	_cnx->reparentwindow(_orig, _cnx->get_root_window(), _wished_position.x,
+	_cnx->reparentwindow(_orig, _cnx->root(), _wished_position.x,
 			_wished_position.y);
 	XRemoveFromSaveSet(_cnx->dpy, _orig);
 	XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));

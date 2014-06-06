@@ -22,7 +22,7 @@ struct popup_frame_move_t: public window_overlay_t {
 	window_icon_handler_t * icon;
 	string title;
 
-	popup_frame_move_t(xconnection_t * cnx, theme_t * theme) :
+	popup_frame_move_t(display_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
 
 		icon = 0;

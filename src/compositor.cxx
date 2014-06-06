@@ -16,7 +16,7 @@
 #include "compositor.hxx"
 #include "atoms.hxx"
 
-#include "xconnection.hxx"
+#include "display.hxx"
 
 namespace page {
 

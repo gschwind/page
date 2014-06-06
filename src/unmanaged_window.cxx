@@ -7,7 +7,7 @@
  *
  */
 
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "unmanaged_window.hxx"
 
 namespace page {

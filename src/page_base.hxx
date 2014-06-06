@@ -12,7 +12,7 @@
 #define PAGE_BASE_HXX_
 
 #include "tree.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "compositor.hxx"
 #include "notebook.hxx"
 

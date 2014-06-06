@@ -16,7 +16,7 @@
 
 #include "time.hxx"
 
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "region.hxx"
 #include "icon.hxx"
 #include "composite_window.hxx"

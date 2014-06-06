@@ -25,7 +25,7 @@ class popup_alt_tab_t : public window_overlay_t {
 
 public:
 
-	popup_alt_tab_t(xconnection_t * cnx, theme_t * theme) :
+	popup_alt_tab_t(display_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
 
 		selected = 0;

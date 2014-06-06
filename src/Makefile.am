@@ -19,6 +19,7 @@ AM_CXXFLAGS =  \
 
 page_SOURCES = \
 	main.cxx page.cxx \
+	display.cxx \
 	tree.cxx notebook.cxx \
 	split.cxx root.cxx \
 	ftrace_function.cxx \

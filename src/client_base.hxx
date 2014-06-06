@@ -21,7 +21,7 @@
 
 #include "utils.hxx"
 #include "motif_hints.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "tree.hxx"
 
 namespace page {
@@ -32,7 +32,7 @@ using namespace std;
 
 class client_base_t : public tree_t {
 public:
-	xconnection_t *              _cnx;
+	display_t *              _cnx;
 	Window                       _id;
 
 	bool                         has_valid_window_attributes;
@@ -141,7 +141,7 @@ public:
 
 	}
 
-	client_base_t(xconnection_t * cnx, Window id) :
+	client_base_t(display_t * cnx, Window id) :
 			_cnx(cnx), _id(id) {
 
 		has_valid_window_attributes = false;
@@ -596,7 +596,6 @@ public:
 		/** HACK FOR ECLIPSE **/
 		{
 			list<Atom> wm_state;
-			xconnection_t::wm_class wm_class;
 			if (this->wm_class != 0 and this->wm_state != 0
 					and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 				if ((*(this->wm_class))[0] == "Eclipse") {

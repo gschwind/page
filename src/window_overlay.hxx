@@ -15,7 +15,7 @@
 #include <cairo/cairo-xlib.h>
 
 #include "cairo_surface_type_name.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 
 namespace page {
 
@@ -23,7 +23,7 @@ namespace page {
 class window_overlay_t {
 
 protected:
-	xconnection_t * _cnx;
+	display_t * _cnx;
 	cairo_surface_t * _front_surf;
 	cairo_surface_t * _back_surf;
 	Window _wid;
@@ -38,7 +38,7 @@ protected:
 	bool _is_visible;
 
 public:
-	window_overlay_t(xconnection_t * cnx, int depth, rectangle position = rectangle(-10,-10, 1, 1)) {
+	window_overlay_t(display_t * cnx, int depth, rectangle position = rectangle(-10,-10, 1, 1)) {
 		_cnx = cnx;
 		_back_surf = 0;
 
@@ -67,10 +67,10 @@ public:
 		 **/
 		wa.border_pixel = 0;
 		wa.background_pixel = 0;
-		wa.colormap = XCreateColormap(_cnx->dpy, _cnx->get_root_window(),
+		wa.colormap = XCreateColormap(_cnx->dpy, _cnx->root(),
 				vinfo.visual, AllocNone);
 
-		_wid = XCreateWindow(_cnx->dpy, _cnx->get_root_window(), position.x,
+		_wid = XCreateWindow(_cnx->dpy, _cnx->root(), position.x,
 				position.y, position.w, position.h, 0, vinfo.depth, InputOutput,
 				vinfo.visual,
 				CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap,

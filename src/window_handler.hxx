@@ -17,7 +17,7 @@ namespace page {
 
 struct window_handler_t {
 
-	xconnection_t * cnx;
+	display_t * cnx;
 	Window id;
 
 	XWindowAttributes wa;
@@ -33,7 +33,7 @@ struct window_handler_t {
 
 
 
-	window_handler_t(xconnection_t * c, Window w) : net_wm_type() {
+	window_handler_t(display_t * c, Window w) : net_wm_type() {
 		cnx = c;
 		id = w;
 		has_net_wm_type = false;

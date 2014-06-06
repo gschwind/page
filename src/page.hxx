@@ -48,7 +48,7 @@
 #include "time.hxx"
 
 #include "compositor.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
 #include "viewport.hxx"
@@ -270,7 +270,7 @@ public:
 
 	mode_data_fullscreen_t mode_data_fullscreen;
 
-	xconnection_t * cnx;
+	display_t * cnx;
 	compositor_t * rnd;
 
 	map<Window, client_base_t *> clients;
@@ -344,7 +344,7 @@ public:
 	void set_default_pop(notebook_t * x);
 	void set_focus(managed_window_t * w, Time tfocus);
 	compositor_t * get_render_context();
-	xconnection_t * get_xconnection();
+	display_t * get_xconnection();
 
 	/** short cut **/
 	Atom A(atom_e atom) {

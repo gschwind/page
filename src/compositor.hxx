@@ -20,7 +20,7 @@
 
 #include "smart_pointer.hxx"
 #include "utils.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "region.hxx"
 #include "renderable.hxx"
 #include "composite_window.hxx"

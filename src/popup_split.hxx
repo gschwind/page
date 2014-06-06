@@ -21,7 +21,7 @@ struct popup_split_t: public window_overlay_t {
 
 	theme_t * _theme;
 
-	popup_split_t(xconnection_t * cnx, theme_t * theme) : window_overlay_t(cnx, 32), _theme(theme) {
+	popup_split_t(display_t * cnx, theme_t * theme) : window_overlay_t(cnx, 32), _theme(theme) {
 
 	}
 

@@ -32,7 +32,7 @@ namespace page {
 class simple2_theme_t : public theme_t {
 public:
 
-	xconnection_t * _cnx;
+	display_t * _cnx;
 
 	PangoFontDescription * notebook_active_font;
 	PangoFontDescription * notebook_selected_font;
@@ -89,7 +89,7 @@ public:
 	string scale_mode;
 
 
-	simple2_theme_t(xconnection_t * cnx, config_handler_t & conf);
+	simple2_theme_t(display_t * cnx, config_handler_t & conf);
 
 	virtual ~simple2_theme_t();
 

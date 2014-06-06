@@ -25,7 +25,7 @@ struct popup_notebook0_t : public window_overlay_t {
 
 	bool _show;
 
-	popup_notebook0_t(xconnection_t * cnx, theme_t * theme) :
+	popup_notebook0_t(display_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
 
 		icon = 0;

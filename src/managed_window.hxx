@@ -12,7 +12,7 @@
 
 #include "theme.hxx"
 #include "managed_window_base.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 
 namespace page {
 

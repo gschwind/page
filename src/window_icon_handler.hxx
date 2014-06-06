@@ -13,7 +13,7 @@
 
 #include <cairo.h>
 #include "icon.hxx"
-#include "xconnection.hxx"
+#include "display.hxx"
 #include "client_base.hxx"
 
 namespace page {

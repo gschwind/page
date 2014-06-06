@@ -21,7 +21,7 @@ class renderable_page_t: public window_overlay_t {
 	region damaged;
 public:
 
-	renderable_page_t(xconnection_t * cnx, theme_t * render, int width,
+	renderable_page_t(display_t * cnx, theme_t * render, int width,
 			int height) :
 			window_overlay_t(cnx, 24, rectangle(0, 0, width, height)), _theme(
 					render) {

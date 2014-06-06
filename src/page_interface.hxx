@@ -29,7 +29,7 @@ public:
 	virtual void set_focus(managed_window_t * w, Time tfocus);
 
 	virtual compositor_t * get_render_context();
-	virtual xconnection_t * get_xconnection();
+	virtual display_t * get_xconnection();
 
 	virtual void run();
 

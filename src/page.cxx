@@ -81,10 +81,10 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	process_mode = PROCESS_NORMAL;
 	key_press_mode = KEY_PRESS_NORMAL;
 
-	cnx = new xconnection_t();
+	cnx = new display_t();
 	rnd = nullptr;
 
-	set_window_cursor(cnx->get_root_window(), default_cursor);
+	set_window_cursor(cnx->root(), default_cursor);
 
 	running = false;
 
@@ -158,18 +158,18 @@ page_t::~page_t() {
 
 	if(cnx != nullptr) {
 		/** clean up properies defined by Window Manager **/
-		cnx->delete_property(cnx->get_root_window(), _NET_SUPPORTED);
-		cnx->delete_property(cnx->get_root_window(), _NET_CLIENT_LIST);
-		cnx->delete_property(cnx->get_root_window(), _NET_CLIENT_LIST_STACKING);
-		cnx->delete_property(cnx->get_root_window(), _NET_ACTIVE_WINDOW);
-		cnx->delete_property(cnx->get_root_window(), _NET_NUMBER_OF_DESKTOPS);
-		cnx->delete_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY);
-		cnx->delete_property(cnx->get_root_window(), _NET_DESKTOP_VIEWPORT);
-		cnx->delete_property(cnx->get_root_window(), _NET_CURRENT_DESKTOP);
-		cnx->delete_property(cnx->get_root_window(), _NET_DESKTOP_NAMES);
-		cnx->delete_property(cnx->get_root_window(), _NET_WORKAREA);
-		cnx->delete_property(cnx->get_root_window(), _NET_SUPPORTING_WM_CHECK);
-		cnx->delete_property(cnx->get_root_window(), _NET_SHOWING_DESKTOP);
+		cnx->delete_property(cnx->root(), _NET_SUPPORTED);
+		cnx->delete_property(cnx->root(), _NET_CLIENT_LIST);
+		cnx->delete_property(cnx->root(), _NET_CLIENT_LIST_STACKING);
+		cnx->delete_property(cnx->root(), _NET_ACTIVE_WINDOW);
+		cnx->delete_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS);
+		cnx->delete_property(cnx->root(), _NET_DESKTOP_GEOMETRY);
+		cnx->delete_property(cnx->root(), _NET_DESKTOP_VIEWPORT);
+		cnx->delete_property(cnx->root(), _NET_CURRENT_DESKTOP);
+		cnx->delete_property(cnx->root(), _NET_DESKTOP_NAMES);
+		cnx->delete_property(cnx->root(), _NET_WORKAREA);
+		cnx->delete_property(cnx->root(), _NET_SUPPORTING_WM_CHECK);
+		cnx->delete_property(cnx->root(), _NET_SHOWING_DESKTOP);
 
 		delete cnx;
 	}
@@ -207,14 +207,14 @@ void page_t::run() {
 	}
 
 	/* create an invisible window to identify page */
-	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->get_root_window(), -100,
+	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->root(), -100,
 			-100, 1, 1, 0, 0, 0);
 	std::string name("page");
 	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
 			name.length() + 1);
 	cnx->change_property(wm_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
 			&wm_window, 1);
-	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTING_WM_CHECK,
+	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
 			WINDOW, 32, &wm_window, 1);
 	long pid = getpid();
 	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
@@ -227,7 +227,7 @@ void page_t::run() {
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
 	 **/
-	XRRSelectInput(cnx->dpy, cnx->get_root_window(), RRCrtcChangeNotifyMask);
+	XRRSelectInput(cnx->dpy, cnx->root(), RRCrtcChangeNotifyMask);
 
 	update_viewport_layout();
 
@@ -255,7 +255,7 @@ void page_t::run() {
 	xc_top_left_corner = XCreateFontCursor(cnx->dpy, XC_top_left_corner);
 	xc_top_side = XCreateFontCursor(cnx->dpy, XC_top_side);
 
-	XDefineCursor(cnx->dpy, cnx->get_root_window(), xc_left_ptr);
+	XDefineCursor(cnx->dpy, cnx->root(), xc_left_ptr);
 
 	default_window_pop = 0;
 
@@ -270,7 +270,7 @@ void page_t::run() {
 
 	/* update number of desktop */
 	int32_t number_of_desktop = 1;
-	cnx->change_property(cnx->get_root_window(), _NET_NUMBER_OF_DESKTOPS,
+	cnx->change_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
 
 	/* define desktop geometry */
@@ -278,20 +278,20 @@ void page_t::run() {
 
 	/* set viewport */
 	long viewport[2] = { 0, 0 };
-	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_VIEWPORT,
+	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
 			CARDINAL, 32, viewport, 2);
 
 	/* set current desktop */
 	long current_desktop = 0;
-	cnx->change_property(cnx->get_root_window(), _NET_CURRENT_DESKTOP, CARDINAL,
+	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
 			32, &current_desktop, 1);
 
 	long showing_desktop = 0;
-	cnx->change_property(cnx->get_root_window(), _NET_SHOWING_DESKTOP, CARDINAL,
+	cnx->change_property(cnx->root(), _NET_SHOWING_DESKTOP, CARDINAL,
 			32, &showing_desktop, 1);
 
 	char const desktop_name[10] = "NoName";
-	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_NAMES,
+	cnx->change_property(cnx->root(), _NET_DESKTOP_NAMES,
 			UTF8_STRING, 8, desktop_name, (strlen(desktop_name) + 2));
 
 	XIconSize icon_size;
@@ -301,7 +301,7 @@ void page_t::run() {
 	icon_size.max_height = 16;
 	icon_size.width_inc = 1;
 	icon_size.height_inc = 1;
-	XSetIconSizes(cnx->dpy, cnx->get_root_window(), &icon_size, 1);
+	XSetIconSizes(cnx->dpy, cnx->root(), &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0, 0);
@@ -314,39 +314,39 @@ void page_t::run() {
 	workarea[1] = 0;
 	workarea[2] = _root_position.w;
 	workarea[3] = _root_position.h;
-	cnx->change_property(cnx->get_root_window(), _NET_WORKAREA, CARDINAL, 32,
+	cnx->change_property(cnx->root(), _NET_WORKAREA, CARDINAL, 32,
 			workarea, 4);
 
 	rpage->add_damaged(_root_position);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 	/* quit page */
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_q), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_r), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* print state info */
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_s), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* Alt-Tab */
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Tab), Mod1Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			False, GrabModeAsync, GrabModeSync);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_z), Mod4Mask,
-			cnx->get_root_window(),
+			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/**
@@ -483,10 +483,10 @@ void page_t::scan() {
 
 	cnx->grab();
 	/* start listen root event before anything each event will be stored to right run later */
-	cnx->select_input(cnx->get_root_window(),
+	cnx->select_input(cnx->root(),
 	SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask);
 
-	if (XQueryTree(cnx->dpy, cnx->get_root_window(), &d1, &d2, &wins, &num)) {
+	if (XQueryTree(cnx->dpy, cnx->root(), &d1, &d2, &wins, &num)) {
 
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
@@ -586,7 +586,7 @@ void page_t::update_net_supported() {
 
 	supported_list.push_back(A(_NET_SUPPORTING_WM_CHECK));
 
-	cnx->change_property(cnx->get_root_window(), _NET_SUPPORTED, ATOM, 32, &supported_list[0],
+	cnx->change_property(cnx->root(), _NET_SUPPORTED, ATOM, 32, &supported_list[0],
 			supported_list.size());
 
 }
@@ -605,9 +605,9 @@ void page_t::update_client_list() {
 	vector<Window> client_list_stack(s_client_list_stack.begin(),
 			s_client_list_stack.end());
 
-	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST_STACKING,
+	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
 			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
-	cnx->change_property(cnx->get_root_window(), _NET_CLIENT_LIST, WINDOW, 32,
+	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&client_list[0], client_list.size());
 
 }
@@ -708,7 +708,7 @@ void page_t::process_event(XKeyEvent const & e) {
 		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
 
 			/* Grab keyboard */
-			XGrabKeyboard(e.display, cnx->get_root_window(), False, GrabModeAsync, GrabModeAsync,
+			XGrabKeyboard(e.display, cnx->root(), False, GrabModeAsync, GrabModeAsync,
 					e.time);
 
 			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
@@ -1874,7 +1874,7 @@ void page_t::process_event(XGravityEvent const & e) {
 void page_t::process_event(XMapEvent const & e) {
 
 	/* if map event does not occur within root, ignore it */
-	if (e.event != cnx->get_root_window())
+	if (e.event != cnx->root())
 		return;
 
 	onmap(e.window);
@@ -1884,7 +1884,7 @@ void page_t::process_event(XMapEvent const & e) {
 void page_t::process_event(XReparentEvent const & e) {
 	if(e.send_event == True)
 		return;
-	if(e.window == cnx->get_root_window())
+	if(e.window == cnx->root())
 		return;
 
 }
@@ -2045,7 +2045,7 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 
 void page_t::process_event(XMapRequestEvent const & e) {
 
-	if (e.send_event == True or e.parent != cnx->get_root_window()) {
+	if (e.send_event == True or e.parent != cnx->root()) {
 		XMapWindow(e.display, e.window);
 		return;
 	}
@@ -2057,7 +2057,7 @@ void page_t::process_event(XMapRequestEvent const & e) {
 void page_t::process_event(XPropertyEvent const & e) {
 	//printf("Atom Name = \"%s\"\n", A_name(e.atom).c_str());
 
-	if(e.window == cnx->get_root_window())
+	if(e.window == cnx->root())
 		return;
 
 	client_base_t * c = find_client(e.window);
@@ -2354,7 +2354,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				}
 
 				if (process_mode != PROCESS_NORMAL) {
-					XGrabPointer(cnx->dpy, cnx->get_root_window(), False,
+					XGrabPointer(cnx->dpy, cnx->root(), False,
 							ButtonPressMask | ButtonMotionMask
 									| ButtonReleaseMask, GrabModeAsync,
 							GrabModeAsync, None, xc, CurrentTime);
@@ -2819,7 +2819,7 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
 }
 
-xconnection_t * page_t::get_xconnection() {
+display_t * page_t::get_xconnection() {
 	return cnx;
 }
 
@@ -3281,7 +3281,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 
 void page_t::grab_pointer() {
 	/* Grab Pointer no other client will get mouse event */
-	if (XGrabPointer(cnx->dpy, cnx->get_root_window(), False,
+	if (XGrabPointer(cnx->dpy, cnx->root(), False,
 			(ButtonPressMask | ButtonReleaseMask
 					| PointerMotionMask),
 			GrabModeAsync, GrabModeAsync, None, None,
@@ -3465,7 +3465,7 @@ void page_t::update_viewport_layout() {
 	/** update root size infos **/
 
 	XWindowAttributes rwa;
-	if(!XGetWindowAttributes(cnx->dpy, cnx->get_root_window(), &rwa)) {
+	if(!XGetWindowAttributes(cnx->dpy, cnx->root(), &rwa)) {
 		throw std::runtime_error("FATAL: cannot read root window attributes\n");
 	}
 
@@ -3476,7 +3476,7 @@ void page_t::update_viewport_layout() {
 	map<RRCrtc, viewport_t *> new_layout;
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(
-			cnx->dpy, cnx->get_root_window());
+			cnx->dpy, cnx->root());
 
 	for (int i = 0; i < resources->ncrtc; ++i) {
 		XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy, resources,
@@ -3887,7 +3887,7 @@ void page_t::set_desktop_geometry(long width, long height) {
 	long desktop_geometry[2];
 	desktop_geometry[0] = width;
 	desktop_geometry[1] = height;
-	cnx->change_property(cnx->get_root_window(), _NET_DESKTOP_GEOMETRY,
+	cnx->change_property(cnx->root(), _NET_DESKTOP_GEOMETRY,
 			CARDINAL, 32, desktop_geometry, 2);
 }
 

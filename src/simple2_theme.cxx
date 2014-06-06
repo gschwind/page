@@ -94,7 +94,7 @@ inline string get_value_string(GKeyFile * conf, string const & group, string con
 	}
 }
 
-simple2_theme_t::simple2_theme_t(xconnection_t * cnx, config_handler_t & conf) {
+simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
 	notebook_margin.top = 19;
 	notebook_margin.bottom = 2;
