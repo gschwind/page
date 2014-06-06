@@ -53,11 +53,6 @@
 #define _NET_WM_STATE_ADD 1
 #define _NET_WM_STATE_TOGGLE 2
 
-/** xprop exec src **/
-extern "C"	int __main(int argc, char ** argv);
-extern "C" void Show_All_Props2 (Display * _dpy, Window _w);
-extern "C" void init_xprop(Display * __dpy);
-
 using namespace std;
 
 namespace page {

@@ -584,7 +584,7 @@ public:
 			 * since event handler can be removed on event, we copy it
 			 * and check for event removed each time.
 			 **/
-			std::vector<xevent_handler_t *> v(event_handler_list.begin(),
+			vector<xevent_handler_t *> v(event_handler_list.begin(),
 					event_handler_list.end());
 			for (unsigned int i = 0; i < v.size(); ++i) {
 				if (std::find(event_handler_list.begin(), event_handler_list.end(),
