@@ -98,7 +98,7 @@ void compositor_t::init_composite_overlay() {
 	XCompositeRedirectSubwindows(_dpy, DefaultRootWindow(_dpy), CompositeRedirectManual);
 }
 
-compositor_t::compositor_t() {
+compositor_t::compositor_t(Display * dpy) : _dpy(dpy) {
 	render_mode = COMPOSITOR_MODE_AUTO;
 
 	fade_in_length = 1000000000L;
@@ -106,7 +106,7 @@ compositor_t::compositor_t() {
 
 	old_error_handler = XSetErrorHandler(error_handler);
 
-	_dpy = XOpenDisplay(NULL);
+	//_dpy = XOpenDisplay(NULL);
 	if (_dpy == NULL) {
 		throw std::runtime_error("Could not open display");
 	} else {
@@ -177,7 +177,6 @@ compositor_t::compositor_t() {
 
 	_back_buffer = 0;
 
-	XRRSelectInput(_dpy, DefaultRootWindow(_dpy), RRCrtcChangeNotifyMask);
 	update_layout();
 
 	/**

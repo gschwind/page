@@ -15,7 +15,8 @@ using namespace page;
 
 int main(int argc, char * * argv) {
 
-	compositor_t * compositor = new page::compositor_t();
+	Display * dpy = XOpenDisplay(NULL);
+	compositor_t * compositor = new page::compositor_t(dpy);
 
 	fd_set fds_read;
 	fd_set fds_intr;

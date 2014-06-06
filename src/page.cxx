@@ -189,7 +189,7 @@ void page_t::run() {
 	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
-			rnd = new compositor_t();
+			rnd = new compositor_t(cnx->dpy);
 
 			if (conf.has_key("compositor", "fade_in_time")) {
 				rnd->set_fade_in_time(
@@ -370,12 +370,12 @@ void page_t::run() {
 
 	int max = cnx->fd();
 
-	if (rnd != nullptr) {
-		max = cnx->fd() > rnd->fd() ? cnx->fd() : rnd->fd();
-	}
+//	if (rnd != nullptr) {
+//		max = cnx->fd() > rnd->fd() ? cnx->fd() : rnd->fd();
+//	}
 
 	if (rnd != nullptr) {
-		rnd->process_events();
+		//rnd->process_events();
 		rnd->render();
 		rnd->xflush();
 	}
@@ -392,10 +392,10 @@ void page_t::run() {
 		FD_SET(cnx->fd(), &fds_intr);
 
 		/** listen for compositor events **/
-		if (rnd != nullptr) {
-			FD_SET(rnd->fd(), &fds_read);
-			FD_SET(rnd->fd(), &fds_intr);
-		}
+//		if (rnd != nullptr) {
+//			FD_SET(rnd->fd(), &fds_read);
+//			FD_SET(rnd->fd(), &fds_intr);
+//		}
 
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
@@ -409,13 +409,18 @@ void page_t::run() {
 			XEvent ev;
 			XNextEvent(cnx->dpy, &ev);
 			process_event(ev);
+
+			if(rnd != nullptr) {
+				rnd->process_event(ev);
+			}
+
 		}
 
 		rpage->repair_damaged(get_all_childs());
 		XFlush(cnx->dpy);
 
-		if (rnd != 0) {
-			rnd->process_events();
+		if (rnd != nullptr) {
+			//rnd->process_events();
 			/** limit FPS **/
 			time_t cur_tic;
 			cur_tic.get_time();

@@ -133,8 +133,10 @@ private:
 	void process_event(XCirculateEvent const & e);
 	void process_event(XDamageNotifyEvent const & e);
 
+public:
 	virtual void process_event(XEvent const & e);
 
+private:
 	void scan();
 
 	void update_layout();
@@ -164,7 +166,7 @@ private:
 public:
 
 	virtual ~compositor_t();
-	compositor_t();
+	compositor_t(Display * dpy);
 
 	void process_events();
 
