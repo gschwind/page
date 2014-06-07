@@ -99,18 +99,11 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 
 compositor_t::~compositor_t() {
 
-	/** clear composite window list **/
-	for(auto & i: window_data) {
-		delete i.second;
-	}
+	if(composite_back_buffer != None)
+		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 
-	window_data.clear();
-
-	/** clear composite window surfaces **/
-	window_to_composite_surface.clear();
-
+	cleanup_internal_data();
 	release_composite_overlay();
-
 };
 
 void compositor_t::repair_area_region(region const & repair) {
@@ -785,7 +778,7 @@ void compositor_t::update_layout() {
 
 	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, None);
 
-	clear();
+	cleanup_internal_data();
 	scan();
 
 	/**
@@ -919,19 +912,18 @@ bool compositor_t::process_check_event() {
 	}
 }
 
-void compositor_t::destroy_cairo() {
+void compositor_t::cleanup_internal_data() {
+	/** cleanup_internal_data composite window list **/
+	for(auto & i: window_data) {
+		delete i.second;
+	}
 
+	window_data.clear();
 
-	XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
+	/** cleanup_internal_data composite window surfaces **/
+	window_to_composite_surface.clear();
+
 }
-
-void compositor_t::init_cairo() {
-
-	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, None);
-
-}
-
-
 
 
 }

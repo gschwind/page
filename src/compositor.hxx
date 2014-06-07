@@ -69,7 +69,7 @@ class compositor_t {
 	struct compositor_fail_t { };
 
 	/** list that track window stack order **/
-	std::list<Window> window_stack;
+	list<Window> window_stack;
 
 	/**
 	 * map do not handle properly objects, it's need copy constructor ...
@@ -150,7 +150,7 @@ private:
 
 	bool check_glx_for_extensions(char const * const * ext);
 
-
+	void cleanup_internal_data();
 
 public:
 
@@ -244,14 +244,7 @@ public:
 		_graph_scene.push_back(r);
 	}
 
-	void clear() {
-		for(auto &i : window_data) {
-			delete i.second;
-		}
 
-		window_to_composite_surface.clear();
-
-	}
 
 	Atom A(atom_e a) {
 		return (*_A)(a);
