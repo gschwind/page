@@ -117,9 +117,13 @@ void compositor_t::render() {
 	time_t tick;
 	tick.get_time();
 
-	for (map<Window, composite_window_t *>::iterator i =
-			window_data.begin(); i != window_data.end(); ++i) {
+	/**
+	 * go throw the list, update fading stuff, and remove outdated elements.
+	 **/
+	auto i = window_data.begin();
+	while (i != window_data.end()) {
 		if (i->second->fade_mode == composite_window_t::FADE_NONE) {
+			++i;
 			continue;
 		} else if (i->second->fade_mode == composite_window_t::FADE_IN) {
 			if (i->second->fade_start + fade_in_length > tick) {
@@ -137,7 +141,8 @@ void compositor_t::render() {
 				i->second->fade_mode = composite_window_t::FADE_NONE;
 				pending_damage += i->second->get_region();
 			}
-
+			++i;
+			continue;
 		} else if (i->second->fade_mode == composite_window_t::FADE_OUT) {
 			if (i->second->fade_start + fade_out_length > tick) {
 				time_t diff = tick - i->second->fade_start;
@@ -149,14 +154,14 @@ void compositor_t::render() {
 
 				i->second->fade_step = 1.0 - alpha;
 				pending_damage += i->second->get_region();
+				++i;
+				continue;
 			} else {
 				pending_damage += i->second->get_region();
-				//stack_window_remove(i->second->get_w());
 				delete i->second;
-				window_data.erase(i);
+				i = window_data.erase(i);
+				continue;
 			}
-		} else {
-			continue;
 		}
 	}
 
@@ -233,7 +238,7 @@ void compositor_t::render_auto() {
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
-	if(_back_buffer == 0)
+	if(_back_buffer == nullptr)
 		return;
 
 	cairo_t * cr = cairo_create(_back_buffer);

@@ -133,11 +133,6 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 page_t::~page_t() {
 
 	delete rpage;
-	if (theme != nullptr)
-		delete theme;
-	if (rnd != nullptr)
-		delete rnd;
-
 
 	if(pfm != nullptr)
 		delete pfm;
@@ -148,17 +143,24 @@ page_t::~page_t() {
 	if(pat != nullptr)
 		delete pat;
 
+	/* get all childs excluding this */
 	auto childs = get_all_childs();
 	for (auto &i : childs) {
 		delete i;
 	}
 
+	/* all client should be in childs, while we already destroyed all child, just clear this list */
 	clients.clear();
 
 	if(page_areas != nullptr) {
 		delete page_areas;
 		page_areas = nullptr;
 	}
+
+	if (theme != nullptr)
+		delete theme;
+	if (rnd != nullptr)
+		delete rnd;
 
 	// cleanup cairo, for valgrind happiness.
 	cairo_debug_reset_static_data();
@@ -426,9 +428,7 @@ void page_t::run() {
 			if (cur_tic > next_frame) {
 				next_frame = cur_tic + default_wait;
 				max_wait = default_wait;
-				if (rnd != 0) {
-					rnd->render();
-				}
+				rnd->render();
 			} else {
 				max_wait = next_frame - cur_tic;
 			}

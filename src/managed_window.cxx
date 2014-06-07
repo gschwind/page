@@ -16,20 +16,35 @@
 namespace page {
 
 managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
-		theme_t const * theme) : managed_window_base_t(*c),
+		theme_t const * theme) :
+		managed_window_base_t(*c),
+		_theme(theme),
+		_type(MANAGED_FLOATING),
+		_net_wm_type(net_wm_type),
+		_floating_wished_position(),
+		_notebook_wished_position(),
+		_wished_position(),
+		_orig_position(),
+		_base_position(),
+		_surf(0),
+		_top_buffer(0),
+		_bottom_buffer(0),
+		_left_buffer(0),
+		_right_buffer(0),
+		_icon(0),
+		_orig_visual(0),
+		_orig_depth(-1),
+		_deco_visual(0),
+		_deco_depth(-1),
+		_orig(_id),
+		_base(None),
+		_deco(None),
+		_floating_area(0),
+		_is_durty(true),
+		_is_focused(false) {
 
-		_theme(theme), _type(MANAGED_FLOATING), _net_wm_type(net_wm_type), _floating_wished_position(), _notebook_wished_position(), _wished_position(), _orig_position(), _base_position(), _surf(
-				0), _top_buffer(0), _bottom_buffer(0), _left_buffer(0), _right_buffer(
-				0), _icon(0), _orig_visual(0), _orig_depth(
-				-1), _deco_visual(0), _deco_depth(-1), _orig(_id), _base(None), _deco(
-				None), _floating_area(0), _is_durty(true), _is_focused(false)
-
-{
-
-	_floating_wished_position = rectangle(wa.x, wa.y,
-			wa.width, wa.height);
-	_notebook_wished_position = rectangle(wa.x, wa.y,
-			wa.width, wa.height);
+	_floating_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
+	_notebook_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
 
 	_orig_visual = wa.visual;
 	_orig_depth = wa.depth;
@@ -46,13 +61,13 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 	}
 
 	if (_floating_wished_position.x == 0) {
-		_floating_wished_position.x = (wa.width
-				- _floating_wished_position.w) / 2;
+		_floating_wished_position.x = (wa.width - _floating_wished_position.w)
+				/ 2;
 	}
 
 	if (_floating_wished_position.y == 0) {
-		_floating_wished_position.y = (wa.height
-				- _floating_wished_position.h) / 2;
+		_floating_wished_position.y = (wa.height - _floating_wished_position.h)
+				/ 2;
 	}
 
 	/** check if the window has motif no border **/
@@ -86,16 +101,14 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		_deco_depth = _orig_depth;
 
 		/** if visual is 32 bits, this values are mandatory **/
-		swa.colormap = XCreateColormap(_cnx->dpy(), _cnx->root(),
-				_orig_visual,
-				AllocNone);
+		swa.colormap = XCreateColormap(_cnx->dpy(), _cnx->root(), _orig_visual,
+		AllocNone);
 		swa.background_pixel = BlackPixel(_cnx->dpy(), _cnx->screen());
 		swa.border_pixel = BlackPixel(_cnx->dpy(), _cnx->screen());
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_cnx->dpy(), _cnx->root(), -10, -10, 1, 1,
-				0, 32,
-				InputOutput, _orig_visual, value_mask, &swa);
+		wbase = XCreateWindow(_cnx->dpy(), _cnx->root(), -10, -10, 1, 1, 0, 32,
+		InputOutput, _orig_visual, value_mask, &swa);
 		wdeco = XCreateWindow(_cnx->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
 		InputOutput, _orig_visual, value_mask, &swa);
 
@@ -118,17 +131,17 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		 **/
 		swa.border_pixel = 0;
 		swa.background_pixel = 0;
-		swa.colormap = XCreateColormap(_cnx->dpy(), _cnx->root(),
-				vinfo.visual, AllocNone);
+		swa.colormap = XCreateColormap(_cnx->dpy(), _cnx->root(), vinfo.visual,
+		AllocNone);
 
 		_deco_visual = vinfo.visual;
 		_deco_depth = 32;
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_cnx->dpy(), _cnx->root(), -10, -10, 1, 1,
-				0, 32, InputOutput, vinfo.visual, value_mask, &swa);
+		wbase = XCreateWindow(_cnx->dpy(), _cnx->root(), -10, -10, 1, 1, 0, 32,
+		InputOutput, vinfo.visual, value_mask, &swa);
 		wdeco = XCreateWindow(_cnx->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
-				InputOutput, vinfo.visual, value_mask, &swa);
+		InputOutput, vinfo.visual, value_mask, &swa);
 	}
 
 	_base = wbase;
@@ -143,19 +156,20 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 	_cnx->reparentwindow(_orig, _base, 0, 0);
 
-	_surf = cairo_xlib_surface_create(_cnx->dpy(), _deco, _deco_visual, b.w, b.h);
+	_surf = cairo_xlib_surface_create(_cnx->dpy(), _deco, _deco_visual, b.w,
+			b.h);
 
 }
 
 managed_window_t::~managed_window_t() {
 	cout << "call " << __FUNCTION__ << endl;
 
-	if(_surf != nullptr) {
+	if (_surf != nullptr) {
 		cairo_surface_destroy(_surf);
 		_surf = nullptr;
 	}
 
-	if(_icon != nullptr) {
+	if (_icon != nullptr) {
 		delete _icon;
 		_icon = nullptr;
 	}
@@ -179,10 +193,9 @@ managed_window_t::~managed_window_t() {
 
 }
 
-
 void managed_window_t::reconfigure() {
 
-	if(is(MANAGED_FLOATING)) {
+	if (is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
 
 		if (_motif_has_border) {
@@ -239,7 +252,8 @@ void managed_window_t::reconfigure() {
 	}
 
 	_cnx->move_resize(_base, _base_position);
-	_cnx->move_resize(_deco, rectangle(0, 0, _base_position.w, _base_position.h));
+	_cnx->move_resize(_deco,
+			rectangle(0, 0, _base_position.w, _base_position.h));
 	_cnx->move_resize(_orig, _orig_position);
 
 	fake_configure();
@@ -389,9 +403,8 @@ void managed_window_t::icccm_focus(Time t) {
 	}
 
 	if (wm_protocols != 0) {
-		if (::std::find(wm_protocols->begin(),
-				wm_protocols->end(), A(WM_TAKE_FOCUS))
-				!= wm_protocols->end()) {
+		if (::std::find(wm_protocols->begin(), wm_protocols->end(),
+				A(WM_TAKE_FOCUS)) != wm_protocols->end()) {
 			XEvent ev;
 			ev.xclient.display = _cnx->dpy();
 			ev.xclient.type = ClientMessage;
@@ -423,7 +436,5 @@ void managed_window_t::set_opaque_region(Window w, region & region) {
 
 }
 
-
 }
-
 
