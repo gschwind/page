@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <string>
+#include <memory>
+#include <cstring>
 
 namespace page {
 
@@ -26,7 +28,7 @@ config_handler_t::~config_handler_t() {
 void config_handler_t::merge_from_file_if_exist(string const & f) {
 
 	/* check if file exist and is readable */
-	if(access(f.c_str(), R_OK) != 0)
+	if (access(f.c_str(), R_OK) != 0)
 		return;
 
 	GKeyFile * kf = g_key_file_new();
@@ -55,9 +57,7 @@ void config_handler_t::merge_from_file_if_exist(string const & f) {
 					gchar * value = g_key_file_get_value(kf, groups[g], keys[k],
 							0);
 					if (value != 0) {
-						string svalue(value);
-						_data[pair<string, string>(groups[g], keys[k])] =
-								svalue;
+						_data[_key_t(groups[g], keys[k])] = value;
 						g_free(value);
 					}
 				}
@@ -66,47 +66,37 @@ void config_handler_t::merge_from_file_if_exist(string const & f) {
 		}
 		g_strfreev(groups);
 	}
-
 	g_key_file_free(kf);
-
 }
 
-string config_handler_t::get_string(char const * group, char const * key) {
-	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
-	if(i != _data.end()) {
-		char * x = g_strcompress(i->second.c_str());
-		string ret = x;
-		g_free(x);
-		return ret;
-	} else {
-		throw runtime_error("group:key not found");
-	}
+string config_handler_t::get_string(char const * group, char const * key) const {
+	string const & tmp = find(group, key);
+	shared_ptr<gchar> p_ret(g_strcompress(tmp.c_str()), g_free);
+	return string(p_ret.get());
 }
 
-double config_handler_t::get_double(char const * group, char const * key) {
-	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
-	if(i != _data.end()) {
-		return g_strtod(i->second.c_str(), NULL);
-	} else {
-		throw runtime_error("group:key not found");
-	}
+double config_handler_t::get_double(char const * group, char const * key) const {
+	string const & tmp = find(group, key);
+	return g_strtod(tmp.c_str(), NULL);
 }
 
-long config_handler_t::get_long(char const * group, char const * key) {
-	long ret = 0;
-	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
-	if(i != _data.end()) {
-		std::istringstream ( i->second ) >> ret;
-	} else {
-		throw runtime_error("group:key not found");
-	}
-
-	return ret;
+long config_handler_t::get_long(char const * group, char const * key) const {
+	string const & tmp = find(group, key);
+	return g_ascii_strtoll(tmp.c_str(), NULL, 10);
 }
 
-bool config_handler_t::has_key(char const * group, char const * key) {
-	map<pair<string, string>, string >::iterator i = _data.find(pair<string, string>(group, key));
-	return (i != _data.end());
+bool config_handler_t::has_key(char const * group, char const * key) const {
+	auto x = _data.find(_key_t(group, key));
+	if(x == _data.end())
+		return false;
+	return true;
+}
+
+string const & config_handler_t::find(char const * group, char const * key) const {
+	auto x = _data.find(_key_t(group, key));
+	if(x == _data.end())
+		throw logic_error("group/key not found");
+	return x->second;
 }
 
 }

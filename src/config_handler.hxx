@@ -18,22 +18,31 @@
 
 using namespace std;
 
+template class pair<string, string>;
+
+
+
 namespace page {
 
 class config_handler_t {
 
-	map<pair<string, string>, string> _data;
+	typedef ::std::pair<string, string> _key_t;
+	map<_key_t, string> _data;
+
+	string const & find(char const * group, char const * key) const;
 
 public:
 	config_handler_t();
 	~config_handler_t();
-	void merge_from_file_if_exist(string const & f);
 
-	bool has_key(char const * groups, char const * key);
+	void merge_from_file_if_exist(string const & filename);
 
-	string get_string(char const * groups, char const * key);
-	double get_double(char const * groups, char const * key);
-	long get_long(char const * group, char const * key);
+	bool has_key(char const * groups, char const * key) const;
+
+	string get_string(char const * groups, char const * key) const;
+	double get_double(char const * groups, char const * key) const;
+	long get_long(char const * group, char const * key) const;
+	string get_value(char const * group, char const * key) const;
 
 };
 

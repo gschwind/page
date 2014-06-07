@@ -26,6 +26,7 @@ inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	if (s != CAIRO_STATUS_SUCCESS) {
 		printf("Cairo status %s:%d = %s\n", file, line,
 				cairo_status_to_string(s));
+		abort();
 	}
 }
 
@@ -79,19 +80,6 @@ rectangle simple2_theme_t::compute_floating_close_position(rectangle const & all
 rectangle simple2_theme_t::compute_floating_bind_position(
 		rectangle const & allocation) const {
 	return rectangle(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16).floor();
-}
-
-
-inline string get_value_string(GKeyFile * conf, string const & group, string const & key) {
-	string ret;
-	gchar * value = g_key_file_get_string(conf, group.c_str(), key.c_str(), 0);
-	if(value != 0) {
-		ret = value;
-		g_free(value);
-		return ret;
-	} else {
-		throw runtime_error("config key missing");
-	}
 }
 
 simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
