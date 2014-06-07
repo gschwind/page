@@ -43,19 +43,19 @@ class compositor_t {
 	XWindowAttributes root_attributes;
 
 	/*damage event handler */
-	int damage_opcode, damage_event, damage_error;
+	int damage_event;
 
-	/* composite event handler */
-	int composite_opcode, composite_event, composite_error;
-
-	/* fixes event handler */
-	int fixes_opcode, fixes_event, fixes_error;
-
-	/* xshape extension handler */
-	int xshape_opcode, xshape_event, xshape_error;
-
-	/* xrandr extension handler */
-	int xrandr_opcode, xrandr_event, xrandr_error;
+//	/* composite event handler */
+//	int composite_opcode, composite_event, composite_error;
+//
+//	/* fixes event handler */
+//	int fixes_opcode, fixes_event, fixes_error;
+//
+//	/* xshape extension handler */
+	int xshape_event;
+//
+//	/* xrandr extension handler */
+	int xrandr_event;
 
 	int (*old_error_handler)(Display *, XErrorEvent *);
 
@@ -164,7 +164,7 @@ private:
 public:
 
 	virtual ~compositor_t();
-	compositor_t(display_t * dpy);
+	compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event);
 
 	void process_events();
 

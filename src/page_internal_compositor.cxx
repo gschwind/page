@@ -17,7 +17,50 @@ using namespace page;
 int main(int argc, char * * argv) {
 
 	display_t * dpy = new display_t();
-	compositor_t * compositor = new page::compositor_t(dpy);
+
+	/*damage event handler */
+	int damage_opcode, damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_opcode, composite_event, composite_error;
+
+	/* xshape extension handler */
+	int xshape_opcode, xshape_event, xshape_error;
+
+	/* xrandr extension handler */
+	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	if (!dpy->check_shape_extension(&xshape_opcode, &xshape_event,
+			&xshape_error)) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (!dpy->check_randr_extension(&xrandr_opcode, &xrandr_event,
+			&xrandr_error)) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
+
+	if (!dpy->check_composite_extension(&composite_opcode, &composite_event,
+			&composite_error)) {
+		throw std::runtime_error("X Server doesn't support Composite 0.4");
+	}
+
+	if (!dpy->check_damage_extension(&damage_opcode, &damage_event,
+			&damage_error)) {
+		throw std::runtime_error("Damage extension is not supported");
+	}
+
+	if (!dpy->check_shape_extension(&xshape_opcode, &xshape_event,
+			&xshape_error)) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (!dpy->check_randr_extension(&xrandr_opcode, &xrandr_event,
+			&xrandr_error)) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
+
+	compositor_t * compositor = new page::compositor_t(dpy, damage_event, xshape_event, xrandr_event);
 
 	fd_set fds_read;
 	fd_set fds_intr;

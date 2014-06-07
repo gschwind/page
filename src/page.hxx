@@ -84,6 +84,24 @@ class page_t : public tree_t {
 
 public:
 
+	/*damage event handler */
+	int damage_opcode, damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_opcode, composite_event, composite_error;
+
+	/* fixes event handler */
+	int fixes_opcode, fixes_event, fixes_error;
+
+	/* xshape extension handler */
+	int xshape_opcode, xshape_event, xshape_error;
+
+	/* xrandr extension handler */
+	int xrandr_opcode, xrandr_event, xrandr_error;
+
+	/* GLX extension handler */
+	int glx_opcode, glx_event, glx_error;
+
 	enum select_e {
 		SELECT_NONE,
 		SELECT_TAB,
@@ -512,6 +530,8 @@ public:
 	void detach_dock(unmanaged_window_t * uw) {
 		docks.remove(uw);
 	}
+
+	void check_x11_extension();
 
 	void create_identity_window();
 	void register_wm();

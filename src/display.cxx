@@ -171,34 +171,9 @@ display_t::display_t() {
 		cnx_printf("Open display : Success\n");
 	}
 
-	/** for testing **/
-	//XSynchronize(dpy, True);
 	_fd = ConnectionNumber(_dpy);
 
 	grab_count = 0;
-
-	// Check if composite is supported.
-
-	if (!check_composite_extension(_dpy, &composite_opcode, &composite_event,
-			&composite_error)) {
-		throw std::runtime_error("X Server doesn't support Composite 0.4");
-	}
-
-	// check/init Damage.
-	if (!check_damage_extension(_dpy, &damage_opcode, &damage_event,
-			&damage_error)) {
-		throw std::runtime_error("Damage extension is not supported");
-	}
-
-	if (!check_shape_extension(_dpy, &xshape_opcode, &xshape_event,
-			&xshape_error)) {
-		throw std::runtime_error(SHAPENAME " extension is not supported");
-	}
-
-	if (!check_randr_extension(_dpy, &xrandr_opcode, &xrandr_event,
-			&xrandr_error)) {
-		throw std::runtime_error(RANDR_NAME " extension is not supported");
-	}
 
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_dpy));
 
@@ -622,6 +597,81 @@ Window * display_t::read_net_wm_user_time_window(Window w) {
 
 Display * display_t::dpy() {
 	return _dpy;
+}
+
+bool display_t::check_composite_extension(int * opcode, int * event,
+		int * error) {
+	// Check if composite is supported.
+	if (XQueryExtension(_dpy, COMPOSITE_NAME, opcode, event, error)) {
+		int major = 0, minor = 0; // The highest version we support
+		XCompositeQueryVersion(_dpy, &major, &minor);
+		if (major != 0 || minor < 4) {
+			return false;
+		} else {
+			printf("using composite %d.%d\n", major, minor);
+			return true;
+		}
+	} else {
+		return false;
+	}
+}
+
+bool display_t::check_damage_extension(int * opcode, int * event, int * error) {
+	if (!XQueryExtension(_dpy, DAMAGE_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XDamageQueryVersion(_dpy, &major, &minor);
+		printf("Damage Extension version %d.%d found\n", major, minor);
+		printf("Damage error %d, Damage event %d\n", *error, *event);
+		return true;
+	}
+}
+
+bool display_t::check_shape_extension(int * opcode, int * event, int * error) {
+	if (!XQueryExtension(_dpy, SHAPENAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XShapeQueryVersion(_dpy, &major, &minor);
+		printf("Shape Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+bool display_t::check_randr_extension(int * opcode, int * event, int * error) {
+	if (!XQueryExtension(_dpy, RANDR_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(_dpy, &major, &minor);
+		printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
+		return true;
+	}
+}
+
+bool display_t::check_glx_extension(int * opcode, int * event, int * error) {
+	if (!XQueryExtension(_dpy, GLX_EXTENSION_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(_dpy, &major, &minor);
+		printf(GLX_EXTENSION_NAME " Extension version %d.%d found\n", major,
+				minor);
+		return true;
+	}
+}
+
+bool display_t::check_dbe_extension(int * opcode, int * event, int * error) {
+	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, opcode, event, error)) {
+		return false;
+	} else {
+		int major = 0, minor = 0;
+		XRRQueryVersion(_dpy, &major, &minor);
+		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major,
+				minor);
+		return true;
+	}
 }
 
 }

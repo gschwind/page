@@ -62,40 +62,13 @@ void compositor_t::init_composite_overlay() {
 	XCompositeRedirectSubwindows(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), CompositeRedirectManual);
 }
 
-compositor_t::compositor_t(display_t * cnx) : _cnx(cnx) {
+compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
 	render_mode = COMPOSITOR_MODE_AUTO;
 
 	fade_in_length = 1000000000L;
 	fade_out_length = 1000000000L;
 
 	old_error_handler = XSetErrorHandler(error_handler);
-
-	//_cnx->dpy() = XOpenDisplay(NULL);
-	if (_cnx->dpy() == NULL) {
-		throw std::runtime_error("Could not open display");
-	} else {
-		printf("Open display : Success\n");
-	}
-
-	if (!check_composite_extension(_cnx->dpy(), &composite_opcode, &composite_event,
-			&composite_error)) {
-		throw std::runtime_error("X Server doesn't support Composite 0.4");
-	}
-
-	if (!check_damage_extension(_cnx->dpy(), &damage_opcode, &damage_event,
-			&damage_error)) {
-		throw std::runtime_error("Damage extension is not supported");
-	}
-
-	if (!check_shape_extension(_cnx->dpy(), &xshape_opcode, &xshape_event,
-			&xshape_error)) {
-		throw std::runtime_error(SHAPENAME " extension is not supported");
-	}
-
-	if (!check_randr_extension(_cnx->dpy(), &xrandr_opcode, &xrandr_event,
-			&xrandr_error)) {
-		throw std::runtime_error(RANDR_NAME " extension is not supported");
-	}
 
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
 

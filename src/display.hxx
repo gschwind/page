@@ -69,24 +69,6 @@ public:
 	/* overlay composite */
 	Window composite_overlay;
 
-	/*damage event handler */
-	int damage_opcode, damage_event, damage_error;
-
-	/* composite event handler */
-	int composite_opcode, composite_event, composite_error;
-
-	/* fixes event handler */
-	int fixes_opcode, fixes_event, fixes_error;
-
-	/* xshape extension handler */
-	int xshape_opcode, xshape_event, xshape_error;
-
-	/* xrandr extension handler */
-	int xrandr_opcode, xrandr_event, xrandr_error;
-
-	/* GLX extension handler */
-	int glx_opcode, glx_event, glx_error;
-
 	shared_ptr<atom_handler_t> _A;
 
 
@@ -207,6 +189,14 @@ public:
 			printf("%s", buffer);
 		}
 	}
+
+
+	bool check_composite_extension(int * opcode, int * event, int * error);
+	bool check_damage_extension(int * opcode, int * event, int * error);
+	bool check_shape_extension(int * opcode, int * event, int * error);
+	bool check_randr_extension(int * opcode, int * event, int * error);
+	bool check_glx_extension(int * opcode, int * event, int * error);
+	bool check_dbe_extension(int * opcode, int * event, int * error);
 
 };
 

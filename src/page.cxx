@@ -184,6 +184,8 @@ page_t::~page_t() {
 
 void page_t::run() {
 
+	/* check for required page extension */
+	check_x11_extension();
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
@@ -203,7 +205,7 @@ void page_t::run() {
 	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
-			rnd = new compositor_t(cnx);
+			rnd = new compositor_t(cnx, damage_event, xshape_event, xrandr_event);
 
 			if (conf.has_key("compositor", "fade_in_time")) {
 				rnd->set_fade_in_time(
@@ -2596,7 +2598,7 @@ void page_t::process_event(XEvent const & e) {
 		process_event(e.xproperty);
 	} else if (e.type == ClientMessage) {
 		process_event(e.xclient);
-	} else if (e.type == cnx->damage_event + XDamageNotify) {
+	} else if (e.type == damage_event + XDamageNotify) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
 	} else if (e.type == Expose) {
 		managed_window_t * mw = find_managed_window_with(e.xexpose.window);
@@ -2618,7 +2620,7 @@ void page_t::process_event(XEvent const & e) {
 			pat->expose();
 		}
 
-	} else if (e.type == cnx->xrandr_event + RRNotify) {
+	} else if (e.type == xrandr_event + RRNotify) {
 		XRRNotifyEvent const &ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 
 		char const * s_subtype = "Unknown";
@@ -2669,12 +2671,12 @@ void page_t::process_event(XEvent const & e) {
 		update_windows_stack();
 
 
-	} else if (e.type == cnx->xrandr_event + RRScreenChangeNotify) {
+	} else if (e.type == xrandr_event + RRScreenChangeNotify) {
 		/** do nothing **/
 	} else if (e.type == SelectionClear) {
 		//printf("SelectionClear\n");
 		running = false;
-	} else if (e.type == cnx->xshape_event + ShapeNotify) {
+	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent * se = (XShapeEvent *)&e;
 		if(se->kind == ShapeClip) {
 			//Window w = se->window;
@@ -4028,6 +4030,40 @@ void page_t::register_cm() {
 	if (use_internal_compositor) {
 		if (!cnx->register_cm(identity_window)) {
 			throw runtime_error("Cannot register composite manager");
+		}
+	}
+}
+
+void page_t::check_x11_extension() {
+	if (!cnx->check_shape_extension(&xshape_opcode, &xshape_event,
+			&xshape_error)) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (!cnx->check_randr_extension(&xrandr_opcode, &xrandr_event,
+			&xrandr_error)) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
+
+	if (use_internal_compositor) {
+		if (!cnx->check_composite_extension(&composite_opcode, &composite_event,
+				&composite_error)) {
+			throw std::runtime_error("X Server doesn't support Composite 0.4");
+		}
+
+		if (!cnx->check_damage_extension(&damage_opcode, &damage_event,
+				&damage_error)) {
+			throw std::runtime_error("Damage extension is not supported");
+		}
+
+		if (!cnx->check_shape_extension(&xshape_opcode, &xshape_event,
+				&xshape_error)) {
+			throw std::runtime_error(SHAPENAME " extension is not supported");
+		}
+
+		if (!cnx->check_randr_extension(&xrandr_opcode, &xrandr_event,
+				&xrandr_error)) {
+			throw std::runtime_error(RANDR_NAME " extension is not supported");
 		}
 	}
 }
