@@ -137,7 +137,6 @@ public:
 	bool register_wm(bool replace, Window w);
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);
-	void select_input(Window w, long int mask);
 	void move_resize(Window w, rectangle const & size);
 	void set_window_border_width(Window w, unsigned int width);
 	void raise_window(Window w);

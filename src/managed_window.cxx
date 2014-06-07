@@ -134,9 +134,9 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 	_base = wbase;
 	_deco = wdeco;
 
-	_cnx->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
-	_cnx->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-	_cnx->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+	XSelectInput(_cnx->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	XSelectInput(_cnx->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
+	XSelectInput(_cnx->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
 
 	/* Grab button click */
 	grab_button_unfocused();

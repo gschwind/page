@@ -25,7 +25,7 @@ enum managed_window_type_e {
 class managed_window_t : public managed_window_base_t {
 private:
 
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask;
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask | StructureNotifyMask;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
 			| (PropertyChangeMask) | (FocusChangeMask);

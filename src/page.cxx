@@ -185,6 +185,9 @@ void page_t::run() {
 	/** initialise theme **/
 	theme = new simple2_theme_t(cnx, conf);
 
+	/* start listen root event before anything each event will be stored to right run later */
+	XSelectInput(cnx->dpy(), cnx->root(), ROOT_EVENT_MASK);
+
 	/** load compositor if requested **/
 	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
@@ -218,7 +221,7 @@ void page_t::run() {
 			WINDOW, 32, &wm_window, 1);
 	long pid = getpid();
 	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
-	cnx->select_input(wm_window, StructureNotifyMask);
+	XSelectInput(cnx->dpy(), wm_window, StructureNotifyMask | PropertyChangeMask);
 	if (!cnx->register_wm(true, wm_window)) {
 		printf("Cannot register window manager\n");
 		return;
@@ -482,9 +485,6 @@ void page_t::scan() {
 	Window d1, d2, *wins = 0;
 
 	cnx->grab();
-	/* start listen root event before anything each event will be stored to right run later */
-	cnx->select_input(cnx->root(),
-	SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask);
 
 	if (XQueryTree(cnx->dpy(), cnx->root(), &d1, &d2, &wins, &num)) {
 

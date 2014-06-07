@@ -34,7 +34,7 @@ public:
 	unmanaged_window_t(Atom type, client_base_t * c) : client_base_t(*c),
 			 _net_wm_type(type) {
 		_cnx->grab();
-		_cnx->select_input(_id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+		XSelectInput(_cnx->dpy(), _id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 		_cnx->ungrab();
 	}
 

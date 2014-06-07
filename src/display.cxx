@@ -173,8 +173,6 @@ display_t::display_t() {
 
 	grab_count = 0;
 
-	select_input(DefaultRootWindow(_dpy), SubstructureNotifyMask);
-
 	// Check if composite is supported.
 
 	if (!check_composite_extension(_dpy, &composite_opcode, &composite_event,
@@ -335,15 +333,6 @@ void display_t::add_to_save_set(Window w) {
 void display_t::remove_from_save_set(Window w) {
 	cnx_printf("XRemoveFromSaveSet: win = %lu\n", w);
 	XRemoveFromSaveSet(_dpy, w);
-}
-
-void display_t::select_input(Window w, long int mask) {
-
-	cnx_printf("XSelectInput: win = %lu, mask = %08lx\n", w,
-			(unsigned long) mask);
-	/** add StructureNotifyMask and PropertyNotify to manage properties cache **/
-	mask |= StructureNotifyMask | PropertyChangeMask;
-	XSelectInput(_dpy, w, mask);
 }
 
 void display_t::move_resize(Window w, rectangle const & size) {

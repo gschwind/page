@@ -730,11 +730,6 @@ void compositor_t::scan() {
 
 	XGrabServer(_cnx->dpy());
 	cout << "XGrabServer(" << _cnx->dpy() << ")" << endl;
-	/**
-	 * Start listen root event before anything each event will be stored to
-	 * right run later.
-	 **/
-	XSelectInput(_cnx->dpy(), _cnx->root(), SubstructureNotifyMask);
 
 	window_stack.clear();
 	window_data.clear();

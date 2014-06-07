@@ -22,6 +22,8 @@ namespace page {
 
 class window_overlay_t {
 
+	static long const OVERLAY_EVENT_MASK = ExposureMask | StructureNotifyMask;
+
 protected:
 	display_t * _cnx;
 	cairo_surface_t * _front_surf;
@@ -76,7 +78,7 @@ public:
 				CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap,
 				&wa);
 
-		_cnx->select_input(_wid, ExposureMask | StructureNotifyMask);
+		XSelectInput(_cnx->dpy(), _wid, OVERLAY_EVENT_MASK);
 
 		_front_surf = cairo_xlib_surface_create(_cnx->dpy(), _wid, vinfo.visual,
 				position.w, position.h);

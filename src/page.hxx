@@ -80,6 +80,8 @@ typedef std::list<rectangle> box_list_t;
 
 class page_t : public tree_t {
 
+	static long const ROOT_EVENT_MASK = SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask;
+
 public:
 
 	enum select_e {
