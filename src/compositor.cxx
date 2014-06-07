@@ -68,8 +68,6 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	fade_in_length = 1000000000L;
 	fade_out_length = 1000000000L;
 
-	old_error_handler = XSetErrorHandler(error_handler);
-
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
 
 	/* initialize composite */
