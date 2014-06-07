@@ -42,7 +42,7 @@ protected:
 public:
 	window_overlay_t(display_t * cnx, int depth, rectangle position = rectangle(-10,-10, 1, 1)) {
 		_cnx = cnx;
-		_back_surf = 0;
+		_back_surf = nullptr;
 
 		_position = position;
 
@@ -83,8 +83,6 @@ public:
 		_front_surf = cairo_xlib_surface_create(_cnx->dpy(), _wid, vinfo.visual,
 				position.w, position.h);
 
-		_back_surf = 0;
-
 		if(vinfo.depth == 32) {
 			_has_alpha = true;
 		} else {
@@ -101,7 +99,7 @@ public:
 	}
 
 	void create_back_buffer() {
-		if (_back_surf == 0) {
+		if (_back_surf == nullptr) {
 			if (_has_alpha) {
 				_back_surf = cairo_surface_create_similar(_front_surf,
 						CAIRO_CONTENT_COLOR_ALPHA, _position.w, _position.h);

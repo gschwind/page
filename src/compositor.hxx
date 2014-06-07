@@ -79,9 +79,6 @@ class compositor_t {
 	map<Window, p_composite_surface_t> window_to_composite_surface;
 	map<Window, Damage> damage_map;
 
-	/** back buffer, used when composition is needed (i.e. transparency) **/
-	cairo_surface_t * _back_buffer;
-
 	/** performance counter **/
 	double fast_region_surf_monitor;
 	double slow_region_surf_monitor;

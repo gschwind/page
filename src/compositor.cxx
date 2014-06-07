@@ -89,9 +89,6 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	flush_count = 0;
 	damage_count = 0;
 
-
-	_back_buffer = nullptr;
-
 	/* this will scan for all windows */
 	update_layout();
 
@@ -188,7 +185,7 @@ void compositor_t::render_managed() {
 
 	_graph_scene.sort(compare);
 
-	_back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
+	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 	cairo_t * cr = cairo_create(_back_buffer);
@@ -234,7 +231,7 @@ void compositor_t::render_auto() {
 		}
 	}
 
-	_back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
+	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
