@@ -588,5 +588,9 @@ Window * display_t::read_net_wm_user_time_window(Window w) {
 			A(WINDOW));
 }
 
+Display * display_t::dpy() {
+	return _dpy;
+}
+
 }
 

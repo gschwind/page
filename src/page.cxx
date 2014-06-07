@@ -189,7 +189,7 @@ void page_t::run() {
 	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
-			rnd = new compositor_t(cnx->dpy);
+			rnd = new compositor_t(cnx->dpy());
 
 			if (conf.has_key("compositor", "fade_in_time")) {
 				rnd->set_fade_in_time(
@@ -207,7 +207,7 @@ void page_t::run() {
 	}
 
 	/* create an invisible window to identify page */
-	wm_window = XCreateSimpleWindow(cnx->dpy, cnx->root(), -100,
+	wm_window = XCreateSimpleWindow(cnx->dpy(), cnx->root(), -100,
 			-100, 1, 1, 0, 0, 0);
 	std::string name("page");
 	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
@@ -227,7 +227,7 @@ void page_t::run() {
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
 	 **/
-	XRRSelectInput(cnx->dpy, cnx->root(), RRCrtcChangeNotifyMask);
+	XRRSelectInput(cnx->dpy(), cnx->root(), RRCrtcChangeNotifyMask);
 
 	update_viewport_layout();
 
@@ -241,21 +241,21 @@ void page_t::run() {
 	ps = new popup_split_t(cnx, theme);
 	pat = new popup_alt_tab_t(cnx, theme);
 
-	xc_left_ptr = XCreateFontCursor(cnx->dpy, XC_left_ptr);
-	xc_fleur = XCreateFontCursor(cnx->dpy, XC_fleur);
+	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
+	xc_fleur = XCreateFontCursor(cnx->dpy(), XC_fleur);
 
-	xc_bottom_left_corner = XCreateFontCursor(cnx->dpy, XC_bottom_left_corner);
-	xc_bottom_righ_corner = XCreateFontCursor(cnx->dpy, XC_bottom_right_corner);
-	xc_bottom_side = XCreateFontCursor(cnx->dpy, XC_bottom_side);
+	xc_bottom_left_corner = XCreateFontCursor(cnx->dpy(), XC_bottom_left_corner);
+	xc_bottom_righ_corner = XCreateFontCursor(cnx->dpy(), XC_bottom_right_corner);
+	xc_bottom_side = XCreateFontCursor(cnx->dpy(), XC_bottom_side);
 
-	xc_left_side = XCreateFontCursor(cnx->dpy, XC_left_side);
-	xc_right_side = XCreateFontCursor(cnx->dpy, XC_right_side);
+	xc_left_side = XCreateFontCursor(cnx->dpy(), XC_left_side);
+	xc_right_side = XCreateFontCursor(cnx->dpy(), XC_right_side);
 
-	xc_top_right_corner = XCreateFontCursor(cnx->dpy, XC_top_right_corner);
-	xc_top_left_corner = XCreateFontCursor(cnx->dpy, XC_top_left_corner);
-	xc_top_side = XCreateFontCursor(cnx->dpy, XC_top_side);
+	xc_top_right_corner = XCreateFontCursor(cnx->dpy(), XC_top_right_corner);
+	xc_top_left_corner = XCreateFontCursor(cnx->dpy(), XC_top_left_corner);
+	xc_top_side = XCreateFontCursor(cnx->dpy(), XC_top_side);
 
-	XDefineCursor(cnx->dpy, cnx->root(), xc_left_ptr);
+	XDefineCursor(cnx->dpy(), cnx->root(), xc_left_ptr);
 
 	default_window_pop = 0;
 
@@ -301,7 +301,7 @@ void page_t::run() {
 	icon_size.max_height = 16;
 	icon_size.width_inc = 1;
 	icon_size.height_inc = 1;
-	XSetIconSizes(cnx->dpy, cnx->root(), &icon_size, 1);
+	XSetIconSizes(cnx->dpy(), cnx->root(), &icon_size, 1);
 
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0, 0);
@@ -319,33 +319,33 @@ void page_t::run() {
 
 	rpage->add_damaged(_root_position);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_f), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_f), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 	/* quit page */
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_q), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_q), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_r), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_r), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* print state info */
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_s), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_s), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
 	/* Alt-Tab */
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_Tab), Mod1Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_Tab), Mod1Mask,
 			cnx->root(),
 			False, GrabModeAsync, GrabModeSync);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_w), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_w), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
-	XGrabKey(cnx->dpy, XKeysymToKeycode(cnx->dpy, XK_z), Mod4Mask,
+	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_z), Mod4Mask,
 			cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 
@@ -354,7 +354,7 @@ void page_t::run() {
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
-	XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
+	XGrabButton(cnx->dpy(), AnyButton, AnyModifier, rpage->id(), False,
 	ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 	GrabModeSync, GrabModeAsync, None, None);
 
@@ -381,7 +381,7 @@ void page_t::run() {
 	}
 
 	update_allocation();
-	XFlush(cnx->dpy);
+	XFlush(cnx->dpy());
 	running = true;
 	while (running) {
 
@@ -405,9 +405,9 @@ void page_t::run() {
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
 		NULL);
 
-		while (XPending(cnx->dpy)) {
+		while (XPending(cnx->dpy())) {
 			XEvent ev;
-			XNextEvent(cnx->dpy, &ev);
+			XNextEvent(cnx->dpy(), &ev);
 			process_event(ev);
 
 			if(rnd != nullptr) {
@@ -417,7 +417,7 @@ void page_t::run() {
 		}
 
 		rpage->repair_damaged(get_all_childs());
-		XFlush(cnx->dpy);
+		XFlush(cnx->dpy());
 
 		if (rnd != nullptr) {
 			//rnd->process_events();
@@ -442,7 +442,7 @@ void page_t::run() {
 managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 	cnx->add_to_save_set(c->orig());
 	/* set border to zero */
-	XSetWindowBorder(cnx->dpy, c->orig(), 0);
+	XSetWindowBorder(cnx->dpy(), c->orig(), 0);
 	/* assign window to desktop 0 */
 	c->set_net_wm_desktop(0);
 	managed_window_t * mw = new managed_window_t(net_wm_type, c, theme);
@@ -486,7 +486,7 @@ void page_t::scan() {
 	cnx->select_input(cnx->root(),
 	SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask);
 
-	if (XQueryTree(cnx->dpy, cnx->root(), &d1, &d2, &wins, &num)) {
+	if (XQueryTree(cnx->dpy(), cnx->root(), &d1, &d2, &wins, &num)) {
 
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
@@ -629,7 +629,7 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	int n;
-	KeySym * k = XGetKeyboardMapping(cnx->dpy, e.keycode, 1, &n);
+	KeySym * k = XGetKeyboardMapping(cnx->dpy(), e.keycode, 1, &n);
 
 	if (k == 0)
 		return;
@@ -898,13 +898,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					XDefineCursor(cnx->dpy, mw->base(), xc_bottom_righ_corner);
-					XDefineCursor(cnx->dpy, mw->orig(), xc_bottom_righ_corner);
+					XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_righ_corner);
+					XDefineCursor(cnx->dpy(), mw->orig(), xc_bottom_righ_corner);
 				} else {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE;
-					XDefineCursor(cnx->dpy, mw->base(), xc_fleur);
-					XDefineCursor(cnx->dpy, mw->orig(), xc_fleur);
+					XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
+					XDefineCursor(cnx->dpy(), mw->orig(), xc_fleur);
 				}
 
 
@@ -957,7 +957,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
-						XDefineCursor(cnx->dpy, mw->base(), xc_fleur);
+						XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
 					} else {
 
 //						pfm->move_resize(mw->get_base_position());
@@ -967,39 +967,39 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP;
-							XDefineCursor(cnx->dpy, mw->base(), xc_top_side);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_top_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM;
-							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_side);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_LEFT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_left_side);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_left_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_RIGHT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_right_side);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_right_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_top_left_corner);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_top_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_top_right_corner);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_top_right_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_left_corner);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							XDefineCursor(cnx->dpy, mw->base(), xc_bottom_righ_corner);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_righ_corner);
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
-							XDefineCursor(cnx->dpy, mw->base(), xc_fleur);
+							XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
 						}
 					}
 
@@ -1049,7 +1049,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 	if (process_mode == PROCESS_NORMAL) {
 
-		XAllowEvents(cnx->dpy, ReplayPointer, CurrentTime);
+		XAllowEvents(cnx->dpy(), ReplayPointer, CurrentTime);
 
 		/**
 		 * This focus is anoying because, passive grab can the
@@ -1077,7 +1077,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		 * It's like we XGrabButton with GrabModeASync
 		 **/
 
-		XAllowEvents(cnx->dpy, AsyncPointer, e.time);
+		XAllowEvents(cnx->dpy(), AsyncPointer, e.time);
 
 //		fprintf(stderr,
 //				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
@@ -1203,8 +1203,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == Button1) {
 			//pfm->hide();
 
-			XUndefineCursor(cnx->dpy, mode_data_floating.f->base());
-			XUndefineCursor(cnx->dpy, mode_data_floating.f->orig());
+			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
+			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1220,7 +1220,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == mode_data_floating.button) {
 			//pfm->hide();
 
-			XUngrabPointer(cnx->dpy, e.time);
+			XUngrabPointer(cnx->dpy(), e.time);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1236,8 +1236,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == Button1) {
 			//pfm->hide();
 
-			XUndefineCursor(cnx->dpy, mode_data_floating.f->base());
-			XUndefineCursor(cnx->dpy, mode_data_floating.f->orig());
+			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
+			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1253,7 +1253,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == mode_data_floating.button) {
 			//pfm->hide();
 
-			XUngrabPointer(cnx->dpy, e.time);
+			XUngrabPointer(cnx->dpy(), e.time);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1381,7 +1381,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
+		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
 
 		if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
 			mode_data_split.split_ratio = (ev.xmotion.x
@@ -1412,7 +1412,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		{
 		/* Get latest know motion event */
 		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev))
+		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
 			continue;
 
 		/* do not start drag&drop for small move */
@@ -1498,7 +1498,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FLOATING_MOVE: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
+		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
 
 		/* compute new window position */
 		rectangle new_position = mode_data_floating.original_position;
@@ -1518,7 +1518,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy, ButtonMotionMask, &ev));
+		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		/* compute new window position */
 		rectangle new_position = mode_data_floating.original_position;
@@ -1538,7 +1538,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FLOATING_RESIZE: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
+		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
 		rectangle size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
@@ -1625,7 +1625,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy, ButtonMotionMask, &ev));
+		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 		rectangle size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
@@ -1714,7 +1714,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FLOATING_BIND: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev))
+		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
 			continue;
 
 		/* do not start drag&drop for small move */
@@ -1810,7 +1810,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_FULLSCREEN_MOVE: {
 		/* get lastest know motion event */
 		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev))
+		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
 			continue;
 
 		viewport_t * v = find_mouse_viewport(ev.xmotion.x_root,
@@ -2210,7 +2210,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 
 void page_t::process_event(XClientMessageEvent const & e) {
 
-	char * name = XGetAtomName(cnx->dpy, e.message_type);
+	char * name = XGetAtomName(cnx->dpy(), e.message_type);
 	printf("ClientMessage type = %s\n", name);
 	XFree(name);
 
@@ -2269,7 +2269,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == A(_NET_CLOSE_WINDOW)) {
 
 		XEvent evx;
-		evx.xclient.display = cnx->dpy;
+		evx.xclient.display = cnx->dpy();
 		evx.xclient.type = ClientMessage;
 		evx.xclient.format = 32;
 		evx.xclient.message_type = A(WM_PROTOCOLS);
@@ -2354,7 +2354,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				}
 
 				if (process_mode != PROCESS_NORMAL) {
-					XGrabPointer(cnx->dpy, cnx->root(), False,
+					XGrabPointer(cnx->dpy(), cnx->root(), False,
 							ButtonPressMask | ButtonMotionMask
 									| ButtonReleaseMask, GrabModeAsync,
 							GrabModeAsync, None, xc, CurrentTime);
@@ -2668,7 +2668,7 @@ void page_t::process_event(XEvent const & e) {
 
 		}
 
-		XGrabButton(cnx->dpy, AnyButton, AnyModifier, rpage->id(), False,
+		XGrabButton(cnx->dpy(), AnyButton, AnyModifier, rpage->id(), False,
 				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 				GrabModeSync, GrabModeAsync, None, None);
 
@@ -3281,7 +3281,7 @@ void page_t::unbind_window(managed_window_t * mw) {
 
 void page_t::grab_pointer() {
 	/* Grab Pointer no other client will get mouse event */
-	if (XGrabPointer(cnx->dpy, cnx->root(), False,
+	if (XGrabPointer(cnx->dpy(), cnx->root(), False,
 			(ButtonPressMask | ButtonReleaseMask
 					| PointerMotionMask),
 			GrabModeAsync, GrabModeAsync, None, None,
@@ -3413,7 +3413,7 @@ viewport_t * page_t::find_viewport_for(notebook_t * n) {
 void page_t::set_window_cursor(Window w, Cursor c) {
 	XSetWindowAttributes swa;
 	swa.cursor = c;
-	XChangeWindowAttributes(cnx->dpy, w, CWCursor, &swa);
+	XChangeWindowAttributes(cnx->dpy(), w, CWCursor, &swa);
 }
 
 void page_t::update_windows_stack() {
@@ -3451,12 +3451,12 @@ void page_t::update_windows_stack() {
 
 	final_order.reverse();
 
-	XRaiseWindow(cnx->dpy, final_order.front());
+	XRaiseWindow(cnx->dpy(), final_order.front());
 	/**
 	 * convert list to C array, see std::vector API.
 	 **/
 	vector<Window> v_order(final_order.begin(), final_order.end());
-	XRestackWindows(cnx->dpy, &v_order[0], v_order.size());
+	XRestackWindows(cnx->dpy(), &v_order[0], v_order.size());
 
 }
 
@@ -3465,7 +3465,7 @@ void page_t::update_viewport_layout() {
 	/** update root size infos **/
 
 	XWindowAttributes rwa;
-	if(!XGetWindowAttributes(cnx->dpy, cnx->root(), &rwa)) {
+	if(!XGetWindowAttributes(cnx->dpy(), cnx->root(), &rwa)) {
 		throw std::runtime_error("FATAL: cannot read root window attributes\n");
 	}
 
@@ -3476,10 +3476,10 @@ void page_t::update_viewport_layout() {
 	map<RRCrtc, viewport_t *> new_layout;
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(
-			cnx->dpy, cnx->root());
+			cnx->dpy(), cnx->root());
 
 	for (int i = 0; i < resources->ncrtc; ++i) {
-		XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy, resources,
+		XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy(), resources,
 				resources->crtcs[i]);
 		//printf(
 		//		"CrtcInfo: width = %d, height = %d, x = %d, y = %d, noutputs = %d\n",
@@ -3607,7 +3607,7 @@ void page_t::onmap(Window w) {
 	 *
 	 **/
 	cnx->grab();
-	XSync(cnx->dpy, False);
+	XSync(cnx->dpy(), False);
 
 	client_base_t * c = find_client_with(w);
 

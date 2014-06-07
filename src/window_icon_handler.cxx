@@ -100,7 +100,7 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 			//printf("selected icon : %dx%d\n", selected.width, selected.height);
 
 			XVisualInfo vinfo;
-			if (XMatchVisualInfo(c->_cnx->dpy, c->_cnx->screen(), 32, TrueColor, &vinfo)
+			if (XMatchVisualInfo(c->_cnx->dpy(), c->_cnx->screen(), 32, TrueColor, &vinfo)
 					== 0) {
 				throw std::runtime_error(
 						"Unable to find valid visual for background windows");

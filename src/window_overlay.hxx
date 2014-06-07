@@ -49,8 +49,8 @@ public:
 		 **/
 
 		XVisualInfo vinfo;
-		if (XMatchVisualInfo(_cnx->dpy, _cnx->screen(), depth, TrueColor,
-				&vinfo) == 0) {
+		if (XMatchVisualInfo(_cnx->dpy(), _cnx->screen(), depth, TrueColor, &vinfo)
+				== 0) {
 			throw std::runtime_error(
 					"Unable to find valid visual for background windows");
 		}
@@ -67,10 +67,10 @@ public:
 		 **/
 		wa.border_pixel = 0;
 		wa.background_pixel = 0;
-		wa.colormap = XCreateColormap(_cnx->dpy, _cnx->root(),
-				vinfo.visual, AllocNone);
+		wa.colormap = XCreateColormap(_cnx->dpy(), _cnx->root(), vinfo.visual,
+				AllocNone);
 
-		_wid = XCreateWindow(_cnx->dpy, _cnx->root(), position.x,
+		_wid = XCreateWindow(_cnx->dpy(), _cnx->root(), position.x,
 				position.y, position.w, position.h, 0, vinfo.depth, InputOutput,
 				vinfo.visual,
 				CWOverrideRedirect | CWBackPixel | CWBorderPixel | CWColormap,
@@ -78,7 +78,7 @@ public:
 
 		_cnx->select_input(_wid, ExposureMask | StructureNotifyMask);
 
-		_front_surf = cairo_xlib_surface_create(_cnx->dpy, _wid, vinfo.visual,
+		_front_surf = cairo_xlib_surface_create(_cnx->dpy(), _wid, vinfo.visual,
 				position.w, position.h);
 
 		_back_surf = 0;
@@ -122,7 +122,7 @@ public:
 	virtual ~window_overlay_t() {
 		destroy_back_buffer();
 		cairo_surface_destroy(_front_surf);
-		XDestroyWindow(_cnx->dpy, _wid);
+		XDestroyWindow(_cnx->dpy(), _wid);
 	}
 
 	void move_resize(rectangle const & area) {

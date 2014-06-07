@@ -228,30 +228,30 @@ public:
 public:
 	void grab_button_focused() {
 		/** First ungrab all **/
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _orig);
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _base);
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _deco);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _orig);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _base);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _deco);
 
 		/** for decoration, grab all **/
-		XGrabButton(_cnx->dpy, (Button1), (AnyModifier), _deco, (False),
+		XGrabButton(_cnx->dpy(), (Button1), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button2), (AnyModifier), _deco, (False),
+		XGrabButton(_cnx->dpy(), (Button2), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button3), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
-
-		/** for base, just grab some modified buttons **/
-		XGrabButton(_cnx->dpy, Button1, (Mod1Mask), _base, False,
+		XGrabButton(_cnx->dpy(), (Button3), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
 		/** for base, just grab some modified buttons **/
-		XGrabButton(_cnx->dpy, Button1, (ControlMask), _base, False,
+		XGrabButton(_cnx->dpy(), Button1, (Mod1Mask), _base, False,
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		/** for base, just grab some modified buttons **/
+		XGrabButton(_cnx->dpy(), Button1, (ControlMask), _base, False,
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
@@ -259,32 +259,32 @@ public:
 
 	void grab_button_unfocused() {
 		/** First ungrab all **/
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _orig);
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _base);
-		XUngrabButton(_cnx->dpy, AnyButton, AnyModifier, _deco);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _orig);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _base);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _deco);
 
-		XGrabButton(_cnx->dpy, (Button1), (AnyModifier), _base, (False),
+		XGrabButton(_cnx->dpy(), (Button1), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button2), (AnyModifier), _base, (False),
+		XGrabButton(_cnx->dpy(), (Button2), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button3), (AnyModifier), _base, (False),
+		XGrabButton(_cnx->dpy(), (Button3), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
 		/** for decoration, grab all **/
-		XGrabButton(_cnx->dpy, (Button1), (AnyModifier), _deco, (False),
+		XGrabButton(_cnx->dpy(), (Button1), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button2), (AnyModifier), _deco, (False),
+		XGrabButton(_cnx->dpy(), (Button2), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_cnx->dpy, (Button3), (AnyModifier), _deco, (False),
+		XGrabButton(_cnx->dpy(), (Button3), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
@@ -333,7 +333,7 @@ public:
 	}
 
 	void net_wm_state_delete() {
-		XDeleteProperty(_cnx->dpy, _orig, A(_NET_WM_STATE));
+		_cnx->delete_property(_orig, _NET_WM_STATE);
 	}
 
 	void normalize() {
@@ -369,7 +369,7 @@ public:
 	}
 
 	void wm_state_delete() {
-		XDeleteProperty(_cnx->dpy, _orig, A(WM_STATE));
+		_cnx->delete_property(_orig, WM_STATE);
 	}
 
 	void set_floating_wished_position(rectangle & pos) {

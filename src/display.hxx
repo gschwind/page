@@ -21,6 +21,8 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 
+#include <cairo/cairo-xlib.h>
+
 #include <glib.h>
 
 #include <memory>
@@ -60,6 +62,7 @@ namespace page {
 class display_t {
 
 	int _fd;
+	Display * _dpy;
 
 public:
 
@@ -87,11 +90,8 @@ public:
 	shared_ptr<atom_handler_t> _A;
 
 
-
-	Display * dpy;
-
 	int grab_count;
-	int (*old_error_handler)(Display * dpy, XErrorEvent * ev);
+	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
 
 public:
@@ -100,6 +100,7 @@ public:
 
 	int fd();
 	Window root();
+	Display * dpy();
 
 	/* conveniant macro to get atom XID */
 	Atom A(atom_e atom);
@@ -145,7 +146,7 @@ public:
 	int change_property(Window w, atom_e property, atom_e type, int format,
 			T data, int nelements) {
 		cnx_printf("XChangeProperty: win = %lu\n", w);
-		return XChangeProperty(dpy, w, A(property), A(type), format,
+		return XChangeProperty(_dpy, w, A(property), A(type), format,
 				PropModeReplace, reinterpret_cast<unsigned char const *>(data),
 				nelements);
 	}
@@ -202,7 +203,7 @@ public:
 			va_list args;
 			va_start(args, str);
 			char buffer[1024];
-			unsigned long serial = XNextRequest(dpy);
+			unsigned long serial = XNextRequest(_dpy);
 			snprintf(buffer, 1024, ">%08lu ", serial);
 			unsigned int len = strnlen(buffer, 1024);
 			vsnprintf(&buffer[len], 1024 - len, str, args);

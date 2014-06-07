@@ -1120,7 +1120,7 @@ void simple_theme_t::create_background_img() {
 				background_file.c_str());
 
 		XWindowAttributes wa;
-		XGetWindowAttributes(_cnx->dpy, DefaultRootWindow(_cnx->dpy), &wa);
+		XGetWindowAttributes(_cnx->dpy(), _cnx->root(), &wa);
 
 		background_s = cairo_image_surface_create(CAIRO_FORMAT_RGB24, wa.width,
 				wa.height);
