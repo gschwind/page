@@ -72,6 +72,8 @@ void compositor_t::release_composite_overlay() {
 compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
 	render_mode = COMPOSITOR_MODE_AUTO;
 
+	composite_back_buffer = None;
+
 	fade_in_length = 1000000000L;
 	fade_out_length = 1000000000L;
 
@@ -88,20 +90,10 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	damage_count = 0;
 
 
-	/** update the windows list **/
-	scan();
+	_back_buffer = nullptr;
 
-
-	_back_buffer = 0;
-
+	/* this will scan for all windows */
 	update_layout();
-
-	/**
-	 * Add the composite window to the stack as invisible window to track a
-	 * valid stack. scan() currently does not report this window, I add remove
-	 * line, in case of scan will report it.
-	 **/
-	stack_window_place_on_top(composite_overlay);
 
 }
 
@@ -374,7 +366,8 @@ void compositor_t::render_auto() {
 
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
-	si.swap_action = None;
+	/* do what you want with current front buffer, maybe destroy it */
+	si.swap_action = XdbeUndefined;
 	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
 
 	_pending_damage.clear();
@@ -761,9 +754,8 @@ void compositor_t::update_layout() {
 
 	XGetWindowAttributes(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), &root_attributes);
 
-	destroy_cairo();
-
-	init_cairo();
+	if(composite_back_buffer != None)
+		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 
 	_desktop_region.clear();
 
@@ -791,8 +783,17 @@ void compositor_t::update_layout() {
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
 
+	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, None);
+
 	clear();
 	scan();
+
+	/**
+	 * Add the composite window to the stack as invisible window to track a
+	 * valid stack. scan() currently does not report this window, I add remove
+	 * line, in case of scan will report it.
+	 **/
+	stack_window_place_on_top(composite_overlay);
 
 }
 
@@ -920,10 +921,6 @@ bool compositor_t::process_check_event() {
 
 void compositor_t::destroy_cairo() {
 
-	if(_back_buffer != nullptr) {
-		cairo_surface_destroy(_back_buffer);
-		_back_buffer = nullptr;
-	}
 
 	XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 }
