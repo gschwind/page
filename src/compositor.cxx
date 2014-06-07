@@ -100,15 +100,15 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 
 compositor_t::~compositor_t() {
 
-	map<Window, composite_window_t *>::iterator i = window_data.begin();
-	while(i != window_data.end()) {
-		delete i->second;
-		++i;
+	/** clear composite window list **/
+	for(auto & i: window_data) {
+		delete i.second;
 	}
 
 	window_data.clear();
+
+	/** clear composite window surfaces **/
 	window_to_composite_surface.clear();
-	XCloseDisplay(_cnx->dpy());
 
 };
 
