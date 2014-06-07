@@ -80,7 +80,7 @@ public:
 
 	composite_window_t(Display * dpy, Window w,
 			XWindowAttributes const * wa, p_composite_surface_t surf) : A(dpy) {
-		page_assert(dpy != 0);
+		page_assert(dpy != NULL);
 
 		_surf = surf;
 
@@ -93,7 +93,7 @@ public:
 		/** guess if window has alpha channel **/
 		_has_alpha = false;
 		XRenderPictFormat * format = XRenderFindVisualFormat(dpy, wa->visual);
-		if (format != 0) {
+		if (format != NULL) {
 			_has_alpha = (format->type == PictTypeDirect
 					&& format->direct.alphaMask);
 		}

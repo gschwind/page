@@ -524,7 +524,7 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 
 	if (e.window == composite_overlay)
 		return;
-	if (e.parent != DefaultRootWindow(_cnx->dpy()))
+	if (e.parent != _cnx->root())
 		return;
 
 	stack_window_place_on_top(e.window);
@@ -545,7 +545,7 @@ void compositor_t::process_event(XReparentEvent const & e) {
 	 *
 	 **/
 
-	if (e.parent == DefaultRootWindow(_cnx->dpy())) {
+	if (e.parent == _cnx->root()) {
 		stack_window_place_on_top(e.window);
 	} else {
 		stack_window_remove(e.window);
@@ -555,7 +555,7 @@ void compositor_t::process_event(XReparentEvent const & e) {
 void compositor_t::process_event(XMapEvent const & e) {
 	if (e.send_event == True)
 		return;
-	if (e.event != DefaultRootWindow(_cnx->dpy()))
+	if (e.event != _cnx->root())
 		return;
 
 	/** don't make composite overlay visible **/
@@ -582,6 +582,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 		}
 	}
 
+	/* Recreate offscreen pixmap for this window */
 	auto i = window_to_composite_surface.find(e.window);
 	if(i != window_to_composite_surface.end()) {
 		i->second->onmap();
@@ -619,8 +620,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 	if (e.send_event == True)
 		return;
 
-	if (e.event == DefaultRootWindow(_cnx->dpy())
-			&& e.window != DefaultRootWindow(_cnx->dpy())) {
+	if (e.event == _cnx->root()
+			&& e.window != _cnx->root()) {
 
 		stack_window_update(e.window, e.above);
 
@@ -645,7 +646,7 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 	if(e.send_event == True)
 		return;
 
-	if(e.event != DefaultRootWindow(_cnx->dpy()))
+	if(e.event != _cnx->root())
 		return;
 
 	if(e.place == PlaceOnTop) {
@@ -733,13 +734,13 @@ void compositor_t::scan() {
 	 * Start listen root event before anything each event will be stored to
 	 * right run later.
 	 **/
-	XSelectInput(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), SubstructureNotifyMask);
+	XSelectInput(_cnx->dpy(), _cnx->root(), SubstructureNotifyMask);
 
 	window_stack.clear();
 	window_data.clear();
 
 	/** read all current root window **/
-	if (XQueryTree(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), &d1, &d2, &wins, &num)
+	if (XQueryTree(_cnx->dpy(), _cnx->root(), &d1, &d2, &wins, &num)
 			!= 0) {
 
 		if (num > 0)
