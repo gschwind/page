@@ -132,6 +132,23 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 page_t::~page_t() {
 
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_fleur);
+	XFreeCursor(cnx->dpy(), xc_bottom_left_corner);
+	XFreeCursor(cnx->dpy(), xc_bottom_righ_corner);
+	XFreeCursor(cnx->dpy(), xc_bottom_side);
+	XFreeCursor(cnx->dpy(), xc_left_side);
+	XFreeCursor(cnx->dpy(), xc_right_side);
+	XFreeCursor(cnx->dpy(), xc_top_right_corner);
+	XFreeCursor(cnx->dpy(), xc_top_left_corner);
+	XFreeCursor(cnx->dpy(), xc_top_side);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+	XFreeCursor(cnx->dpy(), xc_left_ptr);
+
 	delete rpage;
 
 	if(pfm != nullptr)
