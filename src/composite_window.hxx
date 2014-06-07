@@ -49,15 +49,13 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 class composite_window_t {
 	p_composite_surface_t _surf;
 
-	Display * dpy;
+	display_t * _cnx;
 	Window _wid;
 	rectangle _position;
 	bool _has_alpha;
 
 	region _region;
 	region _opaque_region;
-
-	atom_handler_t A;
 
 	/* avoid copy */
 	composite_window_t(composite_window_t const &);
@@ -78,13 +76,11 @@ public:
 	static long int const ClientEventMask = (StructureNotifyMask
 			| PropertyChangeMask);
 
-	composite_window_t(Display * dpy, Window w,
-			XWindowAttributes const * wa, p_composite_surface_t surf) : A(dpy) {
-		page_assert(dpy != NULL);
+	composite_window_t(display_t * cnx, Window w,
+			XWindowAttributes const * wa, p_composite_surface_t surf) : _cnx(cnx) {
+		page_assert(cnx != NULL);
 
 		_surf = surf;
-
-		this->dpy = dpy;
 		_wid = w;
 
 		/** copy usefull window attributes **/
@@ -92,14 +88,14 @@ public:
 
 		/** guess if window has alpha channel **/
 		_has_alpha = false;
-		XRenderPictFormat * format = XRenderFindVisualFormat(dpy, wa->visual);
+		XRenderPictFormat * format = XRenderFindVisualFormat(cnx->dpy(), wa->visual);
 		if (format != NULL) {
 			_has_alpha = (format->type == PictTypeDirect
 					&& format->direct.alphaMask);
 		}
 
 		/** read shape date **/
-		XShapeInputSelected(dpy, _wid);
+		XShapeInputSelected(cnx->dpy(), _wid);
 		update_shape();
 		update_opaque_region();
 
@@ -149,7 +145,7 @@ public:
 	void update_shape() {
 
 		int count = 0, ordering = 0;
-		XRectangle * recs = XShapeGetRectangles(dpy, _wid, ShapeBounding,
+		XRectangle * recs = XShapeGetRectangles(_cnx->dpy(), _wid, ShapeBounding,
 				&count, &ordering);
 
 		_region.clear();
@@ -171,7 +167,7 @@ public:
 
 	region read_opaque_region(Window w) {
 		region ret;
-		std::vector<long> * data = get_window_property<long>(dpy, w, A(_NET_WM_OPAQUE_REGION), A(CARDINAL));
+		std::vector<long> * data = _cnx->read_net_wm_opaque_region(w);
 		if(data != 0) {
 			for(int i = 0; i < data->size() / 4; ++i) {
 				ret += rectangle((*data)[i*4+0],(*data)[i*4+1],(*data)[i*4+2],(*data)[i*4+3]);

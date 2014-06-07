@@ -484,7 +484,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 				delete window_data[e.window];
 				window_data.erase(e.window);
 			}
-			composite_window_t * w = new composite_window_t(_cnx->dpy(), e.window, &wa, x);;
+			composite_window_t * w = new composite_window_t(_cnx, e.window, &wa, x);;
 			window_data[e.window] = w;
 			w->fade_start.get_time();
 			w->fade_mode = composite_window_t::FADE_IN;
@@ -669,7 +669,7 @@ void compositor_t::scan() {
 							delete window_data[wins[i]];
 							window_data.erase(wins[i]);
 						}
-						composite_window_t * w = new composite_window_t(_cnx->dpy(),
+						composite_window_t * w = new composite_window_t(_cnx,
 								wins[i], &wa, x);
 						window_data[wins[i]] = w;
 						w->fade_start.get_time();
