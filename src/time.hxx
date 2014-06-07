@@ -25,12 +25,14 @@ public:
 
 	/* create new time in current time */
 	time_t() : nsec(0) { }
-
-
 	time_t(time_t const & t) : nsec(t.nsec) { }
 
 	/* convert from int64_t */
 	time_t(int64_t nsec) : nsec(nsec) { }
+
+	time_t(long sec, long nsec) {
+		this->nsec = static_cast<int64_t>(sec) * static_cast<int64_t>(1000000000L) + static_cast<int64_t>(nsec);
+	}
 
 	operator timespec() {
 		timespec t;
@@ -39,6 +41,9 @@ public:
 		return t;
 	}
 
+	/**
+	 * Caution: limited to 54 bits while nsec store 64 bits
+	 */
 	operator double() {
 		return static_cast<double>(nsec);
 	}
@@ -85,6 +90,14 @@ public:
 
 	bool operator< (time_t const & t) const {
 		return nsec < t.nsec;
+	}
+
+	bool operator>= (time_t const & t) const {
+		return nsec >= t.nsec;
+	}
+
+	bool operator<= (time_t const & t) const {
+		return nsec <= t.nsec;
 	}
 
 	int64_t operator/ (int64_t x) const {
