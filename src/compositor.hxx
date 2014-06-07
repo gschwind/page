@@ -147,8 +147,6 @@ private:
 	void stack_window_remove(Window w);
 
 	region read_damaged_region(Damage d);
-
-	bool register_cm(Window w);
 	void init_composite_overlay();
 	bool process_check_event();
 

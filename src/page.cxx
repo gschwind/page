@@ -75,6 +75,12 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 		} else {
 			conf_file_name = argv[k];
 		}
+
+		if(x == "--replace") {
+			replace_wm = true;
+		} else {
+			conf_file_name = argv[k];
+		}
 		++k;
 	}
 
@@ -178,6 +184,11 @@ page_t::~page_t() {
 
 void page_t::run() {
 
+	/* Before doing anything, trying to register wm and cm */
+	create_identity_window();
+	register_wm();
+	register_cm();
+
 //	init_xprop(cnx->dpy);
 
 //	printf("root size: %d,%d\n", cnx->get_root_size().w, cnx->get_root_size().h);
@@ -207,24 +218,6 @@ void page_t::run() {
 		} catch (...) {
 			rnd = nullptr;
 		}
-	}
-
-	/* create an invisible window to identify page */
-	wm_window = XCreateSimpleWindow(cnx->dpy(), cnx->root(), -100,
-			-100, 1, 1, 0, 0, 0);
-	std::string name("page");
-	cnx->change_property(wm_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
-			name.length() + 1);
-	cnx->change_property(wm_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
-			&wm_window, 1);
-	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
-			WINDOW, 32, &wm_window, 1);
-	long pid = getpid();
-	cnx->change_property(wm_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
-	XSelectInput(cnx->dpy(), wm_window, StructureNotifyMask | PropertyChangeMask);
-	if (!cnx->register_wm(true, wm_window)) {
-		printf("Cannot register window manager\n");
-		return;
 	}
 
 	/**
@@ -4007,6 +4000,36 @@ void page_t::remove(tree_t * t) {
 	fullscreen_client_to_viewport.erase(dynamic_cast<managed_window_t *>(t));
 	docks.remove(dynamic_cast<unmanaged_window_t*>(t));
 
+}
+
+void page_t::create_identity_window() {
+	/* create an invisible window to identify page */
+	identity_window = XCreateSimpleWindow(cnx->dpy(), cnx->root(), -100,
+			-100, 1, 1, 0, 0, 0);
+	std::string name("page");
+	cnx->change_property(identity_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
+			name.length() + 1);
+	cnx->change_property(identity_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
+			&identity_window, 1);
+	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
+			WINDOW, 32, &identity_window, 1);
+	long pid = getpid();
+	cnx->change_property(identity_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
+	XSelectInput(cnx->dpy(), identity_window, StructureNotifyMask | PropertyChangeMask);
+}
+
+void page_t::register_wm() {
+	if (!cnx->register_wm(replace_wm, identity_window)) {
+		throw runtime_error("Cannot register window manager");
+	}
+}
+
+void page_t::register_cm() {
+	if (use_internal_compositor) {
+		if (!cnx->register_cm(identity_window)) {
+			throw runtime_error("Cannot register composite manager");
+		}
+	}
 }
 
 }

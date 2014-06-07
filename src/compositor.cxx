@@ -53,42 +53,6 @@ static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, dou
 	cairo_restore(cr);
 }
 
-/**
- * Register composite manager. if another one is in place just fail to take
- * the ownership.
- **/
-bool compositor_t::register_cm(Window w) {
-	Window current_cm;
-	Atom a_cm;
-	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
-	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d",
-			DefaultScreen(_cnx->dpy()));
-	a_cm = XInternAtom(_cnx->dpy(), net_wm_cm, False);
-
-	/** read if there is a compositor **/
-	current_cm = XGetSelectionOwner(_cnx->dpy(), a_cm);
-	if (current_cm != None) {
-		printf("Another composite manager is running\n");
-		return false;
-	} else {
-
-		/** become the compositor **/
-		XSetSelectionOwner(_cnx->dpy(), a_cm, w, CurrentTime);
-
-		/** check is we realy are the current compositor **/
-		if (XGetSelectionOwner(_cnx->dpy(), a_cm) != w) {
-			printf("Could not acquire window manager selection on screen %d\n",
-					DefaultScreen(_cnx->dpy()));
-			return false;
-		}
-
-		printf("Composite manager is registered on screen %d\n",
-				DefaultScreen(_cnx->dpy()));
-		return true;
-	}
-
-}
-
 void compositor_t::init_composite_overlay() {
 	/* map & passthrough the overlay */
 	composite_overlay = XCompositeGetOverlayWindow(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()));
@@ -134,31 +98,6 @@ compositor_t::compositor_t(display_t * cnx) : _cnx(cnx) {
 	}
 
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
-
-	/* create an invisible window to identify page */
-	cm_window = XCreateSimpleWindow(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), -100,
-			-100, 1, 1, 0, 0, 0);
-	if (cm_window == None) {
-		XCloseDisplay(_cnx->dpy());
-		throw compositor_fail_t();
-	}
-
-	char const * name = "page_internal_compositor";
-	XChangeProperty(_cnx->dpy(), cm_window, A(_NET_WM_NAME), A(UTF8_STRING), 8,
-	PropModeReplace, reinterpret_cast<unsigned char const *>(name),
-			strlen(name) + 1);
-
-	long pid = getpid();
-
-	XChangeProperty(_cnx->dpy(), cm_window, A(_NET_WM_PID), A(CARDINAL), 32,
-			(PropModeReplace), reinterpret_cast<unsigned char const *>(&pid),
-			1);
-
-	/* try to register compositor manager */
-	if (!register_cm(cm_window)) {
-		XCloseDisplay(_cnx->dpy());
-		throw compositor_fail_t();
-	}
 
 	/* initialize composite */
 	init_composite_overlay();

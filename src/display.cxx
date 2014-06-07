@@ -9,6 +9,10 @@
 
 #include "display.hxx"
 
+#include <poll.h>
+
+#include "time.hxx"
+
 namespace page {
 
 int display_t::fd() {
@@ -201,7 +205,6 @@ display_t::display_t() {
 }
 
 display_t::~display_t() {
-
 	XCloseDisplay(_dpy);
 }
 
@@ -262,7 +265,7 @@ bool display_t::register_wm(bool replace, Window w) {
 	Window current_wm_sn_owner;
 
 	static char wm_sn[] = "WM_Sxx";
-	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", DefaultScreen(_dpy));
+	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
 	wm_sn_atom = XInternAtom(_dpy, wm_sn, FALSE);
 
 	current_wm_sn_owner = XGetSelectionOwner(_dpy, wm_sn_atom);
@@ -283,46 +286,86 @@ bool display_t::register_wm(bool replace, Window w) {
 			if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
 				printf(
 						"Could not acquire window manager selection on screen %d",
-						DefaultScreen(_dpy));
+						screen());
 				return false;
 			}
 
 			/* Wait for old window manager to go away */
 			if (current_wm_sn_owner != None) {
-				unsigned long wait = 0;
-				const unsigned long timeout = G_USEC_PER_SEC * 15; /* wait for 15s max */
+				page::time_t end;
+				page::time_t cur;
+
+				struct pollfd fds[1];
+				fds[0].fd = fd();
+				fds[0].events = POLLIN | POLLOUT | POLLERR | POLLHUP;
+
+				cur.get_time();
+				end = cur + page::time_t(15L, 1000000000L);
 
 				XEvent ev;
 
-				while (wait < timeout) {
+				while (cur < end) {
+					int timeout = static_cast<int64_t>(end - cur) / 1000000000L;
+					poll(fds, 1, timeout);
 					/* Checks the local queue and incoming events for this event */
 					if (XCheckTypedWindowEvent(_dpy, current_wm_sn_owner,
-							DestroyNotify, &ev) == True)
+					DestroyNotify, &ev) == True)
 						break;
-					g_usleep(G_USEC_PER_SEC / 10);
-					wait += G_USEC_PER_SEC / 10;
+					cur.get_time();
 				}
 
-				if (wait >= timeout) {
-					printf("The WM on screen %d is not exiting",
-							DefaultScreen(_dpy));
+				if (cur >= end) {
+					printf("The WM on screen %d is not exiting", screen());
 					return false;
 				}
 			}
 
 		}
-
 	} else {
 		XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
 
 		if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
 			printf("Could not acquire window manager selection on screen %d",
-					DefaultScreen(_dpy));
+					screen());
 			return false;
 		}
 	}
 
 	return true;
+}
+
+
+/**
+ * Register composite manager. if another one is in place just fail to take
+ * the ownership.
+ **/
+bool display_t::register_cm(Window w) {
+	Window current_cm;
+	Atom a_cm;
+	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
+	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
+	a_cm = XInternAtom(_dpy, net_wm_cm, False);
+
+	/** read if there is a compositor **/
+	current_cm = XGetSelectionOwner(_dpy, a_cm);
+	if (current_cm != None) {
+		printf("Another composite manager is running\n");
+		return false;
+	} else {
+
+		/** become the compositor **/
+		XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
+
+		/** check is we realy are the current compositor **/
+		if (XGetSelectionOwner(_dpy, a_cm) != w) {
+			printf("Could not acquire window manager selection on screen %d\n",
+					screen());
+			return false;
+		}
+
+		printf("Composite manager is registered on screen %d\n", screen());
+		return true;
+	}
 }
 
 void display_t::add_to_save_set(Window w) {

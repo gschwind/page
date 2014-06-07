@@ -260,6 +260,10 @@ public:
 	key_mode_data_t key_mode_data;
 
 	bool use_internal_compositor;
+	bool replace_wm;
+
+	/** window that handle page identity for others clients */
+	Window identity_window;
 
 	/* this data are used when you drag&drop a split slider */
 	mode_data_split_t mode_data_split;
@@ -307,9 +311,6 @@ private:
 	Time _last_focus_time;
 	Time _last_button_press;
 	list<managed_window_t *> _client_focused;
-
-	/** this window is a mandatory window to handle the wm session **/
-	Window wm_window;
 
 	rectangle _root_position;
 
@@ -511,6 +512,10 @@ public:
 	void detach_dock(unmanaged_window_t * uw) {
 		docks.remove(uw);
 	}
+
+	void create_identity_window();
+	void register_wm();
+	void register_cm();
 
 };
 

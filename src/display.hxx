@@ -130,11 +130,9 @@ public:
 	void map_window(Window w);
 	void xnextevent(XEvent * ev);
 
-	/* this function come from xcompmgr
-	 * it is intend to make page as composite manager */
-
-
 	bool register_wm(bool replace, Window w);
+	bool register_cm(Window w);
+
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);
 	void move_resize(Window w, rectangle const & size);
