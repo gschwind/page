@@ -930,6 +930,80 @@ void compositor_t::cleanup_internal_data() {
 
 }
 
+void compositor_t::set_render_mode(render_mode_e mode) {
+	render_mode = mode;
+}
+
+compositor_t::render_mode_e compositor_t::get_render_mode() {
+	return render_mode;
+}
+
+p_composite_surface_t compositor_t::get_composite_surface(Window w,
+		XWindowAttributes const & wa) {
+	assert(w != None);
+	assert(wa.c_class == InputOutput);
+
+	auto i = window_to_composite_surface.find(w);
+	if (i != window_to_composite_surface.end()) {
+		return i->second;
+	} else {
+		//printf("number of surfaces = %lu\n", window_to_composite_surface.size());
+		p_composite_surface_t x(new composite_surface_t(_cnx->dpy(), w, wa));
+		window_to_composite_surface[w] = x;
+		return x;
+	}
+}
+
+void compositor_t::destroy_composite_surface(Window w) {
+	auto i = window_to_composite_surface.find(w);
+	if (i != window_to_composite_surface.end()) {
+		printf("number of surfaces = %lu\n",
+				window_to_composite_surface.size());
+		cout << "try to destroy " << i->first << " with "
+				<< i->second.use_count() << endl;
+		window_to_composite_surface.erase(i);
+	}
+}
+
+void compositor_t::create_damage(Window w, XWindowAttributes & wa) {
+	assert(wa.c_class == InputOutput);
+	assert(w != None);
+
+	Damage damage = XDamageCreate(_cnx->dpy(), w, XDamageReportNonEmpty);
+	if (damage != None) {
+		damage_map[w] = damage;
+		XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
+		XDamageSubtract(_cnx->dpy(), damage, None, region);
+		XFixesDestroyRegion(_cnx->dpy(), region);
+	}
+}
+
+void compositor_t::destroy_damage(Window w) {
+	map<Window, Damage>::iterator x = damage_map.find(w);
+	if (x != damage_map.end()) {
+		XDamageDestroy(_cnx->dpy(), x->second);
+		damage_map.erase(x);
+	}
+}
+
+
+void compositor_t::set_fade_in_time(int nsec) {
+	fade_in_length = nsec;
+}
+
+void compositor_t::set_fade_out_time(int nsec) {
+	fade_out_length = nsec;
+}
+
+Window compositor_t::get_composite_overlay() {
+	return composite_overlay;
+}
+
+void compositor_t::add_render(renderable_t * r) {
+	_graph_scene.push_back(r);
+}
+
+
 
 }
 
