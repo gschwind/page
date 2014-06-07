@@ -21,7 +21,7 @@ page_SOURCES = \
 	main.cxx page.cxx \
 	display.cxx \
 	tree.cxx notebook.cxx \
-	split.cxx root.cxx \
+	split.cxx \
 	ftrace_function.cxx \
 	compositor.cxx \
 	viewport.cxx \
@@ -30,10 +30,7 @@ page_SOURCES = \
 	managed_window.cxx \
 	unmanaged_window.cxx \
 	window_icon_handler.cxx \
-	config_handler.cxx \
-	xprop.c \
-	dsimple.c \
-	clientwin.c
+	config_handler.cxx 
 
 page_LDADD = \
 	$(X11_LIBS) \
