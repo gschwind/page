@@ -63,6 +63,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	page_areas = nullptr;
 	use_internal_compositor = true;
+	replace_wm = false;
 	char const * conf_file_name = 0;
 
 	/** parse command line **/
