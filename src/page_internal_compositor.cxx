@@ -8,6 +8,7 @@
  */
 
 #include "utils.hxx"
+#include "display.hxx"
 #include "compositor.hxx"
 #include "time.hxx"
 
@@ -15,7 +16,7 @@ using namespace page;
 
 int main(int argc, char * * argv) {
 
-	Display * dpy = XOpenDisplay(NULL);
+	display_t * dpy = new display_t();
 	compositor_t * compositor = new page::compositor_t(dpy);
 
 	fd_set fds_read;

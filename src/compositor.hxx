@@ -34,7 +34,7 @@ namespace page {
 
 class compositor_t {
 
-	Display * _dpy;
+	display_t * _cnx;
 
 	Window cm_window;
 	Window composite_overlay;
@@ -57,7 +57,7 @@ class compositor_t {
 	/* xrandr extension handler */
 	int xrandr_opcode, xrandr_event, xrandr_error;
 
-	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
+	int (*old_error_handler)(Display *, XErrorEvent *);
 
 	shared_ptr<atom_handler_t> _A;
 
@@ -166,16 +166,16 @@ private:
 public:
 
 	virtual ~compositor_t();
-	compositor_t(Display * dpy);
+	compositor_t(display_t * dpy);
 
 	void process_events();
 
 	int fd() {
-		return ConnectionNumber(_dpy);
+		return _cnx->fd();
 	}
 
 	void xflush() {
-		XFlush(_dpy);
+		XFlush(_cnx->dpy());
 	}
 
 	void render();
@@ -200,7 +200,7 @@ public:
 			return i->second;
 		} else {
 			//printf("number of surfaces = %lu\n", window_to_composite_surface.size());
-			p_composite_surface_t x(new composite_surface_t(_dpy, w, wa));
+			p_composite_surface_t x(new composite_surface_t(_cnx->dpy(), w, wa));
 			window_to_composite_surface[w] = x;
 			return x;
 		}
@@ -221,19 +221,19 @@ public:
 		assert(wa.c_class == InputOutput);
 		assert(w != None);
 
-		Damage damage = XDamageCreate(_dpy, w, XDamageReportNonEmpty);
+		Damage damage = XDamageCreate(_cnx->dpy(), w, XDamageReportNonEmpty);
 		if (damage != None) {
 			damage_map[w] = damage;
-			XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
-			XDamageSubtract(_dpy, damage, None, region);
-			XFixesDestroyRegion(_dpy, region);
+			XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
+			XDamageSubtract(_cnx->dpy(), damage, None, region);
+			XFixesDestroyRegion(_cnx->dpy(), region);
 		}
 	}
 
 	void destroy_damage(Window w) {
 		map<Window, Damage>::iterator x = damage_map.find(w);
 		if (x != damage_map.end()) {
-			XDamageDestroy(_dpy, x->second);
+			XDamageDestroy(_cnx->dpy(), x->second);
 			damage_map.erase(x);
 		}
 	}

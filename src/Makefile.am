@@ -53,6 +53,7 @@ page_LDADD = \
 	-ldl
 
 page_internal_compositor_SOURCES = \
+	display.cxx \
 	page_internal_compositor.cxx \
 	compositor.cxx 
 

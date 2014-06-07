@@ -189,7 +189,7 @@ void page_t::run() {
 	if (use_internal_compositor) {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
-			rnd = new compositor_t(cnx->dpy());
+			rnd = new compositor_t(cnx);
 
 			if (conf.has_key("compositor", "fade_in_time")) {
 				rnd->set_fade_in_time(
