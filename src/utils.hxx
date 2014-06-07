@@ -139,7 +139,7 @@ inline void allow_input_passthrough(Display * dpy, Window w) {
 	/**
 	 * Shape for the entire of window.
 	 **/
-	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, 0);
+	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
 	/**
 	 * input shape was introduced by Keith Packard to define an input area of
 	 * window by default is the ShapeBounding which is used. here we set input
@@ -147,6 +147,11 @@ inline void allow_input_passthrough(Display * dpy, Window w) {
 	 **/
 	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
 	XFixesDestroyRegion(dpy, region);
+}
+
+inline void disable_input_passthrough(Display * dpy, Window w) {
+	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
+	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, None);
 }
 
 static int error_handler(Display * dpy, XErrorEvent * ev) {

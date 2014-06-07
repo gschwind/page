@@ -54,12 +54,19 @@ static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, dou
 }
 
 void compositor_t::init_composite_overlay() {
-	/* map & passthrough the overlay */
-	composite_overlay = XCompositeGetOverlayWindow(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()));
+	/* create and map the composite overlay window */
+	composite_overlay = XCompositeGetOverlayWindow(_cnx->dpy(), _cnx->root());
+	/* user input pass through composite overlay (mouse click for example)) */
 	allow_input_passthrough(_cnx->dpy(), composite_overlay);
+	/** Automatically redirect windows, but paint sub-windows manually */
+	XCompositeRedirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
+}
 
-	/** Automatically redirect windows, but paint window manually */
-	XCompositeRedirectSubwindows(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), CompositeRedirectManual);
+void compositor_t::release_composite_overlay() {
+	XCompositeUnredirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
+	disable_input_passthrough(_cnx->dpy(), composite_overlay);
+	XCompositeReleaseOverlayWindow(_cnx->dpy(), composite_overlay);
+	composite_overlay = None;
 }
 
 compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
@@ -109,6 +116,8 @@ compositor_t::~compositor_t() {
 
 	/** clear composite window surfaces **/
 	window_to_composite_surface.clear();
+
+	release_composite_overlay();
 
 };
 
@@ -568,8 +577,6 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 	if(has_key(window_data, e.window)) {
 		repair_area_region(window_data[e.window]->position());
 	}
-
-
 
 }
 

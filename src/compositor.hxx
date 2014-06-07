@@ -138,6 +138,7 @@ private:
 
 	region read_damaged_region(Damage d);
 	void init_composite_overlay();
+	void release_composite_overlay();
 	bool process_check_event();
 
 	bool check_glx_context();
