@@ -387,6 +387,7 @@ void managed_window_t::expose() {
 		}
 
 		cairo_surface_flush(_surf);
+		cairo_destroy(_cr);
 	}
 }
 
