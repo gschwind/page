@@ -165,7 +165,7 @@ page_t::~page_t() {
 	for (auto &i : childs) {
 		delete i;
 	}
-
+	childs.clear();
 	/* all client should be in childs, while we already destroyed all child, just clear this list */
 	clients.clear();
 
@@ -180,7 +180,7 @@ page_t::~page_t() {
 		delete rnd;
 
 	// cleanup cairo, for valgrind happiness.
-	cairo_debug_reset_static_data();
+	//cairo_debug_reset_static_data();
 
 	if(cnx != nullptr) {
 		/** clean up properies defined by Window Manager **/

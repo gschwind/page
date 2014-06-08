@@ -112,7 +112,7 @@ public:
 	managed_window_type_e get_type();
 
 	window_icon_handler_t * icon() const {
-		if (_icon == 0) {
+		if (_icon == nullptr) {
 			_icon = new window_icon_handler_t(this, 16, 16);
 		}
 		return _icon;
@@ -120,9 +120,9 @@ public:
 
 	void mark_icon_durty() {
 		mark_durty();
-		if (_icon != 0) {
+		if (_icon != nullptr) {
 			delete _icon;
-			_icon = 0;
+			_icon = nullptr;
 		}
 	}
 

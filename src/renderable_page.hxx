@@ -30,7 +30,7 @@ public:
 	}
 
 	~renderable_page_t() {
-
+		cout << "call " << __FUNCTION__ << endl;
 	}
 
 	void repair_notebook_border(notebook_t * n) {

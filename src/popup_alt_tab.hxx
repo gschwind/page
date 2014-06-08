@@ -32,7 +32,9 @@ public:
 	}
 
 	~popup_alt_tab_t() {
-
+		for(auto i: window_list) {
+			delete i;
+		}
 	}
 
 	void select_next() {

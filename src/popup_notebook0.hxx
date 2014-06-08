@@ -28,18 +28,18 @@ struct popup_notebook0_t : public window_overlay_t {
 	popup_notebook0_t(display_t * cnx, theme_t * theme) :
 			window_overlay_t(cnx, 32), _theme(theme) {
 
-		icon = 0;
+		icon = nullptr;
 
 		_show = false;
 	}
 
 	~popup_notebook0_t() {
-		if(icon != 0)
+		if(icon != nullptr)
 			delete icon;
 	}
 
 	void update_window(client_base_t * c, string title) {
-		if (icon != 0)
+		if (icon != nullptr)
 			delete icon;
 		icon = new window_icon_handler_t(c, 64, 64);
 		this->title = title;

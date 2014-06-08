@@ -236,7 +236,7 @@ void compositor_t::render_auto() {
 			root_attributes.height);
 
 	if(_back_buffer == nullptr)
-		return;
+		throw runtime_error("compositor: cannot create cairo back buffer");
 
 	cairo_t * cr = cairo_create(_back_buffer);
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));

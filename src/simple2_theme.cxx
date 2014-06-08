@@ -248,7 +248,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
 	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
 
-
 }
 
 simple2_theme_t::~simple2_theme_t() {

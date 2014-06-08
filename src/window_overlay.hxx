@@ -120,6 +120,7 @@ public:
 	}
 
 	virtual ~window_overlay_t() {
+		cout << "call " << __FUNCTION__ << endl;
 		destroy_back_buffer();
 		cairo_surface_destroy(_front_surf);
 		XDestroyWindow(_cnx->dpy(), _wid);

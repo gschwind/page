@@ -37,6 +37,7 @@ struct cycle_window_entry_t {
 	string title;
 	managed_window_base_t * id;
 
+private:
 	cycle_window_entry_t(cycle_window_entry_t const &);
 	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
@@ -47,7 +48,7 @@ public:
 	}
 
 	~cycle_window_entry_t() {
-		if(icon != 0) {
+		if(icon != nullptr) {
 			delete icon;
 		}
 	}
