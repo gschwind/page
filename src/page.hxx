@@ -537,6 +537,8 @@ public:
 	void register_wm();
 	void register_cm();
 
+	void render(cairo_t * cr, page::time_t time);
+
 };
 
 

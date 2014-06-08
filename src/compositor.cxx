@@ -71,7 +71,6 @@ void compositor_t::release_composite_overlay() {
 
 compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
 	render_mode = COMPOSITOR_MODE_AUTO;
-
 	composite_back_buffer = None;
 
 	fade_in_length = 1000000000L;
@@ -172,18 +171,14 @@ void compositor_t::render() {
 
 }
 
-struct _comp {
-	bool operator()(renderable_t * a, renderable_t * b) {
-		return a->z < b->z;
-	}
-};
-
 
 void compositor_t::render_managed() {
 
-	_comp compare;
+	if(_pending_damage.empty()) {
+		return;
+	}
 
-	_graph_scene.sort(compare);
+	_pending_damage.clear();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
@@ -193,9 +188,13 @@ void compositor_t::render_managed() {
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_paint(cr));
 
-	region area(0, 0, root_attributes.width, root_attributes.height);
-	for(renderable_list_t::iterator i = _graph_scene.begin(); i != _graph_scene.end(); ++i) {
-		(*i)->render(cr, area);
+	time_t cur;
+	cur.get_time();
+
+	cout << "time =" << static_cast<int64_t>(cur) << endl;
+
+	for (auto i : _graph_scene) {
+		i->render(cr, cur);
 	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
@@ -205,7 +204,7 @@ void compositor_t::render_managed() {
 
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
-	si.swap_action = None;
+	si.swap_action = XdbeUndefined;
 	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
 
 }
@@ -954,11 +953,17 @@ Window compositor_t::get_composite_overlay() {
 	return composite_overlay;
 }
 
-void compositor_t::add_render(renderable_t * r) {
+void compositor_t::renderable_add(renderable_t * r) {
 	_graph_scene.push_back(r);
 }
 
+void compositor_t::renderable_remove(renderable_t * r) {
+	_graph_scene.remove(r);
+}
 
+void compositor_t::renderable_clear() {
+	_graph_scene.clear();
+}
 
 }
 

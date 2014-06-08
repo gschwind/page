@@ -73,13 +73,25 @@ public:
 
 	void repair_damaged(list<tree_t *> tree) {
 
+		time_t cur;
+		cur.get_time();
+
 		cairo_t * cr = cairo_create(_back_surf);
 
 		for (auto &i : damaged) {
 			for (auto &j : tree) {
-				tree_renderable_t * rtree = dynamic_cast<tree_renderable_t *>(j);
+				split_t * rtree = dynamic_cast<split_t *>(j);
 				if (rtree != nullptr) {
-					rtree->render(cr, i);
+					rtree->render_legacy(cr, i);
+				}
+			}
+		}
+
+		for (auto &i : damaged) {
+			for (auto &j : tree) {
+				notebook_t * rtree = dynamic_cast<notebook_t *>(j);
+				if (rtree != nullptr) {
+					rtree->render_legacy(cr, i);
 				}
 			}
 		}

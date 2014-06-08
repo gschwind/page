@@ -54,7 +54,8 @@ page_internal_compositor_SOURCES = \
 	display.cxx \
 	page_internal_compositor.cxx \
 	compositor.cxx \
-	composite_surface_manager.cxx 
+	composite_surface_manager.cxx \
+	tree.cxx
 
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \

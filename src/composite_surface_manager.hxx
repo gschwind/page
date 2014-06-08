@@ -211,6 +211,12 @@ public:
 			return p == v;
 		}
 
+		void reset() {
+			if(v != nullptr)
+				v->decr_ref();
+			v = nullptr;
+		}
+
 		friend composite_surface_manager_t;
 
 	};

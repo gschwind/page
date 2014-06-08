@@ -11,7 +11,6 @@
 #define NOTEBOOK_HXX_
 
 #include "tree.hxx"
-#include "tree_renderable.hxx"
 #include "managed_window.hxx"
 
 namespace page {
@@ -23,7 +22,7 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t : public notebook_base_t, public tree_renderable_t {
+class notebook_t : public notebook_base_t  {
 
 	theme_t const * _theme;
 
@@ -142,10 +141,6 @@ public:
 		}
 	}
 
-	virtual void render(cairo_t * cr, rectangle const & area) const {
-		_theme->render_notebook(cr, this, area);
-	}
-
 	virtual bool is_default() const {
 		return _is_default;
 	}
@@ -172,9 +167,41 @@ public:
 
 	}
 
-
 	virtual string get_node_name() const {
 		return _get_node_name<'N'>();
+	}
+
+	void render_legacy(cairo_t * cr, rectangle const & area) const {
+		_theme->render_notebook(cr, this, area);
+	}
+
+	virtual void render(cairo_t * cr, time_t time) {
+		_theme->render_notebook(cr, this, _allocation);
+
+		if(not _selected.empty()) {
+			managed_window_t * mw = _selected.front();
+			composite_surface_handler_t psurf = mw->surf();
+			if (psurf != nullptr) {
+				cairo_surface_t * s = psurf->get_surf();
+				rectangle location = mw->get_base_position();
+
+				cairo_save(cr);
+				cairo_set_source_surface(cr, s, location.x, location.y);
+				//cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+				cairo_rectangle(cr, location.x, location.y, location.w, location.h);
+				//cairo_stroke(cr);
+				cairo_fill(cr);
+				cairo_restore(cr);
+
+			}
+
+			for(auto i: mw->childs()) {
+				i->render(cr, time);
+			}
+
+		}
+
 	}
 
 

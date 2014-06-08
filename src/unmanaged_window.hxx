@@ -12,6 +12,7 @@
 
 #include <X11/X.h>
 
+#include "composite_surface_manager.hxx"
 #include "client_base.hxx"
 #include "display.hxx"
 
@@ -25,6 +26,8 @@ private:
 
 	Atom _net_wm_type;
 
+	composite_surface_handler_t surf;
+
 	/* avoid copy */
 	unmanaged_window_t(unmanaged_window_t const &);
 	unmanaged_window_t & operator=(unmanaged_window_t const &);
@@ -36,6 +39,9 @@ public:
 		_cnx->grab();
 		XSelectInput(_cnx->dpy(), _id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 		_cnx->ungrab();
+
+		surf = composite_surface_manager_t::get(_cnx->dpy(), base());
+
 	}
 
 	~unmanaged_window_t() {
@@ -56,6 +62,25 @@ public:
 
 	virtual string get_node_name() const {
 		return _get_node_name<'U'>();
+	}
+
+	virtual void render(cairo_t * cr, time_t time) {
+		if (surf != nullptr) {
+			cairo_surface_t * s = surf->get_surf();
+
+			cairo_save(cr);
+			cairo_set_source_surface(cr, s, wa.x, wa.y);
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
+			cairo_fill(cr);
+			cairo_restore(cr);
+
+		}
+
+		for(auto i: childs()) {
+			i->render(cr, time);
+		}
+
 	}
 
 

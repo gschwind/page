@@ -13,6 +13,7 @@
 
 #include <list>
 #include <cairo.h>
+#include "time.hxx"
 #include "box.hxx"
 #include "region.hxx"
 #include "utils.hxx"
@@ -25,37 +26,17 @@ namespace page {
 class renderable_t {
 public:
 
-	/* level to draw, lower value mean draw at bottom */
-
-	double z;
-	/**
-	 * renderable default constructor.
-	 */
-	renderable_t() { z = 0.0; }
-
 	/**
 	 * Destroy renderable
 	 */
 	virtual ~renderable_t() { }
 
 	/**
-	 * this is called before the render to update all surface positions
-	 **/
-	virtual void prepare_render(time_t time) {
-
-	}
-	/**
 	 * draw the area of a renderable to the destination surface
 	 * @param cr the destination surface context
 	 * @param area the area to redraw
 	 */
-	virtual void render(cairo_t * cr, region const & area) = 0;
-
-	/**
-	 * to avoid too much memory copy compositor need to know opac/not opac area
-	 **/
-	virtual region opac_area() = 0;
-	virtual region full_area() = 0;
+	virtual void render(cairo_t * cr, time_t time) = 0;
 
 };
 

@@ -13,6 +13,7 @@
 #include "theme.hxx"
 #include "managed_window_base.hxx"
 #include "display.hxx"
+#include "composite_surface_manager.hxx"
 
 namespace page {
 
@@ -82,6 +83,8 @@ private:
 	bool _is_focused;
 
 	bool _motif_has_border;
+
+	composite_surface_handler_t _composite_surf;
 
 public:
 
@@ -185,6 +188,10 @@ public:
 
 	bool motif_has_border() {
 		return _motif_has_border;
+	}
+
+	composite_surface_handler_t surf() {
+		return _composite_surf;
 	}
 
 //	void set_default_action() {
@@ -343,6 +350,8 @@ public:
 		_cnx->map_window(_deco);
 		_cnx->map_window(_base);
 
+		_composite_surf = composite_surface_manager_t::get(_cnx->dpy(), base());
+
 		for(auto c: _childen) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			if(mw != nullptr) {
@@ -358,6 +367,8 @@ public:
 		_cnx->unmap(_base);
 		_cnx->unmap(_deco);
 		_cnx->unmap(_orig);
+
+		_composite_surf.reset();
 
 		for(auto c: _childen) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
@@ -470,6 +481,27 @@ public:
 	virtual string get_node_name() const {
 		return _get_node_name<'M'>();
 	}
+
+	virtual void render(cairo_t * cr, time_t time) {
+
+		if (_composite_surf != nullptr) {
+			cairo_surface_t * s = _composite_surf->get_surf();
+			rectangle loc = base_position();
+
+			cairo_save(cr);
+			cairo_set_source_surface(cr, s, loc.x, loc.y);
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
+			cairo_fill(cr);
+			cairo_restore(cr);
+
+		}
+
+		for(auto i: childs()) {
+			i->render(cr, time);
+		}
+	}
+
 
 };
 

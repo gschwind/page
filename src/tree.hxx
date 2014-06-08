@@ -17,6 +17,8 @@
 #include <list>
 #include <vector>
 #include "region.hxx"
+#include "time.hxx"
+#include "renderable.hxx"
 
 using namespace std;
 
@@ -40,7 +42,7 @@ enum tree_type_e {
 	TYPE_OTHER_OVERLAY      /* unmanaged class (ALL unknown type) */
 };
 
-class tree_t {
+class tree_t : public renderable_t {
 protected:
 	tree_t * _parent;
 	rectangle _allocation;

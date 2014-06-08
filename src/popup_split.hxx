@@ -40,6 +40,19 @@ struct popup_split_t: public window_overlay_t {
 
 	}
 
+	virtual void render(cairo_t * cr, time_t time) {
+
+		if(not _is_visible)
+			return;
+
+		cairo_save(cr);
+		cairo_translate(cr, _position.x, _position.y);
+		_theme->render_popup_split(cr, _position.w, _position.h);
+		cairo_restore(cr);
+
+	}
+
+
 };
 
 }

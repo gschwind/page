@@ -703,8 +703,10 @@ void page_t::process_event(XKeyEvent const & e) {
 	}
 
 	if (XK_z == k[0] and e.type == KeyPress and (e.state & Mod4Mask)) {
-		if(rnd != 0) {
+		if(rnd != nullptr) {
 			if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
+				rnd->renderable_clear();
+				rnd->renderable_add(this);
 				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
 			} else {
 				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
@@ -3482,6 +3484,7 @@ void page_t::update_viewport_layout() {
 
 	_root_position = rectangle(rwa.x, rwa.y, rwa.width, rwa.height);
 	set_desktop_geometry(_root_position.w, _root_position.h);
+	_allocation = _root_position;
 
 	/** store the newer layout, to cleanup obsolet viewport **/
 	map<RRCrtc, viewport_t *> new_layout;
@@ -4082,6 +4085,17 @@ void page_t::check_x11_extension() {
 			throw std::runtime_error(RANDR_NAME " extension is not supported");
 		}
 	}
+}
+
+void page_t::render(cairo_t * cr, page::time_t time) {
+	for(auto i: childs()) {
+		i->render(cr, time);
+	}
+
+	pat->render(cr, time);
+	ps->render(cr, time);
+	pn0->render(cr, time);
+
 }
 
 }

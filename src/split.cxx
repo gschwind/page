@@ -244,7 +244,7 @@ split_type_e split_t::type() const {
 	return _split_type;
 }
 
-void split_t::render(cairo_t * cr, rectangle const & area) const {
+void split_t::render_legacy(cairo_t * cr, rectangle const & area) const {
 	_theme->render_split(cr, this, area);
 }
 

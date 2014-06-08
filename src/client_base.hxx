@@ -790,6 +790,12 @@ public:
 		//motif_hints = nullptr;
 	}
 
+	virtual void render(cairo_t * cr, time_t time) {
+		/* draw nothing */
+		cout << "call " << __FUNCTION__ << endl;
+	}
+
+
 
 };
 

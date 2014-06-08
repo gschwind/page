@@ -99,8 +99,6 @@ private:
 	void repair_damaged_window(Window w, region area);
 	void repair_moved_window(Window w, region from, region to);
 
-
-	//static bool z_comp(renderable_t * x, renderable_t * y);
 	void render_flush();
 
 	void repair_area(rectangle const & box);
@@ -173,7 +171,10 @@ public:
 	void set_fade_in_time(int nsec);
 	void set_fade_out_time(int nsec);
 	Window get_composite_overlay();
-	void add_render(renderable_t * r);
+
+	void renderable_add(renderable_t * r);
+	void renderable_remove(renderable_t * r);
+	void renderable_clear();
 
 	Atom A(atom_e a) {
 		return (*_A)(a);

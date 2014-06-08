@@ -11,7 +11,6 @@
 #define VIEWPORT_HXX_
 
 #include "tree.hxx"
-#include "tree_renderable.hxx"
 #include "viewport_base.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
@@ -23,7 +22,7 @@ using namespace std;
 
 namespace page {
 
-struct viewport_t: public viewport_base_t, public tree_renderable_t {
+struct viewport_t: public viewport_base_t {
 
 private:
 	theme_t * _theme;
@@ -93,6 +92,13 @@ public:
 	virtual string get_node_name() const {
 		return _get_node_name<'V'>();
 	}
+
+	virtual void render(cairo_t * cr, time_t time) {
+		for(auto i: childs()) {
+			i->render(cr, time);
+		}
+	}
+
 
 };
 

@@ -13,7 +13,6 @@
 #include <cmath>
 
 #include "tree.hxx"
-#include "tree_renderable.hxx"
 #include "theme.hxx"
 
 #include <set>
@@ -22,7 +21,7 @@ using namespace std;
 
 namespace page {
 
-class split_t : public split_base_t, public tree_renderable_t {
+class split_t : public split_base_t {
 
 	theme_t const * _theme;
 
@@ -67,7 +66,7 @@ public:
 	void compute_split_size(double split, double & w, double & h) const;
 	double split() const;
 	split_type_e type() const;
-	void render(cairo_t * cr, rectangle const & area) const;
+	void render_legacy(cairo_t * cr, rectangle const & area) const;
 	list<tree_t *> childs() const;
 	void raise_child(tree_t * t);
 
@@ -76,6 +75,14 @@ public:
 	}
 
 	void remove(tree_t * t);
+
+	virtual void render(cairo_t * cr, time_t time) {
+		_theme->render_split(cr, this, _allocation);
+		for(auto i: childs()) {
+			i->render(cr, time);
+		}
+	}
+
 
 };
 
