@@ -104,6 +104,9 @@ void notebook_t::set_selected(managed_window_t * c) {
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			managed_window_t * x = _selected.front();
+			prev_surf = x->surf();
+			prev_loc = x->base_position();
+			swap_start.get_time();
 			x->iconify();
 		}
 	}

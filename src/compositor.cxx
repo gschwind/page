@@ -174,11 +174,11 @@ void compositor_t::render() {
 
 void compositor_t::render_managed() {
 
-	if(_pending_damage.empty()) {
-		return;
-	}
-
-	_pending_damage.clear();
+//	if(_pending_damage.empty()) {
+//		return;
+//	}
+//
+//	_pending_damage.clear();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
@@ -190,8 +190,6 @@ void compositor_t::render_managed() {
 
 	time_t cur;
 	cur.get_time();
-
-	cout << "time =" << static_cast<int64_t>(cur) << endl;
 
 	for (auto i : _graph_scene) {
 		i->render(cr, cur);
@@ -216,8 +214,6 @@ void compositor_t::render_auto() {
 		return;
 	}
 
-	_pending_damage.clear();
-
 	/**
 	 * list content is bottom window to upper window in stack a optimization.
 	 **/
@@ -238,9 +234,9 @@ void compositor_t::render_auto() {
 		throw runtime_error("compositor: cannot create cairo back buffer");
 
 	cairo_t * cr = cairo_create(_back_buffer);
-	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-	CHECK_CAIRO(cairo_paint(cr));
+//	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
+//	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+//	CHECK_CAIRO(cairo_paint(cr));
 
 	/**
 	 * Find region where windows are not overlap each other. i.e. region where
@@ -295,6 +291,9 @@ void compositor_t::render_auto() {
 	slow_region -= region_without_overlapped_window;
 	slow_region -= region_without_alpha_on_top;
 
+	region_without_alpha_on_top &= _pending_damage;
+	region_without_overlapped_window &= _pending_damage;
+	slow_region &= _pending_damage;
 
 	/* direct render, area where there is only one window visible */
 	{
@@ -358,10 +357,11 @@ void compositor_t::render_auto() {
 	cairo_surface_destroy(_back_buffer);
 	_back_buffer = nullptr;
 
+	_pending_damage.clear();
+
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
-	/* do what you want with current front buffer, maybe destroy it */
-	si.swap_action = XdbeUndefined;
+	si.swap_action = XdbeCopied;
 	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
 
 	_pending_damage.clear();

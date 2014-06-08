@@ -12,6 +12,7 @@
 
 #include "tree.hxx"
 #include "managed_window.hxx"
+#include "region.hxx"
 
 namespace page {
 
@@ -30,6 +31,10 @@ class notebook_t : public notebook_base_t  {
 
 	/* child stack order */
 	list<tree_t *> _children;
+
+	page::time_t swap_start;
+	composite_surface_handler_t prev_surf;
+	rectangle prev_loc;
 
 public:
 
@@ -176,29 +181,109 @@ public:
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
+
 		_theme->render_notebook(cr, this, _allocation);
 
-		if(not _selected.empty()) {
-			managed_window_t * mw = _selected.front();
-			composite_surface_handler_t psurf = mw->surf();
-			if (psurf != nullptr) {
-				cairo_surface_t * s = psurf->get_surf();
-				rectangle location = mw->get_base_position();
+		if (not _selected.empty()) {
 
-				cairo_save(cr);
-				cairo_set_source_surface(cr, s, location.x, location.y);
-				//cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, location.x, location.y, location.w, location.h);
-				//cairo_stroke(cr);
-				cairo_fill(cr);
-				cairo_restore(cr);
+			page::time_t d(1, 0);
+			if (time < (swap_start + d)) {
+				double ratio = static_cast<double>(time - swap_start)/1000000000.0;
+
+				double y = floor(ratio * _allocation.h);
+				if(y < 0.0)
+					y = 0.0;
+				if(y > _allocation.h)
+					y = _allocation.h;
+
+				managed_window_t * mw = _selected.front();
+				composite_surface_handler_t psurf = mw->surf();
+
+				if (psurf != nullptr) {
+					cairo_surface_t * s = psurf->get_surf();
+					rectangle old = mw->base_position();
+					rectangle location = mw->base_position();
+
+					if(old.y + old.h > _allocation.y + y) {
+						location.h -= (old.y + old.h) - (_allocation.y + y);
+					}
+
+					if(location.h > old.h)
+						location.h = old.h;
+					if (location.h > 0) {
+
+						cairo_save(cr);
+						cairo_set_source_surface(cr, s, location.x, location.y);
+						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+						cairo_rectangle(cr, location.x, location.y, location.w,
+								location.h);
+						cairo_fill(cr);
+						cairo_restore(cr);
+					}
+
+				}
+
+				if (prev_surf != nullptr) {
+					cairo_surface_t * s = prev_surf->get_surf();
+					rectangle location = prev_loc;
+					if(prev_loc.y + prev_loc.h > _allocation.y + y) {
+						location.y = y;
+						location.h -= y - prev_loc.y;
+					}
+
+					if(location.h > prev_loc.h)
+						location.h = prev_loc.h;
+					if (location.h > 0) {
+
+						cairo_save(cr);
+						cairo_set_source_surface(cr, s, location.x, location.y - (y - prev_loc.y));
+						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+						cairo_rectangle(cr, location.x, location.y, location.w,
+								location.h);
+						cairo_fill(cr);
+
+						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+						cairo_rectangle(cr, location.x, location.y, location.w,
+								3.0);
+						cairo_fill(cr);
+
+						cairo_restore(cr);
+					}
+
+
+
+				}
+
+				for (auto i : mw->childs()) {
+					i->render(cr, time);
+				}
+
+
+			} else {
+
+				managed_window_t * mw = _selected.front();
+				composite_surface_handler_t psurf = mw->surf();
+				if (psurf != nullptr) {
+					cairo_surface_t * s = psurf->get_surf();
+					rectangle location = mw->get_base_position();
+
+					cairo_save(cr);
+					cairo_set_source_surface(cr, s, location.x, location.y);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_rectangle(cr, location.x, location.y, location.w,
+							location.h);
+					cairo_fill(cr);
+					cairo_restore(cr);
+
+				}
+
+				for (auto i : mw->childs()) {
+					i->render(cr, time);
+				}
 
 			}
 
-			for(auto i: mw->childs()) {
-				i->render(cr, time);
-			}
+
 
 		}
 
