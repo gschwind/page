@@ -20,7 +20,6 @@
 #include "region.hxx"
 #include "icon.hxx"
 #include "composite_window.hxx"
-#include "composite_surface.hxx"
 #include "composite_surface_manager.hxx"
 
 

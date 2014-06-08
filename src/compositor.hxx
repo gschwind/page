@@ -24,7 +24,6 @@
 #include "region.hxx"
 #include "renderable.hxx"
 #include "composite_window.hxx"
-#include "composite_surface.hxx"
 #include "composite_surface_manager.hxx"
 
 #include "time.hxx"
@@ -168,8 +167,6 @@ public:
 
 	void set_render_mode(render_mode_e mode);
 	render_mode_e get_render_mode();
-	p_composite_surface_t get_composite_surface(Window w,
-			XWindowAttributes const & wa);
 	void destroy_composite_surface(Window w);
 	void create_damage(Window w, XWindowAttributes & wa);
 	void destroy_damage(Window w);
