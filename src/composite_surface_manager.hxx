@@ -72,11 +72,9 @@ class composite_surface_manager_t {
 			_nref = 0;
 			_mngr = mngr;
 
-			cout << "create : (" << _dpy << "," << _window_id << ") nref = " << _nref << endl;
 		}
 
 		~_composite_surface_t() {
-			cout << "destroy : (" << _dpy << "," << _window_id << ") nref = " << _nref << endl;
 			destroy_cache();
 		}
 
@@ -98,7 +96,6 @@ class composite_surface_manager_t {
 
 		void decr_ref() {
 			_nref -= 1;
-			cout << "delete : (" << _dpy << "," << _window_id << ") nref = " << _nref << endl;
 			if(_nref == 0) {
 				_mngr->erase(this);
 			}
@@ -106,7 +103,6 @@ class composite_surface_manager_t {
 
 		void incr_ref() {
 			_nref += 1;
-			cout << "copy : (" << _dpy << "," << _window_id << ") nref = " << _nref << endl;
 		}
 
 	public:
@@ -150,45 +146,33 @@ class composite_surface_manager_t {
 	_data_map_t _data;
 
 	void erase(_composite_surface_t * c) {
-		cout << "call " << __PRETTY_FUNCTION__ << endl;
-		cout << "count = " << _data.size() << endl;
 		_key_t key = c->get_key();
 		delete c;
 		_data.erase(key);
-		cout << "count = " << _data.size() << endl;
-		cout << "exit " << __PRETTY_FUNCTION__ << endl;
 	}
 
 public:
 	class ptr_t {
 		_composite_surface_t * v;
 		ptr_t(_composite_surface_t * x) {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
 			if(x != nullptr)
 				x->incr_ref();
 			v = x;
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 		}
 
 	public:
 		ptr_t() {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
 			v = nullptr;
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 		}
 
 		ptr_t(ptr_t const & p) {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
 			if (p.v != nullptr)
 				p.v->incr_ref();
 			v = p.v;
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 		}
 
 		ptr_t & operator= (ptr_t const & p) {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
 			if(&p == this) {
-				cout << "exit " << __PRETTY_FUNCTION__ << endl;
 				return *this;
 			}
 
@@ -202,16 +186,13 @@ public:
 
 			v = p.v;
 
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 			return *this;
 
 		}
 
 		~ptr_t() {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
 			if(v != nullptr)
 				v->decr_ref();
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 		}
 
 		_composite_surface_t & operator*() {
@@ -223,8 +204,6 @@ public:
 		}
 
 		operator _composite_surface_t *() {
-			cout << "call " << __PRETTY_FUNCTION__ << endl;
-			cout << "exit " << __PRETTY_FUNCTION__ << endl;
 			return v;
 		}
 
