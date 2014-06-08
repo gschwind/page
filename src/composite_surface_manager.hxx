@@ -234,22 +234,29 @@ private:
 		return x != _data.end();
 	}
 
+	void _onmap(Display * dpy, Window w) {
+		_key_t key(dpy, w);
+		auto x = _data.find(key);
+		if(x != _data.end()) {
+			x->second->onmap();
+		}
+	}
+
+	void _onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
+		_key_t key(dpy, w);
+		auto x = _data.find(key);
+		if(x != _data.end()) {
+			x->second->onresize(width, heigth);
+		}
+	}
+
 	void print_content() {
 		for(auto &i: _data) {
 			cout << "ITEMS : (" << i.first.first << "," << i.first.second << ") nref = " << i.second->_nref << endl;
 		}
 	}
 
-	static composite_surface_manager_t mngr;
-
 public:
-	static ptr_t get_composite_surface(Display * dpy, Window w) {
-		return composite_surface_manager_t::mngr._get_composite_surface(dpy, w);
-	}
-
-	static bool has_composite_surface(Display * dpy, Window w) {
-		return composite_surface_manager_t::mngr._has_composite_surface(dpy, w);
-	}
 
 	~composite_surface_manager_t() {
 		/* sanity check */
@@ -259,10 +266,17 @@ public:
 		}
 	}
 
+	static bool exist(Display * dpy, Window w);
+	static ptr_t get(Display * dpy, Window w);
+	static void onmap(Display * dpy, Window w);
+	static void onresize(Display * dpy, Window w, unsigned width, unsigned heigth);
+
 };
 
+typedef composite_surface_manager_t::ptr_t composite_surface_handler_t;
 
-typedef composite_surface_manager_t::ptr_t p_managed_composite_surface_t;
+
+
 
 }
 

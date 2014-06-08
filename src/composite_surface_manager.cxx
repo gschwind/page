@@ -11,7 +11,24 @@
 
 namespace page {
 
-composite_surface_manager_t composite_surface_manager_t::mngr;
+static composite_surface_manager_t _mngr;
+
+composite_surface_handler_t composite_surface_manager_t::get(Display * dpy, Window w) {
+	return _mngr._get_composite_surface(dpy, w);
+}
+
+bool composite_surface_manager_t::exist(Display * dpy, Window w) {
+	return _mngr._has_composite_surface(dpy, w);
+}
+
+void composite_surface_manager_t::onmap(Display * dpy, Window w) {
+	_mngr._onmap(dpy, w);
+}
+
+void composite_surface_manager_t::onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
+	_mngr._onresize(dpy, w, width, heigth);
+}
+
 
 }
 

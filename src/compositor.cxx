@@ -476,7 +476,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 			create_damage(e.window, wa);
 			_pending_damage += rectangle(wa.x, wa.y, wa.width, wa.height);
 
-			p_managed_composite_surface_t x = composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window);
+			composite_surface_handler_t x = composite_surface_manager_t::get(_cnx->dpy(), e.window);
 			if(has_key(window_data, e.window)) {
 				delete window_data[e.window];
 				window_data.erase(e.window);
@@ -489,9 +489,8 @@ void compositor_t::process_event(XMapEvent const & e) {
 		}
 	}
 
-	if(composite_surface_manager_t::has_composite_surface(_cnx->dpy(), e.window)) {
-		composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window)->onmap();
-	}
+	composite_surface_manager_t::onmap(_cnx->dpy(), e.window);
+
 }
 
 void compositor_t::process_event(XUnmapEvent const & e) {
@@ -537,9 +536,7 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 			repair_area_region(r);
 		}
 
-		if(composite_surface_manager_t::has_composite_surface(_cnx->dpy(), e.window)) {
-			composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window)->onresize(e.width, e.height);
-		}
+		composite_surface_manager_t::onresize(_cnx->dpy(), e.window, e.width, e.height);
 
 	}
 }
@@ -654,7 +651,7 @@ void compositor_t::scan() {
 						_pending_damage += rectangle(wa.x, wa.y, wa.width,
 								wa.height);
 
-						p_managed_composite_surface_t x = composite_surface_manager_t::get_composite_surface(_cnx->dpy(), wins[i]);
+						composite_surface_handler_t x = composite_surface_manager_t::get(_cnx->dpy(), wins[i]);
 						x->onmap();
 						if (has_key(window_data, wins[i])) {
 							delete window_data[wins[i]];

@@ -47,7 +47,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
  **/
 
 class composite_window_t {
-	p_managed_composite_surface_t _surf;
+	composite_surface_handler_t _surf;
 
 	display_t * _cnx;
 	Window _wid;
@@ -77,7 +77,7 @@ public:
 			| PropertyChangeMask);
 
 	composite_window_t(display_t * cnx, Window w,
-			XWindowAttributes const * wa, p_managed_composite_surface_t surf) : _cnx(cnx) {
+			XWindowAttributes const * wa, composite_surface_handler_t surf) : _cnx(cnx) {
 		page_assert(cnx != NULL);
 
 		_surf = surf;
@@ -216,7 +216,7 @@ public:
 
 	}
 
-	p_managed_composite_surface_t get_surf() {
+	composite_surface_handler_t get_surf() {
 		return _surf;
 	}
 
