@@ -1158,9 +1158,9 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t
 	pango_layout_set_font_description(pango_layout, pango_popup_font);
 
 	/** clear popup **/
-	CHECK_CAIRO(cairo_reset_clip(cr));
-	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-	CHECK_CAIRO(cairo_paint(cr));
+//	CHECK_CAIRO(cairo_reset_clip(cr));
+//	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
+//	CHECK_CAIRO(cairo_paint(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
 	//CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
