@@ -199,60 +199,53 @@ public:
 				managed_window_t * mw = _selected.front();
 				composite_surface_handler_t psurf = mw->surf();
 
+				if (prev_surf != nullptr) {
+					cairo_surface_t * s = prev_surf->get_surf();
+					rectangle location = prev_loc;
+
+					cairo_save(cr);
+					cairo_rectangle(cr, location.x, location.y, location.w,
+							location.h);
+					cairo_clip(cr);
+					cairo_set_source_surface(cr, s, location.x, location.y);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
+							y - 100.0, 0.0, y + 0.0);
+					cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
+							0.0);
+					cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
+							1.0);
+					cairo_mask(cr, p);
+					cairo_pattern_destroy(p);
+
+					cairo_restore(cr);
+				}
+
 				if (psurf != nullptr) {
 					cairo_surface_t * s = psurf->get_surf();
 					rectangle old = mw->base_position();
 					rectangle location = mw->base_position();
 
-					if(old.y + old.h > _allocation.y + y) {
-						location.h -= (old.y + old.h) - (_allocation.y + y);
-					}
+					cairo_save(cr);
+					cairo_rectangle(cr, location.x, location.y, location.w,
+							location.h);
+					cairo_clip(cr);
+					cairo_set_source_surface(cr, s, location.x, location.y);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
+							y - 50.0, 0.0, y + 50.0);
+					cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
+							0.0);
+					cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
+							1.0);
+					cairo_mask(cr, p);
+					cairo_pattern_destroy(p);
 
-					if(location.h > old.h)
-						location.h = old.h;
-					if (location.h > 0) {
-
-						cairo_save(cr);
-						cairo_set_source_surface(cr, s, location.x, location.y);
-						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-						cairo_rectangle(cr, location.x, location.y, location.w,
-								location.h);
-						cairo_fill(cr);
-						cairo_restore(cr);
-					}
-
-				}
-
-				if (prev_surf != nullptr) {
-					cairo_surface_t * s = prev_surf->get_surf();
-					rectangle location = prev_loc;
-					if(prev_loc.y + prev_loc.h > _allocation.y + y) {
-						location.y = y;
-						location.h -= y - prev_loc.y;
-					}
-
-					if(location.h > prev_loc.h)
-						location.h = prev_loc.h;
-					if (location.h > 0) {
-
-						cairo_save(cr);
-						cairo_set_source_surface(cr, s, location.x, location.y - (y - prev_loc.y));
-						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-						cairo_rectangle(cr, location.x, location.y, location.w,
-								location.h);
-						cairo_fill(cr);
-
-						cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-						cairo_rectangle(cr, location.x, location.y, location.w,
-								3.0);
-						cairo_fill(cr);
-
-						cairo_restore(cr);
-					}
-
-
+					cairo_restore(cr);
 
 				}
+
+
 
 				for (auto i : mw->childs()) {
 					i->render(cr, time);
