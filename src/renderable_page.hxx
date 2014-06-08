@@ -119,6 +119,16 @@ public:
 		damaged += area;
 	}
 
+	void render_to(cairo_t * cr, rectangle area) {
+		rectangle clip = _position & area;
+		if (!clip.is_null()) {
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+			cairo_set_source_surface(cr, _back_surf, 0, 0);
+			cairo_fill(cr);
+		}
+	}
+
 };
 
 }

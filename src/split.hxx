@@ -77,7 +77,7 @@ public:
 	void remove(tree_t * t);
 
 	virtual void render(cairo_t * cr, time_t time) {
-		_theme->render_split(cr, this, _allocation);
+		//_theme->render_split(cr, this, _allocation);
 		for(auto i: childs()) {
 			i->render(cr, time);
 		}

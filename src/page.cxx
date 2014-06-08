@@ -375,7 +375,7 @@ void page_t::run() {
 	GrabModeSync, GrabModeAsync, None, None);
 
 	timespec _max_wait;
-	time_t const default_wait = 1000000000L / 30L;
+	time_t const default_wait = 1000000000L / 50L;
 	time_t max_wait = default_wait;
 	time_t next_frame;
 
@@ -4088,6 +4088,9 @@ void page_t::check_x11_extension() {
 }
 
 void page_t::render(cairo_t * cr, page::time_t time) {
+
+	rpage->render_to(cr, _allocation);
+
 	for(auto i: childs()) {
 		i->render(cr, time);
 	}

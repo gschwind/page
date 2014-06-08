@@ -182,7 +182,7 @@ public:
 
 	virtual void render(cairo_t * cr, time_t time) {
 
-		_theme->render_notebook(cr, this, _allocation);
+		//_theme->render_notebook(cr, this, _allocation);
 
 		if (not _selected.empty()) {
 
