@@ -301,6 +301,7 @@ public:
 	list<client_base_t *> root_subclients;
 	list<unmanaged_window_t *> docks;
 	list<unmanaged_window_t *> tooltips;
+	list<unmanaged_window_t *> notifications;
 
 	Cursor default_cursor;
 
