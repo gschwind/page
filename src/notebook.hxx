@@ -186,9 +186,9 @@ public:
 
 		if (not _selected.empty()) {
 
-			page::time_t d(1, 0);
+			page::time_t d(0, 700000000);
 			if (time < (swap_start + d)) {
-				double ratio = static_cast<double>(time - swap_start)/1000000000.0;
+				double ratio = static_cast<double>(time - swap_start)/700000000.0;
 
 				double y = floor(ratio * _allocation.h);
 				if(y < 0.0)
@@ -210,7 +210,7 @@ public:
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
-							y - 100.0, 0.0, y + 0.0);
+							y - 150.0, 0.0, y);
 					cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
 							0.0);
 					cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
@@ -233,7 +233,7 @@ public:
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
-							y - 50.0, 0.0, y + 50.0);
+							y, 0.0, y + 150.0);
 					cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
 							0.0);
 					cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
