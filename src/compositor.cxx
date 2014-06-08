@@ -174,11 +174,11 @@ void compositor_t::render() {
 
 void compositor_t::render_managed() {
 
-//	if(_pending_damage.empty()) {
-//		return;
-//	}
-//
-//	_pending_damage.clear();
+	if(_pending_damage.empty()) {
+		return;
+	}
+
+	_pending_damage.clear();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,

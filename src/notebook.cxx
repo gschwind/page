@@ -27,10 +27,15 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	_client_map.insert(x);
 
 	if (_selected.empty()) {
+		swap_start.get_time();
+		prev_surf.reset();
 		x->normalize();
 		_selected.push_front(x);
 	} else {
 		if (prefer_activate) {
+			swap_start.get_time();
+			prev_loc = _selected.front()->base_position();
+			prev_surf = _selected.front()->surf();
 			_selected.front()->iconify();
 			x->normalize();
 			_selected.push_front(x);
@@ -83,6 +88,11 @@ void notebook_t::remove_client(managed_window_t * x) {
 
 	/** update selection **/
 	if (not _selected.empty()) {
+		if(_selected.front() == x) {
+			swap_start.get_time();
+			prev_loc = x->base_position();
+			prev_surf = x->surf();
+		}
 		_selected.remove(x);
 		if (not _selected.empty()) {
 			update_client_position(_selected.front());

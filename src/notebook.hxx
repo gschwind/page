@@ -261,6 +261,8 @@ public:
 
 			} else {
 
+				prev_surf.reset();
+
 				managed_window_t * mw = _selected.front();
 				composite_surface_handler_t psurf = mw->surf();
 				if (psurf != nullptr) {
