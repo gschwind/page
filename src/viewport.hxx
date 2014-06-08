@@ -94,8 +94,10 @@ public:
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
-		for(auto i: childs()) {
-			i->render(cr, time);
+		if (_is_visible) {
+			for (auto i : childs()) {
+				i->render(cr, time);
+			}
 		}
 	}
 
