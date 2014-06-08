@@ -25,6 +25,7 @@
 #include "renderable.hxx"
 #include "composite_window.hxx"
 #include "composite_surface.hxx"
+#include "composite_surface_manager.hxx"
 
 #include "time.hxx"
 
@@ -76,7 +77,6 @@ class compositor_t {
 	 * Use pointer instead.
 	 **/
 	map<Window, composite_window_t *> window_data;
-	map<Window, p_composite_surface_t> window_to_composite_surface;
 	map<Window, Damage> damage_map;
 
 	/** performance counter **/

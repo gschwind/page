@@ -21,6 +21,7 @@
 #include "icon.hxx"
 #include "composite_window.hxx"
 #include "composite_surface.hxx"
+#include "composite_surface_manager.hxx"
 
 
 
@@ -47,7 +48,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
  **/
 
 class composite_window_t {
-	p_composite_surface_t _surf;
+	p_managed_composite_surface_t _surf;
 
 	display_t * _cnx;
 	Window _wid;
@@ -77,7 +78,7 @@ public:
 			| PropertyChangeMask);
 
 	composite_window_t(display_t * cnx, Window w,
-			XWindowAttributes const * wa, p_composite_surface_t surf) : _cnx(cnx) {
+			XWindowAttributes const * wa, p_managed_composite_surface_t surf) : _cnx(cnx) {
 		page_assert(cnx != NULL);
 
 		_surf = surf;
@@ -216,7 +217,7 @@ public:
 
 	}
 
-	p_composite_surface_t get_surf() {
+	p_managed_composite_surface_t get_surf() {
 		return _surf;
 	}
 

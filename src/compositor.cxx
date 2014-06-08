@@ -476,7 +476,7 @@ void compositor_t::process_event(XMapEvent const & e) {
 			create_damage(e.window, wa);
 			_pending_damage += rectangle(wa.x, wa.y, wa.width, wa.height);
 
-			p_composite_surface_t x = get_composite_surface(e.window, wa);
+			p_managed_composite_surface_t x = composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window);
 			if(has_key(window_data, e.window)) {
 				delete window_data[e.window];
 				window_data.erase(e.window);
@@ -489,10 +489,8 @@ void compositor_t::process_event(XMapEvent const & e) {
 		}
 	}
 
-	/* Recreate offscreen pixmap for this window */
-	auto i = window_to_composite_surface.find(e.window);
-	if(i != window_to_composite_surface.end()) {
-		i->second->onmap();
+	if(composite_surface_manager_t::has_composite_surface(_cnx->dpy(), e.window)) {
+		composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window)->onmap();
 	}
 }
 
@@ -506,7 +504,6 @@ void compositor_t::process_event(XUnmapEvent const & e) {
 		repair_area_region(x->second->get_region());
 	}
 	destroy_damage(e.window);
-	destroy_composite_surface(e.window);
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
@@ -540,9 +537,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 			repair_area_region(r);
 		}
 
-		auto i = window_to_composite_surface.find(e.window);
-		if (i != window_to_composite_surface.end()) {
-			i->second->onresize(e.width, e.height);
+		if(composite_surface_manager_t::has_composite_surface(_cnx->dpy(), e.window)) {
+			composite_surface_manager_t::get_composite_surface(_cnx->dpy(), e.window)->onresize(e.width, e.height);
 		}
 
 	}
@@ -658,8 +654,8 @@ void compositor_t::scan() {
 						_pending_damage += rectangle(wa.x, wa.y, wa.width,
 								wa.height);
 
-						p_composite_surface_t x = get_composite_surface(
-								wins[i], wa);
+						p_managed_composite_surface_t x = composite_surface_manager_t::get_composite_surface(_cnx->dpy(), wins[i]);
+						x->onmap();
 						if (has_key(window_data, wins[i])) {
 							delete window_data[wins[i]];
 							window_data.erase(wins[i]);
@@ -670,11 +666,6 @@ void compositor_t::scan() {
 						w->fade_start.get_time();
 						w->fade_mode = composite_window_t::FADE_IN;
 						repair_area_region(w->get_region());
-
-						auto k = window_to_composite_surface.find(wins[i]);
-						if (k != window_to_composite_surface.end()) {
-							k->second->onmap();
-						}
 					}
 				}
 			}
@@ -922,9 +913,6 @@ void compositor_t::cleanup_internal_data() {
 
 	window_data.clear();
 
-	/** cleanup_internal_data composite window surfaces **/
-	window_to_composite_surface.clear();
-
 }
 
 void compositor_t::set_render_mode(render_mode_e mode) {
@@ -933,33 +921,6 @@ void compositor_t::set_render_mode(render_mode_e mode) {
 
 compositor_t::render_mode_e compositor_t::get_render_mode() {
 	return render_mode;
-}
-
-p_composite_surface_t compositor_t::get_composite_surface(Window w,
-		XWindowAttributes const & wa) {
-	assert(w != None);
-	assert(wa.c_class == InputOutput);
-
-	auto i = window_to_composite_surface.find(w);
-	if (i != window_to_composite_surface.end()) {
-		return i->second;
-	} else {
-		//printf("number of surfaces = %lu\n", window_to_composite_surface.size());
-		p_composite_surface_t x(new composite_surface_t(_cnx->dpy(), w, wa));
-		window_to_composite_surface[w] = x;
-		return x;
-	}
-}
-
-void compositor_t::destroy_composite_surface(Window w) {
-	auto i = window_to_composite_surface.find(w);
-	if (i != window_to_composite_surface.end()) {
-		printf("number of surfaces = %lu\n",
-				window_to_composite_surface.size());
-		cout << "try to destroy " << i->first << " with "
-				<< i->second.use_count() << endl;
-		window_to_composite_surface.erase(i);
-	}
 }
 
 void compositor_t::create_damage(Window w, XWindowAttributes & wa) {

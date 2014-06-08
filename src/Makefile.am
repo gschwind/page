@@ -30,7 +30,8 @@ page_SOURCES = \
 	managed_window.cxx \
 	unmanaged_window.cxx \
 	window_icon_handler.cxx \
-	config_handler.cxx 
+	config_handler.cxx \
+	composite_surface_manager.cxx 
 
 page_LDADD = \
 	$(X11_LIBS) \
@@ -52,7 +53,8 @@ page_LDADD = \
 page_internal_compositor_SOURCES = \
 	display.cxx \
 	page_internal_compositor.cxx \
-	compositor.cxx 
+	compositor.cxx \
+	composite_surface_manager.cxx 
 
 page_internal_compositor_LDADD = \
 	$(X11_LIBS) \
