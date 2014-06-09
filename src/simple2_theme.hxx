@@ -58,6 +58,9 @@ public:
 
 	PangoFontDescription * pango_popup_font;
 
+	PangoFontMap * pango_font_map;
+	PangoContext * pango_context;
+
 
 	cairo_surface_t * vsplit_button_s;
 	cairo_surface_t * hsplit_button_s;
