@@ -140,12 +140,6 @@ page_t::~page_t() {
 	XFreeCursor(cnx->dpy(), xc_top_right_corner);
 	XFreeCursor(cnx->dpy(), xc_top_left_corner);
 	XFreeCursor(cnx->dpy(), xc_top_side);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
 
 	delete rpage;
 
