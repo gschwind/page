@@ -211,14 +211,25 @@ public:
 					cairo_clip(cr);
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
+					cairo_pattern_t * p0 = cairo_pattern_create_linear(0.0,
 							y - 150.0, 0.0, y);
-					cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
+					cairo_pattern_add_color_stop_rgba(p0, 0.0, 1.0, 1.0, 1.0,
 							0.0);
-					cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
+					cairo_pattern_add_color_stop_rgba(p0, 1.0, 1.0, 1.0, 1.0,
 							1.0);
-					cairo_mask(cr, p);
-					cairo_pattern_destroy(p);
+					cairo_mask(cr, p0);
+					cairo_pattern_destroy(p0);
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+					cairo_pattern_t * p1 = cairo_pattern_create_linear(0.0,
+							y - 150.0, 0.0, y);
+					cairo_pattern_add_color_stop_rgba(p1, 0.0, 1.0, 1.0, 1.0,
+							0.0);
+					cairo_pattern_add_color_stop_rgba(p1, 1.0, 1.0, 1.0, 1.0,
+							1.0);
+					cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, ratio*0.1);
+					cairo_mask(cr, p1);
+					cairo_pattern_destroy(p1);
+
 					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 				}
