@@ -285,6 +285,21 @@ public:
 
 	}
 
+	bool need_render(time_t time) {
+
+		page::time_t d(0, 700000000);
+		if (time < (swap_start + d)) {
+			return true;
+		}
+
+		for(auto i: childs()) {
+			if(i->need_render(time)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 };
 

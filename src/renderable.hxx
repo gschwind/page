@@ -38,6 +38,12 @@ public:
 	 */
 	virtual void render(cairo_t * cr, time_t time) = 0;
 
+	/**
+	 * Request all registered object to check if new render is needed
+	 * Used in particular while animation.
+	 **/
+	virtual bool need_render(time_t time) = 0;
+
 };
 
 /**

@@ -174,8 +174,18 @@ void compositor_t::render() {
 
 
 void compositor_t::render_managed() {
+	page::time_t cur;
+	cur.get_time();
 
-	if(_pending_damage.empty()) {
+	bool need_render = false;
+	for (auto i : _graph_scene) {
+		if(i->need_render(cur)) {
+			need_render = true;
+			break;
+		}
+	}
+
+	if(_pending_damage.empty() and not need_render) {
 		return;
 	}
 
@@ -190,9 +200,6 @@ void compositor_t::render_managed() {
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_paint(cr));
-
-	time_t cur;
-	cur.get_time();
 
 	for (auto i : _graph_scene) {
 		i->render(cr, cur);

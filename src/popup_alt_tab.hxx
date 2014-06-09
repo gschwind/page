@@ -153,6 +153,10 @@ public:
 
 	}
 
+	bool need_render(time_t time) {
+		return false;
+	}
+
 };
 
 }

@@ -539,6 +539,7 @@ public:
 	void register_cm();
 
 	void render(cairo_t * cr, page::time_t time);
+	bool need_render(time_t time);
 
 };
 
