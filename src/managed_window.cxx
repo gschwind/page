@@ -189,7 +189,7 @@ managed_window_t::~managed_window_t() {
 	XDestroyWindow(_cnx->dpy(), _deco);
 	XDestroyWindow(_cnx->dpy(), _base);
 
-	XMapWindow(_cnx->dpy(), _id);
+	XUnmapWindow(_cnx->dpy(), _id);
 
 }
 

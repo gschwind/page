@@ -1912,10 +1912,16 @@ void page_t::process_event(XUnmapEvent const & e) {
 	 * Client must send a fake unmap event if he want get back the window.
 	 * (i.e. he want that we unmanage it.
 	 */
-	if(c != 0 and e.send_event == True) {
-		destroy_client(c);
-	}
+	if (c != nullptr) {
+		if (e.send_event == True) {
+			destroy_client(c);
+		}
 
+		/** unmanaged window may not send fake unmap */
+		if(typeid(*c) == typeid(unmanaged_window_t)) {
+			destroy_client(c);
+		}
+	}
 }
 
 void page_t::process_event(XCirculateRequestEvent const & e) {
