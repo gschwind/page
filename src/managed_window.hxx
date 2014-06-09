@@ -198,15 +198,6 @@ public:
 		return _composite_surf;
 	}
 
-//	void set_default_action() {
-//		list<Atom> _net_wm_allowed_actions;
-//		_net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
-//		_net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
-//		::page::write_net_wm_allowed_actions(cnx->dpy, _orig,
-//				_net_wm_allowed_actions);
-//	}
-
-
 	void net_wm_allowed_actions_add(atom_e atom) {
 		if(_net_wm_allowed_actions == 0) {
 			_net_wm_allowed_actions = new list<Atom>;
@@ -239,9 +230,7 @@ public:
 public:
 	void grab_button_focused() {
 		/** First ungrab all **/
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _orig);
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _base);
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _deco);
+		ungrab_all_button();
 
 		/** for decoration, grab all **/
 		XGrabButton(_cnx->dpy(), (Button1), (AnyModifier), _deco, (False),
@@ -270,9 +259,7 @@ public:
 
 	void grab_button_unfocused() {
 		/** First ungrab all **/
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _orig);
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _base);
-		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _deco);
+		ungrab_all_button();
 
 		XGrabButton(_cnx->dpy(), (Button1), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
@@ -299,6 +286,25 @@ public:
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
+	}
+
+
+	void ungrab_all_button() {
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _orig);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _base);
+		XUngrabButton(_cnx->dpy(), AnyButton, AnyModifier, _deco);
+	}
+
+	void select_inputs() {
+		XSelectInput(_cnx->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
+		XSelectInput(_cnx->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
+		XSelectInput(_cnx->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+	}
+
+	void unselect_inputs() {
+		XSelectInput(_cnx->dpy(), _base, NoEventMask);
+		XSelectInput(_cnx->dpy(), _deco, NoEventMask);
+		XSelectInput(_cnx->dpy(), _orig, NoEventMask);
 	}
 
 	bool is_fullscreen() {

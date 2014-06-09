@@ -466,28 +466,37 @@ managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 
 void page_t::unmanage(managed_window_t * mw) {
 
-	//printf("unmanage %lu\n", mw->orig());
+	/* if window is in move/resize/notebook move, do cleanup */
+	cleanup_grab(mw);
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		unfullscreen(mw);
 	}
 
-	/** if the window is destroyed, this not work, see fix on destroy **/
-	if (mw == _client_focused.front()) {
-		_client_focused.remove(mw);
-	} else {
-		_client_focused.remove(mw);
+	detach(mw);
+
+	/* if managed window have active clients */
+	list<tree_t *> subclient = mw->childs();
+	for(auto i: subclient) {
+		client_base_t * c = dynamic_cast<client_base_t *>(i);
+		if(c != nullptr) {
+			insert_in_tree_using_transient_for(c);
+		}
 	}
+
+	/** if the window is destroyed, this not work, see fix on destroy **/
+	_client_focused.remove(mw);
 
 	/* as recommended by EWMH delete _NET_WM_STATE when window become unmanaged */
 	mw->net_wm_state_delete();
 	mw->wm_state_delete();
 
-	/* if window is in move/resize/notebook move, do cleanup */
-	cleanup_grab(mw);
+	clients.erase(mw->orig());
+	update_client_list();
+	rpage->mark_durty();
 
-	/* try to remove it from tree */
-	fullscreen_client_to_viewport.erase(mw);
+	delete mw;
+
 }
 
 void page_t::scan() {
@@ -1913,7 +1922,11 @@ void page_t::process_event(XUnmapEvent const & e) {
 	 * (i.e. he want that we unmanage it.
 	 */
 	if (c != nullptr) {
-		if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
+
+		if(e.send_event == True and typeid(*c) == typeid(managed_window_t)) {
+			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			unmanage(mw);
+		} else if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
 			destroy_client(c);
 		}
 	}

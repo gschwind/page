@@ -49,7 +49,7 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 	_orig_visual = wa.visual;
 	_orig_depth = wa.depth;
 
-	if (wm_normal_hints != 0) {
+	if (wm_normal_hints != nullptr) {
 		unsigned w = _floating_wished_position.w;
 		unsigned h = _floating_wished_position.h;
 
@@ -147,9 +147,7 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 	_base = wbase;
 	_deco = wdeco;
 
-	XSelectInput(_cnx->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
-	XSelectInput(_cnx->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-	XSelectInput(_cnx->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+	select_inputs();
 
 	/* Grab button click */
 	grab_button_unfocused();
@@ -164,6 +162,8 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 managed_window_t::~managed_window_t() {
 	cout << "call " << __FUNCTION__ << endl;
+
+	unselect_inputs();
 
 	if (_surf != nullptr) {
 		display_t::destroy_surf(__FILE__, __LINE__);
@@ -184,15 +184,11 @@ managed_window_t::~managed_window_t() {
 
 	destroy_back_buffer();
 
-	_cnx->unmap(_orig);
 	_cnx->reparentwindow(_orig, _cnx->root(), _wished_position.x,
 			_wished_position.y);
 	XRemoveFromSaveSet(_cnx->dpy(), _orig);
-	XDeleteProperty(_cnx->dpy(), _orig, A(WM_STATE));
 	XDestroyWindow(_cnx->dpy(), _deco);
 	XDestroyWindow(_cnx->dpy(), _base);
-
-	XUnmapWindow(_cnx->dpy(), _id);
 
 }
 
