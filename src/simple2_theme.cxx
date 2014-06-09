@@ -248,15 +248,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 			throw std::runtime_error("file not found!");
 	}
 
-//	notebook_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_active_font").c_str());
-//	notebook_selected_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_selected_font").c_str());
-//	notebook_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_normal_font").c_str());
-//
-//	floating_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_active_font").c_str());
-//	floating_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_normal_font").c_str());
-//
-//	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
-//
+
 	notebook_active_font_name = conf.get_string("simple_theme", "notebook_active_font").c_str();
 	notebook_selected_font_name = conf.get_string("simple_theme", "notebook_selected_font").c_str();
 	notebook_normal_font_name = conf.get_string("simple_theme", "notebook_normal_font").c_str();
@@ -265,6 +257,16 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating_normal_font_name = conf.get_string("simple_theme", "floating_normal_font").c_str();
 
 	pango_popup_font_name = conf.get_string("simple_theme", "pango_popup_font").c_str();
+
+	notebook_active_font = pango_font_description_from_string(notebook_active_font_name.c_str());
+	notebook_selected_font = pango_font_description_from_string(notebook_selected_font_name.c_str());
+	notebook_normal_font = pango_font_description_from_string(notebook_normal_font_name.c_str());
+
+	floating_active_font = pango_font_description_from_string(floating_active_font_name.c_str());
+	floating_normal_font = pango_font_description_from_string(floating_normal_font_name.c_str());
+
+	pango_popup_font = pango_font_description_from_string(pango_popup_font_name.c_str());
+
 
 }
 
@@ -298,12 +300,12 @@ simple2_theme_t::~simple2_theme_t() {
 	assert(cairo_surface_get_reference_count(bind_button_s) == 1);
 	cairo_surface_destroy(bind_button_s);
 
-//	pango_font_description_free(notebook_active_font);
-//	pango_font_description_free(notebook_selected_font);
-//	pango_font_description_free(notebook_normal_font);
-//	pango_font_description_free(floating_active_font);
-//	pango_font_description_free(floating_normal_font);
-//	pango_font_description_free(pango_popup_font);
+	pango_font_description_free(notebook_active_font);
+	pango_font_description_free(notebook_selected_font);
+	pango_font_description_free(notebook_normal_font);
+	pango_font_description_free(floating_active_font);
+	pango_font_description_free(floating_normal_font);
+	pango_font_description_free(pango_popup_font);
 
 }
 
@@ -457,14 +459,14 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 			if (i.clt->is_focused()) {
 				render_notebook_selected(cr, i,
-						notebook_active_font_name,
+						notebook_active_font,
 						notebook_active_text_color,
 						notebook_active_outline_color,
 						notebook_active_border_color,
 						notebook_active_background_color, 1.0);
 			} else {
 				render_notebook_selected(cr, i,
-						notebook_selected_font_name,
+						notebook_selected_font,
 						notebook_selected_text_color,
 						notebook_selected_outline_color,
 						notebook_selected_border_color,
@@ -473,7 +475,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 		} else {
 			render_notebook_normal(cr, i,
-					notebook_normal_font_name,
+					notebook_normal_font,
 					notebook_normal_text_color,
 					notebook_normal_outline_color,
 					notebook_normal_border_color,
@@ -582,7 +584,7 @@ static void draw_notebook_border(cairo_t * cr, rectangle const & alloc,
 void simple2_theme_t::render_notebook_selected(
 		cairo_t * cr,
 		page_event_t const & data,
-		string const & pango_font,
+		PangoFontDescription const * pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -661,10 +663,8 @@ void simple2_theme_t::render_notebook_selected(
 		{
 			PangoFontMap * pfm = pango_cairo_font_map_new();
 			PangoContext * pc = pango_font_map_create_context(pfm);
-			PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
 			PangoLayout * pango_layout = pango_layout_new(pc);
-			pango_layout_set_font_description(pango_layout, pango_desc);
-			pango_font_description_free(pango_desc);
+			pango_layout_set_font_description(pango_layout, pango_font);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
 			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
@@ -761,7 +761,7 @@ void simple2_theme_t::render_notebook_selected(
 void simple2_theme_t::render_notebook_normal(
 		cairo_t * cr,
 		page_event_t const & data,
-		string const & pango_font,
+		PangoFontDescription const * pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -866,10 +866,8 @@ void simple2_theme_t::render_notebook_normal(
 	{
 		PangoFontMap * pfm = pango_cairo_font_map_new();
 		PangoContext * pc = pango_font_map_create_context(pfm);
-		PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
 		PangoLayout * pango_layout = pango_layout_new(pc);
-		pango_layout_set_font_description(pango_layout, pango_desc);
-		pango_font_description_free(pango_desc);
+		pango_layout_set_font_description(pango_layout, pango_font);
 		pango_cairo_update_layout(cr, pango_layout);
 		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
 		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
@@ -937,13 +935,13 @@ void simple2_theme_t::render_floating(managed_window_base_t * mw) const {
 
 	if (mw->is_focused()) {
 		render_floating_base(mw,
-				floating_active_font_name,
+				floating_active_font,
 				floating_active_text_color,
 				floating_active_outline_color, floating_active_border_color,
 				floating_active_background_color, 1.0);
 	} else {
 		render_floating_base(mw,
-				floating_normal_font_name,
+				floating_normal_font,
 				floating_normal_text_color,
 				floating_normal_outline_color, floating_normal_border_color,
 				floating_normal_background_color, 1.0);
@@ -953,7 +951,7 @@ void simple2_theme_t::render_floating(managed_window_base_t * mw) const {
 
 void simple2_theme_t::render_floating_base(
 		managed_window_base_t * mw,
-		string const & pango_font,
+		PangoFontDescription const * pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -1075,10 +1073,8 @@ void simple2_theme_t::render_floating_base(
 		{
 			PangoFontMap * pfm = pango_cairo_font_map_new();
 			PangoContext * pc = pango_font_map_create_context(pfm);
-			PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
 			PangoLayout * pango_layout = pango_layout_new(pc);
-			pango_layout_set_font_description(pango_layout, pango_desc);
-			pango_font_description_free(pango_desc);
+			pango_layout_set_font_description(pango_layout, pango_font);
 			pango_cairo_update_layout(cr, pango_layout);
 			pango_layout_set_text(pango_layout, (mw)->title().c_str(), -1);
 			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);

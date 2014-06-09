@@ -38,14 +38,7 @@ public:
 
 	display_t * _cnx;
 
-//	PangoFontDescription * notebook_active_font;
-//	PangoFontDescription * notebook_selected_font;
-//	PangoFontDescription * notebook_normal_font;
-//
-//	PangoFontDescription * floating_active_font;
-//	PangoFontDescription * floating_normal_font;
-//
-//	PangoFontDescription * pango_popup_font;
+
 
 	string notebook_active_font_name;
 	string notebook_selected_font_name;
@@ -55,6 +48,15 @@ public:
 	string floating_normal_font_name;
 
 	string pango_popup_font_name;
+
+	PangoFontDescription * notebook_active_font;
+	PangoFontDescription * notebook_selected_font;
+	PangoFontDescription * notebook_normal_font;
+
+	PangoFontDescription * floating_active_font;
+	PangoFontDescription * floating_normal_font;
+
+	PangoFontDescription * pango_popup_font;
 
 
 	cairo_surface_t * vsplit_button_s;
@@ -141,7 +143,7 @@ public:
 	void render_notebook_selected(
 			cairo_t * cr,
 			page_event_t const & data,
-			string const & pango_font,
+			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,
@@ -152,7 +154,7 @@ public:
 	void render_notebook_normal(
 			cairo_t * cr,
 			page_event_t const & data,
-			string const & pango_font,
+			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,
@@ -161,7 +163,7 @@ public:
 
 	void render_floating_base(
 			managed_window_base_t * mw,
-			string const & pango_font,
+			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,
