@@ -1884,8 +1884,14 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
 	client_base_t * c = find_client_with(e.window);
-	if (c != 0) {
-		destroy_client(c);
+	if (c != nullptr) {
+		if(typeid(*c) == typeid(managed_window_t)) {
+			cout << "WARNING: managed window destroyed improperly" << endl;
+			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			unmanage(mw);
+		} else {
+			destroy_client(c);
+		}
 	}
 }
 
@@ -1922,7 +1928,6 @@ void page_t::process_event(XUnmapEvent const & e) {
 	 * (i.e. he want that we unmanage it.
 	 */
 	if (c != nullptr) {
-
 		if(e.send_event == True and typeid(*c) == typeid(managed_window_t)) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			unmanage(mw);
