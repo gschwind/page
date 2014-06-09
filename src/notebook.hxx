@@ -202,7 +202,7 @@ public:
 				if (prev_surf != nullptr) {
 					cairo_surface_t * s = prev_surf->get_surf();
 					rectangle location = prev_loc;
-
+					display_t::create_context(__FILE__, __LINE__);
 					cairo_save(cr);
 					cairo_rectangle(cr, location.x, location.y, location.w,
 							location.h);
@@ -217,7 +217,7 @@ public:
 							1.0);
 					cairo_mask(cr, p);
 					cairo_pattern_destroy(p);
-
+					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 				}
 
@@ -225,7 +225,7 @@ public:
 					cairo_surface_t * s = psurf->get_surf();
 					rectangle old = mw->base_position();
 					rectangle location = mw->base_position();
-
+					display_t::create_context(__FILE__, __LINE__);
 					cairo_save(cr);
 					cairo_rectangle(cr, location.x, location.y, location.w,
 							location.h);
@@ -240,7 +240,7 @@ public:
 							1.0);
 					cairo_mask(cr, p);
 					cairo_pattern_destroy(p);
-
+					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 
 				}
@@ -261,13 +261,14 @@ public:
 				if (psurf != nullptr) {
 					cairo_surface_t * s = psurf->get_surf();
 					rectangle location = mw->get_base_position();
-
+					display_t::create_context(__FILE__, __LINE__);
 					cairo_save(cr);
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_rectangle(cr, location.x, location.y, location.w,
 							location.h);
 					cairo_fill(cr);
+					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 
 				}

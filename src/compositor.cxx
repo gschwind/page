@@ -31,6 +31,7 @@ static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, dou
 
 	return;
 
+	display_t::create_context(__FILE__, __LINE__);
 	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
@@ -49,7 +50,7 @@ static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, dou
 	cairo_move_to(cr, box.x + box.w - 1.0, box.y + 0.5);
 	cairo_line_to(cr, box.x + 0.5, box.y + box.h - 1.0);
 	cairo_stroke(cr);
-
+	display_t::destroy_context(__FILE__, __LINE__);
 	cairo_restore(cr);
 }
 
@@ -180,9 +181,11 @@ void compositor_t::render_managed() {
 
 	_pending_damage.clear();
 
+	display_t::create_surf(__FILE__, __LINE__);
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
+	display_t::create_context(__FILE__, __LINE__);
 	cairo_t * cr = cairo_create(_back_buffer);
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
@@ -196,7 +199,11 @@ void compositor_t::render_managed() {
 	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
+	display_t::destroy_context(__FILE__, __LINE__);
+	assert(cairo_get_reference_count(cr) == 1);
 	cairo_destroy(cr);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(_back_buffer) == 1);
 	cairo_surface_destroy(_back_buffer);
 	_back_buffer = nullptr;
 
@@ -226,13 +233,14 @@ void compositor_t::render_auto() {
 		}
 	}
 
+	display_t::create_surf(__FILE__, __LINE__);
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
 			root_attributes.height);
 
 	if(_back_buffer == nullptr)
 		throw runtime_error("compositor: cannot create cairo back buffer");
-
+	display_t::create_context(__FILE__, __LINE__);
 	cairo_t * cr = cairo_create(_back_buffer);
 //	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 //	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
@@ -353,7 +361,11 @@ void compositor_t::render_auto() {
 	}
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
+	display_t::destroy_context(__FILE__, __LINE__);
+	assert(cairo_get_reference_count(cr) == 1);
 	cairo_destroy(cr);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(_back_buffer) == 1);
 	cairo_surface_destroy(_back_buffer);
 	_back_buffer = nullptr;
 

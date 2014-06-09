@@ -164,13 +164,15 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 			conf.get_string("simple_theme",
 					"floating_normal_background_color"));
 
-	vsplit_button_s = 0;
-	hsplit_button_s = 0;
-	close_button_s = 0;
-	pop_button_s = 0;
-	pops_button_s = 0;
-	unbind_button_s = 0;
-	bind_button_s = 0;
+	background_s = nullptr;
+
+	vsplit_button_s = nullptr;
+	hsplit_button_s = nullptr;
+	close_button_s = nullptr;
+	pop_button_s = nullptr;
+	pops_button_s = nullptr;
+	unbind_button_s = nullptr;
+	bind_button_s = nullptr;
 
 	has_background = conf.has_key("simple_theme", "background_png");
 	if(has_background)
@@ -186,6 +188,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (hsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (hsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -194,6 +197,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (vsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (vsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -202,6 +206,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (close_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-1.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -210,6 +215,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pop_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -218,6 +224,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pops_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop_selected.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -226,6 +233,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (unbind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/media-eject.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		unbind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (unbind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -234,48 +242,74 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (bind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/view-restore.png";
 		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
 		bind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (bind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
-	notebook_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_active_font").c_str());
-	notebook_selected_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_selected_font").c_str());
-	notebook_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_normal_font").c_str());
+//	notebook_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_active_font").c_str());
+//	notebook_selected_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_selected_font").c_str());
+//	notebook_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "notebook_normal_font").c_str());
+//
+//	floating_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_active_font").c_str());
+//	floating_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_normal_font").c_str());
+//
+//	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
+//
+	notebook_active_font_name = conf.get_string("simple_theme", "notebook_active_font").c_str();
+	notebook_selected_font_name = conf.get_string("simple_theme", "notebook_selected_font").c_str();
+	notebook_normal_font_name = conf.get_string("simple_theme", "notebook_normal_font").c_str();
 
-	floating_active_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_active_font").c_str());
-	floating_normal_font = pango_font_description_from_string(conf.get_string("simple_theme", "floating_normal_font").c_str());
+	floating_active_font_name = conf.get_string("simple_theme", "floating_active_font").c_str();
+	floating_normal_font_name = conf.get_string("simple_theme", "floating_normal_font").c_str();
 
-	pango_popup_font = pango_font_description_from_string(conf.get_string("simple_theme", "pango_popup_font").c_str());
+	pango_popup_font_name = conf.get_string("simple_theme", "pango_popup_font").c_str();
 
 }
 
 simple2_theme_t::~simple2_theme_t() {
 
 	if(background_s != nullptr) {
+		display_t::destroy_surf(__FILE__, __LINE__);
+		assert(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
 	}
-
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(hsplit_button_s) == 1);
 	cairo_surface_destroy(hsplit_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(vsplit_button_s) == 1);
 	cairo_surface_destroy(vsplit_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(close_button_s) == 1);
 	cairo_surface_destroy(close_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(pop_button_s) == 1);
 	cairo_surface_destroy(pop_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(pops_button_s) == 1);
 	cairo_surface_destroy(pops_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(unbind_button_s) == 1);
 	cairo_surface_destroy(unbind_button_s);
+	display_t::destroy_surf(__FILE__, __LINE__);
+	assert(cairo_surface_get_reference_count(bind_button_s) == 1);
 	cairo_surface_destroy(bind_button_s);
 
-	pango_font_description_free(notebook_active_font);
-	pango_font_description_free(notebook_selected_font);
-	pango_font_description_free(notebook_normal_font);
-	pango_font_description_free(floating_active_font);
-	pango_font_description_free(floating_normal_font);
-	pango_font_description_free(pango_popup_font);
+//	pango_font_description_free(notebook_active_font);
+//	pango_font_description_free(notebook_selected_font);
+//	pango_font_description_free(notebook_normal_font);
+//	pango_font_description_free(floating_active_font);
+//	pango_font_description_free(floating_normal_font);
+//	pango_font_description_free(pango_popup_font);
 
 }
 
 void simple2_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 		double w, double h, double r) {
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 
 	CHECK_CAIRO(cairo_new_path(cr));
@@ -288,7 +322,7 @@ void simple2_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	CHECK_CAIRO(cairo_move_to(cr, x + w, y + h));
 	CHECK_CAIRO(cairo_line_to(cr, x + w, y + r));
 	CHECK_CAIRO(cairo_stroke(cr));
-
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
@@ -379,7 +413,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 
 void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		rectangle const & area) const {
-
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 
 	CHECK_CAIRO(cairo_reset_clip(cr));
@@ -395,7 +429,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_rectangle(cr, n->allocation().x, n->allocation().y, n->allocation().w,
 			n->allocation().h));
-	if (background_s != 0) {
+	if (background_s != nullptr) {
 		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, 0.0, 0.0));
 	} else {
 		CHECK_CAIRO(cairo_set_source_rgba(cr, default_background_color));
@@ -408,30 +442,29 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	vector<page_event_t> * tabs = new vector<page_event_t>();
 	compute_areas_for_notebook(n, tabs);
 
-	for (vector<page_event_t>::iterator i = tabs->begin(); i != tabs->end();
-			++i) {
+	for (auto &i : *tabs) {
 
 		/** skip useless boxes **/
-		if ((*i).type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
+		if (i.type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 			continue;
-		} else if ((*i).type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
+		} else if (i.type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 			continue;
-		} else if (not ((*i).type == PAGE_EVENT_NOTEBOOK_CLIENT)) {
+		} else if (not (i.type == PAGE_EVENT_NOTEBOOK_CLIENT)) {
 			continue;
 		}
 
-		if ((*i).clt == n->selected()) {
+		if (i.clt == n->selected()) {
 
-			if ((*i).clt->is_focused()) {
-				render_notebook_selected(cr, (*i),
-						notebook_active_font,
+			if (i.clt->is_focused()) {
+				render_notebook_selected(cr, i,
+						notebook_active_font_name,
 						notebook_active_text_color,
 						notebook_active_outline_color,
 						notebook_active_border_color,
 						notebook_active_background_color, 1.0);
 			} else {
-				render_notebook_selected(cr, (*i),
-						notebook_selected_font,
+				render_notebook_selected(cr, i,
+						notebook_selected_font_name,
 						notebook_selected_text_color,
 						notebook_selected_outline_color,
 						notebook_selected_border_color,
@@ -439,8 +472,8 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 			}
 
 		} else {
-			render_notebook_normal(cr, (*i),
-					notebook_normal_font,
+			render_notebook_normal(cr, i,
+					notebook_normal_font_name,
 					notebook_normal_text_color,
 					notebook_normal_outline_color,
 					notebook_normal_border_color,
@@ -513,7 +546,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, b.x, b.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, b.x, b.y));
 	}
-
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
@@ -549,7 +582,7 @@ static void draw_notebook_border(cairo_t * cr, rectangle const & alloc,
 void simple2_theme_t::render_notebook_selected(
 		cairo_t * cr,
 		page_event_t const & data,
-		PangoFontDescription * pango_font,
+		string const & pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -574,7 +607,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w - 1.0, b.h - 1.0, 7.0));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 	CHECK_CAIRO(cairo_fill(cr));
-
+	display_t::create_context(__FILE__, __LINE__);
 	/** draw gradient under tab **/
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h));
@@ -588,6 +621,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 	CHECK_CAIRO(cairo_fill(cr));
 	CHECK_CAIRO(cairo_pattern_destroy(gradient));
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 	/** draw border **/
@@ -611,6 +645,7 @@ void simple2_theme_t::render_notebook_selected(
 		}
 	}
 
+#ifdef WITH_PANGO
 	/** draw application title **/
 	rectangle btext = tab_area;
 	btext.h -= 0;
@@ -621,30 +656,37 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw title **/
 	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
 
-	CHECK_CAIRO(cairo_new_path(cr));
 	{
 
-		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
-		pango_layout_set_font_description(pango_layout, pango_font);
-		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
-		pango_cairo_update_layout(cr, pango_layout);
-		pango_cairo_layout_path(cr, pango_layout);
+		{
+			PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+			PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
+			pango_layout_set_font_description(pango_layout, pango_desc);
+			pango_font_description_free(pango_desc);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+			pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
+			//pango_cairo_update_layout(cr, pango_layout);
+			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
+					pango_layout, 0);
+			pango_cairo_layout_line_path(cr, pango_lines);
+			g_object_unref(pango_layout);
+		}
 
 		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
 		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
-		CHECK_CAIRO(cairo_stroke(cr));
+
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
 
 		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
-		pango_cairo_layout_path(cr, pango_layout);
 		CHECK_CAIRO(cairo_fill(cr));
-		g_object_unref(pango_layout);
 	}
+
+#endif
 
 	CHECK_CAIRO(cairo_identity_matrix(cr));
 
@@ -717,7 +759,7 @@ void simple2_theme_t::render_notebook_selected(
 void simple2_theme_t::render_notebook_normal(
 		cairo_t * cr,
 		page_event_t const & data,
-		PangoFontDescription * pango_font,
+		string const & pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -731,16 +773,10 @@ void simple2_theme_t::render_notebook_normal(
 	tab_area.h -= 1;
 
 	managed_window_base_t const * c = data.clt;
-
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 
-	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
-	pango_layout_set_font_description(pango_layout, pango_font);
-	pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-	pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 
 	/** draw the tab background **/
@@ -768,6 +804,7 @@ void simple2_theme_t::render_notebook_normal(
 	}
 
 	/** draw gradient under tabs **/
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h));
 	CHECK_CAIRO(cairo_rectangle(cr, 0.0, 0.0, tab_area.w, 100.0));
@@ -780,6 +817,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 	CHECK_CAIRO(cairo_fill(cr));
 	CHECK_CAIRO(cairo_pattern_destroy(gradient));
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 	rectangle bicon = tab_area;
@@ -787,7 +825,7 @@ void simple2_theme_t::render_notebook_normal(
 	bicon.w = 16;
 	bicon.x += 6;
 	bicon.y += 2;
-
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	if ((c)->icon() != 0) {
@@ -799,6 +837,7 @@ void simple2_theme_t::render_notebook_normal(
 					bicon.x, bicon.y));
 		}
 	}
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 	rectangle btext = tab_area;
@@ -806,34 +845,49 @@ void simple2_theme_t::render_notebook_normal(
 	btext.w -= 1 * 16 + 8;
 	btext.x += 3 + 16 + 6;
 	btext.y += 1;
-
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
+
+#ifdef WITH_PANGO
 
 	/* draw title */
 	CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
 
 	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
 
-	CHECK_CAIRO(cairo_new_path(cr));
-	pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-	pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
-	pango_cairo_update_layout(cr, pango_layout);
-	pango_cairo_layout_path(cr, pango_layout);
+	//CHECK_CAIRO(cairo_new_path(cr));
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
 	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 
-	CHECK_CAIRO(cairo_stroke(cr));
+	{
+		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+		PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
+		pango_layout_set_font_description(pango_layout, pango_desc);
+		pango_font_description_free(pango_desc);
+		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
+		//pango_cairo_update_layout(cr, pango_layout);
+		PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
+				pango_layout, 0);
+		pango_cairo_layout_line_path(cr, pango_lines);
+		g_object_unref(pango_layout);
+	}
+
+	CHECK_CAIRO(cairo_stroke_preserve(cr));
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
-	pango_cairo_layout_path(cr, pango_layout);
 	CHECK_CAIRO(cairo_fill(cr));
 
-	CHECK_CAIRO(cairo_restore(cr));
+#endif
 
-	g_object_unref(pango_layout);
+	display_t::destroy_context(__FILE__, __LINE__);
+	CHECK_CAIRO(cairo_restore(cr));
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 
@@ -842,6 +896,7 @@ void simple2_theme_t::render_notebook_normal(
 
 void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 		rectangle const & area) const {
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_reset_clip(cr));
 	CHECK_CAIRO(cairo_identity_matrix(cr));
@@ -868,7 +923,7 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
 	CHECK_CAIRO(cairo_rectangle(cr, grip.x, grip.y, grip.w, grip.h));
 	CHECK_CAIRO(cairo_fill(cr));
-
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
@@ -878,13 +933,13 @@ void simple2_theme_t::render_floating(managed_window_base_t * mw) const {
 
 	if (mw->is_focused()) {
 		render_floating_base(mw,
-				floating_active_font,
+				floating_active_font_name,
 				floating_active_text_color,
 				floating_active_outline_color, floating_active_border_color,
 				floating_active_background_color, 1.0);
 	} else {
 		render_floating_base(mw,
-				floating_normal_font,
+				floating_normal_font_name,
 				floating_normal_text_color,
 				floating_normal_outline_color, floating_normal_border_color,
 				floating_normal_background_color, 1.0);
@@ -894,7 +949,7 @@ void simple2_theme_t::render_floating(managed_window_base_t * mw) const {
 
 void simple2_theme_t::render_floating_base(
 		managed_window_base_t * mw,
-		PangoFontDescription * pango_font,
+		string const & pango_font,
 		color_t const & text_color,
 		color_t const & outline_color,
 		color_t const & border_color,
@@ -906,8 +961,6 @@ void simple2_theme_t::render_floating_base(
 
 	{
 		cairo_t * cr = mw->cairo_top();
-		PangoLayout * pango_layout = pango_cairo_create_layout(cr);
-		pango_layout_set_font_description(pango_layout, pango_font);
 
 		rectangle b(0, 0, allocation.w, floating_margin.top);
 
@@ -1008,31 +1061,42 @@ void simple2_theme_t::render_floating_base(
 		btext.y += 2;
 
 		CHECK_CAIRO(cairo_reset_clip(cr));
-
+		display_t::create_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_save(cr));
-		//CHECK_CAIRO(cairo_new_path(cr));
-
-		CHECK_CAIRO(cairo_set_font_size(cr, 13));
 
 		/* draw selectected title */
-		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
 
-		CHECK_CAIRO(cairo_new_path(cr));
-		pango_layout_set_text(pango_layout, mw->title().c_str(), -1);
-		pango_cairo_update_layout(cr, pango_layout);
-		pango_cairo_layout_path(cr, pango_layout);
+#ifdef WITH_PANGO
+		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
+		{
+			PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+			PangoFontDescription * pango_desc = pango_font_description_from_string(pango_font.c_str());
+			pango_layout_set_font_description(pango_layout, pango_desc);
+			pango_font_description_free(pango_desc);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+			pango_layout_set_text(pango_layout, mw->title().c_str(), -1);
+			//pango_cairo_update_layout(cr, pango_layout);
+			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
+					pango_layout, 0);
+			pango_cairo_layout_line_path(cr, pango_lines);
+			g_object_unref(pango_layout);
+		}
 
 		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
 		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
-		CHECK_CAIRO(cairo_stroke(cr));
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
 
 		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
-		pango_cairo_layout_path(cr, pango_layout);
 		CHECK_CAIRO(cairo_fill(cr));
 
+#endif
+
+		display_t::destroy_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_restore(cr));
 		CHECK_CAIRO(cairo_reset_clip(cr));
 
@@ -1044,8 +1108,8 @@ void simple2_theme_t::render_floating_base(
 //		CHECK_CAIRO(cairo_set_line_width(cr, 2.0));
 //		CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
 //		CHECK_CAIRO(cairo_stroke(cr));
-
-		g_object_unref(pango_layout);
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 	}
 
@@ -1091,7 +1155,8 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(cairo_pattern_destroy(r1grad));
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -1118,7 +1183,8 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(cairo_pattern_destroy(grad));
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 	}
 
@@ -1143,8 +1209,8 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(cairo_pattern_destroy(grad));
-
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -1153,9 +1219,6 @@ void simple2_theme_t::render_floating_base(
 
 void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 		unsigned int height, string const & title) {
-
-	PangoLayout * pango_layout = pango_cairo_create_layout(cr);
-	pango_layout_set_font_description(pango_layout, pango_popup_font);
 
 	/** clear popup **/
 //	CHECK_CAIRO(cairo_reset_clip(cr));
@@ -1179,17 +1242,26 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t
 		CHECK_CAIRO(cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset));
 		CHECK_CAIRO(cairo_mask_surface(cr, icon->get_cairo_surface(), x_offset, y_offset));
 
+#ifdef WITH_PANGO
 
-		/* draw tittle */
+		/* draw title */
 		CHECK_CAIRO(cairo_translate(cr, 0.0, y_offset + 68.0));
 
-		CHECK_CAIRO(cairo_new_path(cr));
-		pango_cairo_update_layout(cr, pango_layout);
-		pango_layout_set_text(pango_layout, title.c_str(), -1);
-		pango_layout_set_width(pango_layout, width * PANGO_SCALE);
-		pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
-		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-		pango_cairo_layout_path(cr, pango_layout);
+		{
+			PangoLayout * pango_layout = pango_cairo_create_layout(cr);
+			PangoFontDescription * pango_desc = pango_font_description_from_string(pango_popup_font_name.c_str());
+			pango_layout_set_font_description(pango_layout, pango_desc);
+			pango_font_description_free(pango_desc);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_width(pango_layout, width * PANGO_SCALE);
+			pango_layout_set_text(pango_layout, title.c_str(), -1);
+			//pango_cairo_update_layout(cr, pango_layout);
+			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
+					pango_layout, 0);
+			pango_cairo_layout_line_path(cr, pango_lines);
+			g_object_unref(pango_layout);
+		}
 
 		CHECK_CAIRO(cairo_set_line_width(cr, 5.0));
 		CHECK_CAIRO(cairo_set_line_cap (cr, CAIRO_LINE_CAP_ROUND));
@@ -1203,10 +1275,9 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t
 		CHECK_CAIRO(cairo_set_source_rgba(cr, popup_text_color));
 		CHECK_CAIRO(cairo_fill(cr));
 
+#endif
 
 	}
-
-	g_object_unref(pango_layout);
 
 }
 
@@ -1216,7 +1287,7 @@ void simple2_theme_t::render_popup_move_frame(cairo_t * cr, window_icon_handler_
 }
 
 void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) const {
-
+	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 	int left_bound = x;
 	int right_bound = x + w;
@@ -1261,7 +1332,7 @@ void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int
 //	CHECK_CAIRO(cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
 	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 	CHECK_CAIRO(cairo_stroke(cr));
-
+	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
@@ -1269,6 +1340,8 @@ void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int
 void simple2_theme_t::update() {
 
 	if(background_s != nullptr) {
+		display_t::destroy_surf(__FILE__, __LINE__);
+		assert(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
 	}
@@ -1281,12 +1354,14 @@ void simple2_theme_t::create_background_img() {
 
 	if (has_background) {
 
+		display_t::create_surf(__FILE__, __LINE__);
 		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
 				background_file.c_str());
 
 		XWindowAttributes wa;
 		XGetWindowAttributes(_cnx->dpy(), _cnx->root(), &wa);
 
+		display_t::create_surf(__FILE__, __LINE__);
 		background_s = cairo_image_surface_create(CAIRO_FORMAT_RGB24, wa.width,
 				wa.height);
 
@@ -1301,6 +1376,7 @@ void simple2_theme_t::create_background_img() {
 		if (src_width > 0 and src_height > 0) {
 
 			if (scale_mode == "stretch") {
+				display_t::create_context(__FILE__, __LINE__);
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1313,10 +1389,12 @@ void simple2_theme_t::create_background_img() {
 				CHECK_CAIRO(cairo_set_source_surface(cr, tmp, 0, 0));
 				CHECK_CAIRO(cairo_rectangle(cr, 0, 0, src_width, src_height));
 				CHECK_CAIRO(cairo_fill(cr));
-
-				CHECK_CAIRO(cairo_destroy(cr));
+				display_t::destroy_context(__FILE__, __LINE__);
+				assert(cairo_get_reference_count(cr) == 1);
+				cairo_destroy(cr);
 
 			} else if (scale_mode == "zoom") {
+				display_t::create_context(__FILE__, __LINE__);
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1353,10 +1431,12 @@ void simple2_theme_t::create_background_img() {
 					CHECK_CAIRO(cairo_rectangle(cr, 0, 0, xp, src_height));
 					CHECK_CAIRO(cairo_fill(cr));
 				}
-
+				display_t::destroy_context(__FILE__, __LINE__);
+				assert(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			} else if (scale_mode == "center") {
+				display_t::create_context(__FILE__, __LINE__);
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1372,10 +1452,12 @@ void simple2_theme_t::create_background_img() {
 						min<double>(src_width, wa.width),
 						min<double>(src_height, wa.height)));
 				CHECK_CAIRO(cairo_fill(cr));
-
-				CHECK_CAIRO(cairo_destroy(cr));
+				display_t::destroy_context(__FILE__, __LINE__);
+				assert(cairo_get_reference_count(cr) == 1);
+				cairo_destroy(cr);
 
 			} else if (scale_mode == "scale" || scale_mode == "span") {
+				display_t::create_context(__FILE__, __LINE__);
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1410,11 +1492,12 @@ void simple2_theme_t::create_background_img() {
 					CHECK_CAIRO(cairo_rectangle(cr, x_offset, y_offset, src_width, src_height));
 					CHECK_CAIRO(cairo_fill(cr));
 				}
-
-				CHECK_CAIRO(cairo_destroy(cr));
+				display_t::destroy_context(__FILE__, __LINE__);
+				assert(cairo_get_reference_count(cr) == 1);
+				cairo_destroy(cr);
 
 			} else if (scale_mode == "tile") {
-
+				display_t::create_context(__FILE__, __LINE__);
 				cairo_t * cr = cairo_create(background_s);
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
 				CHECK_CAIRO(cairo_rectangle(cr, 0, 0, wa.width, wa.height));
@@ -1430,11 +1513,15 @@ void simple2_theme_t::create_background_img() {
 					}
 				}
 
-				CHECK_CAIRO(cairo_destroy(cr));
+				display_t::destroy_context(__FILE__, __LINE__);
+				assert(cairo_get_reference_count(cr) == 1);
+				cairo_destroy(cr);
 
 			}
 
 		}
+		display_t::destroy_surf(__FILE__, __LINE__);
+		assert(cairo_surface_get_reference_count(tmp) == 1);
 		cairo_surface_destroy(tmp);
 
 	} else {

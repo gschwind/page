@@ -116,6 +116,7 @@ public:
 				& rectangle(_position.x, _position.y, _position.w, _position.h);
 
 		if (clip.w > 0 && clip.h > 0) {
+			display_t::create_context(__FILE__, __LINE__);
 			CHECK_CAIRO(cairo_save(cr));
 			CHECK_CAIRO(cairo_reset_clip(cr));
 			CHECK_CAIRO(cairo_identity_matrix(cr));
@@ -131,7 +132,7 @@ public:
 			} else {
 				CHECK_CAIRO(cairo_paint(cr));
 			}
-
+			display_t::destroy_context(__FILE__, __LINE__);
 			CHECK_CAIRO(cairo_restore(cr));
 
 		}

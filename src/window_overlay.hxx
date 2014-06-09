@@ -80,6 +80,7 @@ public:
 
 		XSelectInput(_cnx->dpy(), _wid, OVERLAY_EVENT_MASK);
 
+		display_t::create_surf(__FILE__, __LINE__);
 		_front_surf = cairo_xlib_surface_create(_cnx->dpy(), _wid, vinfo.visual,
 				position.w, position.h);
 
@@ -101,9 +102,11 @@ public:
 	void create_back_buffer() {
 		if (_back_surf == nullptr) {
 			if (_has_alpha) {
+				display_t::create_surf(__FILE__, __LINE__);
 				_back_surf = cairo_surface_create_similar(_front_surf,
 						CAIRO_CONTENT_COLOR_ALPHA, _position.w, _position.h);
 			} else {
+				display_t::create_surf(__FILE__, __LINE__);
 				_back_surf = cairo_surface_create_similar(_front_surf,
 						CAIRO_CONTENT_COLOR, _position.w, _position.h);
 			}
@@ -114,6 +117,8 @@ public:
 
 	void destroy_back_buffer() {
 		if (_back_surf != nullptr) {
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(_back_surf) == 1);
 			cairo_surface_destroy(_back_surf);
 			_back_surf = nullptr;
 		}
@@ -122,6 +127,8 @@ public:
 	virtual ~window_overlay_t() {
 		cout << "call " << __FUNCTION__ << endl;
 		destroy_back_buffer();
+		display_t::destroy_surf(__FILE__, __LINE__);
+		assert(cairo_surface_get_reference_count(_front_surf) == 1);
 		cairo_surface_destroy(_front_surf);
 		XDestroyWindow(_cnx->dpy(), _wid);
 	}
@@ -155,12 +162,14 @@ public:
 	}
 
 	virtual void repair_back_buffer() {
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_fill(cr);
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -174,7 +183,7 @@ public:
 		cairo_xlib_surface_set_size(_front_surf, _position.w, _position.h);
 
 		repair_back_buffer();
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_front_surf);
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -186,7 +195,8 @@ public:
 //		cairo_rectangle(cr, 0 + 0.5, 0 + 0.5, wa->width - 1, wa->height - 1);
 //		cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
 //		cairo_stroke(cr);
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}

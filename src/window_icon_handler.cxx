@@ -106,18 +106,20 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 						"Unable to find valid visual for background windows");
 			}
 
+			display_t::create_surf(__FILE__, __LINE__);
 			icon_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, xsize,
 					ysize);
 
 			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32,
 					selected.width);
+			display_t::create_surf(__FILE__, __LINE__);
 			cairo_surface_t * tmp = cairo_image_surface_create_for_data(
 					selected.data, CAIRO_FORMAT_ARGB32,
 					selected.width, selected.height, stride);
 
 			double x_ratio = xsize / (double)selected.width;
 			double y_ratio = ysize / (double)selected.height;
-
+			display_t::create_context(__FILE__, __LINE__);
 			cairo_t * cr = cairo_create(icon_surf);
 
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -130,8 +132,11 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 			cairo_pattern_set_filter(cairo_get_source(cr),
 					CAIRO_FILTER_NEAREST);
 			cairo_fill(cr);
-
+			display_t::destroy_context(__FILE__, __LINE__);
+			assert(cairo_get_reference_count(cr) == 1);
 			cairo_destroy(cr);
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(tmp) == 1);
 			cairo_surface_destroy(tmp);
 
 		} else {
@@ -148,6 +153,8 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 
 window_icon_handler_t::~window_icon_handler_t() {
 	if (icon_surf != nullptr) {
+		display_t::destroy_surf(__FILE__, __LINE__);
+		assert(cairo_surface_get_reference_count(icon_surf) == 1);
 		cairo_surface_destroy(icon_surf);
 		icon_surf = nullptr;
 	}

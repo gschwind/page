@@ -42,10 +42,6 @@ PKG_CHECK_MODULES(CAIRO, cairo >= 1.0.0)
 AC_SUBST(CAIRO_CFLAGS)
 AC_SUBST(CAIRO_LIBS)
 
-PKG_CHECK_MODULES(PANGO, pangocairo >= 0.28)
-AC_SUBST(PANGO_CFLAGS)
-AC_SUBST(PANGO_LIBS)
-
 PKG_CHECK_MODULES(XCOMPOSITE, xcomposite >= 0.4.0)
 AC_SUBST(XCOMPOSITE_CFLAGS)
 AC_SUBST(XCOMPOSITE_LIBS)
@@ -73,6 +69,34 @@ AC_SUBST(FT2_LIBS)
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.0.0)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
+
+PKG_CHECK_MODULES(PANGO, pangocairo >= 0.28)
+AC_SUBST(PANGO_CFLAGS)
+AC_SUBST(PANGO_LIBS)
+
+
+# This adds the option of compiling without using the ctemplate library,
+# which has proved troublesome for compilation on some platforms
+AC_ARG_ENABLE(pango,
+  [ --disable-pango   Disable pango code path],
+  [case "${enableval}" in
+     yes | no ) WITH_PANGO="${enableval}" ;;
+     *) AC_MSG_ERROR(bad value ${enableval} for --disable-pango) ;;
+   esac],
+  [WITH_PANGO="yes"]
+)
+
+dnl Make sure we register this option with Automake, so we know whether to
+dnl descend into ctemplate for more configuration or not
+AM_CONDITIONAL([WITH_PANGO], [test "x$WITH_PANGO" = "xyes"])
+
+# Define CTEMPLATE in config.h if we're going to compile against it
+if test "x$WITH_PANGO" = "xyes"; then
+    AC_DEFINE([WITH_PANGO], [], ["build using ctemplate library"])
+    AC_MSG_NOTICE([pango code path will be enabled])
+else
+    AC_MSG_NOTICE([pango code path will be enabled])
+fi
 
 #PKG_CHECK_MODULES(GL, gl >= 0.28)
 #AC_SUBST(GL_CFLAGS)

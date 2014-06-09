@@ -10,6 +10,8 @@
 #ifndef SIMPLE2_THEME_HXX_
 #define SIMPLE2_THEME_HXX_
 
+#include "config.hxx"
+
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
@@ -18,7 +20,9 @@
 #include <cairo/cairo-xlib.h>
 #include <cairo/cairo-ft.h>
 
+#ifdef WITH_PANGO
 #include <pango/pangocairo.h>
+#endif
 
 #include "theme.hxx"
 #include "color.hxx"
@@ -34,14 +38,24 @@ public:
 
 	display_t * _cnx;
 
-	PangoFontDescription * notebook_active_font;
-	PangoFontDescription * notebook_selected_font;
-	PangoFontDescription * notebook_normal_font;
+//	PangoFontDescription * notebook_active_font;
+//	PangoFontDescription * notebook_selected_font;
+//	PangoFontDescription * notebook_normal_font;
+//
+//	PangoFontDescription * floating_active_font;
+//	PangoFontDescription * floating_normal_font;
+//
+//	PangoFontDescription * pango_popup_font;
 
-	PangoFontDescription * floating_active_font;
-	PangoFontDescription * floating_normal_font;
+	string notebook_active_font_name;
+	string notebook_selected_font_name;
+	string notebook_normal_font_name;
 
-	PangoFontDescription * pango_popup_font;
+	string floating_active_font_name;
+	string floating_normal_font_name;
+
+	string pango_popup_font_name;
+
 
 	cairo_surface_t * vsplit_button_s;
 	cairo_surface_t * hsplit_button_s;
@@ -127,7 +141,7 @@ public:
 	void render_notebook_selected(
 			cairo_t * cr,
 			page_event_t const & data,
-			PangoFontDescription * pango_font,
+			string const & pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,
@@ -138,7 +152,7 @@ public:
 	void render_notebook_normal(
 			cairo_t * cr,
 			page_event_t const & data,
-			PangoFontDescription * pango_font,
+			string const & pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,
@@ -147,7 +161,7 @@ public:
 
 	void render_floating_base(
 			managed_window_base_t * mw,
-			PangoFontDescription * pango_font,
+			string const & pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
 			color_t const & border_color,

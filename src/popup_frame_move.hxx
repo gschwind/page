@@ -41,7 +41,7 @@ struct popup_frame_move_t: public window_overlay_t {
 	}
 
 	void repair_back_buffer() {
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
@@ -51,7 +51,8 @@ struct popup_frame_move_t: public window_overlay_t {
 
 		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h,
 				title);
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}

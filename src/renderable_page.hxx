@@ -56,7 +56,7 @@ public:
 
 
 	void expose(rectangle area) {
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_front_surf);
 
 		rectangle clip = _position & area;
@@ -67,6 +67,8 @@ public:
 			cairo_fill(cr);
 		}
 		cairo_surface_flush(_front_surf);
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -75,7 +77,7 @@ public:
 
 		time_t cur;
 		cur.get_time();
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 
 		for (auto &i : damaged) {
@@ -95,9 +97,10 @@ public:
 				}
 			}
 		}
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
-
+		display_t::create_context(__FILE__, __LINE__);
 		cr = cairo_create(_front_surf);
 		for (region::iterator i = damaged.begin(); i != damaged.end();
 				++i) {
@@ -109,6 +112,8 @@ public:
 				cairo_paint(cr);
 			}
 		}
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 		damaged.clear();

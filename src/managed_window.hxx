@@ -132,18 +132,22 @@ public:
 	void set_theme(theme_t const * theme);
 
 	cairo_t * cairo_top() const {
+		display_t::create_context(__FILE__, __LINE__);
 		return cairo_create(_top_buffer);
 	}
 
 	cairo_t * cairo_bottom() const {
+		display_t::create_context(__FILE__, __LINE__);
 		return cairo_create(_bottom_buffer);
 	}
 
 	cairo_t * cairo_left() const {
+		display_t::create_context(__FILE__, __LINE__);
 		return cairo_create(_left_buffer);
 	}
 
 	cairo_t * cairo_right() const {
+		display_t::create_context(__FILE__, __LINE__);
 		return cairo_create(_right_buffer);
 	}
 
@@ -402,21 +406,29 @@ public:
 	void destroy_back_buffer() {
 
 		if(_top_buffer != nullptr) {
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(_top_buffer) == 1);
 			cairo_surface_destroy(_top_buffer);
 			_top_buffer = nullptr;
 		}
 
 		if(_bottom_buffer != nullptr) {
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(_bottom_buffer) == 1);
 			cairo_surface_destroy(_bottom_buffer);
 			_bottom_buffer = nullptr;
 		}
 
 		if(_left_buffer != nullptr) {
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(_left_buffer) == 1);
 			cairo_surface_destroy(_left_buffer);
 			_left_buffer = nullptr;
 		}
 
 		if(_right_buffer != nullptr) {
+			display_t::destroy_surf(__FILE__, __LINE__);
+			assert(cairo_surface_get_reference_count(_right_buffer) == 1);
 			cairo_surface_destroy(_right_buffer);
 			_right_buffer = nullptr;
 		}
@@ -426,6 +438,7 @@ public:
 	void create_back_buffer() {
 
 		if (_theme->floating_margin.top > 0) {
+			display_t::create_surf(__FILE__, __LINE__);
 			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating_margin.top);
 		} else {
@@ -433,6 +446,7 @@ public:
 		}
 
 		if (_theme->floating_margin.bottom > 0) {
+			display_t::create_surf(__FILE__, __LINE__);
 			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating_margin.bottom);
 		} else {
@@ -440,6 +454,7 @@ public:
 		}
 
 		if (_theme->floating_margin.left > 0) {
+			display_t::create_surf(__FILE__, __LINE__);
 			_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_theme->floating_margin.left,
 					_base_position.h - _theme->floating_margin.top
@@ -449,6 +464,7 @@ public:
 		}
 
 		if (_theme->floating_margin.right > 0) {
+			display_t::create_surf(__FILE__, __LINE__);
 			_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_theme->floating_margin.right,
 					_base_position.h - _theme->floating_margin.top
@@ -487,12 +503,13 @@ public:
 		if (_composite_surf != nullptr) {
 			cairo_surface_t * s = _composite_surf->get_surf();
 			rectangle loc = base_position();
-
+			display_t::create_context(__FILE__, __LINE__);
 			cairo_save(cr);
 			cairo_set_source_surface(cr, s, loc.x, loc.y);
 			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
 			cairo_fill(cr);
+			display_t::destroy_context(__FILE__, __LINE__);
 			cairo_restore(cr);
 
 		}

@@ -198,6 +198,15 @@ public:
 	bool check_glx_extension(int * opcode, int * event, int * error);
 	bool check_dbe_extension(int * opcode, int * event, int * error);
 
+
+	static void create_surf(char const * f, int l);
+	static void destroy_surf(char const * f, int l);
+	static int get_surf_count();
+
+	static void create_context(char const * f, int l);
+	static void destroy_context(char const * f, int l);
+	static int get_context_count();
+
 };
 
 }

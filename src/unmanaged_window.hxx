@@ -67,12 +67,13 @@ public:
 	virtual void render(cairo_t * cr, time_t time) {
 		if (surf != nullptr) {
 			cairo_surface_t * s = surf->get_surf();
-
+			display_t::create_context(__FILE__, __LINE__);
 			cairo_save(cr);
 			cairo_set_source_surface(cr, s, wa.x, wa.y);
 			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
 			cairo_fill(cr);
+			display_t::destroy_context(__FILE__, __LINE__);
 			cairo_restore(cr);
 
 		}

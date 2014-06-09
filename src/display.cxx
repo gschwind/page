@@ -9,11 +9,44 @@
 
 #include "display.hxx"
 
+#include <cassert>
 #include <poll.h>
-
 #include "time.hxx"
 
 namespace page {
+
+static int surf_count = 0;
+
+void display_t::create_surf(char const * f, int l) {
+	surf_count += 1;
+	//printf("%s:%d surf_count = %d\n", f, l, surf_count);
+}
+void display_t::destroy_surf(char const * f, int l) {
+	surf_count -= 1;
+	//printf("%s:%d surf_count = %d\n", f, l, surf_count);
+	assert(surf_count >= 0);
+}
+
+int display_t::get_surf_count() {
+	return surf_count;
+}
+
+static int context_count = 0;
+
+void display_t::create_context(char const * f, int l) {
+	context_count += 1;
+	//printf("%s:%d context_count = %d\n", f, l, context_count);
+}
+void display_t::destroy_context(char const * f, int l) {
+	context_count -= 1;
+	//printf("%s:%d context_count = %d\n", f, l, context_count);
+	assert(context_count >= 0);
+}
+
+int display_t::get_context_count() {
+	return context_count;
+}
+
 
 int display_t::fd() {
 	return _fd;
@@ -185,10 +218,7 @@ display_t::~display_t() {
 
 void display_t::grab() {
 	if (grab_count == 0) {
-		cnx_printf("XGrabServer\n");
 		XGrabServer(_dpy);
-		cout << "XGrabServer(" << _dpy << ")" << endl;
-		cnx_printf("XSync\n");
 		XSync(_dpy, False);
 	}
 	++grab_count;

@@ -53,7 +53,7 @@ public:
 	}
 
 	void repair_back_buffer() {
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
@@ -93,7 +93,8 @@ public:
 			++n;
 
 		}
-
+		display_t::destroy_context(__FILE__, __LINE__);
+		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -106,7 +107,7 @@ public:
 
 		if(not _is_visible)
 			return;
-
+		display_t::create_context(__FILE__, __LINE__);
 		cairo_save(cr);
 
 		cairo_translate(cr, _position.x, _position.y);
@@ -147,7 +148,7 @@ public:
 			++n;
 
 		}
-
+		display_t::destroy_context(__FILE__, __LINE__);
 		cairo_restore(cr);
 
 	}

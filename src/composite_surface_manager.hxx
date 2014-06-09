@@ -31,11 +31,14 @@
 #ifndef COMPOSITE_SURFACE_MANAGER_HXX_
 #define COMPOSITE_SURFACE_MANAGER_HXX_
 
+#include <cassert>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xcomposite.h>
 #include <cairo/cairo-xlib.h>
 #include <map>
 #include <iostream>
+
+#include "display.hxx"
 
 using namespace std;
 
@@ -80,6 +83,8 @@ class composite_surface_manager_t {
 
 		void destroy_cache() {
 			if (_surf != nullptr) {
+				display_t::destroy_surf(__FILE__, __LINE__);
+				assert(cairo_surface_get_reference_count(_surf) == 1);
 				cairo_surface_destroy(_surf);
 				_surf = nullptr;
 			}
@@ -129,9 +134,12 @@ class composite_surface_manager_t {
 
 		cairo_surface_t * get_surf() {
 			if (_surf != nullptr) {
+				display_t::destroy_surf(__FILE__, __LINE__);
+				assert(cairo_surface_get_reference_count(_surf) == 1);
 				cairo_surface_destroy(_surf);
 				_surf = nullptr;
 			}
+			display_t::create_surf(__FILE__, __LINE__);
 			_surf = cairo_xlib_surface_create(_dpy, _pixmap_id, _vis, _width, _height);
 			return _surf;
 		}
