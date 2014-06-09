@@ -3623,6 +3623,10 @@ void page_t::onmap(Window w) {
 		return;
 	if(w == pat->id())
 		return;
+	if (rnd != nullptr) {
+		if (w == rnd->get_composite_overlay())
+			return;
+	}
 
 
 	/**
