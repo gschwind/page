@@ -1913,12 +1913,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 	 * (i.e. he want that we unmanage it.
 	 */
 	if (c != nullptr) {
-		if (e.send_event == True) {
-			destroy_client(c);
-		}
-
-		/** unmanaged window may not send fake unmap */
-		if(typeid(*c) == typeid(unmanaged_window_t)) {
+		if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
 			destroy_client(c);
 		}
 	}
