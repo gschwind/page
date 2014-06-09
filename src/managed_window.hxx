@@ -501,7 +501,10 @@ public:
 	}
 
 	virtual string get_node_name() const {
-		return _get_node_name<'M'>();
+		string s = _get_node_name<'M'>();
+		ostringstream oss;
+		oss << s << " " << orig() << " " << title();
+		return oss.str();
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {

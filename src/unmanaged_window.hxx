@@ -45,7 +45,7 @@ public:
 	}
 
 	~unmanaged_window_t() {
-
+		XSelectInput(_cnx->dpy(), _id, NoEventMask);
 	}
 
 	Atom net_wm_type() {
@@ -61,7 +61,10 @@ public:
 	}
 
 	virtual string get_node_name() const {
-		return _get_node_name<'U'>();
+		string s = _get_node_name<'U'>();
+		ostringstream oss;
+		oss << s << " " << orig();
+		return oss.str();
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
