@@ -665,15 +665,12 @@ void simple2_theme_t::render_notebook_selected(
 			PangoLayout * pango_layout = pango_layout_new(pc);
 			pango_layout_set_font_description(pango_layout, pango_desc);
 			pango_font_description_free(pango_desc);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
 			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
 			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-			pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
-			pango_cairo_update_layout(cr, pango_layout);
-			CHECK_CAIRO(cairo_move_to(cr, 0.0, 10.0));
-			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
-					pango_layout, 0);
-			pango_cairo_layout_line_path(cr, pango_lines);
+			pango_cairo_layout_path(cr, pango_layout);
 			g_object_unref(pango_layout);
 			g_object_unref(pc);
 			g_object_unref(pfm);
@@ -873,15 +870,12 @@ void simple2_theme_t::render_notebook_normal(
 		PangoLayout * pango_layout = pango_layout_new(pc);
 		pango_layout_set_font_description(pango_layout, pango_desc);
 		pango_font_description_free(pango_desc);
+		pango_cairo_update_layout(cr, pango_layout);
+		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
+		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
 		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-		pango_layout_set_text(pango_layout, (c)->title().c_str(), -1);
-		pango_cairo_update_layout(cr, pango_layout);
-		CHECK_CAIRO(cairo_move_to(cr, 0.0, 10.0));
-		PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
-				pango_layout, 0);
-		pango_cairo_layout_line_path(cr, pango_lines);
+		pango_cairo_layout_path(cr, pango_layout);
 		g_object_unref(pango_layout);
 		g_object_unref(pc);
 		g_object_unref(pfm);
@@ -1085,15 +1079,12 @@ void simple2_theme_t::render_floating_base(
 			PangoLayout * pango_layout = pango_layout_new(pc);
 			pango_layout_set_font_description(pango_layout, pango_desc);
 			pango_font_description_free(pango_desc);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, (mw)->title().c_str(), -1);
 			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
 			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-			pango_layout_set_text(pango_layout, (mw)->title().c_str(), -1);
-			pango_cairo_update_layout(cr, pango_layout);
-			CHECK_CAIRO(cairo_move_to(cr, 0.0, 10.0));
-			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
-					pango_layout, 0);
-			pango_cairo_layout_line_path(cr, pango_lines);
+			pango_cairo_layout_path(cr, pango_layout);
 			g_object_unref(pango_layout);
 			g_object_unref(pc);
 			g_object_unref(pfm);
@@ -1235,20 +1226,11 @@ void simple2_theme_t::render_floating_base(
 void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
 		unsigned int height, string const & title) {
 
-	/** clear popup **/
-//	CHECK_CAIRO(cairo_reset_clip(cr));
-//	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-//	CHECK_CAIRO(cairo_paint(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
-	//CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
-	//CHECK_CAIRO(cairo_stroke(cr));
-
-
 	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
 
-
-	if (icon != 0) {
+	if (icon != nullptr) {
 		double x_offset = (width - 64) / 2.0;
 		double y_offset = (height - 64) / 2.0;
 
@@ -1269,15 +1251,12 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t
 			PangoLayout * pango_layout = pango_layout_new(pc);
 			pango_layout_set_font_description(pango_layout, pango_desc);
 			pango_font_description_free(pango_desc);
-			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-			pango_layout_set_width(pango_layout, width * PANGO_SCALE);
-			pango_layout_set_text(pango_layout, title.c_str(), -1);
 			pango_cairo_update_layout(cr, pango_layout);
-			CHECK_CAIRO(cairo_move_to(cr, 0.0, pango_layout_get_height(pango_layout)));
-			PangoLayoutLine * pango_lines = pango_layout_get_line_readonly(
-					pango_layout, 0);
-			pango_cairo_layout_line_path(cr, pango_lines);
+			pango_layout_set_text(pango_layout, title.c_str(), -1);
+			pango_layout_set_width(pango_layout, width * PANGO_SCALE);
+			pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_cairo_layout_path(cr, pango_layout);
 			g_object_unref(pango_layout);
 			g_object_unref(pc);
 			g_object_unref(pfm);
