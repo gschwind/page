@@ -25,6 +25,8 @@ struct img_t {
 
 class notebook_t : public notebook_base_t  {
 
+	static uint64_t const animation_duration = 300000000;
+
 	theme_t const * _theme;
 
 	bool _is_default;
@@ -186,9 +188,9 @@ public:
 
 		if (not _selected.empty()) {
 
-			page::time_t d(0, 700000000);
+			page::time_t d(0, animation_duration);
 			if (time < (swap_start + d)) {
-				double ratio = static_cast<double>(time - swap_start)/700000000.0;
+				double ratio = static_cast<double>(time - swap_start)/animation_duration;
 
 				double y = floor(ratio * _allocation.h);
 				if(y < 0.0)
@@ -287,7 +289,7 @@ public:
 
 	bool need_render(time_t time) {
 
-		page::time_t d(0, 700000000);
+		page::time_t d(0, animation_duration);
 		if (time < (swap_start + d)) {
 			return true;
 		}
