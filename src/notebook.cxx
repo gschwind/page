@@ -283,10 +283,10 @@ rectangle notebook_t::compute_client_size(managed_window_t * c) {
 
 	/* compute the window placement within notebook */
 	rectangle client_size;
-	client_size.x = (client_area.w - (int)width) / 2;
-	client_size.y = (client_area.h - (int)height) / 2;
-	client_size.w = (int)width;
-	client_size.h = (int)height;
+	client_size.x = floor((client_area.w - width) / 2.0);
+	client_size.y = floor((client_area.h - height) / 2.0);
+	client_size.w = width;
+	client_size.h = height;
 
 	if (client_size.x < 0)
 		client_size.x = 0;

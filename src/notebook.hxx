@@ -275,6 +275,7 @@ public:
 					cairo_surface_t * s = psurf->get_surf();
 					rectangle location = mw->get_base_position();
 					display_t::create_context(__FILE__, __LINE__);
+
 					cairo_save(cr);
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
