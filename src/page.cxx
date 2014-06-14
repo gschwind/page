@@ -3881,19 +3881,19 @@ void page_t::destroy_client(client_base_t * c) {
 }
 
 void page_t::safe_update_transient_for(client_base_t * c) {
-	if(typeid(*c) == typeid(managed_window_t)) {
+	if (typeid(*c) == typeid(managed_window_t)) {
 		managed_window_t * mw = dynamic_cast<managed_window_t*>(c);
-		if(mw->is(MANAGED_FLOATING)) {
+		if (mw->is(MANAGED_FLOATING)) {
 			insert_in_tree_using_transient_for(mw);
-		} else if(mw->is(MANAGED_NOTEBOOK)) {
+		} else if (mw->is(MANAGED_NOTEBOOK)) {
 			/* DO NOTHING */
-		} else if(mw->is(MANAGED_FULLSCREEN)) {
+		} else if (mw->is(MANAGED_FULLSCREEN)) {
 			/* DO NOTHING */
 		}
 	} else if (typeid(*c) == typeid(unmanaged_window_t)) {
 		unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t*>(c);
 
-		if(uw->type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+		if (uw->type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			detach(uw);
 			tooltips.push_back(uw);
 			uw->set_parent(this);
@@ -3901,10 +3901,19 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			detach(uw);
 			notifications.push_back(uw);
 			uw->set_parent(this);
+		} else if (uw->_net_wm_state != nullptr
+				and has_key(*(uw->_net_wm_state), A(_NET_WM_STATE_ABOVE))) {
+			detach(uw);
+			above.push_back(uw);
+			uw->set_parent(this);
+		} else if (uw->_net_wm_state != nullptr
+				and has_key(*(uw->_net_wm_state), A(_NET_WM_STATE_BELOW))) {
+			detach(uw);
+			below.push_back(uw);
+			uw->set_parent(this);
 		} else {
 			insert_in_tree_using_transient_for(uw);
 		}
-
 	}
 }
 
@@ -3979,6 +3988,10 @@ list<tree_t *> page_t::childs() const {
 		}
 	}
 
+	for(auto x: below) {
+		ret.push_back(x);
+	}
+
 	for(auto x: root_subclients) {
 		ret.push_back(x);
 	}
@@ -3998,6 +4011,11 @@ list<tree_t *> page_t::childs() const {
 	for(auto x: notifications) {
 		ret.push_back(x);
 	}
+
+	for(auto x: above) {
+		ret.push_back(x);
+	}
+
 
 	return ret;
 }
@@ -4037,6 +4055,18 @@ void page_t::raise_child(tree_t * t) {
 		docks.push_back(y);
 		y->set_parent(this);
 	}
+
+	if(has_key(above, y)) {
+		above.remove(y);
+		above.push_back(y);
+		y->set_parent(this);
+	}
+
+	if(has_key(below, y)) {
+		below.remove(y);
+		below.push_back(y);
+		y->set_parent(this);
+	}
 }
 
 void page_t::remove(tree_t * t) {
@@ -4054,6 +4084,8 @@ void page_t::remove(tree_t * t) {
 	notifications.remove(dynamic_cast<unmanaged_window_t *>(t));
 	fullscreen_client_to_viewport.erase(dynamic_cast<managed_window_t *>(t));
 	docks.remove(dynamic_cast<unmanaged_window_t*>(t));
+	above.remove(dynamic_cast<unmanaged_window_t*>(t));
+	below.remove(dynamic_cast<unmanaged_window_t*>(t));
 
 }
 

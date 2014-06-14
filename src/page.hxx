@@ -298,10 +298,13 @@ public:
 	compositor_t * rnd;
 
 	map<Window, client_base_t *> clients;
+
+	list<unmanaged_window_t *> below;
 	list<client_base_t *> root_subclients;
 	list<unmanaged_window_t *> docks;
 	list<unmanaged_window_t *> tooltips;
 	list<unmanaged_window_t *> notifications;
+	list<unmanaged_window_t *> above;
 
 	Cursor default_cursor;
 
