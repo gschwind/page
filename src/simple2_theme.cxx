@@ -26,7 +26,7 @@ inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	if (s != CAIRO_STATUS_SUCCESS) {
 		printf("Cairo status %s:%d = %s\n", file, line,
 				cairo_status_to_string(s));
-		abort();
+		//abort();
 	}
 }
 
