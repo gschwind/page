@@ -309,13 +309,6 @@ rectangle const & notebook_t::get_allocation() {
 	return allocation();
 }
 
-managed_window_t const * notebook_t::get_selected() {
-	if (_selected.empty())
-		return 0;
-	else
-		return _selected.front();
-}
-
 void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
@@ -368,8 +361,6 @@ void notebook_t::render_legacy(cairo_t * cr, rectangle const & area) const {
 
 void notebook_t::render(cairo_t * cr, time_t time) {
 
-	//_theme->render_notebook(cr, this, _allocation);
-
 	if (not _selected.empty()) {
 
 		page::time_t d(0, animation_duration);
@@ -382,61 +373,68 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			if(y > _allocation.h)
 				y = _allocation.h;
 
-			managed_window_t * mw = _selected.front();
+			managed_window_t * mw = get_selected();
 			composite_surface_handler_t psurf = mw->surf();
 
-			if (prev_surf != nullptr) {
+			rectangle x_prv_loc;
+			rectangle x_new_loc;
+
+			if(prev_surf != nullptr) {
+				x_prv_loc = prev_loc;
+			}
+
+			if(mw != nullptr) {
+				x_new_loc = mw->get_base_position();
+			}
+
+			if (prev_surf != nullptr and not x_prv_loc.is_null()) {
 				cairo_surface_t * s = prev_surf->get_surf();
-				rectangle location = prev_loc;
+				region r = x_prv_loc;
+				r -= x_new_loc;
 				display_t::create_context(__FILE__, __LINE__);
 				cairo_save(cr);
-				cairo_rectangle(cr, location.x, location.y, location.w,
-						location.h);
-				cairo_clip(cr);
-				cairo_set_source_surface(cr, s, location.x, location.y);
 				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_pattern_t * p0 = cairo_pattern_create_linear(0.0,
-						y - 150.0, 0.0, y);
-				cairo_pattern_add_color_stop_rgba(p0, 0.0, 1.0, 1.0, 1.0,
-						0.0);
-				cairo_pattern_add_color_stop_rgba(p0, 1.0, 1.0, 1.0, 1.0,
-						1.0);
-				cairo_mask(cr, p0);
+				cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0-ratio);
+				for (auto &a : r) {
+					cairo_reset_clip(cr);
+					cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+					cairo_clip(cr);
+					cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+					cairo_mask(cr, p0);
+				}
 				cairo_pattern_destroy(p0);
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-				cairo_pattern_t * p1 = cairo_pattern_create_linear(0.0,
-						y - 150.0, 0.0, y);
-				cairo_pattern_add_color_stop_rgba(p1, 0.0, 1.0, 1.0, 1.0,
-						0.0);
-				cairo_pattern_add_color_stop_rgba(p1, 1.0, 1.0, 1.0, 1.0,
-						1.0);
-				cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, ratio*0.1);
-				cairo_mask(cr, p1);
-				cairo_pattern_destroy(p1);
+
+				region r1 = x_prv_loc;
+				r1 &= x_new_loc;
+				for (auto &a : r1) {
+					cairo_reset_clip(cr);
+					cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+					cairo_clip(cr);
+					cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+					cairo_paint(cr);
+				}
 
 				display_t::destroy_context(__FILE__, __LINE__);
 				cairo_restore(cr);
 			}
 
-			if (psurf != nullptr) {
+			if (mw != nullptr and not x_new_loc.is_null()) {
 				cairo_surface_t * s = psurf->get_surf();
-				rectangle old = mw->base_position();
-				rectangle location = mw->base_position();
+				region r = x_new_loc;
+				r -= x_prv_loc;
+
 				display_t::create_context(__FILE__, __LINE__);
 				cairo_save(cr);
-				cairo_rectangle(cr, location.x, location.y, location.w,
-						location.h);
-				cairo_clip(cr);
-				cairo_set_source_surface(cr, s, location.x, location.y);
 				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_pattern_t * p = cairo_pattern_create_linear(0.0,
-						y, 0.0, y + 150.0);
-				cairo_pattern_add_color_stop_rgba(p, 1.0, 1.0, 1.0, 1.0,
-						0.0);
-				cairo_pattern_add_color_stop_rgba(p, 0.0, 1.0, 1.0, 1.0,
-						1.0);
-				cairo_mask(cr, p);
-				cairo_pattern_destroy(p);
+				cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
+						ratio);
+				cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
+				cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
+						x_new_loc.h);
+				cairo_clip(cr);
+				cairo_mask(cr, p0);
+				cairo_pattern_destroy(p0);
+
 				display_t::destroy_context(__FILE__, __LINE__);
 				cairo_restore(cr);
 
@@ -496,6 +494,14 @@ bool notebook_t::need_render(time_t time) {
 		}
 	}
 	return false;
+}
+
+managed_window_t * notebook_t::get_selected() {
+	if(not _selected.empty()) {
+		return _selected.front();
+	}
+
+	return nullptr;
 }
 
 

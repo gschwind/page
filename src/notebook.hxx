@@ -25,7 +25,7 @@ struct img_t {
 
 class notebook_t : public notebook_base_t  {
 
-	static uint64_t const animation_duration = 300000000;
+	static uint64_t const animation_duration = 400000000;
 
 	theme_t const * _theme;
 
@@ -132,7 +132,6 @@ public:
 
 	rectangle compute_client_size(managed_window_t * c);
 	rectangle const & get_allocation();
-	managed_window_t const * get_selected();
 	void set_theme(theme_t const * theme);
 	list<managed_window_base_t const *> clients() const;
 	managed_window_base_t const * selected() const;
@@ -144,6 +143,8 @@ public:
 	void render_legacy(cairo_t * cr, rectangle const & area) const;
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
+
+	managed_window_t * get_selected();
 
 };
 

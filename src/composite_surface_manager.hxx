@@ -219,6 +219,10 @@ public:
 			return p == v;
 		}
 
+		bool operator!= (_composite_surface_t * p) {
+			return p != v;
+		}
+
 		void reset() {
 			if(v != nullptr)
 				v->decr_ref();
