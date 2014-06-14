@@ -4122,7 +4122,8 @@ void page_t::check_x11_extension() {
 }
 
 void page_t::render(cairo_t * cr, page::time_t time) {
-
+	rpage->repair_damaged(get_all_childs());
+	XFlush(cnx->dpy());
 	rpage->render_to(cr, _allocation);
 
 	for(auto i: childs()) {
@@ -4136,6 +4137,10 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 }
 
 bool page_t::need_render(time_t time) {
+
+	if(rpage->is_durty()) {
+		return true;
+	}
 
 	for(auto i: childs()) {
 		if(i->need_render(time)) {

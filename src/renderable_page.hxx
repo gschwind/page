@@ -33,28 +33,6 @@ public:
 		cout << "call " << __FUNCTION__ << endl;
 	}
 
-	void repair_notebook_border(notebook_t * n) {
-		region r = n->allocation();
-
-		if (n->selected() == 0) {
-
-			rectangle b;
-			b.x = n->allocation().x + _theme->notebook_margin.left;
-			b.y = n->allocation().y + _theme->notebook_margin.top;
-			b.w = n->allocation().w - _theme->notebook_margin.left
-					- _theme->notebook_margin.right;
-			b.h = n->allocation().h - _theme->notebook_margin.top
-					- _theme->notebook_margin.bottom;
-			r -= b;
-		} else {
-			r -= n->selected()->base_position();
-		}
-
-		damaged += r;
-
-	}
-
-
 	void expose(rectangle area) {
 		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_front_surf);
@@ -75,47 +53,49 @@ public:
 
 	void repair_damaged(list<tree_t *> tree) {
 
+		if(damaged.empty() and not _is_durty)
+			return;
+
 		time_t cur;
 		cur.get_time();
 		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 
-		for (auto &i : damaged) {
-			for (auto &j : tree) {
-				split_t * rtree = dynamic_cast<split_t *>(j);
-				if (rtree != nullptr) {
-					rtree->render_legacy(cr, i);
-				}
+		rectangle area = _position;
+		area.x = 0;
+		area.y = 0;
+
+		for (auto &j : tree) {
+			split_t * rtree = dynamic_cast<split_t *>(j);
+			if (rtree != nullptr) {
+				rtree->render_legacy(cr, area);
 			}
 		}
 
-		for (auto &i : damaged) {
-			for (auto &j : tree) {
-				notebook_t * rtree = dynamic_cast<notebook_t *>(j);
-				if (rtree != nullptr) {
-					rtree->render_legacy(cr, i);
-				}
+		for (auto &j : tree) {
+			notebook_t * rtree = dynamic_cast<notebook_t *>(j);
+			if (rtree != nullptr) {
+				rtree->render_legacy(cr, area);
 			}
 		}
+
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 		display_t::create_context(__FILE__, __LINE__);
 		cr = cairo_create(_front_surf);
-		for (region::iterator i = damaged.begin(); i != damaged.end();
-				++i) {
-			rectangle clip = _position & *i;
-			if (!clip.is_null()) {
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-				cairo_set_source_surface(cr, _back_surf, 0, 0);
-				cairo_paint(cr);
-			}
+		rectangle clip = _position;
+		if (!clip.is_null()) {
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+			cairo_set_source_surface(cr, _back_surf, 0, 0);
+			cairo_paint(cr);
 		}
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
+		_is_durty = false;
 		damaged.clear();
 
 	}

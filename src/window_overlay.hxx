@@ -205,6 +205,10 @@ public:
 		return _wid;
 	}
 
+	bool is_durty() {
+		return _is_durty;
+	}
+
 
 };
 
