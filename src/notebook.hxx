@@ -36,7 +36,7 @@ class notebook_t : public notebook_base_t  {
 
 	page::time_t swap_start;
 
-	composite_surface_handler_t prev_surf;
+	shared_ptr<pixmap_t> prev_surf;
 	rectangle prev_loc;
 
 	/* always handle current surface in case of unmap */

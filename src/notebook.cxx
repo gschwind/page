@@ -36,7 +36,7 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 		if (prefer_activate) {
 			swap_start.get_time();
 			prev_loc = _selected.front()->base_position();
-			prev_surf = _selected.front()->surf();
+			prev_surf = _selected.front()->surf()->get_pixmap();
 			_selected.front()->iconify();
 			cur_surf = x->surf();
 			x->normalize();
@@ -93,7 +93,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 		if(_selected.front() == x) {
 			swap_start.get_time();
 			prev_loc = x->base_position();
-			prev_surf = x->surf();
+			prev_surf = x->surf()->get_pixmap();
 		}
 		_selected.remove(x);
 		if (not _selected.empty()) {
@@ -117,7 +117,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			managed_window_t * x = _selected.front();
-			prev_surf = x->surf();
+			prev_surf = x->surf()->get_pixmap();
 			prev_loc = x->base_position();
 			swap_start.get_time();
 			x->iconify();
@@ -392,7 +392,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			}
 
 			if (prev_surf != nullptr and not x_prv_loc.is_null()) {
-				cairo_surface_t * s = prev_surf->get_pixmap()->get_cairo_surface();
+				cairo_surface_t * s = prev_surf->get_cairo_surface();
 				region r = x_prv_loc;
 				r -= x_new_loc;
 				display_t::create_context(__FILE__, __LINE__);
