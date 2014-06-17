@@ -68,13 +68,6 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	int k = 1;
 	while(k < argc) {
-		string x = argv[k];
-		if(x == "--disable-compositor") {
-			use_internal_compositor = false;
-		} else {
-			conf_file_name = argv[k];
-		}
-
 		if(x == "--replace") {
 			replace_wm = true;
 		} else {
