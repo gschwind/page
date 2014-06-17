@@ -510,7 +510,7 @@ public:
 	virtual void render(cairo_t * cr, time_t time) {
 
 		if (_composite_surf != nullptr) {
-			cairo_surface_t * s = _composite_surf->get_surf();
+			cairo_surface_t * s = _composite_surf->get_pixmap()->get_cairo_surface();
 			rectangle loc = base_position();
 			display_t::create_context(__FILE__, __LINE__);
 			cairo_save(cr);

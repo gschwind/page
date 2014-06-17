@@ -37,8 +37,10 @@
 #include <cairo/cairo-xlib.h>
 #include <map>
 #include <iostream>
+#include <memory>
 
 #include "display.hxx"
+#include "pixmap.hxx"
 
 using namespace std;
 
@@ -53,14 +55,14 @@ class composite_surface_manager_t {
 		Display * _dpy;
 		Visual * _vis;
 		Window _window_id;
-		Pixmap _pixmap_id;
-		cairo_surface_t * _surf;
+		shared_ptr<pixmap_t> _pixmap;
 		int _width, _height;
 
 		composite_surface_manager_t * _mngr;
 		int _nref;
 
-		_composite_surface_t(composite_surface_manager_t * mngr, Display * dpy, Window w) {
+		_composite_surface_t(composite_surface_manager_t * mngr, Display * dpy,
+				Window w) {
 			XWindowAttributes wa;
 			XGetWindowAttributes(dpy, w, &wa);
 
@@ -69,30 +71,14 @@ class composite_surface_manager_t {
 			_vis = wa.visual;
 			_width = wa.width;
 			_height = wa.height;
-			_surf = nullptr;
-			_pixmap_id = None;
-
 			_nref = 0;
 			_mngr = mngr;
+			_pixmap = nullptr;
 
 		}
 
 		~_composite_surface_t() {
-			destroy_cache();
-		}
 
-		void destroy_cache() {
-			if (_surf != nullptr) {
-				display_t::destroy_surf(__FILE__, __LINE__);
-				assert(cairo_surface_get_reference_count(_surf) == 1);
-				cairo_surface_destroy(_surf);
-				_surf = nullptr;
-			}
-
-			if(_pixmap_id != None) {
-				XFreePixmap(_dpy, _pixmap_id);
-				_pixmap_id = None;
-			}
 		}
 
 		_key_t get_key() {
@@ -112,12 +98,8 @@ class composite_surface_manager_t {
 
 	public:
 		void onmap() {
-			if(_pixmap_id != None) {
-				XFreePixmap(_dpy, _pixmap_id);
-				_pixmap_id = None;
-			}
-			_pixmap_id = XCompositeNameWindowPixmap(_dpy, _window_id);
-
+			Pixmap pixmap_id = XCompositeNameWindowPixmap(_dpy, _window_id);
+			_pixmap = shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
 		}
 
 		void onresize(int width, int height) {
@@ -132,16 +114,8 @@ class composite_surface_manager_t {
 			return _window_id;
 		}
 
-		cairo_surface_t * get_surf() {
-			if (_surf != nullptr) {
-				display_t::destroy_surf(__FILE__, __LINE__);
-				assert(cairo_surface_get_reference_count(_surf) == 1);
-				cairo_surface_destroy(_surf);
-				_surf = nullptr;
-			}
-			display_t::create_surf(__FILE__, __LINE__);
-			_surf = cairo_xlib_surface_create(_dpy, _pixmap_id, _vis, _width, _height);
-			return _surf;
+		shared_ptr<pixmap_t> get_pixmap() {
+			return _pixmap;
 		}
 
 		friend composite_surface_manager_t;

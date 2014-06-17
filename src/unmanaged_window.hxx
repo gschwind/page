@@ -69,7 +69,7 @@ public:
 
 	virtual void render(cairo_t * cr, time_t time) {
 		if (surf != nullptr) {
-			cairo_surface_t * s = surf->get_surf();
+			cairo_surface_t * s = surf->get_pixmap()->get_cairo_surface();
 			display_t::create_context(__FILE__, __LINE__);
 			cairo_save(cr);
 			cairo_set_source_surface(cr, s, wa.x, wa.y);

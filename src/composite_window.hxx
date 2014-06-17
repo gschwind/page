@@ -123,7 +123,7 @@ public:
 			CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
 			CHECK_CAIRO(cairo_clip(cr));
 
-			CHECK_CAIRO(cairo_set_source_surface(cr, _surf->get_surf(), _position.x, _position.y));
+			CHECK_CAIRO(cairo_set_source_surface(cr, _surf->get_pixmap()->get_cairo_surface(), _position.x, _position.y));
 			if (fade_mode != FADE_NONE) {
 				cairo_pattern_t * pat = cairo_pattern_create_rgba(0.0, 0.0, 0.0,
 						fade_step);

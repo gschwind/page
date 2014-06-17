@@ -392,7 +392,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			}
 
 			if (prev_surf != nullptr and not x_prv_loc.is_null()) {
-				cairo_surface_t * s = prev_surf->get_surf();
+				cairo_surface_t * s = prev_surf->get_pixmap()->get_cairo_surface();
 				region r = x_prv_loc;
 				r -= x_new_loc;
 				display_t::create_context(__FILE__, __LINE__);
@@ -423,7 +423,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			}
 
 			if (mw != nullptr and not x_new_loc.is_null()) {
-				cairo_surface_t * s = psurf->get_surf();
+				cairo_surface_t * s = psurf->get_pixmap()->get_cairo_surface();
 				region r = x_new_loc;
 				r -= x_prv_loc;
 
@@ -458,7 +458,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			managed_window_t * mw = _selected.front();
 			composite_surface_handler_t psurf = mw->surf();
 			if (psurf != nullptr) {
-				cairo_surface_t * s = psurf->get_surf();
+				cairo_surface_t * s = psurf->get_pixmap()->get_cairo_surface();
 				rectangle location = mw->get_base_position();
 				display_t::create_context(__FILE__, __LINE__);
 
