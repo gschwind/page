@@ -68,6 +68,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	int k = 1;
 	while(k < argc) {
+		string x = argv[k];
 		if(x == "--replace") {
 			replace_wm = true;
 		} else {
