@@ -35,8 +35,13 @@ class notebook_t : public notebook_base_t  {
 	list<tree_t *> _children;
 
 	page::time_t swap_start;
+
 	composite_surface_handler_t prev_surf;
 	rectangle prev_loc;
+
+	/* always handle current surface in case of unmap */
+	composite_surface_handler_t cur_surf;
+
 
 public:
 

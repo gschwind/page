@@ -84,6 +84,17 @@ public:
 		return x;
 	}
 
+	time_t & operator+= (time_t const & t) {
+		nsec += t.nsec;
+		return *this;
+	}
+
+	time_t & operator-= (time_t const & t) {
+		nsec -= t.nsec;
+		return *this;
+	}
+
+
 	bool operator> (time_t const & t) const {
 		return nsec > t.nsec;
 	}

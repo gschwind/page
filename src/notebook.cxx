@@ -29,6 +29,7 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	if (_selected.empty()) {
 		swap_start.get_time();
 		prev_surf.reset();
+		cur_surf = x->surf();
 		x->normalize();
 		_selected.push_front(x);
 	} else {
@@ -37,6 +38,7 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 			prev_loc = _selected.front()->base_position();
 			prev_surf = _selected.front()->surf();
 			_selected.front()->iconify();
+			cur_surf = x->surf();
 			x->normalize();
 			_selected.push_front(x);
 		} else {
@@ -97,6 +99,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 		if (not _selected.empty()) {
 			update_client_position(_selected.front());
 			_selected.front()->normalize();
+			cur_surf = _selected.front()->surf();
 		}
 	}
 
@@ -121,6 +124,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 		}
 	}
 
+	cur_surf = c->surf();
 	_selected.remove(c);
 	_selected.push_front(c);
 
@@ -484,6 +488,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 bool notebook_t::need_render(time_t time) {
 
 	page::time_t d(0, animation_duration);
+	d += 100000000;
 	if (time < (swap_start + d)) {
 		return true;
 	}
