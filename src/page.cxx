@@ -223,6 +223,10 @@ void page_t::run() {
 						conf.get_long("compositor", "fade_out_time"));
 			}
 
+			rnd->renderable_clear();
+			rnd->renderable_add(this);
+			rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
+
 		} catch (...) {
 			rnd = nullptr;
 		}
