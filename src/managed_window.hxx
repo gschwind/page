@@ -510,17 +510,19 @@ public:
 	virtual void render(cairo_t * cr, time_t time) {
 
 		if (_composite_surf != nullptr) {
-			cairo_surface_t * s = _composite_surf->get_pixmap()->get_cairo_surface();
-			rectangle loc = base_position();
-			display_t::create_context(__FILE__, __LINE__);
-			cairo_save(cr);
-			cairo_set_source_surface(cr, s, loc.x, loc.y);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-			cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
-			cairo_fill(cr);
-			display_t::destroy_context(__FILE__, __LINE__);
-			cairo_restore(cr);
-
+			shared_ptr<pixmap_t> p = _composite_surf->get_pixmap();
+			if (p != nullptr) {
+				cairo_surface_t * s = p->get_cairo_surface();
+				rectangle loc = base_position();
+				display_t::create_context(__FILE__, __LINE__);
+				cairo_save(cr);
+				cairo_set_source_surface(cr, s, loc.x, loc.y);
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
+				cairo_fill(cr);
+				display_t::destroy_context(__FILE__, __LINE__);
+				cairo_restore(cr);
+			}
 		}
 
 		for(auto i: childs()) {

@@ -109,7 +109,9 @@ public:
 	}
 
 	void draw_to(cairo_t * cr, rectangle const & area) {
-		if (_surf == 0)
+		if (_surf == nullptr)
+			return;
+		if (_surf->get_pixmap() == None)
 			return;
 
 		rectangle clip = area
@@ -123,14 +125,20 @@ public:
 			CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
 			CHECK_CAIRO(cairo_clip(cr));
 
-			CHECK_CAIRO(cairo_set_source_surface(cr, _surf->get_pixmap()->get_cairo_surface(), _position.x, _position.y));
-			if (fade_mode != FADE_NONE) {
-				cairo_pattern_t * pat = cairo_pattern_create_rgba(0.0, 0.0, 0.0,
-						fade_step);
-				CHECK_CAIRO(cairo_mask(cr, pat));
-				CHECK_CAIRO(cairo_pattern_destroy(pat));
-			} else {
-				CHECK_CAIRO(cairo_paint(cr));
+			shared_ptr<pixmap_t>  p = _surf->get_pixmap();
+			if (p != nullptr) {
+				CHECK_CAIRO(
+						cairo_set_source_surface(cr,
+								p->get_cairo_surface(),
+								_position.x, _position.y));
+				if (fade_mode != FADE_NONE) {
+					cairo_pattern_t * pat = cairo_pattern_create_rgba(0.0, 0.0,
+							0.0, fade_step);
+					CHECK_CAIRO(cairo_mask(cr, pat));
+					CHECK_CAIRO(cairo_pattern_destroy(pat));
+				} else {
+					CHECK_CAIRO(cairo_paint(cr));
+				}
 			}
 			display_t::destroy_context(__FILE__, __LINE__);
 			CHECK_CAIRO(cairo_restore(cr));

@@ -167,16 +167,18 @@ public:
 				cairo_restore(cr);
 			}
 
-			cairo_surface_t * s = surf->get_pixmap()->get_cairo_surface();
-			display_t::create_context(__FILE__, __LINE__);
-			cairo_save(cr);
-			cairo_set_source_surface(cr, s, wa.x, wa.y);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-			cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
-			cairo_fill(cr);
-			display_t::destroy_context(__FILE__, __LINE__);
-			cairo_restore(cr);
-
+			shared_ptr<pixmap_t>  p = surf->get_pixmap();
+			if (p != nullptr) {
+				cairo_surface_t * s = p->get_cairo_surface();
+				display_t::create_context(__FILE__, __LINE__);
+				cairo_save(cr);
+				cairo_set_source_surface(cr, s, wa.x, wa.y);
+				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
+				cairo_fill(cr);
+				display_t::destroy_context(__FILE__, __LINE__);
+				cairo_restore(cr);
+			}
 		}
 
 		for(auto i: childs()) {
