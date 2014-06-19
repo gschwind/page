@@ -69,8 +69,11 @@ public:
 
 	virtual void render(cairo_t * cr, time_t time) {
 		if (surf != nullptr) {
+			Atom t = type();
 
-			if (type() == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+			if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
+					or t == A(_NET_WM_WINDOW_TYPE_MENU)
+					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 				cairo_save(cr);
 
 				unsigned const int _shadow_width = 4;
@@ -164,20 +167,42 @@ public:
 				cairo_mask(cr, r3grad);
 				cairo_pattern_destroy(r3grad);
 
-				cairo_restore(cr);
-			}
-
-			shared_ptr<pixmap_t>  p = surf->get_pixmap();
-			if (p != nullptr) {
-				cairo_surface_t * s = p->get_cairo_surface();
-				display_t::create_context(__FILE__, __LINE__);
-				cairo_save(cr);
-				cairo_set_source_surface(cr, s, wa.x, wa.y);
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+				cairo_reset_clip(cr);
 				cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
-				cairo_fill(cr);
-				display_t::destroy_context(__FILE__, __LINE__);
+				cairo_clip(cr);
+
+				shared_ptr<pixmap_t> p = surf->get_pixmap();
+				if (p != nullptr) {
+					cairo_surface_t * s = p->get_cairo_surface();
+					cairo_set_source_surface(cr, s, wa.x, wa.y);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0,
+							1.0, 0.95);
+					cairo_mask(cr, p);
+					cairo_pattern_destroy(p);
+				}
+
 				cairo_restore(cr);
+			} else {
+
+				shared_ptr<pixmap_t> p = surf->get_pixmap();
+				if (p != nullptr) {
+					cairo_surface_t * s = p->get_cairo_surface();
+					display_t::create_context(__FILE__, __LINE__);
+					cairo_save(cr);
+					cairo_reset_clip(cr);
+					cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
+					cairo_clip(cr);
+
+					cairo_set_source_surface(cr, s, wa.x, wa.y);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0,
+							1.0, 1.0);
+					cairo_mask(cr, p);
+					cairo_pattern_destroy(p);
+					display_t::destroy_context(__FILE__, __LINE__);
+					cairo_restore(cr);
+				}
 			}
 		}
 
