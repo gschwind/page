@@ -35,8 +35,11 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	} else {
 		if (prefer_activate) {
 			swap_start.get_time();
-			prev_loc = _selected.front()->base_position();
-			prev_surf = _selected.front()->surf()->get_pixmap();
+			managed_window_t * mw = _selected.front();
+			if (mw->surf() != nullptr) {
+				prev_loc = _selected.front()->base_position();
+				prev_surf = _selected.front()->surf()->get_pixmap();
+			}
 			_selected.front()->iconify();
 			cur_surf = x->surf();
 			x->normalize();
@@ -90,10 +93,12 @@ void notebook_t::remove_client(managed_window_t * x) {
 
 	/** update selection **/
 	if (not _selected.empty()) {
-		if(_selected.front() == x) {
+		if (_selected.front() == x) {
 			swap_start.get_time();
-			prev_loc = x->base_position();
-			prev_surf = x->surf()->get_pixmap();
+			if (x->surf() != nullptr) {
+				prev_surf = x->surf()->get_pixmap();
+				prev_loc = x->base_position();
+			}
 		}
 		_selected.remove(x);
 		if (not _selected.empty()) {
@@ -117,8 +122,10 @@ void notebook_t::set_selected(managed_window_t * c) {
 	if (!_selected.empty()) {
 		if (c != _selected.front()) {
 			managed_window_t * x = _selected.front();
-			prev_surf = x->surf()->get_pixmap();
-			prev_loc = x->base_position();
+			if (x->surf() != nullptr) {
+				prev_surf = x->surf()->get_pixmap();
+				prev_loc = x->base_position();
+			}
 			swap_start.get_time();
 			x->iconify();
 		}
