@@ -184,8 +184,8 @@ managed_window_t::~managed_window_t() {
 
 	destroy_back_buffer();
 
-	_cnx->reparentwindow(_orig, _cnx->root(), _wished_position.x,
-			_wished_position.y);
+	//_cnx->reparentwindow(_orig, _cnx->root(), _wished_position.x,
+	//		_wished_position.y);
 	XRemoveFromSaveSet(_cnx->dpy(), _orig);
 	XDestroyWindow(_cnx->dpy(), _deco);
 	XDestroyWindow(_cnx->dpy(), _base);

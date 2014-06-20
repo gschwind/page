@@ -149,6 +149,12 @@ page_t::~page_t() {
 	/* get all childs excluding this */
 	auto childs = get_all_childs();
 	for (auto &i : childs) {
+
+		if(typeid(*i) == typeid(managed_window_t)) {
+			managed_window_t * mw = dynamic_cast<managed_window_t *>(i);
+			cnx->reparentwindow(mw->orig(), cnx->root(), 0, 0);
+		}
+
 		delete i;
 	}
 	childs.clear();
@@ -457,6 +463,7 @@ managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 }
 
 void page_t::unmanage(managed_window_t * mw) {
+	printf("Unmanage window #%lu\n", mw->orig());
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
@@ -1871,10 +1878,28 @@ void page_t::process_event(XMapEvent const & e) {
 }
 
 void page_t::process_event(XReparentEvent const & e) {
+	printf("Reparent window: %lu, parent: %lu, overide: %d, send_event: %d\n",
+			e.window, e.parent, e.override_redirect, e.send_event);
 	if(e.send_event == True)
 		return;
+	/* Reparent the root window ? hu :/ */
 	if(e.window == cnx->root())
 		return;
+
+	/* If reparent occure on managed windows and new parent is an unknown window then unmanage */
+	managed_window_t * mw = find_managed_window_with(e.window);
+	if (mw != nullptr) {
+		if (e.window == mw->orig() and e.parent != mw->base()) {
+			/* unmanage the window */
+			unmanage(mw);
+		}
+	}
+
+	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
+	unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t *>(find_client_with(e.window));
+	if(uw != nullptr and e.parent != cnx->root()) {
+		destroy_client(uw);
+	}
 
 }
 
@@ -2219,7 +2244,8 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != 0) {
 			if(e.data.l[1] == CurrentTime) {
-				printf("Invalid focus request\n");
+				printf("Invalid focus request ... but stealing focus\n");
+				set_focus(mw, CurrentTime);
 			} else {
 				set_focus(mw, e.data.l[1]);
 			}
