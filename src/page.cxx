@@ -3779,6 +3779,8 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		Time time = 0;
 		if (get_safe_net_wm_user_time(mw, time)) {
 			set_focus(mw, time);
+		} else {
+			mw->set_focus_state(false);
 		}
 	} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
@@ -3793,6 +3795,8 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		Time time = 0;
 		if (get_safe_net_wm_user_time(mw, time)) {
 			set_focus(mw, time);
+		} else {
+			mw->set_focus_state(false);
 		}
 	}
 
