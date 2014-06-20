@@ -68,16 +68,15 @@ int display_t::screen() {
 vector<string> * display_t::read_wm_class(Window w) {
 	vector<char> * tmp = ::page::get_window_property<char>(_dpy, w, A(WM_CLASS), A(STRING));
 
-	if(tmp == 0)
-	return 0;
+	if(tmp == nullptr)
+		return nullptr;
 
 	vector<char>::iterator x = find(tmp->begin(), tmp->end(), 0);
-
 	if(x != tmp->end()) {
 		vector<string> * ret = new vector<string>;
-		x++;
 		ret->push_back(string(tmp->begin(), x));
-		ret->push_back(string(x, tmp->end()));
+		auto x1 = find(++x, tmp->end(), 0);
+		ret->push_back(string(x, x1));
 		delete tmp;
 		return ret;
 	}
