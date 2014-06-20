@@ -1859,7 +1859,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 
 	client_base_t * c = find_client(e.window);
 
-	if(c != 0) {
+	if(c != nullptr) {
 		c->wa.override_redirect = e.override_redirect;
 		c->wa.width = e.width;
 		c->wa.height = e.height;
@@ -1972,8 +1972,9 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 
-			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0 or true) {
+			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
+				rectangle old_size = mw->get_floating_wished_position();
 				/** compute floating size **/
 				rectangle new_size = mw->get_floating_wished_position();
 
@@ -2017,9 +2018,11 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 				printf("new_size = %s\n", new_size.to_string().c_str());
 
-				/** only affect floating windows **/
-				mw->set_floating_wished_position(new_size);
-				mw->reconfigure();
+				if (new_size != old_size) {
+					/** only affect floating windows **/
+					mw->set_floating_wished_position(new_size);
+					mw->reconfigure();
+				}
 			}
 		} else {
 			/** validate configure when window is not managed **/
