@@ -3767,7 +3767,8 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 
 	/* HACK OLD FASHION FULLSCREEN */
 	if (mw->wa.x == 0 and mw->wa.y == 0 and mw->wa.width == _allocation.w
-			and mw->wa.height == _allocation.h) {
+			and mw->wa.height == _allocation.h
+			and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 		mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 	}
 
