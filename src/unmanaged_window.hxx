@@ -196,10 +196,7 @@ public:
 
 					cairo_set_source_surface(cr, s, wa.x, wa.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0,
-							1.0, 1.0);
-					cairo_mask(cr, p);
-					cairo_pattern_destroy(p);
+					cairo_mask_surface(cr, s, wa.x, wa.y);
 					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 				}
