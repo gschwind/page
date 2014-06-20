@@ -801,11 +801,7 @@ void page_t::process_event(XKeyEvent const & e) {
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
 
-	if(_last_focus_time > e.time) {
-		_last_focus_time = e.time;
-	}
-
-	fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
+	printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
 			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
@@ -890,7 +886,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 		}
 
 
-		if (mw != 0) {
+		if (mw != nullptr) {
 
 			if (mw->is(MANAGED_FLOATING) and e.button == Button1
 					and (e.state & (Mod1Mask | ControlMask))) {
@@ -1061,42 +1057,19 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	}
 
 
+	/*
+	 * if no change happenned to process mode
+	 * We allow events (remove the grab), and focus those window.
+	 **/
 	if (process_mode == PROCESS_NORMAL) {
-
 		XAllowEvents(cnx->dpy(), ReplayPointer, CurrentTime);
-
-		/**
-		 * This focus is anoying because, passive grab can the
-		 * focus itself.
-		 **/
-//		if(mw == 0)
-//			mw = find_managed_window_with(e.subwindow);
-//
 		managed_window_t * mw = find_managed_window_with(e.window);
-		if (mw != 0) {
+		if (mw != nullptr) {
 			set_focus(mw, e.time);
 		}
-
-//		fprintf(stderr,
-//				"UnGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
-
 	} else {
-		/**
-		 * if no change in process mode, focus the window under the cursor
-		 * and replay events for the window this window.
-		 **/
-		/**
-		 * keep pointer events for page.
-		 * It's like we XGrabButton with GrabModeASync
-		 **/
-
+		/* Do not replay events, grab them and process them until Release Button */
 		XAllowEvents(cnx->dpy(), AsyncPointer, e.time);
-
-//		fprintf(stderr,
-//				"XXXXGrab event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-//				e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
-//
 	}
 
 }
@@ -1104,10 +1077,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 void page_t::process_event_release(XButtonEvent const & e) {
 	//fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
-
-	if(_last_focus_time > e.time) {
-		_last_focus_time = e.time;
-	}
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -2455,13 +2424,13 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	}
 
 	mw->set_managed_type(MANAGED_FULLSCREEN);
-	mw->set_parent(data.viewport);
+	mw->set_parent(this);
 	fullscreen_client_to_viewport[mw] = data;
 	mw->set_notebook_wished_position(data.viewport->raw_aera);
 	mw->reconfigure();
 	printf("FULLSCREEN TO %fx%f+%f+%f\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
 	mw->normalize();
-	safe_raise_window(mw);
+	//safe_raise_window(mw);
 	update_windows_stack();
 }
 
@@ -2714,9 +2683,9 @@ void page_t::process_event(XEvent const & e) {
 			//Window w = se->window;
 		}
 	} else if (e.type == FocusOut) {
-		//printf("FocusOut %lu\n", e.xfocus.window);
+		printf("FocusOut %lu\n", e.xfocus.window);
 	} else if (e.type == FocusIn) {
-		//printf("FocusIn %lu\n", e.xfocus.window);
+		printf("FocusIn %lu\n", e.xfocus.window);
 	} else {
 //		fprintf(stderr, "Not handled event:\n");
 //		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
@@ -2772,6 +2741,7 @@ void page_t::set_default_pop(notebook_t * x) {
 	rpage->add_damaged(default_window_pop->allocation());
 }
 
+/** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
 void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
 	if (new_focus != nullptr)
@@ -3783,6 +3753,7 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 		} else {
 			mw->set_focus_state(false);
 		}
+
 	} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
 			and get_transient_for(mw) == nullptr and mw->has_motif_border()) {
@@ -4003,16 +3974,16 @@ list<tree_t *> page_t::childs() const {
 		ret.push_back(x);
 	}
 
-	for(auto x: root_subclients) {
-		ret.push_back(x);
-	}
-
 	for(auto x: docks) {
 		ret.push_back(x);
 	}
 
 	for(auto x: fullscreen_client_to_viewport) {
 		ret.push_back(x.first);
+	}
+
+	for(auto x: root_subclients) {
+		ret.push_back(x);
 	}
 
 	for(auto x: tooltips) {

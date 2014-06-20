@@ -650,7 +650,7 @@ public:
 		printf("> backing_planes: %lx\n", wa.backing_planes);
 		printf("> backing_pixel: %lx\n", wa.backing_pixel);
 		printf("> save_under: %d\n", wa.save_under);
-		printf("> colormap: ?\n");
+		printf("> colormap: <Not Implemented>\n");
 		printf("> all_event_masks: %08lx\n", wa.all_event_masks);
 		printf("> your_event_mask: %08lx\n", wa.your_event_mask);
 		printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
