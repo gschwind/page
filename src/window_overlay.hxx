@@ -145,6 +145,8 @@ public:
 
 	void move(int x, int y) {
 		_cnx->move_window(_wid, x, y);
+		_position.x = x;
+		_position.y = y;
 		expose();
 	}
 
