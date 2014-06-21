@@ -419,19 +419,24 @@ void page_t::run() {
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
 		NULL);
 
+		/* grab the server to avoid asynchronous conflicts */
+		cnx->grab();
+
 		while (XPending(cnx->dpy())) {
 			XEvent ev;
 			XNextEvent(cnx->dpy(), &ev);
-			process_event(ev);
+			pending_event.push_back(ev);
+		}
 
+		while(not pending_event.empty()) {
+			process_event(pending_event.front());
 			if(rnd != nullptr) {
-				rnd->process_event(ev);
+				rnd->process_event(pending_event.front());
 			}
-
+			pending_event.pop_front();
 		}
 
 		rpage->repair_damaged(get_all_childs());
-		XFlush(cnx->dpy());
 
 		if (rnd != nullptr) {
 			//rnd->process_events();
@@ -445,8 +450,10 @@ void page_t::run() {
 			} else {
 				max_wait = next_frame - cur_tic;
 			}
-			rnd->xflush();
 		}
+
+		XSync(cnx->dpy(), False);
+		cnx->ungrab();
 
 	}
 }
@@ -463,13 +470,23 @@ managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 }
 
 void page_t::unmanage(managed_window_t * mw) {
-	printf("Unmanage window #%lu\n", mw->orig());
+	printf("Start Unmanage window #%lu\n", mw->orig());
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
-		unfullscreen(mw);
+		fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
+
+		viewport_t * v = data.viewport;
+		fullscreen_client_to_viewport.erase(mw);
+		v->_is_visible = true;
+
+		/* map all notebook window */
+		auto ns = get_notebooks(v);
+		for (auto i : ns) {
+			i->map_all();
+		}
 	}
 
 	detach(mw);
@@ -492,9 +509,12 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	clients.erase(mw->orig());
 	update_client_list();
+	update_allocation();
 	rpage->mark_durty();
 
 	delete mw;
+
+	printf("End Unmanage\n");
 
 }
 
@@ -1851,7 +1871,7 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
-	client_base_t * c = find_client_with(e.window);
+	client_base_t * c = find_client(e.window);
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(managed_window_t)) {
 			cout << "WARNING: managed window destroyed improperly" << endl;
@@ -1906,8 +1926,13 @@ void page_t::process_event(XReparentEvent const & e) {
 void page_t::process_event(XUnmapEvent const & e) {
 	//printf("Unmap event %lu is send event = %d\n", e.window, e.send_event);
 
+	if(not check_for_valid_window(e.window)) {
+		/* this window will be destroyed soon */
+		return;
+	}
+
 	/* if client is managed */
-	client_base_t * c = find_client_with(e.window);
+	client_base_t * c = find_client(e.window);
 
 	/**
 	 * Client must send a fake unmap event if he want get back the window.
@@ -1916,6 +1941,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 	if (c != nullptr) {
 		if(e.send_event == True and typeid(*c) == typeid(managed_window_t)) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
 		} else if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
 			destroy_client(c);
@@ -1958,6 +1984,12 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		printf("has stack mode: %d\n", e.detail);
 	if (e.value_mask & CWBorderWidth)
 		printf("has border: %d\n", e.border_width);
+
+	if(not check_for_valid_window(e.window)) {
+		ackwoledge_configure_request(e);
+		return;
+	}
+
 
 	client_base_t * c = find_client(e.window);
 
@@ -2238,6 +2270,10 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	Window w = e.window;
 	if(w == None)
 		return;
+
+	if(not check_for_valid_window(w)) {
+		return;
+	}
 
 	managed_window_t * mw = find_managed_window_with(e.window);
 
@@ -3619,6 +3655,10 @@ void page_t::onmap(Window w) {
 			return;
 	}
 
+	if(not check_for_valid_window(w)) {
+		return;
+	}
+
 
 	/**
 	 * XSync here is mandatory.
@@ -4188,6 +4228,41 @@ bool page_t::need_render(time_t time) {
 		}
 	}
 	return false;
+}
+
+bool page_t::check_for_valid_window(Window w) {
+	for(auto &ev: pending_event) {
+
+		if(ev.type == DestroyNotify) {
+			if(ev.xdestroywindow.window == w) {
+				return false;
+			}
+		}
+
+		if(ev.type == UnmapNotify) {
+			if(ev.xunmap.send_event == True and ev.xunmap.window == w) {
+				return false;
+			}
+		}
+
+		if (ev.type == ReparentNotify) {
+			if (ev.xreparent.window == w) {
+				client_base_t * c = find_client_with(ev.xreparent.window);
+				managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+				if (mw != nullptr) {
+					if (mw->base() != ev.xreparent.parent) {
+						return false;
+					}
+				} else {
+					if (cnx->root() != ev.xreparent.parent) {
+						return false;
+					}
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 }

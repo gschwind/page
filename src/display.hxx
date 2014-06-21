@@ -54,6 +54,7 @@ using namespace std;
 namespace page {
 
 
+static unsigned long const AllEventMask = 0x01ffffff;
 
 
 /**

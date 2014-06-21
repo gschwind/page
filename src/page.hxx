@@ -329,6 +329,8 @@ public:
 
 	map<Window, window_handler_t *> window_list;
 
+	list<XEvent> pending_event;
+
 private:
 	Time _last_focus_time;
 	Time _last_button_press;
@@ -543,6 +545,9 @@ public:
 
 	void render(cairo_t * cr, page::time_t time);
 	bool need_render(time_t time);
+
+	bool check_for_valid_window(Window w);
+
 
 };
 

@@ -190,6 +190,7 @@ void display_t::write_net_active_window(Window w) {
 }
 
 int display_t::move_window(Window w, int x, int y) {
+	printf("XMoveWindow #%lu %d %d\n", w, x, y);
 	return XMoveWindow(_dpy, w, x, y);
 }
 
@@ -218,7 +219,7 @@ display_t::~display_t() {
 void display_t::grab() {
 	if (grab_count == 0) {
 		XGrabServer(_dpy);
-		XSync(_dpy, False);
+		//XSync(_dpy, False);
 	}
 	++grab_count;
 }
@@ -230,10 +231,11 @@ void display_t::ungrab() {
 	}
 	--grab_count;
 	if (grab_count == 0) {
-		cnx_printf("XUngrabServer\n");
+		/* Flush pending events, and wait for that are applied */
+		XSync(_dpy, False);
+		/* allow other client to make request to the server */
 		XUngrabServer(_dpy);
-		cout << "XUngrabServer(" << _dpy << ")" << endl;
-		cnx_printf("XFlush\n");
+		/* Ungrab the server immediately */
 		XFlush(_dpy);
 	}
 }
@@ -384,7 +386,7 @@ void display_t::remove_from_save_set(Window w) {
 
 void display_t::move_resize(Window w, rectangle const & size) {
 
-	cnx_printf("XMoveResizeWindow: win = %lu, %dx%d+%d+%d\n", w, size.w, size.h,
+	printf("XMoveResizeWindow: win = %lu, %fx%f+%f+%f\n", w, size.w, size.h,
 			size.x, size.y);
 
 	XMoveResizeWindow(_dpy, w, size.x, size.y, size.w, size.h);
