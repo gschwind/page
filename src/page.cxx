@@ -1926,11 +1926,6 @@ void page_t::process_event(XReparentEvent const & e) {
 void page_t::process_event(XUnmapEvent const & e) {
 	//printf("Unmap event %lu is send event = %d\n", e.window, e.send_event);
 
-	if(not check_for_valid_window(e.window)) {
-		/* this window will be destroyed soon */
-		return;
-	}
-
 	/* if client is managed */
 	client_base_t * c = find_client(e.window);
 
@@ -4231,32 +4226,74 @@ bool page_t::need_render(time_t time) {
 }
 
 bool page_t::check_for_valid_window(Window w) {
-	for(auto &ev: pending_event) {
+	client_base_t * c = find_client_with(w);
 
-		if(ev.type == DestroyNotify) {
-			if(ev.xdestroywindow.window == w) {
-				return false;
-			}
-		}
-
-		if(ev.type == UnmapNotify) {
-			if(ev.xunmap.send_event == True and ev.xunmap.window == w) {
-				return false;
-			}
-		}
-
-		if (ev.type == ReparentNotify) {
-			if (ev.xreparent.window == w) {
-				client_base_t * c = find_client_with(ev.xreparent.window);
-				managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
-				if (mw != nullptr) {
-					if (mw->base() != ev.xreparent.parent) {
-						return false;
-					}
-				} else {
+	if (c != nullptr) {
+		if (typeid(*c) == typeid(unmanaged_window_t)) {
+			unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t*>(c);
+			for (auto &ev : pending_event) {
+				if (ev.type == ReparentNotify) {
 					if (cnx->root() != ev.xreparent.parent) {
 						return false;
 					}
+				} else if (ev.type == UnmapNotify) {
+					if (ev.xunmap.window == w) {
+						return false;
+					}
+				} else if (ev.type == DestroyNotify) {
+					if (ev.xdestroywindow.window == w) {
+						return false;
+					}
+				}
+			}
+		} else if (typeid(*c) == typeid(managed_window_t)) {
+			managed_window_t * mw = dynamic_cast<managed_window_t*>(c);
+			for (auto &ev : pending_event) {
+				if (ev.type == ReparentNotify) {
+					if (mw->base() != ev.xreparent.parent) {
+						return false;
+					}
+				} else if (ev.type == UnmapNotify) {
+					if (ev.xunmap.send_event == True
+							and ev.xunmap.window == w) {
+						return false;
+					}
+				} else if (ev.type == DestroyNotify) {
+					if (ev.xdestroywindow.window == w) {
+						return false;
+					}
+				}
+			}
+		} else {
+			for (auto &ev : pending_event) {
+				if (ev.type == ReparentNotify) {
+					if (w != cnx->root()) {
+						return false;
+					}
+				} else if (ev.type == UnmapNotify) {
+					if (ev.xunmap.window == w) {
+						return false;
+					}
+				} else if (ev.type == DestroyNotify) {
+					if (ev.xdestroywindow.window == w) {
+						return false;
+					}
+				}
+			}
+		}
+	} else {
+		for (auto &ev : pending_event) {
+			if (ev.type == ReparentNotify) {
+				if (w != cnx->root()) {
+					return false;
+				}
+			} else if (ev.type == UnmapNotify) {
+				if (ev.xunmap.window == w) {
+					return false;
+				}
+			} else if (ev.type == DestroyNotify) {
+				if (ev.xdestroywindow.window == w) {
+					return false;
 				}
 			}
 		}
