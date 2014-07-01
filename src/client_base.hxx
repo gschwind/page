@@ -756,7 +756,7 @@ public:
 
 		if(_net_wm_icon_geometry != nullptr) {
 			cout << "* _NET_WM_ICON_GEOMETRY = ";
-			for(auto x: *_net_wm_struct_partial) {
+			for(auto x: *_net_wm_icon_geometry) {
 				cout << x << " ";
 			}
 			cout << endl;
