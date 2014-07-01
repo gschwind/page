@@ -10,6 +10,8 @@
 #ifndef RENDER_CONTEXT_HXX_
 #define RENDER_CONTEXT_HXX_
 
+#include "config.hxx"
+
 #include <memory>
 #include <list>
 #include <cassert>
@@ -17,6 +19,11 @@
 #include <ctime>
 #include <cairo.h>
 #include <cairo-xlib.h>
+
+#ifdef WITH_PANGO
+#include <pango/pangocairo.h>
+#endif
+
 
 #include "smart_pointer.hxx"
 #include "utils.hxx"
@@ -85,6 +92,17 @@ class compositor_t {
 	GLXContext glx_ctx;
 
 	renderable_list_t _graph_scene;
+
+	static int const _FPS_WINDOWS = 33;
+	int _fps_top;
+	page::time_t _fps_history[_FPS_WINDOWS];
+	bool _show_fps;
+
+#ifdef WITH_PANGO
+	PangoFontDescription * _fps_font_desc;
+	PangoFontMap * _fps_font_map;
+	PangoContext * _fps_context;
+#endif
 
 public:
 
@@ -178,6 +196,14 @@ public:
 
 	Atom A(atom_e a) {
 		return (*_A)(a);
+	}
+
+	bool show_fps() {
+		return _show_fps;
+	}
+
+	void set_show_fps(bool b) {
+		_show_fps = b;
 	}
 
 

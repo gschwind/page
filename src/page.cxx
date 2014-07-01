@@ -680,10 +680,11 @@ void page_t::process_event(XKeyEvent const & e) {
 //	printf("key : %x\n", (unsigned) k[0]);
 
 	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-//		if (client_focused != 0) {
-//			if (has_key(orig_window_to_notebook_window, client_focused))
-//				toggle_fullscreen(orig_window_to_notebook_window[client_focused]);
-//		}
+		if(rnd->show_fps()) {
+			rnd->set_show_fps(false);
+		} else {
+			rnd->set_show_fps(true);
+		}
 	}
 
 	if (XK_q == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {

@@ -89,12 +89,26 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	flush_count = 0;
 	damage_count = 0;
 
+	_fps_top = 0;
+	_show_fps = true;
+
+#ifdef WITH_PANGO
+	_fps_font_desc = pango_font_description_from_string("Ubuntu 30");
+	_fps_font_map = pango_cairo_font_map_new();
+	_fps_context = pango_font_map_create_context(_fps_font_map);
+#endif
+
 	/* this will scan for all windows */
 	update_layout();
 
 }
 
 compositor_t::~compositor_t() {
+
+	pango_font_description_free(_fps_font_desc);
+
+	g_object_unref(_fps_context);
+	g_object_unref(_fps_font_map);
 
 	if(composite_back_buffer != None)
 		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
@@ -189,6 +203,9 @@ void compositor_t::render_managed() {
 		return;
 	}
 
+	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
+	_fps_history[_fps_top] = cur;
+
 	_pending_damage.clear();
 
 	display_t::create_surf(__FILE__, __LINE__);
@@ -204,6 +221,46 @@ void compositor_t::render_managed() {
 	for (auto i : _graph_scene) {
 		i->render(cr, cur);
 	}
+
+	if (_show_fps) {
+		int _fps_head = (_fps_top + 1) % _FPS_WINDOWS;
+		if (static_cast<int64_t>(_fps_history[_fps_head]) != 0L) {
+
+#ifdef WITH_PANGO
+			cairo_save(cr);
+			cairo_identity_matrix(cr);
+			cairo_translate(cr, 40.0, 40.0);
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+
+			double fps = (_FPS_WINDOWS * 1000000000.0) / (static_cast<int64_t>(_fps_history[_fps_top]) - static_cast<int64_t>(_fps_history[_fps_head]));
+			char fps_s[64];
+			snprintf(fps_s, 64, "%.1f", fps);
+
+			PangoLayout * pango_layout = pango_layout_new(_fps_context);
+			pango_layout_set_font_description(pango_layout, _fps_font_desc);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, fps_s, -1);
+			pango_cairo_layout_path(cr, pango_layout);
+			g_object_unref(pango_layout);
+
+			cairo_set_line_width(cr, 3.0);
+			cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+
+			cairo_stroke_preserve(cr);
+
+			cairo_set_line_width(cr, 1.0);
+			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+			cairo_fill(cr);
+
+			cairo_restore(cr);
+#endif
+
+		}
+	}
+
+
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 	display_t::destroy_context(__FILE__, __LINE__);
