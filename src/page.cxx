@@ -333,35 +333,8 @@ void page_t::run() {
 
 	rpage->add_damaged(_root_position);
 
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_f), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-	/* quit page */
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_q), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_r), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-
-	/* print state info */
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_s), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-
-	/* Alt-Tab */
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_Tab), Mod1Mask,
-			cnx->root(),
-			False, GrabModeAsync, GrabModeSync);
-
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_w), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-
-	XGrabKey(cnx->dpy(), XKeysymToKeycode(cnx->dpy(), XK_z), Mod4Mask,
-			cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
+	update_keymap();
+	update_grabkey();
 
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
@@ -667,162 +640,147 @@ void page_t::process_event(XKeyEvent const & e) {
 				e.state & Mod1Mask ? "true" : "false");
 	}
 
-	int n;
-	KeySym * k = XGetKeyboardMapping(cnx->dpy(), e.keycode, 1, &n);
+	/* get KeyCode for Unmodified Key */
+	KeySym k = keymap->get(e.keycode);
 
 	if (k == 0)
 		return;
-	if (n == 0) {
-		XFree(k);
-		return;
-	}
 
-//	printf("key : %x\n", (unsigned) k[0]);
+	if(e.type == KeyPress) {
 
-	if (XK_f == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		if(rnd->show_fps()) {
-			rnd->set_show_fps(false);
-		} else {
-			rnd->set_show_fps(true);
-		}
-	}
+		if(e.state & Mod4Mask) {
 
-	if (XK_q == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		running = false;
-	}
-
-	if (XK_w == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		update_windows_stack();
-		//print_tree_windows();
-
-		print_tree(0);
-
-		list<managed_window_t *> lst = get_managed_windows();
-
-		for (auto i : lst) {
-			switch (i->get_type()) {
-			case MANAGED_NOTEBOOK:
-				cout << "[" << i->orig() << "] notebook : " << i->title()
-						<< endl;
-				break;
-			case MANAGED_FLOATING:
-				cout << "[" << i->orig() << "] floating : " << i->title()
-						<< endl;
-				break;
-			case MANAGED_FULLSCREEN:
-				cout << "[" << i->orig() << "] fullscreen : " << i->title()
-						<< endl;
-				break;
-			}
-		}
-
-		//printf("fast_region_surf = %g (%.2f)\n", rnd->fast_region_surf, rnd->fast_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
-		//printf("slow_region_surf = %g (%.2f)\n", rnd->slow_region_surf, rnd->slow_region_surf / (rnd->fast_region_surf + rnd->slow_region_surf) * 100.0);
-
-
-	}
-
-	if (XK_s == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		/* free short cut */
-	}
-
-	if (XK_r == k[0] && e.type == KeyPress && (e.state & Mod4Mask)) {
-		printf("rerender background\n");
-		rpage->add_damaged(_root_position);
-	}
-
-	if (XK_z == k[0] and e.type == KeyPress and (e.state & Mod4Mask)) {
-		if(rnd != nullptr) {
-			if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
-				rnd->renderable_clear();
-				rnd->renderable_add(this);
-				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
-			} else {
-				rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
-			}
-		}
-	}
-
-	if (XK_Tab == k[0] && e.type == KeyPress && ((e.state & 0x0f) == Mod1Mask)) {
-
-		list<managed_window_t *> managed_window = get_managed_windows();
-
-		if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
-
-			/* Grab keyboard */
-			XGrabKeyboard(e.display, cnx->root(), False, GrabModeAsync, GrabModeAsync,
-					e.time);
-
-			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-			XAllowEvents(e.display, AsyncKeyboard, e.time);
-
-			key_press_mode = KEY_PRESS_ALT_TAB;
-			key_mode_data.selected = _client_focused.front();
-
-			int sel = 0;
-
-			vector<cycle_window_entry_t *> v;
-			int s = 0;
-
-			for (auto i : managed_window) {
-				window_icon_handler_t * icon = new window_icon_handler_t(i, 64,
-						64);
-				cycle_window_entry_t * cy = new cycle_window_entry_t(i, icon);
-				v.push_back(cy);
-				if (i == _client_focused.front()) {
-					sel = s;
+			if(k == XK_f) {
+				if(rnd->show_fps()) {
+					rnd->set_show_fps(false);
+				} else {
+					rnd->set_show_fps(true);
 				}
-				++s;
+			} else if (k == XK_q) {
+				running = false;
+			} else if (k == XK_w) {
+				update_windows_stack();
+				print_tree(0);
+				list<managed_window_t *> lst = get_managed_windows();
+				for (auto i : lst) {
+					switch (i->get_type()) {
+					case MANAGED_NOTEBOOK:
+						cout << "[" << i->orig() << "] notebook : " << i->title()
+								<< endl;
+						break;
+					case MANAGED_FLOATING:
+						cout << "[" << i->orig() << "] floating : " << i->title()
+								<< endl;
+						break;
+					case MANAGED_FULLSCREEN:
+						cout << "[" << i->orig() << "] fullscreen : " << i->title()
+								<< endl;
+						break;
+					}
+				}
+
+			} else if (k == XK_s) {
+				/* free short cut */
+			} else if (k == XK_r) {
+				printf("rerender background\n");
+				rpage->add_damaged(_root_position);
+			} else if (k == XK_z) {
+				if(rnd != nullptr) {
+					if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
+						rnd->renderable_clear();
+						rnd->renderable_add(this);
+						rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
+					} else {
+						rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
+					}
+				}
 			}
 
-			pat->update_window(v, sel);
 
-			viewport_t * viewport = viewport_outputs.begin()->second;
+		}
 
-			int y = v.size() / 4 + 1;
+		if (k == XK_Tab and ((e.state & 0x0f) == Mod1Mask)) {
 
-			pat->move_resize(
-					rectangle(
-							viewport->raw_aera.x
-									+ (viewport->raw_aera.w - 80 * 4) / 2,
-							viewport->raw_aera.y
-									+ (viewport->raw_aera.h - y * 80) / 2,
-							80 * 4, y * 80));
-			pat->show();
+			list<managed_window_t *> managed_window = get_managed_windows();
 
-		} else {
-			XAllowEvents(e.display, ReplayKeyboard, e.time);
+			if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
+
+				/* Grab keyboard */
+				XGrabKeyboard(e.display, cnx->root(), False, GrabModeAsync, GrabModeAsync,
+						e.time);
+
+				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
+				XAllowEvents(e.display, AsyncKeyboard, e.time);
+
+				key_press_mode = KEY_PRESS_ALT_TAB;
+				key_mode_data.selected = _client_focused.front();
+
+				int sel = 0;
+
+				vector<cycle_window_entry_t *> v;
+				int s = 0;
+
+				for (auto i : managed_window) {
+					window_icon_handler_t * icon = new window_icon_handler_t(i, 64,
+							64);
+					cycle_window_entry_t * cy = new cycle_window_entry_t(i, icon);
+					v.push_back(cy);
+					if (i == _client_focused.front()) {
+						sel = s;
+					}
+					++s;
+				}
+
+				pat->update_window(v, sel);
+
+				viewport_t * viewport = viewport_outputs.begin()->second;
+
+				int y = v.size() / 4 + 1;
+
+				pat->move_resize(
+						rectangle(
+								viewport->raw_aera.x
+										+ (viewport->raw_aera.w - 80 * 4) / 2,
+								viewport->raw_aera.y
+										+ (viewport->raw_aera.h - y * 80) / 2,
+								80 * 4, y * 80));
+				pat->show();
+
+			} else {
+				XAllowEvents(e.display, ReplayKeyboard, e.time);
+			}
+
+
+			pat->select_next();
+			pat->mark_durty();
+			pat->expose();
+			pat->mark_durty();
+
 		}
 
 
-		pat->select_next();
-		pat->mark_durty();
-		pat->expose();
-		pat->mark_durty();
 
+	} else {
+		/** here we guess Mod1 is bound to Alt **/
+		if ((XK_Alt_L == k or XK_Alt_R == k)
+				and key_press_mode == KEY_PRESS_ALT_TAB) {
+
+			/** Ungrab Keyboard **/
+			XUngrabKeyboard(e.display, e.time);
+
+			key_press_mode = KEY_PRESS_NORMAL;
+
+			/**
+			 * do not use dynamic_cast because managed window can be already
+			 * destroyed.
+			 **/
+			managed_window_t * mw =
+					reinterpret_cast<managed_window_t *>(pat->get_selected());
+			set_focus(mw, e.time);
+
+			pat->hide();
+		}
 	}
-
-
-
-	if ((XK_Alt_L == k[0] or XK_Alt_R == k[0]) && e.type == KeyRelease
-			&& key_press_mode == KEY_PRESS_ALT_TAB) {
-
-		/** Ungrab Keyboard **/
-		XUngrabKeyboard(e.display, e.time);
-
-		key_press_mode = KEY_PRESS_NORMAL;
-
-		/**
-		 * do not use dynamic_cast because managed window can be already
-		 * destroyed.
-		 **/
-		managed_window_t * mw = reinterpret_cast<managed_window_t *> (pat->get_selected());
-		set_focus(mw, e.time);
-
-		pat->hide();
-	}
-
-	XFree(k);
 
 }
 
@@ -4301,6 +4259,68 @@ bool page_t::check_for_valid_window(Window w) {
 	}
 
 	return true;
+}
+
+/**
+ * Update grab keys aware of current keymap
+ */
+void page_t::update_grabkey() {
+
+	assert(keymap != nullptr);
+
+	/** ungrab all previews key **/
+	XUngrabKey(cnx->dpy(), AnyKey, AnyModifier, cnx->root());
+
+	int kc = 0;
+
+	if ((kc = keymap->find_keysim(XK_f))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* quit page */
+	if ((kc = keymap->find_keysim(XK_q))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* debug purpose */
+	if ((kc = keymap->find_keysim(XK_r))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* debug: print state info */
+	if ((kc = keymap->find_keysim(XK_s))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* Alt-Tab */
+	if ((kc = keymap->find_keysim(XK_Tab))) {
+		XGrabKey(cnx->dpy(), kc, Mod1Mask, cnx->root(),
+		False, GrabModeAsync, GrabModeSync);
+	}
+
+	/* debug purpose */
+	if ((kc = keymap->find_keysim(XK_w))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* debug purpose */
+	if ((kc = keymap->find_keysim(XK_z))) {
+		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+}
+
+void page_t::update_keymap() {
+	if(keymap != nullptr) {
+		delete keymap;
+	}
+	keymap = new keymap_t(cnx->dpy());
 }
 
 }

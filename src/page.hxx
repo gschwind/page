@@ -70,6 +70,7 @@
 #include "page_exception.hxx"
 
 #include "window_handler.hxx"
+#include "keymap.hxx"
 
 using namespace std;
 
@@ -331,6 +332,8 @@ public:
 
 	list<XEvent> pending_event;
 
+	keymap_t * keymap;
+
 private:
 	Time _last_focus_time;
 	Time _last_button_press;
@@ -547,6 +550,9 @@ public:
 	bool need_render(time_t time);
 
 	bool check_for_valid_window(Window w);
+
+	void update_keymap();
+	void update_grabkey();
 
 
 };
