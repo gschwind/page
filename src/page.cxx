@@ -2702,6 +2702,9 @@ void page_t::process_event(XEvent const & e) {
 		printf("FocusOut %lu\n", e.xfocus.window);
 	} else if (e.type == FocusIn) {
 		printf("FocusIn %lu\n", e.xfocus.window);
+	} else if (e.type == MappingNotify) {
+		update_keymap();
+		update_grabkey();
 	} else {
 //		fprintf(stderr, "Not handled event:\n");
 //		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
