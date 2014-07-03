@@ -906,7 +906,7 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	CHECK_CAIRO(cairo_clip(cr));
 
 	rectangle sarea = compute_split_bar_location(s);
-	if (background_s != 0) {
+	if (background_s != nullptr) {
 		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, 0.0, 0.0));
 	} else {
 		CHECK_CAIRO(cairo_set_source_rgba(cr, default_background_color));
@@ -914,14 +914,38 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	CHECK_CAIRO(cairo_rectangle(cr, sarea.x, sarea.y, sarea.w, sarea.h));
 	CHECK_CAIRO(cairo_fill(cr));
 
-	rectangle grip;
-	grip.x = sarea.x+(sarea.w/2.0) - 4.0;
-	grip.y = sarea.y+(sarea.h/2.0) - 4.0;
-	grip.w = 8.0;
-	grip.h = 8.0;
+	rectangle grip0;
+	rectangle grip1;
+	rectangle grip2;
+
+	if (sarea.w > sarea.h) {
+		grip1.x = sarea.x + (sarea.w / 2.0) - 4.0;
+		grip1.y = sarea.y + (sarea.h / 2.0) - 4.0;
+		grip1.w = 8.0;
+		grip1.h = 8.0;
+		grip0 = grip1;
+		grip0.x -= 16;
+		grip2 = grip1;
+		grip2.x += 16;
+	} else {
+		grip1.x = sarea.x + (sarea.w / 2.0) - 4.0;
+		grip1.y = sarea.y + (sarea.h / 2.0) - 4.0;
+		grip1.w = 8.0;
+		grip1.h = 8.0;
+		grip0 = grip1;
+		grip0.y -= 16;
+		grip2 = grip1;
+		grip2.y += 16;
+	}
 
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
-	CHECK_CAIRO(cairo_rectangle(cr, grip.x, grip.y, grip.w, grip.h));
+	CHECK_CAIRO(cairo_rectangle(cr, grip0.x, grip0.y, grip0.w, grip0.h));
+	CHECK_CAIRO(cairo_fill(cr));
+	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_rectangle(cr, grip1.x, grip1.y, grip1.w, grip1.h));
+	CHECK_CAIRO(cairo_fill(cr));
+	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_rectangle(cr, grip2.x, grip2.y, grip2.w, grip2.h));
 	CHECK_CAIRO(cairo_fill(cr));
 	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
@@ -1619,34 +1643,34 @@ vector<floating_event_t> * simple2_theme_t::compute_floating_areas(
 void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsigned int height) {
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.3));
-	CHECK_CAIRO(cairo_rectangle(cr, 0, 0, width, height));
-	CHECK_CAIRO(cairo_fill(cr));
+//	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.3));
+//	CHECK_CAIRO(cairo_rectangle(cr, 0, 0, width, height));
+//	CHECK_CAIRO(cairo_fill(cr));
 
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_new_path(cr));
 
-//	if(width > height) {
-//		CHECK_CAIRO(cairo_move_to(cr, 0.0, height / 2));
-//		CHECK_CAIRO(cairo_line_to(cr, width, height / 2));
-//
-//		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, 1.0, height - 1.0));
-//
-//		CHECK_CAIRO(cairo_move_to(cr, width - 1.0, 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height));
-//
-//	} else {
-//		CHECK_CAIRO(cairo_move_to(cr, width / 2, 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, width / 2, height - 1.0));
-//
-//		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, 1.0));
-//
-//		CHECK_CAIRO(cairo_move_to(cr, 1.0, height - 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height - 1.0));
-//
-//	}
+	if(width > height) {
+		CHECK_CAIRO(cairo_move_to(cr, 0.0, height / 2));
+		CHECK_CAIRO(cairo_line_to(cr, width, height / 2));
+
+		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
+		CHECK_CAIRO(cairo_line_to(cr, 1.0, height - 1.0));
+
+		CHECK_CAIRO(cairo_move_to(cr, width - 1.0, 1.0));
+		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height));
+
+	} else {
+		CHECK_CAIRO(cairo_move_to(cr, width / 2, 1.0));
+		CHECK_CAIRO(cairo_line_to(cr, width / 2, height - 1.0));
+
+		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
+		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, 1.0));
+
+		CHECK_CAIRO(cairo_move_to(cr, 1.0, height - 1.0));
+		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height - 1.0));
+
+	}
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 2.0));
 	CHECK_CAIRO(cairo_stroke(cr));
