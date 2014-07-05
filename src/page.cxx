@@ -3960,8 +3960,11 @@ client_base_t * page_t::find_client(Window w) {
 
 void page_t::remove_client(client_base_t * c) {
 	clients.erase(c->_id);
-	if(typeid(*c->parent()) == typeid(notebook_t)) {
-		rpage->add_damaged(c->parent()->allocation());
+	tree_t * parent = c->parent();
+	if (parent != nullptr) {
+		if (typeid(*parent) == typeid(notebook_t)) {
+			rpage->add_damaged(parent->allocation());
+		}
 	}
 	detach(c);
 	list<tree_t *> subclient = c->childs();
