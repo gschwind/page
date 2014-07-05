@@ -1241,8 +1241,16 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, window_icon_handler_t
 		unsigned int height, string const & title) {
 
 
+	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
+	CHECK_CAIRO(cairo_clip(cr));
+	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
-	draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
+	cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 0.5);
+	CHECK_CAIRO(cairo_mask(cr, p));
+	cairo_pattern_destroy(p);
+	cairo_reset_clip(cr);
+	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
+	//draw_hatched_rectangle(cr, 40, 1, 1, width - 2, height - 2);
 
 	if (icon != nullptr) {
 		double x_offset = (width - 64) / 2.0;

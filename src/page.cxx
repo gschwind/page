@@ -1046,7 +1046,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	}
 
 
-	/*
+	/**
 	 * if no change happenned to process mode
 	 * We allow events (remove the grab), and focus those window.
 	 **/
