@@ -90,7 +90,7 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	damage_count = 0;
 
 	_fps_top = 0;
-	_show_fps = true;
+	_show_fps = false;
 
 #ifdef WITH_PANGO
 	_fps_font_desc = pango_font_description_from_string("Ubuntu 30");
