@@ -887,9 +887,10 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.popup_original_position = mw->get_base_position();
 				mode_data_floating.button = Button1;
 
-//				pfm->move_resize(mw->get_base_position());
-//				pfm->update_window(mw->orig(), mw->title());
-//				pfm->show();
+				pfm->move_resize(mw->get_base_position());
+				pfm->update_window(mw, mw->title());
+				pfm->show();
+				pfm->expose();
 
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
@@ -947,18 +948,20 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
-//						pfm->move_resize(mw->get_base_position());
-//						pfm->update_window(mw->orig(), mw->title());
-//						pfm->show();
+						pfm->move_resize(mw->get_base_position());
+						pfm->update_window(mw, mw->title());
+						pfm->show();
+						pfm->expose();
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
 						XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
 					} else {
 
-//						pfm->move_resize(mw->get_base_position());
-//						pfm->update_window(mw->orig(), mw->title());
-//						pfm->show();
+						pfm->move_resize(mw->get_base_position());
+						pfm->update_window(mw, mw->title());
+						pfm->show();
+						pfm->expose();
 
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
@@ -1170,7 +1173,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 	case PROCESS_FLOATING_MOVE:
 		if (e.button == Button1) {
-			//pfm->hide();
+			pfm->hide();
 
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
@@ -1187,7 +1190,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 	case PROCESS_FLOATING_MOVE_BY_CLIENT:
 		if (e.button == mode_data_floating.button) {
-			//pfm->hide();
+			pfm->hide();
 
 			XUngrabPointer(cnx->dpy(), e.time);
 
@@ -1203,7 +1206,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 	case PROCESS_FLOATING_RESIZE:
 		if (e.button == Button1) {
-			//pfm->hide();
+			pfm->hide();
 
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
@@ -1475,12 +1478,12 @@ void page_t::process_event(XMotionEvent const & e) {
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
-		mode_data_floating.f->reconfigure();
+		//mode_data_floating.f->reconfigure();
 
-//		box_int_t popup_new_position = mode_data_floating.popup_original_position;
-//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-//		update_popup_position(pfm, popup_new_position);
+		rectangle popup_new_position = mode_data_floating.popup_original_position;
+		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1495,12 +1498,12 @@ void page_t::process_event(XMotionEvent const & e) {
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
-		mode_data_floating.f->reconfigure();
+		//mode_data_floating.f->reconfigure();
 
-//		box_int_t popup_new_position = mode_data_floating.popup_original_position;
-//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-//		update_popup_position(pfm, popup_new_position);
+		rectangle popup_new_position = mode_data_floating.popup_original_position;
+		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1579,15 +1582,15 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = size;
 
 		mode_data_floating.f->set_floating_wished_position(size);
-		mode_data_floating.f->reconfigure();
+		//mode_data_floating.f->reconfigure();
 
-//		box_int_t popup_new_position = size;
-//		popup_new_position.x -= theme->floating_margin.left;
-//		popup_new_position.y -= theme->floating_margin.top;
-//		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
-//		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
-//
-//		update_popup_position(pfm, popup_new_position);
+		rectangle popup_new_position = size;
+		popup_new_position.x -= theme->floating_margin.left;
+		popup_new_position.y -= theme->floating_margin.top;
+		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
+		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+
+		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -1666,15 +1669,15 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = size;
 
 		mode_data_floating.f->set_floating_wished_position(size);
-		mode_data_floating.f->reconfigure();
+		//mode_data_floating.f->reconfigure();
 
-//		box_int_t popup_new_position = size;
-//		popup_new_position.x -= theme->floating_margin.left;
-//		popup_new_position.y -= theme->floating_margin.top;
-//		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
-//		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
-//
-//		update_popup_position(pfm, popup_new_position);
+		rectangle popup_new_position = size;
+		popup_new_position.x -= theme->floating_margin.left;
+		popup_new_position.y -= theme->floating_margin.top;
+		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
+		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+
+		update_popup_position(pfm, popup_new_position);
 
 		break;
 	}
@@ -4173,6 +4176,7 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 	pat->render(cr, time);
 	ps->render(cr, time);
 	pn0->render(cr, time);
+	pfm->render(cr, time);
 
 }
 
