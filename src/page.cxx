@@ -203,10 +203,6 @@ void page_t::run() {
 	register_wm();
 	register_cm();
 
-//	init_xprop(cnx->dpy);
-
-//	printf("root size: %d,%d\n", cnx->get_root_size().w, cnx->get_root_size().h);
-
 	/** initialise theme **/
 	theme = new simple2_theme_t(cnx, conf);
 
@@ -357,12 +353,7 @@ void page_t::run() {
 
 	int max = cnx->fd();
 
-//	if (rnd != nullptr) {
-//		max = cnx->fd() > rnd->fd() ? cnx->fd() : rnd->fd();
-//	}
-
 	if (rnd != nullptr) {
-		//rnd->process_events();
 		rnd->render();
 		rnd->xflush();
 	}
@@ -378,17 +369,10 @@ void page_t::run() {
 		FD_SET(cnx->fd(), &fds_read);
 		FD_SET(cnx->fd(), &fds_intr);
 
-		/** listen for compositor events **/
-//		if (rnd != nullptr) {
-//			FD_SET(rnd->fd(), &fds_read);
-//			FD_SET(rnd->fd(), &fds_intr);
-//		}
-
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
 		_max_wait = max_wait;
-		//printf("%ld %ld\n", _max_wait.tv_sec, _max_wait.tv_nsec);
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
 		NULL);
 
@@ -412,7 +396,6 @@ void page_t::run() {
 		rpage->repair_damaged(get_all_childs());
 
 		if (rnd != nullptr) {
-			//rnd->process_events();
 			/** limit FPS **/
 			time_t cur_tic;
 			cur_tic.get_time();
@@ -443,8 +426,6 @@ managed_window_t * page_t::manage(Atom net_wm_type, client_base_t * c) {
 }
 
 void page_t::unmanage(managed_window_t * mw) {
-	printf("Start Unmanage window #%lu\n", mw->orig());
-
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
@@ -487,12 +468,10 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	delete mw;
 
-	printf("End Unmanage\n");
-
 }
 
 void page_t::scan() {
-//	printf("call %s\n", __PRETTY_FUNCTION__);
+
 	unsigned int num;
 	Window d1, d2, *wins = 0;
 
@@ -541,7 +520,6 @@ void page_t::scan() {
 
 	cnx->ungrab();
 
-//	printf("return %s\n", __PRETTY_FUNCTION__);
 }
 
 void page_t::update_net_supported() {
@@ -630,15 +608,12 @@ void page_t::process_event(XKeyEvent const & e) {
 		_last_focus_time = e.time;
 	}
 
-	if (e.type == KeyPress) {
-		fprintf(stderr, "KeyPress key = %d, mod4 = %s, mod1 = %s\n", e.keycode,
-				e.state & Mod4Mask ? "true" : "false",
-				e.state & Mod1Mask ? "true" : "false");
-	} else {
-		fprintf(stderr, "KeyRelease key = %d, mod4 = %s, mod1 = %s\n",
-				e.keycode, e.state & Mod4Mask ? "true" : "false",
-				e.state & Mod1Mask ? "true" : "false");
-	}
+	printf("%s key = %d, mod4 = %s, mod1 = %s\n",
+			e.type == KeyPress ? "KeyPress" : "KeyRelease",
+			e.keycode,
+			e.state & Mod4Mask ? "true" : "false",
+			e.state & Mod1Mask ? "true" : "false");
+
 
 	/* get KeyCode for Unmodified Key */
 	KeySym k = keymap->get(e.keycode);
@@ -682,7 +657,6 @@ void page_t::process_event(XKeyEvent const & e) {
 			} else if (k == XK_s) {
 				/* free short cut */
 			} else if (k == XK_r) {
-				printf("rerender background\n");
 				rpage->add_damaged(_root_position);
 			} else if (k == XK_z) {
 				if(rnd != nullptr) {
@@ -787,8 +761,6 @@ void page_t::process_event(XKeyEvent const & e) {
 /* Button event make page to grab pointer */
 void page_t::process_event_press(XButtonEvent const & e) {
 
-	printf("Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
-			e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
 	managed_window_t * mw = find_managed_window_with(e.window);
 
 	switch (process_mode) {
@@ -1064,8 +1036,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 }
 
 void page_t::process_event_release(XButtonEvent const & e) {
-	//fprintf(stderr, "Xrelease event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d)\n",
-	//		e.window, e.root, e.subwindow, e.x_root, e.y_root);
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -1404,7 +1374,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		auto ln = get_notebooks();
 		for (auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
-				//printf("tab\n");
 				if (mode_data_notebook.zone != SELECT_TAB
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TAB;
@@ -1414,7 +1383,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->right_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("right\n");
 				if (mode_data_notebook.zone != SELECT_RIGHT
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_RIGHT;
@@ -1424,7 +1392,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->top_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("top\n");
 				if (mode_data_notebook.zone != SELECT_TOP
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TOP;
@@ -1434,7 +1401,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->bottom_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("bottom\n");
 				if (mode_data_notebook.zone != SELECT_BOTTOM
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_BOTTOM;
@@ -1444,7 +1410,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->left_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("left\n");
 				if (mode_data_notebook.zone != SELECT_LEFT
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_LEFT;
@@ -1454,7 +1419,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->popup_center_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("center\n");
 				if (mode_data_notebook.zone != SELECT_CENTER
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_CENTER;
@@ -1535,7 +1499,7 @@ void page_t::process_event(XMotionEvent const & e) {
 			size.h += e.y_root - mode_data_floating.y_root;
 		}
 
-		/* apply mornal hints */
+		/* apply normal hints */
 		unsigned int final_width = size.w;
 		unsigned int final_height = size.h;
 		compute_client_size_with_constraint(mode_data_floating.f->orig(),
@@ -1710,7 +1674,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		for(auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("tab\n");
 				if (mode_data_bind.zone != SELECT_TAB
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_TAB;
@@ -1721,7 +1684,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->right_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("right\n");
 				if (mode_data_bind.zone != SELECT_RIGHT
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_RIGHT;
@@ -1732,7 +1694,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->top_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("top\n");
 				if (mode_data_bind.zone != SELECT_TOP
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_TOP;
@@ -1743,7 +1704,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->bottom_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("bottom\n");
 				if (mode_data_bind.zone != SELECT_BOTTOM
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_BOTTOM;
@@ -1754,7 +1714,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->left_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("left\n");
 				if (mode_data_bind.zone != SELECT_LEFT
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_LEFT;
@@ -1765,7 +1724,6 @@ void page_t::process_event(XMotionEvent const & e) {
 				break;
 			} else if (i->popup_center_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
-				//printf("center\n");
 				if (mode_data_bind.zone != SELECT_CENTER
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_CENTER;
@@ -1886,7 +1844,6 @@ void page_t::process_event(XReparentEvent const & e) {
 }
 
 void page_t::process_event(XUnmapEvent const & e) {
-	//printf("Unmap event %lu is send event = %d\n", e.window, e.send_event);
 
 	/* if client is managed */
 	client_base_t * c = find_client(e.window);
@@ -1920,13 +1877,6 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
 
-	printf("ConfigureRequest %dx%d+%d+%d above:%lu, mode:%x, window:%lu \n",
-			e.width, e.height, e.x, e.y, e.above, e.detail, e.window);
-
-	//printf("name = %s\n", c->get_title().c_str());
-
-	printf("send event: %s\n", e.send_event ? "true" : "false");
-
 	if (e.value_mask & CWX)
 		printf("has x: %d\n", e.x);
 	if (e.value_mask & CWY)
@@ -1946,7 +1896,6 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		ackwoledge_configure_request(e);
 		return;
 	}
-
 
 	client_base_t * c = find_client(e.window);
 
@@ -2014,21 +1963,6 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 	} else {
 
-//		if (e.value_mask & CWX)
-//			printf("xxhas x: %d\n", e.x);
-//		if (e.value_mask & CWY)
-//			printf("xxhas y: %d\n", e.y);
-//		if (e.value_mask & CWWidth)
-//			printf("xxhas width: %d\n", e.width);
-//		if (e.value_mask & CWHeight)
-//			printf("xxhas height: %d\n", e.height);
-//		if (e.value_mask & CWSibling)
-//			printf("xxhas sibling: %lu\n", e.above);
-//		if (e.value_mask & CWStackMode)
-//			printf("xxhas stack mode: %d\n", e.detail);
-//		if (e.value_mask & CWBorderWidth)
-//			printf("xxhas border: %d\n", e.border_width);
-
 		/** validate configure when window is not managed **/
 		ackwoledge_configure_request(e);
 	}
@@ -2065,7 +1999,6 @@ void page_t::process_event(XMapRequestEvent const & e) {
 }
 
 void page_t::process_event(XPropertyEvent const & e) {
-	//printf("Atom Name = \"%s\"\n", A_name(e.atom).c_str());
 
 	if(e.window == cnx->root())
 		return;
@@ -2157,7 +2090,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 
 	} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
-		//printf("UPDATE PARTIAL STRUCT\n");
 		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
 			compute_viewport_allocation(*(i->second));
 		}
@@ -2201,7 +2133,6 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 	} else if (e.atom == A(WM_PROTOCOLS)) {
 	} else if (e.atom == A(WM_TRANSIENT_FOR)) {
-//		printf("TRANSIENT_FOR = #%ld\n", x->transient_for());
 		if (c != 0) {
 			safe_update_transient_for(c);
 			update_windows_stack();
@@ -2278,9 +2209,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == A(PAGE_QUIT)) {
 		running = false;
 	} else if (e.message_type == A(WM_PROTOCOLS)) {
-//		char * name = A_name(e.data.l[0]);
-//		printf("PROTOCOL Atom Name = \"%s\"\n", name);
-//		XFree(name);
+
 	} else if (e.message_type == A(_NET_CLOSE_WINDOW)) {
 
 		XEvent evx;
@@ -2294,7 +2223,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 		cnx->send_event(e.window, False, NoEventMask, &evx);
 	} else if (e.message_type == A(_NET_REQUEST_FRAME_EXTENTS)) {
-			//w->write_net_frame_extents();
+
 	} else if (e.message_type == A(_NET_WM_MOVERESIZE)) {
 		if (mw != 0) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
@@ -2382,8 +2311,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
-	//printf("Should not append\n");
-	//printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x, e.area.y);
+
 }
 
 void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
@@ -2447,9 +2375,7 @@ void page_t::fullscreen(managed_window_t * mw, viewport_t * v) {
 	fullscreen_client_to_viewport[mw] = data;
 	mw->set_notebook_wished_position(data.viewport->raw_aera);
 	mw->reconfigure();
-	printf("FULLSCREEN TO %fx%f+%f+%f\n", data.viewport->raw_aera.w, data.viewport->raw_aera.h, data.viewport->raw_aera.x, data.viewport->raw_aera.y);
 	mw->normalize();
-	//safe_raise_window(mw);
 	update_windows_stack();
 }
 
@@ -2496,93 +2422,8 @@ void page_t::toggle_fullscreen(managed_window_t * c) {
 		fullscreen(c);
 }
 
-void page_t::debug_print_window_attributes(Window w, XWindowAttributes & wa) {
-//	printf(">>> Window: #%lu\n", w);
-//	printf("> size: %dx%d+%d+%d\n", wa.width, wa.height, wa.x, wa.y);
-//	printf("> border_width: %d\n", wa.border_width);
-//	printf("> depth: %d\n", wa.depth);
-//	printf("> visual #%p\n", wa.visual);
-//	printf("> root: #%lu\n", wa.root);
-//	if (wa.c_class == CopyFromParent) {
-//		printf("> class: CopyFromParent\n");
-//	} else if (wa.c_class == InputOutput) {
-//		printf("> class: InputOutput\n");
-//	} else if (wa.c_class == InputOnly) {
-//		printf("> class: InputOnly\n");
-//	} else {
-//		printf("> class: Unknown\n");
-//	}
-//
-//	if (wa.map_state == IsViewable) {
-//		printf("> map_state: IsViewable\n");
-//	} else if (wa.map_state == IsUnviewable) {
-//		printf("> map_state: IsUnviewable\n");
-//	} else if (wa.map_state == IsUnmapped) {
-//		printf("> map_state: IsUnmapped\n");
-//	} else {
-//		printf("> map_state: Unknown\n");
-//	}
-//
-//	printf("> bit_gravity: %d\n", wa.bit_gravity);
-//	printf("> win_gravity: %d\n", wa.win_gravity);
-//	printf("> backing_store: %dlx\n", wa.backing_store);
-//	printf("> backing_planes: %lx\n", wa.backing_planes);
-//	printf("> backing_pixel: %lx\n", wa.backing_pixel);
-//	printf("> save_under: %d\n", wa.save_under);
-//	printf("> colormap: ?\n");
-//	printf("> all_event_masks: %08lx\n", wa.all_event_masks);
-//	printf("> your_event_mask: %08lx\n", wa.your_event_mask);
-//	printf("> do_not_propagate_mask: %08lx\n", wa.do_not_propagate_mask);
-//	printf("> override_redirect: %d\n", wa.override_redirect);
-//	printf("> screen: %p\n", wa.screen);
-}
-
-//std::string page_t::safe_get_window_name(Window w) {
-//	Window x = get_window_t(w);
-//	std::string wname = "unknown window";
-//	if(x != 0) {
-//		wname = x->get_title();
-//	}
-//
-//	return wname;
-//}
 
 void page_t::process_event(XEvent const & e) {
-
-
-
-//	if (e.type == MapNotify) {
-//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xmap.serial,
-//				x_event_name[e.type], e.xmap.event, e.xmap.window, "none");
-//	} else if (e.type == DestroyNotify) {
-//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xdestroywindow.serial,
-//				x_event_name[e.type], e.xdestroywindow.event,
-//				e.xdestroywindow.window, "none");
-//	} else if (e.type == MapRequest) {
-//		fprintf(stderr, "#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xmaprequest.serial,
-//				x_event_name[e.type], e.xmaprequest.parent,
-//				e.xmaprequest.window, "none");
-//	} else if (e.type == UnmapNotify) {
-//		fprintf(stderr, "#%08lu %s: event = %lu, win = %lu, name=\"%s\"\n", e.xunmap.serial,
-//				x_event_name[e.type], e.xunmap.event, e.xunmap.window, "none");
-//	} else if (e.type == CreateNotify) {
-//		fprintf(stderr, "#%08lu %s: parent = %lu, win = %lu, name=\"%s\"\n", e.xcreatewindow.serial,
-//				x_event_name[e.type], e.xcreatewindow.parent,
-//				e.xcreatewindow.window, "none");
-//	} else if (e.type < LASTEvent && e.type > 0) {
-//		fprintf(stderr, "#%08lu %s: win: #%lu, name=\"%s\"\n", e.xany.serial, x_event_name[e.type],
-//				e.xany.window, "none");
-//	}
-
-//	fflush(stdout);
-
-//	page.cnx->grab();
-//
-//	/* remove all destroyed windows */
-//	XEvent tmp_ev;
-//	while (XCheckTypedEvent(page.cnx->dpy, DestroyNotify, &tmp_ev)) {
-//		page.process_event(e.xdestroywindow);
-//	}
 
 	if (e.type == ButtonPress) {
 		process_event_press(e.xbutton);
@@ -2668,8 +2509,6 @@ void page_t::process_event(XEvent const & e) {
 			break;
 		}
 
-		//printf("RRNotify : %s\n", s_subtype);
-
 		if (ev.subtype == RRNotify_CrtcChange) {
 			update_viewport_layout();
 			update_allocation();
@@ -2694,7 +2533,6 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == xrandr_event + RRScreenChangeNotify) {
 		/** do nothing **/
 	} else if (e.type == SelectionClear) {
-		//printf("SelectionClear\n");
 		running = false;
 	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent * se = (XShapeEvent *)&e;
@@ -2702,33 +2540,15 @@ void page_t::process_event(XEvent const & e) {
 			//Window w = se->window;
 		}
 	} else if (e.type == FocusOut) {
-		printf("FocusOut %lu\n", e.xfocus.window);
+
 	} else if (e.type == FocusIn) {
-		printf("FocusIn %lu\n", e.xfocus.window);
+
 	} else if (e.type == MappingNotify) {
 		update_keymap();
 		update_grabkey();
 	} else {
-//		fprintf(stderr, "Not handled event:\n");
-//		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
-//			fprintf(stderr, "#%lu type: %s, send_event: %u, window: %lu\n",
-//					e.xany.serial, x_event_name[e.xany.type], e.xany.send_event,
-//					e.xany.window);
-//		} else {
-//			fprintf(stderr, "#%lu type: %u, send_event: %u, window: %lu\n",
-//					e.xany.serial, e.xany.type, e.xany.send_event,
-//					e.xany.window);
-//		}
+
 	}
-
-	//page.rnd->render_flush();
-
-	//page.cnx->ungrab();
-
-//	if (!page.cnx->is_not_grab()) {
-//		fprintf(stderr, "SERVER IS GRAB WHERE IT SHOULDN'T");
-//		exit(EXIT_FAILURE);
-//	}
 
 }
 
@@ -2966,8 +2786,6 @@ void page_t::update_popup_position(popup_frame_move_t * p,
  * Compute the usable desktop area and dock allocation.
  */
 void page_t::compute_viewport_allocation(viewport_t & v) {
-	//printf("fix_allocation %dx%d+%d+%d\n", v.raw_aera.w, v.raw_aera.h,
-	//		v.raw_aera.x, v.raw_aera.y);
 
 	/* Partial struct content definition */
 	enum {
@@ -3049,8 +2867,6 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 	v.set_effective_area(final_size);
 
-	//printf("subarea %dx%d+%d+%d\n", v.effective_aera.w, v.effective_aera.h,
-	//		v.effective_aera.x, v.effective_aera.y);
 }
 
 void page_t::process_net_vm_state_client_message(Window c, long type, Atom state_properties) {
@@ -3086,15 +2902,11 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				//printf("SET normal\n");
-
 				break;
 			case _NET_WM_STATE_ADD:
-				//printf("SET fullscreen\n");
 				fullscreen(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				//printf("SET toggle\n");
 				toggle_fullscreen(mw);
 				break;
 			}
@@ -3112,22 +2924,14 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 				if (find_parent_notebook_for(mw) != 0) {
 					find_parent_notebook_for(mw)->iconify_client(mw);
 				} else {
-					//c->unmap();
+
 				}
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				if (find_parent_notebook_for(mw) != 0) {
-//					if (cnx->get_wm_state(c) == IconicState) {
-//						find_notebook_for(mw)->activate_client(mw);
-//					} else {
-//						find_notebook_for(mw)->iconify_client(mw);
-//					}
+
 				} else {
-//					if (c->is_map()) {
-//						c->unmap();
-//					} else {
-//						c->map();
-//					}
+
 				}
 				break;
 			default:
@@ -3135,21 +2939,15 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 			}
 		}
 	} else if (mw->is(MANAGED_FLOATING)) {
-		//char * name = A_name(state_properties);
-		//printf("process wm_state %s %s\n", action, name);
-		//XFree(name);
 
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				//printf("SET normal\n");
 				break;
 			case _NET_WM_STATE_ADD:
-				//printf("SET fullscreen\n");
 				fullscreen(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				//printf("SET toggle\n");
 				toggle_fullscreen(mw);
 				break;
 			}
@@ -3163,11 +2961,6 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 				mw->iconify();
 				break;
 			case _NET_WM_STATE_TOGGLE:
-//				if (c->is_map()) {
-//					mw->iconify();
-//				} else {
-//					mw->normalize();
-//				}
 				break;
 			default:
 				break;
@@ -3177,14 +2970,11 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				//printf("SET normal\n");
 				unfullscreen(mw);
 				break;
 			case _NET_WM_STATE_ADD:
-				//printf("SET fullscreen\n");
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				//printf("SET toggle\n");
 				toggle_fullscreen(mw);
 				break;
 			}
@@ -3198,11 +2988,6 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 				mw->iconify();
 				break;
 			case _NET_WM_STATE_TOGGLE:
-//				if (c->is_map()) {
-//					mw->iconify();
-//				} else {
-//					mw->normalize();
-//				}
 				break;
 			default:
 				break;
@@ -3215,7 +3000,6 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 	detach(c);
 	client_base_t * transient_for = get_transient_for(c);
 	if (transient_for != nullptr) {
-		printf("transient_for %lu -> %lu\n", c->orig(), transient_for->orig());
 		transient_for->add_subclient(c);
 	} else {
 		root_subclients.push_back(c);
@@ -3229,7 +3013,7 @@ client_base_t * page_t::get_transient_for(client_base_t * c) {
 		if(c->wm_transient_for != nullptr) {
 			transient_for = find_client_with(*(c->wm_transient_for));
 			if(transient_for == nullptr)
-				printf("Warning transiant for an unknown client\n");
+				printf("Warning transient for an unknown client\n");
 		}
 	}
 	return transient_for;
@@ -3440,10 +3224,8 @@ void page_t::update_windows_stack() {
 	list<tree_t *> childs = this->get_all_childs();
 	list<client_base_t *> clients = filter_class<client_base_t>(childs);
 
-	//cout << "stack" << endl;
 	list<Window> final_order;
 	for(auto i: clients) {
-		//printf("client %lu <%s>\n", i->base(), i->title().c_str());
 		final_order.push_back(i->base());
 	}
 
@@ -3501,9 +3283,6 @@ void page_t::update_viewport_layout() {
 	for (int i = 0; i < resources->ncrtc; ++i) {
 		XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy(), resources,
 				resources->crtcs[i]);
-		//printf(
-		//		"CrtcInfo: width = %d, height = %d, x = %d, y = %d, noutputs = %d\n",
-		//		info->width, info->height, info->x, info->y, info->noutput);
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
@@ -3597,8 +3376,6 @@ void page_t::destroy_viewport(viewport_t * v) {
  **/
 void page_t::onmap(Window w) {
 
-	cout << "enter onmap (" << w << ")" << endl;
-
 	/** ignore page windows **/
 	if(w == rpage->id())
 		return;
@@ -3645,13 +3422,10 @@ void page_t::onmap(Window w) {
 			c->read_all_properties();
 			add_client(c);
 
-			c->print_window_attributes();
-			c->print_properties();
+			//c->print_window_attributes();
+			//c->print_properties();
 
 			Atom type = c->type();
-
-			auto xn = cnx->get_atom_name(type);
-			cout << "Window type = " << xn.get() << endl;
 
 			if (!c->wa.override_redirect) {
 				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
@@ -3732,14 +3506,10 @@ void page_t::onmap(Window w) {
 
 	cnx->ungrab();
 
-	cout << "exit onmap (" << w << ")" << endl;
-
 }
 
 
 void page_t::create_managed_window(client_base_t * c, Atom type) {
-
-	//printf("manage window %lu\n", w);
 
 	/* manage will destroy c */
 	managed_window_t * mw = manage(type, c);
@@ -3749,17 +3519,6 @@ void page_t::create_managed_window(client_base_t * c, Atom type) {
 	mw->raise_child(nullptr);
 	update_client_list();
 	update_windows_stack();
-
-	if(mw->_net_wm_state != 0) {
-
-		cout << "_NET_WM_STATE = ";
-		for (list<Atom>::iterator i = mw->_net_wm_state->begin();
-				i != mw->_net_wm_state->end(); ++i) {
-			auto x = cnx->get_atom_name(*i);
-			cout << x.get() << " ";
-		}
-		cout << endl;
-	}
 
 	/* HACK OLD FASHION FULLSCREEN */
 	if (mw->wa.x == 0 and mw->wa.y == 0 and mw->wa.width == _allocation.w

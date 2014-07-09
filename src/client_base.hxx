@@ -185,7 +185,6 @@ public:
 	}
 
 	virtual ~client_base_t() {
-		cout << "call " << __FUNCTION__ << endl;
 		delete_all_properties();
 	}
 

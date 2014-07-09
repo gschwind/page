@@ -161,7 +161,6 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 }
 
 managed_window_t::~managed_window_t() {
-	cout << "call " << __FUNCTION__ << endl;
 
 	unselect_inputs();
 
