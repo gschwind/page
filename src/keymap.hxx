@@ -49,7 +49,7 @@ public:
 	}
 
 	KeyCode find_keysim(KeySym ks) {
-		for(KeySym i = 0; i <= last_keycode - first_keycode; ++i) {
+		for(KeySym i = 0; i <= (last_keycode - first_keycode + 1) * n_mod; ++i) {
 			if(ks == data[i]) {
 				return (i / n_mod) + first_keycode;
 			}
