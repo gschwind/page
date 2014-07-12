@@ -332,6 +332,18 @@ public:
 
 	list<XEvent> pending_event;
 
+	key_desc_t bind_page_quit;
+	key_desc_t bind_toogle_fullscreen;
+	key_desc_t bind_close;
+	key_desc_t bind_toogle_bind;
+	key_desc_t bind_vert_split;
+	key_desc_t bind_horz_split;
+
+	key_desc_t bind_debug_1;
+	key_desc_t bind_debug_2;
+	key_desc_t bind_debug_3;
+	key_desc_t bind_debug_4;
+
 	keymap_t * keymap;
 
 private:

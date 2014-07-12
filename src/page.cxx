@@ -120,6 +120,12 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	_client_focused.push_front(nullptr);
 
+	find_key_from_string("mod4+q", bind_page_quit);
+	find_key_from_string("mod4+f", bind_debug_1);
+	find_key_from_string("mod4+r", bind_debug_2);
+	find_key_from_string("mod4+s", bind_debug_3);
+	find_key_from_string("mod4+w", bind_debug_4);
+
 }
 
 page_t::~page_t() {
@@ -623,55 +629,56 @@ void page_t::process_event(XKeyEvent const & e) {
 
 	if(e.type == KeyPress) {
 
-		if(e.state & Mod4Mask) {
+		if(k == bind_page_quit.ks and (e.state & bind_page_quit.mod)) {
+			running = false;
+		}
 
-			if(k == XK_f) {
-				if(rnd->show_fps()) {
-					rnd->set_show_fps(false);
+		if(k == bind_debug_1.ks and (e.state & bind_debug_1.mod)) {
+			if(rnd->show_fps()) {
+				rnd->set_show_fps(false);
+			} else {
+				rnd->set_show_fps(true);
+			}
+		}
+
+		if(k == bind_debug_2.ks and (e.state & bind_debug_2.mod)) {
+			rpage->add_damaged(_root_position);
+		}
+
+		if(k == bind_debug_3.ks and (e.state & bind_debug_3.mod)) {
+			if(rnd != nullptr) {
+				if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
+					rnd->renderable_clear();
+					rnd->renderable_add(this);
+					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
 				} else {
-					rnd->set_show_fps(true);
-				}
-			} else if (k == XK_q) {
-				running = false;
-			} else if (k == XK_w) {
-				update_windows_stack();
-				print_tree(0);
-				list<managed_window_t *> lst = get_managed_windows();
-				for (auto i : lst) {
-					switch (i->get_type()) {
-					case MANAGED_NOTEBOOK:
-						cout << "[" << i->orig() << "] notebook : " << i->title()
-								<< endl;
-						break;
-					case MANAGED_FLOATING:
-						cout << "[" << i->orig() << "] floating : " << i->title()
-								<< endl;
-						break;
-					case MANAGED_FULLSCREEN:
-						cout << "[" << i->orig() << "] fullscreen : " << i->title()
-								<< endl;
-						break;
-					}
-				}
-
-			} else if (k == XK_s) {
-				/* free short cut */
-			} else if (k == XK_r) {
-				rpage->add_damaged(_root_position);
-			} else if (k == XK_z) {
-				if(rnd != nullptr) {
-					if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
-						rnd->renderable_clear();
-						rnd->renderable_add(this);
-						rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
-					} else {
-						rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
-					}
+					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
 				}
 			}
-
-
 		}
+
+		if(k == bind_debug_4.ks and (e.state & bind_debug_4.mod)) {
+			update_windows_stack();
+			print_tree(0);
+			list<managed_window_t *> lst = get_managed_windows();
+			for (auto i : lst) {
+				switch (i->get_type()) {
+				case MANAGED_NOTEBOOK:
+					cout << "[" << i->orig() << "] notebook : " << i->title()
+							<< endl;
+					break;
+				case MANAGED_FLOATING:
+					cout << "[" << i->orig() << "] floating : " << i->title()
+							<< endl;
+					break;
+				case MANAGED_FULLSCREEN:
+					cout << "[" << i->orig() << "] fullscreen : " << i->title()
+							<< endl;
+					break;
+				}
+			}
+		}
+
 
 		if (k == XK_Tab and ((e.state & 0x0f) == Mod1Mask)) {
 
@@ -4042,26 +4049,29 @@ void page_t::update_grabkey() {
 
 	int kc = 0;
 
-	if ((kc = keymap->find_keysim(XK_f))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+	if ((kc = keymap->find_keysim(bind_debug_1.ks))) {
+		XGrabKey(cnx->dpy(), kc, bind_debug_1.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	if ((kc = keymap->find_keysim(bind_debug_2.ks))) {
+		XGrabKey(cnx->dpy(), kc, bind_debug_2.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	if ((kc = keymap->find_keysim(bind_debug_3.ks))) {
+		XGrabKey(cnx->dpy(), kc, bind_debug_3.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	if ((kc = keymap->find_keysim(bind_debug_4.ks))) {
+		XGrabKey(cnx->dpy(), kc, bind_debug_4.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 	}
 
 	/* quit page */
-	if ((kc = keymap->find_keysim(XK_q))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-	}
-
-	/* debug purpose */
-	if ((kc = keymap->find_keysim(XK_r))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-	}
-
-	/* debug: print state info */
-	if ((kc = keymap->find_keysim(XK_s))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
+	if ((kc = keymap->find_keysim(bind_page_quit.ks))) {
+		XGrabKey(cnx->dpy(), kc, bind_page_quit.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 	}
 
@@ -4071,17 +4081,6 @@ void page_t::update_grabkey() {
 		False, GrabModeAsync, GrabModeSync);
 	}
 
-	/* debug purpose */
-	if ((kc = keymap->find_keysim(XK_w))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-	}
-
-	/* debug purpose */
-	if ((kc = keymap->find_keysim(XK_z))) {
-		XGrabKey(cnx->dpy(), kc, Mod4Mask, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-	}
 
 }
 

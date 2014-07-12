@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <limits>
 #include <string>
+#include <stdexcept>
 
 #include <X11/X.h>
 #include <X11/Xutil.h>
@@ -33,6 +34,7 @@
 #include <GL/glx.h>
 
 #include "x11_func_name.hxx"
+#include "key_desc.hxx"
 
 using namespace std;
 
@@ -445,6 +447,40 @@ list<T0 *> filter_class(list<T1 *> x) {
 		}
 	}
 	return ret;
+}
+
+/**
+ * Parse string like "mod4+f" to modifier mask (mod) and keysym (ks)
+ **/
+inline void find_key_from_string(string const desc, key_desc_t & k) {
+	std::size_t pos = desc.find("+");
+	if(pos == string::npos)
+		throw std::runtime_error("key description does not match modifier+keysym");
+	string modifier = desc.substr(0, pos);
+	string key = desc.substr(pos+1);
+
+	if(modifier == "shift") {
+		k.mod = ShiftMask;
+	} else if (modifier == "lock") {
+		k.mod = LockMask;
+	} else if (modifier == "control") {
+		k.mod = ControlMask;
+	} else if (modifier == "mod1") {
+		k.mod = Mod1Mask;
+	} else if (modifier == "mod2") {
+		k.mod = Mod2Mask;
+	} else if (modifier == "mod3") {
+		k.mod = Mod3Mask;
+	} else if (modifier == "mod4") {
+		k.mod = Mod4Mask;
+	} else if (modifier == "mod5") {
+		k.mod = Mod5Mask;
+	}
+
+	k.ks = XStringToKeysym(key.c_str());
+	if(k.ks == NoSymbol) {
+		throw std::runtime_error("key binding not found");
+	}
 }
 
 }

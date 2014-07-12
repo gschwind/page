@@ -10,6 +10,7 @@
 
 #include <cassert>
 
+#include "key_desc.hxx"
 
 namespace page {
 
