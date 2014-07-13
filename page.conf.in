@@ -2,6 +2,16 @@
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
 
+# bind page quit
+bind_page_quit=mod4+q
+bind_toogle_fullscreen=mod+f
+
+# bind keys for debuging
+bind_debug_1=mod4+1
+bind_debug_2=mod4+2
+bind_debug_3=mod4+3
+bind_debug_4=mod4+4
+
 [compositor]
 
 # Compositor fade in time in nano second

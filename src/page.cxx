@@ -120,11 +120,11 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 
 	_client_focused.push_front(nullptr);
 
-	find_key_from_string("mod4+q", bind_page_quit);
-	find_key_from_string("mod4+f", bind_debug_1);
-	find_key_from_string("mod4+r", bind_debug_2);
-	find_key_from_string("mod4+s", bind_debug_3);
-	find_key_from_string("mod4+w", bind_debug_4);
+	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
+	find_key_from_string(conf.get_string("default", "bind_debug_1"), bind_debug_1);
+	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
+	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
+	find_key_from_string(conf.get_string("default", "bind_debug_4"), bind_debug_4);
 
 }
 
