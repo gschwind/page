@@ -190,7 +190,7 @@ void display_t::write_net_active_window(Window w) {
 }
 
 int display_t::move_window(Window w, int x, int y) {
-	printf("XMoveWindow #%lu %d %d\n", w, x, y);
+	//printf("XMoveWindow #%lu %d %d\n", w, x, y);
 	return XMoveWindow(_dpy, w, x, y);
 }
 
@@ -386,8 +386,8 @@ void display_t::remove_from_save_set(Window w) {
 
 void display_t::move_resize(Window w, rectangle const & size) {
 
-	printf("XMoveResizeWindow: win = %lu, %fx%f+%f+%f\n", w, size.w, size.h,
-			size.x, size.y);
+	//printf("XMoveResizeWindow: win = %lu, %fx%f+%f+%f\n", w, size.w, size.h,
+	//		size.x, size.y);
 
 	XMoveResizeWindow(_dpy, w, size.x, size.y, size.w, size.h);
 

@@ -121,6 +121,7 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	_client_focused.push_front(nullptr);
 
 	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
+	find_key_from_string(conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
 	find_key_from_string(conf.get_string("default", "bind_debug_1"), bind_debug_1);
 	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
 	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
@@ -631,6 +632,14 @@ void page_t::process_event(XKeyEvent const & e) {
 
 		if(k == bind_page_quit.ks and (e.state & bind_page_quit.mod)) {
 			running = false;
+		}
+
+		if(k == bind_toggle_fullscreen.ks and (e.state & bind_toggle_fullscreen.mod)) {
+			if(not _client_focused.empty()) {
+				if(_client_focused.front() != nullptr) {
+					toggle_fullscreen(_client_focused.front());
+				}
+			}
 		}
 
 		if(k == bind_debug_1.ks and (e.state & bind_debug_1.mod)) {
@@ -1825,8 +1834,8 @@ void page_t::process_event(XMapEvent const & e) {
 }
 
 void page_t::process_event(XReparentEvent const & e) {
-	printf("Reparent window: %lu, parent: %lu, overide: %d, send_event: %d\n",
-			e.window, e.parent, e.override_redirect, e.send_event);
+	//printf("Reparent window: %lu, parent: %lu, overide: %d, send_event: %d\n",
+	//		e.window, e.parent, e.override_redirect, e.send_event);
 	if(e.send_event == True)
 		return;
 	/* Reparent the root window ? hu :/ */
@@ -1884,20 +1893,20 @@ void page_t::process_event(XCirculateRequestEvent const & e) {
 
 void page_t::process_event(XConfigureRequestEvent const & e) {
 
-	if (e.value_mask & CWX)
-		printf("has x: %d\n", e.x);
-	if (e.value_mask & CWY)
-		printf("has y: %d\n", e.y);
-	if (e.value_mask & CWWidth)
-		printf("has width: %d\n", e.width);
-	if (e.value_mask & CWHeight)
-		printf("has height: %d\n", e.height);
-	if (e.value_mask & CWSibling)
-		printf("has sibling: %lu\n", e.above);
-	if (e.value_mask & CWStackMode)
-		printf("has stack mode: %d\n", e.detail);
-	if (e.value_mask & CWBorderWidth)
-		printf("has border: %d\n", e.border_width);
+//	if (e.value_mask & CWX)
+//		printf("has x: %d\n", e.x);
+//	if (e.value_mask & CWY)
+//		printf("has y: %d\n", e.y);
+//	if (e.value_mask & CWWidth)
+//		printf("has width: %d\n", e.width);
+//	if (e.value_mask & CWHeight)
+//		printf("has height: %d\n", e.height);
+//	if (e.value_mask & CWSibling)
+//		printf("has sibling: %lu\n", e.above);
+//	if (e.value_mask & CWStackMode)
+//		printf("has stack mode: %d\n", e.detail);
+//	if (e.value_mask & CWBorderWidth)
+//		printf("has border: %d\n", e.border_width);
 
 	if(not check_for_valid_window(e.window)) {
 		ackwoledge_configure_request(e);
@@ -1933,7 +1942,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 					new_size.h = e.height;
 				}
 
-				printf("new_size = %s\n", new_size.to_string().c_str());
+				//printf("new_size = %s\n", new_size.to_string().c_str());
 
 				if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
 						and e.x == 0 and e.y == 0
@@ -1955,7 +1964,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 				new_size.w = final_width;
 				new_size.h = final_height;
 
-				printf("new_size = %s\n", new_size.to_string().c_str());
+				//printf("new_size = %s\n", new_size.to_string().c_str());
 
 				if (new_size != old_size) {
 					/** only affect floating windows **/
@@ -2593,8 +2602,8 @@ void page_t::set_default_pop(notebook_t * x) {
 /** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
 void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 
-	if (new_focus != nullptr)
-		cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
+	//if (new_focus != nullptr)
+	//	cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
 
 	/** ignore focus if time is too old **/
 	if(tfocus <= _last_focus_time and tfocus != CurrentTime)
@@ -4072,6 +4081,13 @@ void page_t::update_grabkey() {
 	/* quit page */
 	if ((kc = keymap->find_keysim(bind_page_quit.ks))) {
 		XGrabKey(cnx->dpy(), kc, bind_page_quit.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+	}
+
+	/* toggle fullscreen */
+	if ((kc = keymap->find_keysim(bind_toggle_fullscreen.ks))) {
+		printf("bind toggle fullscreen = kc: %02x mod: %02x", (unsigned int)kc, (unsigned int)bind_toggle_fullscreen.mod);
+		XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 	}
 

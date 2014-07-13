@@ -4,7 +4,7 @@ theme_dir=@prefix@/share/page/data/
 
 # bind page quit
 bind_page_quit=mod4+q
-bind_toogle_fullscreen=mod+f
+bind_toggle_fullscreen=mod4+f
 
 # bind keys for debuging
 bind_debug_1=mod4+1
