@@ -4080,13 +4080,14 @@ void page_t::update_grabkey() {
 
 	/* quit page */
 	if ((kc = keymap->find_keysim(bind_page_quit.ks))) {
+		printf("bind page quit => kc: %d mod: %02x, keysym: %04x", kc, (unsigned int)bind_page_quit.mod, (unsigned int)bind_page_quit.ks);
 		XGrabKey(cnx->dpy(), kc, bind_page_quit.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 	}
 
 	/* toggle fullscreen */
 	if ((kc = keymap->find_keysim(bind_toggle_fullscreen.ks))) {
-		printf("bind toggle fullscreen = kc: %02x mod: %02x", (unsigned int)kc, (unsigned int)bind_toggle_fullscreen.mod);
+		printf("bind toggle fullscreen => kc: %d mod: %02x, keysym: %04x", kc, (unsigned int)bind_toggle_fullscreen.mod, (unsigned int)bind_toggle_fullscreen.ks);
 		XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 	}
