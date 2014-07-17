@@ -25,18 +25,38 @@ class keymap_t {
 	 * Several KeySim because key press can be modified by key modifier like shift or alt key.
 	 **/
 	KeySym * data;
+	XModifierKeymap * modmap;
+
+	unsigned int _numlock_mod_mask;
 
 public:
 
 	keymap_t(Display * dpy) {
 		XDisplayKeycodes(dpy, &first_keycode, &last_keycode);
 		data = XGetKeyboardMapping(dpy, first_keycode, (last_keycode - first_keycode) + 1, &n_mod);
+		modmap = XGetModifierMapping(dpy);
+
+		_numlock_mod_mask = 0;
+
+		KeyCode numlock_kc = find_keysim(XK_Num_Lock);
+		if(numlock_kc != 0) {
+			for(int i = 0; i < 8 * modmap->max_keypermod; ++i) {
+				if(modmap->modifiermap[i] == numlock_kc) {
+					_numlock_mod_mask |= 1<<(i / modmap->max_keypermod);
+				}
+			}
+		}
+
 	}
 
 	~keymap_t() {
 		if(data != NULL) {
 			XFree(data);
 		}
+	}
+
+	unsigned int numlock_mod_mask() {
+		return _numlock_mod_mask;
 	}
 
 	KeySym get(KeyCode kc, int mod = 0) {
