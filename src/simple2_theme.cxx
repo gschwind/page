@@ -608,13 +608,14 @@ void simple2_theme_t::render_notebook_selected(
 	tab_area.h -= 1;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 	/** draw the tab background **/
 	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w - 1.0, b.h - 1.0, 7.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h, 7.5));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 	CHECK_CAIRO(cairo_fill(cr));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 	display_t::create_context(__FILE__, __LINE__);
 	/** draw gradient under tab **/
 	CHECK_CAIRO(cairo_save(cr));
@@ -633,7 +634,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_restore(cr));
 
 	/** draw border **/
-	draw_notebook_border(cr, n->allocation(), tab_area, border_color, border_width);
+	//draw_notebook_border(cr, n->allocation(), tab_area, border_color, border_width);
 
 	/** draw application icon **/
 	rectangle bicon = tab_area;
@@ -786,11 +787,14 @@ void simple2_theme_t::render_notebook_normal(
 	/** draw the tab background **/
 	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y + 1.0, b.w, b.h - 1.0, 7.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y + 1.0, b.w, b.h - 1.0, 7.5));
 
 	CHECK_CAIRO(cairo_fill(cr));
+
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	{
 //		rectangle b = tab_area;
@@ -846,7 +850,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	rectangle btext = tab_area;
 	btext.h -= 0;
-	btext.w -= 1 * 16 + 8;
+	btext.w -= 1 * 16 + 12;
 	btext.x += 3 + 16 + 6;
 	btext.y += 1;
 	display_t::create_context(__FILE__, __LINE__);
@@ -889,8 +893,6 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_restore(cr));
 	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
-
-
 
 }
 
