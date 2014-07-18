@@ -2641,8 +2641,10 @@ void page_t::set_focus(managed_window_t * new_focus, Time tfocus) {
 	_client_focused.remove(new_focus);
 	_client_focused.push_front(new_focus);
 
-	if(new_focus == nullptr)
+	if(new_focus == nullptr) {
+		XSetInputFocus(cnx->dpy(), cnx->root(), RevertToNone, _last_focus_time);
 		return;
+	}
 
 	/**
 	 * raise the newly focused window at top, in respect of transient for.
@@ -4111,7 +4113,7 @@ void page_t::update_grabkey() {
 		XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod, cnx->root(),
 		True, GrabModeAsync, GrabModeAsync);
 		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_toogle_bind.mod | keymap->numlock_mod_mask(), cnx->root(),
+			XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod | keymap->numlock_mod_mask(), cnx->root(),
 			True, GrabModeAsync, GrabModeAsync);
 		}
 	}

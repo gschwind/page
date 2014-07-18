@@ -335,9 +335,9 @@ public:
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
 	key_desc_t bind_close;
-	key_desc_t bind_toogle_bind;
-	key_desc_t bind_vert_split;
-	key_desc_t bind_horz_split;
+	//key_desc_t bind_toggle_bind;
+	//key_desc_t bind_vert_split;
+	//key_desc_t bind_horz_split;
 
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;
