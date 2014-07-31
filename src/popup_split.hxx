@@ -21,23 +21,11 @@ struct popup_split_t: public window_overlay_t {
 
 	theme_t * _theme;
 
-	popup_split_t(display_t * cnx, theme_t * theme) : window_overlay_t(cnx, 32), _theme(theme) {
+	popup_split_t(theme_t * theme) : window_overlay_t(), _theme(theme) {
 
 	}
-
 
 	~popup_split_t() {
-
-	}
-
-	void repair_back_buffer() {
-		display_t::create_context(__FILE__, __LINE__);
-		cairo_t * cr = cairo_create(_back_surf);
-
-		_theme->render_popup_split(cr, _position.w, _position.h);
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
-		cairo_destroy(cr);
 
 	}
 

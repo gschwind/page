@@ -17,38 +17,36 @@
 namespace page {
 
 class renderable_page_t: public window_overlay_t {
+	display_t * _cnx;
 	theme_t * _theme;
 	region damaged;
+
+	Pixmap pix;
+
+	/** rendering tabs is time consumming, thus use back buffer **/
+	cairo_surface_t * _back_surf;
+
 public:
 
-	renderable_page_t(display_t * cnx, theme_t * render, int width,
+	renderable_page_t(display_t * cnx, theme_t * theme, int width,
 			int height) :
-			window_overlay_t(cnx, 24, rectangle(0, 0, width, height)), _theme(
-					render) {
+			window_overlay_t(rectangle(0, 0, width, height)), _theme(
+					theme) {
 		window_overlay_t::show();
+
+		_cnx = cnx;
+		XWindowAttributes wa;
+		XGetWindowAttributes(cnx->dpy(), cnx->root(), &wa);
+		pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, 24);
+		_back_surf = cairo_xlib_surface_create(cnx->dpy(), pix, wa.visual, wa.width, wa.height);
+
 
 	}
 
 	~renderable_page_t() {
 		cout << "call " << __FUNCTION__ << endl;
-	}
-
-	void expose(rectangle area) {
-		display_t::create_context(__FILE__, __LINE__);
-		cairo_t * cr = cairo_create(_front_surf);
-
-		rectangle clip = _position & area;
-		if (!clip.is_null()) {
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-			cairo_set_source_surface(cr, _back_surf, 0, 0);
-			cairo_fill(cr);
-		}
-		cairo_surface_flush(_front_surf);
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
-		cairo_destroy(cr);
-
+		cairo_surface_destroy(_back_surf);
+		XFreePixmap(_cnx->dpy(), pix);
 	}
 
 	void repair_damaged(list<tree_t *> tree) {
@@ -56,10 +54,12 @@ public:
 		if(damaged.empty() and not _is_durty)
 			return;
 
-		time_t cur;
-		cur.get_time();
 		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
+
+		cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
+		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+		cairo_fill(cr);
 
 		rectangle area = _position;
 		area.x = 0;
@@ -82,18 +82,6 @@ public:
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
-		display_t::create_context(__FILE__, __LINE__);
-		cr = cairo_create(_front_surf);
-		rectangle clip = _position;
-		if (!clip.is_null()) {
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-			cairo_set_source_surface(cr, _back_surf, 0, 0);
-			cairo_paint(cr);
-		}
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
-		cairo_destroy(cr);
 
 		_is_durty = false;
 		damaged.clear();
@@ -104,8 +92,8 @@ public:
 		damaged += area;
 	}
 
-	void render_to(cairo_t * cr, rectangle area) {
-		rectangle clip = _position & area;
+	void render(cairo_t * cr, time_t time) {
+		rectangle clip = _position;
 		if (!clip.is_null()) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);

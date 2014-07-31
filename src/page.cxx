@@ -253,9 +253,9 @@ void page_t::run() {
 			_root_position.h);
 
 	/* create and add popups (overlay) */
-	pfm = new popup_frame_move_t(cnx, theme);
-	pn0 = new popup_notebook0_t(cnx, theme);
-	ps = new popup_split_t(cnx, theme);
+	pfm = new popup_frame_move_t(theme);
+	pn0 = new popup_notebook0_t(theme);
+	ps = new popup_split_t(theme);
 	pat = new popup_alt_tab_t(cnx, theme);
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
@@ -344,7 +344,7 @@ void page_t::run() {
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
-	XGrabButton(cnx->dpy(), AnyButton, AnyModifier, rpage->id(), False,
+	XGrabButton(cnx->dpy(), AnyButton, AnyModifier, cnx->root(), False,
 	ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 	GrabModeSync, GrabModeAsync, None, None);
 
@@ -742,9 +742,6 @@ void page_t::process_event(XKeyEvent const & e) {
 
 
 			pat->select_next();
-			pat->mark_durty();
-			pat->expose();
-			pat->mark_durty();
 
 		}
 
@@ -782,7 +779,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e.window == rpage->id() && e.subwindow == None && e.button == Button1) {
+		if (e.window == cnx->root() && e.subwindow == None && e.button == Button1) {
 
 			update_page_areas();
 
@@ -853,7 +850,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					/* show split overlay */
 					ps->move_resize(mode_data_split.slider_area);
 					ps->show();
-					ps->expose();
 				}
 			}
 
@@ -878,7 +874,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				pfm->move_resize(mw->get_base_position());
 				pfm->update_window(mw, mw->title());
 				pfm->show();
-				pfm->expose();
 
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
@@ -939,7 +934,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						pfm->move_resize(mw->get_base_position());
 						pfm->update_window(mw, mw->title());
 						pfm->show();
-						pfm->expose();
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
@@ -949,7 +943,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						pfm->move_resize(mw->get_base_position());
 						pfm->update_window(mw, mw->title());
 						pfm->show();
-						pfm->expose();
 
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
@@ -1006,7 +999,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->update_window(mw, mw->title());
 					pn0->show();
 					pn0->move_resize(v->raw_aera);
-					pn0->expose();
 				}
 			} else if (mw->is(MANAGED_NOTEBOOK) and e.button == (Button1)
 					and (e.state & (Mod1Mask))) {
@@ -1765,7 +1757,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		if (v != 0) {
 			if (v != mode_data_fullscreen.v) {
 				pn0->move_resize(v->raw_aera);
-				pn0->expose();
 				mode_data_fullscreen.v = v;
 			}
 
@@ -2485,18 +2476,6 @@ void page_t::process_event(XEvent const & e) {
 			}
 		}
 
-		if (e.xexpose.window == rpage->id()) {
-			rpage->expose(
-					rectangle(e.xexpose.x, e.xexpose.y, e.xexpose.width,
-							e.xexpose.height));
-		} else if (e.xexpose.window == pfm->id()) {
-			pfm->expose();
-		} else if (e.xexpose.window == ps->id()) {
-			ps->expose();
-		} else if (e.xexpose.window == pat->id()) {
-			pat->expose();
-		}
-
 	} else if (e.type == xrandr_event + RRNotify) {
 		XRRNotifyEvent const &ev = reinterpret_cast<XRRNotifyEvent const &>(e);
 
@@ -2538,7 +2517,7 @@ void page_t::process_event(XEvent const & e) {
 
 		}
 
-		XGrabButton(cnx->dpy(), AnyButton, AnyModifier, rpage->id(), False,
+		XGrabButton(cnx->dpy(), AnyButton, AnyModifier, cnx->root(), False,
 				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 				GrabModeSync, GrabModeAsync, None, None);
 
@@ -2790,13 +2769,11 @@ void page_t::notebook_close(notebook_t * src) {
 void page_t::update_popup_position(popup_notebook0_t * p,
 		rectangle & position) {
 	p->move_resize(position);
-	p->expose();
 }
 
 void page_t::update_popup_position(popup_frame_move_t * p,
 		rectangle & position) {
 	p->move_resize(position);
-	p->expose();
 }
 
 
@@ -3247,23 +3224,6 @@ void page_t::update_windows_stack() {
 		final_order.push_back(i->base());
 	}
 
-	/* overlay */
-	final_order.remove(pfm->id());
-	final_order.push_back(pfm->id());
-
-	final_order.remove(pn0->id());
-	final_order.push_back(pn0->id());
-
-	final_order.remove(ps->id());
-	final_order.push_back(ps->id());
-
-	final_order.remove(pat->id());
-	final_order.push_back(pat->id());
-
-	/* page on bottom */
-	final_order.remove(rpage->id());
-	final_order.push_front(rpage->id());
-
 	if(rnd != 0) {
 		final_order.push_back(rnd->get_composite_overlay());
 	}
@@ -3394,17 +3354,6 @@ void page_t::destroy_viewport(viewport_t * v) {
  **/
 void page_t::onmap(Window w) {
 
-	/** ignore page windows **/
-	if(w == rpage->id())
-		return;
-	if(w == pfm->id())
-		return;
-	if(w == pn0->id())
-		return;
-	if(w == ps->id())
-		return;
-	if(w == pat->id())
-		return;
 	if (rnd != nullptr) {
 		if (w == rnd->get_composite_overlay())
 			return;
@@ -3944,7 +3893,7 @@ void page_t::check_x11_extension() {
 void page_t::render(cairo_t * cr, page::time_t time) {
 	rpage->repair_damaged(get_all_childs());
 	XFlush(cnx->dpy());
-	rpage->render_to(cr, _allocation);
+	rpage->render(cr, time);
 
 	for(auto i: childs()) {
 		i->render(cr, time);
@@ -3958,10 +3907,6 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 }
 
 bool page_t::need_render(time_t time) {
-
-	if(rpage->is_durty()) {
-		return true;
-	}
 
 	for(auto i: childs()) {
 		if(i->need_render(time)) {

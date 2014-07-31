@@ -25,8 +25,8 @@ struct popup_notebook0_t : public window_overlay_t {
 
 	bool _show;
 
-	popup_notebook0_t(display_t * cnx, theme_t * theme) :
-			window_overlay_t(cnx, 32), _theme(theme) {
+	popup_notebook0_t(theme_t * theme) :
+			window_overlay_t(), _theme(theme) {
 
 		icon = nullptr;
 
@@ -58,23 +58,6 @@ struct popup_notebook0_t : public window_overlay_t {
 	bool is_visible() {
 		return _show;
 	}
-
-	void repair_back_buffer() {
-		display_t::create_context(__FILE__, __LINE__);
-		cairo_t * cr = cairo_create(_back_surf);
-
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-		cairo_fill(cr);
-
-		_theme->render_popup_notebook0(cr, icon,  _position.w, _position.h, title);
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
-		cairo_destroy(cr);
-
-	}
-
 
 	virtual void render(cairo_t * cr, time_t time) {
 
