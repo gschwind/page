@@ -999,7 +999,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad0 = cairo_pattern_create_linear(b.x, 0.0, b.x + floating_margin.left, 0.0);
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y + floating_margin.bottom, floating_margin.left, floating_margin.top - floating_margin.bottom));
 		CHECK_CAIRO(cairo_set_source(cr, grad0));
 		CHECK_CAIRO(cairo_fill(cr));
@@ -1007,7 +1007,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad1 = cairo_pattern_create_linear(b.x + b.w - floating_margin.right, 0.0, b.x + b.w, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right, floating_margin.top - floating_margin.bottom));
 		CHECK_CAIRO(cairo_set_source(cr, grad1));
@@ -1018,7 +1018,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, b.y, 0.0, b.y + floating_margin.bottom);
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.right - floating_margin.left, floating_margin.bottom));
 		CHECK_CAIRO(cairo_set_source(cr, grad2));
 		CHECK_CAIRO(cairo_fill(cr));
@@ -1026,7 +1026,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y + floating_margin.bottom, 0.0, b.x + floating_margin.left, b.y + floating_margin.bottom, floating_margin.left);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_set_source(cr, r0grad));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom));
@@ -1035,7 +1035,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, 0.0, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_set_source(cr, r1grad));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.right, floating_margin.bottom));
@@ -1148,7 +1148,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, 0.0, floating_margin.bottom);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_set_source(cr, grad));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.left - floating_margin.right, b.h));
@@ -1160,7 +1160,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y, 0.0, b.x + floating_margin.left, b.y, floating_margin.left);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_set_source(cr, r0grad));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom));
@@ -1170,7 +1170,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y, 0.0, b.x + b.w - floating_margin.right, b.y, floating_margin.right);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_set_source(cr, r1grad));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.left, floating_margin.bottom));
@@ -1198,7 +1198,7 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.right, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source(cr, grad));
@@ -1225,7 +1225,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.left, 0.0);
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.2));
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
 		CHECK_CAIRO(cairo_set_source(cr, grad));
 		CHECK_CAIRO(cairo_fill(cr));
