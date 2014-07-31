@@ -84,10 +84,10 @@ rectangle simple2_theme_t::compute_floating_bind_position(
 
 simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
-	notebook_margin.top = 19;
-	notebook_margin.bottom = 2;
-	notebook_margin.left = 2;
-	notebook_margin.right = 2;
+	notebook_margin.top = 24;
+	notebook_margin.bottom = 4;
+	notebook_margin.left = 4;
+	notebook_margin.right = 4;
 
 	split_margin.top = 0;
 	split_margin.bottom = 0;
