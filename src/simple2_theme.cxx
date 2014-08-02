@@ -182,6 +182,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	vsplit_button_s = nullptr;
 	hsplit_button_s = nullptr;
 	close_button_s = nullptr;
+	close_button1_s = nullptr;
 	pop_button_s = nullptr;
 	pops_button_s = nullptr;
 	unbind_button_s = nullptr;
@@ -222,6 +223,15 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 		display_t::create_surf(__FILE__, __LINE__);
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == nullptr)
+			throw std::runtime_error("file not found!");
+	}
+
+	if (close_button1_s == nullptr) {
+		std::string filename = conf_img_dir + "/window-close-2.png";
+		printf("Load: %s\n", filename.c_str());
+		display_t::create_surf(__FILE__, __LINE__);
+		close_button1_s = cairo_image_surface_create_from_png(filename.c_str());
+		if (close_button1_s == nullptr)
 			throw std::runtime_error("file not found!");
 	}
 
@@ -388,17 +398,19 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 						notebook_margin.top - 1);
 
 				page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
-				ncclose.position.x = b.x + b.w - 1 * 17 - 3;
-				ncclose.position.y = b.y + 4;
-				ncclose.position.w = 16;
-				ncclose.position.h = 16;
+
+				ncclose.position.x = b.x + b.w - 35;
+				ncclose.position.y = b.y;
+				ncclose.position.w = 35;
+				ncclose.position.h = b.h-3;
 				ncclose.nbk = n;
 				ncclose.clt = *i;
 				l->push_back(ncclose);
 
 				page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
-				ncub.position.x = b.x + b.w - 2 * 17 - 3;
-				ncub.position.y = b.y + 4;
+
+				ncub.position.x = b.x + b.w - 25 - 30;
+				ncub.position.y = b.y;
 				ncub.position.w = 16;
 				ncub.position.h = 16;
 				ncub.nbk = n;
@@ -624,30 +636,59 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 	/** draw the tab background **/
 	rectangle b = tab_area;
-	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h, 7.5));
-	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-	CHECK_CAIRO(cairo_fill(cr));
-	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
+
 	display_t::create_context(__FILE__, __LINE__);
-	/** draw gradient under tab **/
 	CHECK_CAIRO(cairo_save(cr));
-	CHECK_CAIRO(cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h));
-	CHECK_CAIRO(cairo_rectangle(cr, 0.0, 0.0, tab_area.w, 100.0));
+
+	/** clip tabs **/
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
 	CHECK_CAIRO(cairo_clip(cr));
-	cairo_pattern_t * gradient;
-	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
+
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
+	cairo_pattern_t * gradient;
+	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, b.y+b.h+30.0);
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, background_color.a));
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, b.h/(b.h+30.0), 1.0, 1.0, 1.0, background_color.a));
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, (b.h+20.0)/(b.h+30.0), 1.0, 1.0, 1.0, 0.0));
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
+
+	rectangle xncclose;
+	xncclose.x = b.x + b.w - 35;
+	xncclose.y = b.y;
+	xncclose.w = 35;
+	xncclose.h = b.h-3;
+
+	CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h+0.5));
+	CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
 	CHECK_CAIRO(cairo_fill(cr));
-	CHECK_CAIRO(cairo_pattern_destroy(gradient));
+
+	double radius = 6.5;
+	CHECK_CAIRO(cairo_new_path(cr));
+	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
+	CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
+	CHECK_CAIRO(cairo_close_path(cr));
+
+	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_stroke(cr);
+
+	radius = 6.5;
+	CHECK_CAIRO(cairo_new_path(cr));
+	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+1.5, xncclose.y-1.5 + xncclose.h));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+1.5, xncclose.y+.5));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5 - radius, xncclose.y+.5));
+	CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w - 0.5 - radius, xncclose.y+.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5, xncclose.y + xncclose.h -1.5));
+	CHECK_CAIRO(cairo_close_path(cr));
+	::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
+	cairo_stroke(cr);
+
 	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
-
-	/** draw border **/
-	//draw_notebook_border(cr, n->allocation(), tab_area, border_color, border_width);
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/** draw application icon **/
 	rectangle bicon = tab_area;
@@ -671,7 +712,7 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw application title **/
 	rectangle btext = tab_area;
 	btext.h -= 0;
-	btext.w -= 3 * 16 + 12 + 4;
+	btext.w -= 3 * 16 + 12 + 30;
 	btext.x += 7 + 16 + 6;
 	btext.y += 1;
 
@@ -711,20 +752,20 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw close button **/
 
 	rectangle ncclose;
-	ncclose.x = tab_area.x + tab_area.w - 1 * 17 - 4;
-	ncclose.y = tab_area.y + 2;
+	ncclose.x = tab_area.x + tab_area.w - 25;
+	ncclose.y = tab_area.y;
 	ncclose.w = 16;
 	ncclose.h = 16;
 
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	//CHECK_CAIRO(cairo_rectangle(cr, ncclose.x, ncclose.y, ncclose.w, ncclose.h));
-	CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, ncclose.x, ncclose.y));
-	CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, ncclose.x, ncclose.y));
+	CHECK_CAIRO(cairo_set_source_surface(cr, close_button1_s, ncclose.x, ncclose.y));
+	CHECK_CAIRO(cairo_mask_surface(cr, close_button1_s, ncclose.x, ncclose.y));
 
 	/** draw unbind button **/
 	rectangle ncub;
-	ncub.x = tab_area.x + tab_area.w - 2 * 17 - 4;
-	ncub.y = tab_area.y + 2;
+	ncub.x = tab_area.x + tab_area.w - 25 - 30;
+	ncub.y = tab_area.y;
 	ncub.w = 16;
 	ncub.h = 16;
 
@@ -736,39 +777,6 @@ void simple2_theme_t::render_notebook_selected(
 	rectangle area = n->allocation();
 	area.y += notebook_margin.top - 4;
 	area.h -= notebook_margin.top - 4;
-
-	rectangle bclient = n->selected()->base_position();
-
-//	/* left */
-//	box_int_t bleft(area.x, area.y, bclient.x - area.x, area.h);
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-//	CHECK_CAIRO(cairo_rectangle(cr, bleft.x, bleft.y, bleft.w, bleft.h));
-//	CHECK_CAIRO(cairo_fill(cr));
-//
-//	/* right */
-//
-//	box_int_t bright(bclient.x + bclient.w, area.y,
-//			area.x + area.w - bclient.x - bclient.w, area.h);
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-//	CHECK_CAIRO(cairo_rectangle(cr, bright.x, bright.y, bright.w, bright.h));
-//	CHECK_CAIRO(cairo_fill(cr));
-//
-//	/* top */
-//
-//	box_int_t btop(bclient.x, area.y, bclient.w, bclient.y - area.y);
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-//	CHECK_CAIRO(cairo_rectangle(cr, btop.x, btop.y, btop.w, btop.h));
-//	CHECK_CAIRO(cairo_fill(cr));
-//
-//	/* bottom */
-//	box_int_t bbottom(bclient.x, bclient.y + bclient.h, bclient.w,
-//			area.y + area.h - bclient.y - bclient.h);
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-//	CHECK_CAIRO(cairo_rectangle(cr, bbottom.x, bbottom.y, bbottom.w, bbottom.h));
-//	CHECK_CAIRO(cairo_fill(cr));
-
-
-
 
 }
 

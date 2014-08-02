@@ -15,6 +15,7 @@ nobase_dist_pagedata_DATA = \
 	data/view-restore.png \
 	data/window-close.png \
 	data/window-close-1.png \
+	data/window-close-2.png \
 	data/edit-delete.png \
 	data/media-eject.png \
 	data/pop.png \

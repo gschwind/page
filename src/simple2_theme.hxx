@@ -63,6 +63,7 @@ public:
 	cairo_surface_t * vsplit_button_s;
 	cairo_surface_t * hsplit_button_s;
 	cairo_surface_t * close_button_s;
+	cairo_surface_t * close_button1_s;
 	cairo_surface_t * pop_button_s;
 	cairo_surface_t * pops_button_s;
 	cairo_surface_t * unbind_button_s;
