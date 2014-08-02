@@ -1,4 +1,4 @@
-bin_PROGRAMS = page test_grab_key
+bin_PROGRAMS = page 
 
 AM_CXXFLAGS =  \
 	-std=c++11 \
@@ -47,7 +47,4 @@ page_LDADD = \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
 
-
-test_grab_key_SOURCES = test_grab_key.cxx
-test_grab_key_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
 
