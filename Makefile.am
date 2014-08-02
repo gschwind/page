@@ -5,6 +5,8 @@ SUBDIRS = src
 
 pagedatadir = $(datadir)/page
 
+applicationsdatadir = $(datadir)/applications
+
 nobase_dist_pagedata_DATA = \
 	data/close_button.png \
 	data/hsplit_button.png \
@@ -20,4 +22,7 @@ nobase_dist_pagedata_DATA = \
 	data/vsplit_button.png \
 	page.conf
 
+# allow replacement of mate window manager
+nobase_dist_applicationsdata_DATA = \
+	page.desktop
 
