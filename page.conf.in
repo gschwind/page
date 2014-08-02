@@ -25,16 +25,16 @@ fade_out_time = 300000000
 
 # set background image (optional)
 #
-#background_png=/home/user/pictures/1361665890_96572.png
+#background_png=/absolute_path_to_some_file.png
 
 #possible mode are : *tile, zoom, center, scale, stretch, span (==scale)
 scale_mode=zoom
 
-pango_font = Ubuntu Bold 10
+pango_font = Ubuntu Bold 11
 pango_popup_font = Ubuntu Bold 20
 
 # color used when no backgroun imgage is set.
-default_background_color = 000000
+default_background_color = 005C3566
 
 # popup colors
 popup_text_color = FFFFFF
@@ -46,13 +46,13 @@ popup_background_color = 8ae234
 # active notebook text font.
 notebook_active_font               = Ubuntu Bold 10
 # active notebook text color.
-notebook_active_text_color         = FFFFFF
+notebook_active_text_color         = 00FFFFFF
 # active notebook text outline color
-notebook_active_outline_color      = c4a000
+notebook_active_outline_color      = 88000000
 # active notebook color border
-notebook_active_border_color       = FF0000
+notebook_active_border_color       = 2273d216
 # active notebook background
-notebook_active_background_color   = DDFF0000
+notebook_active_background_color   = 003465A4
 
 # selected notebook is the notebook currently selected for a group of notebook
 # but that do not have the focus.
@@ -60,26 +60,26 @@ notebook_active_background_color   = DDFF0000
 # selected notebook text font.
 notebook_selected_font             = Ubuntu Bold 10
 # selected notebook (not active one) title text color
-notebook_selected_text_color       = FFFFFF
+notebook_selected_text_color       = 00FFFFFF
 # selected notebook (not active one) title text outline color
-notebook_selected_outline_color    = 3A5885
+notebook_selected_outline_color    = 88000000
 # selected notebook (not active one) border color
-notebook_selected_border_color     = 3DADD6
+notebook_selected_border_color     = 224e9a06
 # selected notebook (not active one) background
-notebook_selected_background_color = 883DADD6
+notebook_selected_background_color = 224e9a06
 
 # inactive notebook are all not active and not selected notebook.
 #
 # inactive notebook text font.
 notebook_normal_font               = Ubuntu Regular 10
 # inactive notebook text color
-notebook_normal_text_color = FFFFFF
+notebook_normal_text_color         = 00FFFFFF
 # inactive notebook text outline color
-notebook_normal_outline_color = 3A5885
+notebook_normal_outline_color      = 88000000
 # inactive notebook border color.
-notebook_normal_border_color = 729fcf
+notebook_normal_border_color       = 44ccccce
 # inactive notebook text background
-notebook_normal_background_color = 88204a87
+notebook_normal_background_color   = 44ccccce
 
 
 # active floating window.
