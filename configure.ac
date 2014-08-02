@@ -105,6 +105,7 @@ AC_DEFINE_DIR([DATA_DIR], [datadir], [Data directory (/usr/share)])
 
 AC_CONFIG_FILES([
   page.conf
+  page.desktop
   Makefile
   src/Makefile
   ])

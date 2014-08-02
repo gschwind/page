@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Page
+Exec=@prefix@/bin/page
+Icon=page
+NoDisplay=true
+# name we put on the WM spec check window
+X-GNOME-WMName=page
+# gnome-session autostart
+X-GNOME-Autostart-Phase=WindowManager
+X-GNOME-Provides=windowmanager
+# Ubuntu stuff
+X-Ubuntu-Gettext-Domain=page
+# back compat
+X-GNOME-Autostart-Notify=true
