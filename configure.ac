@@ -6,17 +6,6 @@ AC_CONFIG_MACRO_DIR([m4])
 
 # define custom macro to setup dir from datadir
 
-AC_DEFUN([AC_DEFINE_DIR], [
- # expand 4 times ... with some hope that enough
- eval ac_define_dir="\"[$]$2\""
- eval ac_define_dir="\"$ac_define_dir\""
- eval ac_define_dir="\"$ac_define_dir\""
- eval ac_define_dir="\"$ac_define_dir\""
- AC_SUBST($1, "$ac_define_dir")
- AC_DEFINE_UNQUOTED($1, "$ac_define_dir", [$3])
-])
-
-
 # Check for programs
 AC_PROG_CC
 AC_PROG_CXX
