@@ -38,8 +38,6 @@ public:
 
 	display_t * _cnx;
 
-
-
 	string notebook_active_font_name;
 	string notebook_selected_font_name;
 	string notebook_normal_font_name;

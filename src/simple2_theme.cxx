@@ -164,6 +164,19 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 			conf.get_string("simple_theme",
 					"floating_normal_background_color"));
 
+	notebook_margin.top =
+			conf.get_long("simple_theme",
+					"notebook_margin_top");
+	notebook_margin.bottom =
+			conf.get_long("simple_theme",
+					"notebook_margin_bottom");
+	notebook_margin.left =
+			conf.get_long("simple_theme",
+					"notebook_margin_left");
+	notebook_margin.right =
+			conf.get_long("simple_theme",
+					"notebook_margin_right");
+
 	background_s = nullptr;
 
 	vsplit_button_s = nullptr;

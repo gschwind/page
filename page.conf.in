@@ -1,3 +1,8 @@
+####
+# Page configuration file, do not edit it!
+# Use $HOME/.page.conf to overide those options.
+####
+
 [default]
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
@@ -21,6 +26,9 @@ fade_in_time = 300000000
 fade_out_time = 300000000
 
 
+###
+# This section is related to simple_theme engine
+###
 [simple_theme]
 
 # set background image (optional)
@@ -29,6 +37,14 @@ fade_out_time = 300000000
 
 #possible mode are : *tile, zoom, center, scale, stretch, span (==scale)
 scale_mode=zoom
+
+# notebook layout
+# margin_top include tabs.
+#
+notebook_margin_top     = 22
+notebook_margin_bottom  = 4
+notebook_margin_left    = 4
+notebook_margin_right   = 4
 
 pango_font = Ubuntu Bold 11
 pango_popup_font = Ubuntu Bold 20
