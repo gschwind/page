@@ -646,12 +646,11 @@ void simple2_theme_t::render_notebook_selected(
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	cairo_pattern_t * gradient;
-	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, b.y+b.h+30.0);
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, background_color.a));
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, b.h/(b.h+30.0), 1.0, 1.0, 1.0, background_color.a));
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, (b.h+20.0)/(b.h+30.0), 1.0, 1.0, 1.0, 0.0));
+	gradient = cairo_pattern_create_linear(0.0, b.y-5.0, 0.0, b.y+b.h+20.0);
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
+	cairo_pattern_destroy(gradient);
 
 	rectangle xncclose;
 	xncclose.x = b.x + b.w - 35;
