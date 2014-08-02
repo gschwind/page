@@ -9,10 +9,7 @@
 
 #include "execinfo.h"
 #include "stdint.h"
-#include "ftrace_function.hxx"
 #include "page.hxx"
-
-
 
 
 int main(int argc, char * * argv) {

@@ -18,11 +18,12 @@ AM_CXXFLAGS =  \
 	-fno-strict-aliasing
 
 page_SOURCES = \
-	main.cxx page.cxx \
+	main.cxx \
+	page.cxx \
 	display.cxx \
-	tree.cxx notebook.cxx \
+	tree.cxx \
+	notebook.cxx \
 	split.cxx \
-	ftrace_function.cxx \
 	compositor.cxx \
 	viewport.cxx \
 	simple2_theme.cxx \
@@ -44,10 +45,7 @@ page_LDADD = \
 	$(XEXT_LIBS) \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
-	$(RT_LIBS) \
-	$(GL_LIBS) \
-	-lbfd \
-	-ldl
+	$(RT_LIBS) 
 
 page_internal_compositor_SOURCES = \
 	display.cxx \
@@ -69,10 +67,7 @@ page_internal_compositor_LDADD = \
 	$(XINERAMA_LIBS) \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
-	$(RT_LIBS) \
-	$(GL_LIBS) \
-	-lbfd \
-	-ldl
+	$(RT_LIBS) 
 
 query_tree_SOURCES = query_tree.cxx
 query_tree_LDADD = $(X11_LIBS) 

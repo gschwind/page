@@ -4,8 +4,6 @@ AC_CONFIG_SRCDIR([src/main.cxx])
 AC_CONFIG_HEADERS([src/config.hxx])
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_ARG_ENABLE([trace], [AS_HELP_STRING([--enable-trace],[enable trace feature with gcc])], [CXXFLAGS="-g -finstrument-functions -finstrument-functions-exclude-file-list=x86_64-pc-linux-gnu,X11 -DENABLE_TRACE $CXXFLAGS"], [])
-
 # define custom macro to setup dir from datadir
 
 AC_DEFUN([AC_DEFINE_DIR], [
@@ -17,7 +15,6 @@ AC_DEFUN([AC_DEFINE_DIR], [
  AC_SUBST($1, "$ac_define_dir")
  AC_DEFINE_UNQUOTED($1, "$ac_define_dir", [$3])
 ])
-
 
 
 # Check for programs
@@ -97,23 +94,6 @@ if test "x$WITH_PANGO" = "xyes"; then
 else
     AC_MSG_NOTICE([pango code path will be enabled])
 fi
-
-#PKG_CHECK_MODULES(GL, gl >= 0.28)
-#AC_SUBST(GL_CFLAGS)
-#AC_SUBST(GL_LIBS)
-
-#PKG_CHECK_MODULES(STARTUPNOTIFICATION, libstartup-notification-1.0 >= 0.12)
-#AC_SUBST(STARTUPNOTIFICATION_CFLAGS)
-#AC_SUBST(STARTUPNOTIFICATION_LIBS)
-
-
-AC_CHECK_HEADER([bfd.h],
-                [AC_DEFINE([HAVE_BFD_H], [1], [BFD Headers])],
-                [AC_MSG_ERROR([Header "bfd.h" from the binutils not found!])])
-
-AC_SEARCH_LIBS([bfd_openr],  [bfd],
-               [AC_MSG_RESULT([OK, found libbfd])],
-               [AC_MSG_RESULT([no found libbfd])])
 
 AC_CHECK_LIB(rt, clock_gettime,
     [RT_LIBS="-lrt"
