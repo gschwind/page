@@ -1,6 +1,6 @@
 #!/bin/sh
 libtoolize -f -c
 aclocal
-autoconf
+autoconf -f
 automake -a -f -c
 
