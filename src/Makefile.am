@@ -1,4 +1,4 @@
-bin_PROGRAMS = page list_visual page_internal_compositor test_grab_key
+bin_PROGRAMS = page page_internal_compositor test_grab_key
 
 AM_CXXFLAGS =  \
 	-std=c++11 \
@@ -68,9 +68,6 @@ page_internal_compositor_LDADD = \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
-
-list_visual_SOURCES = list_visual.cxx
-list_visual_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS) 
 
 test_grab_key_SOURCES = test_grab_key.cxx
 test_grab_key_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
