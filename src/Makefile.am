@@ -1,4 +1,4 @@
-bin_PROGRAMS = page listen_root_event simple_window_test send_page_quit test_region list_visual page_internal_compositor test_grab_key
+bin_PROGRAMS = page simple_window_test send_page_quit test_region list_visual page_internal_compositor test_grab_key
 
 AM_CXXFLAGS =  \
 	-std=c++11 \
@@ -68,9 +68,6 @@ page_internal_compositor_LDADD = \
 	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
-
-listen_root_event_SOURCES = listen_root_event.cxx
-listen_root_event_LDADD = $(X11_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
 
 simple_window_test_SOURCES = simple_window_test.cxx
 simple_window_test_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
