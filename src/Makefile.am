@@ -1,4 +1,4 @@
-bin_PROGRAMS = page page_internal_compositor test_grab_key
+bin_PROGRAMS = page test_grab_key
 
 AM_CXXFLAGS =  \
 	-std=c++11 \
@@ -47,27 +47,6 @@ page_LDADD = \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
 
-page_internal_compositor_SOURCES = \
-	display.cxx \
-	page_internal_compositor.cxx \
-	compositor.cxx \
-	composite_surface_manager.cxx \
-	tree.cxx
-
-page_internal_compositor_LDADD = \
-	$(X11_LIBS) \
-	$(XCB_LIBS) \
-	$(CAIRO_LIBS) \
-	$(PANGO_LIBS) \
-	$(XCOMPOSITE_LIBS) \
-	$(XDAMAGE_LIBS) \
-	$(XRENDER_LIBS) \
-	$(XRANDR_LIBS) \
-	$(XEXT_LIBS) \
-	$(XINERAMA_LIBS) \
-	$(FT2_LIBS) \
-	$(GLIB_LIBS) \
-	$(RT_LIBS) 
 
 test_grab_key_SOURCES = test_grab_key.cxx
 test_grab_key_LDADD = $(X11_LIBS) $(CAIRO_LIBS) $(PANGO_LIBS) $(XCOMPOSITE_LIBS) $(XDAMAGE_LIBS) $(XRENDER_LIBS)
