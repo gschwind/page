@@ -681,17 +681,6 @@ bool display_t::check_randr_extension(int * opcode, int * event, int * error) {
 	}
 }
 
-bool display_t::check_glx_extension(int * opcode, int * event, int * error) {
-	if (!XQueryExtension(_dpy, GLX_EXTENSION_NAME, opcode, event, error)) {
-		return false;
-	} else {
-		int major = 0, minor = 0;
-		XRRQueryVersion(_dpy, &major, &minor);
-		printf(GLX_EXTENSION_NAME " Extension version %d.%d found\n", major,
-				minor);
-		return true;
-	}
-}
 
 bool display_t::check_dbe_extension(int * opcode, int * event, int * error) {
 	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, opcode, event, error)) {

@@ -18,8 +18,6 @@
 #include <X11/extensions/Xfixes.h>
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
 
 #include <cairo/cairo-xlib.h>
 

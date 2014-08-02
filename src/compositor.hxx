@@ -89,8 +89,6 @@ class compositor_t {
 	double fast_region_surf_monitor;
 	double slow_region_surf_monitor;
 
-	GLXContext glx_ctx;
-
 	renderable_list_t _graph_scene;
 
 	static int const _FPS_WINDOWS = 33;
