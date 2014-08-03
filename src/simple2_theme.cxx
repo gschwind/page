@@ -646,7 +646,7 @@ void simple2_theme_t::render_notebook_selected(
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
 	cairo_pattern_t * gradient;
-	gradient = cairo_pattern_create_linear(0.0, b.y-5.0, 0.0, b.y+b.h+20.0);
+	gradient = cairo_pattern_create_linear(0.0, b.y-2.0, 0.0, b.y+b.h+20.0);
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
@@ -808,45 +808,20 @@ void simple2_theme_t::render_notebook_normal(
 	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-	//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y + 1.0, b.w, b.h - 1.0, 7.5));
 
-	CHECK_CAIRO(cairo_fill(cr));
+	/** clip tabs **/
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
+	CHECK_CAIRO(cairo_clip(cr));
+
+	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
+	cairo_pattern_t * gradient;
+	gradient = cairo_pattern_create_linear(0.0, b.y-2.0, 0.0, b.y+b.h+20.0);
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
+	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
+	CHECK_CAIRO(cairo_mask(cr, gradient));
+	cairo_pattern_destroy(gradient);
 
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
-
-	{
-//		rectangle b = tab_area;
-
-//		CHECK_CAIRO(cairo_new_path(cr));
-//		CHECK_CAIRO(cairo_move_to(cr, b.x + 0.5, b.y + b.h + 0.5));
-//		CHECK_CAIRO(cairo_line_to(cr, b.x + 0.5, b.y + 0.5));
-//		CHECK_CAIRO(cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5));
-//		CHECK_CAIRO(cairo_line_to(cr, b.x + b.w - 0.5, b.y + b.h + 0.5));
-//		CHECK_CAIRO(cairo_line_to(cr, b.x + 0.5, b.y + b.h + 0.5));
-//
-//		CHECK_CAIRO(cairo_rounded_tab(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0, 7.0));
-//		CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
-//		CHECK_CAIRO(cairo_stroke(cr));
-	}
-
-	/** draw gradient under tabs **/
-	display_t::create_context(__FILE__, __LINE__);
-	CHECK_CAIRO(cairo_save(cr));
-	CHECK_CAIRO(cairo_translate(cr, tab_area.x, tab_area.y + tab_area.h));
-	CHECK_CAIRO(cairo_rectangle(cr, 0.0, 0.0, tab_area.w, 100.0));
-	CHECK_CAIRO(cairo_clip(cr));
-	cairo_pattern_t * gradient;
-	gradient = cairo_pattern_create_linear(0.0, 0.0, 0.0, 20.0);
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
-	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 0.0, 0.0, 0.0, 0.0));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-	CHECK_CAIRO(cairo_mask(cr, gradient));
-	CHECK_CAIRO(cairo_fill(cr));
-	CHECK_CAIRO(cairo_pattern_destroy(gradient));
-	display_t::destroy_context(__FILE__, __LINE__);
-	CHECK_CAIRO(cairo_restore(cr));
 
 	rectangle bicon = tab_area;
 	bicon.h = 16;
