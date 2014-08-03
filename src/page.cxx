@@ -850,7 +850,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 							mode_data_split.split->get_split_bar_area();
 
 					/* show split overlay */
-					ps->move_resize(mode_data_split.slider_area);
+					ps->set_current_split(b->spt);
+					ps->set_position(mode_data_split.split_ratio);
 					ps->show();
 				}
 			}
@@ -1357,7 +1358,7 @@ void page_t::process_event(XMotionEvent const & e) {
 				mode_data_split.slider_area.y);
 
 
-		ps->move(mode_data_split.slider_area.x, mode_data_split.slider_area.y);
+		ps->set_position(mode_data_split.split_ratio);
 		_need_render = true;
 
 		break;

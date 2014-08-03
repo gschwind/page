@@ -107,7 +107,7 @@ public:
 			window_icon_handler_t * icon, unsigned int width,
 			unsigned int height, string const & title) = 0;
 
-	virtual void render_popup_split(cairo_t * cr, unsigned int width, unsigned int height) = 0;
+	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) = 0;
 
 	virtual void update() = 0;
 

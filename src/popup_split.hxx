@@ -20,13 +20,24 @@ namespace page {
 struct popup_split_t: public window_overlay_t {
 
 	theme_t * _theme;
+	double _current_split;
+	split_base_t const * _s_base;
 
 	popup_split_t(theme_t * theme) : window_overlay_t(), _theme(theme) {
-
+		_s_base = nullptr;
+		_current_split = 0.5;
 	}
 
 	~popup_split_t() {
 
+	}
+
+	void set_position(double pos) {
+		_current_split = pos;
+	}
+
+	void set_current_split(split_base_t const * s) {
+		_s_base = s;
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
@@ -35,8 +46,7 @@ struct popup_split_t: public window_overlay_t {
 			return;
 		display_t::create_context(__FILE__, __LINE__);
 		cairo_save(cr);
-		cairo_translate(cr, _position.x, _position.y);
-		_theme->render_popup_split(cr, _position.w, _position.h);
+		_theme->render_popup_split(cr, _s_base, _current_split);
 		display_t::destroy_context(__FILE__, __LINE__);
 		cairo_restore(cr);
 

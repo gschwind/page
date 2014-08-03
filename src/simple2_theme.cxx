@@ -1645,7 +1645,7 @@ vector<floating_event_t> * simple2_theme_t::compute_floating_areas(
 }
 
 
-void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsigned int height) {
+void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) {
 
 	display_t::create_context(__FILE__, __LINE__);
 	cairo_save(cr);
@@ -1653,33 +1653,55 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsig
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
+	rectangle const & alloc = s->allocation();
 
-	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0));
-	CHECK_CAIRO(cairo_new_path(cr));
+	rectangle rect0;
+	rectangle rect1;
 
-	if(width > height) {
-		CHECK_CAIRO(cairo_move_to(cr, 0.0, height / 2));
-		CHECK_CAIRO(cairo_line_to(cr, width, height / 2));
+	if(s->type() == HORIZONTAL_SPLIT) {
 
-		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
-		CHECK_CAIRO(cairo_line_to(cr, 1.0, height - 1.0));
+		rect0.x = alloc.x + 5.0;
+		rect0.w = alloc.w - 10.0;
+		rect1.x = alloc.x + 5.0;
+		rect1.w = alloc.w - 10.0;
 
-		CHECK_CAIRO(cairo_move_to(cr, width - 1.0, 1.0));
-		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height));
+		rect0.y = alloc.y + 5.0;
+		rect0.h = alloc.h * current_split - 5.0 - 5.0;
+
+		rect1.y = alloc.y + alloc.h * current_split + 5.0;
+		rect1.h = alloc.h * (1.0-current_split) - 5.0 - 5.0;
 
 	} else {
-		CHECK_CAIRO(cairo_move_to(cr, width / 2, 1.0));
-		CHECK_CAIRO(cairo_line_to(cr, width / 2, height - 1.0));
 
-		CHECK_CAIRO(cairo_move_to(cr, 1.0, 1.0));
-		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, 1.0));
+		rect0.y = alloc.y + 5.0;
+		rect0.h = alloc.h - 10.0;
+		rect1.y = alloc.y + 5.0;
+		rect1.h = alloc.h - 10.0;
 
-		CHECK_CAIRO(cairo_move_to(cr, 1.0, height - 1.0));
-		CHECK_CAIRO(cairo_line_to(cr, width - 1.0, height - 1.0));
+		rect0.x = alloc.x + 5.0;
+		rect0.w = alloc.w * current_split - 5.0 - 5.0;
+
+		rect1.x = alloc.x + alloc.w * current_split + 5.0;
+		rect1.w = alloc.w * (1.0-current_split) - 5.0 - 5.0;
 
 	}
 
-	CHECK_CAIRO(cairo_set_line_width(cr, 2.0));
+	CHECK_CAIRO(cairo_set_line_width(cr, 6.0));
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0));
+	CHECK_CAIRO(cairo_rectangle(cr, rect0.x, rect0.y, rect0.w, rect0.h));
+	CHECK_CAIRO(cairo_stroke(cr));
+
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0));
+	CHECK_CAIRO(cairo_rectangle(cr, rect1.x, rect1.y, rect1.w, rect1.h));
+	CHECK_CAIRO(cairo_stroke(cr));
+
+	CHECK_CAIRO(cairo_set_line_width(cr, 4.0));
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.5, 0.0, 1.0));
+	CHECK_CAIRO(cairo_rectangle(cr, rect0.x, rect0.y, rect0.w, rect0.h));
+	CHECK_CAIRO(cairo_stroke(cr));
+
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.5, 0.0, 1.0));
+	CHECK_CAIRO(cairo_rectangle(cr, rect1.x, rect1.y, rect1.w, rect1.h));
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	display_t::destroy_context(__FILE__, __LINE__);
