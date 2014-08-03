@@ -473,8 +473,15 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 					cairo_surface_t * s = p->get_cairo_surface();
 					rectangle location = mw->get_base_position();
 					display_t::create_context(__FILE__, __LINE__);
-
 					cairo_save(cr);
+
+					cairo_set_line_width(cr, 1.0);
+					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+					cairo_rectangle(cr, location.x-0.5, location.y-0.5, location.w+1.0,
+							location.h+1.0);
+					cairo_stroke(cr);
+
 					cairo_set_source_surface(cr, s, location.x, location.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_rectangle(cr, location.x, location.y, location.w,
