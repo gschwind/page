@@ -310,6 +310,7 @@ public:
 	Cursor default_cursor;
 
 	bool running;
+	bool _need_render;
 
 	config_handler_t conf;
 

@@ -64,6 +64,8 @@ page_t::page_t(int argc, char ** argv) : viewport_outputs() {
 	replace_wm = false;
 	char const * conf_file_name = 0;
 
+	_need_render = false;
+
 	/** parse command line **/
 
 	int k = 1;
@@ -1356,6 +1358,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 
 		ps->move(mode_data_split.slider_area.x, mode_data_split.slider_area.y);
+		_need_render = true;
 
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
@@ -1456,7 +1459,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.x += e.x_root - mode_data_floating.x_root;
 		popup_new_position.y += e.y_root - mode_data_floating.y_root;
 		update_popup_position(pfm, popup_new_position);
-
+		_need_render = true;
 		break;
 	}
 	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
@@ -1476,7 +1479,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.x += e.x_root - mode_data_floating.x_root;
 		popup_new_position.y += e.y_root - mode_data_floating.y_root;
 		update_popup_position(pfm, popup_new_position);
-
+		_need_render = true;
 		break;
 	}
 	case PROCESS_FLOATING_RESIZE: {
@@ -1563,7 +1566,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
-
+		_need_render = true;
 		break;
 	}
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
@@ -1650,7 +1653,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
-
+		_need_render = true;
 		break;
 	}
 	case PROCESS_FLOATING_CLOSE:
@@ -3904,9 +3907,14 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 	pn0->render(cr, time);
 	pfm->render(cr, time);
 
+	_need_render = false;
+
 }
 
 bool page_t::need_render(time_t time) {
+
+	if(_need_render == true)
+		return true;
 
 	for(auto i: childs()) {
 		if(i->need_render(time)) {

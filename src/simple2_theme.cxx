@@ -1647,10 +1647,12 @@ vector<floating_event_t> * simple2_theme_t::compute_floating_areas(
 
 void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsigned int height) {
 
+	display_t::create_context(__FILE__, __LINE__);
+	cairo_save(cr);
+
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-//	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.3));
-//	CHECK_CAIRO(cairo_rectangle(cr, 0, 0, width, height));
-//	CHECK_CAIRO(cairo_fill(cr));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+
 
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_new_path(cr));
@@ -1679,6 +1681,10 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, unsigned int width, unsig
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 2.0));
 	CHECK_CAIRO(cairo_stroke(cr));
+
+	display_t::destroy_context(__FILE__, __LINE__);
+	cairo_restore(cr);
+
 }
 
 void simple2_theme_t::cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius) {
