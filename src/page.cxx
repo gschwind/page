@@ -795,7 +795,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				}
 			}
 
-			if (b != 0) {
+			if (b != nullptr) {
 
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
@@ -803,6 +803,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.from = _upgrade(b->nbk);
 					mode_data_notebook.ns = 0;
 					mode_data_notebook.zone = SELECT_NONE;
+					mode_data_notebook.ev = *b;
 
 					pn0->move_resize(mode_data_notebook.from->tab_area);
 					pn0->update_window(mode_data_notebook.c,
@@ -1370,13 +1371,7 @@ void page_t::process_event(XMotionEvent const & e) {
 			continue;
 
 		/* do not start drag&drop for small move */
-		if (ev.xmotion.x_root < mode_data_notebook.start_x - 5
-				|| ev.xmotion.x_root > mode_data_notebook.start_x + 5
-				|| ev.xmotion.y_root < mode_data_notebook.start_y - 5
-				|| ev.xmotion.y_root > mode_data_notebook.start_y + 5
-				|| !mode_data_notebook.from->tab_area.is_inside(
-						ev.xmotion.x_root, ev.xmotion.y_root)) {
-
+		if (!mode_data_notebook.ev.position.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
 			if(!pn0->is_visible())
 				pn0->show();
 		}

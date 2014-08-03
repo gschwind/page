@@ -143,6 +143,7 @@ public:
 		managed_window_t * c;
 		notebook_t * from;
 		notebook_t * ns;
+		page_event_t ev;
 
 		mode_data_notebook_t() {
 			reset();
