@@ -1673,10 +1673,10 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, d
 
 	} else {
 
-		rect0.y = alloc.y + 5.0;
-		rect0.h = alloc.h - 10.0;
-		rect1.y = alloc.y + 5.0;
-		rect1.h = alloc.h - 10.0;
+		rect0.y = alloc.y + 5.0 + notebook_margin.top;
+		rect0.h = alloc.h - 10.0 - notebook_margin.top;
+		rect1.y = alloc.y + 5.0 + notebook_margin.top;
+		rect1.h = alloc.h - 10.0 - notebook_margin.top;
 
 		rect0.x = alloc.x + 5.0;
 		rect0.w = alloc.w * current_split - 5.0 - 5.0;
