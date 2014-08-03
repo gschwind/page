@@ -1665,8 +1665,8 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, d
 		rect1.x = alloc.x + 5.0;
 		rect1.w = alloc.w - 10.0;
 
-		rect0.y = alloc.y + 5.0;
-		rect0.h = alloc.h * current_split - 5.0 - 5.0;
+		rect0.y = alloc.y + 5.0 + notebook_margin.top;
+		rect0.h = alloc.h * current_split - 5.0 - 5.0  - notebook_margin.top;
 
 		rect1.y = alloc.y + alloc.h * current_split + 5.0;
 		rect1.h = alloc.h * (1.0-current_split) - 5.0 - 5.0;
