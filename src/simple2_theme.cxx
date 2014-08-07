@@ -76,12 +76,26 @@ rectangle simple2_theme_t::compute_notebook_close_position(
 }
 
 rectangle simple2_theme_t::compute_floating_close_position(rectangle const & allocation) const {
-	return rectangle(allocation.w - 1 * 17 - floating_margin.right, floating_margin.bottom, 16, 16).floor();
+
+	rectangle position;
+	position.x = allocation.w - 35;
+	position.y = 0.0;
+	position.w = 35;
+	position.h = notebook_margin.top-3;
+
+	return position;
 }
 
 rectangle simple2_theme_t::compute_floating_bind_position(
 		rectangle const & allocation) const {
-	return rectangle(allocation.w - 2 * 17 - floating_margin.right, floating_margin.bottom, 16, 16).floor();
+
+	rectangle position;
+	position.x = allocation.w - 25 - 30;
+	position.y = 0.0;
+	position.w = 16;
+	position.h = 16;
+
+	return position;
 }
 
 simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
@@ -96,10 +110,10 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	split_margin.left = 0;
 	split_margin.right = 0;
 
-	floating_margin.top = 32;
-	floating_margin.bottom = 12;
-	floating_margin.left = 12;
-	floating_margin.right = 12;
+	floating_margin.top = 28;
+	floating_margin.bottom = 6;
+	floating_margin.left = 6;
+	floating_margin.right = 6;
 
 	split_width = 10;
 
@@ -985,148 +999,159 @@ void simple2_theme_t::render_floating_base(
 	{
 		cairo_t * cr = mw->cairo_top();
 
-		rectangle b(0, 0, allocation.w, floating_margin.top);
-
-		CHECK_CAIRO(cairo_reset_clip(cr));
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_fill(cr));
+		rectangle tab_area(0, 0, allocation.w, floating_margin.top);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad0 = cairo_pattern_create_linear(b.x, 0.0, b.x + floating_margin.left, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y + floating_margin.bottom, floating_margin.left, floating_margin.top - floating_margin.bottom));
-		CHECK_CAIRO(cairo_set_source(cr, grad0));
-		CHECK_CAIRO(cairo_fill(cr));
-		CHECK_CAIRO(cairo_pattern_destroy(grad0));
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad1 = cairo_pattern_create_linear(b.x + b.w - floating_margin.right, 0.0, b.x + b.w, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right, floating_margin.top - floating_margin.bottom));
-		CHECK_CAIRO(cairo_set_source(cr, grad1));
-		CHECK_CAIRO(cairo_fill(cr));
-		CHECK_CAIRO(cairo_pattern_destroy(grad1));
-
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, b.y, 0.0, b.y + floating_margin.bottom);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.right - floating_margin.left, floating_margin.bottom));
-		CHECK_CAIRO(cairo_set_source(cr, grad2));
-		CHECK_CAIRO(cairo_fill(cr));
-		CHECK_CAIRO(cairo_pattern_destroy(grad2));
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y + floating_margin.bottom, 0.0, b.x + floating_margin.left, b.y + floating_margin.bottom, floating_margin.left);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_set_source(cr, r0grad));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom));
-		CHECK_CAIRO(cairo_fill(cr));
-		CHECK_CAIRO(cairo_pattern_destroy(r0grad));
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, 0.0, b.x + b.w - floating_margin.right, b.y + floating_margin.bottom, floating_margin.right);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_set_source(cr, r1grad));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.right, floating_margin.bottom));
-		CHECK_CAIRO(cairo_fill(cr));
-		CHECK_CAIRO(cairo_pattern_destroy(r1grad));
-
-		rectangle b1(b.x + floating_margin.left, b.y + floating_margin.bottom, b.w - floating_margin.left - floating_margin.right, b.h - floating_margin.bottom);
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		CHECK_CAIRO(cairo_rectangle(cr, b1.x, b1.y, b1.w, b1.h));
-		//CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h, 7.0));
-		CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
-		CHECK_CAIRO(cairo_fill(cr));
-
-		rectangle bicon = b1;
-		bicon.h = 16;
-		bicon.w = 16;
-		bicon.x += 2;
-		bicon.y += 2;
+		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+		cairo_rectangle(cr, tab_area.x, tab_area.y, tab_area.w, tab_area.h);
+		cairo_fill(cr);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+		/** draw the tab background **/
+		rectangle b = tab_area;
 
-		if (mw->icon() != 0) {
-			if (mw->icon()->get_cairo_surface() != 0) {
-				CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-				CHECK_CAIRO(cairo_set_source_surface(cr,
-						mw->icon()->get_cairo_surface(), bicon.x, bicon.y));
-				CHECK_CAIRO(cairo_mask_surface(cr,
-						mw->icon()->get_cairo_surface(), bicon.x, bicon.y));
-			}
-		}
-
-		rectangle bbind = compute_floating_bind_position(b);
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-		//CHECK_CAIRO(cairo_rectangle(cr, bbind.x, bbind.y, bbind.w, bbind.h));
-		CHECK_CAIRO(cairo_set_source_surface(cr, bind_button_s, bbind.x, bbind.y));
-		CHECK_CAIRO(cairo_mask_surface(cr, bind_button_s, bbind.x, bbind.y));
-
-		rectangle bclose = compute_floating_close_position(b);
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-		//CHECK_CAIRO(cairo_rectangle(cr, bclose.x, bclose.y, bclose.w, bclose.h));
-		CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, bclose.x, bclose.y));
-		CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, bclose.x, bclose.y));
-
-		rectangle btext = b1;
-		btext.h -= 4;
-		btext.w -= 3 * 16 - 8;
-		btext.x += 8 + 16 + 2;
-		btext.y += 2;
-
-		CHECK_CAIRO(cairo_reset_clip(cr));
 		display_t::create_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_save(cr));
 
-		/* draw selectected title */
+		/** clip tabs **/
+		CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
+		CHECK_CAIRO(cairo_clip(cr));
 
-#ifdef WITH_PANGO
-		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
-		{
-			PangoLayout * pango_layout = pango_layout_new(pango_context);
-			pango_layout_set_font_description(pango_layout, pango_font);
-			pango_cairo_update_layout(cr, pango_layout);
-			pango_layout_set_text(pango_layout, (mw)->title().c_str(), -1);
-			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-			pango_cairo_layout_path(cr, pango_layout);
-			g_object_unref(pango_layout);
-		}
+		CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
+		cairo_pattern_t * gradient;
+		gradient = cairo_pattern_create_linear(0.0, b.y-2.0, 0.0, b.y+b.h);
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, (background_color.a)));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, (background_color.a)*0.5));
+		CHECK_CAIRO(cairo_mask(cr, gradient));
+		cairo_pattern_destroy(gradient);
 
-		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
-		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
-		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
-		CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
-		CHECK_CAIRO(cairo_stroke_preserve(cr));
+		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.5));
+		cairo_set_line_width(cr, 1.0);
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		CHECK_CAIRO(cairo_stroke(cr));
 
-		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
-		CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
+		rectangle xncclose;
+		xncclose.x = b.x + b.w - 35;
+		xncclose.y = b.y;
+		xncclose.w = 35;
+		xncclose.h = notebook_margin.top-3;
+
+		CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h+0.5));
+		CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
 		CHECK_CAIRO(cairo_fill(cr));
 
-#endif
+		double radius = 6.5;
+		CHECK_CAIRO(cairo_new_path(cr));
+		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
+		CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
+		CHECK_CAIRO(cairo_close_path(cr));
+
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_stroke(cr);
+
+		radius = 6.5;
+		CHECK_CAIRO(cairo_new_path(cr));
+		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+1.5, xncclose.y-1.5 + xncclose.h));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+1.5, xncclose.y+.5));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5 - radius, xncclose.y+.5));
+		CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w - 0.5 - radius, xncclose.y+.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5, xncclose.y + xncclose.h -1.5));
+		CHECK_CAIRO(cairo_close_path(cr));
+		::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
+		cairo_stroke(cr);
 
 		display_t::destroy_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_restore(cr));
-		CHECK_CAIRO(cairo_reset_clip(cr));
+		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
-//		CHECK_CAIRO(cairo_new_path(cr));
-//		CHECK_CAIRO(cairo_move_to(cr, b.x + 1.0, b.y + b.h));
-//		CHECK_CAIRO(cairo_line_to(cr, b.x + 1.0, b.y + 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, b.w - 1.0, b.y + 1.0));
-//		CHECK_CAIRO(cairo_line_to(cr, b.w - 1.0, b.y + b.h));
-//		CHECK_CAIRO(cairo_set_line_width(cr, 2.0));
-//		CHECK_CAIRO(cairo_set_source_rgba(cr, border_color));
-//		CHECK_CAIRO(cairo_stroke(cr));
+		/** draw application icon **/
+		rectangle bicon = tab_area;
+		bicon.h = 16;
+		bicon.w = 16;
+		bicon.x += 10;
+		bicon.y += floating_margin.top - 22;
+
+		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+		if ((mw)->icon() != 0) {
+			if ((mw)->icon()->get_cairo_surface() != 0) {
+				CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+				CHECK_CAIRO(cairo_set_source_surface(cr, (mw)->icon()->get_cairo_surface(),
+						bicon.x, bicon.y));
+				CHECK_CAIRO(cairo_mask_surface(cr, (mw)->icon()->get_cairo_surface(),
+						bicon.x, bicon.y));
+			}
+		}
+
+	#ifdef WITH_PANGO
+		/** draw application title **/
+		rectangle btext = tab_area;
+		btext.h -= 0;
+		btext.w -= 3 * 16 + 12 + 30;
+		btext.x += 7 + 16 + 6;
+		btext.y += floating_margin.top - 23;
+
+		/** draw title **/
+		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
+
+		{
+
+			{
+				PangoLayout * pango_layout = pango_layout_new(pango_context);
+				pango_layout_set_font_description(pango_layout, pango_font);
+				pango_cairo_update_layout(cr, pango_layout);
+				pango_layout_set_text(pango_layout, (mw)->title().c_str(), -1);
+				pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+				pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+				pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+				pango_cairo_layout_path(cr, pango_layout);
+				g_object_unref(pango_layout);
+			}
+
+			CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
+			CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+			CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+			CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
+
+			CHECK_CAIRO(cairo_stroke_preserve(cr));
+
+			CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+			CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
+			CHECK_CAIRO(cairo_fill(cr));
+		}
+
+	#endif
+
+		CHECK_CAIRO(cairo_identity_matrix(cr));
+
+		/** draw close button **/
+
+		rectangle ncclose;
+		ncclose.x = tab_area.x + tab_area.w - 25;
+		ncclose.y = tab_area.y;
+		ncclose.w = 16;
+		ncclose.h = 16;
+
+		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+		//CHECK_CAIRO(cairo_rectangle(cr, ncclose.x, ncclose.y, ncclose.w, ncclose.h));
+		CHECK_CAIRO(cairo_set_source_surface(cr, close_button1_s, ncclose.x, ncclose.y));
+		CHECK_CAIRO(cairo_mask_surface(cr, close_button1_s, ncclose.x, ncclose.y));
+
+		/** draw unbind button **/
+		rectangle ncub;
+		ncub.x = tab_area.x + tab_area.w - 25 - 30;
+		ncub.y = tab_area.y;
+		ncub.w = 16;
+		ncub.h = 16;
+
+		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+		//CHECK_CAIRO(cairo_rectangle(cr, ncub.x, ncub.y, ncub.w, ncub.h));
+		CHECK_CAIRO(cairo_set_source_surface(cr, bind_button_s, ncub.x, ncub.y));
+		CHECK_CAIRO(cairo_mask_surface(cr, bind_button_s, ncub.x, ncub.y));
+
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
@@ -1137,43 +1162,32 @@ void simple2_theme_t::render_floating_base(
 
 		rectangle b(0, 0, allocation.w, floating_margin.bottom);
 
-		/** clear **/
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_fill(cr));
-
-
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, 0.0, floating_margin.bottom);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_set_source(cr, grad));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x + floating_margin.left, b.y, b.w - floating_margin.left - floating_margin.right, b.h));
-		CHECK_CAIRO(cairo_fill(cr));
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_fill(cr);
 
-		CHECK_CAIRO(cairo_pattern_destroy(grad));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr,b.x, b.y+b.h-0.5);
+		cairo_line_to(cr, b.x+b.w, b.y+b.h-0.5);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
 
-		CHECK_CAIRO(cairo_reset_clip(cr));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr,b.x+0.5, b.y);
+		cairo_line_to(cr, b.x+0.5, b.y+b.h);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
 
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * r0grad = cairo_pattern_create_radial(b.x + floating_margin.left, b.y, 0.0, b.x + floating_margin.left, b.y, floating_margin.left);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_set_source(cr, r0grad));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, floating_margin.left, floating_margin.bottom));
-		CHECK_CAIRO(cairo_fill(cr));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr,b.x+b.w-0.5, b.y);
+		cairo_line_to(cr, b.x+b.w-0.5, b.y+b.h);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
 
-		CHECK_CAIRO(cairo_pattern_destroy(r0grad));
-
-		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * r1grad = cairo_pattern_create_radial(b.x + b.w - floating_margin.right, b.y, 0.0, b.x + b.w - floating_margin.right, b.y, floating_margin.right);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_set_source(cr, r1grad));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x + b.w - floating_margin.right, b.y, floating_margin.left, floating_margin.bottom));
-		CHECK_CAIRO(cairo_fill(cr));
-
-		CHECK_CAIRO(cairo_pattern_destroy(r1grad));
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
@@ -1187,21 +1201,18 @@ void simple2_theme_t::render_floating_base(
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
-		/** clear **/
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_fill(cr));
-
-
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.right, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source(cr, grad));
-		CHECK_CAIRO(cairo_fill(cr));
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_fill(cr);
 
-		CHECK_CAIRO(cairo_pattern_destroy(grad));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr,b.x+b.w-0.5, b.y);
+		cairo_line_to(cr, b.x+b.w-0.5, b.y+b.h);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
@@ -1214,20 +1225,19 @@ void simple2_theme_t::render_floating_base(
 				allocation.h - floating_margin.top
 						- floating_margin.bottom);
 
-		/** clear **/
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_fill(cr));
-
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		cairo_pattern_t * grad = cairo_pattern_create_linear(0.0, 0.0, floating_margin.left, 0.0);
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 0.0, 0.0, 0.0, 0.0, 0.0));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(grad, 1.0, 0.0, 0.0, 0.0, 0.2));
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source(cr, grad));
-		CHECK_CAIRO(cairo_fill(cr));
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
+		cairo_fill(cr);
 
-		CHECK_CAIRO(cairo_pattern_destroy(grad));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr,b.x+0.5, b.y);
+		cairo_line_to(cr, b.x+0.5, b.y+b.h);
+		cairo_set_line_width(cr, 1.0);
+		cairo_stroke(cr);
+
 		display_t::destroy_context(__FILE__, __LINE__);
 		assert(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);

@@ -82,7 +82,7 @@ notebook_selected_outline_color    = 88000000
 # selected notebook (not active one) border color
 notebook_selected_border_color     = 224e9a06
 # selected notebook (not active one) background
-notebook_selected_background_color = 224e9a06
+notebook_selected_background_color = 004e9a06
 
 # inactive notebook are all not active and not selected notebook.
 #
@@ -95,7 +95,7 @@ notebook_normal_outline_color      = 88000000
 # inactive notebook border color.
 notebook_normal_border_color       = 44ccccce
 # inactive notebook text background
-notebook_normal_background_color   = 44ccccce
+notebook_normal_background_color   = 00ccccce
 
 
 # active floating window.
@@ -103,24 +103,24 @@ notebook_normal_background_color   = 44ccccce
 # active floating text font.
 floating_active_font               = Ubuntu Bold 10
 # active floating text color.
-floating_active_text_color         = FFFFFF
+floating_active_text_color         = 00FFFFFF
 # active floating text outline color
-floating_active_outline_color      = FF0000
+floating_active_outline_color      = 88000000
 # active floating color border
-floating_active_border_color       = ef2929
+floating_active_border_color       = 2273d216
 # active floating background
-floating_active_background_color   = a40000
+floating_active_background_color   = 003465A4
 
 # inactive floating.
 #
 # innactive floating text font.
-floating_normal_font               = Ubuntu Regular 10
+floating_normal_font               = Ubuntu Bold 10
 # inactive floating text color
-floating_normal_text_color = FFFFFF
+floating_normal_text_color         = 00FFFFFF
 # inactive floating text outline color
-floating_normal_outline_color = 3A5885
+floating_normal_outline_color      = 88000000
 # inactive floating border color.
-floating_normal_border_color = 729fcf
+floating_normal_border_color       = 224e9a06
 # inactive floating text background
-floating_normal_background_color = 204a87
+floating_normal_background_color   = 004e9a06
 
