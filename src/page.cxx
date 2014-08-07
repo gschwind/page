@@ -875,9 +875,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_floating.popup_original_position = mw->get_base_position();
 				mode_data_floating.button = Button1;
 
-				pfm->move_resize(mw->get_base_position());
-				pfm->update_window(mw, mw->title());
-				pfm->show();
+				//pfm->move_resize(mw->get_base_position());
+				//pfm->update_window(mw, mw->title());
+				//pfm->show();
 
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
