@@ -935,18 +935,18 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
-						pfm->move_resize(mw->get_base_position());
-						pfm->update_window(mw, mw->title());
-						pfm->show();
+						//pfm->move_resize(mw->get_base_position());
+						//pfm->update_window(mw, mw->title());
+						//pfm->show();
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
 						XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
 					} else {
 
-						pfm->move_resize(mw->get_base_position());
-						pfm->update_window(mw, mw->title());
-						pfm->show();
+						//pfm->move_resize(mw->get_base_position());
+						//pfm->update_window(mw, mw->title());
+						//pfm->show();
 
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
@@ -1449,12 +1449,12 @@ void page_t::process_event(XMotionEvent const & e) {
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
-		//mode_data_floating.f->reconfigure();
+		mode_data_floating.f->reconfigure();
 
-		rectangle popup_new_position = mode_data_floating.popup_original_position;
-		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-		update_popup_position(pfm, popup_new_position);
+//		rectangle popup_new_position = mode_data_floating.popup_original_position;
+//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+//		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
 		break;
 	}
@@ -1469,12 +1469,12 @@ void page_t::process_event(XMotionEvent const & e) {
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
-		//mode_data_floating.f->reconfigure();
+		mode_data_floating.f->reconfigure();
 
-		rectangle popup_new_position = mode_data_floating.popup_original_position;
-		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-		update_popup_position(pfm, popup_new_position);
+//		rectangle popup_new_position = mode_data_floating.popup_original_position;
+//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
+//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
+//		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
 		break;
 	}
@@ -1553,7 +1553,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = size;
 
 		mode_data_floating.f->set_floating_wished_position(size);
-		//mode_data_floating.f->reconfigure();
+		mode_data_floating.f->reconfigure();
 
 		rectangle popup_new_position = size;
 		popup_new_position.x -= theme->floating_margin.left;
