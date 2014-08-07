@@ -76,96 +76,98 @@ public:
 					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 				cairo_save(cr);
 
-				unsigned const int _shadow_width = 4;
+				draw_outer_graddien(cr, rectangle(wa.x, wa.y, wa.width, wa.height), 4.0);
 
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x - _shadow_width, wa.y, _shadow_width, wa.height);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * grad0 = cairo_pattern_create_linear(wa.x - _shadow_width, 0.0, wa.x, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_mask(cr, grad0);
-				cairo_pattern_destroy(grad0);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x + wa.width, wa.y, _shadow_width, wa.height);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * grad1 = cairo_pattern_create_linear(wa.x + wa.width, 0.0, wa.x + wa.width + _shadow_width, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_mask(cr, grad1);
-				cairo_pattern_destroy(grad1);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x, wa.y - _shadow_width, wa.width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, wa.y - _shadow_width, 0.0, wa.y);
-				cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_mask(cr, grad2);
-				cairo_pattern_destroy(grad2);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x, wa.y + wa.height, wa.width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * grad3 = cairo_pattern_create_linear(0.0, wa.y + wa.height, 0.0, wa.y + wa.height + _shadow_width);
-				cairo_pattern_add_color_stop_rgba(grad3, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_pattern_add_color_stop_rgba(grad3, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_mask(cr, grad3);
-				cairo_pattern_destroy(grad3);
-
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x - _shadow_width, wa.y - _shadow_width, _shadow_width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * r0grad = cairo_pattern_create_radial(wa.x, wa.y, 0.0, wa.x, wa.y, _shadow_width);
-				cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_mask(cr, r0grad);
-				cairo_pattern_destroy(r0grad);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x + wa.width, wa.y - _shadow_width, _shadow_width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * r1grad = cairo_pattern_create_radial(wa.x + wa.width, wa.y, 0.0, wa.x + wa.width, wa.y, _shadow_width);
-				cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_mask(cr, r1grad);
-				cairo_pattern_destroy(r1grad);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x - _shadow_width, wa.y + wa.height, _shadow_width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * r2grad = cairo_pattern_create_radial(wa.x, wa.y + wa.height, 0.0, wa.x, wa.y + wa.height, _shadow_width);
-				cairo_pattern_add_color_stop_rgba(r2grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_pattern_add_color_stop_rgba(r2grad, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_mask(cr, r2grad);
-				cairo_pattern_destroy(r2grad);
-
-				cairo_reset_clip(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_rectangle(cr, wa.x + wa.width, wa.y + wa.height, _shadow_width, _shadow_width);
-				cairo_clip(cr);
-				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-				cairo_pattern_t * r3grad = cairo_pattern_create_radial(wa.x + wa.width, wa.y + wa.height, 0.0, wa.x + wa.width, wa.y + wa.height, _shadow_width);
-				cairo_pattern_add_color_stop_rgba(r3grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-				cairo_pattern_add_color_stop_rgba(r3grad, 1.0, 0.0, 0.0, 0.0, 0.0);
-				cairo_mask(cr, r3grad);
-				cairo_pattern_destroy(r3grad);
+//				unsigned const int _shadow_width = 4;
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x - _shadow_width, wa.y, _shadow_width, wa.height);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * grad0 = cairo_pattern_create_linear(wa.x - _shadow_width, 0.0, wa.x, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_mask(cr, grad0);
+//				cairo_pattern_destroy(grad0);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x + wa.width, wa.y, _shadow_width, wa.height);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * grad1 = cairo_pattern_create_linear(wa.x + wa.width, 0.0, wa.x + wa.width + _shadow_width, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_mask(cr, grad1);
+//				cairo_pattern_destroy(grad1);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x, wa.y - _shadow_width, wa.width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, wa.y - _shadow_width, 0.0, wa.y);
+//				cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_mask(cr, grad2);
+//				cairo_pattern_destroy(grad2);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x, wa.y + wa.height, wa.width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * grad3 = cairo_pattern_create_linear(0.0, wa.y + wa.height, 0.0, wa.y + wa.height + _shadow_width);
+//				cairo_pattern_add_color_stop_rgba(grad3, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_pattern_add_color_stop_rgba(grad3, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_mask(cr, grad3);
+//				cairo_pattern_destroy(grad3);
+//
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x - _shadow_width, wa.y - _shadow_width, _shadow_width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * r0grad = cairo_pattern_create_radial(wa.x, wa.y, 0.0, wa.x, wa.y, _shadow_width);
+//				cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_mask(cr, r0grad);
+//				cairo_pattern_destroy(r0grad);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x + wa.width, wa.y - _shadow_width, _shadow_width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * r1grad = cairo_pattern_create_radial(wa.x + wa.width, wa.y, 0.0, wa.x + wa.width, wa.y, _shadow_width);
+//				cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_mask(cr, r1grad);
+//				cairo_pattern_destroy(r1grad);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x - _shadow_width, wa.y + wa.height, _shadow_width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * r2grad = cairo_pattern_create_radial(wa.x, wa.y + wa.height, 0.0, wa.x, wa.y + wa.height, _shadow_width);
+//				cairo_pattern_add_color_stop_rgba(r2grad, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_pattern_add_color_stop_rgba(r2grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_mask(cr, r2grad);
+//				cairo_pattern_destroy(r2grad);
+//
+//				cairo_reset_clip(cr);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//				cairo_rectangle(cr, wa.x + wa.width, wa.y + wa.height, _shadow_width, _shadow_width);
+//				cairo_clip(cr);
+//				cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//				cairo_pattern_t * r3grad = cairo_pattern_create_radial(wa.x + wa.width, wa.y + wa.height, 0.0, wa.x + wa.width, wa.y + wa.height, _shadow_width);
+//				cairo_pattern_add_color_stop_rgba(r3grad, 0.0, 0.0, 0.0, 0.0, 0.2);
+//				cairo_pattern_add_color_stop_rgba(r3grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+//				cairo_mask(cr, r3grad);
+//				cairo_pattern_destroy(r3grad);
 
 				cairo_reset_clip(cr);
 				cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);

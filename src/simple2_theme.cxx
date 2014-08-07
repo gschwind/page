@@ -31,6 +31,8 @@ inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 }
 
 
+
+
 #define CHECK_CAIRO(x) do { \
 	x;\
 	print_cairo_status(cr, __FILE__, __LINE__); \
