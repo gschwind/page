@@ -1,4 +1,4 @@
-AC_INIT([page], [0.9.5])
+AC_INIT([page], [1.2.4])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
 AC_CONFIG_HEADERS([src/config.hxx])
