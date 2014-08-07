@@ -738,12 +738,15 @@ void page_t::process_event(XKeyEvent const & e) {
 								80 * 4, y * 80));
 				pat->show();
 
+
+
 			} else {
 				XAllowEvents(e.display, ReplayKeyboard, e.time);
 			}
 
 
 			pat->select_next();
+			_need_render = true;
 
 		}
 
