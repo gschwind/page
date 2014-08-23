@@ -515,7 +515,9 @@ public:
 				cairo_surface_t * s = p->get_cairo_surface();
 				rectangle loc = base_position();
 
-				draw_outer_graddien(cr, rectangle(loc.x+2,loc.y+2,loc.w-4,loc.h-4), 8.0);
+				if(_motif_has_border) {
+					draw_outer_graddien(cr, rectangle(loc.x+2,loc.y+2,loc.w-4,loc.h-4), 8.0);
+				}
 
 				display_t::create_context(__FILE__, __LINE__);
 				cairo_save(cr);
