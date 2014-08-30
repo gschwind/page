@@ -154,7 +154,6 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 
 	_cnx->reparentwindow(_orig, _base, 0, 0);
 
-	display_t::create_surf(__FILE__, __LINE__);
 	_surf = cairo_xlib_surface_create(_cnx->dpy(), _deco, _deco_visual, b.w,
 			b.h);
 
@@ -165,8 +164,7 @@ managed_window_t::~managed_window_t() {
 	unselect_inputs();
 
 	if (_surf != nullptr) {
-		display_t::destroy_surf(__FILE__, __LINE__);
-		assert(cairo_surface_get_reference_count(_surf) == 1);
+		warn(cairo_surface_get_reference_count(_surf) == 1);
 		cairo_surface_destroy(_surf);
 		_surf = nullptr;
 	}
@@ -333,7 +331,7 @@ void managed_window_t::expose() {
 		}
 
 		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
-		display_t::create_context(__FILE__, __LINE__);
+
 		cairo_t * _cr = cairo_create(_surf);
 
 		/** top **/
@@ -383,8 +381,8 @@ void managed_window_t::expose() {
 		}
 
 		cairo_surface_flush(_surf);
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(_cr) == 1);
+
+		warn(cairo_get_reference_count(_cr) == 1);
 		cairo_destroy(_cr);
 	}
 }

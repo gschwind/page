@@ -44,11 +44,10 @@ struct popup_frame_move_t: public window_overlay_t {
 
 		if(not _is_visible)
 			return;
-		display_t::create_context(__FILE__, __LINE__);
+
 		cairo_save(cr);
 		cairo_translate(cr, _position.x, _position.y);
 		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h, title);
-		display_t::destroy_context(__FILE__, __LINE__);
 		cairo_restore(cr);
 	}
 

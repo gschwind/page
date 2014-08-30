@@ -40,7 +40,12 @@ using namespace std;
 
 namespace page {
 
-
+#define warn(test) \
+	do { \
+		if(not (test)) { \
+			printf("WARN %s:%d (%s) fail!\n", __FILE__, __LINE__, #test); \
+		} \
+	} while(false)
 
 /**
  * TRICK to compile time checking.

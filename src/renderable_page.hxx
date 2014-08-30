@@ -54,7 +54,6 @@ public:
 		if(damaged.empty() and not _is_durty)
 			return;
 
-		display_t::create_context(__FILE__, __LINE__);
 		cairo_t * cr = cairo_create(_back_surf);
 
 		cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
@@ -79,8 +78,7 @@ public:
 			}
 		}
 
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
+		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 		_is_durty = false;

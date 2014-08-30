@@ -44,10 +44,8 @@ struct popup_split_t: public window_overlay_t {
 
 		if(not _is_visible)
 			return;
-		display_t::create_context(__FILE__, __LINE__);
 		cairo_save(cr);
 		_theme->render_popup_split(cr, _s_base, _current_split);
-		display_t::destroy_context(__FILE__, __LINE__);
 		cairo_restore(cr);
 
 	}

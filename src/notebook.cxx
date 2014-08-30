@@ -402,7 +402,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				cairo_surface_t * s = prev_surf->get_cairo_surface();
 				region r = x_prv_loc;
 				r -= x_new_loc;
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_save(cr);
 				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 				cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0-ratio);
@@ -425,7 +425,6 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 					cairo_paint(cr);
 				}
 
-				display_t::destroy_context(__FILE__, __LINE__);
 				cairo_restore(cr);
 			}
 
@@ -436,7 +435,6 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 					region r = x_new_loc;
 					r -= x_prv_loc;
 
-					display_t::create_context(__FILE__, __LINE__);
 					cairo_save(cr);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
@@ -448,7 +446,6 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 					cairo_mask(cr, p0);
 					cairo_pattern_destroy(p0);
 
-					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 				}
 
@@ -472,7 +469,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
 					rectangle location = mw->get_base_position();
-					display_t::create_context(__FILE__, __LINE__);
+
 					cairo_save(cr);
 
 					cairo_set_line_width(cr, 1.0);
@@ -487,7 +484,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 					cairo_rectangle(cr, location.x, location.y, location.w,
 							location.h);
 					cairo_fill(cr);
-					display_t::destroy_context(__FILE__, __LINE__);
+
 					cairo_restore(cr);
 				}
 			}

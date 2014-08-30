@@ -218,7 +218,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (hsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (hsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -227,7 +226,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (vsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (vsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -236,7 +234,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (close_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-1.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -245,7 +242,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (close_button1_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-2.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		close_button1_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button1_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -254,7 +250,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pop_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -263,7 +258,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pops_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop_selected.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -272,7 +266,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (unbind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/media-eject.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		unbind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (unbind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -281,7 +274,6 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (bind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/view-restore.png";
 		printf("Load: %s\n", filename.c_str());
-		display_t::create_surf(__FILE__, __LINE__);
 		bind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (bind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -315,31 +307,23 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 simple2_theme_t::~simple2_theme_t() {
 
 	if(background_s != nullptr) {
-		display_t::destroy_surf(__FILE__, __LINE__);
-		assert(cairo_surface_get_reference_count(background_s) == 1);
+		warn(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
 	}
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(hsplit_button_s) == 1);
+	warn(cairo_surface_get_reference_count(hsplit_button_s) == 1);
 	cairo_surface_destroy(hsplit_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(vsplit_button_s) == 1);
+	warn(cairo_surface_get_reference_count(vsplit_button_s) == 1);
 	cairo_surface_destroy(vsplit_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(close_button_s) == 1);
+	warn(cairo_surface_get_reference_count(close_button_s) == 1);
 	cairo_surface_destroy(close_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(pop_button_s) == 1);
+	warn(cairo_surface_get_reference_count(pop_button_s) == 1);
 	cairo_surface_destroy(pop_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(pops_button_s) == 1);
+	warn(cairo_surface_get_reference_count(pops_button_s) == 1);
 	cairo_surface_destroy(pops_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(unbind_button_s) == 1);
+	warn(cairo_surface_get_reference_count(unbind_button_s) == 1);
 	cairo_surface_destroy(unbind_button_s);
-	display_t::destroy_surf(__FILE__, __LINE__);
-	assert(cairo_surface_get_reference_count(bind_button_s) == 1);
+	warn(cairo_surface_get_reference_count(bind_button_s) == 1);
 	cairo_surface_destroy(bind_button_s);
 
 	pango_font_description_free(notebook_active_font);
@@ -356,7 +340,7 @@ simple2_theme_t::~simple2_theme_t() {
 
 void simple2_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 		double w, double h, double r) {
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 
 	CHECK_CAIRO(cairo_new_path(cr));
@@ -369,7 +353,7 @@ void simple2_theme_t::rounded_rectangle(cairo_t * cr, double x, double y,
 	CHECK_CAIRO(cairo_move_to(cr, x + w, y + h));
 	CHECK_CAIRO(cairo_line_to(cr, x + w, y + r));
 	CHECK_CAIRO(cairo_stroke(cr));
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
@@ -462,7 +446,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 
 void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		rectangle const & area) const {
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 
 	CHECK_CAIRO(cairo_reset_clip(cr));
@@ -595,7 +579,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 		CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, b.x, b.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, b.x, b.y));
 	}
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
@@ -653,7 +637,6 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw the tab background **/
 	rectangle b = tab_area;
 
-	display_t::create_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_save(cr));
 
 	/** clip tabs **/
@@ -701,7 +684,6 @@ void simple2_theme_t::render_notebook_selected(
 	::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
 	cairo_stroke(cr);
 
-	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
@@ -814,7 +796,7 @@ void simple2_theme_t::render_notebook_normal(
 	tab_area.h -= 1;
 
 	managed_window_base_t const * c = data.clt;
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
@@ -844,7 +826,7 @@ void simple2_theme_t::render_notebook_normal(
 	bicon.w = 16;
 	bicon.x += 6;
 	bicon.y += 2;
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	if ((c)->icon() != 0) {
@@ -856,7 +838,7 @@ void simple2_theme_t::render_notebook_normal(
 					bicon.x, bicon.y));
 		}
 	}
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_restore(cr));
 
 	rectangle btext = tab_area;
@@ -864,7 +846,7 @@ void simple2_theme_t::render_notebook_normal(
 	btext.w -= 1 * 16 + 12;
 	btext.x += 3 + 16 + 6;
 	btext.y += 1;
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 
 #ifdef WITH_PANGO
@@ -900,17 +882,16 @@ void simple2_theme_t::render_notebook_normal(
 
 #endif
 
-	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
-	display_t::destroy_context(__FILE__, __LINE__);
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
 
 void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 		rectangle const & area) const {
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
+
 	CHECK_CAIRO(cairo_reset_clip(cr));
 	CHECK_CAIRO(cairo_identity_matrix(cr));
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
@@ -960,7 +941,7 @@ void simple2_theme_t::render_split(cairo_t * cr, split_base_t const * s,
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
 	CHECK_CAIRO(cairo_rectangle(cr, grip2.x, grip2.y, grip2.w, grip2.h));
 	CHECK_CAIRO(cairo_fill(cr));
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
@@ -1011,7 +992,6 @@ void simple2_theme_t::render_floating_base(
 		/** draw the tab background **/
 		rectangle b = tab_area;
 
-		display_t::create_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_save(cr));
 
 		/** clip tabs **/
@@ -1064,7 +1044,6 @@ void simple2_theme_t::render_floating_base(
 		::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
 		cairo_stroke(cr);
 
-		display_t::destroy_context(__FILE__, __LINE__);
 		CHECK_CAIRO(cairo_restore(cr));
 		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
@@ -1152,8 +1131,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_source_surface(cr, bind_button_s, ncub.x, ncub.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, bind_button_s, ncub.x, ncub.y));
 
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
+		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 	}
 
@@ -1188,8 +1166,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
+		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -1213,8 +1190,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
+		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 	}
 
@@ -1238,8 +1214,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
-		display_t::destroy_context(__FILE__, __LINE__);
-		assert(cairo_get_reference_count(cr) == 1);
+		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
 	}
@@ -1311,7 +1286,7 @@ void simple2_theme_t::render_popup_move_frame(cairo_t * cr, window_icon_handler_
 }
 
 void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w, int h) const {
-	display_t::create_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_save(cr));
 	int left_bound = x;
 	int right_bound = x + w;
@@ -1356,7 +1331,7 @@ void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int
 //	CHECK_CAIRO(cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
 	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 	CHECK_CAIRO(cairo_stroke(cr));
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
@@ -1364,8 +1339,7 @@ void simple2_theme_t::draw_hatched_rectangle(cairo_t * cr, int space, int x, int
 void simple2_theme_t::update() {
 
 	if(background_s != nullptr) {
-		display_t::destroy_surf(__FILE__, __LINE__);
-		assert(cairo_surface_get_reference_count(background_s) == 1);
+		warn(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
 	}
@@ -1378,14 +1352,12 @@ void simple2_theme_t::create_background_img() {
 
 	if (has_background) {
 
-		display_t::create_surf(__FILE__, __LINE__);
 		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
 				background_file.c_str());
 
 		XWindowAttributes wa;
 		XGetWindowAttributes(_cnx->dpy(), _cnx->root(), &wa);
 
-		display_t::create_surf(__FILE__, __LINE__);
 		background_s = cairo_image_surface_create(CAIRO_FORMAT_RGB24, wa.width,
 				wa.height);
 
@@ -1400,7 +1372,7 @@ void simple2_theme_t::create_background_img() {
 		if (src_width > 0 and src_height > 0) {
 
 			if (scale_mode == "stretch") {
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1413,12 +1385,12 @@ void simple2_theme_t::create_background_img() {
 				CHECK_CAIRO(cairo_set_source_surface(cr, tmp, 0, 0));
 				CHECK_CAIRO(cairo_rectangle(cr, 0, 0, src_width, src_height));
 				CHECK_CAIRO(cairo_fill(cr));
-				display_t::destroy_context(__FILE__, __LINE__);
-				assert(cairo_get_reference_count(cr) == 1);
+
+				warn(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			} else if (scale_mode == "zoom") {
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1455,12 +1427,12 @@ void simple2_theme_t::create_background_img() {
 					CHECK_CAIRO(cairo_rectangle(cr, 0, 0, xp, src_height));
 					CHECK_CAIRO(cairo_fill(cr));
 				}
-				display_t::destroy_context(__FILE__, __LINE__);
-				assert(cairo_get_reference_count(cr) == 1);
+
+				warn(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			} else if (scale_mode == "center") {
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1476,12 +1448,12 @@ void simple2_theme_t::create_background_img() {
 						min<double>(src_width, wa.width),
 						min<double>(src_height, wa.height)));
 				CHECK_CAIRO(cairo_fill(cr));
-				display_t::destroy_context(__FILE__, __LINE__);
-				assert(cairo_get_reference_count(cr) == 1);
+
+				warn(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			} else if (scale_mode == "scale" || scale_mode == "span") {
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_t * cr = cairo_create(background_s);
 
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
@@ -1516,12 +1488,12 @@ void simple2_theme_t::create_background_img() {
 					CHECK_CAIRO(cairo_rectangle(cr, x_offset, y_offset, src_width, src_height));
 					CHECK_CAIRO(cairo_fill(cr));
 				}
-				display_t::destroy_context(__FILE__, __LINE__);
-				assert(cairo_get_reference_count(cr) == 1);
+
+				warn(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			} else if (scale_mode == "tile") {
-				display_t::create_context(__FILE__, __LINE__);
+
 				cairo_t * cr = cairo_create(background_s);
 				CHECK_CAIRO(::cairo_set_source_rgb(cr, 0.5, 0.5, 0.5));
 				CHECK_CAIRO(cairo_rectangle(cr, 0, 0, wa.width, wa.height));
@@ -1537,15 +1509,14 @@ void simple2_theme_t::create_background_img() {
 					}
 				}
 
-				display_t::destroy_context(__FILE__, __LINE__);
-				assert(cairo_get_reference_count(cr) == 1);
+				warn(cairo_get_reference_count(cr) == 1);
 				cairo_destroy(cr);
 
 			}
 
 		}
-		display_t::destroy_surf(__FILE__, __LINE__);
-		assert(cairo_surface_get_reference_count(tmp) == 1);
+
+		warn(cairo_surface_get_reference_count(tmp) == 1);
 		cairo_surface_destroy(tmp);
 
 	} else {
@@ -1659,7 +1630,6 @@ vector<floating_event_t> * simple2_theme_t::compute_floating_areas(
 
 void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) {
 
-	display_t::create_context(__FILE__, __LINE__);
 	cairo_save(cr);
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
@@ -1716,7 +1686,6 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, d
 	CHECK_CAIRO(cairo_rectangle(cr, rect1.x, rect1.y, rect1.w, rect1.h));
 	CHECK_CAIRO(cairo_stroke(cr));
 
-	display_t::destroy_context(__FILE__, __LINE__);
 	cairo_restore(cr);
 
 }

@@ -190,7 +190,7 @@ public:
 				shared_ptr<pixmap_t> p = surf->get_pixmap();
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
-					display_t::create_context(__FILE__, __LINE__);
+
 					cairo_save(cr);
 					cairo_reset_clip(cr);
 					cairo_rectangle(cr, wa.x, wa.y, wa.width, wa.height);
@@ -199,7 +199,6 @@ public:
 					cairo_set_source_surface(cr, s, wa.x, wa.y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_mask_surface(cr, s, wa.x, wa.y);
-					display_t::destroy_context(__FILE__, __LINE__);
 					cairo_restore(cr);
 				}
 			}
