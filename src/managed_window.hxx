@@ -504,7 +504,7 @@ public:
 				rectangle loc = base_position();
 
 				if(_motif_has_border) {
-					draw_outer_graddien(cr, rectangle(loc.x+2,loc.y+2,loc.w-4,loc.h-4), 8.0);
+					draw_outer_graddien2(cr, rectangle(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
 				}
 
 

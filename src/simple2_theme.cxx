@@ -668,11 +668,6 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 
-	//CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
-	//CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
-	//CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
-	//CHECK_CAIRO(cairo_close_path(cr));
-
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_stroke(cr);
 
