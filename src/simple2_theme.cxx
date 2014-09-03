@@ -477,7 +477,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 
 	for (auto &i : *tabs) {
 
-		/** skip useless boxes **/
+		/** skip out of scope boxes **/
 		if (i.type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 			continue;
 		} else if (i.type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
@@ -629,18 +629,19 @@ void simple2_theme_t::render_notebook_selected(
 
 	tab_area.x += 2;
 	tab_area.w -= 4;
-	tab_area.y += 1;
+	tab_area.y += 0;
 	tab_area.h -= 1;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
+
 	/** draw the tab background **/
 	rectangle b = tab_area;
 
 	CHECK_CAIRO(cairo_save(cr));
 
 	/** clip tabs **/
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h+30.0, 6.0));
 	CHECK_CAIRO(cairo_clip(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
@@ -663,17 +664,19 @@ void simple2_theme_t::render_notebook_selected(
 
 	double radius = 6.5;
 	CHECK_CAIRO(cairo_new_path(cr));
-	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
-	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
-	CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
-	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
-	CHECK_CAIRO(cairo_close_path(cr));
+	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+
+	//CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
+	//CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+	//CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
+	//CHECK_CAIRO(cairo_close_path(cr));
 
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_stroke(cr);
 
-	radius = 6.5;
+	radius = 5.5;
 	CHECK_CAIRO(cairo_new_path(cr));
 	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+1.5, xncclose.y-1.5 + xncclose.h));
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+1.5, xncclose.y+.5));
@@ -805,10 +808,10 @@ void simple2_theme_t::render_notebook_normal(
 	/** draw the tab background **/
 	rectangle b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/** clip tabs **/
-	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
+	CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h+30.0, 6.0));
 	CHECK_CAIRO(cairo_clip(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
@@ -989,13 +992,14 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
+
 		/** draw the tab background **/
 		rectangle b = tab_area;
 
 		CHECK_CAIRO(cairo_save(cr));
 
 		/** clip tabs **/
-		CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y-.5, b.w, b.h+30.0, 8.0));
+		CHECK_CAIRO(cairo_rounded_tab(cr, b.x, b.y, b.w, b.h+30.0, 8.0));
 		CHECK_CAIRO(cairo_clip(cr));
 
 		CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
@@ -1006,6 +1010,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_mask(cr, gradient));
 		cairo_pattern_destroy(gradient);
 
+		/* draw black outline */
 		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.5));
 		cairo_set_line_width(cr, 1.0);
 		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
@@ -1700,7 +1705,6 @@ void simple2_theme_t::cairo_rounded_tab(cairo_t * cr, double x, double y, double
 	CHECK_CAIRO(cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
 	CHECK_CAIRO(cairo_line_to(cr, x + w, y + h));
 	CHECK_CAIRO(cairo_close_path(cr));
-
 
 }
 
