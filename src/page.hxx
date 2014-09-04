@@ -64,7 +64,6 @@
 #include "popup_split.hxx"
 #include "popup_alt_tab.hxx"
 
-#include "simple_theme.hxx"
 #include "simple2_theme.hxx"
 
 #include "page_exception.hxx"
