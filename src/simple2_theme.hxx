@@ -195,7 +195,7 @@ public:
 	void update();
 
 	static void cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius);
-
+	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 
 	rectangle compute_split_bar_location(split_base_t const * s) const {
 
