@@ -21,6 +21,7 @@ int main(int argc, char * * argv) {
 		page::page_t * m = new page::page_t(argc, argv);
 		m->run();
 		delete m;
+		page::leak_checker::check_everinthing_delete();
 	} catch (page::exception & e) {
 		fprintf(stdout, "%s\n", e.what());
 		fprintf(stderr, "%s\n", e.what());

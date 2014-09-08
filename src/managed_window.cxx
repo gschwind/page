@@ -7,6 +7,8 @@
  *
  */
 
+#include "leak_checker.hxx"
+
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include "managed_window.hxx"

@@ -10,10 +10,14 @@
 #ifndef MANAGED_WINDOW_HXX_
 #define MANAGED_WINDOW_HXX_
 
+#include "leak_checker.hxx"
 #include "theme.hxx"
 #include "managed_window_base.hxx"
 #include "display.hxx"
 #include "composite_surface_manager.hxx"
+
+#include <stdexcept>
+#include <exception>
 
 namespace page {
 
@@ -30,6 +34,7 @@ private:
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
 			| (PropertyChangeMask) | (FocusChangeMask);
+
 
 	// theme used for window decoration
 	theme_t const * _theme;
@@ -532,7 +537,6 @@ public:
 		}
 		return false;
 	}
-
 
 };
 

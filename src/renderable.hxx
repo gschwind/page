@@ -13,6 +13,7 @@
 
 #include <list>
 #include <cairo.h>
+#include "leak_checker.hxx"
 #include "time.hxx"
 #include "box.hxx"
 #include "region.hxx"
@@ -23,7 +24,7 @@ namespace page {
 /**
  * Renderable class are object that can be draw on screen, mainly Window
  */
-class renderable_t {
+class renderable_t : public leak_checker {
 public:
 
 	/**

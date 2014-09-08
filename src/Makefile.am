@@ -31,7 +31,8 @@ page_SOURCES = \
 	unmanaged_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
-	composite_surface_manager.cxx 
+	composite_surface_manager.cxx \
+	leak_checker.cxx
 
 page_LDADD = \
 	$(X11_LIBS) \
