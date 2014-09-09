@@ -1690,6 +1690,76 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, split_base_t const * s, d
 
 }
 
+void simple2_theme_t::render_menuentry(cairo_t * cr, cycle_window_entry_t * w, rectangle const & area) {
+
+	cairo_save(cr);
+
+	cairo_identity_matrix(cr);
+	cairo_translate(cr, area.x, area.y);
+
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
+
+	/** draw application icon **/
+	rectangle bicon = area;
+	bicon.h = 16;
+	bicon.w = 16;
+	bicon.x += 10;
+	bicon.y += 2;
+
+	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+	if ((w)->icon != nullptr) {
+		if ((w)->icon->get_cairo_surface() != 0) {
+			CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+			CHECK_CAIRO(cairo_set_source_surface(cr, (w)->icon->get_cairo_surface(),
+					bicon.x, bicon.y));
+			CHECK_CAIRO(cairo_mask_surface(cr, (w)->icon->get_cairo_surface(),
+					bicon.x, bicon.y));
+		}
+	}
+
+#ifdef WITH_PANGO
+	/** draw application title **/
+	rectangle btext = area;
+	btext.h -= 0;
+	btext.w -= 3 * 16 + 12 + 30;
+	btext.x += 7 + 16 + 6;
+	btext.y += 1;
+
+	/** draw title **/
+	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
+
+	{
+
+		{
+			PangoLayout * pango_layout = pango_layout_new(pango_context);
+			pango_layout_set_font_description(pango_layout, notebook_normal_font);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, (w)->title.c_str(), -1);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+			pango_cairo_layout_path(cr, pango_layout);
+			g_object_unref(pango_layout);
+		}
+
+		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
+		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_outline_color));
+
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
+
+		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_text_color));
+		CHECK_CAIRO(cairo_fill(cr));
+	}
+
+#endif
+
+	cairo_restore(cr);
+
+}
+
 void simple2_theme_t::cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius) {
 
 	CHECK_CAIRO(cairo_new_path(cr));

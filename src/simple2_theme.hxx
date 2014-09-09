@@ -180,6 +180,8 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split);
 
+	virtual void render_menuentry(cairo_t * cr, cycle_window_entry_t * w, rectangle const & area);
+
 	virtual vector<page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const;
 	virtual vector<floating_event_t> * compute_floating_areas(

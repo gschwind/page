@@ -20,6 +20,7 @@
 #include "floating_event.hxx"
 #include "page_event.hxx"
 #include "tree.hxx"
+#include "leak_checker.hxx"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ struct margin_t {
 	int right;
 };
 
-struct cycle_window_entry_t {
+struct cycle_window_entry_t : public leak_checker {
 	window_icon_handler_t * icon;
 	string title;
 	managed_window_base_t * id;
@@ -108,6 +109,8 @@ public:
 			unsigned int height, string const & title) = 0;
 
 	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) = 0;
+
+	virtual void render_menuentry(cairo_t * cr, cycle_window_entry_t * w, rectangle const & area) = 0;
 
 	virtual void update() = 0;
 
