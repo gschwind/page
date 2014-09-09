@@ -63,6 +63,7 @@
 #include "popup_frame_move.hxx"
 #include "popup_split.hxx"
 #include "popup_alt_tab.hxx"
+#include "dropdown_menu.hxx"
 
 #include "simple2_theme.hxx"
 
@@ -117,6 +118,7 @@ public:
 	popup_frame_move_t * pfm;
 	popup_split_t * ps;
 	popup_alt_tab_t * pat;
+	dropdown_menu_t * menu;
 
 	struct mode_data_split_t {
 		split_t * split;

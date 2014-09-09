@@ -15,10 +15,11 @@
 #include "icon.hxx"
 #include "display.hxx"
 #include "client_base.hxx"
+#include "leak_checker.hxx"
 
 namespace page {
 
-class window_icon_handler_t {
+class window_icon_handler_t : public leak_checker {
 	/* icon surface */
 	cairo_surface_t * icon_surf;
 

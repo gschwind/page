@@ -64,6 +64,10 @@ public:
 		_is_visible = false;
 	}
 
+	bool is_visible() {
+		return _is_visible;
+	}
+
 };
 
 }

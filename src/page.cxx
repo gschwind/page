@@ -259,6 +259,7 @@ void page_t::run() {
 	pn0 = new popup_notebook0_t(theme);
 	ps = new popup_split_t(theme);
 	pat = new popup_alt_tab_t(cnx, theme);
+	menu = new dropdown_menu_t(cnx, theme);
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
 	xc_fleur = XCreateFontCursor(cnx->dpy(), XC_fleur);
@@ -657,14 +658,43 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 		if(k == bind_debug_3.ks and (e.state & bind_debug_3.mod)) {
-			if(rnd != nullptr) {
-				if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
-					rnd->renderable_clear();
-					rnd->renderable_add(this);
-					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
-				} else {
-					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
+//			if(rnd != nullptr) {
+//				if(rnd->get_render_mode() == compositor_t::COMPOSITOR_MODE_AUTO) {
+//					rnd->renderable_clear();
+//					rnd->renderable_add(this);
+//					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
+//				} else {
+//					rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_AUTO);
+//				}
+//			}
+
+
+
+			if(menu->is_visible()) {
+				menu->hide();
+			} else {
+
+				list<managed_window_t *> managed_window = get_managed_windows();
+
+				int sel = 0;
+
+				vector<cycle_window_entry_t *> v;
+				int s = 0;
+
+				for (auto i : managed_window) {
+					window_icon_handler_t * icon = new window_icon_handler_t(i, 16,
+							16);
+					cycle_window_entry_t * cy = new cycle_window_entry_t(i, icon);
+					v.push_back(cy);
+					if (i == _client_focused.front()) {
+						sel = s;
+					}
+					++s;
 				}
+
+				menu->update_window(v, sel);
+
+				menu->show();
 			}
 		}
 
@@ -2537,9 +2567,9 @@ void page_t::process_event(XEvent const & e) {
 			//Window w = se->window;
 		}
 	} else if (e.type == FocusOut) {
-
+		printf("FocusOut #%lu\n", e.xfocus.window);
 	} else if (e.type == FocusIn) {
-
+		printf("FocusIn #%lu\n", e.xfocus.window);
 	} else if (e.type == MappingNotify) {
 		update_keymap();
 		update_grabkey();
@@ -3905,6 +3935,7 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 	ps->render(cr, time);
 	pn0->render(cr, time);
 	pfm->render(cr, time);
+	menu->render(cr, time);
 
 	_need_render = false;
 
