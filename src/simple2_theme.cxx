@@ -75,6 +75,14 @@ rectangle simple2_theme_t::compute_notebook_close_position(
 			16, 16).floor();
 }
 
+rectangle simple2_theme_t::compute_notebook_menu_position(
+		rectangle const & allocation) const {
+
+	return rectangle(allocation.x, allocation.y,
+			40, 20).floor();
+
+}
+
 rectangle simple2_theme_t::compute_floating_close_position(rectangle const & allocation) const {
 
 	rectangle position;
@@ -380,19 +388,25 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 		nm.position = compute_notebook_bookmark_position(n->allocation());
 		nm.nbk = n;
 		l->push_back(nm);
+
+		page_event_t nmn(PAGE_EVENT_NOTEBOOK_MENU);
+		nmn.position = compute_notebook_menu_position(n->allocation());
+		nmn.nbk = n;
+		l->push_back(nmn);
+
 	}
 
 	list<managed_window_base_t const *> clist = n->clients();
 
 	if(clist.size() != 0) {
-		double box_width = ((n->allocation().w - 17.0 * 5.0)
+		double box_width = ((n->allocation().w - 17.0 * 5.0 - 40.0)
 				/ (clist.size() + 1.0));
-		double offset = n->allocation().x;
+		double offset = n->allocation().x + 40.0;
 
 		rectangle b;
 
-		for(list<managed_window_base_t const *>::iterator i = clist.begin(); i != clist.end(); ++i) {
-			if ((*i) == n->selected()) {
+		for(auto i : clist) {
+			if (i == n->selected()) {
 				b = rectangle(floor(offset), n->allocation().y,
 						floor(offset + 2.0 * box_width) - floor(offset),
 						notebook_margin.top - 1);
@@ -404,7 +418,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				ncclose.position.w = 35;
 				ncclose.position.h = b.h-3;
 				ncclose.nbk = n;
-				ncclose.clt = *i;
+				ncclose.clt = i;
 				l->push_back(ncclose);
 
 				page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
@@ -414,13 +428,13 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				ncub.position.w = 16;
 				ncub.position.h = 16;
 				ncub.nbk = n;
-				ncub.clt = *i;
+				ncub.clt = i;
 				l->push_back(ncub);
 
 				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
 				nc.position = b;
 				nc.nbk = n;
-				nc.clt = *i;
+				nc.clt = i;
 				l->push_back(nc);
 
 				offset += box_width * 2;
@@ -433,7 +447,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
 				nc.position = b;
 				nc.nbk = n;
-				nc.clt = *i;
+				nc.clt = i;
 				l->push_back(nc);
 
 				offset += box_width;
@@ -1694,17 +1708,14 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, cycle_window_entry_t * w, r
 
 	cairo_save(cr);
 
-	cairo_identity_matrix(cr);
-	cairo_translate(cr, area.x, area.y);
-
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/** draw application icon **/
 	rectangle bicon = area;
 	bicon.h = 16;
 	bicon.w = 16;
-	bicon.x += 10;
-	bicon.y += 2;
+	bicon.x += 5;
+	bicon.y += 5;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 	if ((w)->icon != nullptr) {
@@ -1721,9 +1732,9 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, cycle_window_entry_t * w, r
 	/** draw application title **/
 	rectangle btext = area;
 	btext.h -= 0;
-	btext.w -= 3 * 16 + 12 + 30;
-	btext.x += 7 + 16 + 6;
-	btext.y += 1;
+	btext.w -= 0;
+	btext.x += 24;
+	btext.y += 3;
 
 	/** draw title **/
 	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));

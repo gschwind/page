@@ -68,6 +68,10 @@ public:
 		return _is_visible;
 	}
 
+	rectangle const & position() {
+		return _position;
+	}
+
 };
 
 }

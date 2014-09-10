@@ -127,6 +127,9 @@ public:
 	rectangle compute_notebook_close_position(
 			rectangle const & allocation) const;
 
+	rectangle compute_notebook_menu_position(
+			rectangle const & allocation) const;
+
 	rectangle compute_floating_close_position(
 			rectangle const & _allocation) const;
 	rectangle compute_floating_bind_position(

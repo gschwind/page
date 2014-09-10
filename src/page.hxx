@@ -161,6 +161,10 @@ public:
 
 	};
 
+	struct mode_data_notebook_menu_t {
+		notebook_t * from;
+	};
+
 
 	struct mode_data_bind_t {
 		int start_x;
@@ -259,8 +263,8 @@ public:
 		PROCESS_FLOATING_BIND,
 		PROCESS_FULLSCREEN_MOVE, // Alt + click to change fullscreen screen to another one
 		PROCESS_FLOATING_MOVE_BY_CLIENT, // Move requested by client
-		PROCESS_FLOATING_RESIZE_BY_CLIENT // Resize requested by client
-
+		PROCESS_FLOATING_RESIZE_BY_CLIENT, // Resize requested by client
+		PROCESS_NOTEBOOK_MENU
 	};
 
 	/* this define the current state of page */
@@ -296,6 +300,8 @@ public:
 	mode_data_bind_t mode_data_bind;
 
 	mode_data_fullscreen_t mode_data_fullscreen;
+
+	mode_data_notebook_menu_t mode_data_notebook_menu;
 
 	display_t * cnx;
 	compositor_t * rnd;

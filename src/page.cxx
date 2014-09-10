@@ -887,6 +887,31 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					ps->set_current_split(b->spt);
 					ps->set_position(mode_data_split.split_ratio);
 					ps->show();
+				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
+					process_mode = PROCESS_NOTEBOOK_MENU;
+					mode_data_notebook_menu.from = _upgrade(b->nbk);
+
+					list<managed_window_t *> managed_window = mode_data_notebook_menu.from->get_clients();
+
+					int sel = 0;
+
+					vector<cycle_window_entry_t *> v;
+					int s = 0;
+
+					for (auto i : managed_window) {
+						window_icon_handler_t * icon = new window_icon_handler_t(i, 16,
+								16);
+						cycle_window_entry_t * cy = new cycle_window_entry_t(i, icon);
+						v.push_back(cy);
+						if (i == _client_focused.front()) {
+							sel = s;
+						}
+						++s;
+					}
+					menu->update_window(v, sel);
+					menu->move(mode_data_notebook_menu.from->allocation().x, mode_data_notebook_menu.from->allocation().y + 20);
+					menu->show();
+					//rpage->add_damaged(mode_data_notebook.from->allocation());
 				}
 			}
 
@@ -1340,7 +1365,14 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 
 		break;
-
+	case PROCESS_NOTEBOOK_MENU:
+		if (e.button == Button1) {
+			process_mode = PROCESS_NORMAL;
+			printf("RELEASE\n");
+			mode_data_notebook_menu.from = nullptr;
+			menu->hide();
+		}
+		break;
 	default:
 		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
@@ -1796,7 +1828,14 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		break;
 	}
-
+	case PROCESS_NOTEBOOK_MENU:
+		/** TODO: select menu **/
+	{
+		int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
+		printf("xx %d %d\n", selx, e.y_root);
+		menu->set_selected(selx);
+	}
+		break;
 	default:
 		fprintf(stderr, "Warning: Unknown process_mode\n");
 		break;
