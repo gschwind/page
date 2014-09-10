@@ -1832,7 +1832,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		/** TODO: select menu **/
 	{
 		int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
-		printf("xx %d %d\n", selx, e.y_root);
 		menu->set_selected(selx);
 	}
 		break;
@@ -3232,6 +3231,11 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			pn0->hide();
 			process_mode = PROCESS_NORMAL;
 		}
+		break;
+	case PROCESS_NOTEBOOK_MENU:
+		menu->hide();
+		process_mode = PROCESS_NORMAL;
+		mode_data_notebook_menu.from = nullptr;
 		break;
 	}
 }
