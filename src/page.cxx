@@ -1368,7 +1368,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 	case PROCESS_NOTEBOOK_MENU:
 		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
-			printf("RELEASE\n");
+			if (menu->position().is_inside(e.x_root, e.y_root)) {
+				int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
+				menu->set_selected(selx);
+				mode_data_notebook_menu.from->set_selected(
+						_upgrade(menu->get_selected()));
+			}
 			mode_data_notebook_menu.from = nullptr;
 			menu->hide();
 		}

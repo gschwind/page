@@ -400,7 +400,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 
 	if(clist.size() != 0) {
 		double box_width = ((n->allocation().w - 17.0 * 5.0 - 40.0)
-				/ (clist.size() + 1.0));
+				/ (clist.size() + 3.0));
 		double offset = n->allocation().x + 40.0;
 
 		rectangle b;
@@ -408,7 +408,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 		for(auto i : clist) {
 			if (i == n->selected()) {
 				b = rectangle(floor(offset), n->allocation().y,
-						floor(offset + 2.0 * box_width) - floor(offset),
+						floor(offset + 4.0 * box_width) - floor(offset),
 						notebook_margin.top - 1);
 
 				page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
@@ -437,7 +437,7 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 				nc.clt = i;
 				l->push_back(nc);
 
-				offset += box_width * 2;
+				offset += box_width * 4;
 
 			} else {
 				b = rectangle(floor(offset), n->allocation().y,

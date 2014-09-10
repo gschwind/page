@@ -100,7 +100,9 @@ public:
 	}
 
 	void set_selected(int s) {
-		selected = s;
+		if(s >= 0 and s < window_list.size()) {
+			selected = s;
+		}
 	}
 
 };
