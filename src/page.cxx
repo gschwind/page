@@ -1373,6 +1373,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				menu->set_selected(selx);
 				mode_data_notebook_menu.from->set_selected(
 						_upgrade(menu->get_selected()));
+
+				rpage->add_damaged(mode_data_notebook_menu.from->allocation());
 			}
 			mode_data_notebook_menu.from = nullptr;
 			menu->hide();
