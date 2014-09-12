@@ -163,6 +163,18 @@ public:
 
 	struct mode_data_notebook_menu_t {
 		notebook_t * from;
+		bool active_grab;
+		rectangle b;
+
+		mode_data_notebook_menu_t() {
+			reset();
+		}
+
+		void reset() {
+			from = nullptr;
+			active_grab = false;
+		}
+
 	};
 
 
