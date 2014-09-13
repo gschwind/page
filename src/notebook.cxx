@@ -376,13 +376,11 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 		page::time_t d(0, animation_duration);
 		if (time < (swap_start + d)) {
-			double ratio = static_cast<double>(time - swap_start)/animation_duration;
+			double ratio = (sin(static_cast<double>(time - swap_start)/animation_duration * M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
 
-			double y = floor(ratio * _allocation.h);
-			if(y < 0.0)
-				y = 0.0;
-			if(y > _allocation.h)
-				y = _allocation.h;
+			ratio = std::min(std::max(0.0, ratio), 1.0);
+
+			printf("%f\n", ratio);
 
 			managed_window_t * mw = get_selected();
 			shared_ptr<composite_surface_t> psurf = mw->surf();

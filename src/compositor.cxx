@@ -255,10 +255,10 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 
 void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
-	printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x,
-			e.area.y);
-	printf("Damage geometry %dx%d+%d+%d\n", e.geometry.width, e.geometry.height,
-			e.geometry.x, e.geometry.y);
+//	printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x,
+//			e.area.y);
+//	printf("Damage geometry %dx%d+%d+%d\n", e.geometry.width, e.geometry.height,
+//			e.geometry.x, e.geometry.y);
 
 	/** drop damage data **/
 

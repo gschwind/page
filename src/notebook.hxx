@@ -25,7 +25,7 @@ struct img_t {
 
 class notebook_t : public notebook_base_t  {
 
-	static uint64_t const animation_duration = 400000000;
+	static uint64_t const animation_duration = 500000000;
 
 	theme_t const * _theme;
 
