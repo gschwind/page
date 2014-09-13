@@ -537,6 +537,53 @@ void simple2_theme_t::render_notebook(cairo_t * cr, notebook_base_t const * n,
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 
 	{
+
+		cairo_save(cr);
+		rectangle btext = compute_notebook_menu_position(n->allocation());
+
+		char buf[32];
+		snprintf(buf, 32, "%lu", clients.size());
+
+#ifdef WITH_PANGO
+
+		/* draw title */
+		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_outline_color));
+
+		CHECK_CAIRO(cairo_translate(cr, btext.x + 15, btext.y + 4));
+
+		//CHECK_CAIRO(cairo_new_path(cr));
+
+		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
+		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+
+		{
+			PangoLayout * pango_layout = pango_layout_new(pango_context);
+			pango_layout_set_font_description(pango_layout,
+					notebook_selected_font);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, buf, -1);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_cairo_layout_path(cr, pango_layout);
+			g_object_unref(pango_layout);
+		}
+
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
+
+		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_selected_text_color));
+		CHECK_CAIRO(cairo_fill(cr));
+
+#endif
+
+		cairo_restore(cr);
+
+	}
+
+
+	{
 		rectangle b = compute_notebook_bookmark_position(n->allocation());
 
 		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
