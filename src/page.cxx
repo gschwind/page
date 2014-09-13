@@ -1827,6 +1827,7 @@ void page_t::process_event(XMotionEvent const & e) {
 	{
 		int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
 		menu->set_selected(selx);
+		rnd->need_render();
 	}
 		break;
 	default:
