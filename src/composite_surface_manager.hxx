@@ -41,6 +41,7 @@
 
 #include "display.hxx"
 #include "pixmap.hxx"
+#include "composite_surface.hxx"
 
 using namespace std;
 
@@ -49,174 +50,21 @@ namespace page {
 class composite_surface_manager_t {
 
 	typedef pair<Display *, Window> _key_t;
-
-	class _composite_surface_t {
-
-		Display * _dpy;
-		Visual * _vis;
-		Window _window_id;
-		shared_ptr<pixmap_t> _pixmap;
-		int _width, _height;
-
-		composite_surface_manager_t * _mngr;
-		int _nref;
-
-		_composite_surface_t(composite_surface_manager_t * mngr, Display * dpy,
-				Window w) {
-			XWindowAttributes wa;
-			XGetWindowAttributes(dpy, w, &wa);
-
-			_window_id = w;
-			_dpy = dpy;
-			_vis = wa.visual;
-			_width = wa.width;
-			_height = wa.height;
-			_nref = 0;
-			_mngr = mngr;
-			_pixmap = nullptr;
-
-		}
-
-		~_composite_surface_t() {
-
-		}
-
-		_key_t get_key() {
-			return _key_t(_dpy, _window_id);
-		}
-
-		void decr_ref() {
-			_nref -= 1;
-			if(_nref == 0) {
-				_mngr->erase(this);
-			}
-		}
-
-		void incr_ref() {
-			_nref += 1;
-		}
-
-	public:
-		void onmap() {
-			Pixmap pixmap_id = XCompositeNameWindowPixmap(_dpy, _window_id);
-			_pixmap = shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
-		}
-
-		void onresize(int width, int height) {
-			if (width != _width or height != _height) {
-				_width = width;
-				_height = height;
-				onmap();
-			}
-		}
-
-		Window wid() {
-			return _window_id;
-		}
-
-		shared_ptr<pixmap_t> get_pixmap() {
-			return _pixmap;
-		}
-
-		friend composite_surface_manager_t;
-
-	};
-
-	typedef map<_key_t, _composite_surface_t *> _data_map_t;
+	typedef map<_key_t, shared_ptr<composite_surface_t> > _data_map_t;
 	typedef typename _data_map_t::iterator _map_iter_t;
 
 	_data_map_t _data;
 
-	void erase(_composite_surface_t * c) {
-		_key_t key = c->get_key();
-		delete c;
-		_data.erase(key);
-	}
-
-public:
-	class ptr_t {
-		_composite_surface_t * v;
-		ptr_t(_composite_surface_t * x) {
-			if(x != nullptr)
-				x->incr_ref();
-			v = x;
-		}
-
-	public:
-		ptr_t() {
-			v = nullptr;
-		}
-
-		ptr_t(ptr_t const & p) {
-			if (p.v != nullptr)
-				p.v->incr_ref();
-			v = p.v;
-		}
-
-		ptr_t & operator= (ptr_t const & p) {
-			if(&p == this) {
-				return *this;
-			}
-
-			if(v != nullptr) {
-				v->decr_ref();
-			}
-
-			if(p.v != nullptr) {
-				p.v->incr_ref();
-			}
-
-			v = p.v;
-
-			return *this;
-
-		}
-
-		~ptr_t() {
-			if(v != nullptr)
-				v->decr_ref();
-		}
-
-		_composite_surface_t & operator*() {
-			return *(v);
-		}
-
-		_composite_surface_t * operator->() {
-			return v;
-		}
-
-		operator _composite_surface_t *() {
-			return v;
-		}
-
-		bool operator== (_composite_surface_t * p) {
-			return p == v;
-		}
-
-		bool operator!= (_composite_surface_t * p) {
-			return p != v;
-		}
-
-		void reset() {
-			if(v != nullptr)
-				v->decr_ref();
-			v = nullptr;
-		}
-
-		friend composite_surface_manager_t;
-
-	};
-
 private:
-	ptr_t _get_composite_surface(Display * dpy, Window w) {
+	shared_ptr<composite_surface_t> _get_composite_surface(Display * dpy, Window w) {
 		_key_t key(dpy, w);
 		_map_iter_t x = _data.find(key);
 		if(x != _data.end()) {
-			return ptr_t(x->second);
+			return x->second;
 		} else {
-			_composite_surface_t * h = new _composite_surface_t(this, dpy, w);
+			shared_ptr<composite_surface_t> h(new composite_surface_t(dpy, w));
 			_data[key] = h;
-			return ptr_t(_data[key]);
+			return _data[key];
 		}
 	}
 
@@ -242,9 +90,10 @@ private:
 		}
 	}
 
-	void print_content() {
-		for(auto &i: _data) {
-			cout << "ITEMS : (" << i.first.first << "," << i.first.second << ") nref = " << i.second->_nref << endl;
+	void _ondestroy(Display * dpy, Window w) {
+		auto x = _data.find(_key_t(dpy, w));
+		if(x != _data.end()) {
+			_data.erase(x);
 		}
 	}
 
@@ -254,21 +103,18 @@ public:
 		/* sanity check */
 		if(not _data.empty()) {
 			cout << "WARNING: composite_surface_manager is not empty while destroying." << endl;
-			print_content();
 		}
 	}
 
 	static bool exist(Display * dpy, Window w);
-	static ptr_t get(Display * dpy, Window w);
 	static void onmap(Display * dpy, Window w);
 	static void onresize(Display * dpy, Window w, unsigned width, unsigned heigth);
 
+	static shared_ptr<composite_surface_t> get(Display * dpy, Window w);
+
+	static void ondestroy(Display * dpy, Window w);
+
 };
-
-typedef composite_surface_manager_t::ptr_t composite_surface_handler_t;
-
-
-
 
 }
 

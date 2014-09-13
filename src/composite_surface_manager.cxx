@@ -13,7 +13,7 @@ namespace page {
 
 static composite_surface_manager_t _mngr;
 
-composite_surface_handler_t composite_surface_manager_t::get(Display * dpy, Window w) {
+shared_ptr<composite_surface_t> composite_surface_manager_t::get(Display * dpy, Window w) {
 	return _mngr._get_composite_surface(dpy, w);
 }
 
@@ -27,6 +27,10 @@ void composite_surface_manager_t::onmap(Display * dpy, Window w) {
 
 void composite_surface_manager_t::onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
 	_mngr._onresize(dpy, w, width, heigth);
+}
+
+void composite_surface_manager_t::ondestroy(Display * dpy, Window w) {
+	_mngr._ondestroy(dpy, w);
 }
 
 

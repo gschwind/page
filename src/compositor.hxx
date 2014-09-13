@@ -58,36 +58,10 @@ class compositor_t {
 
 	shared_ptr<atom_handler_t> _A;
 
-	/** Performance counter **/
-	unsigned int flush_count;
-	unsigned int damage_count;
-
-	time_t fade_in_length;
-	time_t fade_out_length;
-
-	double cur_t;
-
-	/** clip region for multi monitor setup **/
-	region _desktop_region;
-
-	region _pending_damage;
-
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	/** list that track window stack order **/
-	list<Window> window_stack;
-
-	/**
-	 * map do not handle properly objects, it's need copy constructor ...
-	 * Use pointer instead.
-	 **/
-	map<Window, composite_window_t *> window_data;
 	map<Window, Damage> damage_map;
-
-	/** performance counter **/
-	double fast_region_surf_monitor;
-	double slow_region_surf_monitor;
 
 	renderable_list_t _graph_scene;
 
@@ -95,6 +69,8 @@ class compositor_t {
 	int _fps_top;
 	page::time_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
+
+	bool _need_render;
 
 #ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
@@ -119,8 +95,6 @@ private:
 
 	void repair_area(rectangle const & box);
 	void repair_overlay(cairo_t * cr, rectangle const & area, cairo_surface_t * src);
-	void repair_buffer(std::list<composite_window_t *> & visible, cairo_t * cr,
-			rectangle const & area);
 
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);
@@ -202,6 +176,10 @@ public:
 
 	void set_show_fps(bool b) {
 		_show_fps = b;
+	}
+
+	void need_render() {
+		_need_render = true;
 	}
 
 

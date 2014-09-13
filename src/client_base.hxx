@@ -32,7 +32,7 @@ using namespace std;
 
 class client_base_t : public tree_t {
 public:
-	display_t *              _cnx;
+	display_t *                  _cnx;
 	Window                       _id;
 
 	bool                         has_valid_window_attributes;

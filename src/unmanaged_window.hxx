@@ -26,7 +26,7 @@ private:
 
 	Atom _net_wm_type;
 
-	composite_surface_handler_t surf;
+	shared_ptr<composite_surface_t> surf;
 
 	/* avoid copy */
 	unmanaged_window_t(unmanaged_window_t const &);
@@ -39,9 +39,8 @@ public:
 		_cnx->grab();
 		XSelectInput(_cnx->dpy(), _id, UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 		_cnx->ungrab();
-
 		surf = composite_surface_manager_t::get(_cnx->dpy(), base());
-
+		composite_surface_manager_t::onmap(_cnx->dpy(), base());
 	}
 
 	~unmanaged_window_t() {

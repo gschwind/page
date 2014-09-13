@@ -163,18 +163,18 @@ inline void disable_input_passthrough(Display * dpy, Window w) {
 }
 
 static int error_handler(Display * dpy, XErrorEvent * ev) {
-//	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
-//			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-//
-//	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
-//
-//	if (ev->request_code < XFUNCSIZE) {
-//		char const * func_name = x_function_codes[ev->request_code];
-//		char error_text[1024];
-//		error_text[0] = 0;
-//		XGetErrorText(dpy, ev->error_code, error_text, 1024);
-//		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
-//	}
+	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
+
+	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
+
+	if (ev->request_code < XFUNCSIZE) {
+		char const * func_name = x_function_codes[ev->request_code];
+		char error_text[1024];
+		error_text[0] = 0;
+		XGetErrorText(dpy, ev->error_code, error_text, 1024);
+		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+	}
 	return 0;
 }
 

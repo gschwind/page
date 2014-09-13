@@ -40,7 +40,7 @@ class notebook_t : public notebook_base_t  {
 	rectangle prev_loc;
 
 	/* always handle current surface in case of unmap */
-	composite_surface_handler_t cur_surf;
+	shared_ptr<composite_surface_t> cur_surf;
 
 
 public:

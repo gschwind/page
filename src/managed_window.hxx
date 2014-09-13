@@ -52,7 +52,7 @@ private:
 	rectangle _orig_position;
 	rectangle _base_position;
 
-	// the window surface
+	// the output surface (i.e. surface where we write things)
 	cairo_surface_t * _surf;
 
 	// border surface of floating window
@@ -89,7 +89,8 @@ private:
 
 	bool _motif_has_border;
 
-	composite_surface_handler_t _composite_surf;
+	/** input surface, surface from we get data **/
+	shared_ptr<composite_surface_t> _composite_surf;
 
 public:
 
@@ -195,7 +196,7 @@ public:
 		return _motif_has_border;
 	}
 
-	composite_surface_handler_t surf() {
+	shared_ptr<composite_surface_t> surf() {
 		return _composite_surf;
 	}
 
@@ -361,7 +362,11 @@ public:
 		_cnx->map_window(_deco);
 		_cnx->map_window(_base);
 
-		_composite_surf = composite_surface_manager_t::get(_cnx->dpy(), base());
+		try {
+			_composite_surf = composite_surface_manager_t::get(_cnx->dpy(), base());
+		} catch(...) {
+			printf("Error while creating composite surface\n");
+		}
 
 		for(auto c: _childen) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);

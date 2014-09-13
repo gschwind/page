@@ -74,20 +74,10 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	render_mode = COMPOSITOR_MODE_AUTO;
 	composite_back_buffer = None;
 
-	fade_in_length = 1000000000L;
-	fade_out_length = 1000000000L;
-
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
 
 	/* initialize composite */
 	init_composite_overlay();
-
-	/** some performance counter **/
-	fast_region_surf_monitor = 0.0;
-	slow_region_surf_monitor = 0.0;
-
-	flush_count = 0;
-	damage_count = 0;
 
 	_fps_top = 0;
 	_show_fps = false;
@@ -113,40 +103,30 @@ compositor_t::~compositor_t() {
 	if(composite_back_buffer != None)
 		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 
-	cleanup_internal_data();
 	release_composite_overlay();
 };
 
-void compositor_t::repair_area_region(region const & repair) {
-	_pending_damage += repair;
-}
-
-
 void compositor_t::render() {
-	render_managed();
-}
-
-
-void compositor_t::render_managed() {
 	page::time_t cur;
 	cur.get_time();
 
-	bool need_render = false;
-	for (auto i : _graph_scene) {
-		if(i->need_render(cur)) {
-			need_render = true;
-			break;
+	if (not _need_render) {
+		for (auto i : _graph_scene) {
+			if (i->need_render(cur)) {
+				_need_render = true;
+				break;
+			}
 		}
 	}
 
-	if(_pending_damage.empty() and not need_render) {
+	if(not _need_render) {
 		return;
 	}
 
+	_need_render = false;
+
 	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
 	_fps_history[_fps_top] = cur;
-
-	_pending_damage.clear();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
@@ -199,8 +179,6 @@ void compositor_t::render_managed() {
 		}
 	}
 
-
-
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 
 	warn(cairo_get_reference_count(cr) == 1);
@@ -216,61 +194,6 @@ void compositor_t::render_managed() {
 
 }
 
-void compositor_t::repair_buffer(std::list<composite_window_t *> & visible,
-		cairo_t * cr, rectangle const & area) {
-	for (auto i : visible) {
-		composite_window_t * r = i;
-		region const & barea = r->get_region();
-		for (auto & j : barea) {
-			rectangle clip = area & (j);
-			if (!clip.is_null()) {
-				r->draw_to(cr, clip);
-			}
-		}
-	}
-}
-
-
-void compositor_t::repair_overlay(cairo_t * cr, rectangle const & area,
-		cairo_surface_t * src) {
-
-	cairo_reset_clip(cr);
-	cairo_identity_matrix(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(cr, src, 0, 0);
-	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-	cairo_fill(cr);
-
-	/* for debug purpose */
-	if (false) {
-		static int color = 0;
-		switch (color % 3) {
-		case 0:
-			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-			break;
-		case 1:
-			cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
-			break;
-		case 2:
-			cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-			break;
-		}
-		//++color;
-		cairo_set_line_width(cr, 1.0);
-		cairo_rectangle(cr, area.x + 0.5, area.y + 0.5, area.w - 1.0,
-				area.h - 1.0);
-		cairo_clip(cr);
-		cairo_paint_with_alpha(cr, 0.3);
-		cairo_reset_clip(cr);
-		//cairo_stroke(composite_overlay_cr);
-	}
-
-	// Never flush composite_overlay_s because this surface is never a source surface.
-	//cairo_surface_flush(composite_overlay_s);
-
-}
-
-
 void compositor_t::process_event(XCreateWindowEvent const & e) {
 	if(e.send_event == True)
 		return;
@@ -279,30 +202,10 @@ void compositor_t::process_event(XCreateWindowEvent const & e) {
 		return;
 	if (e.parent != _cnx->root())
 		return;
-
-	stack_window_place_on_top(e.window);
 }
 
 void compositor_t::process_event(XReparentEvent const & e) {
 
-	/** Ignore fake event **/
-	if(e.send_event == True)
-		return;
-
-
-	/**
-	 * Reparent are preceded by UnmapWindow and followed by MapWindow when
-	 * needed.
-	 *
-	 * Reparent notify is usefull to maintaint window stack at root window level.
-	 *
-	 **/
-
-	if (e.parent == _cnx->root()) {
-		stack_window_place_on_top(e.window);
-	} else {
-		stack_window_remove(e.window);
-	}
 }
 
 void compositor_t::process_event(XMapEvent const & e) {
@@ -315,26 +218,6 @@ void compositor_t::process_event(XMapEvent const & e) {
 	if (e.window == composite_overlay)
 		return;
 
-	XWindowAttributes wa;
-	if (XGetWindowAttributes(_cnx->dpy(), e.window, &wa)) {
-		if (wa.c_class == InputOutput) {
-
-			create_damage(e.window, wa);
-			_pending_damage += rectangle(wa.x, wa.y, wa.width, wa.height);
-
-			composite_surface_handler_t x = composite_surface_manager_t::get(_cnx->dpy(), e.window);
-			if(has_key(window_data, e.window)) {
-				delete window_data[e.window];
-				window_data.erase(e.window);
-			}
-			composite_window_t * w = new composite_window_t(_cnx, e.window, &wa, x);;
-			window_data[e.window] = w;
-			w->fade_start.get_time();
-			w->fade_mode = composite_window_t::FADE_IN;
-			repair_area_region(w->get_region());
-		}
-	}
-
 	composite_surface_manager_t::onmap(_cnx->dpy(), e.window);
 
 }
@@ -342,27 +225,12 @@ void compositor_t::process_event(XMapEvent const & e) {
 void compositor_t::process_event(XUnmapEvent const & e) {
 	if (e.send_event == True)
 		return;
-	auto x = window_data.find(e.window);
-	if (x != window_data.end()) {
-		x->second->fade_start.get_time();
-		x->second->fade_mode = composite_window_t::FADE_OUT;
-		repair_area_region(x->second->get_region());
-	}
-	destroy_damage(e.window);
 }
 
 void compositor_t::process_event(XDestroyWindowEvent const & e) {
 	if (e.send_event == True)
 		return;
-
-	auto x = window_data.find(e.window);
-	if (x != window_data.end()) {
-		if (x->second->fade_mode == composite_window_t::FADE_NONE) {
-			x->second->fade_start.get_time();
-			x->second->fade_mode = composite_window_t::FADE_OUT;
-			repair_area_region(x->second->get_region());
-		}
-	}
+	composite_surface_manager_t::ondestroy(e.display, e.window);
 }
 
 void compositor_t::process_event(XConfigureEvent const & e) {
@@ -370,20 +238,8 @@ void compositor_t::process_event(XConfigureEvent const & e) {
 		return;
 
 	if (e.event == _cnx->root()
-			&& e.window != _cnx->root()) {
-
-		stack_window_update(e.window, e.above);
-
-		auto x = window_data.find(e.window);
-		if (x != window_data.end()) {
-			region r = x->second->position();
-			x->second->update_position(e);
-			r += x->second->position();
-			repair_area_region(r);
-		}
-
+			and e.window != _cnx->root()) {
 		composite_surface_manager_t::onresize(_cnx->dpy(), e.window, e.width, e.height);
-
 	}
 }
 
@@ -395,42 +251,25 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 	if(e.event != _cnx->root())
 		return;
 
-	if(e.place == PlaceOnTop) {
-		stack_window_place_on_top(e.window);
-	} else {
-		stack_window_place_on_bottom(e.window);
-	}
-
-	if(has_key(window_data, e.window)) {
-		repair_area_region(window_data[e.window]->position());
-	}
-
 }
 
 void compositor_t::process_event(XDamageNotifyEvent const & e) {
 
-//	printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x,
-//			e.area.y);
-//	printf("Damage geometry %dx%d+%d+%d\n", e.geometry.width, e.geometry.height,
-//			e.geometry.x, e.geometry.y);
+	printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x,
+			e.area.y);
+	printf("Damage geometry %dx%d+%d+%d\n", e.geometry.width, e.geometry.height,
+			e.geometry.x, e.geometry.y);
 
-	++damage_count;
+	/** drop damage data **/
 
-	region r = read_damaged_region(e.damage);
+	/* create an empty region */
+	XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
+	if (!region)
+		throw std::runtime_error("could not create region");
+	XDamageSubtract(_cnx->dpy(), e.damage, None, region);
+	XFixesDestroyRegion(_cnx->dpy(), region);
 
-	if (e.drawable == composite_overlay
-			|| e.drawable == DefaultRootWindow(_cnx->dpy()))
-		return;
-
-	map<Window, composite_window_t *>::iterator x = window_data.find(
-			e.drawable);
-	if (x == window_data.end())
-		return;
-
-	//x->second->add_damaged_region(r);
-
-	r.translate(e.geometry.x, e.geometry.y);
-	repair_area_region(r);
+	_need_render = true;
 
 }
 
@@ -466,63 +305,6 @@ region compositor_t::read_damaged_region(Damage d) {
 	return result;
 }
 
-void compositor_t::scan() {
-
-	unsigned int num = 0;
-	Window d1, d2, *wins = 0;
-
-
-	XGrabServer(_cnx->dpy());
-	cout << "XGrabServer(" << _cnx->dpy() << ")" << endl;
-
-	window_stack.clear();
-	window_data.clear();
-
-	/** read all current root window **/
-	if (XQueryTree(_cnx->dpy(), _cnx->root(), &d1, &d2, &wins, &num)
-			!= 0) {
-
-		if (num > 0)
-			window_stack.insert(window_stack.end(), &wins[0], &wins[num]);
-
-		for (unsigned i = 0; i < num; ++i) {
-			if(wins[i] == composite_overlay)
-				continue;
-			XWindowAttributes wa;
-			if (XGetWindowAttributes(_cnx->dpy(), wins[i], &wa)) {
-				if(wa.c_class == InputOutput) {
-					if (wa.map_state != IsUnmapped) {
-
-						create_damage(wins[i], wa);
-						_pending_damage += rectangle(wa.x, wa.y, wa.width,
-								wa.height);
-
-						composite_surface_handler_t x = composite_surface_manager_t::get(_cnx->dpy(), wins[i]);
-						x->onmap();
-						if (has_key(window_data, wins[i])) {
-							delete window_data[wins[i]];
-							window_data.erase(wins[i]);
-						}
-						composite_window_t * w = new composite_window_t(_cnx,
-								wins[i], &wa, x);
-						window_data[wins[i]] = w;
-						w->fade_start.get_time();
-						w->fade_mode = composite_window_t::FADE_IN;
-						repair_area_region(w->get_region());
-					}
-				}
-			}
-		}
-
-		XFree(wins);
-	}
-
-	XUngrabServer(_cnx->dpy());
-	cout << "XUngrabServer(" << _cnx->dpy() << ")" << endl;
-	xflush();
-
-}
-
 void compositor_t::process_event(XEvent const & e) {
 
 //	if (e.xany.type > 0 && e.xany.type < LASTEvent) {
@@ -552,10 +334,6 @@ void compositor_t::process_event(XEvent const & e) {
 		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
 	} else if (e.type == xshape_event + ShapeNotify) {
 		XShapeEvent const & sev = reinterpret_cast<XShapeEvent const &>(e);
-		if(has_key(window_data, sev.window)) {
-			window_data[sev.window]->update_shape();
-			window_data[sev.window]->update_opaque_region();
-		}
 	} else if (e.type == xrandr_event + RRNotify) {
 		//printf("RRNotify\n");
 		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
@@ -586,7 +364,7 @@ void compositor_t::update_layout() {
 	if(composite_back_buffer != None)
 		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 
-	_desktop_region.clear();
+	//_desktop_region.clear();
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_cnx->dpy(),
 			DefaultRootWindow(_cnx->dpy()));
@@ -598,31 +376,15 @@ void compositor_t::update_layout() {
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
 			rectangle area(info->x, info->y, info->width, info->height);
-			_desktop_region = _desktop_region + area;
+			//_desktop_region = _desktop_region + area;
 		}
 		XRRFreeCrtcInfo(info);
 	}
 	XRRFreeScreenResources(resources);
 
-	if(_desktop_region.empty()) {
-		/** fall back to one screen **/
-		_desktop_region = rectangle(root_attributes.x, root_attributes.y, root_attributes.width, root_attributes.height);
-
-	}
-
-	printf("layout = %s\n", _desktop_region.to_string().c_str());
+	//printf("layout = %s\n", _desktop_region.to_string().c_str());
 
 	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, None);
-
-	cleanup_internal_data();
-	scan();
-
-	/**
-	 * Add the composite window to the stack as invisible window to track a
-	 * valid stack. scan() currently does not report this window, I add remove
-	 * line, in case of scan will report it.
-	 **/
-	stack_window_place_on_top(composite_overlay);
 
 }
 
@@ -634,101 +396,6 @@ void compositor_t::process_events() {
 		process_event(ev);
 	}
 }
-
-void compositor_t::stack_window_update(Window window, Window above) {
-	if (above == None) {
-		window_stack.remove(window);
-		window_stack.push_front(window);
-	} else {
-
-		auto x = find(window_stack.begin(), window_stack.end(), above);
-
-		if (x == window_stack.end()) {
-			printf("Window not found : %lu for window %lu\n", above, window);
-		} else {
-			window_stack.remove(window);
-			window_stack.insert(++x, window);
-		}
-	}
-}
-
-void compositor_t::stack_window_place_on_top(Window w) {
-	window_stack.remove(w);
-	window_stack.push_back(w);
-}
-
-void compositor_t::stack_window_place_on_bottom(Window w) {
-	window_stack.remove(w);
-	window_stack.push_front(w);
-}
-
-void compositor_t::stack_window_remove(Window w) {
-	window_stack.remove(w);
-}
-
-//void compositor_t::save_state() {
-//
-//	compositor_window_state.clear();
-//
-//	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
-//			i != window_data.end(); ++i) {
-//		compositor_window_state[i->first] = i->second->get_region();
-//	}
-//
-//
-//}
-
-/**
- * Compute damaged area from last render_flush
- **/
-//void compositor_t::compute_pending_damage() {
-//
-//	for (map<Window, composite_window_t *>::iterator i = window_data.begin();
-//			i != window_data.end(); ++i) {
-//
-//		composite_window_t * cw = i->second;
-//
-//		if (cw->c_class() != InputOutput) {
-//			continue;
-//		}
-//
-//		if (cw->old_map_state() == IsUnmapped) {
-//			if(cw->map_state() == IsUnmapped) {
-//				continue;
-//			} else {
-//				/** was mapped **/
-//				pending_damage += cw->get_region();
-//			}
-//		} else {
-//			if(cw->map_state() == IsUnmapped) {
-//				/** was unmapped **/
-//				pending_damage += cw->old_region();
-//			} else {
-//				if (cw->has_moved()) {
-//					/**
-//					 * if moved or re-stacked, add previous location and current
-//					 * location as damaged.
-//					 **/
-//					pending_damage += cw->old_region();
-//					pending_damage += cw->get_region();
-//				} else {
-//					/**
-//					 * What ever is happen, add damaged area
-//					 **/
-//					pending_damage += cw->get_damaged_region();
-//				}
-//			}
-//		}
-//
-//		/**
-//		 * reset damaged, and moved flags
-//		 **/
-//		i->second->clear_state();
-//
-//	}
-//
-//}
-
 
 /**
  * Check event without blocking.
@@ -746,54 +413,6 @@ bool compositor_t::process_check_event() {
 	} else {
 		return false;
 	}
-}
-
-void compositor_t::cleanup_internal_data() {
-	/** cleanup_internal_data composite window list **/
-	for(auto & i: window_data) {
-		delete i.second;
-	}
-
-	window_data.clear();
-
-}
-
-void compositor_t::set_render_mode(render_mode_e mode) {
-	render_mode = mode;
-}
-
-compositor_t::render_mode_e compositor_t::get_render_mode() {
-	return render_mode;
-}
-
-void compositor_t::create_damage(Window w, XWindowAttributes & wa) {
-	assert(wa.c_class == InputOutput);
-	assert(w != None);
-
-	Damage damage = XDamageCreate(_cnx->dpy(), w, XDamageReportNonEmpty);
-	if (damage != None) {
-		damage_map[w] = damage;
-		XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
-		XDamageSubtract(_cnx->dpy(), damage, None, region);
-		XFixesDestroyRegion(_cnx->dpy(), region);
-	}
-}
-
-void compositor_t::destroy_damage(Window w) {
-	map<Window, Damage>::iterator x = damage_map.find(w);
-	if (x != damage_map.end()) {
-		XDamageDestroy(_cnx->dpy(), x->second);
-		damage_map.erase(x);
-	}
-}
-
-
-void compositor_t::set_fade_in_time(int nsec) {
-	fade_in_length = nsec;
-}
-
-void compositor_t::set_fade_out_time(int nsec) {
-	fade_out_length = nsec;
 }
 
 Window compositor_t::get_composite_overlay() {

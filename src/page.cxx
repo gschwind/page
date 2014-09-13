@@ -223,21 +223,8 @@ void page_t::run() {
 		/** try to start compositor, if fail, just ignore it **/
 		try {
 			rnd = new compositor_t(cnx, damage_event, xshape_event, xrandr_event);
-
-			if (conf.has_key("compositor", "fade_in_time")) {
-				rnd->set_fade_in_time(
-						conf.get_long("compositor", "fade_in_time"));
-			}
-
-			if (conf.has_key("compositor", "fade_out_time")) {
-				rnd->set_fade_out_time(
-						conf.get_long("compositor", "fade_out_time"));
-			}
-
 			rnd->renderable_clear();
 			rnd->renderable_add(this);
-			rnd->set_render_mode(compositor_t::COMPOSITOR_MODE_MANAGED);
-
 		} catch (...) {
 			rnd = nullptr;
 		}
@@ -3466,157 +3453,174 @@ void page_t::onmap(Window w) {
 	client_base_t * c = find_client_with(w);
 
 	if (c == nullptr) {
-		c = new client_base_t(cnx, w);
-		if (c->read_window_attributes()) {
-			c->read_all_properties();
-			add_client(c);
+		try {
+			c = new client_base_t(cnx, w);
+			if (c->read_window_attributes()) {
+				if(c->wa.c_class != InputOnly) {
+				c->read_all_properties();
+				add_client(c);
 
-			//c->print_window_attributes();
-			//c->print_properties();
+				//c->print_window_attributes();
+				//c->print_properties();
 
-			Atom type = c->type();
+				Atom type = c->type();
 
-			if (!c->wa.override_redirect) {
-				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-					create_managed_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_dock_window(c, type);
-					update_allocation();
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-					create_managed_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-					create_managed_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-					create_managed_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-					create_managed_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-					create_managed_window(c, type);
+				if (!c->wa.override_redirect) {
+					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+						create_managed_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+						create_dock_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+						create_managed_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+						create_managed_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+						create_managed_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+						create_managed_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+						create_managed_window(c, type);
+					}
+				} else {
+					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+						create_dock_window(c, type);
+						update_allocation();
+					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+						create_unmanaged_window(c, type);
+					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+						create_unmanaged_window(c, type);
+					}
 				}
+
 			} else {
-				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_dock_window(c, type);
-					update_allocation();
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(c, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-					create_unmanaged_window(c, type);
-				}
+				delete c;
 			}
 
 		} else {
 			delete c;
 		}
+
+		} catch (...) {
+			c = nullptr;
+		}
+
 	} else {
+		/** client already existing **/
 		c->read_all_properties();
 		safe_update_transient_for(c);
 		update_windows_stack();
 	}
+
 
 	cnx->ungrab();
 
 }
 
 
-void page_t::create_managed_window(client_base_t * c, Atom type) {
+void page_t::create_managed_window(client_base_t * c, Atom type) throw () {
 
-	/* manage will destroy c */
-	managed_window_t * mw = manage(type, c);
-	c = mw;
+	try {
+		managed_window_t * mw = new managed_window_t(type, c, theme);
+		add_client(mw);
 
-	safe_update_transient_for(mw);
-	mw->raise_child(nullptr);
-	update_client_list();
-	update_windows_stack();
+		safe_update_transient_for(mw);
+		mw->raise_child(nullptr);
+		update_client_list();
+		update_windows_stack();
 
-	/* HACK OLD FASHION FULLSCREEN */
-	if (mw->wa.x == 0 and mw->wa.y == 0 and mw->wa.width == _allocation.w
-			and mw->wa.height == _allocation.h
-			and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-		mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
-	}
-
-
-	if (mw->is_fullscreen()) {
-		mw->normalize();
-		fullscreen(mw);
-		mw->reconfigure();
-		Time time = 0;
-		if (get_safe_net_wm_user_time(mw, time)) {
-			set_focus(mw, time);
-		} else {
-			mw->set_focus_state(false);
+		/* HACK OLD FASHION FULLSCREEN */
+		if (mw->wa.x == 0 and mw->wa.y == 0 and mw->wa.width == _allocation.w
+				and mw->wa.height == _allocation.h
+				and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 		}
 
-	} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
-			and get_transient_for(mw) == nullptr and mw->has_motif_border()) {
+		if (mw->is_fullscreen()) {
+			mw->normalize();
+			fullscreen(mw);
+			mw->reconfigure();
+			Time time = 0;
+			if (get_safe_net_wm_user_time(mw, time)) {
+				set_focus(mw, time);
+			} else {
+				mw->set_focus_state(false);
+			}
 
-		bind_window(mw);
-		mw->reconfigure();
+		} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
+				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+				and get_transient_for(mw) == nullptr
+				and mw->has_motif_border()) {
 
-	} else {
-		mw->normalize();
-		mw->reconfigure();
-		Time time = 0;
-		if (get_safe_net_wm_user_time(mw, time)) {
-			set_focus(mw, time);
+			bind_window(mw);
+			mw->reconfigure();
+
 		} else {
-			mw->set_focus_state(false);
+			mw->normalize();
+			mw->reconfigure();
+			Time time = 0;
+			if (get_safe_net_wm_user_time(mw, time)) {
+				set_focus(mw, time);
+			} else {
+				mw->set_focus_state(false);
+			}
 		}
+
+	} catch (...) {
+		printf("Error while creating managed window\n");
 	}
-
-
-
 }
 
 void page_t::create_unmanaged_window(client_base_t * c, Atom type) {
-	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
-	add_client(uw);
-	uw->map();
-	safe_update_transient_for(uw);
-	safe_raise_window(uw);
-	update_windows_stack();
+	try {
+		unmanaged_window_t * uw = new unmanaged_window_t(type, c);
+		add_client(uw);
+		uw->map();
+		safe_update_transient_for(uw);
+		safe_raise_window(uw);
+		update_windows_stack();
+	} catch (...) {
+		printf("Error while creating unmanaged window\n");
+	}
 }
 
 void page_t::create_dock_window(client_base_t * c, Atom type) {
@@ -3625,6 +3629,7 @@ void page_t::create_dock_window(client_base_t * c, Atom type) {
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);
+	update_allocation();
 }
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {
@@ -4004,6 +4009,9 @@ bool page_t::need_render(time_t time) {
 	return false;
 }
 
+/**
+ * Look at coming events if a client will be destroyed.
+ **/
 bool page_t::check_for_valid_window(Window w) {
 	client_base_t * c = find_client_with(w);
 

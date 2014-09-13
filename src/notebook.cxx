@@ -385,7 +385,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				y = _allocation.h;
 
 			managed_window_t * mw = get_selected();
-			composite_surface_handler_t psurf = mw->surf();
+			shared_ptr<composite_surface_t> psurf = mw->surf();
 
 			rectangle x_prv_loc;
 			rectangle x_new_loc;
@@ -429,26 +429,28 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			}
 
 			if (mw != nullptr and not x_new_loc.is_null()) {
-				shared_ptr<pixmap_t> p = psurf->get_pixmap();
-				if (p != nullptr) {
-					cairo_surface_t * s = p->get_cairo_surface();
-					region r = x_new_loc;
-					r -= x_prv_loc;
+				if (psurf != nullptr) {
+					shared_ptr<pixmap_t> p = psurf->get_pixmap();
+					if (p != nullptr) {
+						cairo_surface_t * s = p->get_cairo_surface();
+						region r = x_new_loc;
+						r -= x_prv_loc;
 
-					cairo_save(cr);
-					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
-							1.0, ratio);
-					cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
-					cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
-							x_new_loc.h);
-					cairo_clip(cr);
-					cairo_mask(cr, p0);
-					cairo_pattern_destroy(p0);
+						cairo_save(cr);
+						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+						cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0,
+								1.0, 1.0, ratio);
+						cairo_set_source_surface(cr, s, x_new_loc.x,
+								x_new_loc.y);
+						cairo_rectangle(cr, x_new_loc.x, x_new_loc.y,
+								x_new_loc.w, x_new_loc.h);
+						cairo_clip(cr);
+						cairo_mask(cr, p0);
+						cairo_pattern_destroy(p0);
 
-					cairo_restore(cr);
+						cairo_restore(cr);
+					}
 				}
-
 			}
 
 
@@ -463,7 +465,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			prev_surf.reset();
 
 			managed_window_t * mw = _selected.front();
-			composite_surface_handler_t psurf = mw->surf();
+			shared_ptr<composite_surface_t> psurf = mw->surf();
 			if (psurf != nullptr) {
 				shared_ptr<pixmap_t> p = psurf->get_pixmap();
 				if (p != nullptr) {

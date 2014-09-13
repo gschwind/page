@@ -535,7 +535,7 @@ public:
 	void remove_viewport(viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
-	void create_managed_window(client_base_t * c, Atom type);
+	void create_managed_window(client_base_t * c, Atom type) throw ();
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 	void create_unmanaged_window(client_base_t * c, Atom type);
 	void create_dock_window(client_base_t * c, Atom type);

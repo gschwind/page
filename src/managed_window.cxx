@@ -45,6 +45,12 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		_is_durty(true),
 		_is_focused(false) {
 
+	_cnx->add_to_save_set(c->orig());
+	/* set border to zero */
+	XSetWindowBorder(_cnx->dpy(), c->orig(), 0);
+	/* assign window to desktop 0 */
+	c->set_net_wm_desktop(0);
+
 	_floating_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
 	_notebook_wished_position = rectangle(wa.x, wa.y, wa.width, wa.height);
 
@@ -62,14 +68,19 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 		_floating_wished_position.h = h;
 	}
 
+	/**
+	 * if x == 0 then place window at center of the screen
+	 **/
 	if (_floating_wished_position.x == 0) {
-		_floating_wished_position.x = (wa.width - _floating_wished_position.w)
-				/ 2;
+		_floating_wished_position.x =
+				(wa.width - _floating_wished_position.w) / 2;
 	}
 
+	/**
+	 * if y == 0 then place window at center of the screen
+	 **/
 	if (_floating_wished_position.y == 0) {
-		_floating_wished_position.y = (wa.height - _floating_wished_position.h)
-				/ 2;
+		_floating_wished_position.y = (wa.height - _floating_wished_position.h) / 2;
 	}
 
 	/** check if the window has motif no border **/
@@ -149,15 +160,17 @@ managed_window_t::managed_window_t(Atom net_wm_type, client_base_t * c,
 	_base = wbase;
 	_deco = wdeco;
 
-	select_inputs();
+	_cnx->reparentwindow(_orig, _base, 0, 0);
 
+	select_inputs();
 	/* Grab button click */
 	grab_button_unfocused();
 
-	_cnx->reparentwindow(_orig, _base, 0, 0);
-
 	_surf = cairo_xlib_surface_create(_cnx->dpy(), _deco, _deco_visual, b.w,
 			b.h);
+
+	_composite_surf = composite_surface_manager_t::get(_cnx->dpy(), _base);
+	composite_surface_manager_t::onmap(_cnx->dpy(), _base);
 
 }
 
