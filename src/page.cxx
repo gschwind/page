@@ -877,6 +877,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
 					process_mode = PROCESS_NOTEBOOK_MENU;
 					mode_data_notebook_menu.from = _upgrade(b->nbk);
+					mode_data_notebook_menu.b = b->position;
 
 					list<managed_window_t *> managed_window = mode_data_notebook_menu.from->get_clients();
 
@@ -1354,17 +1355,29 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 	case PROCESS_NOTEBOOK_MENU:
 		if (e.button == Button1) {
-			process_mode = PROCESS_NORMAL;
-			if (menu->position().is_inside(e.x_root, e.y_root)) {
-				int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
-				menu->set_selected(selx);
-				mode_data_notebook_menu.from->set_selected(
-						_upgrade(menu->get_selected()));
+			if(mode_data_notebook_menu.b.is_inside(e.x, e.y) and not mode_data_notebook_menu.active_grab) {
+				mode_data_notebook_menu.active_grab = true;
+				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e.time);
+			} else {
+				if (mode_data_notebook_menu.active_grab) {
+					XUngrabPointer(cnx->dpy(), e.time);
+					mode_data_notebook_menu.active_grab = false;
+				}
 
-				rpage->add_damaged(mode_data_notebook_menu.from->allocation());
+				process_mode = PROCESS_NORMAL;
+				if (menu->position().is_inside(e.x_root, e.y_root)) {
+					int selx = (int) floor(
+							(e.y_root - menu->position().y) / 24.0);
+					menu->set_selected(selx);
+					mode_data_notebook_menu.from->set_selected(
+							_upgrade(menu->get_selected()));
+
+					rpage->add_damaged(
+							mode_data_notebook_menu.from->allocation());
+				}
+				mode_data_notebook_menu.from = nullptr;
+				menu->hide();
 			}
-			mode_data_notebook_menu.from = nullptr;
-			menu->hide();
 		}
 		break;
 	default:
