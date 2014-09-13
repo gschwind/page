@@ -380,8 +380,6 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 			ratio = std::min(std::max(0.0, ratio), 1.0);
 
-			printf("%f\n", ratio);
-
 			managed_window_t * mw = get_selected();
 			shared_ptr<composite_surface_t> psurf = mw->surf();
 
