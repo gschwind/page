@@ -50,43 +50,38 @@ namespace page {
 class composite_surface_manager_t {
 
 	typedef pair<Display *, Window> _key_t;
-	typedef map<_key_t, shared_ptr<composite_surface_t> > _data_map_t;
+	typedef map<_key_t, weak_ptr<composite_surface_t> > _data_map_t;
 	typedef typename _data_map_t::iterator _map_iter_t;
 
 	_data_map_t _data;
 
 private:
 	shared_ptr<composite_surface_t> _get_composite_surface(Display * dpy, Window w) {
-		_key_t key(dpy, w);
-		_map_iter_t x = _data.find(key);
-		if(x != _data.end()) {
-			return x->second;
-		} else {
-			shared_ptr<composite_surface_t> h(new composite_surface_t(dpy, w));
-			_data[key] = h;
-			return _data[key];
+		weak_ptr<composite_surface_t> & wp = _data[_key_t(dpy, w)];
+		/** do not put into local if () then { } **/
+		shared_ptr<composite_surface_t> h;
+		if(wp.expired()) {
+			h = shared_ptr<composite_surface_t>(new composite_surface_t(dpy, w));
+			wp = h;
 		}
+		return wp.lock();
 	}
 
 	bool _has_composite_surface(Display * dpy, Window w) {
-		_key_t key(dpy, w);
-		_map_iter_t x = _data.find(key);
-		return x != _data.end();
+		return not _data[_key_t(dpy, w)].expired();
 	}
 
 	void _onmap(Display * dpy, Window w) {
-		_key_t key(dpy, w);
-		auto x = _data.find(key);
-		if(x != _data.end()) {
-			x->second->onmap();
+		weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
+		if(not wp.expired()) {
+			wp.lock()->onmap();
 		}
 	}
 
 	void _onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
-		_key_t key(dpy, w);
-		auto x = _data.find(key);
-		if(x != _data.end()) {
-			x->second->onresize(width, heigth);
+		weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
+		if(not wp.expired()) {
+			wp.lock()->onresize(width, heigth);
 		}
 	}
 
@@ -109,10 +104,10 @@ public:
 	static bool exist(Display * dpy, Window w);
 	static void onmap(Display * dpy, Window w);
 	static void onresize(Display * dpy, Window w, unsigned width, unsigned heigth);
+	static void ondestroy(Display * dpy, Window w);
 
 	static shared_ptr<composite_surface_t> get(Display * dpy, Window w);
 
-	static void ondestroy(Display * dpy, Window w);
 
 };
 

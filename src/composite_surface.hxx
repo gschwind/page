@@ -21,11 +21,9 @@ class composite_surface_t {
 	shared_ptr<pixmap_t> _pixmap;
 	int _width, _height;
 
-	void create_damage(Window w) {
-		assert(w != None);
-
+	void create_damage() {
 		if (_damage == None) {
-			_damage = XDamageCreate(_dpy, w, XDamageReportNonEmpty);
+			_damage = XDamageCreate(_dpy, _window_id, XDamageReportNonEmpty);
 			if (_damage != None) {
 				XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
 				XDamageSubtract(_dpy, _damage, None, region);
@@ -34,7 +32,7 @@ class composite_surface_t {
 		}
 	}
 
-	void destroy_damage(Window w) {
+	void destroy_damage() {
 		if(_damage != None) {
 			XDamageDestroy(_dpy, _damage);
 			_damage = None;
@@ -57,13 +55,18 @@ public:
 		_width = wa.width;
 		_height = wa.height;
 		_pixmap = nullptr;
+		_damage = None;
 
-		create_damage(w);
+		printf("create composite_surface %dx%d\n", _width, _height);
+
+		if(wa.map_state != IsUnmapped) {
+			onmap();
+		}
 
 	}
 
 	~composite_surface_t() {
-		destroy_damage(_window_id);
+		destroy_damage();
 	}
 
 	void onmap() {
@@ -73,8 +76,8 @@ public:
 		} else {
 			_pixmap = shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
 		}
-		destroy_damage(_window_id);
-		create_damage(_window_id);
+		destroy_damage();
+		create_damage();
 	}
 
 	void onresize(int width, int height) {
