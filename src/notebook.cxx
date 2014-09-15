@@ -108,7 +108,6 @@ void notebook_t::remove_client(managed_window_t * x) {
 }
 
 void notebook_t::set_selected(managed_window_t * c) {
-	printf("set_selected %p\n", c);
 	/** already selected **/
 	if(_selected == c)
 		return;
@@ -144,18 +143,19 @@ void notebook_t::update_client_position(managed_window_t * c) {
 void notebook_t::iconify_client(managed_window_t * x) {
 	page_assert(has_key(_clients, x));
 
-	printf("iconify_client %p\n", x);
-
 	/** already iconified **/
 	if(_selected != x)
 		return;
 
 	swap_start.get_time();
-	if (_selected->surf() != nullptr) {
-		prev_surf = _selected->surf()->get_pixmap();
-		prev_loc = _selected->base_position();
+
+	if (_selected != nullptr) {
+		if (_selected->surf() != nullptr) {
+			prev_surf = _selected->surf()->get_pixmap();
+			prev_loc = _selected->base_position();
+		}
+		_selected->iconify();
 	}
-	_selected->iconify();
 
 	cur_surf.reset();
 
@@ -367,110 +367,108 @@ void notebook_t::render_legacy(cairo_t * cr, rectangle const & area) const {
 }
 
 void notebook_t::render(cairo_t * cr, time_t time) {
+	page::time_t d(0, animation_duration);
+	if (time < (swap_start + d)) {
+		double ratio = (sin(
+				static_cast<double>(time - swap_start) / animation_duration
+						* M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
 
-	if (_selected != nullptr) {
+		ratio = std::min(std::max(0.0, ratio), 1.0);
 
-		page::time_t d(0, animation_duration);
-		if (time < (swap_start + d)) {
-			double ratio = (sin(static_cast<double>(time - swap_start)/animation_duration * M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
+		rectangle x_prv_loc;
+		rectangle x_new_loc;
 
-			ratio = std::min(std::max(0.0, ratio), 1.0);
+		if (prev_surf != nullptr) {
+			x_prv_loc = prev_loc;
+		}
 
-			managed_window_t * mw = get_selected();
-			shared_ptr<composite_surface_t> psurf = mw->surf();
+		if (_selected != nullptr) {
+			x_new_loc = _selected->get_base_position();
+		}
 
-			rectangle x_prv_loc;
-			rectangle x_new_loc;
+		/** render old surface if one is available **/
+		if (prev_surf != nullptr) {
+			cairo_surface_t * s = prev_surf->get_cairo_surface();
+			region r = x_prv_loc;
+			r -= x_new_loc;
 
-			if(prev_surf != nullptr) {
-				x_prv_loc = prev_loc;
+			cairo_save(cr);
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
+					1.0 - ratio);
+			for (auto &a : r) {
+				cairo_reset_clip(cr);
+				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+				cairo_clip(cr);
+				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+				cairo_mask(cr, p0);
+			}
+			cairo_pattern_destroy(p0);
+
+			region r1 = x_prv_loc;
+			r1 &= x_new_loc;
+			for (auto &a : r1) {
+				cairo_reset_clip(cr);
+				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+				cairo_clip(cr);
+				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+				cairo_paint(cr);
 			}
 
-			if(mw != nullptr) {
-				x_new_loc = mw->get_base_position();
-			}
+			cairo_restore(cr);
+		}
 
-			if (prev_surf != nullptr and not x_prv_loc.is_null()) {
-				cairo_surface_t * s = prev_surf->get_cairo_surface();
-				region r = x_prv_loc;
-				r -= x_new_loc;
-
-				cairo_save(cr);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0-ratio);
-				for (auto &a : r) {
-					cairo_reset_clip(cr);
-					cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-					cairo_clip(cr);
-					cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
-					cairo_mask(cr, p0);
-				}
-				cairo_pattern_destroy(p0);
-
-				region r1 = x_prv_loc;
-				r1 &= x_new_loc;
-				for (auto &a : r1) {
-					cairo_reset_clip(cr);
-					cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-					cairo_clip(cr);
-					cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
-					cairo_paint(cr);
-				}
-
-				cairo_restore(cr);
-			}
-
-			if (mw != nullptr and not x_new_loc.is_null()) {
-				if (psurf != nullptr) {
-					shared_ptr<pixmap_t> p = psurf->get_pixmap();
-					if (p != nullptr) {
-						cairo_surface_t * s = p->get_cairo_surface();
-						region r = x_new_loc;
-						r -= x_prv_loc;
-
-						cairo_save(cr);
-						cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-						cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0,
-								1.0, 1.0, ratio);
-						cairo_set_source_surface(cr, s, x_new_loc.x,
-								x_new_loc.y);
-						cairo_rectangle(cr, x_new_loc.x, x_new_loc.y,
-								x_new_loc.w, x_new_loc.h);
-						cairo_clip(cr);
-						cairo_mask(cr, p0);
-						cairo_pattern_destroy(p0);
-
-						cairo_restore(cr);
-					}
-				}
-			}
-
-
-
-			for (auto i : mw->childs()) {
-				i->render(cr, time);
-			}
-
-
-		} else {
-
-			prev_surf.reset();
-
-			managed_window_t * mw = _selected;
-			shared_ptr<composite_surface_t> psurf = mw->surf();
+		/** render selected surface if available **/
+		if (_selected != nullptr) {
+			shared_ptr<composite_surface_t> psurf = _selected->surf();
 			if (psurf != nullptr) {
 				shared_ptr<pixmap_t> p = psurf->get_pixmap();
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
-					rectangle location = mw->get_base_position();
+					region r = x_new_loc;
+					r -= x_prv_loc;
+
+					cairo_save(cr);
+					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
+							1.0, ratio);
+					cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
+					cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
+							x_new_loc.h);
+					cairo_clip(cr);
+					cairo_mask(cr, p0);
+					cairo_pattern_destroy(p0);
+
+					cairo_restore(cr);
+				}
+			}
+
+			for (auto i : _selected->childs()) {
+				i->render(cr, time);
+			}
+		}
+
+	} else {
+		/** animation is terminated **/
+		prev_surf.reset();
+
+
+		/** draw selected window is one is available **/
+		if (_selected != nullptr) {
+			shared_ptr<composite_surface_t> psurf = _selected->surf();
+			if (psurf != nullptr) {
+				shared_ptr<pixmap_t> p = psurf->get_pixmap();
+				if (p != nullptr) {
+					cairo_surface_t * s = p->get_cairo_surface();
+					rectangle location = _selected->get_base_position();
 
 					cairo_save(cr);
 
 					cairo_set_line_width(cr, 1.0);
 					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-					cairo_rectangle(cr, location.x-0.5, location.y-0.5, location.w+1.0,
-							location.h+1.0);
+					cairo_rectangle(cr, location.x - 0.5, location.y - 0.5,
+							location.w + 1.0, location.h + 1.0);
 					cairo_stroke(cr);
 
 					cairo_set_source_surface(cr, s, location.x, location.y);
@@ -483,13 +481,11 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				}
 			}
 
-			for (auto i : mw->childs()) {
+			for (auto i : _selected->childs()) {
 				i->render(cr, time);
 			}
 
 		}
-
-
 
 	}
 
