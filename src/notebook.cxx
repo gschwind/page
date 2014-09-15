@@ -22,32 +22,35 @@ notebook_t::~notebook_t() {
 }
 
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
+	page_assert(not has_key(_clients, x));
 	_children.push_back(x);
 	x->set_parent(this);
 	_clients.push_front(x);
 	_client_map.insert(x);
 
 	if(prefer_activate) {
+		swap_start.get_time();
+
 		if(_selected != nullptr) {
-			swap_start.get_time();
+			/** get current surface then iconify **/
 			if (_selected->surf() != nullptr) {
 				prev_loc = _selected->base_position();
 				prev_surf = _selected->surf()->get_pixmap();
 			}
 			_selected->iconify();
+		} else {
+			/** no prev surf is used **/
+			prev_surf.reset();
 		}
 
-		swap_start.get_time();
-		prev_surf.reset();
 		cur_surf = x->surf();
+		update_client_position(x);
 		x->normalize();
 		_selected = x;
 
 	} else {
 		x->iconify();
 	}
-
-	update_client_position(x);
 
 	return true;
 }
@@ -70,7 +73,6 @@ void notebook_t::close(tree_t * src) {
 void notebook_t::remove(tree_t * src) {
 	managed_window_t * mw = dynamic_cast<managed_window_t*>(src);
 	if (has_key(_clients, mw) and mw != nullptr) {
-		cout << "WARNING: do not use notebook_t::remove to remove client, prefert notebook_t::remove_client" << endl;
 		remove_client(mw);
 	}
 }
@@ -95,6 +97,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 			prev_surf = x->surf()->get_pixmap();
 			prev_loc = x->base_position();
 		}
+		_selected = nullptr;
 	}
 
 	// cleanup
@@ -110,12 +113,13 @@ void notebook_t::set_selected(managed_window_t * c) {
 	if(_selected == c)
 		return;
 
+	swap_start.get_time();
 	update_client_position(c);
 	c->normalize();
 
 	/** iconify current selected **/
 	if (_selected != nullptr) {
-		swap_start.get_time();
+		/** store current surface then iconify **/
 		if (_selected->surf() != nullptr) {
 			prev_surf = _selected->surf()->get_pixmap();
 			prev_loc = _selected->base_position();
