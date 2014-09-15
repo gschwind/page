@@ -108,7 +108,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 }
 
 void notebook_t::set_selected(managed_window_t * c) {
-
+	printf("set_selected %p\n", c);
 	/** already selected **/
 	if(_selected == c)
 		return;
@@ -142,6 +142,9 @@ void notebook_t::update_client_position(managed_window_t * c) {
 }
 
 void notebook_t::iconify_client(managed_window_t * x) {
+	page_assert(has_key(_clients, x));
+
+	printf("iconify_client %p\n", x);
 
 	/** already iconified **/
 	if(_selected != x)

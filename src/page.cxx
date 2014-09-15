@@ -828,7 +828,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->move_resize(mode_data_notebook.from->tab_area);
 					pn0->update_window(mode_data_notebook.c,
 							mode_data_notebook.c->title());
-					set_focus(mode_data_notebook.c, e.time);
+					//set_focus(mode_data_notebook.c, e.time);
 					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
@@ -1064,7 +1064,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				pn0->move_resize(mode_data_notebook.from->tab_area);
 				pn0->update_window(mw, mw->title());
 
-				mode_data_notebook.from->set_selected(mode_data_notebook.c);
+				//mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				rpage->add_damaged(mode_data_notebook.from->allocation());
 
 			}
@@ -1136,7 +1136,23 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					&& mode_data_notebook.ns != 0) {
 				unbind_window(mode_data_notebook.c);
 			} else {
-				mode_data_notebook.from->set_selected(mode_data_notebook.c);
+
+				if(_client_focused.empty()) {
+					set_focus(mode_data_notebook.c, e.time);
+					mode_data_notebook.from->set_selected(mode_data_notebook.c);
+				} else {
+					if(mode_data_notebook.from->get_selected() == mode_data_notebook.c
+							and _client_focused.front() == mode_data_notebook.c) {
+						/** focus root **/
+						set_focus(nullptr, e.time);
+						/** iconify **/
+						mode_data_notebook.from->iconify_client(mode_data_notebook.c);
+					} else {
+						set_focus(mode_data_notebook.c, e.time);
+						mode_data_notebook.from->set_selected(mode_data_notebook.c);
+					}
+				}
+
 			}
 
 			/* Automatically close empty notebook (disabled) */
@@ -1825,12 +1841,11 @@ void page_t::process_event(XMotionEvent const & e) {
 		viewport_t * v = find_mouse_viewport(ev.xmotion.x_root,
 				ev.xmotion.y_root);
 
-		if (v != 0) {
+		if (v != nullptr) {
 			if (v != mode_data_fullscreen.v) {
 				pn0->move_resize(v->raw_aera);
 				mode_data_fullscreen.v = v;
 			}
-
 		}
 
 		break;
