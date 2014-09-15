@@ -1327,7 +1327,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 				split_right(mode_data_bind.ns, mode_data_bind.c);
 			} else {
-				bind_window(mode_data_bind.c);
+				bind_window(mode_data_bind.c, true);
 			}
 
 			process_mode = PROCESS_NORMAL;
@@ -2302,7 +2302,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		/** When window want to become iconic, just bind them **/
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
-				bind_window(mw);
+				bind_window(mw, false);
 			}
 		}
 
@@ -3148,11 +3148,11 @@ void page_t::compute_client_size_with_constraint(Window c,
 
 }
 
-void page_t::bind_window(managed_window_t * mw) {
+void page_t::bind_window(managed_window_t * mw, bool activate) {
 	/* update database */
 	cout << "bind: " << mw->title() << endl;
 	detach(mw);
-	insert_window_in_notebook(mw, 0, true);
+	insert_window_in_notebook(mw, 0, activate);
 	safe_raise_window(mw);
 	update_client_list();
 }
@@ -3626,7 +3626,27 @@ void page_t::create_managed_window(client_base_t * c, Atom type) throw () {
 				and get_transient_for(mw) == nullptr
 				and mw->has_motif_border()) {
 
-			bind_window(mw);
+			/** select if the client want to apear mapped or iconic **/
+			bool activate = true;
+
+			/**
+			 * first try if previous vm has put this window in IconicState, then
+			 * Check if the client have a prefered initiale state.
+			 **/
+			if (mw->wm_state != nullptr) {
+				if (*(mw->wm_state) == IconicState) {
+					activate = false;
+				}
+			} else {
+				if (mw->wm_hints != nullptr) {
+					if (mw->wm_hints->initial_state == IconicState) {
+						activate = false;
+					}
+				}
+			}
+
+			bind_window(mw, activate);
+
 			mw->reconfigure();
 
 		} else {

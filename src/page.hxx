@@ -514,7 +514,7 @@ public:
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
 	/* attach floating window in a notebook */
-	void bind_window(managed_window_t * mw);
+	void bind_window(managed_window_t * mw, bool activate);
 	/* detach notebooked window to a floating window */
 	void unbind_window(managed_window_t * mw);
 	void grab_pointer();
