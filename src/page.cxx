@@ -3578,6 +3578,12 @@ void page_t::onmap(Window w) {
 		c->read_all_properties();
 		safe_update_transient_for(c);
 		update_windows_stack();
+
+		managed_window_t * mw = dynamic_cast<managed_window_t*>(c);
+		if(mw != nullptr) {
+			mw->reconfigure();
+		}
+
 	}
 
 
