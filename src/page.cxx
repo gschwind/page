@@ -2303,7 +2303,13 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
 				bind_window(mw, false);
+			} else if (mw->is(MANAGED_NOTEBOOK) and e.data.l[0] == IconicState) {
+				notebook_t * n = dynamic_cast<notebook_t *> (mw->parent());
+				n->iconify_client(mw);
+				rpage->add_damaged(n->allocation());
+				rnd->need_render();
 			}
+
 		}
 
 	} else if (e.message_type == A(PAGE_QUIT)) {
