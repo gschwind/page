@@ -55,9 +55,7 @@ public:
 	};
 	// list of client to maintain tab order
 	list<managed_window_t *> _clients;
-	// list of selected to have smart unselect (when window is closed we
-	// select the previous window selected
-	list<managed_window_t *> _selected;
+	managed_window_t * _selected;
 	// set of map for fast check is window is in this notebook
 	set<managed_window_t *> _client_map;
 

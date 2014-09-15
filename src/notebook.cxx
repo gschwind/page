@@ -14,6 +14,7 @@ namespace page {
 
 notebook_t::notebook_t(theme_t const * theme) : _theme(theme) {
 	_is_default = false;
+	_selected = nullptr;
 }
 
 notebook_t::~notebook_t() {
@@ -26,28 +27,24 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	_clients.push_front(x);
 	_client_map.insert(x);
 
-	if (_selected.empty()) {
+	if(prefer_activate) {
+		if(_selected != nullptr) {
+			swap_start.get_time();
+			if (_selected->surf() != nullptr) {
+				prev_loc = _selected->base_position();
+				prev_surf = _selected->surf()->get_pixmap();
+			}
+			_selected->iconify();
+		}
+
 		swap_start.get_time();
 		prev_surf.reset();
 		cur_surf = x->surf();
 		x->normalize();
-		_selected.push_front(x);
+		_selected = x;
+
 	} else {
-		if (prefer_activate) {
-			swap_start.get_time();
-			managed_window_t * mw = _selected.front();
-			if (mw->surf() != nullptr) {
-				prev_loc = _selected.front()->base_position();
-				prev_surf = _selected.front()->surf()->get_pixmap();
-			}
-			_selected.front()->iconify();
-			cur_surf = x->surf();
-			x->normalize();
-			_selected.push_front(x);
-		} else {
-			x->iconify();
-			_selected.push_back(x);
-		}
+		x->iconify();
 	}
 
 	update_client_position(x);
@@ -92,19 +89,11 @@ void notebook_t::remove_client(managed_window_t * x) {
 	page_assert(has_key(_clients, x));
 
 	/** update selection **/
-	if (not _selected.empty()) {
-		if (_selected.front() == x) {
-			swap_start.get_time();
-			if (x->surf() != nullptr) {
-				prev_surf = x->surf()->get_pixmap();
-				prev_loc = x->base_position();
-			}
-		}
-		_selected.remove(x);
-		if (not _selected.empty()) {
-			update_client_position(_selected.front());
-			_selected.front()->normalize();
-			cur_surf = _selected.front()->surf();
+	if (_selected == x) {
+		swap_start.get_time();
+		if (x->surf() != nullptr) {
+			prev_surf = x->surf()->get_pixmap();
+			prev_loc = x->base_position();
 		}
 	}
 
@@ -116,24 +105,28 @@ void notebook_t::remove_client(managed_window_t * x) {
 }
 
 void notebook_t::set_selected(managed_window_t * c) {
+
+	/** already selected **/
+	if(_selected == c)
+		return;
+
 	update_client_position(c);
 	c->normalize();
 
-	if (!_selected.empty()) {
-		if (c != _selected.front()) {
-			managed_window_t * x = _selected.front();
-			if (x->surf() != nullptr) {
-				prev_surf = x->surf()->get_pixmap();
-				prev_loc = x->base_position();
-			}
-			swap_start.get_time();
-			x->iconify();
+	/** iconify current selected **/
+	if (_selected != nullptr) {
+		swap_start.get_time();
+		if (_selected->surf() != nullptr) {
+			prev_surf = _selected->surf()->get_pixmap();
+			prev_loc = _selected->base_position();
 		}
+		_selected->iconify();
 	}
 
+	/** keep current surface in track **/
 	cur_surf = c->surf();
-	_selected.remove(c);
-	_selected.push_front(c);
+	/** set selected **/
+	_selected = c;
 
 }
 
@@ -145,16 +138,22 @@ void notebook_t::update_client_position(managed_window_t * c) {
 }
 
 void notebook_t::iconify_client(managed_window_t * x) {
-	if ((_client_map.find(x)) != _client_map.end()) {
-		if (!_selected.empty()) {
-			if (_selected.front() == x) {
-				_selected.pop_front();
-				if (!_selected.empty()) {
-					set_selected(_selected.front());
-				}
-			}
-		}
+
+	/** already iconified **/
+	if(_selected != x)
+		return;
+
+	swap_start.get_time();
+	if (_selected->surf() != nullptr) {
+		prev_surf = _selected->surf()->get_pixmap();
+		prev_loc = _selected->base_position();
 	}
+	_selected->iconify();
+
+	cur_surf.reset();
+
+	_selected = nullptr;
+
 }
 
 notebook_t * notebook_t::get_nearest_notebook() {
@@ -166,14 +165,14 @@ void notebook_t::delete_all() {
 }
 
 void notebook_t::unmap_all() {
-	if (!_selected.empty()) {
-		_selected.front()->iconify();
+	if (_selected != nullptr) {
+		_selected->iconify();
 	}
 }
 
 void notebook_t::map_all() {
-	if (!_selected.empty()) {
-		_selected.front()->normalize();
+	if (_selected != nullptr) {
+		_selected->normalize();
 	}
 }
 
@@ -182,9 +181,9 @@ rectangle notebook_t::get_absolute_extend() {
 }
 
 region notebook_t::get_area() {
-	if (!_selected.empty()) {
+	if (_selected != nullptr) {
 		region area = allocation();
-		area -= _selected.front()->get_base_position();
+		area -= _selected->get_base_position();
 		return area;
 	} else {
 		return region(allocation());
@@ -253,14 +252,8 @@ void notebook_t::set_allocation(rectangle const & area) {
 	client_area.w = allocation().w - _theme->notebook_margin.left - _theme->notebook_margin.right;
 	client_area.h = allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom;
 
-	if (_selected.empty()) {
-		if (!_clients.empty()) {
-			_selected.push_front(_clients.front());
-		}
-	}
-
-	for(set<managed_window_t *>::iterator i = _client_map.begin(); i != _client_map.end(); ++i) {
-		update_client_position((*i));
+	for(auto i : _client_map) {
+		update_client_position(i);
 	}
 
 }
@@ -329,11 +322,7 @@ list<managed_window_base_t const *> notebook_t::clients() const {
 }
 
 managed_window_base_t const * notebook_t::selected() const {
-	if(_selected.empty()) {
-		return nullptr;
-	} else {
-		return _selected.front();
-	}
+	return _selected;
 }
 
 bool notebook_t::is_default() const {
@@ -372,7 +361,7 @@ void notebook_t::render_legacy(cairo_t * cr, rectangle const & area) const {
 
 void notebook_t::render(cairo_t * cr, time_t time) {
 
-	if (not _selected.empty()) {
+	if (_selected != nullptr) {
 
 		page::time_t d(0, animation_duration);
 		if (time < (swap_start + d)) {
@@ -460,7 +449,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 			prev_surf.reset();
 
-			managed_window_t * mw = _selected.front();
+			managed_window_t * mw = _selected;
 			shared_ptr<composite_surface_t> psurf = mw->surf();
 			if (psurf != nullptr) {
 				shared_ptr<pixmap_t> p = psurf->get_pixmap();
@@ -516,11 +505,7 @@ bool notebook_t::need_render(time_t time) {
 }
 
 managed_window_t * notebook_t::get_selected() {
-	if(not _selected.empty()) {
-		return _selected.front();
-	}
-
-	return nullptr;
+	return _selected;
 }
 
 
