@@ -399,8 +399,14 @@ void simple2_theme_t::compute_areas_for_notebook(notebook_base_t const * n,
 	list<managed_window_base_t const *> clist = n->clients();
 
 	if(clist.size() != 0) {
-		double box_width = ((n->allocation().w - 17.0 * 5.0 - 40.0)
-				/ (clist.size() + 3.0));
+		double box_width;
+		if(n->selected() != nullptr) {
+			box_width = ((n->allocation().w - 17.0 * 5.0 - 40.0)
+					/ (clist.size() + 3.0));
+		} else {
+			box_width = ((n->allocation().w - 17.0 * 5.0 - 40.0)
+					/ (clist.size()));
+		}
 		double offset = n->allocation().x + 40.0;
 
 		rectangle b;
