@@ -2988,6 +2988,35 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 	printf("_NET_WM_STATE %s %s from %lu\n", action, name.get(), c);
 
 	managed_window_t * mw = find_managed_window_with(c);
+
+	if (state_properties == A(_NET_WM_STATE_HIDDEN)
+			and type == _NET_WM_STATE_REMOVE) {
+		managed_window_t * mw = find_managed_window_with(c);
+		if (mw != nullptr) {
+			hidden_clients.remove(mw);
+			mw->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			Atom type = mw->type();
+			manage_managed_window(mw, type);
+			return;
+		}
+	}
+
+	if (state_properties == A(_NET_WM_STATE_HIDDEN)
+			and type == _NET_WM_STATE_TOGGLE) {
+		managed_window_t * mw = find_managed_window_with(c);
+		if (mw != nullptr) {
+			hidden_clients.remove(mw);
+			mw->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			Atom type = mw->type();
+			manage_managed_window(mw, type);
+			return;
+		} else {
+			remove(mw);
+			mw->iconify();
+			hidden_clients.push_back(mw);
+		}
+	}
+
 	if(mw == nullptr)
 		return;
 
@@ -3008,26 +3037,15 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				if (find_parent_notebook_for(mw) != 0) {
-					find_parent_notebook_for(mw)->activate_client(mw);
-				} else {
-					//c->map();
-				}
+				/** already done **/
 				break;
 			case _NET_WM_STATE_ADD:
-				if (find_parent_notebook_for(mw) != 0) {
-					find_parent_notebook_for(mw)->iconify_client(mw);
-				} else {
-
-				}
+				remove(mw);
+				mw->iconify();
+				hidden_clients.push_back(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				if (find_parent_notebook_for(mw) != 0) {
-
-				} else {
-
-				}
-				break;
+				/** already done **/
 			default:
 				break;
 			}
@@ -3049,13 +3067,15 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->normalize();
+				/** already done **/
 				break;
 			case _NET_WM_STATE_ADD:
+				remove(mw);
 				mw->iconify();
+				hidden_clients.push_back(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				break;
+				/** already done **/
 			default:
 				break;
 			}
@@ -3076,13 +3096,15 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->normalize();
+				/** already done **/
 				break;
 			case _NET_WM_STATE_ADD:
+				remove(mw);
 				mw->iconify();
+				hidden_clients.push_back(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				break;
+				/** already done **/
 			default:
 				break;
 			}
@@ -3537,7 +3559,6 @@ void page_t::onmap(Window w) {
 						create_unmanaged_window(c, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 						create_dock_window(c, type);
-						update_allocation();
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 						create_unmanaged_window(c, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
@@ -3603,6 +3624,24 @@ void page_t::create_managed_window(client_base_t * c, Atom type) throw () {
 	try {
 		managed_window_t * mw = new managed_window_t(type, c, theme);
 		add_client(mw);
+
+		manage_managed_window(mw, type);
+
+	} catch (...) {
+		printf("Error while creating managed window\n");
+	}
+}
+
+void page_t::manage_managed_window(managed_window_t * mw, Atom type) throw () {
+
+	try {
+
+		if(mw->_net_wm_state != nullptr) {
+			if(has_key(*mw->_net_wm_state, A(_NET_WM_STATE_HIDDEN))) {
+				hidden_clients.push_back(mw);
+				return;
+			}
+		}
 
 		safe_update_transient_for(mw);
 		mw->raise_child(nullptr);
@@ -3823,6 +3862,15 @@ client_base_t * page_t::find_client_with(Window w) {
 	for(auto &i: clients) {
 		if(i.second->has_window(w)) {
 			return i.second;
+		}
+	}
+	return nullptr;
+}
+
+managed_window_t * page_t::find_hidden_client_with(Window w) {
+	for(auto i: hidden_clients) {
+		if(i->has_window(w)) {
+			return i;
 		}
 	}
 	return nullptr;

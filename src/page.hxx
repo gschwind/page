@@ -327,6 +327,9 @@ public:
 	list<unmanaged_window_t *> notifications;
 	list<unmanaged_window_t *> above;
 
+	/** TODO **/
+	list<managed_window_t *> hidden_clients;
+
 	Cursor default_cursor;
 
 	bool running;
@@ -536,6 +539,7 @@ public:
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
 	void create_managed_window(client_base_t * c, Atom type) throw ();
+	void manage_managed_window(managed_window_t * mw, Atom type) throw ();
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 	void create_unmanaged_window(client_base_t * c, Atom type);
 	void create_dock_window(client_base_t * c, Atom type);
@@ -586,6 +590,8 @@ public:
 
 	void update_keymap();
 	void update_grabkey();
+
+	managed_window_t * find_hidden_client_with(Window w);
 
 
 };
