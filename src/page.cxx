@@ -453,6 +453,7 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	/** if the window is destroyed, this not work, see fix on destroy **/
 	_client_focused.remove(mw);
+	hidden_clients.remove(mw);
 
 	/* as recommended by EWMH delete _NET_WM_STATE when window become unmanaged */
 	mw->net_wm_state_delete();
