@@ -453,7 +453,6 @@ void page_t::unmanage(managed_window_t * mw) {
 
 	/** if the window is destroyed, this not work, see fix on destroy **/
 	_client_focused.remove(mw);
-	hidden_clients.remove(mw);
 
 	/* as recommended by EWMH delete _NET_WM_STATE when window become unmanaged */
 	mw->net_wm_state_delete();
@@ -2990,34 +2989,6 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 
 	managed_window_t * mw = find_managed_window_with(c);
 
-	if (state_properties == A(_NET_WM_STATE_HIDDEN)
-			and type == _NET_WM_STATE_REMOVE) {
-		managed_window_t * mw = find_managed_window_with(c);
-		if (mw != nullptr) {
-			hidden_clients.remove(mw);
-			mw->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			Atom type = mw->type();
-			manage_managed_window(mw, type);
-			return;
-		}
-	}
-
-	if (state_properties == A(_NET_WM_STATE_HIDDEN)
-			and type == _NET_WM_STATE_TOGGLE) {
-		managed_window_t * mw = find_managed_window_with(c);
-		if (mw != nullptr) {
-			hidden_clients.remove(mw);
-			mw->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			Atom type = mw->type();
-			manage_managed_window(mw, type);
-			return;
-		} else {
-			remove(mw);
-			mw->iconify();
-			hidden_clients.push_back(mw);
-		}
-	}
-
 	if(mw == nullptr)
 		return;
 
@@ -3038,15 +3009,18 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				/** already done **/
+			{
+				notebook_t * n = dynamic_cast<notebook_t*>(mw->parent());
+				if(n != nullptr)
+					n->activate_client(mw);
+			}
+
 				break;
 			case _NET_WM_STATE_ADD:
-				remove(mw);
 				mw->iconify();
-				hidden_clients.push_back(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				/** already done **/
+				/** IWMH say ignore it ? **/
 			default:
 				break;
 			}
@@ -3068,15 +3042,13 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				/** already done **/
+				mw->normalize();
 				break;
 			case _NET_WM_STATE_ADD:
-				remove(mw);
-				mw->iconify();
-				hidden_clients.push_back(mw);
+				/** I ignore it **/
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				/** already done **/
+				/** IWMH say ignore it ? **/
 			default:
 				break;
 			}
@@ -3097,15 +3069,10 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				/** already done **/
 				break;
 			case _NET_WM_STATE_ADD:
-				remove(mw);
-				mw->iconify();
-				hidden_clients.push_back(mw);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				/** already done **/
 			default:
 				break;
 			}
@@ -3637,13 +3604,6 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) throw () {
 
 	try {
 
-		if(mw->_net_wm_state != nullptr) {
-			if(has_key(*mw->_net_wm_state, A(_NET_WM_STATE_HIDDEN))) {
-				hidden_clients.push_back(mw);
-				return;
-			}
-		}
-
 		safe_update_transient_for(mw);
 		mw->raise_child(nullptr);
 		update_client_list();
@@ -3688,6 +3648,12 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) throw () {
 					if (mw->wm_hints->initial_state == IconicState) {
 						activate = false;
 					}
+				}
+			}
+
+			if(mw->_net_wm_state != nullptr) {
+				if(has_key(*mw->_net_wm_state, A(_NET_WM_STATE_HIDDEN))) {
+					activate = false;
 				}
 			}
 
@@ -3863,15 +3829,6 @@ client_base_t * page_t::find_client_with(Window w) {
 	for(auto &i: clients) {
 		if(i.second->has_window(w)) {
 			return i.second;
-		}
-	}
-	return nullptr;
-}
-
-managed_window_t * page_t::find_hidden_client_with(Window w) {
-	for(auto i: hidden_clients) {
-		if(i->has_window(w)) {
-			return i;
 		}
 	}
 	return nullptr;

@@ -327,9 +327,6 @@ public:
 	list<unmanaged_window_t *> notifications;
 	list<unmanaged_window_t *> above;
 
-	/** TODO **/
-	list<managed_window_t *> hidden_clients;
-
 	Cursor default_cursor;
 
 	bool running;
