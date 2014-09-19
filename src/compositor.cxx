@@ -71,7 +71,6 @@ void compositor_t::release_composite_overlay() {
 }
 
 compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
-	render_mode = COMPOSITOR_MODE_AUTO;
 	composite_back_buffer = None;
 
 	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));

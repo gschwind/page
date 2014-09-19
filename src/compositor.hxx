@@ -61,8 +61,6 @@ class compositor_t {
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	map<Window, Damage> damage_map;
-
 	renderable_list_t _graph_scene;
 
 	static int const _FPS_WINDOWS = 33;
@@ -78,15 +76,7 @@ class compositor_t {
 	PangoContext * _fps_context;
 #endif
 
-public:
-
-	enum render_mode_e {
-		COMPOSITOR_MODE_AUTO,
-		COMPOSITOR_MODE_MANAGED
-	};
-
 private:
-	render_mode_e render_mode;
 
 	void repair_damaged_window(Window w, region area);
 	void repair_moved_window(Window w, region from, region to);
@@ -113,24 +103,15 @@ private:
 
 	void update_layout();
 
-	void stack_window_update(Window window, Window above);
-	void stack_window_place_on_top(Window w);
-	void stack_window_place_on_bottom(Window w);
-	void stack_window_remove(Window w);
-
 	region read_damaged_region(Damage d);
 	void init_composite_overlay();
 	void release_composite_overlay();
 	bool process_check_event();
 
-	bool check_glx_context();
-
 	void destroy_cairo();
 	void init_cairo();
 
 	void repair_area_region(region const & repair);
-
-	bool check_glx_for_extensions(char const * const * ext);
 
 	void cleanup_internal_data();
 
@@ -150,11 +131,7 @@ public:
 	}
 
 	void render();
-	void render_auto();
-	void render_managed();
 
-	void set_render_mode(render_mode_e mode);
-	render_mode_e get_render_mode();
 	void destroy_composite_surface(Window w);
 	void create_damage(Window w, XWindowAttributes & wa);
 	void destroy_damage(Window w);
