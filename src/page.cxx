@@ -3711,23 +3711,23 @@ viewport_t * page_t::find_mouse_viewport(int x, int y) {
  * Read user time with proper fallback
  * @return: true if successfully find usertime, otherwise false.
  * @output time: if time is found time is set to the found value.
- * @input w: X11 Window ID.
+ * @input c: a window client handler.
  **/
 bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
-	/** TODO function **/
+
 	bool has_time = false;
 	Window time_window;
 
-	if (c->_net_wm_user_time != 0) {
+	if (c->_net_wm_user_time != nullptr) {
 		time = *(c->_net_wm_user_time);
 		has_time = true;
 	} else {
 		/* if no time window try to go on referenced window */
-		if (c->_net_wm_user_time_window != 0) {
+		if (c->_net_wm_user_time_window != nullptr) {
 
 			Time * xtime = cnx->read_net_wm_user_time(
 					*(c->_net_wm_user_time_window));
-			if (xtime != 0) {
+			if (xtime != nullptr) {
 				if (*xtime != 0) {
 					time = *(xtime);
 					has_time = true;
