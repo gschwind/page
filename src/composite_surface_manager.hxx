@@ -10,22 +10,6 @@
  * the relate window. This manager keep those surfaces up-to-date and enable the access after the destruction
  * of the related window.
  *
- * This manager track the number of use of a given surface using a smart pointer like structure, when
- * all client release the handle the surface is destroyed.
- *
- * Why not simply use smart pointer ?
- *
- * Because you may want recover a released handler while it hasn't been released yet.
- *
- * For example:
- *
- * Client 1 handle (display, window N)
- * Client 2 handle (display, window N)
- * Client 2 release (display, window N)
- * Client 2 request new handle to (display, window N)
- *
- * The manager will give back (display, window N) that Client 1 also handle.
- *
  */
 
 #ifndef COMPOSITE_SURFACE_MANAGER_HXX_

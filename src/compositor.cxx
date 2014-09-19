@@ -109,6 +109,7 @@ void compositor_t::render() {
 	page::time_t cur;
 	cur.get_time();
 
+	/** check if some component need rendering **/
 	if (not _need_render) {
 		for (auto i : _graph_scene) {
 			if (i->need_render(cur)) {
@@ -118,6 +119,7 @@ void compositor_t::render() {
 		}
 	}
 
+	/** if no one need rendering, do not render. **/
 	if(not _need_render) {
 		return;
 	}
@@ -132,10 +134,13 @@ void compositor_t::render() {
 			root_attributes.height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
+
+	/** clear back buffer **/
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 	CHECK_CAIRO(cairo_paint(cr));
 
+	/** render all components **/
 	for (auto i : _graph_scene) {
 		i->render(cr, cur);
 	}
@@ -186,6 +191,7 @@ void compositor_t::render() {
 	cairo_surface_destroy(_back_buffer);
 	_back_buffer = nullptr;
 
+	/** swap back buffer and front buffer **/
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
 	si.swap_action = XdbeUndefined;
