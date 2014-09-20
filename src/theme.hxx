@@ -21,6 +21,7 @@
 #include "page_event.hxx"
 #include "tree.hxx"
 #include "leak_checker.hxx"
+#include "icon_handler.hxx"
 
 using namespace std;
 
@@ -52,6 +53,45 @@ public:
 		if(icon != nullptr) {
 			delete icon;
 		}
+	}
+
+};
+
+
+class dropdown_menu_entry_t : public leak_checker {
+
+	icon_handler_t<16,16> * _icon;
+	string _title;
+	managed_window_base_t const * _id;
+
+	dropdown_menu_entry_t(cycle_window_entry_t const &);
+	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
+
+public:
+	dropdown_menu_entry_t(managed_window_base_t const * mw) :
+			_icon(new icon_handler_t<16, 16>(*mw)),
+			_title(mw->title()),
+			_id(mw)
+	{
+
+	}
+
+	~dropdown_menu_entry_t() {
+		if(_icon != nullptr) {
+			delete _icon;
+		}
+	}
+
+	managed_window_base_t const * id() const {
+		return _id;
+	}
+
+	icon_handler_t<16,16> const * icon() const {
+		return _icon;
+	}
+
+	string title() const {
+		return _title;
 	}
 
 };
@@ -110,7 +150,7 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) = 0;
 
-	virtual void render_menuentry(cairo_t * cr, cycle_window_entry_t * w, rectangle const & area) = 0;
+	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, rectangle const & area) = 0;
 
 	virtual void update() = 0;
 

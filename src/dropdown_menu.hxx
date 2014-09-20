@@ -19,8 +19,7 @@ namespace page {
 class dropdown_menu_t : public window_overlay_t, public renderable_t {
 
 	theme_t * _theme;
-
-	vector<cycle_window_entry_t *> window_list;
+	vector<dropdown_menu_entry_t *> window_list;
 	int selected;
 
 public:
@@ -42,7 +41,7 @@ public:
 		mark_durty();
 	}
 
-	void update_window(vector<cycle_window_entry_t *> list, int sel) {
+	void update_window(vector<dropdown_menu_entry_t *> list, int sel) {
 		for(auto i : window_list) {
 			delete i;
 		}
@@ -54,8 +53,8 @@ public:
 		_position.h = 24*window_list.size();
 	}
 
-	managed_window_base_t * get_selected() {
-		return window_list[selected]->id;
+	managed_window_base_t const * get_selected() {
+		return window_list[selected]->id();
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
