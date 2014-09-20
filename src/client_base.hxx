@@ -32,13 +32,13 @@ typedef long card32;
 using namespace std;
 
 class client_base_t : public tree_t {
-public:
+protected:
 
+	/** handle properties of client */
 	shared_ptr<client_properties_t> _properties;
 
-	/** derived properties **/
-	/** TODO: rename **/
-	list<tree_t *>               _childen;
+	/** sub-clients **/
+	list<tree_t *>               _children;
 
 	// window title cache
 	string                       _title;
@@ -53,14 +53,14 @@ public:
 	client_base_t(client_base_t const & c) :
 		_properties(c._properties),
 		_title(c._title),
-		_childen(c._childen)
+		_children(c._children)
 	{
 
 	}
 
 	client_base_t(shared_ptr<client_properties_t> props) :
 		_properties(props),
-		_childen(),
+		_children(),
 		_title()
 	{
 		update_title();
@@ -233,12 +233,12 @@ public:
 	}
 
 	void add_subclient(client_base_t * s) {
-		_childen.push_back(s);
+		_children.push_back(s);
 		s->set_parent(this);
 	}
 
 	void remove_subclient(client_base_t * s) {
-		_childen.remove(s);
+		_children.remove(s);
 		s->set_parent(nullptr);
 	}
 
@@ -271,16 +271,16 @@ public:
 	}
 
 	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret(_childen.begin(), _childen.end());
+		list<tree_t *> ret(_children.begin(), _children.end());
 		return ret;
 	}
 
 
 	void raise_child(tree_t * t) {
 
-		if(has_key(_childen, t)) {
-			_childen.remove(t);
-			_childen.push_back(t);
+		if(has_key(_children, t)) {
+			_children.remove(t);
+			_children.push_back(t);
 		}
 
 		if(_parent != nullptr) {
@@ -388,7 +388,7 @@ public:
 	}
 
 	void remove(tree_t * t) {
-		_childen.remove(t);
+		_children.remove(t);
 	}
 
 	void print_window_attributes() {
@@ -413,6 +413,57 @@ public:
 		}
 		return false;
 	}
+
+	void process_event(XConfigureEvent const & e) {
+		_properties->process_event(e);
+	}
+
+
+	display_t *          cnx() const { return _properties->cnx(); }
+	bool                 has_valid_window_attributes() const { return _properties->has_valid_window_attributes(); }
+
+	XWindowAttributes const & wa() const { return _properties->wa(); }
+
+	/* ICCCM */
+
+	string const *                     wm_name() const { return _properties->wm_name(); }
+	string const *                     wm_icon_name() const { return _properties->wm_icon_name(); };
+	XSizeHints const *                 wm_normal_hints() const { return _properties->wm_normal_hints(); }
+	XWMHints const *                   wm_hints() const { return _properties->wm_hints(); }
+	vector<string> const *             wm_class() const { return _properties->wm_class(); }
+	Window const *                     wm_transient_for() const { return _properties->wm_transient_for(); }
+	list<Atom> const *                 wm_protocols() const { return _properties->wm_protocols(); }
+	vector<Window> const *             wm_colormap_windows() const { return _properties->wm_colormap_windows(); }
+	string const *                     wm_client_machine() const { return _properties->wm_client_machine(); }
+
+	/* wm_state is writen by WM */
+	card32 const *                     wm_state() const {return _properties->wm_state(); }
+
+	/* EWMH */
+
+	string const *                     net_wm_name() const { return _properties->net_wm_name(); }
+	string const *                     net_wm_visible_name() const { return _properties->net_wm_visible_name(); }
+	string const *                     net_wm_icon_name() const { return _properties->net_wm_icon_name(); }
+	string const *                     net_wm_visible_icon_name() const { return _properties->net_wm_visible_icon_name(); }
+	unsigned long const *              net_wm_desktop() const { return _properties->net_wm_desktop(); }
+	list<Atom> const *                 net_wm_window_type() const { return _properties->net_wm_window_type(); }
+	list<Atom> const *                 net_wm_state() const { return _properties->net_wm_state(); }
+	list<Atom> const *                 net_wm_allowed_actions() const { return _properties->net_wm_allowed_actions(); }
+	vector<card32> const *             net_wm_struct() const { return _properties->net_wm_struct(); }
+	vector<card32> const *             net_wm_struct_partial() const { return _properties->net_wm_struct_partial(); }
+	vector<card32> const *             net_wm_icon_geometry() const { return _properties->net_wm_icon_geometry(); }
+	vector<card32> const *             net_wm_icon() const { return _properties->net_wm_icon(); }
+	unsigned long const *              net_wm_pid() const { return _properties->net_wm_pid(); }
+	bool                               net_wm_handled_icons() const { return _properties->net_wm_handled_icons(); }
+	Time const *                       net_wm_user_time() const { return _properties->net_wm_user_time(); }
+	Window const *                     net_wm_user_time_window() const { return _properties->net_wm_user_time_window(); }
+	vector<card32> const *             net_frame_extents() const { return _properties->net_frame_extents(); }
+	vector<card32> const *             net_wm_opaque_region() const { return _properties->net_wm_opaque_region(); }
+	unsigned long const *              net_wm_bypass_compositor() const { return _properties->net_wm_bypass_compositor(); }
+
+	/* OTHERs */
+	motif_wm_hints_t const *           motif_hints() const { return _properties->motif_hints(); }
+
 
 };
 

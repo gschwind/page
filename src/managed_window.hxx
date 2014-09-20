@@ -348,7 +348,7 @@ public:
 			printf("Error while creating composite surface\n");
 		}
 
-		for(auto c: _childen) {
+		for(auto c: _children) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			if(mw != nullptr) {
 				mw->normalize();
@@ -366,7 +366,7 @@ public:
 
 		_composite_surf.reset();
 
-		for(auto c: _childen) {
+		for(auto c: _children) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			if(mw != nullptr) {
 				mw->iconify();

@@ -1872,7 +1872,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 	client_base_t * c = find_client(e.window);
 
 	if(c != nullptr) {
-		c->_properties->process_event(e);
+		c->process_event(e);
 	}
 }
 
@@ -2895,8 +2895,8 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 
 	for(auto & j : clients) {
-		if (j.second->_properties->net_wm_struct_partial() != nullptr) {
-			auto const & ps = *(j.second->_properties->net_wm_struct_partial());
+		if (j.second->net_wm_struct_partial() != nullptr) {
+			auto const & ps = *(j.second->net_wm_struct_partial());
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
@@ -3085,8 +3085,8 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 client_base_t * page_t::get_transient_for(client_base_t * c) {
 	client_base_t * transient_for = nullptr;
 	if(c != nullptr) {
-		if(c->_properties->wm_transient_for() != nullptr) {
-			transient_for = find_client_with(*(c->_properties->wm_transient_for()));
+		if(c->wm_transient_for() != nullptr) {
+			transient_for = find_client_with(*(c->wm_transient_for()));
 			if(transient_for == nullptr)
 				printf("Warning transient for an unknown client\n");
 		}
@@ -3127,10 +3127,10 @@ void page_t::compute_client_size_with_constraint(Window c,
 	if (_c == nullptr)
 		return;
 
-	if (_c->_properties->wm_normal_hints() == nullptr)
+	if (_c->wm_normal_hints() == nullptr)
 		return;
 
-	::page::compute_client_size_with_constraint(*(_c->_properties->wm_normal_hints()),
+	::page::compute_client_size_with_constraint(*(_c->wm_normal_hints()),
 			wished_width, wished_height, width, height);
 
 }
@@ -3595,8 +3595,8 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) {
 		update_windows_stack();
 
 		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->_properties->wa().x == 0 and mw->_properties->wa().y == 0 and mw->_properties->wa().width == _allocation.w
-				and mw->_properties->wa().height == _allocation.h
+		if (mw->wa().x == 0 and mw->wa().y == 0 and mw->wa().width == _allocation.w
+				and mw->wa().height == _allocation.h
 				and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 		}
@@ -3624,20 +3624,20 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) {
 			 * first try if previous vm has put this window in IconicState, then
 			 * Check if the client have a prefered initiale state.
 			 **/
-			if (mw->_properties->wm_state() != nullptr) {
-				if (*(mw->_properties->wm_state()) == IconicState) {
+			if (mw->wm_state() != nullptr) {
+				if (*(mw->wm_state()) == IconicState) {
 					activate = false;
 				}
 			} else {
-				if (mw->_properties->wm_hints() != nullptr) {
-					if (mw->_properties->wm_hints()->initial_state == IconicState) {
+				if (mw->wm_hints() != nullptr) {
+					if (mw->wm_hints()->initial_state == IconicState) {
 						activate = false;
 					}
 				}
 			}
 
-			if(mw->_properties->net_wm_state() != nullptr) {
-				if(has_key(*mw->_properties->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
+			if(mw->net_wm_state() != nullptr) {
+				if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
 					activate = false;
 				}
 			}
@@ -3703,15 +3703,15 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 	bool has_time = false;
 	Window time_window;
 
-	if (c->_properties->net_wm_user_time() != nullptr) {
-		time = *(c->_properties->net_wm_user_time());
+	if (c->net_wm_user_time() != nullptr) {
+		time = *(c->net_wm_user_time());
 		has_time = true;
 	} else {
 		/* if no time window try to go on referenced window */
-		if (c->_properties->net_wm_user_time_window() != nullptr) {
+		if (c->net_wm_user_time_window() != nullptr) {
 
 			Time * xtime = cnx->read_net_wm_user_time(
-					*(c->_properties->net_wm_user_time_window()));
+					*(c->net_wm_user_time_window()));
 			if (xtime != nullptr) {
 				if (*xtime != 0) {
 					time = *(xtime);
@@ -3774,13 +3774,13 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			detach(uw);
 			notifications.push_back(uw);
 			uw->set_parent(this);
-		} else if (uw->_properties->net_wm_state() != nullptr
-				and has_key(*(uw->_properties->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
+		} else if (uw->net_wm_state() != nullptr
+				and has_key(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
 			detach(uw);
 			above.push_back(uw);
 			uw->set_parent(this);
-		} else if (uw->_properties->net_wm_state() != nullptr
-				and has_key(*(uw->_properties->net_wm_state()), A(_NET_WM_STATE_BELOW))) {
+		} else if (uw->net_wm_state() != nullptr
+				and has_key(*(uw->net_wm_state()), A(_NET_WM_STATE_BELOW))) {
 			detach(uw);
 			below.push_back(uw);
 			uw->set_parent(this);

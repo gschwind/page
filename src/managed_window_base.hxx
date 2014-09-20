@@ -54,7 +54,7 @@ struct managed_window_base_t : public client_base_t {
 	}
 
 	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret(_childen.begin(), _childen.end());
+		list<tree_t *> ret(_children.begin(), _children.end());
 		return ret;
 	}
 
