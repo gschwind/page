@@ -366,11 +366,10 @@ vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type)
 	}
 }
 
-template<typename T> void safe_delete(T & p) {
-	if (p != nullptr) {
-		delete p;
-		p = nullptr;
-	}
+template<typename T>
+void safe_delete(T & p) {
+	delete p;
+	p = nullptr;
 }
 
 template<typename T> T * safe_copy(T * p) {

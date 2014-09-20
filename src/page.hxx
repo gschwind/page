@@ -44,6 +44,7 @@
 #include "utils.hxx"
 #include "box.hxx"
 
+#include "client_properties.hxx"
 #include "client_base.hxx"
 #include "time.hxx"
 
@@ -460,7 +461,7 @@ public:
 	void debug_print_window_attributes(Window w, XWindowAttributes &wa);
 
 	/* setup and create managed window */
-	managed_window_t * manage(Atom net_wm_type, client_base_t * wa);
+	managed_window_t * manage(Atom net_wm_type, shared_ptr<client_properties_t> wa);
 
 	/* unmanage a managed window */
 	void unmanage(managed_window_t * mw);
@@ -535,11 +536,11 @@ public:
 	void remove_viewport(viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
-	void create_managed_window(client_base_t * c, Atom type) throw ();
-	void manage_managed_window(managed_window_t * mw, Atom type) throw ();
+	void create_managed_window(shared_ptr<client_properties_t> c, Atom type);
+	void manage_managed_window(managed_window_t * mw, Atom type);
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
-	void create_unmanaged_window(client_base_t * c, Atom type);
-	void create_dock_window(client_base_t * c, Atom type);
+	void create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type);
+	void create_dock_window(shared_ptr<client_properties_t> c, Atom type);
 	viewport_t * find_mouse_viewport(int x, int y);
 	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);
 	void update_page_areas();

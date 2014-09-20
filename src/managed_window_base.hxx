@@ -23,8 +23,10 @@ namespace page {
 
 struct managed_window_base_t : public client_base_t {
 
-	managed_window_base_t(client_base_t const & c) : client_base_t(c) {
-
+	managed_window_base_t(shared_ptr<client_properties_t> props) :
+		client_base_t(props)
+	{
+		client_base_t::update_title();
 	}
 
 	virtual ~managed_window_base_t() { }
