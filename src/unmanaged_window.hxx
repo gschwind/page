@@ -38,17 +38,17 @@ public:
 			client_base_t(c),
 			_net_wm_type(type)
 	{
-		_properties->_cnx->grab();
-		XSelectInput(_properties->_cnx->dpy(), _properties->_id,
+		_properties->cnx()->grab();
+		XSelectInput(_properties->cnx()->dpy(), _properties->id(),
 				UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-		_properties->_cnx->ungrab();
-		surf = composite_surface_manager_t::get(_properties->_cnx->dpy(),
+		_properties->cnx()->ungrab();
+		surf = composite_surface_manager_t::get(_properties->cnx()->dpy(),
 				base());
-		composite_surface_manager_t::onmap(_properties->_cnx->dpy(), base());
+		composite_surface_manager_t::onmap(_properties->cnx()->dpy(), base());
 	}
 
 	~unmanaged_window_t() {
-		XSelectInput(_properties->_cnx->dpy(), _properties->_id, NoEventMask);
+		XSelectInput(_properties->cnx()->dpy(), _properties->id(), NoEventMask);
 	}
 
 	Atom net_wm_type() {
@@ -56,11 +56,11 @@ public:
 	}
 
 	virtual bool has_window(Window w) {
-		return w == _properties->_id;
+		return w == _properties->id();
 	}
 
 	void map() {
-		_properties->_cnx->map_window(_properties->_id);
+		_properties->cnx()->map_window(_properties->id());
 	}
 
 	virtual string get_node_name() const {
@@ -79,7 +79,7 @@ public:
 					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 				cairo_save(cr);
 
-				draw_outer_graddien(cr, rectangle(_properties->wa.x, _properties->wa.y, _properties->wa.width, _properties->wa.height), 4.0);
+				draw_outer_graddien(cr, rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height), 4.0);
 
 //				unsigned const int _shadow_width = 4;
 //
@@ -173,13 +173,13 @@ public:
 //				cairo_pattern_destroy(r3grad);
 
 				cairo_reset_clip(cr);
-				cairo_rectangle(cr, _properties->wa.x, _properties->wa.y, _properties->wa.width, _properties->wa.height);
+				cairo_rectangle(cr, _properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
 				cairo_clip(cr);
 
 				shared_ptr<pixmap_t> p = surf->get_pixmap();
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
-					cairo_set_source_surface(cr, s, _properties->wa.x, _properties->wa.y);
+					cairo_set_source_surface(cr, s, _properties->wa().x, _properties->wa().y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 					cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0,
 							1.0, 0.95);
@@ -196,12 +196,12 @@ public:
 
 					cairo_save(cr);
 					cairo_reset_clip(cr);
-					cairo_rectangle(cr, _properties->wa.x, _properties->wa.y, _properties->wa.width, _properties->wa.height);
+					cairo_rectangle(cr, _properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
 					cairo_clip(cr);
 
-					cairo_set_source_surface(cr, s, _properties->wa.x, _properties->wa.y);
+					cairo_set_source_surface(cr, s, _properties->wa().x, _properties->wa().y);
 					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_mask_surface(cr, s, _properties->wa.x, _properties->wa.y);
+					cairo_mask_surface(cr, s, _properties->wa().x, _properties->wa().y);
 					cairo_restore(cr);
 				}
 			}

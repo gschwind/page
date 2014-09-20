@@ -38,7 +38,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 				_orig_depth(-1),
 				_deco_visual(0),
 				_deco_depth(-1),
-				_orig(props->_id),
+				_orig(props->id()),
 				_base(None),
 				_deco(None),
 				_floating_area(0),
@@ -46,23 +46,23 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 				_is_focused(false)
 {
 
-	_properties->_cnx->add_to_save_set(orig());
+	cnx()->add_to_save_set(orig());
 	/* set border to zero */
-	XSetWindowBorder(_properties->_cnx->dpy(), orig(), 0);
+	XSetWindowBorder(cnx()->dpy(), orig(), 0);
 	/* assign window to desktop 0 */
 	_properties->set_net_wm_desktop(0);
 
-	_floating_wished_position = rectangle(_properties->wa.x, _properties->wa.y, _properties->wa.width, _properties->wa.height);
-	_notebook_wished_position = rectangle(_properties->wa.x, _properties->wa.y, _properties->wa.width, _properties->wa.height);
+	_floating_wished_position = rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
+	_notebook_wished_position = rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
 
-	_orig_visual = _properties->wa.visual;
-	_orig_depth = _properties->wa.depth;
+	_orig_visual = _properties->wa().visual;
+	_orig_depth = _properties->wa().depth;
 
-	if (_properties->wm_normal_hints != nullptr) {
+	if (_properties->wm_normal_hints() != nullptr) {
 		unsigned w = _floating_wished_position.w;
 		unsigned h = _floating_wished_position.h;
 
-		::page::compute_client_size_with_constraint(*(_properties->wm_normal_hints),
+		::page::compute_client_size_with_constraint(*(_properties->wm_normal_hints()),
 				_floating_wished_position.w, _floating_wished_position.h, w, h);
 
 		_floating_wished_position.w = w;
@@ -74,19 +74,19 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	 **/
 	if (_floating_wished_position.x == 0) {
 		_floating_wished_position.x =
-				(_properties->wa.width - _floating_wished_position.w) / 2;
+				(_properties->wa().width - _floating_wished_position.w) / 2;
 	}
 
 	/**
 	 * if y == 0 then place window at center of the screen
 	 **/
 	if (_floating_wished_position.y == 0) {
-		_floating_wished_position.y = (_properties->wa.height - _floating_wished_position.h) / 2;
+		_floating_wished_position.y = (_properties->wa().height - _floating_wished_position.h) / 2;
 	}
 
 	/** check if the window has motif no border **/
 	{
-		_motif_has_border = _properties->_cnx->motif_has_border(_orig);
+		_motif_has_border = cnx()->motif_has_border(_orig);
 	}
 
 	/**
@@ -102,8 +102,8 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	unsigned long value_mask = CWOverrideRedirect;
 	swa.override_redirect = True;
 
-	Visual * root_visual = _properties->wa.visual;
-	int root_depth = _properties->wa.depth;
+	Visual * root_visual = _properties->wa().visual;
+	int root_depth = _properties->wa().depth;
 
 	/**
 	 * If window visual is 32 bit (have alpha channel, and root do not
@@ -115,15 +115,15 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 		_deco_depth = _orig_depth;
 
 		/** if visual is 32 bits, this values are mandatory **/
-		swa.colormap = XCreateColormap(_properties->_cnx->dpy(), _properties->_cnx->root(), _orig_visual,
+		swa.colormap = XCreateColormap(cnx()->dpy(), cnx()->root(), _orig_visual,
 		AllocNone);
-		swa.background_pixel = BlackPixel(_properties->_cnx->dpy(), _properties->_cnx->screen());
-		swa.border_pixel = BlackPixel(_properties->_cnx->dpy(), _properties->_cnx->screen());
+		swa.background_pixel = BlackPixel(cnx()->dpy(), cnx()->screen());
+		swa.border_pixel = BlackPixel(cnx()->dpy(), cnx()->screen());
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_properties->_cnx->dpy(), _properties->_cnx->root(), -10, -10, 1, 1, 0, 32,
+		wbase = XCreateWindow(cnx()->dpy(), cnx()->root(), -10, -10, 1, 1, 0, 32,
 		InputOutput, _orig_visual, value_mask, &swa);
-		wdeco = XCreateWindow(_properties->_cnx->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
+		wdeco = XCreateWindow(cnx()->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
 		InputOutput, _orig_visual, value_mask, &swa);
 
 	} else {
@@ -133,7 +133,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 		 **/
 
 		XVisualInfo vinfo;
-		if (XMatchVisualInfo(_properties->_cnx->dpy(), _properties->_cnx->screen(), 32, TrueColor, &vinfo)
+		if (XMatchVisualInfo(cnx()->dpy(), cnx()->screen(), 32, TrueColor, &vinfo)
 				== 0) {
 			throw std::runtime_error(
 					"Unable to find valid visual for background windows");
@@ -145,33 +145,33 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 		 **/
 		swa.border_pixel = 0;
 		swa.background_pixel = 0;
-		swa.colormap = XCreateColormap(_properties->_cnx->dpy(), _properties->_cnx->root(), vinfo.visual,
+		swa.colormap = XCreateColormap(cnx()->dpy(), cnx()->root(), vinfo.visual,
 		AllocNone);
 
 		_deco_visual = vinfo.visual;
 		_deco_depth = 32;
 		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
 
-		wbase = XCreateWindow(_properties->_cnx->dpy(), _properties->_cnx->root(), -10, -10, 1, 1, 0, 32,
+		wbase = XCreateWindow(cnx()->dpy(), cnx()->root(), -10, -10, 1, 1, 0, 32,
 		InputOutput, vinfo.visual, value_mask, &swa);
-		wdeco = XCreateWindow(_properties->_cnx->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
+		wdeco = XCreateWindow(cnx()->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
 		InputOutput, vinfo.visual, value_mask, &swa);
 	}
 
 	_base = wbase;
 	_deco = wdeco;
 
-	_properties->_cnx->reparentwindow(_orig, _base, 0, 0);
+	cnx()->reparentwindow(_orig, _base, 0, 0);
 
 	select_inputs();
 	/* Grab button click */
 	grab_button_unfocused();
 
-	_surf = cairo_xlib_surface_create(_properties->_cnx->dpy(), _deco, _deco_visual, b.w,
+	_surf = cairo_xlib_surface_create(cnx()->dpy(), _deco, _deco_visual, b.w,
 			b.h);
 
-	_composite_surf = composite_surface_manager_t::get(_properties->_cnx->dpy(), _base);
-	composite_surface_manager_t::onmap(_properties->_cnx->dpy(), _base);
+	_composite_surf = composite_surface_manager_t::get(cnx()->dpy(), _base);
+	composite_surface_manager_t::onmap(cnx()->dpy(), _base);
 
 }
 
@@ -197,9 +197,9 @@ managed_window_t::~managed_window_t() {
 
 	destroy_back_buffer();
 
-	XRemoveFromSaveSet(_properties->_cnx->dpy(), _orig);
-	XDestroyWindow(_properties->_cnx->dpy(), _deco);
-	XDestroyWindow(_properties->_cnx->dpy(), _base);
+	XRemoveFromSaveSet(cnx()->dpy(), _orig);
+	XDestroyWindow(cnx()->dpy(), _deco);
+	XDestroyWindow(cnx()->dpy(), _base);
 
 }
 
@@ -261,10 +261,10 @@ void managed_window_t::reconfigure() {
 
 	}
 
-	_properties->_cnx->move_resize(_base, _base_position);
-	_properties->_cnx->move_resize(_deco,
+	cnx()->move_resize(_base, _base_position);
+	cnx()->move_resize(_deco,
 			rectangle(0, 0, _base_position.w, _base_position.h));
-	_properties->_cnx->move_resize(_orig, _orig_position);
+	cnx()->move_resize(_orig, _orig_position);
 
 	fake_configure();
 
@@ -276,19 +276,19 @@ void managed_window_t::reconfigure() {
 void managed_window_t::fake_configure() {
 	//printf("fake_reconfigure = %dx%d+%d+%d\n", _wished_position.w,
 	//		_wished_position.h, _wished_position.x, _wished_position.y);
-	_properties->_cnx->fake_configure(_orig, _wished_position, 0);
+	cnx()->fake_configure(_orig, _wished_position, 0);
 }
 
 void managed_window_t::delete_window(Time t) {
 	XEvent ev;
-	ev.xclient.display = _properties->_cnx->dpy();
+	ev.xclient.display = cnx()->dpy();
 	ev.xclient.type = ClientMessage;
 	ev.xclient.format = 32;
 	ev.xclient.message_type = A(WM_PROTOCOLS);
 	ev.xclient.window = _orig;
 	ev.xclient.data.l[0] = A(WM_DELETE_WINDOW);
 	ev.xclient.data.l[1] = t;
-	_properties->_cnx->send_event(_orig, False, NoEventMask, &ev);
+	cnx()->send_event(_orig, False, NoEventMask, &ev);
 }
 
 bool managed_window_t::check_orig_position(rectangle const & position) {
@@ -310,7 +310,7 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 	list<Atom> net_wm_allowed_actions;
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
-	_properties->_cnx->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
+	cnx()->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
 
 	_type = type;
 	reconfigure();
@@ -406,27 +406,26 @@ void managed_window_t::expose() {
 void managed_window_t::icccm_focus(Time t) {
 	//fprintf(stderr, "Focus time = %lu\n", t);
 
-	if (_properties->wm_hints != nullptr) {
-		if (_properties->wm_hints->input == True) {
-			_properties->_cnx->set_input_focus(_orig, RevertToParent, t);
+	if (_properties->wm_hints() != nullptr) {
+		if (_properties->wm_hints()->input == True) {
+			cnx()->set_input_focus(_orig, RevertToParent, t);
 		}
 	} else {
 		/** no WM_HINTS, guess hints.input == True **/
-		_properties->_cnx->set_input_focus(_orig, RevertToParent, t);
+		cnx()->set_input_focus(_orig, RevertToParent, t);
 	}
 
-	if (_properties->wm_protocols != nullptr) {
-		if (::std::find(_properties->wm_protocols->begin(), _properties->wm_protocols->end(),
-				A(WM_TAKE_FOCUS)) != _properties->wm_protocols->end()) {
+	if (_properties->wm_protocols() != nullptr) {
+		if (has_key(*(_properties->wm_protocols()), A(WM_TAKE_FOCUS))) {
 			XEvent ev;
-			ev.xclient.display = _properties->_cnx->dpy();
+			ev.xclient.display = cnx()->dpy();
 			ev.xclient.type = ClientMessage;
 			ev.xclient.format = 32;
 			ev.xclient.message_type = A(WM_PROTOCOLS);
 			ev.xclient.window = _orig;
 			ev.xclient.data.l[0] = A(WM_TAKE_FOCUS);
 			ev.xclient.data.l[1] = t;
-			_properties->_cnx->send_event(_orig, False, NoEventMask, &ev);
+			cnx()->send_event(_orig, False, NoEventMask, &ev);
 		}
 	}
 
@@ -444,7 +443,7 @@ void managed_window_t::set_opaque_region(Window w, region & region) {
 		++i;
 	}
 
-	_properties->_cnx->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
+	cnx()->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
 			data.size());
 
 }

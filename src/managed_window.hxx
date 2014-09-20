@@ -159,7 +159,7 @@ public:
 	void expose();
 
 	Window orig() const {
-		return _properties->_id;
+		return _properties->id();
 	}
 
 	Window base() const {
@@ -171,7 +171,7 @@ public:
 	}
 
 	Atom A(atom_e atom) {
-		return _properties->_cnx->A(atom);
+		return cnx()->A(atom);
 	}
 
 	void icccm_focus(Time t);
@@ -201,13 +201,7 @@ public:
 	}
 
 	void net_wm_allowed_actions_add(atom_e atom) {
-		if(_properties->_net_wm_allowed_actions == nullptr) {
-			_properties->_net_wm_allowed_actions = new list<Atom>;
-		}
-
-		_properties->_net_wm_allowed_actions->remove(A(atom));
-		_properties->_net_wm_allowed_actions->push_back(A(atom));
-		_properties->_cnx->write_net_wm_allowed_actions(_orig, *(_properties->_net_wm_allowed_actions));
+		_properties->net_wm_allowed_actions_add(atom);
 	}
 
 	void set_focus_state(bool is_focused) {
@@ -235,25 +229,25 @@ public:
 		ungrab_all_button();
 
 		/** for decoration, grab all **/
-		XGrabButton(_properties->_cnx->dpy(), (Button1), (AnyModifier), _deco, (False),
+		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button2), (AnyModifier), _deco, (False),
+		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button3), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
-
-		/** for base, just grab some modified buttons **/
-		XGrabButton(_properties->_cnx->dpy(), Button1, (Mod1Mask), _base, False,
+		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
 		/** for base, just grab some modified buttons **/
-		XGrabButton(_properties->_cnx->dpy(), Button1, (ControlMask), _base, False,
+		XGrabButton(cnx()->dpy(), Button1, (Mod1Mask), _base, False,
+				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
+				(GrabModeSync), (GrabModeAsync), None, None);
+
+		/** for base, just grab some modified buttons **/
+		XGrabButton(cnx()->dpy(), Button1, (ControlMask), _base, False,
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
@@ -263,28 +257,28 @@ public:
 		/** First ungrab all **/
 		ungrab_all_button();
 
-		XGrabButton(_properties->_cnx->dpy(), (Button1), (AnyModifier), _base, (False),
+		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button2), (AnyModifier), _base, (False),
+		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button3), (AnyModifier), _base, (False),
+		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _base, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
 		/** for decoration, grab all **/
-		XGrabButton(_properties->_cnx->dpy(), (Button1), (AnyModifier), _deco, (False),
+		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button2), (AnyModifier), _deco, (False),
+		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
-		XGrabButton(_properties->_cnx->dpy(), (Button3), (AnyModifier), _deco, (False),
+		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _deco, (False),
 				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
 				(GrabModeSync), (GrabModeAsync), None, None);
 
@@ -292,28 +286,26 @@ public:
 
 
 	void ungrab_all_button() {
-		XUngrabButton(_properties->_cnx->dpy(), AnyButton, AnyModifier, _orig);
-		XUngrabButton(_properties->_cnx->dpy(), AnyButton, AnyModifier, _base);
-		XUngrabButton(_properties->_cnx->dpy(), AnyButton, AnyModifier, _deco);
+		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _orig);
+		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _base);
+		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _deco);
 	}
 
 	void select_inputs() {
-		XSelectInput(_properties->_cnx->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
-		XSelectInput(_properties->_cnx->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-		XSelectInput(_properties->_cnx->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+		XSelectInput(cnx()->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
+		XSelectInput(cnx()->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
+		XSelectInput(cnx()->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
 	}
 
 	void unselect_inputs() {
-		XSelectInput(_properties->_cnx->dpy(), _base, NoEventMask);
-		XSelectInput(_properties->_cnx->dpy(), _deco, NoEventMask);
-		XSelectInput(_properties->_cnx->dpy(), _orig, NoEventMask);
+		XSelectInput(cnx()->dpy(), _base, NoEventMask);
+		XSelectInput(cnx()->dpy(), _deco, NoEventMask);
+		XSelectInput(cnx()->dpy(), _orig, NoEventMask);
 	}
 
 	bool is_fullscreen() {
-		if (_properties->_net_wm_state != nullptr) {
-			list<Atom>::iterator x = find(_properties->_net_wm_state->begin(),
-					_properties->_net_wm_state->end(), A(_NET_WM_STATE_FULLSCREEN));
-			return x != _properties->_net_wm_state->end();
+		if (_properties->net_wm_state() != nullptr) {
+			return has_key(*(_properties->net_wm_state()), A(_NET_WM_STATE_FULLSCREEN));
 		}
 		return false;
 	}
@@ -323,8 +315,8 @@ public:
 	}
 
 	bool get_wm_normal_hints(XSizeHints * size_hints) {
-		if(_properties->wm_normal_hints != nullptr) {
-			*size_hints = *(_properties->wm_normal_hints);
+		if(_properties->wm_normal_hints() != nullptr) {
+			*size_hints = *(_properties->wm_normal_hints());
 			return true;
 		} else {
 			return false;
@@ -332,38 +324,26 @@ public:
 	}
 
 	void net_wm_state_add(atom_e atom) {
-		if(_properties->_net_wm_state == nullptr) {
-			_properties->_net_wm_state = new list<Atom>;
-		}
-		/** remove it if alredy focused **/
-		_properties->_net_wm_state->remove(A(atom));
-		/** add it **/
-		_properties->_net_wm_state->push_back(A(atom));
-		_properties->_cnx->write_net_wm_state(_orig, *(_properties->_net_wm_state));
+		_properties->net_wm_state_add(atom);
 	}
 
 	void net_wm_state_remove(atom_e atom) {
-		if(_properties->_net_wm_state == nullptr) {
-			_properties->_net_wm_state = new list<Atom>;
-		}
-
-		_properties->_net_wm_state->remove(A(atom));
-		_properties->_cnx->write_net_wm_state(_orig, *(_properties->_net_wm_state));
+		_properties->net_wm_state_remove(atom);
 	}
 
 	void net_wm_state_delete() {
-		_properties->_cnx->delete_property(_orig, _NET_WM_STATE);
+		cnx()->delete_property(_orig, _NET_WM_STATE);
 	}
 
 	void normalize() {
-		_properties->_cnx->write_wm_state(_orig, NormalState, None);
+		cnx()->write_wm_state(_orig, NormalState, None);
 		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-		_properties->_cnx->map_window(_orig);
-		_properties->_cnx->map_window(_deco);
-		_properties->_cnx->map_window(_base);
+		cnx()->map_window(_orig);
+		cnx()->map_window(_deco);
+		cnx()->map_window(_base);
 
 		try {
-			_composite_surf = composite_surface_manager_t::get(_properties->_cnx->dpy(), base());
+			_composite_surf = composite_surface_manager_t::get(cnx()->dpy(), base());
 		} catch(...) {
 			printf("Error while creating composite surface\n");
 		}
@@ -379,10 +359,10 @@ public:
 
 	void iconify() {
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		_properties->_cnx->write_wm_state(_orig, IconicState, None);
-		_properties->_cnx->unmap(_base);
-		_properties->_cnx->unmap(_deco);
-		_properties->_cnx->unmap(_orig);
+		cnx()->write_wm_state(_orig, IconicState, None);
+		cnx()->unmap(_base);
+		cnx()->unmap(_deco);
+		cnx()->unmap(_orig);
 
 		_composite_surf.reset();
 
@@ -396,7 +376,7 @@ public:
 	}
 
 	void wm_state_delete() {
-		_properties->_cnx->delete_property(_orig, WM_STATE);
+		cnx()->delete_property(_orig, WM_STATE);
 	}
 
 	void set_floating_wished_position(rectangle & pos) {
@@ -495,7 +475,7 @@ public:
 	void set_opaque_region(Window w, region & region);
 
 	virtual bool has_window(Window w) {
-		return w == _properties->_id or w == _base or w == _deco;
+		return w == _properties->id() or w == _base or w == _deco;
 	}
 
 	virtual string get_node_name() const {
@@ -541,6 +521,10 @@ public:
 			}
 		}
 		return false;
+	}
+
+	display_t * cnx() {
+		return _properties->cnx();
 	}
 
 };

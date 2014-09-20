@@ -45,7 +45,7 @@ public:
 
 	/** short cut **/
 	Atom A(atom_e atom) {
-		return _properties->_cnx->A(atom);
+		return _properties->cnx()->A(atom);
 	}
 
 public:
@@ -201,10 +201,10 @@ public:
 
 
 	bool has_motif_border() {
-		if (_properties->motif_hints != nullptr) {
-			if (_properties->motif_hints->flags & MWM_HINTS_DECORATIONS) {
-				if (not (_properties->motif_hints->decorations & MWM_DECOR_BORDER)
-						and not ((_properties->motif_hints->decorations & MWM_DECOR_ALL))) {
+		if (_properties->motif_hints() != nullptr) {
+			if (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS) {
+				if (not (_properties->motif_hints()->decorations & MWM_DECOR_BORDER)
+						and not ((_properties->motif_hints()->decorations & MWM_DECOR_ALL))) {
 					return false;
 				}
 			}
@@ -221,13 +221,13 @@ public:
 
 	void update_title() {
 			string name;
-			if (_properties->_net_wm_name != nullptr) {
-				_title = *(_properties->_net_wm_name);
-			} else if (_properties->wm_name != nullptr) {
-				_title = *(_properties->wm_name);
+			if (_properties->net_wm_name() != nullptr) {
+				_title = *(_properties->net_wm_name());
+			} else if (_properties->wm_name() != nullptr) {
+				_title = *(_properties->wm_name());
 			} else {
 				std::stringstream s(std::stringstream::in | std::stringstream::out);
-				s << "#" << (_properties->_id) << " (noname)";
+				s << "#" << (_properties->id()) << " (noname)";
 				_title = s.str();
 			}
 	}
@@ -247,19 +247,19 @@ public:
 	}
 
 	bool is_window(Window w) {
-		return w == _properties->_id;
+		return w == _properties->id();
 	}
 
 	virtual bool has_window(Window w) {
-		return w == _properties->_id;
+		return w == _properties->id();
 	}
 
 	virtual Window base() const {
-		return _properties->_id;
+		return _properties->id();
 	}
 
 	virtual Window orig() const {
-		return _properties->_id;
+		return _properties->id();
 	}
 
 	virtual string get_node_name() const {
@@ -293,16 +293,16 @@ public:
 		Atom type = None;
 
 		list<Atom> net_wm_window_type;
-		bool override_redirect = (_properties->wa.override_redirect == True)?true:false;
+		bool override_redirect = (_properties->wa().override_redirect == True)?true:false;
 
-		if(_properties->_net_wm_window_type == nullptr) {
+		if(_properties->net_wm_window_type() == nullptr) {
 			/**
 			 * Fallback from ICCCM.
 			 **/
 
 			if(!override_redirect) {
 				/* Managed windows */
-				if(_properties->wm_transient_for == nullptr) {
+				if(_properties->wm_transient_for() == nullptr) {
 					/**
 					 * Extended ICCCM:
 					 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
@@ -332,7 +332,7 @@ public:
 				net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 			}
 		} else {
-			net_wm_window_type = *(_properties->_net_wm_window_type);
+			net_wm_window_type = *(_properties->net_wm_window_type());
 		}
 
 		/* always fall back to normal */
@@ -370,10 +370,10 @@ public:
 		/** HACK FOR ECLIPSE **/
 		{
 			list<Atom> wm_state;
-			if (_properties->wm_class != nullptr
-					and _properties->wm_state != nullptr
+			if (_properties->wm_class() != nullptr
+					and _properties->wm_state() != nullptr
 					and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				if ((*(_properties->wm_class))[0] == "Eclipse") {
+				if ((*(_properties->wm_class()))[0] == "Eclipse") {
 					auto x = find(wm_state.begin(), wm_state.end(),
 							A(_NET_WM_STATE_SKIP_TASKBAR));
 					if (x != wm_state.end()) {

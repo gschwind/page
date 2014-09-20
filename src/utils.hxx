@@ -178,7 +178,7 @@ static int error_handler(Display * dpy, XErrorEvent * ev) {
 	return 0;
 }
 
-inline void compute_client_size_with_constraint(XSizeHints & size_hints,
+inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
 		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
 		unsigned int & height) {
 

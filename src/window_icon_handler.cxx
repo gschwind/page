@@ -25,8 +25,8 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 
 
 	/* if window have icon properties */
-	if (c->_properties->_net_wm_icon != nullptr) {
-		vector<long> & icon_data = *(c->_properties->_net_wm_icon);
+	if (c->_properties->net_wm_icon() != nullptr) {
+		vector<long> const & icon_data = *(c->_properties->net_wm_icon());
 
 		uint32_t * icon_data32 = 0;
 
@@ -100,7 +100,7 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 			//printf("selected icon : %dx%d\n", selected.width, selected.height);
 
 			XVisualInfo vinfo;
-			if (XMatchVisualInfo(c->_properties->_cnx->dpy(), c->_properties->_cnx->screen(), 32, TrueColor, &vinfo)
+			if (XMatchVisualInfo(c->_properties->cnx()->dpy(), c->_properties->cnx()->screen(), 32, TrueColor, &vinfo)
 					== 0) {
 				throw std::runtime_error(
 						"Unable to find valid visual for background windows");
