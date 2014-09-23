@@ -18,11 +18,13 @@
 
 namespace page {
 
+using namespace std;
+
 template<typename T>
-class region_t: public std::list<rectangle_t<T> > {
+class region_t : public vector<rectangle_t<T> > {
 	/** short cut for the superior class **/
-	typedef std::list<rectangle_t<T> > _superior_t;
-	typedef rectangle_t<T> _box_t;
+	using super = vector<rectangle_t<T> >;
+	using _box_t = rectangle_t<T>;
 
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
@@ -33,69 +35,80 @@ class region_t: public std::list<rectangle_t<T> > {
 
 	/** merge 2 rectangles when it is possible **/
 	static void merge_area_macro(region_t & list) {
-		typename region_t::iterator i = list.begin();
+		auto i = list.begin();
 		while (i != list.end()) {
-			bool have_removed = false;
-			typename region_t::iterator j = i;
+
+			/** skip null boxes **/
+			if(i->is_null()) {
+				++i;
+				continue;
+			}
+
+			auto j = i;
 			++j;
 			while (j != list.end()) {
+
+				/** skip null boxes **/
+				if(j->is_null()) {
+					++j;
+					continue;
+				}
+
 				_box_t & bi = *i;
 				_box_t & bj = *j;
 
 				/** left/right **/
 				if (bi.x + bi.w == bj.x && bi.y == bj.y && bi.h == bj.h) {
-					_box_t new_box(bi.x, bi.y, bj.w + bi.w, bi.h);
-					list.push_back(new_box);
-					list.erase(j);
-					have_removed = true;
-					break;
+					bi = _box_t(bi.x, bi.y, bj.w + bi.w, bi.h);
+					bj = _box_t();
+					++j;
+					continue;
 				}
 
 				/** right/left **/
 				if (bi.x == bj.x + bj.w && bi.y == bj.y && bi.h == bj.h) {
-					_box_t new_box(bj.x, bj.y, bj.w + bi.w, bj.h);
-					list.push_back(new_box);
-					list.erase(j);
-					have_removed = true;
-					break;
+					bi = _box_t(bj.x, bj.y, bj.w + bi.w, bj.h);
+					bj = _box_t();
+					++j;
+					continue;
 				}
 
 				/** top/bottom **/
 				if (bi.y == bj.y + bj.h && bi.x == bj.x && bi.w == bj.w) {
-					_box_t new_box(bj.x, bj.y, bj.w, bj.h + bi.h);
-					list.push_back(new_box);
-					list.erase(j);
-					have_removed = true;
-					break;
+					bi = _box_t(bj.x, bj.y, bj.w, bj.h + bi.h);
+					bj = _box_t();
+					++j;
+					continue;
 				}
 
 				/** bottom/top **/
 				if (bi.y + bi.h == bj.y && bi.x == bj.x && bi.w == bj.w) {
-					_box_t new_box(bi.x, bi.y, bi.w, bj.h + bi.h);
-					list.push_back(new_box);
-					list.erase(j);
-					have_removed = true;
-					break;
+					bi = _box_t(bi.x, bi.y, bi.w, bj.h + bi.h);
+					bj = _box_t();
+					++j;
+					continue;
 				}
 
 				++j;
 			}
-
-			if(have_removed) {
-				i = list.erase(i);
-			} else {
-				++i;
-			}
+			++i;
 		}
-	}
-
-	static bool _is_null(_box_t const & b) {
-		return b.is_null();
 	}
 
 	/** remove empty boxes **/
 	static void remove_empty(region_t & list) {
-		list.remove_if(_is_null);
+		auto i = list.begin();
+		auto j = list.begin();
+		while (j != list.end()) {
+			if(not j->is_null()) {
+				*i = *j;
+				++i;
+			}
+			++j;
+		}
+
+		/* reduce the list size */
+		list.resize(distance(list.begin(), i));
 	}
 
 	bool is_null() {
@@ -109,7 +122,7 @@ class region_t: public std::list<rectangle_t<T> > {
 
 		_box_t intersection = box0 & box1;
 
-		if (!intersection.is_null()) {
+		if (not intersection.is_null()) {
 			/* top box */
 			{
 				T left = intersection.x;
@@ -117,7 +130,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = box0.y;
 				T bottom = intersection.y;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -130,7 +143,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = intersection.y + intersection.h;
 				T bottom = box0.y + box0.h;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -143,7 +156,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = intersection.y;
 				T bottom = intersection.y + intersection.h;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -156,7 +169,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = intersection.y;
 				T bottom = intersection.y + intersection.h;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -169,7 +182,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = box0.y;
 				T bottom = intersection.y;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -182,7 +195,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = box0.y;
 				T bottom = intersection.y;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -195,7 +208,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = intersection.y + intersection.h;
 				T bottom = box0.y + box0.h;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -208,7 +221,7 @@ class region_t: public std::list<rectangle_t<T> > {
 				T top = intersection.y + intersection.h;
 				T bottom = box0.y + box0.h;
 
-				if (right - left > 0 && bottom - top > 0) {
+				if (right - left > 0 and bottom - top > 0) {
 					result.push_back(
 							_box_t(left, top, right - left, bottom - top));
 				}
@@ -225,11 +238,11 @@ class region_t: public std::list<rectangle_t<T> > {
 public:
 
 	/** create an empty region **/
-	region_t() : _superior_t() { }
+	region_t() : super() { }
 
-	region_t(region_t const & r) :
-			_superior_t(r) {
-	}
+	region_t(region_t const & r) : super(r) { }
+
+	region_t(region_t const && r) : super(r) { }
 
 	region_t(_box_t const & b) {
 		if (!b.is_null())
@@ -251,23 +264,23 @@ public:
 
 	region_t & operator =(region_t const & r) {
 		/** call the superior class assign operator **/
-		if (this != &r) {
-			this->_superior_t::operator =(r);
-		}
+		super::operator =(r);
+		return *this;
+	}
+
+	region_t & operator =(region_t const && r) {
+		/** call the superior class assign operator **/
+		super::operator =(r);
 		return *this;
 	}
 
 	region_t & operator -=(_box_t const & box1) {
-		for(typename region_t::iterator i = this->begin(); i != this->end(); ) {
-			if ((*i).has_intersection(box1)) {
-				region_t x = substract_box(*i, box1);
-				i = this->erase(i);
-				this->insert(this->begin(), x.begin(), x.end());
-			} else {
-				++i;
-			}
+		region_t tmp;
+		for (auto &i : *this) {
+			region_t x = substract_box(i, box1);
+			tmp.insert(tmp.end(), x.begin(), x.end());
 		}
-		return clean_up(*this);
+		return (*this = tmp);
 	}
 
 	region_t operator -(_box_t const & b) {
@@ -282,8 +295,8 @@ public:
 			return *this;
 		}
 
-		for (typename region_t::const_iterator i = b.begin(); i != b.end(); ++i) {
-			*this -= *i;
+		for (auto &i : b) {
+			*this -= i;
 		}
 
 		return *this;
@@ -308,7 +321,7 @@ public:
 		if(this == &r)
 			return *this;
 
-		for(typename region_t::const_iterator i = r.begin(); i != r.end(); ++i) {
+		for(auto i : r) {
 			*this += *i;
 		}
 
@@ -327,8 +340,8 @@ public:
 
 	region_t operator &(_box_t const & b) const {
 		region_t result;
-		for(typename region_t::const_iterator i = this->begin(); i != this->end(); ++i) {
-			_box_t x = b & *i;
+		for(auto &i : *this) {
+			_box_t x = b & i;
 			/**
 			 * since this is a region, no over lap is possible, just add the
 			 * intersection if not null. (do not use operator+= for optimal
@@ -343,12 +356,10 @@ public:
 
 	region_t operator &(region_t const & r) const {
 		region_t result;
-
-		for(typename region_t::const_iterator i = this->begin(); i != this->end(); ++i) {
-			region_t clipped = r & *i;
-			result.insert(result.begin(), clipped.begin(), clipped.end());
+		for(auto const & i : *this) {
+			region_t clipped = r & i;
+			result.insert(result.end(), clipped.begin(), clipped.end());
 		}
-
 		return clean_up(result);
 	}
 
@@ -358,18 +369,17 @@ public:
 	}
 
 	region_t & operator &=(region_t const & r) {
-		if(this == &r)
-			return*this;
-		*this = *this & r;
+		if(this != &r)
+			*this = *this & r;
 		return *this;
 	}
 
 
 	/** make string **/
-	std::string to_string() const {
+	string to_string() const {
 		std::ostringstream os;
-		for(typename region_t::const_iterator i = this->begin(); i != this->end(); ++i) {
-			if (i != this->begin())
+		for(auto const & i : *this) {
+			if (&i != this->begin())
 				os << ",";
 			os << i->to_string();
 		}
@@ -377,7 +387,7 @@ public:
 	}
 
 	void translate(T x, T y) {
-		for(typename region_t::iterator i = this->begin(); i != this->end(); ++i) {
+		for(auto & i : *this) {
 			i->x += x;
 			i->y += y;
 		}
