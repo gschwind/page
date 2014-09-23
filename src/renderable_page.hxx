@@ -13,6 +13,7 @@
 
 #include "theme.hxx"
 #include "window_overlay.hxx"
+#include "renderable_surface.hxx"
 
 namespace page {
 
@@ -98,6 +99,11 @@ public:
 			cairo_set_source_surface(cr, _back_surf, 0, 0);
 			cairo_fill(cr);
 		}
+	}
+
+	renderable_t * prepare_render() {
+		renderable_surface_t * surf = new renderable_surface_t(_back_surf, _position);
+		return surf;
 	}
 
 };

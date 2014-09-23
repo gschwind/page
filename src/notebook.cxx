@@ -7,6 +7,8 @@
  *
  */
 
+#include <algorithm>
+#include "renderable_pixmap.hxx"
 #include "notebook.hxx"
 #include <cmath>
 
@@ -443,9 +445,9 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				}
 			}
 
-			for (auto i : _selected->childs()) {
-				i->render(cr, time);
-			}
+//			for (auto i : _selected->childs()) {
+//				i->render(cr, time);
+//			}
 		}
 
 	} else {
@@ -481,9 +483,9 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				}
 			}
 
-			for (auto i : _selected->childs()) {
-				i->render(cr, time);
-			}
+//			for (auto i : _selected->childs()) {
+//				i->render(cr, time);
+//			}
 
 		}
 
@@ -493,23 +495,167 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 bool notebook_t::need_render(time_t time) {
 
-	page::time_t d(0, animation_duration);
-	d += 100000000;
-	if (time < (swap_start + d)) {
-		return true;
-	}
-
-	for(auto i: childs()) {
-		if(i->need_render(time)) {
-			return true;
-		}
-	}
-	return false;
+//	page::time_t d(0, animation_duration);
+//	d += 100000000;
+//	if (time < (swap_start + d)) {
+//		return true;
+//	}
+//
+//	for(auto i: childs()) {
+//		if(i->need_render(time)) {
+//			return true;
+//		}
+//	}
+//	return false;
 }
 
 managed_window_t * notebook_t::get_selected() {
 	return _selected;
 }
+
+vector<ptr<renderable_t>> notebook_t::prepare_render(page::time_t const & time) {
+	vector<ptr<renderable_t>> ret;
+
+	page::time_t d(0, animation_duration);
+	if (time < (swap_start + d) and false) {
+		// TODO: implemente animation.
+
+//		double ratio = (sin(
+//				static_cast<double>(time - swap_start) / animation_duration
+//						* M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
+//
+//		ratio = std::min(std::max(0.0, ratio), 1.0);
+//
+//		rectangle x_prv_loc;
+//		rectangle x_new_loc;
+//
+//		if (prev_surf != nullptr) {
+//			x_prv_loc = prev_loc;
+//		}
+//
+//		if (_selected != nullptr) {
+//			x_new_loc = _selected->get_base_position();
+//		}
+//
+//		/** render old surface if one is available **/
+//		if (prev_surf != nullptr) {
+//			cairo_surface_t * s = prev_surf->get_cairo_surface();
+//			region r = x_prv_loc;
+//			r -= x_new_loc;
+//
+//			cairo_save(cr);
+//			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
+//					1.0 - ratio);
+//			for (auto &a : r) {
+//				cairo_reset_clip(cr);
+//				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+//				cairo_clip(cr);
+//				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+//				cairo_mask(cr, p0);
+//			}
+//			cairo_pattern_destroy(p0);
+//
+//			region r1 = x_prv_loc;
+//			r1 &= x_new_loc;
+//			for (auto &a : r1) {
+//				cairo_reset_clip(cr);
+//				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+//				cairo_clip(cr);
+//				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+//				cairo_paint(cr);
+//			}
+//
+//			cairo_restore(cr);
+//		}
+//
+//		/** render selected surface if available **/
+		if (_selected != nullptr) {
+//			shared_ptr<composite_surface_t> psurf = _selected->surf();
+//			if (psurf != nullptr) {
+//				shared_ptr<pixmap_t> p = psurf->get_pixmap();
+//				if (p != nullptr) {
+//					cairo_surface_t * s = p->get_cairo_surface();
+//					region r = x_new_loc;
+//					r -= x_prv_loc;
+//
+//					cairo_save(cr);
+//					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
+//							1.0, ratio);
+//					cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
+//					cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
+//							x_new_loc.h);
+//					cairo_clip(cr);
+//					cairo_mask(cr, p0);
+//					cairo_pattern_destroy(p0);
+//
+//					cairo_restore(cr);
+//				}
+//			}
+//
+////			for (auto i : _selected->childs()) {
+////				i->render(cr, time);
+////			}
+		if (_selected->surf() != nullptr) {
+			ptr<renderable_t> x(
+					new renderable_pixmap_t(_selected->surf()->get_pixmap(),
+							_selected->get_base_position()));
+			ret.push_back(x);
+		}
+
+		}
+
+	} else {
+		/** animation is terminated **/
+		prev_surf.reset();
+
+
+		/** draw selected window is one is available **/
+//			shared_ptr<composite_surface_t> psurf = _selected->surf();
+//			if (psurf != nullptr) {
+//				shared_ptr<pixmap_t> p = psurf->get_pixmap();
+//				if (p != nullptr) {
+//					cairo_surface_t * s = p->get_cairo_surface();
+//					rectangle location = _selected->get_base_position();
+//
+//					cairo_save(cr);
+//
+//					cairo_set_line_width(cr, 1.0);
+//					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+//					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//					cairo_rectangle(cr, location.x - 0.5, location.y - 0.5,
+//							location.w + 1.0, location.h + 1.0);
+//					cairo_stroke(cr);
+//
+//					cairo_set_source_surface(cr, s, location.x, location.y);
+//					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//					cairo_rectangle(cr, location.x, location.y, location.w,
+//							location.h);
+//					cairo_fill(cr);
+//
+//					cairo_restore(cr);
+//				}
+//			}
+
+		if (_selected->surf() != nullptr) {
+			ptr<renderable_t> x(
+					new renderable_pixmap_t(_selected->surf()->get_pixmap(),
+							_selected->get_base_position()));
+			ret.push_back(x);
+		}
+
+
+			for (auto i : _selected->childs()) {
+				vector<ptr<renderable_t>> tmp = i->prepare_render(time);
+				ret.insert(ret.end(), tmp.begin(), tmp.end());
+			}
+
+		}
+
+	return ret;
+}
+
 
 
 

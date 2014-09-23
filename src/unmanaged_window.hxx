@@ -12,6 +12,7 @@
 
 #include <X11/X.h>
 
+#include "renderable_pixmap.hxx"
 #include "composite_surface_manager.hxx"
 #include "client_base.hxx"
 #include "display.hxx"
@@ -207,10 +208,23 @@ public:
 			}
 		}
 
+//		for(auto i: childs()) {
+//			i->render(cr, time);
+//		}
+
+	}
+
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
+		vector<ptr<renderable_t>> ret;
+		ptr<renderable_t> x{new renderable_pixmap_t(surf->get_pixmap(), rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height))};
+		ret.push_back(x);
+
 		for(auto i: childs()) {
-			i->render(cr, time);
+			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
+			ret.insert(ret.end(), tmp.begin(), tmp.end());
 		}
 
+		return ret;
 	}
 
 

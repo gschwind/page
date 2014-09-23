@@ -16,7 +16,7 @@
 
 namespace page {
 
-class popup_alt_tab_t : public window_overlay_t, public renderable_t {
+class popup_alt_tab_t : public window_overlay_t{
 
 	theme_t * _theme;
 

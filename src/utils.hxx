@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <memory>
 #include <map>
 #include <set>
 #include <list>
@@ -36,9 +37,9 @@
 #include "x11_func_name.hxx"
 #include "key_desc.hxx"
 
-using namespace std;
-
 namespace page {
+
+using namespace std;
 
 #define warn(test) \
 	do { \
@@ -64,6 +65,8 @@ struct ctassert {
 template <bool t>
 char ctassert<t>::A[N];
 
+template<typename T>
+using ptr = shared_ptr<T>;
 
 template<typename T, typename _>
 bool has_key(map<T, _> const & x, T const & key) {

@@ -77,21 +77,24 @@ public:
 	void remove(tree_t * t);
 
 	virtual void render(cairo_t * cr, time_t time) {
-		for(auto i: childs()) {
-			i->render(cr, time);
-		}
+//		for(auto i: childs()) {
+//			i->render(cr, time);
+//		}
 	}
 
 
 	bool need_render(time_t time) {
 
-		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
-		}
-		return false;
+//		for(auto i: childs()) {
+//			if(i->need_render(time)) {
+//				return true;
+//			}
+//		}
+//		return false;
 	}
+
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time);
+
 
 };
 

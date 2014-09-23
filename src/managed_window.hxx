@@ -10,6 +10,7 @@
 #ifndef MANAGED_WINDOW_HXX_
 #define MANAGED_WINDOW_HXX_
 
+#include "utils.hxx"
 #include "leak_checker.hxx"
 #include "theme.hxx"
 #include "managed_window_base.hxx"
@@ -487,45 +488,57 @@ public:
 
 	virtual void render(cairo_t * cr, time_t time) {
 
-		if (_composite_surf != nullptr) {
-			shared_ptr<pixmap_t> p = _composite_surf->get_pixmap();
-			if (p != nullptr) {
-				cairo_surface_t * s = p->get_cairo_surface();
-				rectangle loc = base_position();
-
-				if(_motif_has_border) {
-					draw_outer_graddien2(cr, rectangle(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
-				}
-
-
-				cairo_save(cr);
-				cairo_set_source_surface(cr, s, loc.x, loc.y);
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-				cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
-				cairo_fill(cr);
-
-				cairo_restore(cr);
-			}
-		}
-
-		for(auto i: childs()) {
-			i->render(cr, time);
-		}
+//		if (_composite_surf != nullptr) {
+//			shared_ptr<pixmap_t> p = _composite_surf->get_pixmap();
+//			if (p != nullptr) {
+//				cairo_surface_t * s = p->get_cairo_surface();
+//				rectangle loc = base_position();
+//
+//				if(_motif_has_border) {
+//					draw_outer_graddien2(cr, rectangle(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
+//				}
+//
+//
+//				cairo_save(cr);
+//				cairo_set_source_surface(cr, s, loc.x, loc.y);
+//				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+//				cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
+//				cairo_fill(cr);
+//
+//				cairo_restore(cr);
+//			}
+//		}
+//
+//		for(auto i: childs()) {
+//			i->render(cr, time);
+//		}
 	}
 
 	bool need_render(time_t time) {
 
-		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
-		}
-		return false;
+//		for(auto i: childs()) {
+//			if(i->need_render(time)) {
+//				return true;
+//			}
+//		}
+//		return false;
 	}
 
 	display_t * cnx() {
 		return _properties->cnx();
 	}
+
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
+		vector<ptr<renderable_t>> ret;
+
+		for(auto i: childs()) {
+			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
+			ret.insert(ret.end(), tmp.begin(), tmp.end());
+		}
+
+		return ret;
+	}
+
 
 };
 

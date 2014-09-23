@@ -392,6 +392,16 @@ private:
 	Cursor xc_top_left_corner;
 	Cursor xc_top_side;
 
+	class prepare_render_f : public compositor_t::prepare_render_f {
+		page_t * page;
+	public:
+		prepare_render_f(page_t * page) : page(page) { }
+		virtual vector<ptr<renderable_t>> call(page::time_t const & time);
+	};
+
+
+	prepare_render_f prepare_render_callback;
+
 
 public:
 
@@ -591,6 +601,7 @@ public:
 
 	managed_window_t * find_hidden_client_with(Window w);
 
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time);
 
 };
 

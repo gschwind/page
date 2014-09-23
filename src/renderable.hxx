@@ -21,36 +21,44 @@
 
 namespace page {
 
+using namespace std;
+
 /**
- * Renderable class are object that can be draw on screen, mainly Window
- */
+ * Renderable object, are used to render a static scene graph (en optimise the scene graph)
+ **/
 class renderable_t : public leak_checker {
 public:
 
 	/**
 	 * Destroy renderable
-	 */
+	 **/
 	virtual ~renderable_t() { }
 
 	/**
 	 * draw the area of a renderable to the destination surface
 	 * @param cr the destination surface context
 	 * @param area the area to redraw
-	 */
-	virtual void render(cairo_t * cr, time_t time) = 0;
+	 **/
+	virtual void render(cairo_t * cr, region const & area) = 0;
 
 	/**
-	 * Request all registered object to check if new render is needed
-	 * Used in particular while animation.
+	 * Derived class must return opaque region for this object,
+	 * If unknown it's safe to leave this empty.
 	 **/
-	virtual bool need_render(time_t time) = 0;
+	virtual region get_opaque_region() = 0;
+
+	/**
+	 * Derived class must return visible region,
+	 * If unknow the whole screen can be returned, but draw will be called each time.
+	 **/
+	virtual region get_visible_region() = 0;
 
 };
 
 /**
  * short cut for renderable list.
  */
-typedef std::list<renderable_t *> renderable_list_t;
+typedef list<renderable_t *> renderable_list_t;
 
 }
 

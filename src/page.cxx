@@ -57,7 +57,10 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
-page_t::page_t(int argc, char ** argv) : viewport_outputs() {
+page_t::page_t(int argc, char ** argv) :
+		viewport_outputs(),
+		prepare_render_callback(this)
+{
 
 	page_areas = nullptr;
 	use_internal_compositor = true;
@@ -224,7 +227,8 @@ void page_t::run() {
 		try {
 			rnd = new compositor_t(cnx, damage_event, xshape_event, xrandr_event);
 			rnd->renderable_clear();
-			rnd->renderable_add(this);
+			//rnd->renderable_add(this);
+			rnd->register_callback(&prepare_render_callback);
 		} catch (...) {
 			rnd = nullptr;
 		}
@@ -3995,9 +3999,9 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 	XFlush(cnx->dpy());
 	rpage->render(cr, time);
 
-	for(auto i: childs()) {
-		i->render(cr, time);
-	}
+//	for(auto i: childs()) {
+//		i->render(cr, time);
+//	}
 
 	pat->render(cr, time);
 	ps->render(cr, time);
@@ -4014,11 +4018,11 @@ bool page_t::need_render(time_t time) {
 	if(_need_render == true)
 		return true;
 
-	for(auto i: childs()) {
-		if(i->need_render(time)) {
-			return true;
-		}
-	}
+//	for(auto i: childs()) {
+//		if(i->need_render(time)) {
+//			return true;
+//		}
+//	}
 	return false;
 }
 
@@ -4190,6 +4194,35 @@ void page_t::update_keymap() {
 		delete keymap;
 	}
 	keymap = new keymap_t(cnx->dpy());
+}
+
+vector<ptr<renderable_t>> page_t::prepare_render_f::call(page::time_t const & time) {
+	return page->prepare_render(time);
+}
+
+vector<ptr<renderable_t>> page_t::prepare_render(page::time_t const & time) {
+	vector<ptr<renderable_t>> ret;
+
+	rpage->repair_damaged(get_all_childs());
+	ret.push_back(ptr<renderable_t>(rpage->prepare_render()));
+
+	for(auto i: childs()) {
+		vector<ptr<renderable_t>> tmp = i->prepare_render(time);
+		ret.insert(ret.end(), tmp.begin(), tmp.end());
+	}
+
+	//printf("render size = %lu\n", ret.size());
+
+//
+//	pat->render(cr, time);
+//	ps->render(cr, time);
+//	pn0->render(cr, time);
+//	pfm->render(cr, time);
+//	menu->render(cr, time);
+//
+//	_need_render = false;
+
+	return ret;
 }
 
 }

@@ -149,6 +149,8 @@ public:
 
 	managed_window_t * get_selected();
 
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time);
+
 };
 
 }

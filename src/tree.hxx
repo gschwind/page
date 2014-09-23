@@ -42,7 +42,7 @@ enum tree_type_e {
 	TYPE_OTHER_OVERLAY      /* unmanaged class (ALL unknown type) */
 };
 
-class tree_t : public renderable_t {
+class tree_t {
 protected:
 	tree_t * _parent;
 	rectangle _allocation;
@@ -74,6 +74,7 @@ public:
 		return string(buffer);
 	}
 
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) = 0;
 
 };
 

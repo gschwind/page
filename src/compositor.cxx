@@ -109,20 +109,28 @@ void compositor_t::render() {
 	page::time_t cur;
 	cur.get_time();
 
-	/** check if some component need rendering **/
-	if (not _need_render) {
-		for (auto i : _graph_scene) {
-			if (i->need_render(cur)) {
-				_need_render = true;
-				break;
-			}
-		}
+//	/** check if some component need rendering **/
+//	if (not _need_render) {
+//		for (auto i : _graph_scene) {
+//			if (i->need_render(cur)) {
+//				_need_render = true;
+//				break;
+//			}
+//		}
+//	}
+
+	_graph_scene.clear();
+	for(auto x: _prepare_render) {
+		vector<ptr<renderable_t>> tmp = x->call(cur);
+		_graph_scene.insert(_graph_scene.end(), tmp.begin(), tmp.end());
 	}
 
-	/** if no one need rendering, do not render. **/
-	if(not _need_render) {
-		return;
-	}
+//	printf("yyyyyy %lu\n", _graph_scene.size());
+
+//	/** if no one need rendering, do not render. **/
+//	if(not _need_render) {
+//		return;
+//	}
 
 	_need_render = false;
 
@@ -141,8 +149,8 @@ void compositor_t::render() {
 	CHECK_CAIRO(cairo_paint(cr));
 
 	/** render all components **/
-	for (auto i : _graph_scene) {
-		i->render(cr, cur);
+	for (auto &i : _graph_scene) {
+		i->render(cr, region(0,0,10000,10000));
 	}
 
 	if (_show_fps) {
@@ -425,11 +433,11 @@ Window compositor_t::get_composite_overlay() {
 }
 
 void compositor_t::renderable_add(renderable_t * r) {
-	_graph_scene.push_back(r);
+	//_graph_scene.push_back(r);
 }
 
 void compositor_t::renderable_remove(renderable_t * r) {
-	_graph_scene.remove(r);
+	//_graph_scene.remove(r);
 }
 
 void compositor_t::renderable_clear() {

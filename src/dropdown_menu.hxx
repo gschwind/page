@@ -16,7 +16,7 @@
 
 namespace page {
 
-class dropdown_menu_t : public window_overlay_t, public renderable_t {
+class dropdown_menu_t : public window_overlay_t {
 
 	theme_t * _theme;
 	vector<dropdown_menu_entry_t *> window_list;

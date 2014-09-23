@@ -94,20 +94,32 @@ public:
 	}
 
 	virtual void render(cairo_t * cr, time_t time) {
-		if (_is_visible) {
-			for (auto i : childs()) {
-				i->render(cr, time);
-			}
-		}
+//		if (_is_visible) {
+//			for (auto i : childs()) {
+//				i->render(cr, time);
+//			}
+//		}
 	}
 
 	bool need_render(time_t time) {
+//		for(auto i: childs()) {
+//			if(i->need_render(time)) {
+//				return true;
+//			}
+//		}
+//		return false;
+	}
+
+
+	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
+
+		vector<ptr<renderable_t>> ret;
 		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
+			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
+			ret.insert(ret.end(), tmp.begin(), tmp.end());
 		}
-		return false;
+
+		return ret;
 	}
 
 

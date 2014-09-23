@@ -41,6 +41,17 @@ namespace page {
 
 class compositor_t {
 
+
+public:
+
+	/** implement this as a callback **/
+	class prepare_render_f {
+	public:
+		virtual vector<ptr<renderable_t>> call(page::time_t const & time) = 0;
+	};
+
+private:
+
 	display_t * _cnx;
 
 	Window cm_window;
@@ -61,7 +72,8 @@ class compositor_t {
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	renderable_list_t _graph_scene;
+	list<prepare_render_f *> _prepare_render;
+	vector<ptr<renderable_t>> _graph_scene;
 
 	static int const _FPS_WINDOWS = 33;
 	int _fps_top;
@@ -157,6 +169,14 @@ public:
 
 	void need_render() {
 		_need_render = true;
+	}
+
+	void register_callback(prepare_render_f * f) {
+		_prepare_render.push_back(f);
+	}
+
+	void unregister_callback(prepare_render_f * f) {
+		_prepare_render.remove(f);
 	}
 
 
