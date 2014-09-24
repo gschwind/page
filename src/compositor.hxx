@@ -41,15 +41,6 @@ namespace page {
 
 class compositor_t {
 
-
-public:
-
-	/** implement this as a callback **/
-	class prepare_render_f {
-	public:
-		virtual vector<ptr<renderable_t>> call(page::time_t const & time) = 0;
-	};
-
 private:
 
 	display_t * _cnx;
@@ -72,7 +63,6 @@ private:
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	list<prepare_render_f *> _prepare_render;
 	vector<ptr<renderable_t>> _graph_scene;
 
 	static int const _FPS_WINDOWS = 33;
@@ -81,6 +71,10 @@ private:
 	bool _show_fps;
 
 	bool _need_render;
+
+	map<Window, Damage> _damage_event;
+
+	region _damaged;
 
 #ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
@@ -171,12 +165,20 @@ public:
 		_need_render = true;
 	}
 
-	void register_callback(prepare_render_f * f) {
-		_prepare_render.push_back(f);
+	void add_damaged(region const & r) {
+		_damaged += r;
 	}
 
-	void unregister_callback(prepare_render_f * f) {
-		_prepare_render.remove(f);
+	void clear_renderable() {
+		_graph_scene.clear();
+	}
+
+	void push_back_renderable(ptr<renderable_t> r) {
+		_graph_scene.push_back(r);
+	}
+
+	void push_back_renderable(vector<ptr<renderable_t>> const & r) {
+		_graph_scene.insert(_graph_scene.end(), r.begin(), r.end());
 	}
 
 

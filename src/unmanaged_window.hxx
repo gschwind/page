@@ -216,8 +216,16 @@ public:
 
 	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
 		vector<ptr<renderable_t>> ret;
-		ptr<renderable_t> x{new renderable_pixmap_t(surf->get_pixmap(), rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height))};
-		ret.push_back(x);
+
+		if (surf != nullptr) {
+			region dmg = surf->get_damaged();
+			surf->clear_damaged();
+			dmg.translate(_properties->wa().x, _properties->wa().y);
+			ptr<renderable_t> x { new renderable_pixmap_t(surf->get_pixmap(),
+					rectangle(_properties->wa().x, _properties->wa().y,
+							_properties->wa().width, _properties->wa().height), dmg) };
+			ret.push_back(x);
+		}
 
 		for(auto i: childs()) {
 			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
@@ -225,6 +233,10 @@ public:
 		}
 
 		return ret;
+	}
+
+	virtual bool need_render(time_t time) {
+		return false;
 	}
 
 

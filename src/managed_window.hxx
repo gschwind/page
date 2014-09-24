@@ -16,6 +16,7 @@
 #include "managed_window_base.hxx"
 #include "display.hxx"
 #include "composite_surface_manager.hxx"
+#include "renderable_pixmap.hxx"
 
 #include <stdexcept>
 #include <exception>
@@ -516,12 +517,12 @@ public:
 
 	bool need_render(time_t time) {
 
-//		for(auto i: childs()) {
-//			if(i->need_render(time)) {
-//				return true;
-//			}
-//		}
-//		return false;
+		for(auto i: childs()) {
+			if(i->need_render(time)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	display_t * cnx() {
@@ -530,6 +531,19 @@ public:
 
 	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
 		vector<ptr<renderable_t>> ret;
+
+		if(_composite_surf != nullptr) {
+			rectangle pos {base_position()};
+			region dmg {_composite_surf->get_damaged()};
+			_composite_surf->clear_damaged();
+			dmg.translate(pos.x, pos.y);
+		renderable_pixmap_t * xx = new renderable_pixmap_t(
+				_composite_surf->get_pixmap(),
+				pos, dmg);
+		ptr<renderable_t> x { xx };
+		ret.push_back(x);
+
+		}
 
 		for(auto i: childs()) {
 			vector<ptr<renderable_t>> tmp = i->prepare_render(time);

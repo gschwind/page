@@ -53,6 +53,11 @@ public:
 	 **/
 	virtual region get_visible_region() = 0;
 
+	/**
+	 * return currently damaged area (absolute)
+	 **/
+	virtual region get_damaged() = 0;
+
 };
 
 /**

@@ -8,6 +8,7 @@
 #ifndef COMPOSITE_SURFACE_HXX_
 #define COMPOSITE_SURFACE_HXX_
 
+#include "region.hxx"
 #include "pixmap.hxx"
 
 namespace page {
@@ -21,6 +22,8 @@ class composite_surface_t {
 	shared_ptr<pixmap_t> _pixmap;
 	int _width, _height;
 
+	region _damaged;
+
 	void create_damage() {
 		if (_damage == None) {
 			_damage = XDamageCreate(_dpy, _window_id, XDamageReportNonEmpty);
@@ -28,6 +31,7 @@ class composite_surface_t {
 				XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
 				XDamageSubtract(_dpy, _damage, None, region);
 				XFixesDestroyRegion(_dpy, region);
+				_damaged += rectangle(0,0,_width, _height);
 			}
 		}
 	}
@@ -100,7 +104,17 @@ public:
 		return _pixmap;
 	}
 
+	void clear_damaged() {
+		_damaged.clear();
+	}
 
+	region const & get_damaged() {
+		return _damaged;
+	}
+
+	void add_damaged(region const & r) {
+		_damaged += r;
+	}
 
 };
 

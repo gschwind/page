@@ -22,6 +22,7 @@ class renderable_surface_t : public renderable_t {
 
 	rectangle location;
 	cairo_surface_t * surf;
+	region _damaged;
 
 public:
 
@@ -60,6 +61,18 @@ public:
 	 **/
 	virtual region get_visible_region() {
 		return region(location);
+	}
+
+	virtual region get_damaged() {
+		return _damaged;
+	}
+
+	void clear_damaged() {
+		_damaged.clear();
+	}
+
+	void add_damaged(region const & damaged) {
+		_damaged += damaged;
 	}
 
 

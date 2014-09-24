@@ -140,6 +140,12 @@ struct rectangle_t {
 		rectangle_t<T> x = *this;
 		return (x &= b);
 	}
+
+	template<typename U>
+	operator rectangle_t<U>() const {
+		return rectangle_t<U>(x, y, w, h);
+	}
+
 };
 
 typedef rectangle_t<double> rectangle;

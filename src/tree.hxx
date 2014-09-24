@@ -76,6 +76,8 @@ public:
 
 	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) = 0;
 
+	virtual bool need_render(page::time_t time) = 0;
+
 };
 
 

@@ -24,10 +24,11 @@ class renderable_pixmap_t : public renderable_t {
 
 	rectangle location;
 	ptr<pixmap_t> surf;
+	region damaged;
 
 public:
 
-	renderable_pixmap_t(ptr<pixmap_t> s, rectangle loc) : surf(s), location(loc) {
+	renderable_pixmap_t(ptr<pixmap_t> s, rectangle loc, region damaged) : damaged(damaged), surf(s), location(loc) {
 		location.round();
 	}
 
@@ -67,6 +68,10 @@ public:
 	 **/
 	virtual region get_visible_region() {
 		return region(location);
+	}
+
+	virtual region get_damaged() {
+		return damaged;
 	}
 
 

@@ -33,6 +33,10 @@ void composite_surface_manager_t::ondestroy(Display * dpy, Window w) {
 	_mngr._ondestroy(dpy, w);
 }
 
+weak_ptr<composite_surface_t> composite_surface_manager_t::get_weak_surface(Display * dpy, Window w) {
+	return _mngr._get_weak_surface(dpy, w);
+}
+
 
 }
 

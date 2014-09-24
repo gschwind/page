@@ -276,7 +276,7 @@ public:
 
 	region_t & operator -=(_box_t const & box1) {
 		region_t tmp;
-		for (auto &i : *this) {
+		for (auto & i : *this) {
 			region_t x = substract_box(i, box1);
 			tmp.insert(tmp.end(), x.begin(), x.end());
 		}
@@ -295,7 +295,7 @@ public:
 			return *this;
 		}
 
-		for (auto &i : b) {
+		for (auto & i : b) {
 			*this -= i;
 		}
 
@@ -321,8 +321,8 @@ public:
 		if(this == &r)
 			return *this;
 
-		for(auto i : r) {
-			*this += *i;
+		for(auto & i : r) {
+			*this += i;
 		}
 
 		return *this;
@@ -340,7 +340,7 @@ public:
 
 	region_t operator &(_box_t const & b) const {
 		region_t result;
-		for(auto &i : *this) {
+		for(auto & i : *this) {
 			_box_t x = b & i;
 			/**
 			 * since this is a region, no over lap is possible, just add the
@@ -388,14 +388,14 @@ public:
 
 	void translate(T x, T y) {
 		for(auto & i : *this) {
-			i->x += x;
-			i->y += y;
+			i.x += x;
+			i.y += y;
 		}
 	}
 
 };
 
-typedef region_t<double> region;
+typedef region_t<int> region;
 
 }
 

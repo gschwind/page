@@ -58,8 +58,7 @@ namespace page {
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 page_t::page_t(int argc, char ** argv) :
-		viewport_outputs(),
-		prepare_render_callback(this)
+		viewport_outputs()
 {
 
 	page_areas = nullptr;
@@ -228,7 +227,6 @@ void page_t::run() {
 			rnd = new compositor_t(cnx, damage_event, xshape_event, xrandr_event);
 			rnd->renderable_clear();
 			//rnd->renderable_add(this);
-			rnd->register_callback(&prepare_render_callback);
 		} catch (...) {
 			rnd = nullptr;
 		}
@@ -380,6 +378,7 @@ void page_t::run() {
 		/* grab the server to avoid asynchronous conflicts */
 		cnx->grab();
 
+		/** get all event and store them in pending event **/
 		while (XPending(cnx->dpy())) {
 			XEvent ev;
 			XNextEvent(cnx->dpy(), &ev);
@@ -403,6 +402,9 @@ void page_t::run() {
 			if (cur_tic > next_frame) {
 				next_frame = cur_tic + default_wait;
 				max_wait = default_wait;
+
+				rnd->clear_renderable();
+				rnd->push_back_renderable(prepare_render(cur_tic));
 				rnd->render();
 			} else {
 				max_wait = next_frame - cur_tic;
@@ -1914,6 +1916,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
 		} else if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
+			_need_render = true;
 			destroy_client(c);
 		}
 	}
@@ -4009,7 +4012,7 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 	pfm->render(cr, time);
 	menu->render(cr, time);
 
-	_need_render = false;
+	//_need_render = false;
 
 }
 
@@ -4018,11 +4021,11 @@ bool page_t::need_render(time_t time) {
 	if(_need_render == true)
 		return true;
 
-//	for(auto i: childs()) {
-//		if(i->need_render(time)) {
-//			return true;
-//		}
-//	}
+	for(auto i: childs()) {
+		if(i->need_render(time)) {
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -4196,15 +4199,20 @@ void page_t::update_keymap() {
 	keymap = new keymap_t(cnx->dpy());
 }
 
-vector<ptr<renderable_t>> page_t::prepare_render_f::call(page::time_t const & time) {
-	return page->prepare_render(time);
-}
-
 vector<ptr<renderable_t>> page_t::prepare_render(page::time_t const & time) {
+
+	/** TODO: TEMPORARY HACK **/
+	//if(true)
+	//	rnd->add_damaged(rectangle(0,0,100000,100000));
+
 	vector<ptr<renderable_t>> ret;
 
 	rpage->repair_damaged(get_all_childs());
-	ret.push_back(ptr<renderable_t>(rpage->prepare_render()));
+
+	renderable_surface_t * x = rpage->prepare_render();
+	if(need_render(time))
+		x->add_damaged(region(rectangle(0,0,100000,100000)));
+	ret.push_back(ptr<renderable_t>(x));
 
 	for(auto i: childs()) {
 		vector<ptr<renderable_t>> tmp = i->prepare_render(time);
@@ -4220,9 +4228,10 @@ vector<ptr<renderable_t>> page_t::prepare_render(page::time_t const & time) {
 //	pfm->render(cr, time);
 //	menu->render(cr, time);
 //
-//	_need_render = false;
+	_need_render = false;
 
 	return ret;
+
 }
 
 }

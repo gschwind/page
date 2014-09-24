@@ -76,6 +76,10 @@ private:
 		}
 	}
 
+	weak_ptr<composite_surface_t> _get_weak_surface(Display * dpy, Window w) {
+		return _data[_key_t(dpy, w)];
+	}
+
 public:
 
 	~composite_surface_manager_t() {
@@ -91,7 +95,7 @@ public:
 	static void ondestroy(Display * dpy, Window w);
 
 	static shared_ptr<composite_surface_t> get(Display * dpy, Window w);
-
+	static weak_ptr<composite_surface_t> get_weak_surface(Display * dpy, Window w);
 
 };
 

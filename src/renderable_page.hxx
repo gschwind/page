@@ -101,7 +101,7 @@ public:
 		}
 	}
 
-	renderable_t * prepare_render() {
+	renderable_surface_t * prepare_render() {
 		renderable_surface_t * surf = new renderable_surface_t(_back_surf, _position);
 		return surf;
 	}

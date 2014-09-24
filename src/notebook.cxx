@@ -191,7 +191,7 @@ rectangle notebook_t::get_absolute_extend() {
 
 region notebook_t::get_area() {
 	if (_selected != nullptr) {
-		region area = allocation();
+		region area{allocation()};
 		area -= _selected->get_base_position();
 		return area;
 	} else {
@@ -391,7 +391,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 		/** render old surface if one is available **/
 		if (prev_surf != nullptr) {
 			cairo_surface_t * s = prev_surf->get_cairo_surface();
-			region r = x_prv_loc;
+			region r{x_prv_loc};
 			r -= x_new_loc;
 
 			cairo_save(cr);
@@ -407,7 +407,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 			}
 			cairo_pattern_destroy(p0);
 
-			region r1 = x_prv_loc;
+			region r1{x_prv_loc};
 			r1 &= x_new_loc;
 			for (auto &a : r1) {
 				cairo_reset_clip(cr);
@@ -427,7 +427,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				shared_ptr<pixmap_t> p = psurf->get_pixmap();
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
-					region r = x_new_loc;
+					region r{x_new_loc};
 					r -= x_prv_loc;
 
 					cairo_save(cr);
@@ -495,18 +495,18 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 bool notebook_t::need_render(time_t time) {
 
-//	page::time_t d(0, animation_duration);
-//	d += 100000000;
-//	if (time < (swap_start + d)) {
-//		return true;
-//	}
-//
-//	for(auto i: childs()) {
-//		if(i->need_render(time)) {
-//			return true;
-//		}
-//	}
-//	return false;
+	page::time_t d(0, animation_duration);
+	d += 100000000;
+	if (time < (swap_start + d)) {
+		return true;
+	}
+
+	for(auto i: childs()) {
+		if(i->need_render(time)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 managed_window_t * notebook_t::get_selected() {
@@ -597,12 +597,12 @@ vector<ptr<renderable_t>> notebook_t::prepare_render(page::time_t const & time) 
 ////			for (auto i : _selected->childs()) {
 ////				i->render(cr, time);
 ////			}
-		if (_selected->surf() != nullptr) {
-			ptr<renderable_t> x(
-					new renderable_pixmap_t(_selected->surf()->get_pixmap(),
-							_selected->get_base_position()));
-			ret.push_back(x);
-		}
+//		if (_selected->surf() != nullptr) {
+//			ptr<renderable_t> x(
+//					new renderable_pixmap_t(_selected->surf()->get_pixmap(),
+//							_selected->get_base_position()));
+//			ret.push_back(x);
+//		}
 
 		}
 
@@ -638,20 +638,28 @@ vector<ptr<renderable_t>> notebook_t::prepare_render(page::time_t const & time) 
 //				}
 //			}
 
-		if (_selected->surf() != nullptr) {
-			ptr<renderable_t> x(
-					new renderable_pixmap_t(_selected->surf()->get_pixmap(),
-							_selected->get_base_position()));
-			ret.push_back(x);
-		}
+		if (_selected != nullptr) {
 
+			if (_selected->surf() != nullptr) {
+				rectangle pos {_selected->base_position()};
+				region dmg {_selected->surf()->get_damaged()};
+				_selected->surf()->clear_damaged();
+				dmg.translate(pos.x, pos.y);
+				ptr<renderable_t> x{
+						new renderable_pixmap_t(_selected->surf()->get_pixmap(),
+								pos, dmg)};
+				ret.push_back(x);
+			}
 
-			for (auto i : _selected->childs()) {
+			/** bypass prepare_render of notebook childs **/
+			for (auto & i : _selected->childs()) {
 				vector<ptr<renderable_t>> tmp = i->prepare_render(time);
 				ret.insert(ret.end(), tmp.begin(), tmp.end());
 			}
 
 		}
+	}
+
 
 	return ret;
 }

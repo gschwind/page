@@ -29,9 +29,6 @@ namespace page {
 static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, double g,
 		double b) {
 
-	return;
-
-	display_t::create_context(__FILE__, __LINE__);
 	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
@@ -50,7 +47,7 @@ static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, dou
 	cairo_move_to(cr, box.x + box.w - 1.0, box.y + 0.5);
 	cairo_line_to(cr, box.x + 0.5, box.y + box.h - 1.0);
 	cairo_stroke(cr);
-	display_t::destroy_context(__FILE__, __LINE__);
+
 	cairo_restore(cr);
 }
 
@@ -109,7 +106,7 @@ void compositor_t::render() {
 	page::time_t cur;
 	cur.get_time();
 
-//	/** check if some component need rendering **/
+	/** check if some component need rendering **/
 //	if (not _need_render) {
 //		for (auto i : _graph_scene) {
 //			if (i->need_render(cur)) {
@@ -119,11 +116,18 @@ void compositor_t::render() {
 //		}
 //	}
 
-	_graph_scene.clear();
-	for(auto x: _prepare_render) {
-		vector<ptr<renderable_t>> tmp = x->call(cur);
-		_graph_scene.insert(_graph_scene.end(), tmp.begin(), tmp.end());
+	for (auto &i : _graph_scene) {
+		_damaged += i->get_damaged();
 	}
+
+	if(_damaged.empty())
+		return;
+
+//	_graph_scene.clear();
+//	for(auto x: _prepare_render) {
+//		vector<ptr<renderable_t>> tmp = x->call(cur);
+//		_graph_scene.insert(_graph_scene.end(), tmp.begin(), tmp.end());
+//	}
 
 //	printf("yyyyyy %lu\n", _graph_scene.size());
 
@@ -144,14 +148,22 @@ void compositor_t::render() {
 	cairo_t * cr = cairo_create(_back_buffer);
 
 	/** clear back buffer **/
-	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-	CHECK_CAIRO(cairo_paint(cr));
+//	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
+//	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+//	CHECK_CAIRO(cairo_paint(cr));
 
 	/** render all components **/
-	for (auto &i : _graph_scene) {
-		i->render(cr, region(0,0,10000,10000));
+	for (auto & dmg : _damaged) {
+		for (auto &i : _graph_scene) {
+			i->render(cr, dmg);
+		}
 	}
+
+	for (auto &i: _damaged) {
+		_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
+	}
+
+	_damaged.clear();
 
 	if (_show_fps) {
 		int _fps_head = (_fps_top + 1) % _FPS_WINDOWS;
@@ -202,7 +214,7 @@ void compositor_t::render() {
 	/** swap back buffer and front buffer **/
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
-	si.swap_action = XdbeUndefined;
+	si.swap_action = XdbeCopied;
 	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
 
 }
@@ -232,7 +244,6 @@ void compositor_t::process_event(XMapEvent const & e) {
 		return;
 
 	composite_surface_manager_t::onmap(_cnx->dpy(), e.window);
-
 }
 
 void compositor_t::process_event(XUnmapEvent const & e) {
@@ -276,12 +287,17 @@ void compositor_t::process_event(XDamageNotifyEvent const & e) {
 	/** drop damage data **/
 
 	/* create an empty region */
-	XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
-	if (!region)
-		throw std::runtime_error("could not create region");
-	XDamageSubtract(_cnx->dpy(), e.damage, None, region);
-	XFixesDestroyRegion(_cnx->dpy(), region);
+//	XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
+//	if (!region)
+//		throw std::runtime_error("could not create region");
+//	XDamageSubtract(_cnx->dpy(), e.damage, None, region);
+//	XFixesDestroyRegion(_cnx->dpy(), region);
 
+	region r = read_damaged_region(e.damage);
+	weak_ptr<composite_surface_t> wp = composite_surface_manager_t::get_weak_surface(e.display, e.drawable);
+	if (not wp.expired()) {
+		wp.lock()->add_damaged(r);
+	}
 	_need_render = true;
 
 }
@@ -397,7 +413,7 @@ void compositor_t::update_layout() {
 
 	//printf("layout = %s\n", _desktop_region.to_string().c_str());
 
-	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, None);
+	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, XdbeCopied);
 
 }
 
