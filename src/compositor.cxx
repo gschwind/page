@@ -125,6 +125,23 @@ void compositor_t::render() {
 	if(_damaged.empty())
 		return;
 
+	/**
+	 * forecast next best buffer swapping
+	 * If the buffer was damaged over 75% of the desktop, then
+	 * We prefer no copy buffer swapping else copy buffer.
+	 * maybe a lower threthold is better.
+	 **/
+	if((double)_damaged.area()/(double)_desktop_region.area() > 0.75) {
+		back_buffer_state = XdbeUndefined;
+	} else {
+		back_buffer_state = XdbeCopied;
+	}
+
+	/** if we did not copied the back buffer, repair all screen **/
+	if(back_buffer_state == XdbeUndefined) {
+		_damaged = _desktop_region;
+	}
+
 //	_graph_scene.clear();
 //	for(auto x: _prepare_render) {
 //		vector<ptr<renderable_t>> tmp = x->call(cur);
@@ -260,6 +277,8 @@ void compositor_t::render() {
 		}
 	}
 
+
+
 	_damaged.clear();
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
@@ -273,7 +292,7 @@ void compositor_t::render() {
 	/** swap back buffer and front buffer **/
 	XdbeSwapInfo si;
 	si.swap_window = composite_overlay;
-	si.swap_action = XdbeCopied;
+	si.swap_action = back_buffer_state;
 	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
 
 }

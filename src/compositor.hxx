@@ -79,6 +79,9 @@ private:
 	region _damaged;
 	region _desktop_region;
 
+
+	int back_buffer_state;
+
 #ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
 	PangoFontMap * _fps_font_map;
