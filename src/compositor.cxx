@@ -142,7 +142,7 @@ void compositor_t::render() {
 
 	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
 	_fps_history[_fps_top] = cur;
-	_repaired_area[_fps_top] = _damaged.area();
+	_damaged_area[_fps_top] = _damaged.area();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
@@ -155,11 +155,34 @@ void compositor_t::render() {
 //	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 //	CHECK_CAIRO(cairo_paint(cr));
 
-	/** render all components **/
-	for (auto & dmg : _damaged) {
+	/** handler 1 pass area **/
+	region _direct_render;
+
+	for(auto & i: _graph_scene) {
+		_direct_render -= i->get_visible_region();
+		_direct_render += i->get_opaque_region();
+	}
+
+	_direct_render &= _damaged;
+
+	_direct_render_area[_fps_top] = _direct_render.area();
+
+	region _composited_area = _damaged - _direct_render;
+
+	/** render all composited area **/
+	for (auto & dmg : _composited_area) {
 		for (auto &i : _graph_scene) {
 			i->render(cr, dmg);
 		}
+	}
+
+	/** render 1 pass area **/
+	for(auto i = _graph_scene.rbegin(); i != _graph_scene.rend(); ++i) {
+		region x = (*i)->get_opaque_region() & _direct_render;
+		for (auto & dmg : x) {
+				(*i)->render(cr, dmg);
+		}
+		_direct_render -= x;
 	}
 
 	if (_show_fps) {
@@ -212,12 +235,23 @@ void compositor_t::render() {
 			cairo_new_path(cr);
 
 			double ref = _desktop_region.area();
-			double xdmg = _repaired_area[_fps_top];
+			double xdmg = _damaged_area[_fps_top];
 			cairo_move_to(cr, 0 * 5.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
 
 			for(int i = 1; i < _FPS_WINDOWS; ++i) {
 				int frm = (_fps_top + i) % _FPS_WINDOWS;
-				double xdmg = _repaired_area[frm];
+				double xdmg = _damaged_area[frm];
+				cairo_line_to(cr, i * 2.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+			}
+			cairo_stroke(cr);
+
+			cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
+			xdmg = _direct_render_area[_fps_top];
+			cairo_move_to(cr, 0 * 5.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+
+			for(int i = 1; i < _FPS_WINDOWS; ++i) {
+				int frm = (_fps_top + i) % _FPS_WINDOWS;
+				double xdmg = _direct_render_area[frm];
 				cairo_line_to(cr, i * 2.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
 			}
 			cairo_stroke(cr);

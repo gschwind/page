@@ -69,7 +69,8 @@ private:
 	int _fps_top;
 	page::time_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
-	int _repaired_area[_FPS_WINDOWS];
+	int _damaged_area[_FPS_WINDOWS];
+	int _direct_render_area[_FPS_WINDOWS];
 
 	bool _need_render;
 
