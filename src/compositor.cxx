@@ -164,9 +164,9 @@ void compositor_t::render() {
 
 	if (_show_fps) {
 
-		for (auto &i : _graph_scene) {
-			i->render(cr, region{0, 0, 640, 480});
-		}
+//		for (auto &i : _graph_scene) {
+//			i->render(cr, region{0, 0, 640, 480});
+//		}
 
 		for (auto &i : _damaged) {
 			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
@@ -189,10 +189,14 @@ void compositor_t::render() {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_translate(cr, 40.0, 140.0);
 
-			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+			cairo_set_source_rgb(cr, 0.2, 0.2, 0.2);
+			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 200.0);
+			cairo_fill(cr);
 
+			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 200.0);
 			cairo_stroke(cr);
+
 
 			cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
 			cairo_new_path(cr);
@@ -203,6 +207,8 @@ void compositor_t::render() {
 
 			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 
+			cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 			cairo_new_path(cr);
 
 			double ref = _desktop_region.area();
