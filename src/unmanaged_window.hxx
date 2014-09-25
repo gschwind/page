@@ -16,6 +16,7 @@
 #include "composite_surface_manager.hxx"
 #include "client_base.hxx"
 #include "display.hxx"
+#include "renderable_unmanaged_outer_gradien.hxx"
 
 namespace page {
 
@@ -80,8 +81,8 @@ public:
 					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 				cairo_save(cr);
 
-				draw_outer_graddien(cr, rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height), 4.0);
-
+//				draw_outer_graddien(cr, rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height), 4.0);
+//
 //				unsigned const int _shadow_width = 4;
 //
 //				cairo_reset_clip(cr);
@@ -214,25 +215,28 @@ public:
 
 	}
 
-	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
-		vector<ptr<renderable_t>> ret;
+	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+
+		rectangle pos(_properties->wa().x, _properties->wa().y,
+				_properties->wa().width, _properties->wa().height);
+
+		Atom t = type();
+		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
+				or t == A(_NET_WM_WINDOW_TYPE_MENU)
+				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+			auto x = new renderable_unmanaged_outer_gradien_t(pos, 4.0);
+			out += ptr<renderable_t>{x};
+		}
+
 
 		if (surf != nullptr) {
 			region dmg = surf->get_damaged();
 			surf->clear_damaged();
-			dmg.translate(_properties->wa().x, _properties->wa().y);
-			ptr<renderable_t> x { new renderable_pixmap_t(surf->get_pixmap(),
-					rectangle(_properties->wa().x, _properties->wa().y,
-							_properties->wa().width, _properties->wa().height), dmg) };
-			ret.push_back(x);
+			dmg.translate(pos.x, pos.y);
+			auto x = new renderable_pixmap_t(surf->get_pixmap(), pos, dmg);
+			out += ptr<renderable_t>{x};
 		}
-
-		for(auto i: childs()) {
-			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
-			ret.insert(ret.end(), tmp.begin(), tmp.end());
-		}
-
-		return ret;
+		tree_t::_prepare_render(out, time);
 	}
 
 	virtual bool need_render(time_t time) {

@@ -74,9 +74,15 @@ public:
 		return string(buffer);
 	}
 
-	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) = 0;
-
+	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) = 0;
 	virtual bool need_render(page::time_t time) = 0;
+
+	/** usefull macro **/
+	virtual void _prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+		for(auto i: childs()) {
+			i->prepare_render(out, time);
+		}
+	}
 
 };
 

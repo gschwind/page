@@ -591,7 +591,7 @@ public:
 
 	managed_window_t * find_hidden_client_with(Window w);
 
-	vector<ptr<renderable_t>> prepare_render(page::time_t const & time);
+	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 
 };
 

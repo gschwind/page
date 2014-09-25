@@ -111,17 +111,9 @@ public:
 	}
 
 
-	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
-
-		vector<ptr<renderable_t>> ret;
-		for(auto i: childs()) {
-			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
-			ret.insert(ret.end(), tmp.begin(), tmp.end());
-		}
-
-		return ret;
+	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+		tree_t::_prepare_render(out, time);
 	}
-
 
 };
 

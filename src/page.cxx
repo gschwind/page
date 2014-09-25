@@ -404,7 +404,9 @@ void page_t::run() {
 				max_wait = default_wait;
 
 				rnd->clear_renderable();
-				rnd->push_back_renderable(prepare_render(cur_tic));
+				vector<ptr<renderable_t>> ret;
+				prepare_render(ret, cur_tic);
+				rnd->push_back_renderable(ret);
 				rnd->render();
 			} else {
 				max_wait = next_frame - cur_tic;
@@ -3638,6 +3640,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 		safe_update_transient_for(uw);
 		safe_raise_window(uw);
 		update_windows_stack();
+		_need_render = true;
 	} catch (...) {
 		printf("Error while creating unmanaged window\n");
 	}
@@ -4199,25 +4202,16 @@ void page_t::update_keymap() {
 	keymap = new keymap_t(cnx->dpy());
 }
 
-vector<ptr<renderable_t>> page_t::prepare_render(page::time_t const & time) {
-
-	/** TODO: TEMPORARY HACK **/
-	//if(true)
-	//	rnd->add_damaged(rectangle(0,0,100000,100000));
-
-	vector<ptr<renderable_t>> ret;
+void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
 	rpage->repair_damaged(get_all_childs());
 
 	renderable_surface_t * x = rpage->prepare_render();
 	if(need_render(time))
 		x->add_damaged(region(rectangle(0,0,100000,100000)));
-	ret.push_back(ptr<renderable_t>(x));
 
-	for(auto i: childs()) {
-		vector<ptr<renderable_t>> tmp = i->prepare_render(time);
-		ret.insert(ret.end(), tmp.begin(), tmp.end());
-	}
+	out += ptr<renderable_t>(x);
+	tree_t::_prepare_render(out, time);
 
 	//printf("render size = %lu\n", ret.size());
 
@@ -4229,8 +4223,6 @@ vector<ptr<renderable_t>> page_t::prepare_render(page::time_t const & time) {
 //	menu->render(cr, time);
 //
 	_need_render = false;
-
-	return ret;
 
 }
 

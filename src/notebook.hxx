@@ -149,7 +149,7 @@ public:
 
 	managed_window_t * get_selected();
 
-	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time);
+	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 
 };
 

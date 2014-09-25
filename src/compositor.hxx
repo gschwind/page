@@ -178,7 +178,7 @@ public:
 	}
 
 	void push_back_renderable(vector<ptr<renderable_t>> const & r) {
-		_graph_scene.insert(_graph_scene.end(), r.begin(), r.end());
+		_graph_scene += r;
 	}
 
 

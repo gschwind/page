@@ -29,6 +29,7 @@ namespace page {
 static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, double g,
 		double b) {
 
+	return;
 	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
@@ -446,14 +447,6 @@ bool compositor_t::process_check_event() {
 
 Window compositor_t::get_composite_overlay() {
 	return composite_overlay;
-}
-
-void compositor_t::renderable_add(renderable_t * r) {
-	//_graph_scene.push_back(r);
-}
-
-void compositor_t::renderable_remove(renderable_t * r) {
-	//_graph_scene.remove(r);
 }
 
 void compositor_t::renderable_clear() {

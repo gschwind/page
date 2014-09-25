@@ -513,8 +513,7 @@ managed_window_t * notebook_t::get_selected() {
 	return _selected;
 }
 
-vector<ptr<renderable_t>> notebook_t::prepare_render(page::time_t const & time) {
-	vector<ptr<renderable_t>> ret;
+void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
 	page::time_t d(0, animation_duration);
 	if (time < (swap_start + d) and false) {
@@ -648,20 +647,17 @@ vector<ptr<renderable_t>> notebook_t::prepare_render(page::time_t const & time) 
 				ptr<renderable_t> x{
 						new renderable_pixmap_t(_selected->surf()->get_pixmap(),
 								pos, dmg)};
-				ret.push_back(x);
+				out += x;
 			}
 
 			/** bypass prepare_render of notebook childs **/
 			for (auto & i : _selected->childs()) {
-				vector<ptr<renderable_t>> tmp = i->prepare_render(time);
-				ret.insert(ret.end(), tmp.begin(), tmp.end());
+				i->prepare_render(out, time);
 			}
 
 		}
 	}
 
-
-	return ret;
 }
 
 

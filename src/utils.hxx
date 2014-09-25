@@ -709,6 +709,38 @@ static void draw_outer_graddien2(cairo_t * cr, rectangle r, double _shadow_width
 
 }
 
+/** append vector to the end of list **/
+template<typename T>
+vector<T> & operator +=(vector<T> & a, vector<T> const & b) {
+	a.insert(a.end(), b.begin(), b.end());
+	return a;
+}
+
+template<typename T>
+vector<T> operator +(vector<T> const & a, vector<T> const & b) {
+	vector<T> ret{a};
+	return (ret += b);
+}
+
+template<typename T>
+vector<T> & operator +=(vector<T> & a, T const & b) {
+	a.push_back(b);
+	return a;
+}
+
+template<typename T>
+vector<T> operator +(vector<T> const & a, T const & b) {
+	vector<T> ret{a};
+	return (ret += b);
+}
+
+inline void cairo_clip(cairo_t * cr, rectangle const & clip) {
+	cairo_reset_clip(cr);
+	cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
+	cairo_clip(cr);
+}
+
+
 }
 
 

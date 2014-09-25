@@ -150,6 +150,10 @@ struct rectangle_t {
 
 typedef rectangle_t<double> rectangle;
 
+using i_rect = rectangle_t<int>;
+using d_rect = rectangle_t<double>;
+
+
 }
 
 #endif /* BOX_HXX_ */

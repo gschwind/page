@@ -274,20 +274,16 @@ void split_t::remove(tree_t * t) {
 	}
 }
 
-vector<ptr<renderable_t>> split_t::prepare_render(page::time_t const & time) {
-	vector<ptr<renderable_t>> ret;
+void split_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
 	if(_pack0 != nullptr) {
-		vector<ptr<renderable_t>> tmp = _pack0->prepare_render(time);
-		ret.insert(ret.end(), tmp.begin(), tmp.end());
+		_pack0->prepare_render(out, time);
 	}
 
 	if(_pack1 != nullptr) {
-		vector<ptr<renderable_t>> tmp = _pack1->prepare_render(time);
-		ret.insert(ret.end(), tmp.begin(), tmp.end());
+		_pack1->prepare_render(out, time);
 	}
 
-	return ret;
 }
 
 

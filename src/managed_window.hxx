@@ -17,6 +17,7 @@
 #include "display.hxx"
 #include "composite_surface_manager.hxx"
 #include "renderable_pixmap.hxx"
+#include "renderable_floating_outer_gradien.hxx"
 
 #include <stdexcept>
 #include <exception>
@@ -529,31 +530,30 @@ public:
 		return _properties->cnx();
 	}
 
-	virtual vector<ptr<renderable_t>> prepare_render(page::time_t const & time) {
-		vector<ptr<renderable_t>> ret;
+	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
-		if(_composite_surf != nullptr) {
-			rectangle pos {base_position()};
-			region dmg {_composite_surf->get_damaged()};
+		if (_composite_surf != nullptr) {
+
+			rectangle loc = base_position();
+
+			if (_motif_has_border) {
+				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 6.0);
+				out += ptr<renderable_t> { x };
+			}
+
+			rectangle pos { base_position() };
+			region dmg { _composite_surf->get_damaged() };
 			_composite_surf->clear_damaged();
 			dmg.translate(pos.x, pos.y);
-		renderable_pixmap_t * xx = new renderable_pixmap_t(
-				_composite_surf->get_pixmap(),
-				pos, dmg);
-		ptr<renderable_t> x { xx };
-		ret.push_back(x);
+			auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
+					pos, dmg);
+			out += ptr<renderable_t>{x};
 
 		}
 
-		for(auto i: childs()) {
-			vector<ptr<renderable_t>> tmp = i->prepare_render(time);
-			ret.insert(ret.end(), tmp.begin(), tmp.end());
-		}
+		tree_t::_prepare_render(out, time);
 
-		return ret;
 	}
-
-
 };
 
 }
