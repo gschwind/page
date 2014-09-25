@@ -42,8 +42,6 @@
 #include <vector>
 #include <typeinfo>
 
-
-
 #include "page.hxx"
 
 /* ICCCM definition */
@@ -341,7 +339,7 @@ void page_t::run() {
 	GrabModeSync, GrabModeAsync, None, None);
 
 	timespec _max_wait;
-	time_t const default_wait = 1000000000L / 50L;
+	time_t const default_wait = 1000000000L / 60L;
 	time_t max_wait = default_wait;
 	time_t next_frame;
 

@@ -29,7 +29,6 @@ namespace page {
 static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, double g,
 		double b) {
 
-	return;
 	cairo_save(cr);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
@@ -80,7 +79,7 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	_show_fps = false;
 
 #ifdef WITH_PANGO
-	_fps_font_desc = pango_font_description_from_string("Ubuntu 30");
+	_fps_font_desc = pango_font_description_from_string("Ubuntu 16");
 	_fps_font_map = pango_cairo_font_map_new();
 	_fps_context = pango_font_map_create_context(_fps_font_map);
 #endif
@@ -121,6 +120,8 @@ void compositor_t::render() {
 		_damaged += i->get_damaged();
 	}
 
+	_damaged &= _desktop_region;
+
 	if(_damaged.empty())
 		return;
 
@@ -141,6 +142,7 @@ void compositor_t::render() {
 
 	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
 	_fps_history[_fps_top] = cur;
+	_repaired_area[_fps_top] = _damaged.area();
 
 	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
 			root_attributes.visual, root_attributes.width,
@@ -160,49 +162,65 @@ void compositor_t::render() {
 		}
 	}
 
-	for (auto &i: _damaged) {
-		_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
-	}
+	if (_show_fps) {
 
-	_damaged.clear();
+		for (auto &i : _graph_scene) {
+			i->render(cr, region{0, 0, 640, 480});
+		}
+
+		for (auto &i : _damaged) {
+			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
+		}
+
+	}
 
 	if (_show_fps) {
 		int _fps_head = (_fps_top + 1) % _FPS_WINDOWS;
 		if (static_cast<int64_t>(_fps_history[_fps_head]) != 0L) {
 
-#ifdef WITH_PANGO
+
+			double fps = (_FPS_WINDOWS * 1000000000.0)
+					/ (static_cast<int64_t>(_fps_history[_fps_top])
+							- static_cast<int64_t>(_fps_history[_fps_head]));
+			pango_printf(cr, 40.0, 40.0, "fps: %.1f", fps);
+
 			cairo_save(cr);
 			cairo_identity_matrix(cr);
-			cairo_translate(cr, 40.0, 40.0);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_translate(cr, 40.0, 140.0);
 
-			double fps = (_FPS_WINDOWS * 1000000000.0) / (static_cast<int64_t>(_fps_history[_fps_top]) - static_cast<int64_t>(_fps_history[_fps_head]));
-			char fps_s[64];
-			snprintf(fps_s, 64, "%.1f", fps);
-
-			PangoLayout * pango_layout = pango_layout_new(_fps_context);
-			pango_layout_set_font_description(pango_layout, _fps_font_desc);
-			pango_cairo_update_layout(cr, pango_layout);
-			pango_layout_set_text(pango_layout, fps_s, -1);
-			pango_cairo_layout_path(cr, pango_layout);
-			g_object_unref(pango_layout);
-
-			cairo_set_line_width(cr, 3.0);
-			cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 
-			cairo_stroke_preserve(cr);
+			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 200.0);
+			cairo_stroke(cr);
 
-			cairo_set_line_width(cr, 1.0);
-			cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-			cairo_fill(cr);
+			cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
+			cairo_new_path(cr);
+			cairo_move_to(cr, 0.0, 100.0);
+			cairo_line_to(cr, _FPS_WINDOWS*2.0, 100.0);
+			cairo_stroke(cr);
 
+
+			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+
+			cairo_new_path(cr);
+
+			double ref = _desktop_region.area();
+			double xdmg = _repaired_area[_fps_top];
+			cairo_move_to(cr, 0 * 5.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+
+			for(int i = 1; i < _FPS_WINDOWS; ++i) {
+				int frm = (_fps_top + i) % _FPS_WINDOWS;
+				double xdmg = _repaired_area[frm];
+				cairo_line_to(cr, i * 2.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+			}
+			cairo_stroke(cr);
 			cairo_restore(cr);
-#endif
 
 		}
 	}
+
+	_damaged.clear();
 
 	CHECK_CAIRO(cairo_surface_flush(_back_buffer));
 
@@ -394,7 +412,7 @@ void compositor_t::update_layout() {
 	if(composite_back_buffer != None)
 		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
 
-	//_desktop_region.clear();
+	_desktop_region.clear();
 
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_cnx->dpy(),
 			DefaultRootWindow(_cnx->dpy()));
@@ -406,13 +424,13 @@ void compositor_t::update_layout() {
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
 			rectangle area(info->x, info->y, info->width, info->height);
-			//_desktop_region = _desktop_region + area;
+			_desktop_region = _desktop_region + area;
 		}
 		XRRFreeCrtcInfo(info);
 	}
 	XRRFreeScreenResources(resources);
 
-	//printf("layout = %s\n", _desktop_region.to_string().c_str());
+	printf("layout = %s\n", _desktop_region.to_string().c_str());
 
 	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, XdbeCopied);
 
@@ -451,6 +469,45 @@ Window compositor_t::get_composite_overlay() {
 
 void compositor_t::renderable_clear() {
 	_graph_scene.clear();
+}
+
+void compositor_t::pango_printf(cairo_t * cr, double x, double y,
+		char const * fmt, ...) {
+
+#ifdef WITH_PANGO
+
+	va_list l;
+	va_start(l, fmt);
+
+	cairo_save(cr);
+	cairo_identity_matrix(cr);
+	cairo_move_to(cr, x, y);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+
+	static char buffer[4096];
+	vsnprintf(buffer, 4096, fmt, l);
+
+	PangoLayout * pango_layout = pango_layout_new(_fps_context);
+	pango_layout_set_font_description(pango_layout, _fps_font_desc);
+	pango_cairo_update_layout(cr, pango_layout);
+	pango_layout_set_text(pango_layout, buffer, -1);
+	pango_cairo_layout_path(cr, pango_layout);
+	g_object_unref(pango_layout);
+
+	cairo_set_line_width(cr, 3.0);
+	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+
+	cairo_stroke_preserve(cr);
+
+	cairo_set_line_width(cr, 1.0);
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_fill(cr);
+
+	cairo_restore(cr);
+#endif
+
 }
 
 }

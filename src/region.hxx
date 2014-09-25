@@ -28,70 +28,61 @@ class region_t : public vector<rectangle_t<T> > {
 
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
-		remove_empty(lst);
 		merge_area_macro(lst);
+		remove_empty(lst);
 		return lst;
 	}
 
 	/** merge 2 rectangles when it is possible **/
 	static void merge_area_macro(region_t & list) {
-		auto i = list.begin();
-		while (i != list.end()) {
-
-			/** skip null boxes **/
-			if(i->is_null()) {
-				++i;
-				continue;
-			}
-
-			auto j = i;
-			++j;
-			while (j != list.end()) {
-
-				/** skip null boxes **/
-				if(j->is_null()) {
-					++j;
-					continue;
-				}
-
+		bool end = false;
+		while (not end) {
+			end = true;
+			for (auto i = list.begin(); i != list.end(); ++i) {
 				_box_t & bi = *i;
-				_box_t & bj = *j;
-
-				/** left/right **/
-				if (bi.x + bi.w == bj.x && bi.y == bj.y && bi.h == bj.h) {
-					bi = _box_t(bi.x, bi.y, bj.w + bi.w, bi.h);
-					bj = _box_t();
-					++j;
+				if (bi.is_null()) {
 					continue;
 				}
 
-				/** right/left **/
-				if (bi.x == bj.x + bj.w && bi.y == bj.y && bi.h == bj.h) {
-					bi = _box_t(bj.x, bj.y, bj.w + bi.w, bj.h);
-					bj = _box_t();
-					++j;
-					continue;
-				}
+				for (auto j = i + 1; j != list.end(); ++j) {
+					_box_t & bj = *j;
+					if (bj.is_null()) {
+						continue;
+					}
 
-				/** top/bottom **/
-				if (bi.y == bj.y + bj.h && bi.x == bj.x && bi.w == bj.w) {
-					bi = _box_t(bj.x, bj.y, bj.w, bj.h + bi.h);
-					bj = _box_t();
-					++j;
-					continue;
-				}
+					/** left/right **/
+					if (bi.x + bi.w == bj.x and bi.y == bj.y and bi.h == bj.h) {
+						bi = _box_t(bi.x, bi.y, bj.w + bi.w, bi.h);
+						bj = _box_t();
+						end = false;
+						continue;
+					}
 
-				/** bottom/top **/
-				if (bi.y + bi.h == bj.y && bi.x == bj.x && bi.w == bj.w) {
-					bi = _box_t(bi.x, bi.y, bi.w, bj.h + bi.h);
-					bj = _box_t();
-					++j;
-					continue;
-				}
+					/** right/left **/
+					if (bi.x == bj.x + bj.w and bi.y == bj.y and bi.h == bj.h) {
+						bi = _box_t(bj.x, bj.y, bj.w + bi.w, bj.h);
+						bj = _box_t();
+						end = false;
+						continue;
+					}
 
-				++j;
+					/** top/bottom **/
+					if (bi.y == bj.y + bj.h and bi.x == bj.x and bi.w == bj.w) {
+						bi = _box_t(bj.x, bj.y, bj.w, bj.h + bi.h);
+						bj = _box_t();
+						end = false;
+						continue;
+					}
+
+					/** bottom/top **/
+					if (bi.y + bi.h == bj.y and bi.x == bj.x and bi.w == bj.w) {
+						bi = _box_t(bi.x, bi.y, bi.w, bj.h + bi.h);
+						bj = _box_t();
+						end = false;
+						continue;
+					}
+				}
 			}
-			++i;
 		}
 	}
 
@@ -378,11 +369,16 @@ public:
 	/** make string **/
 	string to_string() const {
 		std::ostringstream os;
-		for(auto const & i : *this) {
-			if (&i != this->begin())
-				os << ",";
-			os << i->to_string();
+		auto i = this->begin();
+		if(i == this->end())
+			return os.str();
+		os << i->to_string();
+		++i;
+		while(i != this->end()) {
+			os << "," << i->to_string();
+			++i;
 		}
+
 		return os.str();
 	}
 
@@ -391,6 +387,15 @@ public:
 			i.x += x;
 			i.y += y;
 		}
+	}
+
+
+	T area() {
+		T ret{T()};
+		for(auto &i: *this) {
+			ret += i.w * i.h;
+		}
+		return ret;
 	}
 
 };

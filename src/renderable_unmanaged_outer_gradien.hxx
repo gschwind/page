@@ -128,7 +128,7 @@ public:
 	 * If unknown it's safe to leave this empty.
 	 **/
 	virtual region get_opaque_region() {
-		return region();
+		return region{};
 	}
 
 	/**
@@ -153,7 +153,7 @@ public:
 	}
 
 	virtual region get_damaged() {
-		return region();
+		return region{};
 	}
 
 

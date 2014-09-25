@@ -47,7 +47,7 @@ struct rectangle_t {
 	}
 
 	bool is_null() const {
-		return (w <= 0 || h <= 0);
+		return (w <= 0 or h <= 0);
 	}
 
 	std::string to_string() const {

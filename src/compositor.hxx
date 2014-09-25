@@ -65,16 +65,18 @@ private:
 
 	vector<ptr<renderable_t>> _graph_scene;
 
-	static int const _FPS_WINDOWS = 33;
+	static int const _FPS_WINDOWS = 80;
 	int _fps_top;
 	page::time_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
+	int _repaired_area[_FPS_WINDOWS];
 
 	bool _need_render;
 
 	map<Window, Damage> _damage_event;
 
 	region _damaged;
+	region _desktop_region;
 
 #ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
@@ -180,6 +182,8 @@ public:
 	void push_back_renderable(vector<ptr<renderable_t>> const & r) {
 		_graph_scene += r;
 	}
+
+	void pango_printf(cairo_t * cr, double x, double y, char const * fmt, ...);
 
 
 };
