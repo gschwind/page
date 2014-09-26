@@ -318,6 +318,7 @@ simple2_theme_t::~simple2_theme_t() {
 		warn(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
+		XFreePixmap(_cnx->dpy(), background_p);
 	}
 	warn(cairo_surface_get_reference_count(hsplit_button_s) == 1);
 	cairo_surface_destroy(hsplit_button_s);
@@ -1427,7 +1428,10 @@ void simple2_theme_t::create_background_img() {
 		XWindowAttributes wa;
 		XGetWindowAttributes(_cnx->dpy(), _cnx->root(), &wa);
 
-		background_s = cairo_image_surface_create(CAIRO_FORMAT_RGB24, wa.width,
+
+		background_p = XCreatePixmap(_cnx->dpy(), _cnx->root(), wa.width, wa.height, wa.depth);
+
+		background_s = cairo_xlib_surface_create(_cnx->dpy(), background_p, wa.visual, wa.width,
 				wa.height);
 
 		/**

@@ -141,6 +141,13 @@ public:
 		ratio = std::min(std::max(0.0, x), 1.0);
 	}
 
+	void update_next(ptr<pixmap_t> const & next) {
+		next_surf = next;
+	}
+
+	void update_next_pos(i_rect const & next_pos) {
+		this->next_pos = next_pos;
+	}
 
 };
 

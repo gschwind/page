@@ -38,7 +38,7 @@ public:
 		_cnx = cnx;
 		XWindowAttributes wa;
 		XGetWindowAttributes(cnx->dpy(), cnx->root(), &wa);
-		pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, 24);
+		pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, wa.depth);
 		_back_surf = cairo_xlib_surface_create(cnx->dpy(), pix, wa.visual, wa.width, wa.height);
 
 

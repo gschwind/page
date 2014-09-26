@@ -545,8 +545,15 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 		double ratio = (static_cast<double>(time - swap_start) / static_cast<double const>(animation_duration));
 		//ratio = (cos(ratio*M_PI-M_PI)*1.05+1.0)/2.0;
 
+		if (_selected != nullptr) {
+			if (_selected->surf() != nullptr) {
+				fading_notebook->update_next(_selected->surf()->get_pixmap());
+				fading_notebook->update_next_pos(_selected->get_base_position());
+			}
+		}
+
 		fading_notebook->set_ratio(ratio);
-		printf("ratio = %f\n", ratio);
+		//printf("ratio = %f\n", ratio);
 		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
 
 	} else {

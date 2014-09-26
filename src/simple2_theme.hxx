@@ -71,6 +71,8 @@ public:
 
 	cairo_surface_t * background_s;
 
+	Pixmap background_p;
+
 	color_t default_background_color;
 
 	color_t popup_text_color;
