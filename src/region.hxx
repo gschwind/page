@@ -21,7 +21,7 @@ namespace page {
 using namespace std;
 
 template<typename T>
-class region_t : public vector<rectangle_t<T> > {
+class region_t : public vector<rectangle_t<T>> {
 	/** short cut for the superior class **/
 	using super = vector<rectangle_t<T> >;
 	using _box_t = rectangle_t<T>;
@@ -234,6 +234,14 @@ public:
 	region_t(region_t const & r) : super(r) { }
 
 	region_t(region_t const && r) : super(r) { }
+
+	template<typename U>
+	region_t(vector<U> const & v) {
+		for (int i = 0; i + 3 < v.size(); i += 4) {
+			super::push_back(_box_t ( v[i + 0], v[i + 1], v[i + 2], v[i + 3] ));
+		}
+	}
+
 
 	region_t(_box_t const & b) {
 		if (!b.is_null())

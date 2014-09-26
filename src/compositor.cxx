@@ -87,6 +87,10 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	/* this will scan for all windows */
 	update_layout();
 
+	_forecast_count = 0;
+	_missed_forecast = 0;
+	back_buffer_state = XdbeCopied;
+
 }
 
 compositor_t::~compositor_t() {
@@ -131,9 +135,16 @@ void compositor_t::render() {
 	 * We prefer no copy buffer swapping else copy buffer.
 	 * maybe a lower threthold is better.
 	 **/
-	if((double)_damaged.area()/(double)_desktop_region.area() > 0.75) {
+	_forecast_count += 1;
+	if((double)_damaged.area()/(double)_desktop_region.area() > 0.50) {
+		if(back_buffer_state == XdbeCopied) {
+			_missed_forecast += 1;
+		}
 		back_buffer_state = XdbeUndefined;
 	} else {
+		if(back_buffer_state == XdbeUndefined) {
+			_missed_forecast += 1;
+		}
 		back_buffer_state = XdbeCopied;
 	}
 
@@ -223,6 +234,7 @@ void compositor_t::render() {
 					/ (static_cast<int64_t>(_fps_history[_fps_top])
 							- static_cast<int64_t>(_fps_history[_fps_head]));
 			pango_printf(cr, 40.0, 40.0, "fps: %.1f", fps);
+			pango_printf(cr, 40.0, 60.0, "miss rate: %.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
 
 			cairo_save(cr);
 			cairo_identity_matrix(cr);

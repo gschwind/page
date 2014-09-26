@@ -11,6 +11,7 @@
 #define CLIENT_PROPERTIES_HXX_
 
 #include <X11/X.h>
+#include <X11/extensions/shape.h>
 
 #include "utils.hxx"
 #include "motif_hints.hxx"
@@ -71,6 +72,8 @@ private:
 	/* OTHERs */
 	motif_wm_hints_t *           _motif_hints;
 
+	region *                     _shape;
+
 	/** short cut **/
 	Atom A(atom_e atom) {
 		return _cnx->A(atom);
@@ -121,6 +124,8 @@ public:
 
 		_motif_hints = safe_copy(c._motif_hints);
 
+		_shape = safe_copy(c._shape);
+
 	}
 
 	client_properties_t(display_t * cnx, Window id) :
@@ -163,6 +168,8 @@ public:
 		__net_wm_bypass_compositor = nullptr;
 
 		_motif_hints = nullptr;
+
+		_shape = nullptr;
 
 	}
 
@@ -207,6 +214,8 @@ public:
 
 		update_motif_hints();
 
+		update_shape();
+
 	}
 
 	void delete_all_properties() {
@@ -245,6 +254,8 @@ public:
 		safe_delete(__net_wm_bypass_compositor);
 
 		safe_delete(_motif_hints);
+
+		safe_delete(_shape);
 
 	}
 
@@ -400,6 +411,25 @@ public:
 	void update_motif_hints() {
 		safe_delete(_motif_hints);
 		_motif_hints = _cnx->read_motif_wm_hints(_id);
+	}
+
+	void update_shape() {
+		safe_delete(_shape);
+
+		int count;
+		int ordering;
+		XRectangle * rect = XShapeGetRectangles(_cnx->dpy(), _id, ShapeBounding, &count, &ordering);
+
+		printf("Shape %d %d\n", count, ordering);
+
+		if (rect != NULL) {
+			_shape = new region{};
+			for (unsigned i = 0; i < count; ++i) {
+				*_shape += rectangle(rect[i]);
+			}
+			XFree(rect);
+		}
+
 	}
 
 
@@ -738,6 +768,7 @@ public:
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const { return _motif_hints; }
 
+	region const *                     shape() const { return _shape; }
 
 	void net_wm_state_add(atom_e atom) {
 		if(__net_wm_state == nullptr) {

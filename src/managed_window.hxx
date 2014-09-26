@@ -298,12 +298,14 @@ public:
 		XSelectInput(cnx()->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
 		XSelectInput(cnx()->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 		XSelectInput(cnx()->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+		XShapeSelectInput(cnx()->dpy(), _orig, ShapeNotifyMask);
 	}
 
 	void unselect_inputs() {
 		XSelectInput(cnx()->dpy(), _base, NoEventMask);
 		XSelectInput(cnx()->dpy(), _deco, NoEventMask);
 		XSelectInput(cnx()->dpy(), _orig, NoEventMask);
+		XShapeSelectInput(cnx()->dpy(), _orig, 0);
 	}
 
 	bool is_fullscreen() {
@@ -535,18 +537,49 @@ public:
 		if (_composite_surf != nullptr) {
 
 			rectangle loc = base_position();
+			rectangle pos { base_position() };
+			region vis{0,0,(int)pos.w,(int)pos.h};
+			region opa;
+			region shp;
+
+			if(shape() != nullptr) {
+				shp = *shape();
+			} else {
+				shp = rectangle(0, 0, _orig_position.w, _orig_position.h);
+			}
+
+			if (net_wm_opaque_region() != nullptr) {
+				opa = region { *(net_wm_opaque_region()) };
+			} else {
+				if (wa().depth == 24) {
+					opa = region { _orig_position };
+				}
+			}
+
+			opa &= shp;
+
+			opa.translate(pos.x + _orig_position.x, pos.y + _orig_position.y);
+
+			shp.translate(_orig_position.x, _orig_position.y);
+			//vis -= _orig_position;
+			//vis += shp;
+
+			vis.translate(pos.x, pos.y);
+
 
 			if (_motif_has_border) {
 				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 6.0);
 				out += ptr<renderable_t> { x };
 			}
 
-			rectangle pos { base_position() };
+
 			region dmg { _composite_surf->get_damaged() };
 			_composite_surf->clear_damaged();
 			dmg.translate(pos.x, pos.y);
 			auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
 					pos, dmg);
+			x->set_opaque_region(opa);
+			x->set_visible_region(vis);
 			out += ptr<renderable_t>{x};
 
 		}

@@ -43,6 +43,8 @@ public:
 		_properties->cnx()->grab();
 		XSelectInput(_properties->cnx()->dpy(), _properties->id(),
 				UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+		XShapeSelectInput(_properties->cnx()->dpy(), _properties->id(), ShapeNotifyMask);
+
 		_properties->cnx()->ungrab();
 		surf = composite_surface_manager_t::get(_properties->cnx()->dpy(),
 				base());

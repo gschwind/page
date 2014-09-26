@@ -18,7 +18,6 @@ namespace page {
 struct popup_frame_move_t: public window_overlay_t {
 
 	theme_t * _theme;
-
 	window_icon_handler_t * icon;
 	string title;
 

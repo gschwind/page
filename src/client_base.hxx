@@ -199,6 +199,10 @@ public:
 		_properties->update_motif_hints();
 	}
 
+	void update_shape() {
+		_properties->update_shape();
+	}
+
 
 	bool has_motif_border() {
 		if (_properties->motif_hints() != nullptr) {
@@ -464,6 +468,7 @@ public:
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const { return _properties->motif_hints(); }
 
+	region const *                     shape() const { return _properties->shape(); }
 
 };
 

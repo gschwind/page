@@ -25,11 +25,14 @@ class renderable_pixmap_t : public renderable_t {
 	rectangle location;
 	ptr<pixmap_t> surf;
 	region damaged;
+	region opaque_region;
+	region visible_region;
 
 public:
 
 	renderable_pixmap_t(ptr<pixmap_t> s, rectangle loc, region damaged) : damaged(damaged), surf(s), location(loc) {
-		location.round();
+		opaque_region = region(loc);
+		visible_region = region(loc);
 	}
 
 	virtual ~renderable_pixmap_t() { }
@@ -44,7 +47,7 @@ public:
 			if (surf->get_cairo_surface() != nullptr) {
 				cairo_set_source_surface(cr, surf->get_cairo_surface(),
 						location.x, location.y);
-				region r = region(location) & area;
+				region r = visible_region & area;
 				for (auto &i : r) {
 					i.round(); // force integer
 					cairo_rectangle(cr, i.x, i.y, i.w, i.h	);
@@ -59,7 +62,7 @@ public:
 	 * If unknown it's safe to leave this empty.
 	 **/
 	virtual region get_opaque_region() {
-		return region(location);
+		return opaque_region;
 	}
 
 	/**
@@ -67,11 +70,19 @@ public:
 	 * If unknow the whole screen can be returned, but draw will be called each time.
 	 **/
 	virtual region get_visible_region() {
-		return region(location);
+		return visible_region;
 	}
 
 	virtual region get_damaged() {
 		return damaged;
+	}
+
+	void set_opaque_region(region const & r) {
+		opaque_region = r;
+	}
+
+	void set_visible_region(region const & r) {
+		visible_region = r;
 	}
 
 

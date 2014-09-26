@@ -74,6 +74,9 @@ private:
 
 	bool _need_render;
 
+	unsigned _missed_forecast;
+	unsigned _forecast_count;
+
 	map<Window, Damage> _damage_event;
 
 	region _damaged;

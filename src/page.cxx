@@ -541,6 +541,7 @@ void page_t::update_net_supported() {
 	supported_list.push_back(A(_NET_WM_STATE_HIDDEN));
 	supported_list.push_back(A(_NET_REQUEST_FRAME_EXTENTS));
 	supported_list.push_back(A(_NET_FRAME_EXTENTS));
+	supported_list.push_back(A(_NET_WM_OPAQUE_REGION));
 
 	supported_list.push_back(A(_NET_WM_ALLOWED_ACTIONS));
 	supported_list.push_back(A(_NET_WM_ACTION_FULLSCREEN));
@@ -2588,14 +2589,19 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == SelectionClear) {
 		running = false;
 	} else if (e.type == xshape_event + ShapeNotify) {
+		printf("shape notify\n");
 		XShapeEvent * se = (XShapeEvent *)&e;
-		if(se->kind == ShapeClip) {
-			//Window w = se->window;
+		if(true) {
+			Window w = se->window;
+			client_base_t * c = find_client(w);
+			if(c != nullptr) {
+				c->update_shape();
+			}
 		}
 	} else if (e.type == FocusOut) {
-		printf("FocusOut #%lu\n", e.xfocus.window);
+		//printf("FocusOut #%lu\n", e.xfocus.window);
 	} else if (e.type == FocusIn) {
-		printf("FocusIn #%lu\n", e.xfocus.window);
+		//printf("FocusIn #%lu\n", e.xfocus.window);
 	} else if (e.type == MappingNotify) {
 		update_keymap();
 		update_grabkey();
