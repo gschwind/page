@@ -78,7 +78,7 @@ using namespace std;
 namespace page {
 
 
-typedef std::list<rectangle> box_list_t;
+typedef std::list<i_rect> box_list_t;
 
 class page_t : public tree_t {
 
@@ -123,7 +123,7 @@ public:
 
 	struct mode_data_split_t {
 		split_t * split;
-		rectangle slider_area;
+		i_rect slider_area;
 		double split_ratio;
 
 		mode_data_split_t() {
@@ -132,7 +132,7 @@ public:
 
 		void reset() {
 			split = nullptr;
-			slider_area = rectangle();
+			slider_area = i_rect();
 			split_ratio = 0.5;
 		}
 
@@ -165,7 +165,7 @@ public:
 	struct mode_data_notebook_menu_t {
 		notebook_t * from;
 		bool active_grab;
-		rectangle b;
+		i_rect b;
 
 		mode_data_notebook_menu_t() {
 			reset();
@@ -218,10 +218,10 @@ public:
 		int y_offset;
 		int x_root;
 		int y_root;
-		rectangle original_position;
+		i_rect original_position;
 		managed_window_t * f;
-		rectangle popup_original_position;
-		rectangle final_position;
+		i_rect popup_original_position;
+		i_rect final_position;
 		unsigned int button;
 
 		mode_data_floating_t() {
@@ -234,10 +234,10 @@ public:
 			y_offset = 0;
 			x_root = 0;
 			y_root = 0;
-			original_position = rectangle();
+			original_position = i_rect();
 			f = nullptr;
-			popup_original_position = rectangle();
-			final_position = rectangle();
+			popup_original_position = i_rect();
+			final_position = i_rect();
 			button = Button1;
 		}
 
@@ -373,7 +373,7 @@ private:
 	Time _last_button_press;
 	list<managed_window_t *> _client_focused;
 
-	rectangle _root_position;
+	i_rect _root_position;
 
 	vector<page_event_t> * page_areas;
 
@@ -491,8 +491,8 @@ public:
 	/* close a notebook and unsplit the parent */
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(popup_notebook0_t * p, rectangle & position);
-	void update_popup_position(popup_frame_move_t * p, rectangle & position);
+	void update_popup_position(popup_notebook0_t * p, i_rect & position);
+	void update_popup_position(popup_frame_move_t * p, i_rect & position);
 
 	/* compute the allocation of viewport taking in account DOCKs */
 	void compute_viewport_allocation(viewport_t & v);

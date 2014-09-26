@@ -25,14 +25,14 @@ class window_overlay_t {
 	static long const OVERLAY_EVENT_MASK = ExposureMask | StructureNotifyMask;
 
 protected:
-	rectangle _position;
+	i_rect _position;
 
 	bool _has_alpha;
 	bool _is_durty;
 	bool _is_visible;
 
 public:
-	window_overlay_t(rectangle position = rectangle(-10,-10, 1, 1)) {
+	window_overlay_t(i_rect position = i_rect(-10,-10, 1, 1)) {
 		_position = position;
 		_has_alpha = true;
 		_is_durty = true;
@@ -47,7 +47,7 @@ public:
 
 	}
 
-	void move_resize(rectangle const & area) {
+	void move_resize(i_rect const & area) {
 		_position = area;
 	}
 
@@ -68,7 +68,7 @@ public:
 		return _is_visible;
 	}
 
-	rectangle const & position() {
+	i_rect const & position() {
 		return _position;
 	}
 

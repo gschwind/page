@@ -83,7 +83,7 @@ public:
 					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 				cairo_save(cr);
 
-//				draw_outer_graddien(cr, rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height), 4.0);
+//				draw_outer_graddien(cr, i_rect(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height), 4.0);
 //
 //				unsigned const int _shadow_width = 4;
 //
@@ -219,7 +219,7 @@ public:
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
-		rectangle pos(_properties->wa().x, _properties->wa().y,
+		i_rect pos(_properties->wa().x, _properties->wa().y,
 				_properties->wa().width, _properties->wa().height);
 
 		Atom t = type();
@@ -245,6 +245,10 @@ public:
 		return false;
 	}
 
+	i_rect get_visible() {
+		i_rect rec{allocation()};
+		return rec;
+	}
 
 };
 

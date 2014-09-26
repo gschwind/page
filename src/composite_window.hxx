@@ -51,7 +51,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //
 //	display_t * _cnx;
 //	Window _wid;
-//	rectangle _position;
+//	i_rect _position;
 //	bool _has_alpha;
 //
 //	region _region;
@@ -84,7 +84,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //		_wid = w;
 //
 //		/** copy usefull window attributes **/
-//		_position = rectangle(wa->x, wa->y, wa->width, wa->height);
+//		_position = i_rect(wa->x, wa->y, wa->width, wa->height);
 //
 //		/** guess if window has alpha channel **/
 //		_has_alpha = false;
@@ -108,14 +108,14 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //
 //	}
 //
-////	void draw_to(cairo_t * cr, rectangle const & area) {
+////	void draw_to(cairo_t * cr, i_rect const & area) {
 ////		if (_surf == nullptr)
 ////			return;
 ////		if (_surf->get_pixmap() == None)
 ////			return;
 ////
-////		rectangle clip = area
-////				& rectangle(_position.x, _position.y, _position.w, _position.h);
+////		i_rect clip = area
+////				& i_rect(_position.x, _position.y, _position.w, _position.h);
 ////
 ////		if (clip.w > 0 && clip.h > 0) {
 ////
@@ -161,7 +161,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //
 //		if (count > 0) {
 //			for (int i = 0; i < count; ++i) {
-//				_region += rectangle(recs[i]);
+//				_region += i_rect(recs[i]);
 //			}
 //
 //			_region.translate(_position.x, _position.y);
@@ -169,7 +169,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //			/* In doubt */
 //			XFree(recs);
 //		} else {
-//			_region = rectangle(_position.x, _position.y, _position.w,
+//			_region = i_rect(_position.x, _position.y, _position.w,
 //					_position.h);
 //		}
 //	}
@@ -179,7 +179,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //		std::vector<long> * data = _cnx->read_net_wm_opaque_region(w);
 //		if(data != 0) {
 //			for(int i = 0; i < data->size() / 4; ++i) {
-//				ret += rectangle((*data)[i*4+0],(*data)[i*4+1],(*data)[i*4+2],(*data)[i*4+3]);
+//				ret += i_rect((*data)[i*4+0],(*data)[i*4+1],(*data)[i*4+2],(*data)[i*4+3]);
 //			}
 //			delete data;
 //		}
@@ -212,13 +212,13 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //		return _wid;
 //	}
 //
-//	rectangle const & position() {
+//	i_rect const & position() {
 //		return _position;
 //	}
 //
 //	void update_position(XConfigureEvent const & ev) {
-//		if (_position != rectangle(ev.x, ev.y, ev.width, ev.height)) {
-//			_position = rectangle(ev.x, ev.y, ev.width, ev.height);
+//		if (_position != i_rect(ev.x, ev.y, ev.width, ev.height)) {
+//			_position = i_rect(ev.x, ev.y, ev.width, ev.height);
 //			update_shape();
 //			update_opaque_region();
 //		}

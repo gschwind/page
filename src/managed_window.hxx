@@ -46,14 +46,14 @@ private:
 	Atom _net_wm_type;
 
 	/** hold floating position **/
-	rectangle _floating_wished_position;
+	i_rect _floating_wished_position;
 
 	/** hold notebook position **/
-	rectangle _notebook_wished_position;
+	i_rect _notebook_wished_position;
 
-	rectangle _wished_position;
-	rectangle _orig_position;
-	rectangle _base_position;
+	i_rect _wished_position;
+	i_rect _orig_position;
+	i_rect _base_position;
 
 	// the output surface (i.e. surface where we write things)
 	cairo_surface_t * _surf;
@@ -104,16 +104,16 @@ public:
 	void reconfigure();
 	void fake_configure();
 
-	void set_wished_position(rectangle const & position);
-	rectangle const & get_wished_position() const;
+	void set_wished_position(i_rect const & position);
+	i_rect const & get_wished_position() const;
 
 	void delete_window(Time t);
 
-	bool check_orig_position(rectangle const & position);
-	bool check_base_position(rectangle const & position);
+	bool check_orig_position(i_rect const & position);
+	bool check_base_position(i_rect const & position);
 
 
-	rectangle get_base_position() const;
+	i_rect get_base_position() const;
 
 	void set_managed_type(managed_window_type_e type);
 
@@ -222,7 +222,7 @@ public:
 		expose();
 	}
 
-	rectangle const & base_position() const {
+	i_rect const & base_position() const {
 		return _base_position;
 	}
 
@@ -384,19 +384,19 @@ public:
 		cnx()->delete_property(_orig, WM_STATE);
 	}
 
-	void set_floating_wished_position(rectangle & pos) {
+	void set_floating_wished_position(i_rect & pos) {
 		_floating_wished_position = pos;
 	}
 
-	void set_notebook_wished_position(rectangle & pos) {
+	void set_notebook_wished_position(i_rect & pos) {
 		_notebook_wished_position = pos;
 	}
 
-	rectangle const & get_wished_position() {
+	i_rect const & get_wished_position() {
 		return _wished_position;
 	}
 
-	rectangle const & get_floating_wished_position() {
+	i_rect const & get_floating_wished_position() {
 		return _floating_wished_position;
 	}
 
@@ -496,10 +496,10 @@ public:
 //			shared_ptr<pixmap_t> p = _composite_surf->get_pixmap();
 //			if (p != nullptr) {
 //				cairo_surface_t * s = p->get_cairo_surface();
-//				rectangle loc = base_position();
+//				i_rect loc = base_position();
 //
 //				if(_motif_has_border) {
-//					draw_outer_graddien2(cr, rectangle(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
+//					draw_outer_graddien2(cr, i_rect(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
 //				}
 //
 //
@@ -536,8 +536,8 @@ public:
 
 		if (_composite_surf != nullptr) {
 
-			rectangle loc = base_position();
-			rectangle pos { base_position() };
+			i_rect loc = base_position();
+			i_rect pos { base_position() };
 			region vis{0,0,(int)pos.w,(int)pos.h};
 			region opa;
 			region shp;
@@ -545,7 +545,7 @@ public:
 			if(shape() != nullptr) {
 				shp = *shape();
 			} else {
-				shp = rectangle(0, 0, _orig_position.w, _orig_position.h);
+				shp = i_rect(0, 0, _orig_position.w, _orig_position.h);
 			}
 
 			if (net_wm_opaque_region() != nullptr) {
@@ -587,6 +587,12 @@ public:
 		tree_t::_prepare_render(out, time);
 
 	}
+
+	i_rect get_visible() {
+		i_rect rec{_base_position};
+		return rec;
+	}
+
 };
 
 }

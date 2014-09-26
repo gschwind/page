@@ -14,7 +14,7 @@
 
 namespace page {
 
-viewport_t::viewport_t(theme_t * theme, rectangle const & area) : raw_aera(area), effective_aera(area) {
+viewport_t::viewport_t(theme_t * theme, i_rect const & area) : raw_aera(area), effective_aera(area) {
 	_subtree = nullptr;
 	_is_visible = true;
 	_theme = theme;
@@ -55,22 +55,22 @@ void viewport_t::reconfigure() {
 	}
 }
 
-void viewport_t::set_allocation(rectangle const & area) {
+void viewport_t::set_allocation(i_rect const & area) {
 	set_effective_area(area);
 }
 
-void viewport_t::set_raw_area(rectangle const & area) {
+void viewport_t::set_raw_area(i_rect const & area) {
 	raw_aera = area;
 }
 
-void viewport_t::set_effective_area(rectangle const & area) {
+void viewport_t::set_effective_area(i_rect const & area) {
 	effective_aera = area;
 	if(_subtree != 0) {
 		_subtree->set_allocation(effective_aera);
 	}
 }
 
-rectangle viewport_t::get_absolute_extend() {
+i_rect viewport_t::get_absolute_extend() {
 	return raw_aera;
 }
 

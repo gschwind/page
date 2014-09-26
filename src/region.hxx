@@ -21,10 +21,10 @@ namespace page {
 using namespace std;
 
 template<typename T>
-class region_t : public vector<rectangle_t<T>> {
+class region_t : public vector<i_rect_t<T>> {
 	/** short cut for the superior class **/
-	using super = vector<rectangle_t<T> >;
-	using _box_t = rectangle_t<T>;
+	using super = vector<i_rect_t<T> >;
+	using _box_t = i_rect_t<T>;
 
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
@@ -33,7 +33,7 @@ class region_t : public vector<rectangle_t<T>> {
 		return lst;
 	}
 
-	/** merge 2 rectangles when it is possible **/
+	/** merge 2 i_rects when it is possible **/
 	static void merge_area_macro(region_t & list) {
 		bool end = false;
 		while (not end) {
@@ -229,9 +229,13 @@ class region_t : public vector<rectangle_t<T>> {
 public:
 
 	/** create an empty region **/
-	region_t() : super() { }
+	region_t() : super() {
+		//printf("capacity = %lu\n", this->capacity());
+	}
 
-	region_t(region_t const & r) : super(r) { }
+	region_t(region_t const & r) : super(r) {
+		//printf("capacity = %lu\n", this->capacity());
+	}
 
 	region_t(region_t const && r) : super(r) { }
 
@@ -242,7 +246,6 @@ public:
 		}
 	}
 
-
 	region_t(_box_t const & b) {
 		if (!b.is_null())
 			this->push_back(b);
@@ -252,6 +255,10 @@ public:
 		_box_t b(x, y, w, h);
 		if (!b.is_null())
 			this->push_back(b);
+	}
+
+	~region_t() {
+		//printf("capacity = %lu\n", this->capacity());
 	}
 
 	region_t & operator =(_box_t const & b) {

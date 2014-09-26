@@ -22,7 +22,7 @@
 namespace page {
 
 template<typename T>
-struct rectangle_t {
+struct i_rect_t {
 	T x, y;
 	T w, h;
 
@@ -30,19 +30,19 @@ struct rectangle_t {
 		return (x <= _x && _x < x + w && y <= _y && _y < y + h);
 	}
 
-	rectangle_t(rectangle_t const & b) :
+	i_rect_t(i_rect_t const & b) :
 			x(b.x), y(b.y), w(b.w), h(b.h) {
 	}
 
-	rectangle_t() :
+	i_rect_t() :
 			x(), y(), w(), h() {
 	}
 
-	rectangle_t(T x, T y, T w, T h) :
+	i_rect_t(T x, T y, T w, T h) :
 			x(x), y(y), w(w), h(h) {
 	}
 
-	rectangle_t(XRectangle const & rec) :
+	i_rect_t(XRectangle const & rec) :
 			x(rec.x), y(rec.y), w(rec.width), h(rec.height) {
 	}
 
@@ -57,17 +57,17 @@ struct rectangle_t {
 		return os.str();
 	}
 
-	bool operator==(rectangle_t const & b) const {
+	bool operator==(i_rect_t const & b) const {
 		return (b.x == x and b.y == y and b.w == w and b.h == h);
 	}
 
-	bool operator!=(rectangle_t const & b) const {
+	bool operator!=(i_rect_t const & b) const {
 		return (b.x != x or b.y != y or b.w != w or b.h != h);
 	}
 
 	/* compute the smallest area that include 2 boxes */
-	rectangle_t get_max_extand(rectangle_t const & b) const {
-		rectangle_t<T> result;
+	i_rect_t get_max_extand(i_rect_t const & b) const {
+		i_rect_t<T> result;
 		result.x = std::min(x, b.x);
 		result.y = std::min(y, b.y);
 		result.w = std::max(x + w, b.x + b.w) - result.x;
@@ -75,7 +75,7 @@ struct rectangle_t {
 		return result;
 	}
 
-	bool has_intersection(rectangle_t const & b) const {
+	bool has_intersection(i_rect_t const & b) const {
 		T left = std::max(x, b.x);
 		T right = std::min(x + w, b.x + b.w);
 
@@ -92,7 +92,7 @@ struct rectangle_t {
 
 	}
 
-	rectangle_t & floor() {
+	i_rect_t & floor() {
 		x = ::floor(x);
 		y = ::floor(y);
 		w = ::floor(w);
@@ -100,7 +100,7 @@ struct rectangle_t {
 		return *this;
 	}
 
-	rectangle_t & round() {
+	i_rect_t & round() {
 		x = ::floor(x+0.5);
 		y = ::floor(y+0.5);
 		w = ::floor(w+0.5);
@@ -108,7 +108,7 @@ struct rectangle_t {
 		return *this;
 	}
 
-	rectangle_t & ceil() {
+	i_rect_t & ceil() {
 		x = ::ceil(x);
 		y = ::ceil(y);
 		w = ::ceil(w);
@@ -116,9 +116,9 @@ struct rectangle_t {
 		return *this;
 	}
 
-	rectangle_t & operator&=(rectangle_t const & b) {
+	i_rect_t & operator&=(i_rect_t const & b) {
 		if(this == &b) {
-			*this = rectangle_t<T>(0, 0, 0, 0);
+			*this = i_rect_t<T>(0, 0, 0, 0);
 			return *this;
 		}
 
@@ -128,30 +128,30 @@ struct rectangle_t {
 		T bottom = std::min(y + h, b.y + b.h);
 
 		if (right <= left || bottom <= top) {
-			*this = rectangle_t<T>(0, 0, 0, 0);
+			*this = i_rect_t<T>(0, 0, 0, 0);
 		} else {
-			*this = rectangle_t<T>(left, top, right - left, bottom - top);
+			*this = i_rect_t<T>(left, top, right - left, bottom - top);
 		}
 
 		return *this;
 	}
 
-	rectangle_t operator&(rectangle_t const & b) const {
-		rectangle_t<T> x = *this;
+	i_rect_t operator&(i_rect_t const & b) const {
+		i_rect_t<T> x = *this;
 		return (x &= b);
 	}
 
 	template<typename U>
-	operator rectangle_t<U>() const {
-		return rectangle_t<U>(x, y, w, h);
+	operator i_rect_t<U>() const {
+		return i_rect_t<U>(x, y, w, h);
 	}
 
 };
 
-typedef rectangle_t<double> rectangle;
+//typedef i_rect_t<double> i_rect;
 
-using i_rect = rectangle_t<int>;
-using d_rect = rectangle_t<double>;
+using i_rect = i_rect_t<int>;
+using d_rect = i_rect_t<double>;
 
 
 }

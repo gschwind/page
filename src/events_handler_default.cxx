@@ -135,7 +135,7 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 			int y = v.size() / 4 + 1;
 
 			pat->move_resize(
-					rectangle(
+					i_rect(
 							viewport->raw_aera.x
 									+ (viewport->raw_aera.w - 80 * 4) / 2,
 							viewport->raw_aera.y
@@ -484,7 +484,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 			rpage->add_damaged(mode_data_split.split->allocation());
 
 			mode_data_split.split = 0;
-			mode_data_split.slider_area = rectangle();
+			mode_data_split.slider_area = i_rect();
 			mode_data_split.split_ratio = 0.5;
 
 			break;
@@ -609,10 +609,10 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
+			mode_data_floating.original_position = i_rect();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.popup_original_position = i_rect();
+			mode_data_floating.final_position = i_rect();
 
 			break;
 		case PROCESS_FLOATING_RESIZE:
@@ -631,10 +631,10 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
+			mode_data_floating.original_position = i_rect();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.popup_original_position = i_rect();
+			mode_data_floating.final_position = i_rect();
 
 			break;
 		case PROCESS_FLOATING_CLOSE: {
@@ -649,10 +649,10 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
+			mode_data_floating.original_position = i_rect();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.popup_original_position = i_rect();
+			mode_data_floating.final_position = i_rect();
 
 			break;
 		}
@@ -749,8 +749,8 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 void events_handler_default::process_event(XMotionEvent const & e)  {
 
 	XEvent ev;
-	rectangle old_area;
-	rectangle new_position;
+	i_rect old_area;
+	i_rect new_position;
 	static int count = 0;
 	count++;
 	switch (process_mode) {
@@ -889,7 +889,7 @@ void events_handler_default::process_event(XMotionEvent const & e)  {
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
 
 		/* compute new window position */
-		rectangle new_position = mode_data_floating.original_position;
+		i_rect new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
@@ -907,7 +907,7 @@ void events_handler_default::process_event(XMotionEvent const & e)  {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy, Button1MotionMask, &ev));
-		rectangle size = mode_data_floating.original_position;
+		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
 			size.w -= e.x_root - mode_data_floating.x_root;
@@ -1131,7 +1131,7 @@ void events_handler_default::process_event(XExposeEvent const & e) {
 
 	if (e.xexpose.window == rpage->id()) {
 		rpage->expose(
-				rectangle(e.xexpose.x, e.xexpose.y, e.xexpose.width,
+				i_rect(e.xexpose.x, e.xexpose.y, e.xexpose.width,
 						e.xexpose.height));
 	} else if (e.xexpose.window == pfm->id()) {
 		pfm->expose();
@@ -1307,7 +1307,7 @@ void events_handler_default::process_event(XConfigureRequestEvent const & e) {
 		if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
 			/** compute floating size **/
-			rectangle new_size = mw->get_floating_wished_position();
+			i_rect new_size = mw->get_floating_wished_position();
 
 			if (e.value_mask & CWX) {
 				new_size.x = e.x;
@@ -1330,7 +1330,7 @@ void events_handler_default::process_event(XConfigureRequestEvent const & e) {
 			if ((e.value_mask & (CWX)) and (e.value_mask & (CWY)) and e.x == 0
 					and e.y == 0 and !viewport_outputs.empty()) {
 				viewport_t * v = viewport_outputs.begin()->second;
-				rectangle b = v->get_absolute_extend();
+				i_rect b = v->get_absolute_extend();
 				/* place on center */
 				new_size.x = (b.w - new_size.w) / 2 + b.x;
 				new_size.y = (b.h - new_size.h) / 2 + b.y;
@@ -1442,7 +1442,7 @@ void events_handler_default::process_event(XPropertyEvent const & e)  {
 			}
 
 			/* apply normal hint to floating window */
-			rectangle new_size = mw->get_wished_position();
+			i_rect new_size = mw->get_wished_position();
 			unsigned int final_width = new_size.w;
 			unsigned int final_height = new_size.h;
 			compute_client_size_with_constraint(mw->orig(),

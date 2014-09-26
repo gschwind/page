@@ -22,7 +22,7 @@ namespace page {
 
 class renderable_pixmap_t : public renderable_t {
 
-	rectangle location;
+	i_rect location;
 	ptr<pixmap_t> surf;
 	region damaged;
 	region opaque_region;
@@ -30,7 +30,7 @@ class renderable_pixmap_t : public renderable_t {
 
 public:
 
-	renderable_pixmap_t(ptr<pixmap_t> s, rectangle loc, region damaged) : damaged(damaged), surf(s), location(loc) {
+	renderable_pixmap_t(ptr<pixmap_t> s, i_rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
 		opaque_region = region(loc);
 		visible_region = region(loc);
 	}

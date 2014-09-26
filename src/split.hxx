@@ -25,14 +25,14 @@ class split_t : public split_base_t {
 
 	theme_t const * _theme;
 
-	rectangle _split_bar_area;
+	i_rect _split_bar_area;
 	split_type_e _split_type;
 	double _split;
 	tree_t * _pack0;
 	tree_t * _pack1;
 
-	rectangle bpack0;
-	rectangle bpack1;
+	i_rect bpack0;
+	i_rect bpack1;
 
 	list<tree_t *> _children;
 
@@ -48,11 +48,11 @@ public:
 			tree_t * p1 = nullptr);
 	~split_t();
 	void replace(tree_t * src, tree_t * by);
-	void compute_split_bar_area(rectangle & area, double split) const;
-	rectangle get_absolute_extend();
-	void set_allocation(rectangle const & area);
+	void compute_split_bar_area(i_rect & area, double split) const;
+	i_rect get_absolute_extend();
+	void set_allocation(i_rect const & area);
 	void set_split(double split);
-	rectangle const & get_split_bar_area() const;
+	i_rect const & get_split_bar_area() const;
 	tree_t * get_pack0();
 	tree_t * get_pack1();
 	split_type_e get_split_type();
@@ -61,12 +61,12 @@ public:
 	void set_pack0(tree_t * x);
 	void set_pack1(tree_t * x);
 	/* compute the slider area */
-	void compute_split_location(double split, double & x, double & y) const;
+	void compute_split_location(double split, int & x, int & y) const;
 	/* compute the slider area */
-	void compute_split_size(double split, double & w, double & h) const;
+	void compute_split_size(double split, int & w, int & h) const;
 	double split() const;
 	split_type_e type() const;
-	void render_legacy(cairo_t * cr, rectangle const & area) const;
+	void render_legacy(cairo_t * cr, i_rect const & area) const;
 	list<tree_t *> childs() const;
 	void raise_child(tree_t * t);
 

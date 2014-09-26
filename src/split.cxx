@@ -30,18 +30,18 @@ split_t::~split_t() {
 
 }
 
-void split_t::set_allocation(rectangle const & allocation) {
+void split_t::set_allocation(i_rect const & allocation) {
 	tree_t::set_allocation(allocation);
 	update_allocation();
 }
 
 void split_t::update_allocation_pack0() {
 
-	rectangle b;
+	i_rect b;
 	if (_split_type == VERTICAL_SPLIT) {
 
-		rectangle bpack0;
-		rectangle bpack1;
+		i_rect bpack0;
+		i_rect bpack1;
 
 		int w = allocation().w - 2 * _theme->split_margin.left - 2 * _theme->split_margin.right - _theme->split_width;
 		int w0 = floor(w * _split + 0.5);
@@ -75,7 +75,7 @@ void split_t::update_allocation_pack0() {
 void split_t::update_allocation_pack1() {
 	if (_pack1 == nullptr)
 		return;
-	rectangle b;
+	i_rect b;
 	if (_split_type == VERTICAL_SPLIT) {
 
 	} else {
@@ -101,7 +101,7 @@ void split_t::replace(tree_t * src, tree_t * by) {
 	update_allocation();
 }
 
-rectangle split_t::get_absolute_extend() {
+i_rect split_t::get_absolute_extend() {
 	return allocation();
 }
 
@@ -114,7 +114,7 @@ void split_t::set_split(double split) {
 	update_allocation();
 }
 
-rectangle const & split_t::get_split_bar_area() const {
+i_rect const & split_t::get_split_bar_area() const {
 	return _split_bar_area;
 }
 
@@ -204,9 +204,9 @@ void split_t::set_pack1(tree_t * x) {
 }
 
 /* compute the slider area */
-void split_t::compute_split_location(double split, double & x,
-		double & y) const {
-	rectangle const & alloc = allocation();
+void split_t::compute_split_location(double split, int & x,
+		int & y) const {
+	i_rect const & alloc = allocation();
 	if (_split_type == VERTICAL_SPLIT) {
 		int w = alloc.w - 2 * _theme->split_margin.left
 				- 2 * _theme->split_margin.right - _theme->split_width;
@@ -225,8 +225,8 @@ void split_t::compute_split_location(double split, double & x,
 }
 
 /* compute the slider area */
-void split_t::compute_split_size(double split, double & w, double & h) const {
-	rectangle const & alloc = allocation();
+void split_t::compute_split_size(double split, int & w, int & h) const {
+	i_rect const & alloc = allocation();
 	if (_split_type == VERTICAL_SPLIT) {
 		w = _theme->split_width;
 		h = alloc.h;
@@ -244,7 +244,7 @@ split_type_e split_t::type() const {
 	return _split_type;
 }
 
-void split_t::render_legacy(cairo_t * cr, rectangle const & area) const {
+void split_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_split(cr, this, area);
 }
 

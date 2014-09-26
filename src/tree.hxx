@@ -45,21 +45,21 @@ enum tree_type_e {
 class tree_t {
 protected:
 	tree_t * _parent;
-	rectangle _allocation;
+	i_rect _allocation;
 	tree_type_e _type;
 public:
-	tree_t(tree_t * parent = nullptr, rectangle allocation = rectangle());
+	tree_t(tree_t * parent = nullptr, i_rect allocation = i_rect());
 
 	virtual ~tree_t();
 	virtual tree_t * parent() const;
 	virtual void replace(tree_t * src, tree_t * by) = 0;
-	virtual void set_allocation(rectangle const & area);
+	virtual void set_allocation(i_rect const & area);
 	virtual string get_node_name() const = 0;
 	virtual list<tree_t *> childs() const = 0;
 	virtual void raise_child(tree_t * t = nullptr) = 0;
 	virtual void remove(tree_t * t) = 0;
 
-	rectangle const & allocation() const;
+	i_rect const & allocation() const;
 	void set_parent(tree_t * parent);
 	void set_allocation(double x, double y, double w, double h);
 	list<tree_t *> get_all_childs() const;

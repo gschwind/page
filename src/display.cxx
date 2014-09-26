@@ -212,7 +212,7 @@ void display_t::ungrab() {
 	--grab_count;
 	if (grab_count == 0) {
 		/* Flush pending events, and wait for that are applied */
-		XSync(_dpy, False);
+		//XSync(_dpy, False);
 		/* allow other client to make request to the server */
 		XUngrabServer(_dpy);
 		/* Ungrab the server immediately */
@@ -364,7 +364,7 @@ void display_t::remove_from_save_set(Window w) {
 	XRemoveFromSaveSet(_dpy, w);
 }
 
-void display_t::move_resize(Window w, rectangle const & size) {
+void display_t::move_resize(Window w, i_rect const & size) {
 
 	//printf("XMoveResizeWindow: win = %lu, %fx%f+%f+%f\n", w, size.w, size.h,
 	//		size.x, size.y);
@@ -453,7 +453,7 @@ int display_t::set_input_focus(Window focus, int revert_to, Time time) {
 	return XSetInputFocus(_dpy, focus, revert_to, time);
 }
 
-void display_t::fake_configure(Window w, rectangle location, int border_width) {
+void display_t::fake_configure(Window w, i_rect location, int border_width) {
 	XEvent ev;
 	ev.xconfigure.type = ConfigureNotify;
 	ev.xconfigure.display = _dpy;

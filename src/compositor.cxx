@@ -26,7 +26,7 @@ namespace page {
 } while(false)
 
 
-static void _draw_crossed_box(cairo_t * cr, rectangle const & box, double r, double g,
+static void _draw_crossed_box(cairo_t * cr, i_rect const & box, double r, double g,
 		double b) {
 
 	cairo_save(cr);
@@ -408,13 +408,13 @@ region compositor_t::read_damaged_region(Damage d) {
 	XRectangle * rects;
 	int nb_rects;
 
-	/* get all rectangles for the damaged region */
+	/* get all i_rects for the damaged region */
 	rects = XFixesFetchRegion(_cnx->dpy(), region, &nb_rects);
 
 	if (rects) {
 		for (int i = 0; i < nb_rects; ++i) {
 			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
-			result += rectangle(rects[i]);
+			result += i_rect(rects[i]);
 		}
 		XFree(rects);
 	}
@@ -494,7 +494,7 @@ void compositor_t::update_layout() {
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
-			rectangle area(info->x, info->y, info->width, info->height);
+			i_rect area(info->x, info->y, info->width, info->height);
 			_desktop_region = _desktop_region + area;
 		}
 		XRRFreeCrtcInfo(info);

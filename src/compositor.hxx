@@ -98,8 +98,8 @@ private:
 
 	void render_flush();
 
-	void repair_area(rectangle const & box);
-	void repair_overlay(cairo_t * cr, rectangle const & area, cairo_surface_t * src);
+	void repair_area(i_rect const & box);
+	void repair_overlay(cairo_t * cr, i_rect const & area, cairo_surface_t * src);
 
 	void process_event(XCreateWindowEvent const & e);
 	void process_event(XReparentEvent const & e);

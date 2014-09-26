@@ -31,7 +31,7 @@ public:
 
 	renderable_page_t(display_t * cnx, theme_t * theme, int width,
 			int height) :
-			window_overlay_t(rectangle(0, 0, width, height)), _theme(
+			window_overlay_t(i_rect(0, 0, width, height)), _theme(
 					theme) {
 		window_overlay_t::show();
 
@@ -61,7 +61,7 @@ public:
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		rectangle area = _position;
+		i_rect area = _position;
 		area.x = 0;
 		area.y = 0;
 
@@ -87,12 +87,12 @@ public:
 
 	}
 
-	void add_damaged(rectangle area) {
+	void add_damaged(i_rect area) {
 		damaged += area;
 	}
 
 	void render(cairo_t * cr, time_t time) {
-		rectangle clip = _position;
+		i_rect clip = _position;
 		if (!clip.is_null()) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);

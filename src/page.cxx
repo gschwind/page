@@ -391,6 +391,8 @@ void page_t::run() {
 			pending_event.pop_front();
 		}
 
+		cnx->ungrab();
+
 		rpage->repair_damaged(get_all_childs());
 
 		if (rnd != nullptr) {
@@ -411,8 +413,7 @@ void page_t::run() {
 			}
 		}
 
-		XSync(cnx->dpy(), False);
-		cnx->ungrab();
+
 
 	}
 }
@@ -431,6 +432,8 @@ managed_window_t * page_t::manage(Atom net_wm_type, shared_ptr<client_properties
 void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
+
+	rnd->add_damaged(region(mw->get_visible()));
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
@@ -713,7 +716,7 @@ void page_t::process_event(XKeyEvent const & e) {
 				int y = v.size() / 4 + 1;
 
 				pat->move_resize(
-						rectangle(
+						i_rect(
 								viewport->raw_aera.x
 										+ (viewport->raw_aera.w - 80 * 4) / 2,
 								viewport->raw_aera.y
@@ -1375,8 +1378,8 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 
 	XEvent ev;
-	rectangle old_area;
-	rectangle new_position;
+	i_rect old_area;
+	i_rect new_position;
 	static int count = 0;
 	count++;
 	switch (process_mode) {
@@ -1496,14 +1499,14 @@ void page_t::process_event(XMotionEvent const & e) {
 		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
 
 		/* compute new window position */
-		rectangle new_position = mode_data_floating.original_position;
+		i_rect new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
 
-//		rectangle popup_new_position = mode_data_floating.popup_original_position;
+//		i_rect popup_new_position = mode_data_floating.popup_original_position;
 //		popup_new_position.x += e.x_root - mode_data_floating.x_root;
 //		popup_new_position.y += e.y_root - mode_data_floating.y_root;
 //		update_popup_position(pfm, popup_new_position);
@@ -1516,14 +1519,14 @@ void page_t::process_event(XMotionEvent const & e) {
 		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		/* compute new window position */
-		rectangle new_position = mode_data_floating.original_position;
+		i_rect new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
 		new_position.y += e.y_root - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
 
-//		rectangle popup_new_position = mode_data_floating.popup_original_position;
+//		i_rect popup_new_position = mode_data_floating.popup_original_position;
 //		popup_new_position.x += e.x_root - mode_data_floating.x_root;
 //		popup_new_position.y += e.y_root - mode_data_floating.y_root;
 //		update_popup_position(pfm, popup_new_position);
@@ -1534,7 +1537,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
-		rectangle size = mode_data_floating.original_position;
+		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
 			size.w -= e.x_root - mode_data_floating.x_root;
@@ -1607,7 +1610,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.f->set_floating_wished_position(size);
 		mode_data_floating.f->reconfigure();
 
-		rectangle popup_new_position = size;
+		i_rect popup_new_position = size;
 		popup_new_position.x -= theme->floating_margin.left;
 		popup_new_position.y -= theme->floating_margin.top;
 		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
@@ -1621,7 +1624,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
-		rectangle size = mode_data_floating.original_position;
+		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
 			size.w -= e.x_root - mode_data_floating.x_root;
@@ -1694,7 +1697,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.f->set_floating_wished_position(size);
 		//mode_data_floating.f->reconfigure();
 
-		rectangle popup_new_position = size;
+		i_rect popup_new_position = size;
 		popup_new_position.x -= theme->floating_margin.left;
 		popup_new_position.y -= theme->floating_margin.top;
 		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
@@ -1966,9 +1969,9 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
-				rectangle old_size = mw->get_floating_wished_position();
+				i_rect old_size = mw->get_floating_wished_position();
 				/** compute floating size **/
-				rectangle new_size = mw->get_floating_wished_position();
+				i_rect new_size = mw->get_floating_wished_position();
 
 				if (e.value_mask & CWX) {
 					new_size.x = e.x;
@@ -1992,7 +1995,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 						and e.x == 0 and e.y == 0
 						and !viewport_outputs.empty()) {
 					viewport_t * v = viewport_outputs.begin()->second;
-					rectangle b = v->get_absolute_extend();
+					i_rect b = v->get_absolute_extend();
 					/* place on center */
 					new_size.x = (b.w - new_size.w) / 2 + b.x;
 					new_size.y = (b.h - new_size.h) / 2 + b.y;
@@ -2179,7 +2182,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 
 			/* apply normal hint to floating window */
-			rectangle new_size = mw->get_wished_position();
+			i_rect new_size = mw->get_wished_position();
 			unsigned int final_width = new_size.w;
 			unsigned int final_height = new_size.h;
 			compute_client_size_with_constraint(mw->orig(),
@@ -2830,12 +2833,12 @@ void page_t::notebook_close(notebook_t * src) {
 }
 
 void page_t::update_popup_position(popup_notebook0_t * p,
-		rectangle & position) {
+		i_rect & position) {
 	p->move_resize(position);
 }
 
 void page_t::update_popup_position(popup_frame_move_t * p,
-		rectangle & position) {
+		i_rect & position) {
 	p->move_resize(position);
 }
 
@@ -2873,9 +2876,9 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
-				rectangle b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
+				i_rect b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
-				rectangle x = v.raw_aera & b;
+				i_rect x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xleft = std::max(xleft, ps[PS_LEFT]);
 				}
@@ -2883,10 +2886,10 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 			if (ps[PS_RIGHT] > 0) {
 				/* check if raw area intersect current viewport */
-				rectangle b(_root_position.w - ps[PS_RIGHT],
+				i_rect b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
-				rectangle x = v.raw_aera & b;
+				i_rect x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xright = std::max(xright, ps[PS_RIGHT]);
 				}
@@ -2894,9 +2897,9 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 			if (ps[PS_TOP] > 0) {
 				/* check if raw area intersect current viewport */
-				rectangle b(ps[PS_TOP_START_X], 0,
+				i_rect b(ps[PS_TOP_START_X], 0,
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
-				rectangle x = v.raw_aera & b;
+				i_rect x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xtop = std::max(xtop, ps[PS_TOP]);
 				}
@@ -2904,11 +2907,11 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 			if (ps[PS_BOTTOM] > 0) {
 				/* check if raw area intersect current viewport */
-				rectangle b(ps[PS_BOTTOM_START_X],
+				i_rect b(ps[PS_BOTTOM_START_X],
 						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
-				rectangle x = v.raw_aera & b;
+				i_rect x = v.raw_aera & b;
 				if (!x.is_null()) {
 					xbottom = std::max(xbottom, ps[PS_BOTTOM]);
 				}
@@ -2916,7 +2919,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 		}
 	}
 
-	rectangle final_size;
+	i_rect final_size;
 
 	final_size.x = xleft;
 	final_size.w = _root_position.w - xright - xleft;
@@ -3182,10 +3185,10 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 			mode_data_floating.y_offset = 0;
 			mode_data_floating.x_root = 0;
 			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = rectangle();
+			mode_data_floating.original_position = i_rect();
 			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = rectangle();
-			mode_data_floating.final_position = rectangle();
+			mode_data_floating.popup_original_position = i_rect();
+			mode_data_floating.final_position = i_rect();
 
 		}
 		break;
@@ -3306,7 +3309,7 @@ void page_t::update_viewport_layout() {
 		throw std::runtime_error("FATAL: cannot read root window attributes\n");
 	}
 
-	_root_position = rectangle(rwa.x, rwa.y, rwa.width, rwa.height);
+	_root_position = i_rect(rwa.x, rwa.y, rwa.width, rwa.height);
 	set_desktop_geometry(_root_position.w, _root_position.h);
 	_allocation = _root_position;
 
@@ -3322,7 +3325,7 @@ void page_t::update_viewport_layout() {
 
 		/** if the CRTC has at less one output bound **/
 		if(info->noutput > 0) {
-			rectangle area(info->x, info->y, info->width, info->height);
+			i_rect area(info->x, info->y, info->width, info->height);
 			/** if this crtc do not has a viewport **/
 			if (!has_key(viewport_outputs, resources->crtcs[i])) {
 				/** then create a new one, and store it in new_layout **/
@@ -3342,7 +3345,7 @@ void page_t::update_viewport_layout() {
 
 	if(new_layout.size() < 1) {
 		/** fallback to one screen **/
-		rectangle area(rwa.x, rwa.y, rwa.width, rwa.height);
+		i_rect area(rwa.x, rwa.y, rwa.width, rwa.height);
 		/** if this crtc do not has a viewport **/
 		if (!has_key(viewport_outputs, (XID)None)) {
 			/** then create a new one, and store it in new_layout **/
@@ -4211,7 +4214,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	renderable_surface_t * x = rpage->prepare_render();
 	if(need_render(time))
-		x->add_damaged(region(rectangle(0,0,100000,100000)));
+		x->add_damaged(region(i_rect(0,0,100000,100000)));
 
 	out += ptr<renderable_t>(x);
 	tree_t::_prepare_render(out, time);

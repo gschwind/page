@@ -16,7 +16,7 @@
 
 namespace page {
 
-tree_t::tree_t(tree_t * parent, rectangle allocation) :
+tree_t::tree_t(tree_t * parent, i_rect allocation) :
 		_parent(parent), _allocation(allocation), _type(TYPE_UNDEF) {
 }
 
@@ -28,7 +28,7 @@ void tree_t::set_parent(tree_t * parent) {
 }
 
 void tree_t::set_allocation(double x, double y, double w, double h) {
-	set_allocation(rectangle(x, y, w, h));
+	set_allocation(i_rect(x, y, w, h));
 }
 
 void tree_t::print_tree(unsigned level) {
@@ -52,11 +52,11 @@ list<tree_t *> tree_t::get_all_childs() const {
 	return ret;
 }
 
-void tree_t::set_allocation(rectangle const & area) {
+void tree_t::set_allocation(i_rect const & area) {
 	_allocation = area;
 }
 
-rectangle const & tree_t::allocation() const {
+i_rect const & tree_t::allocation() const {
 	return _allocation;
 }
 

@@ -61,8 +61,8 @@ bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	return true;
 }
 
-rectangle notebook_t::get_new_client_size() {
-	return rectangle(allocation().x + _theme->notebook_margin.left,
+i_rect notebook_t::get_new_client_size() {
+	return i_rect(allocation().x + _theme->notebook_margin.left,
 			allocation().y + _theme->notebook_margin.top,
 			allocation().w - _theme->notebook_margin.right - _theme->notebook_margin.left,
 			allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom);
@@ -141,7 +141,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 
 void notebook_t::update_client_position(managed_window_t * c) {
 	/* compute the window placement within notebook */
-	rectangle client_size = compute_client_size(c);
+	i_rect client_size = compute_client_size(c);
 	c->set_notebook_wished_position(client_size);
 	c->reconfigure();
 }
@@ -189,7 +189,7 @@ void notebook_t::map_all() {
 	}
 }
 
-rectangle notebook_t::get_absolute_extend() {
+i_rect notebook_t::get_absolute_extend() {
 	return allocation();
 }
 
@@ -203,7 +203,7 @@ region notebook_t::get_area() {
 	}
 }
 
-void notebook_t::set_allocation(rectangle const & area) {
+void notebook_t::set_allocation(i_rect const & area) {
 	if (area == allocation())
 		return;
 
@@ -293,13 +293,13 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 	//printf("XXX result : %d %d\n", width, height);
 }
 
-rectangle notebook_t::compute_client_size(managed_window_t * c) {
+i_rect notebook_t::compute_client_size(managed_window_t * c) {
 	unsigned int height, width;
 	compute_client_size_with_constraint(c, allocation().w - _theme->notebook_margin.left - _theme->notebook_margin.right,
 			allocation().h - _theme->notebook_margin.top - _theme->notebook_margin.bottom, width, height);
 
 	/* compute the window placement within notebook */
-	rectangle client_size;
+	i_rect client_size;
 	client_size.x = floor((client_area.w - width) / 2.0);
 	client_size.y = floor((client_area.h - height) / 2.0);
 	client_size.w = width;
@@ -322,7 +322,7 @@ rectangle notebook_t::compute_client_size(managed_window_t * c) {
 
 }
 
-rectangle const & notebook_t::get_allocation() {
+i_rect const & notebook_t::get_allocation() {
 	return allocation();
 }
 
@@ -368,7 +368,7 @@ string notebook_t::get_node_name() const {
 	return _get_node_name<'N'>();
 }
 
-void notebook_t::render_legacy(cairo_t * cr, rectangle const & area) const {
+void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_notebook(cr, this, area);
 }
 
@@ -381,8 +381,8 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 
 		ratio = std::min(std::max(0.0, ratio), 1.0);
 
-		rectangle x_prv_loc;
-		rectangle x_new_loc;
+		i_rect x_prv_loc;
+		i_rect x_new_loc;
 
 		if (prev_surf != nullptr) {
 			x_prv_loc = prev_loc;
@@ -466,7 +466,7 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 				shared_ptr<pixmap_t> p = psurf->get_pixmap();
 				if (p != nullptr) {
 					cairo_surface_t * s = p->get_cairo_surface();
-					rectangle location = _selected->get_base_position();
+					i_rect location = _selected->get_base_position();
 
 					cairo_save(cr);
 
@@ -523,10 +523,10 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 	if (time < (swap_start + d)) {
 
 		ptr<pixmap_t> prev = prev_surf;
-		rectangle prev_pos = prev_loc;
+		i_rect prev_pos = prev_loc;
 
 		ptr<pixmap_t> next{nullptr};
-		rectangle next_pos;
+		i_rect next_pos;
 
 
 		if(_selected != nullptr) {
@@ -551,7 +551,7 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 		if (_selected != nullptr) {
 
 			if (_selected->surf() != nullptr) {
-				rectangle pos {_selected->base_position()};
+				i_rect pos {_selected->base_position()};
 				region dmg {_selected->surf()->get_damaged()};
 				_selected->surf()->clear_damaged();
 				dmg.translate(pos.x, pos.y);

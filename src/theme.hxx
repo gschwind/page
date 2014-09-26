@@ -135,9 +135,9 @@ public:
 			managed_window_base_t * mw) const = 0;
 
 	virtual void render_split(cairo_t * cr, split_base_t const * s,
-			rectangle const & area) const = 0;
+			i_rect const & area) const = 0;
 	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n,
-			rectangle const & area) const = 0;
+			i_rect const & area) const = 0;
 
 	virtual void render_floating(managed_window_base_t * nw) const = 0;
 
@@ -150,7 +150,7 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split) = 0;
 
-	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, rectangle const & area) = 0;
+	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area) = 0;
 
 	virtual void update() = 0;
 

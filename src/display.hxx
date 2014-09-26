@@ -116,7 +116,7 @@ public:
 
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);
-	void move_resize(Window w, rectangle const & size);
+	void move_resize(Window w, i_rect const & size);
 	void set_window_border_width(Window w, unsigned int width);
 	void raise_window(Window w);
 
@@ -146,7 +146,7 @@ public:
 	Status send_event(Window w, Bool propagate, long event_mask,
 			XEvent* event_send);
 	int set_input_focus(Window focus, int revert_to, Time time);
-	void fake_configure(Window w, rectangle location, int border_width);
+	void fake_configure(Window w, i_rect location, int border_width);
 	bool motif_has_border(Window w);
 
 	string *                     read_wm_name(Window w);

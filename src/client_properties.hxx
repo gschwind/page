@@ -423,7 +423,7 @@ public:
 		if (rect != NULL) {
 			_shape = new region{};
 			for (unsigned i = 0; i < count; ++i) {
-				*_shape += rectangle(rect[i]);
+				*_shape += i_rect(rect[i]);
 			}
 			XFree(rect);
 		}

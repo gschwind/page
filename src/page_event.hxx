@@ -36,7 +36,7 @@ enum page_event_type_e {
 
 struct page_event_t {
 	page_event_type_e type;
-	rectangle position;
+	i_rect position;
 	union {
 		struct {
 			void * _p0;

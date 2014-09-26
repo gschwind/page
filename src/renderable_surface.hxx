@@ -20,13 +20,13 @@ namespace page {
 
 class renderable_surface_t : public renderable_t {
 
-	rectangle location;
+	i_rect location;
 	cairo_surface_t * surf;
 	region _damaged;
 
 public:
 
-	renderable_surface_t(cairo_surface_t * s, rectangle loc) : surf(s), location(loc) {
+	renderable_surface_t(cairo_surface_t * s, i_rect loc) : surf(s), location(loc) {
 		location.round();
 	}
 

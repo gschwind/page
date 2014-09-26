@@ -31,7 +31,7 @@ class composite_surface_t {
 				XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
 				XDamageSubtract(_dpy, _damage, None, region);
 				XFixesDestroyRegion(_dpy, region);
-				_damaged += rectangle(0,0,_width, _height);
+				_damaged += i_rect(0,0,_width, _height);
 			}
 		}
 	}

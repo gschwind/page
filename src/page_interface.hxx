@@ -59,8 +59,8 @@ public:
 	virtual void split_bottom(notebook_t * nbk, managed_window_t * c);
 	virtual void notebook_close(notebook_t * src);
 
-	virtual void update_popup_position(popup_notebook0_t * p, rectangle & position);
-	virtual void update_popup_position(popup_frame_move_t * p, rectangle & position);
+	virtual void update_popup_position(popup_notebook0_t * p, i_rect & position);
+	virtual void update_popup_position(popup_frame_move_t * p, i_rect & position);
 
 	virtual void fix_allocation(viewport_t & v);
 

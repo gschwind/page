@@ -111,37 +111,37 @@ public:
 
 	virtual ~simple2_theme_t();
 
-	rectangle compute_notebook_close_window_position(
-			rectangle const & allocation, int number_of_client,
+	i_rect compute_notebook_close_window_position(
+			i_rect const & allocation, int number_of_client,
 			int selected_client_index) const;
-	rectangle compute_notebook_unbind_window_position(
-			rectangle const & allocation, int number_of_client,
+	i_rect compute_notebook_unbind_window_position(
+			i_rect const & allocation, int number_of_client,
 			int selected_client_index) const;
 
-	rectangle compute_notebook_bookmark_position(
-			rectangle const & allocation) const;
-	rectangle compute_notebook_vsplit_position(
-			rectangle const & allocation) const;
-	rectangle compute_notebook_hsplit_position(
-			rectangle const & allocation) const;
-	rectangle compute_notebook_close_position(
-			rectangle const & allocation) const;
+	i_rect compute_notebook_bookmark_position(
+			i_rect const & allocation) const;
+	i_rect compute_notebook_vsplit_position(
+			i_rect const & allocation) const;
+	i_rect compute_notebook_hsplit_position(
+			i_rect const & allocation) const;
+	i_rect compute_notebook_close_position(
+			i_rect const & allocation) const;
 
-	rectangle compute_notebook_menu_position(
-			rectangle const & allocation) const;
+	i_rect compute_notebook_menu_position(
+			i_rect const & allocation) const;
 
-	rectangle compute_floating_close_position(
-			rectangle const & _allocation) const;
-	rectangle compute_floating_bind_position(
-			rectangle const & _allocation) const;
+	i_rect compute_floating_close_position(
+			i_rect const & _allocation) const;
+	i_rect compute_floating_bind_position(
+			i_rect const & _allocation) const;
 
-	static void rounded_rectangle(cairo_t * cr, double x, double y, double w,
+	static void rounded_i_rect(cairo_t * cr, double x, double y, double w,
 			double h, double r);
 
 	void create_background_img();
 
-	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n, rectangle const & area) const;
-	virtual void render_split(cairo_t * cr, split_base_t const * s, rectangle const & area) const;
+	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n, i_rect const & area) const;
+	virtual void render_split(cairo_t * cr, split_base_t const * s, i_rect const & area) const;
 	virtual void render_floating(managed_window_base_t * mw) const;
 
 
@@ -183,7 +183,7 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split);
 
-	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, rectangle const & area);
+	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area);
 
 	virtual vector<page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const;
@@ -194,7 +194,7 @@ public:
 	void compute_areas_for_notebook(notebook_base_t const * n,
 			vector<page_event_t> * l) const;
 
-	void draw_hatched_rectangle(cairo_t * cr, int space, int x, int y, int w,
+	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;
 
 	void update();
@@ -202,10 +202,10 @@ public:
 	static void cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 
-	rectangle compute_split_bar_location(split_base_t const * s) const {
+	i_rect compute_split_bar_location(split_base_t const * s) const {
 
-		rectangle ret;
-		rectangle const & alloc = s->allocation();
+		i_rect ret;
+		i_rect const & alloc = s->allocation();
 
 		if (s->type() == VERTICAL_SPLIT) {
 

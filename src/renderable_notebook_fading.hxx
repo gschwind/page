@@ -24,15 +24,15 @@ class renderable_notebook_fading_t : public renderable_t {
 
 	double ratio;
 
-	rectangle prev_pos;
-	rectangle next_pos;
+	i_rect prev_pos;
+	i_rect next_pos;
 
 	ptr<pixmap_t> prev_surf;
 	ptr<pixmap_t> next_surf;
 
 public:
 
-	renderable_notebook_fading_t(ptr<pixmap_t> prev, ptr<pixmap_t> next, rectangle prev_pos, rectangle next_pos) : prev_surf(prev), next_surf(next), prev_pos(prev_pos), next_pos(next_pos), ratio(0.5) {
+	renderable_notebook_fading_t(ptr<pixmap_t> prev, ptr<pixmap_t> next, i_rect prev_pos, i_rect next_pos) : prev_surf(prev), next_surf(next), prev_pos(prev_pos), next_pos(next_pos), ratio(0.5) {
 
 	}
 

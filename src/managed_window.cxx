@@ -52,8 +52,8 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	/* assign window to desktop 0 */
 	_properties->set_net_wm_desktop(0);
 
-	_floating_wished_position = rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
-	_notebook_wished_position = rectangle(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
+	_floating_wished_position = i_rect(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
+	_notebook_wished_position = i_rect(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
 
 	_orig_visual = _properties->wa().visual;
 	_orig_depth = _properties->wa().depth;
@@ -96,7 +96,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	XSetWindowAttributes swa;
 	Window wbase;
 	Window wdeco;
-	rectangle b = _floating_wished_position;
+	i_rect b = _floating_wished_position;
 
 	/** Common window properties **/
 	unsigned long value_mask = CWOverrideRedirect;
@@ -252,7 +252,7 @@ void managed_window_t::reconfigure() {
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
-		_orig_position = rectangle(0, 0, _base_position.w, _base_position.h);
+		_orig_position = i_rect(0, 0, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
 
@@ -263,7 +263,7 @@ void managed_window_t::reconfigure() {
 
 	cnx()->move_resize(_base, _base_position);
 	cnx()->move_resize(_deco,
-			rectangle(0, 0, _base_position.w, _base_position.h));
+			i_rect(0, 0, _base_position.w, _base_position.h));
 	cnx()->move_resize(_orig, _orig_position);
 
 	fake_configure();
@@ -291,11 +291,11 @@ void managed_window_t::delete_window(Time t) {
 	cnx()->send_event(_orig, False, NoEventMask, &ev);
 }
 
-bool managed_window_t::check_orig_position(rectangle const & position) {
+bool managed_window_t::check_orig_position(i_rect const & position) {
 	return position == _orig_position;
 }
 
-bool managed_window_t::check_base_position(rectangle const & position) {
+bool managed_window_t::check_base_position(i_rect const & position) {
 	return position == _base_position;
 }
 
@@ -322,7 +322,7 @@ void managed_window_t::focus(Time t) {
 	icccm_focus(t);
 }
 
-rectangle managed_window_t::get_base_position() const {
+i_rect managed_window_t::get_base_position() const {
 	return _base_position;
 }
 

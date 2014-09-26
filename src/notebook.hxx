@@ -37,7 +37,7 @@ class notebook_t : public notebook_base_t  {
 	page::time_t swap_start;
 
 	shared_ptr<pixmap_t> prev_surf;
-	rectangle prev_loc;
+	i_rect prev_loc;
 
 	/* always handle current surface in case of unmap */
 	shared_ptr<composite_surface_t> cur_surf;
@@ -59,27 +59,27 @@ public:
 	// set of map for fast check is window is in this notebook
 	set<managed_window_t *> _client_map;
 
-	rectangle client_area;
+	i_rect client_area;
 
-	rectangle button_close;
-	rectangle button_vsplit;
-	rectangle button_hsplit;
-	rectangle button_pop;
+	i_rect button_close;
+	i_rect button_vsplit;
+	i_rect button_hsplit;
+	i_rect button_pop;
 
-	rectangle tab_area;
-	rectangle top_area;
-	rectangle bottom_area;
-	rectangle left_area;
-	rectangle right_area;
+	i_rect tab_area;
+	i_rect top_area;
+	i_rect bottom_area;
+	i_rect left_area;
+	i_rect right_area;
 
-	rectangle popup_top_area;
-	rectangle popup_bottom_area;
-	rectangle popup_left_area;
-	rectangle popup_right_area;
-	rectangle popup_center_area;
+	i_rect popup_top_area;
+	i_rect popup_bottom_area;
+	i_rect popup_left_area;
+	i_rect popup_right_area;
+	i_rect popup_center_area;
 
-	rectangle close_client_area;
-	rectangle undck_client_area;
+	i_rect close_client_area;
+	i_rect undck_client_area;
 
 	void set_selected(managed_window_t * c);
 
@@ -88,7 +88,7 @@ public:
 public:
 	notebook_t(theme_t const * theme);
 	~notebook_t();
-	void update_allocation(rectangle & allocation);
+	void update_allocation(i_rect & allocation);
 
 	bool process_button_press_event(XEvent const * e);
 
@@ -104,7 +104,7 @@ public:
 	void activate_client(managed_window_t * x);
 	void iconify_client(managed_window_t * x);
 
-	rectangle get_new_client_size();
+	i_rect get_new_client_size();
 
 	void select_next();
 	void delete_all();
@@ -114,9 +114,9 @@ public:
 
 	notebook_t * get_nearest_notebook();
 
-	virtual rectangle get_absolute_extend();
+	virtual i_rect get_absolute_extend();
 	virtual region get_area();
-	virtual void set_allocation(rectangle const & area);
+	virtual void set_allocation(i_rect const & area);
 
 	managed_window_t * find_client_tab(int x, int y);
 
@@ -133,8 +133,8 @@ public:
 			unsigned int max_width, unsigned int max_height,
 			unsigned int & width, unsigned int & height);
 
-	rectangle compute_client_size(managed_window_t * c);
-	rectangle const & get_allocation();
+	i_rect compute_client_size(managed_window_t * c);
+	i_rect const & get_allocation();
 	void set_theme(theme_t const * theme);
 	list<managed_window_base_t const *> clients() const;
 	managed_window_base_t const * selected() const;
@@ -143,7 +143,7 @@ public:
 	list<tree_t *> childs() const;
 	void raise_child(tree_t * t);
 	string get_node_name() const;
-	void render_legacy(cairo_t * cr, rectangle const & area) const;
+	void render_legacy(cairo_t * cr, i_rect const & area) const;
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
 

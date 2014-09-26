@@ -14,13 +14,13 @@ namespace page {
 
 class renderable_floating_outer_gradien_t : public renderable_t {
 
-	rectangle _r;
+	i_rect _r;
 	double _shadow_width;
 	double _radius;
 
 public:
 
-	renderable_floating_outer_gradien_t(rectangle r, double shadow_width,
+	renderable_floating_outer_gradien_t(i_rect r, double shadow_width,
 			double radius) :
 			_r(r), _shadow_width(shadow_width), _radius(radius) {
 
@@ -41,7 +41,7 @@ public:
 
 			/** draw left shawdow **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x - _shadow_width, _r.y + _radius,
+			cairo_clip(cr, cl & i_rect(_r.x - _shadow_width, _r.y + _radius,
 					_shadow_width, _r.h - _radius));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * grad0 = cairo_pattern_create_linear(
@@ -54,7 +54,7 @@ public:
 
 			/** draw right shadow **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x + _r.w, _r.y + _radius, _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x + _r.w, _r.y + _radius, _shadow_width,
 					_r.h - _radius));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * grad1 = cairo_pattern_create_linear(_r.x + _r.w,
@@ -67,7 +67,7 @@ public:
 
 			/** draw top shadow **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x + _radius, _r.y - _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x + _radius, _r.y - _shadow_width,
 					_r.w - 2 * _radius, _shadow_width));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0,
@@ -80,7 +80,7 @@ public:
 
 			/** draw bottom shadow **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x, _r.y + _r.h, _r.w, _shadow_width));
+			cairo_clip(cr, cl & i_rect(_r.x, _r.y + _r.h, _r.w, _shadow_width));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * grad3 = cairo_pattern_create_linear(0.0,
 					_r.y + _r.h, 0.0, _r.y + _r.h + _shadow_width);
@@ -92,7 +92,7 @@ public:
 
 			/** draw top-left corner **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x - _shadow_width, _r.y - _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x - _shadow_width, _r.y - _shadow_width,
 					_shadow_width + _radius, _shadow_width + _radius));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * r0grad = cairo_pattern_create_radial(_r.x + _radius,
@@ -106,7 +106,7 @@ public:
 
 			/** draw top-right corner **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x + _r.w - _radius, _r.y - _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x + _r.w - _radius, _r.y - _shadow_width,
 					_shadow_width + _radius, _shadow_width + _radius));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * r1grad = cairo_pattern_create_radial(
@@ -120,7 +120,7 @@ public:
 
 			/** bottom-left corner **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x - _shadow_width, _r.y + _r.h, _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x - _shadow_width, _r.y + _r.h, _shadow_width,
 					_shadow_width));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * r2grad = cairo_pattern_create_radial(_r.x,
@@ -133,7 +133,7 @@ public:
 
 			/** draw bottom-right corner **/
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & rectangle(_r.x + _r.w, _r.y + _r.h, _shadow_width,
+			cairo_clip(cr, cl & i_rect(_r.x + _r.w, _r.y + _r.h, _shadow_width,
 					_shadow_width));
 			::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 			cairo_pattern_t * r3grad = cairo_pattern_create_radial(_r.x + _r.w,
@@ -164,20 +164,20 @@ public:
 	virtual region get_visible_region() {
 
 		region ret;
-		ret += rectangle(_r.x - _shadow_width, _r.y + _radius, _shadow_width,
+		ret += i_rect(_r.x - _shadow_width, _r.y + _radius, _shadow_width,
 				_r.h - _radius);
-		ret += rectangle(_r.x + _r.w, _r.y + _radius, _shadow_width,
+		ret += i_rect(_r.x + _r.w, _r.y + _radius, _shadow_width,
 				_r.h - _radius);
-		ret += rectangle(_r.x + _radius, _r.y - _shadow_width,
+		ret += i_rect(_r.x + _radius, _r.y - _shadow_width,
 				_r.w - 2 * _radius, _shadow_width);
-		ret += rectangle(_r.x, _r.y + _r.h, _r.w, _shadow_width);
-		ret += rectangle(_r.x - _shadow_width, _r.y - _shadow_width,
+		ret += i_rect(_r.x, _r.y + _r.h, _r.w, _shadow_width);
+		ret += i_rect(_r.x - _shadow_width, _r.y - _shadow_width,
 				_shadow_width + _radius, _shadow_width + _radius);
-		ret += rectangle(_r.x + _r.w - _radius, _r.y - _shadow_width,
+		ret += i_rect(_r.x + _r.w - _radius, _r.y - _shadow_width,
 				_shadow_width + _radius, _shadow_width + _radius);
-		ret += rectangle(_r.x - _shadow_width, _r.y + _r.h, _shadow_width,
+		ret += i_rect(_r.x - _shadow_width, _r.y + _r.h, _shadow_width,
 				_shadow_width);
-		ret += rectangle(_r.x + _r.w, _r.y + _r.h, _shadow_width,
+		ret += i_rect(_r.x + _r.w, _r.y + _r.h, _shadow_width,
 				_shadow_width);
 
 		return ret;

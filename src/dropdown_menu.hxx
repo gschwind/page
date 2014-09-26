@@ -77,7 +77,7 @@ public:
 		for (auto i : window_list) {
 			int x = _position.x;
 			int y = _position.y + n * 24;
-			rectangle area(x, y, 300, 24);
+			i_rect area(x, y, 300, 24);
 
 			if(selected == n) {
 				cairo_rectangle(cr, area.x, area.y, area.w, area.h);

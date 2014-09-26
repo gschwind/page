@@ -491,7 +491,7 @@ inline void find_key_from_string(string const desc, key_desc_t & k) {
 	}
 }
 
-static void draw_outer_graddien(cairo_t * cr, rectangle r, double _shadow_width) {
+static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 
 	cairo_save(cr);
 
@@ -596,7 +596,7 @@ static void draw_outer_graddien(cairo_t * cr, rectangle r, double _shadow_width)
 
 }
 
-static void draw_outer_graddien2(cairo_t * cr, rectangle r, double _shadow_width, double radius) {
+static void draw_outer_graddien2(cairo_t * cr, i_rect r, double _shadow_width, double radius) {
 
 	cairo_save(cr);
 
@@ -734,7 +734,7 @@ vector<T> operator +(vector<T> const & a, T const & b) {
 	return (ret += b);
 }
 
-inline void cairo_clip(cairo_t * cr, rectangle const & clip) {
+inline void cairo_clip(cairo_t * cr, i_rect const & clip) {
 	cairo_reset_clip(cr);
 	cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 	cairo_clip(cr);
