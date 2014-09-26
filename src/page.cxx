@@ -2589,9 +2589,8 @@ void page_t::process_event(XEvent const & e) {
 	} else if (e.type == SelectionClear) {
 		running = false;
 	} else if (e.type == xshape_event + ShapeNotify) {
-		printf("shape notify\n");
 		XShapeEvent * se = (XShapeEvent *)&e;
-		if(true) {
+		if(se->kind == ShapeBounding) {
 			Window w = se->window;
 			client_base_t * c = find_client(w);
 			if(c != nullptr) {

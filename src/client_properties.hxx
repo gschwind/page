@@ -420,8 +420,6 @@ public:
 		int ordering;
 		XRectangle * rect = XShapeGetRectangles(_cnx->dpy(), _id, ShapeBounding, &count, &ordering);
 
-		printf("Shape %d %d\n", count, ordering);
-
 		if (rect != NULL) {
 			_shape = new region{};
 			for (unsigned i = 0; i < count; ++i) {
