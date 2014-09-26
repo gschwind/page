@@ -246,7 +246,7 @@ void page_t::run() {
 	pn0 = new popup_notebook0_t(theme);
 	ps = new popup_split_t(theme);
 	pat = new popup_alt_tab_t(cnx, theme);
-	menu = new dropdown_menu_t(cnx, theme);
+	menu = ptr<dropdown_menu_t>{new dropdown_menu_t(cnx, theme)};
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
 	xc_fleur = XCreateFontCursor(cnx->dpy(), XC_fleur);
@@ -1360,6 +1360,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 				}
 				mode_data_notebook_menu.from = nullptr;
 				menu->hide();
+				rnd->add_damaged(menu->get_opaque_region());
 			}
 		}
 		break;
@@ -3220,6 +3221,7 @@ void page_t::cleanup_grab(managed_window_t * mw) {
 		break;
 	case PROCESS_NOTEBOOK_MENU:
 		menu->hide();
+		rnd->add_damaged(menu->get_opaque_region());
 		process_mode = PROCESS_NORMAL;
 		mode_data_notebook_menu.from = nullptr;
 		break;
@@ -4228,6 +4230,10 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 //	pfm->render(cr, time);
 //	menu->render(cr, time);
 //
+	if(menu->is_visible()) {
+		out.push_back(menu);
+	}
+
 	_need_render = false;
 
 }
