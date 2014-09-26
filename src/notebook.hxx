@@ -10,6 +10,7 @@
 #ifndef NOTEBOOK_HXX_
 #define NOTEBOOK_HXX_
 
+#include "renderable_notebook_fading.hxx"
 #include "tree.hxx"
 #include "managed_window.hxx"
 #include "region.hxx"
@@ -25,7 +26,7 @@ struct img_t {
 
 class notebook_t : public notebook_base_t  {
 
-	static uint64_t const animation_duration = 500000000;
+	page::time_t const animation_duration{0, 500000000};
 
 	theme_t const * _theme;
 
@@ -42,6 +43,7 @@ class notebook_t : public notebook_base_t  {
 	/* always handle current surface in case of unmap */
 	shared_ptr<composite_surface_t> cur_surf;
 
+	ptr<renderable_notebook_fading_t> fading_notebook;
 
 public:
 

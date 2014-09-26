@@ -38,13 +38,15 @@ public:
 	 * @param area the area to redraw
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
+		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cr, surf, location.x, location.y);
 		region r = region(location) & area;
 		for(auto &i: r) {
-			i.round(); // force integer
-			cairo_rectangle(cr, i.x, i.y, i.w, i.h);
-			cairo_fill(cr);
+			cairo_clip(cr, i);
+			cairo_mask_surface(cr, surf, location.x, location.y);
 		}
+		cairo_restore(cr);
 	}
 
 	/**

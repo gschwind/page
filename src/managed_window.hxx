@@ -536,6 +536,30 @@ public:
 
 		if (_composite_surf != nullptr) {
 
+			i_rect loc{base_position()};
+
+			if (_motif_has_border) {
+				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 6.0);
+				out += ptr<renderable_t> { x };
+			}
+
+			ptr<renderable_t> x { get_base_renderable() };
+			if (x != nullptr) {
+				out += x;
+			}
+		}
+
+		tree_t::_prepare_render(out, time);
+
+	}
+
+	i_rect get_visible() {
+		i_rect rec{_base_position};
+		return rec;
+	}
+
+	ptr<renderable_t> get_base_renderable() {
+		if (_composite_surf != nullptr) {
 			i_rect loc = base_position();
 			i_rect pos { base_position() };
 			region vis{0,0,(int)pos.w,(int)pos.h};
@@ -557,21 +581,10 @@ public:
 			}
 
 			opa &= shp;
-
 			opa.translate(pos.x + _orig_position.x, pos.y + _orig_position.y);
-
 			shp.translate(_orig_position.x, _orig_position.y);
-			//vis -= _orig_position;
-			//vis += shp;
 
 			vis.translate(pos.x, pos.y);
-
-
-			if (_motif_has_border) {
-				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 6.0);
-				out += ptr<renderable_t> { x };
-			}
-
 
 			region dmg { _composite_surf->get_damaged() };
 			_composite_surf->clear_damaged();
@@ -580,17 +593,12 @@ public:
 					pos, dmg);
 			x->set_opaque_region(opa);
 			x->set_visible_region(vis);
-			out += ptr<renderable_t>{x};
+			return ptr<renderable_t>{x};
 
+		} else {
+			/* return null */
+			return ptr<renderable_t>{};
 		}
-
-		tree_t::_prepare_render(out, time);
-
-	}
-
-	i_rect get_visible() {
-		i_rect rec{_base_position};
-		return rec;
 	}
 
 };

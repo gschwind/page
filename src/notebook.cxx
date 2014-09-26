@@ -130,6 +130,7 @@ void notebook_t::set_selected(managed_window_t * c) {
 			prev_loc = _selected->base_position();
 		}
 		_selected->iconify();
+		fading_notebook.reset();
 	}
 
 	/** keep current surface in track **/
@@ -373,127 +374,127 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 }
 
 void notebook_t::render(cairo_t * cr, time_t time) {
-	page::time_t d(0, animation_duration);
-	if (time < (swap_start + d)) {
-		double ratio = (sin(
-				static_cast<double>(time - swap_start) / animation_duration
-						* M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
-
-		ratio = std::min(std::max(0.0, ratio), 1.0);
-
-		i_rect x_prv_loc;
-		i_rect x_new_loc;
-
-		if (prev_surf != nullptr) {
-			x_prv_loc = prev_loc;
-		}
-
-		if (_selected != nullptr) {
-			x_new_loc = _selected->get_base_position();
-		}
-
-		/** render old surface if one is available **/
-		if (prev_surf != nullptr) {
-			cairo_surface_t * s = prev_surf->get_cairo_surface();
-			region r{x_prv_loc};
-			r -= x_new_loc;
-
-			cairo_save(cr);
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
-					1.0 - ratio);
-			for (auto &a : r) {
-				cairo_reset_clip(cr);
-				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-				cairo_clip(cr);
-				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
-				cairo_mask(cr, p0);
-			}
-			cairo_pattern_destroy(p0);
-
-			region r1{x_prv_loc};
-			r1 &= x_new_loc;
-			for (auto &a : r1) {
-				cairo_reset_clip(cr);
-				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-				cairo_clip(cr);
-				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
-				cairo_paint(cr);
-			}
-
-			cairo_restore(cr);
-		}
-
-		/** render selected surface if available **/
-		if (_selected != nullptr) {
-			shared_ptr<composite_surface_t> psurf = _selected->surf();
-			if (psurf != nullptr) {
-				shared_ptr<pixmap_t> p = psurf->get_pixmap();
-				if (p != nullptr) {
-					cairo_surface_t * s = p->get_cairo_surface();
-					region r{x_new_loc};
-					r -= x_prv_loc;
-
-					cairo_save(cr);
-					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
-							1.0, ratio);
-					cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
-					cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
-							x_new_loc.h);
-					cairo_clip(cr);
-					cairo_mask(cr, p0);
-					cairo_pattern_destroy(p0);
-
-					cairo_restore(cr);
-				}
-			}
-
-//			for (auto i : _selected->childs()) {
-//				i->render(cr, time);
+//	page::time_t d(0, animation_duration);
+//	if (time < (swap_start + d)) {
+//		double ratio = (sin(
+//				static_cast<double>(time - swap_start) / animation_duration
+//						* M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
+//
+//		ratio = std::min(std::max(0.0, ratio), 1.0);
+//
+//		i_rect x_prv_loc;
+//		i_rect x_new_loc;
+//
+//		if (prev_surf != nullptr) {
+//			x_prv_loc = prev_loc;
+//		}
+//
+//		if (_selected != nullptr) {
+//			x_new_loc = _selected->get_base_position();
+//		}
+//
+//		/** render old surface if one is available **/
+//		if (prev_surf != nullptr) {
+//			cairo_surface_t * s = prev_surf->get_cairo_surface();
+//			region r{x_prv_loc};
+//			r -= x_new_loc;
+//
+//			cairo_save(cr);
+//			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
+//					1.0 - ratio);
+//			for (auto &a : r) {
+//				cairo_reset_clip(cr);
+//				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+//				cairo_clip(cr);
+//				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+//				cairo_mask(cr, p0);
 //			}
-		}
-
-	} else {
-		/** animation is terminated **/
-		prev_surf.reset();
-
-
-		/** draw selected window is one is available **/
-		if (_selected != nullptr) {
-			shared_ptr<composite_surface_t> psurf = _selected->surf();
-			if (psurf != nullptr) {
-				shared_ptr<pixmap_t> p = psurf->get_pixmap();
-				if (p != nullptr) {
-					cairo_surface_t * s = p->get_cairo_surface();
-					i_rect location = _selected->get_base_position();
-
-					cairo_save(cr);
-
-					cairo_set_line_width(cr, 1.0);
-					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-					cairo_rectangle(cr, location.x - 0.5, location.y - 0.5,
-							location.w + 1.0, location.h + 1.0);
-					cairo_stroke(cr);
-
-					cairo_set_source_surface(cr, s, location.x, location.y);
-					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-					cairo_rectangle(cr, location.x, location.y, location.w,
-							location.h);
-					cairo_fill(cr);
-
-					cairo_restore(cr);
-				}
-			}
-
-//			for (auto i : _selected->childs()) {
-//				i->render(cr, time);
+//			cairo_pattern_destroy(p0);
+//
+//			region r1{x_prv_loc};
+//			r1 &= x_new_loc;
+//			for (auto &a : r1) {
+//				cairo_reset_clip(cr);
+//				cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+//				cairo_clip(cr);
+//				cairo_set_source_surface(cr, s, x_prv_loc.x, x_prv_loc.y);
+//				cairo_paint(cr);
 //			}
-
-		}
-
-	}
+//
+//			cairo_restore(cr);
+//		}
+//
+//		/** render selected surface if available **/
+//		if (_selected != nullptr) {
+//			shared_ptr<composite_surface_t> psurf = _selected->surf();
+//			if (psurf != nullptr) {
+//				shared_ptr<pixmap_t> p = psurf->get_pixmap();
+//				if (p != nullptr) {
+//					cairo_surface_t * s = p->get_cairo_surface();
+//					region r{x_new_loc};
+//					r -= x_prv_loc;
+//
+//					cairo_save(cr);
+//					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//					cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0,
+//							1.0, ratio);
+//					cairo_set_source_surface(cr, s, x_new_loc.x, x_new_loc.y);
+//					cairo_rectangle(cr, x_new_loc.x, x_new_loc.y, x_new_loc.w,
+//							x_new_loc.h);
+//					cairo_clip(cr);
+//					cairo_mask(cr, p0);
+//					cairo_pattern_destroy(p0);
+//
+//					cairo_restore(cr);
+//				}
+//			}
+//
+////			for (auto i : _selected->childs()) {
+////				i->render(cr, time);
+////			}
+//		}
+//
+//	} else {
+//		/** animation is terminated **/
+//		prev_surf.reset();
+//
+//
+//		/** draw selected window is one is available **/
+//		if (_selected != nullptr) {
+//			shared_ptr<composite_surface_t> psurf = _selected->surf();
+//			if (psurf != nullptr) {
+//				shared_ptr<pixmap_t> p = psurf->get_pixmap();
+//				if (p != nullptr) {
+//					cairo_surface_t * s = p->get_cairo_surface();
+//					i_rect location = _selected->get_base_position();
+//
+//					cairo_save(cr);
+//
+//					cairo_set_line_width(cr, 1.0);
+//					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+//					cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//					cairo_rectangle(cr, location.x - 0.5, location.y - 0.5,
+//							location.w + 1.0, location.h + 1.0);
+//					cairo_stroke(cr);
+//
+//					cairo_set_source_surface(cr, s, location.x, location.y);
+//					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//					cairo_rectangle(cr, location.x, location.y, location.w,
+//							location.h);
+//					cairo_fill(cr);
+//
+//					cairo_restore(cr);
+//				}
+//			}
+//
+////			for (auto i : _selected->childs()) {
+////				i->render(cr, time);
+////			}
+//
+//		}
+//
+//	}
 
 }
 
@@ -519,45 +520,45 @@ managed_window_t * notebook_t::get_selected() {
 
 void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
-	page::time_t d(0, animation_duration);
-	if (time < (swap_start + d)) {
+	if (time < (swap_start + animation_duration)) {
 
-		ptr<pixmap_t> prev = prev_surf;
-		i_rect prev_pos = prev_loc;
+		if (fading_notebook == nullptr) {
+			ptr<pixmap_t> prev = prev_surf;
+			i_rect prev_pos = prev_loc;
 
-		ptr<pixmap_t> next{nullptr};
-		i_rect next_pos;
+			ptr<pixmap_t> next { nullptr };
+			i_rect next_pos;
 
-
-		if(_selected != nullptr) {
-			if(_selected->surf() != nullptr) {
-				next = _selected->surf()->get_pixmap();
-				next_pos = _selected->get_base_position();
+			if (_selected != nullptr) {
+				if (_selected->surf() != nullptr) {
+					next = _selected->surf()->get_pixmap();
+					next_pos = _selected->get_base_position();
+				}
 			}
+
+			fading_notebook = ptr<renderable_notebook_fading_t> {
+					new renderable_notebook_fading_t { prev, next, prev_pos,
+							next_pos } };
+
 		}
 
-		double ratio = (sin(
-				static_cast<double>(time - swap_start) / animation_duration
-						* M_PI - M_PI_2) * 1.05 + 1.0) / 2.0;
+		double ratio = (static_cast<double>(time - swap_start) / static_cast<double const>(animation_duration));
+		//ratio = (cos(ratio*M_PI-M_PI)*1.05+1.0)/2.0;
 
-		auto x = new renderable_notebook_fading_t{prev, next, prev_pos, next_pos};
-		x->set_ratio(ratio);
-		out += ptr<renderable_t>{x};
+		fading_notebook->set_ratio(ratio);
+		printf("ratio = %f\n", ratio);
+		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
 
 	} else {
 		/** animation is terminated **/
 		prev_surf.reset();
+		fading_notebook.reset();
 
 		if (_selected != nullptr) {
 
-			if (_selected->surf() != nullptr) {
-				i_rect pos {_selected->base_position()};
-				region dmg {_selected->surf()->get_damaged()};
-				_selected->surf()->clear_damaged();
-				dmg.translate(pos.x, pos.y);
-				ptr<renderable_t> x{
-						new renderable_pixmap_t(_selected->surf()->get_pixmap(),
-								pos, dmg)};
+			ptr<renderable_t> x{_selected->get_base_renderable()};
+
+			if (x != nullptr) {
 				out += x;
 			}
 

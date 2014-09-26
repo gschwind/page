@@ -44,11 +44,11 @@ public:
 	/**
 	 * Caution: limited to 54 bits while nsec store 64 bits
 	 */
-	operator double() {
+	operator double() const {
 		return static_cast<double>(nsec);
 	}
 
-	operator int64_t() {
+	operator int64_t() const {
 		return nsec;
 	}
 

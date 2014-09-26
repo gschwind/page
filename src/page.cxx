@@ -339,7 +339,7 @@ void page_t::run() {
 	GrabModeSync, GrabModeAsync, None, None);
 
 	timespec _max_wait;
-	time_t const default_wait = 1000000000L / 60L;
+	time_t const default_wait = 1000000000L / 120L;
 	time_t max_wait = default_wait;
 	time_t next_frame;
 
@@ -400,20 +400,23 @@ void page_t::run() {
 			time_t cur_tic;
 			cur_tic.get_time();
 			if (cur_tic > next_frame) {
-				next_frame = cur_tic + default_wait;
-				max_wait = default_wait;
+
 
 				rnd->clear_renderable();
 				vector<ptr<renderable_t>> ret;
 				prepare_render(ret, cur_tic);
 				rnd->push_back_renderable(ret);
 				rnd->render();
+				XSync(cnx->dpy(), False);
+				cur_tic.get_time();
+
+				/** slow down frame if render is slow **/
+				next_frame = cur_tic + default_wait;
+				max_wait = default_wait;
 			} else {
 				max_wait = next_frame - cur_tic;
 			}
 		}
-
-
 
 	}
 }
@@ -3543,7 +3546,6 @@ void page_t::onmap(Window w) {
 		}
 
 	}
-
 
 	cnx->ungrab();
 
