@@ -77,9 +77,12 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 
 	_fps_top = 0;
 	_show_fps = false;
+	_show_damaged = false;
+	_debug_x = 0;
+	_debug_y = 0;
 
 #ifdef WITH_PANGO
-	_fps_font_desc = pango_font_description_from_string("Ubuntu 16");
+	_fps_font_desc = pango_font_description_from_string("Ubuntu Mono Bold 11");
 	_fps_font_map = pango_cairo_font_map_new();
 	_fps_context = pango_font_map_create_context(_fps_font_map);
 #endif
@@ -153,6 +156,10 @@ void compositor_t::render() {
 		_damaged = _desktop_region;
 	}
 
+	if (_show_fps) {
+		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+200,100};
+	}
+
 //	_graph_scene.clear();
 //	for(auto x: _prepare_render) {
 //		vector<ptr<renderable_t>> tmp = x->call(cur);
@@ -213,16 +220,10 @@ void compositor_t::render() {
 		_direct_render -= x;
 	}
 
-	if (_show_fps) {
-
-//		for (auto &i : _graph_scene) {
-//			i->render(cr, region{0, 0, 640, 480});
-//		}
-
+	if (_show_damaged) {
 		for (auto &i : _damaged) {
 			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
 		}
-
 	}
 
 	if (_show_fps) {
@@ -233,29 +234,19 @@ void compositor_t::render() {
 			double fps = (_FPS_WINDOWS * 1000000000.0)
 					/ (static_cast<int64_t>(_fps_history[_fps_top])
 							- static_cast<int64_t>(_fps_history[_fps_head]));
-			pango_printf(cr, 40.0, 40.0, "fps: %.1f", fps);
-			pango_printf(cr, 40.0, 60.0, "miss rate: %.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
 
 			cairo_save(cr);
 			cairo_identity_matrix(cr);
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_translate(cr, 40.0, 140.0);
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			cairo_translate(cr, _debug_x, _debug_y);
 
-			cairo_set_source_rgb(cr, 0.2, 0.2, 0.2);
-			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 200.0);
+			cairo_set_source_rgba(cr, 0.2, 0.2, 0.2, 0.5);
+			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0+200, 100.0);
 			cairo_fill(cr);
 
 			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 200.0);
+			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 100.0);
 			cairo_stroke(cr);
-
-
-			cairo_set_source_rgb(cr, 0.0, 1.0, 0.0);
-			cairo_new_path(cr);
-			cairo_move_to(cr, 0.0, 100.0);
-			cairo_line_to(cr, _FPS_WINDOWS*2.0, 100.0);
-			cairo_stroke(cr);
-
 
 			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 
@@ -265,25 +256,29 @@ void compositor_t::render() {
 
 			double ref = _desktop_region.area();
 			double xdmg = _damaged_area[_fps_top];
-			cairo_move_to(cr, 0 * 5.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
 
 			for(int i = 1; i < _FPS_WINDOWS; ++i) {
 				int frm = (_fps_top + i) % _FPS_WINDOWS;
 				double xdmg = _damaged_area[frm];
-				cairo_line_to(cr, i * 2.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+				cairo_line_to(cr, i * 2.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
 			}
 			cairo_stroke(cr);
 
 			cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
 			xdmg = _direct_render_area[_fps_top];
-			cairo_move_to(cr, 0 * 5.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
 
 			for(int i = 1; i < _FPS_WINDOWS; ++i) {
 				int frm = (_fps_top + i) % _FPS_WINDOWS;
 				double xdmg = _direct_render_area[frm];
-				cairo_line_to(cr, i * 2.0, 200.0 - std::min((xdmg/ref)*100.0, 200.0));
+				cairo_line_to(cr, i * 2.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
 			}
 			cairo_stroke(cr);
+
+			pango_printf(cr, _FPS_WINDOWS*2+20,0,  "fps:       %6.1f", fps);
+			pango_printf(cr, _FPS_WINDOWS*2+20,20, "miss rate: %6.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
+
 			cairo_restore(cr);
 
 		}
@@ -496,6 +491,12 @@ void compositor_t::update_layout() {
 		if(info->noutput > 0) {
 			i_rect area(info->x, info->y, info->width, info->height);
 			_desktop_region = _desktop_region + area;
+
+			if(i == 0) {
+				_debug_x = info->x + 40;
+				_debug_y = info->y + info->height - 120;
+			}
+
 		}
 		XRRFreeCrtcInfo(info);
 	}
@@ -551,7 +552,6 @@ void compositor_t::pango_printf(cairo_t * cr, double x, double y,
 	va_start(l, fmt);
 
 	cairo_save(cr);
-	cairo_identity_matrix(cr);
 	cairo_move_to(cr, x, y);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 

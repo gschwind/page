@@ -69,8 +69,11 @@ private:
 	int _fps_top;
 	page::time_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
+	bool _show_damaged;
 	int _damaged_area[_FPS_WINDOWS];
 	int _direct_render_area[_FPS_WINDOWS];
+	int _debug_x;
+	int _debug_y;
 
 	bool _need_render;
 
@@ -82,8 +85,8 @@ private:
 	region _damaged;
 	region _desktop_region;
 
-
 	int back_buffer_state;
+
 
 #ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
@@ -167,7 +170,19 @@ public:
 	}
 
 	void set_show_fps(bool b) {
+		if(_show_fps != b)
+			_damaged += _desktop_region;
 		_show_fps = b;
+	}
+
+	bool show_damaged() {
+		return _show_damaged;
+	}
+
+	void set_show_damaged(bool b) {
+		if(_show_damaged != b)
+			_damaged += _desktop_region;
+		_show_damaged = b;
 	}
 
 	void need_render() {

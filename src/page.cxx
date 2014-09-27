@@ -650,7 +650,11 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 		if(k == bind_debug_2.ks and (e.state & bind_debug_2.mod)) {
-			rpage->add_damaged(_root_position);
+			if(rnd->show_damaged()) {
+				rnd->set_show_damaged(false);
+			} else {
+				rnd->set_show_damaged(true);
+			}
 		}
 
 		if(k == bind_debug_3.ks and (e.state & bind_debug_3.mod)) {
