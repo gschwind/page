@@ -32,6 +32,7 @@ public:
 
 	dropdown_menu_t(display_t * cnx, theme_t * theme) : _theme(theme) {
 		selected = 0;
+		_is_visible = false;
 	}
 
 	~dropdown_menu_t() {
@@ -146,21 +147,20 @@ public:
 		if(not _is_visible)
 			return;
 
-
 		cairo_save(cr);
 
-		for (auto a : area) {
+		for (auto const & a : area) {
 			cairo_clip(cr, a);
 
 			cairo_identity_matrix(cr);
 			cairo_rectangle(cr, _position.x, _position.y, _position.w,
 					_position.h);
 			cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 			cairo_fill(cr);
 
 			cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
 			int n = 0;
 			for (auto i : window_list) {
@@ -171,7 +171,7 @@ public:
 				if (selected == n) {
 					cairo_rectangle(cr, area.x, area.y, area.w, area.h);
 					cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
-					cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 					cairo_fill(cr);
 				}
 
@@ -179,8 +179,9 @@ public:
 				++n;
 			}
 
-			cairo_restore(cr);
 		}
+
+		cairo_restore(cr);
 	}
 
 	/**
@@ -203,7 +204,7 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		if(_is_durty) {
+		if(_is_durty or true) {
 			return region{_position};
 		} else {
 			return region{};

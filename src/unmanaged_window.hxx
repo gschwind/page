@@ -232,11 +232,7 @@ public:
 
 
 		if (surf != nullptr) {
-			region dmg = surf->get_damaged();
-			surf->clear_damaged();
-			dmg.translate(pos.x, pos.y);
-			auto x = new renderable_pixmap_t(surf->get_pixmap(), pos, dmg);
-			out += ptr<renderable_t>{x};
+			out += get_base_renderable();
 		}
 		tree_t::_prepare_render(out, time);
 	}
@@ -248,6 +244,50 @@ public:
 	i_rect get_visible() {
 		i_rect rec{allocation()};
 		return rec;
+	}
+
+	ptr<renderable_t> get_base_renderable() {
+		i_rect pos(_properties->wa().x, _properties->wa().y,
+				_properties->wa().width, _properties->wa().height);
+
+		if (surf != nullptr) {
+			i_rect loc{pos};
+			region vis{0,0,(int)pos.w,(int)pos.h};
+			region opa;
+			region shp;
+
+			if(shape() != nullptr) {
+				shp = *shape();
+			} else {
+				shp = i_rect(0, 0, pos.w, pos.h);
+			}
+
+			if (net_wm_opaque_region() != nullptr) {
+				opa = region { *(net_wm_opaque_region()) };
+			} else {
+				if (wa().depth == 24) {
+					opa = region { pos };
+				}
+			}
+
+			opa &= shp;
+			opa.translate(pos.x, pos.y);
+
+			vis.translate(pos.x, pos.y);
+
+			region dmg { surf->get_damaged() };
+			surf->clear_damaged();
+			dmg.translate(pos.x, pos.y);
+			auto x = new renderable_pixmap_t(surf->get_pixmap(),
+					pos, dmg);
+			x->set_opaque_region(opa);
+			x->set_visible_region(vis);
+			return ptr<renderable_t>{x};
+
+		} else {
+			/* return null */
+			return ptr<renderable_t>{};
+		}
 	}
 
 };

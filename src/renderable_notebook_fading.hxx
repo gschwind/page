@@ -97,20 +97,19 @@ public:
 			cairo_destroy(crb);
 		}
 
+		cairo_save(cr);
 		for (auto &cl : area) {
-			cairo_save(cr);
 			cairo_clip(cr, tmp_pos&cl);
-
 			cairo_pattern_t * p1 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0);
 			cairo_set_source_surface(cr, tmpa, tmp_pos.x, tmp_pos.y);
 			cairo_mask(cr, p1);
 			cairo_pattern_destroy(p1);
-
 			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, ratio);
 			cairo_set_source_surface(cr, tmpb, tmp_pos.x, tmp_pos.y);
 			cairo_mask(cr, p0);
 			cairo_pattern_destroy(p0);
 		}
+		cairo_restore(cr);
 
 		if(tmpb != nullptr)
 			cairo_surface_destroy(tmpb);
