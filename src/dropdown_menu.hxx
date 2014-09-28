@@ -19,8 +19,6 @@ namespace page {
 class dropdown_menu_t : public renderable_t {
 
 	i_rect _position;
-
-	bool _has_alpha;
 	bool _is_durty;
 	bool _is_visible;
 
@@ -33,6 +31,7 @@ public:
 	dropdown_menu_t(display_t * cnx, theme_t * theme) : _theme(theme) {
 		selected = 0;
 		_is_visible = false;
+		_is_durty = true;
 	}
 
 	~dropdown_menu_t() {
@@ -100,17 +99,14 @@ public:
 	}
 
 	bool need_render(time_t time) {
-		return false;
+		return _is_durty;
 	}
 
 	void set_selected(int s) {
 		if(s >= 0 and s < window_list.size()) {
 			selected = s;
+			_is_durty = true;
 		}
-	}
-
-	void mark_durty() {
-		_is_durty = true;
 	}
 
 	void move_resize(i_rect const & area) {
@@ -204,7 +200,7 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		if(_is_durty or true) {
+		if(_is_durty) {
 			return region{_position};
 		} else {
 			return region{};
