@@ -56,13 +56,14 @@ public:
 		return window_list[selected]->id;
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
+	virtual void render(cairo_t * cr, region const & area) {
 
 		if(not _is_visible)
 			return;
 
+		for(auto &a: area) {
 		cairo_save(cr);
-
+		cairo_clip(cr, a);
 		cairo_translate(cr, _position.x, _position.y);
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
@@ -103,8 +104,9 @@ public:
 		}
 
 		cairo_restore(cr);
-
+		}
 	}
+
 
 	bool need_render(time_t time) {
 		return false;

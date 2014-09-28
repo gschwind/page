@@ -146,14 +146,12 @@ page_t::~page_t() {
 
 	delete rpage;
 
-	if(pfm != nullptr)
-		delete pfm;
-	if(pn0 != nullptr)
-		delete pn0;
-	if(ps != nullptr)
-		delete ps;
-	if(pat != nullptr)
-		delete pat;
+	pfm.reset();
+	pn0.reset();
+	ps.reset();
+	pat.reset();
+	menu.reset();
+
 
 	/* get all childs excluding this */
 	auto childs = get_all_childs();
@@ -242,10 +240,10 @@ void page_t::run() {
 			_root_position.h);
 
 	/* create and add popups (overlay) */
-	pfm = new popup_frame_move_t(theme);
-	pn0 = new popup_notebook0_t(theme);
-	ps = new popup_split_t(theme);
-	pat = new popup_alt_tab_t(cnx, theme);
+	pfm = ptr<popup_frame_move_t>{new popup_frame_move_t(theme)};
+	pn0 = ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
+	ps = ptr<popup_split_t>{new popup_split_t(theme)};
+	pat = ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
 	menu = ptr<dropdown_menu_t>{new dropdown_menu_t(cnx, theme)};
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
@@ -2840,12 +2838,12 @@ void page_t::notebook_close(notebook_t * src) {
 
 }
 
-void page_t::update_popup_position(popup_notebook0_t * p,
+void page_t::update_popup_position(ptr<popup_notebook0_t> p,
 		i_rect & position) {
 	p->move_resize(position);
 }
 
-void page_t::update_popup_position(popup_frame_move_t * p,
+void page_t::update_popup_position(ptr<popup_frame_move_t> p,
 		i_rect & position) {
 	p->move_resize(position);
 }
@@ -4023,11 +4021,11 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 //		i->render(cr, time);
 //	}
 
-	pat->render(cr, time);
-	ps->render(cr, time);
-	pn0->render(cr, time);
-	pfm->render(cr, time);
-	menu->render(cr, time);
+	//pat->render(cr, time);
+	//ps->render(cr, time);
+	//pn0->render(cr, time);
+	//pfm->render(cr, time);
+	//menu->render(cr, time);
 
 	//_need_render = false;
 
@@ -4236,6 +4234,23 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 //	pfm->render(cr, time);
 //	menu->render(cr, time);
 //
+
+	if(pat->is_visible()) {
+		out.push_back(pat);
+	}
+
+	if(ps->is_visible()) {
+		out.push_back(ps);
+	}
+
+	if(pn0->is_visible()) {
+		out.push_back(pn0);
+	}
+
+	if(pfm->is_visible()) {
+		out.push_back(pfm);
+	}
+
 	if(menu->is_visible()) {
 		out.push_back(menu);
 	}

@@ -20,7 +20,7 @@
 namespace page {
 
 
-class window_overlay_t {
+class window_overlay_t : public renderable_t {
 
 	static long const OVERLAY_EVENT_MASK = ExposureMask | StructureNotifyMask;
 
@@ -70,6 +70,33 @@ public:
 
 	i_rect const & position() {
 		return _position;
+	}
+
+	/**
+	 * Derived class must return opaque region for this object,
+	 * If unknown it's safe to leave this empty.
+	 **/
+	virtual region get_opaque_region() {
+		return region{_position};
+	}
+
+	/**
+	 * Derived class must return visible region,
+	 * If unknow the whole screen can be returned, but draw will be called each time.
+	 **/
+	virtual region get_visible_region() {
+		return region{_position};
+	}
+
+	/**
+	 * return currently damaged area (absolute)
+	 **/
+	virtual region get_damaged()  {
+		if(_is_durty) {
+			return region{_position};
+		} else {
+			return region{};
+		}
 	}
 
 };

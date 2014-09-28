@@ -40,13 +40,17 @@ struct popup_split_t: public window_overlay_t {
 		_s_base = s;
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
+	virtual void render(cairo_t * cr, region const & area) {
 
 		if(not _is_visible)
 			return;
-		cairo_save(cr);
-		_theme->render_popup_split(cr, _s_base, _current_split);
-		cairo_restore(cr);
+
+		for (auto const & a : area) {
+			cairo_save(cr);
+			cairo_clip(cr, a);
+			_theme->render_popup_split(cr, _s_base, _current_split);
+			cairo_restore(cr);
+		}
 
 	}
 

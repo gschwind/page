@@ -39,15 +39,19 @@ struct popup_frame_move_t: public window_overlay_t {
 		this->title = title;
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
+	virtual void render(cairo_t * cr, region const & area) {
 
 		if(not _is_visible)
 			return;
 
-		cairo_save(cr);
-		cairo_translate(cr, _position.x, _position.y);
-		_theme->render_popup_move_frame(cr, icon, _position.w, _position.h, title);
-		cairo_restore(cr);
+		for (auto & a : area) {
+			cairo_save(cr);
+			cairo_clip(cr, a);
+			cairo_translate(cr, _position.x, _position.y);
+			_theme->render_popup_move_frame(cr, icon, _position.w, _position.h,
+					title);
+			cairo_restore(cr);
+		}
 	}
 
 };

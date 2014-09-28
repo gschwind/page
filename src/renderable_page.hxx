@@ -17,12 +17,18 @@
 
 namespace page {
 
-class renderable_page_t: public window_overlay_t {
+class renderable_page_t {
 	display_t * _cnx;
 	theme_t * _theme;
 	region damaged;
 
 	Pixmap pix;
+
+	i_rect _position;
+
+	bool _has_alpha;
+	bool _is_durty;
+	bool _is_visible;
 
 	/** rendering tabs is time consumming, thus use back buffer **/
 	cairo_surface_t * _back_surf;
@@ -30,16 +36,18 @@ class renderable_page_t: public window_overlay_t {
 public:
 
 	renderable_page_t(display_t * cnx, theme_t * theme, int width,
-			int height) :
-			window_overlay_t(i_rect(0, 0, width, height)), _theme(
-					theme) {
-		window_overlay_t::show();
+			int height) {
+		_is_durty = true;
+		_is_visible = true;
+		_has_alpha = false;
 
 		_cnx = cnx;
 		XWindowAttributes wa;
 		XGetWindowAttributes(cnx->dpy(), cnx->root(), &wa);
 		pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, wa.depth);
 		_back_surf = cairo_xlib_surface_create(cnx->dpy(), pix, wa.visual, wa.width, wa.height);
+
+		_position = i_rect{wa.x, wa.y, wa.width, wa.height};
 
 
 	}
@@ -104,6 +112,35 @@ public:
 	renderable_surface_t * prepare_render() {
 		renderable_surface_t * surf = new renderable_surface_t(_back_surf, _position);
 		return surf;
+	}
+
+	void mark_durty() {
+		_is_durty = true;
+	}
+
+	void move_resize(i_rect const & area) {
+		_position = area;
+	}
+
+	void move(int x, int y) {
+		_position.x = x;
+		_position.y = y;
+	}
+
+	void show() {
+		_is_visible = true;
+	}
+
+	void hide() {
+		_is_visible = false;
+	}
+
+	bool is_visible() {
+		return _is_visible;
+	}
+
+	i_rect const & position() {
+		return _position;
 	}
 
 };

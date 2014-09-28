@@ -115,10 +115,10 @@ public:
 	};
 
 	/* popups (overlay) */
-	popup_notebook0_t * pn0;
-	popup_frame_move_t * pfm;
-	popup_split_t * ps;
-	popup_alt_tab_t * pat;
+	ptr<popup_notebook0_t> pn0;
+	ptr<popup_frame_move_t> pfm;
+	ptr<popup_split_t> ps;
+	ptr<popup_alt_tab_t> pat;
 	ptr<dropdown_menu_t> menu;
 
 	struct mode_data_split_t {
@@ -491,8 +491,8 @@ public:
 	/* close a notebook and unsplit the parent */
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(popup_notebook0_t * p, i_rect & position);
-	void update_popup_position(popup_frame_move_t * p, i_rect & position);
+	void update_popup_position(ptr<popup_notebook0_t> p, i_rect & position);
+	void update_popup_position(ptr<popup_frame_move_t> p, i_rect & position);
 
 	/* compute the allocation of viewport taking in account DOCKs */
 	void compute_viewport_allocation(viewport_t & v);
