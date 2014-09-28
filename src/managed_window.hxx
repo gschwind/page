@@ -222,10 +222,6 @@ public:
 		expose();
 	}
 
-	i_rect const & base_position() const {
-		return _base_position;
-	}
-
 public:
 	void grab_button_focused() {
 		/** First ungrab all **/
@@ -599,6 +595,18 @@ public:
 			/* return null */
 			return ptr<renderable_t>{};
 		}
+	}
+
+	virtual i_rect const & base_position() const {
+		return _base_position;
+	}
+
+	virtual i_rect const & orig_position() const {
+		return _orig_position;
+	}
+
+	virtual bool has_window(Window w) const {
+		return w == _properties->id() or w == _base or w == _deco;
 	}
 
 };

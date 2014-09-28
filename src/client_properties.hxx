@@ -807,6 +807,8 @@ public:
 		_wa.border_width = e.border_width;
 	}
 
+	i_rect position() const { return i_rect{_wa.x, _wa.y, _wa.width, _wa.height}; }
+
 };
 
 }

@@ -254,24 +254,18 @@ public:
 		return w == _properties->id();
 	}
 
-	virtual bool has_window(Window w) {
-		return w == _properties->id();
-	}
-
-	virtual Window base() const {
-		return _properties->id();
-	}
-
-	virtual Window orig() const {
-		return _properties->id();
-	}
+	virtual bool has_window(Window w) const = 0;
+	virtual Window base() const = 0;
+	virtual Window orig() const = 0;
+	virtual i_rect const & base_position() const = 0;
+	virtual i_rect const & orig_position() const = 0;
 
 	virtual string get_node_name() const {
 		return _get_node_name<'c'>();
 	}
 
 	virtual void replace(tree_t * src, tree_t * by) {
-		printf("Unexpected use of managed_window_base_t::replace\n");
+		printf("Unexpected use of client_base_t::replace\n");
 	}
 
 	virtual list<tree_t *> childs() const {
@@ -403,19 +397,9 @@ public:
 		_properties->print_properties();
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
-		/* draw nothing */
-		cout << "call " << __FUNCTION__ << endl;
-	}
-
-//	bool need_render(time_t time) {
-//
-//		for(auto i: childs()) {
-//			if(i->need_render(time)) {
-//				return true;
-//			}
-//		}
-//		return false;
+//	virtual void render(cairo_t * cr, time_t time) {
+//		/* draw nothing */
+//		cout << "call " << __FUNCTION__ << endl;
 //	}
 
 	void process_event(XConfigureEvent const & e) {
@@ -469,6 +453,8 @@ public:
 	motif_wm_hints_t const *           motif_hints() const { return _properties->motif_hints(); }
 
 	region const *                     shape() const { return _properties->shape(); }
+
+	i_rect                             position() { return _properties->position(); }
 
 };
 

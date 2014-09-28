@@ -20,9 +20,9 @@ namespace page {
 class renderable_page_t {
 	display_t * _cnx;
 	theme_t * _theme;
-	region damaged;
+	region _damaged;
 
-	Pixmap pix;
+	Pixmap _pix;
 
 	i_rect _position;
 
@@ -33,10 +33,13 @@ class renderable_page_t {
 	/** rendering tabs is time consumming, thus use back buffer **/
 	cairo_surface_t * _back_surf;
 
+	ptr<renderable_surface_t> _renderable;
+
 public:
 
 	renderable_page_t(display_t * cnx, theme_t * theme, int width,
 			int height) {
+		_theme = theme;
 		_is_durty = true;
 		_is_visible = true;
 		_has_alpha = false;
@@ -44,23 +47,21 @@ public:
 		_cnx = cnx;
 		XWindowAttributes wa;
 		XGetWindowAttributes(cnx->dpy(), cnx->root(), &wa);
-		pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, wa.depth);
-		_back_surf = cairo_xlib_surface_create(cnx->dpy(), pix, wa.visual, wa.width, wa.height);
-
+		_pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, wa.depth);
+		_back_surf = cairo_xlib_surface_create(cnx->dpy(), _pix, wa.visual, wa.width, wa.height);
 		_position = i_rect{wa.x, wa.y, wa.width, wa.height};
-
-
+		_renderable = ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _position}};
 	}
 
 	~renderable_page_t() {
 		cout << "call " << __FUNCTION__ << endl;
 		cairo_surface_destroy(_back_surf);
-		XFreePixmap(_cnx->dpy(), pix);
+		XFreePixmap(_cnx->dpy(), _pix);
 	}
 
 	void repair_damaged(list<tree_t *> tree) {
 
-		if(damaged.empty() and not _is_durty)
+		if(_damaged.empty() and not _is_durty)
 			return;
 
 		cairo_t * cr = cairo_create(_back_surf);
@@ -91,27 +92,18 @@ public:
 		cairo_destroy(cr);
 
 		_is_durty = false;
-		damaged.clear();
+		_damaged.clear();
 
 	}
 
 	void add_damaged(i_rect area) {
-		damaged += area;
+		_damaged += area;
 	}
 
-	void render(cairo_t * cr, time_t time) {
-		i_rect clip = _position;
-		if (!clip.is_null()) {
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-			cairo_set_source_surface(cr, _back_surf, 0, 0);
-			cairo_fill(cr);
-		}
-	}
-
-	renderable_surface_t * prepare_render() {
-		renderable_surface_t * surf = new renderable_surface_t(_back_surf, _position);
-		return surf;
+	ptr<renderable_surface_t> prepare_render() {
+		_renderable->clear_damaged();
+		_renderable->add_damaged(_damaged);
+		return _renderable;
 	}
 
 	void mark_durty() {
@@ -141,6 +133,10 @@ public:
 
 	i_rect const & position() {
 		return _position;
+	}
+
+	region const & get_damaged() {
+		return _damaged;
 	}
 
 };

@@ -30,6 +30,8 @@ private:
 
 	shared_ptr<composite_surface_t> surf;
 
+	mutable i_rect _base_position;
+
 	/* avoid copy */
 	unmanaged_window_t(unmanaged_window_t const &);
 	unmanaged_window_t & operator=(unmanaged_window_t const &);
@@ -288,6 +290,28 @@ public:
 			/* return null */
 			return ptr<renderable_t>{};
 		}
+	}
+
+	virtual Window base() const {
+		return _properties->id();
+	}
+
+	virtual Window orig() const {
+		return _properties->id();
+	}
+
+	virtual i_rect const & base_position() const {
+		_base_position = _properties->position();
+		return _base_position;
+	}
+
+	virtual i_rect const & orig_position() const {
+		_base_position = _properties->position();
+		return _base_position;
+	}
+
+	virtual bool has_window(Window w) const {
+		return w == _properties->id();
 	}
 
 };

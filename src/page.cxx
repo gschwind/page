@@ -391,8 +391,6 @@ void page_t::run() {
 
 		cnx->ungrab();
 
-		rpage->repair_damaged(get_all_childs());
-
 		if (rnd != nullptr) {
 			/** limit FPS **/
 			time_t cur_tic;
@@ -1849,8 +1847,21 @@ void page_t::process_event(XConfigureEvent const & e) {
 	client_base_t * c = find_client(e.window);
 
 	if(c != nullptr) {
+		/** damage corresponding area **/
+		if(e.event == cnx->root()) {
+			rnd->add_damaged(c->base_position());
+		}
+
 		c->process_event(e);
+
+		/** damage corresponding area **/
+		if(e.event == cnx->root()) {
+			rnd->add_damaged(c->base_position());
+		}
 	}
+
+
+
 }
 
 /* track all created window */
@@ -3730,6 +3741,7 @@ void page_t::destroy_client(client_base_t * c) {
 		unmanage(mw);
 	}
 
+	rnd->add_damaged(c->base_position());
 	remove_client(c);
 	update_client_list();
 	rpage->mark_durty();
@@ -4013,21 +4025,21 @@ void page_t::check_x11_extension() {
 }
 
 void page_t::render(cairo_t * cr, page::time_t time) {
-	rpage->repair_damaged(get_all_childs());
-	XFlush(cnx->dpy());
-	rpage->render(cr, time);
-
-//	for(auto i: childs()) {
-//		i->render(cr, time);
-//	}
-
-	//pat->render(cr, time);
-	//ps->render(cr, time);
-	//pn0->render(cr, time);
-	//pfm->render(cr, time);
-	//menu->render(cr, time);
-
-	//_need_render = false;
+//	rpage->repair_damaged(get_all_childs());
+//	XFlush(cnx->dpy());
+//	rpage->render(cr, time);
+//
+////	for(auto i: childs()) {
+////		i->render(cr, time);
+////	}
+//
+//	//pat->render(cr, time);
+//	//ps->render(cr, time);
+//	//pn0->render(cr, time);
+//	//pfm->render(cr, time);
+//	//menu->render(cr, time);
+//
+//	//_need_render = false;
 
 }
 
@@ -4218,23 +4230,16 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	rpage->repair_damaged(get_all_childs());
 
-	renderable_surface_t * x = rpage->prepare_render();
-	if(need_render(time))
-		x->add_damaged(region(i_rect(0,0,100000,100000)));
+	/**
+	 * first get renderable and then repair it to get proper
+	 * damaged area
+	 **/
+	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
+	rpage->repair_damaged(get_all_childs());
 
-	out += ptr<renderable_t>(x);
 	tree_t::_prepare_render(out, time);
 
-	//printf("render size = %lu\n", ret.size());
-
-//
-//	pat->render(cr, time);
-//	ps->render(cr, time);
-//	pn0->render(cr, time);
-//	pfm->render(cr, time);
-//	menu->render(cr, time);
-//
-
+	/** Add all possible popups **/
 	if(pat->is_visible()) {
 		out.push_back(pat);
 	}
