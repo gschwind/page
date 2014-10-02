@@ -340,12 +340,44 @@ bool managed_window_t::is(managed_window_type_e type) {
 
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
-		theme_managed_window_t fw;
-		/** TODO **/
 
 		if (_is_durty) {
+			theme_managed_window_t fw;
+
+			if(_bottom_buffer != nullptr) {
+				fw.cairo_bottom = cairo_create(_bottom_buffer);
+			} else {
+				fw.cairo_bottom = nullptr;
+			}
+
+			if(_top_buffer != nullptr) {
+				fw.cairo_top = cairo_create(_top_buffer);
+			} else {
+				fw.cairo_top = nullptr;
+			}
+
+			if(_right_buffer != nullptr) {
+				fw.cairo_right = cairo_create(_right_buffer);
+			} else {
+				fw.cairo_right = nullptr;
+			}
+
+			if(_left_buffer != nullptr) {
+				fw.cairo_left = cairo_create(_left_buffer);
+			} else {
+				fw.cairo_left = nullptr;
+			}
+
+
+			fw.demand_attention = false;
+			fw.focuced = is_focused();
+			fw.position = base_position();
+			fw.icon = _icon;
+			fw.title = title();
+
 			_is_durty = false;
 			_theme->render_floating(&fw);
+
 		}
 
 		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
@@ -353,7 +385,7 @@ void managed_window_t::expose() {
 		cairo_t * _cr = cairo_create(_surf);
 
 		/** top **/
-		if (_top_buffer != 0) {
+		if (_top_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0, 0, _base_position.w,
 					_theme->floating.margin.top);
@@ -362,7 +394,7 @@ void managed_window_t::expose() {
 		}
 
 		/** bottom **/
-		if (_bottom_buffer != 0) {
+		if (_bottom_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0,
 					_base_position.h - _theme->floating.margin.bottom,
@@ -373,7 +405,7 @@ void managed_window_t::expose() {
 		}
 
 		/** left **/
-		if (_left_buffer != 0) {
+		if (_left_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0.0, _theme->floating.margin.top,
 					_theme->floating.margin.left,
@@ -385,7 +417,7 @@ void managed_window_t::expose() {
 		}
 
 		/** right **/
-		if (_right_buffer != 0) {
+		if (_right_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr,
 					_base_position.w - _theme->floating.margin.right,
@@ -522,9 +554,9 @@ vector<floating_event_t> * managed_window_t::compute_floating_areas(
 i_rect managed_window_t::compute_floating_close_position(i_rect const & allocation) const {
 
 	i_rect position;
-	position.x = allocation.w - 35;
+	position.x = allocation.w - _theme->floating.close_width;
 	position.y = 0.0;
-	position.w = 35;
+	position.w = _theme->floating.close_width;
 	position.h = _theme->notebook.margin.top-3;
 
 	return position;
@@ -534,7 +566,7 @@ i_rect managed_window_t::compute_floating_bind_position(
 		i_rect const & allocation) const {
 
 	i_rect position;
-	position.x = allocation.w - 25 - 30;
+	position.x = allocation.w - _theme->floating.bind_width - _theme->floating.close_width;
 	position.y = 0.0;
 	position.w = 16;
 	position.h = 16;

@@ -2551,6 +2551,7 @@ void page_t::process_event(XEvent const & e) {
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->expose();
+				//rnd->add_damaged(mw->base_position());
 			}
 		}
 

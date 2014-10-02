@@ -926,7 +926,7 @@ void simple2_theme_t::render_floating_base(
 
 	i_rect allocation = mw->position;
 
-	{
+	if (mw->cairo_top != nullptr) {
 		cairo_t * cr = mw->cairo_top;
 
 		i_rect tab_area(0, 0, allocation.w, floating.margin.top);
@@ -1086,7 +1086,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_destroy(cr);
 	}
 
-	{
+	if (mw->cairo_bottom != nullptr) {
 		cairo_t * cr = mw->cairo_bottom;
 
 		i_rect b(0, 0, allocation.w, floating.margin.bottom);
@@ -1122,7 +1122,7 @@ void simple2_theme_t::render_floating_base(
 
 	}
 
-	{
+	if (mw->cairo_right != nullptr) {
 		cairo_t * cr = mw->cairo_right;
 
 		i_rect b(0, 0, floating.margin.right,
@@ -1145,7 +1145,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_destroy(cr);
 	}
 
-	{
+	if (mw->cairo_left != nullptr) {
 		cairo_t * cr = mw->cairo_left;
 
 		i_rect b(0, 0, floating.margin.left,

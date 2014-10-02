@@ -430,14 +430,14 @@ public:
 			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating.margin.top);
 		} else {
-			_top_buffer = 0;
+			_top_buffer = nullptr;
 		}
 
 		if (_theme->floating.margin.bottom > 0) {
 			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 					_base_position.w, _theme->floating.margin.bottom);
 		} else {
-			_bottom_buffer = 0;
+			_bottom_buffer = nullptr;
 		}
 
 		if (_theme->floating.margin.left > 0) {
@@ -446,7 +446,7 @@ public:
 					_base_position.h - _theme->floating.margin.top
 							- _theme->floating.margin.bottom);
 		} else {
-			_left_buffer = 0;
+			_left_buffer = nullptr;
 		}
 
 		if (_theme->floating.margin.right > 0) {
@@ -455,7 +455,7 @@ public:
 					_base_position.h - _theme->floating.margin.top
 							- _theme->floating.margin.bottom);
 		} else {
-			_right_buffer = 0;
+			_right_buffer = nullptr;
 		}
 
 	}
