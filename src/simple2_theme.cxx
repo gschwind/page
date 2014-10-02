@@ -91,6 +91,16 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	notebook.margin.left = 4;
 	notebook.margin.right = 4;
 
+	notebook.tab_height = 22;
+	notebook.selected_close_width = 35;
+	notebook.selected_unbind_width = 20;
+
+	notebook.menu_button_width;
+	notebook.close_width = 17;
+	notebook.hsplit_width = 17;
+	notebook.vsplit_width = 17;
+	notebook.mark_width = 17;
+
 	split.margin.top = 0;
 	split.margin.bottom = 0;
 	split.margin.left = 0;
@@ -100,8 +110,17 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating.margin.bottom = 6;
 	floating.margin.left = 6;
 	floating.margin.right = 6;
+	floating.close_width = 35;
+	floating.bind_width = 20;
 
+
+	split.margin.top = 0;
+	split.margin.bottom = 0;
+	split.margin.left = 0;
+	split.margin.right = 0;
 	split.width = 10;
+
+
 
 	_cnx = cnx;
 
@@ -585,7 +604,7 @@ void simple2_theme_t::render_notebook_selected(
 	cairo_pattern_destroy(gradient);
 
 	i_rect xncclose;
-	xncclose.x = b.x + b.w - 35;
+	xncclose.x = b.x + b.w - notebook.selected_close_width;
 	xncclose.y = b.y;
 	xncclose.w = 35;
 	xncclose.h = b.h-3;
@@ -679,7 +698,7 @@ void simple2_theme_t::render_notebook_selected(
 	/** draw close button **/
 
 	i_rect ncclose;
-	ncclose.x = tab_area.x + tab_area.w - 25;
+	ncclose.x = tab_area.x + tab_area.w - notebook.selected_close_width + 10;
 	ncclose.y = tab_area.y;
 	ncclose.w = 16;
 	ncclose.h = 16;
@@ -691,7 +710,8 @@ void simple2_theme_t::render_notebook_selected(
 
 	/** draw unbind button **/
 	i_rect ncub;
-	ncub.x = tab_area.x + tab_area.w - 25 - 30;
+	ncub.x = tab_area.x + tab_area.w - notebook.selected_unbind_width
+			- notebook.selected_close_width;
 	ncub.y = tab_area.y;
 	ncub.w = 16;
 	ncub.h = 16;
@@ -943,7 +963,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_stroke(cr));
 
 		i_rect xncclose;
-		xncclose.x = b.x + b.w - 35;
+		xncclose.x = b.x + b.w - floating.close_width;
 		xncclose.y = b.y;
 		xncclose.w = 35;
 		xncclose.h = notebook.margin.top-3;
@@ -1040,7 +1060,7 @@ void simple2_theme_t::render_floating_base(
 		/** draw close button **/
 
 		i_rect ncclose;
-		ncclose.x = tab_area.x + tab_area.w - 25;
+		ncclose.x = tab_area.x + tab_area.w - floating.close_width + 10;
 		ncclose.y = tab_area.y;
 		ncclose.w = 16;
 		ncclose.h = 16;
@@ -1052,7 +1072,7 @@ void simple2_theme_t::render_floating_base(
 
 		/** draw unbind button **/
 		i_rect ncub;
-		ncub.x = tab_area.x + tab_area.w - 25 - 30;
+		ncub.x = tab_area.x + tab_area.w - floating.bind_width - floating.close_width;
 		ncub.y = tab_area.y;
 		ncub.w = 16;
 		ncub.h = 16;
