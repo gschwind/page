@@ -16,13 +16,11 @@
 #include <map>
 #include <unistd.h>
 
-using namespace std;
-
-template class pair<string, string>;
-
-
+#include "utils.hxx"
 
 namespace page {
+
+using namespace std;
 
 class config_handler_t {
 

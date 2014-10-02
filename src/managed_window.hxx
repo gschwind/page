@@ -65,7 +65,7 @@ private:
 	cairo_surface_t * _right_buffer;
 
 	// icon cache
-	mutable window_icon_handler_t * _icon;
+	mutable icon16 * _icon;
 
 
 	/* private to avoid copy */
@@ -123,9 +123,9 @@ public:
 
 	managed_window_type_e get_type();
 
-	window_icon_handler_t * icon() const {
+	icon16 * icon() const {
 		if (_icon == nullptr) {
-			_icon = new window_icon_handler_t(this, 16, 16);
+			_icon = new icon16(*this);
 		}
 		return _icon;
 	}
@@ -426,34 +426,34 @@ public:
 
 	void create_back_buffer() {
 
-		if (_theme->floating_margin.top > 0) {
+		if (_theme->floating.margin.top > 0) {
 			_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-					_base_position.w, _theme->floating_margin.top);
+					_base_position.w, _theme->floating.margin.top);
 		} else {
 			_top_buffer = 0;
 		}
 
-		if (_theme->floating_margin.bottom > 0) {
+		if (_theme->floating.margin.bottom > 0) {
 			_bottom_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-					_base_position.w, _theme->floating_margin.bottom);
+					_base_position.w, _theme->floating.margin.bottom);
 		} else {
 			_bottom_buffer = 0;
 		}
 
-		if (_theme->floating_margin.left > 0) {
+		if (_theme->floating.margin.left > 0) {
 			_left_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-					_theme->floating_margin.left,
-					_base_position.h - _theme->floating_margin.top
-							- _theme->floating_margin.bottom);
+					_theme->floating.margin.left,
+					_base_position.h - _theme->floating.margin.top
+							- _theme->floating.margin.bottom);
 		} else {
 			_left_buffer = 0;
 		}
 
-		if (_theme->floating_margin.right > 0) {
+		if (_theme->floating.margin.right > 0) {
 			_right_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-					_theme->floating_margin.right,
-					_base_position.h - _theme->floating_margin.top
-							- _theme->floating_margin.bottom);
+					_theme->floating.margin.right,
+					_base_position.h - _theme->floating.margin.top
+							- _theme->floating.margin.bottom);
 		} else {
 			_right_buffer = 0;
 		}
@@ -470,7 +470,11 @@ public:
 			delete _floating_area;
 		}
 
-		_floating_area = _theme->compute_floating_areas(this);
+		theme_managed_window_t tm;
+		tm.position = _base_position;
+		tm.title = _title;
+
+		_floating_area = compute_floating_areas(&tm);
 	}
 
 	void set_opaque_region(Window w, region & region);
@@ -608,6 +612,12 @@ public:
 	virtual bool has_window(Window w) const {
 		return w == _properties->id() or w == _base or w == _deco;
 	}
+
+	vector<floating_event_t> * compute_floating_areas(
+			theme_managed_window_t * mw) const;
+	i_rect compute_floating_bind_position(
+			i_rect const & allocation) const;
+	i_rect compute_floating_close_position(i_rect const & allocation) const;
 
 };
 

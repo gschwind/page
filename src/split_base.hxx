@@ -9,12 +9,9 @@
 #define SPLIT_BASE_HXX_
 
 #include "tree.hxx"
+#include "theme_split.hxx"
 
 namespace page {
-
-enum split_type_e {
-	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
-};
 
 struct split_base_t : public tree_t {
 	virtual ~split_base_t() { }

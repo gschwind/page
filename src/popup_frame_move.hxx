@@ -18,7 +18,7 @@ namespace page {
 struct popup_frame_move_t: public window_overlay_t {
 
 	theme_t * _theme;
-	window_icon_handler_t * icon;
+	icon64 * icon;
 	string title;
 
 	popup_frame_move_t(theme_t * theme) :
@@ -35,7 +35,7 @@ struct popup_frame_move_t: public window_overlay_t {
 	void update_window(client_base_t * c, string title) {
 		if (icon != nullptr)
 			delete icon;
-		icon = new window_icon_handler_t(c, 64, 64);
+		icon = new icon64(*c);
 		this->title = title;
 	}
 

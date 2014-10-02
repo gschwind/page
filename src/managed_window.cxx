@@ -210,20 +210,20 @@ void managed_window_t::reconfigure() {
 
 		if (_motif_has_border) {
 			_base_position.x = _wished_position.x
-					- _theme->floating_margin.left;
-			_base_position.y = _wished_position.y - _theme->floating_margin.top;
-			_base_position.w = _wished_position.w + _theme->floating_margin.left
-					+ _theme->floating_margin.right;
-			_base_position.h = _wished_position.h + _theme->floating_margin.top
-					+ _theme->floating_margin.bottom;
+					- _theme->floating.margin.left;
+			_base_position.y = _wished_position.y - _theme->floating.margin.top;
+			_base_position.w = _wished_position.w + _theme->floating.margin.left
+					+ _theme->floating.margin.right;
+			_base_position.h = _wished_position.h + _theme->floating.margin.top
+					+ _theme->floating.margin.bottom;
 
 			if (_base_position.x < 0)
 				_base_position.x = 0;
 			if (_base_position.y < 0)
 				_base_position.y = 0;
 
-			_orig_position.x = _theme->floating_margin.left;
-			_orig_position.y = _theme->floating_margin.top;
+			_orig_position.x = _theme->floating.margin.left;
+			_orig_position.y = _theme->floating.margin.top;
 			_orig_position.w = _wished_position.w;
 			_orig_position.h = _wished_position.h;
 
@@ -340,10 +340,12 @@ bool managed_window_t::is(managed_window_type_e type) {
 
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
+		theme_managed_window_t fw;
+		/** TODO **/
 
 		if (_is_durty) {
 			_is_durty = false;
-			_theme->render_floating(this);
+			_theme->render_floating(&fw);
 		}
 
 		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
@@ -354,7 +356,7 @@ void managed_window_t::expose() {
 		if (_top_buffer != 0) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0, 0, _base_position.w,
-					_theme->floating_margin.top);
+					_theme->floating.margin.top);
 			cairo_set_source_surface(_cr, _top_buffer, 0, 0);
 			cairo_fill(_cr);
 		}
@@ -363,22 +365,22 @@ void managed_window_t::expose() {
 		if (_bottom_buffer != 0) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0,
-					_base_position.h - _theme->floating_margin.bottom,
-					_base_position.w, _theme->floating_margin.bottom);
+					_base_position.h - _theme->floating.margin.bottom,
+					_base_position.w, _theme->floating.margin.bottom);
 			cairo_set_source_surface(_cr, _bottom_buffer, 0,
-					_base_position.h - _theme->floating_margin.bottom);
+					_base_position.h - _theme->floating.margin.bottom);
 			cairo_fill(_cr);
 		}
 
 		/** left **/
 		if (_left_buffer != 0) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-			cairo_rectangle(_cr, 0.0, _theme->floating_margin.top,
-					_theme->floating_margin.left,
-					_base_position.h - _theme->floating_margin.top
-							- _theme->floating_margin.bottom);
+			cairo_rectangle(_cr, 0.0, _theme->floating.margin.top,
+					_theme->floating.margin.left,
+					_base_position.h - _theme->floating.margin.top
+							- _theme->floating.margin.bottom);
 			cairo_set_source_surface(_cr, _left_buffer, 0.0,
-					_theme->floating_margin.top);
+					_theme->floating.margin.top);
 			cairo_fill(_cr);
 		}
 
@@ -386,13 +388,13 @@ void managed_window_t::expose() {
 		if (_right_buffer != 0) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr,
-					_base_position.w - _theme->floating_margin.right,
-					_theme->floating_margin.top, _theme->floating_margin.right,
-					_base_position.h - _theme->floating_margin.top
-							- _theme->floating_margin.bottom);
+					_base_position.w - _theme->floating.margin.right,
+					_theme->floating.margin.top, _theme->floating.margin.right,
+					_base_position.h - _theme->floating.margin.top
+							- _theme->floating.margin.bottom);
 			cairo_set_source_surface(_cr, _right_buffer,
-					_base_position.w - _theme->floating_margin.right,
-					_theme->floating_margin.top);
+					_base_position.w - _theme->floating.margin.right,
+					_theme->floating.margin.top);
 			cairo_fill(_cr);
 		}
 
@@ -447,6 +449,99 @@ void managed_window_t::set_opaque_region(Window w, region & region) {
 			data.size());
 
 }
+
+vector<floating_event_t> * managed_window_t::compute_floating_areas(
+		theme_managed_window_t * mw) const {
+
+	vector<floating_event_t> * ret = new vector<floating_event_t>();
+
+	floating_event_t fc(FLOATING_EVENT_CLOSE);
+	fc.position = compute_floating_close_position(mw->position);
+	ret->push_back(fc);
+
+	floating_event_t fb(FLOATING_EVENT_BIND);
+	fb.position = compute_floating_bind_position(mw->position);
+	ret->push_back(fb);
+
+	int x0 = _theme->floating.margin.left;
+	int x1 = mw->position.w - _theme->floating.margin.right;
+
+	int y0 = _theme->floating.margin.bottom;
+	int y1 = mw->position.h - _theme->floating.margin.bottom;
+
+	int w0 = mw->position.w - _theme->floating.margin.left
+			- _theme->floating.margin.right;
+	int h0 = mw->position.h - _theme->floating.margin.bottom
+			- _theme->floating.margin.bottom;
+
+	floating_event_t ft(FLOATING_EVENT_TITLE);
+	ft.position = i_rect(x0, y0, w0,
+			_theme->floating.margin.top - _theme->floating.margin.bottom);
+	ret->push_back(ft);
+
+	floating_event_t fgt(FLOATING_EVENT_GRIP_TOP);
+	fgt.position = i_rect(x0, 0, w0, _theme->floating.margin.bottom);
+	ret->push_back(fgt);
+
+	floating_event_t fgb(FLOATING_EVENT_GRIP_BOTTOM);
+	fgb.position = i_rect(x0, y1, w0, _theme->floating.margin.bottom);
+	ret->push_back(fgb);
+
+	floating_event_t fgl(FLOATING_EVENT_GRIP_LEFT);
+	fgl.position = i_rect(0, y0, _theme->floating.margin.left, h0);
+	ret->push_back(fgl);
+
+	floating_event_t fgr(FLOATING_EVENT_GRIP_RIGHT);
+	fgr.position = i_rect(x1, y0, _theme->floating.margin.right, h0);
+	ret->push_back(fgr);
+
+	floating_event_t fgtl(FLOATING_EVENT_GRIP_TOP_LEFT);
+	fgtl.position = i_rect(0, 0, _theme->floating.margin.left,
+			_theme->floating.margin.bottom);
+	ret->push_back(fgtl);
+
+	floating_event_t fgtr(FLOATING_EVENT_GRIP_TOP_RIGHT);
+	fgtr.position = i_rect(x1, 0, _theme->floating.margin.right,
+			_theme->floating.margin.bottom);
+	ret->push_back(fgtr);
+
+	floating_event_t fgbl(FLOATING_EVENT_GRIP_BOTTOM_LEFT);
+	fgbl.position = i_rect(0, y1, _theme->floating.margin.left,
+			_theme->floating.margin.bottom);
+	ret->push_back(fgbl);
+
+	floating_event_t fgbr(FLOATING_EVENT_GRIP_BOTTOM_RIGHT);
+	fgbr.position = i_rect(x1, y1, _theme->floating.margin.right,
+			_theme->floating.margin.bottom);
+	ret->push_back(fgbr);
+
+	return ret;
+
+}
+
+i_rect managed_window_t::compute_floating_close_position(i_rect const & allocation) const {
+
+	i_rect position;
+	position.x = allocation.w - 35;
+	position.y = 0.0;
+	position.w = 35;
+	position.h = _theme->notebook.margin.top-3;
+
+	return position;
+}
+
+i_rect managed_window_t::compute_floating_bind_position(
+		i_rect const & allocation) const {
+
+	i_rect position;
+	position.x = allocation.w - 25 - 30;
+	position.y = 0.0;
+	position.w = 16;
+	position.h = 16;
+
+	return position;
+}
+
 
 }
 

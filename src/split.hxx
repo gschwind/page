@@ -95,6 +95,7 @@ public:
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 
+	i_rect compute_split_bar_location() const;
 
 };
 

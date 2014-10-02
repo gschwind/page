@@ -702,9 +702,8 @@ void page_t::process_event(XKeyEvent const & e) {
 				int s = 0;
 
 				for (auto i : managed_window) {
-					window_icon_handler_t * icon = new window_icon_handler_t(i, 64,
-							64);
-					cycle_window_entry_t * cy = new cycle_window_entry_t(i, icon);
+					icon64 * icon = new icon64(*i);
+					cycle_window_entry_t * cy = new cycle_window_entry_t(i, i->title(), icon);
 					v.push_back(cy);
 					if (i == _client_focused.front()) {
 						sel = s;
@@ -859,7 +858,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					int s = 0;
 
 					for (auto i : managed_window) {
-						dropdown_menu_entry_t * cy = new dropdown_menu_entry_t(i);
+						dropdown_menu_entry_t * cy = new dropdown_menu_entry_t(i, i->icon(), i->title());
 						v.push_back(cy);
 						if (i == _client_focused.front()) {
 							sel = s;
@@ -1615,10 +1614,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.f->reconfigure();
 
 		i_rect popup_new_position = size;
-		popup_new_position.x -= theme->floating_margin.left;
-		popup_new_position.y -= theme->floating_margin.top;
-		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
-		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+		popup_new_position.x -= theme->floating.margin.left;
+		popup_new_position.y -= theme->floating.margin.top;
+		popup_new_position.w += theme->floating.margin.left + theme->floating.margin.right;
+		popup_new_position.h += theme->floating.margin.top + theme->floating.margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
@@ -1702,10 +1701,10 @@ void page_t::process_event(XMotionEvent const & e) {
 		//mode_data_floating.f->reconfigure();
 
 		i_rect popup_new_position = size;
-		popup_new_position.x -= theme->floating_margin.left;
-		popup_new_position.y -= theme->floating_margin.top;
-		popup_new_position.w += theme->floating_margin.left + theme->floating_margin.right;
-		popup_new_position.h += theme->floating_margin.top + theme->floating_margin.bottom;
+		popup_new_position.x -= theme->floating.margin.left;
+		popup_new_position.y -= theme->floating.margin.top;
+		popup_new_position.w += theme->floating.margin.left + theme->floating.margin.right;
+		popup_new_position.h += theme->floating.margin.top + theme->floating.margin.bottom;
 
 		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
@@ -3793,7 +3792,7 @@ void page_t::update_page_areas() {
 
 	list<tree_t *> l = get_all_childs();
 	list<tree_t const *> lc(l.begin(), l.end());
-	page_areas = theme->compute_page_areas(lc);
+	page_areas = compute_page_areas(lc);
 }
 
 void page_t::set_desktop_geometry(long width, long height) {
@@ -4262,6 +4261,41 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	_need_render = false;
 
+}
+
+
+vector<page_event_t> * page_t::compute_page_areas(
+		list<tree_t const *> const & page) const {
+
+	vector<page_event_t> * ret = new vector<page_event_t>();
+
+	for (list<tree_t const *>::const_iterator i = page.begin();
+			i != page.end(); ++i) {
+
+		if(dynamic_cast<split_t const *>(*i)) {
+			split_t const * s = dynamic_cast<split_t const *>(*i);
+			page_event_t bsplit(PAGE_EVENT_SPLIT);
+			bsplit.position = s->compute_split_bar_location();
+
+			if(s->type() == VERTICAL_SPLIT) {
+				bsplit.position.w += theme->notebook.margin.right + theme->notebook.margin.left;
+				bsplit.position.x -= theme->notebook.margin.right;
+			} else {
+				bsplit.position.h += theme->notebook.margin.bottom;
+				bsplit.position.y -= theme->notebook.margin.bottom;
+			}
+
+			bsplit.spt = s;
+			ret->push_back(bsplit);
+		} else if (dynamic_cast<notebook_t const *>(*i)) {
+			notebook_t const * n = dynamic_cast<notebook_t const *>(*i);
+			n->compute_areas_for_notebook(ret);
+		} else if (dynamic_cast<viewport_base_t const *>(*i)) {
+			/** nothing to do **/
+		}
+	}
+
+	return ret;
 }
 
 }

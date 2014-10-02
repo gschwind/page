@@ -14,6 +14,7 @@
 #include "tree.hxx"
 #include "managed_window.hxx"
 #include "region.hxx"
+#include "theme_tab.hxx"
 
 namespace page {
 
@@ -25,7 +26,7 @@ struct img_t {
 };
 
 class notebook_t : public notebook_base_t  {
-
+	double const XN = 0.0;
 	page::time_t const animation_duration{0, 500000000};
 
 	theme_t const * _theme;
@@ -44,6 +45,8 @@ class notebook_t : public notebook_base_t  {
 	shared_ptr<composite_surface_t> cur_surf;
 
 	ptr<renderable_notebook_fading_t> fading_notebook;
+
+	mutable vector<theme_tab_t> theme_clients;
 
 public:
 
@@ -152,6 +155,18 @@ public:
 	managed_window_t * get_selected();
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
+
+	i_rect compute_notebook_close_window_position(i_rect const & allocation,
+			int number_of_client, int selected_client_index) const;
+	i_rect compute_notebook_unbind_window_position(i_rect const & allocation,
+			int number_of_client, int selected_client_index) const;
+	i_rect compute_notebook_bookmark_position(i_rect const & allocation) const;
+	i_rect compute_notebook_vsplit_position(i_rect const & allocation) const;
+	i_rect compute_notebook_hsplit_position(i_rect const & allocation) const;
+	i_rect compute_notebook_close_position(i_rect const & allocation) const;
+	i_rect compute_notebook_menu_position(i_rect const & allocation) const;
+
+	void compute_areas_for_notebook(vector<page_event_t> * l) const;
 
 };
 

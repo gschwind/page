@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "utils.hxx"
+#include "client_base.hxx"
 
 namespace page {
 
@@ -121,6 +122,9 @@ public:
 
 
 };
+
+using icon16 = icon_handler_t<16,16>;
+using icon64 = icon_handler_t<64,64>;
 
 
 }

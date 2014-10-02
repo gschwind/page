@@ -95,7 +95,7 @@ bool config_handler_t::has_key(char const * group, char const * key) const {
 string const & config_handler_t::find(char const * group, char const * key) const {
 	auto x = _data.find(_key_t(group, key));
 	if(x == _data.end())
-		throw logic_error("group/key not found");
+		throw exception_t("following group/key %s:%s not found", group, key);
 	return x->second;
 }
 

@@ -593,6 +593,8 @@ public:
 
 	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 
+	vector<page_event_t> * compute_page_areas(
+			list<tree_t const *> const & page) const;
 };
 
 

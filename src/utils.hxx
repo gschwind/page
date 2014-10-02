@@ -33,6 +33,8 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xdbe.h>
 
+#include "cairo/cairo.h"
+#include "exception.hxx"
 #include "box.hxx"
 #include "x11_func_name.hxx"
 #include "key_desc.hxx"

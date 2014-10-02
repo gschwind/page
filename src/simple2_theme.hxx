@@ -142,14 +142,15 @@ public:
 
 	void create_background_img();
 
-	virtual void render_notebook(cairo_t * cr, notebook_base_t const * n, i_rect const & area) const;
-	virtual void render_split(cairo_t * cr, split_base_t const * s, i_rect const & area) const;
-	virtual void render_floating(managed_window_base_t * mw) const;
+	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n, i_rect const & area) const;
+	virtual void render_split(cairo_t * cr, theme_split_t const * s, i_rect const & area) const;
+	virtual void render_floating(theme_managed_window_t * mw) const;
 
 
 	void render_notebook_selected(
 			cairo_t * cr,
-			page_event_t const & data,
+			theme_notebook_t const & n,
+			theme_tab_t const & data,
 			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
@@ -160,7 +161,7 @@ public:
 
 	void render_notebook_normal(
 			cairo_t * cr,
-			page_event_t const & data,
+			theme_tab_t const & data,
 			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
@@ -169,7 +170,7 @@ public:
 	) const;
 
 	void render_floating_base(
-			managed_window_base_t * mw,
+			theme_managed_window_t * mw,
 			PangoFontDescription const * pango_font,
 			color_t const & text_color,
 			color_t const & outline_color,
@@ -178,23 +179,23 @@ public:
 			double border_width
 	) const;
 
-	virtual void render_popup_notebook0(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
+	virtual void render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
 			unsigned int height, string const & title);
-	virtual void render_popup_move_frame(cairo_t * cr, window_icon_handler_t * icon, unsigned int width,
+	virtual void render_popup_move_frame(cairo_t * cr, icon64 * icon, unsigned int width,
 			unsigned int height, string const & title);
 
-	virtual void render_popup_split(cairo_t * cr, split_base_t const * s, double current_split);
+	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split);
 
 	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area);
 
-	virtual vector<page_event_t> * compute_page_areas(
-			list<tree_t const *> const & page) const;
-	virtual vector<floating_event_t> * compute_floating_areas(
-			managed_window_base_t * mw) const;
+//	virtual vector<page_event_t> * compute_page_areas(
+//			list<tree_t const *> const & page) const;
+//	virtual vector<floating_event_t> * compute_floating_areas(
+//			theme_managed_window_t * mw) const;
 
 
-	void compute_areas_for_notebook(notebook_base_t const * n,
-			vector<page_event_t> * l) const;
+//	void compute_areas_for_notebook(theme_notebook_t const * n,
+//			vector<page_event_t> * l) const;
 
 	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;
@@ -204,43 +205,43 @@ public:
 	static void cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 
-	i_rect compute_split_bar_location(split_base_t const * s) const {
-
-		i_rect ret;
-		i_rect const & alloc = s->allocation();
-
-		if (s->type() == VERTICAL_SPLIT) {
-
-			int w = alloc.w - 2 * split_margin.left
-					- 2 * split_margin.right - split_width;
-			int w0 = floor(w * s->split() + 0.5);
-
-			ret.x = alloc.x + split_margin.left + w0
-					+ split_margin.right;
-			ret.y = alloc.y;
-
-		} else {
-
-			int h = alloc.h - 2 * split_margin.top
-					- 2 * split_margin.bottom - split_width;
-			int h0 = floor(h * s->split() + 0.5);
-
-			ret.x = alloc.x;
-			ret.y = alloc.y + split_margin.top + h0
-					+ split_margin.bottom;
-		}
-
-		if (s->type() == VERTICAL_SPLIT) {
-			ret.w = split_width;
-			ret.h = alloc.h;
-		} else {
-			ret.w = alloc.w;
-			ret.h = split_width;
-		}
-
-		return ret;
-
-	}
+//	i_rect compute_split_bar_location(split_base_t const * s) const {
+//
+//		i_rect ret;
+//		i_rect const & alloc = s->allocation();
+//
+//		if (s->type() == VERTICAL_SPLIT) {
+//
+//			int w = alloc.w - 2 * split.margin.left
+//					- 2 * split.margin.right - split.width;
+//			int w0 = floor(w * s->split() + 0.5);
+//
+//			ret.x = alloc.x + split.margin.left + w0
+//					+ split.margin.right;
+//			ret.y = alloc.y;
+//
+//		} else {
+//
+//			int h = alloc.h - 2 * split.margin.top
+//					- 2 * split.margin.bottom - split.width;
+//			int h0 = floor(h * s->split() + 0.5);
+//
+//			ret.x = alloc.x;
+//			ret.y = alloc.y + split.margin.top + h0
+//					+ split.margin.bottom;
+//		}
+//
+//		if (s->type() == VERTICAL_SPLIT) {
+//			ret.w = split.width;
+//			ret.h = alloc.h;
+//		} else {
+//			ret.w = alloc.w;
+//			ret.h = split.width;
+//		}
+//
+//		return ret;
+//
+//	}
 
 };
 
