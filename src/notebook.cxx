@@ -407,6 +407,7 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 			theme_clients[k].title = i->title();
 			theme_clients[k].demand_attention = false;
 			theme_clients[k].focuced = false;
+			theme_clients[k].icon = i->icon();
 			++k;
 		}
 	}
@@ -422,7 +423,7 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_notebook(cr, &tn, area);
 }
 
-void notebook_t::render(cairo_t * cr, time_t time) {
+//void notebook_t::render(cairo_t * cr, time_t time) {
 //	page::time_t d(0, animation_duration);
 //	if (time < (swap_start + d)) {
 //		double ratio = (sin(
@@ -544,12 +545,12 @@ void notebook_t::render(cairo_t * cr, time_t time) {
 //		}
 //
 //	}
-
-}
+//
+//}
 
 bool notebook_t::need_render(time_t time) {
 
-	page::time_t d(0, animation_duration);
+	page::time_t d{0, animation_duration};
 	d += 100000000;
 	if (time < (swap_start + d)) {
 		return true;
@@ -630,37 +631,37 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 
 i_rect notebook_t::compute_notebook_bookmark_position(
 		i_rect const & allocation) const {
-	return i_rect(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
-			16, 16).floor();
+	return i_rect{allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
+			16, 16};
 }
 
 i_rect notebook_t::compute_notebook_vsplit_position(
 		i_rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
-			16, 16).floor();
+	return i_rect{allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
+			16, 16};
 }
 
 i_rect notebook_t::compute_notebook_hsplit_position(
 		i_rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
-			16, 16).floor();
+	return i_rect{allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
+			16, 16};
 
 }
 
 i_rect notebook_t::compute_notebook_close_position(
 		i_rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
-			16, 16).floor();
+	return i_rect{allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
+			16, 16};
 }
 
 i_rect notebook_t::compute_notebook_menu_position(
 		i_rect const & allocation) const {
 
-	return i_rect(allocation.x, allocation.y,
-			40, 20).floor();
+	return i_rect{allocation.x, allocation.y,
+			40, 20};
 
 }
 
@@ -749,7 +750,7 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 						floor(offset + box_width) - floor(offset),
 						_theme->notebook.margin.top - 1);
 
-				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
+				page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
 				nc.position = b;
 				nc.nbk = this;
 				nc.clt = i;

@@ -71,6 +71,7 @@ public:
 				vector<uint32_t> data(selected.width*selected.height);
 				copy(&selected.data[0], &selected.data[selected.width*selected.height], data.begin());
 
+				/** TODO: make X11 surfaces **/
 				icon_surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
 						WIDTH, HEIGHT);
 

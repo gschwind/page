@@ -65,8 +65,7 @@ private:
 	cairo_surface_t * _right_buffer;
 
 	// icon cache
-	mutable icon16 * _icon;
-
+	ptr<icon16> _icon;
 
 	/* private to avoid copy */
 	managed_window_t(managed_window_t const &);
@@ -93,7 +92,7 @@ private:
 	bool _motif_has_border;
 
 	/** input surface, surface from we get data **/
-	shared_ptr<composite_surface_t> _composite_surf;
+	ptr<composite_surface_t> _composite_surf;
 
 public:
 
@@ -123,19 +122,12 @@ public:
 
 	managed_window_type_e get_type();
 
-	icon16 * icon() const {
-		if (_icon == nullptr) {
-			_icon = new icon16(*this);
-		}
+	ptr<icon16> icon() const {
 		return _icon;
 	}
 
-	void mark_icon_durty() {
-		mark_durty();
-		if (_icon != nullptr) {
-			delete _icon;
-			_icon = nullptr;
-		}
+	void update_icon() {
+		_icon = ptr<icon16>{new icon16(*this)};
 	}
 
 	void set_theme(theme_t const * theme);

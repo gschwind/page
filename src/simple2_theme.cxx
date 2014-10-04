@@ -777,7 +777,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	if (data.icon != 0) {
+	if (data.icon != nullptr) {
 		if (data.icon->get_cairo_surface() != nullptr) {
 			CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 			CHECK_CAIRO(cairo_set_source_surface(cr, data.icon->get_cairo_surface(),

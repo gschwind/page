@@ -32,7 +32,6 @@ struct managed_window_base_t : public client_base_t {
 	virtual ~managed_window_base_t() { }
 
 	virtual i_rect const & base_position() const = 0;
-	virtual icon16 * icon() const = 0;
 
 	/** create a cairo context for top border, must be destroyed with cairo_destroy() **/
 	virtual cairo_t * cairo_top() const = 0;

@@ -20,7 +20,7 @@ using namespace std;
 struct theme_tab_t {
 	i_rect position;
 	string title;
-	icon_handler_t<16,16> * icon;
+	ptr<icon16> icon;
 	bool selected;
 	bool focuced;
 	bool demand_attention;

@@ -63,7 +63,7 @@ public:
 
 class dropdown_menu_entry_t: public leak_checker {
 
-	icon16 * _icon;
+	ptr<icon16> _icon;
 	string _title;
 	managed_window_t const * _id;
 
@@ -71,7 +71,7 @@ class dropdown_menu_entry_t: public leak_checker {
 	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	dropdown_menu_entry_t(managed_window_t * mw, icon16 * icon,
+	dropdown_menu_entry_t(managed_window_t * mw, ptr<icon16> icon,
 			string title) :
 			_icon(icon),
 			_title(title),
@@ -81,16 +81,14 @@ public:
 	}
 
 	~dropdown_menu_entry_t() {
-		if (_icon != nullptr) {
-			delete _icon;
-		}
+
 	}
 
 	managed_window_t const * id() const {
 		return _id;
 	}
 
-	icon_handler_t<16, 16> const * icon() const {
+	ptr<icon16> icon() const {
 		return _icon;
 	}
 

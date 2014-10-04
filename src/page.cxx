@@ -2178,7 +2178,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		//rpage->mark_durty();
 	} else if (e.atom == A(_NET_WM_ICON)) {
 		if (mw != 0)
-			mw->mark_icon_durty();
+			mw->update_icon();
 	} else if (e.atom == A(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
 		/* update cache */

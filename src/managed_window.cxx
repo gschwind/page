@@ -33,7 +33,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 				_bottom_buffer(0),
 				_left_buffer(0),
 				_right_buffer(0),
-				_icon(0),
+				_icon(nullptr),
 				_orig_visual(0),
 				_orig_depth(-1),
 				_deco_visual(0),
@@ -173,6 +173,8 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	_composite_surf = composite_surface_manager_t::get(cnx()->dpy(), _base);
 	composite_surface_manager_t::onmap(cnx()->dpy(), _base);
 
+	update_icon();
+
 }
 
 managed_window_t::~managed_window_t() {
@@ -183,11 +185,6 @@ managed_window_t::~managed_window_t() {
 		warn(cairo_surface_get_reference_count(_surf) == 1);
 		cairo_surface_destroy(_surf);
 		_surf = nullptr;
-	}
-
-	if (_icon != nullptr) {
-		delete _icon;
-		_icon = nullptr;
 	}
 
 	if (_floating_area != nullptr) {
@@ -372,7 +369,7 @@ void managed_window_t::expose() {
 			fw.demand_attention = false;
 			fw.focuced = is_focused();
 			fw.position = base_position();
-			fw.icon = _icon;
+			fw.icon = icon();
 			fw.title = title();
 
 			_is_durty = false;

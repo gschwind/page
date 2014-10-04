@@ -24,7 +24,7 @@ class managed_window_t;
 struct theme_managed_window_t {
 	i_rect position;
 	string title;
-	icon_handler_t<16,16> * icon;
+	ptr<icon16> icon;
 	cairo_t * cairo_top;
 	cairo_t * cairo_bottom;
 	cairo_t * cairo_left;
