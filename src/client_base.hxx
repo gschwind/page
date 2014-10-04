@@ -240,6 +240,7 @@ public:
 	}
 
 	void add_subclient(client_base_t * s) {
+		page_assert(s != nullptr);
 		_children.push_back(s);
 		s->set_parent(this);
 	}

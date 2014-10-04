@@ -33,6 +33,7 @@ notebook_t::~notebook_t() {
 
 bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
 	page_assert(not has_key(_clients, x));
+	page_assert(x != nullptr);
 	_children.push_back(x);
 	x->set_parent(this);
 	_clients.push_front(x);
@@ -396,6 +397,7 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 						(int)_theme->notebook.margin.top - 1 };
 				theme_notebook.clients_tab[k].position = b;
 				theme_notebook.clients_tab[k].selected = true;
+				theme_notebook.clients_tab[k].focuced = _selected->is_focused();
 				offset += box_width * (1.0 + XN);
 			} else {
 				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
@@ -408,7 +410,6 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 
 			theme_notebook.clients_tab[k].title = i->title();
 			theme_notebook.clients_tab[k].demand_attention = false;
-			theme_notebook.clients_tab[k].focuced = false;
 			theme_notebook.clients_tab[k].icon = i->icon();
 			++k;
 		}
