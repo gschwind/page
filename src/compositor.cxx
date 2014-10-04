@@ -78,6 +78,7 @@ compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, 
 	_fps_top = 0;
 	_show_fps = false;
 	_show_damaged = false;
+	_show_opac = false;
 	_debug_x = 0;
 	_debug_y = 0;
 
@@ -133,7 +134,7 @@ void compositor_t::render() {
 		region mask_area { };
 		for (int k = r_opac.size() - 2; k >= 0; --k) {
 			mask_area += r_opac[k + 1];
-			r_damaged[k] -= mask_area;
+			r_damaged[k] = r_damaged[k] - mask_area;
 		}
 
 		for (auto &i : r_damaged) {
@@ -234,7 +235,10 @@ void compositor_t::render() {
 		region x = (*i)->get_opaque_region() & _direct_render;
 		for (auto & dmg : x) {
 				(*i)->render(cr, dmg);
+				if(_show_opac)
+					_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
 		}
+
 		_direct_render -= x;
 	}
 

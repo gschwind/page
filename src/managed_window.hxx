@@ -561,7 +561,7 @@ public:
 			if (net_wm_opaque_region() != nullptr) {
 				opa = region { *(net_wm_opaque_region()) };
 			} else {
-				if (wa().depth == 24) {
+				if (wa().depth == 24 or _type == MANAGED_FULLSCREEN) {
 					opa = region { _orig_position };
 				}
 			}

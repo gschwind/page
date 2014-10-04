@@ -652,7 +652,11 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 		if(k == bind_debug_3.ks and (e.state & bind_debug_3.mod)) {
-
+			if(rnd->show_opac()) {
+				rnd->set_show_opac(false);
+			} else {
+				rnd->set_show_opac(true);
+			}
 		}
 
 		if(k == bind_debug_4.ks and (e.state & bind_debug_4.mod)) {

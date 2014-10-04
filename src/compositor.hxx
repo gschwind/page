@@ -70,6 +70,7 @@ private:
 	page::time_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
 	bool _show_damaged;
+	bool _show_opac;
 	int _damaged_area[_FPS_WINDOWS];
 	int _direct_render_area[_FPS_WINDOWS];
 	int _debug_x;
@@ -179,10 +180,20 @@ public:
 		return _show_damaged;
 	}
 
+	bool show_opac() {
+		return _show_opac;
+	}
+
 	void set_show_damaged(bool b) {
 		if(_show_damaged != b)
 			_damaged += _desktop_region;
 		_show_damaged = b;
+	}
+
+	void set_show_opac(bool b) {
+		if(_show_opac != b)
+			_damaged += _desktop_region;
+		_show_opac = b;
 	}
 
 	void need_render() {
