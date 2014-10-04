@@ -248,7 +248,7 @@ void split_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	theme_split_t ts;
 	ts.split = _split;
 	ts.type = _split_type;
-	ts.allocation = _allocation;
+	ts.allocation = compute_split_bar_location();
 	_theme->render_split(cr, &ts, area);
 }
 
