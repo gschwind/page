@@ -3099,10 +3099,6 @@ client_base_t * page_t::get_transient_for(client_base_t * c) {
 	return transient_for;
 }
 
-void page_t::logical_raise(client_base_t * c) {
-	c->raise_child(nullptr);
-}
-
 void page_t::detach(tree_t * t) {
 	remove(t);
 	list<tree_t *> elements = get_all_childs();
@@ -3114,7 +3110,7 @@ void page_t::detach(tree_t * t) {
 void page_t::safe_raise_window(client_base_t * c) {
 	if(process_mode != PROCESS_NORMAL)
 		return;
-	logical_raise(c);
+	c->raise_child();
 	/** apply change **/
 	update_windows_stack();
 }
@@ -3912,43 +3908,43 @@ void page_t::replace(page_component_t * src, page_component_t * by) {
 }
 
 void page_t::raise_child(tree_t * t) {
+
+	if(t == nullptr)
+		return;
+
+	/** TODO: raise a viewport **/
+
 	/* do nothing, not needed at this level */
 	client_base_t * x = dynamic_cast<client_base_t *>(t);
 	if(has_key(root_subclients, x)) {
 		root_subclients.remove(x);
 		root_subclients.push_back(x);
-		x->set_parent(this);
 	}
 
 	unmanaged_window_t * y = dynamic_cast<unmanaged_window_t *>(t);
 	if(has_key(tooltips, y)) {
 		tooltips.remove(y);
 		tooltips.push_back(y);
-		y->set_parent(this);
 	}
 
 	if(has_key(notifications, y)) {
 		notifications.remove(y);
 		notifications.push_back(y);
-		y->set_parent(this);
 	}
 
 	if(has_key(docks, y)) {
 		docks.remove(y);
 		docks.push_back(y);
-		y->set_parent(this);
 	}
 
 	if(has_key(above, y)) {
 		above.remove(y);
 		above.push_back(y);
-		y->set_parent(this);
 	}
 
 	if(has_key(below, y)) {
 		below.remove(y);
 		below.push_back(y);
-		y->set_parent(this);
 	}
 }
 

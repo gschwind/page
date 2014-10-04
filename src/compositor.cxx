@@ -132,9 +132,9 @@ void compositor_t::render() {
 
 		/** mask_area accumulate opac area, from top level object, to bottom **/
 		region mask_area { };
-		for (int k = r_opac.size() - 2; k >= 0; --k) {
-			mask_area += r_opac[k + 1];
-			r_damaged[k] = r_damaged[k] - mask_area;
+		for (int k = r_opac.size() - 1; k >= 0; --k) {
+			r_damaged[k] -= mask_area;
+			mask_area += r_opac[k];
 		}
 
 		for (auto &i : r_damaged) {

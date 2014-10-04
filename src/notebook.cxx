@@ -357,10 +357,13 @@ void notebook_t::raise_child(tree_t * t) {
 	if (has_key(_children, t)) {
 		_children.remove(t);
 		_children.push_back(t);
-	}
 
-	if(_parent != nullptr) {
-		_parent->raise_child(this);
+		if(_parent != nullptr) {
+			_parent->raise_child(this);
+		}
+
+	} else if (t != nullptr) {
+		throw exception_t("notebook_t::raise_child trying to raise a non child tree");
 	}
 
 }

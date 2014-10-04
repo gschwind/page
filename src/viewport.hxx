@@ -87,7 +87,12 @@ public:
 	}
 
 	void raise_child(tree_t * t) {
-		if(_parent != nullptr) {
+
+		if(t != _subtree and t != nullptr) {
+			throw exception_t("viewport::raise_child trying to raise a non child tree");
+		}
+
+		if(_parent != nullptr and (t == _subtree or t == nullptr)) {
 			_parent->raise_child(this);
 		}
 	}

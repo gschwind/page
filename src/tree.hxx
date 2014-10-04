@@ -33,6 +33,11 @@ public:
 
 	virtual string get_node_name() const = 0;
 	virtual list<tree_t *> childs() const = 0;
+
+	/**
+	 * Raise a child over others respecting stack priority
+	 * if t == nullptr, this mean we raise ourself.
+	 **/
 	virtual void raise_child(tree_t * t = nullptr) = 0;
 	virtual void remove(tree_t * t) = 0;
 

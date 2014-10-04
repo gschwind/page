@@ -162,7 +162,7 @@ public:
 	bool is_default() const;
 	void set_default(bool x);
 	list<tree_t *> childs() const;
-	void raise_child(tree_t * t);
+	void raise_child(tree_t * t = nullptr);
 	string get_node_name() const;
 	void render_legacy(cairo_t * cr, i_rect const & area) const;
 	void render(cairo_t * cr, time_t time);

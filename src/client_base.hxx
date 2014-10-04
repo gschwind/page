@@ -278,7 +278,7 @@ public:
 	}
 
 
-	void raise_child(tree_t * t) {
+	void raise_child(tree_t * t = nullptr) {
 
 		if(has_key(_children, t)) {
 			_children.remove(t);
@@ -288,9 +288,9 @@ public:
 				_parent->raise_child(this);
 			}
 
+		} else if (t != nullptr) {
+			throw exception_t("client_base::raise_child trying to raise a non child tree");
 		}
-
-
 	}
 
 	Atom type() {

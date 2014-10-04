@@ -73,7 +73,7 @@ public:
 	split_type_e type() const;
 	void render_legacy(cairo_t * cr, i_rect const & area) const;
 	list<tree_t *> childs() const;
-	void raise_child(tree_t * t);
+	void raise_child(tree_t * t = nullptr);
 
 	virtual string get_node_name() const {
 		return _get_node_name<'S'>();
