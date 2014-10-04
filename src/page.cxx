@@ -837,7 +837,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					process_mode = PROCESS_SPLIT_GRAB;
 
 					mode_data_split.split_ratio = b->spt->split();
-					mode_data_split.split = _upgrade(b->spt);
+					mode_data_split.split = const_cast<split_t*>(b->spt);
 					mode_data_split.slider_area =
 							mode_data_split.split->get_split_bar_area();
 

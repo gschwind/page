@@ -559,10 +559,6 @@ public:
 		return dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(x));
 	}
 
-	static split_t * _upgrade(split_base_t const * x) {
-		return dynamic_cast<split_t *>(const_cast<split_base_t *>(x));
-	}
-
 	void attach_dock(unmanaged_window_t * uw) {
 		docks.push_back(uw);
 	}

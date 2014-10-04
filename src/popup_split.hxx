@@ -21,7 +21,7 @@ struct popup_split_t: public window_overlay_t {
 
 	theme_t * _theme;
 	double _current_split;
-	split_base_t const * _s_base;
+	split_t const * _s_base;
 
 	popup_split_t(theme_t * theme) : window_overlay_t(), _theme(theme) {
 		_s_base = nullptr;
@@ -36,7 +36,7 @@ struct popup_split_t: public window_overlay_t {
 		_current_split = pos;
 	}
 
-	void set_current_split(split_base_t const * s) {
+	void set_current_split(split_t const * s) {
 		_s_base = s;
 	}
 

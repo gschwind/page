@@ -18,7 +18,7 @@ namespace page {
 
 split_t::split_t(split_type_e type, theme_t const * theme, tree_t * p0,
 		tree_t * p1) :
-		split_base_t(), _theme(theme), _split_bar_area(), _split_type(type), _split(
+		_theme(theme), _split_bar_area(), _split_type(type), _split(
 				0.5), _pack0(nullptr), _pack1(nullptr) {
 
 	set_pack0(p0);

@@ -21,7 +21,7 @@ using namespace std;
 
 namespace page {
 
-class split_t : public split_base_t {
+class split_t : public tree_t {
 
 	theme_t const * _theme;
 
