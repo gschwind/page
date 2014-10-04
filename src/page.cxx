@@ -1512,11 +1512,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
 
-
-//		i_rect popup_new_position = mode_data_floating.popup_original_position;
-//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-//		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
 		break;
 	}
@@ -1524,6 +1519,8 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
+
+		rnd->add_damaged(mode_data_floating.f->visible_area());
 
 		/* compute new window position */
 		i_rect new_position = mode_data_floating.original_position;
@@ -1533,10 +1530,6 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
 
-//		i_rect popup_new_position = mode_data_floating.popup_original_position;
-//		popup_new_position.x += e.x_root - mode_data_floating.x_root;
-//		popup_new_position.y += e.y_root - mode_data_floating.y_root;
-//		update_popup_position(pfm, popup_new_position);
 		_need_render = true;
 		break;
 	}
