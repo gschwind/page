@@ -16,20 +16,11 @@
 
 namespace page {
 
-tree_t::tree_t(tree_t * parent, i_rect allocation) :
-		_parent(parent), _allocation(allocation), _type(TYPE_UNDEF) {
-}
+tree_t::~tree_t() { }
 
-tree_t::~tree_t() {
-}
-
-void tree_t::set_parent(tree_t * parent) {
-	_parent = parent;
-}
-
-void tree_t::set_allocation(double x, double y, double w, double h) {
-	set_allocation(i_rect(x, y, w, h));
-}
+//void tree_t::set_allocation(double x, double y, double w, double h) {
+//	set_allocation(i_rect(x, y, w, h));
+//}
 
 void tree_t::print_tree(unsigned level) {
 	char clevel[] = "                ";
@@ -52,21 +43,21 @@ list<tree_t *> tree_t::get_all_childs() const {
 	return ret;
 }
 
-void tree_t::set_allocation(i_rect const & area) {
-	_allocation = area;
-}
-
-i_rect const & tree_t::allocation() const {
-	return _allocation;
-}
-
-tree_t * tree_t::parent() const {
-	return _parent;
-}
-
-tree_type_e tree_t::type() {
-	return _type;
-}
+//void tree_t::set_allocation(i_rect const & area) {
+//	_allocation = area;
+//}
+//
+//i_rect const & tree_t::allocation() const {
+//	return _allocation;
+//}
+//
+//tree_t * tree_t::parent() const {
+//	return _parent;
+//}
+//
+//tree_type_e tree_t::type() {
+//	return _type;
+//}
 
 
 }

@@ -9,10 +9,11 @@
 #define VIEWPORT_BASE_HXX_
 
 #include "tree.hxx"
+#include "page_component.hxx"
 
 namespace page {
 
-struct viewport_base_t : public tree_t {
+struct viewport_base_t : public page_component_t {
 	virtual ~viewport_base_t() { }
 
 

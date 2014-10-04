@@ -34,6 +34,8 @@ using namespace std;
 class client_base_t : public tree_t {
 protected:
 
+	tree_t * _parent;
+
 	/** handle properties of client */
 	shared_ptr<client_properties_t> _properties;
 
@@ -53,7 +55,8 @@ public:
 	client_base_t(client_base_t const & c) :
 		_properties(c._properties),
 		_title(c._title),
-		_children(c._children)
+		_children(c._children),
+		_parent(nullptr)
 	{
 
 	}
@@ -280,11 +283,13 @@ public:
 		if(has_key(_children, t)) {
 			_children.remove(t);
 			_children.push_back(t);
+
+			if(_parent != nullptr) {
+				_parent->raise_child(this);
+			}
+
 		}
 
-		if(_parent != nullptr) {
-			_parent->raise_child(this);
-		}
 
 	}
 
@@ -405,6 +410,14 @@ public:
 
 	void process_event(XConfigureEvent const & e) {
 		_properties->process_event(e);
+	}
+
+	void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	tree_t * parent() const {
+		return _parent;
 	}
 
 

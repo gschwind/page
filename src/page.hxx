@@ -72,6 +72,7 @@
 
 #include "window_handler.hxx"
 #include "keymap.hxx"
+#include "page_component.hxx"
 
 using namespace std;
 
@@ -80,7 +81,7 @@ namespace page {
 
 typedef std::list<i_rect> box_list_t;
 
-class page_t : public tree_t {
+class page_t : public page_component_t {
 
 	static long const ROOT_EVENT_MASK = SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask;
 
@@ -392,6 +393,7 @@ private:
 	Cursor xc_top_left_corner;
 	Cursor xc_top_side;
 
+	i_rect _allocation;
 
 public:
 
@@ -551,7 +553,7 @@ public:
 	void add_client(client_base_t * c);
 	list<tree_t *> childs() const;
 	string get_node_name() const;
-	void replace(tree_t * src, tree_t * by);
+	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
 	void remove(tree_t * t);
 
@@ -583,6 +585,21 @@ public:
 
 	vector<page_event_t> * compute_page_areas(
 			list<tree_t const *> const & page) const;
+
+	page_component_t * parent() const;
+	void set_parent(tree_t * parent);
+	void set_parent(page_component_t * parent);
+
+	void set_allocation(i_rect const & r) {
+		_allocation = r;
+	}
+
+	i_rect allocation() const {
+		return _allocation;
+	}
+
+	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+
 };
 
 

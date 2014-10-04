@@ -18,9 +18,13 @@
 
 namespace page {
 
-notebook_t::notebook_t(theme_t const * theme) : _theme(theme) {
-	_is_default = false;
-	_selected = nullptr;
+notebook_t::notebook_t(theme_t const * theme) :
+		_theme{theme},
+		_parent{nullptr},
+		_is_default{false},
+		_selected{nullptr}
+{
+
 }
 
 notebook_t::~notebook_t() {
@@ -68,7 +72,7 @@ i_rect notebook_t::get_new_client_size() {
 			allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom);
 }
 
-void notebook_t::replace(tree_t * src, tree_t * by) {
+void notebook_t::replace(page_component_t * src, page_component_t * by) {
 	throw std::runtime_error("cannot replace in notebook");
 }
 
@@ -208,7 +212,7 @@ void notebook_t::set_allocation(i_rect const & area) {
 	if (area == allocation())
 		return;
 
-	tree_t::set_allocation(area);
+	_allocation = area;
 
 	tab_area.x = allocation().x;
 	tab_area.y = allocation().y;
@@ -323,10 +327,6 @@ i_rect notebook_t::compute_client_size(managed_window_t * c) {
 
 }
 
-i_rect const & notebook_t::get_allocation() {
-	return allocation();
-}
-
 void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
@@ -420,21 +420,21 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_notebook(cr, &theme_notebook, area);
 }
 
-bool notebook_t::need_render(time_t time) {
-
-	page::time_t d{0, animation_duration};
-	d += 100000000;
-	if (time < (swap_start + d)) {
-		return true;
-	}
-
-	for(auto i: childs()) {
-		if(i->need_render(time)) {
-			return true;
-		}
-	}
-	return false;
-}
+//bool notebook_t::need_render(time_t time) {
+//
+//	page::time_t d{0, animation_duration};
+//	d += 100000000;
+//	if (time < (swap_start + d)) {
+//		return true;
+//	}
+//
+//	for(auto i: childs()) {
+//		if(i->need_render(time)) {
+//			return true;
+//		}
+//	}
+//	return false;
+//}
 
 managed_window_t * notebook_t::get_selected() {
 	return _selected;

@@ -509,15 +509,15 @@ public:
 //		}
 	}
 
-	bool need_render(time_t time) {
-
-		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
-		}
-		return false;
-	}
+//	bool need_render(time_t time) {
+//
+//		for(auto i: childs()) {
+//			if(i->need_render(time)) {
+//				return true;
+//			}
+//		}
+//		return false;
+//	}
 
 	display_t * cnx() {
 		return _properties->cnx();

@@ -12,6 +12,7 @@
 
 #include "renderable_notebook_fading.hxx"
 #include "tree.hxx"
+#include "page_component.hxx"
 #include "managed_window.hxx"
 #include "region.hxx"
 #include "theme_tab.hxx"
@@ -27,9 +28,13 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t : public tree_t {
+class notebook_t : public page_component_t {
 	double const XN = 0.0;
 	page::time_t const animation_duration{0, 500000000};
+
+	page_component_t * _parent;
+
+	i_rect _allocation;
 
 	theme_t const * _theme;
 
@@ -99,7 +104,7 @@ public:
 
 	bool process_button_press_event(XEvent const * e);
 
-	void replace(tree_t * src, tree_t * by);
+	void replace(page_component_t * src, page_component_t * by);
 	void close(tree_t * src);
 	void remove(tree_t * src);
 
@@ -123,7 +128,16 @@ public:
 
 	virtual i_rect get_absolute_extend();
 	virtual region get_area();
-	virtual void set_allocation(i_rect const & area);
+
+	void set_allocation(i_rect const & area);
+
+	void set_parent(tree_t * t) {
+		throw exception_t("notebook_t cannot have tree_t has parent");
+	}
+
+	void set_parent(page_component_t * t) {
+		_parent = t;
+	}
 
 	managed_window_t * find_client_tab(int x, int y);
 
@@ -169,6 +183,14 @@ public:
 	i_rect compute_notebook_menu_position(i_rect const & allocation) const;
 
 	void compute_areas_for_notebook(vector<page_event_t> * l) const;
+
+	i_rect allocation() const {
+		return _allocation;
+	}
+
+	page_component_t * parent() const {
+		return _parent;
+	}
 
 };
 

@@ -14,7 +14,11 @@
 
 namespace page {
 
-viewport_t::viewport_t(theme_t * theme, i_rect const & area) : raw_aera(area), effective_aera(area) {
+viewport_t::viewport_t(theme_t * theme, i_rect const & area) :
+		raw_aera(area),
+		effective_aera(area),
+		_parent(nullptr)
+{
 	_subtree = nullptr;
 	_is_visible = true;
 	_theme = theme;
@@ -24,7 +28,7 @@ viewport_t::viewport_t(theme_t * theme, i_rect const & area) : raw_aera(area), e
 
 }
 
-void viewport_t::replace(tree_t * src, tree_t * by) {
+void viewport_t::replace(page_component_t * src, page_component_t * by) {
 	//printf("replace %p by %p\n", src, by);
 
 	if (_subtree == src) {

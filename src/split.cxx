@@ -16,10 +16,10 @@
 
 namespace page {
 
-split_t::split_t(split_type_e type, theme_t const * theme, tree_t * p0,
-		tree_t * p1) :
+split_t::split_t(split_type_e type, theme_t const * theme, page_component_t * p0,
+		page_component_t * p1) :
 		_theme(theme), _split_bar_area(), _split_type(type), _split(
-				0.5), _pack0(nullptr), _pack1(nullptr) {
+				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr) {
 
 	set_pack0(p0);
 	set_pack1(p1);
@@ -31,7 +31,7 @@ split_t::~split_t() {
 }
 
 void split_t::set_allocation(i_rect const & allocation) {
-	tree_t::set_allocation(allocation);
+	_allocation = allocation;
 	update_allocation();
 }
 
@@ -87,7 +87,7 @@ void split_t::update_allocation_pack1() {
 	_pack1->set_allocation(b);
 }
 
-void split_t::replace(tree_t * src, tree_t * by) {
+void split_t::replace(page_component_t * src, page_component_t * by) {
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src, by);
 		set_pack0(by);
@@ -118,10 +118,10 @@ i_rect const & split_t::get_split_bar_area() const {
 	return _split_bar_area;
 }
 
-tree_t * split_t::get_pack0() {
+page_component_t * split_t::get_pack0() {
 	return _pack0;
 }
-tree_t * split_t::get_pack1() {
+page_component_t * split_t::get_pack1() {
 	return _pack1;
 }
 
@@ -183,7 +183,7 @@ void split_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-void split_t::set_pack0(tree_t * x) {
+void split_t::set_pack0(page_component_t * x) {
 	_children.remove(_pack0);
 	_pack0 = x;
 	if (_pack0 != nullptr) {
@@ -193,7 +193,7 @@ void split_t::set_pack0(tree_t * x) {
 	}
 }
 
-void split_t::set_pack1(tree_t * x) {
+void split_t::set_pack1(page_component_t * x) {
 	_children.remove(_pack1);
 	_pack1 = x;
 	if (_pack1 != nullptr) {

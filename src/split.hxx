@@ -13,6 +13,7 @@
 #include <cmath>
 
 #include "tree.hxx"
+#include "page_component.hxx"
 #include "theme.hxx"
 
 #include <set>
@@ -21,15 +22,19 @@ using namespace std;
 
 namespace page {
 
-class split_t : public tree_t {
+class split_t : public page_component_t {
+
+	page_component_t * _parent;
 
 	theme_t const * _theme;
 
+
+	i_rect _allocation;
 	i_rect _split_bar_area;
 	split_type_e _split_type;
 	double _split;
-	tree_t * _pack0;
-	tree_t * _pack1;
+	page_component_t * _pack0;
+	page_component_t * _pack1;
 
 	i_rect bpack0;
 	i_rect bpack1;
@@ -44,22 +49,22 @@ class split_t : public tree_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_t const * theme, tree_t * p0 = nullptr,
-			tree_t * p1 = nullptr);
+	split_t(split_type_e type, theme_t const * theme, page_component_t * p0 = nullptr,
+			page_component_t * p1 = nullptr);
 	~split_t();
-	void replace(tree_t * src, tree_t * by);
+	void replace(page_component_t * src, page_component_t * by);
 	void compute_split_bar_area(i_rect & area, double split) const;
 	i_rect get_absolute_extend();
 	void set_allocation(i_rect const & area);
 	void set_split(double split);
 	i_rect const & get_split_bar_area() const;
-	tree_t * get_pack0();
-	tree_t * get_pack1();
+	page_component_t * get_pack0();
+	page_component_t * get_pack1();
 	split_type_e get_split_type();
 	double get_split_ratio();
 	void set_theme(theme_t const * theme);
-	void set_pack0(tree_t * x);
-	void set_pack1(tree_t * x);
+	void set_pack0(page_component_t * x);
+	void set_pack1(page_component_t * x);
 	/* compute the slider area */
 	void compute_split_location(double split, int & x, int & y) const;
 	/* compute the slider area */
@@ -76,26 +81,25 @@ public:
 
 	void remove(tree_t * t);
 
-	virtual void render(cairo_t * cr, time_t time) {
-//		for(auto i: childs()) {
-//			i->render(cr, time);
-//		}
-	}
-
-
-	bool need_render(time_t time) {
-
-		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 
 	i_rect compute_split_bar_location() const;
+
+	i_rect allocation() const {
+		return _allocation;
+	}
+
+	void set_parent(tree_t * t) {
+		throw exception_t("split_t cannot have tree_t has parent");
+	}
+
+	void set_parent(page_component_t * t) {
+		_parent = t;
+	}
+
+	page_component_t * parent() const {
+		return _parent;
+	}
 
 };
 

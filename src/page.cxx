@@ -2761,7 +2761,7 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 }
 
 void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
-	tree_t * parent = nbk->parent();
+	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
 	split_t * split = new split_t(VERTICAL_SPLIT, theme, n, nbk);
 	parent->replace(nbk, split);
@@ -2772,7 +2772,7 @@ void page_t::split_left(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
-	tree_t * parent = nbk->parent();
+	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
 	split_t * split = new split_t(VERTICAL_SPLIT, theme, nbk, n);
 	parent->replace(nbk, split);
@@ -2783,7 +2783,7 @@ void page_t::split_right(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
-	tree_t * parent = nbk->parent();
+	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
 	split_t * split = new split_t(HORIZONTAL_SPLIT, theme, n, nbk);
 	parent->replace(nbk, split);
@@ -2794,7 +2794,7 @@ void page_t::split_top(notebook_t * nbk, managed_window_t * c) {
 }
 
 void page_t::split_bottom(notebook_t * nbk, managed_window_t * c) {
-	tree_t * parent = nbk->parent();
+	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
 	split_t * split = new split_t(HORIZONTAL_SPLIT, theme, nbk, n);
 	parent->replace(nbk, split);
@@ -2814,7 +2814,7 @@ void page_t::notebook_close(notebook_t * src) {
 
 	page_assert(src == ths->get_pack0() or src == ths->get_pack1());
 
-	tree_t * dst = (src == ths->get_pack0()) ? ths->get_pack1() : ths->get_pack0();
+	page_component_t * dst = (src == ths->get_pack0()) ? ths->get_pack1() : ths->get_pack0();
 
 	/* if notebook is default_pop, select another one */
 	if (default_window_pop == src) {
@@ -3833,7 +3833,8 @@ void page_t::remove_client(client_base_t * c) {
 	tree_t * parent = c->parent();
 	if (parent != nullptr) {
 		if (typeid(*parent) == typeid(notebook_t)) {
-			rpage->add_damaged(parent->allocation());
+			notebook_t * nb = dynamic_cast<notebook_t*>(parent);
+			rpage->add_damaged(nb->allocation());
 		}
 	}
 	detach(c);
@@ -3902,7 +3903,7 @@ string page_t::get_node_name() const {
 	return _get_node_name<'P'>();
 }
 
-void page_t::replace(tree_t * src, tree_t * by) {
+void page_t::replace(page_component_t * src, page_component_t * by) {
 	printf("Unexpectected use of page::replace function\n");
 }
 
@@ -4050,18 +4051,18 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 
 }
 
-bool page_t::need_render(time_t time) {
-
-	if(_need_render == true)
-		return true;
-
-	for(auto i: childs()) {
-		if(i->need_render(time)) {
-			return true;
-		}
-	}
-	return false;
-}
+//bool page_t::need_render(time_t time) {
+//
+//	if(_need_render == true)
+//		return true;
+//
+//	for(auto i: childs()) {
+//		if(i->need_render(time)) {
+//			return true;
+//		}
+//	}
+//	return false;
+//}
 
 /**
  * Look at coming events if a client will be destroyed.
@@ -4304,6 +4305,18 @@ vector<page_event_t> * page_t::compute_page_areas(
 	}
 
 	return ret;
+}
+
+page_component_t * page_t::parent() const {
+	return nullptr;
+}
+
+void page_t::set_parent(tree_t * parent) {
+	throw exception_t("page::page_t can't have parent nor tree_t parent");
+}
+
+void page_t::set_parent(page_component_t * parent) {
+	throw exception_t("page::page_t can't have parent");
 }
 
 }

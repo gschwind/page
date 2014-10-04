@@ -25,6 +25,9 @@ namespace page {
 struct viewport_t: public viewport_base_t {
 
 private:
+
+	page_component_t * _parent;
+
 	theme_t * _theme;
 
 	viewport_t(viewport_t const & v);
@@ -34,11 +37,11 @@ public:
 	//page_base_t & page;
 	i_rect raw_aera;
 	i_rect effective_aera;
-	tree_t * _subtree;
+	page_component_t * _subtree;
 
 	bool _is_visible;
 
-	virtual tree_t * parent() const {
+	page_component_t * parent() const {
 		throw std::runtime_error("viewport has no parent");
 	}
 
@@ -46,7 +49,7 @@ public:
 
 	void reconfigure();
 
-	virtual void replace(tree_t * src, tree_t * by);
+	virtual void replace(page_component_t * src, page_component_t * by);
 	virtual void remove(tree_t * src);
 	virtual void close(tree_t * src);
 
@@ -93,27 +96,24 @@ public:
 		return _get_node_name<'V'>();
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
-//		if (_is_visible) {
-//			for (auto i : childs()) {
-//				i->render(cr, time);
-//			}
-//		}
-	}
-
-	bool need_render(time_t time) {
-		for(auto i: childs()) {
-			if(i->need_render(time)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 		tree_t::_prepare_render(out, time);
 	}
+
+	void set_parent(tree_t * t) {
+		throw exception_t("viewport cannot have tree_t as parent");
+	}
+
+	void set_parent(page_component_t * t) {
+		_parent = t;
+	}
+
+	i_rect allocation() const {
+		return raw_aera;
+	}
+
+	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+
 
 };
 
