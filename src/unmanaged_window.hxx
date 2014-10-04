@@ -114,29 +114,31 @@ public:
 				_properties->wa().width, _properties->wa().height);
 
 		if (surf != nullptr) {
-			i_rect loc{pos};
-			region vis{0,0,(int)pos.w,(int)pos.h};
-			region opa;
-			region shp;
 
-			if(shape() != nullptr) {
+			region vis;
+			region opa;
+
+			vis = _base_position;
+
+			region shp;
+			if (shape() != nullptr) {
 				shp = *shape();
 			} else {
-				shp = i_rect(0, 0, pos.w, pos.h);
+				shp = i_rect{0, 0, _base_position.w, _base_position.h};
 			}
 
+			region xopac;
 			if (net_wm_opaque_region() != nullptr) {
-				opa = region { *(net_wm_opaque_region()) };
+				xopac = region { *(net_wm_opaque_region()) };
 			} else {
 				if (wa().depth == 24) {
-					opa = region { pos };
+					xopac = i_rect{0, 0, _base_position.w, _base_position.h};
 				}
 			}
 
-			opa &= shp;
-			opa.translate(pos.x, pos.y);
-
-			vis.translate(pos.x, pos.y);
+			opa = shp & xopac;
+			opa.translate(_base_position.x,
+					_base_position.y);
 
 			region dmg { surf->get_damaged() };
 			surf->clear_damaged();

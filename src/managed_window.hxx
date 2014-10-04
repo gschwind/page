@@ -546,37 +546,44 @@ public:
 
 	ptr<renderable_t> get_base_renderable() {
 		if (_composite_surf != nullptr) {
-			i_rect loc = base_position();
-			i_rect pos { base_position() };
-			region vis{0,0,(int)pos.w,(int)pos.h};
+
+			region vis;
 			region opa;
-			region shp;
 
-			if(shape() != nullptr) {
-				shp = *shape();
+			if(_type == MANAGED_FULLSCREEN) {
+				vis = _base_position;
+				opa = _base_position;
 			} else {
-				shp = i_rect(0, 0, _orig_position.w, _orig_position.h);
-			}
 
-			if (net_wm_opaque_region() != nullptr) {
-				opa = region { *(net_wm_opaque_region()) };
-			} else {
-				if (wa().depth == 24 or _type == MANAGED_FULLSCREEN) {
-					opa = region { _orig_position };
+				vis = _base_position;
+
+				region shp;
+				if (shape() != nullptr) {
+					shp = *shape();
+				} else {
+					shp = i_rect{0, 0, _orig_position.w, _orig_position.h};
 				}
+
+				region xopac;
+				if (net_wm_opaque_region() != nullptr) {
+					xopac = region { *(net_wm_opaque_region()) };
+				} else {
+					if (wa().depth == 24) {
+						xopac = i_rect{0, 0, _orig_position.w, _orig_position.h};
+					}
+				}
+
+				opa = shp & xopac;
+				opa.translate(_base_position.x + _orig_position.x,
+						_base_position.y + _orig_position.y);
+
 			}
-
-			opa &= shp;
-			opa.translate(pos.x + _orig_position.x, pos.y + _orig_position.y);
-			shp.translate(_orig_position.x, _orig_position.y);
-
-			vis.translate(pos.x, pos.y);
 
 			region dmg { _composite_surf->get_damaged() };
 			_composite_surf->clear_damaged();
-			dmg.translate(pos.x, pos.y);
+			dmg.translate(_base_position.x, _base_position.y);
 			auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
-					pos, dmg);
+					_base_position, dmg);
 			x->set_opaque_region(opa);
 			x->set_visible_region(vis);
 			return ptr<renderable_t>{x};
