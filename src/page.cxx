@@ -1501,6 +1501,9 @@ void page_t::process_event(XMotionEvent const & e) {
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
 
+
+		rnd->add_damaged(mode_data_floating.f->visible_area());
+
 		/* compute new window position */
 		i_rect new_position = mode_data_floating.original_position;
 		new_position.x += e.x_root - mode_data_floating.x_root;
@@ -1508,6 +1511,7 @@ void page_t::process_event(XMotionEvent const & e) {
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
+
 
 //		i_rect popup_new_position = mode_data_floating.popup_original_position;
 //		popup_new_position.x += e.x_root - mode_data_floating.x_root;

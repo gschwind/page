@@ -610,6 +610,22 @@ public:
 			i_rect const & allocation) const;
 	i_rect compute_floating_close_position(i_rect const & allocation) const;
 
+
+	i_rect visible_area() const {
+
+		if(_type == MANAGED_FLOATING) {
+			i_rect vis = base_position();
+			vis.x -= 8;
+			vis.y -= 8;
+			vis.w += 16;
+			vis.h += 16;
+			return vis;
+		}
+
+		return base_position();
+
+	}
+
 };
 
 }
