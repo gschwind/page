@@ -110,8 +110,7 @@ public:
 	}
 
 	ptr<renderable_t> get_base_renderable() {
-		i_rect pos(_properties->wa().x, _properties->wa().y,
-				_properties->wa().width, _properties->wa().height);
+		_base_position = _properties->position();
 
 		if (surf != nullptr) {
 
@@ -142,9 +141,9 @@ public:
 
 			region dmg { surf->get_damaged() };
 			surf->clear_damaged();
-			dmg.translate(pos.x, pos.y);
+			dmg.translate(_base_position.x, _base_position.y);
 			auto x = new renderable_pixmap_t(surf->get_pixmap(),
-					pos, dmg);
+					_base_position, dmg);
 			x->set_opaque_region(opa);
 			x->set_visible_region(vis);
 			return ptr<renderable_t>{x};
