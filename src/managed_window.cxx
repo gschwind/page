@@ -19,7 +19,7 @@ namespace page {
 
 managed_window_t::managed_window_t(Atom net_wm_type,
 		shared_ptr<client_properties_t> props, theme_t const * theme) :
-				managed_window_base_t(props),
+				client_base_t(props),
 				_theme(theme),
 				_type(MANAGED_FLOATING),
 				_net_wm_type(net_wm_type),

@@ -16,6 +16,8 @@
 #include "region.hxx"
 #include "theme_tab.hxx"
 
+class managed_window_t;
+
 namespace page {
 
 struct img_t {
@@ -141,8 +143,8 @@ public:
 	i_rect compute_client_size(managed_window_t * c);
 	i_rect const & get_allocation();
 	void set_theme(theme_t const * theme);
-	list<managed_window_base_t const *> clients() const;
-	managed_window_base_t const * selected() const;
+	list<managed_window_t const *> clients() const;
+	managed_window_t const * selected() const;
 	bool is_default() const;
 	void set_default(bool x);
 	list<tree_t *> childs() const;

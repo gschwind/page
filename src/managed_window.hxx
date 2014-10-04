@@ -13,7 +13,6 @@
 #include "utils.hxx"
 #include "leak_checker.hxx"
 #include "theme.hxx"
-#include "managed_window_base.hxx"
 #include "display.hxx"
 #include "composite_surface_manager.hxx"
 #include "renderable_pixmap.hxx"
@@ -30,7 +29,7 @@ enum managed_window_type_e {
 	MANAGED_FULLSCREEN
 };
 
-class managed_window_t : public managed_window_base_t {
+class managed_window_t : public client_base_t {
 private:
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask | StructureNotifyMask;

@@ -13,7 +13,6 @@
 
 #include "box.hxx"
 #include "tree.hxx"
-#include "managed_window_base.hxx"
 
 using namespace std;
 
@@ -45,7 +44,7 @@ struct page_event_t {
 		};
 		struct {
 			notebook_t const * nbk;
-			managed_window_base_t const * clt;
+			managed_window_t const * clt;
 		};
 		split_t const * spt;
 	};

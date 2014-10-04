@@ -555,10 +555,6 @@ public:
 	void raise_child(tree_t * t);
 	void remove(tree_t * t);
 
-	static managed_window_t * _upgrade(managed_window_base_t const * x) {
-		return dynamic_cast<managed_window_t *>(const_cast<managed_window_base_t *>(x));
-	}
-
 	void attach_dock(unmanaged_window_t * uw) {
 		docks.push_back(uw);
 	}

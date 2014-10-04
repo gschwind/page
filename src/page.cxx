@@ -790,7 +790,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
-					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.c = const_cast<managed_window_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 					mode_data_notebook.zone = SELECT_NONE;
@@ -823,12 +823,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.c = const_cast<managed_window_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					mode_data_notebook.c = _upgrade(b->clt);
+					mode_data_notebook.c = const_cast<managed_window_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 
@@ -1355,7 +1355,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 							(e.y_root - menu->position().y) / 24.0);
 					menu->set_selected(selx);
 					mode_data_notebook_menu.from->set_selected(
-							_upgrade(menu->get_selected()));
+							const_cast<managed_window_t*>(menu->get_selected()));
 
 					rpage->add_damaged(
 							mode_data_notebook_menu.from->allocation());

@@ -331,11 +331,11 @@ void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-list<managed_window_base_t const *> notebook_t::clients() const {
-	return list<managed_window_base_t const *>(_clients.begin(), _clients.end());
+list<managed_window_t const *> notebook_t::clients() const {
+	return list<managed_window_t const *>(_clients.begin(), _clients.end());
 }
 
-managed_window_base_t const * notebook_t::selected() const {
+managed_window_t const * notebook_t::selected() const {
 	return _selected;
 }
 
