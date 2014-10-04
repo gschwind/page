@@ -3670,6 +3670,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 		uw->map();
 		safe_update_transient_for(uw);
 		safe_raise_window(uw);
+		rnd->add_damaged(uw->visible_area());
 		update_windows_stack();
 		_need_render = true;
 	} catch (...) {
