@@ -1537,6 +1537,9 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
+
+		rnd->add_damaged(mode_data_floating.f->visible_area());
+
 		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
@@ -1624,6 +1627,9 @@ void page_t::process_event(XMotionEvent const & e) {
 		/* get lastest know motion event */
 		ev.xmotion = e;
 		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
+
+		rnd->add_damaged(mode_data_floating.f->visible_area());
+
 		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
