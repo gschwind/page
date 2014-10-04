@@ -4236,6 +4236,7 @@ void page_t::update_keymap() {
 
 void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
+	rnd->add_damaged(rpage->get_damaged());
 	rpage->repair_damaged(get_all_childs());
 
 	/**
