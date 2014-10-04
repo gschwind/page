@@ -370,10 +370,10 @@ string notebook_t::get_node_name() const {
 }
 
 void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
-	theme_clients.clear();
+	theme_notebook.clients_tab.clear();
 
 	if (_clients.size() != 0) {
-		theme_clients.resize(_clients.size());
+		theme_notebook.clients_tab.resize(_clients.size());
 
 		double box_width;
 		if (_selected != nullptr) {
@@ -391,36 +391,33 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
 						(int)(offset + (1.0 + XN) * box_width) - floor(offset)),
 						(int)_theme->notebook.margin.top - 1 };
-				theme_clients[k].position = b;
-				theme_clients[k].selected = true;
+				theme_notebook.clients_tab[k].position = b;
+				theme_notebook.clients_tab[k].selected = true;
 				offset += box_width * (1.0 + XN);
 			} else {
 				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
 						offset + box_width) - floor(offset)),
 						(int)_theme->notebook.margin.top - 1 };
-				theme_clients[k].position = b;
-
-				theme_clients[k].selected = false;
+				theme_notebook.clients_tab[k].position = b;
+				theme_notebook.clients_tab[k].selected = false;
 				offset += box_width;
 			}
 
-			theme_clients[k].title = i->title();
-			theme_clients[k].demand_attention = false;
-			theme_clients[k].focuced = false;
-			theme_clients[k].icon = i->icon();
+			theme_notebook.clients_tab[k].title = i->title();
+			theme_notebook.clients_tab[k].demand_attention = false;
+			theme_notebook.clients_tab[k].focuced = false;
+			theme_notebook.clients_tab[k].icon = i->icon();
 			++k;
 		}
 	}
 
-	theme_notebook_t tn;
-	tn.allocation = _allocation;
+	theme_notebook.allocation = _allocation;
 	if(_selected != nullptr) {
-		tn.client_position = _selected->base_position();
+		theme_notebook.client_position = _selected->base_position();
 	}
-	tn.is_default = is_default();
-	tn.clients_tab = theme_clients;
+	theme_notebook.is_default = is_default();
 	/** TODO **/
-	_theme->render_notebook(cr, &tn, area);
+	_theme->render_notebook(cr, &theme_notebook, area);
 }
 
 //void notebook_t::render(cairo_t * cr, time_t time) {

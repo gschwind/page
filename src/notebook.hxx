@@ -46,7 +46,7 @@ class notebook_t : public notebook_base_t  {
 
 	ptr<renderable_notebook_fading_t> fading_notebook;
 
-	mutable vector<theme_tab_t> theme_clients;
+	mutable theme_notebook_t theme_notebook;
 
 public:
 
