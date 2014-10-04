@@ -544,11 +544,6 @@ public:
 
 	}
 
-	i_rect get_visible() {
-		i_rect rec{_base_position};
-		return rec;
-	}
-
 	ptr<renderable_t> get_base_renderable() {
 		if (_composite_surf != nullptr) {
 			i_rect loc = base_position();
@@ -611,10 +606,10 @@ public:
 	i_rect compute_floating_close_position(i_rect const & allocation) const;
 
 
-	i_rect visible_area() const {
+	region visible_area() const {
 
 		if(_type == MANAGED_FLOATING) {
-			i_rect vis = base_position();
+			i_rect vis{base_position()};
 			vis.x -= 8;
 			vis.y -= 8;
 			vis.w += 16;

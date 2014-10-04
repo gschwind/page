@@ -432,8 +432,6 @@ void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
-	rnd->add_damaged(region(mw->get_visible()));
-
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
 
@@ -1072,9 +1070,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
 			ps->hide();
+			rnd->add_damaged(mode_data_split.split->allocation());
 			mode_data_split.split->set_split(mode_data_split.split_ratio);
 			rpage->add_damaged(mode_data_split.split->allocation());
 			mode_data_split.reset();
+
 		}
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
@@ -1851,14 +1851,14 @@ void page_t::process_event(XConfigureEvent const & e) {
 	if(c != nullptr) {
 		/** damage corresponding area **/
 		if(e.event == cnx->root()) {
-			rnd->add_damaged(c->base_position());
+			rnd->add_damaged(c->visible_area());
 		}
 
 		c->process_event(e);
 
 		/** damage corresponding area **/
 		if(e.event == cnx->root()) {
-			rnd->add_damaged(c->base_position());
+			rnd->add_damaged(c->visible_area());
 		}
 	}
 
@@ -1934,12 +1934,14 @@ void page_t::process_event(XUnmapEvent const & e) {
 	 * (i.e. he want that we unmanage it.
 	 */
 	if (c != nullptr) {
+
+		rnd->add_damaged(c->visible_area());
+
 		if(e.send_event == True and typeid(*c) == typeid(managed_window_t)) {
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
 		} else if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
-			_need_render = true;
 			destroy_client(c);
 		}
 	}
@@ -1982,11 +1984,12 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 	client_base_t * c = find_client(e.window);
 
 	if (c != nullptr) {
+
+		rnd->add_damaged(c->visible_area());
+
 		if(typeid(*c) == typeid(managed_window_t)) {
 
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
-
-			rnd->add_damaged(mw->base_position());
 
 			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
@@ -3746,7 +3749,6 @@ void page_t::destroy_client(client_base_t * c) {
 		unmanage(mw);
 	}
 
-	rnd->add_damaged(c->base_position());
 	remove_client(c);
 	update_client_list();
 	rpage->mark_durty();

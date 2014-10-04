@@ -259,6 +259,7 @@ public:
 	virtual Window orig() const = 0;
 	virtual i_rect const & base_position() const = 0;
 	virtual i_rect const & orig_position() const = 0;
+	virtual region visible_area() const = 0;
 
 	virtual string get_node_name() const {
 		return _get_node_name<'c'>();
