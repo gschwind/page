@@ -113,18 +113,36 @@ void compositor_t::render() {
 	page::time_t cur;
 	cur.get_time();
 
-	/** check if some component need rendering **/
-//	if (not _need_render) {
-//		for (auto i : _graph_scene) {
-//			if (i->need_render(cur)) {
-//				_need_render = true;
-//				break;
-//			}
-//		}
-//	}
 
-	for (auto &i : _graph_scene) {
-		_damaged += i->get_damaged();
+	/**
+	 * remove masked damaged.
+	 * i.e. if a damage occur on window partially or fully recovered by
+	 * another window, we ignore this damaged region.
+	 **/
+
+	/** check if we have at less 2 object, otherwise we cannot have overlap **/
+	if (_graph_scene.size() >= 2) {
+		vector<region> r_damaged;
+		vector<region> r_opac;
+		for (auto &i : _graph_scene) {
+			r_damaged.push_back(i->get_damaged());
+			r_opac.push_back(i->get_opaque_region());
+		}
+
+		/** mask_area accumulate opac area, from top level object, to bottom **/
+		region mask_area { };
+		for (int k = r_opac.size() - 2; k >= 0; --k) {
+			mask_area += r_opac[k + 1];
+			r_damaged[k] -= mask_area;
+		}
+
+		for (auto &i : r_damaged) {
+			_damaged += i;
+		}
+	} else {
+		for (auto &i : _graph_scene) {
+			_damaged += i->get_damaged();
+		}
 	}
 
 	_damaged &= _desktop_region;
@@ -283,8 +301,6 @@ void compositor_t::render() {
 
 		}
 	}
-
-
 
 	_damaged.clear();
 
