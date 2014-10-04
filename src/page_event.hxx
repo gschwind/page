@@ -13,13 +13,14 @@
 
 #include "box.hxx"
 #include "tree.hxx"
-#include "notebook_base.hxx"
 #include "managed_window_base.hxx"
 #include "split_base.hxx"
 
 using namespace std;
 
 namespace page {
+
+class notebook_t;
 
 enum page_event_type_e {
 	PAGE_EVENT_NONE,
@@ -43,7 +44,7 @@ struct page_event_t {
 			void * _p1;
 		};
 		struct {
-			notebook_base_t const * nbk;
+			notebook_t const * nbk;
 			managed_window_base_t const * clt;
 		};
 		split_base_t const * spt;

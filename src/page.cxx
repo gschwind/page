@@ -791,7 +791,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
 					mode_data_notebook.c = _upgrade(b->clt);
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 					mode_data_notebook.zone = SELECT_NONE;
 					mode_data_notebook.ev = *b;
@@ -804,32 +804,32 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = 0;
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = _upgrade(b->clt);
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					mode_data_notebook.c = _upgrade(b->clt);
-					mode_data_notebook.from = _upgrade(b->nbk);
+					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 
 				} else if (b->type == PAGE_EVENT_SPLIT) {
@@ -847,7 +847,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					ps->show();
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
 					process_mode = PROCESS_NOTEBOOK_MENU;
-					mode_data_notebook_menu.from = _upgrade(b->nbk);
+					mode_data_notebook_menu.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook_menu.b = b->position;
 
 					list<managed_window_t *> managed_window = mode_data_notebook_menu.from->get_clients();
@@ -1983,6 +1983,8 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 
+			rnd->add_damaged(mw->base_position());
+
 			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
 				i_rect old_size = mw->get_floating_wished_position();
@@ -2033,6 +2035,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 					/** only affect floating windows **/
 					mw->set_floating_wished_position(new_size);
 					mw->reconfigure();
+					rnd->add_damaged(mw->base_position());
 				}
 			}
 		} else {
@@ -2041,7 +2044,6 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 		}
 
 	} else {
-
 		/** validate configure when window is not managed **/
 		ackwoledge_configure_request(e);
 	}

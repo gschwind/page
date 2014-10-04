@@ -25,7 +25,7 @@ struct img_t {
   unsigned char  pixel_data[16 * 16 * 4 + 1];
 };
 
-class notebook_t : public notebook_base_t  {
+class notebook_t : public tree_t {
 	double const XN = 0.0;
 	page::time_t const animation_duration{0, 500000000};
 
