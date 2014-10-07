@@ -411,9 +411,8 @@ public:
 
 	void remove(tree_t * t) {
 		client_base_t * c = dynamic_cast<client_base_t *>(t);
-		if(c == nullptr) {
-			throw exception_t{"client_base_t::remove => trying to remove a non client_base_t*"};
-		}
+		if(c == nullptr)
+			return;
 		_children.remove(c);
 	}
 
