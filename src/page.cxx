@@ -799,8 +799,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook.ev = *b;
 
 					pn0->move_resize(mode_data_notebook.from->tab_area);
-					pn0->update_window(mode_data_notebook.c,
-							mode_data_notebook.c->title());
+					pn0->update_window(mode_data_notebook.c);
 					//set_focus(mode_data_notebook.c, e.time);
 					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
@@ -946,7 +945,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						mode_data_bind.zone = SELECT_NONE;
 
 						pn0->move_resize(mode_data_bind.c->get_base_position());
-						pn0->update_window(mw, mw->title());
+						pn0->update_window(mw);
 
 						process_mode = PROCESS_FLOATING_BIND;
 
@@ -1017,7 +1016,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					process_mode = PROCESS_FULLSCREEN_MOVE;
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
-					pn0->update_window(mw, mw->title());
+					pn0->update_window(mw);
 					pn0->show();
 					pn0->move_resize(v->raw_aera);
 				}
@@ -1033,7 +1032,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				mode_data_notebook.zone = SELECT_NONE;
 
 				pn0->move_resize(mode_data_notebook.from->tab_area);
-				pn0->update_window(mw, mw->title());
+				pn0->update_window(mw);
 
 				//mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				rpage->add_damaged(mode_data_notebook.from->allocation());

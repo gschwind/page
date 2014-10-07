@@ -17,12 +17,9 @@
 namespace page {
 
 struct popup_notebook0_t : public renderable_t {
-
 	theme_t * _theme;
-
-	icon64 * icon;
+	ptr<icon64> icon;
 	string title;
-
 	bool _show;
 
 protected:
@@ -89,19 +86,13 @@ public:
 		}
 	}
 
-
-
-
 	~popup_notebook0_t() {
-		if(icon != nullptr)
-			delete icon;
+
 	}
 
-	void update_window(client_base_t * c, string title) {
-		if (icon != nullptr)
-			delete icon;
-		icon = new icon64(*c);
-		this->title = title;
+	void update_window(managed_window_t * c) {
+		icon = ptr<icon64>{new icon64(*c)};
+		this->title = c->title();
 	}
 
 	void show() {
@@ -127,7 +118,7 @@ public:
 			cairo_save(cr);
 			cairo_clip(cr, a);
 			cairo_translate(cr, _position.x, _position.y);
-			_theme->render_popup_notebook0(cr, icon, _position.w, _position.h,
+			_theme->render_popup_notebook0(cr, icon.get(), _position.w, _position.h,
 					title);
 			cairo_restore(cr);
 		}
