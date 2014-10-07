@@ -423,14 +423,18 @@ managed_window_t * page_t::manage(Atom net_wm_type, shared_ptr<client_properties
 	XSetWindowBorder(cnx->dpy(), c->id(), 0);
 	/* assign window to desktop 0 */
 	c->set_net_wm_desktop(0);
-	managed_window_t * mw = new managed_window_t(net_wm_type, c, theme);
+	managed_window_t * mw = new managed_window_t{net_wm_type, c, theme};
 	add_client(mw);
+
+	printf("managing : '%s'\n", mw->title().c_str());
 	return mw;
 }
 
 void page_t::unmanage(managed_window_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
+
+	printf("unmanaging : '%s'\n", mw->title().c_str());
 
 	if (has_key(fullscreen_client_to_viewport, mw)) {
 		fullscreen_data_t & data = fullscreen_client_to_viewport[mw];
@@ -1878,7 +1882,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	client_base_t * c = find_client(e.window);
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(managed_window_t)) {
-			cout << "WARNING: managed window destroyed improperly" << endl;
+			cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			unmanage(mw);
 		} else {
