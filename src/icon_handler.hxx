@@ -32,18 +32,18 @@ public:
 	icon_handler_t(client_base_t const & c) {
 		icon_surf = nullptr;
 
+		vector<long> const * net_wm_icon = c.net_wm_icon();
 		/* if window have icon properties */
-		if (c.net_wm_icon() != nullptr) {
+		if (net_wm_icon != nullptr) {
 
-			vector<long> const * net_wm_icon = c.net_wm_icon();
 			vector<_icon_ref_t> icons;
 
 			/* find all icons in net_wm_icon */
-			for(unsigned offset = 0; offset < net_wm_icon->size(); ++offset) {
+			for(unsigned offset = 0; offset+2 < net_wm_icon->size();) {
 				_icon_ref_t tmp;
 				tmp.width = (*net_wm_icon)[offset + 0];
 				tmp.height = (*net_wm_icon)[offset + 1];
-				tmp.data = &(*net_wm_icon)[offset + 2];
+				tmp.data = &((*net_wm_icon)[offset + 2]);
 				offset += 2 + tmp.width * tmp.height;
 
 				if(offset < net_wm_icon->size() and tmp.width > 0 and tmp.height > 0)
@@ -62,6 +62,19 @@ public:
 				if (i.width >= WIDTH and i.height >= HEIGHT
 						and selected.width > i.width and selected.height > i.height) {
 					selected = i;
+				}
+			}
+
+			/** look for the greatest icons if no icon already matched **/
+			if(selected.data == nullptr) {
+				selected.width = std::numeric_limits<long>::min();
+				selected.height = std::numeric_limits<long>::min();
+				selected.data = nullptr;
+				/* find the greatest icon */
+				for(auto &i: icons) {
+					if (i.width >= selected.width and i.height >= selected.height) {
+						selected = i;
+					}
 				}
 			}
 
