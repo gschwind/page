@@ -37,10 +37,10 @@ protected:
 	tree_t * _parent;
 
 	/** handle properties of client */
-	shared_ptr<client_properties_t> _properties;
+	ptr<client_properties_t> _properties;
 
 	/** sub-clients **/
-	list<tree_t *>               _children;
+	list<client_base_t *>               _children;
 
 	// window title cache
 	string                       _title;
@@ -281,17 +281,34 @@ public:
 
 	void raise_child(tree_t * t = nullptr) {
 
-		if(has_key(_children, t)) {
-			_children.remove(t);
-			_children.push_back(t);
-
+		/** raise ourself **/
+		if(t == nullptr) {
 			if(_parent != nullptr) {
 				_parent->raise_child(this);
 			}
 
-		} else if (t != nullptr) {
-			throw exception_t("client_base::raise_child trying to raise a non child tree");
+			return;
 		}
+
+		/** only client_base_t can be child of client_base_t **/
+		client_base_t * c = dynamic_cast<client_base_t *>(t);
+		if(has_key(_children, c) and c != nullptr) {
+
+			/** raise the child **/
+			_children.remove(c);
+			_children.push_back(c);
+
+			/** raise ourself **/
+			if(_parent != nullptr) {
+				_parent->raise_child(this);
+			}
+
+			return;
+		}
+
+		/** something is wrong with the code if we reach this line **/
+		throw exception_t("client_base::raise_child trying to raise a non child tree");
+
 	}
 
 	Atom type() {
@@ -393,7 +410,11 @@ public:
 	}
 
 	void remove(tree_t * t) {
-		_children.remove(t);
+		client_base_t * c = dynamic_cast<client_base_t *>(t);
+		if(c == nullptr) {
+			throw exception_t{"client_base_t::remove => trying to remove a non client_base_t*"};
+		}
+		_children.remove(c);
 	}
 
 	void print_window_attributes() {

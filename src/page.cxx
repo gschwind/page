@@ -373,6 +373,7 @@ void page_t::run() {
 
 		/* grab the server to avoid asynchronous conflicts */
 		cnx->grab();
+		XSync(cnx->dpy(), False);
 
 		/** get all event and store them in pending event **/
 		while (XPending(cnx->dpy())) {
@@ -381,7 +382,7 @@ void page_t::run() {
 			pending_event.push_back(ev);
 		}
 
-		while(not pending_event.empty()) {
+		while (not pending_event.empty()) {
 			process_event(pending_event.front());
 			if(rnd != nullptr) {
 				rnd->process_event(pending_event.front());
@@ -396,8 +397,6 @@ void page_t::run() {
 			time_t cur_tic;
 			cur_tic.get_time();
 			if (cur_tic > next_frame) {
-
-
 				rnd->clear_renderable();
 				vector<ptr<renderable_t>> ret;
 				prepare_render(ret, cur_tic);
@@ -413,11 +412,10 @@ void page_t::run() {
 				max_wait = next_frame - cur_tic;
 			}
 		}
-
 	}
 }
 
-managed_window_t * page_t::manage(Atom net_wm_type, shared_ptr<client_properties_t> c) {
+managed_window_t * page_t::manage(Atom net_wm_type, ptr<client_properties_t> c) {
 	cnx->add_to_save_set(c->id());
 	/* set border to zero */
 	XSetWindowBorder(cnx->dpy(), c->id(), 0);
@@ -4040,7 +4038,7 @@ void page_t::check_x11_extension() {
 	}
 }
 
-void page_t::render(cairo_t * cr, page::time_t time) {
+/*void page_t::render(cairo_t * cr, page::time_t time) {
 //	rpage->repair_damaged(get_all_childs());
 //	XFlush(cnx->dpy());
 //	rpage->render(cr, time);
@@ -4057,20 +4055,7 @@ void page_t::render(cairo_t * cr, page::time_t time) {
 //
 //	//_need_render = false;
 
-}
-
-//bool page_t::need_render(time_t time) {
-//
-//	if(_need_render == true)
-//		return true;
-//
-//	for(auto i: childs()) {
-//		if(i->need_render(time)) {
-//			return true;
-//		}
-//	}
-//	return false;
-//}
+}*/
 
 /**
  * Look at coming events if a client will be destroyed.

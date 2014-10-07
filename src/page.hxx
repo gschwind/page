@@ -559,10 +559,12 @@ public:
 
 	void attach_dock(unmanaged_window_t * uw) {
 		docks.push_back(uw);
+		uw->set_parent(this);
 	}
 
 	void detach_dock(unmanaged_window_t * uw) {
 		docks.remove(uw);
+		uw->set_parent(nullptr);
 	}
 
 	void check_x11_extension();
