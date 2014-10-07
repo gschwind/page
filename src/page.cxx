@@ -2863,12 +2863,16 @@ void page_t::notebook_close(notebook_t * src) {
 
 void page_t::update_popup_position(ptr<popup_notebook0_t> p,
 		i_rect & position) {
+	rnd->add_damaged(p->position());
 	p->move_resize(position);
+	rnd->add_damaged(p->position());
 }
 
 void page_t::update_popup_position(ptr<popup_frame_move_t> p,
 		i_rect & position) {
+	rnd->add_damaged(p->position());
 	p->move_resize(position);
+	rnd->add_damaged(p->position());
 }
 
 

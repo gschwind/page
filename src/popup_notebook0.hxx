@@ -16,7 +16,7 @@
 
 namespace page {
 
-struct popup_notebook0_t : public window_overlay_t {
+struct popup_notebook0_t : public renderable_t {
 
 	theme_t * _theme;
 
@@ -25,13 +25,72 @@ struct popup_notebook0_t : public window_overlay_t {
 
 	bool _show;
 
+protected:
+	i_rect _position;
+
+	bool _has_alpha;
+	bool _is_durty;
+	bool _is_visible;
+
+public:
 	popup_notebook0_t(theme_t * theme) :
-			window_overlay_t(), _theme(theme) {
+			_theme(theme), _position { -1, -1, 1, 1 } {
+				icon = nullptr;
 
+				_show = false;
 		icon = nullptr;
-
-		_show = false;
+		_has_alpha = true;
+		_is_durty = true;
+		_is_visible = false;
 	}
+
+
+	void mark_durty() {
+		_is_durty = true;
+	}
+
+	void move_resize(i_rect const & area) {
+		_position = area;
+	}
+
+	void move(int x, int y) {
+		_position.x = x;
+		_position.y = y;
+	}
+
+	i_rect const & position() {
+		return _position;
+	}
+
+	/**
+	 * Derived class must return opaque region for this object,
+	 * If unknown it's safe to leave this empty.
+	 **/
+	virtual region get_opaque_region() {
+		return region{};
+	}
+
+	/**
+	 * Derived class must return visible region,
+	 * If unknow the whole screen can be returned, but draw will be called each time.
+	 **/
+	virtual region get_visible_region() {
+		return region{_position};
+	}
+
+	/**
+	 * return currently damaged area (absolute)
+	 **/
+	virtual region get_damaged()  {
+		if(_is_durty) {
+			return region{_position};
+		} else {
+			return region{};
+		}
+	}
+
+
+
 
 	~popup_notebook0_t() {
 		if(icon != nullptr)
@@ -46,12 +105,12 @@ struct popup_notebook0_t : public window_overlay_t {
 	}
 
 	void show() {
-		window_overlay_t::show();
+		_is_visible = true;
 		_show = true;
 	}
 
 	void hide() {
-		window_overlay_t::hide();
+		_is_visible = false;
 		_show = false;
 	}
 

@@ -8,6 +8,7 @@
  */
 
 
+#include "config.hxx"
 #include "simple2_theme.hxx"
 #include "box.hxx"
 #include "color.hxx"
