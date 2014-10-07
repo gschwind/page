@@ -3110,6 +3110,7 @@ void page_t::detach(tree_t * t) {
 	for(auto &i : elements) {
 		i->remove(t);
 	}
+	t->set_parent(nullptr);
 }
 
 void page_t::safe_raise_window(client_base_t * c) {

@@ -278,7 +278,6 @@ public:
 		return ret;
 	}
 
-
 	void raise_child(tree_t * t = nullptr) {
 
 		/** raise ourself **/
@@ -423,11 +422,6 @@ public:
 	void print_properties() {
 		_properties->print_properties();
 	}
-
-//	virtual void render(cairo_t * cr, time_t time) {
-//		/* draw nothing */
-//		cout << "call " << __FUNCTION__ << endl;
-//	}
 
 	void process_event(XConfigureEvent const & e) {
 		_properties->process_event(e);

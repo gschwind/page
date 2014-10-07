@@ -132,7 +132,9 @@ public:
 	void set_allocation(i_rect const & area);
 
 	void set_parent(tree_t * t) {
-		throw exception_t("notebook_t cannot have tree_t has parent");
+		if(t != nullptr) {
+			throw exception_t("notebook_t cannot have tree_t has parent");
+		}
 	}
 
 	void set_parent(page_component_t * t) {
