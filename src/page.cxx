@@ -386,6 +386,7 @@ void page_t::run() {
 			process_event(pending_event.front());
 			if(rnd != nullptr) {
 				rnd->process_event(pending_event.front());
+				XFlush(cnx->dpy());
 			}
 			pending_event.pop_front();
 		}
@@ -1881,6 +1882,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(managed_window_t)) {
 			cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
+			cout << "Sent Event:" << (e.send_event?"true":"false") << endl;
 			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
 			unmanage(mw);
 		} else {

@@ -277,6 +277,8 @@ void managed_window_t::fake_configure() {
 }
 
 void managed_window_t::delete_window(Time t) {
+	printf("request close for '%s'\n", title().c_str());
+
 	XEvent ev;
 	ev.xclient.display = cnx()->dpy();
 	ev.xclient.type = ClientMessage;
