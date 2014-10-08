@@ -13,6 +13,8 @@
 #include <X11/X.h>
 #include <X11/Xutil.h>
 
+#include <X11/Xlib-xcb.h>
+
 #include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/Xfixes.h>
@@ -62,13 +64,14 @@ class display_t {
 
 	int _fd;
 	Display * _dpy;
+	xcb_connection_t * _xcb;
 
 public:
 
 	/* overlay composite */
 	Window composite_overlay;
 
-	shared_ptr<atom_handler_t> _A;
+	ptr<atom_handler_t> _A;
 
 
 	int grab_count;
@@ -82,6 +85,7 @@ public:
 	int fd();
 	Window root();
 	Display * dpy();
+	xcb_connection_t * xcb();
 
 	/* conveniant macro to get atom XID */
 	Atom A(atom_e atom);

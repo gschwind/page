@@ -5,6 +5,7 @@ AM_CXXFLAGS =  \
 	-rdynamic \
 	$(X11_CFLAGS) \
 	$(XCB_CFLAGS) \
+	$(X11XCB_CFLAGS) \
 	$(CAIRO_CFLAGS) \
 	$(PANGO_CFLAGS) \
 	$(XCOMPOSITE_CFLAGS) \
@@ -37,6 +38,7 @@ page_SOURCES = \
 page_LDADD = \
 	$(X11_LIBS) \
 	$(XCB_LIBS) \
+	$(X11XCB_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
 	$(XCOMPOSITE_LIBS) \

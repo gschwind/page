@@ -177,7 +177,7 @@ int display_t::move_window(Window w, int x, int y) {
 display_t::display_t() {
 	old_error_handler = XSetErrorHandler(error_handler);
 
-	_dpy = XOpenDisplay(0);
+	_dpy = XOpenDisplay(NULL);
 	if (_dpy == NULL) {
 		throw std::runtime_error("Could not open display");
 	} else {
@@ -185,6 +185,9 @@ display_t::display_t() {
 	}
 
 	_fd = ConnectionNumber(_dpy);
+
+	/** get xcb connection handler to enable xcb request **/
+	_xcb = XGetXCBConnection(_dpy);
 
 	grab_count = 0;
 
@@ -198,8 +201,14 @@ display_t::~display_t() {
 
 void display_t::grab() {
 	if (grab_count == 0) {
-		XGrabServer(_dpy);
-		//XSync(_dpy, False);
+
+		xcb_void_cookie_t ck = xcb_grab_server_checked(_xcb);
+		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
+
+		if(err != nullptr) {
+			throw exception_t{"%s:%d unable to grab X11 server", __FILE__, __LINE__};
+		}
+
 	}
 	++grab_count;
 }
@@ -214,9 +223,17 @@ void display_t::ungrab() {
 		/* Flush pending events, and wait for that are applied */
 		//XSync(_dpy, False);
 		/* allow other client to make request to the server */
-		XUngrabServer(_dpy);
+		xcb_void_cookie_t ck = xcb_ungrab_server_checked(_xcb);
 		/* Ungrab the server immediately */
-		XFlush(_dpy);
+		if(xcb_flush(_xcb) <= 0)
+			throw exception_t{"%s:%d unable to to flush X11 server", __FILE__, __LINE__};
+
+		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
+
+		if(err != nullptr) {
+			throw exception_t{"%s:%d unable to ungrab X11 server", __FILE__, __LINE__};
+		}
+
 	}
 }
 
@@ -608,6 +625,10 @@ Window * display_t::read_net_wm_user_time_window(Window w) {
 
 Display * display_t::dpy() {
 	return _dpy;
+}
+
+xcb_connection_t * display_t::xcb() {
+	return _xcb;
 }
 
 bool display_t::check_composite_extension(int * opcode, int * event,
