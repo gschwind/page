@@ -2900,10 +2900,10 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 		PS_BOTTOM_END_X = 11,
 	};
 
-	long xtop = v.raw_aera.y;
-	long xleft = v.raw_aera.x;
-	long xright = _root_position.w - v.raw_aera.x - v.raw_aera.w;
-	long xbottom = _root_position.h - v.raw_aera.y - v.raw_aera.h;
+	int xtop = v.raw_aera.y;
+	int xleft = v.raw_aera.x;
+	int xright = _root_position.w - v.raw_aera.x - v.raw_aera.w;
+	int xbottom = _root_position.h - v.raw_aera.y - v.raw_aera.h;
 
 
 	for(auto & j : clients) {
@@ -3491,7 +3491,7 @@ void page_t::onmap(Window w) {
 
 	} else {
 		try {
-			shared_ptr<client_properties_t> props(new client_properties_t(cnx, w));
+			ptr<client_properties_t> props(new client_properties_t(cnx, w));
 			if (props->read_window_attributes()) {
 				if(props->wa().c_class != InputOnly) {
 					props->read_all_properties();
@@ -3646,7 +3646,7 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) {
 			}
 
 			if(mw->net_wm_state() != nullptr) {
-				if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
+				if(has_key(*mw->net_wm_state(), static_cast<xcb_atom_t>(A(_NET_WM_STATE_HIDDEN)))) {
 					activate = false;
 				}
 			}
@@ -3786,12 +3786,12 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			notifications.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->net_wm_state() != nullptr
-				and has_key(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
+				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_ABOVE)))) {
 			detach(uw);
 			above.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->net_wm_state() != nullptr
-				and has_key(*(uw->net_wm_state()), A(_NET_WM_STATE_BELOW))) {
+				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
 			detach(uw);
 			below.push_back(uw);
 			uw->set_parent(this);

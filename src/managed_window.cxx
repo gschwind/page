@@ -449,7 +449,7 @@ void managed_window_t::icccm_focus(Time t) {
 	}
 
 	if (_properties->wm_protocols() != nullptr) {
-		if (has_key(*(_properties->wm_protocols()), A(WM_TAKE_FOCUS))) {
+		if (has_key(*(_properties->wm_protocols()), static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
 			XEvent ev;
 			ev.xclient.display = cnx()->dpy();
 			ev.xclient.type = ClientMessage;

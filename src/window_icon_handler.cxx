@@ -26,7 +26,7 @@ window_icon_handler_t::window_icon_handler_t(client_base_t const * c, unsigned i
 
 	/* if window have icon properties */
 	if (c->net_wm_icon() != nullptr) {
-		vector<long> const & icon_data = *(c->net_wm_icon());
+		vector<int> const & icon_data = *(c->net_wm_icon());
 
 		uint32_t * icon_data32 = 0;
 

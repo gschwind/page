@@ -61,7 +61,7 @@ public:
 
 	}
 
-	client_base_t(shared_ptr<client_properties_t> props) :
+	client_base_t(ptr<client_properties_t> props) :
 		_properties(props),
 		_children(),
 		_title()
@@ -313,7 +313,7 @@ public:
 	Atom type() {
 		Atom type = None;
 
-		list<Atom> net_wm_window_type;
+		list<xcb_atom_t> net_wm_window_type;
 		bool override_redirect = (_properties->wa().override_redirect == True)?true:false;
 
 		if(_properties->net_wm_window_type() == nullptr) {
@@ -360,7 +360,7 @@ public:
 		net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 
 		/* TODO: make this ones */
-		static set<Atom> known_type;
+		static set<xcb_atom_t> known_type;
 		if (known_type.size() == 0) {
 			known_type.insert(A(_NET_CURRENT_DESKTOP));
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
@@ -448,13 +448,13 @@ public:
 	XSizeHints const *                 wm_normal_hints() const { return _properties->wm_normal_hints(); }
 	XWMHints const *                   wm_hints() const { return _properties->wm_hints(); }
 	vector<string> const *             wm_class() const { return _properties->wm_class(); }
-	Window const *                     wm_transient_for() const { return _properties->wm_transient_for(); }
-	list<Atom> const *                 wm_protocols() const { return _properties->wm_protocols(); }
-	vector<Window> const *             wm_colormap_windows() const { return _properties->wm_colormap_windows(); }
+	xcb_window_t const *                     wm_transient_for() const { return _properties->wm_transient_for(); }
+	list<xcb_atom_t> const *                 wm_protocols() const { return _properties->wm_protocols(); }
+	vector<xcb_window_t> const *             wm_colormap_windows() const { return _properties->wm_colormap_windows(); }
 	string const *                     wm_client_machine() const { return _properties->wm_client_machine(); }
 
 	/* wm_state is writen by WM */
-	card32 const *                     wm_state() const {return _properties->wm_state(); }
+	int const *                     wm_state() const {return _properties->wm_state(); }
 
 	/* EWMH */
 
@@ -462,21 +462,21 @@ public:
 	string const *                     net_wm_visible_name() const { return _properties->net_wm_visible_name(); }
 	string const *                     net_wm_icon_name() const { return _properties->net_wm_icon_name(); }
 	string const *                     net_wm_visible_icon_name() const { return _properties->net_wm_visible_icon_name(); }
-	unsigned long const *              net_wm_desktop() const { return _properties->net_wm_desktop(); }
-	list<Atom> const *                 net_wm_window_type() const { return _properties->net_wm_window_type(); }
-	list<Atom> const *                 net_wm_state() const { return _properties->net_wm_state(); }
-	list<Atom> const *                 net_wm_allowed_actions() const { return _properties->net_wm_allowed_actions(); }
-	vector<card32> const *             net_wm_struct() const { return _properties->net_wm_struct(); }
-	vector<card32> const *             net_wm_struct_partial() const { return _properties->net_wm_struct_partial(); }
-	vector<card32> const *             net_wm_icon_geometry() const { return _properties->net_wm_icon_geometry(); }
-	vector<card32> const *             net_wm_icon() const { return _properties->net_wm_icon(); }
-	unsigned long const *              net_wm_pid() const { return _properties->net_wm_pid(); }
-	bool                               net_wm_handled_icons() const { return _properties->net_wm_handled_icons(); }
-	Time const *                       net_wm_user_time() const { return _properties->net_wm_user_time(); }
-	Window const *                     net_wm_user_time_window() const { return _properties->net_wm_user_time_window(); }
-	vector<card32> const *             net_frame_extents() const { return _properties->net_frame_extents(); }
-	vector<card32> const *             net_wm_opaque_region() const { return _properties->net_wm_opaque_region(); }
-	unsigned long const *              net_wm_bypass_compositor() const { return _properties->net_wm_bypass_compositor(); }
+	unsigned int const *              net_wm_desktop() const { return _properties->net_wm_desktop(); }
+	list<xcb_atom_t> const *                 net_wm_window_type() const { return _properties->net_wm_window_type(); }
+	list<xcb_atom_t> const *                 net_wm_state() const { return _properties->net_wm_state(); }
+	list<xcb_atom_t> const *                 net_wm_allowed_actions() const { return _properties->net_wm_allowed_actions(); }
+	vector<int> const *             net_wm_struct() const { return _properties->net_wm_struct(); }
+	vector<int> const *             net_wm_struct_partial() const { return _properties->net_wm_struct_partial(); }
+	vector<int> const *             net_wm_icon_geometry() const { return _properties->net_wm_icon_geometry(); }
+	vector<int> const *             net_wm_icon() const { return _properties->net_wm_icon(); }
+	unsigned int const *              net_wm_pid() const { return _properties->net_wm_pid(); }
+	//bool                               net_wm_handled_icons() const { return _properties->net_wm_handled_icons(); }
+	uint32_t const *                       net_wm_user_time() const { return _properties->net_wm_user_time(); }
+	xcb_window_t const *                     net_wm_user_time_window() const { return _properties->net_wm_user_time_window(); }
+	vector<int> const *             net_frame_extents() const { return _properties->net_frame_extents(); }
+	vector<int> const *             net_wm_opaque_region() const { return _properties->net_wm_opaque_region(); }
+	unsigned int const *              net_wm_bypass_compositor() const { return _properties->net_wm_bypass_compositor(); }
 
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const { return _properties->motif_hints(); }

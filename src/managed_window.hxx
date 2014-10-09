@@ -297,7 +297,7 @@ public:
 
 	bool is_fullscreen() {
 		if (_properties->net_wm_state() != nullptr) {
-			return has_key(*(_properties->net_wm_state()), A(_NET_WM_STATE_FULLSCREEN));
+			return has_key(*(_properties->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_FULLSCREEN)));
 		}
 		return false;
 	}

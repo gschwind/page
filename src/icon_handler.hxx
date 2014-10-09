@@ -23,16 +23,16 @@ class icon_handler_t {
 	cairo_surface_t * icon_surf;
 
 	struct _icon_ref_t {
-		long width;
-		long height;
-		long const * data;
+		int width;
+		int height;
+		int const * data;
 	};
 
 public:
 	icon_handler_t(client_base_t const & c) {
 		icon_surf = nullptr;
 
-		vector<long> const * net_wm_icon = c.net_wm_icon();
+		vector<int> const * net_wm_icon = c.net_wm_icon();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 
