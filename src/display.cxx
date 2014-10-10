@@ -454,9 +454,9 @@ static void _safe_xfree(void * x) {
 }
 
 /* used for debuging, do not optimize with some cache */
-shared_ptr<char> display_t::get_atom_name(Atom atom) {
+ptr<char> display_t::get_atom_name(Atom atom) {
 	cnx_printf("XGetAtomName: atom = %lu\n", atom);
-	return shared_ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
+	return ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
 }
 
 Status display_t::send_event(Window w, Bool propagate, long event_mask,

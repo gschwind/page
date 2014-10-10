@@ -96,7 +96,7 @@ private:
 
 public:
 
-	managed_window_t(Atom net_wm_type, shared_ptr<client_properties_t> c,
+	managed_window_t(Atom net_wm_type, ptr<client_properties_t> c,
 			theme_t const * theme);
 	virtual ~managed_window_t();
 

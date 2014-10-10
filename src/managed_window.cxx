@@ -209,10 +209,8 @@ managed_window_t::~managed_window_t() {
 
 	destroy_back_buffer();
 
-	XRemoveFromSaveSet(cnx()->dpy(), _orig);
-	XDestroyWindow(cnx()->dpy(), _deco);
-	XDestroyWindow(cnx()->dpy(), _base);
-
+	xcb_destroy_window(cnx()->xcb(), _deco);
+	xcb_destroy_window(cnx()->xcb(), _base);
 }
 
 void managed_window_t::reconfigure() {
@@ -258,18 +256,12 @@ void managed_window_t::reconfigure() {
 		destroy_back_buffer();
 		create_back_buffer();
 
-		region r(_orig_position);
-		set_opaque_region(_base, r);
-
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
 		_orig_position = i_rect(0, 0, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
-
-		region r(_orig_position);
-		set_opaque_region(_base, r);
 
 	}
 
@@ -294,15 +286,16 @@ void managed_window_t::fake_configure() {
 void managed_window_t::delete_window(Time t) {
 	printf("request close for '%s'\n", title().c_str());
 
-	XEvent ev;
-	ev.xclient.display = cnx()->dpy();
-	ev.xclient.type = ClientMessage;
-	ev.xclient.format = 32;
-	ev.xclient.message_type = A(WM_PROTOCOLS);
-	ev.xclient.window = _orig;
-	ev.xclient.data.l[0] = A(WM_DELETE_WINDOW);
-	ev.xclient.data.l[1] = t;
-	cnx()->send_event(_orig, False, NoEventMask, &ev);
+	xcb_client_message_event_t xev;
+	xev.response_type = XCB_CLIENT_MESSAGE;
+	xev.type = A(WM_PROTOCOLS);
+	xev.format = 32;
+	xev.window = _orig;
+	xev.data.data32[0] = A(WM_DELETE_WINDOW);
+	xev.data.data32[1] = t;
+
+	xcb_send_event(cnx()->xcb(), False, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&xev));
+
 }
 
 bool managed_window_t::check_orig_position(i_rect const & position) {
@@ -455,7 +448,7 @@ void managed_window_t::icccm_focus(Time t) {
 	//fprintf(stderr, "Focus time = %lu\n", t);
 
 	if (_properties->wm_hints() != nullptr) {
-		if (_properties->wm_hints()->input == True) {
+		if (_properties->wm_hints()->input != False) {
 			cnx()->set_input_focus(_orig, RevertToParent, t);
 		}
 	} else {
@@ -479,22 +472,22 @@ void managed_window_t::icccm_focus(Time t) {
 
 }
 
-void managed_window_t::set_opaque_region(Window w, region & region) {
-	vector<long> data(region.size() * 4);
-	region::iterator i = region.begin();
-	int k = 0;
-	while (i != region.end()) {
-		data[k++] = (*i).x;
-		data[k++] = (*i).y;
-		data[k++] = (*i).w;
-		data[k++] = (*i).h;
-		++i;
-	}
-
-	cnx()->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
-			data.size());
-
-}
+//void managed_window_t::set_opaque_region(Window w, region & region) {
+//	vector<long> data(region.size() * 4);
+//	region::iterator i = region.begin();
+//	int k = 0;
+//	while (i != region.end()) {
+//		data[k++] = (*i).x;
+//		data[k++] = (*i).y;
+//		data[k++] = (*i).w;
+//		data[k++] = (*i).h;
+//		++i;
+//	}
+//
+//	cnx()->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
+//			data.size());
+//
+//}
 
 vector<floating_event_t> * managed_window_t::compute_floating_areas(
 		theme_managed_window_t * mw) const {

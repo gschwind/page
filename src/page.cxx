@@ -4041,25 +4041,6 @@ void page_t::check_x11_extension() {
 	}
 }
 
-/*void page_t::render(cairo_t * cr, page::time_t time) {
-//	rpage->repair_damaged(get_all_childs());
-//	XFlush(cnx->dpy());
-//	rpage->render(cr, time);
-//
-////	for(auto i: childs()) {
-////		i->render(cr, time);
-////	}
-//
-//	//pat->render(cr, time);
-//	//ps->render(cr, time);
-//	//pn0->render(cr, time);
-//	//pfm->render(cr, time);
-//	//menu->render(cr, time);
-//
-//	//_need_render = false;
-
-}*/
-
 /**
  * Look at coming events if a client will be destroyed.
  **/
