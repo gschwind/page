@@ -20,6 +20,7 @@
 
 #include <stdexcept>
 #include <exception>
+#include <cairo/cairo-xcb.h>
 
 namespace page {
 
@@ -72,15 +73,15 @@ private:
 
 	void init_managed_type(managed_window_type_e type);
 
-	Visual * _orig_visual;
+	xcb_visualid_t _orig_visual;
 	int _orig_depth;
 
-	Visual * _deco_visual;
+	xcb_visualid_t _deco_visual;
 	int _deco_depth;
 
-	Window _orig;
-	Window _base;
-	Window _deco;
+	xcb_window_t _orig;
+	xcb_window_t _base;
+	xcb_window_t _deco;
 
 	vector<floating_event_t> * _floating_area;
 
@@ -481,44 +482,6 @@ public:
 		return oss.str();
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
-
-//		if (_composite_surf != nullptr) {
-//			shared_ptr<pixmap_t> p = _composite_surf->get_pixmap();
-//			if (p != nullptr) {
-//				cairo_surface_t * s = p->get_cairo_surface();
-//				i_rect loc = base_position();
-//
-//				if(_motif_has_border) {
-//					draw_outer_graddien2(cr, i_rect(loc.x,loc.y,loc.w,loc.h), 8.0, 6.0);
-//				}
-//
-//
-//				cairo_save(cr);
-//				cairo_set_source_surface(cr, s, loc.x, loc.y);
-//				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-//				cairo_rectangle(cr, loc.x, loc.y, loc.w, loc.h);
-//				cairo_fill(cr);
-//
-//				cairo_restore(cr);
-//			}
-//		}
-//
-//		for(auto i: childs()) {
-//			i->render(cr, time);
-//		}
-	}
-
-//	bool need_render(time_t time) {
-//
-//		for(auto i: childs()) {
-//			if(i->need_render(time)) {
-//				return true;
-//			}
-//		}
-//		return false;
-//	}
-
 	display_t * cnx() {
 		return _properties->cnx();
 	}
@@ -568,7 +531,7 @@ public:
 				if (net_wm_opaque_region() != nullptr) {
 					xopac = region { *(net_wm_opaque_region()) };
 				} else {
-					if (wa().depth == 24) {
+					if (geometry()->depth == 24) {
 						xopac = i_rect{0, 0, _orig_position.w, _orig_position.h};
 					}
 				}

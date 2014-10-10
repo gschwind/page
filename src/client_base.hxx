@@ -311,101 +311,7 @@ public:
 	}
 
 	Atom type() {
-		Atom type = None;
-
-		list<xcb_atom_t> net_wm_window_type;
-		bool override_redirect = (_properties->wa().override_redirect == True)?true:false;
-
-		if(_properties->net_wm_window_type() == nullptr) {
-			/**
-			 * Fallback from ICCCM.
-			 **/
-
-			if(!override_redirect) {
-				/* Managed windows */
-				if(_properties->wm_transient_for() == nullptr) {
-					/**
-					 * Extended ICCCM:
-					 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
-					 * _NET_WM_WINDOW_TYPE nor WM_TRANSIENT_FOR set MUST be taken
-					 * as this type.
-					 **/
-					net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
-				} else {
-					/**
-					 * Extended ICCCM:
-					 * _NET_WM_WINDOW_TYPE_DIALOG [...] If _NET_WM_WINDOW_TYPE is
-					 * not set, then managed windows with WM_TRANSIENT_FOR set MUST
-					 * be taken as this type.
-					 **/
-					net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_DIALOG));
-				}
-
-			} else {
-				/**
-				 * Override-redirected windows.
-				 *
-				 * Extended ICCCM:
-				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Override-redirect windows
-				 * without _NET_WM_WINDOW_TYPE, must be taken as this type, whether
-				 * or not they have WM_TRANSIENT_FOR set.
-				 **/
-				net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
-			}
-		} else {
-			net_wm_window_type = *(_properties->net_wm_window_type());
-		}
-
-		/* always fall back to normal */
-		net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
-
-		/* TODO: make this ones */
-		static set<xcb_atom_t> known_type;
-		if (known_type.size() == 0) {
-			known_type.insert(A(_NET_CURRENT_DESKTOP));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLBAR));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_MENU));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_UTILITY));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_SPLASH));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_DIALOG));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_POPUP_MENU));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLTIP));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_NOTIFICATION));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_COMBO));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_DND));
-			known_type.insert(A(_NET_WM_WINDOW_TYPE_NORMAL));
-		}
-
-		/** find the first known window type **/
-		for (auto i : net_wm_window_type) {
-			//printf("Check for %s\n", cnx->get_atom_name(*i).c_str());
-			if (has_key(known_type, i)) {
-				type = i;
-				break;
-			}
-		}
-
-		/** HACK FOR ECLIPSE **/
-		{
-			list<Atom> wm_state;
-			if (_properties->wm_class() != nullptr
-					and _properties->wm_state() != nullptr
-					and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				if ((*(_properties->wm_class()))[0] == "Eclipse") {
-					auto x = find(wm_state.begin(), wm_state.end(),
-							A(_NET_WM_STATE_SKIP_TASKBAR));
-					if (x != wm_state.end()) {
-						type = A(_NET_WM_WINDOW_TYPE_DND);
-					}
-				}
-			}
-		}
-
-		return type;
-
+		return _properties->type();
 	}
 
 	void remove(tree_t * t) {
@@ -437,21 +343,21 @@ public:
 
 
 	display_t *          cnx() const { return _properties->cnx(); }
-	bool                 has_valid_window_attributes() const { return _properties->has_valid_window_attributes(); }
 
-	XWindowAttributes const & wa() const { return _properties->wa(); }
+	xcb_get_window_attributes_reply_t const * wa() const { return _properties->wa(); }
+	xcb_get_geometry_reply_t const * geometry() const { return _properties->geometry(); }
+
 
 	/* ICCCM */
-
-	string const *                     wm_name() const { return _properties->wm_name(); }
-	string const *                     wm_icon_name() const { return _properties->wm_icon_name(); };
-	XSizeHints const *                 wm_normal_hints() const { return _properties->wm_normal_hints(); }
-	XWMHints const *                   wm_hints() const { return _properties->wm_hints(); }
-	vector<string> const *             wm_class() const { return _properties->wm_class(); }
-	xcb_window_t const *                     wm_transient_for() const { return _properties->wm_transient_for(); }
-	list<xcb_atom_t> const *                 wm_protocols() const { return _properties->wm_protocols(); }
-	vector<xcb_window_t> const *             wm_colormap_windows() const { return _properties->wm_colormap_windows(); }
-	string const *                     wm_client_machine() const { return _properties->wm_client_machine(); }
+	auto wm_name() const -> string const * { return _properties->wm_name(); }
+	auto wm_icon_name() const -> string const * { return _properties->wm_icon_name(); };
+	auto wm_normal_hints() const -> XSizeHints const * { return _properties->wm_normal_hints(); }
+	auto wm_hints() const -> XWMHints const * { return _properties->wm_hints(); }
+	auto wm_class() const -> vector<string> const * { return _properties->wm_class(); }
+	auto wm_transient_for() const -> xcb_window_t const * { return _properties->wm_transient_for(); }
+	auto wm_protocols() const -> list<xcb_atom_t> const * { return _properties->wm_protocols(); }
+	auto wm_colormap_windows() const -> vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
+	auto wm_client_machine() const -> string const * { return _properties->wm_client_machine(); }
 
 	/* wm_state is writen by WM */
 	wm_state_data_t const *                     wm_state() const {return _properties->wm_state(); }

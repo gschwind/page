@@ -191,7 +191,9 @@ display_t::display_t() {
 
 	grab_count = 0;
 
-	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_dpy));
+	_A = ptr<atom_handler_t>(new atom_handler_t(_dpy));
+
+	update_default_visual();
 
 }
 
@@ -693,6 +695,81 @@ bool display_t::check_dbe_extension(int * opcode, int * event, int * error) {
 				minor);
 		return true;
 	}
+}
+
+xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
+{
+  xcb_screen_iterator_t iter;
+
+  iter = xcb_setup_roots_iterator (xcb_get_setup (c));
+  for (; iter.rem; --screen, xcb_screen_next (&iter))
+    if (screen == 0)
+      return iter.data;
+
+  return NULL;
+}
+
+void display_t::update_default_visual() {
+	int screen_nbr = this->screen();
+	/* you init the connection and screen_nbr */
+
+	_screen = screen_of_display(xcb(), screen_nbr);
+
+	printf("found screen %p\n", _screen);
+	if (_screen) {
+		xcb_depth_iterator_t depth_iter;
+		depth_iter = xcb_screen_allowed_depths_iterator(_screen);
+		for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {
+			xcb_visualtype_iterator_t visual_iter;
+
+			visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+			for (; visual_iter.rem; xcb_visualtype_next(&visual_iter)) {
+
+				_xcb_visual_data[visual_iter.data->visual_id] = visual_iter.data;
+				_xcb_visual_depth[visual_iter.data->visual_id] = depth_iter.data->depth;
+
+				if(visual_iter.data->_class == XCB_VISUAL_CLASS_TRUE_COLOR
+						and depth_iter.data->depth == 32) {
+					_xcb_default_visual_type = visual_iter.data;
+				}
+
+				if(visual_iter.data->visual_id == _screen->root_visual
+						and depth_iter.data->depth == _screen->root_depth) {
+					_xcb_root_visual_type = visual_iter.data;
+				}
+			}
+		}
+	}
+}
+
+xcb_visualtype_t * display_t::default_visual() {
+	return _xcb_default_visual_type;
+}
+
+xcb_visualtype_t * display_t::find_visual(xcb_visualid_t id) {
+	return _xcb_visual_data[id];
+}
+
+uint32_t display_t::find_visual_depth(xcb_visualid_t id) {
+	return _xcb_visual_depth[id];
+}
+
+xcb_visualtype_t * display_t::root_visual() {
+	return _xcb_root_visual_type;
+}
+
+void display_t::print_visual_type(xcb_visualtype_t * vis) {
+	printf("visual id: 0x%x\n", vis->visual_id);
+	printf("visual class: %u\n", vis->_class);
+	printf("visual bits_per_rgb_value: %u\n", vis->bits_per_rgb_value);
+	printf("visual blue_mask: %x\n", vis->blue_mask);
+	printf("visual red_mask: %x\n", vis->red_mask);
+	printf("visual green_mask: %x\n", vis->green_mask);
+	printf("visual colormap_entries: %d\n", vis->colormap_entries);
+}
+
+xcb_screen_t * display_t::xcb_screen() {
+	return _screen;
 }
 
 }

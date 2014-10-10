@@ -625,23 +625,6 @@ inline properties_fetcher_t<name, type, xT> make_property_fetcher_t(property_t<n
 	return properties_fetcher_t<name, type, xT>{p, cnx, w};
 }
 
-/*
-
-XSizeHints
-XWMHints
-
-string
-vector<string>
-
-int32_t
-uint32_t
-list<int32_t>
-list<uint32_t>
-vector<int32_t>
-vector<uint32_t>
-
-*/
-
 using wm_name_t =                   property_t<WM_NAME,                    STRING,             string>; // 8
 using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             string>; // 8
 using wm_normal_hints_t =           property_t<WM_NORMAL_HINTS,            WM_SIZE_HINTS,      XSizeHints>; // 32
@@ -681,8 +664,8 @@ private:
 	display_t *                  _cnx;
 	Window                       _id;
 
-	bool                         _has_valid_window_attributes;
-	XWindowAttributes            _wa;
+	xcb_get_window_attributes_reply_t * _wa;
+	xcb_get_geometry_reply_t * _geometry;
 
 	/* ICCCM */
 
@@ -740,60 +723,15 @@ private:
 		return static_cast<xcb_window_t>(_id);
 	}
 
+private:
+	client_properties_t(client_properties_t const &);
+	client_properties_t & operator=(client_properties_t const &);
 public:
-
-//	client_properties_t(client_properties_t const & c) {
-//
-//		_has_valid_window_attributes = c._has_valid_window_attributes;
-//		memcpy(&_wa, &c._wa, sizeof(XWindowAttributes));
-//
-//		_id = c._id;
-//		_cnx = c._cnx;
-//
-//		/* ICCCM */
-//		_wm_name = safe_copy(c._wm_name);
-//		_wm_icon_name = safe_copy(c._wm_icon_name);
-//		_wm_normal_hints = safe_copy(c._wm_normal_hints);
-//		_wm_hints = safe_copy(c._wm_hints);
-//		_wm_class = safe_copy(c._wm_class);
-//		_wm_transient_for = safe_copy(c._wm_transient_for);
-//		_wm_protocols = safe_copy(c._wm_protocols);
-//		_wm_colormap_windows = safe_copy(c._wm_colormap_windows);
-//		_wm_client_machine = safe_copy(c._wm_client_machine);
-//		_wm_state = safe_copy(c._wm_state);
-//
-//		/* EWMH */
-//		__net_wm_name = safe_copy(c.__net_wm_name);
-//		__net_wm_visible_name = safe_copy(c.__net_wm_visible_name);
-//		__net_wm_icon_name = safe_copy(c.__net_wm_icon_name);
-//		__net_wm_visible_icon_name = safe_copy(c.__net_wm_visible_icon_name);
-//		__net_wm_desktop = safe_copy(c.__net_wm_desktop);
-//		__net_wm_window_type = safe_copy(c.__net_wm_window_type);
-//		__net_wm_state = safe_copy(c.__net_wm_state);
-//		__net_wm_allowed_actions = safe_copy(c.__net_wm_allowed_actions);
-//		__net_wm_struct = safe_copy(c.__net_wm_struct);
-//		__net_wm_struct_partial = safe_copy(c.__net_wm_struct_partial);
-//		__net_wm_icon_geometry = safe_copy(c.__net_wm_icon_geometry);
-//		__net_wm_icon = safe_copy(c.__net_wm_icon);
-//		__net_wm_pid = safe_copy(c.__net_wm_pid);
-//		__net_wm_handled_icons = c.__net_wm_handled_icons;
-//		__net_wm_user_time = safe_copy(c.__net_wm_user_time);
-//		__net_wm_user_time_window = safe_copy(c.__net_wm_user_time_window);
-//		__net_frame_extents = safe_copy(c.__net_frame_extents);
-//		__net_wm_opaque_region = safe_copy(c.__net_wm_opaque_region);
-//		__net_wm_bypass_compositor = safe_copy(c.__net_wm_bypass_compositor);
-//
-//		_motif_hints = safe_copy(c._motif_hints);
-//
-//		_shape = safe_copy(c._shape);
-//
-//	}
 
 	client_properties_t(display_t * cnx, Window id) :
 			_cnx(cnx), _id(id) {
 
-		_has_valid_window_attributes = false;
-		bzero(&_wa, sizeof(XWindowAttributes));
+		_wa = nullptr;
 
 		/* ICCCM */
 		_wm_name = nullptr;
@@ -835,12 +773,12 @@ public:
 	}
 
 	~client_properties_t() {
+		if(_wa != nullptr)
+			free(_wa);
 		delete_all_properties();
 	}
 
 	void read_all_properties() {
-
-		xcb_get_window_attributes_cookie_t ck0 = xcb_get_window_attributes(_cnx->xcb(), xid());
 
 		/** Welcome to magic templates ! **/
 		auto xcb_wm_name = make_property_fetcher_t(_wm_name, _cnx, xid());
@@ -873,12 +811,6 @@ public:
 		auto xcb_net_frame_extents = make_property_fetcher_t(__net_frame_extents, _cnx, xid());
 		auto xcb_net_wm_opaque_region = make_property_fetcher_t(__net_wm_opaque_region, _cnx, xid());
 		auto xcb_net_wm_bypass_compositor = make_property_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
-
-
-		xcb_generic_error_t * err;
-		xcb_get_window_attributes_reply_t * attributes = xcb_get_window_attributes_reply(_cnx->xcb(), ck0, &err);
-		if(attributes != nullptr)
-			free(attributes);
 
 		xcb_wm_name.update(_cnx);
 		xcb_wm_icon_name.update(_cnx);
@@ -915,44 +847,9 @@ public:
 
 		update_shape();
 
-		print_properties();
-
 	}
 
 	void delete_all_properties() {
-
-//		/* ICCCM */
-//		//safe_delete(_wm_name);
-//		safe_delete(_wm_icon_name);
-//		safe_delete(_wm_normal_hints);
-//		safe_delete(_wm_hints);
-//		safe_delete(_wm_class);
-//		safe_delete(_wm_transient_for);
-//		safe_delete(_wm_protocols);
-//		safe_delete(_wm_colormap_windows);
-//		safe_delete(_wm_client_machine);
-//		safe_delete(_wm_state);
-//
-//		/* EWMH */
-//		safe_delete(__net_wm_name);
-//		safe_delete(__net_wm_visible_name);
-//		safe_delete(__net_wm_icon_name);
-//		safe_delete(__net_wm_visible_icon_name);
-//		safe_delete(__net_wm_desktop);
-//		safe_delete(__net_wm_window_type);
-//		safe_delete(__net_wm_state);
-//		safe_delete(__net_wm_allowed_actions);
-//		safe_delete(__net_wm_strut);
-//		safe_delete(__net_wm_strut_partial);
-//		safe_delete(__net_wm_icon_geometry);
-//		safe_delete(__net_wm_icon);
-//		safe_delete(__net_wm_pid);
-//		//__net_wm_handled_icons = false;
-//		safe_delete(__net_wm_user_time);
-//		safe_delete(__net_wm_user_time_window);
-//		safe_delete(__net_frame_extents);
-//		safe_delete(__net_wm_opaque_region);
-//		safe_delete(__net_wm_bypass_compositor);
 
 		safe_delete(_motif_hints);
 
@@ -961,8 +858,11 @@ public:
 	}
 
 	bool read_window_attributes() {
-		_has_valid_window_attributes = (_cnx->get_window_attributes(_id, &_wa) != 0);
-		return _has_valid_window_attributes;
+		auto ck0 = xcb_get_window_attributes(_cnx->xcb(), xid());
+		auto ck1 = xcb_get_geometry(_cnx->xcb(), xid());
+		_wa = xcb_get_window_attributes_reply(_cnx->xcb(), ck0, nullptr);
+		_geometry = xcb_get_geometry_reply(_cnx->xcb(), ck1, nullptr);
+		return _wa != nullptr and _geometry != nullptr;
 	}
 
 	void update_wm_name() {
@@ -1154,43 +1054,42 @@ public:
 
 	void print_window_attributes() {
 		printf(">>> Window: #%lu\n", _id);
-		printf("> size: %dx%d+%d+%d\n", _wa.width, _wa.height, _wa.x, _wa.y);
-		printf("> border_width: %d\n", _wa.border_width);
-		printf("> depth: %d\n", _wa.depth);
-		printf("> visual #%p\n", _wa.visual);
-		printf("> root: #%lu\n", _wa.root);
-		if (_wa.c_class == CopyFromParent) {
+		printf("> size: %dx%d+%d+%d\n", _geometry->width, _geometry->height, _geometry->x, _geometry->y);
+		printf("> border_width: %d\n", _geometry->border_width);
+		printf("> depth: %d\n", _geometry->depth);
+		printf("> visual #%u\n", _wa->visual);
+		printf("> root: #%u\n", _geometry->root);
+		if (_wa->_class == CopyFromParent) {
 			printf("> class: CopyFromParent\n");
-		} else if (_wa.c_class == InputOutput) {
+		} else if (_wa->_class == InputOutput) {
 			printf("> class: InputOutput\n");
-		} else if (_wa.c_class == InputOnly) {
+		} else if (_wa->_class == InputOnly) {
 			printf("> class: InputOnly\n");
 		} else {
 			printf("> class: Unknown\n");
 		}
 
-		if (_wa.map_state == IsViewable) {
+		if (_wa->map_state == IsViewable) {
 			printf("> map_state: IsViewable\n");
-		} else if (_wa.map_state == IsUnviewable) {
+		} else if (_wa->map_state == IsUnviewable) {
 			printf("> map_state: IsUnviewable\n");
-		} else if (_wa.map_state == IsUnmapped) {
+		} else if (_wa->map_state == IsUnmapped) {
 			printf("> map_state: IsUnmapped\n");
 		} else {
 			printf("> map_state: Unknown\n");
 		}
 
-		printf("> bit_gravity: %d\n", _wa.bit_gravity);
-		printf("> win_gravity: %d\n", _wa.win_gravity);
-		printf("> backing_store: %dlx\n", _wa.backing_store);
-		printf("> backing_planes: %lx\n", _wa.backing_planes);
-		printf("> backing_pixel: %lx\n", _wa.backing_pixel);
-		printf("> save_under: %d\n", _wa.save_under);
+		printf("> bit_gravity: %d\n", _wa->bit_gravity);
+		printf("> win_gravity: %d\n", _wa->win_gravity);
+		printf("> backing_store: %dlx\n", _wa->backing_store);
+		printf("> backing_planes: %x\n", _wa->backing_planes);
+		printf("> backing_pixel: %x\n", _wa->backing_pixel);
+		printf("> save_under: %d\n", _wa->save_under);
 		printf("> colormap: <Not Implemented>\n");
-		printf("> all_event_masks: %08lx\n", _wa.all_event_masks);
-		printf("> your_event_mask: %08lx\n", _wa.your_event_mask);
-		printf("> do_not_propagate_mask: %08lx\n", _wa.do_not_propagate_mask);
-		printf("> override_redirect: %d\n", _wa.override_redirect);
-		printf("> screen: %p\n", _wa.screen);
+		printf("> all_event_masks: %08x\n", _wa->all_event_masks);
+		printf("> your_event_mask: %08x\n", _wa->your_event_mask);
+		printf("> do_not_propagate_mask: %08x\n", _wa->do_not_propagate_mask);
+		printf("> override_redirect: %d\n", _wa->override_redirect);
 	}
 
 
@@ -1329,7 +1228,7 @@ public:
 		Atom type = None;
 
 		list<xcb_atom_t> net_wm_window_type;
-		bool override_redirect = (_wa.override_redirect == True)?true:false;
+		bool override_redirect = (_wa->override_redirect == True)?true:false;
 
 		if(__net_wm_window_type == nullptr) {
 			/**
@@ -1423,9 +1322,8 @@ public:
 	display_t *          cnx() const { return _cnx; }
 	Window               id() const { return _id; }
 
-	bool                 has_valid_window_attributes() const { return _has_valid_window_attributes; }
-
-	XWindowAttributes const & wa() const { return _wa; }
+	auto wa() const -> xcb_get_window_attributes_reply_t const * { return _wa; }
+	auto geometry() const -> xcb_get_geometry_reply_t const * { return _geometry; }
 
 	/* ICCCM */
 
@@ -1500,15 +1398,15 @@ public:
 	}
 
 	void process_event(XConfigureEvent const & e) {
-		_wa.override_redirect = e.override_redirect;
-		_wa.width = e.width;
-		_wa.height = e.height;
-		_wa.x = e.x;
-		_wa.y = e.y;
-		_wa.border_width = e.border_width;
+		_wa->override_redirect = e.override_redirect;
+		_geometry->width = e.width;
+		_geometry->height = e.height;
+		_geometry->x = e.x;
+		_geometry->y = e.y;
+		_geometry->border_width = e.border_width;
 	}
 
-	i_rect position() const { return i_rect{_wa.x, _wa.y, _wa.width, _wa.height}; }
+	i_rect position() const { return i_rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
 
 };
 

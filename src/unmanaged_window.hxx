@@ -78,10 +78,10 @@ public:
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
-		i_rect pos(_properties->wa().x, _properties->wa().y,
-				_properties->wa().width, _properties->wa().height);
+		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
+				_properties->geometry()->width, _properties->geometry()->height);
 
-		Atom t = type();
+		Atom t = _properties->type();
 		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
@@ -130,7 +130,7 @@ public:
 			if (net_wm_opaque_region() != nullptr) {
 				xopac = region { *(net_wm_opaque_region()) };
 			} else {
-				if (wa().depth == 24) {
+				if (geometry()->depth == 24) {
 					xopac = i_rect{0, 0, _base_position.w, _base_position.h};
 				}
 			}

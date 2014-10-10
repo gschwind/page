@@ -493,13 +493,13 @@ void page_t::scan() {
 				continue;
 			}
 
-			if(c->wa().c_class == InputOnly) {
+			if(c->wa()->_class == InputOnly) {
 				continue;
 			}
 
 			c->read_all_properties();
 
-			if (c->wa().map_state != IsUnmapped) {
+			if (c->wa()->map_state != IsUnmapped) {
 				onmap(w);
 			} else {
 				/**
@@ -3493,7 +3493,7 @@ void page_t::onmap(Window w) {
 		try {
 			ptr<client_properties_t> props(new client_properties_t(cnx, w));
 			if (props->read_window_attributes()) {
-				if(props->wa().c_class != InputOnly) {
+				if(props->wa()->_class != InputOnly) {
 					props->read_all_properties();
 
 				//props->print_window_attributes();
@@ -3501,7 +3501,7 @@ void page_t::onmap(Window w) {
 
 				Atom type = props->type();
 
-				if (!props->wa().override_redirect) {
+				if (!props->wa()->override_redirect) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
@@ -3604,8 +3604,8 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) {
 		update_windows_stack();
 
 		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->wa().x == 0 and mw->wa().y == 0 and mw->wa().width == _allocation.w
-				and mw->wa().height == _allocation.h
+		if (mw->geometry()->x == 0 and mw->geometry()->y == 0 and mw->geometry()->width == _allocation.w
+				and mw->geometry()->height == _allocation.h
 				and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 		}

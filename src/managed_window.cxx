@@ -18,7 +18,7 @@
 namespace page {
 
 managed_window_t::managed_window_t(Atom net_wm_type,
-		shared_ptr<client_properties_t> props, theme_t const * theme) :
+		ptr<client_properties_t> props, theme_t const * theme) :
 				client_base_t(props),
 				_theme(theme),
 				_type(MANAGED_FLOATING),
@@ -52,11 +52,11 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	/* assign window to desktop 0 */
 	_properties->set_net_wm_desktop(0);
 
-	_floating_wished_position = i_rect(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
-	_notebook_wished_position = i_rect(_properties->wa().x, _properties->wa().y, _properties->wa().width, _properties->wa().height);
+	_floating_wished_position = i_rect(_properties->geometry()->x, _properties->geometry()->y, _properties->geometry()->width, _properties->geometry()->height);
+	_notebook_wished_position = i_rect(_properties->geometry()->x, _properties->geometry()->y, _properties->geometry()->width, _properties->geometry()->height);
 
-	_orig_visual = _properties->wa().visual;
-	_orig_depth = _properties->wa().depth;
+	_orig_visual = _properties->wa()->visual;
+	_orig_depth = _properties->geometry()->depth;
 
 	if (_properties->wm_normal_hints() != nullptr) {
 		unsigned w = _floating_wished_position.w;
@@ -74,14 +74,14 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	 **/
 	if (_floating_wished_position.x == 0) {
 		_floating_wished_position.x =
-				(_properties->wa().width - _floating_wished_position.w) / 2;
+				(_properties->geometry()->width - _floating_wished_position.w) / 2;
 	}
 
 	/**
 	 * if y == 0 then place window at center of the screen
 	 **/
 	if (_floating_wished_position.y == 0) {
-		_floating_wished_position.y = (_properties->wa().height - _floating_wished_position.h) / 2;
+		_floating_wished_position.y = (_properties->geometry()->height - _floating_wished_position.h) / 2;
 	}
 
 	/** check if the window has motif no border **/
@@ -93,17 +93,14 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	 * Create the base window, window that will content managed window
 	 **/
 
-	XSetWindowAttributes swa;
-	Window wbase;
-	Window wdeco;
+	xcb_window_t wbase;
+	xcb_window_t wdeco;
 	i_rect b = _floating_wished_position;
 
-	/** Common window properties **/
-	unsigned long value_mask = CWOverrideRedirect;
-	swa.override_redirect = True;
 
-	Visual * root_visual = _properties->wa().visual;
-	int root_depth = _properties->wa().depth;
+
+	xcb_visualid_t root_visual = cnx()->root_visual()->visual_id;
+	int root_depth = cnx()->find_visual_depth(cnx()->root_visual()->visual_id);
 
 	/**
 	 * If window visual is 32 bit (have alpha channel, and root do not
@@ -115,16 +112,28 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 		_deco_depth = _orig_depth;
 
 		/** if visual is 32 bits, this values are mandatory **/
-		swa.colormap = XCreateColormap(cnx()->dpy(), cnx()->root(), _orig_visual,
-		AllocNone);
-		swa.background_pixel = BlackPixel(cnx()->dpy(), cnx()->screen());
-		swa.border_pixel = BlackPixel(cnx()->dpy(), cnx()->screen());
-		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
+		xcb_colormap_t cmap = xcb_generate_id(cnx()->xcb());
+		xcb_create_colormap(cnx()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, cnx()->root(), _deco_visual);
 
-		wbase = XCreateWindow(cnx()->dpy(), cnx()->root(), -10, -10, 1, 1, 0, 32,
-		InputOutput, _orig_visual, value_mask, &swa);
-		wdeco = XCreateWindow(cnx()->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
-		InputOutput, _orig_visual, value_mask, &swa);
+		uint32_t value_mask = 0;
+		uint32_t value[4];
+
+		value_mask |= XCB_CW_BACK_PIXEL;
+		value[0] = cnx()->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_BORDER_PIXEL;
+		value[1] = cnx()->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
+		value[2] = True;
+
+		value_mask |= XCB_CW_COLORMAP;
+		value[3] = cmap;
+
+		wbase = xcb_generate_id(cnx()->xcb());
+		xcb_create_window(cnx()->xcb(), _deco_depth, wbase, cnx()->root(), -10, -10, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
+		wdeco = xcb_generate_id(cnx()->xcb());
+		xcb_create_window(cnx()->xcb(), _deco_depth, wdeco, wbase, b.x, b.y, b.w, b.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
 
 	} else {
 
@@ -132,30 +141,37 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 		 * Create RGB window for back ground
 		 **/
 
-		XVisualInfo vinfo;
-		if (XMatchVisualInfo(cnx()->dpy(), cnx()->screen(), 32, TrueColor, &vinfo)
-				== 0) {
-			throw std::runtime_error(
-					"Unable to find valid visual for background windows");
-		}
+		_deco_visual = cnx()->default_visual()->visual_id;
+		_deco_depth = 32;
+
+		/** if visual is 32 bits, this values are mandatory **/
+		xcb_colormap_t cmap = xcb_generate_id(cnx()->xcb());
+		xcb_create_colormap(cnx()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, cnx()->root(), _deco_visual);
 
 		/**
 		 * To create RGBA window, the following field MUST bet set, for unknown
 		 * reason. i.e. border_pixel, background_pixel and colormap.
 		 **/
-		swa.border_pixel = 0;
-		swa.background_pixel = 0;
-		swa.colormap = XCreateColormap(cnx()->dpy(), cnx()->root(), vinfo.visual,
-		AllocNone);
+		uint32_t value_mask = 0;
+		uint32_t value[4];
 
-		_deco_visual = vinfo.visual;
-		_deco_depth = 32;
-		value_mask |= CWColormap | CWBackPixel | CWBorderPixel;
+		value_mask |= XCB_CW_BACK_PIXEL;
+		value[0] = cnx()->xcb_screen()->black_pixel;
 
-		wbase = XCreateWindow(cnx()->dpy(), cnx()->root(), -10, -10, 1, 1, 0, 32,
-		InputOutput, vinfo.visual, value_mask, &swa);
-		wdeco = XCreateWindow(cnx()->dpy(), wbase, b.x, b.y, b.w, b.h, 0, 32,
-		InputOutput, vinfo.visual, value_mask, &swa);
+		value_mask |= XCB_CW_BORDER_PIXEL;
+		value[1] = cnx()->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
+		value[2] = True;
+
+		value_mask |= XCB_CW_COLORMAP;
+		value[3] = cmap;
+
+		wbase = xcb_generate_id(cnx()->xcb());
+		xcb_create_window(cnx()->xcb(), _deco_depth, wbase, cnx()->root(), -10, -10, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
+		wdeco = xcb_generate_id(cnx()->xcb());
+		xcb_create_window(cnx()->xcb(), _deco_depth, wdeco, wbase, b.x, b.y, b.w, b.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
+
 	}
 
 	_base = wbase;
@@ -167,8 +183,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 	/* Grab button click */
 	grab_button_unfocused();
 
-	_surf = cairo_xlib_surface_create(cnx()->dpy(), _deco, _deco_visual, b.w,
-			b.h);
+	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
 	_composite_surf = composite_surface_manager_t::get(cnx()->dpy(), _base);
 	composite_surface_manager_t::onmap(cnx()->dpy(), _base);
@@ -238,7 +253,7 @@ void managed_window_t::reconfigure() {
 			_orig_position.h = _wished_position.h;
 		}
 
-		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
+		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
 		create_back_buffer();
@@ -379,7 +394,7 @@ void managed_window_t::expose() {
 
 		}
 
-		cairo_xlib_surface_set_size(_surf, _base_position.w, _base_position.h);
+		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
 
 		cairo_t * _cr = cairo_create(_surf);
 

@@ -65,6 +65,16 @@ class display_t {
 	int _fd;
 	Display * _dpy;
 	xcb_connection_t * _xcb;
+	xcb_screen_t * _screen;
+
+	uint32_t _xcb_default_visual_depth;
+	xcb_visualtype_t * _xcb_default_visual_type;
+
+	uint32_t _xcb_root_visual_depth;
+	xcb_visualtype_t * _xcb_root_visual_type;
+
+	map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
+	map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
 
 public:
 
@@ -86,6 +96,10 @@ public:
 	Window root();
 	Display * dpy();
 	xcb_connection_t * xcb();
+	xcb_visualtype_t * default_visual();
+	xcb_visualtype_t * root_visual();
+
+	xcb_screen_t * xcb_screen();
 
 	/* conveniant macro to get atom XID */
 	Atom A(atom_e atom);
@@ -145,7 +159,7 @@ public:
 			XWindowChanges * values);
 
 	/* used for debuging, do not optimize with some cache */
-	shared_ptr<char> get_atom_name(Atom atom);
+	ptr<char> get_atom_name(Atom atom);
 
 	Status send_event(Window w, Bool propagate, long event_mask,
 			XEvent* event_send);
@@ -209,6 +223,16 @@ public:
 	static void create_context(char const * f, int l);
 	static void destroy_context(char const * f, int l);
 	static int get_context_count();
+
+	void update_default_visual();
+
+	static xcb_screen_t * screen_of_display (xcb_connection_t *c, int screen);
+
+	xcb_visualtype_t * find_visual(xcb_visualid_t id);
+	uint32_t find_visual_depth(xcb_visualid_t id);
+
+	static void print_visual_type(xcb_visualtype_t * vis);
+
 
 };
 

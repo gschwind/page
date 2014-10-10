@@ -45,11 +45,10 @@ public:
 		_has_alpha = false;
 
 		_cnx = cnx;
-		XWindowAttributes wa;
-		XGetWindowAttributes(cnx->dpy(), cnx->root(), &wa);
-		_pix = XCreatePixmap(cnx->dpy(), cnx->root(), width, height, wa.depth);
-		_back_surf = cairo_xlib_surface_create(cnx->dpy(), _pix, wa.visual, wa.width, wa.height);
-		_position = i_rect{wa.x, wa.y, wa.width, wa.height};
+		_pix = xcb_generate_id(cnx->xcb());
+		xcb_create_pixmap(cnx->xcb(), cnx->xcb_screen()->root_depth, _pix, cnx->root(), width, height);
+		_back_surf = cairo_xcb_surface_create(cnx->xcb(), _pix, cnx->root_visual(), width, height);
+		_position = i_rect{0, 0, width, height};
 		_renderable = ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _position}};
 	}
 
