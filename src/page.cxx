@@ -1878,6 +1878,9 @@ void page_t::process_event(XCreateWindowEvent const & e) {
 }
 
 void page_t::process_event(XDestroyWindowEvent const & e) {
+	if(e.send_event == True)
+		return;
+
 	client_base_t * c = find_client(e.window);
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(managed_window_t)) {

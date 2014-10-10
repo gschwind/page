@@ -294,7 +294,8 @@ void managed_window_t::delete_window(Time t) {
 	xev.data.data32[0] = A(WM_DELETE_WINDOW);
 	xev.data.data32[1] = t;
 
-	xcb_send_event(cnx()->xcb(), False, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&xev));
+	xcb_send_event(cnx()->xcb(), False, _orig, XCB_EVENT_MASK_NO_EVENT,
+			reinterpret_cast<char*>(&xev));
 
 }
 
@@ -471,23 +472,6 @@ void managed_window_t::icccm_focus(Time t) {
 	}
 
 }
-
-//void managed_window_t::set_opaque_region(Window w, region & region) {
-//	vector<long> data(region.size() * 4);
-//	region::iterator i = region.begin();
-//	int k = 0;
-//	while (i != region.end()) {
-//		data[k++] = (*i).x;
-//		data[k++] = (*i).y;
-//		data[k++] = (*i).w;
-//		data[k++] = (*i).h;
-//		++i;
-//	}
-//
-//	cnx()->change_property(w, _NET_WM_OPAQUE_REGION, CARDINAL, 32, &data[0],
-//			data.size());
-//
-//}
 
 vector<floating_event_t> * managed_window_t::compute_floating_areas(
 		theme_managed_window_t * mw) const {

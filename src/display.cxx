@@ -473,28 +473,23 @@ int display_t::set_input_focus(Window focus, int revert_to, Time time) {
 }
 
 void display_t::fake_configure(Window w, i_rect location, int border_width) {
-	XEvent ev;
-	ev.xconfigure.type = ConfigureNotify;
-	ev.xconfigure.display = _dpy;
-	ev.xconfigure.event = w;
-	ev.xconfigure.window = w;
-	ev.xconfigure.send_event = True;
+	xcb_configure_notify_event_t xev;
+	xev.response_type = XCB_CONFIGURE_NOTIFY;
+	xev.event = w;
+	xev.window = w;
 
 	/* if ConfigureRequest happen, override redirect is False */
-	ev.xconfigure.override_redirect = False;
-	ev.xconfigure.border_width = border_width;
-	ev.xconfigure.above = None;
+	xev.override_redirect = False;
+	xev.border_width = border_width;
+	xev.above_sibling = None;
 
 	/* send mandatory fake event */
-	ev.xconfigure.x = location.x;
-	ev.xconfigure.y = location.y;
-	ev.xconfigure.width = location.w;
-	ev.xconfigure.height = location.h;
+	xev.x = location.x;
+	xev.y = location.y;
+	xev.width = location.w;
+	xev.height = location.h;
 
-	send_event(w, False, StructureNotifyMask, &ev);
-
-	//ev.xconfigure.event = xroot;
-	//send_event(xroot, False, SubstructureNotifyMask, &ev);
+	xcb_send_event(xcb(), False, w, XCB_EVENT_MASK_STRUCTURE_NOTIFY, reinterpret_cast<char*>(&xev));
 
 }
 

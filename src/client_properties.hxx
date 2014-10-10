@@ -593,10 +593,11 @@ struct properties_fetcher_t {
 		xcb_generic_error_t * err;
 		xcb_get_property_reply_t * r = xcb_get_property_reply(cnx->xcb(), ck, &err);
 
-		if(r->format != property_helper_t<xT>::format and r->length != 0)
-		printf("read (%s) format = %d lenght = %d value_length = %d, xxx= %d\n", atom_name[name].name, r->format, r->length, r->value_len, xcb_get_property_value_length(r));
-
-		if(err != nullptr or r->length == 0 or r->format != property_helper_t<xT>::format) {
+		if(err != nullptr or r == nullptr) {
+			if(r != nullptr)
+				free(r);
+			p = nullptr;
+		} else if(r->length == 0 or r->format != property_helper_t<xT>::format) {
 			if(r != nullptr)
 				free(r);
 			p = nullptr;
