@@ -662,7 +662,7 @@ using namespace std;
 class client_properties_t {
 private:
 	display_t *                  _cnx;
-	Window                       _id;
+	xcb_window_t                 _id;
 
 	xcb_get_window_attributes_reply_t * _wa;
 	xcb_get_geometry_reply_t * _geometry;
@@ -728,10 +728,11 @@ private:
 	client_properties_t & operator=(client_properties_t const &);
 public:
 
-	client_properties_t(display_t * cnx, Window id) :
+	client_properties_t(display_t * cnx, xcb_window_t id) :
 			_cnx(cnx), _id(id) {
 
 		_wa = nullptr;
+		_geometry = nullptr;
 
 		/* ICCCM */
 		_wm_name = nullptr;
@@ -775,6 +776,8 @@ public:
 	~client_properties_t() {
 		if(_wa != nullptr)
 			free(_wa);
+		if(_geometry != nullptr)
+			free(_geometry);
 		delete_all_properties();
 	}
 
@@ -858,6 +861,16 @@ public:
 	}
 
 	bool read_window_attributes() {
+		if(_wa != nullptr) {
+			free(_wa);
+			_wa = nullptr;
+		}
+
+		if(_geometry != nullptr) {
+			free(_geometry);
+			_geometry = nullptr;
+		}
+
 		auto ck0 = xcb_get_window_attributes(_cnx->xcb(), xid());
 		auto ck1 = xcb_get_geometry(_cnx->xcb(), xid());
 		_wa = xcb_get_window_attributes_reply(_cnx->xcb(), ck0, nullptr);
@@ -1053,7 +1066,7 @@ public:
 public:
 
 	void print_window_attributes() {
-		printf(">>> Window: #%lu\n", _id);
+		printf(">>> Window: #%u\n", _id);
 		printf("> size: %dx%d+%d+%d\n", _geometry->width, _geometry->height, _geometry->x, _geometry->y);
 		printf("> border_width: %d\n", _geometry->border_width);
 		printf("> depth: %d\n", _geometry->depth);
@@ -1320,7 +1333,7 @@ public:
 	}
 
 	display_t *          cnx() const { return _cnx; }
-	Window               id() const { return _id; }
+	xcb_window_t         id() const { return _id; }
 
 	auto wa() const -> xcb_get_window_attributes_reply_t const * { return _wa; }
 	auto geometry() const -> xcb_get_geometry_reply_t const * { return _geometry; }
