@@ -507,7 +507,7 @@ void page_t::scan() {
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 				 **/
 				if (c->wm_state() != nullptr) {
-					if (*(c->wm_state()) == IconicState) {
+					if (c->wm_state()->state == IconicState) {
 						onmap(w);
 					}
 				}
@@ -3634,7 +3634,7 @@ void page_t::manage_managed_window(managed_window_t * mw, Atom type) {
 			 * Check if the client have a prefered initiale state.
 			 **/
 			if (mw->wm_state() != nullptr) {
-				if (*(mw->wm_state()) == IconicState) {
+				if (mw->wm_state()->state == IconicState) {
 					activate = false;
 				}
 			} else {

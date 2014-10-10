@@ -23,6 +23,12 @@
 
 namespace page {
 
+struct wm_state_data_t {
+	int state;
+	xcb_window_t icon;
+};
+
+
 template<typename T>
 struct property_helper_t {
 	static const int format = 0;
@@ -341,6 +347,33 @@ struct property_helper_t<XWMHints> {
 	}
 };
 
+template<>
+struct property_helper_t<wm_state_data_t> {
+	static const int format = 32;
+	static wm_state_data_t * marshal(void * _tmp, int length) {
+		int32_t * tmp = reinterpret_cast<int32_t *>(_tmp);
+		if (tmp != nullptr) {
+			if (length == 2) {
+				wm_state_data_t * data = new wm_state_data_t;
+				if (data != nullptr) {
+					data->state = tmp[0];
+					data->icon = tmp[1];
+					return data;
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	static void serialize(wm_state_data_t * in, void * &data, int& length) {
+		int32_t * tmp = new int32_t[9];
+		tmp[0] = in->state;
+		tmp[1] = in->icon;
+		data = tmp;
+		length = 2;
+	}
+};
+
 template<typename T>
 inline T * marshal_property(void * _tmp, int length) {
 	T * tmp = static_cast<T*>(_tmp);
@@ -568,7 +601,7 @@ struct properties_fetcher_t {
 				free(r);
 			p = nullptr;
 		} else {
-			int length = xcb_get_property_value_length(r) /  (r->format / 8);
+			int length = xcb_get_property_value_length(r) /  (property_helper_t<xT>::format / 8);
 			void * tmp = (xcb_get_property_value(r));
 			xT * ret = property_helper_t<xT>::marshal(tmp, length);
 			free(r);
@@ -588,7 +621,7 @@ void write_property(display_t * cnx, xcb_window_t w, property_t<name, type, xT> 
 }
 
 template<atom_e name, atom_e type, typename xT>
-inline properties_fetcher_t<name, type, xT> make_properties_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) {
+inline properties_fetcher_t<name, type, xT> make_property_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) {
 	return properties_fetcher_t<name, type, xT>{p, cnx, w};
 }
 
@@ -618,7 +651,7 @@ using wm_transient_for_t =          property_t<WM_TRANSIENT_FOR,           WINDO
 using wm_protocols_t =              property_t<WM_PROTOCOLS,               ATOM,               list<xcb_atom_t>>; // 32
 using wm_colormap_windows_t =       property_t<WM_COLORMAP_WINDOWS,        WINDOW,             vector<xcb_window_t>>; // 32
 using wm_client_machine_t =         property_t<WM_CLIENT_MACHINE,          STRING,             string>; // 8
-using wm_state_t =                  property_t<WM_STATE,                   WM_STATE,           int>; // 32
+using wm_state_t =                  property_t<WM_STATE,                   WM_STATE,           wm_state_data_t>; // 32
 
 using net_wm_name_t =               property_t<_NET_WM_NAME,               UTF8_STRING,        string>; // 8
 using net_wm_visible_name_t =       property_t<_NET_WM_VISIBLE_NAME,       UTF8_STRING,        string>; // 8
@@ -810,37 +843,42 @@ public:
 		xcb_get_window_attributes_cookie_t ck0 = xcb_get_window_attributes(_cnx->xcb(), xid());
 
 		/** Welcome to magic templates ! **/
-		auto xcb_wm_name = make_properties_fetcher_t(_wm_name, _cnx, xid());
-		auto xcb_wm_icon_name = make_properties_fetcher_t(_wm_icon_name, _cnx, xid());
-		auto xcb_wm_normal_hints = make_properties_fetcher_t(_wm_normal_hints, _cnx, xid());
-		auto xcb_wm_hints = make_properties_fetcher_t(_wm_hints, _cnx, xid());
-		auto xcb_wm_class = make_properties_fetcher_t(_wm_class, _cnx, xid());
-		auto xcb_wm_transient_for = make_properties_fetcher_t(_wm_transient_for, _cnx, xid());
-		auto xcb_wm_protocols = make_properties_fetcher_t(_wm_protocols, _cnx, xid());
-		auto xcb_wm_colormap_windows = make_properties_fetcher_t(_wm_colormap_windows, _cnx, xid());
-		auto xcb_wm_client_machine = make_properties_fetcher_t(_wm_client_machine, _cnx, xid());
-		auto xcb_wm_state = make_properties_fetcher_t(_wm_state, _cnx, xid());
+		auto xcb_wm_name = make_property_fetcher_t(_wm_name, _cnx, xid());
+		auto xcb_wm_icon_name = make_property_fetcher_t(_wm_icon_name, _cnx, xid());
+		auto xcb_wm_normal_hints = make_property_fetcher_t(_wm_normal_hints, _cnx, xid());
+		auto xcb_wm_hints = make_property_fetcher_t(_wm_hints, _cnx, xid());
+		auto xcb_wm_class = make_property_fetcher_t(_wm_class, _cnx, xid());
+		auto xcb_wm_transient_for = make_property_fetcher_t(_wm_transient_for, _cnx, xid());
+		auto xcb_wm_protocols = make_property_fetcher_t(_wm_protocols, _cnx, xid());
+		auto xcb_wm_colormap_windows = make_property_fetcher_t(_wm_colormap_windows, _cnx, xid());
+		auto xcb_wm_client_machine = make_property_fetcher_t(_wm_client_machine, _cnx, xid());
+		auto xcb_wm_state = make_property_fetcher_t(_wm_state, _cnx, xid());
 
-		auto xcb_net_wm_name = make_properties_fetcher_t(__net_wm_name, _cnx, xid());
-		auto xcb_net_wm_visible_name = make_properties_fetcher_t(__net_wm_visible_name, _cnx, xid());
-		auto xcb_net_wm_icon_name = make_properties_fetcher_t(__net_wm_icon_name, _cnx, xid());
-		auto xcb_net_wm_visible_icon_name = make_properties_fetcher_t(__net_wm_visible_icon_name, _cnx, xid());
-		auto xcb_net_wm_desktop = make_properties_fetcher_t(__net_wm_desktop, _cnx, xid());
-		auto xcb_net_wm_window_type = make_properties_fetcher_t(__net_wm_window_type, _cnx, xid());
-		auto xcb_net_wm_state = make_properties_fetcher_t(__net_wm_state, _cnx, xid());
-		auto xcb_net_wm_allowed_actions = make_properties_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
-		auto xcb_net_wm_strut = make_properties_fetcher_t(__net_wm_strut, _cnx, xid());
-		auto xcb_net_wm_strut_partial = make_properties_fetcher_t(__net_wm_strut_partial, _cnx, xid());
-		auto xcb_net_wm_icon_geometry = make_properties_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
-		auto xcb_net_wm_icon = make_properties_fetcher_t(__net_wm_icon, _cnx, xid());
-		auto xcb_net_wm_pid = make_properties_fetcher_t(__net_wm_pid, _cnx, xid());
-		//auto xcb_net_wm_handled_icons = make_properties_fetcher_t(_wm_state, _cnx, xid());
-		auto xcb_net_wm_user_time = make_properties_fetcher_t(__net_wm_user_time, _cnx, xid());
-		auto xcb_net_wm_user_time_window = make_properties_fetcher_t(__net_wm_user_time_window, _cnx, xid());
-		auto xcb_net_frame_extents = make_properties_fetcher_t(__net_frame_extents, _cnx, xid());
-		auto xcb_net_wm_opaque_region = make_properties_fetcher_t(__net_wm_opaque_region, _cnx, xid());
-		auto xcb_net_wm_bypass_compositor = make_properties_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
+		auto xcb_net_wm_name = make_property_fetcher_t(__net_wm_name, _cnx, xid());
+		auto xcb_net_wm_visible_name = make_property_fetcher_t(__net_wm_visible_name, _cnx, xid());
+		auto xcb_net_wm_icon_name = make_property_fetcher_t(__net_wm_icon_name, _cnx, xid());
+		auto xcb_net_wm_visible_icon_name = make_property_fetcher_t(__net_wm_visible_icon_name, _cnx, xid());
+		auto xcb_net_wm_desktop = make_property_fetcher_t(__net_wm_desktop, _cnx, xid());
+		auto xcb_net_wm_window_type = make_property_fetcher_t(__net_wm_window_type, _cnx, xid());
+		auto xcb_net_wm_state = make_property_fetcher_t(__net_wm_state, _cnx, xid());
+		auto xcb_net_wm_allowed_actions = make_property_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
+		auto xcb_net_wm_strut = make_property_fetcher_t(__net_wm_strut, _cnx, xid());
+		auto xcb_net_wm_strut_partial = make_property_fetcher_t(__net_wm_strut_partial, _cnx, xid());
+		auto xcb_net_wm_icon_geometry = make_property_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
+		auto xcb_net_wm_icon = make_property_fetcher_t(__net_wm_icon, _cnx, xid());
+		auto xcb_net_wm_pid = make_property_fetcher_t(__net_wm_pid, _cnx, xid());
+		//auto xcb_net_wm_handled_icons = make_property_fetcher_t(_wm_state, _cnx, xid());
+		auto xcb_net_wm_user_time = make_property_fetcher_t(__net_wm_user_time, _cnx, xid());
+		auto xcb_net_wm_user_time_window = make_property_fetcher_t(__net_wm_user_time_window, _cnx, xid());
+		auto xcb_net_frame_extents = make_property_fetcher_t(__net_frame_extents, _cnx, xid());
+		auto xcb_net_wm_opaque_region = make_property_fetcher_t(__net_wm_opaque_region, _cnx, xid());
+		auto xcb_net_wm_bypass_compositor = make_property_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
 
+
+		xcb_generic_error_t * err;
+		xcb_get_window_attributes_reply_t * attributes = xcb_get_window_attributes_reply(_cnx->xcb(), ck0, &err);
+		if(attributes != nullptr)
+			free(attributes);
 
 		xcb_wm_name.update(_cnx);
 		xcb_wm_icon_name.update(_cnx);
@@ -866,7 +904,7 @@ public:
 		xcb_net_wm_icon_geometry.update(_cnx);
 		xcb_net_wm_icon.update(_cnx);
 		xcb_net_wm_pid.update(_cnx);
-		//auto xcb_net_wm_handled_icons = make_properties_fetcher_t(_wm_state, _cnx, xid());
+		//auto xcb_net_wm_handled_icons = make_property_fetcher_t(_wm_state, _cnx, xid());
 		xcb_net_wm_user_time.update(_cnx);
 		xcb_net_wm_user_time_window.update(_cnx);
 		xcb_net_frame_extents.update(_cnx);
@@ -953,17 +991,17 @@ public:
 	}
 
 	void update_wm_transient_for() {
-		auto x = make_properties_fetcher_t(_wm_transient_for, _cnx, xid());
+		auto x = make_property_fetcher_t(_wm_transient_for, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_wm_protocols() {
-		auto x = make_properties_fetcher_t(_wm_protocols, _cnx, xid());
+		auto x = make_property_fetcher_t(_wm_protocols, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_wm_colormap_windows() {
-		auto x = make_properties_fetcher_t(_wm_colormap_windows, _cnx, xid());
+		auto x = make_property_fetcher_t(_wm_colormap_windows, _cnx, xid());
 		x.update(_cnx);
 	}
 
@@ -973,7 +1011,7 @@ public:
 	}
 
 	void update_wm_state() {
-		auto x = make_properties_fetcher_t(_wm_state, _cnx, xid());
+		auto x = make_property_fetcher_t(_wm_state, _cnx, xid());
 		x.update(_cnx);
 	}
 
@@ -1000,74 +1038,74 @@ public:
 	}
 
 	void update_net_wm_desktop() {
-		auto x = make_properties_fetcher_t(__net_wm_desktop, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_desktop, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_window_type() {
-		auto x = make_properties_fetcher_t(__net_wm_window_type, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_window_type, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_state() {
-		auto x = make_properties_fetcher_t(__net_wm_state, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_state, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_allowed_actions() {
-		auto x = make_properties_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_struct() {
-		auto x = make_properties_fetcher_t(__net_wm_strut, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_strut, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_struct_partial() {
-		auto x = make_properties_fetcher_t(__net_wm_strut_partial, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_strut_partial, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_icon_geometry() {
-		auto x = make_properties_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_icon() {
-		auto x = make_properties_fetcher_t(__net_wm_icon, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_icon, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_pid() {
-		auto x = make_properties_fetcher_t(__net_wm_pid, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_pid, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_handled_icons();
 
 	void update_net_wm_user_time() {
-		auto x = make_properties_fetcher_t(__net_wm_user_time, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_user_time, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_user_time_window() {
-		auto x = make_properties_fetcher_t(__net_wm_user_time_window, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_user_time_window, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_frame_extents() {
-		auto x = make_properties_fetcher_t(__net_frame_extents, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_frame_extents, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_opaque_region() {
-		auto x = make_properties_fetcher_t(__net_wm_opaque_region, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_opaque_region, _cnx, xid());
 		x.update(_cnx);
 	}
 
 	void update_net_wm_bypass_compositor() {
-		auto x = make_properties_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
+		auto x = make_property_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
 		x.update(_cnx);
 	}
 
@@ -1191,7 +1229,7 @@ public:
 			cout << "* WM_CLIENT_MACHINE = " << *_wm_client_machine << endl;
 
 		if(_wm_state != nullptr) {
-			cout << "* WM_STATE = " << *_wm_state << endl;
+			cout << "* WM_STATE = " << _wm_state->state << endl;
 		}
 
 
@@ -1396,13 +1434,13 @@ public:
 	XSizeHints const *                 wm_normal_hints() const { return _wm_normal_hints; }
 	XWMHints const *                   wm_hints() const { return _wm_hints; }
 	vector<string> const *             wm_class() const {return _wm_class; }
-	xcb_window_t const *                     wm_transient_for() const { return _wm_transient_for; }
-	list<xcb_atom_t> const *                 wm_protocols() const { return _wm_protocols; }
-	vector<xcb_window_t> const *             wm_colormap_windows() const { return _wm_colormap_windows; }
+	xcb_window_t const *               wm_transient_for() const { return _wm_transient_for; }
+	list<xcb_atom_t> const *           wm_protocols() const { return _wm_protocols; }
+	vector<xcb_window_t> const *       wm_colormap_windows() const { return _wm_colormap_windows; }
 	string const *                     wm_client_machine() const { return _wm_client_machine; }
 
 	/* wm_state is writen by WM */
-	int const *                     wm_state() const {return _wm_state; }
+	wm_state_data_t const *            wm_state() const {return _wm_state; }
 
 	/* EWMH */
 
@@ -1420,8 +1458,8 @@ public:
 	vector<int> const *                net_wm_icon() const { return __net_wm_icon; }
 	unsigned int const *               net_wm_pid() const { return __net_wm_pid; }
 	//bool                               net_wm_handled_icons() const { return __net_wm_handled_icons; }
-	uint32_t const *                       net_wm_user_time() const { return __net_wm_user_time; }
-	xcb_window_t const *                     net_wm_user_time_window() const { return __net_wm_user_time_window; }
+	uint32_t const *                   net_wm_user_time() const { return __net_wm_user_time; }
+	xcb_window_t const *               net_wm_user_time_window() const { return __net_wm_user_time_window; }
 	vector<int> const *                net_frame_extents() const { return __net_frame_extents; }
 	vector<int> const *                net_wm_opaque_region() const { return __net_wm_opaque_region; }
 	unsigned int const *               net_wm_bypass_compositor() const { return __net_wm_bypass_compositor; }

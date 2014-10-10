@@ -454,7 +454,7 @@ public:
 	string const *                     wm_client_machine() const { return _properties->wm_client_machine(); }
 
 	/* wm_state is writen by WM */
-	int const *                     wm_state() const {return _properties->wm_state(); }
+	wm_state_data_t const *                     wm_state() const {return _properties->wm_state(); }
 
 	/* EWMH */
 
