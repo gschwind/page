@@ -17,15 +17,84 @@
 
 namespace page {
 
-struct popup_split_t: public window_overlay_t {
+struct popup_split_t : public renderable_t {
 
 	theme_t * _theme;
 	double _current_split;
 	split_t const * _s_base;
 
-	popup_split_t(theme_t * theme) : window_overlay_t(), _theme(theme) {
+	i_rect _position;
+
+	bool _has_alpha;
+	bool _is_durty;
+	bool _is_visible;
+
+public:
+
+	void mark_durty() {
+		_is_durty = true;
+	}
+
+	void move_resize(i_rect const & area) {
+		_position = area;
+
+	}
+
+	void move(int x, int y) {
+		_position.x = x;
+		_position.y = y;
+	}
+
+	void show() {
+		_is_visible = true;
+	}
+
+	void hide() {
+		_is_visible = false;
+	}
+
+	bool is_visible() {
+		return _is_visible;
+	}
+
+	i_rect const & position() {
+		return _position;
+	}
+
+	/**
+	 * Derived class must return opaque region for this object,
+	 * If unknown it's safe to leave this empty.
+	 **/
+	virtual region get_opaque_region() {
+		return region{};
+	}
+
+	/**
+	 * Derived class must return visible region,
+	 * If unknow the whole screen can be returned, but draw will be called each time.
+	 **/
+	virtual region get_visible_region() {
+		return region{_position};
+	}
+
+	/**
+	 * return currently damaged area (absolute)
+	 **/
+	virtual region get_damaged()  {
+		if(_is_durty) {
+			return region{_position};
+		} else {
+			return region{};
+		}
+	}
+
+
+	popup_split_t(theme_t * theme) : _theme(theme) {
 		_s_base = nullptr;
 		_current_split = 0.5;
+		_has_alpha = true;
+		_is_durty = true;
+		_is_visible = false;
 	}
 
 	~popup_split_t() {
@@ -46,9 +115,6 @@ struct popup_split_t: public window_overlay_t {
 		ts.split = _s_base->split();
 		ts.type = _s_base->type();
 		ts.allocation = _s_base->allocation();
-
-		if(not _is_visible)
-			return;
 
 		for (auto const & a : area) {
 			cairo_save(cr);

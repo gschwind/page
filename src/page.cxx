@@ -848,6 +848,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					/* show split overlay */
 					ps->set_current_split(b->spt);
 					ps->set_position(mode_data_split.split_ratio);
+					ps->move_resize(mode_data_split.split->allocation());
 					ps->show();
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
 					process_mode = PROCESS_NOTEBOOK_MENU;
