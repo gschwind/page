@@ -78,10 +78,6 @@ void notebook_t::replace(page_component_t * src, page_component_t * by) {
 	throw std::runtime_error("cannot replace in notebook");
 }
 
-void notebook_t::close(tree_t * src) {
-
-}
-
 void notebook_t::remove(tree_t * src) {
 	client_managed_t * mw = dynamic_cast<client_managed_t*>(src);
 	if (has_key(_clients, mw) and mw != nullptr) {
@@ -186,7 +182,7 @@ void notebook_t::delete_all() {
 
 void notebook_t::unmap_all() {
 	if (_selected != nullptr) {
-		_selected->iconify();
+		iconify_client(_selected);
 	}
 }
 
