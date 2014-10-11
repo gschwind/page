@@ -374,6 +374,39 @@ struct property_helper_t<wm_state_data_t> {
 	}
 };
 
+template<>
+struct property_helper_t<motif_wm_hints_t> {
+	static const int format = 32;
+	static motif_wm_hints_t * marshal(void * _tmp, int length) {
+		uint32_t * tmp = reinterpret_cast<uint32_t*>(_tmp);
+		if (tmp != nullptr) {
+			motif_wm_hints_t * hints = new motif_wm_hints_t;
+			if (length == 5) {
+				if (hints != nullptr) {
+					hints->flags = tmp[0];
+					hints->functions = tmp[1];
+					hints->decorations = tmp[2];
+					hints->input_mode = tmp[3];
+					hints->status = tmp[4];
+				}
+				return hints;
+			}
+		}
+		return nullptr;
+	}
+
+	static void serialize(motif_wm_hints_t * in, void * &data, int& length) {
+		int32_t * tmp = new int32_t[5];
+		tmp[0] = in->flags;
+		tmp[1] = in->functions;
+		tmp[2] = in->decorations;
+		tmp[3] = in->input_mode;
+		tmp[4] = in->status;
+		data = tmp;
+		length = 5;
+	}
+};
+
 template<atom_e name, atom_e type, typename T>
 struct property_t {
 	T * data;
@@ -498,7 +531,7 @@ using net_wm_user_time_window_t =   property_t<_NET_WM_USER_TIME_WINDOW,   WINDO
 using net_frame_extents_t =         property_t<_NET_FRAME_EXTENTS,         CARDINAL,           vector<int>>; // 32
 using net_wm_opaque_region_t =      property_t<_NET_WM_OPAQUE_REGION,      CARDINAL,           vector<int>>; // 32
 using net_wm_bypass_compositor_t =  property_t<_NET_WM_BYPASS_COMPOSITOR,  CARDINAL,           unsigned int>; // 32
-//using motif_hints_t =             properties_t<WM_MOTIF_HINTS,           STRING,             string>; // 8
+using motif_hints_t =               property_t<_MOTIF_WM_HINTS,          _MOTIF_WM_HINTS,    motif_wm_hints_t>; // 8
 
 using namespace std;
 
@@ -549,7 +582,7 @@ private:
 	net_wm_bypass_compositor_t   __net_wm_bypass_compositor;
 
 	/* OTHERs */
-	motif_wm_hints_t *           _motif_hints;
+	motif_hints_t                _motif_hints;
 
 	region *                     _shape;
 
@@ -697,8 +730,6 @@ public:
 
 	void delete_all_properties() {
 
-		safe_delete(_motif_hints);
-
 		safe_delete(_shape);
 
 	}
@@ -722,28 +753,28 @@ public:
 	}
 
 	void update_wm_name() {
-		//safe_delete(_wm_name);
-		_wm_name = _cnx->read_wm_name(_id);
+		auto x = make_property_fetcher_t(_wm_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_icon_name() {
-		//safe_delete(_wm_icon_name);
-		_wm_icon_name = _cnx->read_wm_icon_name(_id);
+		auto x = make_property_fetcher_t(_wm_icon_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_normal_hints() {
-		//safe_delete(_wm_normal_hints);
-		_wm_normal_hints = _cnx->read_wm_normal_hints(_id);
+		auto x = make_property_fetcher_t(_wm_normal_hints, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_hints() {
-		//safe_delete(_wm_hints);
-		_wm_hints = _cnx->read_wm_hints(_id);
+		auto x = make_property_fetcher_t(_wm_hints, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_class() {
-		//safe_delete(_wm_class);
-		_wm_class = _cnx->read_wm_class(_id);
+		auto x = make_property_fetcher_t(_wm_class, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_transient_for() {
@@ -762,8 +793,8 @@ public:
 	}
 
 	void update_wm_client_machine() {
-		//safe_delete(_wm_client_machine);
-		_wm_client_machine = _cnx->read_wm_client_machine(_id);
+		auto x = make_property_fetcher_t(_wm_client_machine, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_wm_state() {
@@ -774,23 +805,23 @@ public:
 	/* EWMH */
 
 	void update_net_wm_name() {
-		//safe_delete(__net_wm_name);
-		__net_wm_name = _cnx->read_net_wm_name(_id);
+		auto x = make_property_fetcher_t(__net_wm_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_net_wm_visible_name() {
-		//safe_delete(__net_wm_visible_name);
-		__net_wm_visible_name = _cnx->read_net_wm_visible_name(_id);
+		auto x = make_property_fetcher_t(__net_wm_visible_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_net_wm_icon_name() {
-		//safe_delete(__net_wm_icon_name);
-		__net_wm_icon_name = _cnx->read_net_wm_icon_name(_id);
+		auto x = make_property_fetcher_t(__net_wm_icon_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_net_wm_visible_icon_name() {
-		//safe_delete(__net_wm_visible_icon_name);
-		__net_wm_visible_icon_name = _cnx->read_net_wm_visible_icon_name(_id);
+		auto x = make_property_fetcher_t(__net_wm_visible_icon_name, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_net_wm_desktop() {
@@ -866,8 +897,8 @@ public:
 	}
 
 	void update_motif_hints() {
-		//safe_delete(_motif_hints);
-		_motif_hints = _cnx->read_motif_wm_hints(_id);
+		auto x = make_property_fetcher_t(_motif_hints, _cnx, xid());
+		x.update(_cnx);
 	}
 
 	void update_shape() {
