@@ -177,7 +177,7 @@ public:
 		return _motif_has_border;
 	}
 
-	shared_ptr<composite_surface_t> surf() {
+	ptr<composite_surface_t> surf() {
 		return _composite_surf;
 	}
 

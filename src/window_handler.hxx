@@ -29,7 +29,7 @@ struct window_handler_t {
 	Window transient_for;
 
 	client_managed_t * mw;
-	unmanaged_window_t * uw;
+	client_not_managed_t * uw;
 
 
 

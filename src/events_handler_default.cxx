@@ -1160,7 +1160,7 @@ void events_handler_default::process_event(XDestroyWindowEvent const & e) {
 		unmanage(mw);
 	}
 
-	unmanaged_window_t * uw = find_unmanaged_window_with(e.window);
+	client_not_managed_t * uw = find_unmanaged_window_with(e.window);
 	if(uw != 0) {
 		delete uw;
 		unmanaged_window.erase(uw);

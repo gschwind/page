@@ -20,7 +20,7 @@
 
 namespace page {
 
-class unmanaged_window_t : public client_base_t {
+class client_not_managed_t : public client_base_t {
 private:
 
 	static unsigned long const UNMANAGED_ORIG_WINDOW_EVENT_MASK =
@@ -33,12 +33,12 @@ private:
 	mutable i_rect _base_position;
 
 	/* avoid copy */
-	unmanaged_window_t(unmanaged_window_t const &);
-	unmanaged_window_t & operator=(unmanaged_window_t const &);
+	client_not_managed_t(client_not_managed_t const &);
+	client_not_managed_t & operator=(client_not_managed_t const &);
 
 public:
 
-	unmanaged_window_t(Atom type, shared_ptr<client_properties_t> c) :
+	client_not_managed_t(Atom type, shared_ptr<client_properties_t> c) :
 			client_base_t(c),
 			_net_wm_type(type)
 	{
@@ -53,7 +53,7 @@ public:
 		composite_surface_manager_t::onmap(_properties->cnx()->dpy(), base());
 	}
 
-	~unmanaged_window_t() {
+	~client_not_managed_t() {
 		XSelectInput(_properties->cnx()->dpy(), _properties->id(), NoEventMask);
 	}
 

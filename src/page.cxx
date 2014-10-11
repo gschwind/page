@@ -1930,7 +1930,7 @@ void page_t::process_event(XReparentEvent const & e) {
 	}
 
 	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
-	unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t *>(find_client_with(e.window));
+	client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(find_client_with(e.window));
 	if(uw != nullptr and e.parent != cnx->root()) {
 		destroy_client(uw);
 	}
@@ -1954,7 +1954,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
-		} else if (e.send_event == True or typeid(*c) == typeid(unmanaged_window_t)) {
+		} else if (e.send_event == True or typeid(*c) == typeid(client_not_managed_t)) {
 			destroy_client(c);
 		}
 	}
@@ -3687,7 +3687,7 @@ void page_t::manage_managed_window(client_managed_t * mw, Atom type) {
 
 void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type) {
 	try {
-		unmanaged_window_t * uw = new unmanaged_window_t(type, c);
+		client_not_managed_t * uw = new client_not_managed_t(type, c);
 		add_client(uw);
 		uw->map();
 		safe_update_transient_for(uw);
@@ -3701,7 +3701,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 }
 
 void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
-	unmanaged_window_t * uw = new unmanaged_window_t(type, c);
+	client_not_managed_t * uw = new client_not_managed_t(type, c);
 	add_client(uw);
 	uw->map();
 	attach_dock(uw);
@@ -3788,8 +3788,8 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 		} else if (mw->is(MANAGED_FULLSCREEN)) {
 			/* DO NOTHING */
 		}
-	} else if (typeid(*c) == typeid(unmanaged_window_t)) {
-		unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t*>(c);
+	} else if (typeid(*c) == typeid(client_not_managed_t)) {
+		client_not_managed_t * uw = dynamic_cast<client_not_managed_t*>(c);
 
 		if (uw->type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			detach(uw);
@@ -3945,7 +3945,7 @@ void page_t::raise_child(tree_t * t) {
 		root_subclients.push_back(x);
 	}
 
-	unmanaged_window_t * y = dynamic_cast<unmanaged_window_t *>(t);
+	client_not_managed_t * y = dynamic_cast<client_not_managed_t *>(t);
 	if(has_key(tooltips, y)) {
 		tooltips.remove(y);
 		tooltips.push_back(y);
@@ -3983,12 +3983,12 @@ void page_t::remove(tree_t * t) {
 	}
 
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
-	tooltips.remove(dynamic_cast<unmanaged_window_t *>(t));
-	notifications.remove(dynamic_cast<unmanaged_window_t *>(t));
+	tooltips.remove(dynamic_cast<client_not_managed_t *>(t));
+	notifications.remove(dynamic_cast<client_not_managed_t *>(t));
 	fullscreen_client_to_viewport.erase(dynamic_cast<client_managed_t *>(t));
-	docks.remove(dynamic_cast<unmanaged_window_t*>(t));
-	above.remove(dynamic_cast<unmanaged_window_t*>(t));
-	below.remove(dynamic_cast<unmanaged_window_t*>(t));
+	docks.remove(dynamic_cast<client_not_managed_t*>(t));
+	above.remove(dynamic_cast<client_not_managed_t*>(t));
+	below.remove(dynamic_cast<client_not_managed_t*>(t));
 
 }
 

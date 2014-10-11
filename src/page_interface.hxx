@@ -111,7 +111,7 @@ public:
 
 	virtual void get_managed_windows(list<client_managed_t *> & l);
 	virtual client_managed_t * find_managed_window_with(Window w);
-	virtual unmanaged_window_t * find_unmanaged_window_with(Window w);
+	virtual client_not_managed_t * find_unmanaged_window_with(Window w);
 
 	virtual viewport_t * find_viewport_for(notebook_t * n);
 

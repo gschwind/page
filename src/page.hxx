@@ -322,12 +322,12 @@ public:
 
 	map<Window, client_base_t *> clients;
 
-	list<unmanaged_window_t *> below;
+	list<client_not_managed_t *> below;
 	list<client_base_t *> root_subclients;
-	list<unmanaged_window_t *> docks;
-	list<unmanaged_window_t *> tooltips;
-	list<unmanaged_window_t *> notifications;
-	list<unmanaged_window_t *> above;
+	list<client_not_managed_t *> docks;
+	list<client_not_managed_t *> tooltips;
+	list<client_not_managed_t *> notifications;
+	list<client_not_managed_t *> above;
 
 	Cursor default_cursor;
 
@@ -557,12 +557,12 @@ public:
 	void raise_child(tree_t * t);
 	void remove(tree_t * t);
 
-	void attach_dock(unmanaged_window_t * uw) {
+	void attach_dock(client_not_managed_t * uw) {
 		docks.push_back(uw);
 		uw->set_parent(this);
 	}
 
-	void detach_dock(unmanaged_window_t * uw) {
+	void detach_dock(client_not_managed_t * uw) {
 		docks.remove(uw);
 		uw->set_parent(nullptr);
 	}
