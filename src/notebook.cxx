@@ -424,22 +424,6 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_notebook(cr, &theme_notebook, area);
 }
 
-//bool notebook_t::need_render(time_t time) {
-//
-//	page::time_t d{0, animation_duration};
-//	d += 100000000;
-//	if (time < (swap_start + d)) {
-//		return true;
-//	}
-//
-//	for(auto i: childs()) {
-//		if(i->need_render(time)) {
-//			return true;
-//		}
-//	}
-//	return false;
-//}
-
 client_managed_t * notebook_t::get_selected() {
 	return _selected;
 }
@@ -469,6 +453,7 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 		}
 
 		double ratio = (static_cast<double>(time - swap_start) / static_cast<double const>(animation_duration));
+		ratio = ratio*1.05 - 0.025;
 		//ratio = (cos(ratio*M_PI-M_PI)*1.05+1.0)/2.0;
 
 		if (_selected != nullptr) {
