@@ -21,6 +21,7 @@ class composite_surface_t {
 	Damage _damage;
 	shared_ptr<pixmap_t> _pixmap;
 	int _width, _height;
+	int _depth;
 
 	region _damaged;
 
@@ -53,6 +54,8 @@ public:
 
 		assert(wa.c_class != InputOnly);
 
+
+		_depth = wa.depth;
 		_window_id = w;
 		_dpy = dpy;
 		_vis = wa.visual;
@@ -114,6 +117,18 @@ public:
 
 	void add_damaged(region const & r) {
 		_damaged += r;
+	}
+
+	int width() {
+		return _width;
+	}
+
+	int height() {
+		return _height;
+	}
+
+	int depth() {
+		return _depth;
 	}
 
 };

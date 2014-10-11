@@ -80,6 +80,18 @@ private:
 		return _data[_key_t(dpy, w)];
 	}
 
+	void _make_surface_stats(int & size, int & count) {
+		size = 0;
+		count = 0;
+		for(auto &i: _data) {
+			if(not i.second.expired()) {
+				count += 1;
+				auto x = i.second.lock();
+				size += x->depth()/8 * x->width() * x->height();
+			}
+		}
+	}
+
 public:
 
 	~composite_surface_manager_t() {
@@ -96,6 +108,8 @@ public:
 
 	static shared_ptr<composite_surface_t> get(Display * dpy, Window w);
 	static weak_ptr<composite_surface_t> get_weak_surface(Display * dpy, Window w);
+
+	static void make_surface_stats(int & size, int & count);
 
 };
 

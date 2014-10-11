@@ -179,19 +179,6 @@ void compositor_t::render() {
 		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+200,100};
 	}
 
-//	_graph_scene.clear();
-//	for(auto x: _prepare_render) {
-//		vector<ptr<renderable_t>> tmp = x->call(cur);
-//		_graph_scene.insert(_graph_scene.end(), tmp.begin(), tmp.end());
-//	}
-
-//	printf("yyyyyy %lu\n", _graph_scene.size());
-
-//	/** if no one need rendering, do not render. **/
-//	if(not _need_render) {
-//		return;
-//	}
-
 	_need_render = false;
 
 	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
@@ -203,11 +190,6 @@ void compositor_t::render() {
 			root_attributes.height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
-
-	/** clear back buffer **/
-//	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-//	CHECK_CAIRO(cairo_paint(cr));
 
 	/** handler 1 pass area **/
 	region _direct_render;
@@ -298,8 +280,15 @@ void compositor_t::render() {
 			}
 			cairo_stroke(cr);
 
+			int surf_count;
+			int surf_size;
+
+			composite_surface_manager_t::make_surface_stats(surf_size, surf_count);
+
 			pango_printf(cr, _FPS_WINDOWS*2+20,0,  "fps:       %6.1f", fps);
-			pango_printf(cr, _FPS_WINDOWS*2+20,20, "miss rate: %6.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
+			pango_printf(cr, _FPS_WINDOWS*2+20,15, "miss rate: %6.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
+			pango_printf(cr, _FPS_WINDOWS*2+20,30, "surface count: %d", surf_count);
+			pango_printf(cr, _FPS_WINDOWS*2+20,45, "surface size: %d KB", surf_size/1024);
 
 			cairo_restore(cr);
 

@@ -37,6 +37,10 @@ weak_ptr<composite_surface_t> composite_surface_manager_t::get_weak_surface(Disp
 	return _mngr._get_weak_surface(dpy, w);
 }
 
+void composite_surface_manager_t::make_surface_stats(int & size, int & count) {
+	_mngr._make_surface_stats(size, count);
+}
+
 
 }
 

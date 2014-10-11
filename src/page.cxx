@@ -797,13 +797,12 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
 					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
+					mode_data_notebook.ns = nullptr;
 					mode_data_notebook.zone = SELECT_NONE;
 					mode_data_notebook.ev = *b;
 
 					pn0->move_resize(mode_data_notebook.from->tab_area);
 					pn0->update_window(mode_data_notebook.c);
-					//set_focus(mode_data_notebook.c, e.time);
 					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
