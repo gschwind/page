@@ -13,6 +13,7 @@
 
 #include "renderable_notebook_fading.hxx"
 #include "renderable_pixmap.hxx"
+#include "renderable_empty.hxx"
 #include "notebook.hxx"
 
 
@@ -470,7 +471,12 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 	} else {
 		/** animation is terminated **/
 		prev_surf.reset();
-		fading_notebook.reset();
+		if(fading_notebook != nullptr) {
+			fading_notebook.reset();
+			/** force redraw of notebook **/
+			ptr<renderable_t> x{new renderable_empty_t{_allocation}};
+			out += x;
+		}
 
 		if (_selected != nullptr) {
 
@@ -484,8 +490,8 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 			for (auto & i : _selected->childs()) {
 				i->prepare_render(out, time);
 			}
-
 		}
+
 	}
 
 }
