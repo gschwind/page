@@ -1904,6 +1904,9 @@ void page_t::process_event(XMapEvent const & e) {
 	if (e.event != cnx->root())
 		return;
 
+	if(check_for_destroyed_window(e.window))
+		return;
+
 	onmap(e.window);
 
 }
@@ -1985,6 +1988,11 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //		printf("has stack mode: %d\n", e.detail);
 //	if (e.value_mask & CWBorderWidth)
 //		printf("has border: %d\n", e.border_width);
+
+	if(check_for_destroyed_window(e.window)) {
+		/** this window no longer be alive **/
+		return;
+	}
 
 	if(not check_for_valid_window(e.window)) {
 		ackwoledge_configure_request(e);
@@ -2085,6 +2093,9 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 }
 
 void page_t::process_event(XMapRequestEvent const & e) {
+
+	if(check_for_destroyed_window(e.window))
+		return;
 
 	if (e.send_event == True or e.parent != cnx->root()) {
 		XMapWindow(e.display, e.window);
@@ -3835,8 +3846,9 @@ client_base_t * page_t::find_client_with(Window w) {
 
 client_base_t * page_t::find_client(Window w) {
 	auto i = clients.find(w);
-	if (i != clients.end())
+	if (i != clients.end()) {
 		return i->second;
+	}
 	return nullptr;
 }
 
@@ -4045,78 +4057,41 @@ void page_t::check_x11_extension() {
 }
 
 /**
- * Look at coming events if a client will be destroyed.
+ * Look for coming event if the window is destroyed. Used to
+ * Skip events related to destroyed windows.
  **/
-bool page_t::check_for_valid_window(Window w) {
+bool page_t::check_for_destroyed_window(Window w) {
 	client_base_t * c = find_client_with(w);
-
-	if (c != nullptr) {
-		if (typeid(*c) == typeid(unmanaged_window_t)) {
-			unmanaged_window_t * uw = dynamic_cast<unmanaged_window_t*>(c);
-			for (auto &ev : pending_event) {
-				if (ev.type == ReparentNotify) {
-					if (cnx->root() != ev.xreparent.parent) {
-						return false;
-					}
-				} else if (ev.type == UnmapNotify) {
-					if (ev.xunmap.window == w) {
-						return false;
-					}
-				} else if (ev.type == DestroyNotify) {
-					if (ev.xdestroywindow.window == w) {
-						return false;
-					}
-				}
-			}
-		} else if (typeid(*c) == typeid(managed_window_t)) {
-			managed_window_t * mw = dynamic_cast<managed_window_t*>(c);
-			for (auto &ev : pending_event) {
-				if (ev.type == ReparentNotify) {
-					if (mw->base() != ev.xreparent.parent) {
-						return false;
-					}
-				} else if (ev.type == UnmapNotify) {
-					if (ev.xunmap.send_event == True
-							and ev.xunmap.window == w) {
-						return false;
-					}
-				} else if (ev.type == DestroyNotify) {
-					if (ev.xdestroywindow.window == w) {
-						return false;
-					}
-				}
-			}
-		} else {
-			for (auto &ev : pending_event) {
-				if (ev.type == ReparentNotify) {
-					if (w != cnx->root()) {
-						return false;
-					}
-				} else if (ev.type == UnmapNotify) {
-					if (ev.xunmap.window == w) {
-						return false;
-					}
-				} else if (ev.type == DestroyNotify) {
-					if (ev.xdestroywindow.window == w) {
-						return false;
-					}
-				}
+	for (auto &ev : pending_event) {
+		if (ev.type == DestroyNotify) {
+			if (ev.xdestroywindow.window == w
+					and not ev.xdestroywindow.send_event) {
+				return true;
 			}
 		}
-	} else {
-		for (auto &ev : pending_event) {
-			if (ev.type == ReparentNotify) {
-				if (w != cnx->root()) {
-					return false;
-				}
-			} else if (ev.type == UnmapNotify) {
-				if (ev.xunmap.window == w) {
-					return false;
-				}
-			} else if (ev.type == DestroyNotify) {
-				if (ev.xdestroywindow.window == w) {
-					return false;
-				}
+	}
+	return false;
+}
+
+
+/**
+ * Look at coming events if a client is manageable.
+ *
+ * i.e. a client is manageable if :
+ *  1. is child of root window.
+ *  2. is mapped.
+ *  3. is not destroyed.
+ **/
+bool page_t::check_for_valid_window(Window w) {
+
+	for (auto &ev : pending_event) {
+		if (ev.type == ReparentNotify) {
+			if (cnx->root() != ev.xreparent.parent) {
+				return false;
+			}
+		} else if (ev.type == UnmapNotify) {
+			if (ev.xunmap.window == w and ev.xunmap.send_event) {
+				return false;
 			}
 		}
 	}

@@ -385,10 +385,22 @@ void display_t::remove_from_save_set(Window w) {
 
 void display_t::move_resize(Window w, i_rect const & size) {
 
-	//printf("XMoveResizeWindow: win = %lu, %fx%f+%f+%f\n", w, size.w, size.h,
-	//		size.x, size.y);
+	uint16_t mask = 0;
+	uint32_t value[4];
 
-	XMoveResizeWindow(_dpy, w, size.x, size.y, size.w, size.h);
+	mask |= XCB_CONFIG_WINDOW_X;
+	value[0] = size.x;
+
+	mask |= XCB_CONFIG_WINDOW_Y;
+	value[1] = size.y;
+
+	mask |= XCB_CONFIG_WINDOW_WIDTH;
+	value[2] = size.w;
+
+	mask |= XCB_CONFIG_WINDOW_HEIGHT;
+	value[3] = size.h;
+
+	xcb_configure_window(_xcb, w, mask, value);
 
 }
 

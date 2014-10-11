@@ -577,6 +577,7 @@ public:
 	bool need_render(time_t time);
 
 	bool check_for_valid_window(Window w);
+	bool check_for_destroyed_window(Window w);
 
 	void update_keymap();
 	void update_grabkey();
