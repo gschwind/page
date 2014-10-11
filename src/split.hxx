@@ -49,8 +49,7 @@ class split_t : public page_component_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_t const * theme, page_component_t * p0 = nullptr,
-			page_component_t * p1 = nullptr);
+	split_t(split_type_e type, theme_t const * theme);
 	~split_t();
 	void replace(page_component_t * src, page_component_t * by);
 	void compute_split_bar_area(i_rect & area, double split) const;

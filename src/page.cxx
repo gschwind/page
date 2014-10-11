@@ -724,10 +724,10 @@ void page_t::process_event(XKeyEvent const & e) {
 
 				pat->move_resize(
 						i_rect(
-								viewport->raw_aera.x
-										+ (viewport->raw_aera.w - 80 * 4) / 2,
-								viewport->raw_aera.y
-										+ (viewport->raw_aera.h - y * 80) / 2,
+								viewport->_raw_aera.x
+										+ (viewport->_raw_aera.w - 80 * 4) / 2,
+								viewport->_raw_aera.y
+										+ (viewport->_raw_aera.h - y * 80) / 2,
 								80 * 4, y * 80));
 				pat->show();
 
@@ -1021,7 +1021,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_fullscreen.v = v;
 					pn0->update_window(mw);
 					pn0->show();
-					pn0->move_resize(v->raw_aera);
+					pn0->move_resize(v->_raw_aera);
 				}
 			} else if (mw->is(MANAGED_NOTEBOOK) and e.button == (Button1)
 					and (e.state & (Mod1Mask))) {
@@ -1322,7 +1322,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 			if (v != 0) {
 				if (v != mode_data_fullscreen.v) {
-					pn0->move_resize(v->raw_aera);
+					pn0->move_resize(v->_raw_aera);
 					mode_data_fullscreen.v = v;
 				}
 			}
@@ -1822,7 +1822,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		if (v != nullptr) {
 			if (v != mode_data_fullscreen.v) {
-				pn0->move_resize(v->raw_aera);
+				pn0->move_resize(v->_raw_aera);
 				mode_data_fullscreen.v = v;
 			}
 		}
@@ -2037,7 +2037,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 						and e.x == 0 and e.y == 0
 						and !viewport_outputs.empty()) {
 					viewport_t * v = viewport_outputs.begin()->second;
-					i_rect b = v->get_absolute_extend();
+					i_rect b = v->raw_area();
 					/* place on center */
 					new_size.x = (b.w - new_size.w) / 2 + b.x;
 					new_size.y = (b.h - new_size.h) / 2 + b.y;
@@ -2078,33 +2078,42 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 	static unsigned int CONFIGURE_MASK =
 			(CWX | CWY | CWHeight | CWWidth | CWBorderWidth);
 
+	//printf("ackwoledge_configure_request ");
+
 	int i = 0;
 	uint32_t value[5] = {0};
 	uint32_t mask = 0;
 	if(e.value_mask & CWX) {
 		mask |= XCB_CONFIG_WINDOW_X;
 		value[i++] = e.x;
+		//printf("x = %d ", e.x);
 	}
 
 	if(e.value_mask & CWY) {
 		mask |= XCB_CONFIG_WINDOW_Y;
 		value[i++] = e.y;
+		//printf("y = %d ", e.y);
 	}
 
 	if(e.value_mask & CWWidth) {
 		mask |= XCB_CONFIG_WINDOW_WIDTH;
 		value[i++] = e.width;
+		//printf("w = %d ", e.width);
 	}
 
 	if(e.value_mask & CWHeight) {
 		mask |= XCB_CONFIG_WINDOW_HEIGHT;
 		value[i++] = e.height;
+		//printf("h = %d ", e.height);
 	}
 
 	if(e.value_mask & CWBorderWidth) {
 		mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
 		value[i++] = e.border_width;
+		//printf("border = %d ", e.border_width);
 	}
+
+	//printf("\n");
 
 	xcb_configure_window(cnx->xcb(), e.window, mask, value);
 
@@ -2505,7 +2514,7 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 	mw->set_managed_type(MANAGED_FULLSCREEN);
 	mw->set_parent(this);
 	fullscreen_client_to_viewport[mw] = data;
-	mw->set_notebook_wished_position(data.viewport->raw_aera);
+	mw->set_notebook_wished_position(data.viewport->_raw_aera);
 	mw->reconfigure();
 	mw->normalize();
 	update_windows_stack();
@@ -2694,7 +2703,6 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 void page_t::update_allocation() {
 	for(auto & i : viewport_outputs) {
 		compute_viewport_allocation(*(i.second));
-		i.second->reconfigure();
 	}
 }
 
@@ -2792,18 +2800,19 @@ display_t * page_t::get_xconnection() {
 void page_t::split(notebook_t * nbk, split_type_e type) {
 	split_t * split = new split_t(type, theme);
 	nbk->parent()->replace(nbk, split);
-	split->replace(nullptr, nbk);
 	notebook_t * n = new notebook_t(theme);
-	split->replace(nullptr, n);
-	update_allocation();
+	split->set_pack0(nbk);
+	split->set_pack1(n);
 	rpage->add_damaged(split->allocation());
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(VERTICAL_SPLIT, theme, n, nbk);
+	split_t * split = new split_t(VERTICAL_SPLIT, theme);
 	parent->replace(nbk, split);
+	split->set_pack0(n);
+	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
@@ -2813,8 +2822,10 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(VERTICAL_SPLIT, theme, nbk, n);
+	split_t * split = new split_t(VERTICAL_SPLIT, theme);
 	parent->replace(nbk, split);
+	split->set_pack0(nbk);
+	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
@@ -2824,8 +2835,10 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(HORIZONTAL_SPLIT, theme, n, nbk);
+	split_t * split = new split_t(HORIZONTAL_SPLIT, theme);
 	parent->replace(nbk, split);
+	split->set_pack0(n);
+	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
@@ -2835,8 +2848,10 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(HORIZONTAL_SPLIT, theme, nbk, n);
+	split_t * split = new split_t(HORIZONTAL_SPLIT, theme);
 	parent->replace(nbk, split);
+	split->set_pack0(nbk);
+	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
@@ -2932,10 +2947,10 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 		PS_BOTTOM_END_X = 11,
 	};
 
-	int xtop = v.raw_aera.y;
-	int xleft = v.raw_aera.x;
-	int xright = _root_position.w - v.raw_aera.x - v.raw_aera.w;
-	int xbottom = _root_position.h - v.raw_aera.y - v.raw_aera.h;
+	int xtop = v._raw_aera.y;
+	int xleft = v._raw_aera.x;
+	int xright = _root_position.w - v._raw_aera.x - v._raw_aera.w;
+	int xbottom = _root_position.h - v._raw_aera.y - v._raw_aera.h;
 
 
 	for(auto & j : clients) {
@@ -2946,7 +2961,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 				/* check if raw area intersect current viewport */
 				i_rect b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
-				i_rect x = v.raw_aera & b;
+				i_rect x = v._raw_aera & b;
 				if (!x.is_null()) {
 					xleft = std::max(xleft, ps[PS_LEFT]);
 				}
@@ -2957,7 +2972,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 				i_rect b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
-				i_rect x = v.raw_aera & b;
+				i_rect x = v._raw_aera & b;
 				if (!x.is_null()) {
 					xright = std::max(xright, ps[PS_RIGHT]);
 				}
@@ -2967,7 +2982,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 				/* check if raw area intersect current viewport */
 				i_rect b(ps[PS_TOP_START_X], 0,
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
-				i_rect x = v.raw_aera & b;
+				i_rect x = v._raw_aera & b;
 				if (!x.is_null()) {
 					xtop = std::max(xtop, ps[PS_TOP]);
 				}
@@ -2979,7 +2994,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
-				i_rect x = v.raw_aera & b;
+				i_rect x = v._raw_aera & b;
 				if (!x.is_null()) {
 					xbottom = std::max(xbottom, ps[PS_BOTTOM]);
 				}
@@ -2994,7 +3009,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 	final_size.y = xtop;
 	final_size.h = _root_position.h - xbottom - xtop;
 
-	v.set_effective_area(final_size);
+	v.set_allocation(final_size);
 
 }
 
@@ -3729,7 +3744,7 @@ void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {
 	for (auto i : viewport_outputs) {
-		if (i.second->raw_aera.is_inside(x, y))
+		if (i.second->_raw_aera.is_inside(x, y))
 			return i.second;
 	}
 	return 0;
@@ -4291,6 +4306,10 @@ void page_t::set_parent(tree_t * parent) {
 
 void page_t::set_parent(page_component_t * parent) {
 	throw exception_t("page::page_t can't have parent");
+}
+
+void page_t::set_allocation(i_rect const & r) {
+	_allocation = r;
 }
 
 }

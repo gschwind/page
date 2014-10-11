@@ -400,6 +400,7 @@ void display_t::move_resize(Window w, i_rect const & size) {
 	mask |= XCB_CONFIG_WINDOW_HEIGHT;
 	value[3] = size.h;
 
+	//printf("move_resize(%lu, %d, %d, %d, %d)\n", w, size.x, size.y, size.w, size.h);
 	xcb_configure_window(_xcb, w, mask, value);
 
 }

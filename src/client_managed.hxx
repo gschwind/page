@@ -357,11 +357,11 @@ public:
 		cnx()->delete_property(_orig, WM_STATE);
 	}
 
-	void set_floating_wished_position(i_rect & pos) {
+	void set_floating_wished_position(i_rect const & pos) {
 		_floating_wished_position = pos;
 	}
 
-	void set_notebook_wished_position(i_rect & pos) {
+	void set_notebook_wished_position(i_rect const & pos) {
 		_notebook_wished_position = pos;
 	}
 

@@ -19,7 +19,7 @@ namespace page {
 
 client_managed_t::client_managed_t(Atom net_wm_type,
 		ptr<client_properties_t> props, theme_t const * theme) :
-				client_base_t(props),
+				client_base_t{props},
 				_theme(theme),
 				_type(MANAGED_FLOATING),
 				_net_wm_type(net_wm_type),
@@ -51,8 +51,12 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	/* assign window to desktop 0 */
 	_properties->set_net_wm_desktop(0);
 
-	_floating_wished_position = i_rect(_properties->geometry()->x, _properties->geometry()->y, _properties->geometry()->width, _properties->geometry()->height);
-	_notebook_wished_position = i_rect(_properties->geometry()->x, _properties->geometry()->y, _properties->geometry()->width, _properties->geometry()->height);
+	i_rect pos{_properties->position()};
+
+	printf("window default position = %s\n", pos.to_string().c_str());
+
+	_floating_wished_position = pos;
+	_notebook_wished_position = pos;
 
 	_orig_visual = _properties->wa()->visual;
 	_orig_depth = _properties->geometry()->depth;

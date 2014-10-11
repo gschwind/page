@@ -136,10 +136,10 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 
 			pat->move_resize(
 					i_rect(
-							viewport->raw_aera.x
-									+ (viewport->raw_aera.w - 80 * 4) / 2,
-							viewport->raw_aera.y
-									+ (viewport->raw_aera.h - y * 80) / 2,
+							viewport->_raw_aera.x
+									+ (viewport->_raw_aera.w - 80 * 4) / 2,
+							viewport->_raw_aera.y
+									+ (viewport->_raw_aera.h - y * 80) / 2,
 							80 * 4, y * 80));
 			pat->show();
 
@@ -399,7 +399,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 					mode_data_fullscreen.v = v;
 					pn0->update_window(mw->orig(), mw->title());
 					pn0->show();
-					pn0->move_resize(v->raw_aera);
+					pn0->move_resize(v->_raw_aera);
 					pn0->expose();
 				}
 			} else if (mw->is(MANAGED_NOTEBOOK) and e.button == (Button1)
@@ -713,7 +713,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 
 			if (v != 0) {
 				if (v != mode_data_fullscreen.v) {
-					pn0->move_resize(v->raw_aera);
+					pn0->move_resize(v->_raw_aera);
 					mode_data_fullscreen.v = v;
 				}
 			}
@@ -1099,7 +1099,7 @@ void events_handler_default::process_event(XMotionEvent const & e)  {
 
 		if (v != 0) {
 			if (v != mode_data_fullscreen.v) {
-				pn0->move_resize(v->raw_aera);
+				pn0->move_resize(v->_raw_aera);
 				pn0->expose();
 				mode_data_fullscreen.v = v;
 			}

@@ -15,8 +15,8 @@
 namespace page {
 
 viewport_t::viewport_t(theme_t * theme, i_rect const & area) :
-		raw_aera(area),
-		effective_aera(area),
+		_raw_aera(area),
+		_effective_aera(area),
 		_parent(nullptr)
 {
 	_subtree = nullptr;
@@ -24,7 +24,7 @@ viewport_t::viewport_t(theme_t * theme, i_rect const & area) :
 	_theme = theme;
 	_subtree = new notebook_t(_theme);
 	_subtree->set_parent(this);
-	_subtree->set_allocation(effective_aera);
+	_subtree->set_allocation(_effective_aera);
 
 }
 
@@ -34,14 +34,10 @@ void viewport_t::replace(page_component_t * src, page_component_t * by) {
 	if (_subtree == src) {
 		_subtree = by;
 		_subtree->set_parent(this);
-		_subtree->set_allocation(effective_aera);
+		_subtree->set_allocation(_effective_aera);
 	} else {
 		throw std::runtime_error("viewport: bad child replacement!");
 	}
-}
-
-void viewport_t::close(tree_t * src) {
-
 }
 
 void viewport_t::remove(tree_t * src) {
@@ -53,29 +49,18 @@ void viewport_t::remove(tree_t * src) {
 
 }
 
-void viewport_t::reconfigure() {
-	if(_subtree != nullptr) {
-		_subtree->set_allocation(effective_aera);
-	}
-}
-
 void viewport_t::set_allocation(i_rect const & area) {
-	set_effective_area(area);
+	_effective_aera = area;
+	if(_subtree != nullptr)
+		_subtree->set_allocation(_effective_aera);
 }
 
 void viewport_t::set_raw_area(i_rect const & area) {
-	raw_aera = area;
+	_raw_aera = area;
 }
 
-void viewport_t::set_effective_area(i_rect const & area) {
-	effective_aera = area;
-	if(_subtree != 0) {
-		_subtree->set_allocation(effective_aera);
-	}
-}
-
-i_rect viewport_t::get_absolute_extend() {
-	return raw_aera;
+i_rect const & viewport_t::raw_area() const {
+	return _raw_aera;
 }
 
 }

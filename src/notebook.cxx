@@ -272,8 +272,16 @@ void notebook_t::set_allocation(i_rect const & area) {
 	client_area.w = allocation().w - _theme->notebook.margin.left - _theme->notebook.margin.right;
 	client_area.h = allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom;
 
-	for(auto i : _client_map) {
-		update_client_position(i);
+	if(client_area.w <= 0) {
+		client_area.w = 1;
+	}
+
+	if(client_area.h <= 0) {
+		client_area.h = 1;
+	}
+
+	if(_selected != nullptr) {
+		update_client_position(_selected);
 	}
 
 }

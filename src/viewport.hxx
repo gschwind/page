@@ -34,9 +34,12 @@ private:
 	viewport_t & operator= (viewport_t const &);
 
 public:
-	//page_base_t & page;
-	i_rect raw_aera;
-	i_rect effective_aera;
+
+	/** area without considering dock windows **/
+	i_rect _raw_aera;
+
+	/** area considering dock windows **/
+	i_rect _effective_aera;
 	page_component_t * _subtree;
 
 	bool _is_visible;
@@ -47,15 +50,11 @@ public:
 
 	viewport_t(theme_t * theme, i_rect const & area);
 
-	void reconfigure();
-
 	virtual void replace(page_component_t * src, page_component_t * by);
 	virtual void remove(tree_t * src);
-	virtual void close(tree_t * src);
 
 	notebook_t * get_nearest_notebook();
 
-	virtual i_rect get_absolute_extend();
 	virtual void set_allocation(i_rect const & area);
 
 	void set_raw_area(i_rect const & area);
@@ -114,11 +113,12 @@ public:
 	}
 
 	i_rect allocation() const {
-		return raw_aera;
+		return _effective_aera;
 	}
 
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
+	i_rect const & raw_area() const;
 
 };
 
