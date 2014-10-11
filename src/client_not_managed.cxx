@@ -8,7 +8,7 @@
  */
 
 #include "display.hxx"
-#include "unmanaged_window.hxx"
+#include "client_not_managed.hxx"
 
 namespace page {
 

@@ -15,7 +15,7 @@
 #include "notebook.hxx"
 #include "split.hxx"
 #include "theme.hxx"
-#include "unmanaged_window.hxx"
+#include "client_not_managed.hxx"
 
 
 using namespace std;

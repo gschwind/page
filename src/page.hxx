@@ -55,7 +55,7 @@
 #include "viewport.hxx"
 #include "config_handler.hxx"
 
-#include "unmanaged_window.hxx"
+#include "client_not_managed.hxx"
 #include "client_managed.hxx"
 
 #include "renderable_page.hxx"

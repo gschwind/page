@@ -29,7 +29,7 @@ page_SOURCES = \
 	viewport.cxx \
 	simple2_theme.cxx \
 	client_managed.cxx \
-	unmanaged_window.cxx \
+	client_not_managed.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \

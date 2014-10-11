@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef UNMANAGED_WINDOW_HXX_
-#define UNMANAGED_WINDOW_HXX_
+#ifndef CLIENT_NOT_MANAGED_HXX_
+#define CLIENT_NOT_MANAGED_HXX_
 
 #include <X11/X.h>
 
@@ -180,4 +180,4 @@ public:
 
 }
 
-#endif /* UNMANAGED_WINDOW_HXX_ */
+#endif /* CLIENT_NOT_MANAGED_HXX_ */
