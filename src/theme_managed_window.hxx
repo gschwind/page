@@ -19,7 +19,7 @@ namespace page {
 
 using namespace std;
 
-class managed_window_t;
+class client_managed_t;
 
 struct theme_managed_window_t {
 	i_rect position;

@@ -44,7 +44,7 @@ struct page_event_t {
 		};
 		struct {
 			notebook_t const * nbk;
-			managed_window_t const * clt;
+			client_managed_t const * clt;
 		};
 		split_t const * spt;
 	};

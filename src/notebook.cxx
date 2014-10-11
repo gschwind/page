@@ -31,7 +31,7 @@ notebook_t::~notebook_t() {
 
 }
 
-bool notebook_t::add_client(managed_window_t * x, bool prefer_activate) {
+bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	page_assert(not has_key(_clients, x));
 	page_assert(x != nullptr);
 	_children.push_back(x);
@@ -82,23 +82,23 @@ void notebook_t::close(tree_t * src) {
 }
 
 void notebook_t::remove(tree_t * src) {
-	managed_window_t * mw = dynamic_cast<managed_window_t*>(src);
+	client_managed_t * mw = dynamic_cast<client_managed_t*>(src);
 	if (has_key(_clients, mw) and mw != nullptr) {
 		remove_client(mw);
 	}
 }
 
-void notebook_t::activate_client(managed_window_t * x) {
+void notebook_t::activate_client(client_managed_t * x) {
 	if ((_client_map.find(x)) != _client_map.end()) {
 		set_selected(x);
 	}
 }
 
-list<managed_window_t *> const & notebook_t::get_clients() {
+list<client_managed_t *> const & notebook_t::get_clients() {
 	return _clients;
 }
 
-void notebook_t::remove_client(managed_window_t * x) {
+void notebook_t::remove_client(client_managed_t * x) {
 	page_assert(has_key(_clients, x));
 
 	/** update selection **/
@@ -118,7 +118,7 @@ void notebook_t::remove_client(managed_window_t * x) {
 	_client_map.erase(x);
 }
 
-void notebook_t::set_selected(managed_window_t * c) {
+void notebook_t::set_selected(client_managed_t * c) {
 	/** already selected **/
 	if(_selected == c)
 		return;
@@ -145,14 +145,14 @@ void notebook_t::set_selected(managed_window_t * c) {
 
 }
 
-void notebook_t::update_client_position(managed_window_t * c) {
+void notebook_t::update_client_position(client_managed_t * c) {
 	/* compute the window placement within notebook */
 	i_rect client_size = compute_client_size(c);
 	c->set_notebook_wished_position(client_size);
 	c->reconfigure();
 }
 
-void notebook_t::iconify_client(managed_window_t * x) {
+void notebook_t::iconify_client(client_managed_t * x) {
 	page_assert(has_key(_clients, x));
 
 	/** already iconified **/
@@ -278,7 +278,7 @@ void notebook_t::set_allocation(i_rect const & area) {
 }
 
 
-void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
+void notebook_t::compute_client_size_with_constraint(client_managed_t * c,
 		unsigned int max_width, unsigned int max_height, unsigned int & width,
 		unsigned int & height) {
 
@@ -299,7 +299,7 @@ void notebook_t::compute_client_size_with_constraint(managed_window_t * c,
 	//printf("XXX result : %d %d\n", width, height);
 }
 
-i_rect notebook_t::compute_client_size(managed_window_t * c) {
+i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	unsigned int height, width;
 	compute_client_size_with_constraint(c, allocation().w - _theme->notebook.margin.left - _theme->notebook.margin.right,
 			allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom, width, height);
@@ -332,11 +332,11 @@ void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-list<managed_window_t const *> notebook_t::clients() const {
-	return list<managed_window_t const *>(_clients.begin(), _clients.end());
+list<client_managed_t const *> notebook_t::clients() const {
+	return list<client_managed_t const *>(_clients.begin(), _clients.end());
 }
 
-managed_window_t const * notebook_t::selected() const {
+client_managed_t const * notebook_t::selected() const {
 	return _selected;
 }
 
@@ -440,7 +440,7 @@ void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 //	return false;
 //}
 
-managed_window_t * notebook_t::get_selected() {
+client_managed_t * notebook_t::get_selected() {
 	return _selected;
 }
 
@@ -572,7 +572,7 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 
 	}
 
-	list<managed_window_t *> clist = _clients;
+	list<client_managed_t *> clist = _clients;
 
 	if(clist.size() != 0) {
 		double box_width;

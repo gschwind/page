@@ -26,7 +26,7 @@ public:
 	virtual ~page_interface() { }
 
 	virtual void set_default_pop(notebook_t * x);
-	virtual void set_focus(managed_window_t * w, Time tfocus);
+	virtual void set_focus(client_managed_t * w, Time tfocus);
 
 	virtual compositor_t * get_render_context();
 	virtual display_t * get_xconnection();
@@ -38,25 +38,25 @@ public:
 
 	virtual void print_window_attributes(Window w, XWindowAttributes &wa);
 
-	virtual managed_window_t * manage(managed_window_type_e type, Atom net_wm_type, Window w, XWindowAttributes const & wa);
-	virtual void unmanage(managed_window_t * mw);
+	virtual client_managed_t * manage(managed_window_type_e type, Atom net_wm_type, Window w, XWindowAttributes const & wa);
+	virtual void unmanage(client_managed_t * mw);
 
-	virtual void remove_window_from_tree(managed_window_t * x);
-	virtual void insert_window_in_tree(managed_window_t * x, notebook_t * n, bool prefer_activate);
-	virtual void iconify_client(managed_window_t * x);
+	virtual void remove_window_from_tree(client_managed_t * x);
+	virtual void insert_window_in_tree(client_managed_t * x, notebook_t * n, bool prefer_activate);
+	virtual void iconify_client(client_managed_t * x);
 	virtual void update_allocation();
 
 	virtual void destroy(Window w);
 
-	virtual void fullscreen(managed_window_t * c, viewport_t * v = 0);
-	virtual void unfullscreen(managed_window_t * c);
-	virtual void toggle_fullscreen(managed_window_t * c);
+	virtual void fullscreen(client_managed_t * c, viewport_t * v = 0);
+	virtual void unfullscreen(client_managed_t * c);
+	virtual void toggle_fullscreen(client_managed_t * c);
 
 	virtual void split(notebook_t * nbk, split_type_e type);
-	virtual void split_left(notebook_t * nbk, managed_window_t * c);
-	virtual void split_right(notebook_t * nbk, managed_window_t * c);
-	virtual void split_top(notebook_t * nbk, managed_window_t * c);
-	virtual void split_bottom(notebook_t * nbk, managed_window_t * c);
+	virtual void split_left(notebook_t * nbk, client_managed_t * c);
+	virtual void split_right(notebook_t * nbk, client_managed_t * c);
+	virtual void split_top(notebook_t * nbk, client_managed_t * c);
+	virtual void split_bottom(notebook_t * nbk, client_managed_t * c);
 	virtual void notebook_close(notebook_t * src);
 
 	virtual void update_popup_position(popup_notebook0_t * p, i_rect & position);
@@ -70,7 +70,7 @@ public:
 	virtual notebook_t * new_notebook();
 	virtual void destroy(notebook_t * x);
 
-	virtual void destroy_managed_window(managed_window_t * mw);
+	virtual void destroy_managed_window(client_managed_t * mw);
 
 	virtual void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
@@ -94,12 +94,12 @@ public:
 
 	virtual void print_tree_windows();
 
-	virtual void bind_window(managed_window_t * mw);
-	virtual void unbind_window(managed_window_t * mw);
+	virtual void bind_window(client_managed_t * mw);
+	virtual void unbind_window(client_managed_t * mw);
 
 	virtual void grab_pointer();
 
-	virtual void cleanup_grab(managed_window_t * mw);
+	virtual void cleanup_grab(client_managed_t * mw);
 
 	virtual notebook_t * get_another_notebook(tree_t * base = 0, tree_t * nbk = 0);
 
@@ -107,10 +107,10 @@ public:
 	virtual void get_notebooks(vector<notebook_t *> & l);
 	virtual void get_splits(vector<split_t *> & l);
 
-	virtual notebook_t * find_notebook_for(managed_window_t * mw);
+	virtual notebook_t * find_notebook_for(client_managed_t * mw);
 
-	virtual void get_managed_windows(list<managed_window_t *> & l);
-	virtual managed_window_t * find_managed_window_with(Window w);
+	virtual void get_managed_windows(list<client_managed_t *> & l);
+	virtual client_managed_t * find_managed_window_with(Window w);
 	virtual unmanaged_window_t * find_unmanaged_window_with(Window w);
 
 	virtual viewport_t * find_viewport_for(notebook_t * n);
@@ -119,7 +119,7 @@ public:
 
 	virtual void set_window_cursor(Window w, Cursor c);
 
-	virtual bool is_focussed(managed_window_t * mw);
+	virtual bool is_focussed(client_managed_t * mw);
 
 	virtual void update_windows_stack();
 

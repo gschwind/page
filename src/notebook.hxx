@@ -17,7 +17,7 @@
 #include "region.hxx"
 #include "theme_tab.hxx"
 
-class managed_window_t;
+class client_managed_t;
 
 namespace page {
 
@@ -66,10 +66,10 @@ public:
 		SELECT_RIGHT
 	};
 	// list of client to maintain tab order
-	list<managed_window_t *> _clients;
-	managed_window_t * _selected;
+	list<client_managed_t *> _clients;
+	client_managed_t * _selected;
 	// set of map for fast check is window is in this notebook
-	set<managed_window_t *> _client_map;
+	set<client_managed_t *> _client_map;
 
 	i_rect client_area;
 
@@ -93,9 +93,9 @@ public:
 	i_rect close_client_area;
 	i_rect undck_client_area;
 
-	void set_selected(managed_window_t * c);
+	void set_selected(client_managed_t * c);
 
-	void update_client_position(managed_window_t * c);
+	void update_client_position(client_managed_t * c);
 
 public:
 	notebook_t(theme_t const * theme);
@@ -108,13 +108,13 @@ public:
 	void close(tree_t * src);
 	void remove(tree_t * src);
 
-	list<managed_window_t *> const & get_clients();
+	list<client_managed_t *> const & get_clients();
 
-	bool add_client(managed_window_t * c, bool prefer_activate);
-	void remove_client(managed_window_t * c);
+	bool add_client(client_managed_t * c, bool prefer_activate);
+	void remove_client(client_managed_t * c);
 
-	void activate_client(managed_window_t * x);
-	void iconify_client(managed_window_t * x);
+	void activate_client(client_managed_t * x);
+	void iconify_client(client_managed_t * x);
 
 	i_rect get_new_client_size();
 
@@ -141,7 +141,7 @@ public:
 		_parent = t;
 	}
 
-	managed_window_t * find_client_tab(int x, int y);
+	client_managed_t * find_client_tab(int x, int y);
 
 	void update_close_area();
 
@@ -152,15 +152,15 @@ public:
 	 * @output height: height result
 	 */
 
-	static void compute_client_size_with_constraint(managed_window_t * c,
+	static void compute_client_size_with_constraint(client_managed_t * c,
 			unsigned int max_width, unsigned int max_height,
 			unsigned int & width, unsigned int & height);
 
-	i_rect compute_client_size(managed_window_t * c);
+	i_rect compute_client_size(client_managed_t * c);
 	i_rect const & get_allocation();
 	void set_theme(theme_t const * theme);
-	list<managed_window_t const *> clients() const;
-	managed_window_t const * selected() const;
+	list<client_managed_t const *> clients() const;
+	client_managed_t const * selected() const;
 	bool is_default() const;
 	void set_default(bool x);
 	list<tree_t *> childs() const;
@@ -170,7 +170,7 @@ public:
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
 
-	managed_window_t * get_selected();
+	client_managed_t * get_selected();
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 

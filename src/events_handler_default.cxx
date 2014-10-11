@@ -51,9 +51,9 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 		_page->update_windows_stack();
 		_page->print_tree_windows();
 
-		list<managed_window_t *> lst;
+		list<client_managed_t *> lst;
 		_page->get_managed_windows(lst);
-		for (list<managed_window_t *>::iterator i = lst.begin(); i != lst.end();
+		for (list<client_managed_t *>::iterator i = lst.begin(); i != lst.end();
 				++i) {
 			switch ((*i)->get_type()) {
 			case MANAGED_NOTEBOOK:
@@ -114,7 +114,7 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 
 			vector<cycle_window_entry_t *> v;
 			int s = 0;
-			for(set<managed_window_t *>::iterator i = managed_window.begin();
+			for(set<client_managed_t *>::iterator i = managed_window.begin();
 					i != managed_window.end(); ++i) {
 				window_icon_handler_t * icon = new window_icon_handler_t(cnx, (*i)->orig(), 64, 64);
 				cycle_window_entry_t * cy = new cycle_window_entry_t(*i, icon);
@@ -169,7 +169,7 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 		 * do not use dynamic_cast because managed window can be already
 		 * destroyed.
 		 **/
-		managed_window_t * mw = reinterpret_cast<managed_window_t *> (pat->get_selected());
+		client_managed_t * mw = reinterpret_cast<client_managed_t *> (pat->get_selected());
 		set_focus(mw, e.time);
 
 		pat->hide();
@@ -186,7 +186,7 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 void events_handler_default::process_event(XButtonEvent const & e) {
 	//fprintf(stderr, "Xpress event, window = %lu, root = %lu, subwindow = %lu, pos = (%d,%d), time = %lu\n",
 	//		e.window, e.root, e.subwindow, e.x_root, e.y_root, e.time);
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -439,7 +439,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 //		if(mw == 0)
 //			mw = find_managed_window_with(e.subwindow);
 //
-		managed_window_t * mw = find_managed_window_with(e.window);
+		client_managed_t * mw = find_managed_window_with(e.window);
 		if (mw != 0) {
 			set_focus(mw, e.time);
 		}
@@ -638,7 +638,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 
 			break;
 		case PROCESS_FLOATING_CLOSE: {
-			managed_window_t * mw = mode_data_floating.f;
+			client_managed_t * mw = mode_data_floating.f;
 			mw->delete_window(e.time);
 
 			/* cleanup */
@@ -1122,7 +1122,7 @@ void events_handler_default::process_event(XCrossingEvent const & e) { }
 void events_handler_default::process_event(XFocusChangeEvent const & e) { }
 
 void events_handler_default::process_event(XExposeEvent const & e) {
-	managed_window_t * mw = find_managed_window_with(e.xexpose.window);
+	client_managed_t * mw = find_managed_window_with(e.xexpose.window);
 	if (mw != 0) {
 		if (mw->is(MANAGED_FLOATING)) {
 			mw->expose();
@@ -1155,7 +1155,7 @@ void events_handler_default::process_event(XCreateWindowEvent const & e) { }
 
 void events_handler_default::process_event(XDestroyWindowEvent const & e) {
 
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 	if(mw != 0) {
 		unmanage(mw);
 	}
@@ -1194,7 +1194,7 @@ void events_handler_default::process_event(XUnmapEvent const & e) {
 
 	/* if client is managed */
 
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 	if(mw != 0 and e.send_event == True) {
 		unmanage(mw);
 		cleanup_transient_for_for_window(x);
@@ -1300,7 +1300,7 @@ void events_handler_default::process_event(XConfigureRequestEvent const & e) {
 	//	if (e.value_mask & CWBorderWidth)
 	//		printf("has border: %d\n", e.border_width);
 
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 
 	if (mw != 0) {
 
@@ -1393,7 +1393,7 @@ void events_handler_default::process_event(XPropertyEvent const & e)  {
 		return;
 
 	Window x = e.window;
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 
 	if (e.atom == A(_NET_WM_USER_TIME)) {
 
@@ -1487,7 +1487,7 @@ void events_handler_default::process_event(XClientMessageEvent const & e)  {
 	if(w == 0)
 		return;
 
-	managed_window_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e.window);
 
 	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != 0) {

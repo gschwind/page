@@ -17,7 +17,7 @@
 
 namespace page {
 
-managed_window_t::managed_window_t(Atom net_wm_type,
+client_managed_t::client_managed_t(Atom net_wm_type,
 		ptr<client_properties_t> props, theme_t const * theme) :
 				client_base_t(props),
 				_theme(theme),
@@ -191,7 +191,7 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 
 }
 
-managed_window_t::~managed_window_t() {
+client_managed_t::~client_managed_t() {
 
 	unselect_inputs();
 
@@ -212,7 +212,7 @@ managed_window_t::~managed_window_t() {
 	xcb_destroy_window(cnx()->xcb(), _base);
 }
 
-void managed_window_t::reconfigure() {
+void client_managed_t::reconfigure() {
 
 	if (is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
@@ -275,13 +275,13 @@ void managed_window_t::reconfigure() {
 
 }
 
-void managed_window_t::fake_configure() {
+void client_managed_t::fake_configure() {
 	//printf("fake_reconfigure = %dx%d+%d+%d\n", _wished_position.w,
 	//		_wished_position.h, _wished_position.x, _wished_position.y);
 	cnx()->fake_configure(_orig, _wished_position, 0);
 }
 
-void managed_window_t::delete_window(Time t) {
+void client_managed_t::delete_window(Time t) {
 	printf("request close for '%s'\n", title().c_str());
 
 	xcb_client_message_event_t xev;
@@ -297,19 +297,19 @@ void managed_window_t::delete_window(Time t) {
 
 }
 
-bool managed_window_t::check_orig_position(i_rect const & position) {
+bool client_managed_t::check_orig_position(i_rect const & position) {
 	return position == _orig_position;
 }
 
-bool managed_window_t::check_base_position(i_rect const & position) {
+bool client_managed_t::check_base_position(i_rect const & position) {
 	return position == _base_position;
 }
 
-void managed_window_t::init_managed_type(managed_window_type_e type) {
+void client_managed_t::init_managed_type(managed_window_type_e type) {
 	_type = type;
 }
 
-void managed_window_t::set_managed_type(managed_window_type_e type) {
+void client_managed_t::set_managed_type(managed_window_type_e type) {
 
 	list<Atom> net_wm_allowed_actions;
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
@@ -321,28 +321,28 @@ void managed_window_t::set_managed_type(managed_window_type_e type) {
 
 }
 
-void managed_window_t::focus(Time t) {
+void client_managed_t::focus(Time t) {
 	set_focus_state(true);
 	icccm_focus(t);
 }
 
-i_rect managed_window_t::get_base_position() const {
+i_rect client_managed_t::get_base_position() const {
 	return _base_position;
 }
 
-managed_window_type_e managed_window_t::get_type() {
+managed_window_type_e client_managed_t::get_type() {
 	return _type;
 }
 
-void managed_window_t::set_theme(theme_t const * theme) {
+void client_managed_t::set_theme(theme_t const * theme) {
 	this->_theme = theme;
 }
 
-bool managed_window_t::is(managed_window_type_e type) {
+bool client_managed_t::is(managed_window_type_e type) {
 	return _type == type;
 }
 
-void managed_window_t::expose() {
+void client_managed_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 
 			theme_managed_window_t fw;
@@ -438,7 +438,7 @@ void managed_window_t::expose() {
 	}
 }
 
-void managed_window_t::icccm_focus(Time t) {
+void client_managed_t::icccm_focus(Time t) {
 	//fprintf(stderr, "Focus time = %lu\n", t);
 
 	if (_properties->wm_hints() != nullptr) {
@@ -466,7 +466,7 @@ void managed_window_t::icccm_focus(Time t) {
 
 }
 
-vector<floating_event_t> * managed_window_t::compute_floating_areas(
+vector<floating_event_t> * client_managed_t::compute_floating_areas(
 		theme_managed_window_t * mw) const {
 
 	vector<floating_event_t> * ret = new vector<floating_event_t>();
@@ -535,7 +535,7 @@ vector<floating_event_t> * managed_window_t::compute_floating_areas(
 
 }
 
-i_rect managed_window_t::compute_floating_close_position(i_rect const & allocation) const {
+i_rect client_managed_t::compute_floating_close_position(i_rect const & allocation) const {
 
 	i_rect position;
 	position.x = allocation.w - _theme->floating.close_width;
@@ -546,7 +546,7 @@ i_rect managed_window_t::compute_floating_close_position(i_rect const & allocati
 	return position;
 }
 
-i_rect managed_window_t::compute_floating_bind_position(
+i_rect client_managed_t::compute_floating_bind_position(
 		i_rect const & allocation) const {
 
 	i_rect position;

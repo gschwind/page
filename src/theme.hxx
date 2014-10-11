@@ -40,14 +40,14 @@ struct margin_t {
 struct cycle_window_entry_t : public leak_checker {
 	icon64 * icon;
 	string title;
-	managed_window_t * id;
+	client_managed_t * id;
 
 private:
 	cycle_window_entry_t(cycle_window_entry_t const &);
 	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	cycle_window_entry_t(managed_window_t * mw, string title,
+	cycle_window_entry_t(client_managed_t * mw, string title,
 			icon64 * icon) :
 			icon(icon), title(title), id(mw) {
 	}
@@ -65,13 +65,13 @@ class dropdown_menu_entry_t: public leak_checker {
 
 	ptr<icon16> _icon;
 	string _title;
-	managed_window_t const * _id;
+	client_managed_t const * _id;
 
 	dropdown_menu_entry_t(cycle_window_entry_t const &);
 	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	dropdown_menu_entry_t(managed_window_t * mw, ptr<icon16> icon,
+	dropdown_menu_entry_t(client_managed_t * mw, ptr<icon16> icon,
 			string title) :
 			_icon(icon),
 			_title(title),
@@ -84,7 +84,7 @@ public:
 
 	}
 
-	managed_window_t const * id() const {
+	client_managed_t const * id() const {
 		return _id;
 	}
 

@@ -30,7 +30,7 @@ enum managed_window_type_e {
 	MANAGED_FULLSCREEN
 };
 
-class managed_window_t : public client_base_t {
+class client_managed_t : public client_base_t {
 private:
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask | StructureNotifyMask;
@@ -68,8 +68,8 @@ private:
 	ptr<icon16> _icon;
 
 	/* private to avoid copy */
-	managed_window_t(managed_window_t const &);
-	managed_window_t & operator=(managed_window_t const &);
+	client_managed_t(client_managed_t const &);
+	client_managed_t & operator=(client_managed_t const &);
 
 	void init_managed_type(managed_window_type_e type);
 
@@ -94,9 +94,9 @@ private:
 
 public:
 
-	managed_window_t(Atom net_wm_type, ptr<client_properties_t> c,
+	client_managed_t(Atom net_wm_type, ptr<client_properties_t> c,
 			theme_t const * theme);
-	virtual ~managed_window_t();
+	virtual ~client_managed_t();
 
 	void reconfigure();
 	void fake_configure();
@@ -327,7 +327,7 @@ public:
 		}
 
 		for(auto c: _children) {
-			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			if(mw != nullptr) {
 				mw->normalize();
 			}
@@ -345,7 +345,7 @@ public:
 		_composite_surf.reset();
 
 		for(auto c: _children) {
-			managed_window_t * mw = dynamic_cast<managed_window_t *>(c);
+			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			if(mw != nullptr) {
 				mw->iconify();
 			}

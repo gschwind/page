@@ -90,7 +90,7 @@ public:
 
 	}
 
-	void update_window(managed_window_t * c) {
+	void update_window(client_managed_t * c) {
 		icon = ptr<icon64>{new icon64(*c)};
 		this->title = c->title();
 	}

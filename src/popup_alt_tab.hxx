@@ -52,7 +52,7 @@ public:
 		selected = sel;
 	}
 
-	managed_window_t * get_selected() {
+	client_managed_t * get_selected() {
 		return window_list[selected]->id;
 	}
 

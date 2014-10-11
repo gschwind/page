@@ -143,7 +143,7 @@ public:
 		int start_x;
 		int start_y;
 		select_e zone;
-		managed_window_t * c;
+		client_managed_t * c;
 		notebook_t * from;
 		notebook_t * ns;
 		page_event_t ev;
@@ -184,7 +184,7 @@ public:
 		int start_x;
 		int start_y;
 		select_e zone;
-		managed_window_t * c;
+		client_managed_t * c;
 		notebook_t * ns;
 
 		mode_data_bind_t() {
@@ -220,7 +220,7 @@ public:
 		int x_root;
 		int y_root;
 		i_rect original_position;
-		managed_window_t * f;
+		client_managed_t * f;
 		i_rect popup_original_position;
 		i_rect final_position;
 		unsigned int button;
@@ -245,7 +245,7 @@ public:
 	};
 
 	struct mode_data_fullscreen_t {
-		managed_window_t * mw;
+		client_managed_t * mw;
 		viewport_t * v;
 
 		mode_data_fullscreen_t() {
@@ -293,7 +293,7 @@ public:
 	key_press_mode_e key_press_mode;
 
 	struct key_mode_data_t {
-		managed_window_t * selected;
+		client_managed_t * selected;
 	};
 
 	key_mode_data_t key_mode_data;
@@ -343,7 +343,7 @@ public:
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<managed_window_t *, fullscreen_data_t> fullscreen_client_to_viewport;
+	map<client_managed_t *, fullscreen_data_t> fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
 
@@ -372,7 +372,7 @@ public:
 private:
 	Time _last_focus_time;
 	Time _last_button_press;
-	list<managed_window_t *> _client_focused;
+	list<client_managed_t *> _client_focused;
 
 	i_rect _root_position;
 
@@ -408,7 +408,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(managed_window_t * w, Time tfocus);
+	void set_focus(client_managed_t * w, Time tfocus);
 	compositor_t * get_render_context();
 	display_t * get_xconnection();
 
@@ -463,32 +463,32 @@ public:
 	void debug_print_window_attributes(Window w, XWindowAttributes &wa);
 
 	/* setup and create managed window */
-	managed_window_t * manage(Atom net_wm_type, shared_ptr<client_properties_t> wa);
+	client_managed_t * manage(Atom net_wm_type, shared_ptr<client_properties_t> wa);
 
 	/* unmanage a managed window */
-	void unmanage(managed_window_t * mw);
+	void unmanage(client_managed_t * mw);
 
 	/* put a managed window into a given notebook */
-	void insert_window_in_notebook(managed_window_t * x, notebook_t * n, bool prefer_activate);
+	void insert_window_in_notebook(client_managed_t * x, notebook_t * n, bool prefer_activate);
 
 	/* update viewport and childs allocation */
 	void update_allocation();
 
 	/* turn a managed window into fullscreen */
-	void fullscreen(managed_window_t * c, viewport_t * v = nullptr);
+	void fullscreen(client_managed_t * c, viewport_t * v = nullptr);
 
 	/* switch a fullscreened and managed window into floating or notebook window */
-	void unfullscreen(managed_window_t * c);
+	void unfullscreen(client_managed_t * c);
 
 	/* toggle fullscreen */
-	void toggle_fullscreen(managed_window_t * c);
+	void toggle_fullscreen(client_managed_t * c);
 
 	/* split a notebook into two notebook */
 	void split(notebook_t * nbk, split_type_e type);
-	void split_left(notebook_t * nbk, managed_window_t * c);
-	void split_right(notebook_t * nbk, managed_window_t * c);
-	void split_top(notebook_t * nbk, managed_window_t * c);
-	void split_bottom(notebook_t * nbk, managed_window_t * c);
+	void split_left(notebook_t * nbk, client_managed_t * c);
+	void split_right(notebook_t * nbk, client_managed_t * c);
+	void split_top(notebook_t * nbk, client_managed_t * c);
+	void split_bottom(notebook_t * nbk, client_managed_t * c);
 
 	/* close a notebook and unsplit the parent */
 	void notebook_close(notebook_t * src);
@@ -517,20 +517,20 @@ public:
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
 	/* attach floating window in a notebook */
-	void bind_window(managed_window_t * mw, bool activate);
+	void bind_window(client_managed_t * mw, bool activate);
 	/* detach notebooked window to a floating window */
-	void unbind_window(managed_window_t * mw);
+	void unbind_window(client_managed_t * mw);
 	void grab_pointer();
 	/* if grab is linked to a given window remove this grab */
-	void cleanup_grab(managed_window_t * mw);
+	void cleanup_grab(client_managed_t * mw);
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	notebook_t * get_another_notebook(tree_t * base = nullptr, tree_t * nbk = nullptr);
 	/* get all available notebooks with page */
 	list<notebook_t *> get_notebooks(tree_t * base = nullptr);
 	/* find where the managed window is */
-	notebook_t * find_parent_notebook_for(managed_window_t * mw);
-	list<managed_window_t*> get_managed_windows();
-	managed_window_t * find_managed_window_with(Window w);
+	notebook_t * find_parent_notebook_for(client_managed_t * mw);
+	list<client_managed_t*> get_managed_windows();
+	client_managed_t * find_managed_window_with(Window w);
 	viewport_t * find_viewport_for(notebook_t * n);
 	void set_window_cursor(Window w, Cursor c);
 	void update_windows_stack();
@@ -539,7 +539,7 @@ public:
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
 	void create_managed_window(shared_ptr<client_properties_t> c, Atom type);
-	void manage_managed_window(managed_window_t * mw, Atom type);
+	void manage_managed_window(client_managed_t * mw, Atom type);
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
 	void create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type);
 	void create_dock_window(shared_ptr<client_properties_t> c, Atom type);
@@ -582,7 +582,7 @@ public:
 	void update_keymap();
 	void update_grabkey();
 
-	managed_window_t * find_hidden_client_with(Window w);
+	client_managed_t * find_hidden_client_with(Window w);
 
 	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
 

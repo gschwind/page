@@ -66,10 +66,10 @@ public:
 	}
 
 	void split(notebook_t * nbk, split_type_e type);
-	void split_left(notebook_t * nbk, managed_window_t * c);
-	void split_right(notebook_t * nbk, managed_window_t * c);
-	void split_top(notebook_t * nbk, managed_window_t * c);
-	void split_bottom(notebook_t * nbk, managed_window_t * c);
+	void split_left(notebook_t * nbk, client_managed_t * c);
+	void split_right(notebook_t * nbk, client_managed_t * c);
+	void split_top(notebook_t * nbk, client_managed_t * c);
+	void split_bottom(notebook_t * nbk, client_managed_t * c);
 	void notebook_close(notebook_t * src);
 
 	virtual void render(cairo_t * cr, i_rect const & area) const {

@@ -57,7 +57,7 @@ public:
 		_position.h = 24*window_list.size();
 	}
 
-	managed_window_t const * get_selected() {
+	client_managed_t const * get_selected() {
 		return window_list[selected]->id();
 	}
 
