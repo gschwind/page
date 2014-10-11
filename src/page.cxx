@@ -2078,17 +2078,35 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 	static unsigned int CONFIGURE_MASK =
 			(CWX | CWY | CWHeight | CWWidth | CWBorderWidth);
 
-	XWindowChanges ev;
-	ev.x = e.x;
-	ev.y = e.y;
-	ev.width = e.width;
-	ev.height = e.height;
-	ev.sibling = e.above;
-	ev.stack_mode = e.detail;
-	ev.border_width = e.border_width;
+	int i = 0;
+	uint32_t value[5] = {0};
+	uint32_t mask = 0;
+	if(e.value_mask & CWX) {
+		mask |= XCB_CONFIG_WINDOW_X;
+		value[i++] = e.x;
+	}
 
-	XConfigureWindow(e.display, e.window,
-			((unsigned int) e.value_mask) & CONFIGURE_MASK, &ev);
+	if(e.value_mask & CWY) {
+		mask |= XCB_CONFIG_WINDOW_Y;
+		value[i++] = e.y;
+	}
+
+	if(e.value_mask & CWWidth) {
+		mask |= XCB_CONFIG_WINDOW_WIDTH;
+		value[i++] = e.width;
+	}
+
+	if(e.value_mask & CWHeight) {
+		mask |= XCB_CONFIG_WINDOW_HEIGHT;
+		value[i++] = e.height;
+	}
+
+	if(e.value_mask & CWBorderWidth) {
+		mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+		value[i++] = e.border_width;
+	}
+
+	xcb_configure_window(cnx->xcb(), e.window, mask, value);
 
 }
 
