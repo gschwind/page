@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef MANAGED_WINDOW_HXX_
-#define MANAGED_WINDOW_HXX_
+#ifndef CLIENT_MANAGED_HXX_
+#define CLIENT_MANAGED_HXX_
 
 #include "utils.hxx"
 #include "leak_checker.hxx"

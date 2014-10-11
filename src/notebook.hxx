@@ -13,7 +13,7 @@
 #include "renderable_notebook_fading.hxx"
 #include "tree.hxx"
 #include "page_component.hxx"
-#include "managed_window.hxx"
+#include "client_managed.hxx"
 #include "region.hxx"
 #include "theme_tab.hxx"
 

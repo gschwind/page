@@ -28,7 +28,7 @@ page_SOURCES = \
 	compositor.cxx \
 	viewport.cxx \
 	simple2_theme.cxx \
-	managed_window.cxx \
+	client_managed.cxx \
 	unmanaged_window.cxx \
 	window_icon_handler.cxx \
 	config_handler.cxx \

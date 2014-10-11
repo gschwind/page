@@ -11,7 +11,7 @@
 #define WINDOW_HANDLER_HXX_
 
 #include <list>
-#include "managed_window.hxx"
+#include "client_managed.hxx"
 
 namespace page {
 

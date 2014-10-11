@@ -11,7 +11,7 @@
 
 #include <cairo.h>
 #include <cairo-xlib.h>
-#include "managed_window.hxx"
+#include "client_managed.hxx"
 #include "notebook.hxx"
 #include "utils.hxx"
 
