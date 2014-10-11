@@ -91,9 +91,11 @@ void split_t::replace(page_component_t * src, page_component_t * by) {
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src, by);
 		set_pack0(by);
+		src->set_parent(nullptr);
 	} else if (_pack1 == src) {
 		printf("replace %p by %p\n", src, by);
 		set_pack1(by);
+		src->set_parent(nullptr);
 	} else {
 		throw std::runtime_error("split: bad child replacement!");
 	}

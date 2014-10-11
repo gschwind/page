@@ -42,7 +42,6 @@ managed_window_t::managed_window_t(Atom net_wm_type,
 				_base(None),
 				_deco(None),
 				_floating_area(0),
-				_is_durty(true),
 				_is_focused(false)
 {
 
@@ -272,7 +271,6 @@ void managed_window_t::reconfigure() {
 
 	fake_configure();
 
-	mark_durty();
 	expose();
 
 }
@@ -313,8 +311,6 @@ void managed_window_t::init_managed_type(managed_window_type_e type) {
 
 void managed_window_t::set_managed_type(managed_window_type_e type) {
 
-	_is_durty = true;
-
 	list<Atom> net_wm_allowed_actions;
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
 	net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
@@ -349,7 +345,6 @@ bool managed_window_t::is(managed_window_type_e type) {
 void managed_window_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 
-		if (_is_durty) {
 			theme_managed_window_t fw;
 
 			if(_bottom_buffer != nullptr) {
@@ -383,10 +378,8 @@ void managed_window_t::expose() {
 			fw.icon = icon();
 			fw.title = title();
 
-			_is_durty = false;
 			_theme->render_floating(&fw);
 
-		}
 
 		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
 

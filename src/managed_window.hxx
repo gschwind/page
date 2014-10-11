@@ -85,8 +85,6 @@ private:
 
 	vector<floating_event_t> * _floating_area;
 
-	bool _is_durty;
-
 	bool _is_focused;
 
 	bool _motif_has_border;
@@ -171,18 +169,6 @@ public:
 
 	void icccm_focus(Time t);
 
-	void mark_durty() {
-		_is_durty = true;
-	}
-
-	void mark_clean() {
-		_is_durty = false;
-	}
-
-	bool is_durty() {
-		return _is_durty;
-	}
-
 	bool is_focused() const {
 		return _is_focused;
 	}
@@ -210,7 +196,6 @@ public:
 			grab_button_unfocused();
 		}
 
-		mark_durty();
 		expose();
 	}
 
