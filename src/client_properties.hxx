@@ -538,6 +538,8 @@ private:
 	display_t *                  _cnx;
 	xcb_window_t                 _id;
 
+	xcb_atom_t                   _type;
+
 	xcb_get_window_attributes_reply_t * _wa;
 	xcb_get_geometry_reply_t * _geometry;
 
@@ -724,6 +726,8 @@ public:
 
 		update_shape();
 
+		update_type();
+
 	}
 
 	void delete_all_properties() {
@@ -773,11 +777,13 @@ public:
 	void update_wm_class() {
 		auto x = make_property_fetcher_t(_wm_class, _cnx, xid());
 		x.update(_cnx);
+		update_type();
 	}
 
 	void update_wm_transient_for() {
 		auto x = make_property_fetcher_t(_wm_transient_for, _cnx, xid());
 		x.update(_cnx);
+		update_type();
 	}
 
 	void update_wm_protocols() {
@@ -830,6 +836,7 @@ public:
 	void update_net_wm_window_type() {
 		auto x = make_property_fetcher_t(__net_wm_window_type, _cnx, xid());
 		x.update(_cnx);
+		update_type();
 	}
 
 	void update_net_wm_state() {
@@ -1109,8 +1116,8 @@ public:
 		//motif_hints = nullptr;
 	}
 
-	Atom type() {
-		Atom type = None;
+	void update_type() {
+		_type = None;
 
 		list<xcb_atom_t> net_wm_window_type;
 		bool override_redirect = (_wa->override_redirect == True)?true:false;
@@ -1182,7 +1189,7 @@ public:
 		for (auto i : net_wm_window_type) {
 			//printf("Check for %s\n", cnx->get_atom_name(*i).c_str());
 			if (has_key(known_type, i)) {
-				type = i;
+				_type = i;
 				break;
 			}
 		}
@@ -1191,18 +1198,18 @@ public:
 		{
 			if (_wm_class != nullptr
 					and __net_wm_state != nullptr
-					and type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+					and _type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 				if ((*(_wm_class))[0] == "Eclipse") {
 					if(has_key(*__net_wm_state, static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)))) {
-						type = A(_NET_WM_WINDOW_TYPE_DND);
+						_type = A(_NET_WM_WINDOW_TYPE_DND);
 					}
 				}
 			}
 		}
 
-		return type;
-
 	}
+
+	xcb_atom_t type() const { return _type; }
 
 	display_t *          cnx() const { return _cnx; }
 	xcb_window_t         id() const { return _id; }
@@ -1283,7 +1290,10 @@ public:
 	}
 
 	void process_event(XConfigureEvent const & e) {
-		_wa->override_redirect = e.override_redirect;
+		if(_wa->override_redirect != e.override_redirect) {
+			_wa->override_redirect = e.override_redirect;
+			update_type();
+		}
 		_geometry->width = e.width;
 		_geometry->height = e.height;
 		_geometry->x = e.x;
