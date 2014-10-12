@@ -58,7 +58,7 @@ public:
 		XFreePixmap(_cnx->dpy(), _pix);
 	}
 
-	void repair_damaged(list<tree_t *> tree) {
+	void repair_damaged(vector<tree_t *> tree) {
 
 		if(_damaged.empty() and not _is_durty)
 			return;

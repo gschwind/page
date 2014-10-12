@@ -155,19 +155,17 @@ page_t::~page_t() {
 	pat.reset();
 	menu.reset();
 
-
 	/* get all childs excluding this */
-	auto childs = get_all_childs();
-	for (auto &i : childs) {
-
+	update_children_cache();
+	for (auto &i : _all_children_cache) {
 		if(typeid(*i) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(i);
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0, 0);
 		}
-
 		delete i;
 	}
-	childs.clear();
+
+	_all_children_cache.clear();
 	/* all client should be in childs, while we already destroyed all child, just clear this list */
 	clients.clear();
 
@@ -581,7 +579,7 @@ void page_t::update_net_supported() {
 void page_t::update_client_list() {
 	set<Window> s_client_list;
 	set<Window> s_client_list_stack;
-	list<client_managed_t *> lst = get_managed_windows();
+	vector<client_managed_t *> lst = get_managed_windows();
 
 	for (auto i : lst) {
 		s_client_list.insert(i->orig());
@@ -658,8 +656,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 		if(k == bind_debug_4.ks and (e.state & bind_debug_4.mod)) {
 			update_windows_stack();
-			print_tree(0);
-			list<client_managed_t *> lst = get_managed_windows();
+			//print_tree(0);
+			vector<client_managed_t *> lst = get_managed_windows();
 			for (auto i : lst) {
 				switch (i->get_type()) {
 				case MANAGED_NOTEBOOK:
@@ -681,7 +679,7 @@ void page_t::process_event(XKeyEvent const & e) {
 
 		if (k == XK_Tab and ((e.state & 0x0f) == Mod1Mask)) {
 
-			list<client_managed_t *> managed_window = get_managed_windows();
+			vector<client_managed_t *> managed_window = get_managed_windows();
 
 			if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
 
@@ -2506,8 +2504,7 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 	data.viewport->_is_visible = false;
 
 	/* unmap all notebook window */
-	list<notebook_t *> ns = get_notebooks(data.viewport);
-	for(auto i : ns) {
+	for(auto i : get_notebooks(data.viewport)) {
 		i->unmap_all();
 	}
 
@@ -2804,6 +2801,7 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	rpage->add_damaged(split->allocation());
+	update_children_cache();
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
@@ -2817,6 +2815,7 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+	update_children_cache();
 }
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
@@ -2830,6 +2829,7 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+	update_children_cache();
 }
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
@@ -2843,6 +2843,7 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+	update_children_cache();
 }
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
@@ -2856,6 +2857,7 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
+	update_children_cache();
 }
 
 void page_t::notebook_close(notebook_t * src) {
@@ -2909,6 +2911,7 @@ void page_t::notebook_close(notebook_t * src) {
 	delete src;
 	delete ths;
 
+	update_children_cache();
 }
 
 void page_t::update_popup_position(ptr<popup_notebook0_t> p,
@@ -3139,6 +3142,7 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 		root_subclients.push_back(c);
 		c->set_parent(this);
 	}
+	update_children_cache();
 }
 
 client_base_t * page_t::get_transient_for(client_base_t * c) {
@@ -3155,11 +3159,11 @@ client_base_t * page_t::get_transient_for(client_base_t * c) {
 
 void page_t::detach(tree_t * t) {
 	remove(t);
-	list<tree_t *> elements = get_all_childs();
-	for(auto &i : elements) {
+	for(auto i : _all_children_cache) {
 		i->remove(t);
 	}
 	t->set_parent(nullptr);
+	update_children_cache();
 }
 
 void page_t::safe_raise_window(client_base_t * c) {
@@ -3310,7 +3314,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 
 /* look for a notebook in tree base, that is deferent from nbk */
 notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
-	list<notebook_t *> l;
+	vector<notebook_t *> l;
 
 	if (base == 0) {
 		l = get_notebooks();
@@ -3329,11 +3333,13 @@ notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
 
 }
 
-list<notebook_t *> page_t::get_notebooks(tree_t * base) {
+vector<notebook_t *> page_t::get_notebooks(tree_t * base) {
 	if(base == nullptr) {
-		return filter_class<notebook_t>(get_all_childs());
+		return filter_class<notebook_t>(_all_children_cache);
 	} else {
-		return filter_class<notebook_t>(base->get_all_childs());
+		vector<tree_t *> tmp;
+		base->get_all_children(tmp);
+		return filter_class<notebook_t>(tmp);
 	}
 }
 
@@ -3359,8 +3365,7 @@ void page_t::set_window_cursor(Window w, Cursor c) {
 
 void page_t::update_windows_stack() {
 
-	list<tree_t *> childs = this->get_all_childs();
-	list<client_base_t *> clients = filter_class<client_base_t>(childs);
+	vector<client_base_t *> clients = filter_class<client_base_t>(_all_children_cache);
 
 	list<Window> final_order;
 	for(auto i: clients) {
@@ -3452,6 +3457,8 @@ void page_t::update_viewport_layout() {
 	}
 
 	viewport_outputs = new_layout;
+
+	update_children_cache();
 }
 
 void page_t::remove_viewport(viewport_t * v) {
@@ -3467,8 +3474,7 @@ void page_t::remove_viewport(viewport_t * v) {
 	}
 
 	/* Transfer clients to a valid notebook */
-	list<notebook_t *> nbks = get_notebooks(v);
-	for (auto i : nbks) {
+	for (auto i : get_notebooks(v)) {
 		if (default_window_pop == i)
 			default_window_pop = get_another_notebook(i);
 		default_window_pop->set_default(true);
@@ -3481,7 +3487,8 @@ void page_t::remove_viewport(viewport_t * v) {
 }
 
 void page_t::destroy_viewport(viewport_t * v) {
-	list<tree_t *> lst = v->get_all_childs();
+	vector<tree_t *> lst;
+	v->get_all_children(lst);
 	for (auto i : lst) {
 		if (typeid(client_base_t) != typeid(*i)) {
 			delete i;
@@ -3798,8 +3805,8 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 
 }
 
-list<client_managed_t *> page_t::get_managed_windows() {
-	return filter_class<client_managed_t>(get_all_childs());
+vector<client_managed_t *> page_t::get_managed_windows() {
+	return filter_class<client_managed_t>(_all_children_cache);
 }
 
 client_managed_t * page_t::find_managed_window_with(Window w) {
@@ -3871,8 +3878,7 @@ void page_t::update_page_areas() {
 		delete page_areas;
 	}
 
-	list<tree_t *> l = get_all_childs();
-	list<tree_t const *> lc(l.begin(), l.end());
+	list<tree_t const *> lc(_all_children_cache.begin(), _all_children_cache.end());
 	page_areas = compute_page_areas(lc);
 }
 
@@ -3971,6 +3977,52 @@ list<tree_t *> page_t::childs() const {
 
 
 	return ret;
+}
+
+void page_t::get_all_children(vector<tree_t *> & out) const {
+
+	for (auto &i : viewport_outputs) {
+		if (i.second != nullptr) {
+			out.push_back(i.second);
+			i.second->get_all_children(out);
+		}
+	}
+
+	for(auto x: below) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
+	for(auto x: docks) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
+	for(auto x: fullscreen_client_to_viewport) {
+		out.push_back(x.first);
+		x.first->get_all_children(out);
+	}
+
+	for(auto x: root_subclients) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
+	for(auto x: tooltips) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
+	for(auto x: notifications) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
+	for(auto x: above) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
 }
 
 string page_t::get_node_name() const {
@@ -4202,16 +4254,12 @@ void page_t::update_keymap() {
 void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
 	rnd->add_damaged(rpage->get_damaged());
-	rpage->repair_damaged(get_all_childs());
-
-	/**
-	 * first get renderable and then repair it to get proper
-	 * damaged area
-	 **/
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
-	rpage->repair_damaged(get_all_childs());
+	rpage->repair_damaged(_all_children_cache);
 
-	tree_t::_prepare_render(out, time);
+	for(auto i: _all_children_cache) {
+		i->prepare_render(out, time);
+	}
 
 	/** Add all possible popups **/
 	if(pat->is_visible()) {
@@ -4287,6 +4335,11 @@ void page_t::set_parent(page_component_t * parent) {
 
 void page_t::set_allocation(i_rect const & r) {
 	_allocation = r;
+}
+
+void page_t::update_children_cache() const {
+	_all_children_cache.clear();
+	get_all_children(_all_children_cache);
 }
 
 }

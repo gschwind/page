@@ -635,7 +635,12 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 	}
 }
 
-
+void notebook_t::get_all_children(vector<tree_t *> & out) const {
+	for(auto x: _children) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+}
 
 
 

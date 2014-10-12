@@ -912,8 +912,6 @@ void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::tim
 		}
 	}
 
-	tree_t::_prepare_render(out, time);
-
 }
 
 ptr<renderable_t> client_managed_t::get_base_renderable() {

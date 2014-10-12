@@ -101,7 +101,7 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
-		tree_t::_prepare_render(out, time);
+
 	}
 
 	void set_parent(tree_t * t) {
@@ -119,6 +119,8 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 	i_rect const & raw_area() const;
+
+	void get_all_children(vector<tree_t *> & out) const;
 
 };
 

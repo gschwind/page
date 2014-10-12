@@ -194,6 +194,8 @@ public:
 		return _parent;
 	}
 
+	void get_all_children(vector<tree_t *> & out) const;
+
 };
 
 }

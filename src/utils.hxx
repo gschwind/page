@@ -459,6 +459,18 @@ list<T0 *> filter_class(list<T1 *> x) {
 	return ret;
 }
 
+template<typename T0, typename T1>
+vector<T0 *> filter_class(vector<T1 *> x) {
+	vector<T0 *> ret;
+	for (auto i : x) {
+		T0 * n = dynamic_cast<T0 *>(i);
+		if (n != nullptr) {
+			ret.push_back(n);
+		}
+	}
+	return ret;
+}
+
 /**
  * Parse string like "mod4+f" to modifier mask (mod) and keysym (ks)
  **/

@@ -93,7 +93,7 @@ public:
 		if (surf != nullptr) {
 			out += get_base_renderable();
 		}
-		tree_t::_prepare_render(out, time);
+
 	}
 
 	virtual bool need_render(time_t time) {

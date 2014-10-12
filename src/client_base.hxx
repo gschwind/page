@@ -341,6 +341,12 @@ public:
 		return _parent;
 	}
 
+	void get_all_children(vector<tree_t *> & out) const {
+		for(auto x: _children) {
+			out.push_back(x);
+			x->get_all_children(out);
+		}
+	}
 
 	display_t *          cnx() const { return _properties->cnx(); }
 
@@ -390,6 +396,9 @@ public:
 	region const *                     shape() const { return _properties->shape(); }
 
 	i_rect                             position() { return _properties->position(); }
+
+
+
 
 };
 

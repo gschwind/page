@@ -32,7 +32,6 @@ public:
 	virtual tree_t * parent() const = 0;
 
 	virtual string get_node_name() const = 0;
-	virtual list<tree_t *> childs() const = 0;
 
 	/**
 	 * Raise a child over others respecting stack priority
@@ -40,10 +39,8 @@ public:
 	 **/
 	virtual void raise_child(tree_t * t = nullptr) = 0;
 	virtual void remove(tree_t * t) = 0;
-
 	virtual void set_parent(tree_t * parent) = 0;
-	list<tree_t *> get_all_childs() const;
-	void print_tree(unsigned level = 0);
+	virtual void get_all_children(vector<tree_t *> & out) const = 0;
 
 	template<char const c>
 	string _get_node_name() const {
@@ -54,13 +51,6 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) = 0;
-
-	/** usefull macro **/
-	virtual void _prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
-		for(auto i: childs()) {
-			i->prepare_render(out, time);
-		}
-	}
 
 };
 

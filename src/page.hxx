@@ -398,6 +398,8 @@ private:
 
 	i_rect _allocation;
 
+	mutable vector<tree_t *> _all_children_cache;
+
 public:
 
 	theme_t * theme;
@@ -529,10 +531,10 @@ public:
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	notebook_t * get_another_notebook(tree_t * base = nullptr, tree_t * nbk = nullptr);
 	/* get all available notebooks with page */
-	list<notebook_t *> get_notebooks(tree_t * base = nullptr);
+	vector<notebook_t *> get_notebooks(tree_t * base = nullptr);
 	/* find where the managed window is */
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
-	list<client_managed_t*> get_managed_windows();
+	vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(Window w);
 	viewport_t * find_viewport_for(notebook_t * n);
 	void set_window_cursor(Window w, Cursor c);
@@ -603,6 +605,10 @@ public:
 	}
 
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+
+
+	void update_children_cache() const;
+	void get_all_children(vector<tree_t *> & out) const;
 
 };
 

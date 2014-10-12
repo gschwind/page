@@ -323,5 +323,12 @@ i_rect split_t::compute_split_bar_location() const {
 
 }
 
+void split_t::get_all_children(vector<tree_t *> & out) const {
+	for(auto x: _children) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+}
+
 
 }
