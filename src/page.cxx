@@ -55,6 +55,8 @@ namespace page {
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
+time_t const page_t::default_wait{1000000000L / 120L};
+
 page_t::page_t(int argc, char ** argv) :
 		viewport_outputs()
 {
@@ -336,12 +338,9 @@ void page_t::run() {
 	ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
 	GrabModeSync, GrabModeAsync, None, None);
 
-	timespec _max_wait;
-	time_t const default_wait = 1000000000L / 120L;
-	time_t max_wait = default_wait;
-	time_t next_frame;
 
-	next_frame.get_time();
+	_max_wait = default_wait;
+	_next_frame.get_time();
 
 	fd_set fds_read;
 	fd_set fds_intr;
@@ -367,28 +366,24 @@ void page_t::run() {
 		/**
 		 * wait for data in both X11 connection streams (compositor and page)
 		 **/
-		_max_wait = max_wait;
-		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
+		timespec max_wait = _max_wait;
+		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait,
 		NULL);
 
 		while (cnx->has_pending_events()) {
-			process_event(*(cnx->front_event()));
 			if(rnd != nullptr) {
 				rnd->process_event(*(cnx->front_event()));
-				XFlush(cnx->dpy());
 			}
-			cnx->pop_event();
-		}
 
-		if(cnx->grab_count != 0) {
-			printf("GRAB ERROR\n");
+			process_event(*(cnx->front_event()));
+			cnx->pop_event();
 		}
 
 		if (rnd != nullptr) {
 			/** limit FPS **/
 			time_t cur_tic;
 			cur_tic.get_time();
-			if (cur_tic > next_frame) {
+			if (cur_tic > _next_frame) {
 				rnd->clear_renderable();
 				vector<ptr<renderable_t>> ret;
 				prepare_render(ret, cur_tic);
@@ -398,10 +393,10 @@ void page_t::run() {
 				cur_tic.get_time();
 
 				/** slow down frame if render is slow **/
-				next_frame = cur_tic + default_wait;
-				max_wait = default_wait;
+				_next_frame = cur_tic + default_wait;
+				_max_wait = default_wait;
 			} else {
-				max_wait = next_frame - cur_tic;
+				_max_wait = _next_frame - cur_tic;
 			}
 		}
 	}
@@ -2432,11 +2427,25 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			}
 		}
 	}
-
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
+	/**
+	 * Try to render if any damage event is encountered. But limit general
+	 * rendering to 60 fps.
+	 **/
+	time_t cur_tic;
+	cur_tic.get_time();
+	rnd->clear_renderable();
+	vector<ptr<renderable_t>> ret;
+	prepare_render(ret, cur_tic);
+	rnd->push_back_renderable(ret);
+	rnd->render();
 
+	cur_tic.get_time();
+	/** slow down frame if render is slow **/
+	_next_frame = cur_tic + default_wait;
+	_max_wait = default_wait;
 }
 
 void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {

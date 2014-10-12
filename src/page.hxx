@@ -84,6 +84,7 @@ typedef list<i_rect> box_list_t;
 class page_t : public page_component_t {
 
 	static long const ROOT_EVENT_MASK = SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask;
+	static time_t const default_wait;
 
 public:
 
@@ -368,6 +369,10 @@ public:
 	keymap_t * keymap;
 
 private:
+
+	time_t _next_frame;
+	time_t _max_wait;
+
 	Time _last_focus_time;
 	Time _last_button_press;
 	list<client_managed_t *> _client_focused;
