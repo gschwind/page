@@ -11,7 +11,7 @@
 #define VIEWPORT_HXX_
 
 #include "tree.hxx"
-#include "viewport_base.hxx"
+#include "page_component.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
 #include "theme.hxx"
@@ -22,7 +22,7 @@ using namespace std;
 
 namespace page {
 
-struct viewport_t: public viewport_base_t {
+struct viewport_t: public page_component_t {
 
 private:
 

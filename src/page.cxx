@@ -4313,8 +4313,6 @@ vector<page_event_t> * page_t::compute_page_areas(
 		} else if (dynamic_cast<notebook_t const *>(*i)) {
 			notebook_t const * n = dynamic_cast<notebook_t const *>(*i);
 			n->compute_areas_for_notebook(ret);
-		} else if (dynamic_cast<viewport_base_t const *>(*i)) {
-			/** nothing to do **/
 		}
 	}
 

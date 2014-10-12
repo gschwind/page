@@ -16,11 +16,9 @@
 #include <algorithm>
 #include <iostream>
 
-#include <viewport_base.hxx>
+namespace page {
 
 using namespace std;
-
-namespace page {
 
 inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	cairo_status_t s = cairo_status(cr);
