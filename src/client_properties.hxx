@@ -33,7 +33,7 @@ template<typename T>
 struct property_helper_t {
 	static const int format = 0;
 	static T * marshal(void * _tmp, int length);
-	static void serialize(T * in, void * &data, int& length);
+	static void serialize(T * in, char * &data, int& length);
 };
 
 template<>
@@ -48,12 +48,12 @@ struct property_helper_t<string> {
 		return ret;
 	}
 
-	static void serialize(string * in, void * &data, int& length) {
-		char * tmp = new char[in->size()+1];
+	static void serialize(string * in, char * &data, int& length) {
+		data = new char[in->size()+1];
+		length = in->size()+1;
+		char * tmp = reinterpret_cast<char*>(data);
 		copy(in->begin(), in->end(), tmp);
 		tmp[in->size()] = 0;
-		data = tmp;
-		length = in->size()+1;
 	}
 
 };
@@ -76,7 +76,7 @@ struct property_helper_t<vector<string>> {
 		return nullptr;
 	}
 
-	static void serialize(vector<string> * in, void * &data, int& length) {
+	static void serialize(vector<string> * in, char * &data, int& length) {
 		int size = 0;
 		for(auto &i: *in) {
 			size += i.size() + 1;
@@ -84,7 +84,10 @@ struct property_helper_t<vector<string>> {
 
 		size += 1;
 
-		char * tmp = new char[size];
+		data = new char[size];
+		length = size;
+
+		char * tmp = reinterpret_cast<char*>(data);
 		char * offset = tmp;
 
 		for(auto &i: *in) {
@@ -92,10 +95,6 @@ struct property_helper_t<vector<string>> {
 			*(offset++) = 0;
 		}
 		*offset = 0;
-
-		data = tmp;
-		length = size;
-
 	}
 
 };
@@ -113,10 +112,10 @@ struct property_helper_t<list<int32_t>> {
 		return ret;
 	}
 
-	static void serialize(list<int32_t> * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[in->size()];
+	static void serialize(list<int32_t> * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*in->size()];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
-		data = tmp;
 		length = in->size();
 	}
 
@@ -134,10 +133,10 @@ struct property_helper_t<list<uint32_t>> {
 		return ret;
 	}
 
-	static void serialize(list<uint32_t> * in, void * &data, int& length) {
-		uint32_t * tmp = new uint32_t[in->size()];
+	static void serialize(list<uint32_t> * in, char * &data, int& length) {
+		data = new char[sizeof(uint32_t)*in->size()];
+		uint32_t * tmp = reinterpret_cast<uint32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
-		data = tmp;
 		length = in->size();
 	}
 
@@ -155,10 +154,10 @@ struct property_helper_t<vector<int32_t>> {
 		return ret;
 	}
 
-	static void serialize(vector<int32_t> * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[in->size()];
+	static void serialize(vector<int32_t> * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*in->size()];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
-		data = tmp;
 		length = in->size();
 	}
 
@@ -176,10 +175,10 @@ struct property_helper_t<vector<uint32_t>> {
 		return ret;
 	}
 
-	static void serialize(vector<uint32_t> * in, void * &data, int& length) {
-		uint32_t * tmp = new uint32_t[in->size()];
+	static void serialize(vector<uint32_t> * in, char * &data, int& length) {
+		data = new char[sizeof(uint32_t)*in->size()];
+		uint32_t * tmp = reinterpret_cast<uint32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
-		data = tmp;
 		length = in->size();
 	}
 
@@ -205,10 +204,10 @@ struct property_helper_t<int32_t> {
 		return ret;
 	}
 
-	static void serialize(int32_t * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t;
+	static void serialize(int32_t * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		*tmp = *in;
-		data = tmp;
 		length = 1;
 	}
 
@@ -234,10 +233,10 @@ struct property_helper_t<uint32_t> {
 		return ret;
 	}
 
-	static void serialize(uint32_t * in, void * &data, int& length) {
-		uint32_t * tmp = new uint32_t;
+	static void serialize(uint32_t * in, char * &data, int& length) {
+		data = new char[sizeof(uint32_t)];
+		uint32_t * tmp = reinterpret_cast<uint32_t*>(data);
 		*tmp = *in;
-		data = tmp;
 		length = 1;
 	}
 
@@ -278,8 +277,9 @@ struct property_helper_t<XSizeHints> {
 		return nullptr;
 	}
 
-	static void serialize(XSizeHints * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[18];
+	static void serialize(XSizeHints * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*18];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		tmp[0] = in->flags;
 		tmp[1] = in->x;
 		tmp[2] = in->y;
@@ -298,8 +298,6 @@ struct property_helper_t<XSizeHints> {
 		tmp[15] = in->base_width;
 		tmp[16] = in->base_height;
 		tmp[17] = in->win_gravity;
-
-		data = tmp;
 		length = 18;
 	}
 
@@ -330,8 +328,9 @@ struct property_helper_t<XWMHints> {
 		return nullptr;
 	}
 
-	static void serialize(XWMHints * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[9];
+	static void serialize(XWMHints * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*9];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		tmp[0] = in->flags;
 		tmp[1] = in->input;
 		tmp[2] = in->initial_state;
@@ -342,7 +341,6 @@ struct property_helper_t<XWMHints> {
 		tmp[7] = in->icon_mask ;
 		tmp[8] = in->window_group;
 
-		data = tmp;
 		length = 9;
 	}
 };
@@ -365,11 +363,11 @@ struct property_helper_t<wm_state_data_t> {
 		return nullptr;
 	}
 
-	static void serialize(wm_state_data_t * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[9];
+	static void serialize(wm_state_data_t * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*2];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		tmp[0] = in->state;
 		tmp[1] = in->icon;
-		data = tmp;
 		length = 2;
 	}
 };
@@ -395,14 +393,14 @@ struct property_helper_t<motif_wm_hints_t> {
 		return nullptr;
 	}
 
-	static void serialize(motif_wm_hints_t * in, void * &data, int& length) {
-		int32_t * tmp = new int32_t[5];
+	static void serialize(motif_wm_hints_t * in, char * &data, int& length) {
+		data = new char[sizeof(int32_t)*5];
+		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		tmp[0] = in->flags;
 		tmp[1] = in->functions;
 		tmp[2] = in->decorations;
 		tmp[3] = in->input_mode;
 		tmp[4] = in->status;
-		data = tmp;
 		length = 5;
 	}
 };
@@ -489,11 +487,11 @@ struct properties_fetcher_t {
 
 template<atom_e name, atom_e type, typename xT >
 void write_property(display_t * cnx, xcb_window_t w, property_t<name, type, xT> & p) {
-	void * data;
+	char * data;
 	int length;
 	property_helper_t<xT>::serialize(p.data, data, length);
 	xcb_change_property(cnx->xcb(), XCB_PROP_MODE_REPLACE, w, name, type, property_helper_t<xT>::format, length, data);
-
+	delete[] data;
 }
 
 template<atom_e name, atom_e type, typename xT>

@@ -81,6 +81,7 @@ page_t::page_t(int argc, char ** argv) :
 		++k;
 	}
 
+	keymap = nullptr;
 	process_mode = PROCESS_NORMAL;
 	key_press_mode = KEY_PRESS_NORMAL;
 
@@ -179,6 +180,9 @@ page_t::~page_t() {
 		delete theme;
 	if (rnd != nullptr)
 		delete rnd;
+
+	if(keymap != nullptr)
+		delete keymap;
 
 	// cleanup cairo, for valgrind happiness.
 	cairo_debug_reset_static_data();
