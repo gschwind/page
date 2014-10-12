@@ -122,7 +122,7 @@ private:
 
 	void update_layout();
 
-	region read_damaged_region(Damage d);
+
 	void init_composite_overlay();
 	void release_composite_overlay();
 	bool process_check_event();
@@ -135,7 +135,7 @@ private:
 	void cleanup_internal_data();
 
 public:
-
+	region read_damaged_region(Damage d);
 	virtual ~compositor_t();
 	compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event);
 

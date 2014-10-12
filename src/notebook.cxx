@@ -472,6 +472,12 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 		//printf("ratio = %f\n", ratio);
 		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
 
+		if (_selected != nullptr) {
+			for(auto i: _selected->childs()) {
+				i->prepare_render(out, time);
+			}
+		}
+
 	} else {
 		/** animation is terminated **/
 		prev_surf.reset();

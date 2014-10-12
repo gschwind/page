@@ -373,37 +373,22 @@ void page_t::run() {
 		NULL);
 
 		while (cnx->has_pending_events()) {
-			if(rnd != nullptr) {
-				rnd->process_event(*(cnx->front_event()));
-			}
-
+			rnd->process_event(*(cnx->front_event()));
 			process_event(*(cnx->front_event()));
 			cnx->pop_event();
-
 			xcb_flush(cnx->xcb());
 		}
 
-		if (rnd != nullptr) {
-			/** limit FPS **/
-			time_t cur_tic;
-			cur_tic.get_time();
-			if (cur_tic > _next_frame) {
-				rnd->clear_renderable();
-				vector<ptr<renderable_t>> ret;
-				prepare_render(ret, cur_tic);
-				rnd->push_back_renderable(ret);
-				rnd->render();
-				cur_tic.get_time();
-
-				/** slow down frame if render is slow **/
-				_next_frame = cur_tic + default_wait;
-				_max_wait = default_wait;
-			} else {
-				_max_wait = _next_frame - cur_tic;
-			}
-
-			xcb_flush(cnx->xcb());
+		/** render if no render occurred within previous 1/120 second **/
+		time_t cur_tic;
+		cur_tic.get_time();
+		if (cur_tic > _next_frame) {
+			render();
+		} else {
+			_max_wait = _next_frame - cur_tic;
 		}
+
+		xcb_flush(cnx->xcb());
 	}
 }
 
@@ -443,8 +428,7 @@ void page_t::unmanage(client_managed_t * mw) {
 	detach(mw);
 
 	/* if managed window have active clients */
-	list<tree_t *> subclient = mw->childs();
-	for(auto i: subclient) {
+	for(auto i: mw->childs()) {
 		client_base_t * c = dynamic_cast<client_base_t *>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
@@ -1860,7 +1844,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 		}
 	}
 
-
+	render();
 
 }
 
@@ -1898,6 +1882,7 @@ void page_t::process_event(XMapEvent const & e) {
 
 	onmap(e.window);
 
+	render();
 }
 
 void page_t::process_event(XReparentEvent const & e) {
@@ -1947,6 +1932,8 @@ void page_t::process_event(XUnmapEvent const & e) {
 			cleanup_client(c);
 		}
 	}
+
+	render();
 }
 
 void page_t::process_event(XCirculateRequestEvent const & e) {
@@ -2435,6 +2422,10 @@ void page_t::process_event(XClientMessageEvent const & e) {
 }
 
 void page_t::process_event(XDamageNotifyEvent const & e) {
+	render();
+}
+
+void page_t::render() {
 	/**
 	 * Try to render if any damage event is encountered. But limit general
 	 * rendering to 60 fps.
@@ -2446,6 +2437,10 @@ void page_t::process_event(XDamageNotifyEvent const & e) {
 	prepare_render(ret, cur_tic);
 	rnd->push_back_renderable(ret);
 	rnd->render();
+
+	/** sync with X server to ensure all render are done **/
+	xcb_void_cookie_t ck = xcb_no_operation_checked(cnx->xcb());
+	xcb_generic_error_t * err = xcb_request_check(cnx->xcb(), ck);
 
 	cur_tic.get_time();
 	/** slow down frame if render is slow **/
@@ -3918,8 +3913,7 @@ void page_t::remove_client(client_base_t * c) {
 		}
 	}
 	detach(c);
-	list<tree_t *> subclient = c->childs();
-	for(auto i: subclient) {
+	for(auto i: c->childs()) {
 		client_base_t * c = dynamic_cast<client_base_t *>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
@@ -3939,8 +3933,8 @@ void page_t::add_client(client_base_t * c) {
 	clients[c->orig()] = c;
 }
 
-list<tree_t *> page_t::childs() const {
-	list<tree_t *> ret;
+vector<tree_t *> page_t::childs() const {
+	vector<tree_t *> ret;
 	for (auto &i : viewport_outputs) {
 		if (i.second != nullptr) {
 			ret.push_back(i.second);
@@ -4257,7 +4251,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
 	rpage->repair_damaged(_all_children_cache);
 
-	for(auto i: _all_children_cache) {
+	for(auto i: childs()) {
 		i->prepare_render(out, time);
 	}
 

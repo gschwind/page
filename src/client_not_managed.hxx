@@ -89,9 +89,12 @@ public:
 			out += ptr<renderable_t>{x};
 		}
 
-
 		if (surf != nullptr) {
 			out += get_base_renderable();
+		}
+
+		for(auto i: _children) {
+			i->prepare_render(out, time);
 		}
 
 	}

@@ -372,28 +372,11 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 }
 
 void compositor_t::process_event(XDamageNotifyEvent const & e) {
-
-//	printf("Damage area %dx%d+%d+%d\n", e.area.width, e.area.height, e.area.x,
-//			e.area.y);
-//	printf("Damage geometry %dx%d+%d+%d\n", e.geometry.width, e.geometry.height,
-//			e.geometry.x, e.geometry.y);
-
-	/** drop damage data **/
-
-	/* create an empty region */
-//	XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
-//	if (!region)
-//		throw std::runtime_error("could not create region");
-//	XDamageSubtract(_cnx->dpy(), e.damage, None, region);
-//	XFixesDestroyRegion(_cnx->dpy(), region);
-
 	region r = read_damaged_region(e.damage);
 	weak_ptr<composite_surface_t> wp = composite_surface_manager_t::get_weak_surface(e.display, e.drawable);
 	if (not wp.expired()) {
 		wp.lock()->add_damaged(r);
 	}
-	_need_render = true;
-
 }
 
 region compositor_t::read_damaged_region(Damage d) {

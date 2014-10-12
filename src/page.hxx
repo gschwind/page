@@ -556,7 +556,7 @@ public:
 	client_base_t * find_client(Window w);
 	void remove_client(client_base_t * c);
 	void add_client(client_base_t * c);
-	list<tree_t *> childs() const;
+	vector<tree_t *> childs() const;
 	string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
@@ -610,6 +610,7 @@ public:
 	void update_children_cache() const;
 	void get_all_children(vector<tree_t *> & out) const;
 
+	void render();
 };
 
 

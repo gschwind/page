@@ -40,10 +40,10 @@ protected:
 	ptr<client_properties_t> _properties;
 
 	/** sub-clients **/
-	list<client_base_t *>               _children;
+	list<client_base_t *> _children;
 
 	// window title cache
-	string                       _title;
+	string _title;
 
 	/** short cut **/
 	Atom A(atom_e atom) {
@@ -273,8 +273,8 @@ public:
 		printf("Unexpected use of client_base_t::replace\n");
 	}
 
-	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret(_children.begin(), _children.end());
+	vector<tree_t *> childs() const {
+		vector<tree_t *> ret(_children.begin(), _children.end());
 		return ret;
 	}
 

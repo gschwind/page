@@ -101,7 +101,9 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
-
+		if(_subtree != nullptr) {
+			_subtree->prepare_render(out, time);
+		}
 	}
 
 	void set_parent(tree_t * t) {
