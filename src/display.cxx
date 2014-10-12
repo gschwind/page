@@ -780,5 +780,116 @@ xcb_screen_t * display_t::xcb_screen() {
 	return _screen;
 }
 
+
+/**
+ * Look at coming events if a client is manageable.
+ *
+ * i.e. a client is manageable if :
+ *  1. is child of root window.
+ *  2. is mapped.
+ *  3. is not destroyed.
+ **/
+bool display_t::check_for_fake_unmap_window(Window w) {
+	for (auto &ev : pending_event) {
+		if (ev.type == UnmapNotify) {
+			if (ev.xunmap.window == w and ev.xunmap.send_event) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool display_t::check_for_unmap_window(Window w) {
+	for (auto &ev : pending_event) {
+		if (ev.type == UnmapNotify) {
+			if (ev.xunmap.window == w) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+/**
+ * Look at coming events if a client is manageable.
+ *
+ * i.e. a client is manageable if :
+ *  1. is child of root window.
+ *  2. is mapped.
+ *  3. is not destroyed.
+ **/
+bool display_t::check_for_reparent_window(Window w) {
+	for (auto &ev : pending_event) {
+		if (ev.type == ReparentNotify) {
+			if (root() != ev.xreparent.parent and ev.xreparent.window == w) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
+ * Look for coming event if the window is destroyed. Used to
+ * Skip events related to destroyed windows.
+ **/
+bool display_t::check_for_destroyed_window(Window w) {
+	for (auto &ev : pending_event) {
+		if (ev.type == DestroyNotify) {
+			if (ev.xdestroywindow.window == w
+					and not ev.xdestroywindow.send_event) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void display_t::fetch_pending_events() {
+	/** get all event and store them in pending event **/
+	while (XPending(_dpy)) {
+		XEvent ev;
+		XNextEvent(_dpy, &ev);
+		pending_event.push_back(ev);
+	}
+}
+
+XEvent * display_t::front_event() {
+	if(not pending_event.empty()) {
+		return &pending_event.front();
+	} else {
+		if(XPending(_dpy)) {
+			XEvent ev;
+			XNextEvent(_dpy, &ev);
+			pending_event.push_back(ev);
+		}
+		return &pending_event.front();
+	}
+	return nullptr;
+}
+
+void display_t::pop_event() {
+	pending_event.pop_front();
+}
+
+bool display_t::has_pending_events() {
+	if (not pending_event.empty()) {
+		return true;
+	} else {
+		if (XPending(_dpy)) {
+			XEvent ev;
+			XNextEvent(_dpy, &ev);
+			pending_event.push_back(ev);
+		}
+		return not pending_event.empty();
+	}
+}
+
+void display_t::clear_events() {
+	pending_event.clear();
+}
+
 }
 

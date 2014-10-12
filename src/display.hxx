@@ -76,6 +76,8 @@ class display_t {
 	map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
 	map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
 
+	list<XEvent> pending_event;
+
 public:
 
 	/* overlay composite */
@@ -233,6 +235,18 @@ public:
 
 	static void print_visual_type(xcb_visualtype_t * vis);
 
+	bool check_for_reparent_window(Window w);
+	bool check_for_fake_unmap_window(Window w);
+	bool check_for_destroyed_window(Window w);
+	bool check_for_unmap_window(Window w);
+
+	void fetch_pending_events();
+
+	XEvent * front_event();
+	void pop_event();
+	bool has_pending_events();
+
+	void clear_events();
 
 };
 

@@ -371,27 +371,18 @@ void page_t::run() {
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &_max_wait,
 		NULL);
 
-		/* grab the server to avoid asynchronous conflicts */
-		cnx->grab();
-		XSync(cnx->dpy(), False);
-
-		/** get all event and store them in pending event **/
-		while (XPending(cnx->dpy())) {
-			XEvent ev;
-			XNextEvent(cnx->dpy(), &ev);
-			pending_event.push_back(ev);
-		}
-
-		while (not pending_event.empty()) {
-			process_event(pending_event.front());
+		while (cnx->has_pending_events()) {
+			process_event(*(cnx->front_event()));
 			if(rnd != nullptr) {
-				rnd->process_event(pending_event.front());
+				rnd->process_event(*(cnx->front_event()));
 				XFlush(cnx->dpy());
 			}
-			pending_event.pop_front();
+			cnx->pop_event();
 		}
 
-		cnx->ungrab();
+		if(cnx->grab_count != 0) {
+			printf("GRAB ERROR\n");
+		}
 
 		if (rnd != nullptr) {
 			/** limit FPS **/
@@ -482,13 +473,14 @@ void page_t::scan() {
 	Window d1, d2, *wins = 0;
 
 	cnx->grab();
+	cnx->fetch_pending_events();
 
 	if (XQueryTree(cnx->dpy(), cnx->root(), &d1, &d2, &wins, &num)) {
 
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
 
-			shared_ptr<client_properties_t> c(new client_properties_t(cnx, w));
+			ptr<client_properties_t> c{new client_properties_t(cnx, w)};
 			if (!c->read_window_attributes()) {
 				continue;
 			}
@@ -1889,7 +1881,7 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			unmanage(mw);
 		} else {
-			destroy_client(c);
+			cleanup_client(c);
 		}
 	}
 }
@@ -1902,9 +1894,6 @@ void page_t::process_event(XMapEvent const & e) {
 
 	/* if map event does not occur within root, ignore it */
 	if (e.event != cnx->root())
-		return;
-
-	if(check_for_destroyed_window(e.window))
 		return;
 
 	onmap(e.window);
@@ -1932,7 +1921,7 @@ void page_t::process_event(XReparentEvent const & e) {
 	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
 	client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(find_client_with(e.window));
 	if(uw != nullptr and e.parent != cnx->root()) {
-		destroy_client(uw);
+		cleanup_client(uw);
 	}
 
 }
@@ -1955,7 +1944,7 @@ void page_t::process_event(XUnmapEvent const & e) {
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
 		} else if (e.send_event == True or typeid(*c) == typeid(client_not_managed_t)) {
-			destroy_client(c);
+			cleanup_client(c);
 		}
 	}
 }
@@ -1989,15 +1978,6 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //	if (e.value_mask & CWBorderWidth)
 //		printf("has border: %d\n", e.border_width);
 
-	if(check_for_destroyed_window(e.window)) {
-		/** this window no longer be alive **/
-		return;
-	}
-
-	if(not check_for_valid_window(e.window)) {
-		ackwoledge_configure_request(e);
-		return;
-	}
 
 	client_base_t * c = find_client(e.window);
 
@@ -2009,59 +1989,65 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 
-			if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
+			if (mw->lock()) {
 
-				i_rect old_size = mw->get_floating_wished_position();
-				/** compute floating size **/
-				i_rect new_size = mw->get_floating_wished_position();
+				if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
 
-				if (e.value_mask & CWX) {
-					new_size.x = e.x;
+					i_rect old_size = mw->get_floating_wished_position();
+					/** compute floating size **/
+					i_rect new_size = mw->get_floating_wished_position();
+
+					if (e.value_mask & CWX) {
+						new_size.x = e.x;
+					}
+
+					if (e.value_mask & CWY) {
+						new_size.y = e.y;
+					}
+
+					if (e.value_mask & CWWidth) {
+						new_size.w = e.width;
+					}
+
+					if (e.value_mask & CWHeight) {
+						new_size.h = e.height;
+					}
+
+					//printf("new_size = %s\n", new_size.to_string().c_str());
+
+					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
+							and e.x == 0 and e.y == 0
+							and !viewport_outputs.empty()) {
+						viewport_t * v = viewport_outputs.begin()->second;
+						i_rect b = v->raw_area();
+						/* place on center */
+						new_size.x = (b.w - new_size.w) / 2 + b.x;
+						new_size.y = (b.h - new_size.h) / 2 + b.y;
+					}
+
+					unsigned int final_width = new_size.w;
+					unsigned int final_height = new_size.h;
+
+					compute_client_size_with_constraint(mw->orig(),
+							(unsigned) new_size.w, (unsigned) new_size.h,
+							final_width, final_height);
+
+					new_size.w = final_width;
+					new_size.h = final_height;
+
+					//printf("new_size = %s\n", new_size.to_string().c_str());
+
+					if (new_size != old_size) {
+						/** only affect floating windows **/
+						mw->set_floating_wished_position(new_size);
+						mw->reconfigure();
+						rnd->add_damaged(mw->base_position());
+					}
 				}
 
-				if (e.value_mask & CWY) {
-					new_size.y = e.y;
-				}
-
-				if (e.value_mask & CWWidth) {
-					new_size.w = e.width;
-				}
-
-				if (e.value_mask & CWHeight) {
-					new_size.h = e.height;
-				}
-
-				//printf("new_size = %s\n", new_size.to_string().c_str());
-
-				if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
-						and e.x == 0 and e.y == 0
-						and !viewport_outputs.empty()) {
-					viewport_t * v = viewport_outputs.begin()->second;
-					i_rect b = v->raw_area();
-					/* place on center */
-					new_size.x = (b.w - new_size.w) / 2 + b.x;
-					new_size.y = (b.h - new_size.h) / 2 + b.y;
-				}
-
-				unsigned int final_width = new_size.w;
-				unsigned int final_height = new_size.h;
-
-				compute_client_size_with_constraint(mw->orig(),
-						(unsigned) new_size.w, (unsigned) new_size.h,
-						final_width, final_height);
-
-				new_size.w = final_width;
-				new_size.h = final_height;
-
-				//printf("new_size = %s\n", new_size.to_string().c_str());
-
-				if (new_size != old_size) {
-					/** only affect floating windows **/
-					mw->set_floating_wished_position(new_size);
-					mw->reconfigure();
-					rnd->add_damaged(mw->base_position());
-				}
+				mw->unlock();
 			}
+
 		} else {
 			/** validate configure when window is not managed **/
 			ackwoledge_configure_request(e);
@@ -2120,9 +2106,6 @@ void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
 }
 
 void page_t::process_event(XMapRequestEvent const & e) {
-
-	if(check_for_destroyed_window(e.window))
-		return;
 
 	if (e.send_event == True or e.parent != cnx->root()) {
 		XMapWindow(e.display, e.window);
@@ -2291,22 +2274,22 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	XFree(name);
 
 	Window w = e.window;
-	if(w == None)
+	if (w == None)
 		return;
-
-	if(not check_for_valid_window(w)) {
-		return;
-	}
 
 	client_managed_t * mw = find_managed_window_with(e.window);
 
 	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
-		if (mw != 0) {
-			if(e.data.l[1] == CurrentTime) {
-				printf("Invalid focus request ... but stealing focus\n");
-				set_focus(mw, CurrentTime);
-			} else {
-				set_focus(mw, e.data.l[1]);
+		if (mw != nullptr) {
+
+			if (mw->lock()) {
+				if (e.data.l[1] == CurrentTime) {
+					printf("Invalid focus request ... but stealing focus\n");
+					set_focus(mw, CurrentTime);
+				} else {
+					set_focus(mw, e.data.l[1]);
+				}
+				mw->unlock();
 			}
 		}
 	} else if (e.message_type == A(_NET_WM_STATE)) {
@@ -2336,15 +2319,18 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 		/** When window want to become iconic, just bind them **/
 		if (mw != nullptr) {
-			if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
-				bind_window(mw, false);
-			} else if (mw->is(MANAGED_NOTEBOOK) and e.data.l[0] == IconicState) {
-				notebook_t * n = dynamic_cast<notebook_t *> (mw->parent());
-				n->iconify_client(mw);
-				rpage->add_damaged(n->allocation());
-				rnd->need_render();
+			if (mw->lock()) {
+				if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
+					bind_window(mw, false);
+				} else if (mw->is(
+						MANAGED_NOTEBOOK) and e.data.l[0] == IconicState) {
+					notebook_t * n = dynamic_cast<notebook_t *>(mw->parent());
+					n->iconify_client(mw);
+					rpage->add_damaged(n->allocation());
+					rnd->need_render();
+				}
+				mw->unlock();
 			}
-
 		}
 
 	} else if (e.message_type == A(PAGE_QUIT)) {
@@ -2352,99 +2338,97 @@ void page_t::process_event(XClientMessageEvent const & e) {
 	} else if (e.message_type == A(WM_PROTOCOLS)) {
 
 	} else if (e.message_type == A(_NET_CLOSE_WINDOW)) {
-
-		XEvent evx;
-		evx.xclient.display = cnx->dpy();
-		evx.xclient.type = ClientMessage;
-		evx.xclient.format = 32;
-		evx.xclient.message_type = A(WM_PROTOCOLS);
-		evx.xclient.window = e.window;
-		evx.xclient.data.l[0] = A(WM_DELETE_WINDOW);
-		evx.xclient.data.l[1] = e.data.l[0];
-
-		cnx->send_event(e.window, False, NoEventMask, &evx);
+		if(mw != nullptr) {
+			mw->delete_window(e.data.l[0]);
+		}
 	} else if (e.message_type == A(_NET_REQUEST_FRAME_EXTENTS)) {
 
 	} else if (e.message_type == A(_NET_WM_MOVERESIZE)) {
-		if (mw != 0) {
+		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
 
-				Cursor xc = None;
+				if (mw->lock()) {
+					Cursor xc = None;
 
-				long x_root = e.data.l[0];
-				long y_root = e.data.l[1];
-				long direction = e.data.l[2];
-				long button = e.data.l[3];
-				long source = e.data.l[4];
+					long x_root = e.data.l[0];
+					long y_root = e.data.l[1];
+					long direction = e.data.l[2];
+					long button = e.data.l[3];
+					long source = e.data.l[4];
 
-				mode_data_floating.x_offset = x_root
-						- mw->get_base_position().x;
-				mode_data_floating.y_offset = y_root
-						- mw->get_base_position().y;
-				;
-				mode_data_floating.x_root = x_root;
-				mode_data_floating.y_root = y_root;
-				mode_data_floating.f = mw;
-				mode_data_floating.original_position =
-						mw->get_floating_wished_position();
-				mode_data_floating.final_position =
-						mw->get_floating_wished_position();
-				mode_data_floating.popup_original_position =
-						mw->get_base_position();
-				mode_data_floating.button = button;
+					mode_data_floating.x_offset = x_root
+							- mw->get_base_position().x;
+					mode_data_floating.y_offset = y_root
+							- mw->get_base_position().y;
+					;
+					mode_data_floating.x_root = x_root;
+					mode_data_floating.y_root = y_root;
+					mode_data_floating.f = mw;
+					mode_data_floating.original_position =
+							mw->get_floating_wished_position();
+					mode_data_floating.final_position =
+							mw->get_floating_wished_position();
+					mode_data_floating.popup_original_position =
+							mw->get_base_position();
+					mode_data_floating.button = button;
 
-				if (direction == _NET_WM_MOVERESIZE_MOVE) {
-					safe_raise_window(mw);
-					process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
-					xc = xc_fleur;
-				} else {
-
-					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_TOP;
-						xc = xc_top_side;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_BOTTOM;
-						xc = xc_bottom_side;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_LEFT;
-						xc = xc_left_side;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_RIGHT;
-						xc = xc_right_side;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_TOP_LEFT;
-						xc = xc_top_left_corner;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_TOP_RIGHT;
-						xc = xc_top_right_corner;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-						xc = xc_bottom_left_corner;
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
-						process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-						mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-						xc = xc_bottom_righ_corner;
-					} else {
+					if (direction == _NET_WM_MOVERESIZE_MOVE) {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
 						xc = xc_fleur;
+					} else {
+
+						if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_TOP;
+							xc = xc_top_side;
+						} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_BOTTOM;
+							xc = xc_bottom_side;
+						} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_LEFT;
+							xc = xc_left_side;
+						} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_RIGHT;
+							xc = xc_right_side;
+						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_TOP_LEFT;
+							xc = xc_top_left_corner;
+						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_TOP_RIGHT;
+							xc = xc_top_right_corner;
+						} else if (direction
+								== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
+							xc = xc_bottom_left_corner;
+						} else if (direction
+								== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
+							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
+							xc = xc_bottom_righ_corner;
+						} else {
+							safe_raise_window(mw);
+							process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+							xc = xc_fleur;
+						}
 					}
-				}
 
-				if (process_mode != PROCESS_NORMAL) {
-					XGrabPointer(cnx->dpy(), cnx->root(), False,
-							ButtonPressMask | ButtonMotionMask
-									| ButtonReleaseMask, GrabModeAsync,
-							GrabModeAsync, None, xc, CurrentTime);
-				}
+					if (process_mode != PROCESS_NORMAL) {
+						XGrabPointer(cnx->dpy(), cnx->root(), False,
+						ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+						GrabModeAsync,
+						GrabModeAsync, None, xc, CurrentTime);
+					}
 
+					mw->unlock();
+
+				}
 			}
 		}
 	}
@@ -3223,6 +3207,7 @@ void page_t::grab_pointer() {
 		/* bad news */
 		throw std::runtime_error("fail to grab pointer");
 	}
+
 }
 
 void page_t::cleanup_grab(client_managed_t * mw) {
@@ -3501,11 +3486,6 @@ void page_t::onmap(Window w) {
 			return;
 	}
 
-	if(not check_for_valid_window(w)) {
-		return;
-	}
-
-
 	/**
 	 * XSync here is mandatory.
 	 *
@@ -3521,7 +3501,25 @@ void page_t::onmap(Window w) {
 	 *
 	 **/
 	cnx->grab();
-	XSync(cnx->dpy(), False);
+	cnx->fetch_pending_events();
+
+	if(cnx->check_for_destroyed_window(w)) {
+		printf("do not manage %lu because it wil be destoyed\n", w);
+		cnx->ungrab();
+		return;
+	}
+
+	if(cnx->check_for_unmap_window(w)) {
+		printf("do not manage %lu because it wil be unmapped\n", w);
+		cnx->ungrab();
+		return;
+	}
+
+	if(cnx->check_for_reparent_window(w)) {
+		printf("do not manage %lu because it wil be reparented\n", w);
+		cnx->ungrab();
+		return;
+	}
 
 	client_base_t * c = find_client_with(w);
 
@@ -3797,11 +3795,14 @@ client_managed_t * page_t::find_managed_window_with(Window w) {
 	}
 }
 
-
-void page_t::destroy_client(client_base_t * c) {
+/**
+ * This will remove a client from tree and destroy related data. This
+ * function do not send any X11 request.
+ **/
+void page_t::cleanup_client(client_base_t * c) {
 
 	if(typeid(*c) == typeid(client_managed_t)) {
-		client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
+		client_managed_t * mw = dynamic_cast<client_managed_t*>(c);
 		unmanage(mw);
 	}
 
@@ -4089,48 +4090,8 @@ void page_t::check_x11_extension() {
 	}
 }
 
-/**
- * Look for coming event if the window is destroyed. Used to
- * Skip events related to destroyed windows.
- **/
-bool page_t::check_for_destroyed_window(Window w) {
-	client_base_t * c = find_client_with(w);
-	for (auto &ev : pending_event) {
-		if (ev.type == DestroyNotify) {
-			if (ev.xdestroywindow.window == w
-					and not ev.xdestroywindow.send_event) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
 
 
-/**
- * Look at coming events if a client is manageable.
- *
- * i.e. a client is manageable if :
- *  1. is child of root window.
- *  2. is mapped.
- *  3. is not destroyed.
- **/
-bool page_t::check_for_valid_window(Window w) {
-
-	for (auto &ev : pending_event) {
-		if (ev.type == ReparentNotify) {
-			if (cnx->root() != ev.xreparent.parent) {
-				return false;
-			}
-		} else if (ev.type == UnmapNotify) {
-			if (ev.xunmap.window == w and ev.xunmap.send_event) {
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
 
 /**
  * Update grab keys aware of current keymap

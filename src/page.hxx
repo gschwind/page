@@ -74,12 +74,12 @@
 #include "keymap.hxx"
 #include "page_component.hxx"
 
-using namespace std;
 
 namespace page {
 
+using namespace std;
 
-typedef std::list<i_rect> box_list_t;
+typedef list<i_rect> box_list_t;
 
 class page_t : public page_component_t {
 
@@ -353,8 +353,6 @@ public:
 
 	map<Window, window_handler_t *> window_list;
 
-	list<XEvent> pending_event;
-
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
 	key_desc_t bind_close;
@@ -499,7 +497,7 @@ public:
 	/* compute the allocation of viewport taking in account DOCKs */
 	void compute_viewport_allocation(viewport_t & v);
 
-	void destroy_client(client_base_t * c);
+	void cleanup_client(client_base_t * c);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
@@ -576,7 +574,7 @@ public:
 	void render(cairo_t * cr, page::time_t time);
 	bool need_render(time_t time);
 
-	bool check_for_valid_window(Window w);
+	bool check_for_managed_window(Window w);
 	bool check_for_destroyed_window(Window w);
 
 	void update_keymap();
