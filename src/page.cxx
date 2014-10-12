@@ -377,6 +377,8 @@ void page_t::run() {
 
 			process_event(*(cnx->front_event()));
 			cnx->pop_event();
+
+			xcb_flush(cnx->xcb());
 		}
 
 		if (rnd != nullptr) {
@@ -389,7 +391,6 @@ void page_t::run() {
 				prepare_render(ret, cur_tic);
 				rnd->push_back_renderable(ret);
 				rnd->render();
-				XSync(cnx->dpy(), False);
 				cur_tic.get_time();
 
 				/** slow down frame if render is slow **/
@@ -398,6 +399,8 @@ void page_t::run() {
 			} else {
 				_max_wait = _next_frame - cur_tic;
 			}
+
+			xcb_flush(cnx->xcb());
 		}
 	}
 }

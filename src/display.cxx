@@ -222,20 +222,11 @@ void display_t::ungrab() {
 	}
 	--grab_count;
 	if (grab_count == 0) {
-		/* Flush pending events, and wait for that are applied */
-		//XSync(_dpy, False);
-		/* allow other client to make request to the server */
-		xcb_void_cookie_t ck = xcb_ungrab_server_checked(_xcb);
+		xcb_ungrab_server(_xcb);
 		/* Ungrab the server immediately */
-		if(xcb_flush(_xcb) <= 0)
-			throw exception_t{"%s:%d unable to to flush X11 server", __FILE__, __LINE__};
-
-		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
-
-		if(err != nullptr) {
-			throw exception_t{"%s:%d unable to ungrab X11 server", __FILE__, __LINE__};
-		}
-
+		if (xcb_flush(_xcb) <= 0)
+			throw exception_t { "%s:%d unable to to flush X11 server", __FILE__,
+					__LINE__ };
 	}
 }
 
