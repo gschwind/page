@@ -1,8 +1,10 @@
+
 AC_INIT([page], [1.2.4])
+AC_CONFIG_MACRO_DIR([m4])
+
 AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
 AC_CONFIG_HEADERS([src/config.hxx])
-AC_CONFIG_MACRO_DIR([m4])
 
 # define custom macro to setup dir from datadir
 

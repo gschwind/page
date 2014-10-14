@@ -53,7 +53,7 @@ class region_t : public vector<i_rect_t<T>> {
 					/** left/right **/
 					if (bi.x + bi.w == bj.x and bi.y == bj.y and bi.h == bj.h) {
 						bi = _box_t(bi.x, bi.y, bj.w + bi.w, bi.h);
-						bj = _box_t();
+						bj.w = 0;
 						end = false;
 						continue;
 					}
@@ -61,7 +61,7 @@ class region_t : public vector<i_rect_t<T>> {
 					/** right/left **/
 					if (bi.x == bj.x + bj.w and bi.y == bj.y and bi.h == bj.h) {
 						bi = _box_t(bj.x, bj.y, bj.w + bi.w, bj.h);
-						bj = _box_t();
+						bj.w = 0;
 						end = false;
 						continue;
 					}
@@ -69,7 +69,7 @@ class region_t : public vector<i_rect_t<T>> {
 					/** top/bottom **/
 					if (bi.y == bj.y + bj.h and bi.x == bj.x and bi.w == bj.w) {
 						bi = _box_t(bj.x, bj.y, bj.w, bj.h + bi.h);
-						bj = _box_t();
+						bj.w = 0;
 						end = false;
 						continue;
 					}
@@ -77,7 +77,7 @@ class region_t : public vector<i_rect_t<T>> {
 					/** bottom/top **/
 					if (bi.y + bi.h == bj.y and bi.x == bj.x and bi.w == bj.w) {
 						bi = _box_t(bi.x, bi.y, bi.w, bj.h + bi.h);
-						bj = _box_t();
+						bj.w = 0;
 						end = false;
 						continue;
 					}

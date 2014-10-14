@@ -2772,7 +2772,6 @@ void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
 		}
 	}
 
-
 	/**
 	 * change root window properties to the current focused window.
 	 **/
@@ -3162,8 +3161,8 @@ void page_t::detach(tree_t * t) {
 }
 
 void page_t::safe_raise_window(client_base_t * c) {
-	if(process_mode != PROCESS_NORMAL)
-		return;
+	//if(process_mode != PROCESS_NORMAL)
+	//	return;
 	c->raise_child();
 	/** apply change **/
 	update_windows_stack();
@@ -3359,8 +3358,9 @@ void page_t::set_window_cursor(Window w, Cursor c) {
 }
 
 void page_t::update_windows_stack() {
-
-	vector<client_base_t *> clients = filter_class<client_base_t>(_all_children_cache);
+	vector<tree_t *> children;
+	get_all_children(children);
+	vector<client_base_t *> clients = filter_class<client_base_t>(children);
 
 	list<Window> final_order;
 	for(auto i: clients) {

@@ -448,7 +448,7 @@ reverse_range<T> reverse_iterate (T& x)
 
 
 template<typename T0, typename T1>
-list<T0 *> filter_class(list<T1 *> x) {
+list<T0 *> filter_class(list<T1 *> const & x) {
 	list<T0 *> ret;
 	for (auto i : x) {
 		T0 * n = dynamic_cast<T0 *>(i);
@@ -460,7 +460,7 @@ list<T0 *> filter_class(list<T1 *> x) {
 }
 
 template<typename T0, typename T1>
-vector<T0 *> filter_class(vector<T1 *> x) {
+vector<T0 *> filter_class(vector<T1 *> const & x) {
 	vector<T0 *> ret;
 	for (auto i : x) {
 		T0 * n = dynamic_cast<T0 *>(i);
