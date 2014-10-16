@@ -3555,7 +3555,7 @@ void page_t::onmap(Window w) {
 
 	} else {
 		try {
-			ptr<client_properties_t> props{new client_properties_t{cnx, w}};
+			ptr<client_properties_t> props{new client_properties_t{cnx, static_cast<xcb_window_t>(w)}};
 			if (props->read_window_attributes()) {
 				if(props->wa()->_class != InputOnly) {
 					props->read_all_properties();
@@ -3650,14 +3650,14 @@ void page_t::create_managed_window(ptr<client_properties_t> c, Atom type) {
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme);
 		add_client(mw);
-		manage_managed_window(mw, type);
+		manage_client(mw, type);
 
 	} catch (...) {
 		printf("Error while creating managed window\n");
 	}
 }
 
-void page_t::manage_managed_window(client_managed_t * mw, Atom type) {
+void page_t::manage_client(client_managed_t * mw, Atom type) {
 
 	try {
 
