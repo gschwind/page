@@ -42,7 +42,7 @@ private:
 	// theme used for window decoration
 	theme_t const * _theme;
 
-	managed_window_type_e _type;
+	managed_window_type_e _managed_type;
 	Atom _net_wm_type;
 
 	/** hold floating position **/

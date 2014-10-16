@@ -81,7 +81,7 @@ public:
 		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
 
-		Atom t = _properties->type();
+		Atom t = _properties->wm_type();
 		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {

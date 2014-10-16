@@ -21,7 +21,7 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 		ptr<client_properties_t> props, theme_t const * theme) :
 				client_base_t{props},
 				_theme(theme),
-				_type(MANAGED_FLOATING),
+				_managed_type(MANAGED_FLOATING),
 				_net_wm_type(net_wm_type),
 				_floating_wished_position(),
 				_notebook_wished_position(),
@@ -61,17 +61,6 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	_orig_visual = _properties->wa()->visual;
 	_orig_depth = _properties->geometry()->depth;
 
-	if (_properties->wm_normal_hints() != nullptr) {
-		unsigned w = _floating_wished_position.w;
-		unsigned h = _floating_wished_position.h;
-
-		::page::compute_client_size_with_constraint(*(_properties->wm_normal_hints()),
-				_floating_wished_position.w, _floating_wished_position.h, w, h);
-
-		_floating_wished_position.w = w;
-		_floating_wished_position.h = h;
-	}
-
 	/**
 	 * if x == 0 then place window at center of the screen
 	 **/
@@ -80,11 +69,19 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				(_properties->geometry()->width - _floating_wished_position.w) / 2;
 	}
 
+	if(_floating_wished_position.x < 0) {
+		_floating_wished_position.x = 0;
+	}
+
 	/**
 	 * if y == 0 then place window at center of the screen
 	 **/
 	if (_floating_wished_position.y == 0) {
 		_floating_wished_position.y = (_properties->geometry()->height - _floating_wished_position.h) / 2;
+	}
+
+	if(_floating_wished_position.y < 0) {
+		_floating_wished_position.y = 0;
 	}
 
 	/** check if the window has motif no border **/
@@ -230,11 +227,6 @@ void client_managed_t::reconfigure() {
 			_base_position.h = _wished_position.h + _theme->floating.margin.top
 					+ _theme->floating.margin.bottom;
 
-			if (_base_position.x < 0)
-				_base_position.x = 0;
-			if (_base_position.y < 0)
-				_base_position.y = 0;
-
 			_orig_position.x = _theme->floating.margin.left;
 			_orig_position.y = _theme->floating.margin.top;
 			_orig_position.w = _wished_position.w;
@@ -243,15 +235,11 @@ void client_managed_t::reconfigure() {
 		} else {
 			_base_position = _wished_position;
 
-			if (_base_position.x < 0)
-				_base_position.x = 0;
-			if (_base_position.y < 0)
-				_base_position.y = 0;
-
 			_orig_position.x = 0;
 			_orig_position.y = 0;
 			_orig_position.w = _wished_position.w;
 			_orig_position.h = _wished_position.h;
+
 		}
 
 		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
@@ -271,7 +259,7 @@ void client_managed_t::reconfigure() {
 	if (lock()) {
 		cnx()->move_resize(_base, _base_position);
 		cnx()->move_resize(_deco,
-				i_rect(0, 0, _base_position.w, _base_position.h));
+				i_rect{0, 0, _base_position.w, _base_position.h});
 		cnx()->move_resize(_orig, _orig_position);
 		fake_configure();
 		unlock();
@@ -313,7 +301,7 @@ bool client_managed_t::check_base_position(i_rect const & position) {
 }
 
 void client_managed_t::init_managed_type(managed_window_type_e type) {
-	_type = type;
+	_managed_type = type;
 }
 
 void client_managed_t::set_managed_type(managed_window_type_e type) {
@@ -323,7 +311,7 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
 		cnx()->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
 
-		_type = type;
+		_managed_type = type;
 		reconfigure();
 		unlock();
 	}
@@ -339,7 +327,7 @@ i_rect client_managed_t::get_base_position() const {
 }
 
 managed_window_type_e client_managed_t::get_type() {
-	return _type;
+	return _managed_type;
 }
 
 void client_managed_t::set_theme(theme_t const * theme) {
@@ -347,7 +335,7 @@ void client_managed_t::set_theme(theme_t const * theme) {
 }
 
 bool client_managed_t::is(managed_window_type_e type) {
-	return _type == type;
+	return _managed_type == type;
 }
 
 void client_managed_t::expose() {
@@ -924,7 +912,7 @@ ptr<renderable_t> client_managed_t::get_base_renderable() {
 		region vis;
 		region opa;
 
-		if(_type == MANAGED_FULLSCREEN) {
+		if(_managed_type == MANAGED_FULLSCREEN) {
 			vis = _base_position;
 			opa = _base_position;
 		} else {
@@ -982,7 +970,7 @@ bool client_managed_t::has_window(Window w) const {
 
 region client_managed_t::visible_area() const {
 
-	if(_type == MANAGED_FLOATING) {
+	if(_managed_type == MANAGED_FLOATING) {
 		i_rect vis{base_position()};
 		vis.x -= 8;
 		vis.y -= 8;

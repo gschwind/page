@@ -309,21 +309,21 @@ i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	compute_client_size_with_constraint(c, allocation().w - _theme->notebook.margin.left - _theme->notebook.margin.right,
 			allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom, width, height);
 
+	/** if the client cannot fit into client_area, clip it **/
+	if(width > client_area.w) {
+		width = client_area.w;
+	}
+
+	if(height > client_area.h) {
+		height = client_area.h;
+	}
+
 	/* compute the window placement within notebook */
 	i_rect client_size;
 	client_size.x = floor((client_area.w - width) / 2.0);
 	client_size.y = floor((client_area.h - height) / 2.0);
 	client_size.w = width;
 	client_size.h = height;
-
-	if (client_size.x < 0)
-		client_size.x = 0;
-	if (client_size.y < 0)
-		client_size.y = 0;
-	if (client_size.w > client_area.w)
-		client_size.w = client_area.w;
-	if (client_size.h > client_area.h)
-		client_size.h = client_area.h;
 
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;

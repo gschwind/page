@@ -310,8 +310,8 @@ public:
 
 	}
 
-	Atom type() {
-		return _properties->type();
+	Atom wm_type() {
+		return _properties->wm_type();
 	}
 
 	void remove(tree_t * t) {

@@ -1836,6 +1836,7 @@ void page_t::process_event(XConfigureEvent const & e) {
 			rnd->add_damaged(c->visible_area());
 		}
 
+		printf("configure %dx%d+%d+%d\n", e.width, e.height, e.x, e.y);
 		c->process_event(e);
 
 		/** damage corresponding area **/
@@ -3554,7 +3555,7 @@ void page_t::onmap(Window w) {
 
 	} else {
 		try {
-			ptr<client_properties_t> props(new client_properties_t(cnx, w));
+			ptr<client_properties_t> props{new client_properties_t{cnx, w}};
 			if (props->read_window_attributes()) {
 				if(props->wa()->_class != InputOnly) {
 					props->read_all_properties();
@@ -3562,9 +3563,9 @@ void page_t::onmap(Window w) {
 				//props->print_window_attributes();
 				//props->print_properties();
 
-				Atom type = props->type();
+				Atom type = props->wm_type();
 
-				if (!props->wa()->override_redirect) {
+				if (not props->wa()->override_redirect) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
@@ -3644,12 +3645,11 @@ void page_t::onmap(Window w) {
 }
 
 
-void page_t::create_managed_window(shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_managed_window(ptr<client_properties_t> c, Atom type) {
 
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme);
 		add_client(mw);
-
 		manage_managed_window(mw, type);
 
 	} catch (...) {
@@ -3667,9 +3667,10 @@ void page_t::manage_managed_window(client_managed_t * mw, Atom type) {
 		update_windows_stack();
 
 		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->geometry()->x == 0 and mw->geometry()->y == 0 and mw->geometry()->width == _allocation.w
+		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
+				and mw->geometry()->width == _allocation.w
 				and mw->geometry()->height == _allocation.h
-				and mw->type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+				and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 		}
 
@@ -3684,8 +3685,7 @@ void page_t::manage_managed_window(client_managed_t * mw, Atom type) {
 				mw->set_focus_state(false);
 			}
 
-		} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+		} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL) or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
 				and get_transient_for(mw) == nullptr
 				and mw->has_motif_border()) {
 
@@ -3719,6 +3719,7 @@ void page_t::manage_managed_window(client_managed_t * mw, Atom type) {
 			mw->reconfigure();
 
 		} else {
+
 			mw->normalize();
 			mw->reconfigure();
 			Time time = 0;
@@ -3843,11 +3844,11 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 	} else if (typeid(*c) == typeid(client_not_managed_t)) {
 		client_not_managed_t * uw = dynamic_cast<client_not_managed_t*>(c);
 
-		if (uw->type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			detach(uw);
 			tooltips.push_back(uw);
 			uw->set_parent(this);
-		} else if (uw->type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
 			detach(uw);
 			notifications.push_back(uw);
 			uw->set_parent(this);
@@ -3923,13 +3924,7 @@ void page_t::remove_client(client_base_t * c) {
 }
 
 void page_t::add_client(client_base_t * c) {
-	auto i = clients.find(c->orig());
-	if(i != clients.end() and c != i->second) {
-		auto x = i->second;
-		detach(x);
-		delete x;
-		clients.erase(i);
-	}
+	page_assert(clients.find(c->orig()) == clients.end());
 	clients[c->orig()] = c;
 }
 

@@ -538,7 +538,7 @@ private:
 	display_t *                  _cnx;
 	xcb_window_t                 _id;
 
-	xcb_atom_t                   _type;
+	xcb_atom_t                   _wm_type;
 
 	xcb_get_window_attributes_reply_t * _wa;
 	xcb_get_geometry_reply_t * _geometry;
@@ -1117,7 +1117,7 @@ public:
 	}
 
 	void update_type() {
-		_type = None;
+		_wm_type = None;
 
 		list<xcb_atom_t> net_wm_window_type;
 		bool override_redirect = (_wa->override_redirect == True)?true:false;
@@ -1189,7 +1189,7 @@ public:
 		for (auto i : net_wm_window_type) {
 			//printf("Check for %s\n", cnx->get_atom_name(*i).c_str());
 			if (has_key(known_type, i)) {
-				_type = i;
+				_wm_type = i;
 				break;
 			}
 		}
@@ -1198,10 +1198,10 @@ public:
 		{
 			if (_wm_class != nullptr
 					and __net_wm_state != nullptr
-					and _type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+					and _wm_type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 				if ((*(_wm_class))[0] == "Eclipse") {
 					if(has_key(*__net_wm_state, static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)))) {
-						_type = A(_NET_WM_WINDOW_TYPE_DND);
+						_wm_type = A(_NET_WM_WINDOW_TYPE_DND);
 					}
 				}
 			}
@@ -1209,7 +1209,7 @@ public:
 
 	}
 
-	xcb_atom_t type() const { return _type; }
+	xcb_atom_t wm_type() const { return _wm_type; }
 
 	display_t *          cnx() const { return _cnx; }
 	xcb_window_t         id() const { return _id; }
