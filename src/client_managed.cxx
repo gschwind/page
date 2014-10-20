@@ -69,8 +69,8 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				(_properties->geometry()->width - _floating_wished_position.w) / 2;
 	}
 
-	if(_floating_wished_position.x < 0) {
-		_floating_wished_position.x = 0;
+	if(_floating_wished_position.x - _theme->floating.margin.left < 0) {
+		_floating_wished_position.x = _theme->floating.margin.left;
 	}
 
 	/**
@@ -80,8 +80,8 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 		_floating_wished_position.y = (_properties->geometry()->height - _floating_wished_position.h) / 2;
 	}
 
-	if(_floating_wished_position.y < 0) {
-		_floating_wished_position.y = 0;
+	if(_floating_wished_position.y - _theme->floating.margin.top < 0) {
+		_floating_wished_position.y = _theme->floating.margin.top;
 	}
 
 	/** check if the window has motif no border **/
