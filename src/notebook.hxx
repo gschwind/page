@@ -196,6 +196,8 @@ public:
 
 	void get_all_children(vector<tree_t *> & out) const;
 
+	void update_theme_notebook() const;
+
 };
 
 }

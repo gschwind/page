@@ -379,53 +379,7 @@ string notebook_t::get_node_name() const {
 }
 
 void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
-	theme_notebook.clients_tab.clear();
-
-	if (_clients.size() != 0) {
-		theme_notebook.clients_tab.resize(_clients.size());
-
-		double box_width;
-		if (_selected != nullptr) {
-			box_width = ((_allocation.w - 17.0 * 5.0 - 40.0)
-					/ (_clients.size() + XN));
-		} else {
-			box_width = ((_allocation.w - 17.0 * 5.0 - 40.0)
-					/ (_clients.size()));
-		}
-		double offset = _allocation.x + 40.0;
-
-		unsigned k = 0;
-		for (auto i : _clients) {
-			if (i == _selected) {
-				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
-						(int)(offset + (1.0 + XN) * box_width) - floor(offset)),
-						(int)_theme->notebook.margin.top - 1 };
-				theme_notebook.clients_tab[k].position = b;
-				theme_notebook.clients_tab[k].selected = true;
-				theme_notebook.clients_tab[k].focuced = _selected->is_focused();
-				offset += box_width * (1.0 + XN);
-			} else {
-				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
-						offset + box_width) - floor(offset)),
-						(int)_theme->notebook.margin.top - 1 };
-				theme_notebook.clients_tab[k].position = b;
-				theme_notebook.clients_tab[k].selected = false;
-				offset += box_width;
-			}
-
-			theme_notebook.clients_tab[k].title = i->title();
-			theme_notebook.clients_tab[k].demand_attention = false;
-			theme_notebook.clients_tab[k].icon = i->icon();
-			++k;
-		}
-	}
-
-	theme_notebook.allocation = _allocation;
-	if(_selected != nullptr) {
-		theme_notebook.client_position = _selected->base_position();
-	}
-	theme_notebook.is_default = is_default();
-	/** TODO **/
+	update_theme_notebook();
 	_theme->render_notebook(cr, &theme_notebook, area);
 }
 
@@ -573,26 +527,13 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 
 	}
 
-	list<client_managed_t *> clist = _clients;
+	update_theme_notebook();
 
-	if(clist.size() != 0) {
-		double box_width;
-		if(_selected != nullptr) {
-			box_width = ((_allocation.w - 17.0 * 5.0 - 40.0)
-					/ (clist.size() + XN));
-		} else {
-			box_width = ((_allocation.w - 17.0 * 5.0 - 40.0)
-					/ (clist.size()));
-		}
-		double offset = _allocation.x + 40.0;
-
-		i_rect b;
-
-		for(auto i : clist) {
-			if (i == _selected) {
-				b = i_rect(floor(offset), _allocation.y,
-						floor(offset + (1.0+XN) * box_width) - floor(offset),
-						_theme->notebook.margin.top - 1);
+	if(_clients.size() > 0) {
+		auto c = _clients.begin();
+		for(auto &i : theme_notebook.clients_tab) {
+			if (i.selected) {
+				i_rect & b = i.position;
 
 				page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
 
@@ -601,7 +542,7 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 				ncclose.position.w = 35;
 				ncclose.position.h = b.h-3;
 				ncclose.nbk = this;
-				ncclose.clt = i;
+				ncclose.clt = *c;
 				l->push_back(ncclose);
 
 				page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
@@ -611,31 +552,26 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 				ncub.position.w = 16;
 				ncub.position.h = 16;
 				ncub.nbk = this;
-				ncub.clt = i;
+				ncub.clt = *c;
 				l->push_back(ncub);
 
 				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
 				nc.position = b;
 				nc.nbk = this;
-				nc.clt = i;
+				nc.clt = *c;
 				l->push_back(nc);
 
-				offset += box_width * (1.0+XN);
-
 			} else {
-				b = i_rect(floor(offset), _allocation.y,
-						floor(offset + box_width) - floor(offset),
-						_theme->notebook.margin.top - 1);
+				i_rect & b = i.position;
 
 				page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
 				nc.position = b;
 				nc.nbk = this;
-				nc.clt = i;
+				nc.clt = *c;
 				l->push_back(nc);
 
-				offset += box_width;
 			}
-
+			++c;
 		}
 
 	}
@@ -646,6 +582,49 @@ void notebook_t::get_all_children(vector<tree_t *> & out) const {
 		out.push_back(x);
 		x->get_all_children(out);
 	}
+}
+
+void notebook_t::update_theme_notebook() const {
+	theme_notebook.clients_tab.clear();
+
+	if (_clients.size() != 0) {
+		theme_notebook.clients_tab.resize(_clients.size());
+
+		double box_width = 33.0;
+		double selected_box_width = (_allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()-1) * box_width;
+		double offset = _allocation.x + 40.0;
+
+		unsigned k = 0;
+		for (auto i : _clients) {
+			if (i == _selected) {
+				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
+						(int)(offset + selected_box_width) - floor(offset)),
+						(int)_theme->notebook.margin.top - 1 };
+				theme_notebook.clients_tab[k].position = b;
+				theme_notebook.clients_tab[k].selected = true;
+				theme_notebook.clients_tab[k].focuced = _selected->is_focused();
+				offset += selected_box_width;
+			} else {
+				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
+						offset + box_width) - floor(offset)),
+						(int)_theme->notebook.margin.top - 1 };
+				theme_notebook.clients_tab[k].position = b;
+				theme_notebook.clients_tab[k].selected = false;
+				offset += box_width;
+			}
+
+			theme_notebook.clients_tab[k].title = i->title();
+			theme_notebook.clients_tab[k].demand_attention = false;
+			theme_notebook.clients_tab[k].icon = i->icon();
+			++k;
+		}
+	}
+
+	theme_notebook.allocation = _allocation;
+	if(_selected != nullptr) {
+		theme_notebook.client_position = _selected->base_position();
+	}
+	theme_notebook.is_default = is_default();
 }
 
 
