@@ -794,42 +794,47 @@ void simple2_theme_t::render_notebook_normal(
 	btext.x += 3 + 16 + 6;
 	btext.y += 1;
 
-	CHECK_CAIRO(cairo_save(cr));
+	if (btext.w > 10) {
+
+		CHECK_CAIRO(cairo_save(cr));
 
 #ifdef WITH_PANGO
 
-	/* draw title */
-	CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
+		/* draw title */
+		CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
 
-	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
+		CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
 
-	//CHECK_CAIRO(cairo_new_path(cr));
+		//CHECK_CAIRO(cairo_new_path(cr));
 
-	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
-	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
-	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+		CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
+		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 
-	{
-		PangoLayout * pango_layout = pango_layout_new(pango_context);
-		pango_layout_set_font_description(pango_layout, pango_font);
-		pango_cairo_update_layout(cr, pango_layout);
-		pango_layout_set_text(pango_layout, data.title.c_str(), -1);
-		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
-		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
-		pango_cairo_layout_path(cr, pango_layout);
-		g_object_unref(pango_layout);
-	}
+		{
+			PangoLayout * pango_layout = pango_layout_new(pango_context);
+			pango_layout_set_font_description(pango_layout, pango_font);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, data.title.c_str(), -1);
+			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_cairo_layout_path(cr, pango_layout);
+			g_object_unref(pango_layout);
+		}
 
-	CHECK_CAIRO(cairo_stroke_preserve(cr));
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
 
-	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
-	CHECK_CAIRO(cairo_fill(cr));
+		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+		CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
+		CHECK_CAIRO(cairo_fill(cr));
 
 #endif
 
-	CHECK_CAIRO(cairo_restore(cr));
+		CHECK_CAIRO(cairo_restore(cr));
+
+	}
+
 	CHECK_CAIRO(cairo_restore(cr));
 
 }
