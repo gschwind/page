@@ -123,6 +123,8 @@ void notebook_t::set_selected(client_managed_t * c) {
 	swap_start.get_time();
 	update_client_position(c);
 	c->normalize();
+	_clients.remove(c);
+	_clients.push_front(c);
 
 	/** iconify current selected **/
 	if (_selected != nullptr) {
@@ -603,6 +605,14 @@ void notebook_t::update_theme_notebook() const {
 				theme_notebook.clients_tab[k].position = b;
 				theme_notebook.clients_tab[k].selected = true;
 				theme_notebook.clients_tab[k].focuced = _selected->is_focused();
+				offset += selected_box_width;
+			} else if (k == 0) {
+				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
+						(int)(offset + selected_box_width) - floor(offset)),
+						(int)_theme->notebook.margin.top - 1 };
+				theme_notebook.clients_tab[k].position = b;
+				theme_notebook.clients_tab[k].selected = false;
+				theme_notebook.clients_tab[k].focuced = false;
 				offset += selected_box_width;
 			} else {
 				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
