@@ -53,8 +53,8 @@ public:
 			}
 
 			_icon_ref_t selected;
-			selected.width = std::numeric_limits<long>::max();
-			selected.height = std::numeric_limits<long>::max();
+			selected.width = std::numeric_limits<int>::max();
+			selected.height = std::numeric_limits<int>::max();
 			selected.data = nullptr;
 
 			/* find the smallest icon that is greater than desired size */
@@ -67,8 +67,8 @@ public:
 
 			/** look for the greatest icons if no icon already matched **/
 			if(selected.data == nullptr) {
-				selected.width = std::numeric_limits<long>::min();
-				selected.height = std::numeric_limits<long>::min();
+				selected.width = std::numeric_limits<int>::min();
+				selected.height = std::numeric_limits<int>::min();
 				selected.data = nullptr;
 				/* find the greatest icon */
 				for(auto &i: icons) {
