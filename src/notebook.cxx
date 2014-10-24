@@ -62,8 +62,23 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 
 	} else {
 		x->iconify();
+
+		if(_selected != nullptr) {
+			/** get current surface then iconify **/
+			if (_selected->surf() != nullptr) {
+				prev_loc = _selected->base_position();
+				prev_surf = _selected->surf()->get_pixmap();
+			}
+			_selected->iconify();
+		} else {
+			/** no prev surf is used **/
+			prev_surf.reset();
+		}
+
+		_selected = nullptr;
 	}
 
+	update_theme_notebook();
 	return true;
 }
 
@@ -113,6 +128,8 @@ void notebook_t::remove_client(client_managed_t * x) {
 	x->set_parent(nullptr);
 	_clients.remove(x);
 	_client_map.erase(x);
+	update_theme_notebook();
+
 }
 
 void notebook_t::set_selected(client_managed_t * c) {
@@ -281,6 +298,8 @@ void notebook_t::set_allocation(i_rect const & area) {
 	if(_selected != nullptr) {
 		update_client_position(_selected);
 	}
+
+	update_theme_notebook();
 
 }
 
