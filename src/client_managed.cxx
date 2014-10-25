@@ -890,8 +890,13 @@ void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::tim
 		i_rect loc{base_position()};
 
 		if (_motif_has_border) {
-			auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 6.0);
-			out += ptr<renderable_t> { x };
+			if(is_focused()) {
+				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 7.0);
+				out += ptr<renderable_t> { x };
+			} else {
+				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 7.0);
+				out += ptr<renderable_t> { x };
+			}
 		}
 
 		ptr<renderable_t> x { get_base_renderable() };
@@ -972,10 +977,10 @@ region client_managed_t::visible_area() const {
 
 	if(_managed_type == MANAGED_FLOATING) {
 		i_rect vis{base_position()};
-		vis.x -= 8;
-		vis.y -= 8;
-		vis.w += 16;
-		vis.h += 16;
+		vis.x -= 32;
+		vis.y -= 32;
+		vis.w += 64;
+		vis.h += 64;
 		return vis;
 	}
 
