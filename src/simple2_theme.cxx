@@ -917,6 +917,15 @@ void simple2_theme_t::render_split(cairo_t * cr,
 		grip0.x -= 16;
 		grip2 = grip1;
 		grip2.x += 16;
+
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr, sarea.x, sarea.y + sarea.h/2+0.5);
+		cairo_line_to(cr, sarea.x + sarea.w, sarea.y + sarea.h/2+0.5);
+		cairo_stroke(cr);
+
+
+
 	} else {
 		grip1.x = sarea.x + (sarea.w / 2.0) - 4.0;
 		grip1.y = sarea.y + (sarea.h / 2.0) - 4.0;
@@ -926,6 +935,13 @@ void simple2_theme_t::render_split(cairo_t * cr,
 		grip0.y -= 16;
 		grip2 = grip1;
 		grip2.y += 16;
+
+		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		cairo_new_path(cr);
+		cairo_move_to(cr, sarea.x + sarea.w/2 + 0.5, sarea.y);
+		cairo_line_to(cr, sarea.x + sarea.w/2 + 0.5, sarea.y + sarea.h);
+		cairo_stroke(cr);
+
 	}
 
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
