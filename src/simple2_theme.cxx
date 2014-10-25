@@ -583,7 +583,7 @@ void simple2_theme_t::render_notebook_selected(
 	tab_area.h -= 1;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
 	/** draw the tab background **/
 	i_rect b = tab_area;
@@ -591,7 +591,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_save(cr));
 
 	/** clip tabs **/
-	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.0));
+	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.5));
 	CHECK_CAIRO(cairo_clip(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
@@ -600,7 +600,40 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, 1.0));
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
+
+	cairo_reset_clip(cr);
+
+	/* draw black outline */
+	CHECK_CAIRO(cairo_rounded_tab3(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 5.5));
+	cairo_set_line_width(cr, 1.0);
+	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	CHECK_CAIRO(cairo_stroke(cr));
+
+	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
+
+	cairo_reset_clip(cr);
+	CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y+5.5, 1.0, 40.0));
+	cairo_clip(cr);
+
+	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	CHECK_CAIRO(cairo_mask(cr, gradient));
+
+	cairo_reset_clip(cr);
+	CHECK_CAIRO(cairo_rectangle(cr, b.x+b.w-1.0, b.y+5.5, 1.0, 40.0));
+	cairo_clip(cr);
+
+	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	CHECK_CAIRO(cairo_mask(cr, gradient));
+
+
 	cairo_pattern_destroy(gradient);
+
+	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
+
+	/** clip tabs **/
+	cairo_reset_clip(cr);
+	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.5));
+	CHECK_CAIRO(cairo_clip(cr));
 
 	i_rect xncclose;
 	xncclose.x = b.x + b.w - notebook.selected_close_width;
@@ -752,10 +785,10 @@ void simple2_theme_t::render_notebook_normal(
 	/** draw the tab background **/
 	i_rect b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
+	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
 	/** clip tabs **/
-	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+1.0, 6.0));
+	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+1.0, 6.5));
 	CHECK_CAIRO(cairo_clip(cr));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, background_color));
@@ -765,6 +798,16 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, 0.0));
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 	cairo_pattern_destroy(gradient);
+
+	cairo_reset_clip(cr);
+
+	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h, 5.5));
+	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
@@ -1640,6 +1683,17 @@ void simple2_theme_t::cairo_rounded_tab2(cairo_t * cr, double x, double y, doubl
 	CHECK_CAIRO(cairo_close_path(cr));
 
 }
+
+void simple2_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius) {
+
+	CHECK_CAIRO(cairo_new_path(cr));
+	CHECK_CAIRO(cairo_move_to(cr, x, y + radius));
+	CHECK_CAIRO(cairo_arc(cr, x + radius, y + radius, radius, 2.0 * M_PI_2, 3.0 * M_PI_2));
+	CHECK_CAIRO(cairo_line_to(cr, x + w - radius, y));
+	CHECK_CAIRO(cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+
+}
+
 
 }
 
