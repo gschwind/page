@@ -1004,7 +1004,7 @@ void simple2_theme_t::render_floating_base(
 		cairo_pattern_destroy(gradient);
 
 		/* draw black outline */
-		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.5));
+		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.0));
 		cairo_set_line_width(cr, 1.0);
 		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 		CHECK_CAIRO(cairo_stroke(cr));
