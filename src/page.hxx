@@ -648,6 +648,8 @@ public:
 
 	void children(vector<tree_t *> & out) const;
 
+	void update_current_desktop() const;
+
 };
 
 

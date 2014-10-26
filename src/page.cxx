@@ -293,7 +293,7 @@ void page_t::run() {
 	update_net_supported();
 
 	/* update number of desktop */
-	int32_t number_of_desktop = 1;
+	int32_t number_of_desktop = _desktop_list.size();
 	cnx->change_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
 
@@ -305,18 +305,24 @@ void page_t::run() {
 	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
 			CARDINAL, 32, viewport, 2);
 
-	/* set current desktop */
-	long current_desktop = 0;
-	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
-			32, &current_desktop, 1);
+	update_current_desktop();
 
+	/* page is not able to show desktop only windows */
 	long showing_desktop = 0;
 	cnx->change_property(cnx->root(), _NET_SHOWING_DESKTOP, CARDINAL,
 			32, &showing_desktop, 1);
 
-	char const desktop_name[10] = "NoName";
+
+	vector<char> names_list;
+	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
+		ostringstream os;
+		os << "Desktop #" << k;
+		string s{os.str()};
+		names_list.insert(names_list.end(), s.begin(), s.end());
+		names_list.push_back(0);
+	}
 	cnx->change_property(cnx->root(), _NET_DESKTOP_NAMES,
-			UTF8_STRING, 8, desktop_name, (strlen(desktop_name) + 2));
+			UTF8_STRING, 8, &names_list[0], names_list.size());
 
 	XIconSize icon_size;
 	icon_size.min_width = 16;
@@ -641,6 +647,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 			_current_desktop = (_current_desktop + 1) % _desktop_list.size();
 			printf("New desktop = %d\n", _current_desktop);
+			update_current_desktop();
 			update_structure_cache();
 			rpage->add_damaged(_root_position);
 		}
@@ -652,6 +659,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 			_current_desktop = (_current_desktop - 1) % _desktop_list.size();
 			printf("New desktop = %d\n", _current_desktop);
+			update_current_desktop();
 			update_structure_cache();
 			rpage->add_damaged(_root_position);
 		}
@@ -925,7 +933,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						vector<ptr<client_dropdown_menu_t::item_t>> v;
 						int s = 0;
 
-						for(unsigned k = 0; k < 4; ++k) {
+						for(unsigned k = 0; k < _desktop_list.size(); ++k) {
 							ostringstream os;
 							os << "Desktop #" << k;
 							auto item = new client_dropdown_menu_t::item_t(k, nullptr, os.str());
@@ -1232,7 +1240,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-						if (_global_default_pop != 0) {
+						if (_global_default_pop != nullptr) {
 							_global_default_pop->set_default(false);
 							rpage->add_damaged(
 									_global_default_pop->allocation());
@@ -1452,7 +1460,17 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					int selx = (int) floor(
 							(e.y_root - client_menu->position().y) / 24.0);
 					client_menu->set_selected(selx);
-					printf("Change desktop %d for %lu\n", client_menu->get_selected(), mode_data_notebook_client_menu.client->orig());
+
+					int selected = client_menu->get_selected();
+					printf("Change desktop %d for %lu\n", selected, mode_data_notebook_client_menu.client->orig());
+					if(selected != _current_desktop) {
+						detach(mode_data_notebook_client_menu.client);
+						mode_data_notebook_client_menu.client->set_parent(nullptr);
+						_desktop_list[selected]->get_default_pop()->add_client(mode_data_notebook_client_menu.client, false);
+						mode_data_notebook_client_menu.client->set_current_desktop(selected);
+						update_structure_cache();
+						rpage->add_damaged(_root_position);
+					}
 				}
 				mode_data_notebook_client_menu.reset();
 				rnd->add_damaged(client_menu->get_visible_region());
@@ -2384,15 +2402,17 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-
-			if (mw->lock()) {
-				if (e.data.l[1] == CurrentTime) {
-					printf("Invalid focus request ... but stealing focus\n");
-					set_focus(mw, CurrentTime);
-				} else {
-					set_focus(mw, e.data.l[1]);
+			if (mw->current_desktop() == _current_desktop) {
+				if (mw->lock()) {
+					if (e.data.l[1] == CurrentTime) {
+						printf(
+								"Invalid focus request ... but stealing focus\n");
+						set_focus(mw, CurrentTime);
+					} else {
+						set_focus(mw, e.data.l[1]);
+					}
+					mw->unlock();
 				}
-				mw->unlock();
 			}
 		}
 	} else if (e.message_type == A(_NET_WM_STATE)) {
@@ -2533,6 +2553,20 @@ void page_t::process_event(XClientMessageEvent const & e) {
 
 				}
 			}
+		}
+	} else if (e.message_type == A(_NET_CURRENT_DESKTOP)) {
+		if(e.data.l[0] >= 0 and e.data.l[0] < _desktop_list.size() and e.data.l[0] != _current_desktop) {
+
+			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
+			for(auto i: nl) {
+				i->unmap_all();
+			}
+
+			_current_desktop = e.data.l[0];
+			printf("New desktop = %d\n", _current_desktop);
+			update_current_desktop();
+			update_structure_cache();
+			rpage->add_damaged(_root_position);
 		}
 	}
 }
@@ -3818,6 +3852,8 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 		update_client_list();
 		update_windows_stack();
 
+		mw->set_current_desktop(_current_desktop);
+
 		/* HACK OLD FASHION FULLSCREEN */
 		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
 				and mw->geometry()->width == _allocation.w
@@ -4461,11 +4497,9 @@ vector<page_event_t> * page_t::compute_page_areas(
 
 	vector<page_event_t> * ret = new vector<page_event_t>();
 
-	for (list<tree_t const *>::const_iterator i = page.begin();
-			i != page.end(); ++i) {
-
-		if(dynamic_cast<split_t const *>(*i)) {
-			split_t const * s = dynamic_cast<split_t const *>(*i);
+	for (auto i : page) {
+		if(dynamic_cast<split_t const *>(i)) {
+			split_t const * s = dynamic_cast<split_t const *>(i);
 			page_event_t bsplit(PAGE_EVENT_SPLIT);
 			bsplit.position = s->compute_split_bar_location();
 
@@ -4479,8 +4513,8 @@ vector<page_event_t> * page_t::compute_page_areas(
 
 			bsplit.spt = s;
 			ret->push_back(bsplit);
-		} else if (dynamic_cast<notebook_t const *>(*i)) {
-			notebook_t const * n = dynamic_cast<notebook_t const *>(*i);
+		} else if (dynamic_cast<notebook_t const *>(i)) {
+			notebook_t const * n = dynamic_cast<notebook_t const *>(i);
 			n->compute_areas_for_notebook(ret);
 		}
 	}
@@ -4509,13 +4543,7 @@ void page_t::update_structure_cache() const {
 	get_all_children(_all_children_cache);
 	_current_desktop_children_cache.clear();
 	_desktop_list[_current_desktop]->get_all_children(_current_desktop_children_cache);
-
-	for(auto i: _current_desktop_children_cache) {
-		if(typeid(*i) == typeid(notebook_t)) {
-			_global_default_pop = dynamic_cast<notebook_t*>(i);
-			break;
-		}
-	}
+	_global_default_pop = _desktop_list[_current_desktop]->get_default_pop();
 
 	print_state();
 
@@ -4538,6 +4566,13 @@ void page_t::print_state() const {
 	}
 	cout << "end" << endl;;
 
+}
+
+void page_t::update_current_desktop() const {
+	/* set current desktop */
+	long current_desktop = _current_desktop;
+	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
+			32, &current_desktop, 1);
 }
 
 }

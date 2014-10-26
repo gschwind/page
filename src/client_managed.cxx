@@ -48,8 +48,6 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	cnx()->add_to_save_set(orig());
 	/* set border to zero */
 	XSetWindowBorder(cnx()->dpy(), orig(), 0);
-	/* assign window to desktop 0 */
-	_properties->set_net_wm_desktop(0);
 
 	i_rect pos{_properties->position()};
 
