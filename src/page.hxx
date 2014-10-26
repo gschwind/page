@@ -52,7 +52,7 @@
 #include "display.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
-#include "viewport.hxx"
+#include "desktop.hxx"
 #include "config_handler.hxx"
 
 #include "client_not_managed.hxx"
@@ -355,15 +355,15 @@ public:
 	list<client_not_managed_t *> notifications;
 	list<client_not_managed_t *> above;
 
-	Cursor default_cursor;
+
 
 	bool running;
 	bool _need_render;
 
 	config_handler_t conf;
 
-	/** map viewport to real outputs **/
-	map<RRCrtc, viewport_t *> viewport_outputs;
+	int _current_desktop;
+	vector<desktop_t *> _desktop_list;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
@@ -373,7 +373,7 @@ public:
 
 	list<Atom> supported_list;
 
-	notebook_t * default_window_pop;
+	notebook_t * _global_default_pop;
 
 	string page_base_dir;
 
@@ -382,9 +382,6 @@ public:
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
 	key_desc_t bind_close;
-	//key_desc_t bind_toggle_bind;
-	//key_desc_t bind_vert_split;
-	//key_desc_t bind_horz_split;
 
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;
@@ -406,6 +403,7 @@ private:
 
 	vector<page_event_t> * page_areas;
 
+	Cursor default_cursor;
 
 	Cursor xc_left_ptr;
 	Cursor xc_fleur;
@@ -424,6 +422,7 @@ private:
 	i_rect _allocation;
 
 	mutable vector<tree_t *> _all_children_cache;
+	mutable vector<tree_t *> _current_desktop_children_cache;
 
 public:
 
@@ -632,10 +631,20 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 
-	void update_children_cache() const;
+
 	void get_all_children(vector<tree_t *> & out) const;
 
 	void render();
+
+	/** this function update often used list of children **/
+	void update_structure_cache() const;
+
+
+	/** debug function that try to print the state of page in stdout **/
+	void print_state() const;
+
+	void children(vector<tree_t *> & out) const;
+
 };
 
 

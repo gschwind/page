@@ -20,9 +20,9 @@
 #include "time.hxx"
 #include "renderable.hxx"
 
-using namespace std;
-
 namespace page {
+
+using namespace std;
 
 class tree_t {
 public:
@@ -41,6 +41,7 @@ public:
 	virtual void remove(tree_t * t) = 0;
 	virtual void set_parent(tree_t * parent) = 0;
 	virtual void get_all_children(vector<tree_t *> & out) const = 0;
+	virtual void children(vector<tree_t *> & out) const = 0;
 
 	template<char const c>
 	string _get_node_name() const {
@@ -51,6 +52,23 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) = 0;
+
+	void print_tree(int level = 0) const {
+		char space[] = "                               ";
+		space[level] = 0;
+		cout << space << get_node_name() << endl;
+		for(auto i: children()) {
+			i->print_tree(level+1);
+		}
+
+	}
+
+	vector<tree_t *> children() const {
+		vector<tree_t *> ret;
+		children(ret);
+		return ret;
+	}
+
 
 };
 

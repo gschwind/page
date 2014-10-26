@@ -397,7 +397,9 @@ public:
 
 	i_rect                             position() { return _properties->position(); }
 
-
+	void children(vector<tree_t *> & out) const {
+		out.insert(out.end(), _children.begin(), _children.end());
+	}
 
 
 };

@@ -88,6 +88,12 @@ bool has_key(list<T> const & x, T const & key) {
 	return i != x.end();
 }
 
+template<typename T>
+bool has_key(vector<T> const & x, T const & key) {
+	typename vector<T>::const_iterator i = find(x.begin(), x.end(), key);
+	return i != x.end();
+}
+
 template<typename K, typename V>
 list<V> list_values(map<K, V> const & x) {
 	list<V> ret;

@@ -198,6 +198,10 @@ public:
 
 	void update_theme_notebook() const;
 
+	void children(vector<tree_t *> & out) const {
+		out.insert(out.end(), _children.begin(), _children.end());
+	}
+
 };
 
 }

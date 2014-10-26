@@ -45,7 +45,7 @@ public:
 	bool _is_visible;
 
 	page_component_t * parent() const {
-		throw std::runtime_error("viewport has no parent");
+		return _parent;
 	}
 
 	viewport_t(theme_t * theme, i_rect const & area);
@@ -123,6 +123,12 @@ public:
 	i_rect const & raw_area() const;
 
 	void get_all_children(vector<tree_t *> & out) const;
+
+	void children(vector<tree_t *> & out) const {
+		if(_subtree != nullptr) {
+			out.push_back(_subtree);
+		}
+	}
 
 };
 

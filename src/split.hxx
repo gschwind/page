@@ -102,6 +102,10 @@ public:
 
 	void get_all_children(vector<tree_t *> & out) const;
 
+	void children(vector<tree_t *> & out) const {
+		out.insert(out.end(), _children.begin(), _children.end());
+	}
+
 };
 
 }

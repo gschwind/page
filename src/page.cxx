@@ -58,9 +58,13 @@ long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 time_t const page_t::default_wait{1000000000L / 120L};
 
-page_t::page_t(int argc, char ** argv) :
-		viewport_outputs()
+page_t::page_t(int argc, char ** argv)
 {
+
+	/** initialize the empty desktop **/
+	_current_desktop = 0;
+	_desktop_list.push_back(new desktop_t);
+	_desktop_list[0]->set_parent(this);
 
 	page_areas = nullptr;
 	use_internal_compositor = true;
@@ -114,7 +118,7 @@ page_t::page_t(int argc, char ** argv) :
 		conf.merge_from_file_if_exist(s);
 	}
 
-	default_window_pop = nullptr;
+	_global_default_pop = nullptr;
 
 	page_base_dir = conf.get_string("default", "theme_dir");
 
@@ -132,6 +136,8 @@ page_t::page_t(int argc, char ** argv) :
 	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
 	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
 	find_key_from_string(conf.get_string("default", "bind_debug_4"), bind_debug_4);
+
+	update_structure_cache();
 
 }
 
@@ -158,7 +164,7 @@ page_t::~page_t() {
 	client_menu.reset();
 
 	/* get all childs excluding this */
-	update_children_cache();
+	update_structure_cache();
 	for (auto &i : _all_children_cache) {
 		if(typeid(*i) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(i);
@@ -268,14 +274,14 @@ void page_t::run() {
 
 	XDefineCursor(cnx->dpy(), cnx->root(), xc_left_ptr);
 
-	default_window_pop = 0;
+	_global_default_pop = nullptr;
 
-	default_window_pop = get_another_notebook();
-	if (default_window_pop == 0)
+	_global_default_pop = get_another_notebook();
+	if (_global_default_pop == nullptr)
 		throw std::runtime_error("very bad error");
 
-	if (default_window_pop != 0)
-		default_window_pop->set_default(true);
+	if (_global_default_pop != nullptr)
+		_global_default_pop->set_default(true);
 
 	update_net_supported();
 
@@ -455,6 +461,9 @@ void page_t::unmanage(client_managed_t * mw) {
 
 void page_t::scan() {
 
+
+	print_state();
+
 	unsigned int num;
 	Window d1, d2, *wins = 0;
 
@@ -499,6 +508,8 @@ void page_t::scan() {
 	update_windows_stack();
 
 	cnx->ungrab();
+
+	print_state();
 
 }
 
@@ -696,7 +707,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 				pat->update_window(v, sel);
 
-				viewport_t * viewport = viewport_outputs.begin()->second;
+				/** show it on all viewport ? **/
+				viewport_t * viewport = _desktop_list[0]->get_any_viewport();
 
 				int y = v.size() / 4 + 1;
 
@@ -1190,14 +1202,14 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-						if (default_window_pop != 0) {
-							default_window_pop->set_default(false);
+						if (_global_default_pop != 0) {
+							_global_default_pop->set_default(false);
 							rpage->add_damaged(
-									default_window_pop->allocation());
+									_global_default_pop->allocation());
 						}
-						default_window_pop = mode_data_notebook.from;
-						default_window_pop->set_default(true);
-						rpage->add_damaged(default_window_pop->allocation());
+						_global_default_pop = mode_data_notebook.from;
+						_global_default_pop->set_default(true);
+						rpage->add_damaged(_global_default_pop->allocation());
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 						mode_data_notebook.c->delete_window(e.time);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
@@ -2075,15 +2087,15 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 					//printf("new_size = %s\n", new_size.to_string().c_str());
 
-					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
-							and e.x == 0 and e.y == 0
-							and !viewport_outputs.empty()) {
-						viewport_t * v = viewport_outputs.begin()->second;
-						i_rect b = v->raw_area();
-						/* place on center */
-						new_size.x = (b.w - new_size.w) / 2 + b.x;
-						new_size.y = (b.h - new_size.h) / 2 + b.y;
-					}
+//					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
+//							and e.x == 0 and e.y == 0
+//							and !viewport_outputs.empty()) {
+//						viewport_t * v = viewport_outputs.begin()->second;
+//						i_rect b = v->raw_area();
+//						/* place on center */
+//						new_size.x = (b.w - new_size.w) / 2 + b.x;
+//						new_size.y = (b.h - new_size.h) / 2 + b.y;
+//					}
 
 					unsigned int final_width = new_size.w;
 					unsigned int final_height = new_size.h;
@@ -2268,8 +2280,9 @@ void page_t::process_event(XPropertyEvent const & e) {
 		}
 
 	} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
-		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
-			compute_viewport_allocation(*(i->second));
+		vector<viewport_t *> viewports = filter_class<viewport_t>(_all_children_cache);
+		for(auto i: viewports) {
+			compute_viewport_allocation(*i);
 		}
 		rpage->mark_durty();
 	} else if (e.atom == A(_NET_WM_STRUT)) {
@@ -2554,7 +2567,7 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 		data.revert_notebook = nullptr;
 		if (v == nullptr) {
 			// TODO: find a free viewport
-			data.viewport = viewport_outputs.begin()->second;
+			data.viewport = _desktop_list[0]->get_any_viewport();
 		} else {
 			data.viewport = v;
 		}
@@ -2756,7 +2769,7 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 	page_assert(x != nullptr);
 	page_assert(find_parent_notebook_for(x) == nullptr);
 	if (n == nullptr)
-		n = default_window_pop;
+		n = _global_default_pop;
 	page_assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
@@ -2766,19 +2779,20 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 
 /* update viewport and childs allocation */
 void page_t::update_allocation() {
-	for(auto & i : viewport_outputs) {
-		compute_viewport_allocation(*(i.second));
+	vector<viewport_t*> viewports = filter_class<viewport_t>(_all_children_cache);
+	for(auto v: viewports) {
+		compute_viewport_allocation(*v);
 	}
 }
 
 void page_t::set_default_pop(notebook_t * x) {
-	if(default_window_pop != nullptr) {
-		default_window_pop->set_default(false);
-		rpage->add_damaged(default_window_pop->allocation());
+	if(_global_default_pop != nullptr) {
+		_global_default_pop->set_default(false);
+		rpage->add_damaged(_global_default_pop->allocation());
 	}
-	default_window_pop = x;
-	default_window_pop->set_default(true);
-	rpage->add_damaged(default_window_pop->allocation());
+	_global_default_pop = x;
+	_global_default_pop->set_default(true);
+	rpage->add_damaged(_global_default_pop->allocation());
 }
 
 /** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
@@ -2868,7 +2882,7 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	rpage->add_damaged(split->allocation());
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
@@ -2882,7 +2896,7 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
@@ -2896,7 +2910,7 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
@@ -2910,7 +2924,7 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
@@ -2924,7 +2938,7 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	insert_window_in_notebook(c, n, true);
 	update_allocation();
 	rpage->add_damaged(split->allocation());
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::notebook_close(notebook_t * src) {
@@ -2940,16 +2954,16 @@ void page_t::notebook_close(notebook_t * src) {
 	page_component_t * dst = (src == ths->get_pack0()) ? ths->get_pack1() : ths->get_pack0();
 
 	/* if notebook is default_pop, select another one */
-	if (default_window_pop == src) {
+	if (_global_default_pop == src) {
 		/* prefer a nearest new notebook */
-		default_window_pop = get_another_notebook(dst, src);
+		_global_default_pop = get_another_notebook(dst, src);
 		/* else try a global one */
-		if(default_window_pop == nullptr) {
-			default_window_pop = get_another_notebook(this, src);
+		if(_global_default_pop == nullptr) {
+			_global_default_pop = get_another_notebook(this, src);
 		}
-		page_assert(default_window_pop != nullptr);
-		default_window_pop->set_default(true);
-		rpage->add_damaged(default_window_pop->allocation());
+		page_assert(_global_default_pop != nullptr);
+		_global_default_pop->set_default(true);
+		rpage->add_damaged(_global_default_pop->allocation());
 	}
 
 	/* move all windows from src to default_window_pop */
@@ -2963,7 +2977,7 @@ void page_t::notebook_close(notebook_t * src) {
 	 * change it to default_window_pop */
 	for (auto & i : fullscreen_client_to_viewport) {
 		if (i.second.revert_notebook == src) {
-			i.second.revert_notebook = default_window_pop;
+			i.second.revert_notebook = _global_default_pop;
 		}
 	}
 
@@ -2978,7 +2992,7 @@ void page_t::notebook_close(notebook_t * src) {
 	delete src;
 	delete ths;
 
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::update_popup_position(ptr<popup_notebook0_t> p,
@@ -3209,7 +3223,7 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 		root_subclients.push_back(c);
 		c->set_parent(this);
 	}
-	update_children_cache();
+	update_structure_cache();
 }
 
 client_base_t * page_t::get_transient_for(client_base_t * c) {
@@ -3230,7 +3244,7 @@ void page_t::detach(tree_t * t) {
 		i->remove(t);
 	}
 	t->set_parent(nullptr);
-	update_children_cache();
+	update_structure_cache();
 }
 
 void page_t::safe_raise_window(client_base_t * c) {
@@ -3266,7 +3280,7 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 	/* update database */
 	cout << "bind: " << mw->title() << endl;
 	detach(mw);
-	insert_window_in_notebook(mw, 0, activate);
+	insert_window_in_notebook(mw, nullptr, activate);
 	safe_raise_window(mw);
 	update_client_list();
 }
@@ -3394,7 +3408,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
 	vector<notebook_t *> l;
 
-	if (base == 0) {
+	if (base == nullptr) {
 		l = get_notebooks();
 	} else {
 		l = get_notebooks(base);
@@ -3479,65 +3493,88 @@ void page_t::update_viewport_layout() {
 	set_desktop_geometry(_root_position.w, _root_position.h);
 	_allocation = _root_position;
 
-	/** store the newer layout, to cleanup obsolet viewport **/
-	map<RRCrtc, viewport_t *> new_layout;
 
+	/** load RandR data **/
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(
 			cnx->dpy(), cnx->root());
 
-	for (int i = 0; i < resources->ncrtc; ++i) {
-		XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy(), resources,
-				resources->crtcs[i]);
+	map<RRCrtc, XRRCrtcInfo *> crtc_info;
 
-		/** if the CRTC has at less one output bound **/
-		if(info->noutput > 0) {
+	if (resources != nullptr) {
+		for (unsigned k = 0; k < resources->ncrtc; ++k) {
+			XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy(), resources,
+					resources->crtcs[k]);
+			crtc_info[resources->crtcs[k]] = info;
+		}
+	}
+
+	for(auto d: _desktop_list) {
+		map<RRCrtc, viewport_t *> old_layout{d->get_viewport_map()};
+
+		/** store the newer layout, to be able to cleanup obsolete viewports **/
+		map<RRCrtc, viewport_t *> new_layout;
+		for(auto crtc: crtc_info) {
+			XRRCrtcInfo * info = crtc.second;
+			if(info == nullptr)
+				continue;
+			if(info->noutput <= 0)
+				continue;
+
 			i_rect area(info->x, info->y, info->width, info->height);
 			/** if this crtc do not has a viewport **/
-			if (!has_key(viewport_outputs, resources->crtcs[i])) {
+			if (not has_key(old_layout, crtc.first)) {
 				/** then create a new one, and store it in new_layout **/
 				viewport_t * v = new viewport_t(theme, area);
-				v->set_parent(this);
-				new_layout[resources->crtcs[i]] = v;
+				v->set_parent(d);
+				new_layout[crtc.first] = v;
 			} else {
 				/** update allocation, and store it to new_layout **/
-				viewport_outputs[resources->crtcs[i]]->set_raw_area(area);
-				new_layout[resources->crtcs[i]] = viewport_outputs[resources->crtcs[i]];
+				old_layout[crtc.first]->set_raw_area(area);
+				new_layout[crtc.first] = old_layout[crtc.first];
 			}
-			compute_viewport_allocation(*(new_layout[resources->crtcs[i]]));
+			compute_viewport_allocation(*(new_layout[crtc.first]));
 		}
-		XRRFreeCrtcInfo(info);
-	}
-	XRRFreeScreenResources(resources);
 
-	if(new_layout.size() < 1) {
-		/** fallback to one screen **/
-		i_rect area(rwa.x, rwa.y, rwa.width, rwa.height);
-		/** if this crtc do not has a viewport **/
-		if (!has_key(viewport_outputs, (XID)None)) {
-			/** then create a new one, and store it in new_layout **/
-			viewport_t * v = new viewport_t(theme, area);
-			v->set_parent(this);
-			new_layout[None] = v;
-		} else {
-			/** update allocation, and store it to new_layout **/
-			viewport_outputs[None]->set_raw_area(area);
-			new_layout[None] = viewport_outputs[None];
+		if(new_layout.size() < 1) {
+			/** fallback to one screen **/
+			i_rect area(rwa.x, rwa.y, rwa.width, rwa.height);
+			/** if this crtc do not has a viewport **/
+			if (not has_key(old_layout, (XID)None)) {
+				/** then create a new one, and store it in new_layout **/
+				viewport_t * v = new viewport_t(theme, area);
+				v->set_parent(d);
+				new_layout[None] = v;
+			} else {
+				/** update allocation, and store it to new_layout **/
+				old_layout[None]->set_raw_area(area);
+				new_layout[None] = old_layout[None];
+			}
+			compute_viewport_allocation(*(new_layout[None]));
 		}
-		compute_viewport_allocation(*(new_layout[0]));
-	}
 
-	/** clean up old layout **/
-	for (auto & i : viewport_outputs) {
-		if (!has_key(new_layout, i.first)) {
-			/** destroy this viewport **/
-			remove_viewport(i.second);
-			destroy_viewport(i.second);
+		d->set_layout(new_layout);
+
+		/** clean up obsolete layout **/
+		for (auto i: old_layout) {
+			if (not has_key(new_layout, i.first)) {
+				/** destroy this viewport **/
+				remove_viewport(i.second);
+				destroy_viewport(i.second);
+			}
 		}
+
 	}
 
-	viewport_outputs = new_layout;
+	for(auto i: crtc_info) {
+		if(i.second != nullptr)
+			XRRFreeCrtcInfo(i.second);
+	}
 
-	update_children_cache();
+	if(resources != nullptr) {
+		XRRFreeScreenResources(resources);
+	}
+
+	update_structure_cache();
 }
 
 void page_t::remove_viewport(viewport_t * v) {
@@ -3554,13 +3591,13 @@ void page_t::remove_viewport(viewport_t * v) {
 
 	/* Transfer clients to a valid notebook */
 	for (auto i : get_notebooks(v)) {
-		if (default_window_pop == i)
-			default_window_pop = get_another_notebook(i);
-		default_window_pop->set_default(true);
-		rpage->add_damaged(default_window_pop->allocation());
+		if (_global_default_pop == i)
+			_global_default_pop = get_another_notebook(i);
+		_global_default_pop->set_default(true);
+		rpage->add_damaged(_global_default_pop->allocation());
 		list<client_managed_t *> lc = i->get_clients();
 		for (auto j : lc) {
-			default_window_pop->add_client(j, false);
+			_global_default_pop->add_client(j, false);
 		}
 	}
 }
@@ -3719,6 +3756,7 @@ void page_t::onmap(Window w) {
 
 		} catch (...) {
 			c = nullptr;
+			throw;
 		}
 
 	}
@@ -3737,6 +3775,7 @@ void page_t::create_managed_window(ptr<client_properties_t> c, Atom type) {
 
 	} catch (...) {
 		printf("Error while creating managed window\n");
+		throw;
 	}
 }
 
@@ -3772,12 +3811,12 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 				and get_transient_for(mw) == nullptr
 				and mw->has_motif_border()) {
 
-			/** select if the client want to apear mapped or iconic **/
+			/** select if the client want to appear mapped or iconic **/
 			bool activate = true;
 
 			/**
 			 * first try if previous vm has put this window in IconicState, then
-			 * Check if the client have a prefered initiale state.
+			 * Check if the client have a preferred initial state.
 			 **/
 			if (mw->wm_state() != nullptr) {
 				if (mw->wm_state()->state == IconicState) {
@@ -3813,8 +3852,13 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 			}
 		}
 
+	} catch (exception & e) {
+		cout << e.what() << endl;
+	} catch (exception_t & e) {
+		cout << e.what() << endl;
 	} catch (...) {
 		printf("Error while creating managed window\n");
+		throw;
 	}
 }
 
@@ -3828,8 +3872,13 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 		rnd->add_damaged(uw->visible_area());
 		update_windows_stack();
 		_need_render = true;
+	} catch (exception & e) {
+		cout << e.what() << endl;
+	} catch (exception_t & e) {
+		cout << e.what() << endl;
 	} catch (...) {
-		printf("Error while creating unmanaged window\n");
+		printf("Error while creating managed window\n");
+		throw;
 	}
 }
 
@@ -3843,11 +3892,12 @@ void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
 }
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {
-	for (auto i : viewport_outputs) {
-		if (i.second->_raw_aera.is_inside(x, y))
-			return i.second;
+	vector<viewport_t*> viewports = _desktop_list[_current_desktop]->get_viewports();
+	for (auto v: viewports) {
+		if (v->_raw_aera.is_inside(x, y))
+			return v;
 	}
-	return 0;
+	return nullptr;
 }
 
 /**
@@ -4013,11 +4063,11 @@ void page_t::add_client(client_base_t * c) {
 
 vector<tree_t *> page_t::childs() const {
 	vector<tree_t *> ret;
-	for (auto &i : viewport_outputs) {
-		if (i.second != nullptr) {
-			ret.push_back(i.second);
-		}
-	}
+//	for (auto i: _desktop_list) {
+//		ret.push_back(i);
+//	}
+
+	ret.push_back(_desktop_list[_current_desktop]);
 
 	for(auto x: below) {
 		ret.push_back(x);
@@ -4047,17 +4097,14 @@ vector<tree_t *> page_t::childs() const {
 		ret.push_back(x);
 	}
 
-
 	return ret;
 }
 
 void page_t::get_all_children(vector<tree_t *> & out) const {
 
-	for (auto &i : viewport_outputs) {
-		if (i.second != nullptr) {
-			out.push_back(i.second);
-			i.second->get_all_children(out);
-		}
+	for (auto v: _desktop_list) {
+		out.push_back(v);
+		v->get_all_children(out);
 	}
 
 	for(auto x: below) {
@@ -4148,12 +4195,8 @@ void page_t::raise_child(tree_t * t) {
 
 void page_t::remove(tree_t * t) {
 
-	for(auto &i: viewport_outputs) {
-		if(i.second == t) {
-			cout << "WARNING: using page::remove to remove viewport is not recommended, use page::remove_viewport instead" << endl;
-			remove_viewport(i.second);
-			return;
-		}
+	if(has_key(vector<tree_t*>{_desktop_list.begin(), _desktop_list.end()}, t)) {
+		throw exception_t("ERROR: using page::remove to remove desktop is not recommended, use page::remove_viewport instead");
 	}
 
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
@@ -4327,7 +4370,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	rnd->add_damaged(rpage->get_damaged());
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
-	rpage->repair_damaged(_all_children_cache);
+ 	rpage->repair_damaged(_current_desktop_children_cache);
 
 	for(auto i: childs()) {
 		i->prepare_render(out, time);
@@ -4411,9 +4454,33 @@ void page_t::set_allocation(i_rect const & r) {
 	_allocation = r;
 }
 
-void page_t::update_children_cache() const {
+void page_t::update_structure_cache() const {
 	_all_children_cache.clear();
 	get_all_children(_all_children_cache);
+	_current_desktop_children_cache.clear();
+	_desktop_list[_current_desktop]->get_all_children(_current_desktop_children_cache);
+
+	print_state();
+
+}
+
+void page_t::children(vector<tree_t *> & out) const {
+	vector<tree_t*> x = childs();
+	out.insert(out.end(), x.begin(), x.end());
+}
+
+/** debug function that try to print the state of page in stdout **/
+void page_t::print_state() const {
+	print_tree(0);
+	cout << "_current_desktop = " << _current_desktop << endl;
+	cout << "_global_default_pop = " << _global_default_pop << endl;
+
+	cout << "clients list:" << endl;
+	for(auto c: clients) {
+		cout << "client " << c.second->get_node_name() << " id = " << c.first << " ptr = " << c.second << " parent = " << c.second->parent() << endl;
+	}
+	cout << "end" << endl;;
+
 }
 
 }
