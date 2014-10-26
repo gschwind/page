@@ -373,7 +373,7 @@ public:
 
 	list<Atom> supported_list;
 
-	notebook_t * _global_default_pop;
+	mutable notebook_t * _global_default_pop;
 
 	string page_base_dir;
 
@@ -382,6 +382,9 @@ public:
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
 	key_desc_t bind_close;
+
+	key_desc_t bind_right_desktop;
+	key_desc_t bind_left_desktop;
 
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;

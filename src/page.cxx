@@ -63,8 +63,11 @@ page_t::page_t(int argc, char ** argv)
 
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
-	_desktop_list.push_back(new desktop_t);
-	_desktop_list[0]->set_parent(this);
+	for(unsigned k = 0; k < 4; ++k) {
+		desktop_t * d = new desktop_t;
+		d->set_parent(this);
+		_desktop_list.push_back(d);
+	}
 
 	page_areas = nullptr;
 	use_internal_compositor = true;
@@ -132,6 +135,10 @@ page_t::page_t(int argc, char ** argv)
 
 	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
 	find_key_from_string(conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
+	find_key_from_string(conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
+	find_key_from_string(conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
+
+
 	find_key_from_string(conf.get_string("default", "bind_debug_1"), bind_debug_1);
 	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
 	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
@@ -626,6 +633,29 @@ void page_t::process_event(XKeyEvent const & e) {
 				}
 			}
 		}
+
+		if(k == bind_right_desktop.ks and (e.state & bind_right_desktop.mod)) {
+			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
+			for(auto i: nl) {
+				i->unmap_all();
+			}
+			_current_desktop = (_current_desktop + 1) % _desktop_list.size();
+			printf("New desktop = %d\n", _current_desktop);
+			update_structure_cache();
+			rpage->add_damaged(_root_position);
+		}
+
+		if(k == bind_left_desktop.ks and (e.state & bind_left_desktop.mod)) {
+			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
+			for(auto i: nl) {
+				i->unmap_all();
+			}
+			_current_desktop = (_current_desktop - 1) % _desktop_list.size();
+			printf("New desktop = %d\n", _current_desktop);
+			update_structure_cache();
+			rpage->add_damaged(_root_position);
+		}
+
 
 		if(k == bind_debug_1.ks and (e.state & bind_debug_1.mod)) {
 			if(rnd->show_fps()) {
@@ -4003,11 +4033,11 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 
 void page_t::update_page_areas() {
 
-	if (page_areas != 0) {
+	if (page_areas != nullptr) {
 		delete page_areas;
 	}
 
-	list<tree_t const *> lc(_all_children_cache.begin(), _all_children_cache.end());
+	list<tree_t const *> lc(_current_desktop_children_cache.begin(), _current_desktop_children_cache.end());
 	page_areas = compute_page_areas(lc);
 }
 
@@ -4063,11 +4093,9 @@ void page_t::add_client(client_base_t * c) {
 
 vector<tree_t *> page_t::childs() const {
 	vector<tree_t *> ret;
-//	for (auto i: _desktop_list) {
-//		ret.push_back(i);
-//	}
-
-	ret.push_back(_desktop_list[_current_desktop]);
+	for (auto i: _desktop_list) {
+		ret.push_back(i);
+	}
 
 	for(auto x: below) {
 		ret.push_back(x);
@@ -4346,6 +4374,28 @@ void page_t::update_grabkey() {
 		}
 	}
 
+	/* go to right desktop */
+	if ((kc = keymap->find_keysim(bind_right_desktop.ks))) {
+		printf("bind right desktop => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_right_desktop.mod, (unsigned int)bind_right_desktop.ks);
+		XGrabKey(cnx->dpy(), kc, bind_right_desktop.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+		if(keymap->numlock_mod_mask() != 0) {
+			XGrabKey(cnx->dpy(), kc, bind_right_desktop.mod | keymap->numlock_mod_mask(), cnx->root(),
+			True, GrabModeAsync, GrabModeAsync);
+		}
+	}
+
+	/* go to left desktop */
+	if ((kc = keymap->find_keysim(bind_left_desktop.ks))) {
+		printf("bind left desktop => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_left_desktop.mod, (unsigned int)bind_left_desktop.ks);
+		XGrabKey(cnx->dpy(), kc, bind_left_desktop.mod, cnx->root(),
+		True, GrabModeAsync, GrabModeAsync);
+		if(keymap->numlock_mod_mask() != 0) {
+			XGrabKey(cnx->dpy(), kc, bind_left_desktop.mod | keymap->numlock_mod_mask(), cnx->root(),
+			True, GrabModeAsync, GrabModeAsync);
+		}
+	}
+
 	/* Alt-Tab */
 	if ((kc = keymap->find_keysim(XK_Tab))) {
 		XGrabKey(cnx->dpy(), kc, Mod1Mask, cnx->root(),
@@ -4459,6 +4509,13 @@ void page_t::update_structure_cache() const {
 	get_all_children(_all_children_cache);
 	_current_desktop_children_cache.clear();
 	_desktop_list[_current_desktop]->get_all_children(_current_desktop_children_cache);
+
+	for(auto i: _current_desktop_children_cache) {
+		if(typeid(*i) == typeid(notebook_t)) {
+			_global_default_pop = dynamic_cast<notebook_t*>(i);
+			break;
+		}
+	}
 
 	print_state();
 
