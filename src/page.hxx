@@ -125,6 +125,9 @@ public:
 	using notebook_dropdown_menu_t = dropdown_menu_t<client_managed_t const *>;
 	ptr<notebook_dropdown_menu_t> menu;
 
+	using client_dropdown_menu_t = dropdown_menu_t<int>;
+	ptr<client_dropdown_menu_t> client_menu;
+
 	struct mode_data_split_t {
 		split_t * split;
 		i_rect slider_area;
@@ -177,6 +180,24 @@ public:
 
 		void reset() {
 			from = nullptr;
+			active_grab = false;
+		}
+
+	};
+
+	struct mode_data_notebook_client_menu_t {
+		notebook_t * from;
+		client_managed_t * client;
+		bool active_grab;
+		i_rect b;
+
+		mode_data_notebook_client_menu_t() {
+			reset();
+		}
+
+		void reset() {
+			from = nullptr;
+			client = nullptr;
 			active_grab = false;
 		}
 
@@ -281,7 +302,8 @@ public:
 		PROCESS_FULLSCREEN_MOVE, // Alt + click to change fullscreen screen to another one
 		PROCESS_FLOATING_MOVE_BY_CLIENT, // Move requested by client
 		PROCESS_FLOATING_RESIZE_BY_CLIENT, // Resize requested by client
-		PROCESS_NOTEBOOK_MENU
+		PROCESS_NOTEBOOK_MENU,
+		PROCESS_NOTEBOOK_CLIENT_MENU
 	};
 
 	/* this define the current state of page */
@@ -319,6 +341,7 @@ public:
 	mode_data_fullscreen_t mode_data_fullscreen;
 
 	mode_data_notebook_menu_t mode_data_notebook_menu;
+	mode_data_notebook_client_menu_t mode_data_notebook_client_menu;
 
 	display_t * cnx;
 	compositor_t * rnd;

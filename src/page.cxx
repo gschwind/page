@@ -41,6 +41,7 @@
 #include <stack>
 #include <vector>
 #include <typeinfo>
+#include <memory>
 
 #include "page.hxx"
 
@@ -154,6 +155,7 @@ page_t::~page_t() {
 	ps.reset();
 	pat.reset();
 	menu.reset();
+	client_menu.reset();
 
 	/* get all childs excluding this */
 	update_children_cache();
@@ -337,8 +339,8 @@ void page_t::run() {
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
 	XGrabButton(cnx->dpy(), AnyButton, AnyModifier, cnx->root(), False,
-	ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-	GrabModeSync, GrabModeAsync, None, None);
+			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
+			GrabModeSync, GrabModeAsync, None, None);
 
 
 	_max_wait = default_wait;
@@ -753,7 +755,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e.window == cnx->root() && e.subwindow == None && e.button == Button1) {
+		if (e.window == cnx->root()
+				and e.subwindow == None
+				and e.button == Button1) {
 
 			update_page_areas();
 
@@ -853,6 +857,47 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				}
 			}
 
+		}
+
+		if (e.window == cnx->root()
+				and e.subwindow == None
+				and e.button == Button3) {
+
+			page_event_t * b = nullptr;
+			for (auto &i: *page_areas) {
+				if (i.position.is_inside(e.x, e.y)) {
+					b = &(i);
+					break;
+				}
+			}
+
+			if (b != nullptr) {
+				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
+					process_mode = PROCESS_NOTEBOOK_CLIENT_MENU;
+
+					if(mode_data_notebook_client_menu.active_grab == false) {
+						mode_data_notebook_client_menu.from = const_cast<notebook_t*>(b->nbk);
+						mode_data_notebook_client_menu.client = const_cast<client_managed_t *>(b->clt);
+						mode_data_notebook_client_menu.b = b->position;
+
+						vector<ptr<client_dropdown_menu_t::item_t>> v;
+						int s = 0;
+
+						for(unsigned k = 0; k < 4; ++k) {
+							ostringstream os;
+							os << "Desktop #" << k;
+							auto item = new client_dropdown_menu_t::item_t(k, nullptr, os.str());
+							v.push_back(ptr<client_dropdown_menu_t::item_t>{item});
+						}
+
+						int x = e.x_root;
+						int y = e.y_root;
+
+						client_menu = ptr<client_dropdown_menu_t>{new client_dropdown_menu_t(cnx, theme, v, x, y, 300)};
+
+					}
+				}
+			}
 		}
 
 
@@ -1349,6 +1394,30 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			}
 		}
 		break;
+	case PROCESS_NOTEBOOK_CLIENT_MENU:
+		if (e.button == Button3 or e.button == Button1) {
+			if(mode_data_notebook_client_menu.b.is_inside(e.x, e.y) and not mode_data_notebook_client_menu.active_grab) {
+				mode_data_notebook_client_menu.active_grab = true;
+				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e.time);
+			} else {
+				if (mode_data_notebook_client_menu.active_grab) {
+					XUngrabPointer(cnx->dpy(), e.time);
+					mode_data_notebook_client_menu.active_grab = false;
+				}
+
+				process_mode = PROCESS_NORMAL;
+				if (client_menu->position().is_inside(e.x_root, e.y_root)) {
+					int selx = (int) floor(
+							(e.y_root - client_menu->position().y) / 24.0);
+					client_menu->set_selected(selx);
+					printf("Change desktop %d for %lu\n", client_menu->get_selected(), mode_data_notebook_client_menu.client->orig());
+				}
+				mode_data_notebook_client_menu.reset();
+				rnd->add_damaged(client_menu->get_visible_region());
+				client_menu.reset();
+			}
+		}
+		break;
 	default:
 		if (e.button == Button1) {
 			process_mode = PROCESS_NORMAL;
@@ -1712,13 +1781,9 @@ void page_t::process_event(XMotionEvent const & e) {
 
 			if(!pn0->is_visible())
 				pn0->show();
-//			if(!pn1->is_visible())
-//				pn1->show();
 		}
 
 		++count;
-
-//		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
 		auto ln = get_notebooks();
 
@@ -1807,11 +1872,17 @@ void page_t::process_event(XMotionEvent const & e) {
 		break;
 	}
 	case PROCESS_NOTEBOOK_MENU:
-		/** TODO: select menu **/
 	{
 		int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
 		menu->set_selected(selx);
-		rnd->need_render();
+		rnd->add_damaged(menu->get_visible_region());
+	}
+		break;
+	case PROCESS_NOTEBOOK_CLIENT_MENU:
+	{
+		int selx = (int) floor((e.y_root - client_menu->position().y) / 24.0);
+		client_menu->set_selected(selx);
+		rnd->add_damaged(client_menu->get_visible_region());
 	}
 		break;
 	default:
@@ -3305,6 +3376,17 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 		process_mode = PROCESS_NORMAL;
 		mode_data_notebook_menu.from = nullptr;
 		break;
+	case PROCESS_NOTEBOOK_CLIENT_MENU:
+		if (mode_data_notebook_client_menu.client == mw) {
+			if (mode_data_notebook_client_menu.active_grab) {
+				xcb_ungrab_pointer(cnx->xcb(), XCB_CURRENT_TIME);
+			}
+			rnd->add_damaged(client_menu->get_visible_region());
+			client_menu.reset();
+			process_mode = PROCESS_NORMAL;
+			mode_data_notebook_client_menu.reset();
+		}
+		break;
 	}
 }
 
@@ -4270,6 +4352,10 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	if(menu != nullptr) {
 		out.push_back(menu);
+	}
+
+	if(client_menu != nullptr) {
+		out.push_back(client_menu);
 	}
 
 	_need_render = false;
