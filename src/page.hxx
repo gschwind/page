@@ -121,7 +121,9 @@ public:
 	ptr<popup_frame_move_t> pfm;
 	ptr<popup_split_t> ps;
 	ptr<popup_alt_tab_t> pat;
-	ptr<dropdown_menu_t> menu;
+
+	using notebook_dropdown_menu_t = dropdown_menu_t<client_managed_t const *>;
+	ptr<notebook_dropdown_menu_t> menu;
 
 	struct mode_data_split_t {
 		split_t * split;

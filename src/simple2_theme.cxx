@@ -1604,7 +1604,7 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 
 }
 
-void simple2_theme_t::render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area, bool selected) {
+void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) {
 
 	cairo_save(cr);
 
@@ -1627,12 +1627,12 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, 
 	bicon.y += 5;
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
-	if ((w)->icon() != nullptr) {
-		if ((w)->icon()->get_cairo_surface() != 0) {
+	if (item.icon != nullptr) {
+		if (item.icon->get_cairo_surface() != 0) {
 			CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
-			CHECK_CAIRO(cairo_set_source_surface(cr, (w)->icon()->get_cairo_surface(),
+			CHECK_CAIRO(cairo_set_source_surface(cr, item.icon->get_cairo_surface(),
 					bicon.x, bicon.y));
-			CHECK_CAIRO(cairo_mask_surface(cr, (w)->icon()->get_cairo_surface(),
+			CHECK_CAIRO(cairo_mask_surface(cr, item.icon->get_cairo_surface(),
 					bicon.x, bicon.y));
 		}
 	}
@@ -1654,7 +1654,7 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, 
 			PangoLayout * pango_layout = pango_layout_new(pango_context);
 			pango_layout_set_font_description(pango_layout, notebook_normal_font);
 			pango_cairo_update_layout(cr, pango_layout);
-			pango_layout_set_text(pango_layout, (w)->title().c_str(), -1);
+			pango_layout_set_text(pango_layout, item.label.c_str(), -1);
 			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
 			pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);

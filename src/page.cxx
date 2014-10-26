@@ -834,11 +834,11 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					int sel = 0;
 
-					vector<ptr<dropdown_menu_entry_t>> v;
+					vector<ptr<notebook_dropdown_menu_t::item_t>> v;
 					int s = 0;
 
 					for (auto i : managed_window) {
-						ptr<dropdown_menu_entry_t> cy{new dropdown_menu_entry_t(i, i->icon(), i->title())};
+						ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
 						v.push_back(cy);
 						if (i == _client_focused.front()) {
 							sel = s;
@@ -849,7 +849,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					int x = mode_data_notebook_menu.from->allocation().x;
 					int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
 
-					menu = ptr<dropdown_menu_t>{new dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
+					menu = ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
 				}
 			}
 

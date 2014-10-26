@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+
+
 #include "theme_managed_window.hxx"
 #include "theme_split.hxx"
 #include "theme_notebook.hxx"
@@ -60,43 +62,11 @@ public:
 
 };
 
-
-class dropdown_menu_entry_t: public leak_checker {
-
-	ptr<icon16> _icon;
-	string _title;
-	client_managed_t const * _id;
-
-	dropdown_menu_entry_t(cycle_window_entry_t const &);
-	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
-
-public:
-	dropdown_menu_entry_t(client_managed_t * mw, ptr<icon16> icon,
-			string title) :
-			_icon(icon),
-			_title(title),
-			_id(mw)
-	{
-
-	}
-
-	~dropdown_menu_entry_t() {
-
-	}
-
-	client_managed_t const * id() const {
-		return _id;
-	}
-
-	ptr<icon16> icon() const {
-		return _icon;
-	}
-
-	string title() const {
-		return _title;
-	}
-
+struct theme_dropdown_menu_entry_t {
+	ptr<icon16> icon;
+	string label;
 };
+
 
 class theme_t {
 
@@ -152,7 +122,7 @@ public:
 			unsigned int height, string const & title) = 0;
 
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) = 0;
-	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area, bool selected) = 0;
+	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) = 0;
 	virtual void update() = 0;
 
 

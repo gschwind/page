@@ -16,10 +16,56 @@
 
 namespace page {
 
+template<typename TDATA>
+class dropdown_menu_entry_t {
+
+	theme_dropdown_menu_entry_t _theme_data;
+
+	TDATA const _data;
+
+	dropdown_menu_entry_t(cycle_window_entry_t const &);
+	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
+
+public:
+	dropdown_menu_entry_t(TDATA data, ptr<icon16> icon, string label) :
+		_data(data)
+	{
+		_theme_data.icon = icon;
+		_theme_data.label = label;
+	}
+
+	~dropdown_menu_entry_t() {
+
+	}
+
+	TDATA const & data() const {
+		return _data;
+	}
+
+	ptr<icon16> icon() const {
+		return _theme_data.icon;
+	}
+
+	string const & label() const {
+		return _theme_data.label;
+	}
+
+	theme_dropdown_menu_entry_t const & get_theme_item() {
+		return _theme_data;
+	}
+
+};
+
+template<typename TDATA>
 class dropdown_menu_t : public renderable_t {
+
+public:
+	using item_t = dropdown_menu_entry_t<TDATA>;
+
+private:
 	theme_t * _theme;
 	display_t * _cnx;
-	vector<ptr<dropdown_menu_entry_t>> _items;
+	vector<ptr<item_t>> _items;
 	int _selected;
 
 	xcb_pixmap_t _pix;
@@ -31,7 +77,7 @@ class dropdown_menu_t : public renderable_t {
 
 public:
 
-	dropdown_menu_t(display_t * cnx, theme_t * theme, vector<ptr<dropdown_menu_entry_t>> items, int x, int y, int width) : _theme(theme) {
+	dropdown_menu_t(display_t * cnx, theme_t * theme, vector<ptr<item_t>> items, int x, int y, int width) : _theme(theme) {
 		_selected = -1;
 
 		_is_durty = true;
@@ -55,8 +101,8 @@ public:
 		xcb_free_pixmap(_cnx->xcb(), _pix);
 	}
 
-	client_managed_t const * get_selected() {
-		return _items[_selected]->id();
+	TDATA const & get_selected() {
+		return _items[_selected]->data();
 	}
 
 	void update_backbuffer() {
@@ -74,7 +120,7 @@ public:
 	void update_items_back_buffer(cairo_t * cr, int n) {
 		if (n >= 0 and n < _items.size()) {
 			i_rect area(0, 24 * n, _position.w, 24);
-			_theme->render_menuentry(cr, _items[n].get(), area, n == _selected);
+			_theme->render_menuentry(cr, _items[n]->get_theme_item(), area, n == _selected);
 		}
 	}
 
