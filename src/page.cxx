@@ -248,7 +248,7 @@ void page_t::run() {
 	pn0 = ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
 	ps = ptr<popup_split_t>{new popup_split_t(theme)};
 	pat = ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
-	menu = ptr<dropdown_menu_t>{new dropdown_menu_t(cnx, theme)};
+	menu = nullptr;
 
 	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
 	xc_fleur = XCreateFontCursor(cnx->dpy(), XC_fleur);
@@ -834,21 +834,22 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 					int sel = 0;
 
-					vector<dropdown_menu_entry_t *> v;
+					vector<ptr<dropdown_menu_entry_t>> v;
 					int s = 0;
 
 					for (auto i : managed_window) {
-						dropdown_menu_entry_t * cy = new dropdown_menu_entry_t(i, i->icon(), i->title());
+						ptr<dropdown_menu_entry_t> cy{new dropdown_menu_entry_t(i, i->icon(), i->title())};
 						v.push_back(cy);
 						if (i == _client_focused.front()) {
 							sel = s;
 						}
 						++s;
 					}
-					menu->update_window(v, sel);
-					menu->move(mode_data_notebook_menu.from->allocation().x, mode_data_notebook_menu.from->allocation().y + 20);
-					menu->show();
-					//rpage->add_damaged(mode_data_notebook.from->allocation());
+
+					int x = mode_data_notebook_menu.from->allocation().x;
+					int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
+
+					menu = ptr<dropdown_menu_t>{new dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
 				}
 			}
 
@@ -1343,8 +1344,8 @@ void page_t::process_event_release(XButtonEvent const & e) {
 							mode_data_notebook_menu.from->allocation());
 				}
 				mode_data_notebook_menu.from = nullptr;
-				menu->hide();
-				rnd->add_damaged(menu->get_opaque_region());
+				rnd->add_damaged(menu->get_visible_region());
+				menu.reset();
 			}
 		}
 		break;
@@ -3299,8 +3300,8 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_MENU:
-		menu->hide();
-		rnd->add_damaged(menu->get_opaque_region());
+		rnd->add_damaged(menu->get_visible_region());
+		menu.reset();
 		process_mode = PROCESS_NORMAL;
 		mode_data_notebook_menu.from = nullptr;
 		break;
@@ -4267,7 +4268,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 		out.push_back(pfm);
 	}
 
-	if(menu->is_visible()) {
+	if(menu != nullptr) {
 		out.push_back(menu);
 	}
 

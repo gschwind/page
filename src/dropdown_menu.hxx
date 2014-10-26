@@ -17,117 +17,84 @@
 namespace page {
 
 class dropdown_menu_t : public renderable_t {
+	theme_t * _theme;
+	display_t * _cnx;
+	vector<ptr<dropdown_menu_entry_t>> _items;
+	int _selected;
+
+	xcb_pixmap_t _pix;
+	cairo_surface_t * _surf;
 
 	i_rect _position;
-	bool _is_durty;
-	bool _is_visible;
 
-	theme_t * _theme;
-	vector<dropdown_menu_entry_t *> window_list;
-	int selected;
+	bool _is_durty;
 
 public:
 
-	dropdown_menu_t(display_t * cnx, theme_t * theme) : _theme(theme) {
-		selected = 0;
-		_is_visible = false;
+	dropdown_menu_t(display_t * cnx, theme_t * theme, vector<ptr<dropdown_menu_entry_t>> items, int x, int y, int width) : _theme(theme) {
+		_selected = -1;
+
 		_is_durty = true;
+		_cnx = cnx;
+
+		_items = items;
+		_position.x = x;
+		_position.y = y;
+		_position.w = width;
+		_position.h = 24*_items.size();
+
+		_pix = xcb_generate_id(cnx->xcb());
+		xcb_create_pixmap(cnx->xcb(), 32, _pix, cnx->root(), _position.w, _position.h);
+		_surf = cairo_xcb_surface_create(cnx->xcb(), _pix, cnx->default_visual(), _position.w, _position.h);
+
+		update_backbuffer();
 	}
 
 	~dropdown_menu_t() {
-		for(auto i: window_list) {
-			delete i;
-		}
-	}
-
-	void select_next() {
-		selected = (selected + 1) % window_list.size();
-		_is_durty = true;
-	}
-
-	void update_window(vector<dropdown_menu_entry_t *> list, int sel) {
-		for(auto i : window_list) {
-			delete i;
-		}
-
-		window_list = list;
-		selected = sel;
-
-		_position.w = 300.0;
-		_position.h = 24*window_list.size();
+		cairo_surface_destroy(_surf);
+		xcb_free_pixmap(_cnx->xcb(), _pix);
 	}
 
 	client_managed_t const * get_selected() {
-		return window_list[selected]->id();
+		return _items[_selected]->id();
 	}
 
-	virtual void render(cairo_t * cr, time_t time) {
+	void update_backbuffer() {
 
-		if(not _is_visible)
-			return;
+		cairo_t * cr = cairo_create(_surf);
 
-		cairo_save(cr);
-
-		cairo_identity_matrix(cr);
-		cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
-		cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_fill(cr);
-
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-		int n = 0;
-		for (auto i : window_list) {
-			int x = _position.x;
-			int y = _position.y + n * 24;
-			i_rect area(x, y, 300, 24);
-
-			if(selected == n) {
-				cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-				cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
-				cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-				cairo_fill(cr);
-			}
-
-			_theme->render_menuentry(cr, i, area);
-			++n;
+		for (unsigned k = 0; k < _items.size(); ++k) {
+			update_items_back_buffer(cr, k);
 		}
 
-		cairo_restore(cr);
+		cairo_destroy(cr);
 
 	}
 
-	bool need_render(time_t time) {
-		return _is_durty;
+	void update_items_back_buffer(cairo_t * cr, int n) {
+		if (n >= 0 and n < _items.size()) {
+			i_rect area(0, 24 * n, _position.w, 24);
+			cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+			if (n == _selected) {
+				cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
+			} else {
+				cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
+			}
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_fill(cr);
+			_theme->render_menuentry(cr, _items[n].get(), area);
+		}
 	}
 
 	void set_selected(int s) {
-		if(s >= 0 and s < window_list.size()) {
-			selected = s;
+		if(s >= 0 and s < _items.size() and s != _selected) {
+			std::swap(_selected, s);
+			cairo_t * cr = cairo_create(_surf);
+			update_items_back_buffer(cr, _selected);
+			update_items_back_buffer(cr, s);
+			cairo_destroy(cr);
 			_is_durty = true;
 		}
-	}
-
-	void move_resize(i_rect const & area) {
-		_position = area;
-	}
-
-	void move(int x, int y) {
-		_position.x = x;
-		_position.y = y;
-	}
-
-	void show() {
-		_is_visible = true;
-	}
-
-	void hide() {
-		_is_visible = false;
-	}
-
-	bool is_visible() {
-		return _is_visible;
 	}
 
 	i_rect const & position() {
@@ -140,41 +107,13 @@ public:
 	 * @param area the area to redraw
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
-		if(not _is_visible)
-			return;
-
 		cairo_save(cr);
 
 		for (auto const & a : area) {
 			cairo_clip(cr, a);
-
-			cairo_identity_matrix(cr);
-			cairo_rectangle(cr, _position.x, _position.y, _position.w,
-					_position.h);
-			cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+			cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
+			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
 			cairo_fill(cr);
-
-			cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-
-			int n = 0;
-			for (auto i : window_list) {
-				int x = _position.x;
-				int y = _position.y + n * 24;
-				i_rect area(x, y, 300, 24);
-
-				if (selected == n) {
-					cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-					cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
-					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-					cairo_fill(cr);
-				}
-
-				_theme->render_menuentry(cr, i, area);
-				++n;
-			}
-
 		}
 
 		cairo_restore(cr);
@@ -201,6 +140,7 @@ public:
 	 **/
 	virtual region get_damaged()  {
 		if(_is_durty) {
+			_is_durty = false;
 			return region{_position};
 		} else {
 			return region{};
