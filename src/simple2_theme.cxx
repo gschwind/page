@@ -1604,9 +1604,18 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 
 }
 
-void simple2_theme_t::render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area) {
+void simple2_theme_t::render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area, bool selected) {
 
 	cairo_save(cr);
+
+	cairo_rectangle(cr, area.x, area.y, area.w, area.h);
+	if (selected) {
+		::cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
+	} else {
+		::cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
+	}
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_fill(cr);
 
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 

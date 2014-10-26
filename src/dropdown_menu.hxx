@@ -74,15 +74,7 @@ public:
 	void update_items_back_buffer(cairo_t * cr, int n) {
 		if (n >= 0 and n < _items.size()) {
 			i_rect area(0, 24 * n, _position.w, 24);
-			cairo_rectangle(cr, area.x, area.y, area.w, area.h);
-			if (n == _selected) {
-				cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 1.0);
-			} else {
-				cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-			}
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_fill(cr);
-			_theme->render_menuentry(cr, _items[n].get(), area);
+			_theme->render_menuentry(cr, _items[n].get(), area, n == _selected);
 		}
 	}
 

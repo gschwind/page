@@ -152,7 +152,7 @@ public:
 			unsigned int height, string const & title) = 0;
 
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) = 0;
-	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area) = 0;
+	virtual void render_menuentry(cairo_t * cr, dropdown_menu_entry_t * w, i_rect const & area, bool selected) = 0;
 	virtual void update() = 0;
 
 
