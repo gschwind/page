@@ -1548,7 +1548,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		auto ln = get_notebooks();
+		auto ln = filter_class<notebook_t>(_current_desktop_children_cache);
 		for (auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
 				if (mode_data_notebook.zone != SELECT_TAB
