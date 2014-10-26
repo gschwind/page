@@ -913,6 +913,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				and e.subwindow == None
 				and e.button == Button3) {
 
+			update_page_areas();
+
 			page_event_t * b = nullptr;
 			for (auto &i: *page_areas) {
 				if (i.position.is_inside(e.x, e.y)) {
@@ -931,8 +933,6 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						mode_data_notebook_client_menu.b = b->position;
 
 						vector<ptr<client_dropdown_menu_t::item_t>> v;
-						int s = 0;
-
 						for(unsigned k = 0; k < _desktop_list.size(); ++k) {
 							ostringstream os;
 							os << "Desktop #" << k;
