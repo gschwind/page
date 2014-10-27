@@ -411,6 +411,10 @@ client_managed_t * notebook_t::get_selected() {
 
 void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
+	if(_is_hidden) {
+		return;
+	}
+
 	if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {

@@ -889,6 +889,13 @@ display_t * client_managed_t::cnx() {
 
 void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
+	if(_is_hidden) {
+		for(auto i: _children) {
+			i->prepare_render(out, time);
+		}
+		return;
+	}
+
 	if (_composite_surf != nullptr and not _is_hidden) {
 
 		i_rect loc{base_position()};

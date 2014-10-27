@@ -208,6 +208,10 @@ public:
 		}
 	}
 
+	bool is_hidden() {
+		return _is_hidden;
+	}
+
 };
 
 }

@@ -653,6 +653,9 @@ public:
 	void hide();
 	void show();
 
+	void switch_to_desktop(int desktop);
+
+
 };
 
 

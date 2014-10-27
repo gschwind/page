@@ -67,7 +67,10 @@ page_t::page_t(int argc, char ** argv)
 		desktop_t * d = new desktop_t;
 		d->set_parent(this);
 		_desktop_list.push_back(d);
+		d->hide();
 	}
+
+	_desktop_list[_current_desktop]->show();
 
 	page_areas = nullptr;
 	use_internal_compositor = true;
@@ -413,19 +416,6 @@ void page_t::run() {
 	}
 }
 
-//client_managed_t * page_t::manage(Atom net_wm_type, ptr<client_properties_t> c) {
-//	cnx->add_to_save_set(c->id());
-//	/* set border to zero */
-//	XSetWindowBorder(cnx->dpy(), c->id(), 0);
-//	/* assign window to desktop 0 */
-//	c->set_net_wm_desktop(_current_desktop);
-//	client_managed_t * mw = new client_managed_t{net_wm_type, c, theme};
-//	add_client(mw);
-//
-//	printf("managing : '%s'\n", mw->title().c_str());
-//	return mw;
-//}
-
 void page_t::unmanage(client_managed_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
@@ -641,27 +631,11 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 		if(k == bind_right_desktop.ks and (e.state & bind_right_desktop.mod)) {
-			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
-			for(auto i: nl) {
-				i->unmap_all();
-			}
-			_current_desktop = (_current_desktop + 1) % _desktop_list.size();
-			printf("New desktop = %d\n", _current_desktop);
-			update_current_desktop();
-			update_structure_cache();
-			rpage->add_damaged(_root_position);
+			switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
 		}
 
 		if(k == bind_left_desktop.ks and (e.state & bind_left_desktop.mod)) {
-			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
-			for(auto i: nl) {
-				i->unmap_all();
-			}
-			_current_desktop = (_current_desktop - 1) % _desktop_list.size();
-			printf("New desktop = %d\n", _current_desktop);
-			update_current_desktop();
-			update_structure_cache();
-			rpage->add_damaged(_root_position);
+			switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
 		}
 
 
@@ -2556,17 +2530,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		}
 	} else if (e.message_type == A(_NET_CURRENT_DESKTOP)) {
 		if(e.data.l[0] >= 0 and e.data.l[0] < _desktop_list.size() and e.data.l[0] != _current_desktop) {
-
-			vector<notebook_t *> nl = filter_class<notebook_t>(_current_desktop_children_cache);
-			for(auto i: nl) {
-				i->unmap_all();
-			}
-
-			_current_desktop = e.data.l[0];
-			printf("New desktop = %d\n", _current_desktop);
-			update_current_desktop();
-			update_structure_cache();
-			rpage->add_damaged(_root_position);
+			switch_to_desktop(e.data.l[0]);
 		}
 	}
 }
@@ -3853,7 +3817,11 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 		update_windows_stack();
 
 		mw->set_current_desktop(_current_desktop);
-		mw->show();
+		if(not _desktop_list[_current_desktop]->is_hidden()) {
+			mw->show();
+		} else {
+			mw->hide();
+		}
 
 		/* HACK OLD FASHION FULLSCREEN */
 		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
@@ -4585,6 +4553,17 @@ void page_t::hide() {
 void page_t::show() {
 	for(auto i: tree_t::children()) {
 		i->show();
+	}
+}
+
+void page_t::switch_to_desktop(int desktop) {
+	if (desktop != _current_desktop) {
+		_desktop_list[_current_desktop]->hide();
+		_current_desktop = desktop;
+		update_current_desktop();
+		update_structure_cache();
+		_desktop_list[_current_desktop]->show();
+		rpage->add_damaged(_root_position);
 	}
 }
 
