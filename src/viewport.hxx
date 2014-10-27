@@ -29,11 +29,6 @@ private:
 	theme_t * _theme;
 	bool _is_hidden;
 
-	viewport_t(viewport_t const & v);
-	viewport_t & operator= (viewport_t const &);
-
-public:
-
 	/** area without considering dock windows **/
 	i_rect _raw_aera;
 
@@ -41,7 +36,10 @@ public:
 	i_rect _effective_aera;
 	page_component_t * _subtree;
 
-	bool _is_visible;
+	viewport_t(viewport_t const & v);
+	viewport_t & operator= (viewport_t const &);
+
+public:
 
 	page_component_t * parent() const {
 		return _parent;
@@ -100,6 +98,8 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+		if(_is_hidden)
+			return;
 		if(_subtree != nullptr) {
 			_subtree->prepare_render(out, time);
 		}
@@ -142,6 +142,19 @@ public:
 
 		for(auto i: tree_t::children()) {
 			i->show();
+		}
+	}
+
+	i_rect const & raw_area() {
+		return _raw_aera;
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
 		}
 	}
 

@@ -36,6 +36,7 @@ public:
 	virtual auto remove(tree_t * t) -> void = 0;
 	virtual auto set_parent(tree_t * parent) -> void = 0;
 	virtual auto get_all_children(vector<tree_t *> & out) const -> void = 0;
+	virtual auto get_visible_children(vector<tree_t *> & out) -> void = 0;
 	virtual auto children(vector<tree_t *> & out) const -> void = 0;
 	virtual auto hide() -> void = 0;
 	virtual auto show() -> void = 0;
@@ -64,6 +65,18 @@ public:
 	vector<tree_t *> children() const {
 		vector<tree_t *> ret;
 		children(ret);
+		return ret;
+	}
+
+	vector<tree_t *> get_all_children() const {
+		vector<tree_t *> ret;
+		get_all_children(ret);
+		return ret;
+	}
+
+	vector<tree_t *> get_visible_children() {
+		vector<tree_t *> ret;
+		get_visible_children(ret);
 		return ret;
 	}
 

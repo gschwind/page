@@ -284,10 +284,10 @@ public:
 	};
 
 	struct fullscreen_data_t {
+		desktop_t * desktop;
 		viewport_t * viewport;
 		managed_window_type_e revert_type;
 		notebook_t * revert_notebook;
-
 	};
 
 	enum process_mode_e {
@@ -369,7 +369,7 @@ public:
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<client_managed_t *, fullscreen_data_t> fullscreen_client_to_viewport;
+	map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
 
@@ -425,6 +425,7 @@ private:
 	i_rect _allocation;
 
 	mutable vector<tree_t *> _all_children_cache;
+	mutable vector<tree_t *> _visible_children_cache;
 	mutable vector<tree_t *> _current_desktop_children_cache;
 
 public:
@@ -564,7 +565,8 @@ public:
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
 	vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(Window w);
-	viewport_t * find_viewport_for(notebook_t * n);
+	viewport_t * find_viewport_of(tree_t * n);
+	desktop_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(Window w, Cursor c);
 	void update_windows_stack();
 	void update_viewport_layout();
@@ -591,8 +593,15 @@ public:
 	void remove(tree_t * t);
 
 	void attach_dock(client_not_managed_t * uw) {
-		docks.push_back(uw);
-		uw->set_parent(this);
+		if(uw->net_wm_state() != nullptr) {
+			if(has_key<unsigned>(*(uw->net_wm_state()), A(_NET_WM_STATE_STICKY))) {
+				for(auto i: _desktop_list) {
+					i->add_dock_client(uw);
+				}
+			} else {
+				_desktop_list[_current_desktop]->add_dock_client(uw);
+			}
+		}
 	}
 
 	void detach_dock(client_not_managed_t * uw) {
@@ -641,7 +650,7 @@ public:
 	void render();
 
 	/** this function update often used list of children **/
-	void update_structure_cache() const;
+	void update_structure_cache();
 
 
 	/** debug function that try to print the state of page in stdout **/
@@ -656,6 +665,10 @@ public:
 
 	void switch_to_desktop(int desktop, Time time);
 
+	void update_fullscreen_clients_position();
+	void update_desktop_visibility();
+
+	auto get_visible_children(vector<tree_t *> & out) -> void;
 
 };
 

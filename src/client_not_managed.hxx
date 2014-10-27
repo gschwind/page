@@ -179,6 +179,13 @@ public:
 		return w == _properties->id();
 	}
 
+	void get_visible_children(vector<tree_t *> & out) {
+		out.push_back(this);
+		for (auto i : tree_t::children()) {
+			i->get_visible_children(out);
+		}
+	}
+
 };
 
 }

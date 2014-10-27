@@ -25,16 +25,21 @@ using namespace std;
 
 struct desktop_t: public page_component_t {
 
-public:
+private:
+
 	page_component_t * _parent;
 	i_rect _allocation;
 
 	/** map viewport to real outputs **/
 	map<RRCrtc, viewport_t *> _viewport_outputs;
-
+	list<client_not_managed_t *> _dock_clients;
 	list<client_managed_t *> _floating_clients;
+	list<client_managed_t *> _fullscreen_clients;
+
 
 	notebook_t * _default_pop;
+
+
 
 	bool _is_hidden;
 
@@ -79,11 +84,22 @@ public:
 	}
 
 	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
-		for(auto &i: _viewport_outputs) {
+		if(_is_hidden)
+			return;
+
+		for(auto i: _viewport_outputs) {
 			i.second->prepare_render(out, time);
 		}
 
-		for(auto &i: _floating_clients) {
+		for(auto i: _dock_clients) {
+			i->prepare_render(out, time);
+		}
+
+		for(auto i: _floating_clients) {
+			i->prepare_render(out, time);
+		}
+
+		for(auto i: _fullscreen_clients) {
 			i->prepare_render(out, time);
 		}
 	}
@@ -141,9 +157,18 @@ public:
 				out.push_back(i.second);
 		}
 
+		for(auto i: _dock_clients) {
+				out.push_back(i);
+		}
+
 		for(auto i: _floating_clients) {
 				out.push_back(i);
 		}
+
+		for(auto i: _fullscreen_clients) {
+				out.push_back(i);
+		}
+
 	}
 
 	notebook_t * get_default_pop() {
@@ -163,6 +188,16 @@ public:
 		c->set_parent(this);
 	}
 
+	void add_dock_client(client_not_managed_t * c) {
+		_dock_clients.push_back(c);
+		c->set_parent(this);
+	}
+
+	void add_fullscreen_client(client_managed_t * c) {
+		_fullscreen_clients.push_back(c);
+		c->set_parent(this);
+	}
+
 	void replace(page_component_t * src, page_component_t * by) {
 		throw std::runtime_error("desktop_t::replace implemented yet!");
 	}
@@ -175,7 +210,9 @@ public:
 			}
 		}
 
+		_dock_clients.remove(reinterpret_cast<client_not_managed_t*>(src));
 		_floating_clients.remove(reinterpret_cast<client_managed_t*>(src));
+		_fullscreen_clients.remove(reinterpret_cast<client_managed_t*>(src));
 
 	}
 
@@ -189,7 +226,17 @@ public:
 			i.second->get_all_children(out);
 		}
 
+		for(auto i: _dock_clients) {
+			out.push_back(i);
+			i->get_all_children(out);
+		}
+
 		for(auto i: _floating_clients) {
+			out.push_back(i);
+			i->get_all_children(out);
+		}
+
+		for(auto i: _fullscreen_clients) {
 			out.push_back(i);
 			i->get_all_children(out);
 		}
@@ -211,6 +258,15 @@ public:
 
 	bool is_hidden() {
 		return _is_hidden;
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
+		}
 	}
 
 };

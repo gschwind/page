@@ -280,6 +280,8 @@ void split_t::remove(tree_t * t) {
 }
 
 void split_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	if(_is_hidden)
+		return;
 	for(auto i: _children) {
 		i->prepare_render(out, time);
 	}
