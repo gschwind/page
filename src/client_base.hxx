@@ -45,6 +45,8 @@ protected:
 	// window title cache
 	string _title;
 
+	bool _is_hidden;
+
 	/** short cut **/
 	Atom A(atom_e atom) {
 		return _properties->cnx()->A(atom);
@@ -56,7 +58,8 @@ public:
 		_properties(c._properties),
 		_title(c._title),
 		_children(c._children),
-		_parent(nullptr)
+		_parent(nullptr),
+		_is_hidden(true)
 	{
 
 	}
@@ -243,6 +246,11 @@ public:
 		page_assert(s != nullptr);
 		_children.push_back(s);
 		s->set_parent(this);
+		if(_is_hidden) {
+			s->hide();
+		} else {
+			s->show();
+		}
 	}
 
 	void remove_subclient(client_base_t * s) {
@@ -402,12 +410,14 @@ public:
 	}
 
 	void hide() {
+		_is_hidden = true;
 		for(auto i: tree_t::children()) {
 			i->hide();
 		}
 	}
 
 	void show() {
+		_is_hidden = false;
 		for(auto i: tree_t::children()) {
 			i->show();
 		}

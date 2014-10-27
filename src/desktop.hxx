@@ -62,10 +62,6 @@ public:
 	void set_raw_area(i_rect const & area);
 	void set_effective_area(i_rect const & area);
 
-	virtual bool is_visible() {
-		return true;
-	}
-
 	void notebook_close(notebook_t * src);
 
 	void render(cairo_t * cr, i_rect const & area) const {
@@ -78,13 +74,17 @@ public:
 		}
 	}
 
-	virtual string get_node_name() const {
+	string get_node_name() const {
 		return _get_node_name<'D'>();
 	}
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 		for(auto &i: _viewport_outputs) {
 			i.second->prepare_render(out, time);
+		}
+
+		for(auto &i: _floating_clients) {
+			i->prepare_render(out, time);
 		}
 	}
 
@@ -160,6 +160,7 @@ public:
 
 	void add_floating_client(client_managed_t * c) {
 		_floating_clients.push_back(c);
+		c->set_parent(this);
 	}
 
 	void replace(page_component_t * src, page_component_t * by) {

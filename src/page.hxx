@@ -536,6 +536,7 @@ public:
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void insert_in_tree_using_transient_for(client_base_t * c);
+	void insert_in_tree_using_transient_for(client_managed_t * c);
 	void safe_update_transient_for(client_base_t * c);
 
 	client_base_t * get_transient_for(client_base_t * c);
@@ -653,7 +654,7 @@ public:
 	void hide();
 	void show();
 
-	void switch_to_desktop(int desktop);
+	void switch_to_desktop(int desktop, Time time);
 
 
 };

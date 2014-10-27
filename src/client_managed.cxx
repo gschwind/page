@@ -43,8 +43,7 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				_deco(None),
 				_floating_area(0),
 				_is_focused(false),
-				_is_iconic(true),
-				_is_hidden(true)
+				_is_iconic(true)
 {
 
 	cnx()->add_to_save_set(orig());
@@ -189,6 +188,8 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	composite_surface_manager_t::onmap(cnx()->dpy(), _base);
 
 	update_icon();
+
+	_current_desktop = 0;
 
 }
 

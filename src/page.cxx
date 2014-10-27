@@ -631,11 +631,11 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 		if(k == bind_right_desktop.ks and (e.state & bind_right_desktop.mod)) {
-			switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
+			switch_to_desktop((_current_desktop + 1) % _desktop_list.size(), e.time);
 		}
 
 		if(k == bind_left_desktop.ks and (e.state & bind_left_desktop.mod)) {
-			switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
+			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e.time);
 		}
 
 
@@ -2530,7 +2530,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 		}
 	} else if (e.message_type == A(_NET_CURRENT_DESKTOP)) {
 		if(e.data.l[0] >= 0 and e.data.l[0] < _desktop_list.size() and e.data.l[0] != _current_desktop) {
-			switch_to_desktop(e.data.l[0]);
+			switch_to_desktop(e.data.l[0], CurrentTime);
 		}
 	}
 }
@@ -3254,6 +3254,22 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 	update_structure_cache();
 }
 
+void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
+	detach(c);
+	client_base_t * transient_for = get_transient_for(c);
+	if (transient_for != nullptr) {
+		transient_for->add_subclient(c);
+	} else {
+		_desktop_list[c->current_desktop()]->add_floating_client(c);
+		if(_desktop_list[c->current_desktop()]->is_hidden()) {
+			c->hide();
+		} else {
+			c->show();
+		}
+	}
+	update_structure_cache();
+}
+
 client_base_t * page_t::get_transient_for(client_base_t * c) {
 	client_base_t * transient_for = nullptr;
 	if(c != nullptr) {
@@ -3317,8 +3333,7 @@ void page_t::unbind_window(client_managed_t * mw) {
 	detach(mw);
 	/* update database */
 	mw->set_managed_type(MANAGED_FLOATING);
-	mw->set_parent(this);
-	safe_update_transient_for(mw);
+	insert_in_tree_using_transient_for(mw);
 	mw->expose();
 	mw->normalize();
 	safe_raise_window(mw);
@@ -4556,7 +4571,7 @@ void page_t::show() {
 	}
 }
 
-void page_t::switch_to_desktop(int desktop) {
+void page_t::switch_to_desktop(int desktop, Time time) {
 	if (desktop != _current_desktop) {
 		_desktop_list[_current_desktop]->hide();
 		_current_desktop = desktop;
@@ -4564,6 +4579,7 @@ void page_t::switch_to_desktop(int desktop) {
 		update_structure_cache();
 		_desktop_list[_current_desktop]->show();
 		rpage->add_damaged(_root_position);
+		set_focus(nullptr, time);
 	}
 }
 

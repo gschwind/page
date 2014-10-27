@@ -95,7 +95,6 @@ private:
 	int _current_desktop;
 
 	bool _is_iconic;
-	bool _is_hidden;
 
 public:
 
