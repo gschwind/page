@@ -25,10 +25,9 @@ namespace page {
 struct viewport_t: public page_component_t {
 
 private:
-
 	page_component_t * _parent;
-
 	theme_t * _theme;
+	bool _is_hidden;
 
 	viewport_t(viewport_t const & v);
 	viewport_t & operator= (viewport_t const &);
@@ -127,6 +126,22 @@ public:
 	void children(vector<tree_t *> & out) const {
 		if(_subtree != nullptr) {
 			out.push_back(_subtree);
+		}
+	}
+
+	void hide() {
+		_is_hidden = true;
+
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+
+		for(auto i: tree_t::children()) {
+			i->show();
 		}
 	}
 

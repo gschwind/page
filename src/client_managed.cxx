@@ -42,7 +42,9 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				_base(None),
 				_deco(None),
 				_floating_area(0),
-				_is_focused(false)
+				_is_focused(false),
+				_is_iconic(true),
+				_is_hidden(true)
 {
 
 	cnx()->add_to_save_set(orig());
@@ -709,11 +711,14 @@ void client_managed_t::net_wm_state_delete() {
 
 void client_managed_t::normalize() {
 	if (lock()) {
+		_is_iconic = false;
 		cnx()->write_wm_state(_orig, NormalState, None);
-		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-		cnx()->map_window(_orig);
-		cnx()->map_window(_deco);
-		cnx()->map_window(_base);
+		if (not _is_hidden) {
+			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			cnx()->map_window(_orig);
+			cnx()->map_window(_deco);
+			cnx()->map_window(_base);
+		}
 
 		try {
 			_composite_surf = composite_surface_manager_t::get(cnx()->dpy(),
@@ -734,6 +739,7 @@ void client_managed_t::normalize() {
 
 void client_managed_t::iconify() {
 	if (lock()) {
+		_is_iconic = true;
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		cnx()->write_wm_state(_orig, IconicState, None);
 		cnx()->unmap(_base);
@@ -883,7 +889,7 @@ display_t * client_managed_t::cnx() {
 
 void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
 
-	if (_composite_surf != nullptr) {
+	if (_composite_surf != nullptr and not _is_hidden) {
 
 		i_rect loc{base_position()};
 

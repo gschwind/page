@@ -94,6 +94,9 @@ private:
 
 	int _current_desktop;
 
+	bool _is_iconic;
+	bool _is_hidden;
+
 public:
 
 	client_managed_t(Atom net_wm_type, ptr<client_properties_t> c,
@@ -237,6 +240,33 @@ public:
 	i_rect compute_floating_close_position(i_rect const & allocation) const;
 	region visible_area() const;
 
+	void hide() {
+		_is_hidden = true;
+
+		net_wm_state_add(_NET_WM_STATE_HIDDEN);
+		cnx()->unmap(_orig);
+		cnx()->unmap(_deco);
+		cnx()->unmap(_base);
+
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+
+		if (not _is_iconic) {
+			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			cnx()->map_window(_orig);
+			cnx()->map_window(_deco);
+			cnx()->map_window(_base);
+		}
+
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
 
 };
 

@@ -401,6 +401,17 @@ public:
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
+	void hide() {
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
 
 };
 

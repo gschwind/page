@@ -29,19 +29,18 @@ public:
 	tree_t() { }
 
 	virtual ~tree_t();
-	virtual tree_t * parent() const = 0;
 
-	virtual string get_node_name() const = 0;
+	virtual auto parent() const -> tree_t * = 0;
+	virtual auto get_node_name() const -> string = 0;
+	virtual auto raise_child(tree_t * t = nullptr) -> void = 0;
+	virtual auto remove(tree_t * t) -> void = 0;
+	virtual auto set_parent(tree_t * parent) -> void = 0;
+	virtual auto get_all_children(vector<tree_t *> & out) const -> void = 0;
+	virtual auto children(vector<tree_t *> & out) const -> void = 0;
+	virtual auto hide() -> void = 0;
+	virtual auto show() -> void = 0;
+	virtual auto prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) -> void = 0;
 
-	/**
-	 * Raise a child over others respecting stack priority
-	 * if t == nullptr, this mean we raise ourself.
-	 **/
-	virtual void raise_child(tree_t * t = nullptr) = 0;
-	virtual void remove(tree_t * t) = 0;
-	virtual void set_parent(tree_t * parent) = 0;
-	virtual void get_all_children(vector<tree_t *> & out) const = 0;
-	virtual void children(vector<tree_t *> & out) const = 0;
 
 	template<char const c>
 	string _get_node_name() const {
@@ -51,7 +50,6 @@ public:
 		return string(buffer);
 	}
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) = 0;
 
 	void print_tree(int level = 0) const {
 		char space[] = "                               ";
@@ -68,7 +66,6 @@ public:
 		children(ret);
 		return ret;
 	}
-
 
 };
 

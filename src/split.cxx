@@ -18,7 +18,7 @@ namespace page {
 
 split_t::split_t(split_type_e type, theme_t const * theme) :
 		_theme(theme), _split_bar_area(), _split_type(type), _split(
-				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr) {
+				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr), _is_hidden(false) {
 
 }
 

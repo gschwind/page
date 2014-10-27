@@ -650,6 +650,9 @@ public:
 
 	void update_current_desktop() const;
 
+	void hide();
+	void show();
+
 };
 
 

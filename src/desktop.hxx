@@ -32,7 +32,11 @@ public:
 	/** map viewport to real outputs **/
 	map<RRCrtc, viewport_t *> _viewport_outputs;
 
+	list<client_managed_t *> _floating_clients;
+
 	notebook_t * _default_pop;
+
+	bool _is_hidden;
 
 	desktop_t(desktop_t const & v);
 	desktop_t & operator= (desktop_t const &);
@@ -43,16 +47,17 @@ public:
 		return _parent;
 	}
 
-	desktop_t() : _allocation(), _parent(nullptr), _viewport_outputs(), _default_pop(nullptr) {
+	desktop_t() :
+		_allocation(),
+		_parent(nullptr),
+		_viewport_outputs(),
+		_default_pop(nullptr),
+		_is_hidden(false)
+	{
 
 	}
 
-	virtual void replace(page_component_t * src, page_component_t * by);
-	virtual void remove(tree_t * src);
-
 	notebook_t * get_nearest_notebook();
-
-	virtual void set_allocation(i_rect const & area);
 
 	void set_raw_area(i_rect const & area);
 	void set_effective_area(i_rect const & area);
@@ -63,18 +68,8 @@ public:
 
 	void notebook_close(notebook_t * src);
 
-	virtual void render(cairo_t * cr, i_rect const & area) const {
+	void render(cairo_t * cr, i_rect const & area) const {
 
-	}
-
-	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret;
-
-		for(auto &i: _viewport_outputs) {
-			ret.push_back(i.second);
-		}
-
-		return ret;
 	}
 
 	void raise_child(tree_t * t) {
@@ -108,8 +103,6 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 	i_rect const & raw_area() const;
-
-	void get_all_children(vector<tree_t *> & out) const;
 
 	auto get_viewport_map() const -> map<RRCrtc, viewport_t *> const & {
 		return _viewport_outputs;
@@ -147,6 +140,10 @@ public:
 		for(auto i: _viewport_outputs) {
 				out.push_back(i.second);
 		}
+
+		for(auto i: _floating_clients) {
+				out.push_back(i);
+		}
 	}
 
 	notebook_t * get_default_pop() {
@@ -159,6 +156,56 @@ public:
 		}
 
 		return nullptr;
+	}
+
+	void add_floating_client(client_managed_t * c) {
+		_floating_clients.push_back(c);
+	}
+
+	void replace(page_component_t * src, page_component_t * by) {
+		throw std::runtime_error("desktop_t::replace implemented yet!");
+	}
+
+	void remove(tree_t * src) {
+		for(auto i : _viewport_outputs) {
+			if(i.second == src) {
+				_viewport_outputs.erase(i.first);
+				return;
+			}
+		}
+
+		_floating_clients.remove(reinterpret_cast<client_managed_t*>(src));
+
+	}
+
+	void set_allocation(i_rect const & area) {
+		_allocation = area;
+	}
+
+	void get_all_children(vector<tree_t *> & out) const {
+		for(auto i: _viewport_outputs) {
+			out.push_back(i.second);
+			i.second->get_all_children(out);
+		}
+
+		for(auto i: _floating_clients) {
+			out.push_back(i);
+			i->get_all_children(out);
+		}
+	}
+
+	void hide() {
+		_is_hidden = true;
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
 	}
 
 };

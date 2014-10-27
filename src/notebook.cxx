@@ -23,7 +23,8 @@ notebook_t::notebook_t(theme_t const * theme) :
 		_theme{theme},
 		_parent{nullptr},
 		_is_default{false},
-		_selected{nullptr}
+		_selected{nullptr},
+		_is_hidden{false}
 {
 
 }

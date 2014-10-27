@@ -413,18 +413,18 @@ void page_t::run() {
 	}
 }
 
-client_managed_t * page_t::manage(Atom net_wm_type, ptr<client_properties_t> c) {
-	cnx->add_to_save_set(c->id());
-	/* set border to zero */
-	XSetWindowBorder(cnx->dpy(), c->id(), 0);
-	/* assign window to desktop 0 */
-	c->set_net_wm_desktop(0);
-	client_managed_t * mw = new client_managed_t{net_wm_type, c, theme};
-	add_client(mw);
-
-	printf("managing : '%s'\n", mw->title().c_str());
-	return mw;
-}
+//client_managed_t * page_t::manage(Atom net_wm_type, ptr<client_properties_t> c) {
+//	cnx->add_to_save_set(c->id());
+//	/* set border to zero */
+//	XSetWindowBorder(cnx->dpy(), c->id(), 0);
+//	/* assign window to desktop 0 */
+//	c->set_net_wm_desktop(_current_desktop);
+//	client_managed_t * mw = new client_managed_t{net_wm_type, c, theme};
+//	add_client(mw);
+//
+//	printf("managing : '%s'\n", mw->title().c_str());
+//	return mw;
+//}
 
 void page_t::unmanage(client_managed_t * mw) {
 	/* if window is in move/resize/notebook move, do cleanup */
@@ -3853,6 +3853,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 		update_windows_stack();
 
 		mw->set_current_desktop(_current_desktop);
+		mw->show();
 
 		/* HACK OLD FASHION FULLSCREEN */
 		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
@@ -4573,6 +4574,18 @@ void page_t::update_current_desktop() const {
 	long current_desktop = _current_desktop;
 	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
 			32, &current_desktop, 1);
+}
+
+void page_t::hide() {
+	for(auto i: tree_t::children()) {
+		i->hide();
+	}
+}
+
+void page_t::show() {
+	for(auto i: tree_t::children()) {
+		i->show();
+	}
 }
 
 }
