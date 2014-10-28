@@ -42,6 +42,7 @@ public:
 			client_base_t(c),
 			_net_wm_type(type)
 	{
+		_is_hidden = false;
 		_properties->cnx()->grab();
 		XSelectInput(_properties->cnx()->dpy(), _properties->id(),
 				UNMANAGED_ORIG_WINDOW_EVENT_MASK);

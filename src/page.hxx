@@ -346,16 +346,12 @@ public:
 	display_t * cnx;
 	compositor_t * rnd;
 
-	map<Window, client_base_t *> clients;
-
 	list<client_not_managed_t *> below;
 	list<client_base_t *> root_subclients;
 	list<client_not_managed_t *> docks;
 	list<client_not_managed_t *> tooltips;
 	list<client_not_managed_t *> notifications;
 	list<client_not_managed_t *> above;
-
-
 
 	bool running;
 	bool _need_render;
@@ -585,7 +581,6 @@ public:
 	client_base_t * find_client_with(Window w);
 	client_base_t * find_client(Window w);
 	void remove_client(client_base_t * c);
-	void add_client(client_base_t * c);
 	vector<tree_t *> childs() const;
 	string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);

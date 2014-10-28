@@ -184,8 +184,6 @@ page_t::~page_t() {
 	}
 
 	_all_children_cache.clear();
-	/* all client should be in childs, while we already destroyed all child, just clear this list */
-	clients.clear();
 
 	if(page_areas != nullptr) {
 		delete page_areas;
@@ -446,7 +444,6 @@ void page_t::unmanage(client_managed_t * mw) {
 	mw->net_wm_state_delete();
 	mw->wm_state_delete();
 
-	clients.erase(mw->orig());
 	update_client_list();
 	update_allocation();
 	rpage->mark_durty();
@@ -3040,9 +3037,9 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 	int xbottom = _root_position.h - raw_area.y - raw_area.h;
 
 
-	for(auto & j : clients) {
-		if (j.second->net_wm_struct_partial() != nullptr) {
-			auto const & ps = *(j.second->net_wm_struct_partial());
+	for(auto j : filter_class<client_base_t>(_all_children_cache)) {
+		if (j->net_wm_struct_partial() != nullptr) {
+			auto const & ps = *(j->net_wm_struct_partial());
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
@@ -3805,9 +3802,7 @@ void page_t::create_managed_window(ptr<client_properties_t> c, Atom type) {
 
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme);
-		add_client(mw);
 		manage_client(mw, type);
-
 	} catch (...) {
 		printf("Error while creating managed window\n");
 		throw;
@@ -3906,7 +3901,6 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type) {
 	try {
 		client_not_managed_t * uw = new client_not_managed_t(type, c);
-		add_client(uw);
 		uw->map();
 		safe_update_transient_for(uw);
 		safe_raise_window(uw);
@@ -3925,7 +3919,6 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 
 void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
 	client_not_managed_t * uw = new client_not_managed_t(type, c);
-	add_client(uw);
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);
@@ -4027,7 +4020,7 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			notifications.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->net_wm_state() != nullptr
-				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_ABOVE)))) {
+				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
 			detach(uw);
 			above.push_back(uw);
 			uw->set_parent(this);
@@ -4062,24 +4055,24 @@ void page_t::set_desktop_geometry(long width, long height) {
 }
 
 client_base_t * page_t::find_client_with(Window w) {
-	for(auto &i: clients) {
-		if(i.second->has_window(w)) {
-			return i.second;
+	for(auto i: filter_class<client_base_t>(_all_children_cache)) {
+		if(i->has_window(w)) {
+			return i;
 		}
 	}
 	return nullptr;
 }
 
 client_base_t * page_t::find_client(Window w) {
-	auto i = clients.find(w);
-	if (i != clients.end()) {
-		return i->second;
+	for(auto i: filter_class<client_base_t>(_all_children_cache)) {
+		if(i->orig() == w) {
+			return i;
+		}
 	}
 	return nullptr;
 }
 
 void page_t::remove_client(client_base_t * c) {
-	clients.erase(c->orig());
 	tree_t * parent = c->parent();
 	if (parent != nullptr) {
 		if (typeid(*parent) == typeid(notebook_t)) {
@@ -4095,11 +4088,6 @@ void page_t::remove_client(client_base_t * c) {
 		}
 	}
 	delete c;
-}
-
-void page_t::add_client(client_base_t * c) {
-	page_assert(clients.find(c->orig()) == clients.end());
-	clients[c->orig()] = c;
 }
 
 vector<tree_t *> page_t::childs() const {
@@ -4538,8 +4526,8 @@ void page_t::print_state() const {
 	cout << "_global_default_pop = " << _global_default_pop << endl;
 
 	cout << "clients list:" << endl;
-	for(auto c: clients) {
-		cout << "client " << c.second->get_node_name() << " id = " << c.first << " ptr = " << c.second << " parent = " << c.second->parent() << endl;
+	for(auto c: filter_class<client_base_t>(_all_children_cache)) {
+		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
 	}
 	cout << "end" << endl;;
 
