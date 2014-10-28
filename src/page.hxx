@@ -420,8 +420,6 @@ private:
 
 	i_rect _allocation;
 
-	mutable vector<tree_t *> _visible_children_cache;
-
 public:
 
 	theme_t * theme;

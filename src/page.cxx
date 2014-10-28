@@ -4377,7 +4377,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 
 	rnd->add_damaged(rpage->get_damaged());
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
- 	rpage->repair_damaged(_visible_children_cache);
+ 	rpage->repair_damaged(tree_t::get_visible_children());
 
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
@@ -4461,8 +4461,6 @@ void page_t::set_allocation(i_rect const & r) {
 
 void page_t::update_structure_cache() {
 	_global_default_pop = _desktop_list[_current_desktop]->get_default_pop();
-
-	_visible_children_cache = tree_t::get_visible_children();
 
 	print_state();
 
