@@ -369,8 +369,6 @@ public:
 
 	list<Atom> supported_list;
 
-	mutable notebook_t * _global_default_pop;
-
 	string page_base_dir;
 
 	map<Window, window_handler_t *> window_list;
@@ -562,7 +560,7 @@ public:
 	void set_window_cursor(Window w, Cursor c);
 	void update_windows_stack();
 	void update_viewport_layout();
-	void remove_viewport(viewport_t * v);
+	void remove_viewport(desktop_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
 	void create_managed_window(shared_ptr<client_properties_t> c, Atom type);
@@ -641,14 +639,8 @@ public:
 
 	void render();
 
-	/** this function update often used list of children **/
-	void update_structure_cache();
-
-
 	/** debug function that try to print the state of page in stdout **/
 	void print_state() const;
-
-
 
 	void update_current_desktop() const;
 

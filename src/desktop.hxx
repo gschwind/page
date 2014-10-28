@@ -39,8 +39,6 @@ private:
 
 	notebook_t * _default_pop;
 
-
-
 	bool _is_hidden;
 
 	desktop_t(desktop_t const & v);
@@ -145,7 +143,9 @@ public:
 	}
 
 	void set_default_pop(notebook_t * n) {
+		_default_pop->set_default(false);
 		_default_pop = n;
+		_default_pop->set_default(true);
 	}
 
 	notebook_t * default_pop() {
@@ -172,15 +172,25 @@ public:
 	}
 
 	notebook_t * get_default_pop() {
+		return _default_pop;
+	}
+
+	void update_default_pop() {
+		_default_pop = nullptr;
 		vector<tree_t *> all_children;
 		get_all_children(all_children);
 		for(auto i: all_children) {
 			if(typeid(*i) == typeid(notebook_t)) {
-				return dynamic_cast<notebook_t*>(i);
+				dynamic_cast<notebook_t*>(i)->set_default(false);
 			}
 		}
-
-		return nullptr;
+		for(auto i: all_children) {
+			if(typeid(*i) == typeid(notebook_t)) {
+				_default_pop = dynamic_cast<notebook_t*>(i);
+				_default_pop->set_default(true);
+				break;
+			}
+		}
 	}
 
 	void add_floating_client(client_managed_t * c) {
