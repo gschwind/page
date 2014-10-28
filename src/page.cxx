@@ -175,15 +175,14 @@ page_t::~page_t() {
 
 	/* get all childs excluding this */
 	update_structure_cache();
-	for (auto &i : _all_children_cache) {
-		if(typeid(*i) == typeid(client_managed_t)) {
-			client_managed_t * mw = dynamic_cast<client_managed_t *>(i);
-			cnx->reparentwindow(mw->orig(), cnx->root(), 0, 0);
-		}
-		delete i;
+
+	for (auto i : filter_class<client_managed_t>(tree_t::get_all_children())) {
+		cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
 	}
 
-	_all_children_cache.clear();
+	for (auto i : tree_t::get_all_children()) {
+		delete i;
+	}
 
 	if(page_areas != nullptr) {
 		delete page_areas;
@@ -2778,8 +2777,7 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 
 /* update viewport and childs allocation */
 void page_t::update_allocation() {
-	vector<viewport_t*> viewports = filter_class<viewport_t>(_all_children_cache);
-	for(auto v: viewports) {
+	for(auto v: filter_class<viewport_t>(tree_t::get_all_children())) {
 		compute_viewport_allocation(*v);
 	}
 }
@@ -3037,7 +3035,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 	int xbottom = _root_position.h - raw_area.y - raw_area.h;
 
 
-	for(auto j : filter_class<client_base_t>(_all_children_cache)) {
+	for(auto j : filter_class<client_base_t>(tree_t::get_all_children())) {
 		if (j->net_wm_struct_partial() != nullptr) {
 			auto const & ps = *(j->net_wm_struct_partial());
 
@@ -3262,7 +3260,7 @@ client_base_t * page_t::get_transient_for(client_base_t * c) {
 
 void page_t::detach(tree_t * t) {
 	remove(t);
-	for(auto i : _all_children_cache) {
+	for(auto i : tree_t::get_all_children()) {
 		i->remove(t);
 	}
 	t->set_parent(nullptr);
@@ -3447,13 +3445,9 @@ notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
 }
 
 vector<notebook_t *> page_t::get_notebooks(tree_t * base) {
-	if(base == nullptr) {
-		return filter_class<notebook_t>(_all_children_cache);
-	} else {
-		vector<tree_t *> tmp;
-		base->get_all_children(tmp);
-		return filter_class<notebook_t>(tmp);
-	}
+	if(base == nullptr)
+		base = this;
+	return filter_class<notebook_t>(base->get_all_children());
 }
 
 notebook_t * page_t::find_parent_notebook_for(client_managed_t * mw) {
@@ -3969,7 +3963,7 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 }
 
 vector<client_managed_t *> page_t::get_managed_windows() {
-	return filter_class<client_managed_t>(_all_children_cache);
+	return filter_class<client_managed_t>(tree_t::get_all_children());
 }
 
 client_managed_t * page_t::find_managed_window_with(Window w) {
@@ -4055,7 +4049,7 @@ void page_t::set_desktop_geometry(long width, long height) {
 }
 
 client_base_t * page_t::find_client_with(Window w) {
-	for(auto i: filter_class<client_base_t>(_all_children_cache)) {
+	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
 		if(i->has_window(w)) {
 			return i;
 		}
@@ -4064,7 +4058,7 @@ client_base_t * page_t::find_client_with(Window w) {
 }
 
 client_base_t * page_t::find_client(Window w) {
-	for(auto i: filter_class<client_base_t>(_all_children_cache)) {
+	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
 		if(i->orig() == w) {
 			return i;
 		}
@@ -4088,43 +4082,6 @@ void page_t::remove_client(client_base_t * c) {
 		}
 	}
 	delete c;
-}
-
-vector<tree_t *> page_t::childs() const {
-	vector<tree_t *> ret;
-	for (auto i: _desktop_list) {
-		ret.push_back(i);
-	}
-
-	for(auto x: below) {
-		ret.push_back(x);
-	}
-
-	for(auto x: docks) {
-		ret.push_back(x);
-	}
-
-//	for(auto x: _fullscreen_client_to_viewport) {
-//		ret.push_back(x.first);
-//	}
-
-	for(auto x: root_subclients) {
-		ret.push_back(x);
-	}
-
-	for(auto x: tooltips) {
-		ret.push_back(x);
-	}
-
-	for(auto x: notifications) {
-		ret.push_back(x);
-	}
-
-	for(auto x: above) {
-		ret.push_back(x);
-	}
-
-	return ret;
 }
 
 void page_t::get_all_children(vector<tree_t *> & out) const {
@@ -4421,7 +4378,7 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
  	rpage->repair_damaged(_visible_children_cache);
 
-	for(auto i: childs()) {
+	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
 	}
 
@@ -4502,8 +4459,6 @@ void page_t::set_allocation(i_rect const & r) {
 }
 
 void page_t::update_structure_cache() {
-	_all_children_cache.clear();
-	get_all_children(_all_children_cache);
 	_current_desktop_children_cache.clear();
 	_desktop_list[_current_desktop]->get_all_children(_current_desktop_children_cache);
 	_global_default_pop = _desktop_list[_current_desktop]->get_default_pop();
@@ -4515,8 +4470,33 @@ void page_t::update_structure_cache() {
 }
 
 void page_t::children(vector<tree_t *> & out) const {
-	vector<tree_t*> x = childs();
-	out.insert(out.end(), x.begin(), x.end());
+	for (auto i: _desktop_list) {
+		out.push_back(i);
+	}
+
+	for(auto x: below) {
+		out.push_back(x);
+	}
+
+	for(auto x: docks) {
+		out.push_back(x);
+	}
+
+	for(auto x: root_subclients) {
+		out.push_back(x);
+	}
+
+	for(auto x: tooltips) {
+		out.push_back(x);
+	}
+
+	for(auto x: notifications) {
+		out.push_back(x);
+	}
+
+	for(auto x: above) {
+		out.push_back(x);
+	}
 }
 
 /** debug function that try to print the state of page in stdout **/
@@ -4526,7 +4506,7 @@ void page_t::print_state() const {
 	cout << "_global_default_pop = " << _global_default_pop << endl;
 
 	cout << "clients list:" << endl;
-	for(auto c: filter_class<client_base_t>(_all_children_cache)) {
+	for(auto c: filter_class<client_base_t>(tree_t::get_all_children())) {
 		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
 	}
 	cout << "end" << endl;;
@@ -4570,7 +4550,7 @@ void page_t::update_fullscreen_clients_position() {
 }
 
 void page_t::update_desktop_visibility() {
-	/** hide only desktop that must be hiden first **/
+	/** hide only desktop that must be hidden first **/
 	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
 		if(k != _current_desktop) {
 			_desktop_list[k]->hide();
@@ -4589,6 +4569,7 @@ void page_t::update_desktop_visibility() {
 
 void page_t::get_visible_children(vector<tree_t *> & out) {
 	out.push_back(this);
+	/** all children are visible within page **/
 	for(auto i: tree_t::children()) {
 		i->get_visible_children(out);
 	}

@@ -420,7 +420,6 @@ private:
 
 	i_rect _allocation;
 
-	mutable vector<tree_t *> _all_children_cache;
 	mutable vector<tree_t *> _visible_children_cache;
 	mutable vector<tree_t *> _current_desktop_children_cache;
 
@@ -581,7 +580,6 @@ public:
 	client_base_t * find_client_with(Window w);
 	client_base_t * find_client(Window w);
 	void remove_client(client_base_t * c);
-	vector<tree_t *> childs() const;
 	string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
@@ -639,8 +637,10 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 
-
+	void children(vector<tree_t *> & out) const;
 	void get_all_children(vector<tree_t *> & out) const;
+	void get_visible_children(vector<tree_t *> & out);
+
 
 	void render();
 
@@ -651,7 +651,7 @@ public:
 	/** debug function that try to print the state of page in stdout **/
 	void print_state() const;
 
-	void children(vector<tree_t *> & out) const;
+
 
 	void update_current_desktop() const;
 
@@ -663,7 +663,7 @@ public:
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();
 
-	auto get_visible_children(vector<tree_t *> & out) -> void;
+
 
 };
 

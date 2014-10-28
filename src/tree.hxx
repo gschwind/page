@@ -35,9 +35,11 @@ public:
 	virtual auto raise_child(tree_t * t = nullptr) -> void = 0;
 	virtual auto remove(tree_t * t) -> void = 0;
 	virtual auto set_parent(tree_t * parent) -> void = 0;
+
+	virtual auto children(vector<tree_t *> & out) const -> void = 0;
 	virtual auto get_all_children(vector<tree_t *> & out) const -> void = 0;
 	virtual auto get_visible_children(vector<tree_t *> & out) -> void = 0;
-	virtual auto children(vector<tree_t *> & out) const -> void = 0;
+
 	virtual auto hide() -> void = 0;
 	virtual auto show() -> void = 0;
 	virtual auto prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) -> void = 0;
