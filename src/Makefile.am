@@ -27,6 +27,7 @@ page_SOURCES = \
 	split.cxx \
 	compositor.cxx \
 	viewport.cxx \
+	desktop.cxx \
 	simple2_theme.cxx \
 	client_managed.cxx \
 	client_not_managed.cxx \

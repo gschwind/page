@@ -25,15 +25,9 @@ namespace page {
 struct viewport_t: public page_component_t {
 
 private:
-
 	page_component_t * _parent;
-
 	theme_t * _theme;
-
-	viewport_t(viewport_t const & v);
-	viewport_t & operator= (viewport_t const &);
-
-public:
+	bool _is_hidden;
 
 	/** area without considering dock windows **/
 	i_rect _raw_aera;
@@ -42,10 +36,13 @@ public:
 	i_rect _effective_aera;
 	page_component_t * _subtree;
 
-	bool _is_visible;
+	viewport_t(viewport_t const & v);
+	viewport_t & operator= (viewport_t const &);
+
+public:
 
 	page_component_t * parent() const {
-		throw std::runtime_error("viewport has no parent");
+		return _parent;
 	}
 
 	viewport_t(theme_t * theme, i_rect const & area);
@@ -101,6 +98,8 @@ public:
 	}
 
 	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+		if(_is_hidden)
+			return;
 		if(_subtree != nullptr) {
 			_subtree->prepare_render(out, time);
 		}
@@ -123,6 +122,41 @@ public:
 	i_rect const & raw_area() const;
 
 	void get_all_children(vector<tree_t *> & out) const;
+
+	void children(vector<tree_t *> & out) const {
+		if(_subtree != nullptr) {
+			out.push_back(_subtree);
+		}
+	}
+
+	void hide() {
+		_is_hidden = true;
+
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
+
+	i_rect const & raw_area() {
+		return _raw_aera;
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
+		}
+	}
 
 };
 

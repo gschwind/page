@@ -42,6 +42,7 @@ public:
 			client_base_t(c),
 			_net_wm_type(type)
 	{
+		_is_hidden = false;
 		_properties->cnx()->grab();
 		XSelectInput(_properties->cnx()->dpy(), _properties->id(),
 				UNMANAGED_ORIG_WINDOW_EVENT_MASK);
@@ -177,6 +178,13 @@ public:
 
 	virtual bool has_window(Window w) const {
 		return w == _properties->id();
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		out.push_back(this);
+		for (auto i : tree_t::children()) {
+			i->get_visible_children(out);
+		}
 	}
 
 };

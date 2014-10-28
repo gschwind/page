@@ -17,10 +17,10 @@ namespace page {
 viewport_t::viewport_t(theme_t * theme, i_rect const & area) :
 		_raw_aera(area),
 		_effective_aera(area),
-		_parent(nullptr)
+		_parent(nullptr),
+		_is_hidden(false)
 {
 	_subtree = nullptr;
-	_is_visible = true;
 	_theme = theme;
 	_subtree = new notebook_t(_theme);
 	_subtree->set_parent(this);

@@ -52,7 +52,7 @@
 #include "display.hxx"
 #include "notebook.hxx"
 #include "split.hxx"
-#include "viewport.hxx"
+#include "desktop.hxx"
 #include "config_handler.hxx"
 
 #include "client_not_managed.hxx"
@@ -125,6 +125,9 @@ public:
 	using notebook_dropdown_menu_t = dropdown_menu_t<client_managed_t const *>;
 	ptr<notebook_dropdown_menu_t> menu;
 
+	using client_dropdown_menu_t = dropdown_menu_t<int>;
+	ptr<client_dropdown_menu_t> client_menu;
+
 	struct mode_data_split_t {
 		split_t * split;
 		i_rect slider_area;
@@ -177,6 +180,24 @@ public:
 
 		void reset() {
 			from = nullptr;
+			active_grab = false;
+		}
+
+	};
+
+	struct mode_data_notebook_client_menu_t {
+		notebook_t * from;
+		client_managed_t * client;
+		bool active_grab;
+		i_rect b;
+
+		mode_data_notebook_client_menu_t() {
+			reset();
+		}
+
+		void reset() {
+			from = nullptr;
+			client = nullptr;
 			active_grab = false;
 		}
 
@@ -263,10 +284,10 @@ public:
 	};
 
 	struct fullscreen_data_t {
+		desktop_t * desktop;
 		viewport_t * viewport;
 		managed_window_type_e revert_type;
 		notebook_t * revert_notebook;
-
 	};
 
 	enum process_mode_e {
@@ -281,7 +302,8 @@ public:
 		PROCESS_FULLSCREEN_MOVE, // Alt + click to change fullscreen screen to another one
 		PROCESS_FLOATING_MOVE_BY_CLIENT, // Move requested by client
 		PROCESS_FLOATING_RESIZE_BY_CLIENT, // Resize requested by client
-		PROCESS_NOTEBOOK_MENU
+		PROCESS_NOTEBOOK_MENU,
+		PROCESS_NOTEBOOK_CLIENT_MENU
 	};
 
 	/* this define the current state of page */
@@ -319,11 +341,10 @@ public:
 	mode_data_fullscreen_t mode_data_fullscreen;
 
 	mode_data_notebook_menu_t mode_data_notebook_menu;
+	mode_data_notebook_client_menu_t mode_data_notebook_client_menu;
 
 	display_t * cnx;
 	compositor_t * rnd;
-
-	map<Window, client_base_t *> clients;
 
 	list<client_not_managed_t *> below;
 	list<client_base_t *> root_subclients;
@@ -332,25 +353,21 @@ public:
 	list<client_not_managed_t *> notifications;
 	list<client_not_managed_t *> above;
 
-	Cursor default_cursor;
-
 	bool running;
 	bool _need_render;
 
 	config_handler_t conf;
 
-	/** map viewport to real outputs **/
-	map<RRCrtc, viewport_t *> viewport_outputs;
+	int _current_desktop;
+	vector<desktop_t *> _desktop_list;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<client_managed_t *, fullscreen_data_t> fullscreen_client_to_viewport;
+	map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
 
 	list<Atom> supported_list;
-
-	notebook_t * default_window_pop;
 
 	string page_base_dir;
 
@@ -359,9 +376,9 @@ public:
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
 	key_desc_t bind_close;
-	//key_desc_t bind_toggle_bind;
-	//key_desc_t bind_vert_split;
-	//key_desc_t bind_horz_split;
+
+	key_desc_t bind_right_desktop;
+	key_desc_t bind_left_desktop;
 
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;
@@ -383,6 +400,7 @@ private:
 
 	vector<page_event_t> * page_areas;
 
+	Cursor default_cursor;
 
 	Cursor xc_left_ptr;
 	Cursor xc_fleur;
@@ -399,8 +417,6 @@ private:
 	Cursor xc_top_side;
 
 	i_rect _allocation;
-
-	mutable vector<tree_t *> _all_children_cache;
 
 public:
 
@@ -511,6 +527,7 @@ public:
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 
 	void insert_in_tree_using_transient_for(client_base_t * c);
+	void insert_in_tree_using_transient_for(client_managed_t * c);
 	void safe_update_transient_for(client_base_t * c);
 
 	client_base_t * get_transient_for(client_base_t * c);
@@ -538,11 +555,12 @@ public:
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
 	vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(Window w);
-	viewport_t * find_viewport_for(notebook_t * n);
+	viewport_t * find_viewport_of(tree_t * n);
+	desktop_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(Window w, Cursor c);
 	void update_windows_stack();
 	void update_viewport_layout();
-	void remove_viewport(viewport_t * v);
+	void remove_viewport(desktop_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
 	void create_managed_window(shared_ptr<client_properties_t> c, Atom type);
@@ -557,16 +575,21 @@ public:
 	client_base_t * find_client_with(Window w);
 	client_base_t * find_client(Window w);
 	void remove_client(client_base_t * c);
-	void add_client(client_base_t * c);
-	vector<tree_t *> childs() const;
 	string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
 	void remove(tree_t * t);
 
 	void attach_dock(client_not_managed_t * uw) {
-		docks.push_back(uw);
-		uw->set_parent(this);
+		if(uw->net_wm_state() != nullptr) {
+			if(has_key<unsigned>(*(uw->net_wm_state()), A(_NET_WM_STATE_STICKY))) {
+				for(auto i: _desktop_list) {
+					i->add_dock_client(uw);
+				}
+			} else {
+				_desktop_list[_current_desktop]->add_dock_client(uw);
+			}
+		}
 	}
 
 	void detach_dock(client_not_managed_t * uw) {
@@ -609,10 +632,28 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 
-	void update_children_cache() const;
+	void children(vector<tree_t *> & out) const;
 	void get_all_children(vector<tree_t *> & out) const;
+	void get_visible_children(vector<tree_t *> & out);
+
 
 	void render();
+
+	/** debug function that try to print the state of page in stdout **/
+	void print_state() const;
+
+	void update_current_desktop() const;
+
+	void hide();
+	void show();
+
+	void switch_to_desktop(int desktop, Time time);
+
+	void update_fullscreen_clients_position();
+	void update_desktop_visibility();
+
+
+
 };
 
 

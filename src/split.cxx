@@ -18,7 +18,7 @@ namespace page {
 
 split_t::split_t(split_type_e type, theme_t const * theme) :
 		_theme(theme), _split_bar_area(), _split_type(type), _split(
-				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr) {
+				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr), _is_hidden(false) {
 
 }
 
@@ -280,6 +280,8 @@ void split_t::remove(tree_t * t) {
 }
 
 void split_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	if(_is_hidden)
+		return;
 	for(auto i: _children) {
 		i->prepare_render(out, time);
 	}

@@ -92,6 +92,10 @@ private:
 	/** input surface, surface from we get data **/
 	ptr<composite_surface_t> _composite_surf;
 
+	int _current_desktop;
+
+	bool _is_iconic;
+
 public:
 
 	client_managed_t(Atom net_wm_type, ptr<client_properties_t> c,
@@ -187,6 +191,15 @@ public:
 	void unlock();
 	void set_focus_state(bool is_focused);
 
+	void set_current_desktop(int n) {
+		_current_desktop = n;
+		_properties->set_net_wm_desktop(n);
+	}
+
+	int current_desktop() {
+		return _current_desktop;
+	}
+
 public:
 	void grab_button_focused();
 	void grab_button_unfocused();
@@ -225,6 +238,43 @@ public:
 			i_rect const & allocation) const;
 	i_rect compute_floating_close_position(i_rect const & allocation) const;
 	region visible_area() const;
+
+	void hide() {
+		_is_hidden = true;
+
+		net_wm_state_add(_NET_WM_STATE_HIDDEN);
+		cnx()->unmap(_orig);
+		cnx()->unmap(_deco);
+		cnx()->unmap(_base);
+
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+
+		if (not _is_iconic) {
+			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			cnx()->map_window(_orig);
+			cnx()->map_window(_deco);
+			cnx()->map_window(_base);
+		}
+
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
+		}
+	}
 
 };
 

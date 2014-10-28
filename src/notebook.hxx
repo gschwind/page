@@ -38,8 +38,6 @@ class notebook_t : public page_component_t {
 
 	theme_t const * _theme;
 
-	bool _is_default;
-
 	/* child stack order */
 	list<tree_t *> _children;
 
@@ -54,6 +52,9 @@ class notebook_t : public page_component_t {
 	ptr<renderable_notebook_fading_t> fading_notebook;
 
 	mutable theme_notebook_t theme_notebook;
+
+	bool _is_default;
+	bool _is_hidden;
 
 public:
 
@@ -197,6 +198,33 @@ public:
 	void get_all_children(vector<tree_t *> & out) const;
 
 	void update_theme_notebook() const;
+
+	void children(vector<tree_t *> & out) const {
+		out.insert(out.end(), _children.begin(), _children.end());
+	}
+
+	void hide() {
+		_is_hidden = true;
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
+		}
+	}
 
 };
 

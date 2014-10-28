@@ -41,6 +41,8 @@ class split_t : public page_component_t {
 
 	list<tree_t *> _children;
 
+	bool _is_hidden;
+
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
 
@@ -101,6 +103,33 @@ public:
 	}
 
 	void get_all_children(vector<tree_t *> & out) const;
+
+	void children(vector<tree_t *> & out) const {
+		out.insert(out.end(), _children.begin(), _children.end());
+	}
+
+	void hide() {
+		_is_hidden = true;
+		for(auto i: tree_t::children()) {
+			i->hide();
+		}
+	}
+
+	void show() {
+		_is_hidden = false;
+		for(auto i: tree_t::children()) {
+			i->show();
+		}
+	}
+
+	void get_visible_children(vector<tree_t *> & out) {
+		if (not _is_hidden) {
+			out.push_back(this);
+			for (auto i : tree_t::children()) {
+				i->get_visible_children(out);
+			}
+		}
+	}
 
 };
 
