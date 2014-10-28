@@ -1502,7 +1502,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		auto ln = filter_class<notebook_t>(_current_desktop_children_cache);
+		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
 		for (auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
 				if (mode_data_notebook.zone != SELECT_TAB
@@ -1799,7 +1799,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		++count;
 
-		auto ln = filter_class<notebook_t>(_current_desktop_children_cache);
+		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
 
 		for(auto i : ln) {
 			if (i->tab_area.is_inside(ev.xmotion.x_root,
@@ -4035,7 +4035,8 @@ void page_t::update_page_areas() {
 		delete page_areas;
 	}
 
-	list<tree_t const *> lc(_current_desktop_children_cache.begin(), _current_desktop_children_cache.end());
+	vector<tree_t *> tmp = _desktop_list[_current_desktop]->tree_t::get_all_children();
+	list<tree_t const *> lc(tmp.begin(), tmp.end());
 	page_areas = compute_page_areas(lc);
 }
 
@@ -4459,8 +4460,6 @@ void page_t::set_allocation(i_rect const & r) {
 }
 
 void page_t::update_structure_cache() {
-	_current_desktop_children_cache.clear();
-	_desktop_list[_current_desktop]->get_all_children(_current_desktop_children_cache);
 	_global_default_pop = _desktop_list[_current_desktop]->get_default_pop();
 
 	_visible_children_cache = tree_t::get_visible_children();

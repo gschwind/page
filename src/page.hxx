@@ -421,7 +421,6 @@ private:
 	i_rect _allocation;
 
 	mutable vector<tree_t *> _visible_children_cache;
-	mutable vector<tree_t *> _current_desktop_children_cache;
 
 public:
 
