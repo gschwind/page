@@ -1187,8 +1187,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 						split(mode_data_notebook.from, VERTICAL_SPLIT);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-						_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
 						rpage->add_damaged(mode_data_notebook.from->allocation());
+						rpage->add_damaged(_desktop_list[_current_desktop]->get_default_pop()->allocation());
+						_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 						mode_data_notebook.c->delete_window(e.time);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
@@ -2742,7 +2743,7 @@ void page_t::process_event(XEvent const & e) {
 void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 		bool prefer_activate) {
 	page_assert(x != nullptr);
-	page_assert(find_parent_notebook_for(x) == nullptr);
+	//page_assert(find_parent_notebook_for(x) == nullptr);
 	if (n == nullptr)
 		n = _desktop_list[_current_desktop]->get_default_pop();
 	page_assert(n != nullptr);
@@ -2933,8 +2934,8 @@ void page_t::notebook_close(notebook_t * nbk) {
 	}
 
 	/* move all client from destroyed notebook to new default pop */
-	auto windows = nbk->get_clients();
-	for(auto i : windows) {
+	auto clients = nbk->get_clients();
+	for(auto i : clients) {
 		insert_window_in_notebook(i, nullptr, false);
 	}
 

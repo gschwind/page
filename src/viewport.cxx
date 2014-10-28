@@ -32,6 +32,7 @@ void viewport_t::replace(page_component_t * src, page_component_t * by) {
 	//printf("replace %p by %p\n", src, by);
 
 	if (_subtree == src) {
+		_subtree->set_parent(nullptr);
 		_subtree = by;
 		_subtree->set_parent(this);
 		_subtree->set_allocation(_effective_aera);

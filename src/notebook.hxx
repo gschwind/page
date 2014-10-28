@@ -135,6 +135,8 @@ public:
 	void set_parent(tree_t * t) {
 		if(t != nullptr) {
 			throw exception_t("notebook_t cannot have tree_t has parent");
+		} else {
+			_parent = nullptr;
 		}
 	}
 
