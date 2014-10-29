@@ -902,7 +902,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 			} else if (mw->is(MANAGED_FLOATING) and e.button == Button1
 					and e.subwindow != mw->orig()) {
-				mw->update_floating_areas();
+				//mw->update_floating_areas();
 				auto const * l = mw->floating_areas();
 				floating_event_t const * b = 0;
 				for (auto &i : (*l)) {

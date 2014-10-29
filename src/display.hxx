@@ -270,6 +270,10 @@ public:
 	void unload_cursors();
 	xcb_cursor_t _load_cursor(uint16_t cursor_id);
 
+	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
+
+	xcb_window_t create_input_only_window(xcb_window_t parent, i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs);
+
 };
 
 }

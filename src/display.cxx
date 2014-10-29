@@ -922,5 +922,19 @@ void display_t::unload_cursors() {
 	xcb_close_font(_xcb, cursor_font);
 }
 
+void display_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
+	uint32_t attrs = c;
+	xcb_change_window_attributes(_xcb, w, XCB_CW_CURSOR, &attrs);
+}
+
+xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
+		i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs) {
+	xcb_window_t id = xcb_generate_id(_xcb);
+	xcb_void_cookie_t ck = xcb_create_window(_xcb, XCB_COPY_FROM_PARENT, id,
+			parent, pos.x, pos.y, pos.w, pos.h, 0, XCB_WINDOW_CLASS_INPUT_ONLY,
+			XCB_COPY_FROM_PARENT, attrs_mask, attrs);
+	return id;
+}
+
 }
 

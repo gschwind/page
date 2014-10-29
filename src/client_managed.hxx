@@ -83,6 +83,24 @@ private:
 	xcb_window_t _base;
 	xcb_window_t _deco;
 
+	xcb_window_t _input_top;
+	xcb_window_t _input_left;
+	xcb_window_t _input_right;
+	xcb_window_t _input_bottom;
+	xcb_window_t _input_top_left;
+	xcb_window_t _input_top_right;
+	xcb_window_t _input_bottom_left;
+	xcb_window_t _input_bottom_right;
+
+	i_rect _area_top;
+	i_rect _area_left;
+	i_rect _area_right;
+	i_rect _area_bottom;
+	i_rect _area_top_left;
+	i_rect _area_top_right;
+	i_rect _area_bottom_left;
+	i_rect _area_bottom_right;
+
 	vector<floating_event_t> * _floating_area;
 
 	bool _is_focused;
@@ -200,6 +218,9 @@ public:
 		return _current_desktop;
 	}
 
+	void map();
+	void unmap();
+
 public:
 	void grab_button_focused();
 	void grab_button_unfocused();
@@ -241,12 +262,8 @@ public:
 
 	void hide() {
 		_is_hidden = true;
-
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		cnx()->unmap(_orig);
-		cnx()->unmap(_deco);
-		cnx()->unmap(_base);
-
+		unmap();
 		for(auto i: tree_t::children()) {
 			i->hide();
 		}
@@ -257,9 +274,7 @@ public:
 
 		if (not _is_iconic) {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			cnx()->map_window(_orig);
-			cnx()->map_window(_deco);
-			cnx()->map_window(_base);
+			map();
 		}
 
 		for(auto i: tree_t::children()) {

@@ -176,7 +176,30 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	_base = wbase;
 	_deco = wdeco;
 
+	update_floating_areas();
+
 	cnx()->reparentwindow(_orig, _base, 0, 0);
+
+	uint32_t cursor;
+
+	cursor = cnx()->xc_top_side;
+	_input_top = cnx()->create_input_only_window(_deco, _area_top, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_bottom_side;
+	_input_bottom = cnx()->create_input_only_window(_deco, _area_bottom, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_left_side;
+	_input_left = cnx()->create_input_only_window(_deco, _area_left, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_right_side;
+	_input_right = cnx()->create_input_only_window(_deco, _area_right, XCB_CW_CURSOR, &cursor);
+
+	cursor = cnx()->xc_top_left_corner;
+	_input_top_left = cnx()->create_input_only_window(_deco, _area_top_left, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_top_right_corner;
+	_input_top_right = cnx()->create_input_only_window(_deco, _area_top_right, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_bottom_left_corner;
+	_input_bottom_left = cnx()->create_input_only_window(_deco, _area_bottom_left, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_bottom_righ_corner;
+	_input_bottom_right = cnx()->create_input_only_window(_deco, _area_bottom_right, XCB_CW_CURSOR, &cursor);
+
 
 	select_inputs();
 	/* Grab button click */
@@ -257,11 +280,24 @@ void client_managed_t::reconfigure() {
 
 	}
 
+	update_floating_areas();
+
 	if (lock()) {
 		cnx()->move_resize(_base, _base_position);
 		cnx()->move_resize(_deco,
 				i_rect{0, 0, _base_position.w, _base_position.h});
 		cnx()->move_resize(_orig, _orig_position);
+
+		cnx()->move_resize(_input_top, _area_top);
+		cnx()->move_resize(_input_bottom, _area_bottom);
+		cnx()->move_resize(_input_right, _area_right);
+		cnx()->move_resize(_input_left, _area_left);
+
+		cnx()->move_resize(_input_top_left, _area_top_left);
+		cnx()->move_resize(_input_top_right, _area_top_right);
+		cnx()->move_resize(_input_bottom_left, _area_bottom_left);
+		cnx()->move_resize(_input_bottom_right, _area_bottom_right);
+
 		fake_configure();
 		unlock();
 	}
@@ -716,9 +752,7 @@ void client_managed_t::normalize() {
 		cnx()->write_wm_state(_orig, NormalState, None);
 		if (not _is_hidden) {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			cnx()->map_window(_orig);
-			cnx()->map_window(_deco);
-			cnx()->map_window(_base);
+			map();
 		}
 
 		try {
@@ -743,9 +777,8 @@ void client_managed_t::iconify() {
 		_is_iconic = true;
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		cnx()->write_wm_state(_orig, IconicState, None);
-		cnx()->unmap(_base);
-		cnx()->unmap(_deco);
-		cnx()->unmap(_orig);
+
+		unmap();
 
 		_composite_surf.reset();
 
@@ -871,6 +904,32 @@ void client_managed_t::update_floating_areas() {
 	tm.title = _title;
 
 	_floating_area = compute_floating_areas(&tm);
+
+	int x0 = _theme->floating.margin.left;
+	int x1 = _base_position.w - _theme->floating.margin.right;
+
+	int y0 = _theme->floating.margin.bottom;
+	int y1 = _base_position.h - _theme->floating.margin.bottom;
+
+	int w0 = _base_position.w - _theme->floating.margin.left
+			- _theme->floating.margin.right;
+	int h0 = _base_position.h - _theme->floating.margin.bottom
+			- _theme->floating.margin.bottom;
+
+	_area_top = i_rect(x0, 0, w0, _theme->floating.margin.bottom);
+	_area_bottom = i_rect(x0, y1, w0, _theme->floating.margin.bottom);
+	_area_left = i_rect(0, y0, _theme->floating.margin.left, h0);
+	_area_right = i_rect(x1, y0, _theme->floating.margin.right, h0);
+
+	_area_top_left = i_rect(0, 0, _theme->floating.margin.left,
+			_theme->floating.margin.bottom);
+	_area_top_right = i_rect(x1, 0, _theme->floating.margin.right,
+			_theme->floating.margin.bottom);
+	_area_bottom_left = i_rect(0, y1, _theme->floating.margin.left,
+			_theme->floating.margin.bottom);
+	_area_bottom_right = i_rect(x1, y1, _theme->floating.margin.right,
+			_theme->floating.margin.bottom);
+
 }
 
 bool client_managed_t::has_window(Window w) {
@@ -1033,6 +1092,38 @@ void client_managed_t::net_wm_allowed_actions_add(atom_e atom) {
 		_properties->net_wm_allowed_actions_add(atom);
 		unlock();
 	}
+}
+
+void client_managed_t::map() {
+	cnx()->map_window(_orig);
+	cnx()->map_window(_deco);
+	cnx()->map_window(_base);
+
+	cnx()->map_window(_input_top);
+	cnx()->map_window(_input_left);
+	cnx()->map_window(_input_right);
+	cnx()->map_window(_input_bottom);
+
+	cnx()->map_window(_input_top_left);
+	cnx()->map_window(_input_top_right);
+	cnx()->map_window(_input_bottom_left);
+	cnx()->map_window(_input_bottom_right);
+}
+
+void client_managed_t::unmap() {
+	cnx()->unmap(_base);
+	cnx()->unmap(_deco);
+	cnx()->unmap(_orig);
+
+	cnx()->unmap(_input_top);
+	cnx()->unmap(_input_left);
+	cnx()->unmap(_input_right);
+	cnx()->unmap(_input_bottom);
+
+	cnx()->unmap(_input_top_left);
+	cnx()->unmap(_input_top_right);
+	cnx()->unmap(_input_bottom_left);
+	cnx()->unmap(_input_bottom_right);
 }
 
 
