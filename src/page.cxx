@@ -99,7 +99,7 @@ page_t::page_t(int argc, char ** argv)
 	cnx = new display_t();
 	rnd = nullptr;
 
-	set_window_cursor(cnx->root(), default_cursor);
+	set_window_cursor(cnx->root(), cnx->xc_left_ptr);
 
 	running = false;
 
@@ -149,16 +149,7 @@ page_t::page_t(int argc, char ** argv)
 
 page_t::~page_t() {
 
-	XFreeCursor(cnx->dpy(), xc_left_ptr);
-	XFreeCursor(cnx->dpy(), xc_fleur);
-	XFreeCursor(cnx->dpy(), xc_bottom_left_corner);
-	XFreeCursor(cnx->dpy(), xc_bottom_righ_corner);
-	XFreeCursor(cnx->dpy(), xc_bottom_side);
-	XFreeCursor(cnx->dpy(), xc_left_side);
-	XFreeCursor(cnx->dpy(), xc_right_side);
-	XFreeCursor(cnx->dpy(), xc_top_right_corner);
-	XFreeCursor(cnx->dpy(), xc_top_left_corner);
-	XFreeCursor(cnx->dpy(), xc_top_side);
+	cnx->unload_cursors();
 
 	delete rpage;
 
@@ -177,24 +168,16 @@ page_t::~page_t() {
 		delete i;
 	}
 
-	if(page_areas != nullptr) {
-		delete page_areas;
-		page_areas = nullptr;
-	}
-
-	if (theme != nullptr)
-		delete theme;
-	if (rnd != nullptr)
-		delete rnd;
-
-	if(keymap != nullptr)
-		delete keymap;
+	delete page_areas;
+	delete theme;
+	delete rnd;
+	delete keymap;
 
 	// cleanup cairo, for valgrind happiness.
 	cairo_debug_reset_static_data();
 
 	if(cnx != nullptr) {
-		/** clean up properies defined by Window Manager **/
+		/** clean up properties defined by Window Manager **/
 		cnx->delete_property(cnx->root(), _NET_SUPPORTED);
 		cnx->delete_property(cnx->root(), _NET_CLIENT_LIST);
 		cnx->delete_property(cnx->root(), _NET_CLIENT_LIST_STACKING);
@@ -258,21 +241,8 @@ void page_t::run() {
 	pat = ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
 	menu = nullptr;
 
-	xc_left_ptr = XCreateFontCursor(cnx->dpy(), XC_left_ptr);
-	xc_fleur = XCreateFontCursor(cnx->dpy(), XC_fleur);
-
-	xc_bottom_left_corner = XCreateFontCursor(cnx->dpy(), XC_bottom_left_corner);
-	xc_bottom_righ_corner = XCreateFontCursor(cnx->dpy(), XC_bottom_right_corner);
-	xc_bottom_side = XCreateFontCursor(cnx->dpy(), XC_bottom_side);
-
-	xc_left_side = XCreateFontCursor(cnx->dpy(), XC_left_side);
-	xc_right_side = XCreateFontCursor(cnx->dpy(), XC_right_side);
-
-	xc_top_right_corner = XCreateFontCursor(cnx->dpy(), XC_top_right_corner);
-	xc_top_left_corner = XCreateFontCursor(cnx->dpy(), XC_top_left_corner);
-	xc_top_side = XCreateFontCursor(cnx->dpy(), XC_top_side);
-
-	XDefineCursor(cnx->dpy(), cnx->root(), xc_left_ptr);
+	cnx->load_cursors();
+	set_window_cursor(cnx->root(), cnx->xc_left_ptr);
 
 	update_net_supported();
 
@@ -920,13 +890,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				if ((e.state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_righ_corner);
-					XDefineCursor(cnx->dpy(), mw->orig(), xc_bottom_righ_corner);
+					set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
+					set_window_cursor(mw->orig(), cnx->xc_bottom_righ_corner);
 				} else {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE;
-					XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
-					XDefineCursor(cnx->dpy(), mw->orig(), xc_fleur);
+					set_window_cursor(mw->base(), cnx->xc_fleur);
+					set_window_cursor(mw->orig(), cnx->xc_fleur);
 				}
 
 
@@ -979,7 +949,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
-						XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
+						set_window_cursor(mw->base(), cnx->xc_fleur);
 					} else {
 
 						//pfm->move_resize(mw->get_base_position());
@@ -989,39 +959,39 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_top_side);
+							set_window_cursor(mw->base(), cnx->xc_top_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_side);
+							set_window_cursor(mw->base(), cnx->xc_bottom_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_LEFT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_left_side);
+							set_window_cursor(mw->base(), cnx->xc_left_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_RIGHT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_right_side);
+							set_window_cursor(mw->base(), cnx->xc_right_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_top_left_corner);
+							set_window_cursor(mw->base(), cnx->xc_top_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_top_right_corner);
+							set_window_cursor(mw->base(), cnx->xc_top_right_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_left_corner);
+							set_window_cursor(mw->base(), cnx->xc_bottom_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_bottom_righ_corner);
+							set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
-							XDefineCursor(cnx->dpy(), mw->base(), xc_fleur);
+							set_window_cursor(mw->base(), cnx->xc_fleur);
 						}
 					}
 
@@ -2400,7 +2370,7 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
 
 				if (mw->lock()) {
-					Cursor xc = None;
+					xcb_cursor_t xc = None;
 
 					long x_root = e.data.l[0];
 					long y_root = e.data.l[1];
@@ -2427,47 +2397,47 @@ void page_t::process_event(XClientMessageEvent const & e) {
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
-						xc = xc_fleur;
+						xc = cnx->xc_fleur;
 					} else {
 
 						if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_TOP;
-							xc = xc_top_side;
+							xc = cnx->xc_top_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_BOTTOM;
-							xc = xc_bottom_side;
+							xc = cnx->xc_bottom_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_LEFT;
-							xc = xc_left_side;
+							xc = cnx->xc_left_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_RIGHT;
-							xc = xc_right_side;
+							xc = cnx->xc_right_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							xc = xc_top_left_corner;
+							xc = cnx->xc_top_left_corner;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							xc = xc_top_right_corner;
+							xc = cnx->xc_top_right_corner;
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							xc = xc_bottom_left_corner;
+							xc = cnx->xc_bottom_left_corner;
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							xc = xc_bottom_righ_corner;
+							xc = cnx->xc_bottom_righ_corner;
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
-							xc = xc_fleur;
+							xc = cnx->xc_fleur;
 						}
 					}
 
@@ -3434,10 +3404,9 @@ desktop_t * page_t::find_desktop_of(tree_t * n) {
 	return nullptr;
 }
 
-void page_t::set_window_cursor(Window w, Cursor c) {
-	XSetWindowAttributes swa;
-	swa.cursor = c;
-	XChangeWindowAttributes(cnx->dpy(), w, CWCursor, &swa);
+void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
+	uint32_t attrs = c;
+	xcb_change_window_attributes(cnx->xcb(), w, XCB_CW_CURSOR, &attrs);
 }
 
 void page_t::update_windows_stack() {

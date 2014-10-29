@@ -882,5 +882,45 @@ void display_t::clear_events() {
 	pending_event.clear();
 }
 
+xcb_cursor_t display_t::_load_cursor(uint16_t cursor_id) {
+	xcb_cursor_t cursor{xcb_generate_id(_xcb)};
+	xcb_create_glyph_cursor(_xcb, cursor, cursor_font, cursor_font, cursor_id, cursor_id+1, 0, 0, 0, 0xffff, 0xffff, 0xffff);
+	return cursor;
+
+}
+
+void display_t::load_cursors() {
+
+	cursor_font = xcb_generate_id(_xcb);
+	xcb_open_font(_xcb, cursor_font, strlen("cursor"), "cursor");
+
+	xc_left_ptr = _load_cursor(XC_left_ptr);
+	xc_fleur = _load_cursor(XC_fleur);
+	xc_bottom_left_corner = _load_cursor(XC_bottom_left_corner);
+	xc_bottom_righ_corner = _load_cursor(XC_bottom_right_corner);
+	xc_bottom_side = _load_cursor(XC_bottom_side);
+	xc_left_side = _load_cursor(XC_left_side);
+	xc_right_side = _load_cursor(XC_right_side);
+	xc_top_right_corner = _load_cursor(XC_top_right_corner);
+	xc_top_left_corner = _load_cursor(XC_top_left_corner);
+	xc_top_side = _load_cursor(XC_top_side);
+
+}
+
+void display_t::unload_cursors() {
+	xcb_free_cursor(_xcb, xc_left_ptr);
+	xcb_free_cursor(_xcb, xc_fleur);
+	xcb_free_cursor(_xcb, xc_bottom_left_corner);
+	xcb_free_cursor(_xcb, xc_bottom_righ_corner);
+	xcb_free_cursor(_xcb, xc_bottom_side);
+	xcb_free_cursor(_xcb, xc_left_side);
+	xcb_free_cursor(_xcb, xc_right_side);
+	xcb_free_cursor(_xcb, xc_top_right_corner);
+	xcb_free_cursor(_xcb, xc_top_left_corner);
+	xcb_free_cursor(_xcb, xc_top_side);
+
+	xcb_close_font(_xcb, cursor_font);
+}
+
 }
 

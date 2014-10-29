@@ -21,6 +21,11 @@
 #include <X11/extensions/shape.h>
 #include <X11/extensions/Xrandr.h>
 
+#include <X11/cursorfont.h>
+
+#include <xcb/xcb.h>
+#include <xcb/xcb_util.h>
+
 #include <cairo/cairo-xlib.h>
 
 #include <glib.h>
@@ -89,6 +94,19 @@ public:
 	int grab_count;
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
+	xcb_font_t cursor_font;
+
+	xcb_cursor_t default_cursor;
+	xcb_cursor_t xc_left_ptr;
+	xcb_cursor_t xc_fleur;
+	xcb_cursor_t xc_bottom_left_corner;
+	xcb_cursor_t xc_bottom_righ_corner;
+	xcb_cursor_t xc_bottom_side;
+	xcb_cursor_t xc_left_side;
+	xcb_cursor_t xc_right_side;
+	xcb_cursor_t xc_top_right_corner;
+	xcb_cursor_t xc_top_left_corner;
+	xcb_cursor_t xc_top_side;
 
 public:
 
@@ -247,6 +265,10 @@ public:
 	bool has_pending_events();
 
 	void clear_events();
+
+	void load_cursors();
+	void unload_cursors();
+	xcb_cursor_t _load_cursor(uint16_t cursor_id);
 
 };
 

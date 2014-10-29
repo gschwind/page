@@ -400,22 +400,6 @@ private:
 
 	vector<page_event_t> * page_areas;
 
-	Cursor default_cursor;
-
-	Cursor xc_left_ptr;
-	Cursor xc_fleur;
-
-	Cursor xc_bottom_left_corner;
-	Cursor xc_bottom_righ_corner;
-	Cursor xc_bottom_side;
-
-	Cursor xc_left_side;
-	Cursor xc_right_side;
-
-	Cursor xc_top_right_corner;
-	Cursor xc_top_left_corner;
-	Cursor xc_top_side;
-
 	i_rect _allocation;
 
 public:
@@ -557,7 +541,7 @@ public:
 	client_managed_t * find_managed_window_with(Window w);
 	viewport_t * find_viewport_of(tree_t * n);
 	desktop_t * find_desktop_of(tree_t * n);
-	void set_window_cursor(Window w, Cursor c);
+	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
 	void update_viewport_layout();
 	void remove_viewport(desktop_t * d, viewport_t * v);
