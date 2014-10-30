@@ -10,9 +10,6 @@
 #ifndef EVENTS_HANDLER_DEFAULT_HXX_
 #define EVENTS_HANDLER_DEFAULT_HXX_
 
-#include "page_interface.hxx"
-#include "events_handler_interface.hxx"
-
 namespace page {
 
 class events_handler_default : public events_handler_interface {

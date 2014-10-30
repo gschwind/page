@@ -8,7 +8,13 @@
 #ifndef RENDERABLE_FLOATING_OUTER_GRADIEN_HXX_
 #define RENDERABLE_FLOATING_OUTER_GRADIEN_HXX_
 
+#include <cairo.h>
+#include <cairo-xlib.h>
+#include <cairo-xcb.h>
+
+#include "utils.hxx"
 #include "renderable.hxx"
+#include "region.hxx"
 
 namespace page {
 

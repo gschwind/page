@@ -10,47 +10,45 @@
 #ifndef WINDOW_HANDLER_HXX_
 #define WINDOW_HANDLER_HXX_
 
-#include <list>
-#include "client_managed.hxx"
 
-namespace page {
-
-struct window_handler_t {
-
-	display_t * cnx;
-	Window id;
-
-	XWindowAttributes wa;
-
-	bool has_net_wm_type;
-	std::list<Atom> net_wm_type;
-
-	bool has_transient_for;
-	Window transient_for;
-
-	client_managed_t * mw;
-	client_not_managed_t * uw;
-
-
-
-	window_handler_t(display_t * c, Window w) : net_wm_type() {
-		cnx = c;
-		id = w;
-		has_net_wm_type = false;
-		transient_for = None;
-		has_transient_for = false;
-		mw = 0;
-		uw = 0;
-		bzero(&wa, sizeof(wa));
-	}
-
-
-
-
-};
-
-
-}
+//namespace page {
+//
+//struct window_handler_t {
+//
+//	display_t * cnx;
+//	Window id;
+//
+//	XWindowAttributes wa;
+//
+//	bool has_net_wm_type;
+//	std::list<Atom> net_wm_type;
+//
+//	bool has_transient_for;
+//	Window transient_for;
+//
+//	client_managed_t * mw;
+//	client_not_managed_t * uw;
+//
+//
+//
+//	window_handler_t(display_t * c, Window w) : net_wm_type() {
+//		cnx = c;
+//		id = w;
+//		has_net_wm_type = false;
+//		transient_for = None;
+//		has_transient_for = false;
+//		mw = 0;
+//		uw = 0;
+//		bzero(&wa, sizeof(wa));
+//	}
+//
+//
+//
+//
+//};
+//
+//
+//}
 
 
 

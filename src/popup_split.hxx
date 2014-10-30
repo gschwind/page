@@ -11,9 +11,7 @@
 #ifndef POPUP_SPLIT_HXX_
 #define POPUP_SPLIT_HXX_
 
-#include "window_overlay.hxx"
-#include "box.hxx"
-#include "renderable.hxx"
+#include "split.hxx"
 
 namespace page {
 

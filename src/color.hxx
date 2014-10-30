@@ -10,10 +10,7 @@
 #ifndef COLOR_HXX_
 #define COLOR_HXX_
 
-#include <string>
-#include <stdexcept>
-
-using namespace std;
+namespace page {
 
 struct color_t {
 	double r, g, b, a;
@@ -29,11 +26,11 @@ struct color_t {
 		set(color);
 	}
 
-	color_t(string const & scolor) {
+	color_t(std::string const & scolor) {
 		set(scolor);
 	}
 
-	void set(string const & scolor) {
+	void set(std::string const & scolor) {
 		if(scolor.size() == 6 || scolor.size() == 8) {
 			char const * c = scolor.c_str();
 			unsigned x = strtoul(c, 0, 16);
@@ -53,6 +50,6 @@ struct color_t {
 
 };
 
-
+}
 
 #endif /* COLOR_HXX_ */

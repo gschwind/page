@@ -11,7 +11,7 @@
 #define PAGE_EXCEPTION_HXX_
 
 #include <exception>
-#include <cstring>
+#include <cstd::string>
 
 namespace page {
 

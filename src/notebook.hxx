@@ -10,16 +10,25 @@
 #ifndef NOTEBOOK_HXX_
 #define NOTEBOOK_HXX_
 
+#include <algorithm>
+#include <cmath>
+#include <cassert>
+
+#include "theme.hxx"
+#include "pixmap.hxx"
+#include "composite_surface.hxx"
 #include "renderable_notebook_fading.hxx"
-#include "tree.hxx"
+#include "page_event.hxx"
+#include "renderable_notebook_fading.hxx"
+#include "renderable_pixmap.hxx"
+#include "renderable_empty.hxx"
+
 #include "page_component.hxx"
 #include "client_managed.hxx"
-#include "region.hxx"
-#include "theme_tab.hxx"
-
-class client_managed_t;
 
 namespace page {
+
+class client_managed_t;
 
 struct img_t {
   unsigned int   width;
@@ -39,17 +48,17 @@ class notebook_t : public page_component_t {
 	theme_t const * _theme;
 
 	/* child stack order */
-	list<tree_t *> _children;
+	std::list<tree_t *> _children;
 
 	page::time_t swap_start;
 
-	shared_ptr<pixmap_t> prev_surf;
+	std::shared_ptr<pixmap_t> prev_surf;
 	i_rect prev_loc;
 
 	/* always handle current surface in case of unmap */
-	shared_ptr<composite_surface_t> cur_surf;
+	std::shared_ptr<composite_surface_t> cur_surf;
 
-	ptr<renderable_notebook_fading_t> fading_notebook;
+	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
 
 	mutable theme_notebook_t theme_notebook;
 
@@ -67,7 +76,7 @@ public:
 		SELECT_RIGHT
 	};
 	// list of client to maintain tab order
-	list<client_managed_t *> _clients;
+	std::list<client_managed_t *> _clients;
 	client_managed_t * _selected;
 	// set of map for fast check is window is in this notebook
 	set<client_managed_t *> _client_map;
@@ -109,7 +118,7 @@ public:
 	void close(tree_t * src);
 	void remove(tree_t * src);
 
-	list<client_managed_t *> const & get_clients();
+	std::list<client_managed_t *> const & get_clients();
 
 	bool add_client(client_managed_t * c, bool prefer_activate);
 	void remove_client(client_managed_t * c);
@@ -162,20 +171,20 @@ public:
 	i_rect compute_client_size(client_managed_t * c);
 	i_rect const & get_allocation();
 	void set_theme(theme_t const * theme);
-	list<client_managed_t const *> clients() const;
+	std::list<client_managed_t const *> clients() const;
 	client_managed_t const * selected() const;
 	bool is_default() const;
 	void set_default(bool x);
-	list<tree_t *> childs() const;
+	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
-	string get_node_name() const;
+	std::string get_node_name() const;
 	void render_legacy(cairo_t * cr, i_rect const & area) const;
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
 
 	client_managed_t * get_selected();
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
 	i_rect compute_notebook_close_window_position(i_rect const & allocation,
 			int number_of_client, int selected_client_index) const;
@@ -187,7 +196,7 @@ public:
 	i_rect compute_notebook_close_position(i_rect const & allocation) const;
 	i_rect compute_notebook_menu_position(i_rect const & allocation) const;
 
-	void compute_areas_for_notebook(vector<page_event_t> * l) const;
+	void compute_areas_for_notebook(std::vector<page_event_t> * l) const;
 
 	i_rect allocation() const {
 		return _allocation;
@@ -197,11 +206,11 @@ public:
 		return _parent;
 	}
 
-	void get_all_children(vector<tree_t *> & out) const;
+	void get_all_children(std::vector<tree_t *> & out) const;
 
 	void update_theme_notebook() const;
 
-	void children(vector<tree_t *> & out) const {
+	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
@@ -219,7 +228,7 @@ public:
 		}
 	}
 
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
 			for (auto i : tree_t::children()) {

@@ -15,21 +15,22 @@
 #define CLIENT_BASE_HXX_
 
 #include <cassert>
-#include <typeinfo>
+#include <memory>
 
-#include <X11/X.h>
+#include "utils.hxx"
+#include "region.hxx"
+
+#include "atoms.hxx"
+#include "exception.hxx"
 
 #include "client_properties.hxx"
-#include "utils.hxx"
-#include "motif_hints.hxx"
 #include "display.hxx"
+
 #include "tree.hxx"
 
 namespace page {
 
 typedef long card32;
-
-using namespace std;
 
 class client_base_t : public tree_t {
 protected:
@@ -37,13 +38,13 @@ protected:
 	tree_t * _parent;
 
 	/** handle properties of client */
-	ptr<client_properties_t> _properties;
+	std::shared_ptr<client_properties_t> _properties;
 
 	/** sub-clients **/
-	list<client_base_t *> _children;
+	std::list<client_base_t *> _children;
 
 	// window title cache
-	string _title;
+	std::string _title;
 
 	bool _is_hidden;
 
@@ -64,7 +65,7 @@ public:
 
 	}
 
-	client_base_t(ptr<client_properties_t> props) :
+	client_base_t(std::shared_ptr<client_properties_t> props) :
 		_properties(props),
 		_children(),
 		_title()
@@ -230,7 +231,7 @@ public:
 
 
 	void update_title() {
-			string name;
+			std::string name;
 			if (_properties->net_wm_name() != nullptr) {
 				_title = *(_properties->net_wm_name());
 			} else if (_properties->wm_name() != nullptr) {
@@ -243,7 +244,7 @@ public:
 	}
 
 	void add_subclient(client_base_t * s) {
-		page_assert(s != nullptr);
+		assert(s != nullptr);
 		_children.push_back(s);
 		s->set_parent(this);
 		if(_is_hidden) {
@@ -258,7 +259,7 @@ public:
 		s->set_parent(nullptr);
 	}
 
-	string const & title() const {
+	std::string const & title() const {
 		return _title;
 	}
 
@@ -266,14 +267,14 @@ public:
 		return w == _properties->id();
 	}
 
-	virtual bool has_window(Window w) const = 0;
-	virtual Window base() const = 0;
-	virtual Window orig() const = 0;
+	virtual bool has_window(xcb_window_t w) const = 0;
+	virtual xcb_window_t base() const = 0;
+	virtual xcb_window_t orig() const = 0;
 	virtual i_rect const & base_position() const = 0;
 	virtual i_rect const & orig_position() const = 0;
 	virtual region visible_area() const = 0;
 
-	virtual string get_node_name() const {
+	virtual std::string get_node_name() const {
 		return _get_node_name<'c'>();
 	}
 
@@ -281,8 +282,8 @@ public:
 		printf("Unexpected use of client_base_t::replace\n");
 	}
 
-	vector<tree_t *> childs() const {
-		vector<tree_t *> ret(_children.begin(), _children.end());
+	std::vector<tree_t *> childs() const {
+		std::vector<tree_t *> ret(_children.begin(), _children.end());
 		return ret;
 	}
 
@@ -349,7 +350,7 @@ public:
 		return _parent;
 	}
 
-	void get_all_children(vector<tree_t *> & out) const {
+	void get_all_children(std::vector<tree_t *> & out) const {
 		for(auto x: _children) {
 			out.push_back(x);
 			x->get_all_children(out);
@@ -363,49 +364,46 @@ public:
 
 
 	/* ICCCM */
-	auto wm_name() const -> string const * { return _properties->wm_name(); }
-	auto wm_icon_name() const -> string const * { return _properties->wm_icon_name(); };
+	auto wm_name() const -> std::string const * { return _properties->wm_name(); }
+	auto wm_icon_name() const -> std::string const * { return _properties->wm_icon_name(); };
 	auto wm_normal_hints() const -> XSizeHints const * { return _properties->wm_normal_hints(); }
 	auto wm_hints() const -> XWMHints const * { return _properties->wm_hints(); }
-	auto wm_class() const -> vector<string> const * { return _properties->wm_class(); }
+	auto wm_class() const -> std::vector<std::string> const * { return _properties->wm_class(); }
 	auto wm_transient_for() const -> xcb_window_t const * { return _properties->wm_transient_for(); }
-	auto wm_protocols() const -> list<xcb_atom_t> const * { return _properties->wm_protocols(); }
-	auto wm_colormap_windows() const -> vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
-	auto wm_client_machine() const -> string const * { return _properties->wm_client_machine(); }
+	auto wm_protocols() const -> std::list<xcb_atom_t> const * { return _properties->wm_protocols(); }
+	auto wm_colormap_windows() const -> std::vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
+	auto wm_client_machine() const -> std::string const * { return _properties->wm_client_machine(); }
 
 	/* wm_state is writen by WM */
-	wm_state_data_t const *                     wm_state() const {return _properties->wm_state(); }
+	auto wm_state() const -> wm_state_data_t const * {return _properties->wm_state(); }
 
 	/* EWMH */
-
-	string const *                     net_wm_name() const { return _properties->net_wm_name(); }
-	string const *                     net_wm_visible_name() const { return _properties->net_wm_visible_name(); }
-	string const *                     net_wm_icon_name() const { return _properties->net_wm_icon_name(); }
-	string const *                     net_wm_visible_icon_name() const { return _properties->net_wm_visible_icon_name(); }
-	unsigned int const *              net_wm_desktop() const { return _properties->net_wm_desktop(); }
-	list<xcb_atom_t> const *                 net_wm_window_type() const { return _properties->net_wm_window_type(); }
-	list<xcb_atom_t> const *                 net_wm_state() const { return _properties->net_wm_state(); }
-	list<xcb_atom_t> const *                 net_wm_allowed_actions() const { return _properties->net_wm_allowed_actions(); }
-	vector<int> const *             net_wm_struct() const { return _properties->net_wm_struct(); }
-	vector<int> const *             net_wm_struct_partial() const { return _properties->net_wm_struct_partial(); }
-	vector<int> const *             net_wm_icon_geometry() const { return _properties->net_wm_icon_geometry(); }
-	vector<int> const *             net_wm_icon() const { return _properties->net_wm_icon(); }
-	unsigned int const *              net_wm_pid() const { return _properties->net_wm_pid(); }
-	//bool                               net_wm_handled_icons() const { return _properties->net_wm_handled_icons(); }
-	uint32_t const *                       net_wm_user_time() const { return _properties->net_wm_user_time(); }
-	xcb_window_t const *                     net_wm_user_time_window() const { return _properties->net_wm_user_time_window(); }
-	vector<int> const *             net_frame_extents() const { return _properties->net_frame_extents(); }
-	vector<int> const *             net_wm_opaque_region() const { return _properties->net_wm_opaque_region(); }
-	unsigned int const *              net_wm_bypass_compositor() const { return _properties->net_wm_bypass_compositor(); }
+	auto net_wm_name() const -> std::string const * { return _properties->net_wm_name(); }
+	auto net_wm_visible_name() const -> std::string const * { return _properties->net_wm_visible_name(); }
+	auto net_wm_icon_name() const -> std::string const * { return _properties->net_wm_icon_name(); }
+	auto net_wm_visible_icon_name() const -> std::string const * { return _properties->net_wm_visible_icon_name(); }
+	auto net_wm_desktop() const -> unsigned int const * { return _properties->net_wm_desktop(); }
+	auto net_wm_window_type() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_window_type(); }
+	auto net_wm_state() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_state(); }
+	auto net_wm_allowed_actions() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_allowed_actions(); }
+	auto net_wm_struct() const -> std::vector<int> const * { return _properties->net_wm_struct(); }
+	auto net_wm_struct_partial() const -> std::vector<int> const * { return _properties->net_wm_struct_partial(); }
+	auto net_wm_icon_geometry() const -> std::vector<int> const * { return _properties->net_wm_icon_geometry(); }
+	auto net_wm_icon() const -> std::vector<int> const * { return _properties->net_wm_icon(); }
+	auto net_wm_pid() const -> unsigned int const * { return _properties->net_wm_pid(); }
+	auto net_wm_handled_icons() const -> bool;// { return _properties->net_wm_handled_icons(); }
+	auto net_wm_user_time() const -> uint32_t const * { return _properties->net_wm_user_time(); }
+	auto net_wm_user_time_window() const -> xcb_window_t const * { return _properties->net_wm_user_time_window(); }
+	auto net_frame_extents() const -> std::vector<int> const * { return _properties->net_frame_extents(); }
+	auto net_wm_opaque_region() const -> std::vector<int> const * { return _properties->net_wm_opaque_region(); }
+	auto net_wm_bypass_compositor() const -> unsigned int const * { return _properties->net_wm_bypass_compositor(); }
 
 	/* OTHERs */
-	motif_wm_hints_t const *           motif_hints() const { return _properties->motif_hints(); }
+	auto motif_hints() const -> motif_wm_hints_t const * { return _properties->motif_hints(); }
+	auto shape() const -> region const * { return _properties->shape(); }
+	auto position() -> i_rect { return _properties->position(); }
 
-	region const *                     shape() const { return _properties->shape(); }
-
-	i_rect                             position() { return _properties->position(); }
-
-	void children(vector<tree_t *> & out) const {
+	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
@@ -423,7 +421,7 @@ public:
 		}
 	}
 
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
 			for (auto i : tree_t::children()) {

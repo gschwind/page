@@ -20,6 +20,7 @@ namespace page {
 
 class notebook_t;
 class split_t;
+class client_managed_t;
 
 enum page_event_type_e {
 	PAGE_EVENT_NONE,

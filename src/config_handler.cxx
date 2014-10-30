@@ -14,6 +14,11 @@
 #include <memory>
 #include <cstring>
 
+#include <unistd.h>
+#include <glib.h>
+
+#include "exception.hxx"
+
 namespace page {
 
 config_handler_t::config_handler_t() {
@@ -25,7 +30,7 @@ config_handler_t::~config_handler_t() {
 }
 
 /* this function merge config file, the last one override previous loaded files */
-void config_handler_t::merge_from_file_if_exist(string const & f) {
+void config_handler_t::merge_from_file_if_exist(std::string const & f) {
 
 	/* check if file exist and is readable */
 	if (access(f.c_str(), R_OK) != 0)
@@ -33,10 +38,10 @@ void config_handler_t::merge_from_file_if_exist(string const & f) {
 
 	GKeyFile * kf = g_key_file_new();
 	if (kf == 0)
-		throw runtime_error("could not allocate memory");
+		throw exception_t("could not allocate memory");
 
 	if (!g_key_file_load_from_file(kf, f.c_str(), G_KEY_FILE_NONE, 0)) {
-		throw runtime_error("could not load configuration file");
+		throw exception_t("could not load configuration file");
 	}
 
 	gchar ** groups = 0;
@@ -69,19 +74,19 @@ void config_handler_t::merge_from_file_if_exist(string const & f) {
 	g_key_file_free(kf);
 }
 
-string config_handler_t::get_string(char const * group, char const * key) const {
-	string const & tmp = find(group, key);
-	shared_ptr<gchar> p_ret(g_strcompress(tmp.c_str()), g_free);
-	return string(p_ret.get());
+std::string config_handler_t::get_string(char const * group, char const * key) const {
+	std::string const & tmp = find(group, key);
+	std::shared_ptr<gchar> p_ret{g_strcompress(tmp.c_str()), g_free};
+	return std::string(p_ret.get());
 }
 
 double config_handler_t::get_double(char const * group, char const * key) const {
-	string const & tmp = find(group, key);
+	std::string const & tmp = find(group, key);
 	return g_strtod(tmp.c_str(), NULL);
 }
 
 long config_handler_t::get_long(char const * group, char const * key) const {
-	string const & tmp = find(group, key);
+	std::string const & tmp = find(group, key);
 	return g_ascii_strtoll(tmp.c_str(), NULL, 10);
 }
 
@@ -92,7 +97,7 @@ bool config_handler_t::has_key(char const * group, char const * key) const {
 	return true;
 }
 
-string const & config_handler_t::find(char const * group, char const * key) const {
+std::string const & config_handler_t::find(char const * group, char const * key) const {
 	auto x = _data.find(_key_t(group, key));
 	if(x == _data.end())
 		throw exception_t("following group/key %s:%s not found", group, key);

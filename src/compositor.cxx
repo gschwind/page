@@ -10,9 +10,13 @@
 #include <unistd.h>
 #include <algorithm>
 #include <list>
+#include <memory>
 
 #include <cstdlib>
 
+#include "composite_surface_manager.hxx"
+
+#include "utils.hxx"
 #include "compositor.hxx"
 #include "atoms.hxx"
 
@@ -22,7 +26,7 @@ namespace page {
 
 #define CHECK_CAIRO(x) do { \
 	x;\
-	print_cairo_status(cr, __FILE__, __LINE__); \
+	/*print_cairo_status(cr, __FILE__, __LINE__);*/ \
 } while(false)
 
 
@@ -55,14 +59,14 @@ void compositor_t::init_composite_overlay() {
 	/* create and map the composite overlay window */
 	composite_overlay = XCompositeGetOverlayWindow(_cnx->dpy(), _cnx->root());
 	/* user input pass through composite overlay (mouse click for example)) */
-	allow_input_passthrough(_cnx->dpy(), composite_overlay);
+	_cnx->allow_input_passthrough(_cnx->dpy(), composite_overlay);
 	/** Automatically redirect windows, but paint sub-windows manually */
 	XCompositeRedirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
 }
 
 void compositor_t::release_composite_overlay() {
 	XCompositeUnredirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
-	disable_input_passthrough(_cnx->dpy(), composite_overlay);
+	_cnx->disable_input_passthrough(_cnx->dpy(), composite_overlay);
 	XCompositeReleaseOverlayWindow(_cnx->dpy(), composite_overlay);
 	composite_overlay = None;
 }
@@ -70,7 +74,7 @@ void compositor_t::release_composite_overlay() {
 compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
 	composite_back_buffer = None;
 
-	_A = shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
+	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
 
 	/* initialize composite */
 	init_composite_overlay();
@@ -123,8 +127,8 @@ void compositor_t::render() {
 
 	/** check if we have at less 2 object, otherwise we cannot have overlap **/
 	if (_graph_scene.size() >= 2) {
-		vector<region> r_damaged;
-		vector<region> r_opac;
+		std::vector<region> r_damaged;
+		std::vector<region> r_opac;
 		for (auto &i : _graph_scene) {
 			r_damaged.push_back(i->get_damaged());
 			r_opac.push_back(i->get_opaque_region());
@@ -373,7 +377,7 @@ void compositor_t::process_event(XCirculateEvent const & e) {
 
 void compositor_t::process_event(XDamageNotifyEvent const & e) {
 	region r = read_damaged_region(e.damage);
-	weak_ptr<composite_surface_t> wp = composite_surface_manager_t::get_weak_surface(e.display, e.drawable);
+	std::weak_ptr<composite_surface_t> wp = composite_surface_manager_t::get_weak_surface(e.display, e.drawable);
 	if (not wp.expired()) {
 		wp.lock()->add_damaged(r);
 	}

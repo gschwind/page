@@ -11,15 +11,16 @@
 #ifndef POPUP_NOTEBOOK0_HXX_
 #define POPUP_NOTEBOOK0_HXX_
 
-#include "window_overlay.hxx"
-#include "window_icon_handler.hxx"
+#include "theme.hxx"
+#include "renderable.hxx"
+#include "icon_handler.hxx"
 
 namespace page {
 
 struct popup_notebook0_t : public renderable_t {
 	theme_t * _theme;
-	ptr<icon64> icon;
-	string title;
+	std::shared_ptr<icon64> icon;
+	std::string title;
 	bool _show;
 
 protected:
@@ -91,7 +92,7 @@ public:
 	}
 
 	void update_window(client_managed_t * c) {
-		icon = ptr<icon64>{new icon64(*c)};
+		icon = std::shared_ptr<icon64>{new icon64(*c)};
 		this->title = c->title();
 	}
 

@@ -10,17 +10,16 @@
 #ifndef CLIENT_MANAGED_HXX_
 #define CLIENT_MANAGED_HXX_
 
-#include "utils.hxx"
-#include "leak_checker.hxx"
-#include "theme.hxx"
-#include "display.hxx"
-#include "composite_surface_manager.hxx"
-#include "renderable_pixmap.hxx"
-#include "renderable_floating_outer_gradien.hxx"
+#include <string>
+#include <vector>
 
-#include <stdexcept>
-#include <exception>
-#include <cairo/cairo-xcb.h>
+#include "icon_handler.hxx"
+#include "theme.hxx"
+
+#include "client_properties.hxx"
+
+#include "floating_event.hxx"
+#include "composite_surface.hxx"
 
 namespace page {
 
@@ -65,7 +64,7 @@ private:
 	cairo_surface_t * _right_buffer;
 
 	// icon cache
-	ptr<icon16> _icon;
+	std::shared_ptr<icon16> _icon;
 
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &);
@@ -101,22 +100,20 @@ private:
 	i_rect _area_bottom_left;
 	i_rect _area_bottom_right;
 
-	vector<floating_event_t> * _floating_area;
-
-	bool _is_focused;
-
-	bool _motif_has_border;
+	std::vector<floating_event_t> * _floating_area;
 
 	/** input surface, surface from we get data **/
-	ptr<composite_surface_t> _composite_surf;
+	std::shared_ptr<composite_surface_t> _composite_surf;
 
 	int _current_desktop;
 
+	bool _is_focused;
+	bool _motif_has_border;
 	bool _is_iconic;
 
 public:
 
-	client_managed_t(Atom net_wm_type, ptr<client_properties_t> c,
+	client_managed_t(Atom net_wm_type, std::shared_ptr<client_properties_t> c,
 			theme_t const * theme);
 	virtual ~client_managed_t();
 
@@ -142,42 +139,25 @@ public:
 
 	managed_window_type_e get_type();
 
-	ptr<icon16> icon() const {
+	std::shared_ptr<icon16> icon() const {
 		return _icon;
 	}
 
 	void update_icon() {
-		_icon = ptr<icon16>{new icon16(*this)};
+		_icon = std::shared_ptr<icon16>{new icon16(*this)};
 	}
 
 	void set_theme(theme_t const * theme);
-
-	cairo_t * cairo_top() const {
-		return cairo_create(_top_buffer);
-	}
-
-	cairo_t * cairo_bottom() const {
-		return cairo_create(_bottom_buffer);
-	}
-
-	cairo_t * cairo_left() const {
-		return cairo_create(_left_buffer);
-	}
-
-	cairo_t * cairo_right() const {
-		return cairo_create(_right_buffer);
-	}
-
 
 	bool is(managed_window_type_e type);
 
 	void expose();
 
-	Window orig() const {
+	xcb_window_t orig() const {
 		return _properties->id();
 	}
 
-	Window base() const {
+	xcb_window_t base() const {
 		return _base;
 	}
 
@@ -199,15 +179,9 @@ public:
 		return _motif_has_border;
 	}
 
-	ptr<composite_surface_t> surf() {
+	std::shared_ptr<composite_surface_t> surf() {
 		return _composite_surf;
 	}
-
-	void net_wm_allowed_actions_add(atom_e atom);
-
-	bool lock();
-	void unlock();
-	void set_focus_state(bool is_focused);
 
 	void set_current_desktop(int n) {
 		_current_desktop = n;
@@ -218,15 +192,24 @@ public:
 		return _current_desktop;
 	}
 
+	void net_wm_allowed_actions_add(atom_e atom);
+
+	bool lock();
+	void unlock();
+	void set_focus_state(bool is_focused);
+
+private:
+
 	void map();
 	void unmap();
-
-public:
 	void grab_button_focused();
 	void grab_button_unfocused();
 	void ungrab_all_button();
 	void select_inputs();
 	void unselect_inputs();
+
+public:
+
 	bool is_fullscreen();
 	Atom net_wm_type();
 	bool get_wm_normal_hints(XSizeHints * size_hints);
@@ -242,54 +225,25 @@ public:
 	i_rect const & get_floating_wished_position();
 	void destroy_back_buffer();
 	void create_back_buffer();
-	vector<floating_event_t> const * floating_areas();
+	std::vector<floating_event_t> const * floating_areas();
 	void update_floating_areas();
 	void set_opaque_region(Window w, region & region);
-	virtual bool has_window(Window w);
-	virtual string get_node_name() const;
+	bool has_window(xcb_window_t w) const;
+	virtual std::string get_node_name() const;
 	display_t * cnx();
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
-	ptr<renderable_t> get_base_renderable();
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
+	std::shared_ptr<renderable_t> get_base_renderable();
 	virtual i_rect const & base_position() const;
 	virtual i_rect const & orig_position() const;
-	virtual bool has_window(Window w) const;
-	vector<floating_event_t> * compute_floating_areas(
+	std::vector<floating_event_t> * compute_floating_areas(
 			theme_managed_window_t * mw) const;
 	i_rect compute_floating_bind_position(
 			i_rect const & allocation) const;
 	i_rect compute_floating_close_position(i_rect const & allocation) const;
 	region visible_area() const;
-
-	void hide() {
-		_is_hidden = true;
-		net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		unmap();
-		for(auto i: tree_t::children()) {
-			i->hide();
-		}
-	}
-
-	void show() {
-		_is_hidden = false;
-
-		if (not _is_iconic) {
-			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			map();
-		}
-
-		for(auto i: tree_t::children()) {
-			i->show();
-		}
-	}
-
-	void get_visible_children(vector<tree_t *> & out) {
-		if (not _is_hidden) {
-			out.push_back(this);
-			for (auto i : tree_t::children()) {
-				i->get_visible_children(out);
-			}
-		}
-	}
+	void hide();
+	void show();
+	void get_visible_children(std::vector<tree_t *> & out);
 
 };
 

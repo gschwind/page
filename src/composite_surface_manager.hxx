@@ -15,37 +15,33 @@
 #ifndef COMPOSITE_SURFACE_MANAGER_HXX_
 #define COMPOSITE_SURFACE_MANAGER_HXX_
 
-#include <cassert>
-#include <X11/Xlib.h>
-#include <X11/extensions/Xcomposite.h>
-#include <cairo/cairo-xlib.h>
-#include <map>
-#include <iostream>
+
 #include <memory>
+#include <map>
+#include <utility>
+#include <iostream>
 
 #include "display.hxx"
-#include "pixmap.hxx"
 #include "composite_surface.hxx"
 
-using namespace std;
 
 namespace page {
 
 class composite_surface_manager_t {
 
-	typedef pair<Display *, Window> _key_t;
-	typedef map<_key_t, weak_ptr<composite_surface_t> > _data_map_t;
+	typedef std::pair<Display *, Window> _key_t;
+	typedef std::map<_key_t, std::weak_ptr<composite_surface_t>> _data_map_t;
 	typedef typename _data_map_t::iterator _map_iter_t;
 
 	_data_map_t _data;
 
 private:
-	shared_ptr<composite_surface_t> _get_composite_surface(Display * dpy, Window w) {
-		weak_ptr<composite_surface_t> & wp = _data[_key_t(dpy, w)];
+	std::shared_ptr<composite_surface_t> _get_composite_surface(Display * dpy, Window w) {
+		std::weak_ptr<composite_surface_t> & wp = _data[_key_t(dpy, w)];
 		/** do not put into local if () then { } **/
-		shared_ptr<composite_surface_t> h;
+		std::shared_ptr<composite_surface_t> h;
 		if(wp.expired()) {
-			h = shared_ptr<composite_surface_t>(new composite_surface_t(dpy, w));
+			h = std::shared_ptr<composite_surface_t>(new composite_surface_t(dpy, w));
 			wp = h;
 		}
 		return wp.lock();
@@ -56,14 +52,14 @@ private:
 	}
 
 	void _onmap(Display * dpy, Window w) {
-		weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
+		std::weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
 		if(not wp.expired()) {
 			wp.lock()->onmap();
 		}
 	}
 
 	void _onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
-		weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
+		std::weak_ptr<composite_surface_t> wp = _data[_key_t(dpy, w)];
 		if(not wp.expired()) {
 			wp.lock()->onresize(width, heigth);
 		}
@@ -76,7 +72,7 @@ private:
 		}
 	}
 
-	weak_ptr<composite_surface_t> _get_weak_surface(Display * dpy, Window w) {
+	std::weak_ptr<composite_surface_t> _get_weak_surface(Display * dpy, Window w) {
 		return _data[_key_t(dpy, w)];
 	}
 
@@ -97,7 +93,7 @@ public:
 	~composite_surface_manager_t() {
 		/* sanity check */
 		if(not _data.empty()) {
-			cout << "WARNING: composite_surface_manager is not empty while destroying." << endl;
+			std::cout << "WARNING: composite_surface_manager is not empty while destroying." << std::endl;
 		}
 	}
 
@@ -106,8 +102,8 @@ public:
 	static void onresize(Display * dpy, Window w, unsigned width, unsigned heigth);
 	static void ondestroy(Display * dpy, Window w);
 
-	static shared_ptr<composite_surface_t> get(Display * dpy, Window w);
-	static weak_ptr<composite_surface_t> get_weak_surface(Display * dpy, Window w);
+	static std::shared_ptr<composite_surface_t> get(Display * dpy, Window w);
+	static std::weak_ptr<composite_surface_t> get_weak_surface(Display * dpy, Window w);
 
 	static void make_surface_stats(int & size, int & count);
 

@@ -10,76 +10,47 @@
 #ifndef PAGE_HXX_
 #define PAGE_HXX_
 
+#include <memory>
+#include <list>
+#include <vector>
+#include <string>
+#include <map>
 
 #include "config.hxx"
 
-#include <glib.h>
-
-#include <features.h>
-#include <ctime>
-#include <X11/X.h>
-#include <X11/cursorfont.h>
-#include <unistd.h>
-#include <cairo.h>
-#include <cairo-xlib.h>
-
-#include <stdio.h>
-
-#include <list>
-#include <string>
-#include <iostream>
-#include <limits>
-#include <cstring>
-#include <map>
-
-/* According to POSIX.1-2001 */
-#include <sys/select.h>
-
-/* According to earlier standards */
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-
-#include "utils.hxx"
-#include "box.hxx"
-
-#include "client_properties.hxx"
-#include "client_base.hxx"
 #include "time.hxx"
-
-#include "compositor.hxx"
 #include "display.hxx"
-#include "notebook.hxx"
-#include "split.hxx"
-#include "desktop.hxx"
+#include "compositor.hxx"
+
 #include "config_handler.hxx"
 
-#include "client_not_managed.hxx"
+#include "key_desc.hxx"
+#include "keymap.hxx"
+
+#include "theme.hxx"
+
+#include "client_base.hxx"
 #include "client_managed.hxx"
+#include "client_not_managed.hxx"
 
-#include "renderable_page.hxx"
-
-#include "popup_notebook0.hxx"
-#include "popup_frame_move.hxx"
-#include "popup_split.hxx"
 #include "popup_alt_tab.hxx"
+#include "popup_notebook0.hxx"
+#include "popup_split.hxx"
+#include "popup_frame_move.hxx"
+
 #include "dropdown_menu.hxx"
 
-#include "simple2_theme.hxx"
-
-#include "page_exception.hxx"
-
-#include "window_handler.hxx"
-#include "keymap.hxx"
 #include "page_component.hxx"
+#include "notebook.hxx"
+#include "split.hxx"
+#include "viewport.hxx"
+#include "desktop.hxx"
+
+#include "page_event.hxx"
+#include "renderable_page.hxx"
 
 
 namespace page {
-
-using namespace std;
-
-typedef list<i_rect> box_list_t;
 
 class page_t : public page_component_t {
 
@@ -117,16 +88,16 @@ public:
 	};
 
 	/* popups (overlay) */
-	ptr<popup_notebook0_t> pn0;
-	ptr<popup_frame_move_t> pfm;
-	ptr<popup_split_t> ps;
-	ptr<popup_alt_tab_t> pat;
+	std::shared_ptr<popup_notebook0_t> pn0;
+	std::shared_ptr<popup_frame_move_t> pfm;
+	std::shared_ptr<popup_split_t> ps;
+	std::shared_ptr<popup_alt_tab_t> pat;
 
 	using notebook_dropdown_menu_t = dropdown_menu_t<client_managed_t const *>;
-	ptr<notebook_dropdown_menu_t> menu;
+	std::shared_ptr<notebook_dropdown_menu_t> menu;
 
 	using client_dropdown_menu_t = dropdown_menu_t<int>;
-	ptr<client_dropdown_menu_t> client_menu;
+	std::shared_ptr<client_dropdown_menu_t> client_menu;
 
 	struct mode_data_split_t {
 		split_t * split;
@@ -346,12 +317,12 @@ public:
 	display_t * cnx;
 	compositor_t * rnd;
 
-	list<client_not_managed_t *> below;
-	list<client_base_t *> root_subclients;
-	list<client_not_managed_t *> docks;
-	list<client_not_managed_t *> tooltips;
-	list<client_not_managed_t *> notifications;
-	list<client_not_managed_t *> above;
+	std::list<client_not_managed_t *> below;
+	std::list<client_base_t *> root_subclients;
+	std::list<client_not_managed_t *> docks;
+	std::list<client_not_managed_t *> tooltips;
+	std::list<client_not_managed_t *> notifications;
+	std::list<client_not_managed_t *> above;
 
 	bool running;
 	bool _need_render;
@@ -359,19 +330,19 @@ public:
 	config_handler_t conf;
 
 	int _current_desktop;
-	vector<desktop_t *> _desktop_list;
+	std::vector<desktop_t *> _desktop_list;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
+	std::map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
 
-	list<Atom> supported_list;
+	std::list<Atom> supported_list;
 
-	string page_base_dir;
+	std::string page_base_dir;
 
-	map<Window, window_handler_t *> window_list;
+	//std::map<Window, window_handler_t *> window_list;
 
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
@@ -394,11 +365,11 @@ private:
 
 	Time _last_focus_time;
 	Time _last_button_press;
-	list<client_managed_t *> _client_focused;
+	std::list<client_managed_t *> _client_focused;
 
 	i_rect _root_position;
 
-	vector<page_event_t> * page_areas;
+	std::vector<page_event_t> * page_areas;
 
 	i_rect _allocation;
 
@@ -470,7 +441,7 @@ public:
 	void debug_print_window_attributes(Window w, XWindowAttributes &wa);
 
 	/* setup and create managed window */
-	client_managed_t * manage(Atom net_wm_type, shared_ptr<client_properties_t> wa);
+	client_managed_t * manage(Atom net_wm_type, std::shared_ptr<client_properties_t> wa);
 
 	/* unmanage a managed window */
 	void unmanage(client_managed_t * mw);
@@ -500,8 +471,8 @@ public:
 	/* close a notebook and unsplit the parent */
 	void notebook_close(notebook_t * src);
 
-	void update_popup_position(ptr<popup_notebook0_t> p, i_rect & position);
-	void update_popup_position(ptr<popup_frame_move_t> p, i_rect & position);
+	void update_popup_position(std::shared_ptr<popup_notebook0_t> p, i_rect & position);
+	void update_popup_position(std::shared_ptr<popup_frame_move_t> p, i_rect & position);
 
 	/* compute the allocation of viewport taking in account DOCKs */
 	void compute_viewport_allocation(viewport_t & v);
@@ -534,10 +505,10 @@ public:
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	notebook_t * get_another_notebook(tree_t * base = nullptr, tree_t * nbk = nullptr);
 	/* get all available notebooks with page */
-	vector<notebook_t *> get_notebooks(tree_t * base = nullptr);
+	std::vector<notebook_t *> get_notebooks(tree_t * base = nullptr);
 	/* find where the managed window is */
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
-	vector<client_managed_t*> get_managed_windows();
+	std::vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(Window w);
 	viewport_t * find_viewport_of(tree_t * n);
 	desktop_t * find_desktop_of(tree_t * n);
@@ -547,11 +518,11 @@ public:
 	void remove_viewport(desktop_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(Window w);
-	void create_managed_window(shared_ptr<client_properties_t> c, Atom type);
+	void create_managed_window(std::shared_ptr<client_properties_t> c, Atom type);
 	void manage_client(client_managed_t * mw, Atom type);
 	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
-	void create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type);
-	void create_dock_window(shared_ptr<client_properties_t> c, Atom type);
+	void create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type);
+	void create_dock_window(std::shared_ptr<client_properties_t> c, Atom type);
 	viewport_t * find_mouse_viewport(int x, int y);
 	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);
 	void update_page_areas();
@@ -559,7 +530,7 @@ public:
 	client_base_t * find_client_with(Window w);
 	client_base_t * find_client(Window w);
 	void remove_client(client_base_t * c);
-	string get_node_name() const;
+	std::string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
 	void remove(tree_t * t);
@@ -598,10 +569,10 @@ public:
 
 	client_managed_t * find_hidden_client_with(Window w);
 
-	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
+	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
-	vector<page_event_t> * compute_page_areas(
-			list<tree_t const *> const & page) const;
+	std::vector<page_event_t> * compute_page_areas(
+			std::list<tree_t const *> const & page) const;
 
 	page_component_t * parent() const;
 	void set_parent(tree_t * parent);
@@ -616,9 +587,9 @@ public:
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
 
-	void children(vector<tree_t *> & out) const;
-	void get_all_children(vector<tree_t *> & out) const;
-	void get_visible_children(vector<tree_t *> & out);
+	void children(std::vector<tree_t *> & out) const;
+	void get_all_children(std::vector<tree_t *> & out) const;
+	void get_visible_children(std::vector<tree_t *> & out);
 
 
 	void render();

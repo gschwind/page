@@ -250,8 +250,8 @@ void split_t::render_legacy(cairo_t * cr, i_rect const & area) const {
 	_theme->render_split(cr, &ts, area);
 }
 
-list<tree_t *> split_t::childs() const {
-	list<tree_t *> ret(_children.begin(), _children.end());
+std::list<tree_t *> split_t::childs() const {
+	std::list<tree_t *> ret(_children.begin(), _children.end());
 	return ret;
 }
 
@@ -279,7 +279,7 @@ void split_t::remove(tree_t * t) {
 	}
 }
 
-void split_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+void split_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 	if(_is_hidden)
 		return;
 	for(auto i: _children) {
@@ -325,7 +325,7 @@ i_rect split_t::compute_split_bar_location() const {
 
 }
 
-void split_t::get_all_children(vector<tree_t *> & out) const {
+void split_t::get_all_children(std::vector<tree_t *> & out) const {
 	for(auto x: _children) {
 		out.push_back(x);
 		x->get_all_children(out);

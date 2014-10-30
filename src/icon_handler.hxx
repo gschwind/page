@@ -8,9 +8,10 @@
 #ifndef ICON_HANDLER_HXX_
 #define ICON_HANDLER_HXX_
 
-#include <vector>
+#include <cairo/cairo.h>
 
-#include "utils.hxx"
+#include <limits>
+
 #include "client_base.hxx"
 
 namespace page {
@@ -32,11 +33,11 @@ public:
 	icon_handler_t(client_base_t const & c) {
 		icon_surf = nullptr;
 
-		vector<int> const * net_wm_icon = c.net_wm_icon();
+		std::vector<int> const * net_wm_icon = c.net_wm_icon();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 
-			vector<_icon_ref_t> icons;
+			std::vector<_icon_ref_t> icons;
 
 			/* find all icons in net_wm_icon */
 			for(unsigned offset = 0; offset+2 < net_wm_icon->size();) {
@@ -81,7 +82,7 @@ public:
 			if (selected.data != nullptr) {
 
 				/** convert possibly 64 bit data to 32 bit **/
-				vector<uint32_t> data(selected.width*selected.height);
+				std::vector<uint32_t> data(selected.width*selected.height);
 				copy(&selected.data[0], &selected.data[selected.width*selected.height], data.begin());
 
 				/** TODO: make X11 surfaces **/

@@ -11,6 +11,11 @@
 
 #include <cairo.h>
 #include <cairo-xlib.h>
+#include <cairo-xcb.h>
+
+#include "composite_surface_manager.hxx"
+
+#include "renderable_floating_outer_gradien.hxx"
 #include "client_managed.hxx"
 #include "notebook.hxx"
 #include "utils.hxx"
@@ -18,7 +23,7 @@
 namespace page {
 
 client_managed_t::client_managed_t(Atom net_wm_type,
-		ptr<client_properties_t> props, theme_t const * theme) :
+		std::shared_ptr<client_properties_t> props, theme_t const * theme) :
 				client_base_t{props},
 				_theme(theme),
 				_managed_type(MANAGED_FLOATING),
@@ -85,7 +90,7 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 
 	/** check if the window has motif no border **/
 	{
-		_motif_has_border = cnx()->motif_has_border(_orig);
+		_motif_has_border = _properties->has_motif_border();
 	}
 
 	/**
@@ -235,6 +240,16 @@ client_managed_t::~client_managed_t() {
 
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
+
+	xcb_destroy_window(cnx()->xcb(), _input_top);
+	xcb_destroy_window(cnx()->xcb(), _input_left);
+	xcb_destroy_window(cnx()->xcb(), _input_right);
+	xcb_destroy_window(cnx()->xcb(), _input_bottom);
+	xcb_destroy_window(cnx()->xcb(), _input_top_left);
+	xcb_destroy_window(cnx()->xcb(), _input_top_right);
+	xcb_destroy_window(cnx()->xcb(), _input_bottom_left);
+	xcb_destroy_window(cnx()->xcb(), _input_bottom_right);
+
 }
 
 void client_managed_t::reconfigure() {
@@ -343,11 +358,10 @@ void client_managed_t::init_managed_type(managed_window_type_e type) {
 
 void client_managed_t::set_managed_type(managed_window_type_e type) {
 	if (lock()) {
-		list<Atom> net_wm_allowed_actions;
-		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_CLOSE));
-		net_wm_allowed_actions.push_back(A(_NET_WM_ACTION_FULLSCREEN));
-		cnx()->write_net_wm_allowed_actions(_orig, net_wm_allowed_actions);
-
+		std::list<atom_e> net_wm_allowed_actions;
+		net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
+		net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
+		_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
 		_managed_type = type;
 		reconfigure();
 		unlock();
@@ -506,10 +520,10 @@ void client_managed_t::icccm_focus(Time t) {
 
 }
 
-vector<floating_event_t> * client_managed_t::compute_floating_areas(
+std::vector<floating_event_t> * client_managed_t::compute_floating_areas(
 		theme_managed_window_t * mw) const {
 
-	vector<floating_event_t> * ret = new vector<floating_event_t>();
+	std::vector<floating_event_t> * ret = new std::vector<floating_event_t>();
 
 	floating_event_t fc(FLOATING_EVENT_CLOSE);
 	fc.position = compute_floating_close_position(mw->position);
@@ -749,7 +763,7 @@ void client_managed_t::net_wm_state_delete() {
 void client_managed_t::normalize() {
 	if (lock()) {
 		_is_iconic = false;
-		cnx()->write_wm_state(_orig, NormalState, None);
+		_properties->set_wm_state(NormalState);
 		if (not _is_hidden) {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 			map();
@@ -776,7 +790,7 @@ void client_managed_t::iconify() {
 	if (lock()) {
 		_is_iconic = true;
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		cnx()->write_wm_state(_orig, IconicState, None);
+		_properties->set_wm_state(IconicState);
 
 		unmap();
 
@@ -889,7 +903,7 @@ void client_managed_t::create_back_buffer() {
 
 }
 
-vector<floating_event_t> const * client_managed_t::floating_areas() {
+std::vector<floating_event_t> const * client_managed_t::floating_areas() {
 	return _floating_area;
 }
 
@@ -932,13 +946,13 @@ void client_managed_t::update_floating_areas() {
 
 }
 
-bool client_managed_t::has_window(Window w) {
+bool client_managed_t::has_window(xcb_window_t w) const {
 	return w == _properties->id() or w == _base or w == _deco;
 }
 
-string client_managed_t::get_node_name() const {
-	string s = _get_node_name<'M'>();
-	ostringstream oss;
+std::string client_managed_t::get_node_name() const {
+	std::string s = _get_node_name<'M'>();
+	std::ostringstream oss;
 	oss << s << " " << orig() << " " << title();
 	return oss.str();
 }
@@ -947,7 +961,7 @@ display_t * client_managed_t::cnx() {
 	return _properties->cnx();
 }
 
-void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
 	if(_is_hidden) {
 		return;
@@ -960,14 +974,14 @@ void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::tim
 		if (_motif_has_border) {
 			if(is_focused()) {
 				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 7.0);
-				out += ptr<renderable_t> { x };
+				out += std::shared_ptr<renderable_t> { x };
 			} else {
 				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 7.0);
-				out += ptr<renderable_t> { x };
+				out += std::shared_ptr<renderable_t> { x };
 			}
 		}
 
-		ptr<renderable_t> x { get_base_renderable() };
+		std::shared_ptr<renderable_t> x { get_base_renderable() };
 		if (x != nullptr) {
 			out += x;
 		}
@@ -979,7 +993,7 @@ void client_managed_t::prepare_render(vector<ptr<renderable_t>> & out, page::tim
 
 }
 
-ptr<renderable_t> client_managed_t::get_base_renderable() {
+std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 	if (_composite_surf != nullptr) {
 
 		region vis;
@@ -1021,11 +1035,11 @@ ptr<renderable_t> client_managed_t::get_base_renderable() {
 				_base_position, dmg);
 		x->set_opaque_region(opa);
 		x->set_visible_region(vis);
-		return ptr<renderable_t>{x};
+		return std::shared_ptr<renderable_t>{x};
 
 	} else {
 		/* return null */
-		return ptr<renderable_t>{};
+		return std::shared_ptr<renderable_t>{};
 	}
 }
 
@@ -1035,10 +1049,6 @@ i_rect const & client_managed_t::base_position() const {
 
 i_rect const & client_managed_t::orig_position() const {
 	return _orig_position;
-}
-
-bool client_managed_t::has_window(Window w) const {
-	return w == _properties->id() or w == _base or w == _deco;
 }
 
 region client_managed_t::visible_area() const {
@@ -1095,19 +1105,19 @@ void client_managed_t::net_wm_allowed_actions_add(atom_e atom) {
 }
 
 void client_managed_t::map() {
-	cnx()->map_window(_orig);
-	cnx()->map_window(_deco);
-	cnx()->map_window(_base);
+	cnx()->map(_orig);
+	cnx()->map(_deco);
+	cnx()->map(_base);
 
-	cnx()->map_window(_input_top);
-	cnx()->map_window(_input_left);
-	cnx()->map_window(_input_right);
-	cnx()->map_window(_input_bottom);
+	cnx()->map(_input_top);
+	cnx()->map(_input_left);
+	cnx()->map(_input_right);
+	cnx()->map(_input_bottom);
 
-	cnx()->map_window(_input_top_left);
-	cnx()->map_window(_input_top_right);
-	cnx()->map_window(_input_bottom_left);
-	cnx()->map_window(_input_bottom_right);
+	cnx()->map(_input_top_left);
+	cnx()->map(_input_top_right);
+	cnx()->map(_input_bottom_left);
+	cnx()->map(_input_bottom_right);
 }
 
 void client_managed_t::unmap() {
@@ -1124,6 +1134,37 @@ void client_managed_t::unmap() {
 	cnx()->unmap(_input_top_right);
 	cnx()->unmap(_input_bottom_left);
 	cnx()->unmap(_input_bottom_right);
+}
+
+void client_managed_t::hide() {
+	_is_hidden = true;
+	net_wm_state_add(_NET_WM_STATE_HIDDEN);
+	unmap();
+	for(auto i: tree_t::children()) {
+		i->hide();
+	}
+}
+
+void client_managed_t::show() {
+	_is_hidden = false;
+
+	if (not _is_iconic) {
+		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+		map();
+	}
+
+	for(auto i: tree_t::children()) {
+		i->show();
+	}
+}
+
+void client_managed_t::get_visible_children(std::vector<tree_t *> & out) {
+	if (not _is_hidden) {
+		out.push_back(this);
+		for (auto i : tree_t::children()) {
+			i->get_visible_children(out);
+		}
+	}
 }
 
 

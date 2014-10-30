@@ -18,8 +18,6 @@
 
 namespace page {
 
-using namespace std;
-
 inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	cairo_status_t s = cairo_status(cr);
 	if (s != CAIRO_STATUS_SUCCESS) {
@@ -123,7 +121,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
 	_cnx = cnx;
 
-	string conf_img_dir = conf.get_string("default", "theme_dir");
+	std::string conf_img_dir = conf.get_string("default", "theme_dir");
 
 	default_background_color.set(
 			conf.get_string("simple_theme", "default_background_color"));
@@ -1236,7 +1234,7 @@ void simple2_theme_t::render_floating_base(
 }
 
 void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
-		unsigned int height, string const & title) {
+		unsigned int height, std::string const & title) {
 
 
 	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
@@ -1295,7 +1293,7 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 }
 
 void simple2_theme_t::render_popup_move_frame(cairo_t * cr, icon64 * icon, unsigned int width,
-		unsigned int height, string const & title) {
+		unsigned int height, std::string const & title) {
 	render_popup_notebook0(cr, icon, width, height, title);
 }
 

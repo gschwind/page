@@ -10,38 +10,23 @@
 #ifndef UTILS_HXX_
 #define UTILS_HXX_
 
-#include <cstdio>
-#include <cstring>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/extensions/shape.h>
 
-#include <memory>
+#include <cairo/cairo.h>
+
+#include <algorithm>
+#include <list>
 #include <map>
 #include <set>
-#include <list>
-#include <vector>
-#include <algorithm>
-#include <limits>
-#include <string>
-#include <stdexcept>
+#include <memory>
 
-#include <X11/X.h>
-#include <X11/Xutil.h>
-
-#include <X11/extensions/Xcomposite.h>
-#include <X11/extensions/Xdamage.h>
-#include <X11/extensions/Xfixes.h>
-#include <X11/extensions/shape.h>
-#include <X11/extensions/Xrandr.h>
-#include <X11/extensions/Xdbe.h>
-
-#include "cairo/cairo.h"
-#include "exception.hxx"
 #include "box.hxx"
-#include "x11_func_name.hxx"
 #include "key_desc.hxx"
+#include "x11_func_name.hxx"
 
 namespace page {
-
-using namespace std;
 
 #define warn(test) \
 	do { \
@@ -67,37 +52,34 @@ struct ctassert {
 template <bool t>
 char ctassert<t>::A[N];
 
-template<typename T>
-using ptr = shared_ptr<T>;
-
 template<typename T, typename _>
-bool has_key(map<T, _> const & x, T const & key) {
-	typename map<T, _>::const_iterator i = x.find(key);
+bool has_key(std::map<T, _> const & x, T const & key) {
+	auto i = x.find(key);
 	return i != x.end();
 }
 
 template<typename T>
-bool has_key(set<T> const & x, T const & key) {
-	typename set<T>::const_iterator i = x.find(key);
+bool has_key(std::set<T> const & x, T const & key) {
+	auto i = x.find(key);
 	return i != x.end();
 }
 
 template<typename T>
-bool has_key(list<T> const & x, T const & key) {
-	typename list<T>::const_iterator i = find(x.begin(), x.end(), key);
+bool has_key(std::list<T> const & x, T const & key) {
+	auto i = std::find(x.begin(), x.end(), key);
 	return i != x.end();
 }
 
 template<typename T>
-bool has_key(vector<T> const & x, T const & key) {
-	typename vector<T>::const_iterator i = find(x.begin(), x.end(), key);
+bool has_key(std::vector<T> const & x, T const & key) {
+	typename std::vector<T>::const_iterator i = find(x.begin(), x.end(), key);
 	return i != x.end();
 }
 
 template<typename K, typename V>
-list<V> list_values(map<K, V> const & x) {
-	list<V> ret;
-	typename map<K, V>::const_iterator i = x.begin();
+std::list<V> list_values(std::map<K, V> const & x) {
+	std::list<V> ret;
+	auto i = x.begin();
 	while(i != x.end()) {
 		ret.push_back(i->second);
 		++i;
@@ -107,87 +89,51 @@ list<V> list_values(map<K, V> const & x) {
 }
 
 template<typename _0, typename _1>
-_1 get_safe_value(map<_0, _1> & x, _0 key, _1 def) {
-	typename map<_0, _1>::iterator i = x.find(key);
+_1 get_safe_value(std::map<_0, _1> & x, _0 key, _1 def) {
+	typename std::map<_0, _1>::iterator i = x.find(key);
 	if (i != x.end())
 		return i->second;
 	else
 		return def;
 }
 
-template<typename T> struct _format {
-	static const int size = 0;
-};
-
-template<> struct _format<long> {
-	static const int size = 32;
-};
-
-template<> struct _format<unsigned long> {
-	static const int size = 32;
-};
-
-template<> struct _format<short> {
-	static const int size = 16;
-};
-
-template<> struct _format<unsigned short> {
-	static const int size = 16;
-};
-
-template<> struct _format<char> {
-	static const int size = 8;
-};
-
-template<> struct _format<unsigned char> {
-	static const int size = 8;
-};
-
-
-template<typename T>
-void write_window_property(Display * dpy, Window win, Atom prop,
-		Atom type, vector<T> & v) {
-	XChangeProperty(dpy, win, prop, type, _format<T>::size,
-	PropModeReplace, (unsigned char *) &v[0], v.size());
-}
+//template<typename T> struct _format {
+//	static const int size = 0;
+//};
+//
+//template<> struct _format<long> {
+//	static const int size = 32;
+//};
+//
+//template<> struct _format<unsigned long> {
+//	static const int size = 32;
+//};
+//
+//template<> struct _format<short> {
+//	static const int size = 16;
+//};
+//
+//template<> struct _format<unsigned short> {
+//	static const int size = 16;
+//};
+//
+//template<> struct _format<char> {
+//	static const int size = 8;
+//};
+//
+//template<> struct _format<unsigned char> {
+//	static const int size = 8;
+//};
 
 
-/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
-inline void allow_input_passthrough(Display * dpy, Window w) {
-	XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
-	/**
-	 * Shape for the entire of window.
-	 **/
-	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
-	/**
-	 * input shape was introduced by Keith Packard to define an input area of
-	 * window by default is the ShapeBounding which is used. here we set input
-	 * area an empty region.
-	 **/
-	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
-	XFixesDestroyRegion(dpy, region);
-}
+//template<typename T>
+//void write_window_property(Display * dpy, Window win, Atom prop,
+//		Atom type, std::vector<T> & v) {
+//	XChangeProperty(dpy, win, prop, type, _format<T>::size,
+//	PropModeReplace, (unsigned char *) &v[0], v.size());
+//}
 
-inline void disable_input_passthrough(Display * dpy, Window w) {
-	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
-	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, None);
-}
 
-static int error_handler(Display * dpy, XErrorEvent * ev) {
-	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
-			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-
-	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
-
-	if (ev->request_code < XFUNCSIZE) {
-		char const * func_name = x_function_codes[ev->request_code];
-		char error_text[1024];
-		error_text[0] = 0;
-		XGetErrorText(dpy, ev->error_code, error_text, 1024);
-		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
-	}
-	return 0;
-}
 
 inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
 		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
@@ -271,111 +217,111 @@ inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
 }
 
 
-inline struct timespec operator +(struct timespec const & a,
-		struct timespec const & b) {
-	struct timespec ret;
-	ret.tv_nsec = (a.tv_nsec + b.tv_nsec) % 1000000000L;
-	ret.tv_sec = (a.tv_sec + b.tv_sec)
-			+ ((a.tv_nsec + b.tv_nsec) / 1000000000L);
-	return ret;
-}
-
-inline bool operator <(struct timespec const & a, struct timespec const & b) {
-	return (a.tv_sec < b.tv_sec)
-			|| (a.tv_sec == b.tv_sec and a.tv_nsec < b.tv_nsec);
-}
-
-inline bool operator >(struct timespec const & a, struct timespec const & b) {
-	return b < a;
-}
-
-inline struct timespec new_timespec(long sec, long nsec) {
-	struct timespec ret;
-	ret.tv_nsec = nsec % 1000000000L;
-	ret.tv_sec = sec + (nsec / 1000000000L);
-	return ret;
-}
-
-/** positive diff **/
-inline struct timespec pdiff(struct timespec const & a,
-		struct timespec const & b) {
-	struct timespec ret;
-
-	if(b < a) {
-		ret.tv_nsec = (a.tv_nsec - b.tv_nsec);
-		ret.tv_sec = (a.tv_sec - b.tv_sec);
-		if(ret.tv_nsec < 0) {
-			ret.tv_sec -= 1;
-			ret.tv_nsec += 1000000000L;
-		}
-	} else {
-		ret.tv_nsec = (b.tv_nsec - a.tv_nsec);
-		ret.tv_sec = (b.tv_sec - a.tv_sec);
-		if(ret.tv_nsec < 0) {
-			ret.tv_sec -= 1;
-			ret.tv_nsec += 1000000000L;
-		}
-	}
-
-	return ret;
-}
-
-
-
-template<typename T>
-vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type) {
-
-	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
-
-	int status;
-	Atom actual_type;
-	int actual_format; /* can be 8, 16 or 32 */
-	unsigned long int nitems;
-	unsigned long int bytes_left;
-	long int offset = 0L;
-
-	vector<T> * buffer = new vector<T>();
-
-	do {
-		unsigned char * tbuff;
-
-		status = XGetWindowProperty(dpy, win, prop, offset,
-				std::numeric_limits<long int>::max(), False, type, &actual_type,
-				&actual_format, &nitems, &bytes_left, &tbuff);
-
-		if (status == Success) {
-
-			if (actual_format == _format<T>::size && nitems > 0) {
-				T * data = reinterpret_cast<T*>(tbuff);
-				buffer->insert(buffer->end(), &data[0], &data[nitems]);
-			} else {
-				status = BadValue;
-				XFree(tbuff);
-				break;
-			}
-
-			if (bytes_left != 0) {
-				printf("some bits lefts\n");
-				//assert((nitems * actual_format % 32) == 0);
-				//assert(bytes_left % (actual_format/4) == 0);
-				offset += (nitems * actual_format) / 32;
-			}
-
-			XFree(tbuff);
-		} else {
-			break;
-		}
-
-	} while (bytes_left != 0);
+//inline struct timespec operator +(struct timespec const & a,
+//		struct timespec const & b) {
+//	struct timespec ret;
+//	ret.tv_nsec = (a.tv_nsec + b.tv_nsec) % 1000000000L;
+//	ret.tv_sec = (a.tv_sec + b.tv_sec)
+//			+ ((a.tv_nsec + b.tv_nsec) / 1000000000L);
+//	return ret;
+//}
+//
+//inline bool operator <(struct timespec const & a, struct timespec const & b) {
+//	return (a.tv_sec < b.tv_sec)
+//			|| (a.tv_sec == b.tv_sec and a.tv_nsec < b.tv_nsec);
+//}
+//
+//inline bool operator >(struct timespec const & a, struct timespec const & b) {
+//	return b < a;
+//}
+//
+//inline struct timespec new_timespec(long sec, long nsec) {
+//	struct timespec ret;
+//	ret.tv_nsec = nsec % 1000000000L;
+//	ret.tv_sec = sec + (nsec / 1000000000L);
+//	return ret;
+//}
+//
+///** positive diff **/
+//inline struct timespec pdiff(struct timespec const & a,
+//		struct timespec const & b) {
+//	struct timespec ret;
+//
+//	if(b < a) {
+//		ret.tv_nsec = (a.tv_nsec - b.tv_nsec);
+//		ret.tv_sec = (a.tv_sec - b.tv_sec);
+//		if(ret.tv_nsec < 0) {
+//			ret.tv_sec -= 1;
+//			ret.tv_nsec += 1000000000L;
+//		}
+//	} else {
+//		ret.tv_nsec = (b.tv_nsec - a.tv_nsec);
+//		ret.tv_sec = (b.tv_sec - a.tv_sec);
+//		if(ret.tv_nsec < 0) {
+//			ret.tv_sec -= 1;
+//			ret.tv_nsec += 1000000000L;
+//		}
+//	}
+//
+//	return ret;
+//}
 
 
-	if (status == Success) {
-		return buffer;
-	} else {
-		delete buffer;
-		return 0;
-	}
-}
+
+//template<typename T>
+//std::vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type) {
+//
+//	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
+//
+//	int status;
+//	Atom actual_type;
+//	int actual_format; /* can be 8, 16 or 32 */
+//	unsigned long int nitems;
+//	unsigned long int bytes_left;
+//	long int offset = 0L;
+//
+//	std::vector<T> * buffer = new std::vector<T>();
+//
+//	do {
+//		unsigned char * tbuff;
+//
+//		status = XGetWindowProperty(dpy, win, prop, offset,
+//				std::numeric_limits<long int>::max(), False, type, &actual_type,
+//				&actual_format, &nitems, &bytes_left, &tbuff);
+//
+//		if (status == Success) {
+//
+//			if (actual_format == _format<T>::size && nitems > 0) {
+//				T * data = reinterpret_cast<T*>(tbuff);
+//				buffer->insert(buffer->end(), &data[0], &data[nitems]);
+//			} else {
+//				status = BadValue;
+//				XFree(tbuff);
+//				break;
+//			}
+//
+//			if (bytes_left != 0) {
+//				printf("some bits lefts\n");
+//				//assert((nitems * actual_format % 32) == 0);
+//				//assert(bytes_left % (actual_format/4) == 0);
+//				offset += (nitems * actual_format) / 32;
+//			}
+//
+//			XFree(tbuff);
+//		} else {
+//			break;
+//		}
+//
+//	} while (bytes_left != 0);
+//
+//
+//	if (status == Success) {
+//		return buffer;
+//	} else {
+//		delete buffer;
+//		return 0;
+//	}
+//}
 
 template<typename T>
 void safe_delete(T & p) {
@@ -391,44 +337,44 @@ template<typename T> T * safe_copy(T * p) {
 	}
 }
 
-template<typename T>
-list<T> * read_list(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-	if (tmp != 0) {
-		list<T> * ret = new list<T>(tmp->begin(), tmp->end());
-		delete tmp;
-		return ret;
-	} else {
-		return 0;
-	}
-}
+//template<typename T>
+//std::list<T> * read_list(Display * dpy, Window w, Atom prop, Atom type) {
+//	std::vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
+//	if (tmp != 0) {
+//		std::list<T> * ret = new std::list<T>(tmp->begin(), tmp->end());
+//		delete tmp;
+//		return ret;
+//	} else {
+//		return 0;
+//	}
+//}
+//
+//template<typename T>
+//T * read_value(Display * dpy, Window w, Atom prop, Atom type) {
+//	std::vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
+//	if (tmp != 0) {
+//		if (tmp->size() > 0) {
+//			T * ret = new T(tmp->front());
+//			delete tmp;
+//			return ret;
+//		} else {
+//			return 0;
+//		}
+//	} else {
+//		return 0;
+//	}
+//}
 
-template<typename T>
-T * read_value(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-	if (tmp != 0) {
-		if (tmp->size() > 0) {
-			T * ret = new T(tmp->front());
-			delete tmp;
-			return ret;
-		} else {
-			return 0;
-		}
-	} else {
-		return 0;
-	}
-}
-
-inline string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
-	vector<char> * tmp = get_window_property<char>(dpy, w, prop, type);
-	if (tmp != nullptr) {
-		string * ret = new string(tmp->begin(), tmp->end());
-		delete tmp;
-		return ret;
-	} else {
-		return nullptr;
-	}
-}
+//inline std::string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
+//	std::vector<char> * tmp = get_window_property<char>(dpy, w, prop, type);
+//	if (tmp != nullptr) {
+//		std::string * ret = new std::string(tmp->begin(), tmp->end());
+//		delete tmp;
+//		return ret;
+//	} else {
+//		return nullptr;
+//	}
+//}
 
 /* C++11 reverse iterators */
 template <typename T>
@@ -454,8 +400,8 @@ reverse_range<T> reverse_iterate (T& x)
 
 
 template<typename T0, typename T1>
-list<T0 *> filter_class(list<T1 *> const & x) {
-	list<T0 *> ret;
+std::list<T0 *> filter_class(std::list<T1 *> const & x) {
+	std::list<T0 *> ret;
 	for (auto i : x) {
 		T0 * n = dynamic_cast<T0 *>(i);
 		if (n != nullptr) {
@@ -466,8 +412,8 @@ list<T0 *> filter_class(list<T1 *> const & x) {
 }
 
 template<typename T0, typename T1>
-vector<T0 *> filter_class(vector<T1 *> const & x) {
-	vector<T0 *> ret;
+std::vector<T0 *> filter_class(std::vector<T1 *> const & x) {
+	std::vector<T0 *> ret;
 	for (auto i : x) {
 		T0 * n = dynamic_cast<T0 *>(i);
 		if (n != nullptr) {
@@ -478,14 +424,14 @@ vector<T0 *> filter_class(vector<T1 *> const & x) {
 }
 
 /**
- * Parse string like "mod4+f" to modifier mask (mod) and keysym (ks)
+ * Parse std::string like "mod4+f" to modifier mask (mod) and keysym (ks)
  **/
-inline void find_key_from_string(string const desc, key_desc_t & k) {
+inline void find_key_from_string(std::string const desc, key_desc_t & k) {
 	std::size_t pos = desc.find("+");
-	if(pos == string::npos)
+	if(pos == std::string::npos)
 		throw std::runtime_error("key description does not match modifier+keysym");
-	string modifier = desc.substr(0, pos);
-	string key = desc.substr(pos+1);
+	std::string modifier = desc.substr(0, pos);
+	std::string key = desc.substr(pos+1);
 
 	if(modifier == "shift") {
 		k.mod = ShiftMask;
@@ -731,26 +677,26 @@ static void draw_outer_graddien2(cairo_t * cr, i_rect r, double _shadow_width, d
 
 /** append vector to the end of list **/
 template<typename T>
-vector<T> & operator +=(vector<T> & a, vector<T> const & b) {
+std::vector<T> & operator +=(std::vector<T> & a, std::vector<T> const & b) {
 	a.insert(a.end(), b.begin(), b.end());
 	return a;
 }
 
 template<typename T>
-vector<T> operator +(vector<T> const & a, vector<T> const & b) {
-	vector<T> ret{a};
+std::vector<T> operator +(std::vector<T> const & a, std::vector<T> const & b) {
+	std::vector<T> ret{a};
 	return (ret += b);
 }
 
 template<typename T>
-vector<T> & operator +=(vector<T> & a, T const & b) {
+std::vector<T> & operator +=(std::vector<T> & a, T const & b) {
 	a.push_back(b);
 	return a;
 }
 
 template<typename T>
-vector<T> operator +(vector<T> const & a, T const & b) {
-	vector<T> ret{a};
+std::vector<T> operator +(std::vector<T> const & a, T const & b) {
+	std::vector<T> ret{a};
 	return (ret += b);
 }
 

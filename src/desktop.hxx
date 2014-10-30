@@ -10,18 +10,16 @@
 #ifndef DESKTOP_HXX_
 #define DESKTOP_HXX_
 
-#include "tree.hxx"
-#include "page_component.hxx"
-#include "notebook.hxx"
-#include "split.hxx"
-#include "theme.hxx"
-#include "client_not_managed.hxx"
-#include "viewport.hxx"
+#include <X11/extensions/Xrandr.h>
 
+#include <map>
+#include <vector>
+
+#include "viewport.hxx"
+#include "client_managed.hxx"
+#include "client_not_managed.hxx"
 
 namespace page {
-
-using namespace std;
 
 struct desktop_t: public page_component_t {
 
@@ -31,10 +29,10 @@ private:
 	i_rect _allocation;
 
 	/** map viewport to real outputs **/
-	map<RRCrtc, viewport_t *> _viewport_outputs;
-	list<client_not_managed_t *> _dock_clients;
-	list<client_managed_t *> _floating_clients;
-	list<client_managed_t *> _fullscreen_clients;
+	std::map<RRCrtc, viewport_t *> _viewport_outputs;
+	std::list<client_not_managed_t *> _dock_clients;
+	std::list<client_managed_t *> _floating_clients;
+	std::list<client_managed_t *> _fullscreen_clients;
 
 
 	notebook_t * _default_pop;
@@ -77,11 +75,11 @@ public:
 		}
 	}
 
-	string get_node_name() const {
+	std::string get_node_name() const {
 		return _get_node_name<'D'>();
 	}
 
-	void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 		if(_is_hidden)
 			return;
 
@@ -118,11 +116,11 @@ public:
 
 	i_rect const & raw_area() const;
 
-	auto get_viewport_map() const -> map<RRCrtc, viewport_t *> const & {
+	auto get_viewport_map() const -> std::map<RRCrtc, viewport_t *> const & {
 		return _viewport_outputs;
 	}
 
-	auto set_layout(map<RRCrtc, viewport_t *> new_layout) -> void {
+	auto set_layout(std::map<RRCrtc, viewport_t *> new_layout) -> void {
 		_viewport_outputs = new_layout;
 	}
 
@@ -134,8 +132,8 @@ public:
 		}
 	}
 
-	auto get_viewports() const -> vector< viewport_t * > {
-		vector<viewport_t *> ret;
+	auto get_viewports() const -> std::vector< viewport_t * > {
+		std::vector<viewport_t *> ret;
 		for(auto i: _viewport_outputs) {
 				ret.push_back(i.second);
 		}
@@ -152,7 +150,7 @@ public:
 		return _default_pop;
 	}
 
-	void children(vector<tree_t *> & out) const {
+	void children(std::vector<tree_t *> & out) const {
 		for(auto i: _viewport_outputs) {
 				out.push_back(i.second);
 		}
@@ -177,7 +175,7 @@ public:
 
 	void update_default_pop() {
 		_default_pop = nullptr;
-		vector<tree_t *> all_children;
+		std::vector<tree_t *> all_children;
 		get_all_children(all_children);
 		for(auto i: all_children) {
 			if(typeid(*i) == typeid(notebook_t)) {
@@ -230,7 +228,7 @@ public:
 		_allocation = area;
 	}
 
-	void get_all_children(vector<tree_t *> & out) const {
+	void get_all_children(std::vector<tree_t *> & out) const {
 		for(auto i: _viewport_outputs) {
 			out.push_back(i.second);
 			i.second->get_all_children(out);
@@ -270,7 +268,7 @@ public:
 		return _is_hidden;
 	}
 
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
 			for (auto i : tree_t::children()) {

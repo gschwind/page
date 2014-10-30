@@ -10,8 +10,9 @@
 #ifndef ATOMS_HXX_
 #define ATOMS_HXX_
 
-#include <cstdio>
-#include <X11/Xatom.h>
+#include "config.hxx"
+
+#include <X11/X.h>
 
 namespace page {
 

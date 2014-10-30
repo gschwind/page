@@ -15,24 +15,14 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <X11/keysymdef.h>
-#include <X11/extensions/shape.h>
-#include <X11/extensions/Xfixes.h>
-#include <X11/extensions/Xrender.h>
-#include <X11/extensions/Xrandr.h>
-#include <X11/cursorfont.h>
-#include <X11/keysym.h>
-#include <X11/Xatom.h>
-#include <X11/Xlib.h>
-#include <X11/Xproto.h>
-#include <X11/Xutil.h>
-#include <X11/cursorfont.h>
 #include <cairo.h>
 #include <cairo-xlib.h>
-#include <stdlib.h>
-#include <cstring>
 
+#include <cstdlib>
 #include <cstring>
+#include <cassert>
+
+#include <string>
 #include <sstream>
 #include <limits>
 #include <stdint.h>
@@ -43,16 +33,32 @@
 #include <typeinfo>
 #include <memory>
 
+#include "utils.hxx"
+
+#include "renderable.hxx"
+#include "key_desc.hxx"
+#include "time.hxx"
+#include "atoms.hxx"
+#include "client_base.hxx"
+#include "client_managed.hxx"
+#include "client_not_managed.hxx"
+
+#include "simple2_theme.hxx"
+
+#include "desktop.hxx"
+#include "split.hxx"
 #include "page.hxx"
+
+#include "popup_alt_tab.hxx"
 
 /* ICCCM definition */
 #define _NET_WM_STATE_REMOVE 0
 #define _NET_WM_STATE_ADD 1
 #define _NET_WM_STATE_TOGGLE 2
 
-using namespace std;
-
 namespace page {
+
+using namespace std;
 
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
@@ -83,7 +89,7 @@ page_t::page_t(int argc, char ** argv)
 
 	int k = 1;
 	while(k < argc) {
-		string x = argv[k];
+		std::string x = argv[k];
 		if(x == "--replace") {
 			replace_wm = true;
 		} else {
@@ -106,21 +112,21 @@ page_t::page_t(int argc, char ** argv)
 	/* load configurations, from lower priority to high one */
 
 	/* load default configuration */
-	conf.merge_from_file_if_exist(string(DATA_DIR "/page/page.conf"));
+	conf.merge_from_file_if_exist(std::string(DATA_DIR "/page/page.conf"));
 
 	/* load homedir configuration */
 	{
 		char const * chome = getenv("HOME");
 		if(chome != nullptr) {
-			string xhome = chome;
-			string file = xhome + "/.page.conf";
+			std::string xhome = chome;
+			std::string file = xhome + "/.page.conf";
 			conf.merge_from_file_if_exist(file);
 		}
 	}
 
 	/* load file in arguments if provided */
 	if (conf_file_name != nullptr) {
-		string s(conf_file_name);
+		std::string s(conf_file_name);
 		conf.merge_from_file_if_exist(s);
 	}
 
@@ -235,10 +241,10 @@ void page_t::run() {
 			_root_position.h);
 
 	/* create and add popups (overlay) */
-	pfm = ptr<popup_frame_move_t>{new popup_frame_move_t(theme)};
-	pn0 = ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
-	ps = ptr<popup_split_t>{new popup_split_t(theme)};
-	pat = ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
+	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(theme)};
+	pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
+	ps = std::shared_ptr<popup_split_t>{new popup_split_t(theme)};
+	pat = std::shared_ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
 	menu = nullptr;
 
 	cnx->load_cursors();
@@ -267,11 +273,11 @@ void page_t::run() {
 			32, &showing_desktop, 1);
 
 
-	vector<char> names_list;
+	std::vector<char> names_list;
 	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-		ostringstream os;
+		std::ostringstream os;
 		os << "Desktop #" << k;
-		string s{os.str()};
+		std::string s{os.str()};
 		names_list.insert(names_list.end(), s.begin(), s.end());
 		names_list.push_back(0);
 	}
@@ -421,7 +427,7 @@ void page_t::scan() {
 		for (unsigned i = 0; i < num; ++i) {
 			Window w = wins[i];
 
-			ptr<client_properties_t> c{new client_properties_t(cnx, w)};
+			std::shared_ptr<client_properties_t> c{new client_properties_t(cnx, w)};
 			if (!c->read_window_attributes()) {
 				continue;
 			}
@@ -460,7 +466,7 @@ void page_t::scan() {
 }
 
 void page_t::update_net_supported() {
-	vector<long> supported_list;
+	std::vector<long> supported_list;
 
 	supported_list.push_back(A(_NET_WM_NAME));
 	supported_list.push_back(A(_NET_WM_USER_TIME));
@@ -522,15 +528,15 @@ void page_t::update_net_supported() {
 void page_t::update_client_list() {
 	set<Window> s_client_list;
 	set<Window> s_client_list_stack;
-	vector<client_managed_t *> lst = get_managed_windows();
+	std::vector<client_managed_t *> lst = get_managed_windows();
 
 	for (auto i : lst) {
 		s_client_list.insert(i->orig());
 		s_client_list_stack.insert(i->orig());
 	}
 
-	vector<Window> client_list(s_client_list.begin(), s_client_list.end());
-	vector<Window> client_list_stack(s_client_list_stack.begin(),
+	std::vector<Window> client_list(s_client_list.begin(), s_client_list.end());
+	std::vector<Window> client_list_stack(s_client_list_stack.begin(),
 			s_client_list_stack.end());
 
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
@@ -609,7 +615,7 @@ void page_t::process_event(XKeyEvent const & e) {
 		if(k == bind_debug_4.ks and (e.state & bind_debug_4.mod)) {
 			update_windows_stack();
 			//print_tree(0);
-			vector<client_managed_t *> lst = get_managed_windows();
+			std::vector<client_managed_t *> lst = get_managed_windows();
 			for (auto i : lst) {
 				switch (i->get_type()) {
 				case MANAGED_NOTEBOOK:
@@ -631,7 +637,7 @@ void page_t::process_event(XKeyEvent const & e) {
 
 		if (k == XK_Tab and ((e.state & 0x0f) == Mod1Mask)) {
 
-			vector<client_managed_t *> managed_window = get_managed_windows();
+			std::vector<client_managed_t *> managed_window = get_managed_windows();
 
 			if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
 
@@ -647,7 +653,7 @@ void page_t::process_event(XKeyEvent const & e) {
 
 				int sel = 0;
 
-				vector<cycle_window_entry_t *> v;
+				std::vector<cycle_window_entry_t *> v;
 				int s = 0;
 
 				for (auto i : managed_window) {
@@ -729,9 +735,9 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			update_page_areas();
 
 			page_event_t * b = 0;
-			for (vector<page_event_t>::iterator i = page_areas->begin();
+			for (std::vector<page_event_t>::iterator i = page_areas->begin();
 					i != page_areas->end(); ++i) {
-				//printf("box = %s => %s\n", (i)->position.to_string().c_str(), typeid(*i).name());
+				//printf("box = %s => %s\n", (i)->position.to_std::string().c_str(), typeid(*i).name());
 				if ((*i).position.is_inside(e.x, e.y)) {
 					b = &(*i);
 					break;
@@ -801,15 +807,15 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					mode_data_notebook_menu.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook_menu.b = b->position;
 
-					list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
+					std::list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
 
 					int sel = 0;
 
-					vector<ptr<notebook_dropdown_menu_t::item_t>> v;
+					std::vector<std::shared_ptr<notebook_dropdown_menu_t::item_t>> v;
 					int s = 0;
 
 					for (auto i : managed_window) {
-						ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
+						std::shared_ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
 						v.push_back(cy);
 						if (i == _client_focused.front()) {
 							sel = s;
@@ -820,7 +826,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					int x = mode_data_notebook_menu.from->allocation().x;
 					int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
 
-					menu = ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
+					menu = std::shared_ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
 				}
 			}
 
@@ -849,18 +855,18 @@ void page_t::process_event_press(XButtonEvent const & e) {
 						mode_data_notebook_client_menu.client = const_cast<client_managed_t *>(b->clt);
 						mode_data_notebook_client_menu.b = b->position;
 
-						vector<ptr<client_dropdown_menu_t::item_t>> v;
+						std::vector<std::shared_ptr<client_dropdown_menu_t::item_t>> v;
 						for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-							ostringstream os;
+							std::ostringstream os;
 							os << "Desktop #" << k;
 							auto item = new client_dropdown_menu_t::item_t(k, nullptr, os.str());
-							v.push_back(ptr<client_dropdown_menu_t::item_t>{item});
+							v.push_back(std::shared_ptr<client_dropdown_menu_t::item_t>{item});
 						}
 
 						int x = e.x_root;
 						int y = e.y_root;
 
-						client_menu = ptr<client_dropdown_menu_t>{new client_dropdown_menu_t(cnx, theme, v, x, y, 300)};
+						client_menu = std::shared_ptr<client_dropdown_menu_t>{new client_dropdown_menu_t(cnx, theme, v, x, y, 300)};
 
 					}
 				}
@@ -1365,7 +1371,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					client_menu->set_selected(selx);
 
 					int selected = client_menu->get_selected();
-					printf("Change desktop %d for %lu\n", selected, mode_data_notebook_client_menu.client->orig());
+					printf("Change desktop %d for %u\n", selected, mode_data_notebook_client_menu.client->orig());
 					if(selected != _current_desktop) {
 						detach(mode_data_notebook_client_menu.client);
 						mode_data_notebook_client_menu.client->set_parent(nullptr);
@@ -2035,7 +2041,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 						new_size.h = e.height;
 					}
 
-					//printf("new_size = %s\n", new_size.to_string().c_str());
+					//printf("new_size = %s\n", new_size.to_std::string().c_str());
 
 //					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
 //							and e.x == 0 and e.y == 0
@@ -2057,7 +2063,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 					new_size.w = final_width;
 					new_size.h = final_height;
 
-					//printf("new_size = %s\n", new_size.to_string().c_str());
+					//printf("new_size = %s\n", new_size.to_std::string().c_str());
 
 					if (new_size != old_size) {
 						/** only affect floating windows **/
@@ -2472,7 +2478,7 @@ void page_t::render() {
 	time_t cur_tic;
 	cur_tic.get_time();
 	rnd->clear_renderable();
-	vector<ptr<renderable_t>> ret;
+	std::vector<std::shared_ptr<renderable_t>> ret;
 	prepare_render(ret, cur_tic);
 	rnd->push_back_renderable(ret);
 	rnd->render();
@@ -2505,14 +2511,14 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 		 *    fullscreen host or use the first available viewport.
 		 **/
 		data.revert_notebook = find_parent_notebook_for(mw);
-		page_assert(data.revert_notebook != nullptr);
+		assert(data.revert_notebook != nullptr);
 		data.revert_type = MANAGED_NOTEBOOK;
 		if (v == nullptr) {
 			data.viewport = find_viewport_of(data.revert_notebook);
 		} else {
 			data.viewport = v;
 		}
-		page_assert(data.viewport != nullptr);
+		assert(data.viewport != nullptr);
 		detach(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
 		detach(mw);
@@ -2712,11 +2718,10 @@ void page_t::process_event(XEvent const & e) {
 
 void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 		bool prefer_activate) {
-	page_assert(x != nullptr);
-	//page_assert(find_parent_notebook_for(x) == nullptr);
+	assert(x != nullptr);
 	if (n == nullptr)
 		n = _desktop_list[_current_desktop]->get_default_pop();
-	page_assert(n != nullptr);
+	assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
 	rpage->add_damaged(n->allocation());
@@ -2797,7 +2802,7 @@ void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
 	/**
 	 * change root window properties to the current focused window.
 	 **/
-	cnx->write_net_active_window(new_focus->orig());
+	cnx->set_net_active_window(new_focus->orig());
 
 	/**
 	 * update the focus status
@@ -2883,7 +2888,7 @@ void page_t::notebook_close(notebook_t * nbk) {
 	if(splt == nullptr)
 		return;
 
-	page_assert(nbk == splt->get_pack0() or nbk == splt->get_pack1());
+	assert(nbk == splt->get_pack0() or nbk == splt->get_pack1());
 
 	/* find the sibling branch of note that we want close */
 	page_component_t * dst = (nbk == splt->get_pack0()) ? splt->get_pack1() : splt->get_pack0();
@@ -2925,14 +2930,14 @@ void page_t::notebook_close(notebook_t * nbk) {
 
 }
 
-void page_t::update_popup_position(ptr<popup_notebook0_t> p,
+void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 		i_rect & position) {
 	rnd->add_damaged(p->position());
 	p->move_resize(position);
 	rnd->add_damaged(p->position());
 }
 
-void page_t::update_popup_position(ptr<popup_frame_move_t> p,
+void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
 		i_rect & position) {
 	rnd->add_damaged(p->position());
 	p->move_resize(position);
@@ -3221,7 +3226,7 @@ void page_t::compute_client_size_with_constraint(Window c,
 	if (_c->wm_normal_hints() == nullptr)
 		return;
 
-	::page::compute_client_size_with_constraint(*(_c->wm_normal_hints()),
+	page::compute_client_size_with_constraint(*(_c->wm_normal_hints()),
 			wished_width, wished_height, width, height);
 
 }
@@ -3355,7 +3360,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 
 /* look for a notebook in tree base, that is deferent from nbk */
 notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
-	vector<notebook_t *> l;
+	std::vector<notebook_t *> l;
 
 	if (base == nullptr) {
 		l = get_notebooks();
@@ -3374,7 +3379,7 @@ notebook_t * page_t::get_another_notebook(tree_t * base, tree_t * nbk) {
 
 }
 
-vector<notebook_t *> page_t::get_notebooks(tree_t * base) {
+std::vector<notebook_t *> page_t::get_notebooks(tree_t * base) {
 	if(base == nullptr)
 		base = this;
 	return filter_class<notebook_t>(base->get_all_children());
@@ -3410,11 +3415,11 @@ void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
 }
 
 void page_t::update_windows_stack() {
-	vector<tree_t *> children;
+	std::vector<tree_t *> children;
 	get_all_children(children);
-	vector<client_base_t *> clients = filter_class<client_base_t>(children);
+	std::vector<client_base_t *> clients = filter_class<client_base_t>(children);
 
-	list<Window> final_order;
+	std::list<Window> final_order;
 	for(auto i: clients) {
 		final_order.push_back(i->base());
 	}
@@ -3429,7 +3434,7 @@ void page_t::update_windows_stack() {
 	/**
 	 * convert list to C array, see std::vector API.
 	 **/
-	vector<Window> v_order(final_order.begin(), final_order.end());
+	std::vector<Window> v_order(final_order.begin(), final_order.end());
 	XRestackWindows(cnx->dpy(), &v_order[0], v_order.size());
 
 }
@@ -3452,7 +3457,7 @@ void page_t::update_viewport_layout() {
 	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(
 			cnx->dpy(), cnx->root());
 
-	map<RRCrtc, XRRCrtcInfo *> crtc_info;
+	std::map<RRCrtc, XRRCrtcInfo *> crtc_info;
 
 	if (resources != nullptr) {
 		for (unsigned k = 0; k < resources->ncrtc; ++k) {
@@ -3463,10 +3468,10 @@ void page_t::update_viewport_layout() {
 	}
 
 	for(auto d: _desktop_list) {
-		map<RRCrtc, viewport_t *> old_layout{d->get_viewport_map()};
+		std::map<RRCrtc, viewport_t *> old_layout{d->get_viewport_map()};
 
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
-		map<RRCrtc, viewport_t *> new_layout;
+		std::map<RRCrtc, viewport_t *> new_layout;
 		for(auto crtc: crtc_info) {
 			XRRCrtcInfo * info = crtc.second;
 			if(info == nullptr)
@@ -3553,7 +3558,7 @@ void page_t::remove_viewport(desktop_t * d, viewport_t * v) {
 }
 
 void page_t::destroy_viewport(viewport_t * v) {
-	vector<tree_t *> lst;
+	std::vector<tree_t *> lst;
 	v->get_all_children(lst);
 	for (auto i : lst) {
 		if (typeid(client_base_t) != typeid(*i)) {
@@ -3625,7 +3630,7 @@ void page_t::onmap(Window w) {
 
 	} else {
 		try {
-			ptr<client_properties_t> props{new client_properties_t{cnx, static_cast<xcb_window_t>(w)}};
+			std::shared_ptr<client_properties_t> props{new client_properties_t{cnx, static_cast<xcb_window_t>(w)}};
 			if (props->read_window_attributes()) {
 				if(props->wa()->_class != InputOnly) {
 					props->read_all_properties();
@@ -3716,7 +3721,7 @@ void page_t::onmap(Window w) {
 }
 
 
-void page_t::create_managed_window(ptr<client_properties_t> c, Atom type) {
+void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, Atom type) {
 
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme);
@@ -3805,9 +3810,6 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 				mw->set_focus_state(false);
 			}
 		}
-
-	} catch (exception & e) {
-		cout << e.what() << endl;
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
@@ -3816,7 +3818,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 	}
 }
 
-void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type) {
 	try {
 		client_not_managed_t * uw = new client_not_managed_t(type, c);
 		uw->map();
@@ -3835,7 +3837,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, Atom typ
 	}
 }
 
-void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, Atom type) {
 	client_not_managed_t * uw = new client_not_managed_t(type, c);
 	uw->map();
 	attach_dock(uw);
@@ -3844,7 +3846,7 @@ void page_t::create_dock_window(shared_ptr<client_properties_t> c, Atom type) {
 }
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {
-	vector<viewport_t*> viewports = _desktop_list[_current_desktop]->get_viewports();
+	std::vector<viewport_t*> viewports = _desktop_list[_current_desktop]->get_viewports();
 	for (auto v: viewports) {
 		if (v->raw_area().is_inside(x, y))
 			return v;
@@ -3869,15 +3871,16 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 	} else {
 		/* if no time window try to go on referenced window */
 		if (c->net_wm_user_time_window() != nullptr) {
+			net_wm_user_time_t xtime;
 
-			Time * xtime = cnx->read_net_wm_user_time(
-					*(c->net_wm_user_time_window()));
-			if (xtime != nullptr) {
+			auto x = display_t::make_property_fetcher_t(xtime, cnx, *(c->net_wm_user_time()));
+			x.update(cnx);
+
+			if (xtime.data != nullptr) {
 				if (*xtime != 0) {
 					time = *(xtime);
 					has_time = true;
 				}
-				delete xtime;
 			}
 		}
 	}
@@ -3886,7 +3889,7 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
 
 }
 
-vector<client_managed_t *> page_t::get_managed_windows() {
+std::vector<client_managed_t *> page_t::get_managed_windows() {
 	return filter_class<client_managed_t>(tree_t::get_all_children());
 }
 
@@ -3959,8 +3962,8 @@ void page_t::update_page_areas() {
 		delete page_areas;
 	}
 
-	vector<tree_t *> tmp = _desktop_list[_current_desktop]->tree_t::get_all_children();
-	list<tree_t const *> lc(tmp.begin(), tmp.end());
+	std::vector<tree_t *> tmp = _desktop_list[_current_desktop]->tree_t::get_all_children();
+	std::list<tree_t const *> lc(tmp.begin(), tmp.end());
 	page_areas = compute_page_areas(lc);
 }
 
@@ -4009,7 +4012,7 @@ void page_t::remove_client(client_base_t * c) {
 	delete c;
 }
 
-void page_t::get_all_children(vector<tree_t *> & out) const {
+void page_t::get_all_children(std::vector<tree_t *> & out) const {
 
 	for (auto v: _desktop_list) {
 		out.push_back(v);
@@ -4053,7 +4056,7 @@ void page_t::get_all_children(vector<tree_t *> & out) const {
 
 }
 
-string page_t::get_node_name() const {
+std::string page_t::get_node_name() const {
 	return _get_node_name<'P'>();
 }
 
@@ -4104,7 +4107,7 @@ void page_t::raise_child(tree_t * t) {
 
 void page_t::remove(tree_t * t) {
 
-	if(has_key(vector<tree_t*>{_desktop_list.begin(), _desktop_list.end()}, t)) {
+	if(has_key(std::vector<tree_t*>{_desktop_list.begin(), _desktop_list.end()}, t)) {
 		throw exception_t("ERROR: using page::remove to remove desktop is not recommended, use page::remove_viewport instead");
 	}
 
@@ -4297,7 +4300,7 @@ void page_t::update_keymap() {
 	keymap = new keymap_t(cnx->dpy());
 }
 
-void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
 	rnd->add_damaged(rpage->get_damaged());
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
@@ -4337,10 +4340,10 @@ void page_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const 
 }
 
 
-vector<page_event_t> * page_t::compute_page_areas(
-		list<tree_t const *> const & page) const {
+std::vector<page_event_t> * page_t::compute_page_areas(
+		std::list<tree_t const *> const & page) const {
 
-	vector<page_event_t> * ret = new vector<page_event_t>();
+	std::vector<page_event_t> * ret = new std::vector<page_event_t>();
 
 	for (auto i : page) {
 		if(dynamic_cast<split_t const *>(i)) {
@@ -4383,7 +4386,7 @@ void page_t::set_allocation(i_rect const & r) {
 	_allocation = r;
 }
 
-void page_t::children(vector<tree_t *> & out) const {
+void page_t::children(std::vector<tree_t *> & out) const {
 	for (auto i: _desktop_list) {
 		out.push_back(i);
 	}
@@ -4479,7 +4482,7 @@ void page_t::update_desktop_visibility() {
 	}
 }
 
-void page_t::get_visible_children(vector<tree_t *> & out) {
+void page_t::get_visible_children(std::vector<tree_t *> & out) {
 	out.push_back(this);
 	/** all children are visible within page **/
 	for(auto i: tree_t::children()) {
@@ -4489,3 +4492,4 @@ void page_t::get_visible_children(vector<tree_t *> & out) {
 
 
 }
+

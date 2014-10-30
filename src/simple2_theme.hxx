@@ -10,26 +10,17 @@
 #ifndef SIMPLE2_THEME_HXX_
 #define SIMPLE2_THEME_HXX_
 
-#include "config.hxx"
-
-#include <stdexcept>
-#include <algorithm>
-#include <cmath>
-
-#include <cairo/cairo.h>
-#include <cairo/cairo-xlib.h>
-#include <cairo/cairo-ft.h>
-
 #ifdef WITH_PANGO
 #include <pango/pangocairo.h>
 #endif
 
+#include <cairo/cairo.h>
+#include <cairo/cairo-xlib.h>
+
+
 #include "theme.hxx"
 #include "color.hxx"
-#include "box.hxx"
 #include "config_handler.hxx"
-
-using namespace std;
 
 namespace page {
 
@@ -38,14 +29,14 @@ public:
 
 	display_t * _cnx;
 
-	string notebook_active_font_name;
-	string notebook_selected_font_name;
-	string notebook_normal_font_name;
+	std::string notebook_active_font_name;
+	std::string notebook_selected_font_name;
+	std::string notebook_normal_font_name;
 
-	string floating_active_font_name;
-	string floating_normal_font_name;
+	std::string floating_active_font_name;
+	std::string floating_normal_font_name;
 
-	string pango_popup_font_name;
+	std::string pango_popup_font_name;
 
 	PangoFontDescription * notebook_active_font;
 	PangoFontDescription * notebook_selected_font;
@@ -105,8 +96,8 @@ public:
 	color_t floating_normal_background_color;
 
 	bool has_background;
-	string background_file;
-	string scale_mode;
+	std::string background_file;
+	std::string scale_mode;
 
 
 	simple2_theme_t(display_t * cnx, config_handler_t & conf);
@@ -180,22 +171,22 @@ public:
 	) const;
 
 	virtual void render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
-			unsigned int height, string const & title);
+			unsigned int height, std::string const & title);
 	virtual void render_popup_move_frame(cairo_t * cr, icon64 * icon, unsigned int width,
-			unsigned int height, string const & title);
+			unsigned int height, std::string const & title);
 
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split);
 
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected);
 
-//	virtual vector<page_event_t> * compute_page_areas(
-//			list<tree_t const *> const & page) const;
-//	virtual vector<floating_event_t> * compute_floating_areas(
+//	virtual std::vector<page_event_t> * compute_page_areas(
+//			std::list<tree_t const *> const & page) const;
+//	virtual std::vector<floating_event_t> * compute_floating_areas(
 //			theme_managed_window_t * mw) const;
 
 
 //	void compute_areas_for_notebook(theme_notebook_t const * n,
-//			vector<page_event_t> * l) const;
+//			std::vector<page_event_t> * l) const;
 
 	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;

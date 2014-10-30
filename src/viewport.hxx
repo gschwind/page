@@ -10,15 +10,13 @@
 #ifndef VIEWPORT_HXX_
 #define VIEWPORT_HXX_
 
-#include "tree.hxx"
+#include <memory>
+#include <vector>
+
+#include "renderable.hxx"
+#include "theme.hxx"
 #include "page_component.hxx"
 #include "notebook.hxx"
-#include "split.hxx"
-#include "theme.hxx"
-#include "client_not_managed.hxx"
-
-
-using namespace std;
 
 namespace page {
 
@@ -72,8 +70,8 @@ public:
 
 	}
 
-	virtual list<tree_t *> childs() const {
-		list<tree_t *> ret;
+	virtual std::list<tree_t *> childs() const {
+		std::list<tree_t *> ret;
 
 		if (_subtree != nullptr) {
 			ret.push_back(_subtree);
@@ -93,11 +91,11 @@ public:
 		}
 	}
 
-	virtual string get_node_name() const {
+	virtual std::string get_node_name() const {
 		return _get_node_name<'V'>();
 	}
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 		if(_is_hidden)
 			return;
 		if(_subtree != nullptr) {
@@ -121,9 +119,9 @@ public:
 
 	i_rect const & raw_area() const;
 
-	void get_all_children(vector<tree_t *> & out) const;
+	void get_all_children(std::vector<tree_t *> & out) const;
 
-	void children(vector<tree_t *> & out) const {
+	void children(std::vector<tree_t *> & out) const {
 		if(_subtree != nullptr) {
 			out.push_back(_subtree);
 		}
@@ -149,7 +147,7 @@ public:
 		return _raw_aera;
 	}
 
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
 			for (auto i : tree_t::children()) {

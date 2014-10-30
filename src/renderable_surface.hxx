@@ -8,15 +8,9 @@
 #ifndef RENDERABLE_SURFACE_HXX_
 #define RENDERABLE_SURFACE_HXX_
 
-#include <cairo/cairo.h>
-
-#include "region.hxx"
-#include "renderable.hxx"
-#include "box.hxx"
+#include "utils.hxx"
 
 namespace page {
-
-
 
 class renderable_surface_t : public renderable_t {
 

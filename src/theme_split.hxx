@@ -12,8 +12,6 @@
 
 namespace page {
 
-class split_t;
-
 enum split_type_e {
 	HORIZONTAL_SPLIT, VERTICAL_SPLIT,
 };

@@ -11,15 +11,13 @@
 #ifndef POPUP_FRAME_MOVE_HXX_
 #define POPUP_FRAME_MOVE_HXX_
 
-#include "window_overlay.hxx"
-
 namespace page {
 
 struct popup_frame_move_t: public renderable_t {
 
 	theme_t * _theme;
 	icon64 * icon;
-	string title;
+	std::string title;
 
 protected:
 	i_rect _position;
@@ -102,7 +100,7 @@ public:
 			delete icon;
 	}
 
-	void update_window(client_base_t * c, string title) {
+	void update_window(client_base_t * c, std::string title) {
 		if (icon != nullptr)
 			delete icon;
 		icon = new icon64(*c);

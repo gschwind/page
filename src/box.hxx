@@ -13,11 +13,7 @@
 #include <X11/Xlib.h>
 
 #include <cmath>
-
-#include <algorithm>
-#include <list>
 #include <sstream>
-#include <iostream>
 
 namespace page {
 

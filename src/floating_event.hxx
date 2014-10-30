@@ -10,8 +10,6 @@
 #ifndef FLOATING_EVENT_HXX_
 #define FLOATING_EVENT_HXX_
 
-#include "box.hxx"
-
 namespace page {
 
 enum floating_event_type_e {

@@ -11,19 +11,18 @@
 #ifndef REGION_HXX_
 #define REGION_HXX_
 
-#include <iostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "box.hxx"
 
 namespace page {
 
-using namespace std;
-
 template<typename T>
-class region_t : public vector<i_rect_t<T>> {
+class region_t : public std::vector<i_rect_t<T>> {
 	/** short cut for the superior class **/
-	using super = vector<i_rect_t<T> >;
+	using super = std::vector<i_rect_t<T> >;
 	using _box_t = i_rect_t<T>;
 
 	/** this function reduce the number of boxes if possible **/
@@ -240,7 +239,7 @@ public:
 	region_t(region_t const && r) : super(r) { }
 
 	template<typename U>
-	region_t(vector<U> const & v) {
+	region_t(std::vector<U> const & v) {
 		for (int i = 0; i + 3 < v.size(); i += 4) {
 			super::push_back(_box_t ( v[i + 0], v[i + 1], v[i + 2], v[i + 3] ));
 		}
@@ -381,8 +380,8 @@ public:
 	}
 
 
-	/** make string **/
-	string to_string() const {
+	/** make std::string **/
+	std::string to_string() const {
 		std::ostringstream os;
 		auto i = this->begin();
 		if(i == this->end())

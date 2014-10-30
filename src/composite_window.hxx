@@ -10,27 +10,13 @@
 #ifndef COMPOSITE_WINDOW_HXX_
 #define COMPOSITE_WINDOW_HXX_
 
-#include <X11/Xlib.h>
-#include <set>
-#include <map>
-
-#include "time.hxx"
-
-#include "display.hxx"
-#include "region.hxx"
-#include "icon.hxx"
-#include "composite_window.hxx"
-#include "composite_surface_manager.hxx"
-
-
-
 namespace page {
 
 inline static void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	cairo_status_t s = cairo_status(cr);
 	if (s != CAIRO_STATUS_SUCCESS) {
 		printf("Cairo status %s:%d = %s\n", file, line,
-				cairo_status_to_string(s));
+				cairo_status_to_std::string(s));
 	}
 }
 
@@ -47,7 +33,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
  **/
 
 //class composite_window_t {
-//	shared_ptr<composite_surface_t> _surf;
+//	shared_std::shared_ptr<composite_surface_t> _surf;
 //
 //	display_t * _cnx;
 //	Window _wid;
@@ -77,7 +63,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //			| PropertyChangeMask);
 //
 //	composite_window_t(display_t * cnx, Window w,
-//			XWindowAttributes const * wa, shared_ptr<composite_surface_t> surf) : _cnx(cnx) {
+//			XWindowAttributes const * wa, shared_std::shared_ptr<composite_surface_t> surf) : _cnx(cnx) {
 //		page_assert(cnx != NULL);
 //
 //		_surf = surf;
@@ -125,7 +111,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 ////			CHECK_CAIRO(cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h));
 ////			CHECK_CAIRO(cairo_clip(cr));
 ////
-////			shared_ptr<pixmap_t>  p = _surf->get_pixmap();
+////			shared_std::shared_ptr<pixmap_t>  p = _surf->get_pixmap();
 ////			if (p != nullptr) {
 ////				CHECK_CAIRO(
 ////						cairo_set_source_surface(cr,
@@ -225,7 +211,7 @@ inline static void print_cairo_status(cairo_t * cr, char const * file, int line)
 //
 //	}
 //
-//	shared_ptr<composite_surface_t> get_surf() {
+//	shared_std::shared_ptr<composite_surface_t> get_surf() {
 //		return _surf;
 //	}
 //

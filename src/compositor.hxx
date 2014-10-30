@@ -12,30 +12,25 @@
 
 #include "config.hxx"
 
-#include <memory>
-#include <list>
-#include <cassert>
-
-#include <ctime>
-#include <cairo.h>
-#include <cairo-xlib.h>
-
 #ifdef WITH_PANGO
+#include <pango/pango.h>
 #include <pango/pangocairo.h>
 #endif
 
+#include <cairo/cairo.h>
+#include <cairo/cairo-xlib.h>
+#include <cairo/cairo-xcb.h>
 
-#include "smart_pointer.hxx"
-#include "utils.hxx"
+#include <memory>
+#include <vector>
+
 #include "display.hxx"
-#include "region.hxx"
-#include "renderable.hxx"
-#include "composite_window.hxx"
-#include "composite_surface_manager.hxx"
-
 #include "time.hxx"
 
-using namespace std;
+
+#include "box.hxx"
+#include "region.hxx"
+#include "renderable.hxx"
 
 namespace page {
 
@@ -58,12 +53,12 @@ private:
 	/* xrandr extension handler */
 	int xrandr_event;
 
-	shared_ptr<atom_handler_t> _A;
+	std::shared_ptr<atom_handler_t> _A;
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	vector<ptr<renderable_t>> _graph_scene;
+	std::vector<std::shared_ptr<renderable_t>> _graph_scene;
 
 	static int const _FPS_WINDOWS = 80;
 	int _fps_top;
@@ -81,7 +76,7 @@ private:
 	unsigned _missed_forecast;
 	unsigned _forecast_count;
 
-	map<Window, Damage> _damage_event;
+	std::map<Window, Damage> _damage_event;
 
 	region _damaged;
 	region _desktop_region;
@@ -208,12 +203,12 @@ public:
 		_graph_scene.clear();
 	}
 
-	void push_back_renderable(ptr<renderable_t> r) {
+	void push_back_renderable(std::shared_ptr<renderable_t> r) {
 		_graph_scene.push_back(r);
 	}
 
-	void push_back_renderable(vector<ptr<renderable_t>> const & r) {
-		_graph_scene += r;
+	void push_back_renderable(std::vector<std::shared_ptr<renderable_t>> const & r) {
+		_graph_scene.insert(_graph_scene.end(), r.begin(), r.end());
 	}
 
 	void pango_printf(cairo_t * cr, double x, double y, char const * fmt, ...);

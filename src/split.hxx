@@ -10,15 +10,8 @@
 #ifndef SPLIT_HXX_
 #define SPLIT_HXX_
 
-#include <cmath>
-
-#include "tree.hxx"
-#include "page_component.hxx"
 #include "theme.hxx"
-
-#include <set>
-
-using namespace std;
+#include "page_component.hxx"
 
 namespace page {
 
@@ -39,7 +32,7 @@ class split_t : public page_component_t {
 	i_rect bpack0;
 	i_rect bpack1;
 
-	list<tree_t *> _children;
+	std::list<tree_t *> _children;
 
 	bool _is_hidden;
 
@@ -73,16 +66,16 @@ public:
 	double split() const;
 	split_type_e type() const;
 	void render_legacy(cairo_t * cr, i_rect const & area) const;
-	list<tree_t *> childs() const;
+	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
 
-	virtual string get_node_name() const {
+	virtual std::string get_node_name() const {
 		return _get_node_name<'S'>();
 	}
 
 	void remove(tree_t * t);
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time);
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
 	i_rect compute_split_bar_location() const;
 
@@ -102,9 +95,9 @@ public:
 		return _parent;
 	}
 
-	void get_all_children(vector<tree_t *> & out) const;
+	void get_all_children(std::vector<tree_t *> & out) const;
 
-	void children(vector<tree_t *> & out) const {
+	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
@@ -122,7 +115,7 @@ public:
 		}
 	}
 
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
 			for (auto i : tree_t::children()) {

@@ -10,15 +10,13 @@
 
 #include <cairo/cairo.h>
 
-#include "pixmap.hxx"
+#include <memory>
+
 #include "utils.hxx"
-#include "region.hxx"
 #include "renderable.hxx"
-#include "box.hxx"
+#include "pixmap.hxx"
 
 namespace page {
-
-using namespace std;
 
 class renderable_notebook_fading_t : public renderable_t {
 
@@ -29,14 +27,14 @@ class renderable_notebook_fading_t : public renderable_t {
 
 	i_rect tmp_pos;
 
-	ptr<pixmap_t> prev_surf;
-	ptr<pixmap_t> next_surf;
+	std::shared_ptr<pixmap_t> prev_surf;
+	std::shared_ptr<pixmap_t> next_surf;
 
 	cairo_surface_t * tmpa;
 
 public:
 
-	renderable_notebook_fading_t(ptr<pixmap_t> prev, ptr<pixmap_t> next, i_rect prev_pos, i_rect next_pos) : prev_surf(prev), next_surf(next), prev_pos(prev_pos), next_pos(next_pos), ratio(0.5) {
+	renderable_notebook_fading_t(std::shared_ptr<pixmap_t> prev, std::shared_ptr<pixmap_t> next, i_rect prev_pos, i_rect next_pos) : prev_surf(prev), next_surf(next), prev_pos(prev_pos), next_pos(next_pos), ratio(0.5) {
 		tmpa = nullptr;
 		tmp_pos.x = std::min(prev_pos.x, next_pos.x);
 		tmp_pos.y = std::min(prev_pos.y, next_pos.y);
@@ -140,7 +138,7 @@ public:
 		ratio = std::min(std::max(0.0, x), 1.0);
 	}
 
-	void update_next(ptr<pixmap_t> const & next) {
+	void update_next(std::shared_ptr<pixmap_t> const & next) {
 		next_surf = next;
 	}
 

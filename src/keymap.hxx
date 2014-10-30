@@ -8,9 +8,10 @@
 #ifndef KEYMAP_HXX_
 #define KEYMAP_HXX_
 
-#include <cassert>
+#include <X11/Xlib.h>
+#include <X11/keysymdef.h>
 
-#include "key_desc.hxx"
+#include <cassert>
 
 namespace page {
 

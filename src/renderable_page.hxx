@@ -11,8 +11,12 @@
 #ifndef RENDERABLE_PAGE_HXX_
 #define RENDERABLE_PAGE_HXX_
 
+#include <memory>
+
+#include "display.hxx"
 #include "theme.hxx"
-#include "window_overlay.hxx"
+
+#include "region.hxx"
 #include "renderable_surface.hxx"
 
 namespace page {
@@ -33,7 +37,7 @@ class renderable_page_t {
 	/** rendering tabs is time consumming, thus use back buffer **/
 	cairo_surface_t * _back_surf;
 
-	ptr<renderable_surface_t> _renderable;
+	std::shared_ptr<renderable_surface_t> _renderable;
 
 public:
 
@@ -49,7 +53,7 @@ public:
 		xcb_create_pixmap(cnx->xcb(), cnx->xcb_screen()->root_depth, _pix, cnx->root(), width, height);
 		_back_surf = cairo_xcb_surface_create(cnx->xcb(), _pix, cnx->root_visual(), width, height);
 		_position = i_rect{0, 0, width, height};
-		_renderable = ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _position}};
+		_renderable = std::shared_ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _position}};
 	}
 
 	~renderable_page_t() {
@@ -58,7 +62,7 @@ public:
 		XFreePixmap(_cnx->dpy(), _pix);
 	}
 
-	void repair_damaged(vector<tree_t *> tree) {
+	void repair_damaged(std::vector<tree_t *> tree) {
 
 		if(_damaged.empty() and not _is_durty)
 			return;
@@ -99,7 +103,7 @@ public:
 		_damaged += area;
 	}
 
-	ptr<renderable_surface_t> prepare_render() {
+	std::shared_ptr<renderable_surface_t> prepare_render() {
 		_renderable->clear_damaged();
 		_renderable->add_damaged(_damaged);
 		return _renderable;

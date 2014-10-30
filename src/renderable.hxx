@@ -11,17 +11,15 @@
 #ifndef RENDERABLE_HXX_
 #define RENDERABLE_HXX_
 
+#include <cairo/cairo.h>
+
 #include <list>
-#include <cairo.h>
+
 #include "leak_checker.hxx"
-#include "time.hxx"
-#include "box.hxx"
 #include "region.hxx"
-#include "utils.hxx"
+
 
 namespace page {
-
-using namespace std;
 
 /**
  * Renderable object, are used to render a static scene graph (en optimise the scene graph)
@@ -63,7 +61,7 @@ public:
 /**
  * short cut for renderable list.
  */
-typedef list<renderable_t *> renderable_list_t;
+using renderable_list_t = std::list<renderable_t *>;
 
 }
 

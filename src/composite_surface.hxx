@@ -8,6 +8,14 @@
 #ifndef COMPOSITE_SURFACE_HXX_
 #define COMPOSITE_SURFACE_HXX_
 
+#include <X11/Xlib.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/Xcomposite.h>
+
+#include <cassert>
+
+#include <memory>
+
 #include "region.hxx"
 #include "pixmap.hxx"
 
@@ -19,7 +27,7 @@ class composite_surface_t {
 	Visual * _vis;
 	Window _window_id;
 	Damage _damage;
-	shared_ptr<pixmap_t> _pixmap;
+	std::shared_ptr<pixmap_t> _pixmap;
 	int _width, _height;
 	int _depth;
 
@@ -81,7 +89,7 @@ public:
 		if(pixmap_id == None) {
 			printf("invalid pixmap creation\n");
 		} else {
-			_pixmap = shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
+			_pixmap = std::shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
 		}
 		destroy_damage();
 		create_damage();
@@ -103,7 +111,7 @@ public:
 		return _window_id;
 	}
 
-	shared_ptr<pixmap_t> get_pixmap() {
+	std::shared_ptr<pixmap_t> get_pixmap() {
 		return _pixmap;
 	}
 

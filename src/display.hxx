@@ -10,57 +10,41 @@
 #ifndef DISPLAY_HXX_
 #define DISPLAY_HXX_
 
-#include <X11/X.h>
-#include <X11/Xutil.h>
-
+#include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
 
-#include <X11/extensions/Xcomposite.h>
-#include <X11/extensions/Xdamage.h>
-#include <X11/extensions/Xfixes.h>
-#include <X11/extensions/shape.h>
-#include <X11/extensions/Xrandr.h>
-
-#include <X11/cursorfont.h>
-
 #include <xcb/xcb.h>
-#include <xcb/xcb_util.h>
 
-#include <cairo/cairo-xlib.h>
+#include <X11/keysymdef.h>
+#include <X11/cursorfont.h>
+#include <X11/keysym.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
 
-#include <glib.h>
+#include <X11/extensions/shape.h>
+#include <X11/extensions/Xdbe.h>
+#include <X11/extensions/Xfixes.h>
+#include <X11/extensions/Xrender.h>
+#include <X11/extensions/Xrandr.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/Xcomposite.h>
 
-#include <memory>
-
+#include <cstring>
 #include <cstdarg>
-#include <cstdlib>
-#include <cstdio>
-#include <limits>
-#include <algorithm>
+#include <map>
 #include <list>
 #include <vector>
-#include <stdexcept>
-#include <map>
-#include <cstring>
-
-#include "page_exception.hxx"
+#include <memory>
 
 #include "box.hxx"
 #include "atoms.hxx"
-#include "x11_func_name.hxx"
-#include "utils.hxx"
-#include "properties_cache.hxx"
-#include "window_attributes_cache.hxx"
 #include "motif_hints.hxx"
 
-
-using namespace std;
+#include "properties.hxx"
 
 namespace page {
 
-
 static unsigned long const AllEventMask = 0x01ffffff;
-
 
 /**
  * Structure to handle X connection context.
@@ -78,17 +62,17 @@ class display_t {
 	uint32_t _xcb_root_visual_depth;
 	xcb_visualtype_t * _xcb_root_visual_type;
 
-	map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
-	map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
+	std::map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
+	std::map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
 
-	list<XEvent> pending_event;
+	std::list<XEvent> pending_event;
 
 public:
 
 	/* overlay composite */
 	Window composite_overlay;
 
-	ptr<atom_handler_t> _A;
+	std::shared_ptr<atom_handler_t> _A;
 
 
 	int grab_count;
@@ -132,21 +116,16 @@ public:
 	display_t();
 	~display_t();
 
-	vector<string> * read_wm_class(Window w);
-	XWMHints * read_wm_hints(Window w);
-	motif_wm_hints_t * read_motif_wm_hints(Window w);
-	XSizeHints * read_wm_normal_hints(Window w);
-	void write_net_wm_allowed_actions(Window w, list<Atom> & list);
-	void write_net_wm_state(Window w, list<Atom> & list);
-	void write_wm_state(Window w, long state, Window icon);
-	void write_net_active_window(Window w);
+	void set_net_active_window(xcb_window_t w);
+
 	int move_window(Window w, int x, int y);
 	void grab();
 	void ungrab();
 	bool is_not_grab();
 	void unmap(Window w);
-	void reparentwindow(Window w, Window parent, int x, int y);
-	void map_window(Window w);
+	void reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y);
+	void map(xcb_window_t w);
+
 	void xnextevent(XEvent * ev);
 
 	bool register_wm(bool replace, Window w);
@@ -159,12 +138,9 @@ public:
 	void raise_window(Window w);
 
 	template<typename T>
-	int change_property(Window w, atom_e property, atom_e type, int format,
-			T data, int nelements) {
+	int change_property(xcb_window_t w, atom_e property, atom_e type, int format, T data, int nelements) {
 		cnx_printf("XChangeProperty: win = %lu\n", w);
-		return XChangeProperty(_dpy, w, A(property), A(type), format,
-				PropModeReplace, reinterpret_cast<unsigned char const *>(data),
-				nelements);
+		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(property), A(type), format, nelements, reinterpret_cast<unsigned char const *>(data));
 	}
 
 	void delete_property(Window w, atom_e property);
@@ -179,40 +155,12 @@ public:
 			XWindowChanges * values);
 
 	/* used for debuging, do not optimize with some cache */
-	ptr<char> get_atom_name(Atom atom);
+	std::shared_ptr<char> get_atom_name(Atom atom);
 
 	Status send_event(Window w, Bool propagate, long event_mask,
 			XEvent* event_send);
 	int set_input_focus(Window focus, int revert_to, Time time);
 	void fake_configure(Window w, i_rect location, int border_width);
-	bool motif_has_border(Window w);
-
-	string *                     read_wm_name(Window w);
-	string *                     read_wm_icon_name(Window w);
-	vector<Window> *             read_wm_colormap_windows(Window w);
-	string *                     read_wm_client_machine(Window w);
-	string *                     read_net_wm_name(Window w);
-	string *                     read_net_wm_visible_name(Window w);
-	string *                     read_net_wm_icon_name(Window w);
-	string *                     read_net_wm_visible_icon_name(Window w);
-	long *                       read_wm_state(Window w);
-	Window *                     read_wm_transient_for(Window w);
-	list<Atom> *                 read_net_wm_window_type(Window w);
-	list<Atom> *                 read_net_wm_state(Window w);
-	list<Atom> *                 read_net_wm_protocols(Window w);
-	vector<long> *               read_net_wm_struct(Window w);
-	vector<long> *               read_net_wm_struct_partial(Window w);
-	vector<long> *               read_net_wm_icon_geometry(Window w);
-	vector<long> *               read_net_wm_icon(Window w);
-	vector<long> *               read_net_wm_opaque_region(Window w);
-	vector<long> *               read_net_frame_extents(Window w);
-	unsigned long *              read_net_wm_desktop(Window w);
-	unsigned long *              read_net_wm_pid(Window w);
-	unsigned long *              read_net_wm_bypass_compositor(Window w);
-	list<Atom> *                 read_net_wm_allowed_actions(Window w);
-	Time *                       read_net_wm_user_time(Window w);
-	Window *                     read_net_wm_user_time_window(Window w);
-
 
 	void cnx_printf(char const * str, ...) {
 		if (false) {
@@ -273,6 +221,60 @@ public:
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 
 	xcb_window_t create_input_only_window(xcb_window_t parent, i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs);
+
+	/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
+	void allow_input_passthrough(Display * dpy, Window w);
+
+	void disable_input_passthrough(Display * dpy, Window w);
+
+	static int error_handler(Display * dpy, XErrorEvent * ev);
+
+	template<atom_e name, atom_e type, typename xT >
+	struct properties_fetcher_t {
+
+		property_t<name, type, xT> & p;
+		xcb_get_property_cookie_t ck;
+		properties_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) : p(p) {
+			ck = xcb_get_property(cnx->xcb(), 0, static_cast<xcb_window_t>(w), cnx->A(name), cnx->A(type), 0, std::numeric_limits<uint32_t>::max());
+		}
+
+		void update(display_t * cnx) {
+			xcb_generic_error_t * err;
+			xcb_get_property_reply_t * r = xcb_get_property_reply(cnx->xcb(), ck, &err);
+
+			if(err != nullptr or r == nullptr) {
+				if(r != nullptr)
+					free(r);
+				p = nullptr;
+			} else if(r->length == 0 or r->format != property_helper_t<xT>::format) {
+				if(r != nullptr)
+					free(r);
+				p = nullptr;
+			} else {
+				int length = xcb_get_property_value_length(r) /  (property_helper_t<xT>::format / 8);
+				void * tmp = (xcb_get_property_value(r));
+				xT * ret = property_helper_t<xT>::marshal(tmp, length);
+				free(r);
+				p = ret;
+			}
+		}
+
+	};
+
+	template<atom_e name, atom_e type, typename xT >
+	void write_property(xcb_window_t w, property_t<name, type, xT> & p) {
+		char * data;
+		int length;
+		property_helper_t<xT>::serialize(p.data, data, length);
+		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, name, type, property_helper_t<xT>::format, length, data);
+		delete[] data;
+	}
+
+	template<atom_e name, atom_e type, typename xT>
+	static properties_fetcher_t<name, type, xT> make_property_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) {
+		return properties_fetcher_t<name, type, xT>{p, cnx, w};
+	}
+
 
 };
 

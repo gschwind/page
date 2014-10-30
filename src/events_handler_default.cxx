@@ -10,6 +10,7 @@
 namespace page {
 
 events_handler_default::~events_handler_default() {
+
 }
 
 void events_handler_default::process_event(XKeyEvent const & e) {
@@ -51,9 +52,9 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 		_page->update_windows_stack();
 		_page->print_tree_windows();
 
-		list<client_managed_t *> lst;
+		std::list<client_managed_t *> lst;
 		_page->get_managed_windows(lst);
-		for (list<client_managed_t *>::iterator i = lst.begin(); i != lst.end();
+		for (std::list<client_managed_t *>::iterator i = lst.begin(); i != lst.end();
 				++i) {
 			switch ((*i)->get_type()) {
 			case MANAGED_NOTEBOOK:
@@ -112,7 +113,7 @@ void events_handler_default::process_event(XKeyEvent const & e) {
 
 			int sel = 0;
 
-			vector<cycle_window_entry_t *> v;
+			std::vector<cycle_window_entry_t *> v;
 			int s = 0;
 			for(set<client_managed_t *>::iterator i = managed_window.begin();
 					i != managed_window.end(); ++i) {
@@ -196,9 +197,9 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 			update_page_areas();
 
 			page_event_t * b = 0;
-			for (vector<page_event_t>::iterator i = page_areas->begin();
+			for (std::vector<page_event_t>::iterator i = page_areas->begin();
 					i != page_areas->end(); ++i) {
-				//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), typeid(**i).name());
+				//printf("box = %s => %s\n", (*i)->position.to_std::string().c_str(), typeid(**i).name());
 				if ((*i).position.is_inside(e.x, e.y)) {
 					b = &(*i);
 					break;
@@ -300,12 +301,12 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 					and e.subwindow != mw->orig()) {
 
 				mw->update_floating_areas();
-				vector<floating_event_t> const * l = mw->floating_areas();
+				std::vector<floating_event_t> const * l = mw->floating_areas();
 
 				floating_event_t const * b = 0;
-				for (vector<floating_event_t>::const_iterator i = l->begin();
+				for (std::vector<floating_event_t>::const_iterator i = l->begin();
 						i != l->end(); ++i) {
-					//printf("box = %s => %s\n", (*i)->position.to_string().c_str(), "test");
+					//printf("box = %s => %s\n", (*i)->position.to_std::string().c_str(), "test");
 					if((*i).position.is_inside(e.x, e.y)) {
 						b = &(*i);
 						break;
@@ -549,7 +550,7 @@ void events_handler_default::process_event(XButtonEvent const & e) {
 
 			{
 				page_event_t * b = 0;
-				for (vector<page_event_t>::iterator i = page_areas->begin();
+				for (std::vector<page_event_t>::iterator i = page_areas->begin();
 						i != page_areas->end(); ++i) {
 					if ((*i).position.is_inside(e.x, e.y)) {
 						b = &(*i);
@@ -809,9 +810,9 @@ void events_handler_default::process_event(XMotionEvent const & e)  {
 
 		++count;
 
-		vector<notebook_t *> ln;
+		std::vector<notebook_t *> ln;
 		get_notebooks(ln);
-		for(vector<notebook_t *>::iterator i = ln.begin(); i != ln.end(); ++i) {
+		for(std::vector<notebook_t *>::iterator i = ln.begin(); i != ln.end(); ++i) {
 			if ((*i)->tab_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
 				//printf("tab\n");
@@ -1014,9 +1015,9 @@ void events_handler_default::process_event(XMotionEvent const & e)  {
 
 //		pn1->move(ev.xmotion.x_root + 10, ev.xmotion.y_root);
 
-		vector<notebook_t *> ln;
+		std::vector<notebook_t *> ln;
 		get_notebooks(ln);
-		for (vector<notebook_t *>::iterator i = ln.begin(); i != ln.end(); ++i) {
+		for (std::vector<notebook_t *>::iterator i = ln.begin(); i != ln.end(); ++i) {
 			if ((*i)->tab_area.is_inside(ev.xmotion.x_root,
 					ev.xmotion.y_root)) {
 				//printf("tab\n");
@@ -1208,7 +1209,7 @@ void events_handler_default::process_event(XUnmapEvent const & e) {
 void events_handler_default::process_event(XMapEvent const & e) {
 
 	{
-		string s = get_window_string(e.window);
+		std::string s = get_window_std::string(e.window);
 		printf("map : %s\n", s.c_str());
 	}
 	/* if map event does not occur within root, ignore it */
@@ -1325,7 +1326,7 @@ void events_handler_default::process_event(XConfigureRequestEvent const & e) {
 				new_size.h = e.height;
 			}
 
-			printf("new_size = %s\n", new_size.to_string().c_str());
+			printf("new_size = %s\n", new_size.to_std::string().c_str());
 
 			if ((e.value_mask & (CWX)) and (e.value_mask & (CWY)) and e.x == 0
 					and e.y == 0 and !viewport_outputs.empty()) {
@@ -1346,7 +1347,7 @@ void events_handler_default::process_event(XConfigureRequestEvent const & e) {
 			new_size.w = final_width;
 			new_size.h = final_height;
 
-			printf("new_size = %s\n", new_size.to_string().c_str());
+			printf("new_size = %s\n", new_size.to_std::string().c_str());
 
 			/** only affect floating windows **/
 			mw->set_floating_wished_position(new_size);
@@ -1413,7 +1414,7 @@ void events_handler_default::process_event(XPropertyEvent const & e)  {
 
 	} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
 		//printf("UPDATE PARTIAL STRUCT\n");
-		for(map<RRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
+		for(std::mapRRCrtc, viewport_t *>::iterator i = viewport_outputs.begin(); i != viewport_outputs.end(); ++i) {
 			fix_allocation(*(i->second));
 		}
 		rpage->mark_durty();

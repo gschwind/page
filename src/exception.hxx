@@ -9,16 +9,8 @@
 #define EXCEPTION_HXX_
 
 #include <cstdarg>
-#include <cstdio>
-#include <exception>
 
 namespace page {
-
-using namespace std;
-
-
-
-
 
 class exception_t : public std::exception {
 	char * str;

@@ -9,7 +9,8 @@
 #define LEACK_CHECKER_HXX_
 
 #include <cstdlib>
-#include <exception>
+#include <cstdio>
+#include <utility>
 #include <stdexcept>
 
 namespace page {

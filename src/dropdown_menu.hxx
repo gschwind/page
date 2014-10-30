@@ -11,8 +11,19 @@
 #ifndef DROPDOWN_MENU_HXX_
 #define DROPDOWN_MENU_HXX_
 
-#include "theme.hxx"
-#include "window_overlay.hxx"
+#include <cairo/cairo.h>
+#include <cairo/cairo-xcb.h>
+
+#include <string>
+#include <memory>
+#include <vector>
+
+
+#include "utils.hxx"
+#include "renderable.hxx"
+#include "box.hxx"
+#include "region.hxx"
+#include "icon_handler.hxx"
 
 namespace page {
 
@@ -27,7 +38,7 @@ class dropdown_menu_entry_t {
 	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	dropdown_menu_entry_t(TDATA data, ptr<icon16> icon, string label) :
+	dropdown_menu_entry_t(TDATA data, std::shared_ptr<icon16> icon, std::string label) :
 		_data(data)
 	{
 		_theme_data.icon = icon;
@@ -42,11 +53,11 @@ public:
 		return _data;
 	}
 
-	ptr<icon16> icon() const {
+	std::shared_ptr<icon16> icon() const {
 		return _theme_data.icon;
 	}
 
-	string const & label() const {
+	std::string const & label() const {
 		return _theme_data.label;
 	}
 
@@ -65,7 +76,7 @@ public:
 private:
 	theme_t * _theme;
 	display_t * _cnx;
-	vector<ptr<item_t>> _items;
+	std::vector<std::shared_ptr<item_t>> _items;
 	int _selected;
 
 	xcb_pixmap_t _pix;
@@ -77,7 +88,7 @@ private:
 
 public:
 
-	dropdown_menu_t(display_t * cnx, theme_t * theme, vector<ptr<item_t>> items, int x, int y, int width) : _theme(theme) {
+	dropdown_menu_t(display_t * cnx, theme_t * theme, std::vector<std::shared_ptr<item_t>> items, int x, int y, int width) : _theme(theme) {
 		_selected = -1;
 
 		_is_durty = true;

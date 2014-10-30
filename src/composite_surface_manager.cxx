@@ -7,13 +7,15 @@
  *
  */
 
+#include <memory>
+
 #include "composite_surface_manager.hxx"
 
 namespace page {
 
 static composite_surface_manager_t _mngr;
 
-shared_ptr<composite_surface_t> composite_surface_manager_t::get(Display * dpy, Window w) {
+std::shared_ptr<composite_surface_t> composite_surface_manager_t::get(Display * dpy, Window w) {
 	return _mngr._get_composite_surface(dpy, w);
 }
 
@@ -33,7 +35,7 @@ void composite_surface_manager_t::ondestroy(Display * dpy, Window w) {
 	_mngr._ondestroy(dpy, w);
 }
 
-weak_ptr<composite_surface_t> composite_surface_manager_t::get_weak_surface(Display * dpy, Window w) {
+std::weak_ptr<composite_surface_t> composite_surface_manager_t::get_weak_surface(Display * dpy, Window w) {
 	return _mngr._get_weak_surface(dpy, w);
 }
 

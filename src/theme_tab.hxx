@@ -8,19 +8,12 @@
 #ifndef THEME_TAB_HXX_
 #define THEME_TAB_HXX_
 
-#include <list>
-#include <string>
-
-#include "icon_handler.hxx"
-
 namespace page {
-
-using namespace std;
 
 struct theme_tab_t {
 	i_rect position;
-	string title;
-	ptr<icon16> icon;
+	std::string title;
+	std::shared_ptr<icon16> icon;
 	bool selected;
 	bool focuced;
 	bool demand_attention;

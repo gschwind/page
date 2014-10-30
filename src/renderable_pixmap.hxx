@@ -8,29 +8,20 @@
 #ifndef RENDERABLE_PIXMAP_HXX_
 #define RENDERABLE_PIXMAP_HXX_
 
-#include <cairo/cairo.h>
-
-#include "pixmap.hxx"
-#include "utils.hxx"
-#include "region.hxx"
-#include "renderable.hxx"
-#include "box.hxx"
 
 namespace page {
-
-
 
 class renderable_pixmap_t : public renderable_t {
 
 	i_rect location;
-	ptr<pixmap_t> surf;
+	std::shared_ptr<pixmap_t> surf;
 	region damaged;
 	region opaque_region;
 	region visible_region;
 
 public:
 
-	renderable_pixmap_t(ptr<pixmap_t> s, i_rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
+	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, i_rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
 		opaque_region = region(loc);
 		visible_region = region(loc);
 	}

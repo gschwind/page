@@ -10,13 +10,20 @@
 #ifndef CLIENT_NOT_MANAGED_HXX_
 #define CLIENT_NOT_MANAGED_HXX_
 
-#include <X11/X.h>
+#include <X11/Xlib.h>
 
-#include "renderable_pixmap.hxx"
-#include "composite_surface_manager.hxx"
+#include <memory>
+
+
+#include "client_properties.hxx"
 #include "client_base.hxx"
 #include "display.hxx"
+
+#include "renderable.hxx"
+#include "composite_surface_manager.hxx"
+#include "renderable_floating_outer_gradien.hxx"
 #include "renderable_unmanaged_outer_gradien.hxx"
+#include "renderable_pixmap.hxx"
 
 namespace page {
 
@@ -28,7 +35,7 @@ private:
 
 	Atom _net_wm_type;
 
-	shared_ptr<composite_surface_t> surf;
+	std::shared_ptr<composite_surface_t> surf;
 
 	mutable i_rect _base_position;
 
@@ -38,7 +45,7 @@ private:
 
 public:
 
-	client_not_managed_t(Atom type, shared_ptr<client_properties_t> c) :
+	client_not_managed_t(Atom type, std::shared_ptr<client_properties_t> c) :
 			client_base_t(c),
 			_net_wm_type(type)
 	{
@@ -62,22 +69,22 @@ public:
 		return _net_wm_type;
 	}
 
-	virtual bool has_window(Window w) {
+	bool has_window(xcb_window_t w) const {
 		return w == _properties->id();
 	}
 
 	void map() {
-		_properties->cnx()->map_window(_properties->id());
+		_properties->cnx()->map(_properties->id());
 	}
 
-	virtual string get_node_name() const {
-		string s = _get_node_name<'U'>();
-		ostringstream oss;
+	virtual std::string get_node_name() const {
+		std::string s = _get_node_name<'U'>();
+		std::ostringstream oss;
 		oss << s << " " << orig();
 		return oss.str();
 	}
 
-	virtual void prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
 		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
@@ -87,7 +94,7 @@ public:
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
 			auto x = new renderable_unmanaged_outer_gradien_t(pos, 4.0);
-			out += ptr<renderable_t>{x};
+			out += std::shared_ptr<renderable_t>{x};
 		}
 
 		if (surf != nullptr) {
@@ -113,7 +120,7 @@ public:
 		return rec;
 	}
 
-	ptr<renderable_t> get_base_renderable() {
+	std::shared_ptr<renderable_t> get_base_renderable() {
 		_base_position = _properties->position();
 
 		if (surf != nullptr) {
@@ -150,19 +157,19 @@ public:
 					_base_position, dmg);
 			x->set_opaque_region(opa);
 			x->set_visible_region(vis);
-			return ptr<renderable_t>{x};
+			return std::shared_ptr<renderable_t>{x};
 
 		} else {
 			/* return null */
-			return ptr<renderable_t>{};
+			return std::shared_ptr<renderable_t>{};
 		}
 	}
 
-	virtual Window base() const {
+	xcb_window_t base() const {
 		return _properties->id();
 	}
 
-	virtual Window orig() const {
+	xcb_window_t orig() const {
 		return _properties->id();
 	}
 
@@ -176,11 +183,7 @@ public:
 		return _base_position;
 	}
 
-	virtual bool has_window(Window w) const {
-		return w == _properties->id();
-	}
-
-	void get_visible_children(vector<tree_t *> & out) {
+	void get_visible_children(std::vector<tree_t *> & out) {
 		out.push_back(this);
 		for (auto i : tree_t::children()) {
 			i->get_visible_children(out);

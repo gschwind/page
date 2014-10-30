@@ -9,9 +9,11 @@
 
 #include "display.hxx"
 
-#include <cassert>
 #include <poll.h>
+
+#include "utils.hxx"
 #include "time.hxx"
+#include "exception.hxx"
 
 namespace page {
 
@@ -45,129 +47,129 @@ int display_t::screen() {
 	return DefaultScreen(_dpy);
 }
 
-vector<string> * display_t::read_wm_class(Window w) {
-	vector<char> * tmp = ::page::get_window_property<char>(_dpy, w, A(WM_CLASS), A(STRING));
-
-	if(tmp == nullptr)
-		return nullptr;
-
-	vector<char>::iterator x = find(tmp->begin(), tmp->end(), 0);
-	if(x != tmp->end()) {
-		vector<string> * ret = new vector<string>;
-		ret->push_back(string(tmp->begin(), x));
-		auto x1 = find(++x, tmp->end(), 0);
-		ret->push_back(string(x, x1));
-		delete tmp;
-		return ret;
-	}
-
-	delete tmp;
-	return 0;
-}
-
-XWMHints * display_t::read_wm_hints(Window w) {
-	vector<long> * tmp = ::page::get_window_property<long>(_dpy, w, A(WM_HINTS),
-			A(WM_HINTS));
-	if (tmp != 0) {
-		if (tmp->size() == 9) {
-			XWMHints * hints = new XWMHints;
-			if (hints != 0) {
-				hints->flags = (*tmp)[0];
-				hints->input = (*tmp)[1];
-				hints->initial_state = (*tmp)[2];
-				hints->icon_pixmap = (*tmp)[3];
-				hints->icon_window = (*tmp)[4];
-				hints->icon_x = (*tmp)[5];
-				hints->icon_y = (*tmp)[6];
-				hints->icon_mask = (*tmp)[7];
-				hints->window_group = (*tmp)[8];
-			}
-			delete tmp;
-			return hints;
-		}
-		delete tmp;
-	}
-	return 0;
-}
-
-motif_wm_hints_t * display_t::read_motif_wm_hints(Window w) {
-	vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
-			A(_MOTIF_WM_HINTS), A(_MOTIF_WM_HINTS));
-	if (tmp != 0) {
-		motif_wm_hints_t * hints = new motif_wm_hints_t;
-		if (tmp->size() == 5) {
-			if (hints != 0) {
-				hints->flags = (*tmp)[0];
-				hints->functions = (*tmp)[1];
-				hints->decorations = (*tmp)[2];
-				hints->input_mode = (*tmp)[3];
-				hints->status = (*tmp)[4];
-			}
-			delete tmp;
-			return hints;
-		}
-		delete tmp;
-	}
-	return 0;
-}
-
-XSizeHints * display_t::read_wm_normal_hints(Window w) {
-	vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
-			A(WM_NORMAL_HINTS), A(WM_SIZE_HINTS));
-	if (tmp != 0) {
-		if (tmp->size() == 18) {
-			XSizeHints * size_hints = new XSizeHints;
-			if (size_hints) {
-				size_hints->flags = (*tmp)[0];
-				size_hints->x = (*tmp)[1];
-				size_hints->y = (*tmp)[2];
-				size_hints->width = (*tmp)[3];
-				size_hints->height = (*tmp)[4];
-				size_hints->min_width = (*tmp)[5];
-				size_hints->min_height = (*tmp)[6];
-				size_hints->max_width = (*tmp)[7];
-				size_hints->max_height = (*tmp)[8];
-				size_hints->width_inc = (*tmp)[9];
-				size_hints->height_inc = (*tmp)[10];
-				size_hints->min_aspect.x = (*tmp)[11];
-				size_hints->min_aspect.y = (*tmp)[12];
-				size_hints->max_aspect.x = (*tmp)[13];
-				size_hints->max_aspect.y = (*tmp)[14];
-				size_hints->base_width = (*tmp)[15];
-				size_hints->base_height = (*tmp)[16];
-				size_hints->win_gravity = (*tmp)[17];
-			}
-			delete tmp;
-			return size_hints;
-		}
-		delete tmp;
-	}
-	return 0;
-}
-
-void display_t::write_net_wm_allowed_actions(Window w, list<Atom> & list) {
-	vector<long> v(list.begin(), list.end());
-	write_window_property(_dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
-}
-
-void display_t::write_net_wm_state(Window w, list<Atom> & list) {
-	vector<long> v(list.begin(), list.end());
-	write_window_property(_dpy, w, A(_NET_WM_STATE), A(ATOM), v);
-}
-
-void display_t::write_wm_state(Window w, long state, Window icon) {
-	vector<long> v(2);
-	v[0] = state;
-	v[1] = icon;
-	write_window_property(_dpy, w, A(WM_STATE), A(WM_STATE), v);
-}
-
-void display_t::write_net_active_window(Window w) {
-	vector<long> v(1);
-	v[0] = w;
-	write_window_property(_dpy, DefaultRootWindow(_dpy), A(_NET_ACTIVE_WINDOW),
-			A(WINDOW), v);
-}
+//std::vector<std::string> * display_t::read_wm_class(Window w) {
+//	std::vector<char> * tmp = ::page::get_window_property<char>(_dpy, w, A(WM_CLASS), A(STRING));
+//
+//	if(tmp == nullptr)
+//		return nullptr;
+//
+//	std::vector<char>::iterator x = find(tmp->begin(), tmp->end(), 0);
+//	if(x != tmp->end()) {
+//		std::vector<std::string> * ret = new std::vector<std::string>;
+//		ret->push_back(std::string(tmp->begin(), x));
+//		auto x1 = find(++x, tmp->end(), 0);
+//		ret->push_back(std::string(x, x1));
+//		delete tmp;
+//		return ret;
+//	}
+//
+//	delete tmp;
+//	return 0;
+//}
+//
+//XWMHints * display_t::read_wm_hints(Window w) {
+//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w, A(WM_HINTS),
+//			A(WM_HINTS));
+//	if (tmp != 0) {
+//		if (tmp->size() == 9) {
+//			XWMHints * hints = new XWMHints;
+//			if (hints != 0) {
+//				hints->flags = (*tmp)[0];
+//				hints->input = (*tmp)[1];
+//				hints->initial_state = (*tmp)[2];
+//				hints->icon_pixmap = (*tmp)[3];
+//				hints->icon_window = (*tmp)[4];
+//				hints->icon_x = (*tmp)[5];
+//				hints->icon_y = (*tmp)[6];
+//				hints->icon_mask = (*tmp)[7];
+//				hints->window_group = (*tmp)[8];
+//			}
+//			delete tmp;
+//			return hints;
+//		}
+//		delete tmp;
+//	}
+//	return 0;
+//}
+//
+//motif_wm_hints_t * display_t::read_motif_wm_hints(Window w) {
+//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
+//			A(_MOTIF_WM_HINTS), A(_MOTIF_WM_HINTS));
+//	if (tmp != 0) {
+//		motif_wm_hints_t * hints = new motif_wm_hints_t;
+//		if (tmp->size() == 5) {
+//			if (hints != 0) {
+//				hints->flags = (*tmp)[0];
+//				hints->functions = (*tmp)[1];
+//				hints->decorations = (*tmp)[2];
+//				hints->input_mode = (*tmp)[3];
+//				hints->status = (*tmp)[4];
+//			}
+//			delete tmp;
+//			return hints;
+//		}
+//		delete tmp;
+//	}
+//	return 0;
+//}
+//
+//XSizeHints * display_t::read_wm_normal_hints(Window w) {
+//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
+//			A(WM_NORMAL_HINTS), A(WM_SIZE_HINTS));
+//	if (tmp != 0) {
+//		if (tmp->size() == 18) {
+//			XSizeHints * size_hints = new XSizeHints;
+//			if (size_hints) {
+//				size_hints->flags = (*tmp)[0];
+//				size_hints->x = (*tmp)[1];
+//				size_hints->y = (*tmp)[2];
+//				size_hints->width = (*tmp)[3];
+//				size_hints->height = (*tmp)[4];
+//				size_hints->min_width = (*tmp)[5];
+//				size_hints->min_height = (*tmp)[6];
+//				size_hints->max_width = (*tmp)[7];
+//				size_hints->max_height = (*tmp)[8];
+//				size_hints->width_inc = (*tmp)[9];
+//				size_hints->height_inc = (*tmp)[10];
+//				size_hints->min_aspect.x = (*tmp)[11];
+//				size_hints->min_aspect.y = (*tmp)[12];
+//				size_hints->max_aspect.x = (*tmp)[13];
+//				size_hints->max_aspect.y = (*tmp)[14];
+//				size_hints->base_width = (*tmp)[15];
+//				size_hints->base_height = (*tmp)[16];
+//				size_hints->win_gravity = (*tmp)[17];
+//			}
+//			delete tmp;
+//			return size_hints;
+//		}
+//		delete tmp;
+//	}
+//	return 0;
+//}
+//
+//void display_t::write_net_wm_allowed_actions(Window w, std::list<Atom> & list) {
+//	std::vector<long> v(list.begin(), list.end());
+//	write_window_property(_dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
+//}
+//
+//void display_t::write_net_wm_state(Window w, std::list<Atom> & list) {
+//	std::vector<long> v(list.begin(), list.end());
+//	write_window_property(_dpy, w, A(_NET_WM_STATE), A(ATOM), v);
+//}
+//
+//void display_t::write_wm_state(Window w, long state, Window icon) {
+//	std::vector<long> v(2);
+//	v[0] = state;
+//	v[1] = icon;
+//	write_window_property(_dpy, w, A(WM_STATE), A(WM_STATE), v);
+//}
+//
+//void display_t::write_net_active_window(Window w) {
+//	std::vector<long> v(1);
+//	v[0] = w;
+//	write_window_property(_dpy, DefaultRootWindow(_dpy), A(_NET_ACTIVE_WINDOW),
+//			A(WINDOW), v);
+//}
 
 int display_t::move_window(Window w, int x, int y) {
 	//printf("XMoveWindow #%lu %d %d\n", w, x, y);
@@ -191,7 +193,7 @@ display_t::display_t() {
 
 	grab_count = 0;
 
-	_A = ptr<atom_handler_t>(new atom_handler_t(_dpy));
+	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_dpy));
 
 	update_default_visual();
 
@@ -203,14 +205,11 @@ display_t::~display_t() {
 
 void display_t::grab() {
 	if (grab_count == 0) {
-
 		xcb_void_cookie_t ck = xcb_grab_server_checked(_xcb);
 		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
-
 		if(err != nullptr) {
 			throw exception_t{"%s:%d unable to grab X11 server", __FILE__, __LINE__};
 		}
-
 	}
 	++grab_count;
 }
@@ -236,17 +235,17 @@ bool display_t::is_not_grab() {
 
 void display_t::unmap(Window w) {
 	cnx_printf("X_UnmapWindow: win = %lu\n", w);
-	XUnmapWindow(_dpy, w);
+	xcb_unmap_window(_xcb, w);
 }
 
-void display_t::reparentwindow(Window w, Window parent, int x, int y) {
+void display_t::reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y) {
 	cnx_printf("Reparent serial: #%lu win: #%lu, parent: #%lu\n", w, parent);
-	XReparentWindow(_dpy, w, parent, x, y);
+	xcb_reparent_window(_xcb, w, parent, x, y);
 }
 
-void display_t::map_window(Window w) {
+void display_t::map(xcb_window_t w) {
 	cnx_printf("X_MapWindow: win = %lu\n", w);
-	XMapWindow(_dpy, w);
+	xcb_map_window(_xcb, w);
 }
 
 void display_t::xnextevent(XEvent * ev) {
@@ -262,7 +261,7 @@ bool display_t::register_wm(bool replace, Window w) {
 
 	static char wm_sn[] = "WM_Sxx";
 	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
-	wm_sn_atom = XInternAtom(_dpy, wm_sn, FALSE);
+	wm_sn_atom = XInternAtom(_dpy, wm_sn, false);
 
 	current_wm_sn_owner = XGetSelectionOwner(_dpy, wm_sn_atom);
 	if (current_wm_sn_owner == w)
@@ -275,7 +274,7 @@ bool display_t::register_wm(bool replace, Window w) {
 		} else {
 			/* We want to find out when the current selection owner dies */
 			XSelectInput(_dpy, current_wm_sn_owner, StructureNotifyMask);
-			XSync(_dpy, FALSE);
+			XSync(_dpy, false);
 
 			XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
 
@@ -458,9 +457,9 @@ static void _safe_xfree(void * x) {
 }
 
 /* used for debuging, do not optimize with some cache */
-ptr<char> display_t::get_atom_name(Atom atom) {
+std::shared_ptr<char> display_t::get_atom_name(Atom atom) {
 	cnx_printf("XGetAtomName: atom = %lu\n", atom);
-	return ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
+	return std::shared_ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
 }
 
 Status display_t::send_event(Window w, Bool propagate, long event_mask,
@@ -497,132 +496,20 @@ void display_t::fake_configure(Window w, i_rect location, int border_width) {
 
 }
 
-bool display_t::motif_has_border(Window w) {
-	motif_wm_hints_t * motif_hints = read_motif_wm_hints(w);
-	if (motif_hints != 0) {
-		if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
-			if (not (motif_hints->decorations & MWM_DECOR_BORDER)
-					and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
-				delete motif_hints;
-				return false;
-			}
-		}
-		delete motif_hints;
-	}
-	return true;
-}
-
-string * display_t::read_wm_name(Window w) {
-	return ::page::read_text(_dpy, w, A(WM_NAME), A(STRING));
-}
-
-string * display_t::read_wm_icon_name(Window w) {
-	return ::page::read_text(_dpy, w, A(WM_ICON_NAME), A(STRING));
-}
-
-vector<Window> * display_t::read_wm_colormap_windows(Window w) {
-	return ::page::get_window_property<Window>(_dpy, w, A(WM_COLORMAP_WINDOWS),
-			A(WINDOW));
-}
-
-string * display_t::read_wm_client_machine(Window w) {
-	return ::page::read_text(_dpy, w, A(WM_CLIENT_MACHINE), A(STRING));
-}
-
-string * display_t::read_net_wm_name(Window w) {
-	return ::page::read_text(_dpy, w, A(_NET_WM_NAME), A(UTF8_STRING));
-}
-
-string * display_t::read_net_wm_visible_name(Window w) {
-	return ::page::read_text(_dpy, w, A(_NET_WM_VISIBLE_NAME), A(UTF8_STRING));
-}
-
-string * display_t::read_net_wm_icon_name(Window w) {
-	return ::page::read_text(_dpy, w, A(_NET_WM_ICON_NAME), A(UTF8_STRING));
-}
-
-string * display_t::read_net_wm_visible_icon_name(Window w) {
-	return ::page::read_text(_dpy, w, A(_NET_WM_VISIBLE_ICON_NAME),
-			A(UTF8_STRING));
-}
-
-long * display_t::read_wm_state(Window w) {
-	return ::page::read_value<long>(_dpy, w, A(WM_STATE), A(WM_STATE));
-}
-
-Window * display_t::read_wm_transient_for(Window w) {
-	return ::page::read_value<Window>(_dpy, w, A(WM_TRANSIENT_FOR), A(WINDOW));
-}
-
-list<Atom> * display_t::read_net_wm_window_type(Window w) {
-	return ::page::read_list<Atom>(_dpy, w, A(_NET_WM_WINDOW_TYPE), A(ATOM));
-}
-
-list<Atom> * display_t::read_net_wm_state(Window w) {
-	return ::page::read_list<Atom>(_dpy, w, A(_NET_WM_STATE), A(ATOM));
-}
-
-list<Atom> * display_t::read_net_wm_protocols(Window w) {
-	return ::page::read_list<Atom>(_dpy, w, A(WM_PROTOCOLS), A(ATOM));
-}
-
-vector<long> * display_t::read_net_wm_struct(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_WM_STRUT),
-			A(CARDINAL));
-}
-
-vector<long> * display_t::read_net_wm_struct_partial(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_WM_STRUT_PARTIAL),
-			A(CARDINAL));
-}
-
-vector<long> * display_t::read_net_wm_icon_geometry(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_WM_ICON_GEOMETRY),
-			A(CARDINAL));
-}
-
-vector<long> * display_t::read_net_wm_icon(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_WM_ICON),
-			A(CARDINAL));
-}
-
-vector<long> * display_t::read_net_wm_opaque_region(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_WM_OPAQUE_REGION),
-			A(CARDINAL));
-}
-
-vector<long> * display_t::read_net_frame_extents(Window w) {
-	return ::page::get_window_property<long>(_dpy, w, A(_NET_FRAME_EXTENTS),
-			A(CARDINAL));
-}
-
-unsigned long * display_t::read_net_wm_desktop(Window w) {
-	return ::page::read_value<unsigned long>(_dpy, w, A(_NET_WM_DESKTOP),
-			A(CARDINAL));
-}
-
-unsigned long * display_t::read_net_wm_pid(Window w) {
-	return ::page::read_value<unsigned long>(_dpy, w, A(_NET_WM_PID),
-			A(CARDINAL));
-}
-
-unsigned long * display_t::read_net_wm_bypass_compositor(Window w) {
-	return ::page::read_value<unsigned long>(_dpy, w,
-			A(_NET_WM_BYPASS_COMPOSITOR), A(CARDINAL));
-}
-
-list<Atom> * display_t::read_net_wm_allowed_actions(Window w) {
-	return ::page::read_list<Atom>(_dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM));
-}
-
-Time * display_t::read_net_wm_user_time(Window w) {
-	return ::page::read_value<Time>(_dpy, w, A(_NET_WM_USER_TIME), A(CARDINAL));
-}
-
-Window * display_t::read_net_wm_user_time_window(Window w) {
-	return ::page::read_value<Window>(_dpy, w, A(_NET_WM_USER_TIME_WINDOW),
-			A(WINDOW));
-}
+//bool display_t::motif_has_border(Window w) {
+//	motif_wm_hints_t * motif_hints = read_motif_wm_hints(w);
+//	if (motif_hints != 0) {
+//		if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
+//			if (not (motif_hints->decorations & MWM_DECOR_BORDER)
+//					and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
+//				delete motif_hints;
+//				return false;
+//			}
+//		}
+//		delete motif_hints;
+//	}
+//	return true;
+//}
 
 Display * display_t::dpy() {
 	return _dpy;
@@ -934,6 +821,49 @@ xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
 			parent, pos.x, pos.y, pos.w, pos.h, 0, XCB_WINDOW_CLASS_INPUT_ONLY,
 			XCB_COPY_FROM_PARENT, attrs_mask, attrs);
 	return id;
+}
+
+
+/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
+void display_t::allow_input_passthrough(Display * dpy, Window w) {
+	XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
+	/**
+	 * Shape for the entire of window.
+	 **/
+	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
+	/**
+	 * input shape was introduced by Keith Packard to define an input area of
+	 * window by default is the ShapeBounding which is used. here we set input
+	 * area an empty region.
+	 **/
+	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
+	XFixesDestroyRegion(dpy, region);
+}
+
+void display_t::disable_input_passthrough(Display * dpy, Window w) {
+	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
+	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, None);
+}
+
+int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
+	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
+			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
+
+	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
+
+	if (ev->request_code < XFUNCSIZE) {
+		char const * func_name = x_function_codes[ev->request_code];
+		char error_text[1024];
+		error_text[0] = 0;
+		XGetErrorText(dpy, ev->error_code, error_text, 1024);
+		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+	}
+	return 0;
+}
+
+void display_t::set_net_active_window(xcb_window_t w) {
+	net_active_window_t active{new xcb_window_t{w}};
+	write_property(root(), active);
 }
 
 }

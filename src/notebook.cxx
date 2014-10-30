@@ -7,15 +7,7 @@
  *
  */
 
-
-#include <algorithm>
-#include <cmath>
-
-#include "renderable_notebook_fading.hxx"
-#include "renderable_pixmap.hxx"
-#include "renderable_empty.hxx"
 #include "notebook.hxx"
-
 
 namespace page {
 
@@ -34,8 +26,8 @@ notebook_t::~notebook_t() {
 }
 
 bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
-	page_assert(not has_key(_clients, x));
-	page_assert(x != nullptr);
+	assert(not has_key(_clients, x));
+	assert(x != nullptr);
 	_children.push_back(x);
 	x->set_parent(this);
 	_clients.push_front(x);
@@ -107,12 +99,12 @@ void notebook_t::activate_client(client_managed_t * x) {
 	}
 }
 
-list<client_managed_t *> const & notebook_t::get_clients() {
+std::list<client_managed_t *> const & notebook_t::get_clients() {
 	return _clients;
 }
 
 void notebook_t::remove_client(client_managed_t * x) {
-	page_assert(has_key(_clients, x));
+	assert(has_key(_clients, x));
 
 	/** update selection **/
 	if (_selected == x) {
@@ -170,7 +162,7 @@ void notebook_t::update_client_position(client_managed_t * c) {
 }
 
 void notebook_t::iconify_client(client_managed_t * x) {
-	page_assert(has_key(_clients, x));
+	assert(has_key(_clients, x));
 
 	/** already iconified **/
 	if(_selected != x)
@@ -350,7 +342,7 @@ i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;
 
-	//printf("Computed client size %s\n", client_size.to_string().c_str());
+	//printf("Computed client size %s\n", client_size.to_std::string().c_str());
 	return client_size;
 
 }
@@ -359,8 +351,8 @@ void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-list<client_managed_t const *> notebook_t::clients() const {
-	return list<client_managed_t const *>(_clients.begin(), _clients.end());
+std::list<client_managed_t const *> notebook_t::clients() const {
+	return std::list<client_managed_t const *>(_clients.begin(), _clients.end());
 }
 
 client_managed_t const * notebook_t::selected() const {
@@ -375,8 +367,8 @@ void notebook_t::set_default(bool x) {
 	_is_default = x;
 }
 
-list<tree_t *> notebook_t::childs() const {
-	list<tree_t *> ret(_children.begin(), _children.end());
+std::list<tree_t *> notebook_t::childs() const {
+	std::list<tree_t *> ret(_children.begin(), _children.end());
 	return ret;
 }
 
@@ -396,7 +388,7 @@ void notebook_t::raise_child(tree_t * t) {
 
 }
 
-string notebook_t::get_node_name() const {
+std::string notebook_t::get_node_name() const {
 	return _get_node_name<'N'>();
 }
 
@@ -409,7 +401,7 @@ client_managed_t * notebook_t::get_selected() {
 	return _selected;
 }
 
-void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t const & time) {
+void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
 	if(_is_hidden) {
 		return;
@@ -418,10 +410,10 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 	if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {
-			ptr<pixmap_t> prev = prev_surf;
+			std::shared_ptr<pixmap_t> prev = prev_surf;
 			i_rect prev_pos = prev_loc;
 
-			ptr<pixmap_t> next { nullptr };
+			std::shared_ptr<pixmap_t> next { nullptr };
 			i_rect next_pos;
 
 			if (_selected != nullptr) {
@@ -431,7 +423,7 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 				}
 			}
 
-			fading_notebook = ptr<renderable_notebook_fading_t> {
+			fading_notebook = std::shared_ptr<renderable_notebook_fading_t> {
 					new renderable_notebook_fading_t { prev, next, prev_pos,
 							next_pos } };
 
@@ -464,13 +456,13 @@ void notebook_t::prepare_render(vector<ptr<renderable_t>> & out, page::time_t co
 		if(fading_notebook != nullptr) {
 			fading_notebook.reset();
 			/** force redraw of notebook **/
-			ptr<renderable_t> x{new renderable_empty_t{_allocation}};
+			std::shared_ptr<renderable_t> x{new renderable_empty_t{_allocation}};
 			out += x;
 		}
 
 		if (_selected != nullptr) {
 
-			ptr<renderable_t> x{_selected->get_base_renderable()};
+			std::shared_ptr<renderable_t> x{_selected->get_base_renderable()};
 
 			if (x != nullptr) {
 				out += x;
@@ -523,7 +515,7 @@ i_rect notebook_t::compute_notebook_menu_position(
 }
 
 
-void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
+void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l) const {
 
 	{
 		page_event_t nc(PAGE_EVENT_NOTEBOOK_CLOSE);
@@ -603,7 +595,7 @@ void notebook_t::compute_areas_for_notebook(vector<page_event_t> * l) const {
 	}
 }
 
-void notebook_t::get_all_children(vector<tree_t *> & out) const {
+void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
 	for(auto x: _children) {
 		out.push_back(x);
 		x->get_all_children(out);
