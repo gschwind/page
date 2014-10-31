@@ -13,13 +13,15 @@
 
 #include <cairo/cairo.h>
 
+#include <memory>
+
 #include "renderable.hxx"
 #include "icon_handler.hxx"
 
 namespace page {
 
-struct cycle_window_entry_t : public leak_checker {
-	icon64 * icon;
+struct cycle_window_entry_t {
+	std::shared_ptr<icon64> icon;
 	std::string title;
 	client_managed_t * id;
 
@@ -28,37 +30,32 @@ private:
 	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	cycle_window_entry_t(client_managed_t * mw, std::string title,
-			icon64 * icon) :
+	cycle_window_entry_t(client_managed_t * mw, std::string title, std::shared_ptr<icon64> icon) :
 			icon(icon), title(title), id(mw) {
 	}
 
-	~cycle_window_entry_t() {
-		if(icon != nullptr) {
-			delete icon;
-		}
-	}
+	~cycle_window_entry_t() { }
 
 };
 
 class popup_alt_tab_t : public renderable_t {
-
 	theme_t * _theme;
-
 	i_rect _position;
-
-	std::vector<cycle_window_entry_t *> window_list;
-	int selected;
-
+	std::vector<std::shared_ptr<cycle_window_entry_t>> _client_list;
+	int _selected;
 	bool _is_visible;
 	bool _is_durty;
 
 public:
 
-	popup_alt_tab_t(display_t * cnx, theme_t * theme) :_theme(theme) {
-		selected = 0;
-		_is_durty = true;
-		_is_visible = false;
+	popup_alt_tab_t(display_t * cnx, theme_t * theme, std::vector<std::shared_ptr<cycle_window_entry_t>> client_list, int selected) :
+		_theme{theme},
+		_selected{selected},
+		_client_list{client_list},
+		_is_durty{true},
+		_is_visible{false}
+	{
+
 	}
 
 	void mark_durty() {
@@ -91,74 +88,60 @@ public:
 	}
 
 	~popup_alt_tab_t() {
-		for(auto i: window_list) {
-			delete i;
-		}
+
 	}
 
 	void select_next() {
-		selected = (selected + 1) % window_list.size();
-	}
-
-	void update_window(std::vector<cycle_window_entry_t *> list, int sel) {
-		for(std::vector<cycle_window_entry_t *>::iterator i = window_list.begin();
-				i != window_list.end(); ++i) {
-			delete *i;
-		}
-
-		window_list = list;
-		selected = sel;
+		_selected = (_selected + 1) % _client_list.size();
 	}
 
 	client_managed_t * get_selected() {
-		return window_list[selected]->id;
+		return _client_list[_selected]->id;
 	}
 
-	virtual void render(cairo_t * cr, region const & area) {
+	void render(cairo_t * cr, region const & area) {
 
-		for(auto &a: area) {
-		cairo_save(cr);
-		cairo_clip(cr, a);
-		cairo_translate(cr, _position.x, _position.y);
-		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
-		cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_fill(cr);
+		for (auto &a : area) {
+			cairo_save(cr);
+			cairo_clip(cr, a);
+			cairo_translate(cr, _position.x, _position.y);
+			cairo_rectangle(cr, 0, 0, _position.w, _position.h);
+			cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_fill(cr);
 
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 
-		int n = 0;
-		for (std::vector<cycle_window_entry_t *>::iterator i = window_list.begin();
-				i != window_list.end(); ++i) {
-			int x = n % 4;
-			int y = n / 4;
+			int n = 0;
+			for (auto i : _client_list) {
+				int x = n % 4;
+				int y = n / 4;
 
-			if ((*i)->icon != 0) {
-				if ((*i)->icon->get_cairo_surface() != 0) {
+				if (i->icon != nullptr) {
+					if (i->icon->get_cairo_surface() != nullptr) {
+						cairo_set_source_surface(cr,
+								i->icon->get_cairo_surface(), x * 80 + 8,
+								y * 80 + 8);
+						cairo_mask_surface(cr, i->icon->get_cairo_surface(),
+								x * 80 + 8, y * 80 + 8);
 
-					cairo_set_source_surface(cr,
-							(*i)->icon->get_cairo_surface(), x * 80 + 8, y * 80 + 8);
-					cairo_mask_surface(cr,
-							(*i)->icon->get_cairo_surface(), x * 80 + 8, y * 80 + 8);
-
-//					cairo_rectangle(cr, x * 80 + 8, y * 80 + 8, 64, 64);
-//					cairo_fill(cr);
+					}
 				}
+
+				if (n == _selected) {
+					/** draw a buttyfull yelow box **/
+					cairo_set_line_width(cr, 2.0);
+					::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
+					cairo_rectangle(cr, x * 80 + 8, y * 80 + 8, 64, 64);
+					cairo_stroke(cr);
+				}
+
+				++n;
+
 			}
 
-			if (n == selected) {
-				cairo_set_line_width(cr, 2.0);
-				::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-				cairo_rectangle(cr, x * 80 + 8, y * 80 + 8, 64, 64);
-				cairo_stroke(cr);
-			}
-
-			++n;
-
-		}
-
-		cairo_restore(cr);
+			cairo_restore(cr);
 		}
 	}
 

@@ -45,6 +45,7 @@
 
 #include "simple2_theme.hxx"
 
+#include "notebook.hxx"
 #include "desktop.hxx"
 #include "split.hxx"
 #include "page.hxx"
@@ -244,7 +245,7 @@ void page_t::run() {
 	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(theme)};
 	pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
 	ps = std::shared_ptr<popup_split_t>{new popup_split_t(theme)};
-	pat = std::shared_ptr<popup_alt_tab_t>{new popup_alt_tab_t(cnx, theme)};
+	pat = nullptr;
 	menu = nullptr;
 
 	cnx->load_cursors();
@@ -653,12 +654,12 @@ void page_t::process_event(XKeyEvent const & e) {
 
 				int sel = 0;
 
-				std::vector<cycle_window_entry_t *> v;
+				std::vector<std::shared_ptr<cycle_window_entry_t>> v;
 				int s = 0;
 
 				for (auto i : managed_window) {
-					icon64 * icon = new icon64(*i);
-					cycle_window_entry_t * cy = new cycle_window_entry_t(i, i->title(), icon);
+					std::shared_ptr<icon64> icon{new icon64(*i)};
+					std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
 					v.push_back(cy);
 					if (i == _client_focused.front()) {
 						sel = s;
@@ -666,7 +667,7 @@ void page_t::process_event(XKeyEvent const & e) {
 					++s;
 				}
 
-				pat->update_window(v, sel);
+				pat = std::shared_ptr<popup_alt_tab_t>{new popup_alt_tab_t{cnx, theme, v ,sel}};
 
 				/** show it on all viewport ? **/
 				viewport_t * viewport = _desktop_list[0]->get_any_viewport();
@@ -710,11 +711,10 @@ void page_t::process_event(XKeyEvent const & e) {
 			 * do not use dynamic_cast because managed window can be already
 			 * destroyed.
 			 **/
-			client_managed_t * mw =
-					reinterpret_cast<client_managed_t *>(pat->get_selected());
+			client_managed_t * mw = pat->get_selected();
 			set_focus(mw, e.time);
 
-			pat->hide();
+			pat.reset();
 		}
 	}
 
@@ -3827,8 +3827,6 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Ato
 		rnd->add_damaged(uw->visible_area());
 		update_windows_stack();
 		_need_render = true;
-	} catch (exception & e) {
-		cout << e.what() << endl;
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
@@ -4311,7 +4309,7 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 	}
 
 	/** Add all possible popups **/
-	if(pat->is_visible()) {
+	if(pat != nullptr) {
 		out.push_back(pat);
 	}
 

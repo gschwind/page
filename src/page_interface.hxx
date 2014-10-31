@@ -8,7 +8,7 @@
 #ifndef PAGE_INTERFACE_HXX_
 #define PAGE_INTERFACE_HXX_
 
-#include <std::string>
+#include <string>
 #include <list>
 #include <vector>
 #include <map>

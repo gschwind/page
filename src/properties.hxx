@@ -447,6 +447,7 @@ struct property_t {
 
 };
 
+/** client properties **/
 using wm_name_t =                   property_t<WM_NAME,                    STRING,             std::string>; // 8
 using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             std::string>; // 8
 using wm_normal_hints_t =           property_t<WM_NORMAL_HINTS,            WM_SIZE_HINTS,      XSizeHints>; // 32
@@ -478,6 +479,8 @@ using net_frame_extents_t =         property_t<_NET_FRAME_EXTENTS,         CARDI
 using net_wm_opaque_region_t =      property_t<_NET_WM_OPAQUE_REGION,      CARDINAL,           std::vector<int>>; // 32
 using net_wm_bypass_compositor_t =  property_t<_NET_WM_BYPASS_COMPOSITOR,  CARDINAL,           unsigned int>; // 32
 using motif_hints_t =               property_t<_MOTIF_WM_HINTS,            _MOTIF_WM_HINTS,    motif_wm_hints_t>; // 8
+
+/** root properties **/
 using net_active_window_t =         property_t<_NET_ACTIVE_WINDOW,         WINDOW,             xcb_window_t>; // 32
 
 }

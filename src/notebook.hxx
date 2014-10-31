@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+#include <memory>
 
 #include "theme.hxx"
 #include "pixmap.hxx"
