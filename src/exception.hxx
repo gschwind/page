@@ -20,9 +20,9 @@ public:
 		va_start(l, fmt);
 		int n = vsnprintf(nullptr, 0, fmt, l);
 		va_end(l);
-		str = new char[n];
+		str = new char[n+1];
 		va_start(l, fmt);
-		vsnprintf(str, n, fmt, l);
+		vsnprintf(str, n+1, fmt, l);
 		va_end(l);
 	}
 

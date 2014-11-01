@@ -54,28 +54,10 @@ namespace page {
 
 class page_t : public page_component_t {
 
-	static long const ROOT_EVENT_MASK = SubstructureNotifyMask | SubstructureRedirectMask | PropertyChangeMask;
+	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE;
 	static time_t const default_wait;
 
 public:
-
-	/*damage event handler */
-	int damage_opcode, damage_event, damage_error;
-
-	/* composite event handler */
-	int composite_opcode, composite_event, composite_error;
-
-	/* fixes event handler */
-	int fixes_opcode, fixes_event, fixes_error;
-
-	/* xshape extension handler */
-	int xshape_opcode, xshape_event, xshape_error;
-
-	/* xrandr extension handler */
-	int xrandr_opcode, xrandr_event, xrandr_error;
-
-	/* GLX extension handler */
-	int glx_opcode, glx_event, glx_error;
 
 	enum select_e {
 		SELECT_NONE,
@@ -294,7 +276,6 @@ public:
 
 	key_mode_data_t key_mode_data;
 
-	bool use_internal_compositor;
 	bool replace_wm;
 
 	/** window that handle page identity for others clients */
@@ -316,6 +297,7 @@ public:
 
 	display_t * cnx;
 	compositor_t * rnd;
+	composite_surface_manager_t * cmgr;
 
 	std::list<client_not_managed_t *> below;
 	std::list<client_base_t *> root_subclients;
@@ -401,35 +383,37 @@ public:
 	/* scan current root window status, finding mapped windows */
 	void scan();
 
-	void process_event(XKeyEvent const & e);
-	void process_event_press(XButtonEvent const & e);
-	void process_event_release(XButtonEvent const & e);
-	void process_event(XMotionEvent const & e);
+	/** user inputs **/
+	void process_event(xcb_key_press_event_t const * e);
+	void process_event_press(xcb_button_press_event_t const * e);
+	void process_event_release(xcb_button_release_event_t const * e);
+	void process_event(xcb_motion_notify_event_t const * e);
 	/* SubstructureNotifyMask */
-	void process_event(XCirculateEvent const & e);
-	void process_event(XConfigureEvent const & e);
-	void process_event(XCreateWindowEvent const & e);
-	void process_event(XDestroyWindowEvent const & e);
-	void process_event(XGravityEvent const & e);
-	void process_event(XMapEvent const & e);
-	void process_event(XReparentEvent const & e);
-	void process_event(XUnmapEvent const & e);
+	//void process_event(xcb_circulate_notify_event_t const * e);
+	void process_event(xcb_configure_notify_event_t const * e);
+	void process_event(xcb_create_notify_event_t const * e);
+	void process_event(xcb_destroy_notify_event_t const * e);
+	void process_event(xcb_gravity_notify_event_t const * e);
+	void process_event(xcb_map_notify_event_t const * e);
+	void process_event(xcb_reparent_notify_event_t const * e);
+	void process_event(xcb_unmap_notify_event_t const * e);
+	void process_fake_event(xcb_unmap_notify_event_t const * e);
 
 	/* SubstructureRedirectMask */
-	void process_event(XCirculateRequestEvent const & e);
-	void process_event(XConfigureRequestEvent const & e);
-	void process_event(XMapRequestEvent const & e);
+	void process_event(xcb_circulate_request_event_t const * e);
+	void process_event(xcb_configure_request_event_t const * e);
+	void process_event(xcb_map_request_event_t const * e);
 
 	/* PropertyChangeMask */
-	void process_event(XPropertyEvent const & e);
+	void process_event(xcb_property_notify_event_t const * e);
 
 	/* Unmaskable Events */
-	void process_event(XClientMessageEvent const & e);
+	void process_event(xcb_client_message_event_t const * e);
 
 	/* extension events */
-	void process_event(XDamageNotifyEvent const & ev);
+	void process_event(xcb_damage_notify_event_t const * ev);
 
-	void process_event(XEvent const & e);
+	void process_event(xcb_generic_event_t const * e);
 
 	/* update _NET_CLIENT_LIST_STACKING and _NET_CLIENT_LIST */
 	void update_client_list();
@@ -517,10 +501,10 @@ public:
 	void update_viewport_layout();
 	void remove_viewport(desktop_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
-	void onmap(Window w);
+	void onmap(xcb_window_t w);
 	void create_managed_window(std::shared_ptr<client_properties_t> c, Atom type);
 	void manage_client(client_managed_t * mw, Atom type);
-	void ackwoledge_configure_request(XConfigureRequestEvent const & e);
+	void ackwoledge_configure_request(xcb_configure_request_event_t const * e);
 	void create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type);
 	void create_dock_window(std::shared_ptr<client_properties_t> c, Atom type);
 	viewport_t * find_mouse_viewport(int x, int y);

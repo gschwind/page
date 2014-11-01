@@ -57,21 +57,28 @@ static void _draw_crossed_box(cairo_t * cr, i_rect const & box, double r, double
 
 void compositor_t::init_composite_overlay() {
 	/* create and map the composite overlay window */
-	composite_overlay = XCompositeGetOverlayWindow(_cnx->dpy(), _cnx->root());
+	xcb_composite_get_overlay_window_cookie_t ck = xcb_composite_get_overlay_window(_cnx->xcb(), _cnx->root());
+	xcb_composite_get_overlay_window_reply_t * r = xcb_composite_get_overlay_window_reply(_cnx->xcb(), ck, 0);
+	if(r == nullptr) {
+		throw exception_t("cannot create compositor window overlay");
+	}
+
+	composite_overlay = r->overlay_win;
+
 	/* user input pass through composite overlay (mouse click for example)) */
-	_cnx->allow_input_passthrough(_cnx->dpy(), composite_overlay);
+	_cnx->allow_input_passthrough(composite_overlay);
 	/** Automatically redirect windows, but paint sub-windows manually */
-	XCompositeRedirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
+	xcb_composite_redirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
 }
 
 void compositor_t::release_composite_overlay() {
-	XCompositeUnredirectSubwindows(_cnx->dpy(), _cnx->root(), CompositeRedirectManual);
-	_cnx->disable_input_passthrough(_cnx->dpy(), composite_overlay);
-	XCompositeReleaseOverlayWindow(_cnx->dpy(), composite_overlay);
-	composite_overlay = None;
+	xcb_composite_unredirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
+	_cnx->disable_input_passthrough(composite_overlay);
+	xcb_composite_release_overlay_window(_cnx->xcb(), composite_overlay);
+	composite_overlay = XCB_NONE;
 }
 
-compositor_t::compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event) : _cnx(cnx), damage_event(damage_event), xshape_event(xshape_event), xrandr_event(xrandr_event) {
+compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) : _cnx(cnx), _cmgr(cmgr) {
 	composite_back_buffer = None;
 
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
@@ -189,8 +196,7 @@ void compositor_t::render() {
 	_fps_history[_fps_top] = cur;
 	_damaged_area[_fps_top] = _damaged.area();
 
-	cairo_surface_t * _back_buffer = cairo_xlib_surface_create(_cnx->dpy(), composite_back_buffer,
-			root_attributes.visual, root_attributes.width,
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), root_attributes.width,
 			root_attributes.height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
@@ -287,7 +293,7 @@ void compositor_t::render() {
 			int surf_count;
 			int surf_size;
 
-			composite_surface_manager_t::make_surface_stats(surf_size, surf_count);
+			_cmgr->make_surface_stats(surf_size, surf_count);
 
 			pango_printf(cr, _FPS_WINDOWS*2+20,0,  "fps:       %6.1f", fps);
 			pango_printf(cr, _FPS_WINDOWS*2+20,15, "miss rate: %6.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
@@ -317,155 +323,68 @@ void compositor_t::render() {
 
 }
 
-void compositor_t::process_event(XCreateWindowEvent const & e) {
-	if(e.send_event == True)
-		return;
-
-	if (e.window == composite_overlay)
-		return;
-	if (e.parent != _cnx->root())
-		return;
-}
-
-void compositor_t::process_event(XReparentEvent const & e) {
-
-}
-
-void compositor_t::process_event(XMapEvent const & e) {
-	if (e.send_event == True)
-		return;
-	if (e.event != _cnx->root())
-		return;
-
-	/** don't make composite overlay visible **/
-	if (e.window == composite_overlay)
-		return;
-
-	composite_surface_manager_t::onmap(_cnx->dpy(), e.window);
-}
-
-void compositor_t::process_event(XUnmapEvent const & e) {
-	if (e.send_event == True)
-		return;
-}
-
-void compositor_t::process_event(XDestroyWindowEvent const & e) {
-	if (e.send_event == True)
-		return;
-	composite_surface_manager_t::ondestroy(e.display, e.window);
-}
-
-void compositor_t::process_event(XConfigureEvent const & e) {
-	if (e.send_event == True)
-		return;
-
-	if (e.event == _cnx->root()
-			and e.window != _cnx->root()) {
-		composite_surface_manager_t::onresize(_cnx->dpy(), e.window, e.width, e.height);
-	}
-}
-
-
-void compositor_t::process_event(XCirculateEvent const & e) {
-	if(e.send_event == True)
-		return;
-
-	if(e.event != _cnx->root())
-		return;
-
-}
-
-void compositor_t::process_event(XDamageNotifyEvent const & e) {
-	region r = read_damaged_region(e.damage);
-	std::weak_ptr<composite_surface_t> wp = composite_surface_manager_t::get_weak_surface(e.display, e.drawable);
-	if (not wp.expired()) {
-		wp.lock()->add_damaged(r);
-	}
-}
-
-region compositor_t::read_damaged_region(Damage d) {
-
-	region result;
-
-	/* create an empty region */
-	XserverRegion region = XFixesCreateRegion(_cnx->dpy(), 0, 0);
-
-	if (!region)
-		throw std::runtime_error("could not create region");
-
-	/* get damaged region and remove them from damaged status */
-	XDamageSubtract(_cnx->dpy(), d, None, region);
-
-	XRectangle * rects;
-	int nb_rects;
-
-	/* get all i_rects for the damaged region */
-	rects = XFixesFetchRegion(_cnx->dpy(), region, &nb_rects);
-
-	if (rects) {
-		for (int i = 0; i < nb_rects; ++i) {
-			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
-			result += i_rect(rects[i]);
-		}
-		XFree(rects);
-	}
-
-	XFixesDestroyRegion(_cnx->dpy(), region);
-
-	return result;
-}
-
-void compositor_t::process_event(XEvent const & e) {
-
-//	if (e.xany.type > 0 && e.xany.type < LASTEvent) {
-//		printf("#%lu type: %s, send_event: %u, window: %lu\n", e.xany.serial,
-//				x_event_name[e.xany.type], e.xany.send_event, e.xany.window);
-//	} else {
-//		printf("#%lu type: %u, send_event: %u, window: %lu\n", e.xany.serial,
-//				e.xany.type, e.xany.send_event, e.xany.window);
-//	}
-
-
-	if (e.type == CirculateNotify) {
-		process_event(e.xcirculate);
-	} else if (e.type == ConfigureNotify) {
-		process_event(e.xconfigure);
-	} else if (e.type == CreateNotify) {
-		process_event(e.xcreatewindow);
-	} else if (e.type == DestroyNotify) {
-		process_event(e.xdestroywindow);
-	} else if (e.type == MapNotify) {
-		process_event(e.xmap);
-	} else if (e.type == ReparentNotify) {
-		process_event(e.xreparent);
-	} else if (e.type == UnmapNotify) {
-		process_event(e.xunmap);
-	} else if (e.type == damage_event + XDamageNotify) {
-		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
-	} else if (e.type == xshape_event + ShapeNotify) {
-		XShapeEvent const & sev = reinterpret_cast<XShapeEvent const &>(e);
-	} else if (e.type == xrandr_event + RRNotify) {
-		//printf("RRNotify\n");
-		XRRNotifyEvent const & ev = reinterpret_cast<XRRNotifyEvent const &>(e);
-		if (ev.subtype == RRNotify_CrtcChange) {
-			/* re-read root window attribute, in particular the size **/
-			update_layout();
-			//rebuild_cairo_context();
-		}
-	} else {
-//		printf("Unhandled event\n");
-//		if (e.xany.type > 0 && e.xany.type < LASTEvent) {
-//			printf("#%lu type: %s, send_event: %u, window: %lu\n",
-//					e.xany.serial, x_event_name[e.xany.type], e.xany.send_event,
-//					e.xany.window);
-//		} else {
-//			printf("#%lu type: %u, send_event: %u, window: %lu\n",
-//					e.xany.serial, e.xany.type, e.xany.send_event,
-//					e.xany.window);
+//region compositor_t::read_damaged_region(xcb_damage_damage_t d) {
+//
+//	region result;
+//
+//	/* create an empty region */
+//	xcb_xfixes_region_t region = xcb_generate_id(_cnx->xcb());
+//	xcb_xfixes_create_region(_cnx->xcb(), region, 0, 0);
+//
+//	/* get damaged region and remove them from damaged status */
+//	xcb_damage_subtract(_cnx->xcb(), d, XCB_XFIXES_REGION_NONE, region);
+//
+//
+//	/* get all i_rects for the damaged region */
+//
+//	xcb_xfixes_fetch_region_cookie_t ck = xcb_xfixes_fetch_region(_cnx->xcb(), region);
+//
+//	xcb_generic_error_t * err;
+//	xcb_xfixes_fetch_region_reply_t * r = xcb_xfixes_fetch_region_reply(_cnx->xcb(), ck, &err);
+//
+//	if (err == nullptr and r != nullptr) {
+//		xcb_rectangle_t * rect = xcb_xfixes_fetch_region_rectangles(r);
+//		for (unsigned k = 0; k < r->length; ++k) {
+//			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
+//			result += i_rect(rect[k]);
 //		}
-	}
+//		//free(rect);
+//		free(r);
+//	}
+//
+//	xcb_xfixes_destroy_region(_cnx->xcb(), region);
+//
+//	return result;
+//}
 
-}
+//void compositor_t::process_event(xcb_generic_event_t const * e) {
+//
+////	if (e.xany.type > 0 && e.xany.type < LASTEvent) {
+////		printf("#%lu type: %s, send_event: %u, window: %lu\n", e.xany.serial,
+////				x_event_name[e.xany.type], e.xany.send_event, e.xany.window);
+////	} else {
+////		printf("#%lu type: %u, send_event: %u, window: %lu\n", e.xany.serial,
+////				e.xany.type, e.xany.send_event, e.xany.window);
+////	}
+//
+//
+//	if (e->response_type == XCB_CIRCULATE_NOTIFY) {
+//		//process_event(e.xcirculate);
+//	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
+//		//process_event(e.xconfigure);
+//	} else if (e->response_type == XCB_CREATE_NOTIFY) {
+//		//process_event(e.xcreatewindow);
+//	} else if (e->response_type == XCB_DESTROY_NOTIFY) {
+//		//process_event(reinterpret_cast<xcb_destroy_notify_event_t const *>(e));
+//	} else if (e->response_type == XCB_MAP_NOTIFY) {
+//		//process_event(reinterpret_cast<xcb_map_notify_event_t const *>(e));
+//	} else if (e->response_type == XCB_REPARENT_NOTIFY) {
+//		//process_event(e.xreparent);
+//	} else if (e->response_type == XCB_UNMAP_NOTIFY) {
+//		//process_event(e.xunmap);
+//	}
+//
+//}
 
 void compositor_t::update_layout() {
 
@@ -505,33 +424,33 @@ void compositor_t::update_layout() {
 }
 
 
-void compositor_t::process_events() {
-	XEvent ev;
-	while(XPending(_cnx->dpy())) {
-		XNextEvent(_cnx->dpy(), &ev);
-		process_event(ev);
-	}
-}
+//void compositor_t::process_events() {
+//	XEvent ev;
+//	while(XPending(_cnx->dpy())) {
+//		XNextEvent(_cnx->dpy(), &ev);
+//		process_event(ev);
+//	}
+//}
 
 /**
  * Check event without blocking.
  **/
-bool compositor_t::process_check_event() {
-	XEvent e;
+//bool compositor_t::process_check_event() {
+//	XEvent e;
+//
+//	int x;
+//	/** Passive check of events in queue, never flush any thing **/
+//	if ((x = XEventsQueued(_cnx->dpy(), QueuedAlready)) > 0) {
+//		/** should not block or flush **/
+//		XNextEvent(_cnx->dpy(), &e);
+//		process_event(e);
+//		return true;
+//	} else {
+//		return false;
+//	}
+//}
 
-	int x;
-	/** Passive check of events in queue, never flush any thing **/
-	if ((x = XEventsQueued(_cnx->dpy(), QueuedAlready)) > 0) {
-		/** should not block or flush **/
-		XNextEvent(_cnx->dpy(), &e);
-		process_event(e);
-		return true;
-	} else {
-		return false;
-	}
-}
-
-Window compositor_t::get_composite_overlay() {
+xcb_window_t compositor_t::get_composite_overlay() {
 	return composite_overlay;
 }
 

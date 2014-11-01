@@ -31,6 +31,7 @@
 #include "box.hxx"
 #include "region.hxx"
 #include "renderable.hxx"
+#include "composite_surface_manager.hxx"
 
 namespace page {
 
@@ -39,19 +40,13 @@ class compositor_t {
 private:
 
 	display_t * _cnx;
+	composite_surface_manager_t * _cmgr;
 
-	Window cm_window;
-	Window composite_overlay;
+	xcb_window_t cm_window;
+	xcb_window_t composite_overlay;
 	XdbeBackBuffer composite_back_buffer;
 
 	XWindowAttributes root_attributes;
-
-	/*damage event handler */
-	int damage_event;
-	/* xshape extension handler */
-	int xshape_event;
-	/* xrandr extension handler */
-	int xrandr_event;
 
 	std::shared_ptr<atom_handler_t> _A;
 
@@ -100,17 +95,11 @@ private:
 	void repair_area(i_rect const & box);
 	void repair_overlay(cairo_t * cr, i_rect const & area, cairo_surface_t * src);
 
-	void process_event(XCreateWindowEvent const & e);
-	void process_event(XReparentEvent const & e);
-	void process_event(XMapEvent const & e);
-	void process_event(XUnmapEvent const & e);
-	void process_event(XDestroyWindowEvent const & e);
-	void process_event(XConfigureEvent const & e);
-	void process_event(XCirculateEvent const & e);
-	void process_event(XDamageNotifyEvent const & e);
+	void process_event(xcb_map_notify_event_t const * e);
+	void process_event(xcb_destroy_notify_event_t const * e);
+	void process_event(xcb_configure_notify_event_t const * e);
+	void process_event(xcb_damage_notify_event_t const * e);
 
-public:
-	virtual void process_event(XEvent const & e);
 
 private:
 	void scan();
@@ -130,9 +119,9 @@ private:
 	void cleanup_internal_data();
 
 public:
-	region read_damaged_region(Damage d);
-	virtual ~compositor_t();
-	compositor_t(display_t * cnx, int damage_event, int xshape_event, int xrandr_event);
+	//region read_damaged_region(xcb_damage_damage_t d);
+	~compositor_t();
+	compositor_t(display_t * cnx, composite_surface_manager_t * cmgr);
 
 	void process_events();
 
@@ -151,7 +140,7 @@ public:
 	void destroy_damage(Window w);
 	void set_fade_in_time(int nsec);
 	void set_fade_out_time(int nsec);
-	Window get_composite_overlay();
+	xcb_window_t get_composite_overlay();
 
 	void renderable_add(renderable_t * r);
 	void renderable_remove(renderable_t * r);

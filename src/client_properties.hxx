@@ -803,16 +803,16 @@ public:
 		_cnx->write_property(xid(), _wm_state);
 	}
 
-	void process_event(XConfigureEvent const & e) {
-		if(_wa->override_redirect != e.override_redirect) {
-			_wa->override_redirect = e.override_redirect;
+	void process_event(xcb_configure_notify_event_t const * e) {
+		if(_wa->override_redirect != e->override_redirect) {
+			_wa->override_redirect = e->override_redirect;
 			update_type();
 		}
-		_geometry->width = e.width;
-		_geometry->height = e.height;
-		_geometry->x = e.x;
-		_geometry->y = e.y;
-		_geometry->border_width = e.border_width;
+		_geometry->width = e->width;
+		_geometry->height = e->height;
+		_geometry->x = e->x;
+		_geometry->y = e->y;
+		_geometry->border_width = e->border_width;
 	}
 
 	i_rect position() const { return i_rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }

@@ -14,6 +14,10 @@
 #include <X11/Xlib-xcb.h>
 
 #include <xcb/xcb.h>
+#include <xcb/damage.h>
+#include <xcb/composite.h>
+#include <xcb/xfixes.h>
+#include <xcb/randr.h>
 
 #include <X11/keysymdef.h>
 #include <X11/cursorfont.h>
@@ -35,8 +39,10 @@
 #include <list>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include "box.hxx"
+#include "region.hxx"
 #include "atoms.hxx"
 #include "motif_hints.hxx"
 
@@ -65,9 +71,32 @@ class display_t {
 	std::map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
 	std::map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
 
-	std::list<XEvent> pending_event;
+	std::list<xcb_generic_event_t *> pending_event;
 
 public:
+	char const * request_type_name[256];
+
+	/*damage event handler */
+	int damage_opcode, damage_event, damage_error;
+
+	/* composite event handler */
+	int composite_opcode, composite_event, composite_error;
+
+	/* fixes event handler */
+	int fixes_opcode, fixes_event, fixes_error;
+
+	/* xshape extension handler */
+	int shape_opcode, shape_event, shape_error;
+
+	/* xrandr extension handler */
+	int randr_opcode, randr_event, randr_error;
+
+	int dbe_opcode, dbe_event, dbe_error;
+
+	/* GLX extension handler */
+	//int glx_opcode, glx_event, glx_error;
+
+
 
 	/* overlay composite */
 	Window composite_overlay;
@@ -97,7 +126,7 @@ public:
 	unsigned long int last_serial;
 
 	int fd();
-	Window root();
+	xcb_window_t root();
 	Display * dpy();
 	xcb_connection_t * xcb();
 	xcb_visualtype_t * default_visual();
@@ -176,12 +205,13 @@ public:
 	}
 
 
-	bool check_composite_extension(int * opcode, int * event, int * error);
-	bool check_damage_extension(int * opcode, int * event, int * error);
-	bool check_shape_extension(int * opcode, int * event, int * error);
-	bool check_randr_extension(int * opcode, int * event, int * error);
-	bool check_glx_extension(int * opcode, int * event, int * error);
-	bool check_dbe_extension(int * opcode, int * event, int * error);
+	bool check_composite_extension();
+	bool check_damage_extension();
+	bool check_shape_extension();
+	bool check_randr_extension();
+	bool check_xfixes_extension();
+	bool check_glx_extension();
+	bool check_dbe_extension();
 
 
 	static void create_surf(char const * f, int l);
@@ -201,14 +231,14 @@ public:
 
 	static void print_visual_type(xcb_visualtype_t * vis);
 
-	bool check_for_reparent_window(Window w);
-	bool check_for_fake_unmap_window(Window w);
-	bool check_for_destroyed_window(Window w);
-	bool check_for_unmap_window(Window w);
+	bool check_for_reparent_window(xcb_window_t w);
+	bool check_for_fake_unmap_window(xcb_window_t w);
+	bool check_for_destroyed_window(xcb_window_t w);
+	bool check_for_unmap_window(xcb_window_t w);
 
 	void fetch_pending_events();
 
-	XEvent * front_event();
+	xcb_generic_event_t * front_event();
 	void pop_event();
 	bool has_pending_events();
 
@@ -223,9 +253,9 @@ public:
 	xcb_window_t create_input_only_window(xcb_window_t parent, i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs);
 
 	/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
-	void allow_input_passthrough(Display * dpy, Window w);
+	void allow_input_passthrough(xcb_window_t w);
 
-	void disable_input_passthrough(Display * dpy, Window w);
+	void disable_input_passthrough(xcb_window_t w);
 
 	static int error_handler(Display * dpy, XErrorEvent * ev);
 
@@ -274,6 +304,50 @@ public:
 	static properties_fetcher_t<name, type, xT> make_property_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) {
 		return properties_fetcher_t<name, type, xT>{p, cnx, w};
 	}
+
+	void sync() {
+		/** force sync */
+		xcb_void_cookie_t ck = xcb_no_operation_checked(_xcb);
+		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
+		if(err != nullptr) {
+			std::cout << "Fail to sync with the server" << std::endl;
+		}
+	}
+
+	bool query_extension(char const * name, int * opcode, int * event, int * error);
+
+	void select_input(xcb_window_t w, uint32_t mask);
+
+	int root_depth() {
+		return _xcb_root_visual_depth;
+	}
+
+	region read_damaged_region(xcb_damage_damage_t d);
+
+	int get_visual_depth(xcb_visualid_t vid) {
+		return _xcb_visual_depth[vid];
+	}
+
+	xcb_visualtype_t * get_visual_type(xcb_visualid_t vid) {
+		return _xcb_visual_data[vid];
+	}
+
+
+	bool lock(xcb_window_t w) {
+		grab();
+		fetch_pending_events();
+		if(check_for_destroyed_window(w)) {
+			ungrab();
+			return false;
+		}
+		return true;
+	}
+
+	void unlock() {
+		ungrab();
+	}
+
+	void check_x11_extension();
 
 
 };

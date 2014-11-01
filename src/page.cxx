@@ -80,7 +80,6 @@ page_t::page_t(int argc, char ** argv)
 	_desktop_list[_current_desktop]->show();
 
 	page_areas = nullptr;
-	use_internal_compositor = true;
 	replace_wm = false;
 	char const * conf_file_name = 0;
 
@@ -206,34 +205,25 @@ page_t::~page_t() {
 void page_t::run() {
 
 	/* check for required page extension */
-	check_x11_extension();
+	cnx->check_x11_extension();
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
 	register_cm();
 
 	/** initialise theme **/
-	theme = new simple2_theme_t(cnx, conf);
+	theme = new simple2_theme_t{cnx, conf};
+	cmgr = new composite_surface_manager_t{cnx};
 
 	/* start listen root event before anything each event will be stored to right run later */
-	XSelectInput(cnx->dpy(), cnx->root(), ROOT_EVENT_MASK);
+	cnx->select_input(cnx->root(), ROOT_EVENT_MASK);
 
-	/** load compositor if requested **/
-	if (use_internal_compositor) {
-		/** try to start compositor, if fail, just ignore it **/
-		try {
-			rnd = new compositor_t(cnx, damage_event, xshape_event, xrandr_event);
-			rnd->renderable_clear();
-			//rnd->renderable_add(this);
-		} catch (...) {
-			rnd = nullptr;
-		}
-	}
+	rnd = new compositor_t(cnx, cmgr);
 
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
 	 **/
-	XRRSelectInput(cnx->dpy(), cnx->root(), RRCrtcChangeNotifyMask);
+	xcb_randr_select_input(cnx->xcb(), cnx->root(), XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE);
 
 	update_viewport_layout();
 
@@ -341,6 +331,8 @@ void page_t::run() {
 	running = true;
 	while (running) {
 
+		xcb_flush(cnx->xcb());
+
 		FD_ZERO(&fds_read);
 		FD_ZERO(&fds_intr);
 
@@ -354,9 +346,9 @@ void page_t::run() {
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait,
 		NULL);
 
-		while (cnx->has_pending_events()) {
-			rnd->process_event(*(cnx->front_event()));
-			process_event(*(cnx->front_event()));
+		while(cnx->has_pending_events()) {
+			cmgr->process_event(cnx->front_event());
+			process_event(cnx->front_event());
 			cnx->pop_event();
 			xcb_flush(cnx->xcb());
 		}
@@ -547,32 +539,32 @@ void page_t::update_client_list() {
 
 }
 
-void page_t::process_event(XKeyEvent const & e) {
+void page_t::process_event(xcb_key_press_event_t const * e) {
 
-	if(_last_focus_time > e.time) {
-		_last_focus_time = e.time;
+	if(_last_focus_time > e->time) {
+		_last_focus_time = e->time;
 	}
 
 	printf("%s key = %d, mod4 = %s, mod1 = %s\n",
-			e.type == KeyPress ? "KeyPress" : "KeyRelease",
-			e.keycode,
-			e.state & Mod4Mask ? "true" : "false",
-			e.state & Mod1Mask ? "true" : "false");
+			e->response_type == XCB_KEY_PRESS ? "KeyPress" : "KeyRelease",
+			e->detail,
+			e->state & XCB_MOD_MASK_4 ? "true" : "false",
+			e->state & XCB_MOD_MASK_1 ? "true" : "false");
 
 
 	/* get KeyCode for Unmodified Key */
-	KeySym k = keymap->get(e.keycode);
+	KeySym k = keymap->get(e->detail);
 
 	if (k == 0)
 		return;
 
-	if(e.type == KeyPress) {
+	if(e->response_type == XCB_KEY_PRESS) {
 
-		if(k == bind_page_quit.ks and (e.state & bind_page_quit.mod)) {
+		if(k == bind_page_quit.ks and (e->state & bind_page_quit.mod)) {
 			running = false;
 		}
 
-		if(k == bind_toggle_fullscreen.ks and (e.state & bind_toggle_fullscreen.mod)) {
+		if(k == bind_toggle_fullscreen.ks and (e->state & bind_toggle_fullscreen.mod)) {
 			if(not _client_focused.empty()) {
 				if(_client_focused.front() != nullptr) {
 					toggle_fullscreen(_client_focused.front());
@@ -580,16 +572,16 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
-		if(k == bind_right_desktop.ks and (e.state & bind_right_desktop.mod)) {
-			switch_to_desktop((_current_desktop + 1) % _desktop_list.size(), e.time);
+		if(k == bind_right_desktop.ks and (e->state & bind_right_desktop.mod)) {
+			switch_to_desktop((_current_desktop + 1) % _desktop_list.size(), e->time);
 		}
 
-		if(k == bind_left_desktop.ks and (e.state & bind_left_desktop.mod)) {
-			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e.time);
+		if(k == bind_left_desktop.ks and (e->state & bind_left_desktop.mod)) {
+			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e->time);
 		}
 
 
-		if(k == bind_debug_1.ks and (e.state & bind_debug_1.mod)) {
+		if(k == bind_debug_1.ks and (e->state & bind_debug_1.mod)) {
 			if(rnd->show_fps()) {
 				rnd->set_show_fps(false);
 			} else {
@@ -597,7 +589,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
-		if(k == bind_debug_2.ks and (e.state & bind_debug_2.mod)) {
+		if(k == bind_debug_2.ks and (e->state & bind_debug_2.mod)) {
 			if(rnd->show_damaged()) {
 				rnd->set_show_damaged(false);
 			} else {
@@ -605,7 +597,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
-		if(k == bind_debug_3.ks and (e.state & bind_debug_3.mod)) {
+		if(k == bind_debug_3.ks and (e->state & bind_debug_3.mod)) {
 			if(rnd->show_opac()) {
 				rnd->set_show_opac(false);
 			} else {
@@ -613,7 +605,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			}
 		}
 
-		if(k == bind_debug_4.ks and (e.state & bind_debug_4.mod)) {
+		if(k == bind_debug_4.ks and (e->state & bind_debug_4.mod)) {
 			update_windows_stack();
 			//print_tree(0);
 			std::vector<client_managed_t *> lst = get_managed_windows();
@@ -636,18 +628,18 @@ void page_t::process_event(XKeyEvent const & e) {
 		}
 
 
-		if (k == XK_Tab and ((e.state & 0x0f) == Mod1Mask)) {
+		if (k == XK_Tab and ((e->state & 0x0f) == Mod1Mask)) {
 
 			std::vector<client_managed_t *> managed_window = get_managed_windows();
 
 			if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
 
 				/* Grab keyboard */
-				XGrabKeyboard(e.display, cnx->root(), False, GrabModeAsync, GrabModeAsync,
-						e.time);
+				/** TODO: check for success or failure **/
+				xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
 				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-				XAllowEvents(e.display, AsyncKeyboard, e.time);
+				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 
 				key_press_mode = KEY_PRESS_ALT_TAB;
 				key_mode_data.selected = _client_focused.front();
@@ -686,9 +678,8 @@ void page_t::process_event(XKeyEvent const & e) {
 
 
 			} else {
-				XAllowEvents(e.display, ReplayKeyboard, e.time);
+				xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
 			}
-
 
 			pat->select_next();
 			_need_render = true;
@@ -703,7 +694,7 @@ void page_t::process_event(XKeyEvent const & e) {
 				and key_press_mode == KEY_PRESS_ALT_TAB) {
 
 			/** Ungrab Keyboard **/
-			XUngrabKeyboard(e.display, e.time);
+			xcb_ungrab_keyboard(cnx->xcb(), e->time);
 
 			key_press_mode = KEY_PRESS_NORMAL;
 
@@ -712,7 +703,7 @@ void page_t::process_event(XKeyEvent const & e) {
 			 * destroyed.
 			 **/
 			client_managed_t * mw = pat->get_selected();
-			set_focus(mw, e.time);
+			set_focus(mw, e->time);
 
 			pat.reset();
 		}
@@ -721,16 +712,16 @@ void page_t::process_event(XKeyEvent const & e) {
 }
 
 /* Button event make page to grab pointer */
-void page_t::process_event_press(XButtonEvent const & e) {
+void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
-	client_managed_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e->event);
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e.window == cnx->root()
-				and e.subwindow == None
-				and e.button == Button1) {
+		if (e->event == cnx->root()
+				and e->child == XCB_NONE
+				and e->detail == XCB_BUTTON_INDEX_1) {
 
 			update_page_areas();
 
@@ -738,7 +729,7 @@ void page_t::process_event_press(XButtonEvent const & e) {
 			for (std::vector<page_event_t>::iterator i = page_areas->begin();
 					i != page_areas->end(); ++i) {
 				//printf("box = %s => %s\n", (i)->position.to_std::string().c_str(), typeid(*i).name());
-				if ((*i).position.is_inside(e.x, e.y)) {
+				if ((*i).position.is_inside(e->event_x, e->event_y)) {
 					b = &(*i);
 					break;
 				}
@@ -832,15 +823,15 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		}
 
-		if (e.window == cnx->root()
-				and e.subwindow == None
-				and e.button == Button3) {
+		if (e->event == cnx->root()
+				and e->child == XCB_NONE
+				and e->detail == XCB_BUTTON_INDEX_3) {
 
 			update_page_areas();
 
 			page_event_t * b = nullptr;
 			for (auto &i: *page_areas) {
-				if (i.position.is_inside(e.x, e.y)) {
+				if (i.position.is_inside(e->event_x, e->event_y)) {
 					b = &(i);
 					break;
 				}
@@ -863,8 +854,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 							v.push_back(std::shared_ptr<client_dropdown_menu_t::item_t>{item});
 						}
 
-						int x = e.x_root;
-						int y = e.y_root;
+						int x = e->root_x;
+						int y = e->root_y;
 
 						client_menu = std::shared_ptr<client_dropdown_menu_t>{new client_dropdown_menu_t(cnx, theme, v, x, y, 300)};
 
@@ -876,24 +867,24 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 		if (mw != nullptr) {
 
-			if (mw->is(MANAGED_FLOATING) and e.button == Button1
-					and (e.state & (Mod1Mask | ControlMask))) {
+			if (mw->is(MANAGED_FLOATING) and e->detail == XCB_BUTTON_INDEX_1
+					and (e->state & (Mod1Mask | ControlMask))) {
 
-				mode_data_floating.x_offset = e.x;
-				mode_data_floating.y_offset = e.y;
-				mode_data_floating.x_root = e.x_root;
-				mode_data_floating.y_root = e.y_root;
+				mode_data_floating.x_offset = e->event_x;
+				mode_data_floating.y_offset = e->event_y;
+				mode_data_floating.x_root = e->root_x;
+				mode_data_floating.y_root = e->root_y;
 				mode_data_floating.f = mw;
 				mode_data_floating.original_position = mw->get_floating_wished_position();
 				mode_data_floating.final_position = mw->get_floating_wished_position();
 				mode_data_floating.popup_original_position = mw->get_base_position();
-				mode_data_floating.button = Button1;
+				mode_data_floating.button = XCB_BUTTON_INDEX_1;
 
 				//pfm->move_resize(mw->get_base_position());
 				//pfm->update_window(mw, mw->title());
 				//pfm->show();
 
-				if ((e.state & ControlMask)) {
+				if ((e->state & ControlMask)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
@@ -906,13 +897,13 @@ void page_t::process_event_press(XButtonEvent const & e) {
 				}
 
 
-			} else if (mw->is(MANAGED_FLOATING) and e.button == Button1
-					and e.subwindow != mw->orig()) {
+			} else if (mw->is(MANAGED_FLOATING) and e->detail == XCB_BUTTON_INDEX_1
+					and e->child != mw->orig()) {
 				//mw->update_floating_areas();
 				auto const * l = mw->floating_areas();
 				floating_event_t const * b = 0;
 				for (auto &i : (*l)) {
-					if(i.position.is_inside(e.x, e.y)) {
+					if(i.position.is_inside(e->root_x, e->root_y)) {
 						b = &i;
 						break;
 					}
@@ -921,15 +912,15 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				if (b != 0) {
 
-					mode_data_floating.x_offset = e.x;
-					mode_data_floating.y_offset = e.y;
-					mode_data_floating.x_root = e.x_root;
-					mode_data_floating.y_root = e.y_root;
+					mode_data_floating.x_offset = e->event_x;
+					mode_data_floating.y_offset = e->event_y;
+					mode_data_floating.x_root = e->root_x;
+					mode_data_floating.y_root = e->root_y;
 					mode_data_floating.f = mw;
 					mode_data_floating.original_position = mw->get_floating_wished_position();
 					mode_data_floating.final_position = mw->get_floating_wished_position();
 					mode_data_floating.popup_original_position = mw->get_base_position();
-					mode_data_floating.button = Button1;
+					mode_data_floating.button = XCB_BUTTON_INDEX_1;
 
 					if (b->type == FLOATING_EVENT_CLOSE) {
 
@@ -1003,11 +994,11 @@ void page_t::process_event_press(XButtonEvent const & e) {
 
 				}
 
-			} else if (mw->is(MANAGED_FULLSCREEN) and e.button == (Button1)
-					and (e.state & (Mod1Mask))) {
+			} else if (mw->is(MANAGED_FULLSCREEN) and e->detail == (XCB_BUTTON_INDEX_1)
+					and (e->state & (XCB_MOD_MASK_1))) {
 				fprintf(stderr, "start FULLSCREEN MOVE\n");
 				/** start moving fullscreen window **/
-				viewport_t * v = find_mouse_viewport(e.x_root, e.y_root);
+				viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
 
 				if (v != 0) {
 					fprintf(stderr, "start FULLSCREEN MOVE\n");
@@ -1018,8 +1009,8 @@ void page_t::process_event_press(XButtonEvent const & e) {
 					pn0->show();
 					pn0->move_resize(v->raw_area());
 				}
-			} else if (mw->is(MANAGED_NOTEBOOK) and e.button == (Button1)
-					and (e.state & (Mod1Mask))) {
+			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_1)
+					and (e->state & (XCB_MOD_MASK_1))) {
 
 				notebook_t * n = find_parent_notebook_for(mw);
 
@@ -1049,26 +1040,26 @@ void page_t::process_event_press(XButtonEvent const & e) {
 	 * We allow events (remove the grab), and focus those window.
 	 **/
 	if (process_mode == PROCESS_NORMAL) {
-		XAllowEvents(cnx->dpy(), ReplayPointer, CurrentTime);
-		client_managed_t * mw = find_managed_window_with(e.window);
+		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
+		client_managed_t * mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			set_focus(mw, e.time);
+			set_focus(mw, e->time);
 		}
 	} else {
 		/* Do not replay events, grab them and process them until Release Button */
-		XAllowEvents(cnx->dpy(), AsyncPointer, e.time);
+		xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
 	}
 
 }
 
-void page_t::process_event_release(XButtonEvent const & e) {
+void page_t::process_event_release(xcb_button_press_event_t const * e) {
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 		fprintf(stderr, "Warning: release and normal mode are incompatible\n");
 		break;
 	case PROCESS_SPLIT_GRAB:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			process_mode = PROCESS_NORMAL;
 			ps->hide();
 			rnd->add_damaged(mode_data_split.split->allocation());
@@ -1079,7 +1070,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
@@ -1108,17 +1099,17 @@ void page_t::process_event_release(XButtonEvent const & e) {
 			} else {
 
 				if(_client_focused.empty()) {
-					set_focus(mode_data_notebook.c, e.time);
+					set_focus(mode_data_notebook.c, e->time);
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				} else {
 					if(mode_data_notebook.from->get_selected() == mode_data_notebook.c
 							and _client_focused.front() == mode_data_notebook.c) {
 						/** focus root **/
-						set_focus(nullptr, e.time);
+						set_focus(nullptr, e->time);
 						/** iconify **/
 						mode_data_notebook.from->iconify_client(mode_data_notebook.c);
 					} else {
-						set_focus(mode_data_notebook.c, e.time);
+						set_focus(mode_data_notebook.c, e->time);
 						mode_data_notebook.from->set_selected(mode_data_notebook.c);
 					}
 				}
@@ -1131,7 +1122,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 //				notebook_close(mode_data_notebook.from);
 //				update_allocation();
 //			}
-			set_focus(mode_data_notebook.c, e.time);
+			set_focus(mode_data_notebook.c, e->time);
 			if (mode_data_notebook.from != nullptr)
 				rpage->add_damaged(mode_data_notebook.from->allocation());
 			if (mode_data_notebook.ns != nullptr)
@@ -1141,13 +1132,13 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_BUTTON_PRESS:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			process_mode = PROCESS_NORMAL;
 
 			{
 				page_event_t * b = 0;
 				for (auto &i : *page_areas) {
-					if (i.position.is_inside(e.x, e.y)) {
+					if (i.position.is_inside(e->event_x, e->event_y)) {
 						b = &i;
 						break;
 					}
@@ -1167,7 +1158,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 						rpage->add_damaged(_desktop_list[_current_desktop]->get_default_pop()->allocation());
 						_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
-						mode_data_notebook.c->delete_window(e.time);
+						mode_data_notebook.c->delete_window(e->time);
 					} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 						unbind_window(mode_data_notebook.c);
 					} else if (b->type == PAGE_EVENT_SPLIT) {
@@ -1181,7 +1172,7 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 		break;
 	case PROCESS_FLOATING_MOVE:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			pfm->hide();
 
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
@@ -1191,30 +1182,30 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time);
+			set_focus(mode_data_floating.f, e->time);
 
 			process_mode = PROCESS_NORMAL;
 			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_MOVE_BY_CLIENT:
-		if (e.button == mode_data_floating.button) {
+		if (e->detail == mode_data_floating.button) {
 			pfm->hide();
 
-			XUngrabPointer(cnx->dpy(), e.time);
+			XUngrabPointer(cnx->dpy(), e->time);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time);
+			set_focus(mode_data_floating.f, e->time);
 
 			process_mode = PROCESS_NORMAL;
 			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_RESIZE:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			pfm->hide();
 
 			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
@@ -1224,23 +1215,22 @@ void page_t::process_event_release(XButtonEvent const & e) {
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time);
+			set_focus(mode_data_floating.f, e->time);
 			process_mode = PROCESS_NORMAL;
 
 			mode_data_floating.reset();
 		}
 		break;
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
-		if (e.button == mode_data_floating.button) {
-			//pfm->hide();
+		if (e->detail == mode_data_floating.button) {
 
-			XUngrabPointer(cnx->dpy(), e.time);
+			xcb_ungrab_pointer(cnx->xcb(), e->time);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
 			mode_data_floating.f->reconfigure();
 
-			set_focus(mode_data_floating.f, e.time);
+			set_focus(mode_data_floating.f, e->time);
 
 			process_mode = PROCESS_NORMAL;
 			mode_data_floating.reset();
@@ -1248,9 +1238,9 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 	case PROCESS_FLOATING_CLOSE:
 
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			client_managed_t * mw = mode_data_floating.f;
-			mw->delete_window(e.time);
+			mw->delete_window(e->time);
 			/* cleanup */
 			process_mode = PROCESS_NORMAL;
 			mode_data_floating.reset();
@@ -1259,12 +1249,12 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		break;
 
 	case PROCESS_FLOATING_BIND:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
 
-			set_focus(mode_data_bind.c, e.time);
+			set_focus(mode_data_bind.c, e->time);
 
 			if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
 				mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
@@ -1304,11 +1294,11 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 	case PROCESS_FULLSCREEN_MOVE:
 
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			/** drop the fullscreen window to the new viewport **/
 
 			process_mode = PROCESS_NORMAL;
-			viewport_t * v = find_mouse_viewport(e.x_root, e.y_root);
+			viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
 			client_managed_t * c = mode_data_fullscreen.mw;
 			if (v != nullptr and has_key(_fullscreen_client_to_viewport, c)) {
 				fullscreen_data_t & data = _fullscreen_client_to_viewport[c];
@@ -1326,20 +1316,20 @@ void page_t::process_event_release(XButtonEvent const & e) {
 
 		break;
 	case PROCESS_NOTEBOOK_MENU:
-		if (e.button == Button1) {
-			if(mode_data_notebook_menu.b.is_inside(e.x, e.y) and not mode_data_notebook_menu.active_grab) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
+			if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab) {
 				mode_data_notebook_menu.active_grab = true;
-				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e.time);
+				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e->time);
 			} else {
 				if (mode_data_notebook_menu.active_grab) {
-					XUngrabPointer(cnx->dpy(), e.time);
+					xcb_ungrab_pointer(cnx->xcb(), e->time);
 					mode_data_notebook_menu.active_grab = false;
 				}
 
 				process_mode = PROCESS_NORMAL;
-				if (menu->position().is_inside(e.x_root, e.y_root)) {
+				if (menu->position().is_inside(e->root_x, e->root_y)) {
 					int selx = (int) floor(
-							(e.y_root - menu->position().y) / 24.0);
+							(e->root_y - menu->position().y) / 24.0);
 					menu->set_selected(selx);
 					mode_data_notebook_menu.from->set_selected(
 							const_cast<client_managed_t*>(menu->get_selected()));
@@ -1354,20 +1344,20 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_CLIENT_MENU:
-		if (e.button == Button3 or e.button == Button1) {
-			if(mode_data_notebook_client_menu.b.is_inside(e.x, e.y) and not mode_data_notebook_client_menu.active_grab) {
+		if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
+			if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
 				mode_data_notebook_client_menu.active_grab = true;
-				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e.time);
+				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e->time);
 			} else {
 				if (mode_data_notebook_client_menu.active_grab) {
-					XUngrabPointer(cnx->dpy(), e.time);
+					xcb_ungrab_pointer(cnx->xcb(), e->time);
 					mode_data_notebook_client_menu.active_grab = false;
 				}
 
 				process_mode = PROCESS_NORMAL;
-				if (client_menu->position().is_inside(e.x_root, e.y_root)) {
+				if (client_menu->position().is_inside(e->root_x, e->root_y)) {
 					int selx = (int) floor(
-							(e.y_root - client_menu->position().y) / 24.0);
+							(e->root_y - client_menu->position().y) / 24.0);
 					client_menu->set_selected(selx);
 
 					int selected = client_menu->get_selected();
@@ -1387,20 +1377,19 @@ void page_t::process_event_release(XButtonEvent const & e) {
 		}
 		break;
 	default:
-		if (e.button == Button1) {
+		if (e->detail == XCB_BUTTON_INDEX_1) {
 			process_mode = PROCESS_NORMAL;
 		}
 		break;
 	}
 }
 
-void page_t::process_event(XMotionEvent const & e) {
+void page_t::process_event(xcb_motion_notify_event_t const * e) {
 
-	if(_last_focus_time > e.time) {
-		_last_focus_time = e.time;
+	if(_last_focus_time > e->time) {
+		_last_focus_time = e->time;
 	}
 
-	XEvent ev;
 	i_rect old_area;
 	i_rect new_position;
 	static int count = 0;
@@ -1412,15 +1401,15 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_SPLIT_GRAB:
 
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
+		//ev.xmotion = e;
+		//while(XCheckMaskEvent(cnx->dpy(), XCB_EVENT_MASK_BUTTON_MOTION, &ev));
 
 		if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
-			mode_data_split.split_ratio = (ev.xmotion.x
+			mode_data_split.split_ratio = (e->event_x
 					- mode_data_split.split->allocation().x)
 					/ (double) (mode_data_split.split->allocation().w);
 		} else {
-			mode_data_split.split_ratio = (ev.xmotion.y
+			mode_data_split.split_ratio = (e->event_y
 					- mode_data_split.split->allocation().y)
 					/ (double) (mode_data_split.split->allocation().h);
 		}
@@ -1444,12 +1433,12 @@ void page_t::process_event(XMotionEvent const & e) {
 	case PROCESS_NOTEBOOK_GRAB:
 		{
 		/* Get latest know motion event */
-		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
-			continue;
+		//ev.xmotion = e;
+		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
+		//	continue;
 
 		/* do not start drag&drop for small move */
-		if (!mode_data_notebook.ev.position.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
+		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
 			if(!pn0->is_visible())
 				pn0->show();
 		}
@@ -1458,7 +1447,7 @@ void page_t::process_event(XMotionEvent const & e) {
 
 		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
 		for (auto i : ln) {
-			if (i->tab_area.is_inside(ev.xmotion.x_root, ev.xmotion.y_root)) {
+			if (i->tab_area.is_inside(e->root_x, e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_TAB
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TAB;
@@ -1466,8 +1455,8 @@ void page_t::process_event(XMotionEvent const & e) {
 					update_popup_position(pn0, i->tab_area);
 				}
 				break;
-			} else if (i->right_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->right_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_RIGHT
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_RIGHT;
@@ -1475,8 +1464,8 @@ void page_t::process_event(XMotionEvent const & e) {
 					update_popup_position(pn0, i->popup_right_area);
 				}
 				break;
-			} else if (i->top_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->top_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_TOP
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TOP;
@@ -1484,8 +1473,8 @@ void page_t::process_event(XMotionEvent const & e) {
 					update_popup_position(pn0, i->popup_top_area);
 				}
 				break;
-			} else if (i->bottom_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->bottom_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_BOTTOM
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_BOTTOM;
@@ -1493,8 +1482,8 @@ void page_t::process_event(XMotionEvent const & e) {
 					update_popup_position(pn0, i->popup_bottom_area);
 				}
 				break;
-			} else if (i->left_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->left_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_LEFT
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_LEFT;
@@ -1502,8 +1491,8 @@ void page_t::process_event(XMotionEvent const & e) {
 					update_popup_position(pn0, i->popup_left_area);
 				}
 				break;
-			} else if (i->popup_center_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->popup_center_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_notebook.zone != SELECT_CENTER
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_CENTER;
@@ -1518,16 +1507,15 @@ void page_t::process_event(XMotionEvent const & e) {
 		break;
 	case PROCESS_FLOATING_MOVE: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
-
+		//ev.xmotion = e;
+		//while(XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
 		/* compute new window position */
 		i_rect new_position = mode_data_floating.original_position;
-		new_position.x += e.x_root - mode_data_floating.x_root;
-		new_position.y += e.y_root - mode_data_floating.y_root;
+		new_position.x += e->root_x - mode_data_floating.x_root;
+		new_position.y += e->root_y - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
@@ -1537,15 +1525,15 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
+		//ev.xmotion = e;
+		//while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
 		/* compute new window position */
 		i_rect new_position = mode_data_floating.original_position;
-		new_position.x += e.x_root - mode_data_floating.x_root;
-		new_position.y += e.y_root - mode_data_floating.y_root;
+		new_position.x += e->root_x - mode_data_floating.x_root;
+		new_position.y += e->root_y - mode_data_floating.y_root;
 		mode_data_floating.final_position = new_position;
 		mode_data_floating.f->set_floating_wished_position(new_position);
 		mode_data_floating.f->reconfigure();
@@ -1555,33 +1543,33 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 	case PROCESS_FLOATING_RESIZE: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev));
+		//ev.xmotion = e;
+		//while(XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
 		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.w += e->root_x - mode_data_floating.x_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
 		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
+			size.w += e->root_x - mode_data_floating.x_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.w += e->root_x - mode_data_floating.x_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		}
 
 		/* apply normal hints */
@@ -1645,33 +1633,33 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
+		//ev.xmotion = e;
+		//while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
 		i_rect size = mode_data_floating.original_position;
 
 		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
-			size.h -= e.y_root - mode_data_floating.y_root;
+			size.w += e->root_x - mode_data_floating.x_root;
+			size.h -= e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
 		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
+			size.w += e->root_x - mode_data_floating.x_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			size.w -= e.x_root - mode_data_floating.x_root;
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.w -= e->root_x - mode_data_floating.x_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-			size.w += e.x_root - mode_data_floating.x_root;
-			size.h += e.y_root - mode_data_floating.y_root;
+			size.w += e->root_x - mode_data_floating.x_root;
+			size.h += e->root_y - mode_data_floating.y_root;
 		}
 
 		/* apply mornal hints */
@@ -1737,15 +1725,15 @@ void page_t::process_event(XMotionEvent const & e) {
 		break;
 	case PROCESS_FLOATING_BIND: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
-			continue;
+		//ev.xmotion = e;
+		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
+		//	continue;
 
 		/* do not start drag&drop for small move */
-		if (ev.xmotion.x_root < mode_data_bind.start_x - 5
-				|| ev.xmotion.x_root > mode_data_bind.start_x + 5
-				|| ev.xmotion.y_root < mode_data_bind.start_y - 5
-				|| ev.xmotion.y_root > mode_data_bind.start_y + 5) {
+		if (e->root_x < mode_data_bind.start_x - 5
+				|| e->root_x > mode_data_bind.start_x + 5
+				|| e->root_y < mode_data_bind.start_y - 5
+				|| e->root_y > mode_data_bind.start_y + 5) {
 
 			if(!pn0->is_visible())
 				pn0->show();
@@ -1756,8 +1744,8 @@ void page_t::process_event(XMotionEvent const & e) {
 		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
 
 		for(auto i : ln) {
-			if (i->tab_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			if (i->tab_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_TAB
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_TAB;
@@ -1766,8 +1754,8 @@ void page_t::process_event(XMotionEvent const & e) {
 							i->tab_area);
 				}
 				break;
-			} else if (i->right_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->right_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_RIGHT
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_RIGHT;
@@ -1776,8 +1764,8 @@ void page_t::process_event(XMotionEvent const & e) {
 							i->popup_right_area);
 				}
 				break;
-			} else if (i->top_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->top_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_TOP
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_TOP;
@@ -1786,8 +1774,8 @@ void page_t::process_event(XMotionEvent const & e) {
 							i->popup_top_area);
 				}
 				break;
-			} else if (i->bottom_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->bottom_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_BOTTOM
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_BOTTOM;
@@ -1796,8 +1784,8 @@ void page_t::process_event(XMotionEvent const & e) {
 							i->popup_bottom_area);
 				}
 				break;
-			} else if (i->left_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->left_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_LEFT
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_LEFT;
@@ -1806,8 +1794,8 @@ void page_t::process_event(XMotionEvent const & e) {
 							i->popup_left_area);
 				}
 				break;
-			} else if (i->popup_center_area.is_inside(ev.xmotion.x_root,
-					ev.xmotion.y_root)) {
+			} else if (i->popup_center_area.is_inside(e->root_x,
+					e->root_y)) {
 				if (mode_data_bind.zone != SELECT_CENTER
 						|| mode_data_bind.ns != i) {
 					mode_data_bind.zone = SELECT_CENTER;
@@ -1823,12 +1811,12 @@ void page_t::process_event(XMotionEvent const & e) {
 		break;
 	case PROCESS_FULLSCREEN_MOVE: {
 		/* get lastest know motion event */
-		ev.xmotion = e;
-		while (XCheckMaskEvent(cnx->dpy(), Button1MotionMask, &ev))
-			continue;
+		//ev.xmotion = e;
+		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
+		//	continue;
 
-		viewport_t * v = find_mouse_viewport(ev.xmotion.x_root,
-				ev.xmotion.y_root);
+		viewport_t * v = find_mouse_viewport(e->root_x,
+				e->root_y);
 
 		if (v != nullptr) {
 			if (v != mode_data_fullscreen.v) {
@@ -1841,14 +1829,14 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 	case PROCESS_NOTEBOOK_MENU:
 	{
-		int selx = (int) floor((e.y_root - menu->position().y) / 24.0);
+		int selx = (int) floor((e->root_y - menu->position().y) / 24.0);
 		menu->set_selected(selx);
 		rnd->add_damaged(menu->get_visible_region());
 	}
 		break;
 	case PROCESS_NOTEBOOK_CLIENT_MENU:
 	{
-		int selx = (int) floor((e.y_root - client_menu->position().y) / 24.0);
+		int selx = (int) floor((e->root_y - client_menu->position().y) / 24.0);
 		client_menu->set_selected(selx);
 		rnd->add_damaged(client_menu->get_visible_region());
 	}
@@ -1859,50 +1847,39 @@ void page_t::process_event(XMotionEvent const & e) {
 	}
 }
 
-void page_t::process_event(XCirculateEvent const & e) {
-
-}
-
-void page_t::process_event(XConfigureEvent const & e) {
-
-	if(e.send_event == True)
-		return;
-
-	client_base_t * c = find_client(e.window);
+void page_t::process_event(xcb_configure_notify_event_t const * e) {
+	client_base_t * c = find_client(e->window);
 
 	if(c != nullptr) {
 		/** damage corresponding area **/
-		if(e.event == cnx->root()) {
+		if(e->event == cnx->root()) {
 			rnd->add_damaged(c->visible_area());
 		}
 
-		printf("configure %dx%d+%d+%d\n", e.width, e.height, e.x, e.y);
+		printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
 
 		/** damage corresponding area **/
-		if(e.event == cnx->root()) {
+		if(e->event == cnx->root()) {
 			rnd->add_damaged(c->visible_area());
 		}
 	}
 
-	render();
+	//render();
 
 }
 
 /* track all created window */
-void page_t::process_event(XCreateWindowEvent const & e) {
+void page_t::process_event(xcb_create_notify_event_t const * e) {
 
 }
 
-void page_t::process_event(XDestroyWindowEvent const & e) {
-	if(e.send_event == True)
-		return;
-
-	client_base_t * c = find_client(e.window);
+void page_t::process_event(xcb_destroy_notify_event_t const * e) {
+	client_base_t * c = find_client(e->window);
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(client_managed_t)) {
 			cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
-			cout << "Sent Event:" << (e.send_event?"true":"false") << endl;
+			cout << "Sent Event: " << "false" << endl;
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			unmanage(mw);
 		} else {
@@ -1911,85 +1888,86 @@ void page_t::process_event(XDestroyWindowEvent const & e) {
 	}
 }
 
-void page_t::process_event(XGravityEvent const & e) {
+void page_t::process_event(xcb_gravity_notify_event_t const * e) {
 	/* Ignore it, never happen ? */
 }
 
-void page_t::process_event(XMapEvent const & e) {
+void page_t::process_event(xcb_map_notify_event_t const * e) {
 
 	/* if map event does not occur within root, ignore it */
-	if (e.event != cnx->root())
+	if (e->event != cnx->root())
 		return;
 
-	onmap(e.window);
+	onmap(e->window);
 
-	render();
+	//render();
 }
 
-void page_t::process_event(XReparentEvent const & e) {
+void page_t::process_event(xcb_reparent_notify_event_t const * e) {
 	//printf("Reparent window: %lu, parent: %lu, overide: %d, send_event: %d\n",
 	//		e.window, e.parent, e.override_redirect, e.send_event);
-	if(e.send_event == True)
-		return;
 	/* Reparent the root window ? hu :/ */
-	if(e.window == cnx->root())
+	if(e->window == cnx->root())
 		return;
 
 	/* If reparent occure on managed windows and new parent is an unknown window then unmanage */
-	client_managed_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e->window);
 	if (mw != nullptr) {
-		if (e.window == mw->orig() and e.parent != mw->base()) {
+		if (e->window == mw->orig() and e->parent != mw->base()) {
 			/* unmanage the window */
 			unmanage(mw);
 		}
 	}
 
 	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
-	client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(find_client_with(e.window));
-	if(uw != nullptr and e.parent != cnx->root()) {
+	client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(find_client_with(e->window));
+	if(uw != nullptr and e->parent != cnx->root()) {
 		cleanup_client(uw);
 	}
 
 }
 
-void page_t::process_event(XUnmapEvent const & e) {
+void page_t::process_event(xcb_unmap_notify_event_t const * e) {
+	client_base_t * c = find_client(e->window);
+	if (c != nullptr) {
+		rnd->add_damaged(c->visible_area());
+		//render();
+	}
+}
 
-	/* if client is managed */
-	client_base_t * c = find_client(e.window);
-
+void page_t::process_fake_event(xcb_unmap_notify_event_t const * e) {
 	/**
 	 * Client must send a fake unmap event if he want get back the window.
 	 * (i.e. he want that we unmanage it.
-	 */
+	 **/
+
+	/* if client is managed */
+	client_base_t * c = find_client(e->window);
+
 	if (c != nullptr) {
-
 		rnd->add_damaged(c->visible_area());
-
-		if(e.send_event == True and typeid(*c) == typeid(client_managed_t)) {
+		if(typeid(*c) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
 			unmanage(mw);
-		} else if (e.send_event == True or typeid(*c) == typeid(client_not_managed_t)) {
-			cleanup_client(c);
 		}
+		//render();
 	}
-
-	render();
 }
 
-void page_t::process_event(XCirculateRequestEvent const & e) {
+void page_t::process_event(xcb_circulate_request_event_t const * e) {
 	/* will happpen ? */
-	client_base_t * c = find_client_with(e.window);
-	if (c != 0) {
-		if (e.place == PlaceOnTop) {
+	client_base_t * c = find_client_with(e->window);
+	if (c != nullptr) {
+		if (e->place == XCB_PLACE_ON_TOP) {
 			safe_raise_window(c);
-		} else if (e.place == PlaceOnBottom) {
-			cnx->lower_window(e.window);
+		} else if (e->place == XCB_PLACE_ON_BOTTOM) {
+			cnx->lower_window(e->window);
 		}
 	}
 }
 
-void page_t::process_event(XConfigureRequestEvent const & e) {
+void page_t::process_event(xcb_configure_request_event_t const * e) {
 
 //	if (e.value_mask & CWX)
 //		printf("has x: %d\n", e.x);
@@ -2007,7 +1985,7 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 //		printf("has border: %d\n", e.border_width);
 
 
-	client_base_t * c = find_client(e.window);
+	client_base_t * c = find_client(e->window);
 
 	if (c != nullptr) {
 
@@ -2019,26 +1997,26 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 			if (mw->lock()) {
 
-				if ((e.value_mask & (CWX | CWY | CWWidth | CWHeight)) != 0) {
+				if ((e->value_mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT)) != 0) {
 
 					i_rect old_size = mw->get_floating_wished_position();
 					/** compute floating size **/
 					i_rect new_size = mw->get_floating_wished_position();
 
-					if (e.value_mask & CWX) {
-						new_size.x = e.x;
+					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
+						new_size.x = e->x;
 					}
 
-					if (e.value_mask & CWY) {
-						new_size.y = e.y;
+					if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
+						new_size.y = e->y;
 					}
 
-					if (e.value_mask & CWWidth) {
-						new_size.w = e.width;
+					if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+						new_size.w = e->width;
 					}
 
-					if (e.value_mask & CWHeight) {
-						new_size.h = e.height;
+					if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+						new_size.h = e->height;
 					}
 
 					//printf("new_size = %s\n", new_size.to_std::string().c_str());
@@ -2088,138 +2066,142 @@ void page_t::process_event(XConfigureRequestEvent const & e) {
 
 }
 
-void page_t::ackwoledge_configure_request(XConfigureRequestEvent const & e) {
+void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * e) {
 	static unsigned int CONFIGURE_MASK =
-			(CWX | CWY | CWHeight | CWWidth | CWBorderWidth);
+			(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH);
 
 	//printf("ackwoledge_configure_request ");
 
 	int i = 0;
 	uint32_t value[5] = {0};
 	uint32_t mask = 0;
-	if(e.value_mask & CWX) {
+	if(e->value_mask & XCB_CONFIG_WINDOW_X) {
 		mask |= XCB_CONFIG_WINDOW_X;
-		value[i++] = e.x;
+		value[i++] = e->x;
 		//printf("x = %d ", e.x);
 	}
 
-	if(e.value_mask & CWY) {
+	if(e->value_mask & XCB_CONFIG_WINDOW_Y) {
 		mask |= XCB_CONFIG_WINDOW_Y;
-		value[i++] = e.y;
+		value[i++] = e->y;
 		//printf("y = %d ", e.y);
 	}
 
-	if(e.value_mask & CWWidth) {
+	if(e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_WIDTH;
-		value[i++] = e.width;
+		value[i++] = e->width;
 		//printf("w = %d ", e.width);
 	}
 
-	if(e.value_mask & CWHeight) {
+	if(e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
 		mask |= XCB_CONFIG_WINDOW_HEIGHT;
-		value[i++] = e.height;
+		value[i++] = e->height;
 		//printf("h = %d ", e.height);
 	}
 
-	if(e.value_mask & CWBorderWidth) {
+	if(e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-		value[i++] = e.border_width;
+		value[i++] = e->border_width;
 		//printf("border = %d ", e.border_width);
 	}
 
 	//printf("\n");
 
-	xcb_configure_window(cnx->xcb(), e.window, mask, value);
+	xcb_void_cookie_t ck = xcb_configure_window_checked(cnx->xcb(), e->window, mask, value);
+	xcb_generic_error_t * err = xcb_request_check(cnx->xcb(), ck);
+	if(err != nullptr) {
+		printf("configure error\n");
+	}
 
 }
 
-void page_t::process_event(XMapRequestEvent const & e) {
+void page_t::process_event(xcb_map_request_event_t const * e) {
 
-	if (e.send_event == True or e.parent != cnx->root()) {
-		XMapWindow(e.display, e.window);
+	if (e->parent != cnx->root()) {
+		xcb_map_window(cnx->xcb(), e->window);
 		return;
 	}
 
-	onmap(e.window);
+	onmap(e->window);
 
 }
 
-void page_t::process_event(XPropertyEvent const & e) {
+void page_t::process_event(xcb_property_notify_event_t const * e) {
 
-	if(e.window == cnx->root())
+	if(e->window == cnx->root())
 		return;
 
-	client_base_t * c = find_client(e.window);
+	client_base_t * c = find_client(e->window);
 
 	if(c != nullptr) {
-		if(e.atom == A(WM_NAME)) {
+		if(e->atom == A(WM_NAME)) {
 			c->update_wm_name();
-		} else if (e.atom == A(WM_ICON_NAME)) {
+		} else if (e->atom == A(WM_ICON_NAME)) {
 			c->update_wm_icon_name();
-		} else if (e.atom == A(WM_NORMAL_HINTS)) {
+		} else if (e->atom == A(WM_NORMAL_HINTS)) {
 			c->update_wm_normal_hints();
-		} else if (e.atom == A(WM_HINTS)) {
+		} else if (e->atom == A(WM_HINTS)) {
 			c->update_wm_hints();
-		} else if (e.atom == A(WM_CLASS)) {
+		} else if (e->atom == A(WM_CLASS)) {
 			c->update_wm_class();
-		} else if (e.atom == A(WM_TRANSIENT_FOR)) {
+		} else if (e->atom == A(WM_TRANSIENT_FOR)) {
 			c->update_wm_transient_for();
-		} else if (e.atom == A(WM_PROTOCOLS)) {
+		} else if (e->atom == A(WM_PROTOCOLS)) {
 			c->update_wm_protocols();
-		} else if (e.atom == A(WM_COLORMAP_WINDOWS)) {
+		} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
 			c->update_wm_colormap_windows();
-		} else if (e.atom == A(WM_CLIENT_MACHINE)) {
+		} else if (e->atom == A(WM_CLIENT_MACHINE)) {
 			c->update_wm_client_machine();
-		} else if (e.atom == A(WM_STATE)) {
+		} else if (e->atom == A(WM_STATE)) {
 			c->update_wm_state();
-		} else if (e.atom == A(_NET_WM_NAME)) {
+		} else if (e->atom == A(_NET_WM_NAME)) {
 			c->update_net_wm_name();
-		} else if (e.atom == A(_NET_WM_VISIBLE_NAME)) {
+		} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
 			c->update_net_wm_visible_name();
-		} else if (e.atom == A(_NET_WM_ICON_NAME)) {
+		} else if (e->atom == A(_NET_WM_ICON_NAME)) {
 			c->update_net_wm_icon_name();
-		} else if (e.atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
+		} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
 			c->update_net_wm_visible_icon_name();
-		} else if (e.atom == A(_NET_WM_DESKTOP)) {
+		} else if (e->atom == A(_NET_WM_DESKTOP)) {
 			c->update_net_wm_desktop();
-		} else if (e.atom == A(_NET_WM_WINDOW_TYPE)) {
+		} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
 			c->update_net_wm_window_type();
-		} else if (e.atom == A(_NET_WM_STATE)) {
+		} else if (e->atom == A(_NET_WM_STATE)) {
 			c->update_net_wm_state();
-		} else if (e.atom == A(_NET_WM_ALLOWED_ACTIONS)) {
+		} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
 			c->update_net_wm_allowed_actions();
-		} else if (e.atom == A(_NET_WM_STRUT)) {
+		} else if (e->atom == A(_NET_WM_STRUT)) {
 			c->update_net_wm_struct();
-		} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
+		} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 			c->update_net_wm_struct_partial();
-		} else if (e.atom == A(_NET_WM_ICON_GEOMETRY)) {
+		} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
 			c->update_net_wm_icon_geometry();
-		} else if (e.atom == A(_NET_WM_ICON)) {
+		} else if (e->atom == A(_NET_WM_ICON)) {
 			c->update_net_wm_icon();
-		} else if (e.atom == A(_NET_WM_PID)) {
+		} else if (e->atom == A(_NET_WM_PID)) {
 			c->update_net_wm_pid();
-		} else if (e.atom == A(_NET_WM_USER_TIME)) {
+		} else if (e->atom == A(_NET_WM_USER_TIME)) {
 			c->update_net_wm_user_time();
-		} else if (e.atom == A(_NET_WM_USER_TIME_WINDOW)) {
+		} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
 			c->update_net_wm_user_time_window();
-		} else if (e.atom == A(_NET_FRAME_EXTENTS)) {
+		} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
 			c->update_net_frame_extents();
-		} else if (e.atom == A(_NET_WM_OPAQUE_REGION)) {
+		} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
 			c->update_net_wm_opaque_region();
-		} else if (e.atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
+		} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
 			c->update_net_wm_bypass_compositor();
-		}  else if (e.atom == A(_MOTIF_WM_HINTS)) {
+		}  else if (e->atom == A(_MOTIF_WM_HINTS)) {
 			c->update_motif_hints();
 		}
 
 	}
 
-	Window x = e.window;
-	client_managed_t * mw = find_managed_window_with(e.window);
+	Window x = e->window;
+	client_managed_t * mw = find_managed_window_with(e->window);
 
-	if (e.atom == A(_NET_WM_USER_TIME)) {
+	if (e->atom == A(_NET_WM_USER_TIME)) {
 
-	} else if (e.atom == A(_NET_WM_NAME) || e.atom == A(WM_NAME)) {
+	} else if (e->atom == A(_NET_WM_NAME) || e->atom == A(WM_NAME)) {
 
 
 		if (mw != nullptr) {
@@ -2235,16 +2217,16 @@ void page_t::process_event(XPropertyEvent const & e) {
 			}
 		}
 
-	} else if (e.atom == A(_NET_WM_STRUT_PARTIAL)) {
+	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 		update_allocation();
 		rpage->mark_durty();
-	} else if (e.atom == A(_NET_WM_STRUT)) {
+	} else if (e->atom == A(_NET_WM_STRUT)) {
 		//x->mark_durty_net_wm_partial_struct();
 		//rpage->mark_durty();
-	} else if (e.atom == A(_NET_WM_ICON)) {
+	} else if (e->atom == A(_NET_WM_ICON)) {
 		if (mw != 0)
 			mw->update_icon();
-	} else if (e.atom == A(_NET_WM_WINDOW_TYPE)) {
+	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
 		/* update cache */
 
@@ -2255,7 +2237,7 @@ void page_t::process_event(XPropertyEvent const & e) {
 		//if(x->get_window_type() == window_t::PAGE_NORMAL_WINDOW_TYPE && old != window_t::PAGE_NORMAL_WINDOW_TYPE) {
 		//	manage_notebook(x);
 		//}
-	} else if (e.atom == A(WM_NORMAL_HINTS)) {
+	} else if (e->atom == A(WM_NORMAL_HINTS)) {
 		if (mw != nullptr) {
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
@@ -2275,83 +2257,82 @@ void page_t::process_event(XPropertyEvent const & e) {
 			mw->reconfigure();
 
 		}
-	} else if (e.atom == A(WM_PROTOCOLS)) {
-	} else if (e.atom == A(WM_TRANSIENT_FOR)) {
+	} else if (e->atom == A(WM_PROTOCOLS)) {
+	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
 		if (c != 0) {
 			safe_update_transient_for(c);
 			update_windows_stack();
 		}
-	} else if (e.atom == A(WM_HINTS)) {
-	} else if (e.atom == A(_NET_WM_STATE)) {
+	} else if (e->atom == A(WM_HINTS)) {
+	} else if (e->atom == A(_NET_WM_STATE)) {
 		/* this event are generated by page */
 		/* change of net_wm_state must be requested by client message */
-	} else if (e.atom == A(WM_STATE)) {
+	} else if (e->atom == A(WM_STATE)) {
 		/** this is set by page ... don't read it **/
-	} else if (e.atom == A(_NET_WM_DESKTOP)) {
+	} else if (e->atom == A(_NET_WM_DESKTOP)) {
 		/* this set by page in most case */
 		//x->read_net_wm_desktop();
 	}
 }
 
-void page_t::process_event(XClientMessageEvent const & e) {
+void page_t::process_event(xcb_client_message_event_t const * e) {
 
-	char * name = XGetAtomName(cnx->dpy(), e.message_type);
-	printf("ClientMessage type = %s\n", name);
-	XFree(name);
+	//std::shared_ptr<char> name = cnx->get_atom_name(e->type);
+	//std::cout << "ClientMessage type = " << name.get() << std::endl;
 
-	Window w = e.window;
-	if (w == None)
+	xcb_window_t w = e->window;
+	if (w == XCB_NONE)
 		return;
 
-	client_managed_t * mw = find_managed_window_with(e.window);
+	client_managed_t * mw = find_managed_window_with(e->window);
 
-	if (e.message_type == A(_NET_ACTIVE_WINDOW)) {
+	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
 			if (mw->current_desktop() == _current_desktop) {
 				if (mw->lock()) {
-					if (e.data.l[1] == CurrentTime) {
+					if (e->data.data32[1] == XCB_CURRENT_TIME) {
 						printf(
 								"Invalid focus request ... but stealing focus\n");
-						set_focus(mw, CurrentTime);
+						set_focus(mw, XCB_CURRENT_TIME);
 					} else {
-						set_focus(mw, e.data.l[1]);
+						set_focus(mw, e->data.data32[1]);
 					}
 					mw->unlock();
 				}
 			}
 		}
-	} else if (e.message_type == A(_NET_WM_STATE)) {
+	} else if (e->type == A(_NET_WM_STATE)) {
 
 		/* process first request */
-		process_net_vm_state_client_message(w, e.data.l[0], e.data.l[1]);
+		process_net_vm_state_client_message(w, e->data.data32[0], e->data.data32[1]);
 		/* process second request */
-		process_net_vm_state_client_message(w, e.data.l[0], e.data.l[2]);
+		process_net_vm_state_client_message(w, e->data.data32[0], e->data.data32[2]);
 
 		for (int i = 1; i < 3; ++i) {
 			if (std::find(supported_list.begin(), supported_list.end(),
-					e.data.l[i]) != supported_list.end()) {
-				switch (e.data.l[0]) {
+					e->data.data32[i]) != supported_list.end()) {
+				switch (e->data.data32[0]) {
 				case _NET_WM_STATE_REMOVE:
-					//w->unset_net_wm_state(e.data.l[i]);
+					//w->unset_net_wm_state(e->data.l[i]);
 					break;
 				case _NET_WM_STATE_ADD:
-					//w->set_net_wm_state(e.data.l[i]);
+					//w->set_net_wm_state(e->data.l[i]);
 					break;
 				case _NET_WM_STATE_TOGGLE:
-					//w->toggle_net_wm_state(e.data.l[i]);
+					//w->toggle_net_wm_state(e->data.l[i]);
 					break;
 				}
 			}
 		}
-	} else if (e.message_type == A(WM_CHANGE_STATE)) {
+	} else if (e->type == A(WM_CHANGE_STATE)) {
 
 		/** When window want to become iconic, just bind them **/
 		if (mw != nullptr) {
 			if (mw->lock()) {
-				if (mw->is(MANAGED_FLOATING) and e.data.l[0] == IconicState) {
+				if (mw->is(MANAGED_FLOATING) and e->data.data32[0] == IconicState) {
 					bind_window(mw, false);
 				} else if (mw->is(
-						MANAGED_NOTEBOOK) and e.data.l[0] == IconicState) {
+						MANAGED_NOTEBOOK) and e->data.data32[0] == IconicState) {
 					notebook_t * n = dynamic_cast<notebook_t *>(mw->parent());
 					n->iconify_client(mw);
 					rpage->add_damaged(n->allocation());
@@ -2361,28 +2342,28 @@ void page_t::process_event(XClientMessageEvent const & e) {
 			}
 		}
 
-	} else if (e.message_type == A(PAGE_QUIT)) {
+	} else if (e->type == A(PAGE_QUIT)) {
 		running = false;
-	} else if (e.message_type == A(WM_PROTOCOLS)) {
+	} else if (e->type == A(WM_PROTOCOLS)) {
 
-	} else if (e.message_type == A(_NET_CLOSE_WINDOW)) {
+	} else if (e->type == A(_NET_CLOSE_WINDOW)) {
 		if(mw != nullptr) {
-			mw->delete_window(e.data.l[0]);
+			mw->delete_window(e->data.data32[0]);
 		}
-	} else if (e.message_type == A(_NET_REQUEST_FRAME_EXTENTS)) {
+	} else if (e->type == A(_NET_REQUEST_FRAME_EXTENTS)) {
 
-	} else if (e.message_type == A(_NET_WM_MOVERESIZE)) {
+	} else if (e->type == A(_NET_WM_MOVERESIZE)) {
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
 
 				if (mw->lock()) {
-					xcb_cursor_t xc = None;
+					xcb_cursor_t xc = XCB_NONE;
 
-					long x_root = e.data.l[0];
-					long y_root = e.data.l[1];
-					long direction = e.data.l[2];
-					long button = e.data.l[3];
-					long source = e.data.l[4];
+					long x_root = e->data.data32[0];
+					long y_root = e->data.data32[1];
+					long direction = e->data.data32[2];
+					long button = e->data.data32[3];
+					long source = e->data.data32[4];
 
 					mode_data_floating.x_offset = x_root
 							- mw->get_base_position().x;
@@ -2459,14 +2440,14 @@ void page_t::process_event(XClientMessageEvent const & e) {
 				}
 			}
 		}
-	} else if (e.message_type == A(_NET_CURRENT_DESKTOP)) {
-		if(e.data.l[0] >= 0 and e.data.l[0] < _desktop_list.size() and e.data.l[0] != _current_desktop) {
-			switch_to_desktop(e.data.l[0], CurrentTime);
+	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
+		if(e->data.data32[0] >= 0 and e->data.data32[0] < _desktop_list.size() and e->data.data32[0] != _current_desktop) {
+			switch_to_desktop(e->data.data32[0], XCB_CURRENT_TIME);
 		}
 	}
 }
 
-void page_t::process_event(XDamageNotifyEvent const & e) {
+void page_t::process_event(xcb_damage_notify_event_t const * e) {
 	render();
 }
 
@@ -2484,8 +2465,7 @@ void page_t::render() {
 	rnd->render();
 
 	/** sync with X server to ensure all render are done **/
-	xcb_void_cookie_t ck = xcb_no_operation_checked(cnx->xcb());
-	xcb_generic_error_t * err = xcb_request_check(cnx->xcb(), ck);
+	cnx->sync();
 
 	cur_tic.get_time();
 	/** slow down frame if render is slow **/
@@ -2594,46 +2574,49 @@ void page_t::toggle_fullscreen(client_managed_t * c) {
 }
 
 
-void page_t::process_event(XEvent const & e) {
+void page_t::process_event(xcb_generic_event_t const * e) {
 
-	if (e.type == ButtonPress) {
-		process_event_press(e.xbutton);
-	} else if (e.type == ButtonRelease) {
-		process_event_release(e.xbutton);
-	} else if (e.type == MotionNotify) {
-		process_event(e.xmotion);
-	} else if (e.type == KeyPress || e.type == KeyRelease) {
-		process_event(e.xkey);
-	} else if (e.type == CirculateNotify) {
-		process_event(e.xcirculate);
-	} else if (e.type == ConfigureNotify) {
-		process_event(e.xconfigure);
-	} else if (e.type == CreateNotify) {
-		process_event(e.xcreatewindow);
-	} else if (e.type == DestroyNotify) {
-		process_event(e.xdestroywindow);
-	} else if (e.type == GravityNotify) {
-		process_event(e.xgravity);
-	} else if (e.type == MapNotify) {
-		process_event(e.xmap);
-	} else if (e.type == ReparentNotify) {
-		process_event(e.xreparent);
-	} else if (e.type == UnmapNotify) {
-		process_event(e.xunmap);
-	} else if (e.type == CirculateRequest) {
-		process_event(e.xcirculaterequest);
-	} else if (e.type == ConfigureRequest) {
-		process_event(e.xconfigurerequest);
-	} else if (e.type == MapRequest) {
-		process_event(e.xmaprequest);
-	} else if (e.type == PropertyNotify) {
-		process_event(e.xproperty);
-	} else if (e.type == ClientMessage) {
-		process_event(e.xclient);
-	} else if (e.type == damage_event + XDamageNotify) {
-		process_event(reinterpret_cast<XDamageNotifyEvent const &>(e));
-	} else if (e.type == Expose) {
-		client_managed_t * mw = find_managed_window_with(e.xexpose.window);
+	if (e->response_type == XCB_BUTTON_PRESS) {
+		process_event_press(reinterpret_cast<xcb_button_press_event_t const *>(e));
+	} else if (e->response_type == XCB_BUTTON_RELEASE) {
+		process_event_release(reinterpret_cast<xcb_button_release_event_t const *>(e));
+	} else if (e->response_type == XCB_MOTION_NOTIFY) {
+		process_event(reinterpret_cast<xcb_motion_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_KEY_PRESS) {
+		process_event(reinterpret_cast<xcb_key_press_event_t const *>(e));
+	} else if (e->response_type == XCB_KEY_RELEASE) {
+		process_event(reinterpret_cast<xcb_key_release_event_t const *>(e));
+	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
+		process_event(reinterpret_cast<xcb_configure_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_CREATE_NOTIFY) {
+		process_event(reinterpret_cast<xcb_create_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_DESTROY_NOTIFY) {
+		process_event(reinterpret_cast<xcb_destroy_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_GRAVITY_NOTIFY) {
+		process_event(reinterpret_cast<xcb_gravity_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_MAP_NOTIFY) {
+		process_event(reinterpret_cast<xcb_map_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_REPARENT_NOTIFY) {
+		process_event(reinterpret_cast<xcb_reparent_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_UNMAP_NOTIFY) {
+		process_event(reinterpret_cast<xcb_unmap_notify_event_t const *>(e));
+	} else if (e->response_type == (XCB_UNMAP_NOTIFY|0x80)) {
+		process_fake_event(reinterpret_cast<xcb_unmap_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_CIRCULATE_NOTIFY) {
+
+	} else if (e->response_type == XCB_CONFIGURE_REQUEST) {
+		process_event(reinterpret_cast<xcb_configure_request_event_t const *>(e));
+	} else if (e->response_type == XCB_MAP_REQUEST) {
+		process_event(reinterpret_cast<xcb_map_request_event_t const *>(e));
+	} else if (e->response_type == XCB_PROPERTY_NOTIFY) {
+		process_event(reinterpret_cast<xcb_property_notify_event_t const *>(e));
+	} else if (e->response_type == XCB_CLIENT_MESSAGE) {
+		process_event(reinterpret_cast<xcb_client_message_event_t const *>(e));
+	} else if (e->response_type == cnx->damage_event + XCB_DAMAGE_NOTIFY) {
+		process_event(reinterpret_cast<xcb_damage_notify_event_t const *>(e));
+	} else if (e->response_type == Expose) {
+		xcb_expose_event_t const * ev = reinterpret_cast<xcb_expose_event_t const *>(e);
+		client_managed_t * mw = find_managed_window_with(ev->window);
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING)) {
 				mw->expose();
@@ -2641,12 +2624,12 @@ void page_t::process_event(XEvent const & e) {
 			}
 		}
 
-	} else if (e.type == xrandr_event + RRNotify) {
-		XRRNotifyEvent const &ev = reinterpret_cast<XRRNotifyEvent const &>(e);
+	} else if (e->response_type == cnx->randr_event + RRNotify) {
+		xcb_randr_notify_event_t const * ev = reinterpret_cast<xcb_randr_notify_event_t const *>(e);
 
 		char const * s_subtype = "Unknown";
 
-		switch(ev.subtype) {
+		switch(ev->subCode) {
 		case RRNotify_CrtcChange:
 			s_subtype = "RRNotify_CrtcChange";
 			break;
@@ -2669,7 +2652,7 @@ void page_t::process_event(XEvent const & e) {
 			break;
 		}
 
-		if (ev.subtype == RRNotify_CrtcChange) {
+		if (ev->subCode == RRNotify_CrtcChange) {
 			update_viewport_layout();
 			update_allocation();
 
@@ -2690,11 +2673,11 @@ void page_t::process_event(XEvent const & e) {
 		update_windows_stack();
 
 
-	} else if (e.type == xrandr_event + RRScreenChangeNotify) {
+	} else if (e->response_type == cnx->randr_event + RRScreenChangeNotify) {
 		/** do nothing **/
-	} else if (e.type == SelectionClear) {
+	} else if (e->response_type == SelectionClear) {
 		running = false;
-	} else if (e.type == xshape_event + ShapeNotify) {
+	} else if (e->response_type == cnx->shape_event + ShapeNotify) {
 		XShapeEvent * se = (XShapeEvent *)&e;
 		if(se->kind == ShapeBounding) {
 			Window w = se->window;
@@ -2703,15 +2686,23 @@ void page_t::process_event(XEvent const & e) {
 				c->update_shape();
 			}
 		}
-	} else if (e.type == FocusOut) {
+	} else if (e->response_type == XCB_FOCUS_OUT) {
 		//printf("FocusOut #%lu\n", e.xfocus.window);
-	} else if (e.type == FocusIn) {
+	} else if (e->response_type == XCB_FOCUS_IN) {
 		//printf("FocusIn #%lu\n", e.xfocus.window);
-	} else if (e.type == MappingNotify) {
+	} else if (e->response_type == XCB_MAPPING_NOTIFY) {
 		update_keymap();
 		update_grabkey();
-	} else {
+	} else if (e->response_type == 0) {
+		xcb_generic_error_t const * ev = reinterpret_cast<xcb_generic_error_t const *>(e);
 
+		char const * type_name = "UNKNOWN";
+		if(ev->error_code >= 0 or ev->error_code <= 17) {
+			type_name = x_error_type_name[ev->error_code];
+		}
+		printf("%08d %s(%d) type : %s\n", static_cast<int>(ev->sequence), cnx->request_type_name[ev->major_code], static_cast<int>(ev->minor_code), type_name);
+	} else {
+		printf("%08d Event unknow %d\n", static_cast<int>(e->sequence), static_cast<int>(e->response_type));
 	}
 
 }
@@ -3573,12 +3564,11 @@ void page_t::destroy_viewport(viewport_t * v) {
  * If a window have to be managed, this function manage this window, if not
  * The function create unmanaged window.
  **/
-void page_t::onmap(Window w) {
-
-	if (rnd != nullptr) {
-		if (w == rnd->get_composite_overlay())
-			return;
-	}
+void page_t::onmap(xcb_window_t w) {
+	if (w == rnd->get_composite_overlay())
+		return;
+	if (w == cnx->root())
+		return;
 
 	/**
 	 * XSync here is mandatory.
@@ -3598,19 +3588,19 @@ void page_t::onmap(Window w) {
 	cnx->fetch_pending_events();
 
 	if(cnx->check_for_destroyed_window(w)) {
-		printf("do not manage %lu because it wil be destoyed\n", w);
+		printf("do not manage %u because it wil be destoyed\n", w);
 		cnx->ungrab();
 		return;
 	}
 
 	if(cnx->check_for_unmap_window(w)) {
-		printf("do not manage %lu because it wil be unmapped\n", w);
+		printf("do not manage %u because it wil be unmapped\n", w);
 		cnx->ungrab();
 		return;
 	}
 
 	if(cnx->check_for_reparent_window(w)) {
-		printf("do not manage %lu because it wil be reparented\n", w);
+		printf("do not manage %u because it will be reparented\n", w);
 		cnx->ungrab();
 		return;
 	}
@@ -3724,7 +3714,7 @@ void page_t::onmap(Window w) {
 void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, Atom type) {
 
 	try {
-		client_managed_t * mw = new client_managed_t(type, c, theme);
+		client_managed_t * mw = new client_managed_t(type, c, theme, cmgr);
 		manage_client(mw, type);
 	} catch (...) {
 		printf("Error while creating managed window\n");
@@ -3820,7 +3810,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 
 void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type) {
 	try {
-		client_not_managed_t * uw = new client_not_managed_t(type, c);
+		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 		uw->map();
 		safe_update_transient_for(uw);
 		safe_raise_window(uw);
@@ -3836,7 +3826,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Ato
 }
 
 void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, Atom type) {
-	client_not_managed_t * uw = new client_not_managed_t(type, c);
+	client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);
@@ -4142,49 +4132,10 @@ void page_t::register_wm() {
 }
 
 void page_t::register_cm() {
-	if (use_internal_compositor) {
-		if (!cnx->register_cm(identity_window)) {
-			throw runtime_error("Cannot register composite manager");
-		}
+	if (!cnx->register_cm(identity_window)) {
+		throw runtime_error("Cannot register composite manager");
 	}
 }
-
-void page_t::check_x11_extension() {
-	if (!cnx->check_shape_extension(&xshape_opcode, &xshape_event,
-			&xshape_error)) {
-		throw std::runtime_error(SHAPENAME " extension is not supported");
-	}
-
-	if (!cnx->check_randr_extension(&xrandr_opcode, &xrandr_event,
-			&xrandr_error)) {
-		throw std::runtime_error(RANDR_NAME " extension is not supported");
-	}
-
-	if (use_internal_compositor) {
-		if (!cnx->check_composite_extension(&composite_opcode, &composite_event,
-				&composite_error)) {
-			throw std::runtime_error("X Server doesn't support Composite 0.4");
-		}
-
-		if (!cnx->check_damage_extension(&damage_opcode, &damage_event,
-				&damage_error)) {
-			throw std::runtime_error("Damage extension is not supported");
-		}
-
-		if (!cnx->check_shape_extension(&xshape_opcode, &xshape_event,
-				&xshape_error)) {
-			throw std::runtime_error(SHAPENAME " extension is not supported");
-		}
-
-		if (!cnx->check_randr_extension(&xrandr_opcode, &xrandr_event,
-				&xrandr_error)) {
-			throw std::runtime_error(RANDR_NAME " extension is not supported");
-		}
-	}
-}
-
-
-
 
 /**
  * Update grab keys aware of current keymap

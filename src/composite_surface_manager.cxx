@@ -13,35 +13,66 @@
 
 namespace page {
 
-static composite_surface_manager_t _mngr;
+std::shared_ptr<composite_surface_t> composite_surface_manager_t::get_managed_composite_surface(xcb_window_t w) {
 
-std::shared_ptr<composite_surface_t> composite_surface_manager_t::get(Display * dpy, Window w) {
-	return _mngr._get_composite_surface(dpy, w);
-}
-
-bool composite_surface_manager_t::exist(Display * dpy, Window w) {
-	return _mngr._has_composite_surface(dpy, w);
-}
-
-void composite_surface_manager_t::onmap(Display * dpy, Window w) {
-	_mngr._onmap(dpy, w);
-}
-
-void composite_surface_manager_t::onresize(Display * dpy, Window w, unsigned width, unsigned heigth) {
-	_mngr._onresize(dpy, w, width, heigth);
-}
-
-void composite_surface_manager_t::ondestroy(Display * dpy, Window w) {
-	_mngr._ondestroy(dpy, w);
-}
-
-std::weak_ptr<composite_surface_t> composite_surface_manager_t::get_weak_surface(Display * dpy, Window w) {
-	return _mngr._get_weak_surface(dpy, w);
+	/** if we find a not expired key **/
+	auto x = _data.find(w);
+	if(x != _data.end()) {
+		if(not x->second.expired()) {
+			return x->second.lock();
+		}
+	}
+	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, [this](composite_surface_t * p) { this->_data.erase(p->wid()); delete p; } };
+	_data[w] = ret;
+	return ret;
 }
 
 void composite_surface_manager_t::make_surface_stats(int & size, int & count) {
-	_mngr._make_surface_stats(size, count);
+	size = 0;
+	count = 0;
+	for(auto &i: _data) {
+		if(not i.second.expired()) {
+			count += 1;
+			auto x = i.second.lock();
+			size += x->depth()/8 * x->width() * x->height();
+		}
+	}
 }
+
+void composite_surface_manager_t::process_event(xcb_generic_event_t const * e) {
+
+	if (e->response_type == XCB_CONFIGURE_NOTIFY) {
+		xcb_configure_notify_event_t const * ev =
+				reinterpret_cast<xcb_configure_notify_event_t const *>(e);
+		auto x = _data.find(ev->window);
+		if (x != _data.end()) {
+			std::weak_ptr<composite_surface_t> wp = x->second;
+			if (not wp.expired()) {
+				wp.lock()->onresize(ev->width, ev->height);
+			}
+		}
+	} else if (e->response_type == XCB_MAP_NOTIFY) {
+		xcb_map_notify_event_t const * ev =
+				reinterpret_cast<xcb_map_notify_event_t const *>(e);
+		auto x = _data.find(ev->window);
+		if (x != _data.end()) {
+			std::weak_ptr<composite_surface_t> wp = x->second;
+			if (not wp.expired()) {
+				wp.lock()->onmap();
+			}
+		}
+	} else if (e->response_type == _dpy->damage_opcode + XCB_DAMAGE_NOTIFY) {
+		xcb_damage_notify_event_t const * ev = reinterpret_cast<xcb_damage_notify_event_t const *>(e);
+		auto x = _data.find(ev->drawable);
+		if (x != _data.end()) {
+			std::weak_ptr<composite_surface_t> wp = x->second;
+			if (not wp.expired()) {
+				wp.lock()->ondamage();
+			}
+		}
+	}
+}
+
 
 
 }

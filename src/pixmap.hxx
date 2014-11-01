@@ -9,7 +9,7 @@
 #define PIXMAP_HXX_
 
 #include <cairo/cairo.h>
-#include <cairo/cairo-xlib.h>
+#include <cairo/cairo-xcb.h>
 
 namespace page {
 
@@ -19,16 +19,16 @@ namespace page {
 
 class pixmap_t {
 
-	Display * _dpy;
-	Pixmap _pixmap_id;
+	display_t * _dpy;
+	xcb_pixmap_t _pixmap_id;
 	cairo_surface_t * _surf;
 
 public:
 
-	pixmap_t(Display * dpy, Visual * v, Pixmap p, unsigned w, unsigned h) {
+	pixmap_t(display_t * dpy, xcb_visualtype_t * v, xcb_pixmap_t p, unsigned w, unsigned h) {
 		_dpy = dpy;
 		_pixmap_id = p;
-		_surf = cairo_xlib_surface_create(dpy, p, v, w, h);
+		_surf = cairo_xcb_surface_create(dpy->xcb(), p, v, w, h);
 	}
 
 	~pixmap_t() {
@@ -36,9 +36,9 @@ public:
 			cairo_surface_destroy(_surf);
 			_surf = nullptr;
 		}
-		if (_pixmap_id != None) {
-			XFreePixmap(_dpy, _pixmap_id);
-			_pixmap_id = None;
+		if (_pixmap_id != XCB_NONE) {
+			xcb_free_pixmap(_dpy->xcb(), _pixmap_id);
+			_pixmap_id = XCB_NONE;
 		}
 	}
 

@@ -23,7 +23,7 @@
 namespace page {
 
 client_managed_t::client_managed_t(Atom net_wm_type,
-		std::shared_ptr<client_properties_t> props, theme_t const * theme) :
+		std::shared_ptr<client_properties_t> props, theme_t const * theme, composite_surface_manager_t * cmgr) :
 				client_base_t{props},
 				_theme(theme),
 				_managed_type(MANAGED_FLOATING),
@@ -48,7 +48,8 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				_deco(None),
 				_floating_area(0),
 				_is_focused(false),
-				_is_iconic(true)
+				_is_iconic(true),
+				_cmgr(cmgr)
 {
 
 	cnx()->add_to_save_set(orig());
@@ -212,8 +213,7 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
-	_composite_surf = composite_surface_manager_t::get(cnx()->dpy(), _base);
-	composite_surface_manager_t::onmap(cnx()->dpy(), _base);
+	_composite_surf = _cmgr->get_managed_composite_surface(_base);
 
 	update_icon();
 
@@ -315,6 +315,7 @@ void client_managed_t::reconfigure() {
 
 		fake_configure();
 		unlock();
+
 	}
 	expose();
 
@@ -770,8 +771,7 @@ void client_managed_t::normalize() {
 		}
 
 		try {
-			_composite_surf = composite_surface_manager_t::get(cnx()->dpy(),
-					base());
+			_composite_surf = _cmgr->get_managed_composite_surface(base());
 		} catch (...) {
 			printf("Error while creating composite surface\n");
 		}

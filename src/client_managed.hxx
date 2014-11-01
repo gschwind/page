@@ -16,6 +16,7 @@
 #include "icon_handler.hxx"
 #include "theme.hxx"
 
+#include "composite_surface_manager.hxx"
 #include "client_properties.hxx"
 
 #include "floating_event.hxx"
@@ -102,6 +103,7 @@ private:
 
 	std::vector<floating_event_t> * _floating_area;
 
+	composite_surface_manager_t * _cmgr;
 	/** input surface, surface from we get data **/
 	std::shared_ptr<composite_surface_t> _composite_surf;
 
@@ -114,7 +116,7 @@ private:
 public:
 
 	client_managed_t(Atom net_wm_type, std::shared_ptr<client_properties_t> c,
-			theme_t const * theme);
+			theme_t const * theme, composite_surface_manager_t * cmgr);
 	virtual ~client_managed_t();
 
 	void reconfigure();

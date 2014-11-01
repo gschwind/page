@@ -16,65 +16,67 @@
 
 #include <memory>
 
+#include "exception.hxx"
+#include "display.hxx"
 #include "region.hxx"
 #include "pixmap.hxx"
 
 namespace page {
 
 class composite_surface_t {
-
-	Display * _dpy;
-	Visual * _vis;
-	Window _window_id;
-	Damage _damage;
+	display_t * _dpy;
+	xcb_visualtype_t * _vis;
+	xcb_window_t _window_id;
+	xcb_damage_damage_t _damage;
 	std::shared_ptr<pixmap_t> _pixmap;
 	int _width, _height;
 	int _depth;
-
 	region _damaged;
 
+	bool _is_map;
+
 	void create_damage() {
-		if (_damage == None) {
-			_damage = XDamageCreate(_dpy, _window_id, XDamageReportNonEmpty);
-			if (_damage != None) {
-				XserverRegion region = XFixesCreateRegion(_dpy, 0, 0);
-				XDamageSubtract(_dpy, _damage, None, region);
-				XFixesDestroyRegion(_dpy, region);
-				_damaged += i_rect(0,0,_width, _height);
+		if (_damage == XCB_NONE) {
+			_damage = xcb_generate_id(_dpy->xcb());
+			xcb_damage_create(_dpy->xcb(), _damage, _window_id, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
+			if (_damage != XCB_NONE) {
+				_damaged += _dpy->read_damaged_region(_damage);
 			}
 		}
 	}
 
 	void destroy_damage() {
 		if(_damage != None) {
-			XDamageDestroy(_dpy, _damage);
+			xcb_damage_destroy(_dpy->xcb(), _damage);
 			_damage = None;
 		}
 	}
 
 public:
 
-	composite_surface_t(Display * dpy, Window w) {
-		XWindowAttributes wa;
-		if(XGetWindowAttributes(dpy, w, &wa) == 0) {
-			throw 0;
+	composite_surface_t(display_t * dpy, xcb_window_t w) : _dpy(dpy), _window_id(w) {
+		xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _window_id);
+		xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(_dpy->xcb(), _window_id);
+
+		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_dpy->xcb(), ck0, 0);
+		xcb_get_window_attributes_reply_t * attrs = xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
+
+		if(attrs == nullptr or geometry == nullptr) {
+			throw exception_t("fail to get window attribute");
 		}
 
-		assert(wa.c_class != InputOnly);
-
-
-		_depth = wa.depth;
-		_window_id = w;
-		_dpy = dpy;
-		_vis = wa.visual;
-		_width = wa.width;
-		_height = wa.height;
+		_depth = geometry->depth;
+		_vis = _dpy->get_visual_type(attrs->visual);
+		_width = geometry->width;
+		_height = geometry->height;
 		_pixmap = nullptr;
-		_damage = None;
+		_damage = XCB_NONE;
+
+		_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
 
 		printf("create composite_surface %dx%d\n", _width, _height);
 
-		if(wa.map_state != IsUnmapped) {
+		if(_is_map) {
 			onmap();
 		}
 
@@ -85,29 +87,44 @@ public:
 	}
 
 	void onmap() {
-		Pixmap pixmap_id = XCompositeNameWindowPixmap(_dpy, _window_id);
-		if(pixmap_id == None) {
-			printf("invalid pixmap creation\n");
-		} else {
-			_pixmap = std::shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
+		if(_dpy->lock(_window_id)) {
+			if(not _dpy->check_for_unmap_window(_window_id)) {
+				_is_map = true;
+				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
+				_pixmap = std::shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
+				destroy_damage();
+				create_damage();
+			} else {
+				_is_map = false;
+			}
+
+			_dpy->unlock();
 		}
-		destroy_damage();
-		create_damage();
 	}
 
 	void onresize(int width, int height) {
 		if (width != _width or height != _height) {
 			_width = width;
 			_height = height;
-			onmap();
+			if(_is_map) {
+				onmap();
+			}
 		}
 	}
 
-	Display * dpy() {
+	void ondamage() {
+		if(_dpy->lock(_window_id)) {
+			_damaged += _dpy->read_damaged_region(_damage);
+			_dpy->unlock();
+		}
+	}
+
+	display_t * dpy() {
 		return _dpy;
 	}
 
-	Window wid() {
+	xcb_window_t wid() {
 		return _window_id;
 	}
 

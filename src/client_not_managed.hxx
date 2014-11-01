@@ -45,9 +45,10 @@ private:
 
 public:
 
-	client_not_managed_t(Atom type, std::shared_ptr<client_properties_t> c) :
+	client_not_managed_t(Atom type, std::shared_ptr<client_properties_t> c, std::shared_ptr<composite_surface_t> surf) :
 			client_base_t(c),
-			_net_wm_type(type)
+			_net_wm_type(type),
+			surf(surf)
 	{
 		_is_hidden = false;
 		_properties->cnx()->grab();
@@ -56,9 +57,6 @@ public:
 		XShapeSelectInput(_properties->cnx()->dpy(), _properties->id(), ShapeNotifyMask);
 
 		_properties->cnx()->ungrab();
-		surf = composite_surface_manager_t::get(_properties->cnx()->dpy(),
-				base());
-		composite_surface_manager_t::onmap(_properties->cnx()->dpy(), base());
 	}
 
 	~client_not_managed_t() {

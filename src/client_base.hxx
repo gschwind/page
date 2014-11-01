@@ -338,7 +338,7 @@ public:
 		_properties->print_properties();
 	}
 
-	void process_event(XConfigureEvent const & e) {
+	void process_event(xcb_configure_notify_event_t const * e) {
 		_properties->process_event(e);
 	}
 

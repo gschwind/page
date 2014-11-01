@@ -34,7 +34,7 @@ int display_t::fd() {
 	return _fd;
 }
 
-Window display_t::root() {
+xcb_window_t display_t::root() {
 	return DefaultRootWindow(_dpy);
 }
 
@@ -47,134 +47,10 @@ int display_t::screen() {
 	return DefaultScreen(_dpy);
 }
 
-//std::vector<std::string> * display_t::read_wm_class(Window w) {
-//	std::vector<char> * tmp = ::page::get_window_property<char>(_dpy, w, A(WM_CLASS), A(STRING));
-//
-//	if(tmp == nullptr)
-//		return nullptr;
-//
-//	std::vector<char>::iterator x = find(tmp->begin(), tmp->end(), 0);
-//	if(x != tmp->end()) {
-//		std::vector<std::string> * ret = new std::vector<std::string>;
-//		ret->push_back(std::string(tmp->begin(), x));
-//		auto x1 = find(++x, tmp->end(), 0);
-//		ret->push_back(std::string(x, x1));
-//		delete tmp;
-//		return ret;
-//	}
-//
-//	delete tmp;
-//	return 0;
+//int display_t::move_window(Window w, int x, int y) {
+//	//printf("XMoveWindow #%lu %d %d\n", w, x, y);
+//	return XMoveWindow(_dpy, w, x, y);
 //}
-//
-//XWMHints * display_t::read_wm_hints(Window w) {
-//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w, A(WM_HINTS),
-//			A(WM_HINTS));
-//	if (tmp != 0) {
-//		if (tmp->size() == 9) {
-//			XWMHints * hints = new XWMHints;
-//			if (hints != 0) {
-//				hints->flags = (*tmp)[0];
-//				hints->input = (*tmp)[1];
-//				hints->initial_state = (*tmp)[2];
-//				hints->icon_pixmap = (*tmp)[3];
-//				hints->icon_window = (*tmp)[4];
-//				hints->icon_x = (*tmp)[5];
-//				hints->icon_y = (*tmp)[6];
-//				hints->icon_mask = (*tmp)[7];
-//				hints->window_group = (*tmp)[8];
-//			}
-//			delete tmp;
-//			return hints;
-//		}
-//		delete tmp;
-//	}
-//	return 0;
-//}
-//
-//motif_wm_hints_t * display_t::read_motif_wm_hints(Window w) {
-//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
-//			A(_MOTIF_WM_HINTS), A(_MOTIF_WM_HINTS));
-//	if (tmp != 0) {
-//		motif_wm_hints_t * hints = new motif_wm_hints_t;
-//		if (tmp->size() == 5) {
-//			if (hints != 0) {
-//				hints->flags = (*tmp)[0];
-//				hints->functions = (*tmp)[1];
-//				hints->decorations = (*tmp)[2];
-//				hints->input_mode = (*tmp)[3];
-//				hints->status = (*tmp)[4];
-//			}
-//			delete tmp;
-//			return hints;
-//		}
-//		delete tmp;
-//	}
-//	return 0;
-//}
-//
-//XSizeHints * display_t::read_wm_normal_hints(Window w) {
-//	std::vector<long> * tmp = ::page::get_window_property<long>(_dpy, w,
-//			A(WM_NORMAL_HINTS), A(WM_SIZE_HINTS));
-//	if (tmp != 0) {
-//		if (tmp->size() == 18) {
-//			XSizeHints * size_hints = new XSizeHints;
-//			if (size_hints) {
-//				size_hints->flags = (*tmp)[0];
-//				size_hints->x = (*tmp)[1];
-//				size_hints->y = (*tmp)[2];
-//				size_hints->width = (*tmp)[3];
-//				size_hints->height = (*tmp)[4];
-//				size_hints->min_width = (*tmp)[5];
-//				size_hints->min_height = (*tmp)[6];
-//				size_hints->max_width = (*tmp)[7];
-//				size_hints->max_height = (*tmp)[8];
-//				size_hints->width_inc = (*tmp)[9];
-//				size_hints->height_inc = (*tmp)[10];
-//				size_hints->min_aspect.x = (*tmp)[11];
-//				size_hints->min_aspect.y = (*tmp)[12];
-//				size_hints->max_aspect.x = (*tmp)[13];
-//				size_hints->max_aspect.y = (*tmp)[14];
-//				size_hints->base_width = (*tmp)[15];
-//				size_hints->base_height = (*tmp)[16];
-//				size_hints->win_gravity = (*tmp)[17];
-//			}
-//			delete tmp;
-//			return size_hints;
-//		}
-//		delete tmp;
-//	}
-//	return 0;
-//}
-//
-//void display_t::write_net_wm_allowed_actions(Window w, std::list<Atom> & list) {
-//	std::vector<long> v(list.begin(), list.end());
-//	write_window_property(_dpy, w, A(_NET_WM_ALLOWED_ACTIONS), A(ATOM), v);
-//}
-//
-//void display_t::write_net_wm_state(Window w, std::list<Atom> & list) {
-//	std::vector<long> v(list.begin(), list.end());
-//	write_window_property(_dpy, w, A(_NET_WM_STATE), A(ATOM), v);
-//}
-//
-//void display_t::write_wm_state(Window w, long state, Window icon) {
-//	std::vector<long> v(2);
-//	v[0] = state;
-//	v[1] = icon;
-//	write_window_property(_dpy, w, A(WM_STATE), A(WM_STATE), v);
-//}
-//
-//void display_t::write_net_active_window(Window w) {
-//	std::vector<long> v(1);
-//	v[0] = w;
-//	write_window_property(_dpy, DefaultRootWindow(_dpy), A(_NET_ACTIVE_WINDOW),
-//			A(WINDOW), v);
-//}
-
-int display_t::move_window(Window w, int x, int y) {
-	//printf("XMoveWindow #%lu %d %d\n", w, x, y);
-	return XMoveWindow(_dpy, w, x, y);
-}
 
 display_t::display_t() {
 	old_error_handler = XSetErrorHandler(error_handler);
@@ -190,6 +66,7 @@ display_t::display_t() {
 
 	/** get xcb connection handler to enable xcb request **/
 	_xcb = XGetXCBConnection(_dpy);
+	XSetEventQueueOwner(_dpy, XCBOwnsEventQueue);
 
 	grab_count = 0;
 
@@ -256,6 +133,7 @@ void display_t::xnextevent(XEvent * ev) {
  * it is intend to make page as composite manager */
 
 bool display_t::register_wm(bool replace, Window w) {
+	xcb_generic_error_t * err;
 	Atom wm_sn_atom;
 	Window current_wm_sn_owner;
 
@@ -263,30 +141,40 @@ bool display_t::register_wm(bool replace, Window w) {
 	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
 	wm_sn_atom = XInternAtom(_dpy, wm_sn, false);
 
-	current_wm_sn_owner = XGetSelectionOwner(_dpy, wm_sn_atom);
-	if (current_wm_sn_owner == w)
-		current_wm_sn_owner = None;
-	if (current_wm_sn_owner != None) {
+
+	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
+	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+
+	if(r == nullptr or err != nullptr) {
+		std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+		return false;
+	}
+
+	if (r->owner != XCB_NONE) {
 		if (!replace) {
 			printf("A window manager is already running on screen %d",
 					DefaultScreen(_dpy));
 			return false;
 		} else {
 			/* We want to find out when the current selection owner dies */
-			XSelectInput(_dpy, current_wm_sn_owner, StructureNotifyMask);
-			XSync(_dpy, false);
+			select_input(current_wm_sn_owner, XCB_EVENT_MASK_STRUCTURE_NOTIFY);
+			sync();
 
-			XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
+			xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
 
-			if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
-				printf(
-						"Could not acquire window manager selection on screen %d",
-						screen());
+			xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
+			xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+
+			if(r == nullptr or err != nullptr) {
+				std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+				return false;
+			} else if (r->owner != w) {
+				std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
 				return false;
 			}
 
 			/* Wait for old window manager to go away */
-			if (current_wm_sn_owner != None) {
+			if (current_wm_sn_owner != XCB_NONE) {
 				page::time_t end;
 				page::time_t cur;
 
@@ -297,15 +185,18 @@ bool display_t::register_wm(bool replace, Window w) {
 				cur.get_time();
 				end = cur + page::time_t(15L, 1000000000L);
 
-				XEvent ev;
 
+				xcb_flush(_xcb);
 				while (cur < end) {
 					int timeout = static_cast<int64_t>(end - cur) / 1000000000L;
 					poll(fds, 1, timeout);
-					/* Checks the local queue and incoming events for this event */
-					if (XCheckTypedWindowEvent(_dpy, current_wm_sn_owner,
-					DestroyNotify, &ev) == True)
+
+					fetch_pending_events();
+
+					if(check_for_destroyed_window(current_wm_sn_owner)) {
 						break;
+					}
+
 					cur.get_time();
 				}
 
@@ -317,13 +208,19 @@ bool display_t::register_wm(bool replace, Window w) {
 
 		}
 	} else {
-		XSetSelectionOwner(_dpy, wm_sn_atom, w, CurrentTime);
+		xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
 
-		if (XGetSelectionOwner(_dpy, wm_sn_atom) != w) {
-			printf("Could not acquire window manager selection on screen %d",
-					screen());
+		xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
+		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr) {
+			std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+			return false;
+		} else if (r->owner != w) {
+			std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
 			return false;
 		}
+
 	}
 
 	return true;
@@ -335,6 +232,7 @@ bool display_t::register_wm(bool replace, Window w) {
  * the ownership.
  **/
 bool display_t::register_cm(Window w) {
+	xcb_generic_error_t * err;
 	Window current_cm;
 	Atom a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
@@ -342,22 +240,31 @@ bool display_t::register_cm(Window w) {
 	a_cm = XInternAtom(_dpy, net_wm_cm, False);
 
 	/** read if there is a compositor **/
-	current_cm = XGetSelectionOwner(_dpy, a_cm);
-	if (current_cm != None) {
+	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, a_cm);
+	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+
+	if(r == nullptr or err != nullptr) {
+		std::cout << "Error while getting selection owner of " << net_wm_cm << std::endl;
+		return false;
+	}
+
+	if (r->owner != XCB_NONE) {
 		printf("Another composite manager is running\n");
 		return false;
 	} else {
-
 		/** become the compositor **/
-		XSetSelectionOwner(_dpy, a_cm, w, CurrentTime);
+		xcb_set_selection_owner(_xcb, w, a_cm, XCB_CURRENT_TIME);
 
-		/** check is we realy are the current compositor **/
-		if (XGetSelectionOwner(_dpy, a_cm) != w) {
-			printf("Could not acquire window manager selection on screen %d\n",
-					screen());
+		xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, a_cm);
+		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr) {
+			std::cout << "Error while getting selection owner of " << net_wm_cm << std::endl;
+			return false;
+		} else if (r->owner != w) {
+			std::cout << "Could not acquire the ownership of " << net_wm_cm << std::endl;
 			return false;
 		}
-
 		printf("Composite manager is registered on screen %d\n", screen());
 		return true;
 	}
@@ -395,10 +302,10 @@ void display_t::move_resize(Window w, i_rect const & size) {
 
 }
 
-void display_t::set_window_border_width(Window w, unsigned int width) {
-	cnx_printf("XSetWindowBorderWidth: win = %lu, width = %u\n", w, width);
-	XSetWindowBorderWidth(_dpy, w, width);
-}
+//void display_t::set_window_border_width(Window w, unsigned int width) {
+//	cnx_printf("XSetWindowBorderWidth: win = %lu, width = %u\n", w, width);
+//	XSetWindowBorderWidth(_dpy, w, width);
+//}
 
 void display_t::raise_window(Window w) {
 	cnx_printf("XRaiseWindow: win = %lu\n", w);
@@ -426,29 +333,6 @@ int display_t::lower_window(Window w) {
 
 	cnx_printf("XLowerWindow: win = %lu\n", w);
 	return XLowerWindow(_dpy, w);
-}
-
-int display_t::configure_window(Window w, unsigned int value_mask,
-		XWindowChanges * values) {
-
-	cnx_printf("XConfigureWindow: win = %lu\n", w);
-	if (value_mask & CWX)
-		cnx_printf("has x: %d\n", values->x);
-	if (value_mask & CWY)
-		cnx_printf("has y: %d\n", values->y);
-	if (value_mask & CWWidth)
-		cnx_printf("has width: %d\n", values->width);
-	if (value_mask & CWHeight)
-		cnx_printf("has height: %d\n", values->height);
-
-	if (value_mask & CWSibling)
-		cnx_printf("has sibling: %lu\n", values->sibling);
-	if (value_mask & CWStackMode)
-		cnx_printf("has stack mode: %d\n", values->stack_mode);
-
-	if (value_mask & CWBorderWidth)
-		cnx_printf("has border: %d\n", values->border_width);
-	return XConfigureWindow(_dpy, w, value_mask, values);
 }
 
 static void _safe_xfree(void * x) {
@@ -496,21 +380,6 @@ void display_t::fake_configure(Window w, i_rect location, int border_width) {
 
 }
 
-//bool display_t::motif_has_border(Window w) {
-//	motif_wm_hints_t * motif_hints = read_motif_wm_hints(w);
-//	if (motif_hints != 0) {
-//		if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
-//			if (not (motif_hints->decorations & MWM_DECOR_BORDER)
-//					and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
-//				delete motif_hints;
-//				return false;
-//			}
-//		}
-//		delete motif_hints;
-//	}
-//	return true;
-//}
-
 Display * display_t::dpy() {
 	return _dpy;
 }
@@ -519,64 +388,110 @@ xcb_connection_t * display_t::xcb() {
 	return _xcb;
 }
 
-bool display_t::check_composite_extension(int * opcode, int * event,
-		int * error) {
-	// Check if composite is supported.
-	if (XQueryExtension(_dpy, COMPOSITE_NAME, opcode, event, error)) {
-		int major = 0, minor = 0; // The highest version we support
-		XCompositeQueryVersion(_dpy, &major, &minor);
-		if (major != 0 || minor < 4) {
-			return false;
-		} else {
-			printf("using composite %d.%d\n", major, minor);
-			return true;
-		}
-	} else {
-		return false;
-	}
-}
-
-bool display_t::check_damage_extension(int * opcode, int * event, int * error) {
-	if (!XQueryExtension(_dpy, DAMAGE_NAME, opcode, event, error)) {
+bool display_t::query_extension(char const * name, int * opcode, int * event, int * error) {
+	xcb_generic_error_t * err;
+	xcb_query_extension_cookie_t ck = xcb_query_extension(_xcb, strlen(name), name);
+	xcb_query_extension_reply_t * r = xcb_query_extension_reply(_xcb, ck, &err);
+	if (err != nullptr or r == nullptr) {
 		return false;
 	} else {
-		int major = 0, minor = 0;
-		XDamageQueryVersion(_dpy, &major, &minor);
-		printf("Damage Extension version %d.%d found\n", major, minor);
-		printf("Damage error %d, Damage event %d\n", *error, *event);
-		return true;
-	}
-}
-
-bool display_t::check_shape_extension(int * opcode, int * event, int * error) {
-	if (!XQueryExtension(_dpy, SHAPENAME, opcode, event, error)) {
-		return false;
-	} else {
-		int major = 0, minor = 0;
-		XShapeQueryVersion(_dpy, &major, &minor);
-		printf("Shape Extension version %d.%d found\n", major, minor);
-		return true;
-	}
-}
-
-bool display_t::check_randr_extension(int * opcode, int * event, int * error) {
-	if (!XQueryExtension(_dpy, RANDR_NAME, opcode, event, error)) {
-		return false;
-	} else {
-		int major = 0, minor = 0;
-		XRRQueryVersion(_dpy, &major, &minor);
-		printf(RANDR_NAME " Extension version %d.%d found\n", major, minor);
+		*opcode = r->major_opcode;
+		*event = r->first_event;
+		*error = r->first_error;
+		free(r);
 		return true;
 	}
 }
 
 
-bool display_t::check_dbe_extension(int * opcode, int * event, int * error) {
-	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, opcode, event, error)) {
+bool display_t::check_composite_extension() {
+	if (not query_extension(COMPOSITE_NAME, &composite_opcode, &composite_event, &composite_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_composite_query_version_cookie_t ck = xcb_composite_query_version(_xcb, XCB_COMPOSITE_MAJOR_VERSION, XCB_COMPOSITE_MINOR_VERSION);
+		xcb_composite_query_version_reply_t * r = xcb_composite_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get " COMPOSITE_NAME " version");
+
+		printf(COMPOSITE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		return true;
+	}
+}
+
+bool display_t::check_damage_extension() {
+	if (not query_extension(DAMAGE_NAME, &damage_opcode, &damage_event, &damage_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_damage_query_version_cookie_t ck = xcb_damage_query_version(_xcb, XCB_DAMAGE_MAJOR_VERSION, XCB_DAMAGE_MINOR_VERSION);
+		xcb_damage_query_version_reply_t * r = xcb_damage_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get " DAMAGE_NAME " version");
+
+		printf(DAMAGE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		return true;
+	}
+}
+
+bool display_t::check_xfixes_extension() {
+	if (not query_extension(XFIXES_NAME, &fixes_opcode, &fixes_event, &fixes_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_xfixes_query_version_cookie_t ck = xcb_xfixes_query_version(_xcb, XCB_XFIXES_MAJOR_VERSION, XCB_XFIXES_MINOR_VERSION);
+		xcb_xfixes_query_version_reply_t * r = xcb_xfixes_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get " XFIXES_NAME " version");
+
+		printf(XFIXES_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		return true;
+	}
+}
+
+
+bool display_t::check_shape_extension() {
+	if (not query_extension(SHAPENAME, &shape_opcode, &shape_event, &shape_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_shape_query_version_cookie_t ck = xcb_shape_query_version(_xcb);
+		xcb_shape_query_version_reply_t * r = xcb_shape_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get " SHAPENAME " version");
+
+		printf(SHAPENAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		return true;
+	}
+}
+
+bool display_t::check_randr_extension() {
+	if (not query_extension(RANDR_NAME, &randr_opcode, &randr_event, &randr_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_randr_query_version_cookie_t ck = xcb_randr_query_version(_xcb, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
+		xcb_randr_query_version_reply_t * r = xcb_randr_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get " RANDR_NAME " version");
+
+		printf(RANDR_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		return true;
+	}
+}
+
+
+bool display_t::check_dbe_extension() {
+	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, &dbe_opcode, &dbe_event, &dbe_error)) {
 		return false;
 	} else {
 		int major = 0, minor = 0;
-		XRRQueryVersion(_dpy, &major, &minor);
+		XdbeQueryExtension(_dpy, &major, &minor);
 		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major,
 				minor);
 		return true;
@@ -667,23 +582,21 @@ xcb_screen_t * display_t::xcb_screen() {
  *  2. is mapped.
  *  3. is not destroyed.
  **/
-bool display_t::check_for_fake_unmap_window(Window w) {
-	for (auto &ev : pending_event) {
-		if (ev.type == UnmapNotify) {
-			if (ev.xunmap.window == w and ev.xunmap.send_event) {
+bool display_t::check_for_fake_unmap_window(xcb_window_t w) {
+	for (auto i : pending_event) {
+		if (i->response_type == (XCB_UNMAP_NOTIFY|0x80)) {
+			if (reinterpret_cast<xcb_unmap_notify_event_t const *>(i)->window == w)
 				return true;
-			}
 		}
 	}
 	return false;
 }
 
-bool display_t::check_for_unmap_window(Window w) {
-	for (auto &ev : pending_event) {
-		if (ev.type == UnmapNotify) {
-			if (ev.xunmap.window == w) {
+bool display_t::check_for_unmap_window(xcb_window_t w) {
+	for (auto i : pending_event) {
+		if (i->response_type == XCB_UNMAP_NOTIFY) {
+			if (reinterpret_cast<xcb_unmap_notify_event_t const *>(i)->window == w)
 				return true;
-			}
 		}
 	}
 	return false;
@@ -698,12 +611,11 @@ bool display_t::check_for_unmap_window(Window w) {
  *  2. is mapped.
  *  3. is not destroyed.
  **/
-bool display_t::check_for_reparent_window(Window w) {
-	for (auto &ev : pending_event) {
-		if (ev.type == ReparentNotify) {
-			if (root() != ev.xreparent.parent and ev.xreparent.window == w) {
+bool display_t::check_for_reparent_window(xcb_window_t w) {
+	for (auto i : pending_event) {
+		if (i->response_type == XCB_REPARENT_NOTIFY) {
+			if (reinterpret_cast<xcb_reparent_notify_event_t const *>(i)->window == w)
 				return true;
-			}
 		}
 	}
 	return false;
@@ -713,13 +625,11 @@ bool display_t::check_for_reparent_window(Window w) {
  * Look for coming event if the window is destroyed. Used to
  * Skip events related to destroyed windows.
  **/
-bool display_t::check_for_destroyed_window(Window w) {
-	for (auto &ev : pending_event) {
-		if (ev.type == DestroyNotify) {
-			if (ev.xdestroywindow.window == w
-					and not ev.xdestroywindow.send_event) {
+bool display_t::check_for_destroyed_window(xcb_window_t w) {
+	for (auto i : pending_event) {
+		if (i->response_type == XCB_DESTROY_NOTIFY) {
+			if (reinterpret_cast<xcb_destroy_notify_event_t const *>(i)->window == w)
 				return true;
-			}
 		}
 	}
 	return false;
@@ -727,42 +637,35 @@ bool display_t::check_for_destroyed_window(Window w) {
 
 void display_t::fetch_pending_events() {
 	/** get all event and store them in pending event **/
-	while (XPending(_dpy)) {
-		XEvent ev;
-		XNextEvent(_dpy, &ev);
-		pending_event.push_back(ev);
+	xcb_generic_event_t * e = xcb_poll_for_queued_event(_xcb);
+	while (e != nullptr) {
+		pending_event.push_back(e);
+		e = xcb_poll_for_queued_event(_xcb);
 	}
 }
 
-XEvent * display_t::front_event() {
+xcb_generic_event_t * display_t::front_event() {
 	if(not pending_event.empty()) {
-		return &pending_event.front();
+		return pending_event.front();
 	} else {
-		if(XPending(_dpy)) {
-			XEvent ev;
-			XNextEvent(_dpy, &ev);
-			pending_event.push_back(ev);
+		xcb_generic_event_t * e = xcb_poll_for_queued_event(_xcb);
+		if(e != nullptr) {
+			pending_event.push_back(e);
+			return pending_event.front();
 		}
-		return &pending_event.front();
 	}
 	return nullptr;
 }
 
 void display_t::pop_event() {
-	pending_event.pop_front();
+	if(not pending_event.empty()) {
+		free(pending_event.front());
+		pending_event.pop_front();
+	}
 }
 
 bool display_t::has_pending_events() {
-	if (not pending_event.empty()) {
-		return true;
-	} else {
-		if (XPending(_dpy)) {
-			XEvent ev;
-			XNextEvent(_dpy, &ev);
-			pending_event.push_back(ev);
-		}
-		return not pending_event.empty();
-	}
+	return front_event() != nullptr;
 }
 
 void display_t::clear_events() {
@@ -825,24 +728,30 @@ xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
 
 
 /** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
-void display_t::allow_input_passthrough(Display * dpy, Window w) {
-	XserverRegion region = XFixesCreateRegion(dpy, NULL, 0);
+void display_t::allow_input_passthrough(xcb_window_t w) {
+	xcb_xfixes_region_t region = xcb_generate_id(_xcb);
+	xcb_rectangle_t nill{0,0,0,0};
+	xcb_void_cookie_t ck = xcb_xfixes_create_region_checked(_xcb, region, 0, 0);
+	xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
+	if(err != nullptr) {
+		throw exception_t("Fail to create region %d %d", err->major_code, err->minor_code);
+	}
 	/**
 	 * Shape for the entire of window.
 	 **/
-	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
+	xcb_xfixes_set_window_shape_region(_xcb, w, XCB_SHAPE_SK_BOUNDING, 0, 0, XCB_XFIXES_REGION_NONE);
 	/**
 	 * input shape was introduced by Keith Packard to define an input area of
 	 * window by default is the ShapeBounding which is used. here we set input
 	 * area an empty region.
 	 **/
-	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, region);
-	XFixesDestroyRegion(dpy, region);
+	xcb_xfixes_set_window_shape_region(_xcb, w, XCB_SHAPE_SK_INPUT, 0, 0, region);
+	xcb_xfixes_destroy_region(_xcb, region);
 }
 
-void display_t::disable_input_passthrough(Display * dpy, Window w) {
-	XFixesSetWindowShapeRegion(dpy, w, ShapeBounding, 0, 0, None);
-	XFixesSetWindowShapeRegion(dpy, w, ShapeInput, 0, 0, None);
+void display_t::disable_input_passthrough(xcb_window_t w) {
+	xcb_xfixes_set_window_shape_region(_xcb, w, XCB_SHAPE_SK_BOUNDING, 0, 0, XCB_XFIXES_REGION_NONE);
+	xcb_xfixes_set_window_shape_region(_xcb, w, XCB_SHAPE_SK_INPUT, 0, 0, XCB_XFIXES_REGION_NONE);
 }
 
 int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
@@ -864,6 +773,89 @@ int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
 void display_t::set_net_active_window(xcb_window_t w) {
 	net_active_window_t active{new xcb_window_t{w}};
 	write_property(root(), active);
+}
+
+void display_t::select_input(xcb_window_t w, uint32_t mask) {
+	xcb_change_window_attributes(_xcb, w, XCB_CW_EVENT_MASK, &mask);
+}
+
+
+region display_t::read_damaged_region(xcb_damage_damage_t d) {
+
+	region result;
+
+	/* create an empty region */
+	xcb_xfixes_region_t region = xcb_generate_id(_xcb);
+	xcb_xfixes_create_region(_xcb, region, 0, 0);
+
+	/* get damaged region and remove them from damaged status */
+	xcb_damage_subtract(_xcb, d, XCB_XFIXES_REGION_NONE, region);
+
+
+	/* get all i_rects for the damaged region */
+
+	xcb_xfixes_fetch_region_cookie_t ck = xcb_xfixes_fetch_region(_xcb, region);
+
+	xcb_generic_error_t * err;
+	xcb_xfixes_fetch_region_reply_t * r = xcb_xfixes_fetch_region_reply(_xcb, ck, &err);
+
+	if (err == nullptr and r != nullptr) {
+		xcb_rectangle_t * rect = xcb_xfixes_fetch_region_rectangles(r);
+		for (unsigned k = 0; k < r->length; ++k) {
+			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
+			result += i_rect(rect[k]);
+		}
+		//free(rect);
+		free(r);
+	}
+
+	xcb_xfixes_destroy_region(_xcb, region);
+
+	return result;
+}
+
+void display_t::check_x11_extension() {
+	if (not check_xfixes_extension()) {
+		throw std::runtime_error(XFIXES_NAME " extension is not supported");
+	}
+
+	if (not check_shape_extension()) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (not check_randr_extension()) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
+
+	if (not check_composite_extension()) {
+		throw std::runtime_error("X Server doesn't support Composite 0.4");
+	}
+
+	if (not check_damage_extension()) {
+		throw std::runtime_error("Damage extension is not supported");
+	}
+
+	if (not check_shape_extension()) {
+		throw std::runtime_error(SHAPENAME " extension is not supported");
+	}
+
+	if (not check_randr_extension()) {
+		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	}
+
+
+	for(unsigned k = 0; k < (sizeof(x_function_codes)/sizeof(char *)); ++k) {
+		request_type_name[k] = x_function_codes[k];
+	}
+
+	for(unsigned k = 0; k < (sizeof(xdamage_func)/sizeof(char *)); ++k) {
+		request_type_name[damage_opcode+k] = xdamage_func[k];
+	}
+
+	for(unsigned k = 0; k < (sizeof(xcomposite_request_name)/sizeof(char *)); ++k) {
+		request_type_name[composite_opcode+k] = xcomposite_request_name[k];
+	}
+
 }
 
 }

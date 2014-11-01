@@ -24,7 +24,7 @@ static char const * const x_function_codes[] = {
 	"X_ReparentWindow", 
 	"X_MapWindow", 
 	"X_MapSubwindows", 
-	"X_UnmapWindow",  
+	"X_UnmapWindow",
 	"X_UnmapSubwindows", 
 	"X_ConfigureWindow", 
 	"X_CirculateWindow", 
@@ -195,6 +195,28 @@ static char const * const x_event_name[LASTEvent] = {
 	"MappingNotify",
 	"GenericEvent"
 };
+
+static char const * const x_error_type_name[] = {
+/*  0 */		"NULL_ERROR",
+/*  1 */		"XCB_REQUEST",
+/*  2 */		"XCB_VALUE",
+/*  3 */  		"XCB_WINDOW",
+/*  4 */		"XCB_PIXMAP",
+/*  5 */		"XCB_ATOM",
+/*  6 */		"XCB_CURSOR",
+/*  7 */		"XCB_FONT",
+/*  8 */		"XCB_MATCH",
+/*  9 */		"XCB_DRAWABLE",
+/* 10 */		"XCB_ACCESS",
+/* 11 */		"XCB_ALLOC",
+/* 12 */		"XCB_COLORMAP",
+/* 13 */		"XCB_G_CONTEXT",
+/* 14 */		"XCB_ID_CHOICE",
+/* 15 */		"XCB_NAME",
+/* 16 */		"XCB_LENGTH",
+/* 17 */		"XCB_IMPLEMENTATION"
+};
+
 
 }
 
