@@ -35,7 +35,7 @@ int display_t::fd() {
 }
 
 xcb_window_t display_t::root() {
-	return DefaultRootWindow(_dpy);
+	return _screen->root;
 }
 
 /* conveniant macro to get atom XID */
@@ -132,16 +132,16 @@ void display_t::xnextevent(XEvent * ev) {
 /* this function come from xcompmgr
  * it is intend to make page as composite manager */
 
-bool display_t::register_wm(bool replace, Window w) {
+bool display_t::register_wm(xcb_window_t w, bool replace) {
 	xcb_generic_error_t * err;
 	Atom wm_sn_atom;
-	Window current_wm_sn_owner;
+	xcb_window_t current_wm_sn_owner;
 
 	static char wm_sn[] = "WM_Sxx";
 	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
 	wm_sn_atom = XInternAtom(_dpy, wm_sn, false);
 
-
+	/** who is the current owner ? **/
 	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
 	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
@@ -150,31 +150,41 @@ bool display_t::register_wm(bool replace, Window w) {
 		return false;
 	}
 
-	if (r->owner != XCB_NONE) {
+	current_wm_sn_owner = r->owner;
+	free(r);
+
+	/* if there is a current owner */
+	if (current_wm_sn_owner != XCB_WINDOW_NONE) {
 		if (!replace) {
-			printf("A window manager is already running on screen %d",
-					DefaultScreen(_dpy));
+			std::cout << "A window manager is already running on screen "
+					<< screen() << std::endl;
 			return false;
 		} else {
-			/* We want to find out when the current selection owner dies */
 			select_input(current_wm_sn_owner, XCB_EVENT_MASK_STRUCTURE_NOTIFY);
-			sync();
 
+			/**
+			 * we request to become the owner  then we check if we successfuly
+			 * become the owner.
+			 **/
 			xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
 
 			xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
 			xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
+			/** If we are not the owner -> exit **/
 			if(r == nullptr or err != nullptr) {
 				std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
 				return false;
 			} else if (r->owner != w) {
 				std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
+				free(r);
 				return false;
 			}
 
-			/* Wait for old window manager to go away */
-			if (current_wm_sn_owner != XCB_NONE) {
+			free(r);
+
+			/** Now we are the owner, wait for max. 5 second that the previous owner to exit */
+			if (current_wm_sn_owner != XCB_WINDOW_NONE) {
 				page::time_t end;
 				page::time_t cur;
 
@@ -183,25 +193,20 @@ bool display_t::register_wm(bool replace, Window w) {
 				fds[0].events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
 				cur.get_time();
-				end = cur + page::time_t(15L, 1000000000L);
+				end = cur + page::time_t{5L, 0L};
 
-
+				bool destroyed = false;
 				xcb_flush(_xcb);
-				while (cur < end) {
-					int timeout = static_cast<int64_t>(end - cur) / 1000000000L;
+				while (cur < end and not destroyed) {
+					int timeout = (end - cur).milliseconds();
 					poll(fds, 1, timeout);
-
 					fetch_pending_events();
-
-					if(check_for_destroyed_window(current_wm_sn_owner)) {
-						break;
-					}
-
+					destroyed = check_for_destroyed_window(current_wm_sn_owner);
 					cur.get_time();
 				}
 
-				if (cur >= end) {
-					printf("The WM on screen %d is not exiting", screen());
+				if (not destroyed) {
+					printf("The WM on screen %d is not exiting\n", screen());
 					return false;
 				}
 			}
@@ -218,8 +223,11 @@ bool display_t::register_wm(bool replace, Window w) {
 			return false;
 		} else if (r->owner != w) {
 			std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
+			free(r);
 			return false;
 		}
+
+		free(r);
 
 	}
 
@@ -231,9 +239,9 @@ bool display_t::register_wm(bool replace, Window w) {
  * Register composite manager. if another one is in place just fail to take
  * the ownership.
  **/
-bool display_t::register_cm(Window w) {
+bool display_t::register_cm(xcb_window_t w, bool replace) {
 	xcb_generic_error_t * err;
-	Window current_cm;
+	xcb_window_t current_cm;
 	Atom a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
 	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
@@ -248,8 +256,11 @@ bool display_t::register_cm(Window w) {
 		return false;
 	}
 
-	if (r->owner != XCB_NONE) {
-		printf("Another composite manager is running\n");
+	current_cm = r->owner;
+	free(r);
+
+	if (r->owner != XCB_WINDOW_NONE) {
+		std::cout << "Could not acquire the ownership of " << net_wm_cm << std::endl;
 		return false;
 	} else {
 		/** become the compositor **/
@@ -640,7 +651,7 @@ void display_t::fetch_pending_events() {
 	xcb_generic_event_t * e = xcb_poll_for_queued_event(_xcb);
 	while (e != nullptr) {
 		pending_event.push_back(e);
-		e = xcb_poll_for_queued_event(_xcb);
+		e = xcb_poll_for_event(_xcb);
 	}
 }
 

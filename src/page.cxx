@@ -2675,7 +2675,8 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 
 	} else if (e->response_type == cnx->randr_event + RRScreenChangeNotify) {
 		/** do nothing **/
-	} else if (e->response_type == SelectionClear) {
+	} else if (e->response_type == XCB_SELECTION_CLEAR) {
+		/** some one want to replace our self **/
 		running = false;
 	} else if (e->response_type == cnx->shape_event + ShapeNotify) {
 		XShapeEvent * se = (XShapeEvent *)&e;
@@ -4111,8 +4112,11 @@ void page_t::remove(tree_t * t) {
 
 void page_t::create_identity_window() {
 	/* create an invisible window to identify page */
-	identity_window = XCreateSimpleWindow(cnx->dpy(), cnx->root(), -100,
-			-100, 1, 1, 0, 0, 0);
+
+	uint32_t attrs = XCB_EVENT_MASK_STRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE;
+	uint32_t attrs_mask = XCB_CW_EVENT_MASK;
+	identity_window = cnx->create_input_only_window(cnx->root(), i_rect { -100,
+			-100, 1, 1 }, attrs_mask, &attrs);
 	std::string name("page");
 	cnx->change_property(identity_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
 			name.length() + 1);
@@ -4122,18 +4126,18 @@ void page_t::create_identity_window() {
 			WINDOW, 32, &identity_window, 1);
 	long pid = getpid();
 	cnx->change_property(identity_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
-	XSelectInput(cnx->dpy(), identity_window, StructureNotifyMask | PropertyChangeMask);
+
 }
 
 void page_t::register_wm() {
-	if (!cnx->register_wm(replace_wm, identity_window)) {
-		throw runtime_error("Cannot register window manager");
+	if (!cnx->register_wm(identity_window, replace_wm)) {
+		throw exception_t("Cannot register window manager");
 	}
 }
 
 void page_t::register_cm() {
-	if (!cnx->register_cm(identity_window)) {
-		throw runtime_error("Cannot register composite manager");
+	if (!cnx->register_cm(identity_window, replace_wm)) {
+		throw exception_t("Cannot register composite manager");
 	}
 }
 

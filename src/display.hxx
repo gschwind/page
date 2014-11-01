@@ -65,7 +65,6 @@ class display_t {
 	uint32_t _xcb_default_visual_depth;
 	xcb_visualtype_t * _xcb_default_visual_type;
 
-	uint32_t _xcb_root_visual_depth;
 	xcb_visualtype_t * _xcb_root_visual_type;
 
 	std::map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
@@ -157,8 +156,8 @@ public:
 
 	void xnextevent(XEvent * ev);
 
-	bool register_wm(bool replace, Window w);
-	bool register_cm(Window w);
+	bool register_wm(xcb_window_t w, bool replace);
+	bool register_cm(xcb_window_t w, bool replace);
 
 	void add_to_save_set(Window w);
 	void remove_from_save_set(Window w);
@@ -319,7 +318,7 @@ public:
 	void select_input(xcb_window_t w, uint32_t mask);
 
 	int root_depth() {
-		return _xcb_root_visual_depth;
+		return _screen->root_depth;
 	}
 
 	region read_damaged_region(xcb_damage_damage_t d);

@@ -111,6 +111,10 @@ public:
 		return nsec/x;
 	}
 
+	int64_t milliseconds() {
+		return nsec / 1000000L;
+	}
+
 
 };
 
