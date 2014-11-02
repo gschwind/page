@@ -1931,7 +1931,10 @@ void page_t::process_event(xcb_unmap_notify_event_t const * e) {
 	client_base_t * c = find_client(e->window);
 	if (c != nullptr) {
 		rnd->add_damaged(c->visible_area());
-		//render();
+		if(typeid(*c) == typeid(client_not_managed_t)) {
+			cleanup_client(c);
+			render();
+		}
 	}
 }
 
