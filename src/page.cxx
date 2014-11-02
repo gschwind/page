@@ -4268,7 +4268,7 @@ void page_t::update_keymap() {
 	if(keymap != nullptr) {
 		delete keymap;
 	}
-	keymap = new keymap_t(cnx->dpy());
+	keymap = new keymap_t(cnx->xcb());
 }
 
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
