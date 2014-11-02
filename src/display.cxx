@@ -70,7 +70,7 @@ display_t::display_t() {
 
 	grab_count = 0;
 
-	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_dpy));
+	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
 
 	update_default_visual();
 
@@ -322,9 +322,9 @@ void display_t::move_resize(Window w, i_rect const & size) {
 
 	mask |= XCB_CONFIG_WINDOW_HEIGHT;
 	value[3] = size.h;
+	xcb_void_cookie_t ck = xcb_configure_window(_xcb, w, mask, value);
 
-	//printf("move_resize(%lu, %d, %d, %d, %d)\n", w, size.x, size.y, size.w, size.h);
-	xcb_configure_window(_xcb, w, mask, value);
+	printf("%08u move_resize(%lu, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
 
 }
 

@@ -12,7 +12,11 @@
 
 #include "config.hxx"
 
-#include <X11/X.h>
+#include <xcb/xcb.h>
+
+#include <cstring>
+
+#include "exception.hxx"
 
 namespace page {
 
@@ -278,7 +282,7 @@ ATOM_ITEM(PAGE_QUIT)
  * atom call.
  **/
 class atom_handler_t {
-	Atom * _data;
+	xcb_atom_t * _data;
 	char const ** _name;
 
 	/** cannot be moved or copied **/
@@ -288,10 +292,18 @@ class atom_handler_t {
 
 public:
 
-	atom_handler_t(Display * dpy) {
+	xcb_atom_t get_atom(xcb_connection_t * xcb, char const * name) {
+		xcb_intern_atom_cookie_t ck = xcb_intern_atom(xcb, false, strlen(name), name);
+		xcb_intern_atom_reply_t * r = xcb_intern_atom_reply(xcb, ck, 0);
+		if(r == nullptr)
+			throw exception_t("Error while getting atom '%s'", name);
+		return r->atom;
+	}
+
+	atom_handler_t(xcb_connection_t * dpy) {
 		unsigned const n_items = sizeof(atom_name) / sizeof(atom_item_t);
 
-		_data = new Atom[LAST_ATOM];
+		_data = new xcb_atom_t[LAST_ATOM];
 		_name = new char const *[LAST_ATOM];
 
 		for (int i = 0; i < LAST_ATOM; ++i) {
@@ -300,7 +312,7 @@ public:
 		}
 
 		for (unsigned int i = 0; i < n_items; ++i) {
-			_data[atom_name[i].id] = XInternAtom(dpy, atom_name[i].name, False);
+			_data[atom_name[i].id] = get_atom(dpy, atom_name[i].name);
 			_name[atom_name[i].id] = atom_name[i].name;
 		}
 
@@ -315,11 +327,11 @@ public:
 		delete [] _name;
 	}
 
-	Atom operator() (int id) {
+	xcb_atom_t operator() (int id) {
 		return _data[id];
 	}
 
-	Atom operator[] (int id) {
+	xcb_atom_t operator[] (int id) {
 		return _data[id];
 	}
 

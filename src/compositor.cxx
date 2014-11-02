@@ -81,7 +81,7 @@ void compositor_t::release_composite_overlay() {
 compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) : _cnx(cnx), _cmgr(cmgr) {
 	composite_back_buffer = None;
 
-	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->dpy()));
+	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->xcb()));
 
 	/* initialize composite */
 	init_composite_overlay();

@@ -2634,7 +2634,7 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 		process_event(reinterpret_cast<xcb_map_request_event_t const *>(e));
 	} else if (e->response_type == XCB_PROPERTY_NOTIFY) {
 		process_event(reinterpret_cast<xcb_property_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_CLIENT_MESSAGE) {
+	} else if (e->response_type == (XCB_CLIENT_MESSAGE|0x80)) {
 		process_event(reinterpret_cast<xcb_client_message_event_t const *>(e));
 	} else if (e->response_type == cnx->damage_event + XCB_DAMAGE_NOTIFY) {
 		process_event(reinterpret_cast<xcb_damage_notify_event_t const *>(e));
