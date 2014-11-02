@@ -461,7 +461,7 @@ public:
 	/* compute the allocation of viewport taking in account DOCKs */
 	void compute_viewport_allocation(viewport_t & v);
 
-	void cleanup_client(client_base_t * c);
+	void cleanup_not_managed_client(client_not_managed_t * c);
 
 	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
 

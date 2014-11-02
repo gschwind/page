@@ -1882,8 +1882,8 @@ void page_t::process_event(xcb_destroy_notify_event_t const * e) {
 			cout << "Sent Event: " << "false" << endl;
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			unmanage(mw);
-		} else {
-			cleanup_client(c);
+		} else if(typeid(*c) == typeid(client_not_managed_t)) {
+			cleanup_not_managed_client(dynamic_cast<client_not_managed_t *>(c));
 		}
 	}
 }
@@ -1922,7 +1922,7 @@ void page_t::process_event(xcb_reparent_notify_event_t const * e) {
 	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
 	client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(find_client_with(e->window));
 	if(uw != nullptr and e->parent != cnx->root()) {
-		cleanup_client(uw);
+		cleanup_not_managed_client(uw);
 	}
 
 }
@@ -1932,7 +1932,7 @@ void page_t::process_event(xcb_unmap_notify_event_t const * e) {
 	if (c != nullptr) {
 		rnd->add_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
-			cleanup_client(c);
+			cleanup_not_managed_client(dynamic_cast<client_not_managed_t *>(c));
 			render();
 		}
 	}
@@ -3848,32 +3848,30 @@ viewport_t * page_t::find_mouse_viewport(int x, int y) {
  * @input c: a window client handler.
  **/
 bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
-
-	bool has_time = false;
-	Window time_window;
-
 	if (c->net_wm_user_time() != nullptr) {
 		time = *(c->net_wm_user_time());
-		has_time = true;
+		return true;
 	} else {
-		/* if no time window try to go on referenced window */
-		if (c->net_wm_user_time_window() != nullptr) {
-			net_wm_user_time_t xtime;
+		if (c->net_wm_user_time_window() == nullptr)
+			return false;
+		if (*(c->net_wm_user_time_window()) == XCB_WINDOW_NONE)
+			return false;
 
-			auto x = display_t::make_property_fetcher_t(xtime, cnx, *(c->net_wm_user_time()));
-			x.update(cnx);
+		net_wm_user_time_t xtime;
+		auto x = display_t::make_property_fetcher_t(xtime, cnx,
+				*(c->net_wm_user_time_window()));
+		x.update(cnx);
 
-			if (xtime.data != nullptr) {
-				if (*xtime != 0) {
-					time = *(xtime);
-					has_time = true;
-				}
-			}
-		}
+		if(xtime.data == nullptr)
+			return false;
+
+		if (*xtime == 0)
+			return false;
+
+		time = *(xtime);
+		return true;
+
 	}
-
-	return has_time;
-
 }
 
 std::vector<client_managed_t *> page_t::get_managed_windows() {
@@ -3893,17 +3891,9 @@ client_managed_t * page_t::find_managed_window_with(Window w) {
  * This will remove a client from tree and destroy related data. This
  * function do not send any X11 request.
  **/
-void page_t::cleanup_client(client_base_t * c) {
-
-	if(typeid(*c) == typeid(client_managed_t)) {
-		client_managed_t * mw = dynamic_cast<client_managed_t*>(c);
-		unmanage(mw);
-	}
-
+void page_t::cleanup_not_managed_client(client_not_managed_t * c) {
 	remove_client(c);
 	update_client_list();
-	rpage->mark_durty();
-
 }
 
 void page_t::safe_update_transient_for(client_base_t * c) {

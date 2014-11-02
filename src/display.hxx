@@ -316,6 +316,8 @@ public:
 	bool query_extension(char const * name, int * opcode, int * event, int * error);
 
 	void select_input(xcb_window_t w, uint32_t mask);
+	void set_border_width(xcb_window_t w, uint32_t width);
+
 
 	int root_depth() {
 		return _screen->root_depth;

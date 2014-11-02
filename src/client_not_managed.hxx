@@ -31,7 +31,7 @@ class client_not_managed_t : public client_base_t {
 private:
 
 	static unsigned long const UNMANAGED_ORIG_WINDOW_EVENT_MASK =
-	StructureNotifyMask | PropertyChangeMask;
+	XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
 
 	Atom _net_wm_type;
 
@@ -51,16 +51,15 @@ public:
 			surf(surf)
 	{
 		_is_hidden = false;
-		_properties->cnx()->grab();
-		XSelectInput(_properties->cnx()->dpy(), _properties->id(),
-				UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-		XShapeSelectInput(_properties->cnx()->dpy(), _properties->id(), ShapeNotifyMask);
-
-		_properties->cnx()->ungrab();
+		if (cnx()->lock(orig())) {
+			cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+			xcb_shape_select_input(cnx()->xcb(), orig(), true);
+			cnx()->unlock();
+		}
 	}
 
 	~client_not_managed_t() {
-		XSelectInput(_properties->cnx()->dpy(), _properties->id(), NoEventMask);
+		cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
 	}
 
 	Atom net_wm_type() {

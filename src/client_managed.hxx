@@ -33,11 +33,10 @@ enum managed_window_type_e {
 class client_managed_t : public client_base_t {
 private:
 
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK = SubstructureRedirectMask | StructureNotifyMask;
-	static long const MANAGED_DECO_WINDOW_EVENT_MASK = ExposureMask;
-	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = (StructureNotifyMask)
-			| (PropertyChangeMask) | (FocusChangeMask);
-
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	static long const MANAGED_DECO_WINDOW_EVENT_MASK = XCB_EVENT_MASK_EXPOSURE;
+	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
+	static uint32_t const BUTTON_DEFAULT_MASK =  XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_BUTTON_RELEASE;
 
 	// theme used for window decoration
 	theme_t const * _theme;

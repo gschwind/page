@@ -804,6 +804,9 @@ void display_t::select_input(xcb_window_t w, uint32_t mask) {
 	xcb_change_window_attributes(_xcb, w, XCB_CW_EVENT_MASK, &mask);
 }
 
+void display_t::set_border_width(xcb_window_t w, uint32_t width) {
+	xcb_configure_window(_xcb, w, XCB_CONFIG_WINDOW_BORDER_WIDTH, &width);
+}
 
 region display_t::read_damaged_region(xcb_damage_damage_t d) {
 

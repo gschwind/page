@@ -52,9 +52,7 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				_cmgr(cmgr)
 {
 
-	cnx()->add_to_save_set(orig());
-	/* set border to zero */
-	XSetWindowBorder(cnx()->dpy(), orig(), 0);
+
 
 	i_rect pos{_properties->position()};
 
@@ -184,8 +182,6 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 
 	update_floating_areas();
 
-	cnx()->reparentwindow(_orig, _base, 0, 0);
-
 	uint32_t cursor;
 
 	cursor = cnx()->xc_top_side;
@@ -206,10 +202,18 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 	cursor = cnx()->xc_bottom_righ_corner;
 	_input_bottom_right = cnx()->create_input_only_window(_deco, _area_bottom_right, XCB_CW_CURSOR, &cursor);
 
+	if (lock()) {
+		cnx()->add_to_save_set(orig());
+		/* set border to zero */
+		select_inputs();
+		/* Grab button click */
+		grab_button_unfocused();
 
-	select_inputs();
-	/* Grab button click */
-	grab_button_unfocused();
+		cnx()->set_border_width(orig(), 0);
+		cnx()->reparentwindow(_orig, _base, 0, 0);
+		unlock();
+	}
+
 
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
@@ -620,27 +624,26 @@ void client_managed_t::grab_button_focused() {
 		ungrab_all_button();
 
 		/** for decoration, grab all **/
-		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
-
-		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
-
-		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 		/** for base, just grab some modified buttons **/
-		XGrabButton(cnx()->dpy(), Button1, (Mod1Mask), _base, False,
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1);
 
 		/** for base, just grab some modified buttons **/
-		XGrabButton(cnx()->dpy(), Button1, (ControlMask), _base, False,
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_CONTROL);
+
 		unlock();
 	}
 }
@@ -650,30 +653,30 @@ void client_managed_t::grab_button_unfocused() {
 		/** First ungrab all **/
 		ungrab_all_button();
 
-		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _base, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _base, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _base, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 		/** for decoration, grab all **/
-		XGrabButton(cnx()->dpy(), (Button1), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		XGrabButton(cnx()->dpy(), (Button2), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		XGrabButton(cnx()->dpy(), (Button3), (AnyModifier), _deco, (False),
-				(ButtonPressMask | ButtonMotionMask | ButtonReleaseMask),
-				(GrabModeSync), (GrabModeAsync), None, None);
+		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 		unlock();
 	}
@@ -682,29 +685,29 @@ void client_managed_t::grab_button_unfocused() {
 
 void client_managed_t::ungrab_all_button() {
 	if (lock()) {
-		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _orig);
-		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _base);
-		XUngrabButton(cnx()->dpy(), AnyButton, AnyModifier, _deco);
+		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _orig, XCB_MOD_MASK_ANY);
+		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
+		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
 		unlock();
 	}
 }
 
 void client_managed_t::select_inputs() {
 	if (lock()) {
-		XSelectInput(cnx()->dpy(), _base, MANAGED_BASE_WINDOW_EVENT_MASK);
-		XSelectInput(cnx()->dpy(), _deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-		XSelectInput(cnx()->dpy(), _orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
-		XShapeSelectInput(cnx()->dpy(), _orig, ShapeNotifyMask);
+		cnx()->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+		cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
+		cnx()->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+		xcb_shape_select_input(cnx()->xcb(), _orig, true);
 		unlock();
 	}
 }
 
 void client_managed_t::unselect_inputs() {
 	if (lock()) {
-		XSelectInput(cnx()->dpy(), _base, NoEventMask);
-		XSelectInput(cnx()->dpy(), _deco, NoEventMask);
-		XSelectInput(cnx()->dpy(), _orig, NoEventMask);
-		XShapeSelectInput(cnx()->dpy(), _orig, 0);
+		cnx()->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
+		cnx()->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
+		cnx()->select_input(_orig, XCB_EVENT_MASK_NO_EVENT);
+		xcb_shape_select_input(cnx()->xcb(), _orig, false);
 		unlock();
 	}
 }
