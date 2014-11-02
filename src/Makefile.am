@@ -36,7 +36,6 @@ page_SOURCES = \
 	simple2_theme.cxx \
 	client_managed.cxx \
 	client_not_managed.cxx \
-	window_icon_handler.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
 	leak_checker.cxx

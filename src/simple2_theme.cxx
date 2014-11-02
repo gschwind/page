@@ -313,7 +313,7 @@ simple2_theme_t::~simple2_theme_t() {
 		warn(cairo_surface_get_reference_count(background_s) == 1);
 		cairo_surface_destroy(background_s);
 		background_s = nullptr;
-		XFreePixmap(_cnx->dpy(), background_p);
+		xcb_free_pixmap(_cnx->xcb(), background_p);
 	}
 	warn(cairo_surface_get_reference_count(hsplit_button_s) == 1);
 	cairo_surface_destroy(hsplit_button_s);

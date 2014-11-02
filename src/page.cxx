@@ -308,9 +308,11 @@ void page_t::run() {
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
-	XGrabButton(cnx->dpy(), AnyButton, AnyModifier, cnx->root(), False,
-			ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-			GrabModeSync, GrabModeAsync, None, None);
+	xcb_grab_button(cnx->xcb(), false, cnx->root(),
+			XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
+					| XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC,
+			XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY,
+			XCB_MOD_MASK_ANY);
 
 
 	_max_wait = default_wait;
@@ -327,7 +329,7 @@ void page_t::run() {
 	}
 
 	update_allocation();
-	XFlush(cnx->dpy());
+	xcb_flush(cnx->xcb());
 	running = true;
 	while (running) {
 
@@ -406,47 +408,48 @@ void page_t::unmanage(client_managed_t * mw) {
 
 void page_t::scan() {
 
-
-	print_state();
-
-	unsigned int num;
-	Window d1, d2, *wins = 0;
-
 	cnx->grab();
 	cnx->fetch_pending_events();
 
-	if (XQueryTree(cnx->dpy(), cnx->root(), &d1, &d2, &wins, &num)) {
+	xcb_query_tree_cookie_t ck = xcb_query_tree(cnx->xcb(), cnx->root());
+	xcb_query_tree_reply_t * r = xcb_query_tree_reply(cnx->xcb(), ck, 0);
 
-		for (unsigned i = 0; i < num; ++i) {
-			Window w = wins[i];
+	if(r == nullptr)
+		throw exception_t("Cannot query tree");
 
-			std::shared_ptr<client_properties_t> c{new client_properties_t(cnx, w)};
-			if (!c->read_window_attributes()) {
-				continue;
-			}
+	xcb_window_t * children = xcb_query_tree_children(r);
+	unsigned n_children = xcb_query_tree_children_length(r);
 
-			if(c->wa()->_class == InputOnly) {
-				continue;
-			}
+	for (unsigned i = 0; i < n_children; ++i) {
+		xcb_window_t w = children[i];
 
-			c->read_all_properties();
+		std::shared_ptr<client_properties_t> c{new client_properties_t(cnx, w)};
+		if (!c->read_window_attributes()) {
+			continue;
+		}
 
-			if (c->wa()->map_state != IsUnmapped) {
-				onmap(w);
-			} else {
-				/**
-				 * if the window is not map check if previous windows manager has set WM_STATE to iconic
-				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
-				 **/
-				if (c->wm_state() != nullptr) {
-					if (c->wm_state()->state == IconicState) {
-						onmap(w);
-					}
+		if(c->wa()->_class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+			continue;
+		}
+
+		c->read_all_properties();
+
+		if (c->wa()->map_state != XCB_MAP_STATE_UNMAPPED) {
+			onmap(w);
+		} else {
+			/**
+			 * if the window is not map check if previous windows manager has set WM_STATE to iconic
+			 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
+			 **/
+			if (c->wm_state() != nullptr) {
+				if (c->wm_state()->state == IconicState) {
+					onmap(w);
 				}
 			}
 		}
-		XFree(wins);
 	}
+
+	free(r);
 
 	update_client_list();
 	update_allocation();
@@ -1189,8 +1192,8 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_1) {
 			pfm->hide();
 
-			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
-			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
+			cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
+			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1206,7 +1209,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == mode_data_floating.button) {
 			pfm->hide();
 
-			XUngrabPointer(cnx->dpy(), e->time);
+			xcb_ungrab_pointer(cnx->xcb(), e->time);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1222,8 +1225,8 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_1) {
 			pfm->hide();
 
-			XUndefineCursor(cnx->dpy(), mode_data_floating.f->base());
-			XUndefineCursor(cnx->dpy(), mode_data_floating.f->orig());
+			cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
+			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
 
 			mode_data_floating.f->set_floating_wished_position(
 					mode_data_floating.final_position);
@@ -1333,7 +1336,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_1) {
 			if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab) {
 				mode_data_notebook_menu.active_grab = true;
-				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e->time);
+				xcb_grab_pointer(cnx->xcb(), true, cnx->root(), XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, e->time);
 			} else {
 				if (mode_data_notebook_menu.active_grab) {
 					xcb_ungrab_pointer(cnx->xcb(), e->time);
@@ -1361,7 +1364,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
 			if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
 				mode_data_notebook_client_menu.active_grab = true;
-				XGrabPointer(cnx->dpy(),cnx->root(), True, ButtonReleaseMask | PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, e->time);
+				xcb_grab_pointer(cnx->xcb(), true, cnx->root(), XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, e->time);
 			} else {
 				if (mode_data_notebook_client_menu.active_grab) {
 					xcb_ungrab_pointer(cnx->xcb(), e->time);

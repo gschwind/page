@@ -62,7 +62,7 @@ public:
 
 	cairo_surface_t * background_s;
 
-	Pixmap background_p;
+	xcb_pixmap_t background_p;
 
 	color_t default_background_color;
 
