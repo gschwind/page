@@ -44,7 +44,7 @@ Atom display_t::A(atom_e atom) {
 }
 
 int display_t::screen() {
-	return DefaultScreen(_dpy);
+	return _default_screen;
 }
 
 //int display_t::move_window(Window w, int x, int y) {
@@ -53,20 +53,22 @@ int display_t::screen() {
 //}
 
 display_t::display_t() {
-	old_error_handler = XSetErrorHandler(error_handler);
+	//old_error_handler = XSetErrorHandler(error_handler);
 
-	_dpy = XOpenDisplay(NULL);
-	if (_dpy == NULL) {
-		throw std::runtime_error("Could not open display");
-	} else {
-		cnx_printf("Open display : Success\n");
-	}
+//	_dpy = NULL;
+//	_dpy = XOpenDisplay(NULL);
+//	if (_dpy == NULL) {
+//		throw std::runtime_error("Could not open display");
+//	} else {
+//		cnx_printf("Open display : Success\n");
+//	}
 
-	_fd = ConnectionNumber(_dpy);
+	_xcb = xcb_connect(nullptr, &_default_screen);
+	_fd = xcb_get_file_descriptor(_xcb);
 
 	/** get xcb connection handler to enable xcb request **/
-	_xcb = XGetXCBConnection(_dpy);
-	XSetEventQueueOwner(_dpy, XCBOwnsEventQueue);
+	//_xcb = XGetXCBConnection(_dpy);
+	//XSetEventQueueOwner(_dpy, XCBOwnsEventQueue);
 
 	grab_count = 0;
 
@@ -77,7 +79,8 @@ display_t::display_t() {
 }
 
 display_t::~display_t() {
-	XCloseDisplay(_dpy);
+	//XCloseDisplay(_dpy);
+	xcb_disconnect(_xcb);
 }
 
 void display_t::grab() {
@@ -397,9 +400,9 @@ void display_t::fake_configure(xcb_window_t w, i_rect location, int border_width
 
 }
 
-Display * display_t::dpy() {
-	return _dpy;
-}
+//Display * display_t::dpy() {
+//	return _dpy;
+//}
 
 xcb_connection_t * display_t::xcb() {
 	return _xcb;
@@ -529,10 +532,9 @@ xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 }
 
 void display_t::update_default_visual() {
-	int screen_nbr = this->screen();
-	/* you init the connection and screen_nbr */
 
-	_screen = screen_of_display(xcb(), screen_nbr);
+	/* you init the connection and screen_nbr */
+	_screen = screen_of_display(xcb(), _default_screen);
 
 	printf("found screen %p\n", _screen);
 	if (_screen) {

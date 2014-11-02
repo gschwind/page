@@ -58,9 +58,11 @@ static unsigned long const AllEventMask = 0x01ffffff;
 class display_t {
 
 	int _fd;
-	Display * _dpy;
+	//Display * _dpy;
 	xcb_connection_t * _xcb;
 	xcb_screen_t * _screen;
+
+	int _default_screen;
 
 	uint32_t _xcb_default_visual_depth;
 	xcb_visualtype_t * _xcb_default_visual_type;
@@ -193,14 +195,14 @@ public:
 
 	void cnx_printf(char const * str, ...) {
 		if (false) {
-			va_list args;
-			va_start(args, str);
-			char buffer[1024];
-			unsigned long serial = XNextRequest(_dpy);
-			snprintf(buffer, 1024, ">%08lu ", serial);
-			unsigned int len = strnlen(buffer, 1024);
-			vsnprintf(&buffer[len], 1024 - len, str, args);
-			printf("%s", buffer);
+//			va_list args;
+//			va_start(args, str);
+//			char buffer[1024];
+//			unsigned long serial = XNextRequest(_dpy);
+//			snprintf(buffer, 1024, ">%08lu ", serial);
+//			unsigned int len = strnlen(buffer, 1024);
+//			vsnprintf(&buffer[len], 1024 - len, str, args);
+//			printf("%s", buffer);
 		}
 	}
 
