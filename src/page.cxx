@@ -714,6 +714,18 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 /* Button event make page to grab pointer */
 void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
+	std::cout << "Button Event Press "
+			<< " event=" << e->event
+			<< " child=" << e->child
+			<< " root=" << e->root
+			<< " button=" << static_cast<int>(e->detail)
+			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
+			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
+			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
+			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
+			<< std::endl;
+
+
 	client_managed_t * mw = find_managed_window_with(e->event);
 
 	switch (process_mode) {
@@ -725,12 +737,11 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
 			update_page_areas();
 
-			page_event_t * b = 0;
-			for (std::vector<page_event_t>::iterator i = page_areas->begin();
-					i != page_areas->end(); ++i) {
+			page_event_t * b = nullptr;
+			for (auto &i : *page_areas) {
 				//printf("box = %s => %s\n", (i)->position.to_std::string().c_str(), typeid(*i).name());
-				if ((*i).position.is_inside(e->event_x, e->event_y)) {
-					b = &(*i);
+				if (i.position.is_inside(e->root_x, e->root_y)) {
+					b = &i;
 					break;
 				}
 			}
@@ -867,11 +878,12 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
 		if (mw != nullptr) {
 
-			if (mw->is(MANAGED_FLOATING) and e->detail == XCB_BUTTON_INDEX_1
-					and (e->state & (Mod1Mask | ControlMask))) {
+			if (mw->is(MANAGED_FLOATING)
+					and e->detail == XCB_BUTTON_INDEX_1
+					and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
 
-				mode_data_floating.x_offset = e->event_x;
-				mode_data_floating.y_offset = e->event_y;
+				mode_data_floating.x_offset = e->root_x - mw->base_position().x;
+				mode_data_floating.y_offset = e->root_y - mw->base_position().y;
 				mode_data_floating.x_root = e->root_x;
 				mode_data_floating.y_root = e->root_y;
 				mode_data_floating.f = mw;
@@ -897,23 +909,25 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 				}
 
 
-			} else if (mw->is(MANAGED_FLOATING) and e->detail == XCB_BUTTON_INDEX_1
-					and e->child != mw->orig()) {
-				//mw->update_floating_areas();
+			} else if (mw->is(MANAGED_FLOATING)
+					and e->detail == XCB_BUTTON_INDEX_1
+					and e->child != mw->orig()
+					and e->event == mw->deco()) {
+
 				auto const * l = mw->floating_areas();
-				floating_event_t const * b = 0;
+				floating_event_t const * b = nullptr;
 				for (auto &i : (*l)) {
-					if(i.position.is_inside(e->root_x, e->root_y)) {
+					if(i.position.is_inside(e->event_x, e->event_y)) {
 						b = &i;
 						break;
 					}
 				}
 
 
-				if (b != 0) {
+				if (b != nullptr) {
 
-					mode_data_floating.x_offset = e->event_x;
-					mode_data_floating.y_offset = e->event_y;
+					mode_data_floating.x_offset = e->root_x - mw->base_position().x;
+					mode_data_floating.y_offset = e->root_y - mw->base_position().y;
 					mode_data_floating.x_root = e->root_x;
 					mode_data_floating.y_root = e->root_y;
 					mode_data_floating.f = mw;
