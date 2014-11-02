@@ -79,7 +79,7 @@ void compositor_t::release_composite_overlay() {
 }
 
 compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) : _cnx(cnx), _cmgr(cmgr) {
-	composite_back_buffer = None;
+	composite_back_buffer = XCB_NONE;
 
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->xcb()));
 
@@ -101,10 +101,6 @@ compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) 
 
 	/* this will scan for all windows */
 	update_layout();
-
-	_forecast_count = 0;
-	_missed_forecast = 0;
-	back_buffer_state = XdbeCopied;
 
 }
 
@@ -162,30 +158,6 @@ void compositor_t::render() {
 	if(_damaged.empty())
 		return;
 
-	/**
-	 * forecast next best buffer swapping
-	 * If the buffer was damaged over 75% of the desktop, then
-	 * We prefer no copy buffer swapping else copy buffer.
-	 * maybe a lower threthold is better.
-	 **/
-	_forecast_count += 1;
-	if((double)_damaged.area()/(double)_desktop_region.area() > 0.50) {
-		if(back_buffer_state == XdbeCopied) {
-			_missed_forecast += 1;
-		}
-		back_buffer_state = XdbeUndefined;
-	} else {
-		if(back_buffer_state == XdbeUndefined) {
-			_missed_forecast += 1;
-		}
-		back_buffer_state = XdbeCopied;
-	}
-
-	/** if we did not copied the back buffer, repair all screen **/
-	if(back_buffer_state == XdbeUndefined) {
-		_damaged = _desktop_region;
-	}
-
 	if (_show_fps) {
 		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+200,100};
 	}
@@ -196,8 +168,8 @@ void compositor_t::render() {
 	_fps_history[_fps_top] = cur;
 	_damaged_area[_fps_top] = _damaged.area();
 
-	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), root_attributes.width,
-			root_attributes.height);
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width,
+			height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
 
@@ -296,7 +268,6 @@ void compositor_t::render() {
 			_cmgr->make_surface_stats(surf_size, surf_count);
 
 			pango_printf(cr, _FPS_WINDOWS*2+20,0,  "fps:       %6.1f", fps);
-			pango_printf(cr, _FPS_WINDOWS*2+20,15, "miss rate: %6.1f %%", ((double)_missed_forecast/(double)_forecast_count)*100.0);
 			pango_printf(cr, _FPS_WINDOWS*2+20,30, "surface count: %d", surf_count);
 			pango_printf(cr, _FPS_WINDOWS*2+20,45, "surface size: %d KB", surf_size/1024);
 
@@ -311,52 +282,88 @@ void compositor_t::render() {
 
 	warn(cairo_get_reference_count(cr) == 1);
 	cairo_destroy(cr);
-	warn(cairo_surface_get_reference_count(_back_buffer) == 1);
-	cairo_surface_destroy(_back_buffer);
-	_back_buffer = nullptr;
 
-	/** swap back buffer and front buffer **/
-	XdbeSwapInfo si;
-	si.swap_window = composite_overlay;
-	si.swap_action = back_buffer_state;
-	XdbeSwapBuffers(_cnx->dpy(), &si, 1);
+	cairo_surface_t * front_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_overlay, _cnx->root_visual(), width,
+			height);
+	cr = cairo_create(front_buffer);
+	cairo_set_source_surface(cr, _back_buffer, 0, 0);
+	cairo_paint(cr);
+	cairo_destroy(cr);
+	cairo_surface_flush(front_buffer);
+	cairo_surface_destroy(front_buffer);
+	cairo_surface_destroy(_back_buffer);
 
 }
 
 void compositor_t::update_layout() {
 
-	XGetWindowAttributes(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), &root_attributes);
+	if(composite_back_buffer != XCB_NONE) {
+		xcb_free_pixmap(_cnx->xcb(), composite_back_buffer);
+		composite_back_buffer = XCB_NONE;
+	}
 
-	if(composite_back_buffer != None)
-		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
+	/** update root size infos **/
+
+	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_cnx->xcb(), _cnx->root());
+	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_cnx->xcb(), _cnx->root());
+
+	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck0, nullptr);
+	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(_cnx->xcb(), ck1, 0);
+
+	if(geometry == nullptr or randr_resources == nullptr) {
+		throw exception_t("FATAL: cannot read root window attributes");
+	}
+
+	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
+
+	std::vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
+	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
+	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
+		ckx[k] = xcb_randr_get_crtc_info(_cnx->xcb(), crtc_list[k], XCB_CURRENT_TIME);
+	}
+
+	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
+		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_cnx->xcb(), ckx[k], 0);
+		if(r != nullptr) {
+			crtc_info[crtc_list[k]] = r;
+		}
+	}
 
 	_desktop_region.clear();
 
-	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(_cnx->dpy(),
-			DefaultRootWindow(_cnx->dpy()));
-
-	for (int i = 0; i < resources->ncrtc; ++i) {
-		XRRCrtcInfo * info = XRRGetCrtcInfo(_cnx->dpy(), resources,
-				resources->crtcs[i]);
-
-		/** if the CRTC has at less one output bound **/
-		if(info->noutput > 0) {
-			i_rect area(info->x, info->y, info->width, info->height);
-			_desktop_region = _desktop_region + area;
-
-			if(i == 0) {
-				_debug_x = info->x + 40;
-				_debug_y = info->y + info->height - 120;
-			}
-
-		}
-		XRRFreeCrtcInfo(info);
+	for(auto i: crtc_info) {
+		i_rect area{i.second->x, i.second->y, i.second->width, i.second->height};
+		_desktop_region = _desktop_region + area;
 	}
-	XRRFreeScreenResources(resources);
+
+	if(not crtc_info.empty()) {
+		_debug_x = crtc_info.begin()->second->x + 40;
+		_debug_y = crtc_info.begin()->second->y + crtc_info.begin()->second->height - 120;
+	}
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
 
-	composite_back_buffer = XdbeAllocateBackBufferName(_cnx->dpy(), composite_overlay, XdbeCopied);
+	_damaged += i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
+
+	composite_back_buffer = xcb_generate_id(_cnx->xcb());
+	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), composite_back_buffer,
+			composite_overlay, geometry->width, geometry->height);
+
+	width = geometry->width;
+	height = geometry->height;
+
+	for(auto i: crtc_info) {
+		if(i.second != nullptr)
+			free(i.second);
+	}
+
+	if(geometry != nullptr) {
+		free(geometry);
+	}
+
+	if(randr_resources != nullptr) {
+		free(randr_resources);
+	}
 
 }
 

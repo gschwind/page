@@ -44,9 +44,10 @@ private:
 
 	xcb_window_t cm_window;
 	xcb_window_t composite_overlay;
-	XdbeBackBuffer composite_back_buffer;
+	xcb_pixmap_t composite_back_buffer;
 
-	XWindowAttributes root_attributes;
+	int width;
+	int height;
 
 	std::shared_ptr<atom_handler_t> _A;
 
@@ -68,15 +69,8 @@ private:
 
 	bool _need_render;
 
-	unsigned _missed_forecast;
-	unsigned _forecast_count;
-
-	std::map<Window, Damage> _damage_event;
-
 	region _damaged;
 	region _desktop_region;
-
-	int back_buffer_state;
 
 
 #ifdef WITH_PANGO
