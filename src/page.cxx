@@ -1417,10 +1417,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 		break;
 	case PROCESS_SPLIT_GRAB:
 
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while(XCheckMaskEvent(cnx->dpy(), XCB_EVENT_MASK_BUTTON_MOTION, &ev));
-
 		if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
 			mode_data_split.split_ratio = (e->event_x
 					- mode_data_split.split->allocation().x)
@@ -1449,10 +1445,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
 		{
-		/* Get latest know motion event */
-		//ev.xmotion = e;
-		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
-		//	continue;
 
 		/* do not start drag&drop for small move */
 		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
@@ -1523,9 +1515,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 
 		break;
 	case PROCESS_FLOATING_MOVE: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while(XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
@@ -1541,9 +1530,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 		break;
 	}
 	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
@@ -1559,9 +1545,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 		break;
 	}
 	case PROCESS_FLOATING_RESIZE: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while(XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
@@ -1649,9 +1632,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 		break;
 	}
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while(XCheckMaskEvent(cnx->dpy(), ButtonMotionMask, &ev));
 
 		rnd->add_damaged(mode_data_floating.f->visible_area());
 
@@ -1741,10 +1721,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 	case PROCESS_FLOATING_CLOSE:
 		break;
 	case PROCESS_FLOATING_BIND: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
-		//	continue;
 
 		/* do not start drag&drop for small move */
 		if (e->root_x < mode_data_bind.start_x - 5
@@ -1827,10 +1803,6 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 
 		break;
 	case PROCESS_FULLSCREEN_MOVE: {
-		/* get lastest know motion event */
-		//ev.xmotion = e;
-		//while (XCheckMaskEvent(cnx->dpy(), XCB_BUTTON_INDEX_1MotionMask, &ev))
-		//	continue;
 
 		viewport_t * v = find_mouse_viewport(e->root_x,
 				e->root_y);
@@ -2449,10 +2421,12 @@ void page_t::process_event(xcb_client_message_event_t const * e) {
 					}
 
 					if (process_mode != PROCESS_NORMAL) {
-						XGrabPointer(cnx->dpy(), cnx->root(), False,
-						ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-						GrabModeAsync,
-						GrabModeAsync, None, xc, CurrentTime);
+						xcb_grab_pointer(cnx->xcb(), false, cnx->root(),
+								XCB_EVENT_MASK_BUTTON_PRESS
+										| XCB_EVENT_MASK_BUTTON_RELEASE
+										| XCB_EVENT_MASK_BUTTON_MOTION,
+								XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+								XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
 					}
 
 					mw->unlock();
@@ -2692,9 +2666,11 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 
 		}
 
-		XGrabButton(cnx->dpy(), AnyButton, AnyModifier, cnx->root(), False,
-				ButtonPressMask | ButtonMotionMask | ButtonReleaseMask,
-				GrabModeSync, GrabModeAsync, None, None);
+		xcb_grab_button(cnx->xcb(), false, cnx->root(),
+				XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
+						| XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC,
+				XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY,
+				XCB_MOD_MASK_ANY);
 
 		/** put rpage behind all managed windows **/
 		update_windows_stack();
@@ -2706,9 +2682,9 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 		/** some one want to replace our self **/
 		running = false;
 	} else if (e->response_type == cnx->shape_event + ShapeNotify) {
-		XShapeEvent * se = (XShapeEvent *)&e;
-		if(se->kind == ShapeBounding) {
-			Window w = se->window;
+		xcb_shape_notify_event_t const * se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
+		if(se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
+			Window w = se->affected_window;
 			client_base_t * c = find_client(w);
 			if(c != nullptr) {
 				c->update_shape();
@@ -2792,7 +2768,7 @@ void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
 	_client_focused.push_front(new_focus);
 
 	if(new_focus == nullptr) {
-		XSetInputFocus(cnx->dpy(), cnx->root(), RevertToNone, _last_focus_time);
+		cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, _last_focus_time);
 		return;
 	}
 
@@ -3263,19 +3239,6 @@ void page_t::unbind_window(client_managed_t * mw) {
 	update_windows_stack();
 }
 
-void page_t::grab_pointer() {
-	/* Grab Pointer no other client will get mouse event */
-	if (XGrabPointer(cnx->dpy(), cnx->root(), False,
-			(ButtonPressMask | ButtonReleaseMask
-					| PointerMotionMask),
-			GrabModeAsync, GrabModeAsync, None, None,
-			CurrentTime) != GrabSuccess) {
-		/* bad news */
-		throw std::runtime_error("fail to grab pointer");
-	}
-
-}
-
 void page_t::cleanup_grab(client_managed_t * mw) {
 
 	switch (process_mode) {
@@ -3430,23 +3393,12 @@ void page_t::update_windows_stack() {
 	get_all_children(children);
 	std::vector<client_base_t *> clients = filter_class<client_base_t>(children);
 
-	std::list<Window> final_order;
+	std::list<xcb_window_t> final_order;
 	for(auto i: clients) {
-		final_order.push_back(i->base());
+		cnx->raise_window(i->base());
 	}
 
-	if(rnd != 0) {
-		final_order.push_back(rnd->get_composite_overlay());
-	}
-
-	final_order.reverse();
-
-	XRaiseWindow(cnx->dpy(), final_order.front());
-	/**
-	 * convert list to C array, see std::vector API.
-	 **/
-	std::vector<Window> v_order(final_order.begin(), final_order.end());
-	XRestackWindows(cnx->dpy(), &v_order[0], v_order.size());
+	cnx->raise_window(rnd->get_composite_overlay());
 
 }
 

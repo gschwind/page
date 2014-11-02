@@ -340,12 +340,12 @@ void display_t::delete_property(xcb_window_t w, atom_e property) {
 }
 
 
-Status display_t::get_text_property(xcb_window_t w, XTextProperty * text_prop_return,
-		atom_e property) {
-
-	cnx_printf("XGetTextProperty: win = %lu\n", w);
-	return XGetTextProperty(_dpy, w, text_prop_return, A(property));
-}
+//Status display_t::get_text_property(xcb_window_t w, XTextProperty * text_prop_return,
+//		atom_e property) {
+//
+//	cnx_printf("XGetTextProperty: win = %lu\n", w);
+//	return XGetTextProperty(_dpy, w, text_prop_return, A(property));
+//}
 
 int display_t::lower_window(xcb_window_t w) {
 	cnx_printf("XLowerWindow: win = %lu\n", w);
