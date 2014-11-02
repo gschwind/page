@@ -345,8 +345,8 @@ private:
 	time_t _next_frame;
 	time_t _max_wait;
 
-	Time _last_focus_time;
-	Time _last_button_press;
+	xcb_timestamp_t _last_focus_time;
+	xcb_timestamp_t _last_button_press;
 	std::list<client_managed_t *> _client_focused;
 
 	i_rect _root_position;

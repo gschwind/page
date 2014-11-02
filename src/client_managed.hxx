@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include <xcb/xcb.h>
+
 #include "icon_handler.hxx"
 #include "theme.hxx"
 
@@ -136,7 +138,7 @@ public:
 
 	cairo_t * get_cairo_context();
 
-	void focus(Time t);
+	void focus(xcb_timestamp_t t);
 
 	managed_window_type_e get_type();
 
@@ -170,7 +172,7 @@ public:
 		return cnx()->A(atom);
 	}
 
-	void icccm_focus(Time t);
+	void icccm_focus(xcb_timestamp_t t);
 
 	bool is_focused() const {
 		return _is_focused;

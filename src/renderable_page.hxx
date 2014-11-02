@@ -59,7 +59,7 @@ public:
 	~renderable_page_t() {
 		cout << "call " << __FUNCTION__ << endl;
 		cairo_surface_destroy(_back_surf);
-		XFreePixmap(_cnx->dpy(), _pix);
+		xcb_free_pixmap(_cnx->xcb(), _pix);
 	}
 
 	void repair_damaged(std::vector<tree_t *> tree) {

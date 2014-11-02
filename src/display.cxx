@@ -110,7 +110,7 @@ bool display_t::is_not_grab() {
 	return grab_count == 0;
 }
 
-void display_t::unmap(Window w) {
+void display_t::unmap(xcb_window_t w) {
 	cnx_printf("X_UnmapWindow: win = %lu\n", w);
 	xcb_unmap_window(_xcb, w);
 }
@@ -123,10 +123,6 @@ void display_t::reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y
 void display_t::map(xcb_window_t w) {
 	cnx_printf("X_MapWindow: win = %lu\n", w);
 	xcb_map_window(_xcb, w);
-}
-
-void display_t::xnextevent(XEvent * ev) {
-	XNextEvent(_dpy, ev);
 }
 
 /**
@@ -260,7 +256,7 @@ bool display_t::register_cm(xcb_window_t w, bool replace) {
 	Atom a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
 	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
-	a_cm = XInternAtom(_dpy, net_wm_cm, False);
+	a_cm = get_atom(net_wm_cm);
 
 	/** read if there is a compositor **/
 	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, a_cm);
@@ -296,17 +292,17 @@ bool display_t::register_cm(xcb_window_t w, bool replace) {
 	}
 }
 
-void display_t::add_to_save_set(Window w) {
+void display_t::add_to_save_set(xcb_window_t w) {
 	cnx_printf("XAddToSaveSet: win = %lu\n", w);
-	XAddToSaveSet(_dpy, w);
+	xcb_change_save_set(_xcb, XCB_SET_MODE_INSERT, w);
 }
 
-void display_t::remove_from_save_set(Window w) {
+void display_t::remove_from_save_set(xcb_window_t w) {
 	cnx_printf("XRemoveFromSaveSet: win = %lu\n", w);
-	XRemoveFromSaveSet(_dpy, w);
+	xcb_change_save_set(_xcb, XCB_SET_MODE_DELETE, w);
 }
 
-void display_t::move_resize(Window w, i_rect const & size) {
+void display_t::move_resize(xcb_window_t w, i_rect const & size) {
 
 	uint16_t mask = 0;
 	uint32_t value[4];
@@ -324,68 +320,63 @@ void display_t::move_resize(Window w, i_rect const & size) {
 	value[3] = size.h;
 	xcb_void_cookie_t ck = xcb_configure_window(_xcb, w, mask, value);
 
-	printf("%08u move_resize(%lu, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
+	printf("%08u move_resize(%u, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
 
 }
 
-//void display_t::set_window_border_width(Window w, unsigned int width) {
+//void display_t::set_window_border_width(xcb_window_t w, unsigned int width) {
 //	cnx_printf("XSetWindowBorderWidth: win = %lu, width = %u\n", w, width);
 //	XSetWindowBorderWidth(_dpy, w, width);
 //}
 
-void display_t::raise_window(Window w) {
+void display_t::raise_window(xcb_window_t w) {
 	cnx_printf("XRaiseWindow: win = %lu\n", w);
-	XRaiseWindow(_dpy, w);
+	uint32_t mode = XCB_STACK_MODE_ABOVE;
+	xcb_configure_window(_xcb, w, XCB_CONFIG_WINDOW_STACK_MODE, &mode);
 }
 
-void display_t::delete_property(Window w, atom_e property) {
-	XDeleteProperty(_dpy, w, A(property));
+void display_t::delete_property(xcb_window_t w, atom_e property) {
+	xcb_delete_property(_xcb, w, A(property));
 }
 
-Status display_t::get_window_attributes(Window w,
-		XWindowAttributes * window_attributes_return) {
-	cnx_printf("XGetWindowAttributes: win = %lu\n", w);
-	return XGetWindowAttributes(_dpy, w, window_attributes_return);
-}
 
-Status display_t::get_text_property(Window w, XTextProperty * text_prop_return,
+Status display_t::get_text_property(xcb_window_t w, XTextProperty * text_prop_return,
 		atom_e property) {
 
 	cnx_printf("XGetTextProperty: win = %lu\n", w);
 	return XGetTextProperty(_dpy, w, text_prop_return, A(property));
 }
 
-int display_t::lower_window(Window w) {
-
+int display_t::lower_window(xcb_window_t w) {
 	cnx_printf("XLowerWindow: win = %lu\n", w);
-	return XLowerWindow(_dpy, w);
+	uint32_t mode = XCB_STACK_MODE_BELOW;
+	xcb_configure_window(_xcb, w, XCB_CONFIG_WINDOW_STACK_MODE, &mode);
+	return 0;
 }
 
-static void _safe_xfree(void * x) {
-	if (x != NULL)
-		XFree(x);
+//static void _safe_xfree(void * x) {
+//	if (x != NULL)
+//		XFree(x);
+//}
+
+///* used for debuging, do not optimize with some cache */
+//std::shared_ptr<char> display_t::get_atom_name(xcb_atom_t atom) {
+//	cnx_printf("XGetAtomName: atom = %lu\n", atom);
+//	return std::shared_ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
+//}
+
+//Status display_t::send_event(xcb_window_t w, Bool propagate, long event_mask,
+//		XEvent* event_send) {
+//
+//	cnx_printf("XSendEvent: win = %lu\n", w);
+//	return XSendEvent(_dpy, w, propagate, event_mask, event_send);
+//}
+//
+void display_t::set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time) {
+	xcb_set_input_focus(_xcb, revert_to, focus, time);
 }
 
-/* used for debuging, do not optimize with some cache */
-std::shared_ptr<char> display_t::get_atom_name(Atom atom) {
-	cnx_printf("XGetAtomName: atom = %lu\n", atom);
-	return std::shared_ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
-}
-
-Status display_t::send_event(Window w, Bool propagate, long event_mask,
-		XEvent* event_send) {
-
-	cnx_printf("XSendEvent: win = %lu\n", w);
-	return XSendEvent(_dpy, w, propagate, event_mask, event_send);
-}
-
-int display_t::set_input_focus(Window focus, int revert_to, Time time) {
-	cnx_printf("XSetInputFocus: win = %lu, time = %lu\n", focus, time);
-	fflush(stdout);
-	return XSetInputFocus(_dpy, focus, revert_to, time);
-}
-
-void display_t::fake_configure(Window w, i_rect location, int border_width) {
+void display_t::fake_configure(xcb_window_t w, i_rect location, int border_width) {
 	xcb_configure_notify_event_t xev;
 	xev.response_type = XCB_CONFIGURE_NOTIFY;
 	xev.event = w;
@@ -402,7 +393,7 @@ void display_t::fake_configure(Window w, i_rect location, int border_width) {
 	xev.width = location.w;
 	xev.height = location.h;
 
-	xcb_send_event(xcb(), False, w, XCB_EVENT_MASK_STRUCTURE_NOTIFY, reinterpret_cast<char*>(&xev));
+	xcb_send_event(xcb(), false, w, XCB_EVENT_MASK_STRUCTURE_NOTIFY, reinterpret_cast<char*>(&xev));
 
 }
 

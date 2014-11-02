@@ -373,7 +373,7 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 	}
 }
 
-void client_managed_t::focus(Time t) {
+void client_managed_t::focus(xcb_timestamp_t t) {
 	set_focus_state(true);
 	icccm_focus(t);
 }
@@ -490,32 +490,34 @@ void client_managed_t::expose() {
 	}
 }
 
-void client_managed_t::icccm_focus(Time t) {
+void client_managed_t::icccm_focus(xcb_timestamp_t t) {
 	//fprintf(stderr, "Focus time = %lu\n", t);
 
 	if (lock()) {
 
 		if (_properties->wm_hints() != nullptr) {
 			if (_properties->wm_hints()->input != False) {
-				cnx()->set_input_focus(_orig, RevertToParent, t);
+				cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_PARENT, t);
 			}
 		} else {
 			/** no WM_HINTS, guess hints.input == True **/
-			cnx()->set_input_focus(_orig, RevertToParent, t);
+			cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_PARENT, t);
 		}
 
 		if (_properties->wm_protocols() != nullptr) {
 			if (has_key(*(_properties->wm_protocols()),
 					static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
-				XEvent ev;
-				ev.xclient.display = cnx()->dpy();
-				ev.xclient.type = ClientMessage;
-				ev.xclient.format = 32;
-				ev.xclient.message_type = A(WM_PROTOCOLS);
-				ev.xclient.window = _orig;
-				ev.xclient.data.l[0] = A(WM_TAKE_FOCUS);
-				ev.xclient.data.l[1] = t;
-				cnx()->send_event(_orig, False, NoEventMask, &ev);
+
+				xcb_client_message_event_t ev;
+				ev.response_type = XCB_CLIENT_MESSAGE;
+				ev.format = 32;
+				ev.type = A(WM_PROTOCOLS);
+				ev.window = _orig;
+				ev.data.data32[0] = A(WM_TAKE_FOCUS);
+				ev.data.data32[1] = t;
+
+				xcb_send_event(cnx()->xcb(), false, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
+
 			}
 		}
 

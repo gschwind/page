@@ -147,11 +147,11 @@ public:
 
 	void set_net_active_window(xcb_window_t w);
 
-	int move_window(Window w, int x, int y);
+	int move_window(xcb_window_t w, int x, int y);
 	void grab();
 	void ungrab();
 	bool is_not_grab();
-	void unmap(Window w);
+	void unmap(xcb_window_t w);
 	void reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y);
 	void map(xcb_window_t w);
 
@@ -160,11 +160,11 @@ public:
 	bool register_wm(xcb_window_t w, bool replace);
 	bool register_cm(xcb_window_t w, bool replace);
 
-	void add_to_save_set(Window w);
-	void remove_from_save_set(Window w);
-	void move_resize(Window w, i_rect const & size);
-	void set_window_border_width(Window w, unsigned int width);
-	void raise_window(Window w);
+	void add_to_save_set(xcb_window_t w);
+	void remove_from_save_set(xcb_window_t w);
+	void move_resize(xcb_window_t w, i_rect const & size);
+	void set_window_border_width(xcb_window_t w, unsigned int width);
+	void raise_window(xcb_window_t w);
 
 	template<typename T>
 	int change_property(xcb_window_t w, atom_e property, atom_e type, int format, T data, int nelements) {
@@ -172,24 +172,24 @@ public:
 		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(property), A(type), format, nelements, reinterpret_cast<unsigned char const *>(data));
 	}
 
-	void delete_property(Window w, atom_e property);
+	void delete_property(xcb_window_t w, atom_e property);
 
-	Status get_window_attributes(Window w,
+	Status get_window_attributes(xcb_window_t w,
 			XWindowAttributes * window_attributes_return);
 
-	Status get_text_property(Window w,
+	Status get_text_property(xcb_window_t w,
 			XTextProperty * text_prop_return, atom_e property);
-	int lower_window(Window w);
-	int configure_window(Window w, unsigned int value_mask,
+	int lower_window(xcb_window_t w);
+	int configure_window(xcb_window_t w, unsigned int value_mask,
 			XWindowChanges * values);
 
 	/* used for debuging, do not optimize with some cache */
 	std::shared_ptr<char> get_atom_name(Atom atom);
 
-	Status send_event(Window w, Bool propagate, long event_mask,
+	Status send_event(xcb_window_t w, Bool propagate, long event_mask,
 			XEvent* event_send);
-	int set_input_focus(Window focus, int revert_to, Time time);
-	void fake_configure(Window w, i_rect location, int border_width);
+	void set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time);
+	void fake_configure(xcb_window_t w, i_rect location, int border_width);
 
 	void cnx_printf(char const * str, ...) {
 		if (false) {

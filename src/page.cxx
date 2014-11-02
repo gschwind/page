@@ -132,8 +132,8 @@ page_t::page_t(int argc, char ** argv)
 
 	page_base_dir = conf.get_string("default", "theme_dir");
 
-	_last_focus_time = 0;
-	_last_button_press = 0;
+	_last_focus_time = XCB_TIME_CURRENT_TIME;
+	_last_button_press = XCB_TIME_CURRENT_TIME;
 
 	theme = nullptr;
 	rpage = nullptr;
@@ -553,7 +553,7 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 
 
 	/* get KeyCode for Unmodified Key */
-	KeySym k = keymap->get(e->detail);
+	xcb_keysym_t k = keymap->get(e->detail);
 
 	if (k == 0)
 		return;
@@ -3064,9 +3064,6 @@ void page_t::process_net_vm_state_client_message(Window c, long type, Atom state
 		action = "unknown";
 		break;
 	}
-
-	auto name = cnx->get_atom_name(state_properties);
-	printf("_NET_WM_STATE %s %s from %lu\n", action, name.get(), c);
 
 	client_managed_t * mw = find_managed_window_with(c);
 

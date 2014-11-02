@@ -14,6 +14,8 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/shape.h>
 
+#include <xcb/xcb_util.h>
+
 #include <cairo/cairo.h>
 
 #include <algorithm>
