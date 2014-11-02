@@ -504,17 +504,17 @@ bool display_t::check_randr_extension() {
 }
 
 
-bool display_t::check_dbe_extension() {
-	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, &dbe_opcode, &dbe_event, &dbe_error)) {
-		return false;
-	} else {
-		int major = 0, minor = 0;
-		XdbeQueryExtension(_dpy, &major, &minor);
-		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major,
-				minor);
-		return true;
-	}
-}
+//bool display_t::check_dbe_extension() {
+//	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, &dbe_opcode, &dbe_event, &dbe_error)) {
+//		return false;
+//	} else {
+//		int major = 0, minor = 0;
+//		XdbeQueryExtension(_dpy, &major, &minor);
+//		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major,
+//				minor);
+//		return true;
+//	}
+//}
 
 xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 {
@@ -781,8 +781,8 @@ int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
 		char const * func_name = xcore_request_name[ev->request_code];
 		char error_text[1024];
 		error_text[0] = 0;
-		XGetErrorText(dpy, ev->error_code, error_text, 1024);
-		fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
+		//XGetErrorText(dpy, ev->error_code, error_text, 1024);
+		//fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
 	}
 	return 0;
 }

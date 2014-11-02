@@ -275,14 +275,15 @@ void page_t::run() {
 	cnx->change_property(cnx->root(), _NET_DESKTOP_NAMES,
 			UTF8_STRING, 8, &names_list[0], names_list.size());
 
-	XIconSize icon_size;
+	wm_icon_size_t icon_size;
 	icon_size.min_width = 16;
 	icon_size.min_height = 16;
 	icon_size.max_width = 16;
 	icon_size.max_height = 16;
-	icon_size.width_inc = 1;
-	icon_size.height_inc = 1;
-	XSetIconSizes(cnx->dpy(), cnx->root(), &icon_size, 1);
+	icon_size.width_inc = 16;
+	icon_size.height_inc = 16;
+	cnx->change_property(cnx->root(), WM_ICON_SIZE,
+			CARDINAL, 32, &icon_size, 6);
 
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0, 0);

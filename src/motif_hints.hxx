@@ -44,6 +44,13 @@ struct motif_wm_hints_t {
 	unsigned long status;
 };
 
+
+struct wm_icon_size_t {
+	int32_t min_width, min_height;
+	int32_t max_width, max_height;
+	int32_t width_inc, height_inc;
+};
+
 }
 
 

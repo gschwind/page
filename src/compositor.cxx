@@ -111,8 +111,12 @@ compositor_t::~compositor_t() {
 	g_object_unref(_fps_context);
 	g_object_unref(_fps_font_map);
 
-	if(composite_back_buffer != None)
-		XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
+	//if(composite_back_buffer != None)
+	//	XdbeDeallocateBackBufferName(_cnx->dpy(), composite_back_buffer);
+
+	if(composite_back_buffer != XCB_NONE) {
+		xcb_free_pixmap(_cnx->xcb(), composite_back_buffer);
+	}
 
 	release_composite_overlay();
 };
