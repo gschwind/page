@@ -323,69 +323,6 @@ void compositor_t::render() {
 
 }
 
-//region compositor_t::read_damaged_region(xcb_damage_damage_t d) {
-//
-//	region result;
-//
-//	/* create an empty region */
-//	xcb_xfixes_region_t region = xcb_generate_id(_cnx->xcb());
-//	xcb_xfixes_create_region(_cnx->xcb(), region, 0, 0);
-//
-//	/* get damaged region and remove them from damaged status */
-//	xcb_damage_subtract(_cnx->xcb(), d, XCB_XFIXES_REGION_NONE, region);
-//
-//
-//	/* get all i_rects for the damaged region */
-//
-//	xcb_xfixes_fetch_region_cookie_t ck = xcb_xfixes_fetch_region(_cnx->xcb(), region);
-//
-//	xcb_generic_error_t * err;
-//	xcb_xfixes_fetch_region_reply_t * r = xcb_xfixes_fetch_region_reply(_cnx->xcb(), ck, &err);
-//
-//	if (err == nullptr and r != nullptr) {
-//		xcb_rectangle_t * rect = xcb_xfixes_fetch_region_rectangles(r);
-//		for (unsigned k = 0; k < r->length; ++k) {
-//			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
-//			result += i_rect(rect[k]);
-//		}
-//		//free(rect);
-//		free(r);
-//	}
-//
-//	xcb_xfixes_destroy_region(_cnx->xcb(), region);
-//
-//	return result;
-//}
-
-//void compositor_t::process_event(xcb_generic_event_t const * e) {
-//
-////	if (e.xany.type > 0 && e.xany.type < LASTEvent) {
-////		printf("#%lu type: %s, send_event: %u, window: %lu\n", e.xany.serial,
-////				x_event_name[e.xany.type], e.xany.send_event, e.xany.window);
-////	} else {
-////		printf("#%lu type: %u, send_event: %u, window: %lu\n", e.xany.serial,
-////				e.xany.type, e.xany.send_event, e.xany.window);
-////	}
-//
-//
-//	if (e->response_type == XCB_CIRCULATE_NOTIFY) {
-//		//process_event(e.xcirculate);
-//	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
-//		//process_event(e.xconfigure);
-//	} else if (e->response_type == XCB_CREATE_NOTIFY) {
-//		//process_event(e.xcreatewindow);
-//	} else if (e->response_type == XCB_DESTROY_NOTIFY) {
-//		//process_event(reinterpret_cast<xcb_destroy_notify_event_t const *>(e));
-//	} else if (e->response_type == XCB_MAP_NOTIFY) {
-//		//process_event(reinterpret_cast<xcb_map_notify_event_t const *>(e));
-//	} else if (e->response_type == XCB_REPARENT_NOTIFY) {
-//		//process_event(e.xreparent);
-//	} else if (e->response_type == XCB_UNMAP_NOTIFY) {
-//		//process_event(e.xunmap);
-//	}
-//
-//}
-
 void compositor_t::update_layout() {
 
 	XGetWindowAttributes(_cnx->dpy(), DefaultRootWindow(_cnx->dpy()), &root_attributes);
@@ -423,32 +360,6 @@ void compositor_t::update_layout() {
 
 }
 
-
-//void compositor_t::process_events() {
-//	XEvent ev;
-//	while(XPending(_cnx->dpy())) {
-//		XNextEvent(_cnx->dpy(), &ev);
-//		process_event(ev);
-//	}
-//}
-
-/**
- * Check event without blocking.
- **/
-//bool compositor_t::process_check_event() {
-//	XEvent e;
-//
-//	int x;
-//	/** Passive check of events in queue, never flush any thing **/
-//	if ((x = XEventsQueued(_cnx->dpy(), QueuedAlready)) > 0) {
-//		/** should not block or flush **/
-//		XNextEvent(_cnx->dpy(), &e);
-//		process_event(e);
-//		return true;
-//	} else {
-//		return false;
-//	}
-//}
 
 xcb_window_t compositor_t::get_composite_overlay() {
 	return composite_overlay;

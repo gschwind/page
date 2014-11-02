@@ -3454,43 +3454,47 @@ void page_t::update_viewport_layout() {
 
 	/** update root size infos **/
 
-	XWindowAttributes rwa;
-	if(!XGetWindowAttributes(cnx->dpy(), cnx->root(), &rwa)) {
-		throw std::runtime_error("FATAL: cannot read root window attributes\n");
+	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(cnx->xcb(), cnx->root());
+	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(cnx->xcb(), cnx->root());
+
+	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(cnx->xcb(), ck0, nullptr);
+	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(cnx->xcb(), ck1, 0);
+
+	if(geometry == nullptr or randr_resources == nullptr) {
+		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-	_root_position = i_rect(rwa.x, rwa.y, rwa.width, rwa.height);
+
+	_root_position = i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_desktop_geometry(_root_position.w, _root_position.h);
 	_allocation = _root_position;
 
+	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
-	/** load RandR data **/
-	XRRScreenResources * resources = XRRGetScreenResourcesCurrent(
-			cnx->dpy(), cnx->root());
+	std::vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
+	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
+	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
+		ckx[k] = xcb_randr_get_crtc_info(cnx->xcb(), crtc_list[k], XCB_CURRENT_TIME);
+	}
 
-	std::map<RRCrtc, XRRCrtcInfo *> crtc_info;
-
-	if (resources != nullptr) {
-		for (unsigned k = 0; k < resources->ncrtc; ++k) {
-			XRRCrtcInfo * info = XRRGetCrtcInfo(cnx->dpy(), resources,
-					resources->crtcs[k]);
-			crtc_info[resources->crtcs[k]] = info;
+	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
+		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(cnx->xcb(), ckx[k], 0);
+		if(r != nullptr) {
+			crtc_info[crtc_list[k]] = r;
 		}
 	}
 
 	for(auto d: _desktop_list) {
-		std::map<RRCrtc, viewport_t *> old_layout{d->get_viewport_map()};
+		std::map<xcb_randr_crtc_t, viewport_t *> old_layout{d->get_viewport_map()};
 
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
-		std::map<RRCrtc, viewport_t *> new_layout;
+		std::map<xcb_randr_crtc_t, viewport_t *> new_layout;
 		for(auto crtc: crtc_info) {
-			XRRCrtcInfo * info = crtc.second;
-			if(info == nullptr)
-				continue;
-			if(info->noutput <= 0)
+			xcb_randr_get_crtc_info_reply_t * info = crtc.second;
+			if(info->num_outputs <= 0)
 				continue;
 
-			i_rect area(info->x, info->y, info->width, info->height);
+			i_rect area{info->x, info->y, info->width, info->height};
 			/** if this crtc do not has a viewport **/
 			if (not has_key(old_layout, crtc.first)) {
 				/** then create a new one, and store it in new_layout **/
@@ -3507,19 +3511,19 @@ void page_t::update_viewport_layout() {
 
 		if(new_layout.size() < 1) {
 			/** fallback to one screen **/
-			i_rect area(rwa.x, rwa.y, rwa.width, rwa.height);
+			i_rect area{_root_position};
 			/** if this crtc do not has a viewport **/
-			if (not has_key(old_layout, (XID)None)) {
+			if (not has_key<xcb_randr_crtc_t>(old_layout, XCB_NONE)) {
 				/** then create a new one, and store it in new_layout **/
 				viewport_t * v = new viewport_t(theme, area);
 				v->set_parent(d);
-				new_layout[None] = v;
+				new_layout[XCB_NONE] = v;
 			} else {
 				/** update allocation, and store it to new_layout **/
-				old_layout[None]->set_raw_area(area);
-				new_layout[None] = old_layout[None];
+				old_layout[XCB_NONE]->set_raw_area(area);
+				new_layout[XCB_NONE] = old_layout[XCB_NONE];
 			}
-			compute_viewport_allocation(*(new_layout[None]));
+			compute_viewport_allocation(*(new_layout[XCB_NONE]));
 		}
 
 		d->set_layout(new_layout);
@@ -3538,12 +3542,17 @@ void page_t::update_viewport_layout() {
 
 	for(auto i: crtc_info) {
 		if(i.second != nullptr)
-			XRRFreeCrtcInfo(i.second);
+			free(i.second);
 	}
 
-	if(resources != nullptr) {
-		XRRFreeScreenResources(resources);
+	if(geometry != nullptr) {
+		free(geometry);
 	}
+
+	if(randr_resources != nullptr) {
+		free(randr_resources);
+	}
+
 	update_desktop_visibility();
 }
 

@@ -406,18 +406,23 @@ public:
 	}
 
 	void update_shape() {
-		//safe_delete(_shape);
+		delete _shape;
 
 		int count;
 		int ordering;
-		XRectangle * rect = XShapeGetRectangles(_cnx->dpy(), _id, ShapeBounding, &count, &ordering);
 
-		if (rect != NULL) {
+		xcb_shape_get_rectangles_cookie_t ck = xcb_shape_get_rectangles(_cnx->xcb(), _id, XCB_SHAPE_SK_BOUNDING);
+		xcb_shape_get_rectangles_reply_t * r = xcb_shape_get_rectangles_reply(_cnx->xcb(), ck, 0);
+
+		if (r != nullptr) {
 			_shape = new region{};
-			for (unsigned i = 0; i < count; ++i) {
-				*_shape += i_rect(rect[i]);
+
+			xcb_rectangle_iterator_t i = xcb_shape_get_rectangles_rectangles_iterator(r);
+			while(i.rem > 0) {
+				*_shape += i_rect{i.data->x, i.data->y, i.data->width, i.data->height};
+				xcb_rectangle_next(&i);
 			}
-			XFree(rect);
+			free(r);
 		}
 
 	}

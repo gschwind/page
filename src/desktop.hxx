@@ -29,7 +29,7 @@ private:
 	i_rect _allocation;
 
 	/** map viewport to real outputs **/
-	std::map<RRCrtc, viewport_t *> _viewport_outputs;
+	std::map<xcb_randr_crtc_t, viewport_t *> _viewport_outputs;
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
 	std::list<client_managed_t *> _fullscreen_clients;
@@ -116,11 +116,11 @@ public:
 
 	i_rect const & raw_area() const;
 
-	auto get_viewport_map() const -> std::map<RRCrtc, viewport_t *> const & {
+	auto get_viewport_map() const -> std::map<xcb_randr_crtc_t, viewport_t *> const & {
 		return _viewport_outputs;
 	}
 
-	auto set_layout(std::map<RRCrtc, viewport_t *> new_layout) -> void {
+	auto set_layout(std::map<xcb_randr_crtc_t, viewport_t *> new_layout) -> void {
 		_viewport_outputs = new_layout;
 	}
 

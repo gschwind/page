@@ -130,7 +130,7 @@ public:
 	}
 
 	void xflush() {
-		XFlush(_cnx->dpy());
+		xcb_flush(_cnx->xcb());
 	}
 
 	void render();
