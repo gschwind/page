@@ -891,5 +891,13 @@ xcb_atom_t display_t::get_atom(char const * name) {
 	return r->atom;
 }
 
+void display_t::print_error(xcb_generic_error_t const * err) {
+	char const * type_name = "UNKNOWN";
+	if(err->error_code >= 0 or err->error_code <= 17) {
+		type_name = x_error_type_name[err->error_code];
+	}
+	printf("#%08d ERROR %s: %s (%d,%d,%d)\n", static_cast<int>(err->sequence), request_type_name[err->major_code], type_name, static_cast<int>(err->major_code), static_cast<int>(err->minor_code), static_cast<int>(err->error_code));
+}
+
 }
 

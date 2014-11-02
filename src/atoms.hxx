@@ -323,6 +323,10 @@ public:
 		return _data[id];
 	}
 
+	char const * name(atom_e a) {
+		return _name[a];
+	}
+
 
 };
 

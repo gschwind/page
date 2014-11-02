@@ -295,7 +295,7 @@ public:
 		char * data;
 		int length;
 		property_helper_t<xT>::serialize(p.data, data, length);
-		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, name, type, property_helper_t<xT>::format, length, data);
+		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(name), A(type), property_helper_t<xT>::format, length, data);
 		delete[] data;
 	}
 
@@ -349,7 +349,7 @@ public:
 	void check_x11_extension();
 
 	xcb_atom_t get_atom(char const * name);
-
+	void print_error(xcb_generic_error_t const * err);
 
 };
 

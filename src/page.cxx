@@ -1856,7 +1856,7 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 			rnd->add_damaged(c->visible_area());
 		}
 
-		printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
+		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
 
 		/** damage corresponding area **/
@@ -2699,12 +2699,7 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 		update_grabkey();
 	} else if (e->response_type == 0) {
 		xcb_generic_error_t const * ev = reinterpret_cast<xcb_generic_error_t const *>(e);
-
-		char const * type_name = "UNKNOWN";
-		if(ev->error_code >= 0 or ev->error_code <= 17) {
-			type_name = x_error_type_name[ev->error_code];
-		}
-		printf("%08d %s(%d) type : %s\n", static_cast<int>(ev->sequence), cnx->request_type_name[ev->major_code], static_cast<int>(ev->minor_code), type_name);
+		cnx->print_error(ev);
 	} else {
 		printf("%08d Event unknow %d\n", static_cast<int>(e->sequence), static_cast<int>(e->response_type));
 	}
