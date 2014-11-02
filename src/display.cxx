@@ -424,6 +424,7 @@ bool display_t::query_extension(char const * name, int * opcode, int * event, in
 		*opcode = r->major_opcode;
 		*event = r->first_event;
 		*error = r->first_error;
+		std::cout << "Extension " << name << " found opcode=" << static_cast<int>(r->major_opcode) << " event=" << static_cast<int>(r->first_event) << " error=" << static_cast<int>(r->first_error) << std::endl;
 		free(r);
 		return true;
 	}
@@ -783,10 +784,10 @@ int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
 	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
 			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
 
-	static const unsigned int XFUNCSIZE = (sizeof(x_function_codes)/sizeof(char *));
+	static const unsigned int XFUNCSIZE = (sizeof(xcore_request_name)/sizeof(char *));
 
 	if (ev->request_code < XFUNCSIZE) {
-		char const * func_name = x_function_codes[ev->request_code];
+		char const * func_name = xcore_request_name[ev->request_code];
 		char error_text[1024];
 		error_text[0] = 0;
 		XGetErrorText(dpy, ev->error_code, error_text, 1024);
@@ -863,25 +864,65 @@ void display_t::check_x11_extension() {
 		throw std::runtime_error("Damage extension is not supported");
 	}
 
-	if (not check_shape_extension()) {
-		throw std::runtime_error(SHAPENAME " extension is not supported");
+	for(auto &i: event_type_name) {
+		i = "UnknownEvent";
 	}
 
-	if (not check_randr_extension()) {
-		throw std::runtime_error(RANDR_NAME " extension is not supported");
+	for(unsigned k = 0; k < (sizeof(xcore_event_name)/sizeof(char *)); ++k) {
+		event_type_name[k] = xcore_event_name[k];
 	}
 
-
-	for(unsigned k = 0; k < (sizeof(x_function_codes)/sizeof(char *)); ++k) {
-		request_type_name[k] = x_function_codes[k];
+	for(unsigned k = 0; k < (sizeof(xdamage_event_name)/sizeof(char *)); ++k) {
+		event_type_name[damage_event+k] = xdamage_event_name[k];
 	}
 
-	for(unsigned k = 0; k < (sizeof(xdamage_func)/sizeof(char *)); ++k) {
-		request_type_name[damage_opcode+k] = xdamage_func[k];
+	for(unsigned k = 0; k < (sizeof(xcomposite_event_name)/sizeof(char *)); ++k) {
+		event_type_name[composite_event+k] = xcomposite_event_name[k];
 	}
 
-	for(unsigned k = 0; k < (sizeof(xcomposite_request_name)/sizeof(char *)); ++k) {
-		request_type_name[composite_opcode+k] = xcomposite_request_name[k];
+	for(unsigned k = 0; k < (sizeof(xfixes_event_name)/sizeof(char *)); ++k) {
+		event_type_name[fixes_event+k] = xfixes_event_name[k];
+	}
+
+	for(unsigned k = 0; k < (sizeof(xshape_event_name)/sizeof(char *)); ++k) {
+		event_type_name[shape_event+k] = xshape_event_name[k];
+	}
+
+	for(unsigned k = 0; k < (sizeof(xrandr_event_name)/sizeof(char *)); ++k) {
+		event_type_name[randr_event+k] = xrandr_event_name[k];
+	}
+
+	for(auto &i: error_type_name) {
+		i = "UnknownError";
+	}
+
+	for(unsigned k = 0; k < (sizeof(xcore_minor_error_name)/sizeof(char *)); ++k) {
+		error_type_name[k] = xcore_minor_error_name[k];
+	}
+
+	if(damage_error != 0)
+	for(unsigned k = 0; k < (sizeof(xdamage_error_name)/sizeof(char *)); ++k) {
+		error_type_name[damage_error+k] = xdamage_error_name[k];
+	}
+
+	if(composite_error != 0)
+	for(unsigned k = 0; k < (sizeof(xcomposite_error_name)/sizeof(char *)); ++k) {
+		error_type_name[composite_error+k] = xcomposite_error_name[k];
+	}
+
+	if(fixes_error != 0)
+	for(unsigned k = 0; k < (sizeof(xfixes_error_name)/sizeof(char *)); ++k) {
+		error_type_name[fixes_error+k] = xfixes_error_name[k];
+	}
+
+	if(shape_error != 0)
+	for(unsigned k = 0; k < (sizeof(xshape_error_name)/sizeof(char *)); ++k) {
+		error_type_name[shape_error+k] = xshape_error_name[k];
+	}
+
+	if(randr_error != 0)
+	for(unsigned k = 0; k < (sizeof(xrandr_error_name)/sizeof(char *)); ++k) {
+		error_type_name[randr_error+k] = xrandr_error_name[k];
 	}
 
 }
@@ -895,12 +936,37 @@ xcb_atom_t display_t::get_atom(char const * name) {
 }
 
 void display_t::print_error(xcb_generic_error_t const * err) {
-	char const * type_name = "UNKNOWN";
-	if(err->error_code >= 0 or err->error_code <= 17) {
-		type_name = x_error_type_name[err->error_code];
+	char const * fail_request = "UnkwonRequest";
+	char const * type_name = error_type_name[err->error_code];
+
+	if (err->major_code >= 0 and err->major_code < (sizeof(xcore_request_name)/sizeof(char *))) {
+		fail_request = xcore_request_name[err->major_code];
+
+	} else if (err->major_code == damage_opcode) {
+		if(err->minor_code >= 0 and err->minor_code < (sizeof(xdamage_request_name)/sizeof(char *))) {
+			fail_request = xdamage_request_name[err->minor_code];
+		}
+	} else if (err->major_code == composite_opcode) {
+		if(err->minor_code >= 0 and err->minor_code < (sizeof(xcomposite_request_name)/sizeof(char *))) {
+			fail_request = xcomposite_request_name[err->minor_code];
+		}
+	} else if (err->major_code == fixes_opcode) {
+		if(err->minor_code >= 0 and err->minor_code < (sizeof(xfixes_request_name)/sizeof(char *))) {
+			fail_request = xfixes_request_name[err->minor_code];
+		}
+	} else if (err->major_code == randr_opcode) {
+		if(err->minor_code >= 0 and err->minor_code < (sizeof(xrandr_request_name)/sizeof(char *))) {
+			fail_request = xrandr_request_name[err->minor_code];
+		}
+	} else if (err->major_code == shape_opcode) {
+		if(err->minor_code >= 0 and err->minor_code < (sizeof(xshape_request_name)/sizeof(char *))) {
+			fail_request = xshape_request_name[err->minor_code];
+		}
 	}
-	printf("#%08d ERROR %s: %s (%d,%d,%d)\n", static_cast<int>(err->sequence), request_type_name[err->major_code], type_name, static_cast<int>(err->major_code), static_cast<int>(err->minor_code), static_cast<int>(err->error_code));
+
+	printf("#%08d ERROR %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
 }
+
 
 }
 

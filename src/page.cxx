@@ -2593,6 +2593,13 @@ void page_t::toggle_fullscreen(client_managed_t * c) {
 
 void page_t::process_event(xcb_generic_event_t const * e) {
 
+	/**
+	 * This print produce damage notify, thus avoid to print this line in that case
+	 **/
+//	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
+//		std::cout << "process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
+//	}
+
 	if (e->response_type == XCB_BUTTON_PRESS) {
 		process_event_press(reinterpret_cast<xcb_button_press_event_t const *>(e));
 	} else if (e->response_type == XCB_BUTTON_RELEASE) {
@@ -2715,7 +2722,7 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 		xcb_generic_error_t const * ev = reinterpret_cast<xcb_generic_error_t const *>(e);
 		cnx->print_error(ev);
 	} else {
-		printf("%08d Event unknow %d\n", static_cast<int>(e->sequence), static_cast<int>(e->response_type));
+		std::cout << "not handled event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
 	}
 
 }

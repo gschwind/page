@@ -73,7 +73,8 @@ class display_t {
 	std::list<xcb_generic_event_t *> pending_event;
 
 public:
-	char const * request_type_name[256];
+	char const * event_type_name[128];
+	char const * error_type_name[256];
 
 	/*damage event handler */
 	int damage_opcode, damage_event, damage_error;
@@ -352,6 +353,9 @@ public:
 
 	xcb_atom_t get_atom(char const * name);
 	void print_error(xcb_generic_error_t const * err);
+
+	char const * get_event_name(uint8_t response_type);
+
 
 };
 
