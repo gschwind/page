@@ -22,7 +22,7 @@ std::shared_ptr<composite_surface_t> composite_surface_manager_t::get_managed_co
 			return x->second.lock();
 		}
 	}
-	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, [this](composite_surface_t * p) { this->_data.erase(p->wid()); delete p; } };
+	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, [this](composite_surface_t * p) { this->remove(p); delete p; } };
 	_data[w] = ret;
 	return ret;
 }
@@ -48,7 +48,17 @@ void composite_surface_manager_t::process_event(xcb_generic_event_t const * e) {
 		if (x != _data.end()) {
 			std::weak_ptr<composite_surface_t> wp = x->second;
 			if (not wp.expired()) {
-				wp.lock()->onresize(ev->width, ev->height);
+				wp.lock()->on_resize(ev->width, ev->height);
+			}
+		}
+	} else if (e->response_type == XCB_UNMAP_NOTIFY) {
+		xcb_unmap_notify_event_t const * ev =
+				reinterpret_cast<xcb_unmap_notify_event_t const *>(e);
+		auto x = _data.find(ev->window);
+		if (x != _data.end()) {
+			std::weak_ptr<composite_surface_t> wp = x->second;
+			if (not wp.expired()) {
+				wp.lock()->on_unmap();
 			}
 		}
 	} else if (e->response_type == XCB_MAP_NOTIFY) {
@@ -58,17 +68,21 @@ void composite_surface_manager_t::process_event(xcb_generic_event_t const * e) {
 		if (x != _data.end()) {
 			std::weak_ptr<composite_surface_t> wp = x->second;
 			if (not wp.expired()) {
-				wp.lock()->onmap();
+				wp.lock()->on_map();
 			}
 		}
-	} else if (e->response_type == _dpy->damage_opcode + XCB_DAMAGE_NOTIFY) {
+	} else if (e->response_type == _dpy->damage_event + XCB_DAMAGE_NOTIFY) {
 		xcb_damage_notify_event_t const * ev = reinterpret_cast<xcb_damage_notify_event_t const *>(e);
 		auto x = _data.find(ev->drawable);
 		if (x != _data.end()) {
 			std::weak_ptr<composite_surface_t> wp = x->second;
 			if (not wp.expired()) {
-				wp.lock()->ondamage();
+				wp.lock()->on_damage();
+			} else {
+				std::cout << "damage received and found expired surface" << std::endl;
 			}
+		} else {
+			std::cout << "damage received but not corresponding surface found" << std::endl;
 		}
 	}
 }

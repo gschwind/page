@@ -348,6 +348,8 @@ public:
 
 	void check_x11_extension();
 
+	xcb_atom_t get_atom(char const * name);
+
 
 };
 

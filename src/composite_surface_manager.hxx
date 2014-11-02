@@ -48,6 +48,11 @@ private:
 		}
 	}
 
+	void remove(composite_surface_t * p) {
+		_data.erase(p->wid());
+		std::cout << "removing composite surface " << p << std::endl;
+	}
+
 public:
 
 	~composite_surface_manager_t() {

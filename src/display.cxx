@@ -129,17 +129,28 @@ void display_t::xnextevent(XEvent * ev) {
 	XNextEvent(_dpy, ev);
 }
 
-/* this function come from xcompmgr
- * it is intend to make page as composite manager */
-
+/**
+ * This function try to become the owner of WM_Sxx to be the offical
+ * window manager.
+ *
+ * @input w: the window that will be the owner
+ * @input replace: try to replace ?
+ * @return: true if success or false if fail.
+ *
+ **/
 bool display_t::register_wm(xcb_window_t w, bool replace) {
+	/**
+	 * The current window manager must own WM_Sxx with xx the screen number
+	 * to be the official window manager.
+	 **/
+
 	xcb_generic_error_t * err;
-	Atom wm_sn_atom;
+	xcb_atom_t wm_sn_atom;
 	xcb_window_t current_wm_sn_owner;
 
 	static char wm_sn[] = "WM_Sxx";
 	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
-	wm_sn_atom = XInternAtom(_dpy, wm_sn, false);
+	wm_sn_atom = get_atom(wm_sn);
 
 	/** who is the current owner ? **/
 	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
@@ -153,6 +164,8 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 	current_wm_sn_owner = r->owner;
 	free(r);
 
+	std::cout << "Found " << current_wm_sn_owner << " as owner of " << wm_sn << std::endl;
+
 	/* if there is a current owner */
 	if (current_wm_sn_owner != XCB_WINDOW_NONE) {
 		if (!replace) {
@@ -160,10 +173,11 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 					<< screen() << std::endl;
 			return false;
 		} else {
+			std::cout << "trying to replace the current owner" << std::endl;
 			select_input(current_wm_sn_owner, XCB_EVENT_MASK_STRUCTURE_NOTIFY);
 
 			/**
-			 * we request to become the owner  then we check if we successfuly
+			 * we request to become the owner then we check if we successfully
 			 * become the owner.
 			 **/
 			xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
@@ -184,7 +198,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 			free(r);
 
 			/** Now we are the owner, wait for max. 5 second that the previous owner to exit */
-			if (current_wm_sn_owner != XCB_WINDOW_NONE) {
+			{
 				page::time_t end;
 				page::time_t cur;
 
@@ -231,6 +245,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 
 	}
 
+	printf("Window manager is registered on screen %d.\n", screen());
 	return true;
 }
 
@@ -276,7 +291,7 @@ bool display_t::register_cm(xcb_window_t w, bool replace) {
 			std::cout << "Could not acquire the ownership of " << net_wm_cm << std::endl;
 			return false;
 		}
-		printf("Composite manager is registered on screen %d\n", screen());
+		printf("Composite manager is registered on screen %d.\n", screen());
 		return true;
 	}
 }
@@ -648,7 +663,7 @@ bool display_t::check_for_destroyed_window(xcb_window_t w) {
 
 void display_t::fetch_pending_events() {
 	/** get all event and store them in pending event **/
-	xcb_generic_event_t * e = xcb_poll_for_queued_event(_xcb);
+	xcb_generic_event_t * e = xcb_poll_for_event(_xcb);
 	while (e != nullptr) {
 		pending_event.push_back(e);
 		e = xcb_poll_for_event(_xcb);
@@ -659,7 +674,7 @@ xcb_generic_event_t * display_t::front_event() {
 	if(not pending_event.empty()) {
 		return pending_event.front();
 	} else {
-		xcb_generic_event_t * e = xcb_poll_for_queued_event(_xcb);
+		xcb_generic_event_t * e = xcb_poll_for_event(_xcb);
 		if(e != nullptr) {
 			pending_event.push_back(e);
 			return pending_event.front();
@@ -741,7 +756,6 @@ xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
 /** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
 void display_t::allow_input_passthrough(xcb_window_t w) {
 	xcb_xfixes_region_t region = xcb_generate_id(_xcb);
-	xcb_rectangle_t nill{0,0,0,0};
 	xcb_void_cookie_t ck = xcb_xfixes_create_region_checked(_xcb, region, 0, 0);
 	xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
 	if(err != nullptr) {
@@ -802,22 +816,22 @@ region display_t::read_damaged_region(xcb_damage_damage_t d) {
 	/* get damaged region and remove them from damaged status */
 	xcb_damage_subtract(_xcb, d, XCB_XFIXES_REGION_NONE, region);
 
-
 	/* get all i_rects for the damaged region */
-
 	xcb_xfixes_fetch_region_cookie_t ck = xcb_xfixes_fetch_region(_xcb, region);
 
 	xcb_generic_error_t * err;
 	xcb_xfixes_fetch_region_reply_t * r = xcb_xfixes_fetch_region_reply(_xcb, ck, &err);
 
 	if (err == nullptr and r != nullptr) {
-		xcb_rectangle_t * rect = xcb_xfixes_fetch_region_rectangles(r);
-		for (unsigned k = 0; k < r->length; ++k) {
-			//printf("rect %dx%d+%d+%d\n", rects[i].width, rects[i].height, rects[i].x, rects[i].y);
-			result += i_rect(rect[k]);
+		xcb_rectangle_iterator_t i = xcb_xfixes_fetch_region_rectangles_iterator(r);
+		while(i.rem > 0) {
+			//printf("rect %dx%d+%d+%d\n", i.data->width, i.data->height, i.data->x, i.data->y);
+			result += i_rect{i.data->x, i.data->y, i.data->width, i.data->height};
+			xcb_rectangle_next(&i);
 		}
-		//free(rect);
 		free(r);
+	} else {
+		throw exception_t{"Could not fetch region"};
 	}
 
 	xcb_xfixes_destroy_region(_xcb, region);
@@ -867,6 +881,14 @@ void display_t::check_x11_extension() {
 		request_type_name[composite_opcode+k] = xcomposite_request_name[k];
 	}
 
+}
+
+xcb_atom_t display_t::get_atom(char const * name) {
+	xcb_intern_atom_cookie_t ck = xcb_intern_atom(_xcb, false, strlen(name), name);
+	xcb_intern_atom_reply_t * r = xcb_intern_atom_reply(_xcb, ck, 0);
+	if(r == nullptr)
+		throw exception_t("Error while getting atom '%s'", name);
+	return r->atom;
 }
 
 }

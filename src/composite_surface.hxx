@@ -37,18 +37,19 @@ class composite_surface_t {
 
 	void create_damage() {
 		if (_damage == XCB_NONE) {
+			std::cout << "create damage for " << this << std::endl;
 			_damage = xcb_generate_id(_dpy->xcb());
 			xcb_damage_create(_dpy->xcb(), _damage, _window_id, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
-			if (_damage != XCB_NONE) {
-				_damaged += _dpy->read_damaged_region(_damage);
-			}
+			_damaged += i_rect{0, 0, _width, _height};
+			_damaged += _dpy->read_damaged_region(_damage);
 		}
 	}
 
 	void destroy_damage() {
-		if(_damage != None) {
+		if(_damage != XCB_NONE) {
+			std::cout << "destroy damage for " << this << std::endl;
 			xcb_damage_destroy(_dpy->xcb(), _damage);
-			_damage = None;
+			_damage = XCB_NONE;
 		}
 	}
 
@@ -74,10 +75,10 @@ public:
 
 		_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
 
-		printf("create composite_surface %dx%d\n", _width, _height);
+		printf("create composite_surface (%p) %dx%d\n", this, _width, _height);
 
 		if(_is_map) {
-			onmap();
+			on_map();
 		}
 
 	}
@@ -86,14 +87,13 @@ public:
 		destroy_damage();
 	}
 
-	void onmap() {
+	void on_map() {
 		if(_dpy->lock(_window_id)) {
 			if(not _dpy->check_for_unmap_window(_window_id)) {
 				_is_map = true;
 				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
 				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
 				_pixmap = std::shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
-				destroy_damage();
 				create_damage();
 			} else {
 				_is_map = false;
@@ -103,17 +103,25 @@ public:
 		}
 	}
 
-	void onresize(int width, int height) {
+	void on_unmap() {
+		if(_dpy->lock(_window_id)) {
+			destroy_damage();
+			_is_map = false;
+			_dpy->unlock();
+		}
+	}
+
+	void on_resize(int width, int height) {
 		if (width != _width or height != _height) {
 			_width = width;
 			_height = height;
 			if(_is_map) {
-				onmap();
+				on_map();
 			}
 		}
 	}
 
-	void ondamage() {
+	void on_damage() {
 		if(_dpy->lock(_window_id)) {
 			_damaged += _dpy->read_damaged_region(_damage);
 			_dpy->unlock();
