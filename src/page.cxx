@@ -4156,6 +4156,16 @@ void page_t::register_cm() {
 	}
 }
 
+void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * keymap) {
+	int kc = 0;
+	if ((kc = keymap->find_keysim(key.ks))) {
+		xcb_grab_key(xcb, true, w, key.mod, kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+		if(keymap->numlock_mod_mask() != 0) {
+			xcb_grab_key(xcb, true, w, key.mod| keymap->numlock_mod_mask(), kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+		}
+	}
+}
+
 /**
  * Update grab keys aware of current keymap
  */
@@ -4164,97 +4174,28 @@ void page_t::update_grabkey() {
 	assert(keymap != nullptr);
 
 	/** ungrab all previews key **/
-	XUngrabKey(cnx->dpy(), AnyKey, AnyModifier, cnx->root());
+	xcb_ungrab_key(cnx->xcb(), XCB_GRAB_ANY, cnx->root(), XCB_MOD_MASK_ANY);
 
 	int kc = 0;
 
-	if ((kc = keymap->find_keysim(bind_debug_1.ks))) {
-		XGrabKey(cnx->dpy(), kc, bind_debug_1.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_debug_1.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_1, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_2, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_3, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_4, keymap);
 
-	if ((kc = keymap->find_keysim(bind_debug_2.ks))) {
-		XGrabKey(cnx->dpy(), kc, bind_debug_2.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_debug_2.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	if ((kc = keymap->find_keysim(bind_debug_3.ks))) {
-		XGrabKey(cnx->dpy(), kc, bind_debug_3.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_debug_3.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	if ((kc = keymap->find_keysim(bind_debug_4.ks))) {
-		XGrabKey(cnx->dpy(), kc, bind_debug_4.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_debug_4.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	/* quit page */
-	if ((kc = keymap->find_keysim(bind_page_quit.ks))) {
-		printf("bind page quit => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_page_quit.mod, (unsigned int)bind_page_quit.ks);
-		XGrabKey(cnx->dpy(), kc, bind_page_quit.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_page_quit.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	/* toggle fullscreen */
-	if ((kc = keymap->find_keysim(bind_toggle_fullscreen.ks))) {
-		printf("bind toggle fullscreen => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_toggle_fullscreen.mod, (unsigned int)bind_toggle_fullscreen.ks);
-		XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_toggle_fullscreen.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	/* go to right desktop */
-	if ((kc = keymap->find_keysim(bind_right_desktop.ks))) {
-		printf("bind right desktop => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_right_desktop.mod, (unsigned int)bind_right_desktop.ks);
-		XGrabKey(cnx->dpy(), kc, bind_right_desktop.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_right_desktop.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
-
-	/* go to left desktop */
-	if ((kc = keymap->find_keysim(bind_left_desktop.ks))) {
-		printf("bind left desktop => kc: %d mod: %02x, keysym: %04x\n", kc, (unsigned int)bind_left_desktop.mod, (unsigned int)bind_left_desktop.ks);
-		XGrabKey(cnx->dpy(), kc, bind_left_desktop.mod, cnx->root(),
-		True, GrabModeAsync, GrabModeAsync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, bind_left_desktop.mod | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
-		}
-	}
+	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_left_desktop, keymap);
 
 	/* Alt-Tab */
 	if ((kc = keymap->find_keysim(XK_Tab))) {
-		XGrabKey(cnx->dpy(), kc, Mod1Mask, cnx->root(),
-		False, GrabModeAsync, GrabModeSync);
-		if(keymap->numlock_mod_mask() != 0) {
-			XGrabKey(cnx->dpy(), kc, Mod1Mask | keymap->numlock_mod_mask(), cnx->root(),
-			True, GrabModeAsync, GrabModeAsync);
+		xcb_grab_key(cnx->xcb(), true, cnx->root(), XCB_MOD_MASK_1, kc,
+				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
+		if (keymap->numlock_mod_mask() != 0) {
+			xcb_grab_key(cnx->xcb(), true, cnx->root(),
+					XCB_MOD_MASK_1 | keymap->numlock_mod_mask(), kc,
+					XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
 		}
 	}
 
