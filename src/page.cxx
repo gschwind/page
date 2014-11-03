@@ -167,7 +167,10 @@ page_t::~page_t() {
 	client_menu.reset();
 
 	for (auto i : filter_class<client_managed_t>(tree_t::get_all_children())) {
-		cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
+		if (cnx->lock(i->orig())) {
+			cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
+			cnx->unlock();
+		}
 	}
 
 	for (auto i : tree_t::get_all_children()) {
@@ -1846,7 +1849,7 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 			rnd->add_damaged(c->visible_area());
 		}
 
-		printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
+		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
 
 		/** damage corresponding area **/
@@ -1861,9 +1864,9 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 
 /* track all created window */
 void page_t::process_event(xcb_create_notify_event_t const * e) {
-	std::cout << format("08", e->sequence) << "create_notify " << e->width << "x" << e->height << "+" << e->x << "+" << e->y
-			<< " overide=" << (e->override_redirect?"true":"false")
-			<< " boder_width=" << e->border_width << std::endl;
+//	std::cout << format("08", e->sequence) << " create_notify " << e->width << "x" << e->height << "+" << e->x << "+" << e->y
+//			<< " overide=" << (e->override_redirect?"true":"false")
+//			<< " boder_width=" << e->border_width << std::endl;
 }
 
 void page_t::process_event(xcb_destroy_notify_event_t const * e) {
@@ -1943,7 +1946,12 @@ void page_t::process_fake_event(xcb_unmap_notify_event_t const * e) {
 		rnd->add_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
-			cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
+
+			if (cnx->lock(mw->orig())) {
+				cnx->reparentwindow(mw->orig(), cnx->root(), 0.0, 0.0);
+				cnx->unlock();
+			}
+
 			unmanage(mw);
 		}
 		//render();
@@ -2036,7 +2044,7 @@ void page_t::process_event(xcb_configure_request_event_t const * e) {
 					new_size.w = final_width;
 					new_size.h = final_height;
 
-					printf("new_size = %s\n", new_size.to_string().c_str());
+					//printf("new_size = %s\n", new_size.to_string().c_str());
 
 					if (new_size != old_size) {
 						/** only affect floating windows **/
@@ -2062,7 +2070,7 @@ void page_t::process_event(xcb_configure_request_event_t const * e) {
 }
 
 void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * e) {
-	printf("ackwoledge_configure_request ");
+	//printf("ackwoledge_configure_request ");
 
 	int i = 0;
 	uint32_t value[7] = {0};
@@ -2070,46 +2078,46 @@ void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * 
 	if(e->value_mask & XCB_CONFIG_WINDOW_X) {
 		mask |= XCB_CONFIG_WINDOW_X;
 		value[i++] = e->x;
-		printf("x = %d ", e->x);
+		//printf("x = %d ", e->x);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_Y) {
 		mask |= XCB_CONFIG_WINDOW_Y;
 		value[i++] = e->y;
-		printf("y = %d ", e->y);
+		//printf("y = %d ", e->y);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_WIDTH;
 		value[i++] = e->width;
-		printf("w = %d ", e->width);
+		//printf("w = %d ", e->width);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
 		mask |= XCB_CONFIG_WINDOW_HEIGHT;
 		value[i++] = e->height;
-		printf("h = %d ", e->height);
+		//printf("h = %d ", e->height);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
 		value[i++] = e->border_width;
-		printf("border = %d ", e->border_width);
+		//printf("border = %d ", e->border_width);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
 		mask |= XCB_CONFIG_WINDOW_SIBLING;
 		value[i++] = e->sibling;
-		printf("sibling = %d ", e->sibling);
+		//printf("sibling = %d ", e->sibling);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
 		mask |= XCB_CONFIG_WINDOW_STACK_MODE;
 		value[i++] = e->stack_mode;
-		printf("stack_mode = %d ", e->stack_mode);
+		//printf("stack_mode = %d ", e->stack_mode);
 	}
 
-	printf("\n");
+	//printf("\n");
 
 	xcb_void_cookie_t ck = xcb_configure_window(cnx->xcb(), e->window, mask, value);
 
@@ -2581,9 +2589,9 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 	/**
 	 * This print produce damage notify, thus avoid to print this line in that case
 	 **/
-	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
-		std::cout << format("08", e->sequence) << " process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
-	}
+//	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
+//		std::cout << format("08", e->sequence) << " process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
+//	}
 
 	if (e->response_type == XCB_BUTTON_PRESS) {
 		process_event_press(reinterpret_cast<xcb_button_press_event_t const *>(e));
@@ -3568,7 +3576,6 @@ void page_t::onmap(xcb_window_t w) {
 	 * managed this window and the window have not the right default size.
 	 *
 	 **/
-	xcb_flush(cnx->xcb());
 	cnx->grab();
 	cnx->fetch_pending_events();
 
@@ -3610,8 +3617,8 @@ void page_t::onmap(xcb_window_t w) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
 
-				props->print_window_attributes();
-				props->print_properties();
+				//props->print_window_attributes();
+				//props->print_properties();
 
 				xcb_atom_t type = props->wm_type();
 

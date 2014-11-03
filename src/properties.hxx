@@ -264,9 +264,6 @@ struct property_helper_t<XSizeHints> {
 					size_hints->base_width = tmp[15];
 					size_hints->base_height = tmp[16];
 					size_hints->win_gravity = tmp[17];
-
-					printf("XXX %d %d %d %d\n", size_hints->min_width, size_hints->min_height, size_hints->base_width, size_hints->base_height);
-
 					return size_hints;
 				}
 			}

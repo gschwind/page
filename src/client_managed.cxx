@@ -260,9 +260,6 @@ client_managed_t::~client_managed_t() {
 
 	destroy_back_buffer();
 
-	xcb_destroy_window(cnx()->xcb(), _deco);
-	xcb_destroy_window(cnx()->xcb(), _base);
-
 	xcb_destroy_window(cnx()->xcb(), _input_top);
 	xcb_destroy_window(cnx()->xcb(), _input_left);
 	xcb_destroy_window(cnx()->xcb(), _input_right);
@@ -271,6 +268,9 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _input_top_right);
 	xcb_destroy_window(cnx()->xcb(), _input_bottom_left);
 	xcb_destroy_window(cnx()->xcb(), _input_bottom_right);
+
+	xcb_destroy_window(cnx()->xcb(), _deco);
+	xcb_destroy_window(cnx()->xcb(), _base);
 
 }
 
@@ -704,18 +704,18 @@ void client_managed_t::grab_button_unfocused() {
 
 
 void client_managed_t::ungrab_all_button() {
-	if (lock()) {
+	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
+	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
+	if (cnx()->lock(_orig)) {
 		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _orig, XCB_MOD_MASK_ANY);
-		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
-		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
-		unlock();
+		cnx()->unlock();
 	}
 }
 
 void client_managed_t::select_inputs() {
+	cnx()->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 	if (lock()) {
-		cnx()->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
-		cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 		cnx()->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
 		xcb_shape_select_input(cnx()->xcb(), _orig, true);
 		unlock();
@@ -723,12 +723,12 @@ void client_managed_t::select_inputs() {
 }
 
 void client_managed_t::unselect_inputs() {
-	if (lock()) {
-		cnx()->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
-		cnx()->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
+	cnx()->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
+	cnx()->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
+	if (cnx()->lock(_orig)) {
 		cnx()->select_input(_orig, XCB_EVENT_MASK_NO_EVENT);
 		xcb_shape_select_input(cnx()->xcb(), _orig, false);
-		unlock();
+		cnx()->unlock();
 	}
 }
 
@@ -772,16 +772,10 @@ void client_managed_t::net_wm_state_delete() {
 	 * This one is for removing the window manager tag, thus only check if the window
 	 * still exist. (don't need lock);
 	 **/
-	cnx()->grab();
-	cnx()->fetch_pending_events();
-	if(cnx()->check_for_destroyed_window(_orig)) {
-		cnx()->ungrab();
-		return;
+	if (cnx()->lock(_orig)) {
+		cnx()->delete_property(_orig, _NET_WM_STATE);
+		cnx()->unlock();
 	}
-
-	cnx()->delete_property(_orig, _NET_WM_STATE);
-
-	cnx()->ungrab();
 }
 
 void client_managed_t::normalize() {
@@ -834,16 +828,11 @@ void client_managed_t::wm_state_delete() {
 	 * This one is for removing the window manager tag, thus only check if the window
 	 * still exist. (don't need lock);
 	 **/
-	cnx()->grab();
-	cnx()->fetch_pending_events();
-	if(cnx()->check_for_destroyed_window(_orig)) {
-		cnx()->ungrab();
-		return;
+
+	if(cnx()->lock(_orig)) {
+		cnx()->delete_property(_orig, WM_STATE);
+		cnx()->unlock();
 	}
-
-	cnx()->delete_property(_orig, WM_STATE);
-
-	cnx()->ungrab();
 }
 
 void client_managed_t::set_floating_wished_position(i_rect const & pos) {
