@@ -244,7 +244,7 @@ void page_t::run() {
 	update_net_supported();
 
 	/* update number of desktop */
-	int32_t number_of_desktop = _desktop_list.size();
+	uint32_t number_of_desktop = _desktop_list.size();
 	cnx->change_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
 
@@ -252,14 +252,14 @@ void page_t::run() {
 	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	/* set viewport */
-	long viewport[2] = { 0, 0 };
+	uint32_t viewport[2] = { 0, 0 };
 	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
 			CARDINAL, 32, viewport, 2);
 
 	update_current_desktop();
 
 	/* page is not able to show desktop only windows */
-	long showing_desktop = 0;
+	uint32_t showing_desktop = 0;
 	cnx->change_property(cnx->root(), _NET_SHOWING_DESKTOP, CARDINAL,
 			32, &showing_desktop, 1);
 
@@ -291,7 +291,7 @@ void page_t::run() {
 	scan();
 	update_windows_stack();
 
-	long workarea[4];
+	uint32_t workarea[4];
 	workarea[0] = 0;
 	workarea[1] = 0;
 	workarea[2] = _root_position.w;
@@ -463,7 +463,7 @@ void page_t::scan() {
 }
 
 void page_t::update_net_supported() {
-	std::vector<long> supported_list;
+	std::vector<xcb_atom_t> supported_list;
 
 	supported_list.push_back(A(_NET_WM_NAME));
 	supported_list.push_back(A(_NET_WM_USER_TIME));
@@ -3937,7 +3937,7 @@ void page_t::update_page_areas() {
 
 void page_t::set_desktop_geometry(long width, long height) {
 	/* define desktop geometry */
-	long desktop_geometry[2];
+	uint32_t desktop_geometry[2];
 	desktop_geometry[0] = width;
 	desktop_geometry[1] = height;
 	cnx->change_property(cnx->root(), _NET_DESKTOP_GEOMETRY,
@@ -4103,7 +4103,7 @@ void page_t::create_identity_window() {
 			&identity_window, 1);
 	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
 			WINDOW, 32, &identity_window, 1);
-	long pid = getpid();
+	uint32_t pid = getpid();
 	cnx->change_property(identity_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
 
 }
@@ -4304,7 +4304,7 @@ void page_t::print_state() const {
 
 void page_t::update_current_desktop() const {
 	/* set current desktop */
-	long current_desktop = _current_desktop;
+	uint32_t current_desktop = _current_desktop;
 	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
 			32, &current_desktop, 1);
 }
