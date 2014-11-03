@@ -44,7 +44,7 @@ private:
 	theme_t const * _theme;
 
 	managed_window_type_e _managed_type;
-	Atom _net_wm_type;
+	xcb_atom_t _net_wm_type;
 
 	/** hold floating position **/
 	i_rect _floating_wished_position;
@@ -116,7 +116,7 @@ private:
 
 public:
 
-	client_managed_t(Atom net_wm_type, std::shared_ptr<client_properties_t> c,
+	client_managed_t(xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> c,
 			theme_t const * theme, composite_surface_manager_t * cmgr);
 	virtual ~client_managed_t();
 
@@ -164,11 +164,11 @@ public:
 		return _base;
 	}
 
-	Window deco() const {
+	xcb_window_t deco() const {
 		return _deco;
 	}
 
-	Atom A(atom_e atom) {
+	xcb_atom_t A(atom_e atom) {
 		return cnx()->A(atom);
 	}
 
@@ -214,7 +214,7 @@ private:
 public:
 
 	bool is_fullscreen();
-	Atom net_wm_type();
+	xcb_atom_t net_wm_type();
 	bool get_wm_normal_hints(XSizeHints * size_hints);
 	void net_wm_state_add(atom_e atom);
 	void net_wm_state_remove(atom_e atom);
@@ -230,7 +230,7 @@ public:
 	void create_back_buffer();
 	std::vector<floating_event_t> const * floating_areas();
 	void update_floating_areas();
-	void set_opaque_region(Window w, region & region);
+	void set_opaque_region(xcb_window_t w, region & region);
 	bool has_window(xcb_window_t w) const;
 	virtual std::string get_node_name() const;
 	display_t * cnx();

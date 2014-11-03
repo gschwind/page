@@ -279,7 +279,7 @@ public:
 	bool replace_wm;
 
 	/** window that handle page identity for others clients */
-	Window identity_window;
+	xcb_window_t identity_window;
 
 	/* this data are used when you drag&drop a split slider */
 	mode_data_split_t mode_data_split;
@@ -320,11 +320,9 @@ public:
 	 **/
 	std::map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
 
-	std::list<Atom> supported_list;
+	std::list<xcb_atom_t> supported_list;
 
 	std::string page_base_dir;
-
-	//std::map<Window, window_handler_t *> window_list;
 
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
@@ -373,7 +371,7 @@ public:
 	display_t * get_xconnection();
 
 	/** short cut **/
-	Atom A(atom_e atom) {
+	xcb_atom_t A(atom_e atom) {
 		return cnx->A(atom);
 	}
 
@@ -421,11 +419,8 @@ public:
 	/* update _NET_SUPPORTED */
 	void update_net_supported();
 
-	/* print some window attributes for debuging */
-	void debug_print_window_attributes(Window w, XWindowAttributes &wa);
-
 	/* setup and create managed window */
-	client_managed_t * manage(Atom net_wm_type, std::shared_ptr<client_properties_t> wa);
+	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> wa);
 
 	/* unmanage a managed window */
 	void unmanage(client_managed_t * mw);
@@ -463,7 +458,7 @@ public:
 
 	void cleanup_not_managed_client(client_not_managed_t * c);
 
-	void process_net_vm_state_client_message(Window c, long type, Atom state_properties);
+	void process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties);
 
 	void insert_in_tree_using_transient_for(client_base_t * c);
 	void insert_in_tree_using_transient_for(client_managed_t * c);
@@ -476,7 +471,7 @@ public:
 	void safe_raise_window(client_base_t * c);
 
 	/** move to client_base **/
-	void compute_client_size_with_constraint(Window c,
+	void compute_client_size_with_constraint(xcb_window_t c,
 			unsigned int max_width, unsigned int max_height, unsigned int & width,
 			unsigned int & height);
 	/* attach floating window in a notebook */
@@ -493,7 +488,7 @@ public:
 	/* find where the managed window is */
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
 	std::vector<client_managed_t*> get_managed_windows();
-	client_managed_t * find_managed_window_with(Window w);
+	client_managed_t * find_managed_window_with(xcb_window_t w);
 	viewport_t * find_viewport_of(tree_t * n);
 	desktop_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
@@ -502,17 +497,17 @@ public:
 	void remove_viewport(desktop_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(xcb_window_t w);
-	void create_managed_window(std::shared_ptr<client_properties_t> c, Atom type);
-	void manage_client(client_managed_t * mw, Atom type);
+	void create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type);
+	void manage_client(client_managed_t * mw, xcb_atom_t type);
 	void ackwoledge_configure_request(xcb_configure_request_event_t const * e);
-	void create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type);
-	void create_dock_window(std::shared_ptr<client_properties_t> c, Atom type);
+	void create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type);
+	void create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type);
 	viewport_t * find_mouse_viewport(int x, int y);
-	bool get_safe_net_wm_user_time(client_base_t * c, Time & time);
+	bool get_safe_net_wm_user_time(client_base_t * c, xcb_timestamp_t & time);
 	void update_page_areas();
 	void set_desktop_geometry(long width, long height);
-	client_base_t * find_client_with(Window w);
-	client_base_t * find_client(Window w);
+	client_base_t * find_client_with(xcb_window_t w);
+	client_base_t * find_client(xcb_window_t w);
 	void remove_client(client_base_t * c);
 	std::string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
@@ -545,13 +540,13 @@ public:
 	void render(cairo_t * cr, page::time_t time);
 	bool need_render(time_t time);
 
-	bool check_for_managed_window(Window w);
-	bool check_for_destroyed_window(Window w);
+	bool check_for_managed_window(xcb_window_t w);
+	bool check_for_destroyed_window(xcb_window_t w);
 
 	void update_keymap();
 	void update_grabkey();
 
-	client_managed_t * find_hidden_client_with(Window w);
+	client_managed_t * find_hidden_client_with(xcb_window_t w);
 
 	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 

@@ -39,7 +39,7 @@ xcb_window_t display_t::root() {
 }
 
 /* conveniant macro to get atom XID */
-Atom display_t::A(atom_e atom) {
+xcb_atom_t display_t::A(atom_e atom) {
 	return (*_A)(atom);
 }
 
@@ -47,39 +47,15 @@ int display_t::screen() {
 	return _default_screen;
 }
 
-//int display_t::move_window(Window w, int x, int y) {
-//	//printf("XMoveWindow #%lu %d %d\n", w, x, y);
-//	return XMoveWindow(_dpy, w, x, y);
-//}
-
 display_t::display_t() {
-	//old_error_handler = XSetErrorHandler(error_handler);
-
-//	_dpy = NULL;
-//	_dpy = XOpenDisplay(NULL);
-//	if (_dpy == NULL) {
-//		throw std::runtime_error("Could not open display");
-//	} else {
-//		cnx_printf("Open display : Success\n");
-//	}
-
 	_xcb = xcb_connect(nullptr, &_default_screen);
 	_fd = xcb_get_file_descriptor(_xcb);
-
-	/** get xcb connection handler to enable xcb request **/
-	//_xcb = XGetXCBConnection(_dpy);
-	//XSetEventQueueOwner(_dpy, XCBOwnsEventQueue);
-
 	grab_count = 0;
-
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
-
 	update_default_visual();
-
 }
 
 display_t::~display_t() {
-	//XCloseDisplay(_dpy);
 	xcb_disconnect(_xcb);
 }
 
@@ -256,7 +232,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 bool display_t::register_cm(xcb_window_t w, bool replace) {
 	xcb_generic_error_t * err;
 	xcb_window_t current_cm;
-	Atom a_cm;
+	xcb_atom_t a_cm;
 	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
 	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
 	a_cm = get_atom(net_wm_cm);
@@ -323,14 +299,9 @@ void display_t::move_resize(xcb_window_t w, i_rect const & size) {
 	value[3] = size.h;
 	xcb_void_cookie_t ck = xcb_configure_window(_xcb, w, mask, value);
 
-	printf("%08u move_resize(%u, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
+	//printf("%08u move_resize(%u, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
 
 }
-
-//void display_t::set_window_border_width(xcb_window_t w, unsigned int width) {
-//	cnx_printf("XSetWindowBorderWidth: win = %lu, width = %u\n", w, width);
-//	XSetWindowBorderWidth(_dpy, w, width);
-//}
 
 void display_t::raise_window(xcb_window_t w) {
 	cnx_printf("XRaiseWindow: win = %lu\n", w);
@@ -342,14 +313,6 @@ void display_t::delete_property(xcb_window_t w, atom_e property) {
 	xcb_delete_property(_xcb, w, A(property));
 }
 
-
-//Status display_t::get_text_property(xcb_window_t w, XTextProperty * text_prop_return,
-//		atom_e property) {
-//
-//	cnx_printf("XGetTextProperty: win = %lu\n", w);
-//	return XGetTextProperty(_dpy, w, text_prop_return, A(property));
-//}
-
 int display_t::lower_window(xcb_window_t w) {
 	cnx_printf("XLowerWindow: win = %lu\n", w);
 	uint32_t mode = XCB_STACK_MODE_BELOW;
@@ -357,24 +320,6 @@ int display_t::lower_window(xcb_window_t w) {
 	return 0;
 }
 
-//static void _safe_xfree(void * x) {
-//	if (x != NULL)
-//		XFree(x);
-//}
-
-///* used for debuging, do not optimize with some cache */
-//std::shared_ptr<char> display_t::get_atom_name(xcb_atom_t atom) {
-//	cnx_printf("XGetAtomName: atom = %lu\n", atom);
-//	return std::shared_ptr<char>(XGetAtomName(_dpy, atom), _safe_xfree);
-//}
-
-//Status display_t::send_event(xcb_window_t w, Bool propagate, long event_mask,
-//		XEvent* event_send) {
-//
-//	cnx_printf("XSendEvent: win = %lu\n", w);
-//	return XSendEvent(_dpy, w, propagate, event_mask, event_send);
-//}
-//
 void display_t::set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time) {
 	xcb_set_input_focus(_xcb, revert_to, focus, time);
 }

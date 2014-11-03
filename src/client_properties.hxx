@@ -86,7 +86,7 @@ private:
 	region *                     _shape;
 
 	/** short cut **/
-	Atom A(atom_e atom) {
+	xcb_atom_t A(atom_e atom) {
 		return _cnx->A(atom);
 	}
 
@@ -449,7 +449,7 @@ public:
 public:
 
 	void print_window_attributes() {
-		printf(">>> Window: #%u\n", _id);
+		printf(">>> window xid: #%u\n", _id);
 		printf("> size: %dx%d+%d+%d\n", _geometry->width, _geometry->height, _geometry->x, _geometry->y);
 		printf("> border_width: %d\n", _geometry->border_width);
 		printf("> depth: %d\n", _geometry->depth);

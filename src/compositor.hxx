@@ -81,8 +81,8 @@ private:
 
 private:
 
-	void repair_damaged_window(Window w, region area);
-	void repair_moved_window(Window w, region from, region to);
+	void repair_damaged_window(xcb_window_t w, region area);
+	void repair_moved_window(xcb_window_t w, region from, region to);
 
 	void render_flush();
 
@@ -129,9 +129,7 @@ public:
 
 	void render();
 
-	void destroy_composite_surface(Window w);
-	void create_damage(Window w, XWindowAttributes & wa);
-	void destroy_damage(Window w);
+	void destroy_composite_surface(xcb_window_t w);
 	void set_fade_in_time(int nsec);
 	void set_fade_out_time(int nsec);
 	xcb_window_t get_composite_overlay();
@@ -140,7 +138,7 @@ public:
 	void renderable_remove(renderable_t * r);
 	void renderable_clear();
 
-	Atom A(atom_e a) {
+	xcb_atom_t A(atom_e a) {
 		return (*_A)(a);
 	}
 

@@ -101,7 +101,7 @@ public:
 
 
 	/* overlay composite */
-	Window composite_overlay;
+	xcb_window_t composite_overlay;
 
 	std::shared_ptr<atom_handler_t> _A;
 
@@ -129,7 +129,6 @@ public:
 
 	int fd();
 	xcb_window_t root();
-	Display * dpy();
 	xcb_connection_t * xcb();
 	xcb_visualtype_t * default_visual();
 	xcb_visualtype_t * root_visual();
@@ -137,7 +136,7 @@ public:
 	xcb_screen_t * xcb_screen();
 
 	/* conveniant macro to get atom XID */
-	Atom A(atom_e atom);
+	xcb_atom_t A(atom_e atom);
 
 	int screen();
 
@@ -175,21 +174,7 @@ public:
 	}
 
 	void delete_property(xcb_window_t w, atom_e property);
-
-	Status get_window_attributes(xcb_window_t w,
-			XWindowAttributes * window_attributes_return);
-
-	Status get_text_property(xcb_window_t w,
-			XTextProperty * text_prop_return, atom_e property);
 	int lower_window(xcb_window_t w);
-	int configure_window(xcb_window_t w, unsigned int value_mask,
-			XWindowChanges * values);
-
-	/* used for debuging, do not optimize with some cache */
-	std::shared_ptr<char> get_atom_name(Atom atom);
-
-	Status send_event(xcb_window_t w, Bool propagate, long event_mask,
-			XEvent* event_send);
 	void set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time);
 	void fake_configure(xcb_window_t w, i_rect location, int border_width);
 
@@ -358,6 +343,14 @@ public:
 	void print_error(xcb_generic_error_t const * err);
 
 	char const * get_event_name(uint8_t response_type);
+
+	char const * get_atom_name(atom_e a) {
+		return _A->name(a);
+	}
+
+	std::string const & get_atom_name(xcb_atom_t a) {
+		return _A->name(a);
+	}
 
 
 };

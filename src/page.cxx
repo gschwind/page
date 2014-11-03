@@ -523,8 +523,8 @@ void page_t::update_net_supported() {
 }
 
 void page_t::update_client_list() {
-	set<Window> s_client_list;
-	set<Window> s_client_list_stack;
+	set<xcb_window_t> s_client_list;
+	set<xcb_window_t> s_client_list_stack;
 	std::vector<client_managed_t *> lst = get_managed_windows();
 
 	for (auto i : lst) {
@@ -532,8 +532,8 @@ void page_t::update_client_list() {
 		s_client_list_stack.insert(i->orig());
 	}
 
-	std::vector<Window> client_list(s_client_list.begin(), s_client_list.end());
-	std::vector<Window> client_list_stack(s_client_list_stack.begin(),
+	std::vector<xcb_window_t> client_list(s_client_list.begin(), s_client_list.end());
+	std::vector<xcb_window_t> client_list_stack(s_client_list_stack.begin(),
 			s_client_list_stack.end());
 
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
@@ -718,16 +718,16 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 /* Button event make page to grab pointer */
 void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
-	std::cout << "Button Event Press "
-			<< " event=" << e->event
-			<< " child=" << e->child
-			<< " root=" << e->root
-			<< " button=" << static_cast<int>(e->detail)
-			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
-			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
-			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
-			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
-			<< std::endl;
+//	std::cout << "Button Event Press "
+//			<< " event=" << e->event
+//			<< " child=" << e->child
+//			<< " root=" << e->root
+//			<< " button=" << static_cast<int>(e->detail)
+//			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
+//			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
+//			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
+//			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
+//			<< std::endl;
 
 
 	client_managed_t * mw = find_managed_window_with(e->event);
@@ -1846,7 +1846,7 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 			rnd->add_damaged(c->visible_area());
 		}
 
-		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
+		printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
 
 		/** damage corresponding area **/
@@ -1861,7 +1861,9 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 
 /* track all created window */
 void page_t::process_event(xcb_create_notify_event_t const * e) {
-
+	std::cout << format("08", e->sequence) << "create_notify " << e->width << "x" << e->height << "+" << e->x << "+" << e->y
+			<< " overide=" << (e->override_redirect?"true":"false")
+			<< " boder_width=" << e->border_width << std::endl;
 }
 
 void page_t::process_event(xcb_destroy_notify_event_t const * e) {
@@ -2034,7 +2036,7 @@ void page_t::process_event(xcb_configure_request_event_t const * e) {
 					new_size.w = final_width;
 					new_size.h = final_height;
 
-					//printf("new_size = %s\n", new_size.to_std::string().c_str());
+					printf("new_size = %s\n", new_size.to_string().c_str());
 
 					if (new_size != old_size) {
 						/** only affect floating windows **/
@@ -2060,51 +2062,56 @@ void page_t::process_event(xcb_configure_request_event_t const * e) {
 }
 
 void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * e) {
-	static unsigned int CONFIGURE_MASK =
-			(XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT | XCB_CONFIG_WINDOW_BORDER_WIDTH);
-
-	//printf("ackwoledge_configure_request ");
+	printf("ackwoledge_configure_request ");
 
 	int i = 0;
-	uint32_t value[5] = {0};
+	uint32_t value[7] = {0};
 	uint32_t mask = 0;
 	if(e->value_mask & XCB_CONFIG_WINDOW_X) {
 		mask |= XCB_CONFIG_WINDOW_X;
 		value[i++] = e->x;
-		//printf("x = %d ", e.x);
+		printf("x = %d ", e->x);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_Y) {
 		mask |= XCB_CONFIG_WINDOW_Y;
 		value[i++] = e->y;
-		//printf("y = %d ", e.y);
+		printf("y = %d ", e->y);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_WIDTH;
 		value[i++] = e->width;
-		//printf("w = %d ", e.width);
+		printf("w = %d ", e->width);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
 		mask |= XCB_CONFIG_WINDOW_HEIGHT;
 		value[i++] = e->height;
-		//printf("h = %d ", e.height);
+		printf("h = %d ", e->height);
 	}
 
 	if(e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
 		mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
 		value[i++] = e->border_width;
-		//printf("border = %d ", e.border_width);
+		printf("border = %d ", e->border_width);
 	}
 
-	//printf("\n");
-
-	xcb_void_cookie_t ck = xcb_configure_window_checked(cnx->xcb(), e->window, mask, value);
-	xcb_generic_error_t * err = xcb_request_check(cnx->xcb(), ck);
-	if(err != nullptr) {
-		printf("configure error\n");
+	if(e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
+		mask |= XCB_CONFIG_WINDOW_SIBLING;
+		value[i++] = e->sibling;
+		printf("sibling = %d ", e->sibling);
 	}
+
+	if(e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
+		mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+		value[i++] = e->stack_mode;
+		printf("stack_mode = %d ", e->stack_mode);
+	}
+
+	printf("\n");
+
+	xcb_void_cookie_t ck = xcb_configure_window(cnx->xcb(), e->window, mask, value);
 
 }
 
@@ -2189,7 +2196,7 @@ void page_t::process_event(xcb_property_notify_event_t const * e) {
 
 	}
 
-	Window x = e->window;
+	xcb_window_t x = e->window;
 	client_managed_t * mw = find_managed_window_with(e->window);
 
 	if (e->atom == A(_NET_WM_USER_TIME)) {
@@ -2271,7 +2278,7 @@ void page_t::process_event(xcb_property_notify_event_t const * e) {
 void page_t::process_event(xcb_client_message_event_t const * e) {
 
 	//std::shared_ptr<char> name = cnx->get_atom_name(e->type);
-	//std::cout << "ClientMessage type = " << name.get() << std::endl;
+	std::cout << "ClientMessage type = " << cnx->get_atom_name(e->type) << std::endl;
 
 	xcb_window_t w = e->window;
 	if (w == XCB_NONE)
@@ -2574,9 +2581,9 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 	/**
 	 * This print produce damage notify, thus avoid to print this line in that case
 	 **/
-//	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
-//		std::cout << "process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
-//	}
+	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
+		std::cout << format("08", e->sequence) << " process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
+	}
 
 	if (e->response_type == XCB_BUTTON_PRESS) {
 		process_event_press(reinterpret_cast<xcb_button_press_event_t const *>(e));
@@ -2685,7 +2692,7 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 	} else if (e->response_type == cnx->shape_event + ShapeNotify) {
 		xcb_shape_notify_event_t const * se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
 		if(se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
-			Window w = se->affected_window;
+			xcb_window_t w = se->affected_window;
 			client_base_t * c = find_client(w);
 			if(c != nullptr) {
 				c->update_shape();
@@ -3024,7 +3031,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 }
 
-void page_t::process_net_vm_state_client_message(Window c, long type, Atom state_properties) {
+void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties) {
 	if(state_properties == None)
 		return;
 
@@ -3198,7 +3205,7 @@ void page_t::safe_raise_window(client_base_t * c) {
 	update_windows_stack();
 }
 
-void page_t::compute_client_size_with_constraint(Window c,
+void page_t::compute_client_size_with_constraint(xcb_window_t c,
 		unsigned int wished_width, unsigned int wished_height,
 		unsigned int & width, unsigned int & height) {
 
@@ -3394,7 +3401,6 @@ void page_t::update_windows_stack() {
 	get_all_children(children);
 	std::vector<client_base_t *> clients = filter_class<client_base_t>(children);
 
-	std::list<xcb_window_t> final_order;
 	for(auto i: clients) {
 		cnx->raise_window(i->base());
 	}
@@ -3566,6 +3572,7 @@ void page_t::onmap(xcb_window_t w) {
 	 * managed this window and the window have not the right default size.
 	 *
 	 **/
+	xcb_flush(cnx->xcb());
 	cnx->grab();
 	cnx->fetch_pending_events();
 
@@ -3604,13 +3611,13 @@ void page_t::onmap(xcb_window_t w) {
 		try {
 			std::shared_ptr<client_properties_t> props{new client_properties_t{cnx, static_cast<xcb_window_t>(w)}};
 			if (props->read_window_attributes()) {
-				if(props->wa()->_class != InputOnly) {
+				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
 
-				//props->print_window_attributes();
-				//props->print_properties();
+				props->print_window_attributes();
+				props->print_properties();
 
-				Atom type = props->wm_type();
+				xcb_atom_t type = props->wm_type();
 
 				if (not props->wa()->override_redirect) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
@@ -3681,7 +3688,8 @@ void page_t::onmap(xcb_window_t w) {
 			}
 		}
 
-		} catch (...) {
+		} catch (exception_t &e) {
+			std::cout << e.what() << std::endl;
 			c = nullptr;
 			throw;
 		}
@@ -3693,7 +3701,7 @@ void page_t::onmap(xcb_window_t w) {
 }
 
 
-void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme, cmgr);
@@ -3704,7 +3712,7 @@ void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, Atom 
 	}
 }
 
-void page_t::manage_client(client_managed_t * mw, Atom type) {
+void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 	try {
 
@@ -3733,7 +3741,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 			fullscreen(mw);
 			update_desktop_visibility();
 			mw->reconfigure();
-			Time time = 0;
+			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
 				set_focus(mw, time);
 			} else {
@@ -3775,7 +3783,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 		} else {
 			mw->normalize();
 			mw->reconfigure();
-			Time time = 0;
+			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
 				set_focus(mw, time);
 			} else {
@@ -3790,7 +3798,7 @@ void page_t::manage_client(client_managed_t * mw, Atom type) {
 	}
 }
 
-void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
 		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 		uw->map();
@@ -3807,7 +3815,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, Ato
 	}
 }
 
-void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, Atom type) {
+void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 	uw->map();
 	attach_dock(uw);
@@ -3830,7 +3838,7 @@ viewport_t * page_t::find_mouse_viewport(int x, int y) {
  * @output time: if time is found time is set to the found value.
  * @input c: a window client handler.
  **/
-bool page_t::get_safe_net_wm_user_time(client_base_t * c, Time & time) {
+bool page_t::get_safe_net_wm_user_time(client_base_t * c, xcb_timestamp_t & time) {
 	if (c->net_wm_user_time() != nullptr) {
 		time = *(c->net_wm_user_time());
 		return true;
@@ -3861,7 +3869,7 @@ std::vector<client_managed_t *> page_t::get_managed_windows() {
 	return filter_class<client_managed_t>(tree_t::get_all_children());
 }
 
-client_managed_t * page_t::find_managed_window_with(Window w) {
+client_managed_t * page_t::find_managed_window_with(xcb_window_t w) {
 	client_base_t * c = find_client_with(w);
 	if (c != nullptr) {
 		return dynamic_cast<client_managed_t *>(c);
@@ -3936,7 +3944,7 @@ void page_t::set_desktop_geometry(long width, long height) {
 			CARDINAL, 32, desktop_geometry, 2);
 }
 
-client_base_t * page_t::find_client_with(Window w) {
+client_base_t * page_t::find_client_with(xcb_window_t w) {
 	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
 		if(i->has_window(w)) {
 			return i;
@@ -3945,7 +3953,7 @@ client_base_t * page_t::find_client_with(Window w) {
 	return nullptr;
 }
 
-client_base_t * page_t::find_client(Window w) {
+client_base_t * page_t::find_client(xcb_window_t w) {
 	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
 		if(i->orig() == w) {
 			return i;

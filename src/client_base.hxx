@@ -49,7 +49,7 @@ protected:
 	bool _is_hidden;
 
 	/** short cut **/
-	Atom A(atom_e atom) {
+	xcb_atom_t A(atom_e atom) {
 		return _properties->cnx()->A(atom);
 	}
 
@@ -263,7 +263,7 @@ public:
 		return _title;
 	}
 
-	bool is_window(Window w) {
+	bool is_window(xcb_window_t w) {
 		return w == _properties->id();
 	}
 
@@ -319,7 +319,7 @@ public:
 
 	}
 
-	Atom wm_type() {
+	xcb_atom_t wm_type() {
 		return _properties->wm_type();
 	}
 

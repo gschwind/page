@@ -15,6 +15,8 @@
 #include <xcb/xcb.h>
 
 #include <cstring>
+#include <map>
+#include <string>
 
 #include "exception.hxx"
 
@@ -284,8 +286,12 @@ ATOM_ITEM(PAGE_QUIT)
  * atom call.
  **/
 class atom_handler_t {
-	xcb_atom_t * _data;
-	char const ** _name;
+	xcb_connection_t * _xcb;
+
+	std::map<int, xcb_atom_t> _id_to_xid;
+
+	std::map<std::string, xcb_atom_t> _name_to_xid;
+	std::map<xcb_atom_t, std::string> _xid_to_name;
 
 	/** cannot be moved or copied **/
 	atom_handler_t(atom_handler_t const & a);
@@ -294,52 +300,64 @@ class atom_handler_t {
 
 public:
 
-	xcb_atom_t get_atom(xcb_connection_t * xcb, char const * name) {
-		xcb_intern_atom_cookie_t ck = xcb_intern_atom(xcb, false, strlen(name), name);
-		xcb_intern_atom_reply_t * r = xcb_intern_atom_reply(xcb, ck, 0);
-		if(r == nullptr)
-			throw exception_t("Error while getting atom '%s'", name);
-		return r->atom;
+	xcb_atom_t get_atom(std::string const & name) {
+		auto x = _name_to_xid.find(name);
+		if(x != _name_to_xid.end()) {
+			return x->second;
+		} else {
+			xcb_intern_atom_cookie_t ck = xcb_intern_atom(_xcb, false, name.length(), name.c_str());
+			xcb_intern_atom_reply_t * r = xcb_intern_atom_reply(_xcb, ck, 0);
+			if (r == nullptr)
+				throw exception_t("Error while getting atom '%s'", name.c_str());
+			xcb_atom_t a = r->atom;
+			_name_to_xid[name] = a;
+			_xid_to_name[a] = name;
+			free(r);
+			return a;
+		}
 	}
 
-	atom_handler_t(xcb_connection_t * dpy) {
+	atom_handler_t(xcb_connection_t * xcb) : _xcb(xcb) {
 		unsigned const n_items = sizeof(atom_name) / sizeof(atom_item_t);
-
-		_data = new xcb_atom_t[LAST_ATOM];
-		_name = new char const *[LAST_ATOM];
-
-		for (int i = 0; i < LAST_ATOM; ++i) {
-			_data[i] = None;
-			_name[i] = nullptr;
-		}
-
 		for (unsigned int i = 0; i < n_items; ++i) {
-			_data[atom_name[i].id] = get_atom(dpy, atom_name[i].name);
-			_name[atom_name[i].id] = atom_name[i].name;
-		}
-
-		for (unsigned int i = 0; i < LAST_ATOM; ++i) {
-			if(_data[i] == None)
-				printf("FAIL INIT ATOM %d\n", i);
+			xcb_atom_t a = get_atom(atom_name[i].name);
+			_id_to_xid[i] = a;
 		}
 	}
 
 	~atom_handler_t() {
-		delete [] _data;
-		delete [] _name;
+
 	}
 
-	xcb_atom_t operator() (int id) {
-		return _data[id];
+	xcb_atom_t operator() (atom_e id) {
+		return _id_to_xid[id];
 	}
 
-	xcb_atom_t operator[] (int id) {
-		return _data[id];
+	xcb_atom_t operator[] (atom_e id) {
+		return _id_to_xid[id];
 	}
 
 	char const * name(atom_e a) {
-		return _name[a];
+		return atom_name[a].name;
 	}
+
+	std::string const & name(xcb_atom_t xid) {
+		auto x = _xid_to_name.find(xid);
+		if(x != _xid_to_name.end())
+			return x->second;
+		xcb_get_atom_name_cookie_t ck = xcb_get_atom_name(_xcb, xid);
+		xcb_get_atom_name_reply_t * r = xcb_get_atom_name_reply(_xcb, ck, 0);
+		if(r == nullptr)  {
+			static std::string const not_found{"AtomNotFound"};
+			return not_found;
+		}
+		std::string name{xcb_get_atom_name_name(r), xcb_get_atom_name_name(r) + xcb_get_atom_name_name_length(r)};
+		_name_to_xid[name] = xid;
+		_xid_to_name[xid] = name;
+		free(r);
+		return _xid_to_name[xid];
+	}
+
 
 
 };

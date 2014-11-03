@@ -26,7 +26,7 @@ class renderable_page_t {
 	theme_t * _theme;
 	region _damaged;
 
-	Pixmap _pix;
+	xcb_pixmap_t _pix;
 
 	i_rect _position;
 

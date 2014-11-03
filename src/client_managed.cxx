@@ -22,7 +22,7 @@
 
 namespace page {
 
-client_managed_t::client_managed_t(Atom net_wm_type,
+client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 		std::shared_ptr<client_properties_t> props, theme_t const * theme, composite_surface_manager_t * cmgr) :
 				client_base_t(props),
 				_theme(theme),
@@ -52,14 +52,32 @@ client_managed_t::client_managed_t(Atom net_wm_type,
 				_cmgr(cmgr)
 {
 
-
-
 	i_rect pos{_properties->position()};
 
 	printf("window default position = %s\n", pos.to_string().c_str());
 
 	_floating_wished_position = pos;
 	_notebook_wished_position = pos;
+	_base_position = pos;
+	_orig_position = pos;
+
+	if(_properties->wm_normal_hints()!= nullptr) {
+		XSizeHints const * s = _properties->wm_normal_hints();
+
+		if (s->flags & PBaseSize) {
+			if (_floating_wished_position.w < s->base_width)
+				_floating_wished_position.w = s->base_width;
+			if (_floating_wished_position.h < s->base_height)
+				_floating_wished_position.h = s->base_height;
+		} else if (s->flags & PMinSize) {
+			if (_floating_wished_position.w < s->min_width)
+				_floating_wished_position.w = s->min_width;
+			if (_floating_wished_position.h < s->min_height)
+				_floating_wished_position.h = s->min_height;
+		}
+
+	}
+
 
 	_orig_visual = _properties->wa()->visual;
 	_orig_depth = _properties->geometry()->depth;
@@ -722,7 +740,7 @@ bool client_managed_t::is_fullscreen() {
 	return false;
 }
 
-Atom client_managed_t::net_wm_type() {
+xcb_atom_t client_managed_t::net_wm_type() {
 	return _net_wm_type;
 }
 

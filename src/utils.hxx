@@ -23,6 +23,7 @@
 #include <map>
 #include <set>
 #include <memory>
+#include <sstream>
 
 #include "box.hxx"
 #include "key_desc.hxx"
@@ -98,44 +99,6 @@ _1 get_safe_value(std::map<_0, _1> & x, _0 key, _1 def) {
 	else
 		return def;
 }
-
-//template<typename T> struct _format {
-//	static const int size = 0;
-//};
-//
-//template<> struct _format<long> {
-//	static const int size = 32;
-//};
-//
-//template<> struct _format<unsigned long> {
-//	static const int size = 32;
-//};
-//
-//template<> struct _format<short> {
-//	static const int size = 16;
-//};
-//
-//template<> struct _format<unsigned short> {
-//	static const int size = 16;
-//};
-//
-//template<> struct _format<char> {
-//	static const int size = 8;
-//};
-//
-//template<> struct _format<unsigned char> {
-//	static const int size = 8;
-//};
-
-
-//template<typename T>
-//void write_window_property(Display * dpy, Window win, Atom prop,
-//		Atom type, std::vector<T> & v) {
-//	XChangeProperty(dpy, win, prop, type, _format<T>::size,
-//	PropModeReplace, (unsigned char *) &v[0], v.size());
-//}
-
-
 
 inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
 		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
@@ -218,113 +181,6 @@ inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
 
 }
 
-
-//inline struct timespec operator +(struct timespec const & a,
-//		struct timespec const & b) {
-//	struct timespec ret;
-//	ret.tv_nsec = (a.tv_nsec + b.tv_nsec) % 1000000000L;
-//	ret.tv_sec = (a.tv_sec + b.tv_sec)
-//			+ ((a.tv_nsec + b.tv_nsec) / 1000000000L);
-//	return ret;
-//}
-//
-//inline bool operator <(struct timespec const & a, struct timespec const & b) {
-//	return (a.tv_sec < b.tv_sec)
-//			|| (a.tv_sec == b.tv_sec and a.tv_nsec < b.tv_nsec);
-//}
-//
-//inline bool operator >(struct timespec const & a, struct timespec const & b) {
-//	return b < a;
-//}
-//
-//inline struct timespec new_timespec(long sec, long nsec) {
-//	struct timespec ret;
-//	ret.tv_nsec = nsec % 1000000000L;
-//	ret.tv_sec = sec + (nsec / 1000000000L);
-//	return ret;
-//}
-//
-///** positive diff **/
-//inline struct timespec pdiff(struct timespec const & a,
-//		struct timespec const & b) {
-//	struct timespec ret;
-//
-//	if(b < a) {
-//		ret.tv_nsec = (a.tv_nsec - b.tv_nsec);
-//		ret.tv_sec = (a.tv_sec - b.tv_sec);
-//		if(ret.tv_nsec < 0) {
-//			ret.tv_sec -= 1;
-//			ret.tv_nsec += 1000000000L;
-//		}
-//	} else {
-//		ret.tv_nsec = (b.tv_nsec - a.tv_nsec);
-//		ret.tv_sec = (b.tv_sec - a.tv_sec);
-//		if(ret.tv_nsec < 0) {
-//			ret.tv_sec -= 1;
-//			ret.tv_nsec += 1000000000L;
-//		}
-//	}
-//
-//	return ret;
-//}
-
-
-
-//template<typename T>
-//std::vector<T> * get_window_property(Display * dpy, Window win, Atom prop, Atom type) {
-//
-//	//printf("try read win = %lu, %lu(%lu)\n", win, prop, type);
-//
-//	int status;
-//	Atom actual_type;
-//	int actual_format; /* can be 8, 16 or 32 */
-//	unsigned long int nitems;
-//	unsigned long int bytes_left;
-//	long int offset = 0L;
-//
-//	std::vector<T> * buffer = new std::vector<T>();
-//
-//	do {
-//		unsigned char * tbuff;
-//
-//		status = XGetWindowProperty(dpy, win, prop, offset,
-//				std::numeric_limits<long int>::max(), False, type, &actual_type,
-//				&actual_format, &nitems, &bytes_left, &tbuff);
-//
-//		if (status == Success) {
-//
-//			if (actual_format == _format<T>::size && nitems > 0) {
-//				T * data = reinterpret_cast<T*>(tbuff);
-//				buffer->insert(buffer->end(), &data[0], &data[nitems]);
-//			} else {
-//				status = BadValue;
-//				XFree(tbuff);
-//				break;
-//			}
-//
-//			if (bytes_left != 0) {
-//				printf("some bits lefts\n");
-//				//assert((nitems * actual_format % 32) == 0);
-//				//assert(bytes_left % (actual_format/4) == 0);
-//				offset += (nitems * actual_format) / 32;
-//			}
-//
-//			XFree(tbuff);
-//		} else {
-//			break;
-//		}
-//
-//	} while (bytes_left != 0);
-//
-//
-//	if (status == Success) {
-//		return buffer;
-//	} else {
-//		delete buffer;
-//		return 0;
-//	}
-//}
-
 template<typename T>
 void safe_delete(T & p) {
 	delete p;
@@ -338,45 +194,6 @@ template<typename T> T * safe_copy(T * p) {
 		return nullptr;
 	}
 }
-
-//template<typename T>
-//std::list<T> * read_list(Display * dpy, Window w, Atom prop, Atom type) {
-//	std::vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-//	if (tmp != 0) {
-//		std::list<T> * ret = new std::list<T>(tmp->begin(), tmp->end());
-//		delete tmp;
-//		return ret;
-//	} else {
-//		return 0;
-//	}
-//}
-//
-//template<typename T>
-//T * read_value(Display * dpy, Window w, Atom prop, Atom type) {
-//	std::vector<T> * tmp = get_window_property<T>(dpy, w, prop, type);
-//	if (tmp != 0) {
-//		if (tmp->size() > 0) {
-//			T * ret = new T(tmp->front());
-//			delete tmp;
-//			return ret;
-//		} else {
-//			return 0;
-//		}
-//	} else {
-//		return 0;
-//	}
-//}
-
-//inline std::string * read_text(Display * dpy, Window w, Atom prop, Atom type) {
-//	std::vector<char> * tmp = get_window_property<char>(dpy, w, prop, type);
-//	if (tmp != nullptr) {
-//		std::string * ret = new std::string(tmp->begin(), tmp->end());
-//		delete tmp;
-//		return ret;
-//	} else {
-//		return nullptr;
-//	}
-//}
 
 /* C++11 reverse iterators */
 template <typename T>
@@ -707,6 +524,158 @@ inline void cairo_clip(cairo_t * cr, i_rect const & clip) {
 	cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
 	cairo_clip(cr);
 }
+
+template<typename T>
+class _format {
+	std::ios::fmtflags flags;
+	int width;
+	int precision;
+	char fill;
+
+	T const & data;
+
+	int read_int(std::string const & s, int pos, int & value) {
+		bool cont = true;
+		do {
+			switch(s[pos]) {
+			case '0':
+				value = value*10+0;
+				pos += 1;
+				break;
+			case '1':
+				value = value*10+1;
+				pos += 1;
+				break;
+			case '2':
+				value = value*10+2;
+				pos += 1;
+				break;
+			case '3':
+				value = value*10+3;
+				pos += 1;
+				break;
+			case '4':
+				value = value*10+4;
+				pos += 1;
+				break;
+			case '5':
+				value = value*10+5;
+				pos += 1;
+				break;
+			case '6':
+				value = value*10+6;
+				pos += 1;
+				break;
+			case '7':
+				value = value*10+7;
+				pos += 1;
+				break;
+			case '8':
+				value = value*10+8;
+				pos += 1;
+				break;
+			case '9':
+				value = value*10+9;
+				pos += 1;
+				break;
+			default:
+				cont = false;
+				break;
+			}
+		} while(cont);
+		return pos;
+	}
+
+
+public:
+	_format(std::string const & s, T const & data) : flags(), width(0), precision(0), fill(' '), data(data) {
+		int pos = 0;
+		switch(s[0]) {
+		case '-':
+			flags |= std::ios::left;
+			pos += 1;
+			break;
+		case '+':
+			flags |= std::ios::showpos;
+			pos += 1;
+			break;
+		case '#':
+			flags |= std::ios::showbase;
+			pos += 1;
+			break;
+		case '0':
+			fill = '0';
+			pos += 1;
+			break;
+		case ' ':
+			fill = ' ';
+			pos += 1;
+			break;
+		case 0:
+			break;
+		default:
+			break;
+		}
+
+		pos = read_int(s, pos, width);
+
+		if(s[pos] == '.') {
+			pos += 1;
+			pos = read_int(s, pos, precision);
+		}
+
+		switch(s[pos]) {
+			case 'g':
+				flags |= std::ios::scientific;
+				pos += 1;
+				break;
+			case 'x':
+				flags |= std::ios::hex;
+				pos += 1;
+				break;
+			case 'X':
+				flags |= std::ios::hex | std::ios::uppercase;
+				pos += 1;
+				break;
+			case 'e':
+				flags |= std::ios::scientific;
+				pos += 1;
+				break;
+			case 'E':
+				flags |= std::ios::scientific | std::ios::uppercase;
+				pos += 1;
+				break;
+			case 'o':
+				flags |= std::ios::oct;
+				pos += 1;
+				break;
+			case 0:
+				break;
+			default:
+				break;
+		}
+
+	}
+
+	std::string str() {
+		std::ostringstream os;
+		/** set new flags and backup previous **/
+		os.flags(flags);
+		os.width(width);
+		os.precision(precision);
+		os.fill(fill);
+		os << data;
+		return os.str();
+	}
+
+};
+
+template<typename T>
+std::string format(std::string const & s, T const & data) {
+	_format<T> tmp{s, data};
+	return tmp.str();
+}
+
 
 
 }

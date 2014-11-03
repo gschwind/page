@@ -33,7 +33,7 @@ private:
 	static unsigned long const UNMANAGED_ORIG_WINDOW_EVENT_MASK =
 	XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
 
-	Atom _net_wm_type;
+	xcb_atom_t _net_wm_type;
 
 	std::shared_ptr<composite_surface_t> surf;
 
@@ -45,7 +45,7 @@ private:
 
 public:
 
-	client_not_managed_t(Atom type, std::shared_ptr<client_properties_t> c, std::shared_ptr<composite_surface_t> surf) :
+	client_not_managed_t(xcb_atom_t type, std::shared_ptr<client_properties_t> c, std::shared_ptr<composite_surface_t> surf) :
 			client_base_t(c),
 			_net_wm_type(type),
 			surf(surf)
@@ -62,7 +62,7 @@ public:
 		cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
 	}
 
-	Atom net_wm_type() {
+	xcb_atom_t net_wm_type() {
 		return _net_wm_type;
 	}
 
@@ -86,7 +86,7 @@ public:
 		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
 
-		Atom t = _properties->wm_type();
+		xcb_atom_t t = _properties->wm_type();
 		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
