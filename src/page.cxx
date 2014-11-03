@@ -3397,16 +3397,12 @@ void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
 }
 
 void page_t::update_windows_stack() {
-	std::vector<tree_t *> children;
-	get_all_children(children);
-	std::vector<client_base_t *> clients = filter_class<client_base_t>(children);
-
+	std::vector<client_base_t *> clients =
+			filter_class<client_base_t>(tree_t::get_visible_children());
 	for(auto i: clients) {
 		cnx->raise_window(i->base());
 	}
-
 	cnx->raise_window(rnd->get_composite_overlay());
-
 }
 
 void page_t::update_viewport_layout() {
