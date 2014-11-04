@@ -153,6 +153,16 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 			conf.get_string("simple_theme",
 					"notebook_selected_background_color"));
 
+	notebook_attention_text_color.set(
+			conf.get_string("simple_theme", "notebook_attention_text_color"));
+	notebook_attention_outline_color.set(
+			conf.get_string("simple_theme", "notebook_attention_outline_color"));
+	notebook_attention_border_color.set(
+			conf.get_string("simple_theme", "notebook_attention_border_color"));
+	notebook_attention_background_color.set(
+			conf.get_string("simple_theme",
+					"notebook_attention_background_color"));
+
 	notebook_normal_text_color.set(
 			conf.get_string("simple_theme", "notebook_normal_text_color"));
 	notebook_normal_outline_color.set(
@@ -172,6 +182,16 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating_active_background_color.set(
 			conf.get_string("simple_theme",
 					"floating_active_background_color"));
+
+	floating_attention_text_color.set(
+			conf.get_string("simple_theme", "floating_attention_text_color"));
+	floating_attention_outline_color.set(
+			conf.get_string("simple_theme", "floating_attention_outline_color"));
+	floating_attention_border_color.set(
+			conf.get_string("simple_theme", "floating_attention_border_color"));
+	floating_attention_background_color.set(
+			conf.get_string("simple_theme",
+					"floating_attention_background_color"));
 
 	floating_normal_text_color.set(
 			conf.get_string("simple_theme", "floating_normal_text_color"));
@@ -285,18 +305,22 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
 	notebook_active_font_name = conf.get_string("simple_theme", "notebook_active_font").c_str();
 	notebook_selected_font_name = conf.get_string("simple_theme", "notebook_selected_font").c_str();
+	notebook_attention_font_name = conf.get_string("simple_theme", "notebook_attention_font").c_str();
 	notebook_normal_font_name = conf.get_string("simple_theme", "notebook_normal_font").c_str();
 
 	floating_active_font_name = conf.get_string("simple_theme", "floating_active_font").c_str();
+	floating_attention_font_name = conf.get_string("simple_theme", "floating_attention_font").c_str();
 	floating_normal_font_name = conf.get_string("simple_theme", "floating_normal_font").c_str();
 
 	pango_popup_font_name = conf.get_string("simple_theme", "pango_popup_font").c_str();
 
 	notebook_active_font = pango_font_description_from_string(notebook_active_font_name.c_str());
 	notebook_selected_font = pango_font_description_from_string(notebook_selected_font_name.c_str());
+	notebook_attention_font = pango_font_description_from_string(notebook_attention_font_name.c_str());
 	notebook_normal_font = pango_font_description_from_string(notebook_normal_font_name.c_str());
 
 	floating_active_font = pango_font_description_from_string(floating_active_font_name.c_str());
+	floating_attention_font = pango_font_description_from_string(floating_attention_font_name.c_str());
 	floating_normal_font = pango_font_description_from_string(floating_normal_font_name.c_str());
 
 	pango_popup_font = pango_font_description_from_string(pango_popup_font_name.c_str());
@@ -332,8 +356,10 @@ simple2_theme_t::~simple2_theme_t() {
 
 	pango_font_description_free(notebook_active_font);
 	pango_font_description_free(notebook_selected_font);
+	pango_font_description_free(notebook_attention_font);
 	pango_font_description_free(notebook_normal_font);
 	pango_font_description_free(floating_active_font);
+	pango_font_description_free(floating_attention_font);
 	pango_font_description_free(floating_normal_font);
 	pango_font_description_free(pango_popup_font);
 
@@ -396,6 +422,13 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n,
 						notebook_active_outline_color,
 						notebook_active_border_color,
 						notebook_active_background_color, 1.0);
+			} else if (n->selected_client.demand_attention) {
+				render_notebook_selected(cr, *n, n->selected_client,
+						notebook_attention_font,
+						notebook_attention_text_color,
+						notebook_attention_outline_color,
+						notebook_attention_border_color,
+						notebook_attention_background_color, 1.0);
 			} else {
 				render_notebook_selected(cr, *n, n->selected_client,
 						notebook_selected_font, notebook_selected_text_color,
@@ -404,7 +437,15 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n,
 						notebook_selected_background_color, 1.0);
 			}
 		} else {
-			if (n->selected_client.selected) {
+
+			if (n->selected_client.demand_attention) {
+				render_notebook_normal(cr, n->selected_client,
+						notebook_attention_font,
+						notebook_attention_text_color,
+						notebook_attention_outline_color,
+						notebook_attention_border_color,
+						notebook_attention_background_color);
+			} else if (n->selected_client.selected) {
 				render_notebook_normal(cr, n->selected_client,
 						notebook_selected_font,
 						notebook_selected_text_color,
@@ -431,6 +472,13 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n,
 					notebook_active_outline_color,
 					notebook_active_border_color,
 					notebook_active_background_color);
+		} else if (i.demand_attention) {
+			render_notebook_normal(cr, i,
+					notebook_attention_font,
+					notebook_attention_text_color,
+					notebook_attention_outline_color,
+					notebook_attention_border_color,
+					notebook_attention_background_color);
 		} else if (i.selected) {
 			render_notebook_normal(cr, i,
 					notebook_selected_font,
@@ -994,6 +1042,13 @@ void simple2_theme_t::render_floating(theme_managed_window_t * mw) const {
 				floating_active_text_color,
 				floating_active_outline_color, floating_active_border_color,
 				floating_active_background_color, 1.0);
+	} else if (mw->demand_attention) {
+		render_floating_base(mw,
+				floating_attention_font,
+				floating_attention_text_color,
+				floating_attention_outline_color,
+				floating_attention_border_color,
+				floating_attention_background_color, 1.0);
 	} else {
 		render_floating_base(mw,
 				floating_normal_font,

@@ -31,18 +31,22 @@ public:
 
 	std::string notebook_active_font_name;
 	std::string notebook_selected_font_name;
+	std::string notebook_attention_font_name;
 	std::string notebook_normal_font_name;
 
 	std::string floating_active_font_name;
+	std::string floating_attention_font_name;
 	std::string floating_normal_font_name;
 
 	std::string pango_popup_font_name;
 
 	PangoFontDescription * notebook_active_font;
 	PangoFontDescription * notebook_selected_font;
+	PangoFontDescription * notebook_attention_font;
 	PangoFontDescription * notebook_normal_font;
 
 	PangoFontDescription * floating_active_font;
+	PangoFontDescription * floating_attention_font;
 	PangoFontDescription * floating_normal_font;
 
 	PangoFontDescription * pango_popup_font;
@@ -80,6 +84,11 @@ public:
 	color_t notebook_selected_border_color;
 	color_t notebook_selected_background_color;
 
+	color_t notebook_attention_text_color;
+	color_t notebook_attention_outline_color;
+	color_t notebook_attention_border_color;
+	color_t notebook_attention_background_color;
+
 	color_t notebook_normal_text_color;
 	color_t notebook_normal_outline_color;
 	color_t notebook_normal_border_color;
@@ -89,6 +98,11 @@ public:
 	color_t floating_active_outline_color;
 	color_t floating_active_border_color;
 	color_t floating_active_background_color;
+
+	color_t floating_attention_text_color;
+	color_t floating_attention_outline_color;
+	color_t floating_attention_border_color;
+	color_t floating_attention_background_color;
 
 	color_t floating_normal_text_color;
 	color_t floating_normal_outline_color;

@@ -441,12 +441,11 @@ void client_managed_t::expose() {
 				fw.cairo_left = nullptr;
 			}
 
-
-			fw.demand_attention = false;
 			fw.focuced = is_focused();
 			fw.position = base_position();
 			fw.icon = icon();
 			fw.title = title();
+			fw.demand_attention = _demands_attention;
 
 			_theme->render_floating(&fw);
 
@@ -512,6 +511,11 @@ void client_managed_t::icccm_focus(xcb_timestamp_t t) {
 	//fprintf(stderr, "Focus time = %lu\n", t);
 
 	if (lock()) {
+
+		if(_demands_attention) {
+			_demands_attention = false;
+			_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		}
 
 		if (_properties->wm_hints() != nullptr) {
 			if (_properties->wm_hints()->input != False) {

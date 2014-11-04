@@ -86,6 +86,19 @@ notebook_selected_border_color     = 224e9a06
 # selected notebook (not active one) background
 notebook_selected_background_color = 004e9a06
 
+# demands attention notebook.
+#
+# attention notebook text font.
+notebook_attention_font               = Ubuntu Regular 10
+# attention notebook text color
+notebook_attention_text_color         = 00FFFFFF
+# attention notebook text outline color
+notebook_attention_outline_color      = 88000000
+# attention notebook border color.
+notebook_attention_border_color       = 44ffff00
+# attention notebook text background
+notebook_attention_background_color   = 00ffff00
+
 # inactive notebook are all not active and not selected notebook.
 #
 # inactive notebook text font.
@@ -112,6 +125,19 @@ floating_active_outline_color      = 88000000
 floating_active_border_color       = 2273d216
 # active floating background
 floating_active_background_color   = 003465A4
+
+# demand attention floating.
+#
+# attention floating text font.
+floating_attention_font               = Ubuntu Bold 10
+# attention floating text color
+floating_attention_text_color         = 00FFFFFF
+# attention floating text outline color
+floating_attention_outline_color      = 88000000
+# attention floating border color.
+floating_attention_border_color       = 22ffff00
+# attention floating text background
+floating_attention_background_color   = 00ffff00
 
 # inactive floating.
 #

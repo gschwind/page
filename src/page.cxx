@@ -3164,14 +3164,17 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->set_demands_attention(false);
+				mw->expose();
 				rpage->add_damaged(_root_position);
 				break;
 			case _NET_WM_STATE_ADD:
 				mw->set_demands_attention(true);
+				mw->expose();
 				rpage->add_damaged(_root_position);
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				mw->set_demands_attention(not mw->demands_attention());
+				mw->expose();
 				rpage->add_damaged(_root_position);
 				break;
 			default:
