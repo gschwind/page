@@ -749,14 +749,14 @@ public:
 	std::vector<int> const *                net_wm_struct() const { return __net_wm_strut; }
 	std::vector<int> const *                net_wm_struct_partial() const { return __net_wm_strut_partial; }
 	std::vector<int> const *                net_wm_icon_geometry() const { return __net_wm_icon_geometry; }
-	std::vector<int> const *                net_wm_icon() const { return __net_wm_icon; }
-	unsigned int const *               net_wm_pid() const { return __net_wm_pid; }
-	//bool                               net_wm_handled_icons() const { return __net_wm_handled_icons; }
-	uint32_t const *                   net_wm_user_time() const { return __net_wm_user_time; }
-	xcb_window_t const *               net_wm_user_time_window() const { return __net_wm_user_time_window; }
-	std::vector<int> const *           net_frame_extents() const { return __net_frame_extents; }
-	std::vector<int> const *           net_wm_opaque_region() const { return __net_wm_opaque_region; }
-	unsigned int const *               net_wm_bypass_compositor() const { return __net_wm_bypass_compositor; }
+	std::vector<uint32_t> const *           net_wm_icon() const { return __net_wm_icon; }
+	unsigned int const *                    net_wm_pid() const { return __net_wm_pid; }
+	//bool                                  net_wm_handled_icons() const { return __net_wm_handled_icons; }
+	uint32_t const *                        net_wm_user_time() const { return __net_wm_user_time; }
+	xcb_window_t const *                    net_wm_user_time_window() const { return __net_wm_user_time_window; }
+	std::vector<int> const *                net_frame_extents() const { return __net_frame_extents; }
+	std::vector<int> const *                net_wm_opaque_region() const { return __net_wm_opaque_region; }
+	unsigned int const *                    net_wm_bypass_compositor() const { return __net_wm_bypass_compositor; }
 
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const { return _motif_hints; }

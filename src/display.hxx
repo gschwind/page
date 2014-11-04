@@ -58,7 +58,6 @@ static unsigned long const AllEventMask = 0x01ffffff;
 class display_t {
 
 	int _fd;
-	//Display * _dpy;
 	xcb_connection_t * _xcb;
 	xcb_screen_t * _screen;
 
@@ -74,7 +73,10 @@ class display_t {
 
 	std::list<xcb_generic_event_t *> pending_event;
 
+	int _grab_count;
+
 public:
+
 	char const * event_type_name[128];
 	char const * error_type_name[256];
 
@@ -95,19 +97,13 @@ public:
 
 	int dbe_opcode, dbe_event, dbe_error;
 
-	/* GLX extension handler */
-	//int glx_opcode, glx_event, glx_error;
-
-
-
 	/* overlay composite */
 	xcb_window_t composite_overlay;
 
 	std::shared_ptr<atom_handler_t> _A;
 
 
-	int _grab_count;
-	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
+
 
 	xcb_font_t cursor_font;
 
@@ -125,8 +121,6 @@ public:
 
 public:
 
-	unsigned long int last_serial;
-
 	int fd();
 	xcb_window_t root();
 	xcb_connection_t * xcb();
@@ -140,23 +134,17 @@ public:
 
 	int screen();
 
-public:
-
-
 	display_t();
 	~display_t();
 
 	void set_net_active_window(xcb_window_t w);
 
-	int move_window(xcb_window_t w, int x, int y);
 	void grab();
 	void ungrab();
 	bool is_not_grab();
 	void unmap(xcb_window_t w);
 	void reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y);
 	void map(xcb_window_t w);
-
-	void xnextevent(XEvent * ev);
 
 	bool register_wm(xcb_window_t w, bool replace);
 	bool register_cm(xcb_window_t w);
@@ -169,28 +157,13 @@ public:
 
 	template<typename T>
 	int change_property(xcb_window_t w, atom_e property, atom_e type, int format, T data, int nelements) {
-		cnx_printf("XChangeProperty: win = %lu\n", w);
 		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(property), A(type), format, nelements, reinterpret_cast<unsigned char const *>(data));
 	}
 
 	void delete_property(xcb_window_t w, atom_e property);
-	int lower_window(xcb_window_t w);
+	void lower_window(xcb_window_t w);
 	void set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time);
 	void fake_configure(xcb_window_t w, i_rect location, int border_width);
-
-	void cnx_printf(char const * str, ...) {
-		if (false) {
-//			va_list args;
-//			va_start(args, str);
-//			char buffer[1024];
-//			unsigned long serial = XNextRequest(_dpy);
-//			snprintf(buffer, 1024, ">%08lu ", serial);
-//			unsigned int len = strnlen(buffer, 1024);
-//			vsnprintf(&buffer[len], 1024 - len, str, args);
-//			printf("%s", buffer);
-		}
-	}
-
 
 	bool check_composite_extension();
 	bool check_damage_extension();
@@ -243,8 +216,6 @@ public:
 	void allow_input_passthrough(xcb_window_t w);
 
 	void disable_input_passthrough(xcb_window_t w);
-
-	static int error_handler(Display * dpy, XErrorEvent * ev);
 
 	template<atom_e name, atom_e type, typename xT >
 	struct properties_fetcher_t {

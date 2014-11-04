@@ -267,12 +267,10 @@ bool display_t::register_cm(xcb_window_t w) {
 }
 
 void display_t::add_to_save_set(xcb_window_t w) {
-	cnx_printf("XAddToSaveSet: win = %lu\n", w);
 	xcb_change_save_set(_xcb, XCB_SET_MODE_INSERT, w);
 }
 
 void display_t::remove_from_save_set(xcb_window_t w) {
-	cnx_printf("XRemoveFromSaveSet: win = %lu\n", w);
 	xcb_change_save_set(_xcb, XCB_SET_MODE_DELETE, w);
 }
 
@@ -299,7 +297,6 @@ void display_t::move_resize(xcb_window_t w, i_rect const & size) {
 }
 
 void display_t::raise_window(xcb_window_t w) {
-	cnx_printf("XRaiseWindow: win = %lu\n", w);
 	uint32_t mode = XCB_STACK_MODE_ABOVE;
 	xcb_configure_window(_xcb, w, XCB_CONFIG_WINDOW_STACK_MODE, &mode);
 }
@@ -308,11 +305,9 @@ void display_t::delete_property(xcb_window_t w, atom_e property) {
 	xcb_delete_property(_xcb, w, A(property));
 }
 
-int display_t::lower_window(xcb_window_t w) {
-	cnx_printf("XLowerWindow: win = %lu\n", w);
+void display_t::lower_window(xcb_window_t w) {
 	uint32_t mode = XCB_STACK_MODE_BELOW;
 	xcb_configure_window(_xcb, w, XCB_CONFIG_WINDOW_STACK_MODE, &mode);
-	return 0;
 }
 
 void display_t::set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time) {
@@ -446,29 +441,14 @@ bool display_t::check_randr_extension() {
 	}
 }
 
-
-//bool display_t::check_dbe_extension() {
-//	if (!XQueryExtension(_dpy, DBE_PROTOCOL_NAME, &dbe_opcode, &dbe_event, &dbe_error)) {
-//		return false;
-//	} else {
-//		int major = 0, minor = 0;
-//		XdbeQueryExtension(_dpy, &major, &minor);
-//		printf(DBE_PROTOCOL_NAME " Extension version %d.%d found\n", major,
-//				minor);
-//		return true;
-//	}
-//}
-
 xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 {
-  xcb_screen_iterator_t iter;
-
-  iter = xcb_setup_roots_iterator (xcb_get_setup (c));
-  for (; iter.rem; --screen, xcb_screen_next (&iter))
+  xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(c));
+  for(; iter.rem; --screen, xcb_screen_next(&iter))
     if (screen == 0)
       return iter.data;
 
-  return NULL;
+  return nullptr;
 }
 
 void display_t::update_default_visual() {
@@ -673,8 +653,7 @@ void display_t::unload_cursors() {
 }
 
 void display_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
-	uint32_t attrs = c;
-	xcb_change_window_attributes(_xcb, w, XCB_CW_CURSOR, &attrs);
+	xcb_change_window_attributes(_xcb, w, XCB_CW_CURSOR, &c);
 }
 
 xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
@@ -713,22 +692,6 @@ void display_t::disable_input_passthrough(xcb_window_t w) {
 	xcb_xfixes_set_window_shape_region(_xcb, w, XCB_SHAPE_SK_INPUT, 0, 0, XCB_XFIXES_REGION_NONE);
 }
 
-int display_t::error_handler(Display * dpy, XErrorEvent * ev) {
-	fprintf(stderr,"#%08lu ERROR, major_code: %u, minor_code: %u, error_code: %u\n",
-			ev->serial, ev->request_code, ev->minor_code, ev->error_code);
-
-	static const unsigned int XFUNCSIZE = (sizeof(xcore_request_name)/sizeof(char *));
-
-	if (ev->request_code < XFUNCSIZE) {
-		char const * func_name = xcore_request_name[ev->request_code];
-		char error_text[1024];
-		error_text[0] = 0;
-		//XGetErrorText(dpy, ev->error_code, error_text, 1024);
-		//fprintf(stderr, "#%08lu ERROR, %s : %s\n", ev->serial, func_name, error_text);
-	}
-	return 0;
-}
-
 void display_t::set_net_active_window(xcb_window_t w) {
 	net_active_window_t active{new xcb_window_t{w}};
 	write_property(root(), active);
@@ -747,7 +710,7 @@ region display_t::read_damaged_region(xcb_damage_damage_t d) {
 	region result;
 
 	/* create an empty region */
-	xcb_xfixes_region_t region = xcb_generate_id(_xcb);
+	xcb_xfixes_region_t region{xcb_generate_id(_xcb)};
 	xcb_xfixes_create_region(_xcb, region, 0, 0);
 
 	/* get damaged region and remove them from damaged status */

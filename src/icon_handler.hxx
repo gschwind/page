@@ -26,14 +26,14 @@ class icon_handler_t {
 	struct _icon_ref_t {
 		int width;
 		int height;
-		int const * data;
+		uint32_t const * data;
 	};
 
 public:
 	icon_handler_t(client_base_t const & c) {
 		icon_surf = nullptr;
 
-		std::vector<int> const * net_wm_icon = c.net_wm_icon();
+		std::vector<uint32_t> const * net_wm_icon = c.net_wm_icon();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 
@@ -47,7 +47,7 @@ public:
 				tmp.data = &((*net_wm_icon)[offset + 2]);
 				offset += 2 + tmp.width * tmp.height;
 
-				if(offset < net_wm_icon->size() and tmp.width > 0 and tmp.height > 0)
+				if(offset <= net_wm_icon->size() and tmp.width > 0 and tmp.height > 0)
 					icons.push_back(tmp);
 				else
 					break;
