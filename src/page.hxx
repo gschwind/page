@@ -81,6 +81,9 @@ public:
 	using client_dropdown_menu_t = dropdown_menu_t<int>;
 	std::shared_ptr<client_dropdown_menu_t> client_menu;
 
+	/** data to set _NET_CLIENT_LIST **/
+	std::list<client_managed_t *> _clients_list;
+
 	struct mode_data_split_t {
 		split_t * split;
 		i_rect slider_area;
@@ -313,6 +316,9 @@ public:
 
 	int _current_desktop;
 	std::vector<desktop_t *> _desktop_list;
+
+	/** store the order of last shown desktop **/
+	std::list<desktop_t *> _desktop_stack;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
@@ -581,7 +587,7 @@ public:
 	void hide();
 	void show();
 
-	void switch_to_desktop(int desktop, Time time);
+	void switch_to_desktop(int desktop, xcb_timestamp_t time);
 
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();

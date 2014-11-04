@@ -74,6 +74,7 @@ page_t::page_t(int argc, char ** argv)
 		desktop_t * d = new desktop_t;
 		d->set_parent(this);
 		_desktop_list.push_back(d);
+		_desktop_stack.push_front(d);
 		d->hide();
 	}
 
@@ -400,6 +401,7 @@ void page_t::unmanage(client_managed_t * mw) {
 	update_workarea();
 	rpage->mark_durty();
 
+	_clients_list.remove(mw);
 	delete mw;
 
 }
@@ -520,23 +522,28 @@ void page_t::update_net_supported() {
 }
 
 void page_t::update_client_list() {
-	set<xcb_window_t> s_client_list;
-	set<xcb_window_t> s_client_list_stack;
-	std::vector<client_managed_t *> lst = get_managed_windows();
 
-	for (auto i : lst) {
-		s_client_list.insert(i->orig());
-		s_client_list_stack.insert(i->orig());
+
+	std::vector<xcb_window_t> client_list;
+	for(auto c: _clients_list) {
+		client_list.push_back(c->orig());
 	}
 
-	std::vector<xcb_window_t> client_list(s_client_list.begin(), s_client_list.end());
-	std::vector<xcb_window_t> client_list_stack(s_client_list_stack.begin(),
-			s_client_list_stack.end());
-
-	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
-			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&client_list[0], client_list.size());
+
+	std::vector<client_managed_t *> lst = get_managed_windows();
+	std::list<xcb_window_t> tmp_client_list_stack;
+	for (auto i : lst) {
+		tmp_client_list_stack.remove(i->orig());
+		tmp_client_list_stack.push_back(i->orig());
+	}
+
+	std::vector<xcb_window_t> client_list_stack(tmp_client_list_stack.begin(),
+			tmp_client_list_stack.end());
+	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
+			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
+
 
 }
 
@@ -3734,6 +3741,7 @@ void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_a
 
 	try {
 		client_managed_t * mw = new client_managed_t(type, c, theme, cmgr);
+		_clients_list.push_back(mw);
 		manage_client(mw, type);
 	} catch (...) {
 		printf("Error while creating managed window\n");
@@ -4011,7 +4019,7 @@ void page_t::remove_client(client_base_t * c) {
 
 void page_t::get_all_children(std::vector<tree_t *> & out) const {
 
-	for (auto v: _desktop_list) {
+	for (auto v: _desktop_stack) {
 		out.push_back(v);
 		v->get_all_children(out);
 	}
@@ -4289,7 +4297,7 @@ void page_t::set_allocation(i_rect const & r) {
 }
 
 void page_t::children(std::vector<tree_t *> & out) const {
-	for (auto i: _desktop_list) {
+	for (auto i: _desktop_stack) {
 		out.push_back(i);
 	}
 
@@ -4350,9 +4358,11 @@ void page_t::show() {
 	}
 }
 
-void page_t::switch_to_desktop(int desktop, Time time) {
+void page_t::switch_to_desktop(int desktop, xcb_timestamp_t time) {
 	if (desktop != _current_desktop) {
 		_current_desktop = desktop;
+		_desktop_stack.remove(_desktop_list[_current_desktop]);
+		_desktop_stack.push_back(_desktop_list[_current_desktop]);
 		update_current_desktop();
 		update_desktop_visibility();
 		rpage->add_damaged(_root_position);
