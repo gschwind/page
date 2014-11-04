@@ -313,9 +313,12 @@ void page_t::run() {
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
 	xcb_grab_button(cnx->xcb(), false, cnx->root(),
-			XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
-					| XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC,
-			XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY,
+			DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC,
+			XCB_GRAB_MODE_ASYNC,
+			XCB_NONE,
+			XCB_NONE,
+			XCB_BUTTON_INDEX_ANY,
 			XCB_MOD_MASK_ANY);
 
 
@@ -886,7 +889,7 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 		if (mw != nullptr) {
 
 			if (mw->is(MANAGED_FLOATING)
-					and e->detail == XCB_BUTTON_INDEX_1
+					and e->detail == XCB_BUTTON_INDEX_3
 					and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
 
 				mode_data_floating.x_offset = e->root_x - mw->base_position().x;
@@ -897,13 +900,13 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 				mode_data_floating.original_position = mw->get_floating_wished_position();
 				mode_data_floating.final_position = mw->get_floating_wished_position();
 				mode_data_floating.popup_original_position = mw->get_base_position();
-				mode_data_floating.button = XCB_BUTTON_INDEX_1;
+				mode_data_floating.button = XCB_BUTTON_INDEX_3;
 
 				//pfm->move_resize(mw->get_base_position());
 				//pfm->update_window(mw, mw->title());
 				//pfm->show();
 
-				if ((e->state & ControlMask)) {
+				if ((e->state & XCB_MOD_MASK_CONTROL)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
@@ -1015,7 +1018,7 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
 				}
 
-			} else if (mw->is(MANAGED_FULLSCREEN) and e->detail == (XCB_BUTTON_INDEX_1)
+			} else if (mw->is(MANAGED_FULLSCREEN) and e->detail == (XCB_BUTTON_INDEX_3)
 					and (e->state & (XCB_MOD_MASK_1))) {
 				fprintf(stderr, "start FULLSCREEN MOVE\n");
 				/** start moving fullscreen window **/
@@ -1030,7 +1033,7 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 					pn0->show();
 					pn0->move_resize(v->raw_area());
 				}
-			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_1)
+			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 					and (e->state & (XCB_MOD_MASK_1))) {
 
 				notebook_t * n = find_parent_notebook_for(mw);
@@ -1091,7 +1094,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
-		if (e->detail == XCB_BUTTON_INDEX_1) {
+		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			process_mode = PROCESS_NORMAL;
 
 			pn0->hide();
@@ -1193,7 +1196,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		}
 		break;
 	case PROCESS_FLOATING_MOVE:
-		if (e->detail == XCB_BUTTON_INDEX_1) {
+		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			pfm->hide();
 
 			cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
@@ -1226,7 +1229,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		}
 		break;
 	case PROCESS_FLOATING_RESIZE:
-		if (e->detail == XCB_BUTTON_INDEX_1) {
+		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			pfm->hide();
 
 			cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
@@ -1315,7 +1318,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 
 	case PROCESS_FULLSCREEN_MOVE:
 
-		if (e->detail == XCB_BUTTON_INDEX_1) {
+		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			/** drop the fullscreen window to the new viewport **/
 
 			process_mode = PROCESS_NORMAL;
@@ -1398,7 +1401,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		}
 		break;
 	default:
-		if (e->detail == XCB_BUTTON_INDEX_1) {
+		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			process_mode = PROCESS_NORMAL;
 		}
 		break;

@@ -644,25 +644,25 @@ void client_managed_t::grab_button_focused() {
 		ungrab_all_button();
 
 		/** for decoration, grab all **/
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 		/** for base, just grab some modified buttons **/
-		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1);
+				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
 
 		/** for base, just grab some modified buttons **/
-		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_CONTROL);
+				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_CONTROL);
 
 		unlock();
 	}
@@ -673,28 +673,28 @@ void client_managed_t::grab_button_unfocused() {
 		/** First ungrab all **/
 		ungrab_all_button();
 
-		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _base, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 		/** for decoration, grab all **/
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _deco, BUTTON_DEFAULT_MASK,
+		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
 				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
