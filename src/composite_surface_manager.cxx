@@ -15,14 +15,17 @@ namespace page {
 
 std::shared_ptr<composite_surface_t> composite_surface_manager_t::get_managed_composite_surface(xcb_window_t w) {
 
-	/** if we find a not expired key **/
+	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
 	if(x != _data.end()) {
 		if(not x->second.expired()) {
 			return x->second.lock();
 		}
 	}
-	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, [this](composite_surface_t * p) { this->remove(p); delete p; } };
+
+	/** otherwise, create a new one **/
+	auto callback = [this](composite_surface_t * p) { this->remove(p); delete p; };
+	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, callback };
 	_data[w] = ret;
 	return ret;
 }

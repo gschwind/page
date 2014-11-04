@@ -36,18 +36,7 @@ class composite_surface_manager_t {
 
 private:
 
-	void _make_surface_stats(int & size, int & count) {
-		size = 0;
-		count = 0;
-		for(auto &i: _data) {
-			if(not i.second.expired()) {
-				count += 1;
-				auto x = i.second.lock();
-				size += x->depth()/8 * x->width() * x->height();
-			}
-		}
-	}
-
+	/** called on surface destroy, maybe no more need of weak ptr **/
 	void remove(composite_surface_t * p) {
 		_data.erase(p->wid());
 		std::cout << "removing composite surface " << p << std::endl;

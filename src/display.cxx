@@ -50,7 +50,7 @@ int display_t::screen() {
 display_t::display_t() {
 	_xcb = xcb_connect(nullptr, &_default_screen);
 	_fd = xcb_get_file_descriptor(_xcb);
-	grab_count = 0;
+	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
 	update_default_visual();
 }
@@ -60,47 +60,42 @@ display_t::~display_t() {
 }
 
 void display_t::grab() {
-	if (grab_count == 0) {
+	if (_grab_count == 0) {
 		xcb_void_cookie_t ck = xcb_grab_server_checked(_xcb);
 		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
 		if(err != nullptr) {
 			throw exception_t{"%s:%d unable to grab X11 server", __FILE__, __LINE__};
 		}
 	}
-	++grab_count;
+	++_grab_count;
 }
 
 void display_t::ungrab() {
-	if (grab_count == 0) {
-		fprintf(stderr, "TRY TO UNGRAB NOT GRABBED CONNECTION!\n");
-		return;
+	if (_grab_count == 0) {
+		throw exception_t{"Error: Trying to ungrab not grabbed connection\n"};
 	}
-	--grab_count;
-	if (grab_count == 0) {
+	--_grab_count;
+	if (_grab_count == 0) {
 		xcb_ungrab_server(_xcb);
-		/* Ungrab the server immediately */
+		/**
+		 * Don't wait to ungrab the server to allow other client to continue
+		 * their business
+		 **/
 		if (xcb_flush(_xcb) <= 0)
 			throw exception_t { "%s:%d unable to to flush X11 server", __FILE__,
 					__LINE__ };
 	}
 }
 
-bool display_t::is_not_grab() {
-	return grab_count == 0;
-}
-
 void display_t::unmap(xcb_window_t w) {
-	cnx_printf("X_UnmapWindow: win = %lu\n", w);
 	xcb_unmap_window(_xcb, w);
 }
 
 void display_t::reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y) {
-	cnx_printf("Reparent serial: #%lu win: #%lu, parent: #%lu\n", w, parent);
 	xcb_reparent_window(_xcb, w, parent, x, y);
 }
 
 void display_t::map(xcb_window_t w) {
-	cnx_printf("X_MapWindow: win = %lu\n", w);
 	xcb_map_window(_xcb, w);
 }
 
@@ -229,7 +224,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
  * Register composite manager. if another one is in place just fail to take
  * the ownership.
  **/
-bool display_t::register_cm(xcb_window_t w, bool replace) {
+bool display_t::register_cm(xcb_window_t w) {
 	xcb_generic_error_t * err;
 	xcb_window_t current_cm;
 	xcb_atom_t a_cm;

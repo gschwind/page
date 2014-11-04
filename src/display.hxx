@@ -106,7 +106,7 @@ public:
 	std::shared_ptr<atom_handler_t> _A;
 
 
-	int grab_count;
+	int _grab_count;
 	int (*old_error_handler)(Display * _dpy, XErrorEvent * ev);
 
 	xcb_font_t cursor_font;
@@ -159,7 +159,7 @@ public:
 	void xnextevent(XEvent * ev);
 
 	bool register_wm(xcb_window_t w, bool replace);
-	bool register_cm(xcb_window_t w, bool replace);
+	bool register_cm(xcb_window_t w);
 
 	void add_to_save_set(xcb_window_t w);
 	void remove_from_save_set(xcb_window_t w);

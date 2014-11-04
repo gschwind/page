@@ -635,7 +635,7 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 		}
 
 
-		if (k == XK_Tab and ((e->state & 0x0f) == Mod1Mask)) {
+		if (k == XK_Tab and ((e->state & 0x0f) == XCB_MOD_MASK_1)) {
 
 			std::vector<client_managed_t *> managed_window = get_managed_windows();
 
@@ -4118,7 +4118,7 @@ void page_t::register_wm() {
 }
 
 void page_t::register_cm() {
-	if (!cnx->register_cm(identity_window, replace_wm)) {
+	if (!cnx->register_cm(identity_window)) {
 		throw exception_t("Cannot register composite manager");
 	}
 }
