@@ -113,6 +113,7 @@ private:
 	bool _is_focused;
 	bool _motif_has_border;
 	bool _is_iconic;
+	bool _demands_attention;
 
 public:
 
@@ -200,6 +201,19 @@ public:
 	bool lock();
 	void unlock();
 	void set_focus_state(bool is_focused);
+
+	void set_demands_attention(bool x) {
+		if (x) {
+			_properties->net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
+		} else {
+			_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		}
+		_demands_attention = x;
+	}
+
+	bool demands_attention() {
+		return _demands_attention;
+	}
 
 private:
 

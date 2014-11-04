@@ -3068,9 +3068,11 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		action = "toggle";
 		break;
 	default:
-		action = "unknown";
+		action = "invalid";
 		break;
 	}
+
+	std::cout << "_NET_WM_STATE: "  << action << " " << cnx->get_atom_name(state_properties) << std::endl;
 
 	client_managed_t * mw = find_managed_window_with(c);
 
@@ -3111,6 +3113,23 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			default:
 				break;
 			}
+		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+			switch (type) {
+			case _NET_WM_STATE_REMOVE:
+				mw->set_demands_attention(false);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_ADD:
+				mw->set_demands_attention(true);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_TOGGLE:
+				mw->set_demands_attention(not mw->demands_attention());
+				rpage->add_damaged(_root_position);
+				break;
+			default:
+				break;
+			}
 		}
 	} else if (mw->is(MANAGED_FLOATING)) {
 
@@ -3141,6 +3160,23 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			default:
 				break;
 			}
+		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+			switch (type) {
+			case _NET_WM_STATE_REMOVE:
+				mw->set_demands_attention(false);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_ADD:
+				mw->set_demands_attention(true);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_TOGGLE:
+				mw->set_demands_attention(not mw->demands_attention());
+				rpage->add_damaged(_root_position);
+				break;
+			default:
+				break;
+			}
 		}
 	} else if (mw->is(MANAGED_FULLSCREEN)) {
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
@@ -3164,6 +3200,23 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			case _NET_WM_STATE_ADD:
 				break;
 			case _NET_WM_STATE_TOGGLE:
+			default:
+				break;
+			}
+		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+			switch (type) {
+			case _NET_WM_STATE_REMOVE:
+				mw->set_demands_attention(false);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_ADD:
+				mw->set_demands_attention(true);
+				rpage->add_damaged(_root_position);
+				break;
+			case _NET_WM_STATE_TOGGLE:
+				mw->set_demands_attention(not mw->demands_attention());
+				rpage->add_damaged(_root_position);
+				break;
 			default:
 				break;
 			}

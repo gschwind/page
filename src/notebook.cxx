@@ -613,7 +613,7 @@ void notebook_t::update_theme_notebook() const {
 			theme_notebook.selected_client.selected = true;
 			theme_notebook.selected_client.focuced = _selected->is_focused();
 			theme_notebook.selected_client.title = _selected->title();
-			theme_notebook.selected_client.demand_attention = false;
+			theme_notebook.selected_client.demand_attention = _selected->demands_attention();
 			theme_notebook.selected_client.icon = _selected->icon();
 			theme_notebook.selected_client.is_iconic = _selected->is_iconic();
 			theme_notebook.has_selected_client = true;
@@ -631,7 +631,7 @@ void notebook_t::update_theme_notebook() const {
 			theme_notebook.clients_tab[k].selected = (i == _selected);
 			theme_notebook.clients_tab[k].focuced = i->is_focused();
 			theme_notebook.clients_tab[k].title = i->title();
-			theme_notebook.clients_tab[k].demand_attention = false;
+			theme_notebook.clients_tab[k].demand_attention = i->demands_attention();
 			theme_notebook.clients_tab[k].icon = i->icon();
 			theme_notebook.clients_tab[k].is_iconic = i->is_iconic();
 			offset += box_width;
