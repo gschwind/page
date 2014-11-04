@@ -15,6 +15,7 @@
 #include <map>
 #include <vector>
 
+#include "utils.hxx"
 #include "viewport.hxx"
 #include "client_managed.hxx"
 #include "client_not_managed.hxx"
@@ -31,6 +32,7 @@ private:
 
 	/** map viewport to real outputs **/
 	std::map<xcb_randr_crtc_t, viewport_t *> _viewport_outputs;
+	std::list<viewport_t *> _viewport_stack;
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
 	std::list<client_managed_t *> _fullscreen_clients;
@@ -51,7 +53,9 @@ public:
 		_parent(nullptr),
 		_viewport_outputs(),
 		_default_pop(nullptr),
-		_is_hidden(false)
+		_is_hidden(false),
+		_workarea(),
+		_primary_viewport(nullptr)
 	{
 
 	}
@@ -68,6 +72,31 @@ public:
 	}
 
 	void raise_child(tree_t * t) {
+
+		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
+		if(has_key(_fullscreen_clients, mw)) {
+			_fullscreen_clients.remove(mw);
+			_fullscreen_clients.push_back(mw);
+		}
+
+		if(has_key(_floating_clients, mw)) {
+			_floating_clients.remove(mw);
+			_floating_clients.push_back(mw);
+		}
+
+
+		client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(t);
+		if(has_key(_dock_clients, uw)) {
+			_dock_clients.remove(uw);
+			_dock_clients.push_back(uw);
+		}
+
+		viewport_t * v = dynamic_cast<viewport_t *>(t);
+		if(has_key(_viewport_stack, v)) {
+			_viewport_stack.remove(v);
+			_viewport_stack.push_back(v);
+		}
+
 		if(_parent != nullptr) {
 			_parent->raise_child(this);
 		}
@@ -120,11 +149,15 @@ public:
 
 	auto set_layout(std::map<xcb_randr_crtc_t, viewport_t *> new_layout) -> void {
 		_viewport_outputs = new_layout;
+		_viewport_stack.clear();
+		for(auto i: _viewport_outputs) {
+			_viewport_stack.push_back(i.second);
+		}
 	}
 
 	auto get_any_viewport() const -> viewport_t * {
-		if(_viewport_outputs.size() > 0) {
-			return _viewport_outputs.begin()->second;
+		if(_viewport_stack.size() > 0) {
+			return _viewport_stack.front();
 		} else {
 			return nullptr;
 		}
@@ -132,8 +165,8 @@ public:
 
 	auto get_viewports() const -> std::vector< viewport_t * > {
 		std::vector<viewport_t *> ret;
-		for(auto i: _viewport_outputs) {
-				ret.push_back(i.second);
+		for(auto i: _viewport_stack) {
+				ret.push_back(i);
 		}
 		return ret;
 	}
@@ -149,8 +182,8 @@ public:
 	}
 
 	void children(std::vector<tree_t *> & out) const {
-		for(auto i: _viewport_outputs) {
-				out.push_back(i.second);
+		for(auto i: _viewport_stack) {
+				out.push_back(i);
 		}
 
 		for(auto i: _dock_clients) {
@@ -214,6 +247,7 @@ public:
 				_viewport_outputs.erase(i.first);
 				return;
 			}
+			_viewport_stack.remove(dynamic_cast<viewport_t*>(src));
 		}
 
 		_dock_clients.remove(reinterpret_cast<client_not_managed_t*>(src));
@@ -227,9 +261,9 @@ public:
 	}
 
 	void get_all_children(std::vector<tree_t *> & out) const {
-		for(auto i: _viewport_outputs) {
-			out.push_back(i.second);
-			i.second->get_all_children(out);
+		for(auto i: _viewport_stack) {
+			out.push_back(i);
+			i->get_all_children(out);
 		}
 
 		for(auto i: _dock_clients) {
