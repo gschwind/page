@@ -1179,6 +1179,10 @@ void client_managed_t::get_visible_children(std::vector<tree_t *> & out) {
 	}
 }
 
+bool client_managed_t::is_iconic() {
+	return _is_iconic;
+}
+
 
 }
 

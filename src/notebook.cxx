@@ -28,8 +28,8 @@ notebook_t::~notebook_t() {
 bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	assert(not has_key(_clients, x));
 	assert(x != nullptr);
-	_children.push_back(x);
 	x->set_parent(this);
+	_children.push_back(x);
 	_clients.push_front(x);
 	_client_map.insert(x);
 
@@ -133,8 +133,8 @@ void notebook_t::set_selected(client_managed_t * c) {
 	swap_start.get_time();
 	update_client_position(c);
 	c->normalize();
-	_clients.remove(c);
-	_clients.push_front(c);
+//	_clients.remove(c);
+//	_clients.push_front(c);
 
 	/** iconify current selected **/
 	if (_selected != nullptr) {
@@ -351,10 +351,6 @@ void notebook_t::set_theme(theme_t const * theme) {
 	_theme = theme;
 }
 
-std::list<client_managed_t const *> notebook_t::clients() const {
-	return std::list<client_managed_t const *>(_clients.begin(), _clients.end());
-}
-
 client_managed_t const * notebook_t::selected() const {
 	return _selected;
 }
@@ -548,47 +544,46 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l) const
 	update_theme_notebook();
 
 	if(_clients.size() > 0) {
+
+		if(_selected != nullptr) {
+			i_rect & b = theme_notebook.selected_client.position;
+
+			page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
+
+			ncclose.position.x = b.x + b.w - 35;
+			ncclose.position.y = b.y;
+			ncclose.position.w = 35;
+			ncclose.position.h = b.h-3;
+			ncclose.nbk = this;
+			ncclose.clt = _selected;
+			l->push_back(ncclose);
+
+			page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
+
+			ncub.position.x = b.x + b.w - 25 - 30;
+			ncub.position.y = b.y;
+			ncub.position.w = 16;
+			ncub.position.h = 16;
+			ncub.nbk = this;
+			ncub.clt = _selected;
+			l->push_back(ncub);
+
+			page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
+			nc.position = b;
+			nc.nbk = this;
+			nc.clt = _selected;
+			l->push_back(nc);
+
+		}
+
 		auto c = _clients.begin();
-		for(auto &i : theme_notebook.clients_tab) {
-			if (i.selected) {
-				i_rect & b = i.position;
-
-				page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
-
-				ncclose.position.x = b.x + b.w - 35;
-				ncclose.position.y = b.y;
-				ncclose.position.w = 35;
-				ncclose.position.h = b.h-3;
-				ncclose.nbk = this;
-				ncclose.clt = *c;
-				l->push_back(ncclose);
-
-				page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
-
-				ncub.position.x = b.x + b.w - 25 - 30;
-				ncub.position.y = b.y;
-				ncub.position.w = 16;
-				ncub.position.h = 16;
-				ncub.nbk = this;
-				ncub.clt = *c;
-				l->push_back(ncub);
-
-				page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
-				nc.position = b;
-				nc.nbk = this;
-				nc.clt = *c;
-				l->push_back(nc);
-
-			} else {
-				i_rect & b = i.position;
-
-				page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-				nc.position = b;
-				nc.nbk = this;
-				nc.clt = *c;
-				l->push_back(nc);
-
-			}
+		for (unsigned k = 0; k < theme_notebook.clients_tab.size(); ++k) {
+			i_rect & b = theme_notebook.clients_tab[k].position;
+			page_event_t nc { PAGE_EVENT_NOTEBOOK_CLIENT };
+			nc.position = b;
+			nc.nbk = this;
+			nc.clt = *c;
+			l->push_back(nc);
 			++c;
 		}
 
@@ -609,39 +604,37 @@ void notebook_t::update_theme_notebook() const {
 		theme_notebook.clients_tab.resize(_clients.size());
 
 		double box_width = 33.0;
-		double selected_box_width = (_allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()-1) * box_width;
+		double selected_box_width = (_allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()) * box_width;
 		double offset = _allocation.x + 40.0;
 
+		if (_selected != nullptr){
+			i_rect b { (int)floor(offset), _allocation.y, (int)floor(
+					(int)(offset + selected_box_width) - floor(offset)),
+					(int)_theme->notebook.margin.top - 1 };
+			theme_notebook.selected_client.position = b;
+			theme_notebook.selected_client.selected = true;
+			theme_notebook.selected_client.focuced = _selected->is_focused();
+			theme_notebook.selected_client.title = _selected->title();
+			theme_notebook.selected_client.demand_attention = false;
+			theme_notebook.selected_client.icon = _selected->icon();
+			theme_notebook.has_selected_client = true;
+		} else {
+			theme_notebook.has_selected_client = false;
+		}
+
+		offset += selected_box_width;
 		unsigned k = 0;
 		for (auto i : _clients) {
-			if (i == _selected) {
-				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
-						(int)(offset + selected_box_width) - floor(offset)),
-						(int)_theme->notebook.margin.top - 1 };
-				theme_notebook.clients_tab[k].position = b;
-				theme_notebook.clients_tab[k].selected = true;
-				theme_notebook.clients_tab[k].focuced = _selected->is_focused();
-				offset += selected_box_width;
-			} else if (k == 0) {
-				i_rect b { (int)floor(offset), _allocation.y, (int)floor(
-						(int)(offset + selected_box_width) - floor(offset)),
-						(int)_theme->notebook.margin.top - 1 };
-				theme_notebook.clients_tab[k].position = b;
-				theme_notebook.clients_tab[k].selected = false;
-				theme_notebook.clients_tab[k].focuced = false;
-				offset += selected_box_width;
-			} else {
 				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
 						offset + box_width) - floor(offset)),
 						(int)_theme->notebook.margin.top - 1 };
-				theme_notebook.clients_tab[k].position = b;
-				theme_notebook.clients_tab[k].selected = false;
-				offset += box_width;
-			}
-
+			theme_notebook.clients_tab[k].position = b;
+			theme_notebook.clients_tab[k].selected = (i == _selected);
+			theme_notebook.clients_tab[k].focuced = i->is_focused();
 			theme_notebook.clients_tab[k].title = i->title();
 			theme_notebook.clients_tab[k].demand_attention = false;
 			theme_notebook.clients_tab[k].icon = i->icon();
+			offset += box_width;
 			++k;
 		}
 	}

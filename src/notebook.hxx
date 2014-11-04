@@ -79,6 +79,7 @@ public:
 	// list of client to maintain tab order
 	std::list<client_managed_t *> _clients;
 	client_managed_t * _selected;
+
 	// set of map for fast check is window is in this notebook
 	set<client_managed_t *> _client_map;
 

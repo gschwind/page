@@ -248,6 +248,8 @@ public:
 	void show();
 	void get_visible_children(std::vector<tree_t *> & out);
 
+	bool is_iconic();
+
 };
 
 }
