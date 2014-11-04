@@ -127,7 +127,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 
 void notebook_t::set_selected(client_managed_t * c) {
 	/** already selected **/
-	if(_selected == c)
+	if(_selected == c and not c->is_iconic())
 		return;
 
 	swap_start.get_time();
@@ -137,7 +137,7 @@ void notebook_t::set_selected(client_managed_t * c) {
 //	_clients.push_front(c);
 
 	/** iconify current selected **/
-	if (_selected != nullptr) {
+	if (_selected != nullptr and c != _selected) {
 		/** store current surface then iconify **/
 		if (_selected->surf() != nullptr) {
 			prev_surf = _selected->surf()->get_pixmap();
@@ -179,8 +179,6 @@ void notebook_t::iconify_client(client_managed_t * x) {
 	}
 
 	cur_surf.reset();
-
-	_selected = nullptr;
 
 }
 
@@ -617,6 +615,7 @@ void notebook_t::update_theme_notebook() const {
 			theme_notebook.selected_client.title = _selected->title();
 			theme_notebook.selected_client.demand_attention = false;
 			theme_notebook.selected_client.icon = _selected->icon();
+			theme_notebook.selected_client.is_iconic = _selected->is_iconic();
 			theme_notebook.has_selected_client = true;
 		} else {
 			theme_notebook.has_selected_client = false;
@@ -634,6 +633,7 @@ void notebook_t::update_theme_notebook() const {
 			theme_notebook.clients_tab[k].title = i->title();
 			theme_notebook.clients_tab[k].demand_attention = false;
 			theme_notebook.clients_tab[k].icon = i->icon();
+			theme_notebook.clients_tab[k].is_iconic = i->is_iconic();
 			offset += box_width;
 			++k;
 		}

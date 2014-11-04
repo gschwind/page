@@ -388,21 +388,37 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n,
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 
-	if(n->has_selected_client) {
-		if (n->selected_client.focuced) {
-			render_notebook_selected(cr, *n, n->selected_client,
-					notebook_active_font,
-					notebook_active_text_color,
-					notebook_active_outline_color,
-					notebook_active_border_color,
-					notebook_active_background_color, 1.0);
+	if (n->has_selected_client) {
+		if (not n->selected_client.is_iconic) {
+			if (n->selected_client.focuced) {
+				render_notebook_selected(cr, *n, n->selected_client,
+						notebook_active_font, notebook_active_text_color,
+						notebook_active_outline_color,
+						notebook_active_border_color,
+						notebook_active_background_color, 1.0);
+			} else {
+				render_notebook_selected(cr, *n, n->selected_client,
+						notebook_selected_font, notebook_selected_text_color,
+						notebook_selected_outline_color,
+						notebook_selected_border_color,
+						notebook_selected_background_color, 1.0);
+			}
 		} else {
-			render_notebook_selected(cr, *n, n->selected_client,
-					notebook_selected_font,
-					notebook_selected_text_color,
-					notebook_selected_outline_color,
-					notebook_selected_border_color,
-					notebook_selected_background_color, 1.0);
+			if (n->selected_client.selected) {
+				render_notebook_normal(cr, n->selected_client,
+						notebook_selected_font,
+						notebook_selected_text_color,
+						notebook_selected_outline_color,
+						notebook_selected_border_color,
+						notebook_selected_background_color);
+			} else {
+				render_notebook_normal(cr, n->selected_client,
+						notebook_normal_font,
+						notebook_normal_text_color,
+						notebook_normal_outline_color,
+						notebook_normal_border_color,
+						notebook_normal_background_color);
+			}
 		}
 
 	}

@@ -17,6 +17,7 @@ struct theme_tab_t {
 	bool selected;
 	bool focuced;
 	bool demand_attention;
+	bool is_iconic;
 };
 
 }
