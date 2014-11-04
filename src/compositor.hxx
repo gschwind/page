@@ -89,18 +89,6 @@ private:
 	void repair_area(i_rect const & box);
 	void repair_overlay(cairo_t * cr, i_rect const & area, cairo_surface_t * src);
 
-	void process_event(xcb_map_notify_event_t const * e);
-	void process_event(xcb_destroy_notify_event_t const * e);
-	void process_event(xcb_configure_notify_event_t const * e);
-	void process_event(xcb_damage_notify_event_t const * e);
-
-
-private:
-	void scan();
-
-	void update_layout();
-
-
 	void init_composite_overlay();
 	void release_composite_overlay();
 	bool process_check_event();
@@ -110,23 +98,12 @@ private:
 
 	void repair_area_region(region const & repair);
 
-	void cleanup_internal_data();
-
 public:
 	//region read_damaged_region(xcb_damage_damage_t d);
 	~compositor_t();
 	compositor_t(display_t * cnx, composite_surface_manager_t * cmgr);
 
-	void process_events();
-
-	int fd() {
-		return _cnx->fd();
-	}
-
-	void xflush() {
-		xcb_flush(_cnx->xcb());
-	}
-
+	void update_layout();
 	void render();
 
 	void destroy_composite_surface(xcb_window_t w);

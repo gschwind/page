@@ -27,18 +27,16 @@ private:
 
 	page_component_t * _parent;
 	i_rect _allocation;
+	i_rect _workarea;
 
 	/** map viewport to real outputs **/
 	std::map<xcb_randr_crtc_t, viewport_t *> _viewport_outputs;
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
 	std::list<client_managed_t *> _fullscreen_clients;
-
-
+	viewport_t * _primary_viewport;
 	notebook_t * _default_pop;
-
 	bool _is_hidden;
-
 	desktop_t(desktop_t const & v);
 	desktop_t & operator= (desktop_t const &);
 
@@ -275,6 +273,22 @@ public:
 				i->get_visible_children(out);
 			}
 		}
+	}
+
+	void set_workarea(i_rect const & r) {
+		_workarea = r;
+	}
+
+	i_rect const & workarea() {
+		return _workarea;
+	}
+
+	void set_primary_viewport(viewport_t * v) {
+		_primary_viewport = v;
+	}
+
+	viewport_t * primary_viewport() {
+		return _primary_viewport;
 	}
 
 };

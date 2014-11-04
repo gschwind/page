@@ -251,22 +251,17 @@ void page_t::run() {
 	cnx->change_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
 
-	/* define desktop geometry */
-	set_desktop_geometry(_root_position.w, _root_position.h);
-
-	/* set viewport */
-	uint32_t viewport[2] = { 0, 0 };
-	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
-			CARDINAL, 32, viewport, 2);
 
 	update_current_desktop();
 
-	/* page is not able to show desktop only windows */
+	{
+	/* page does not have showing desktop mode */
 	uint32_t showing_desktop = 0;
 	cnx->change_property(cnx->root(), _NET_SHOWING_DESKTOP, CARDINAL,
 			32, &showing_desktop, 1);
+	}
 
-
+	{
 	std::vector<char> names_list;
 	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
 		std::ostringstream os;
@@ -278,6 +273,9 @@ void page_t::run() {
 	cnx->change_property(cnx->root(), _NET_DESKTOP_NAMES,
 			UTF8_STRING, 8, &names_list[0], names_list.size());
 
+	}
+
+	{
 	wm_icon_size_t icon_size;
 	icon_size.min_width = 16;
 	icon_size.min_height = 16;
@@ -288,19 +286,13 @@ void page_t::run() {
 	cnx->change_property(cnx->root(), WM_ICON_SIZE,
 			CARDINAL, 32, &icon_size, 6);
 
+	}
+
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(0, 0);
 
 	scan();
 	update_windows_stack();
-
-	uint32_t workarea[4];
-	workarea[0] = 0;
-	workarea[1] = 0;
-	workarea[2] = _root_position.w;
-	workarea[3] = _root_position.h;
-	cnx->change_property(cnx->root(), _NET_WORKAREA, CARDINAL, 32,
-			workarea, 4);
 
 	rpage->add_damaged(_root_position);
 
@@ -332,10 +324,9 @@ void page_t::run() {
 
 	if (rnd != nullptr) {
 		rnd->render();
-		rnd->xflush();
+		xcb_flush(cnx->xcb());
 	}
 
-	update_allocation();
 	xcb_flush(cnx->xcb());
 	running = true;
 	while (running) {
@@ -406,7 +397,7 @@ void page_t::unmanage(client_managed_t * mw) {
 	mw->wm_state_delete();
 
 	update_client_list();
-	update_allocation();
+	update_workarea();
 	rpage->mark_durty();
 
 	delete mw;
@@ -459,7 +450,7 @@ void page_t::scan() {
 	free(r);
 
 	update_client_list();
-	update_allocation();
+	update_workarea();
 	update_windows_stack();
 
 	cnx->ungrab();
@@ -2229,7 +2220,7 @@ void page_t::process_event(xcb_property_notify_event_t const * e) {
 		}
 
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-		update_allocation();
+		update_workarea();
 		rpage->mark_durty();
 	} else if (e->atom == A(_NET_WM_STRUT)) {
 		//x->mark_durty_net_wm_partial_struct();
@@ -2574,7 +2565,7 @@ void page_t::unfullscreen(client_managed_t * mw) {
 		v->show();
 	}
 
-	update_allocation();
+	update_workarea();
 	rpage->mark_durty();
 
 }
@@ -2647,47 +2638,43 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 	} else if (e->response_type == cnx->randr_event + RRNotify) {
 		xcb_randr_notify_event_t const * ev = reinterpret_cast<xcb_randr_notify_event_t const *>(e);
 
-		char const * s_subtype = "Unknown";
+//		char const * s_subtype = "Unknown";
+//
+//		switch(ev->subCode) {
+//		case XCB_RANDR_NOTIFY_CRTC_CHANGE:
+//			s_subtype = "RRNotify_CrtcChange";
+//			break;
+//		case XCB_RANDR_NOTIFY_OUTPUT_CHANGE:
+//			s_subtype = "RRNotify_OutputChange";
+//			break;
+//		case XCB_RANDR_NOTIFY_OUTPUT_PROPERTY:
+//			s_subtype = "RRNotify_OutputProperty";
+//			break;
+//		case XCB_RANDR_NOTIFY_PROVIDER_CHANGE:
+//			s_subtype = "RRNotify_ProviderChange";
+//			break;
+//		case XCB_RANDR_NOTIFY_PROVIDER_PROPERTY:
+//			s_subtype = "RRNotify_ProviderProperty";
+//			break;
+//		case XCB_RANDR_NOTIFY_RESOURCE_CHANGE:
+//			s_subtype = "RRNotify_ResourceChange";
+//			break;
+//		default:
+//			break;
+//		}
 
-		switch(ev->subCode) {
-		case RRNotify_CrtcChange:
-			s_subtype = "RRNotify_CrtcChange";
-			break;
-		case RRNotify_OutputChange:
-			s_subtype = "RRNotify_OutputChange";
-			break;
-		case RRNotify_OutputProperty:
-			s_subtype = "RRNotify_OutputProperty";
-			break;
-		case RRNotify_ProviderChange:
-			s_subtype = "RRNotify_ProviderChange";
-			break;
-		case RRNotify_ProviderProperty:
-			s_subtype = "RRNotify_ProviderProperty";
-			break;
-		case RRNotify_ResourceChange:
-			s_subtype = "RRNotify_ResourceChange";
-			break;
-		default:
-			break;
-		}
-
-		if (ev->subCode == RRNotify_CrtcChange) {
+		if (ev->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
 			update_viewport_layout();
-			update_allocation();
-
+			rnd->update_layout();
 			theme->update();
-
 			delete rpage;
 			rpage = new renderable_page_t(cnx, theme, _root_position.w,
 					_root_position.h);
 			rpage->show();
-
 		}
 
 		xcb_grab_button(cnx->xcb(), false, cnx->root(),
-				XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE
-						| XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_SYNC,
+				DEFAULT_BUTTON_EVENT_MASK, XCB_GRAB_MODE_SYNC,
 				XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY,
 				XCB_MOD_MASK_ANY);
 
@@ -2738,10 +2725,26 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 }
 
 /* update viewport and childs allocation */
-void page_t::update_allocation() {
-	for(auto v: filter_class<viewport_t>(tree_t::get_all_children())) {
-		compute_viewport_allocation(*v);
+void page_t::update_workarea() {
+	for (auto d : _desktop_list) {
+		for (auto v : d->get_viewports()) {
+			compute_viewport_allocation(d, v);
+		}
+		d->set_workarea(d->primary_viewport()->allocation());
 	}
+
+	std::vector<uint32_t> workarea_data(_desktop_list.size()*4);
+	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
+		workarea_data[k*4+0] = _desktop_list[k]->workarea().x;
+		workarea_data[k*4+1] = _desktop_list[k]->workarea().y;
+		workarea_data[k*4+2] = _desktop_list[k]->workarea().w;
+		workarea_data[k*4+3] = _desktop_list[k]->workarea().h;
+	}
+
+	cnx->change_property(cnx->root(), _NET_WORKAREA, CARDINAL, 32,
+			&workarea_data[0], workarea_data.size());
+
+
 }
 
 /** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
@@ -2842,7 +2845,7 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_allocation();
+	update_workarea();
 	rpage->add_damaged(split->allocation());
 }
 
@@ -2855,7 +2858,7 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_allocation();
+	update_workarea();
 	rpage->add_damaged(split->allocation());
 }
 
@@ -2868,7 +2871,7 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_allocation();
+	update_workarea();
 	rpage->add_damaged(split->allocation());
 }
 
@@ -2881,7 +2884,7 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_allocation();
+	update_workarea();
 	rpage->add_damaged(split->allocation());
 }
 
@@ -2957,7 +2960,7 @@ void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
 /*
  * Compute the usable desktop area and dock allocation.
  */
-void page_t::compute_viewport_allocation(viewport_t & v) {
+void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 
 	/* Partial struct content definition */
 	enum {
@@ -2975,14 +2978,13 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 		PS_BOTTOM_END_X = 11,
 	};
 
-	i_rect const raw_area = v.raw_area();
-	int xtop = raw_area.y;
-	int xleft = raw_area.x;
-	int xright = _root_position.w - raw_area.x - raw_area.w;
-	int xbottom = _root_position.h - raw_area.y - raw_area.h;
+	i_rect const raw_area = v->raw_area();
+	int margin_left = _root_position.x + raw_area.x;
+	int margin_top = _root_position.y + raw_area.y;
+	int margin_right = _root_position.w - raw_area.x - raw_area.w;
+	int margin_bottom = _root_position.h - raw_area.y - raw_area.h;
 
-
-	for(auto j : filter_class<client_base_t>(tree_t::get_all_children())) {
+	for(auto j : filter_class<client_base_t>(d->tree_t::get_all_children())) {
 		if (j->net_wm_struct_partial() != nullptr) {
 			auto const & ps = *(j->net_wm_struct_partial());
 
@@ -2992,7 +2994,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
 				i_rect x = raw_area & b;
 				if (!x.is_null()) {
-					xleft = std::max(xleft, ps[PS_LEFT]);
+					margin_left = std::max(margin_left, ps[PS_LEFT]);
 				}
 			}
 
@@ -3003,7 +3005,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
 				i_rect x = raw_area & b;
 				if (!x.is_null()) {
-					xright = std::max(xright, ps[PS_RIGHT]);
+					margin_right = std::max(margin_right, ps[PS_RIGHT]);
 				}
 			}
 
@@ -3013,7 +3015,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
 				i_rect x = raw_area & b;
 				if (!x.is_null()) {
-					xtop = std::max(xtop, ps[PS_TOP]);
+					margin_top = std::max(margin_top, ps[PS_TOP]);
 				}
 			}
 
@@ -3025,7 +3027,7 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 						ps[PS_BOTTOM]);
 				i_rect x = raw_area & b;
 				if (!x.is_null()) {
-					xbottom = std::max(xbottom, ps[PS_BOTTOM]);
+					margin_bottom = std::max(margin_bottom, ps[PS_BOTTOM]);
 				}
 			}
 		}
@@ -3033,12 +3035,12 @@ void page_t::compute_viewport_allocation(viewport_t & v) {
 
 	i_rect final_size;
 
-	final_size.x = xleft;
-	final_size.w = _root_position.w - xright - xleft;
-	final_size.y = xtop;
-	final_size.h = _root_position.h - xbottom - xtop;
+	final_size.x = margin_left;
+	final_size.w = _root_position.w - margin_right - margin_left;
+	final_size.y = margin_top;
+	final_size.h = _root_position.h - margin_bottom - margin_top;
 
-	v.set_allocation(final_size);
+	v->set_allocation(final_size);
 
 }
 
@@ -3083,7 +3085,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				update_desktop_visibility();
 				break;
 			}
-			update_allocation();
+			update_workarea();
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
@@ -3118,7 +3120,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				update_desktop_visibility();
 				break;
 			}
-			update_allocation();
+			update_workarea();
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
@@ -3147,7 +3149,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				update_desktop_visibility();
 				break;
 			}
-			update_allocation();
+			update_workarea();
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
@@ -3419,7 +3421,6 @@ void page_t::update_windows_stack() {
 void page_t::update_viewport_layout() {
 
 	/** update root size infos **/
-
 	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(cnx->xcb(), cnx->root());
 	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(cnx->xcb(), cnx->root());
 
@@ -3430,11 +3431,11 @@ void page_t::update_viewport_layout() {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-
 	_root_position = i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_desktop_geometry(_root_position.w, _root_position.h);
 	_allocation = _root_position;
 
+	xcb_randr_crtc_t primary;
 	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
 	std::vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
@@ -3448,6 +3449,12 @@ void page_t::update_viewport_layout() {
 		if(r != nullptr) {
 			crtc_info[crtc_list[k]] = r;
 		}
+	}
+
+	if(xcb_randr_get_screen_resources_crtcs_length(randr_resources) > 0) {
+		primary = crtc_list[0];
+	} else {
+		primary = 0;
 	}
 
 	for(auto d: _desktop_list) {
@@ -3472,7 +3479,10 @@ void page_t::update_viewport_layout() {
 				old_layout[crtc.first]->set_raw_area(area);
 				new_layout[crtc.first] = old_layout[crtc.first];
 			}
-			compute_viewport_allocation(*(new_layout[crtc.first]));
+			compute_viewport_allocation(d, new_layout[crtc.first]);
+			if(crtc.first == primary) {
+				d->set_primary_viewport(new_layout[crtc.first]);
+			}
 		}
 
 		if(new_layout.size() < 1) {
@@ -3489,7 +3499,8 @@ void page_t::update_viewport_layout() {
 				old_layout[XCB_NONE]->set_raw_area(area);
 				new_layout[XCB_NONE] = old_layout[XCB_NONE];
 			}
-			compute_viewport_allocation(*(new_layout[XCB_NONE]));
+			compute_viewport_allocation(d, new_layout[XCB_NONE]);
+			d->set_primary_viewport(new_layout[XCB_NONE]);
 		}
 
 		d->set_layout(new_layout);
@@ -3520,6 +3531,18 @@ void page_t::update_viewport_layout() {
 	}
 
 	update_desktop_visibility();
+
+	/* set viewport */
+	std::vector<uint32_t> viewport(_desktop_list.size()*2);
+	std::fill_n(viewport.begin(), _desktop_list.size()*2, 0);
+	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
+			CARDINAL, 32, &viewport[0], _desktop_list.size()*2);
+
+	/* define desktop geometry */
+	set_desktop_geometry(_root_position.w, _root_position.h);
+
+	update_workarea();
+
 }
 
 void page_t::remove_viewport(desktop_t * d, viewport_t * v) {
@@ -3826,7 +3849,7 @@ void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);
-	update_allocation();
+	update_workarea();
 }
 
 viewport_t * page_t::find_mouse_viewport(int x, int y) {

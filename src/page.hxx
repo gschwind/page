@@ -429,7 +429,7 @@ public:
 	void insert_window_in_notebook(client_managed_t * x, notebook_t * n, bool prefer_activate);
 
 	/* update viewport and childs allocation */
-	void update_allocation();
+	void update_workarea();
 
 	/* turn a managed window into fullscreen */
 	void fullscreen(client_managed_t * c, viewport_t * v = nullptr);
@@ -454,7 +454,7 @@ public:
 	void update_popup_position(std::shared_ptr<popup_frame_move_t> p, i_rect & position);
 
 	/* compute the allocation of viewport taking in account DOCKs */
-	void compute_viewport_allocation(viewport_t & v);
+	void compute_viewport_allocation(desktop_t * d, viewport_t * v);
 
 	void cleanup_not_managed_client(client_not_managed_t * c);
 

@@ -331,18 +331,19 @@ void compositor_t::update_layout() {
 		if(r != nullptr) {
 			crtc_info[crtc_list[k]] = r;
 		}
+
+		if(k == 0) {
+			_debug_x = r->x + 40;
+			_debug_y = r->y + r->height - 120;
+		}
+
 	}
 
 	_desktop_region.clear();
 
 	for(auto i: crtc_info) {
 		i_rect area{i.second->x, i.second->y, i.second->width, i.second->height};
-		_desktop_region = _desktop_region + area;
-	}
-
-	if(not crtc_info.empty()) {
-		_debug_x = crtc_info.begin()->second->x + 40;
-		_debug_y = crtc_info.begin()->second->y + crtc_info.begin()->second->height - 120;
+		_desktop_region += area;
 	}
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
