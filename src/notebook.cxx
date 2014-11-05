@@ -55,20 +55,13 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 
 	} else {
 		x->iconify();
-
 		if(_selected != nullptr) {
-			/** get current surface then iconify **/
-			if (_selected->surf() != nullptr) {
-				prev_loc = _selected->base_position();
-				prev_surf = _selected->surf()->get_pixmap();
-			}
-			_selected->iconify();
+			/* do nothing */
 		} else {
 			/** no prev surf is used **/
+			_selected = x;
 			prev_surf.reset();
 		}
-
-		_selected = nullptr;
 	}
 
 	update_theme_notebook();
