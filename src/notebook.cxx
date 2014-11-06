@@ -630,6 +630,8 @@ void notebook_t::update_theme_notebook() const {
 			offset += box_width;
 			++k;
 		}
+	} else {
+		theme_notebook.has_selected_client = false;
 	}
 
 	theme_notebook.allocation = _allocation;
