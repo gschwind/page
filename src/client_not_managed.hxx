@@ -74,6 +74,10 @@ public:
 		_properties->cnx()->map(_properties->id());
 	}
 
+	void unmap() {
+		_properties->cnx()->unmap(_properties->id());
+	}
+
 	virtual std::string get_node_name() const {
 		std::string s = _get_node_name<'U'>();
 		std::ostringstream oss;
@@ -90,7 +94,7 @@ public:
 		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-			auto x = new renderable_unmanaged_outer_gradien_t(pos, 4.0);
+			auto x = new renderable_unmanaged_outer_gradien_t{pos, 4};
 			out += std::shared_ptr<renderable_t>{x};
 		}
 

@@ -1859,8 +1859,6 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 		}
 	}
 
-	//render();
-
 }
 
 /* track all created window */
@@ -1889,14 +1887,10 @@ void page_t::process_event(xcb_gravity_notify_event_t const * e) {
 }
 
 void page_t::process_event(xcb_map_notify_event_t const * e) {
-
 	/* if map event does not occur within root, ignore it */
 	if (e->event != cnx->root())
 		return;
-
 	onmap(e->window);
-
-	//render();
 }
 
 void page_t::process_event(xcb_reparent_notify_event_t const * e) {
@@ -2317,22 +2311,22 @@ void page_t::process_event(xcb_client_message_event_t const * e) {
 		/* process second request */
 		process_net_vm_state_client_message(w, e->data.data32[0], e->data.data32[2]);
 
-		for (int i = 1; i < 3; ++i) {
-			if (std::find(supported_list.begin(), supported_list.end(),
-					e->data.data32[i]) != supported_list.end()) {
-				switch (e->data.data32[0]) {
-				case _NET_WM_STATE_REMOVE:
-					//w->unset_net_wm_state(e->data.l[i]);
-					break;
-				case _NET_WM_STATE_ADD:
-					//w->set_net_wm_state(e->data.l[i]);
-					break;
-				case _NET_WM_STATE_TOGGLE:
-					//w->toggle_net_wm_state(e->data.l[i]);
-					break;
-				}
-			}
-		}
+//		for (int i = 1; i < 3; ++i) {
+//			if (std::find(supported_list.begin(), supported_list.end(),
+//					e->data.data32[i]) != supported_list.end()) {
+//				switch (e->data.data32[0]) {
+//				case _NET_WM_STATE_REMOVE:
+//					//w->unset_net_wm_state(e->data.l[i]);
+//					break;
+//				case _NET_WM_STATE_ADD:
+//					//w->set_net_wm_state(e->data.l[i]);
+//					break;
+//				case _NET_WM_STATE_TOGGLE:
+//					//w->toggle_net_wm_state(e->data.l[i]);
+//					break;
+//				}
+//			}
+//		}
 	} else if (e->type == A(WM_CHANGE_STATE)) {
 
 		/** When window want to become iconic, just bind them **/
@@ -3052,7 +3046,7 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 }
 
 void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties) {
-	if(state_properties == None)
+	if(state_properties == XCB_ATOM_NONE)
 		return;
 
 	char const * action;
@@ -3074,157 +3068,186 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 
 	std::cout << "_NET_WM_STATE: "  << action << " " << cnx->get_atom_name(state_properties) << std::endl;
 
+
+
 	client_managed_t * mw = find_managed_window_with(c);
 
-	if(mw == nullptr)
-		return;
+	if (mw != nullptr) {
 
-	if (mw->is(MANAGED_NOTEBOOK)) {
+		if (mw->is(MANAGED_NOTEBOOK)) {
 
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				fullscreen(mw);
-				update_desktop_visibility();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_desktop_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-			{
-				notebook_t * n = dynamic_cast<notebook_t*>(mw->parent());
-				if(n != nullptr)
-					n->activate_client(mw);
-			}
+			if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					break;
+				case _NET_WM_STATE_ADD:
+					fullscreen(mw);
+					update_desktop_visibility();
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					toggle_fullscreen(mw);
+					update_desktop_visibility();
+					break;
+				}
+				update_workarea();
+			} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE: {
+					notebook_t * n = dynamic_cast<notebook_t*>(mw->parent());
+					if (n != nullptr)
+						n->activate_client(mw);
+				}
 
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->iconify();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				/** IWMH say ignore it ? **/
-			default:
-				break;
+					break;
+				case _NET_WM_STATE_ADD:
+					mw->iconify();
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					/** IWMH say ignore it ? **/
+				default:
+					break;
+				}
+			} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->set_demands_attention(false);
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_ADD:
+					mw->set_demands_attention(true);
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					mw->set_demands_attention(not mw->demands_attention());
+					rpage->add_damaged(_root_position);
+					break;
+				default:
+					break;
+				}
 			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				rpage->add_damaged(_root_position);
-				break;
-			default:
-				break;
+		} else if (mw->is(MANAGED_FLOATING)) {
+
+			if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					break;
+				case _NET_WM_STATE_ADD:
+					fullscreen(mw);
+					update_desktop_visibility();
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					toggle_fullscreen(mw);
+					update_desktop_visibility();
+					break;
+				}
+				update_workarea();
+			} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->normalize();
+					break;
+				case _NET_WM_STATE_ADD:
+					/** I ignore it **/
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					/** IWMH say ignore it ? **/
+				default:
+					break;
+				}
+			} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->set_demands_attention(false);
+					mw->expose();
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_ADD:
+					mw->set_demands_attention(true);
+					mw->expose();
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					mw->set_demands_attention(not mw->demands_attention());
+					mw->expose();
+					rpage->add_damaged(_root_position);
+					break;
+				default:
+					break;
+				}
+			}
+		} else if (mw->is(MANAGED_FULLSCREEN)) {
+			if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					unfullscreen(mw);
+					update_desktop_visibility();
+					break;
+				case _NET_WM_STATE_ADD:
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					toggle_fullscreen(mw);
+					update_desktop_visibility();
+					break;
+				}
+				update_workarea();
+			} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					break;
+				case _NET_WM_STATE_ADD:
+					break;
+				case _NET_WM_STATE_TOGGLE:
+				default:
+					break;
+				}
+			} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->set_demands_attention(false);
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_ADD:
+					mw->set_demands_attention(true);
+					rpage->add_damaged(_root_position);
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					mw->set_demands_attention(not mw->demands_attention());
+					rpage->add_damaged(_root_position);
+					break;
+				default:
+					break;
+				}
 			}
 		}
-	} else if (mw->is(MANAGED_FLOATING)) {
 
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				fullscreen(mw);
-				update_desktop_visibility();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_desktop_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->normalize();
-				break;
-			case _NET_WM_STATE_ADD:
-				/** I ignore it **/
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				/** IWMH say ignore it ? **/
-			default:
-				break;
-			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
-				mw->expose();
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				mw->expose();
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				mw->expose();
-				rpage->add_damaged(_root_position);
-				break;
-			default:
-				break;
-			}
-		}
-	} else if (mw->is(MANAGED_FULLSCREEN)) {
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				unfullscreen(mw);
-				update_desktop_visibility();
-				break;
-			case _NET_WM_STATE_ADD:
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_desktop_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				break;
-			case _NET_WM_STATE_TOGGLE:
-			default:
-				break;
-			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				rpage->add_damaged(_root_position);
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				rpage->add_damaged(_root_position);
-				break;
-			default:
-				break;
-			}
-		}
 	}
+
+//	else {
+//		net_wm_state_t state;
+//		auto x = display_t::make_property_fetcher_t(state, cnx, c);
+//		x.update(cnx);
+//
+//		if (state != nullptr) {
+//			switch (type) {
+//			case _NET_WM_STATE_REMOVE:
+//				state->remove(state_properties);
+//				break;
+//			case _NET_WM_STATE_ADD:
+//				state->remove(state_properties);
+//				state->push_back(state_properties);
+//				break;
+//			case _NET_WM_STATE_TOGGLE:
+//				if (has_key(*state, state_properties)) {
+//					state->remove(state_properties);
+//				} else {
+//					state->push_back(state_properties);
+//				}
+//				break;
+//			}
+//			cnx->write_property(c, state);
+//		}
+//
+//	}
 }
 
 void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
@@ -3706,8 +3729,8 @@ void page_t::onmap(xcb_window_t w) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
 
-				//props->print_window_attributes();
-				//props->print_properties();
+				props->print_window_attributes();
+				props->print_properties();
 
 				xcb_atom_t type = props->wm_type();
 
@@ -3896,10 +3919,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb
 		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 		uw->map();
 		safe_update_transient_for(uw);
-		safe_raise_window(uw);
 		rnd->add_damaged(uw->visible_area());
-		update_windows_stack();
-		_need_render = true;
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
