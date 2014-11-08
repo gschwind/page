@@ -521,14 +521,8 @@ public:
 	void remove(tree_t * t);
 
 	void attach_dock(client_not_managed_t * uw) {
-		if(uw->net_wm_state() != nullptr) {
-			if(has_key<unsigned>(*(uw->net_wm_state()), A(_NET_WM_STATE_STICKY))) {
-				for(auto i: _desktop_list) {
-					i->add_dock_client(uw);
-				}
-			} else {
-				_desktop_list[_current_desktop]->add_dock_client(uw);
-			}
+		for (auto i : _desktop_list) {
+			i->add_dock_client(uw);
 		}
 	}
 

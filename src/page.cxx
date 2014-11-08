@@ -59,8 +59,6 @@
 
 namespace page {
 
-using namespace std;
-
 long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
 
 time_t const page_t::default_wait{1000000000L / 120L};
@@ -615,7 +613,7 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 
 		if(k == bind_debug_4.ks and (e->state & bind_debug_4.mod)) {
 			update_windows_stack();
-			//print_tree(0);
+			print_tree(0);
 			std::vector<client_managed_t *> lst = get_managed_windows();
 			for (auto i : lst) {
 				switch (i->get_type()) {
@@ -2177,6 +2175,7 @@ void page_t::process_event(xcb_property_notify_event_t const * e) {
 			c->update_net_wm_struct();
 		} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 			c->update_net_wm_struct_partial();
+			update_workarea();
 		} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
 			c->update_net_wm_icon_geometry();
 		} else if (e->atom == A(_NET_WM_ICON)) {
@@ -2745,6 +2744,8 @@ void page_t::update_workarea() {
 	cnx->change_property(cnx->root(), _NET_WORKAREA, CARDINAL, 32,
 			&workarea_data[0], workarea_data.size());
 
+	if(rpage != nullptr)
+		rpage->add_damaged(_root_position);
 
 }
 
@@ -2980,12 +2981,14 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 	};
 
 	i_rect const raw_area = v->raw_area();
+
 	int margin_left = _root_position.x + raw_area.x;
 	int margin_top = _root_position.y + raw_area.y;
 	int margin_right = _root_position.w - raw_area.x - raw_area.w;
 	int margin_bottom = _root_position.h - raw_area.y - raw_area.h;
 
-	for(auto j : filter_class<client_base_t>(d->tree_t::get_all_children())) {
+	auto children = filter_class<client_base_t>(d->tree_t::get_all_children());
+	for(auto j: children) {
 		if (j->net_wm_struct_partial() != nullptr) {
 			auto const & ps = *(j->net_wm_struct_partial());
 
@@ -3729,8 +3732,8 @@ void page_t::onmap(xcb_window_t w) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
 
-				props->print_window_attributes();
-				props->print_properties();
+				//props->print_window_attributes();
+				//props->print_properties();
 
 				xcb_atom_t type = props->wm_type();
 
@@ -4021,6 +4024,9 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			detach(uw);
 			notifications.push_back(uw);
 			uw->set_parent(this);
+		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			detach(uw);
+			attach_dock(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
 			detach(uw);
@@ -4195,7 +4201,6 @@ void page_t::remove(tree_t * t) {
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
 	tooltips.remove(dynamic_cast<client_not_managed_t *>(t));
 	notifications.remove(dynamic_cast<client_not_managed_t *>(t));
-	//_fullscreen_client_to_viewport.erase(dynamic_cast<client_managed_t *>(t));
 	docks.remove(dynamic_cast<client_not_managed_t*>(t));
 	above.remove(dynamic_cast<client_not_managed_t*>(t));
 	below.remove(dynamic_cast<client_not_managed_t*>(t));
