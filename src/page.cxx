@@ -2989,7 +2989,49 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 
 	auto children = filter_class<client_base_t>(d->tree_t::get_all_children());
 	for(auto j: children) {
-		if (j->net_wm_struct_partial() != nullptr) {
+		uint32_t ps[12];
+		bool has_strut{false};
+
+		if(j->net_wm_struct_partial() != nullptr) {
+			if(j->net_wm_struct_partial()->size() == 12) {
+				std::copy(j->net_wm_struct_partial()->begin(), j->net_wm_struct_partial()->end(), &ps[0]);
+				has_strut = true;
+			}
+		}
+
+		if (j->net_wm_struct() != nullptr and not has_strut) {
+			if(j->net_wm_struct()->size() == 4) {
+
+				/** if strut is found, fake strut_partial **/
+
+				std::copy(j->net_wm_struct()->begin(), j->net_wm_struct()->end(), &ps[0]);
+
+				if(ps[PS_TOP] > 0) {
+					ps[PS_TOP_START_X] = _root_position.x;
+					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
+				}
+
+				if(ps[PS_BOTTOM] > 0) {
+					ps[PS_BOTTOM_START_X] = _root_position.x;
+					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
+				}
+
+				if(ps[PS_LEFT] > 0) {
+					ps[PS_LEFT_START_Y] = _root_position.y;
+					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
+				}
+
+				if(ps[PS_RIGHT] > 0) {
+					ps[PS_RIGHT_START_Y] = _root_position.y;
+					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
+				}
+
+				has_strut = true;
+			}
+		}
+
+		if (has_strut) {
+
 			auto const & ps = *(j->net_wm_struct_partial());
 
 			if (ps[PS_LEFT] > 0) {
