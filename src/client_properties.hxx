@@ -746,8 +746,8 @@ public:
 	std::list<xcb_atom_t> const *           net_wm_window_type() const { return __net_wm_window_type; }
 	std::list<xcb_atom_t> const *           net_wm_state() const { return __net_wm_state; }
 	std::list<xcb_atom_t> const *           net_wm_allowed_actions() const { return __net_wm_allowed_actions; }
-	std::vector<int> const *                net_wm_struct() const { return __net_wm_strut; }
-	std::vector<int> const *                net_wm_struct_partial() const { return __net_wm_strut_partial; }
+	std::vector<int> const *                net_wm_strut() const { return __net_wm_strut; }
+	std::vector<int> const *                net_wm_strut_partial() const { return __net_wm_strut_partial; }
 	std::vector<int> const *                net_wm_icon_geometry() const { return __net_wm_icon_geometry; }
 	std::vector<uint32_t> const *           net_wm_icon() const { return __net_wm_icon; }
 	unsigned int const *                    net_wm_pid() const { return __net_wm_pid; }

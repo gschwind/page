@@ -2989,22 +2989,22 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 
 	auto children = filter_class<client_base_t>(d->tree_t::get_all_children());
 	for(auto j: children) {
-		uint32_t ps[12];
+		int32_t ps[12];
 		bool has_strut{false};
 
-		if(j->net_wm_struct_partial() != nullptr) {
-			if(j->net_wm_struct_partial()->size() == 12) {
-				std::copy(j->net_wm_struct_partial()->begin(), j->net_wm_struct_partial()->end(), &ps[0]);
+		if(j->net_wm_strut_partial() != nullptr) {
+			if(j->net_wm_strut_partial()->size() == 12) {
+				std::copy(j->net_wm_strut_partial()->begin(), j->net_wm_strut_partial()->end(), &ps[0]);
 				has_strut = true;
 			}
 		}
 
-		if (j->net_wm_struct() != nullptr and not has_strut) {
-			if(j->net_wm_struct()->size() == 4) {
+		if (j->net_wm_strut() != nullptr and not has_strut) {
+			if(j->net_wm_strut()->size() == 4) {
 
 				/** if strut is found, fake strut_partial **/
 
-				std::copy(j->net_wm_struct()->begin(), j->net_wm_struct()->end(), &ps[0]);
+				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
 					ps[PS_TOP_START_X] = _root_position.x;
@@ -3031,8 +3031,6 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 		}
 
 		if (has_strut) {
-
-			auto const & ps = *(j->net_wm_struct_partial());
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
