@@ -1440,6 +1440,11 @@ void simple2_theme_t::update() {
 		background_s = nullptr;
 	}
 
+	if(background_p != XCB_NONE) {
+		xcb_free_pixmap(_cnx->xcb(), background_p);
+		background_p = XCB_NONE;
+	}
+
 	create_background_img();
 
 }
