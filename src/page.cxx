@@ -66,6 +66,33 @@ time_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
+	_process_key_press_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
+	_process_key_release_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
+	_process_button_press_event = [this](xcb_generic_event_t const * e) { this->process_event_button_press_event(e); };
+	_process_button_release_event = [this](xcb_generic_event_t const * e) { this->process_event_button_release_event(e); };
+	_process_motion_notify_event = [this](xcb_generic_event_t const * e) { this->process_motion_notify_event(e); };
+	_process_circulate_notify_event = [this](xcb_generic_event_t const * e) {  };
+	_process_configure_notify_event = [this](xcb_generic_event_t const * e) { this->process_configure_notify_event(e); };
+	_process_create_notify_event = [this](xcb_generic_event_t const * e) { this->process_create_notify_event(e); };
+	_process_destroy_notify_event = [this](xcb_generic_event_t const * e) { this->process_destroy_notify_event(e); };
+	_process_gravity_notify_event = [this](xcb_generic_event_t const * e) { this->process_gravity_notify_event(e); };
+	_process_map_notify_event = [this](xcb_generic_event_t const * e) { this->process_map_notify_event(e); };
+	_process_reparent_notify_event = [this](xcb_generic_event_t const * e) { this->process_reparent_notify_event(e); };
+	_process_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_unmap_notify_event(e); };
+	_process_circulate_request_event = [this](xcb_generic_event_t const * e) { this->process_circulate_request_event(e); };
+	_process_configure_request_event = [this](xcb_generic_event_t const * e) { this->process_configure_request_event(e); };
+	_process_map_request_event = [this](xcb_generic_event_t const * e) { this->process_map_request_event(e); };
+	_process_property_notify_event = [this](xcb_generic_event_t const * e) { this->process_property_notify_event(e); };
+	_process_mapping_notify_event = [this](xcb_generic_event_t const * e) { this->process_mapping_notify_event(e); };
+
+	_process_fake_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_fake_unmap_notify_event(e); };
+	_process_fake_client_message_event = [this](xcb_generic_event_t const * e) { this->process_fake_client_message_event(e); };
+
+	_process_damage_notify_event = [this](xcb_generic_event_t const * e) { this->process_damage_notify_event(e); };
+	_process_randr_notify_event = [this](xcb_generic_event_t const * e) { this->process_randr_notify_event(e); };
+	_process_shape_notify_event = [this](xcb_generic_event_t const * e) { this->process_shape_notify_event(e); };
+
+
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
 	for(unsigned k = 0; k < 4; ++k) {
@@ -212,6 +239,8 @@ void page_t::run() {
 	create_identity_window();
 	register_wm();
 	register_cm();
+
+	_bind_all_default_event();
 
 	/** initialise theme **/
 	theme = new simple2_theme_t{cnx, conf};
@@ -545,8 +574,8 @@ void page_t::update_client_list() {
 
 }
 
-void page_t::process_event(xcb_key_press_event_t const * e) {
-
+void page_t::process_event_key_press_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_key_press_event_t const *>(_e);
 	if(_last_focus_time > e->time) {
 		_last_focus_time = e->time;
 	}
@@ -718,8 +747,8 @@ void page_t::process_event(xcb_key_press_event_t const * e) {
 }
 
 /* Button event make page to grab pointer */
-void page_t::process_event_press(xcb_button_press_event_t const * e) {
-
+void page_t::process_event_button_press_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
 //	std::cout << "Button Event Press "
 //			<< " event=" << e->event
 //			<< " child=" << e->child
@@ -1072,7 +1101,8 @@ void page_t::process_event_press(xcb_button_press_event_t const * e) {
 
 }
 
-void page_t::process_event_release(xcb_button_press_event_t const * e) {
+void page_t::process_event_button_release_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
 
 	switch (process_mode) {
 	case PROCESS_NORMAL:
@@ -1414,7 +1444,8 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_motion_notify_event_t const * e) {
+void page_t::process_motion_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 
 //		std::cout << "Button Motion Event"
 //				<< " event=" << e->event
@@ -1856,7 +1887,8 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_configure_notify_event_t const * e) {
+void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_configure_notify_event_t const *>(_e);
 	client_base_t * c = find_client(e->window);
 
 	if(c != nullptr) {
@@ -1877,13 +1909,14 @@ void page_t::process_event(xcb_configure_notify_event_t const * e) {
 }
 
 /* track all created window */
-void page_t::process_event(xcb_create_notify_event_t const * e) {
+void page_t::process_create_notify_event(xcb_generic_event_t const * e) {
 //	std::cout << format("08", e->sequence) << " create_notify " << e->width << "x" << e->height << "+" << e->x << "+" << e->y
 //			<< " overide=" << (e->override_redirect?"true":"false")
 //			<< " boder_width=" << e->border_width << std::endl;
 }
 
-void page_t::process_event(xcb_destroy_notify_event_t const * e) {
+void page_t::process_destroy_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_destroy_notify_event_t const *>(_e);
 	client_base_t * c = find_client(e->window);
 	if (c != nullptr) {
 		if(typeid(*c) == typeid(client_managed_t)) {
@@ -1897,18 +1930,20 @@ void page_t::process_event(xcb_destroy_notify_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_gravity_notify_event_t const * e) {
+void page_t::process_gravity_notify_event(xcb_generic_event_t const * e) {
 	/* Ignore it, never happen ? */
 }
 
-void page_t::process_event(xcb_map_notify_event_t const * e) {
+void page_t::process_map_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_map_notify_event_t const *>(_e);
 	/* if map event does not occur within root, ignore it */
 	if (e->event != cnx->root())
 		return;
 	onmap(e->window);
 }
 
-void page_t::process_event(xcb_reparent_notify_event_t const * e) {
+void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_reparent_notify_event_t const *>(_e);
 	//printf("Reparent window: %lu, parent: %lu, overide: %d, send_event: %d\n",
 	//		e.window, e.parent, e.override_redirect, e.send_event);
 	/* Reparent the root window ? hu :/ */
@@ -1932,7 +1967,8 @@ void page_t::process_event(xcb_reparent_notify_event_t const * e) {
 
 }
 
-void page_t::process_event(xcb_unmap_notify_event_t const * e) {
+void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
 	client_base_t * c = find_client(e->window);
 	if (c != nullptr) {
 		rnd->add_damaged(c->visible_area());
@@ -1943,7 +1979,8 @@ void page_t::process_event(xcb_unmap_notify_event_t const * e) {
 	}
 }
 
-void page_t::process_fake_event(xcb_unmap_notify_event_t const * e) {
+void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
 	/**
 	 * Client must send a fake unmap event if he want get back the window.
 	 * (i.e. he want that we unmanage it.
@@ -1968,7 +2005,8 @@ void page_t::process_fake_event(xcb_unmap_notify_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_circulate_request_event_t const * e) {
+void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_circulate_request_event_t const *>(_e);
 	/* will happpen ? */
 	client_base_t * c = find_client_with(e->window);
 	if (c != nullptr) {
@@ -1980,8 +2018,8 @@ void page_t::process_event(xcb_circulate_request_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_configure_request_event_t const * e) {
-
+void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_configure_request_event_t const *>(_e);
 //	if (e.value_mask & CWX)
 //		printf("has x: %d\n", e.x);
 //	if (e.value_mask & CWY)
@@ -2133,8 +2171,8 @@ void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * 
 
 }
 
-void page_t::process_event(xcb_map_request_event_t const * e) {
-
+void page_t::process_map_request_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_map_request_event_t const *>(_e);
 	if (e->parent != cnx->root()) {
 		xcb_map_window(cnx->xcb(), e->window);
 		return;
@@ -2144,8 +2182,8 @@ void page_t::process_event(xcb_map_request_event_t const * e) {
 
 }
 
-void page_t::process_event(xcb_property_notify_event_t const * e) {
-
+void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_property_notify_event_t const *>(_e);
 	if(e->window == cnx->root())
 		return;
 
@@ -2294,8 +2332,8 @@ void page_t::process_event(xcb_property_notify_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_client_message_event_t const * e) {
-
+void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_client_message_event_t const *>(_e);
 	//std::shared_ptr<char> name = cnx->get_atom_name(e->type);
 	std::cout << "ClientMessage type = " << cnx->get_atom_name(e->type) << std::endl;
 
@@ -2468,7 +2506,7 @@ void page_t::process_event(xcb_client_message_event_t const * e) {
 	}
 }
 
-void page_t::process_event(xcb_damage_notify_event_t const * e) {
+void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 	render();
 }
 
@@ -2596,137 +2634,14 @@ void page_t::toggle_fullscreen(client_managed_t * c) {
 
 
 void page_t::process_event(xcb_generic_event_t const * e) {
-
-	/**
-	 * This print produce damage notify, thus avoid to print this line in that case
-	 **/
-//	if(e->response_type != cnx->damage_event + XCB_DAMAGE_NOTIFY) {
-//		std::cout << format("08", e->sequence) << " process event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
-//	}
-
-	if (e->response_type == XCB_BUTTON_PRESS) {
-		process_event_press(reinterpret_cast<xcb_button_press_event_t const *>(e));
-	} else if (e->response_type == XCB_BUTTON_RELEASE) {
-		process_event_release(reinterpret_cast<xcb_button_release_event_t const *>(e));
-	} else if (e->response_type == XCB_MOTION_NOTIFY) {
-		process_event(reinterpret_cast<xcb_motion_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_KEY_PRESS) {
-		process_event(reinterpret_cast<xcb_key_press_event_t const *>(e));
-	} else if (e->response_type == XCB_KEY_RELEASE) {
-		process_event(reinterpret_cast<xcb_key_release_event_t const *>(e));
-	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
-		process_event(reinterpret_cast<xcb_configure_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_CREATE_NOTIFY) {
-		process_event(reinterpret_cast<xcb_create_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_DESTROY_NOTIFY) {
-		process_event(reinterpret_cast<xcb_destroy_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_GRAVITY_NOTIFY) {
-		process_event(reinterpret_cast<xcb_gravity_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_MAP_NOTIFY) {
-		process_event(reinterpret_cast<xcb_map_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_REPARENT_NOTIFY) {
-		process_event(reinterpret_cast<xcb_reparent_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_UNMAP_NOTIFY) {
-		process_event(reinterpret_cast<xcb_unmap_notify_event_t const *>(e));
-	} else if (e->response_type == (XCB_UNMAP_NOTIFY|0x80)) {
-		process_fake_event(reinterpret_cast<xcb_unmap_notify_event_t const *>(e));
-	} else if (e->response_type == XCB_CIRCULATE_NOTIFY) {
-
-	} else if (e->response_type == XCB_CONFIGURE_REQUEST) {
-		process_event(reinterpret_cast<xcb_configure_request_event_t const *>(e));
-	} else if (e->response_type == XCB_MAP_REQUEST) {
-		process_event(reinterpret_cast<xcb_map_request_event_t const *>(e));
-	} else if (e->response_type == XCB_PROPERTY_NOTIFY) {
-		process_event(reinterpret_cast<xcb_property_notify_event_t const *>(e));
-	} else if (e->response_type == (XCB_CLIENT_MESSAGE|0x80)) {
-		process_event(reinterpret_cast<xcb_client_message_event_t const *>(e));
-	} else if (e->response_type == cnx->damage_event + XCB_DAMAGE_NOTIFY) {
-		process_event(reinterpret_cast<xcb_damage_notify_event_t const *>(e));
-	} else if (e->response_type == Expose) {
-		xcb_expose_event_t const * ev = reinterpret_cast<xcb_expose_event_t const *>(e);
-		client_managed_t * mw = find_managed_window_with(ev->window);
-		if (mw != nullptr) {
-			if (mw->is(MANAGED_FLOATING)) {
-				mw->expose();
-				//rnd->add_damaged(mw->base_position());
-			}
+	auto x = _event_handlers.find(e->response_type);
+	if(x != _event_handlers.end()) {
+		for(auto & i: x->second) {
+			i(e);
 		}
-
-	} else if (e->response_type == cnx->randr_event + RRNotify) {
-		xcb_randr_notify_event_t const * ev = reinterpret_cast<xcb_randr_notify_event_t const *>(e);
-
-//		char const * s_subtype = "Unknown";
-//
-//		switch(ev->subCode) {
-//		case XCB_RANDR_NOTIFY_CRTC_CHANGE:
-//			s_subtype = "RRNotify_CrtcChange";
-//			break;
-//		case XCB_RANDR_NOTIFY_OUTPUT_CHANGE:
-//			s_subtype = "RRNotify_OutputChange";
-//			break;
-//		case XCB_RANDR_NOTIFY_OUTPUT_PROPERTY:
-//			s_subtype = "RRNotify_OutputProperty";
-//			break;
-//		case XCB_RANDR_NOTIFY_PROVIDER_CHANGE:
-//			s_subtype = "RRNotify_ProviderChange";
-//			break;
-//		case XCB_RANDR_NOTIFY_PROVIDER_PROPERTY:
-//			s_subtype = "RRNotify_ProviderProperty";
-//			break;
-//		case XCB_RANDR_NOTIFY_RESOURCE_CHANGE:
-//			s_subtype = "RRNotify_ResourceChange";
-//			break;
-//		default:
-//			break;
-//		}
-
-		if (ev->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
-			update_viewport_layout();
-			rnd->update_layout();
-			theme->update();
-			delete rpage;
-			rpage = new renderable_page_t(cnx, theme, _root_position.w,
-					_root_position.h);
-			rpage->show();
-		}
-
-		xcb_grab_button(cnx->xcb(), false, cnx->root(),
-				DEFAULT_BUTTON_EVENT_MASK, XCB_GRAB_MODE_SYNC,
-				XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, XCB_BUTTON_INDEX_ANY,
-				XCB_MOD_MASK_ANY);
-
-		/** put rpage behind all managed windows **/
-		update_windows_stack();
-
-
-	} else if (e->response_type == cnx->randr_event + RRScreenChangeNotify) {
-		/** do nothing **/
-	} else if (e->response_type == XCB_SELECTION_CLEAR) {
-		/** some one want to replace our self **/
-		running = false;
-	} else if (e->response_type == cnx->shape_event + ShapeNotify) {
-		xcb_shape_notify_event_t const * se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
-		if(se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
-			xcb_window_t w = se->affected_window;
-			client_base_t * c = find_client(w);
-			if(c != nullptr) {
-				c->update_shape();
-			}
-		}
-	} else if (e->response_type == XCB_FOCUS_OUT) {
-		//printf("FocusOut #%lu\n", e.xfocus.window);
-	} else if (e->response_type == XCB_FOCUS_IN) {
-		//printf("FocusIn #%lu\n", e.xfocus.window);
-	} else if (e->response_type == XCB_MAPPING_NOTIFY) {
-		update_keymap();
-		update_grabkey();
-	} else if (e->response_type == 0) {
-		xcb_generic_error_t const * ev = reinterpret_cast<xcb_generic_error_t const *>(e);
-		cnx->print_error(ev);
 	} else {
 		std::cout << "not handled event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
 	}
-
 }
 
 void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
@@ -4540,6 +4455,110 @@ void page_t::get_visible_children(std::vector<tree_t *> & out) {
 	}
 }
 
+void page_t::_event_handler_bind(int type, std::function<callback_event_t> f) {
+	_event_handlers[type].push_back(f);
+}
+
+void page_t::_event_handler_unbind(int type, std::function<callback_event_t> f) {
+	_event_handlers[type].remove_if([&f](std::function<callback_event_t> & x) -> bool { if(*(x.target<callback_event_t>()) == *(f.target<callback_event_t>())) { return true; } });
+}
+
+void page_t::_bind_all_default_event() {
+
+	_event_handler_bind(XCB_BUTTON_PRESS, _process_button_press_event);
+	_event_handler_bind(XCB_BUTTON_RELEASE, _process_button_release_event);
+	_event_handler_bind(XCB_MOTION_NOTIFY, _process_motion_notify_event);
+	_event_handler_bind(XCB_KEY_PRESS, _process_key_press_event);
+	_event_handler_bind(XCB_KEY_RELEASE, _process_key_release_event);
+	_event_handler_bind(XCB_CONFIGURE_NOTIFY, _process_configure_notify_event);
+	_event_handler_bind(XCB_CREATE_NOTIFY, _process_create_notify_event);
+	_event_handler_bind(XCB_DESTROY_NOTIFY, _process_destroy_notify_event);
+	_event_handler_bind(XCB_GRAVITY_NOTIFY, _process_gravity_notify_event);
+	_event_handler_bind(XCB_MAP_NOTIFY, _process_map_notify_event);
+	_event_handler_bind(XCB_REPARENT_NOTIFY, _process_reparent_notify_event);
+	_event_handler_bind(XCB_UNMAP_NOTIFY, _process_unmap_notify_event);
+	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, _process_fake_unmap_notify_event);
+	_event_handler_bind(XCB_CIRCULATE_NOTIFY, _process_circulate_notify_event);
+	_event_handler_bind(XCB_CONFIGURE_REQUEST, _process_configure_request_event);
+	_event_handler_bind(XCB_MAP_REQUEST, _process_map_request_event);
+	_event_handler_bind(XCB_MAPPING_NOTIFY, _process_mapping_notify_event);
+	_event_handler_bind(XCB_SELECTION_CLEAR, _process_selection_clear_event);
+	_event_handler_bind(XCB_PROPERTY_NOTIFY, _process_property_notify_event);
+
+	/** Extension **/
+	_event_handler_bind(cnx->damage_event + XCB_DAMAGE_NOTIFY, _process_damage_notify_event);
+	_event_handler_bind(cnx->randr_event + RRNotify, _process_randr_notify_event);
+	_event_handler_bind(cnx->shape_event + ShapeNotify, _process_shape_notify_event);
+
+}
+
+
+void page_t::process_mapping_notify_event(xcb_generic_event_t const * e) {
+	update_keymap();
+	update_grabkey();
+}
+
+void page_t::process_selection_clear_event(xcb_generic_event_t const * e) {
+	running = false;
+}
+
+void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
+	auto ev = reinterpret_cast<xcb_randr_notify_event_t const *>(e);
+
+	//		char const * s_subtype = "Unknown";
+	//
+	//		switch(ev->subCode) {
+	//		case XCB_RANDR_NOTIFY_CRTC_CHANGE:
+	//			s_subtype = "RRNotify_CrtcChange";
+	//			break;
+	//		case XCB_RANDR_NOTIFY_OUTPUT_CHANGE:
+	//			s_subtype = "RRNotify_OutputChange";
+	//			break;
+	//		case XCB_RANDR_NOTIFY_OUTPUT_PROPERTY:
+	//			s_subtype = "RRNotify_OutputProperty";
+	//			break;
+	//		case XCB_RANDR_NOTIFY_PROVIDER_CHANGE:
+	//			s_subtype = "RRNotify_ProviderChange";
+	//			break;
+	//		case XCB_RANDR_NOTIFY_PROVIDER_PROPERTY:
+	//			s_subtype = "RRNotify_ProviderProperty";
+	//			break;
+	//		case XCB_RANDR_NOTIFY_RESOURCE_CHANGE:
+	//			s_subtype = "RRNotify_ResourceChange";
+	//			break;
+	//		default:
+	//			break;
+	//		}
+
+	if (ev->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
+		update_viewport_layout();
+		rnd->update_layout();
+		theme->update();
+		delete rpage;
+		rpage = new renderable_page_t(cnx, theme, _root_position.w,
+				_root_position.h);
+		rpage->show();
+	}
+
+	xcb_grab_button(cnx->xcb(), false, cnx->root(), DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
+			XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+
+	/** put rpage behind all managed windows **/
+	update_windows_stack();
+
+}
+
+void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
+	auto se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
+	if (se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
+		xcb_window_t w = se->affected_window;
+		client_base_t * c = find_client(w);
+		if (c != nullptr) {
+			c->update_shape();
+		}
+	}
+}
 
 }
 
