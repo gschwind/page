@@ -146,6 +146,13 @@ public:
 		}
 	}
 
+	void update_cursor_position(int x, int y) {
+		if (_position.is_inside(x, y)) {
+			int s = (int) floor((y - _position.y) / 24.0);
+			set_selected(s);
+		}
+	}
+
 	i_rect const & position() {
 		return _position;
 	}

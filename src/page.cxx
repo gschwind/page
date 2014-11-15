@@ -1339,7 +1339,15 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_1) {
 			if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab) {
 				mode_data_notebook_menu.active_grab = true;
-				xcb_grab_pointer(cnx->xcb(), true, cnx->root(), XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, e->time);
+				xcb_grab_pointer(cnx->xcb(),
+						0,
+						cnx->root(),
+						DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_NONE,
+						XCB_NONE,
+						e->time);
 			} else {
 				if (mode_data_notebook_menu.active_grab) {
 					xcb_ungrab_pointer(cnx->xcb(), e->time);
@@ -1348,12 +1356,9 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 
 				process_mode = PROCESS_NORMAL;
 				if (menu->position().is_inside(e->root_x, e->root_y)) {
-					int selx = (int) floor(
-							(e->root_y - menu->position().y) / 24.0);
-					menu->set_selected(selx);
+					menu->update_cursor_position(e->root_x, e->root_y);
 					mode_data_notebook_menu.from->set_selected(
 							const_cast<client_managed_t*>(menu->get_selected()));
-
 					rpage->add_damaged(
 							mode_data_notebook_menu.from->allocation());
 				}
@@ -1367,7 +1372,15 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 		if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
 			if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
 				mode_data_notebook_client_menu.active_grab = true;
-				xcb_grab_pointer(cnx->xcb(), true, cnx->root(), XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE, e->time);
+				xcb_grab_pointer(cnx->xcb(),
+						0,
+						cnx->root(),
+						DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_GRAB_MODE_ASYNC,
+						XCB_NONE,
+						XCB_NONE,
+						e->time);
 			} else {
 				if (mode_data_notebook_client_menu.active_grab) {
 					xcb_ungrab_pointer(cnx->xcb(), e->time);
@@ -1376,10 +1389,7 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 
 				process_mode = PROCESS_NORMAL;
 				if (client_menu->position().is_inside(e->root_x, e->root_y)) {
-					int selx = (int) floor(
-							(e->root_y - client_menu->position().y) / 24.0);
-					client_menu->set_selected(selx);
-
+					client_menu->update_cursor_position(e->root_x, e->root_y);
 					int selected = client_menu->get_selected();
 					printf("Change desktop %d for %u\n", selected, mode_data_notebook_client_menu.client->orig());
 					if(selected != _current_desktop) {
@@ -1405,6 +1415,17 @@ void page_t::process_event_release(xcb_button_press_event_t const * e) {
 }
 
 void page_t::process_event(xcb_motion_notify_event_t const * e) {
+
+//		std::cout << "Button Motion Event"
+//				<< " event=" << e->event
+//				<< " child=" << e->child
+//				<< " root=" << e->root
+//				<< " button=" << static_cast<int>(e->detail)
+//				<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
+//				<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
+//				<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
+//				<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
+//				<< std::endl;
 
 	if(_last_focus_time > e->time) {
 		_last_focus_time = e->time;
@@ -1821,16 +1842,12 @@ void page_t::process_event(xcb_motion_notify_event_t const * e) {
 	}
 	case PROCESS_NOTEBOOK_MENU:
 	{
-		int selx = (int) floor((e->root_y - menu->position().y) / 24.0);
-		menu->set_selected(selx);
-		rnd->add_damaged(menu->get_visible_region());
+		menu->update_cursor_position(e->root_x, e->root_y);
 	}
 		break;
 	case PROCESS_NOTEBOOK_CLIENT_MENU:
 	{
-		int selx = (int) floor((e->root_y - client_menu->position().y) / 24.0);
-		client_menu->set_selected(selx);
-		rnd->add_damaged(client_menu->get_visible_region());
+		client_menu->update_cursor_position(e->root_x, e->root_y);
 	}
 		break;
 	default:
