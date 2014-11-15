@@ -4477,13 +4477,15 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_MAP_NOTIFY, _process_map_notify_event);
 	_event_handler_bind(XCB_REPARENT_NOTIFY, _process_reparent_notify_event);
 	_event_handler_bind(XCB_UNMAP_NOTIFY, _process_unmap_notify_event);
-	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, _process_fake_unmap_notify_event);
 	_event_handler_bind(XCB_CIRCULATE_NOTIFY, _process_circulate_notify_event);
 	_event_handler_bind(XCB_CONFIGURE_REQUEST, _process_configure_request_event);
 	_event_handler_bind(XCB_MAP_REQUEST, _process_map_request_event);
 	_event_handler_bind(XCB_MAPPING_NOTIFY, _process_mapping_notify_event);
 	_event_handler_bind(XCB_SELECTION_CLEAR, _process_selection_clear_event);
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, _process_property_notify_event);
+
+	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, _process_fake_unmap_notify_event);
+	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, _process_fake_client_message_event);
 
 	/** Extension **/
 	_event_handler_bind(cnx->damage_event + XCB_DAMAGE_NOTIFY, _process_damage_notify_event);
