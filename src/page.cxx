@@ -591,28 +591,29 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e->time);
 		}
 
-
-		if(k == bind_debug_1.ks and (e->state & bind_debug_1.mod)) {
-			if(rnd->show_fps()) {
-				rnd->set_show_fps(false);
-			} else {
-				rnd->set_show_fps(true);
+		if (rnd != nullptr) {
+			if (k == bind_debug_1.ks and (e->state & bind_debug_1.mod)) {
+				if (rnd->show_fps()) {
+					rnd->set_show_fps(false);
+				} else {
+					rnd->set_show_fps(true);
+				}
 			}
-		}
 
-		if(k == bind_debug_2.ks and (e->state & bind_debug_2.mod)) {
-			if(rnd->show_damaged()) {
-				rnd->set_show_damaged(false);
-			} else {
-				rnd->set_show_damaged(true);
+			if (k == bind_debug_2.ks and (e->state & bind_debug_2.mod)) {
+				if (rnd->show_damaged()) {
+					rnd->set_show_damaged(false);
+				} else {
+					rnd->set_show_damaged(true);
+				}
 			}
-		}
 
-		if(k == bind_debug_3.ks and (e->state & bind_debug_3.mod)) {
-			if(rnd->show_opac()) {
-				rnd->set_show_opac(false);
-			} else {
-				rnd->set_show_opac(true);
+			if (k == bind_debug_3.ks and (e->state & bind_debug_3.mod)) {
+				if (rnd->show_opac()) {
+					rnd->set_show_opac(false);
+				} else {
+					rnd->set_show_opac(true);
+				}
 			}
 		}
 
@@ -1159,7 +1160,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 	if(c != nullptr) {
 		/** damage corresponding area **/
 		if(e->event == cnx->root()) {
-			rnd->add_damaged(c->visible_area());
+			add_compositor_damaged(c->visible_area());
 		}
 
 		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
@@ -1167,7 +1168,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 		/** damage corresponding area **/
 		if(e->event == cnx->root()) {
-			rnd->add_damaged(c->visible_area());
+			add_compositor_damaged(c->visible_area());
 		}
 	}
 
@@ -1236,7 +1237,7 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
 	client_base_t * c = find_client(e->window);
 	if (c != nullptr) {
-		rnd->add_damaged(c->visible_area());
+		add_compositor_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_cast<client_not_managed_t *>(c));
 			render();
@@ -1255,7 +1256,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	client_base_t * c = find_client(e->window);
 
 	if (c != nullptr) {
-		rnd->add_damaged(c->visible_area());
+		add_compositor_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 
@@ -1305,7 +1306,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 	if (c != nullptr) {
 
-		rnd->add_damaged(c->visible_area());
+		add_compositor_damaged(c->visible_area());
 
 		if(typeid(*c) == typeid(client_managed_t)) {
 
@@ -1363,7 +1364,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 						/** only affect floating windows **/
 						mw->set_floating_wished_position(new_size);
 						mw->reconfigure();
-						rnd->add_damaged(mw->base_position());
+						add_compositor_damaged(mw->base_position());
 					}
 				}
 
@@ -1658,7 +1659,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					notebook_t * n = dynamic_cast<notebook_t *>(mw->parent());
 					n->iconify_client(mw);
 					rpage->add_damaged(n->allocation());
-					rnd->need_render();
+					add_compositor_damaged(_root_position);
 				}
 				mw->unlock();
 			}
@@ -1806,25 +1807,27 @@ void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 }
 
 void page_t::render() {
-	/**
-	 * Try to render if any damage event is encountered. But limit general
-	 * rendering to 60 fps.
-	 **/
-	time_t cur_tic;
-	cur_tic.get_time();
-	rnd->clear_renderable();
-	std::vector<std::shared_ptr<renderable_t>> ret;
-	prepare_render(ret, cur_tic);
-	rnd->push_back_renderable(ret);
-	rnd->render();
+	if (rnd != nullptr) {
+		/**
+		 * Try to render if any damage event is encountered. But limit general
+		 * rendering to 60 fps.
+		 **/
+		time_t cur_tic;
+		cur_tic.get_time();
+		rnd->clear_renderable();
+		std::vector<std::shared_ptr<renderable_t>> ret;
+		prepare_render(ret, cur_tic);
+		rnd->push_back_renderable(ret);
+		rnd->render();
 
-	/** sync with X server to ensure all render are done **/
-	cnx->sync();
+		/** sync with X server to ensure all render are done **/
+		cnx->sync();
 
-	cur_tic.get_time();
-	/** slow down frame if render is slow **/
-	_next_frame = cur_tic + default_wait;
-	_max_wait = default_wait;
+		cur_tic.get_time();
+		/** slow down frame if render is slow **/
+		_next_frame = cur_tic + default_wait;
+		_max_wait = default_wait;
+	}
 }
 
 void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
@@ -2173,16 +2176,16 @@ void page_t::notebook_close(notebook_t * nbk) {
 
 void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 		i_rect & position) {
-	rnd->add_damaged(p->position());
+	add_compositor_damaged(p->position());
 	p->move_resize(position);
-	rnd->add_damaged(p->position());
+	add_compositor_damaged(p->position());
 }
 
 void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
 		i_rect & position) {
-	rnd->add_damaged(p->position());
+	add_compositor_damaged(p->position());
 	p->move_resize(position);
-	rnd->add_damaged(p->position());
+	add_compositor_damaged(p->position());
 }
 
 
@@ -2690,7 +2693,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 		}
 		break;
 	case PROCESS_NOTEBOOK_MENU:
-		rnd->add_damaged(menu->get_visible_region());
+		add_compositor_damaged(menu->get_visible_region());
 		menu.reset();
 		process_mode = PROCESS_NORMAL;
 		mode_data_notebook_menu.from = nullptr;
@@ -2700,7 +2703,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 			if (mode_data_notebook_client_menu.active_grab) {
 				xcb_ungrab_pointer(cnx->xcb(), XCB_CURRENT_TIME);
 			}
-			rnd->add_damaged(client_menu->get_visible_region());
+			add_compositor_damaged(client_menu->get_visible_region());
 			client_menu.reset();
 			process_mode = PROCESS_NORMAL;
 			mode_data_notebook_client_menu.reset();
@@ -2771,7 +2774,8 @@ void page_t::update_windows_stack() {
 	for(auto i: clients) {
 		cnx->raise_window(i->base());
 	}
-	cnx->raise_window(rnd->get_composite_overlay());
+	if(rnd != nullptr)
+		cnx->raise_window(rnd->get_composite_overlay());
 }
 
 void page_t::update_viewport_layout() {
@@ -2939,8 +2943,9 @@ void page_t::destroy_viewport(viewport_t * v) {
  * The function create unmanaged window.
  **/
 void page_t::onmap(xcb_window_t w) {
-	if (w == rnd->get_composite_overlay())
-		return;
+	if(rnd != nullptr)
+		if (w == rnd->get_composite_overlay())
+			return;
 	if (w == cnx->root())
 		return;
 
@@ -3189,7 +3194,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb
 		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
 		uw->map();
 		safe_update_transient_for(uw);
-		rnd->add_damaged(uw->visible_area());
+		add_compositor_damaged(uw->visible_area());
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
@@ -3561,7 +3566,7 @@ void page_t::update_keymap() {
 
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
-	rnd->add_damaged(rpage->get_damaged());
+	add_compositor_damaged(rpage->get_damaged());
 	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
  	rpage->repair_damaged(tree_t::get_visible_children());
 
@@ -3826,7 +3831,8 @@ void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
 
 	if (ev->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
 		update_viewport_layout();
-		rnd->update_layout();
+		if(rnd != nullptr)
+			rnd->update_layout();
 		theme->update();
 		delete rpage;
 		rpage = new renderable_page_t(cnx, theme, _root_position.w,
@@ -3963,7 +3969,7 @@ void page_t::process_motion_notify_floating_move(
 		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 
-	rnd->add_damaged(mode_data_floating.f->visible_area());
+	add_compositor_damaged(mode_data_floating.f->visible_area());
 
 	/* compute new window position */
 	i_rect new_position = mode_data_floating.original_position;
@@ -3980,7 +3986,7 @@ void page_t::process_motion_notify_floating_resize(
 		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 
-	rnd->add_damaged(mode_data_floating.f->visible_area());
+	add_compositor_damaged(mode_data_floating.f->visible_area());
 
 	i_rect size = mode_data_floating.original_position;
 
@@ -4152,7 +4158,7 @@ void page_t::process_motion_notify_fullscreen_move(
 
 void page_t::process_motion_notify_floating_move_by_client(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	rnd->add_damaged(mode_data_floating.f->visible_area());
+	add_compositor_damaged(mode_data_floating.f->visible_area());
 
 	/* compute new window position */
 	i_rect new_position = mode_data_floating.original_position;
@@ -4169,7 +4175,7 @@ void page_t::process_motion_notify_floating_resize_by_client(
 		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 
-	rnd->add_damaged(mode_data_floating.f->visible_area());
+	add_compositor_damaged(mode_data_floating.f->visible_area());
 
 	i_rect size = mode_data_floating.original_position;
 
@@ -4278,7 +4284,7 @@ void page_t::process_button_release_split_grab(xcb_generic_event_t const * _e) {
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		ps->hide();
-		rnd->add_damaged(mode_data_split.split->allocation());
+		add_compositor_damaged(mode_data_split.split->allocation());
 		mode_data_split.split->set_split(mode_data_split.split_ratio);
 		rpage->add_damaged(mode_data_split.split->allocation());
 		mode_data_split.reset();
@@ -4595,7 +4601,7 @@ void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e
 						mode_data_notebook_menu.from->allocation());
 			}
 			mode_data_notebook_menu.from = nullptr;
-			rnd->add_damaged(menu->get_visible_region());
+			add_compositor_damaged(menu->get_visible_region());
 			menu.reset();
 		}
 	}
@@ -4638,12 +4644,17 @@ void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t con
 				}
 			}
 			mode_data_notebook_client_menu.reset();
-			rnd->add_damaged(client_menu->get_visible_region());
+			add_compositor_damaged(client_menu->get_visible_region());
 			client_menu.reset();
 		}
 	}
 }
 
+void page_t::add_compositor_damaged(region const & r) {
+	if(rnd != nullptr) {
+		rnd->add_damaged(r);
+	}
+}
 
 }
 
