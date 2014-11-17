@@ -340,6 +340,7 @@ public:
 
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;
+	key_desc_t bind_toggle_compositor;
 	key_desc_t bind_close;
 
 	key_desc_t bind_right_desktop;

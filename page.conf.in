@@ -10,6 +10,7 @@ theme_dir=@prefix@/share/page/data/
 # bind page quit
 bind_page_quit=mod4+q
 bind_toggle_fullscreen=mod4+f
+bind_toggle_compositor=mod4+0
 bind_right_desktop=mod4+Right
 bind_left_desktop=mod4+Left
 

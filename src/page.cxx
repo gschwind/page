@@ -64,33 +64,6 @@ time_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
-//	_process_key_press_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
-//	_process_key_release_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
-//	_process_button_press_event = [this](xcb_generic_event_t const * e) { this->process_event_button_press_event(e); };
-//	_process_button_release_event = [this](xcb_generic_event_t const * e) { this->process_event_button_release_event(e); };
-//	_process_motion_notify_event = [this](xcb_generic_event_t const * e) { this->process_motion_notify_event(e); };
-//	_process_circulate_notify_event = [this](xcb_generic_event_t const * e) {  };
-//	_process_configure_notify_event = [this](xcb_generic_event_t const * e) { this->process_configure_notify_event(e); };
-//	_process_create_notify_event = [this](xcb_generic_event_t const * e) { this->process_create_notify_event(e); };
-//	_process_destroy_notify_event = [this](xcb_generic_event_t const * e) { this->process_destroy_notify_event(e); };
-//	_process_gravity_notify_event = [this](xcb_generic_event_t const * e) { this->process_gravity_notify_event(e); };
-//	_process_map_notify_event = [this](xcb_generic_event_t const * e) { this->process_map_notify_event(e); };
-//	_process_reparent_notify_event = [this](xcb_generic_event_t const * e) { this->process_reparent_notify_event(e); };
-//	_process_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_unmap_notify_event(e); };
-//	_process_circulate_request_event = [this](xcb_generic_event_t const * e) { this->process_circulate_request_event(e); };
-//	_process_configure_request_event = [this](xcb_generic_event_t const * e) { this->process_configure_request_event(e); };
-//	_process_map_request_event = [this](xcb_generic_event_t const * e) { this->process_map_request_event(e); };
-//	_process_property_notify_event = [this](xcb_generic_event_t const * e) { this->process_property_notify_event(e); };
-//	_process_mapping_notify_event = [this](xcb_generic_event_t const * e) { this->process_mapping_notify_event(e); };
-//
-//	_process_fake_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_fake_unmap_notify_event(e); };
-//	_process_fake_client_message_event = [this](xcb_generic_event_t const * e) { this->process_fake_client_message_event(e); };
-//
-//	_process_damage_notify_event = [this](xcb_generic_event_t const * e) { this->process_damage_notify_event(e); };
-//	_process_randr_notify_event = [this](xcb_generic_event_t const * e) { this->process_randr_notify_event(e); };
-//	_process_shape_notify_event = [this](xcb_generic_event_t const * e) { this->process_shape_notify_event(e); };
-
-
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
 	for(unsigned k = 0; k < 4; ++k) {
@@ -166,6 +139,7 @@ page_t::page_t(int argc, char ** argv)
 
 	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
 	find_key_from_string(conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
+	find_key_from_string(conf.get_string("default", "bind_toggle_compositor"), bind_toggle_compositor);
 	find_key_from_string(conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
 	find_key_from_string(conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
 
@@ -603,6 +577,10 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 					toggle_fullscreen(_client_focused.front());
 				}
 			}
+		}
+
+		if(k == bind_toggle_compositor.ks and (e->state & bind_toggle_compositor.mod)) {
+			/** TODO **/
 		}
 
 		if(k == bind_right_desktop.ks and (e->state & bind_right_desktop.mod)) {
@@ -3556,6 +3534,7 @@ void page_t::update_grabkey() {
 
 	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_left_desktop, keymap);
 
