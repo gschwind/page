@@ -574,7 +574,7 @@ void page_t::update_client_list() {
 
 }
 
-void page_t::process_event_key_press_event(xcb_generic_event_t const * _e) {
+void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_key_press_event_t const *>(_e);
 	if(_last_focus_time > e->time) {
 		_last_focus_time = e->time;
@@ -747,7 +747,7 @@ void page_t::process_event_key_press_event(xcb_generic_event_t const * _e) {
 }
 
 /* Button event make page to grab pointer */
-void page_t::process_event_button_press_event(xcb_generic_event_t const * _e) {
+void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
 //	std::cout << "Button Event Press "
 //			<< " event=" << e->event
@@ -1101,7 +1101,7 @@ void page_t::process_event_button_press_event(xcb_generic_event_t const * _e) {
 
 }
 
-void page_t::process_event_button_release_event(xcb_generic_event_t const * _e) {
+void page_t::process_button_release_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
 
 	switch (process_mode) {
@@ -4461,11 +4461,11 @@ void page_t::_event_handler_bind(int type, callback_event_t f) {
 
 void page_t::_bind_all_default_event() {
 
-	_event_handler_bind(XCB_BUTTON_PRESS, &page_t::process_event_button_press_event);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_event_button_release_event);
+	_event_handler_bind(XCB_BUTTON_PRESS, &page_t::process_button_press_event);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_event);
 	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_event);
-	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_event_key_press_event);
-	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_event_key_press_event);
+	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_key_press_event);
+	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_key_press_event);
 	_event_handler_bind(XCB_CONFIGURE_NOTIFY, &page_t::process_configure_notify_event);
 	_event_handler_bind(XCB_CREATE_NOTIFY, &page_t::process_create_notify_event);
 	_event_handler_bind(XCB_DESTROY_NOTIFY, &page_t::process_destroy_notify_event);

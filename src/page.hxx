@@ -428,9 +428,9 @@ public:
 	void scan();
 
 	/** user inputs **/
-	void process_event_key_press_event(xcb_generic_event_t const * e);
-	void process_event_button_press_event(xcb_generic_event_t const * e);
-	void process_event_button_release_event(xcb_generic_event_t const * e);
+	void process_key_press_event(xcb_generic_event_t const * e);
+	void process_button_press_event(xcb_generic_event_t const * e);
+	void process_button_release_event(xcb_generic_event_t const * e);
 	void process_motion_notify_event(xcb_generic_event_t const * e);
 	/* SubstructureNotifyMask */
 	//void process_event(xcb_circulate_notify_event_t const * e);
