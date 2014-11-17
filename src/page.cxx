@@ -1468,418 +1468,40 @@ void page_t::process_motion_notify_event(xcb_generic_event_t const * _e) {
 	count++;
 	switch (process_mode) {
 	case PROCESS_NORMAL:
-		fprintf(stderr, "Warning: This case should not happen %s:%d\n", __FILE__, __LINE__);
+		process_motion_notify_normal(_e);
 		break;
 	case PROCESS_SPLIT_GRAB:
-
-		if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
-			mode_data_split.split_ratio = (e->event_x
-					- mode_data_split.split->allocation().x)
-					/ (double) (mode_data_split.split->allocation().w);
-		} else {
-			mode_data_split.split_ratio = (e->event_y
-					- mode_data_split.split->allocation().y)
-					/ (double) (mode_data_split.split->allocation().h);
-		}
-
-		if (mode_data_split.split_ratio > 0.95)
-			mode_data_split.split_ratio = 0.95;
-		if (mode_data_split.split_ratio < 0.05)
-			mode_data_split.split_ratio = 0.05;
-
-		/* Render slider with quite complex render method to avoid flickering */
-		old_area = mode_data_split.slider_area;
-		mode_data_split.split->compute_split_location(
-				mode_data_split.split_ratio, mode_data_split.slider_area.x,
-				mode_data_split.slider_area.y);
-
-
-		ps->set_position(mode_data_split.split_ratio);
-		_need_render = true;
-
+		process_motion_notify_split_grab(_e);
 		break;
 	case PROCESS_NOTEBOOK_GRAB:
-		{
-
-		/* do not start drag&drop for small move */
-		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
-			if(!pn0->is_visible())
-				pn0->show();
-		}
-
-		++count;
-
-		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
-		for (auto i : ln) {
-			if (i->tab_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_TAB
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_TAB;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->tab_area);
-				}
-				break;
-			} else if (i->right_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_RIGHT
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_RIGHT;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->popup_right_area);
-				}
-				break;
-			} else if (i->top_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_TOP
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_TOP;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->popup_top_area);
-				}
-				break;
-			} else if (i->bottom_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_BOTTOM
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_BOTTOM;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->popup_bottom_area);
-				}
-				break;
-			} else if (i->left_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_LEFT
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_LEFT;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->popup_left_area);
-				}
-				break;
-			} else if (i->popup_center_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_CENTER
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_CENTER;
-					mode_data_notebook.ns = i;
-					update_popup_position(pn0, i->popup_center_area);
-				}
-				break;
-			}
-		}
-	}
-
+		process_motion_notify_notebook_grab(_e);
 		break;
-	case PROCESS_FLOATING_MOVE: {
-
-		rnd->add_damaged(mode_data_floating.f->visible_area());
-
-		/* compute new window position */
-		i_rect new_position = mode_data_floating.original_position;
-		new_position.x += e->root_x - mode_data_floating.x_root;
-		new_position.y += e->root_y - mode_data_floating.y_root;
-		mode_data_floating.final_position = new_position;
-		mode_data_floating.f->set_floating_wished_position(new_position);
-		mode_data_floating.f->reconfigure();
-
-		_need_render = true;
+	case PROCESS_FLOATING_MOVE:
+		process_motion_notify_floating_move(_e);
 		break;
-	}
-	case PROCESS_FLOATING_MOVE_BY_CLIENT: {
-
-		rnd->add_damaged(mode_data_floating.f->visible_area());
-
-		/* compute new window position */
-		i_rect new_position = mode_data_floating.original_position;
-		new_position.x += e->root_x - mode_data_floating.x_root;
-		new_position.y += e->root_y - mode_data_floating.y_root;
-		mode_data_floating.final_position = new_position;
-		mode_data_floating.f->set_floating_wished_position(new_position);
-		mode_data_floating.f->reconfigure();
-
-		_need_render = true;
+	case PROCESS_FLOATING_MOVE_BY_CLIENT:
+		process_motion_notify_floating_move_by_client(_e);
 		break;
-	}
-	case PROCESS_FLOATING_RESIZE: {
-
-		rnd->add_damaged(mode_data_floating.f->visible_area());
-
-		i_rect size = mode_data_floating.original_position;
-
-		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-			size.h += e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-			size.h += e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-			size.h += e->root_y - mode_data_floating.y_root;
-		}
-
-		/* apply normal hints */
-		unsigned int final_width = size.w;
-		unsigned int final_height = size.h;
-		compute_client_size_with_constraint(mode_data_floating.f->orig(),
-				(unsigned) size.w, (unsigned) size.h, final_width,
-				final_height);
-		size.w = final_width;
-		size.h = final_height;
-
-		if(size.h < 1)
-			size.h = 1;
-		if(size.w < 1)
-			size.w = 1;
-
-		/* do not allow to large windows */
-		if(size.w > _root_position.w - 100)
-			size.w = _root_position.w - 100;
-		if(size.h > _root_position.h - 100)
-			size.h = _root_position.h - 100;
-
-		int x_diff = 0;
-		int y_diff = 0;
-
-		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-
-		}
-
-		size.x += x_diff;
-		size.y += y_diff;
-		mode_data_floating.final_position = size;
-
-		mode_data_floating.f->set_floating_wished_position(size);
-		mode_data_floating.f->reconfigure();
-
-		i_rect popup_new_position = size;
-		popup_new_position.x -= theme->floating.margin.left;
-		popup_new_position.y -= theme->floating.margin.top;
-		popup_new_position.w += theme->floating.margin.left + theme->floating.margin.right;
-		popup_new_position.h += theme->floating.margin.top + theme->floating.margin.bottom;
-
-		update_popup_position(pfm, popup_new_position);
-		_need_render = true;
+	case PROCESS_FLOATING_RESIZE:
+		process_motion_notify_floating_resize(_e);
 		break;
-	}
-	case PROCESS_FLOATING_RESIZE_BY_CLIENT: {
-
-		rnd->add_damaged(mode_data_floating.f->visible_area());
-
-		i_rect size = mode_data_floating.original_position;
-
-		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-			size.h -= e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			size.w -= e->root_x - mode_data_floating.x_root;
-			size.h += e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-			size.h += e->root_y - mode_data_floating.y_root;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-			size.w += e->root_x - mode_data_floating.x_root;
-			size.h += e->root_y - mode_data_floating.y_root;
-		}
-
-		/* apply mornal hints */
-		unsigned int final_width = size.w;
-		unsigned int final_height = size.h;
-		compute_client_size_with_constraint(mode_data_floating.f->orig(),
-				(unsigned) size.w, (unsigned) size.h, final_width,
-				final_height);
-		size.w = final_width;
-		size.h = final_height;
-
-		if(size.h < 1)
-			size.h = 1;
-		if(size.w < 1)
-			size.w = 1;
-
-		/* do not allow to large windows */
-		if(size.w > _root_position.w - 100)
-			size.w = _root_position.w - 100;
-		if(size.h > _root_position.h - 100)
-			size.h = _root_position.h - 100;
-
-		int x_diff = 0;
-		int y_diff = 0;
-
-		if(mode_data_floating.mode == RESIZE_TOP_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_TOP) {
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-			y_diff = mode_data_floating.original_position.h - size.h;
-		} else if (mode_data_floating.mode == RESIZE_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-		} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-			x_diff = mode_data_floating.original_position.w - size.w;
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-
-		} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-
-		}
-
-		size.x += x_diff;
-		size.y += y_diff;
-		mode_data_floating.final_position = size;
-
-		mode_data_floating.f->set_floating_wished_position(size);
-		//mode_data_floating.f->reconfigure();
-
-		i_rect popup_new_position = size;
-		popup_new_position.x -= theme->floating.margin.left;
-		popup_new_position.y -= theme->floating.margin.top;
-		popup_new_position.w += theme->floating.margin.left + theme->floating.margin.right;
-		popup_new_position.h += theme->floating.margin.top + theme->floating.margin.bottom;
-
-		update_popup_position(pfm, popup_new_position);
-		_need_render = true;
+	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
+		process_motion_notify_floating_resize_by_client(_e);
 		break;
-	}
 	case PROCESS_FLOATING_CLOSE:
+		/** nothing to do */
 		break;
-	case PROCESS_FLOATING_BIND: {
-
-		/* do not start drag&drop for small move */
-		if (e->root_x < mode_data_bind.start_x - 5
-				|| e->root_x > mode_data_bind.start_x + 5
-				|| e->root_y < mode_data_bind.start_y - 5
-				|| e->root_y > mode_data_bind.start_y + 5) {
-
-			if(!pn0->is_visible())
-				pn0->show();
-		}
-
-		++count;
-
-		auto ln = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
-
-		for(auto i : ln) {
-			if (i->tab_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_TAB
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_TAB;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->tab_area);
-				}
-				break;
-			} else if (i->right_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_RIGHT
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_RIGHT;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->popup_right_area);
-				}
-				break;
-			} else if (i->top_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_TOP
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_TOP;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->popup_top_area);
-				}
-				break;
-			} else if (i->bottom_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_BOTTOM
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_BOTTOM;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->popup_bottom_area);
-				}
-				break;
-			} else if (i->left_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_LEFT
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_LEFT;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->popup_left_area);
-				}
-				break;
-			} else if (i->popup_center_area.is_inside(e->root_x,
-					e->root_y)) {
-				if (mode_data_bind.zone != SELECT_CENTER
-						|| mode_data_bind.ns != i) {
-					mode_data_bind.zone = SELECT_CENTER;
-					mode_data_bind.ns = i;
-					update_popup_position(pn0,
-							i->popup_center_area);
-				}
-				break;
-			}
-		}
-	}
-
+	case PROCESS_FLOATING_BIND:
+		process_motion_notify_floating_bind(_e);
 		break;
-	case PROCESS_FULLSCREEN_MOVE: {
-
-		viewport_t * v = find_mouse_viewport(e->root_x,
-				e->root_y);
-
-		if (v != nullptr) {
-			if (v != mode_data_fullscreen.v) {
-				pn0->move_resize(v->raw_area());
-				mode_data_fullscreen.v = v;
-			}
-		}
-
+	case PROCESS_FULLSCREEN_MOVE:
+		process_motion_notify_fullscreen_move(_e);
 		break;
-	}
 	case PROCESS_NOTEBOOK_MENU:
-	{
-		menu->update_cursor_position(e->root_x, e->root_y);
-	}
+		process_motion_notify_notebook_menu(_e);
 		break;
 	case PROCESS_NOTEBOOK_CLIENT_MENU:
-	{
-		client_menu->update_cursor_position(e->root_x, e->root_y);
-	}
+		process_motion_notify_notebook_client_menu(_e);
 		break;
 	default:
 		fprintf(stderr, "Warning: Unknown process_mode\n");
@@ -4556,6 +4178,417 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 			c->update_shape();
 		}
 	}
+}
+
+
+void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	fprintf(stderr, "Warning: This case should not happen %s:%d\n", __FILE__, __LINE__);
+}
+
+void page_t::process_motion_notify_split_grab(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
+		mode_data_split.split_ratio = (e->event_x
+				- mode_data_split.split->allocation().x)
+				/ (double) (mode_data_split.split->allocation().w);
+	} else {
+		mode_data_split.split_ratio = (e->event_y
+				- mode_data_split.split->allocation().y)
+				/ (double) (mode_data_split.split->allocation().h);
+	}
+
+	if (mode_data_split.split_ratio > 0.95)
+		mode_data_split.split_ratio = 0.95;
+	if (mode_data_split.split_ratio < 0.05)
+		mode_data_split.split_ratio = 0.05;
+
+	/* Render slider with quite complex render method to avoid flickering */
+	i_rect old_area = mode_data_split.slider_area;
+	mode_data_split.split->compute_split_location(mode_data_split.split_ratio,
+			mode_data_split.slider_area.x, mode_data_split.slider_area.y);
+
+	ps->set_position(mode_data_split.split_ratio);
+	_need_render = true;
+}
+
+void page_t::process_motion_notify_notebook_grab(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	{
+
+		/* do not start drag&drop for small move */
+		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
+			if (!pn0->is_visible())
+				pn0->show();
+		}
+
+		auto ln = filter_class<notebook_t>(
+				_desktop_list[_current_desktop]->tree_t::get_all_children());
+		for (auto i : ln) {
+			if (i->tab_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_TAB
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_TAB;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->tab_area);
+				}
+				break;
+			} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_RIGHT
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_RIGHT;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->popup_right_area);
+				}
+				break;
+			} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_TOP
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_TOP;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->popup_top_area);
+				}
+				break;
+			} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_BOTTOM
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_BOTTOM;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->popup_bottom_area);
+				}
+				break;
+			} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_LEFT
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_LEFT;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->popup_left_area);
+				}
+				break;
+			} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
+				if (mode_data_notebook.zone != SELECT_CENTER
+						|| mode_data_notebook.ns != i) {
+					mode_data_notebook.zone = SELECT_CENTER;
+					mode_data_notebook.ns = i;
+					update_popup_position(pn0, i->popup_center_area);
+				}
+				break;
+			}
+		}
+	}
+
+}
+
+void page_t::process_motion_notify_notebook_button_press(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+}
+
+void page_t::process_motion_notify_floating_move(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+	rnd->add_damaged(mode_data_floating.f->visible_area());
+
+	/* compute new window position */
+	i_rect new_position = mode_data_floating.original_position;
+	new_position.x += e->root_x - mode_data_floating.x_root;
+	new_position.y += e->root_y - mode_data_floating.y_root;
+	mode_data_floating.final_position = new_position;
+	mode_data_floating.f->set_floating_wished_position(new_position);
+	mode_data_floating.f->reconfigure();
+
+	_need_render = true;
+}
+
+void page_t::process_motion_notify_floating_resize(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+	rnd->add_damaged(mode_data_floating.f->visible_area());
+
+	i_rect size = mode_data_floating.original_position;
+
+	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_TOP) {
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+		size.h += e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+		size.h += e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+		size.h += e->root_y - mode_data_floating.y_root;
+	}
+
+	/* apply normal hints */
+	unsigned int final_width = size.w;
+	unsigned int final_height = size.h;
+	compute_client_size_with_constraint(mode_data_floating.f->orig(),
+			(unsigned) size.w, (unsigned) size.h, final_width, final_height);
+	size.w = final_width;
+	size.h = final_height;
+
+	if (size.h < 1)
+		size.h = 1;
+	if (size.w < 1)
+		size.w = 1;
+
+	/* do not allow to large windows */
+	if (size.w > _root_position.w - 100)
+		size.w = _root_position.w - 100;
+	if (size.h > _root_position.h - 100)
+		size.h = _root_position.h - 100;
+
+	int x_diff = 0;
+	int y_diff = 0;
+
+	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_TOP) {
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+
+	}
+
+	size.x += x_diff;
+	size.y += y_diff;
+	mode_data_floating.final_position = size;
+
+	mode_data_floating.f->set_floating_wished_position(size);
+	mode_data_floating.f->reconfigure();
+
+	i_rect popup_new_position = size;
+	popup_new_position.x -= theme->floating.margin.left;
+	popup_new_position.y -= theme->floating.margin.top;
+	popup_new_position.w += theme->floating.margin.left
+			+ theme->floating.margin.right;
+	popup_new_position.h += theme->floating.margin.top
+			+ theme->floating.margin.bottom;
+
+	update_popup_position(pfm, popup_new_position);
+	_need_render = true;
+}
+
+void page_t::process_motion_notify_floating_close(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+}
+
+void page_t::process_motion_notify_floating_bind(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+	/* do not start drag&drop for small move */
+	if (e->root_x < mode_data_bind.start_x - 5
+			|| e->root_x > mode_data_bind.start_x + 5
+			|| e->root_y < mode_data_bind.start_y - 5
+			|| e->root_y > mode_data_bind.start_y + 5) {
+
+		if (!pn0->is_visible())
+			pn0->show();
+	}
+
+	auto ln = filter_class<notebook_t>(
+			_desktop_list[_current_desktop]->tree_t::get_all_children());
+
+	for (auto i : ln) {
+		if (i->tab_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_TAB || mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_TAB;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->tab_area);
+			}
+			break;
+		} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_RIGHT || mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_RIGHT;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->popup_right_area);
+			}
+			break;
+		} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_TOP || mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_TOP;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->popup_top_area);
+			}
+			break;
+		} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_BOTTOM
+					|| mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_BOTTOM;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->popup_bottom_area);
+			}
+			break;
+		} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_LEFT || mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_LEFT;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->popup_left_area);
+			}
+			break;
+		} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
+			if (mode_data_bind.zone != SELECT_CENTER
+					|| mode_data_bind.ns != i) {
+				mode_data_bind.zone = SELECT_CENTER;
+				mode_data_bind.ns = i;
+				update_popup_position(pn0, i->popup_center_area);
+			}
+			break;
+		}
+	}
+}
+
+void page_t::process_motion_notify_fullscreen_move(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
+
+	if (v != nullptr) {
+		if (v != mode_data_fullscreen.v) {
+			pn0->move_resize(v->raw_area());
+			mode_data_fullscreen.v = v;
+		}
+	}
+}
+
+void page_t::process_motion_notify_floating_move_by_client(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	rnd->add_damaged(mode_data_floating.f->visible_area());
+
+	/* compute new window position */
+	i_rect new_position = mode_data_floating.original_position;
+	new_position.x += e->root_x - mode_data_floating.x_root;
+	new_position.y += e->root_y - mode_data_floating.y_root;
+	mode_data_floating.final_position = new_position;
+	mode_data_floating.f->set_floating_wished_position(new_position);
+	mode_data_floating.f->reconfigure();
+
+	_need_render = true;
+}
+
+void page_t::process_motion_notify_floating_resize_by_client(
+		xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+
+	rnd->add_damaged(mode_data_floating.f->visible_area());
+
+	i_rect size = mode_data_floating.original_position;
+
+	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_TOP) {
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+		size.h -= e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+		size.w -= e->root_x - mode_data_floating.x_root;
+		size.h += e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+		size.h += e->root_y - mode_data_floating.y_root;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+		size.w += e->root_x - mode_data_floating.x_root;
+		size.h += e->root_y - mode_data_floating.y_root;
+	}
+
+	/* apply mornal hints */
+	unsigned int final_width = size.w;
+	unsigned int final_height = size.h;
+	compute_client_size_with_constraint(mode_data_floating.f->orig(),
+			(unsigned) size.w, (unsigned) size.h, final_width, final_height);
+	size.w = final_width;
+	size.h = final_height;
+
+	if (size.h < 1)
+		size.h = 1;
+	if (size.w < 1)
+		size.w = 1;
+
+	/* do not allow to large windows */
+	if (size.w > _root_position.w - 100)
+		size.w = _root_position.w - 100;
+	if (size.h > _root_position.h - 100)
+		size.h = _root_position.h - 100;
+
+	int x_diff = 0;
+	int y_diff = 0;
+
+	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_TOP) {
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+		y_diff = mode_data_floating.original_position.h - size.h;
+	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+		x_diff = mode_data_floating.original_position.w - size.w;
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+
+	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+
+	}
+
+	size.x += x_diff;
+	size.y += y_diff;
+	mode_data_floating.final_position = size;
+
+	mode_data_floating.f->set_floating_wished_position(size);
+	//mode_data_floating.f->reconfigure();
+
+	i_rect popup_new_position = size;
+	popup_new_position.x -= theme->floating.margin.left;
+	popup_new_position.y -= theme->floating.margin.top;
+	popup_new_position.w += theme->floating.margin.left
+			+ theme->floating.margin.right;
+	popup_new_position.h += theme->floating.margin.top
+			+ theme->floating.margin.bottom;
+
+	update_popup_position(pfm, popup_new_position);
+	_need_render = true;
+}
+
+void page_t::process_motion_notify_notebook_menu(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	menu->update_cursor_position(e->root_x, e->root_y);
+}
+
+void page_t::process_motion_notify_notebook_client_menu(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	client_menu->update_cursor_position(e->root_x, e->root_y);
 }
 
 }
