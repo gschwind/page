@@ -1728,46 +1728,76 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move_by_client);
+						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move_by_client);
+
 						xc = cnx->xc_fleur;
 					} else {
 
 						if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_TOP;
 							xc = cnx->xc_top_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_BOTTOM;
 							xc = cnx->xc_bottom_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_LEFT;
 							xc = cnx->xc_left_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_RIGHT;
 							xc = cnx->xc_right_side;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
 							xc = cnx->xc_top_left_corner;
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
 							xc = cnx->xc_top_right_corner;
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
 							xc = cnx->xc_bottom_left_corner;
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
+
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 							xc = cnx->xc_bottom_righ_corner;
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
+							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move_by_client);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move_by_client);
+
 							xc = cnx->xc_fleur;
 						}
 					}
