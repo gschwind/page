@@ -66,31 +66,31 @@ time_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
-	_process_key_press_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
-	_process_key_release_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
-	_process_button_press_event = [this](xcb_generic_event_t const * e) { this->process_event_button_press_event(e); };
-	_process_button_release_event = [this](xcb_generic_event_t const * e) { this->process_event_button_release_event(e); };
-	_process_motion_notify_event = [this](xcb_generic_event_t const * e) { this->process_motion_notify_event(e); };
-	_process_circulate_notify_event = [this](xcb_generic_event_t const * e) {  };
-	_process_configure_notify_event = [this](xcb_generic_event_t const * e) { this->process_configure_notify_event(e); };
-	_process_create_notify_event = [this](xcb_generic_event_t const * e) { this->process_create_notify_event(e); };
-	_process_destroy_notify_event = [this](xcb_generic_event_t const * e) { this->process_destroy_notify_event(e); };
-	_process_gravity_notify_event = [this](xcb_generic_event_t const * e) { this->process_gravity_notify_event(e); };
-	_process_map_notify_event = [this](xcb_generic_event_t const * e) { this->process_map_notify_event(e); };
-	_process_reparent_notify_event = [this](xcb_generic_event_t const * e) { this->process_reparent_notify_event(e); };
-	_process_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_unmap_notify_event(e); };
-	_process_circulate_request_event = [this](xcb_generic_event_t const * e) { this->process_circulate_request_event(e); };
-	_process_configure_request_event = [this](xcb_generic_event_t const * e) { this->process_configure_request_event(e); };
-	_process_map_request_event = [this](xcb_generic_event_t const * e) { this->process_map_request_event(e); };
-	_process_property_notify_event = [this](xcb_generic_event_t const * e) { this->process_property_notify_event(e); };
-	_process_mapping_notify_event = [this](xcb_generic_event_t const * e) { this->process_mapping_notify_event(e); };
-
-	_process_fake_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_fake_unmap_notify_event(e); };
-	_process_fake_client_message_event = [this](xcb_generic_event_t const * e) { this->process_fake_client_message_event(e); };
-
-	_process_damage_notify_event = [this](xcb_generic_event_t const * e) { this->process_damage_notify_event(e); };
-	_process_randr_notify_event = [this](xcb_generic_event_t const * e) { this->process_randr_notify_event(e); };
-	_process_shape_notify_event = [this](xcb_generic_event_t const * e) { this->process_shape_notify_event(e); };
+//	_process_key_press_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
+//	_process_key_release_event = [this](xcb_generic_event_t const * e) { this->process_event_key_press_event(e); };
+//	_process_button_press_event = [this](xcb_generic_event_t const * e) { this->process_event_button_press_event(e); };
+//	_process_button_release_event = [this](xcb_generic_event_t const * e) { this->process_event_button_release_event(e); };
+//	_process_motion_notify_event = [this](xcb_generic_event_t const * e) { this->process_motion_notify_event(e); };
+//	_process_circulate_notify_event = [this](xcb_generic_event_t const * e) {  };
+//	_process_configure_notify_event = [this](xcb_generic_event_t const * e) { this->process_configure_notify_event(e); };
+//	_process_create_notify_event = [this](xcb_generic_event_t const * e) { this->process_create_notify_event(e); };
+//	_process_destroy_notify_event = [this](xcb_generic_event_t const * e) { this->process_destroy_notify_event(e); };
+//	_process_gravity_notify_event = [this](xcb_generic_event_t const * e) { this->process_gravity_notify_event(e); };
+//	_process_map_notify_event = [this](xcb_generic_event_t const * e) { this->process_map_notify_event(e); };
+//	_process_reparent_notify_event = [this](xcb_generic_event_t const * e) { this->process_reparent_notify_event(e); };
+//	_process_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_unmap_notify_event(e); };
+//	_process_circulate_request_event = [this](xcb_generic_event_t const * e) { this->process_circulate_request_event(e); };
+//	_process_configure_request_event = [this](xcb_generic_event_t const * e) { this->process_configure_request_event(e); };
+//	_process_map_request_event = [this](xcb_generic_event_t const * e) { this->process_map_request_event(e); };
+//	_process_property_notify_event = [this](xcb_generic_event_t const * e) { this->process_property_notify_event(e); };
+//	_process_mapping_notify_event = [this](xcb_generic_event_t const * e) { this->process_mapping_notify_event(e); };
+//
+//	_process_fake_unmap_notify_event = [this](xcb_generic_event_t const * e) { this->process_fake_unmap_notify_event(e); };
+//	_process_fake_client_message_event = [this](xcb_generic_event_t const * e) { this->process_fake_client_message_event(e); };
+//
+//	_process_damage_notify_event = [this](xcb_generic_event_t const * e) { this->process_damage_notify_event(e); };
+//	_process_randr_notify_event = [this](xcb_generic_event_t const * e) { this->process_randr_notify_event(e); };
+//	_process_shape_notify_event = [this](xcb_generic_event_t const * e) { this->process_shape_notify_event(e); };
 
 
 	/** initialize the empty desktop **/
@@ -2636,8 +2636,8 @@ void page_t::toggle_fullscreen(client_managed_t * c) {
 void page_t::process_event(xcb_generic_event_t const * e) {
 	auto x = _event_handlers.find(e->response_type);
 	if(x != _event_handlers.end()) {
-		for(auto & i: x->second) {
-			i(e);
+		if(x->second != nullptr) {
+			(this->*(x->second))(e);
 		}
 	} else {
 		std::cout << "not handled event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
@@ -4455,42 +4455,38 @@ void page_t::get_visible_children(std::vector<tree_t *> & out) {
 	}
 }
 
-void page_t::_event_handler_bind(int type, std::function<callback_event_t> f) {
-	_event_handlers[type].push_back(f);
-}
-
-void page_t::_event_handler_unbind(int type, std::function<callback_event_t> f) {
-	_event_handlers[type].remove_if([&f](std::function<callback_event_t> & x) -> bool { if(*(x.target<callback_event_t>()) == *(f.target<callback_event_t>())) { return true; } });
+void page_t::_event_handler_bind(int type, callback_event_t f) {
+	_event_handlers[type] = f;
 }
 
 void page_t::_bind_all_default_event() {
 
-	_event_handler_bind(XCB_BUTTON_PRESS, _process_button_press_event);
-	_event_handler_bind(XCB_BUTTON_RELEASE, _process_button_release_event);
-	_event_handler_bind(XCB_MOTION_NOTIFY, _process_motion_notify_event);
-	_event_handler_bind(XCB_KEY_PRESS, _process_key_press_event);
-	_event_handler_bind(XCB_KEY_RELEASE, _process_key_release_event);
-	_event_handler_bind(XCB_CONFIGURE_NOTIFY, _process_configure_notify_event);
-	_event_handler_bind(XCB_CREATE_NOTIFY, _process_create_notify_event);
-	_event_handler_bind(XCB_DESTROY_NOTIFY, _process_destroy_notify_event);
-	_event_handler_bind(XCB_GRAVITY_NOTIFY, _process_gravity_notify_event);
-	_event_handler_bind(XCB_MAP_NOTIFY, _process_map_notify_event);
-	_event_handler_bind(XCB_REPARENT_NOTIFY, _process_reparent_notify_event);
-	_event_handler_bind(XCB_UNMAP_NOTIFY, _process_unmap_notify_event);
-	_event_handler_bind(XCB_CIRCULATE_NOTIFY, _process_circulate_notify_event);
-	_event_handler_bind(XCB_CONFIGURE_REQUEST, _process_configure_request_event);
-	_event_handler_bind(XCB_MAP_REQUEST, _process_map_request_event);
-	_event_handler_bind(XCB_MAPPING_NOTIFY, _process_mapping_notify_event);
-	_event_handler_bind(XCB_SELECTION_CLEAR, _process_selection_clear_event);
-	_event_handler_bind(XCB_PROPERTY_NOTIFY, _process_property_notify_event);
+	_event_handler_bind(XCB_BUTTON_PRESS, &page_t::process_event_button_press_event);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_event_button_release_event);
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_event);
+	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_event_key_press_event);
+	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_event_key_press_event);
+	_event_handler_bind(XCB_CONFIGURE_NOTIFY, &page_t::process_configure_notify_event);
+	_event_handler_bind(XCB_CREATE_NOTIFY, &page_t::process_create_notify_event);
+	_event_handler_bind(XCB_DESTROY_NOTIFY, &page_t::process_destroy_notify_event);
+	_event_handler_bind(XCB_GRAVITY_NOTIFY, &page_t::process_gravity_notify_event);
+	_event_handler_bind(XCB_MAP_NOTIFY, &page_t::process_map_notify_event);
+	_event_handler_bind(XCB_REPARENT_NOTIFY, &page_t::process_reparent_notify_event);
+	_event_handler_bind(XCB_UNMAP_NOTIFY, &page_t::process_unmap_notify_event);
+	//_event_handler_bind(XCB_CIRCULATE_NOTIFY, &page_t::process_circulate_notify_event);
+	_event_handler_bind(XCB_CONFIGURE_REQUEST, &page_t::process_configure_request_event);
+	_event_handler_bind(XCB_MAP_REQUEST, &page_t::process_map_request_event);
+	_event_handler_bind(XCB_MAPPING_NOTIFY, &page_t::process_mapping_notify_event);
+	_event_handler_bind(XCB_SELECTION_CLEAR, &page_t::process_selection_clear_event);
+	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
 
-	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, _process_fake_unmap_notify_event);
-	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, _process_fake_client_message_event);
+	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, &page_t::process_fake_unmap_notify_event);
+	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, &page_t::process_fake_client_message_event);
 
 	/** Extension **/
-	_event_handler_bind(cnx->damage_event + XCB_DAMAGE_NOTIFY, _process_damage_notify_event);
-	_event_handler_bind(cnx->randr_event + RRNotify, _process_randr_notify_event);
-	_event_handler_bind(cnx->shape_event + ShapeNotify, _process_shape_notify_event);
+	_event_handler_bind(cnx->damage_event + XCB_DAMAGE_NOTIFY, &page_t::process_damage_notify_event);
+	_event_handler_bind(cnx->randr_event + RRNotify, &page_t::process_randr_notify_event);
+	_event_handler_bind(cnx->shape_event + ShapeNotify, &page_t::process_shape_notify_event);
 
 }
 

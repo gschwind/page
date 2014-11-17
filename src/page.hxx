@@ -58,42 +58,42 @@ class page_t : public page_component_t {
 	static time_t const default_wait;
 
 	/** define callback function type for event handler **/
-	using callback_event_t = void(xcb_generic_event_t const *);
+	using callback_event_t = void (page_t::*) (xcb_generic_event_t const *);
 
-	std::map<int, std::list<std::function<callback_event_t>>> _event_handlers;
+	std::map<int, callback_event_t> _event_handlers;
 
-	/** core events **/
-	std::function<callback_event_t> _process_key_press_event;
-	std::function<callback_event_t> _process_key_release_event;
-	std::function<callback_event_t> _process_button_press_event;
-	std::function<callback_event_t> _process_button_release_event;
-	std::function<callback_event_t> _process_motion_notify_event;
-	std::function<callback_event_t> _process_circulate_notify_event;
-	std::function<callback_event_t> _process_configure_notify_event;
-	std::function<callback_event_t> _process_create_notify_event;
-	std::function<callback_event_t> _process_destroy_notify_event;
-	std::function<callback_event_t> _process_gravity_notify_event;
-	std::function<callback_event_t> _process_map_notify_event;
-	std::function<callback_event_t> _process_reparent_notify_event;
-	std::function<callback_event_t> _process_unmap_notify_event;
-	std::function<callback_event_t> _process_circulate_request_event;
-	std::function<callback_event_t> _process_configure_request_event;
-	std::function<callback_event_t> _process_map_request_event;
-	std::function<callback_event_t> _process_property_notify_event;
-	std::function<callback_event_t> _process_mapping_notify_event;
-	std::function<callback_event_t> _process_selection_clear_event;
+//	/** core events **/
+//	std::function<callback_event_t> _process_key_press_event;
+//	std::function<callback_event_t> _process_key_release_event;
+//	std::function<callback_event_t> _process_button_press_event;
+//	std::function<callback_event_t> _process_button_release_event;
+//	std::function<callback_event_t> _process_motion_notify_event;
+//	std::function<callback_event_t> _process_circulate_notify_event;
+//	std::function<callback_event_t> _process_configure_notify_event;
+//	std::function<callback_event_t> _process_create_notify_event;
+//	std::function<callback_event_t> _process_destroy_notify_event;
+//	std::function<callback_event_t> _process_gravity_notify_event;
+//	std::function<callback_event_t> _process_map_notify_event;
+//	std::function<callback_event_t> _process_reparent_notify_event;
+//	std::function<callback_event_t> _process_unmap_notify_event;
+//	std::function<callback_event_t> _process_circulate_request_event;
+//	std::function<callback_event_t> _process_configure_request_event;
+//	std::function<callback_event_t> _process_map_request_event;
+//	std::function<callback_event_t> _process_property_notify_event;
+//	std::function<callback_event_t> _process_mapping_notify_event;
+//	std::function<callback_event_t> _process_selection_clear_event;
+//
+//	/** sent by send_event **/
+//	std::function<callback_event_t> _process_fake_unmap_notify_event;
+//	std::function<callback_event_t> _process_fake_client_message_event;
+//
+//	/** extension **/
+//	std::function<callback_event_t> _process_damage_notify_event;
+//	std::function<callback_event_t> _process_randr_notify_event;
+//	std::function<callback_event_t> _process_shape_notify_event;
 
-	/** sent by send_event **/
-	std::function<callback_event_t> _process_fake_unmap_notify_event;
-	std::function<callback_event_t> _process_fake_client_message_event;
-
-	/** extension **/
-	std::function<callback_event_t> _process_damage_notify_event;
-	std::function<callback_event_t> _process_randr_notify_event;
-	std::function<callback_event_t> _process_shape_notify_event;
-
-	void _event_handler_bind(int type, std::function<callback_event_t> f);
-	void _event_handler_unbind(int type, std::function<callback_event_t> f);
+	void _event_handler_bind(int type, callback_event_t f);
+	void _event_handler_unbind(int type, callback_event_t f);
 
 	void _bind_all_default_event();
 
