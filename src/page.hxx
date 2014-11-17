@@ -614,6 +614,21 @@ public:
 	void process_motion_notify_notebook_menu(xcb_generic_event_t const * e);
 	void process_motion_notify_notebook_client_menu(xcb_generic_event_t const * e);
 
+	void process_button_release_normal(xcb_generic_event_t const * e);
+	void process_button_release_split_grab(xcb_generic_event_t const * e);
+	void process_button_release_notebook_grab(xcb_generic_event_t const * e);
+	void process_button_release_notebook_button_press(xcb_generic_event_t const * e);
+	void process_button_release_floating_move(xcb_generic_event_t const * e);
+	void process_button_release_floating_resize(xcb_generic_event_t const * e);
+	void process_button_release_floating_close(xcb_generic_event_t const * e);
+	void process_button_release_floating_bind(xcb_generic_event_t const * e);
+	void process_button_release_fullscreen_move(xcb_generic_event_t const * e);
+	void process_button_release_floating_move_by_client(xcb_generic_event_t const * e);
+	void process_button_release_floating_resize_by_client(xcb_generic_event_t const * e);
+	void process_button_release_notebook_menu(xcb_generic_event_t const * e);
+	void process_button_release_notebook_client_menu(xcb_generic_event_t const * e);
+
+
 };
 
 
