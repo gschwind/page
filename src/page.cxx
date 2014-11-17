@@ -59,8 +59,6 @@
 
 namespace page {
 
-long int const ClientEventMask = (StructureNotifyMask | PropertyChangeMask);
-
 time_t const page_t::default_wait{1000000000L / 120L};
 
 page_t::page_t(int argc, char ** argv)
@@ -786,6 +784,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_GRAB;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
 
 					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
@@ -799,36 +798,48 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = 0;
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
 					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
 					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook.ns = 0;
@@ -837,6 +848,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 					process_mode = PROCESS_SPLIT_GRAB;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
 
 					mode_data_split.split_ratio = b->spt->split();
 					mode_data_split.split = const_cast<split_t*>(b->spt);
@@ -851,6 +863,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
 					process_mode = PROCESS_NOTEBOOK_MENU;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_menu);
 
 					mode_data_notebook_menu.from = const_cast<notebook_t*>(b->nbk);
 					mode_data_notebook_menu.b = b->position;
@@ -898,6 +911,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_CLIENT_MENU;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_client_menu);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_client_menu);
 
 					if(mode_data_notebook_client_menu.active_grab == false) {
 						mode_data_notebook_client_menu.from = const_cast<notebook_t*>(b->nbk);
@@ -946,6 +960,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				if ((e->state & XCB_MOD_MASK_CONTROL)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 					set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
@@ -954,6 +969,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
 					set_window_cursor(mw->base(), cnx->xc_fleur);
 					set_window_cursor(mw->orig(), cnx->xc_fleur);
@@ -992,6 +1008,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						mode_data_floating.f = mw;
 						process_mode = PROCESS_FLOATING_CLOSE;
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_close);
+						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_close);
 
 					} else if (b->type == FLOATING_EVENT_BIND) {
 
@@ -1004,6 +1021,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 						process_mode = PROCESS_FLOATING_BIND;
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_bind);
+						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_bind);
 
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
@@ -1015,6 +1033,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
+						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
 						set_window_cursor(mw->base(), cnx->xc_fleur);
 					} else {
@@ -1026,48 +1045,56 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP;
 							set_window_cursor(mw->base(), cnx->xc_top_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM;
 							set_window_cursor(mw->base(), cnx->xc_bottom_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_LEFT;
 							set_window_cursor(mw->base(), cnx->xc_left_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_RIGHT;
 							set_window_cursor(mw->base(), cnx->xc_right_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
 							set_window_cursor(mw->base(), cnx->xc_top_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
 							set_window_cursor(mw->base(), cnx->xc_top_right_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
 							set_window_cursor(mw->base(), cnx->xc_bottom_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 							set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
@@ -1075,6 +1102,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
+							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
 							set_window_cursor(mw->base(), cnx->xc_fleur);
 						}
@@ -1092,6 +1120,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					fprintf(stderr, "start FULLSCREEN MOVE\n");
 					process_mode = PROCESS_FULLSCREEN_MOVE;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_fullscreen_move);
+					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_fullscreen_move);
 
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
@@ -1106,6 +1135,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 				process_mode = PROCESS_NOTEBOOK_GRAB;
 				_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
+				_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
 
 				mode_data_notebook.c = mw;
 				mode_data_notebook.from = n;
@@ -1191,6 +1221,7 @@ void page_t::process_button_release_event(xcb_generic_event_t const * _e) {
 		if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 			process_mode = PROCESS_NORMAL;
 			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		}
 		break;
@@ -3837,7 +3868,7 @@ void page_t::_event_handler_bind(int type, callback_event_t f) {
 void page_t::_bind_all_default_event() {
 
 	_event_handler_bind(XCB_BUTTON_PRESS, &page_t::process_button_press_event);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_event);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
 	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_key_press_event);
 	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_key_press_event);
@@ -4354,6 +4385,7 @@ void page_t::process_button_release_split_grab(xcb_generic_event_t const * _e) {
 	if (e->detail == XCB_BUTTON_INDEX_1) {
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		ps->hide();
 		rnd->add_damaged(mode_data_split.split->allocation());
@@ -4369,6 +4401,7 @@ void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e
 	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		pn0->hide();
 
@@ -4434,6 +4467,7 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 	if (e->detail == XCB_BUTTON_INDEX_1) {
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		{
 			page_event_t * b = 0;
@@ -4486,6 +4520,7 @@ void page_t::process_button_release_floating_move(xcb_generic_event_t const * _e
 
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		mode_data_floating.reset();
 	}
@@ -4506,6 +4541,7 @@ void page_t::process_button_release_floating_resize(xcb_generic_event_t const * 
 		set_focus(mode_data_floating.f, e->time);
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		mode_data_floating.reset();
 	}
@@ -4519,6 +4555,7 @@ void page_t::process_button_release_floating_close(xcb_generic_event_t const * _
 		/* cleanup */
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		mode_data_floating.reset();
 	}
@@ -4529,6 +4566,7 @@ void page_t::process_button_release_floating_bind(xcb_generic_event_t const * _e
 	if (e->detail == XCB_BUTTON_INDEX_1) {
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		pn0->hide();
 
@@ -4575,6 +4613,7 @@ void page_t::process_button_release_fullscreen_move(xcb_generic_event_t const * 
 
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
 		client_managed_t * c = mode_data_fullscreen.mw;
@@ -4608,6 +4647,7 @@ void page_t::process_button_release_floating_move_by_client(xcb_generic_event_t 
 
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		mode_data_floating.reset();
 	}
@@ -4627,6 +4667,7 @@ void page_t::process_button_release_floating_resize_by_client(xcb_generic_event_
 
 		process_mode = PROCESS_NORMAL;
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		mode_data_floating.reset();
 	}
@@ -4654,6 +4695,7 @@ void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e
 
 			process_mode = PROCESS_NORMAL;
 			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 			if (menu->position().is_inside(e->root_x, e->root_y)) {
 				menu->update_cursor_position(e->root_x, e->root_y);
@@ -4691,6 +4733,7 @@ void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t con
 
 			process_mode = PROCESS_NORMAL;
 			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 			if (client_menu->position().is_inside(e->root_x, e->root_y)) {
 				client_menu->update_cursor_position(e->root_x, e->root_y);
