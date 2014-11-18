@@ -629,6 +629,8 @@ public:
 	void process_button_release_notebook_menu(xcb_generic_event_t const * e);
 	void process_button_release_notebook_client_menu(xcb_generic_event_t const * e);
 
+	void process_error(xcb_generic_event_t const * e);
+
 	void add_compositor_damaged(region const & r);
 
 	void start_compositor();

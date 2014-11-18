@@ -2774,16 +2774,50 @@ void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
 }
 
 void page_t::update_windows_stack() {
-	std::vector<client_base_t *> clients =
-			filter_class<client_base_t>(tree_t::get_visible_children());
+	std::vector<client_base_t *> clients = filter_class<client_base_t>(
+			tree_t::get_visible_children());
+	std::reverse(clients.begin(), clients.end());
+	std::vector<xcb_window_t> stack;
 
-	cnx->raise_window(rpage->wid());
+	/** place overlay on top **/
+	if (rnd != nullptr)
+		stack.push_back(rnd->get_composite_overlay());
 
-	for(auto i: clients) {
-		cnx->raise_window(i->base());
+	for (auto i : clients) {
+		stack.push_back(i->base());
 	}
-	if(rnd != nullptr)
-		cnx->raise_window(rnd->get_composite_overlay());
+
+	/** place page window on button **/
+	stack.push_back(rpage->wid());
+
+	xcb_window_t win = XCB_WINDOW_NONE;
+
+	unsigned k = 0;
+	if (stack.size() > k) {
+		uint32_t value[1];
+		uint32_t mask{0};
+		value[0] = XCB_STACK_MODE_ABOVE;
+		mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+		xcb_configure_window(cnx->xcb(),
+				stack[k], mask, value);
+		++k;
+	}
+
+	while (stack.size() > k) {
+		uint32_t value[2];
+		uint32_t mask { 0 };
+
+		value[0] = stack[k-1];
+		mask |= XCB_CONFIG_WINDOW_SIBLING;
+
+		value[1] = XCB_STACK_MODE_BELOW;
+		mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+
+		xcb_configure_window(cnx->xcb(), stack[k], mask,
+				value);
+		++k;
+	}
+
 }
 
 void page_t::update_viewport_layout() {
@@ -3792,6 +3826,9 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
 	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
 
+	_event_handler_bind(0, &page_t::process_error);
+
+
 	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, &page_t::process_fake_unmap_notify_event);
 	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, &page_t::process_fake_client_message_event);
 
@@ -4694,6 +4731,11 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	if(rpage->wid() == e->window) {
 		rpage->expose(i_rect(e->x, e->y, e->width, e->height));
 	}
+}
+
+void page_t::process_error(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_generic_error_t const *>(_e);
+	cnx->print_error(e);
 }
 
 }
