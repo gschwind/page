@@ -411,8 +411,10 @@ public:
 	void process_fake_unmap_notify_event(xcb_generic_event_t const * e);
 	void process_mapping_notify_event(xcb_generic_event_t const * e);
 	void process_selection_clear_event(xcb_generic_event_t const * e);
-	void process_randr_notify_event(xcb_generic_event_t const * e);
 
+	void process_expose_event(xcb_generic_event_t const * e);
+
+	void process_randr_notify_event(xcb_generic_event_t const * e);
 	void process_shape_notify_event(xcb_generic_event_t const * e);
 
 	/* SubstructureRedirectMask */

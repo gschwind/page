@@ -102,8 +102,6 @@ page_t::page_t(int argc, char ** argv)
 	cnx = new display_t();
 	rnd = nullptr;
 
-	set_window_cursor(cnx->root(), cnx->xc_left_ptr);
-
 	running = false;
 
 	/* load configurations, from lower priority to high one */
@@ -242,6 +240,7 @@ void page_t::run() {
 
 	cnx->load_cursors();
 	set_window_cursor(cnx->root(), cnx->xc_left_ptr);
+	set_window_cursor(rpage->wid(), cnx->xc_left_ptr);
 
 	update_net_supported();
 
@@ -303,7 +302,7 @@ void page_t::run() {
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
-	xcb_grab_button(cnx->xcb(), false, cnx->root(),
+	xcb_grab_button(cnx->xcb(), false, rpage->wid(),
 			DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC,
 			XCB_GRAB_MODE_ASYNC,
@@ -746,7 +745,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	switch (process_mode) {
 	case PROCESS_NORMAL:
 
-		if (e->event == cnx->root()
+		if (e->event == rpage->wid()
 				and e->child == XCB_NONE
 				and e->detail == XCB_BUTTON_INDEX_1) {
 
@@ -875,7 +874,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 		}
 
-		if (e->event == cnx->root()
+		if (e->event == rpage->wid()
 				and e->child == XCB_NONE
 				and e->detail == XCB_BUTTON_INDEX_3) {
 
@@ -1830,6 +1829,9 @@ void page_t::render() {
 		/** slow down frame if render is slow **/
 		_next_frame = cur_tic + default_wait;
 		_max_wait = default_wait;
+	} else {
+		if(rpage->repair_damaged(tree_t::get_visible_children()))
+			rpage->expose(_root_position);
 	}
 }
 
@@ -2774,6 +2776,9 @@ void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
 void page_t::update_windows_stack() {
 	std::vector<client_base_t *> clients =
 			filter_class<client_base_t>(tree_t::get_visible_children());
+
+	cnx->raise_window(rpage->wid());
+
 	for(auto i: clients) {
 		cnx->raise_window(i->base());
 	}
@@ -2949,7 +2954,9 @@ void page_t::onmap(xcb_window_t w) {
 	if(rnd != nullptr)
 		if (w == rnd->get_composite_overlay())
 			return;
-	if (w == cnx->root())
+	if(w == cnx->root())
+		return;
+	if(w == rpage->wid())
 		return;
 
 	/**
@@ -3783,6 +3790,7 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_MAPPING_NOTIFY, &page_t::process_mapping_notify_event);
 	_event_handler_bind(XCB_SELECTION_CLEAR, &page_t::process_selection_clear_event);
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
+	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
 
 	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, &page_t::process_fake_unmap_notify_event);
 	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, &page_t::process_fake_client_message_event);
@@ -4583,7 +4591,7 @@ void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e
 			mode_data_notebook_menu.active_grab = true;
 			xcb_grab_pointer(cnx->xcb(),
 					0,
-					cnx->root(),
+					rpage->wid(),
 					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
 					XCB_GRAB_MODE_ASYNC,
 					XCB_GRAB_MODE_ASYNC,
@@ -4621,7 +4629,7 @@ void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t con
 			mode_data_notebook_client_menu.active_grab = true;
 			xcb_grab_pointer(cnx->xcb(),
 					0,
-					cnx->root(),
+					rpage->wid(),
 					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
 					XCB_GRAB_MODE_ASYNC,
 					XCB_GRAB_MODE_ASYNC,
@@ -4679,6 +4687,13 @@ void page_t::stop_compositor() {
 	cmgr->disable();
 	delete rnd;
 	rnd = nullptr;
+}
+
+void page_t::process_expose_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
+	if(rpage->wid() == e->window) {
+		rpage->expose(i_rect(e->x, e->y, e->width, e->height));
+	}
 }
 
 }
