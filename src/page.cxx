@@ -290,7 +290,7 @@ void page_t::run() {
 	set_focus(0, 0);
 
 	scan();
-	update_windows_stack();
+	_need_restack = true;
 
 	rpage->add_damaged(_root_position);
 
@@ -349,6 +349,11 @@ void page_t::run() {
 			process_event(cnx->front_event());
 			cnx->pop_event();
 			xcb_flush(cnx->xcb());
+		}
+
+		if(_need_restack) {
+			_need_restack = false;
+			update_windows_stack();
 		}
 
 		/** render if no render occurred within previous 1/120 second **/
@@ -450,7 +455,7 @@ void page_t::scan() {
 
 	update_client_list();
 	update_workarea();
-	update_windows_stack();
+	_need_restack = true;
 
 	cnx->ungrab();
 
@@ -620,7 +625,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 
 		if(k == bind_debug_4.ks and (e->state & bind_debug_4.mod)) {
-			update_windows_stack();
+			_need_restack = true;
 			print_tree(0);
 			std::vector<client_managed_t *> lst = get_managed_windows();
 			for (auto i : lst) {
@@ -1196,6 +1201,8 @@ void page_t::process_destroy_notify_event(xcb_generic_event_t const * _e) {
 			cleanup_not_managed_client(dynamic_cast<client_not_managed_t *>(c));
 		}
 	}
+
+	_need_restack = true;
 }
 
 void page_t::process_gravity_notify_event(xcb_generic_event_t const * e) {
@@ -1586,7 +1593,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
 		if (c != 0) {
 			safe_update_transient_for(c);
-			update_windows_stack();
+			_need_restack = true;
 		}
 	} else if (e->atom == A(WM_HINTS)) {
 	} else if (e->atom == A(_NET_WM_STATE)) {
@@ -1890,7 +1897,7 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 	mw->set_notebook_wished_position(data.viewport->raw_area());
 	mw->reconfigure();
 	mw->normalize();
-	update_windows_stack();
+	_need_restack = true;
 }
 
 void page_t::unfullscreen(client_managed_t * mw) {
@@ -2579,7 +2586,7 @@ void page_t::safe_raise_window(client_base_t * c) {
 	//	return;
 	c->raise_child();
 	/** apply change **/
-	update_windows_stack();
+	_need_restack = true;
 }
 
 void page_t::compute_client_size_with_constraint(xcb_window_t c,
@@ -2621,7 +2628,7 @@ void page_t::unbind_window(client_managed_t * mw) {
 	mw->normalize();
 	safe_raise_window(mw);
 	update_client_list();
-	update_windows_stack();
+	_need_restack = true;
 }
 
 void page_t::cleanup_grab(client_managed_t * mw) {
@@ -3034,7 +3041,7 @@ void page_t::onmap(xcb_window_t w) {
 		/** client already existing **/
 		c->read_all_properties();
 		safe_update_transient_for(c);
-		update_windows_stack();
+		_need_restack = true;
 
 		client_managed_t * mw = dynamic_cast<client_managed_t*>(c);
 		if (mw != nullptr) {
@@ -3154,7 +3161,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		safe_update_transient_for(mw);
 		mw->raise_child(nullptr);
 		update_client_list();
-		update_windows_stack();
+		_need_restack = true;
 
 		mw->set_current_desktop(_current_desktop);
 		if(not _desktop_list[_current_desktop]->is_hidden()) {
@@ -3897,7 +3904,7 @@ void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
 			XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 	/** put rpage behind all managed windows **/
-	update_windows_stack();
+	_need_restack = true;
 
 }
 

@@ -319,6 +319,7 @@ public:
 
 	bool running;
 	bool _need_render;
+	bool _need_restack;
 
 	config_handler_t conf;
 
