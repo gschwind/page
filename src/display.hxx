@@ -119,6 +119,9 @@ public:
 	xcb_cursor_t xc_top_left_corner;
 	xcb_cursor_t xc_top_side;
 
+	xcb_atom_t wm_sn_atom;
+	xcb_atom_t cm_sn_atom;
+
 public:
 
 	int fd();
@@ -148,6 +151,7 @@ public:
 
 	bool register_wm(xcb_window_t w, bool replace);
 	bool register_cm(xcb_window_t w);
+	void unregister_cm();
 
 	void add_to_save_set(xcb_window_t w);
 	void remove_from_save_set(xcb_window_t w);

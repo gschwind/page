@@ -13,19 +13,21 @@
 
 namespace page {
 
-std::shared_ptr<composite_surface_t> composite_surface_manager_t::get_managed_composite_surface(xcb_window_t w) {
+std::shared_ptr<composite_surface_t> composite_surface_manager_t::get_managed_composite_surface(
+		xcb_window_t w) {
 
 	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
-	if(x != _data.end()) {
-		if(not x->second.expired()) {
+	if (x != _data.end()) {
+		if (not x->second.expired()) {
 			return x->second.lock();
 		}
 	}
 
 	/** otherwise, create a new one **/
-	auto callback = [this](composite_surface_t * p) { this->remove(p); delete p; };
-	auto ret = std::shared_ptr<composite_surface_t>{new composite_surface_t{_dpy, w}, callback };
+	auto callback = [this](composite_surface_t * p) {this->remove(p); delete p;};
+	auto ret = std::shared_ptr<composite_surface_t> { new composite_surface_t {
+			_dpy, w, _enabled}, callback};
 	_data[w] = ret;
 	return ret;
 }
@@ -90,7 +92,24 @@ void composite_surface_manager_t::process_event(xcb_generic_event_t const * e) {
 	}
 }
 
+void composite_surface_manager_t::enable() {
+	_enabled = true;
+	for(auto i: _data) {
+		if(not i.second.expired()) {
+			i.second.lock()->set_composited(true);
+		}
+	}
+}
 
+void composite_surface_manager_t::disable() {
+	_enabled = false;
+
+	for(auto i: _data) {
+		if(not i.second.expired()) {
+			i.second.lock()->set_composited(false);
+		}
+	}
+}
 
 }
 

@@ -35,6 +35,8 @@ class composite_surface_t {
 
 	bool _is_map;
 
+	bool _is_composited;
+
 	void create_damage() {
 		if (_damage == XCB_NONE) {
 			std::cout << "create damage for " << this << std::endl;
@@ -55,7 +57,7 @@ class composite_surface_t {
 
 public:
 
-	composite_surface_t(display_t * dpy, xcb_window_t w) : _dpy(dpy), _window_id(w) {
+	composite_surface_t(display_t * dpy, xcb_window_t w, bool composited) : _dpy(dpy), _window_id(w), _is_composited(composited) {
 		xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _window_id);
 		xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(_dpy->xcb(), _window_id);
 
@@ -77,7 +79,7 @@ public:
 
 		printf("create composite_surface (%p) %dx%d\n", this, _width, _height);
 
-		if(_is_map) {
+		if(_is_map and _is_composited) {
 			on_map();
 		}
 
@@ -91,10 +93,17 @@ public:
 		if(_dpy->lock(_window_id)) {
 			if(not _dpy->check_for_unmap_window(_window_id)) {
 				_is_map = true;
-				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
-				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
-				_pixmap = std::shared_ptr<pixmap_t>(new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
-				create_damage();
+				if (_is_composited) {
+					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
+							pixmap_id);
+					_pixmap = std::shared_ptr<pixmap_t>(
+							new pixmap_t(_dpy, _vis, pixmap_id, _width,
+									_height));
+					create_damage();
+				} else {
+					_pixmap = nullptr;
+				}
 			} else {
 				_is_map = false;
 			}
@@ -162,6 +171,24 @@ public:
 
 	int depth() {
 		return _depth;
+	}
+
+	void set_composited(bool composited) {
+		if(composited) {
+			if(_dpy->lock(_window_id)) {
+				if(not _dpy->check_for_unmap_window(_window_id)) {
+					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
+					_pixmap = std::shared_ptr<pixmap_t>{new pixmap_t(_dpy, _vis, pixmap_id, _width, _height)};
+					create_damage();
+				}
+				_dpy->unlock();
+			}
+		} else {
+			destroy_damage();
+			_pixmap = nullptr;
+		}
+		_is_composited = composited;
 	}
 
 };

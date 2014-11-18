@@ -629,6 +629,9 @@ public:
 
 	void add_compositor_damaged(region const & r);
 
+	void start_compositor();
+	void stop_compositor();
+
 };
 
 

@@ -407,6 +407,7 @@ public:
 
 	void update_shape() {
 		delete _shape;
+		_shape = nullptr;
 
 		int count;
 		int ordering;

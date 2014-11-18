@@ -53,6 +53,17 @@ display_t::display_t() {
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
 	update_default_visual();
+
+	/** get default WM_Sxx atom **/
+	char wm_sn[] = "WM_Sxx";
+	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
+	wm_sn_atom = get_atom(wm_sn);
+
+	/** get default _NET_WM_CM_Sxx atom **/
+	char net_wm_cm[] = "_NET_WM_CM_Sxx";
+	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
+	cm_sn_atom = get_atom(net_wm_cm);
+
 }
 
 display_t::~display_t() {
@@ -115,26 +126,21 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 	 **/
 
 	xcb_generic_error_t * err;
-	xcb_atom_t wm_sn_atom;
 	xcb_window_t current_wm_sn_owner;
-
-	static char wm_sn[] = "WM_Sxx";
-	snprintf(wm_sn, sizeof(wm_sn), "WM_S%d", screen());
-	wm_sn_atom = get_atom(wm_sn);
 
 	/** who is the current owner ? **/
 	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
 	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
 	if(r == nullptr or err != nullptr) {
-		std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+		std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
 		return false;
 	}
 
 	current_wm_sn_owner = r->owner;
 	free(r);
 
-	std::cout << "Found " << current_wm_sn_owner << " as owner of " << wm_sn << std::endl;
+	std::cout << "Found " << current_wm_sn_owner << " as owner of " << get_atom_name(wm_sn_atom) << std::endl;
 
 	/* if there is a current owner */
 	if (current_wm_sn_owner != XCB_WINDOW_NONE) {
@@ -157,10 +163,10 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 
 			/** If we are not the owner -> exit **/
 			if(r == nullptr or err != nullptr) {
-				std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+				std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
 				return false;
 			} else if (r->owner != w) {
-				std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
+				std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
 				free(r);
 				return false;
 			}
@@ -203,10 +209,10 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr) {
-			std::cout << "Error while getting selection owner of " << wm_sn << std::endl;
+			std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
 			return false;
 		} else if (r->owner != w) {
-			std::cout << "Could not acquire the ownership of " << wm_sn << std::endl;
+			std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
 			free(r);
 			return false;
 		}
@@ -227,17 +233,13 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 bool display_t::register_cm(xcb_window_t w) {
 	xcb_generic_error_t * err;
 	xcb_window_t current_cm;
-	xcb_atom_t a_cm;
-	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
-	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
-	a_cm = get_atom(net_wm_cm);
 
 	/** read if there is a compositor **/
-	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, a_cm);
+	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, cm_sn_atom);
 	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
 	if(r == nullptr or err != nullptr) {
-		std::cout << "Error while getting selection owner of " << net_wm_cm << std::endl;
+		std::cout << "Error while getting selection owner of " << get_atom_name(cm_sn_atom) << std::endl;
 		return false;
 	}
 
@@ -245,25 +247,33 @@ bool display_t::register_cm(xcb_window_t w) {
 	free(r);
 
 	if (r->owner != XCB_WINDOW_NONE) {
-		std::cout << "Could not acquire the ownership of " << net_wm_cm << std::endl;
+		std::cout << "Could not acquire the ownership of " << get_atom_name(cm_sn_atom) << std::endl;
 		return false;
 	} else {
 		/** become the compositor **/
-		xcb_set_selection_owner(_xcb, w, a_cm, XCB_CURRENT_TIME);
+		xcb_set_selection_owner(_xcb, w, cm_sn_atom, XCB_CURRENT_TIME);
 
-		xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, a_cm);
+		xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, cm_sn_atom);
 		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr) {
-			std::cout << "Error while getting selection owner of " << net_wm_cm << std::endl;
+			std::cout << "Error while getting selection owner of " << get_atom_name(cm_sn_atom) << std::endl;
 			return false;
 		} else if (r->owner != w) {
-			std::cout << "Could not acquire the ownership of " << net_wm_cm << std::endl;
+			std::cout << "Could not acquire the ownership of " << get_atom_name(cm_sn_atom) << std::endl;
 			return false;
 		}
 		printf("Composite manager is registered on screen %d.\n", screen());
 		return true;
 	}
+}
+
+void display_t::unregister_cm() {
+	xcb_atom_t a_cm;
+	static char net_wm_cm[] = "_NET_WM_CM_Sxx";
+	snprintf(net_wm_cm, sizeof(net_wm_cm), "_NET_WM_CM_S%d", screen());
+	a_cm = get_atom(net_wm_cm);
+	xcb_set_selection_owner(_xcb, XCB_WINDOW_NONE, a_cm, XCB_CURRENT_TIME);
 }
 
 void display_t::add_to_save_set(xcb_window_t w) {

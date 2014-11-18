@@ -210,18 +210,17 @@ void page_t::run() {
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
-	register_cm();
 
 	_bind_all_default_event();
 
-	/** initialise theme **/
+	/** Initialize theme **/
 	theme = new simple2_theme_t{cnx, conf};
 	cmgr = new composite_surface_manager_t{cnx};
 
 	/* start listen root event before anything each event will be stored to right run later */
 	cnx->select_input(cnx->root(), ROOT_EVENT_MASK);
 
-	rnd = new compositor_t(cnx, cmgr);
+	start_compositor();
 
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
@@ -580,7 +579,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 
 		if(k == bind_toggle_compositor.ks and (e->state & bind_toggle_compositor.mod)) {
-			/** TODO **/
+			if(rnd == nullptr) {
+				start_compositor();
+			} else {
+				stop_compositor();
+			}
 		}
 
 		if(k == bind_right_desktop.ks and (e->state & bind_right_desktop.mod)) {
@@ -3797,8 +3800,12 @@ void page_t::process_mapping_notify_event(xcb_generic_event_t const * e) {
 	update_grabkey();
 }
 
-void page_t::process_selection_clear_event(xcb_generic_event_t const * e) {
-	running = false;
+void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_selection_clear_event_t const *>(_e);
+	if(e->selection == cnx->wm_sn_atom)
+		running = false;
+	if(e->selection == cnx->cm_sn_atom)
+		stop_compositor();
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
@@ -4654,6 +4661,24 @@ void page_t::add_compositor_damaged(region const & r) {
 	if(rnd != nullptr) {
 		rnd->add_damaged(r);
 	}
+}
+
+void page_t::start_compositor() {
+	try {
+		register_cm();
+	} catch(std::exception & e) {
+		std::cout << e.what() << std::endl;
+		return;
+	}
+	rnd = new compositor_t{cnx, cmgr};
+	cmgr->enable();
+}
+
+void page_t::stop_compositor() {
+	cnx->unregister_cm();
+	cmgr->disable();
+	delete rnd;
+	rnd = nullptr;
 }
 
 }

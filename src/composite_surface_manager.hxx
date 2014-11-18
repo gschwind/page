@@ -34,6 +34,8 @@ class composite_surface_manager_t {
 	display_t * _dpy;
 	_data_map_t _data;
 
+	bool _enabled;
+
 private:
 
 	/** called on surface destroy, maybe no more need of weak ptr **/
@@ -51,7 +53,7 @@ public:
 		}
 	}
 
-	composite_surface_manager_t(display_t * dpy) : _dpy(dpy) { }
+	composite_surface_manager_t(display_t * dpy) : _dpy{dpy}, _enabled{true} { }
 
 	void process_event(xcb_generic_event_t const * e);
 
@@ -60,8 +62,8 @@ public:
 
 	void make_surface_stats(int & size, int & count);
 
-
-
+	void enable();
+	void disable();
 
 };
 
