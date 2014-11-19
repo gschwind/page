@@ -232,7 +232,7 @@ void page_t::run() {
 			_root_position.h);
 
 	/* create and add popups (overlay) */
-	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(theme)};
+	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(cnx, theme)};
 	pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
 	ps = std::shared_ptr<popup_split_t>{new popup_split_t(theme)};
 	pat = nullptr;
@@ -3642,13 +3642,13 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 		out.push_back(pfm);
 	}
 
-	if(menu != nullptr) {
-		out.push_back(menu);
-	}
-
-	if(client_menu != nullptr) {
-		out.push_back(client_menu);
-	}
+//	if(menu != nullptr) {
+//		out.push_back(menu);
+//	}
+//
+//	if(client_menu != nullptr) {
+//		out.push_back(client_menu);
+//	}
 
 	_need_render = false;
 
@@ -4735,8 +4735,20 @@ void page_t::stop_compositor() {
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
-	if(rpage->wid() == e->window) {
+	if (rpage->wid() == e->window) {
 		rpage->expose(i_rect(e->x, e->y, e->width, e->height));
+	}
+
+	if (menu != nullptr) {
+		if (menu->id() == e->window) {
+			menu->expose(i_rect(e->x, e->y, e->width, e->height));
+		}
+	}
+
+	if (client_menu != nullptr) {
+		if (client_menu->id() == e->window) {
+			client_menu->expose(i_rect(e->x, e->y, e->width, e->height));
+		}
 	}
 }
 

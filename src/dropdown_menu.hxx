@@ -75,7 +75,7 @@ public:
 
 private:
 	theme_t * _theme;
-	display_t * _cnx;
+	display_t * _dpy;
 	std::vector<std::shared_ptr<item_t>> _items;
 	int _selected;
 
@@ -83,6 +83,8 @@ private:
 	cairo_surface_t * _surf;
 
 	i_rect _position;
+
+	xcb_window_t _wid;
 
 	bool _is_durty;
 
@@ -92,7 +94,7 @@ public:
 		_selected = -1;
 
 		_is_durty = true;
-		_cnx = cnx;
+		_dpy = cnx;
 
 		_items = items;
 		_position.x = x;
@@ -100,16 +102,44 @@ public:
 		_position.w = width;
 		_position.h = 24*_items.size();
 
-		_pix = xcb_generate_id(cnx->xcb());
-		xcb_create_pixmap(cnx->xcb(), 32, _pix, cnx->root(), _position.w, _position.h);
-		_surf = cairo_xcb_surface_create(cnx->xcb(), _pix, cnx->default_visual(), _position.w, _position.h);
+		xcb_colormap_t cmap = xcb_generate_id(_dpy->xcb());
+		xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _dpy->root(), _dpy->root_visual()->visual_id);
+
+		uint32_t value_mask = 0;
+		uint32_t value[5];
+
+		value_mask |= XCB_CW_BACK_PIXEL;
+		value[0] = _dpy->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_BORDER_PIXEL;
+		value[1] = _dpy->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
+		value[2] = True;
+
+		value_mask |= XCB_CW_EVENT_MASK;
+		value[3] = XCB_EVENT_MASK_EXPOSURE;
+
+		value_mask |= XCB_CW_COLORMAP;
+		value[4] = cmap;
+
+		_wid = xcb_generate_id(_dpy->xcb());
+		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
+		_dpy->map(_wid);
+
+		_pix = xcb_generate_id(_dpy->xcb());
+		xcb_create_pixmap(_dpy->xcb(), _dpy->root_depth(), _pix, _wid, _position.w, _position.h);
+		_surf = cairo_xcb_surface_create(_dpy->xcb(), _pix, _dpy->root_visual(), _position.w, _position.h);
 
 		update_backbuffer();
+		//expose(i_rect{0,0,_position.w,_position.h});
+
 	}
 
 	~dropdown_menu_t() {
 		cairo_surface_destroy(_surf);
-		xcb_free_pixmap(_cnx->xcb(), _pix);
+		xcb_free_pixmap(_dpy->xcb(), _pix);
+		xcb_destroy_window(_dpy->xcb(), _wid);
 	}
 
 	TDATA const & get_selected() {
@@ -125,6 +155,8 @@ public:
 		}
 
 		cairo_destroy(cr);
+
+		expose(i_rect(0,0,_position.w,_position.h));
 
 	}
 
@@ -143,6 +175,8 @@ public:
 			update_items_back_buffer(cr, s);
 			cairo_destroy(cr);
 			_is_durty = true;
+
+			expose(i_rect(0,0,_position.w,_position.h));
 		}
 	}
 
@@ -157,22 +191,39 @@ public:
 		return _position;
 	}
 
+	xcb_window_t id() {
+		return _wid;
+	}
+
+	void expose(region const & r) {
+		cairo_surface_t * surf = cairo_xcb_surface_create(_dpy->xcb(), _wid, _dpy->root_visual(), _position.w, _position.h);
+		cairo_t * cr = cairo_create(surf);
+		for(auto a: r) {
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+			cairo_set_source_surface(cr, _surf, 0.0, 0.0);
+			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
+			cairo_fill(cr);
+		}
+		cairo_destroy(cr);
+		cairo_surface_destroy(surf);
+	}
+
 	/**
 	 * draw the area of a renderable to the destination surface
 	 * @param cr the destination surface context
 	 * @param area the area to redraw
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
-		cairo_save(cr);
-
-		for (auto const & a : area) {
-			cairo_clip(cr, a);
-			cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
-			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
-			cairo_fill(cr);
-		}
-
-		cairo_restore(cr);
+//		cairo_save(cr);
+//
+//		for (auto const & a : area) {
+//			cairo_clip(cr, a);
+//			cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
+//			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
+//			cairo_fill(cr);
+//		}
+//
+//		cairo_restore(cr);
 	}
 
 	/**
