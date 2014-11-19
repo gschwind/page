@@ -125,15 +125,14 @@ public:
 
 		_wid = xcb_generate_id(_dpy->xcb());
 		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
-		_dpy->map(_wid);
+
 
 		_pix = xcb_generate_id(_dpy->xcb());
 		xcb_create_pixmap(_dpy->xcb(), _dpy->root_depth(), _pix, _wid, _position.w, _position.h);
 		_surf = cairo_xcb_surface_create(_dpy->xcb(), _pix, _dpy->root_visual(), _position.w, _position.h);
-
 		update_backbuffer();
-		//expose(i_rect{0,0,_position.w,_position.h});
 
+		_dpy->map(_wid);
 	}
 
 	~dropdown_menu_t() {

@@ -682,19 +682,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 				/** show it on all viewport ? **/
 				viewport_t * viewport = _desktop_list[0]->get_any_viewport();
-
-				int y = v.size() / 4 + 1;
-
-				pat->move_resize(
-						i_rect(
-								viewport->raw_area().x
-										+ (viewport->raw_area().w - 80 * 4) / 2,
+				pat->move(viewport->raw_area().x
+										+ (viewport->raw_area().w - pat->position().w) / 2,
 								viewport->raw_area().y
-										+ (viewport->raw_area().h - y * 80) / 2,
-								80 * 4, y * 80));
+										+ (viewport->raw_area().h - pat->position().h) / 2);
 				pat->show();
-
-
 
 			} else {
 				xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
@@ -3626,9 +3618,9 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 	}
 
 	/** Add all possible popups **/
-	if(pat != nullptr) {
-		out.push_back(pat);
-	}
+//	if(pat != nullptr) {
+//		out.push_back(pat);
+//	}
 
 	if(ps->is_visible()) {
 		out.push_back(ps);
@@ -4748,6 +4740,12 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	if (client_menu != nullptr) {
 		if (client_menu->id() == e->window) {
 			client_menu->expose(i_rect(e->x, e->y, e->width, e->height));
+		}
+	}
+
+	if (pat != nullptr) {
+		if (pat->id() == e->window) {
+			pat->expose(i_rect(e->x, e->y, e->width, e->height));
 		}
 	}
 }
