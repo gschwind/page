@@ -54,6 +54,7 @@ public:
 		if (cnx()->lock(orig())) {
 			cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 			xcb_shape_select_input(cnx()->xcb(), orig(), true);
+			_properties->update_shape();
 			cnx()->unlock();
 		}
 	}
@@ -129,13 +130,14 @@ public:
 			region vis;
 			region opa;
 
-			vis = _base_position;
+			vis = i_rect { 0, 0, _base_position.w, _base_position.h };
 
-			region shp;
 			if (shape() != nullptr) {
+				region shp;
 				shp = *shape();
+				vis = shp;
 			} else {
-				shp = i_rect{0, 0, _base_position.w, _base_position.h};
+				vis = i_rect { 0, 0, _base_position.w, _base_position.h };
 			}
 
 			region xopac;
@@ -143,13 +145,14 @@ public:
 				xopac = region { *(net_wm_opaque_region()) };
 			} else {
 				if (geometry()->depth == 24) {
-					xopac = i_rect{0, 0, _base_position.w, _base_position.h};
+					xopac = i_rect { 0, 0, _base_position.w, _base_position.h };
 				}
 			}
 
-			opa = shp & xopac;
-			opa.translate(_base_position.x,
-					_base_position.y);
+			vis.translate(_base_position.x, _base_position.y);
+
+			xopac.translate(_base_position.x, _base_position.y);
+			opa = vis & xopac;
 
 			region dmg { surf->get_damaged() };
 			surf->clear_damaged();

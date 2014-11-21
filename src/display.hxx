@@ -102,9 +102,6 @@ public:
 
 	std::shared_ptr<atom_handler_t> _A;
 
-
-
-
 	xcb_font_t cursor_font;
 
 	xcb_cursor_t default_cursor;

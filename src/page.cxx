@@ -233,7 +233,7 @@ void page_t::run() {
 
 	/* create and add popups (overlay) */
 	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(cnx, theme)};
-	pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(theme)};
+	pn0 = nullptr;
 	ps = std::shared_ptr<popup_split_t>{new popup_split_t(theme)};
 	pat = nullptr;
 	menu = nullptr;
@@ -770,8 +770,10 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					mode_data_notebook.zone = SELECT_NONE;
 					mode_data_notebook.ev = *b;
 
-					pn0->move_resize(mode_data_notebook.from->tab_area);
-					pn0->update_window(mode_data_notebook.c);
+					if(pn0 != nullptr) {
+						pn0->move_resize(mode_data_notebook.from->tab_area);
+						pn0->update_window(mode_data_notebook.c);
+					}
 					rpage->add_damaged(mode_data_notebook.from->allocation());
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
 					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
@@ -994,8 +996,10 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						mode_data_bind.ns = 0;
 						mode_data_bind.zone = SELECT_NONE;
 
+						if(pn0 != nullptr) {
 						pn0->move_resize(mode_data_bind.c->get_base_position());
 						pn0->update_window(mw);
+						}
 
 						process_mode = PROCESS_FLOATING_BIND;
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_bind);
@@ -1102,8 +1106,9 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
+
+					pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
 					pn0->update_window(mw);
-					pn0->show();
 					pn0->move_resize(v->raw_area());
 				}
 			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
@@ -1120,10 +1125,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				mode_data_notebook.ns = 0;
 				mode_data_notebook.zone = SELECT_NONE;
 
+				pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(cnx, theme)};
 				pn0->move_resize(mode_data_notebook.from->tab_area);
 				pn0->update_window(mw);
 
-				//mode_data_notebook.from->set_selected(mode_data_notebook.c);
+					//mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				rpage->add_damaged(mode_data_notebook.from->allocation());
 
 			}
@@ -1155,20 +1161,14 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_configure_notify_event_t const *>(_e);
 	client_base_t * c = find_client(e->window);
-
 	if(c != nullptr) {
-		/** damage corresponding area **/
-		if(e->event == cnx->root()) {
-			add_compositor_damaged(c->visible_area());
-		}
-
 		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
+	}
 
-		/** damage corresponding area **/
-		if(e->event == cnx->root()) {
-			add_compositor_damaged(c->visible_area());
-		}
+	/** damage corresponding area **/
+	if(e->event == cnx->root()) {
+		add_compositor_damaged(_root_position);
 	}
 
 }
@@ -2180,16 +2180,16 @@ void page_t::notebook_close(notebook_t * nbk) {
 
 void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 		i_rect & position) {
-	add_compositor_damaged(p->position());
+	add_compositor_damaged(p->get_visible_region());
 	p->move_resize(position);
-	add_compositor_damaged(p->position());
+	add_compositor_damaged(p->get_visible_region());
 }
 
 void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
 		i_rect & position) {
-	add_compositor_damaged(p->position());
+	add_compositor_damaged(p->get_visible_region());
 	p->move_resize(position);
-	add_compositor_damaged(p->position());
+	add_compositor_damaged(p->get_visible_region());
 }
 
 
@@ -2636,7 +2636,8 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 			mode_data_notebook.c = 0;
 			process_mode = PROCESS_NORMAL;
 
-			pn0->hide();
+			if(pn0 != nullptr)
+				pn0 = nullptr;
 
 			mode_data_notebook.start_x = 0;
 			mode_data_notebook.start_y = 0;
@@ -2676,7 +2677,8 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 			mode_data_bind.c = 0;
 			process_mode = PROCESS_NORMAL;
 
-			pn0->hide();
+			if(pn0 != nullptr)
+				pn0 = nullptr;
 
 			mode_data_bind.start_x = 0;
 			mode_data_bind.start_y = 0;
@@ -2692,7 +2694,8 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 		if(mode_data_fullscreen.mw == mw) {
 			mode_data_fullscreen.mw = 0;
 			mode_data_fullscreen.v = 0;
-			pn0->hide();
+			if(pn0 != nullptr)
+				pn0 = nullptr;
 			process_mode = PROCESS_NORMAL;
 		}
 		break;
@@ -3626,9 +3629,9 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 		out.push_back(ps);
 	}
 
-	if(pn0->is_visible()) {
-		out.push_back(pn0);
-	}
+//	if(pn0->is_visible()) {
+//		out.push_back(pn0);
+//	}
 
 	if(pfm->is_visible()) {
 		out.push_back(pfm);
@@ -3950,8 +3953,9 @@ void page_t::process_motion_notify_notebook_grab(
 
 		/* do not start drag&drop for small move */
 		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
-			if (!pn0->is_visible())
-				pn0->show();
+			if(pn0 == nullptr) {
+				pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, theme});
+			}
 		}
 
 		auto ln = filter_class<notebook_t>(
@@ -3962,6 +3966,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TAB;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->tab_area);
 				}
 				break;
@@ -3970,6 +3975,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_RIGHT;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->popup_right_area);
 				}
 				break;
@@ -3978,6 +3984,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_TOP;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->popup_top_area);
 				}
 				break;
@@ -3986,6 +3993,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_BOTTOM;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->popup_bottom_area);
 				}
 				break;
@@ -3994,6 +4002,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_LEFT;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->popup_left_area);
 				}
 				break;
@@ -4002,6 +4011,7 @@ void page_t::process_motion_notify_notebook_grab(
 						|| mode_data_notebook.ns != i) {
 					mode_data_notebook.zone = SELECT_CENTER;
 					mode_data_notebook.ns = i;
+					if(pn0 != nullptr)
 					update_popup_position(pn0, i->popup_center_area);
 				}
 				break;
@@ -4138,8 +4148,10 @@ void page_t::process_motion_notify_floating_bind(
 			|| e->root_y < mode_data_bind.start_y - 5
 			|| e->root_y > mode_data_bind.start_y + 5) {
 
-		if (!pn0->is_visible())
-			pn0->show();
+		if(pn0 == nullptr) {
+			pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, theme});
+		}
+
 	}
 
 	auto ln = filter_class<notebook_t>(
@@ -4150,6 +4162,7 @@ void page_t::process_motion_notify_floating_bind(
 			if (mode_data_bind.zone != SELECT_TAB || mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_TAB;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->tab_area);
 			}
 			break;
@@ -4157,6 +4170,7 @@ void page_t::process_motion_notify_floating_bind(
 			if (mode_data_bind.zone != SELECT_RIGHT || mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_RIGHT;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->popup_right_area);
 			}
 			break;
@@ -4164,6 +4178,7 @@ void page_t::process_motion_notify_floating_bind(
 			if (mode_data_bind.zone != SELECT_TOP || mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_TOP;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->popup_top_area);
 			}
 			break;
@@ -4172,6 +4187,7 @@ void page_t::process_motion_notify_floating_bind(
 					|| mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_BOTTOM;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->popup_bottom_area);
 			}
 			break;
@@ -4179,6 +4195,7 @@ void page_t::process_motion_notify_floating_bind(
 			if (mode_data_bind.zone != SELECT_LEFT || mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_LEFT;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->popup_left_area);
 			}
 			break;
@@ -4187,6 +4204,7 @@ void page_t::process_motion_notify_floating_bind(
 					|| mode_data_bind.ns != i) {
 				mode_data_bind.zone = SELECT_CENTER;
 				mode_data_bind.ns = i;
+				if(pn0 != nullptr)
 				update_popup_position(pn0, i->popup_center_area);
 			}
 			break;
@@ -4201,6 +4219,7 @@ void page_t::process_motion_notify_fullscreen_move(
 
 	if (v != nullptr) {
 		if (v != mode_data_fullscreen.v) {
+			if(pn0 != nullptr)
 			pn0->move_resize(v->raw_area());
 			mode_data_fullscreen.v = v;
 		}
@@ -4350,7 +4369,8 @@ void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
-		pn0->hide();
+		if(pn0 != nullptr)
+		pn0 = nullptr;
 
 		if (mode_data_notebook.zone == SELECT_TAB
 				&& mode_data_notebook.ns != 0
@@ -4515,7 +4535,8 @@ void page_t::process_button_release_floating_bind(xcb_generic_event_t const * _e
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
-		pn0->hide();
+		if(pn0 != nullptr)
+		pn0 = nullptr;
 
 		set_focus(mode_data_bind.c, e->time);
 
@@ -4573,7 +4594,9 @@ void page_t::process_button_release_fullscreen_move(xcb_generic_event_t const * 
 			}
 		}
 
-		pn0->hide();
+		if(pn0 != nullptr)
+		pn0 = nullptr;
+
 		mode_data_fullscreen.reset();
 
 	}
@@ -4746,6 +4769,12 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	if (pat != nullptr) {
 		if (pat->id() == e->window) {
 			pat->expose(i_rect(e->x, e->y, e->width, e->height));
+		}
+	}
+
+	if (pn0 != nullptr) {
+		if (pn0->id() == e->window) {
+			pn0->expose();
 		}
 	}
 }

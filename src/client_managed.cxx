@@ -549,8 +549,8 @@ void client_managed_t::icccm_focus(xcb_timestamp_t t) {
 
 }
 
-std::vector<floating_event_t> * client_managed_t::compute_floating_areas(
-		theme_managed_window_t * mw) const {
+std::vector<floating_event_t> * client_managed_t::
+compute_floating_areas(theme_managed_window_t * mw) const {
 
 	std::vector<floating_event_t> * ret = new std::vector<floating_event_t>();
 
@@ -629,8 +629,8 @@ i_rect client_managed_t::compute_floating_close_position(i_rect const & allocati
 	return position;
 }
 
-i_rect client_managed_t::compute_floating_bind_position(
-		i_rect const & allocation) const {
+i_rect client_managed_t::
+compute_floating_bind_position(i_rect const & allocation) const {
 
 	i_rect position;
 	position.x = allocation.w - _theme->floating.bind_width - _theme->floating.close_width;
@@ -1020,13 +1020,14 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 			opa = _base_position;
 		} else {
 
-			vis = _base_position;
+			vis = i_rect{0,0,_base_position.w,_base_position.h};
 
-			region shp;
 			if (shape() != nullptr) {
+				region shp;
 				shp = *shape();
-			} else {
-				shp = i_rect{0, 0, _orig_position.w, _orig_position.h};
+				vis -= _orig_position;
+				shp.translate(_orig_position.x, _orig_position.y);
+				vis += shp;
 			}
 
 			region xopac;
@@ -1038,9 +1039,11 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 				}
 			}
 
-			opa = shp & xopac;
-			opa.translate(_base_position.x + _orig_position.x,
+			vis.translate(_base_position.x, _base_position.y);
+
+			xopac.translate(_base_position.x + _orig_position.x,
 					_base_position.y + _orig_position.y);
+			opa = vis & xopac;
 
 		}
 

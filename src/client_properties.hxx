@@ -416,7 +416,7 @@ public:
 		xcb_shape_get_rectangles_reply_t * r = xcb_shape_get_rectangles_reply(_cnx->xcb(), ck, 0);
 
 		if (r != nullptr) {
-			_shape = new region{};
+			_shape = new region;
 
 			xcb_rectangle_iterator_t i = xcb_shape_get_rectangles_rectangles_iterator(r);
 			while(i.rem > 0) {
