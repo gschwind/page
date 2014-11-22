@@ -234,7 +234,7 @@ void page_t::run() {
 	/* create and add popups (overlay) */
 	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(cnx, theme)};
 	pn0 = nullptr;
-	ps = std::shared_ptr<popup_split_t>{new popup_split_t(theme)};
+	ps = nullptr;
 	pat = nullptr;
 	menu = nullptr;
 
@@ -835,11 +835,10 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					mode_data_split.slider_area =
 							mode_data_split.split->get_split_bar_area();
 
-					/* show split overlay */
-					ps->set_current_split(b->spt);
+					ps = std::shared_ptr<popup_split_t>(new popup_split_t{cnx, theme, mode_data_split.split});
 					ps->set_position(mode_data_split.split_ratio);
-					ps->move_resize(mode_data_split.split->allocation());
-					ps->show();
+					add_compositor_damaged(ps->position());
+
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
 					process_mode = PROCESS_NOTEBOOK_MENU;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
@@ -3625,9 +3624,9 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 //		out.push_back(pat);
 //	}
 
-	if(ps->is_visible()) {
-		out.push_back(ps);
-	}
+//	if(ps->is_visible()) {
+//		out.push_back(ps);
+//	}
 
 //	if(pn0->is_visible()) {
 //		out.push_back(pn0);
@@ -3943,7 +3942,8 @@ void page_t::process_motion_notify_split_grab(xcb_generic_event_t const * _e) {
 			mode_data_split.slider_area.x, mode_data_split.slider_area.y);
 
 	ps->set_position(mode_data_split.split_ratio);
-	_need_render = true;
+	add_compositor_damaged(ps->position());
+
 }
 
 void page_t::process_motion_notify_notebook_grab(
@@ -4353,7 +4353,7 @@ void page_t::process_button_release_split_grab(xcb_generic_event_t const * _e) {
 		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
-		ps->hide();
+		ps = nullptr;
 		add_compositor_damaged(mode_data_split.split->allocation());
 		mode_data_split.split->set_split(mode_data_split.split_ratio);
 		rpage->add_damaged(mode_data_split.split->allocation());
@@ -4775,6 +4775,12 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	if (pn0 != nullptr) {
 		if (pn0->id() == e->window) {
 			pn0->expose();
+		}
+	}
+
+	if (ps != nullptr) {
+		if (ps->id() == e->window) {
+			ps->expose();
 		}
 	}
 }

@@ -37,9 +37,8 @@ protected:
 public:
 	popup_notebook0_t(display_t * dpy, theme_t * theme) :
 			_theme(theme), _position { -1, -1, 1, 1 } , _dpy{dpy} {
-				icon = nullptr;
-
-				_show = false;
+		icon = nullptr;
+		_show = false;
 		icon = nullptr;
 		_has_alpha = true;
 		_is_durty = true;
