@@ -344,28 +344,44 @@ void page_t::run() {
 		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait,
 		NULL);
 
-		while(cnx->has_pending_events()) {
-			cmgr->process_event(cnx->front_event());
-			process_event(cnx->front_event());
-			cnx->pop_event();
-			xcb_flush(cnx->xcb());
+		/** Here we try to process all pending events then render if needed **/
+		cnx->grab();
+
+		while (cnx->has_pending_events()) {
+			while (cnx->has_pending_events()) {
+				cmgr->process_event(cnx->front_event());
+				process_event(cnx->front_event());
+				cnx->pop_event();
+				xcb_flush(cnx->xcb());
+			}
+
+			if (_need_restack) {
+				_need_restack = false;
+				update_windows_stack();
+			}
+
+			cnx->sync();
+
 		}
 
-		if(_need_restack) {
-			_need_restack = false;
-			update_windows_stack();
-		}
+		/**
+		 * Here we are sure that we have the properstate of the server, no one else
+		 * Have pending query.
+		 **/
+
 
 		/** render if no render occurred within previous 1/120 second **/
 		time_t cur_tic;
 		cur_tic.get_time();
-		if (cur_tic > _next_frame) {
+		if (cur_tic > _next_frame or _need_render) {
+			_need_render = false;
 			render();
 		} else {
 			_max_wait = _next_frame - cur_tic;
 		}
 
-		xcb_flush(cnx->xcb());
+		cnx->ungrab();
+
 	}
 }
 
@@ -1240,7 +1256,7 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 		add_compositor_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_cast<client_not_managed_t *>(c));
-			render();
+			_need_render = true;
 		}
 	}
 }
@@ -1803,7 +1819,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
-	render();
+	_need_render = true;
 }
 
 void page_t::render() {
@@ -3644,7 +3660,7 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 //		out.push_back(client_menu);
 //	}
 
-	_need_render = false;
+//	_need_render = false;
 
 }
 
