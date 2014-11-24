@@ -294,6 +294,7 @@ void client_managed_t::reconfigure() {
 			_orig_position.h = _wished_position.h;
 
 		} else {
+			/* floating window without borders */
 			_base_position = _wished_position;
 
 			_orig_position.x = 0;
@@ -361,7 +362,7 @@ void client_managed_t::delete_window(Time t) {
 		xev.data.data32[0] = A(WM_DELETE_WINDOW);
 		xev.data.data32[1] = t;
 
-		xcb_send_event(cnx()->xcb(), False, _orig, XCB_EVENT_MASK_NO_EVENT,
+		xcb_send_event(cnx()->xcb(), 0, _orig, XCB_EVENT_MASK_NO_EVENT,
 				reinterpret_cast<char*>(&xev));
 		unlock();
 	}
@@ -538,7 +539,7 @@ void client_managed_t::icccm_focus(xcb_timestamp_t t) {
 				ev.data.data32[0] = A(WM_TAKE_FOCUS);
 				ev.data.data32[1] = t;
 
-				xcb_send_event(cnx()->xcb(), false, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
+				xcb_send_event(cnx()->xcb(), 0, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
 
 			}
 		}
@@ -721,7 +722,7 @@ void client_managed_t::select_inputs() {
 	cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 	if (lock()) {
 		cnx()->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
-		xcb_shape_select_input(cnx()->xcb(), _orig, true);
+		xcb_shape_select_input(cnx()->xcb(), _orig, 1);
 		unlock();
 	}
 }
@@ -1023,8 +1024,7 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 			vis = i_rect{0,0,_base_position.w,_base_position.h};
 
 			if (shape() != nullptr) {
-				region shp;
-				shp = *shape();
+				region shp{*shape()};
 				vis -= _orig_position;
 				shp.translate(_orig_position.x, _orig_position.y);
 				vis += shp;
@@ -1049,7 +1049,7 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 
 		region dmg { _composite_surf->get_damaged() };
 		_composite_surf->clear_damaged();
-		dmg.translate(_base_position.x, _base_position.y);
+		dmg.translate(_base_position.x + _orig_position.x, _base_position.y + _orig_position.y);
 		auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
 				_base_position, dmg);
 		x->set_opaque_region(opa);

@@ -182,7 +182,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 				fds[0].fd = fd();
 				fds[0].events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
-				cur.get_time();
+				cur.update_to_current_time();
 				end = cur + page::time_t{5L, 0L};
 
 				bool destroyed = false;
@@ -192,7 +192,7 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 					poll(fds, 1, timeout);
 					fetch_pending_events();
 					destroyed = check_for_destroyed_window(current_wm_sn_owner);
-					cur.get_time();
+					cur.update_to_current_time();
 				}
 
 				if (not destroyed) {

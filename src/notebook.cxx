@@ -34,7 +34,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_client_map.insert(x);
 
 	if(prefer_activate) {
-		swap_start.get_time();
+		swap_start.update_to_current_time();
 
 		if(_selected != nullptr) {
 			/** get current surface then iconify **/
@@ -51,6 +51,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		cur_surf = x->surf();
 		update_client_position(x);
 		x->normalize();
+		x->reconfigure();
 		_selected = x;
 
 	} else {
@@ -101,7 +102,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 
 	/** update selection **/
 	if (_selected == x) {
-		swap_start.get_time();
+		swap_start.update_to_current_time();
 		if (x->surf() != nullptr) {
 			prev_surf = x->surf()->get_pixmap();
 			prev_loc = x->base_position();
@@ -123,9 +124,10 @@ void notebook_t::set_selected(client_managed_t * c) {
 	if(_selected == c and not c->is_iconic())
 		return;
 
-	swap_start.get_time();
+	swap_start.update_to_current_time();
 	update_client_position(c);
 	c->normalize();
+	c->reconfigure();
 //	_clients.remove(c);
 //	_clients.push_front(c);
 
@@ -161,7 +163,7 @@ void notebook_t::iconify_client(client_managed_t * x) {
 	if(_selected != x)
 		return;
 
-	swap_start.get_time();
+	swap_start.update_to_current_time();
 
 	if (_selected != nullptr) {
 		if (_selected->surf() != nullptr) {
@@ -281,6 +283,7 @@ void notebook_t::set_allocation(i_rect const & area) {
 
 	if(_selected != nullptr) {
 		update_client_position(_selected);
+		_selected->reconfigure();
 	}
 
 	update_theme_notebook();

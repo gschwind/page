@@ -120,7 +120,7 @@ compositor_t::~compositor_t() {
 
 void compositor_t::render() {
 	page::time_t cur;
-	cur.get_time();
+	cur.update_to_current_time();
 
 
 	/**

@@ -412,18 +412,35 @@ public:
 		int count;
 		int ordering;
 
-		xcb_shape_get_rectangles_cookie_t ck = xcb_shape_get_rectangles(_cnx->xcb(), _id, XCB_SHAPE_SK_BOUNDING);
-		xcb_shape_get_rectangles_reply_t * r = xcb_shape_get_rectangles_reply(_cnx->xcb(), ck, 0);
+		/** request extent to check if shape has been set **/
+		xcb_shape_query_extents_cookie_t ck0 = xcb_shape_query_extents(_cnx->xcb(), _id);
 
-		if (r != nullptr) {
-			_shape = new region;
+		/** in the same time we make the request for rectangle (even if this request isn't needed) **/
+		xcb_shape_get_rectangles_cookie_t ck1 = xcb_shape_get_rectangles(_cnx->xcb(), _id, XCB_SHAPE_SK_BOUNDING);
 
-			xcb_rectangle_iterator_t i = xcb_shape_get_rectangles_rectangles_iterator(r);
-			while(i.rem > 0) {
-				*_shape += i_rect{i.data->x, i.data->y, i.data->width, i.data->height};
-				xcb_rectangle_next(&i);
+		xcb_shape_query_extents_reply_t * r0 = xcb_shape_query_extents_reply(_cnx->xcb(), ck0, 0);
+		xcb_shape_get_rectangles_reply_t * r1 = xcb_shape_get_rectangles_reply(_cnx->xcb(), ck1, 0);
+
+		if (r0 != nullptr) {
+
+			if (r0->bounding_shaped and r1 != nullptr) {
+
+				_shape = new region;
+
+				xcb_rectangle_iterator_t i =
+						xcb_shape_get_rectangles_rectangles_iterator(r1);
+				while (i.rem > 0) {
+					*_shape += i_rect { i.data->x, i.data->y, i.data->width,
+							i.data->height };
+					xcb_rectangle_next(&i);
+				}
+
 			}
-			free(r);
+			free(r0);
+		}
+
+		if(r1 != nullptr) {
+			free(r1);
 		}
 
 	}

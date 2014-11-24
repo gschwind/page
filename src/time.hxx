@@ -48,7 +48,7 @@ public:
 		return nsec;
 	}
 
-	void get_time() {
+	void update_to_current_time() {
 		timespec cur_tic;
 		clock_gettime(CLOCK_MONOTONIC, &cur_tic);
 		nsec = cur_tic.tv_sec * 1000000000L + cur_tic.tv_nsec;

@@ -239,8 +239,8 @@ void page_t::run() {
 	menu = nullptr;
 
 	cnx->load_cursors();
-	set_window_cursor(cnx->root(), cnx->xc_left_ptr);
-	set_window_cursor(rpage->wid(), cnx->xc_left_ptr);
+	cnx->set_window_cursor(cnx->root(), cnx->xc_left_ptr);
+	cnx->set_window_cursor(rpage->wid(), cnx->xc_left_ptr);
 
 	update_net_supported();
 
@@ -313,7 +313,7 @@ void page_t::run() {
 
 
 	_max_wait = default_wait;
-	_next_frame.get_time();
+	_next_frame.update_to_current_time();
 
 	fd_set fds_read;
 	fd_set fds_intr;
@@ -365,14 +365,14 @@ void page_t::run() {
 		}
 
 		/**
-		 * Here we are sure that we have the properstate of the server, no one else
+		 * Here we are sure that we have the proper state of the server, no one else
 		 * Have pending query.
 		 **/
 
 
 		/** render if no render occurred within previous 1/120 second **/
 		time_t cur_tic;
-		cur_tic.get_time();
+		cur_tic.update_to_current_time();
 		if (cur_tic > _next_frame or _need_render) {
 			_need_render = false;
 			render();
@@ -958,16 +958,16 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
-					set_window_cursor(mw->orig(), cnx->xc_bottom_righ_corner);
+					cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
+					cnx->set_window_cursor(mw->orig(), cnx->xc_bottom_righ_corner);
 				} else {
 					safe_raise_window(mw);
 					process_mode = PROCESS_FLOATING_MOVE;
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
 					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
-					set_window_cursor(mw->base(), cnx->xc_fleur);
-					set_window_cursor(mw->orig(), cnx->xc_fleur);
+					cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
+					cnx->set_window_cursor(mw->orig(), cnx->xc_fleur);
 				}
 
 
@@ -1032,7 +1032,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
 						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
-						set_window_cursor(mw->base(), cnx->xc_fleur);
+						cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
 					} else {
 
 						//pfm->move_resize(mw->get_base_position());
@@ -1045,63 +1045,63 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP;
-							set_window_cursor(mw->base(), cnx->xc_top_side);
+							cnx->set_window_cursor(mw->base(), cnx->xc_top_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM;
-							set_window_cursor(mw->base(), cnx->xc_bottom_side);
+							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_LEFT;
-							set_window_cursor(mw->base(), cnx->xc_left_side);
+							cnx->set_window_cursor(mw->base(), cnx->xc_left_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_RIGHT;
-							set_window_cursor(mw->base(), cnx->xc_right_side);
+							cnx->set_window_cursor(mw->base(), cnx->xc_right_side);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							set_window_cursor(mw->base(), cnx->xc_top_left_corner);
+							cnx->set_window_cursor(mw->base(), cnx->xc_top_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							set_window_cursor(mw->base(), cnx->xc_top_right_corner);
+							cnx->set_window_cursor(mw->base(), cnx->xc_top_right_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							set_window_cursor(mw->base(), cnx->xc_bottom_left_corner);
+							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_left_corner);
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
 							process_mode = PROCESS_FLOATING_RESIZE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
 
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
+							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
 						} else {
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
-							set_window_cursor(mw->base(), cnx->xc_fleur);
+							cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
 						}
 					}
 
@@ -1175,9 +1175,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_configure_notify_event_t const *>(_e);
+
+	//printf("configure (%d) %dx%d+%d+%d\n", e->window, e->width, e->height, e->x, e->y);
+
 	client_base_t * c = find_client(e->window);
 	if(c != nullptr) {
-		//printf("configure %dx%d+%d+%d\n", e->width, e->height, e->x, e->y);
 		c->process_event(e);
 	}
 
@@ -1829,7 +1831,7 @@ void page_t::render() {
 		 * rendering to 60 fps.
 		 **/
 		time_t cur_tic;
-		cur_tic.get_time();
+		cur_tic.update_to_current_time();
 		rnd->clear_renderable();
 		std::vector<std::shared_ptr<renderable_t>> ret;
 		prepare_render(ret, cur_tic);
@@ -1839,7 +1841,7 @@ void page_t::render() {
 		/** sync with X server to ensure all render are done **/
 		cnx->sync();
 
-		cur_tic.get_time();
+		cur_tic.update_to_current_time();
 		/** slow down frame if render is slow **/
 		_next_frame = cur_tic + default_wait;
 		_max_wait = default_wait;
@@ -2785,11 +2787,6 @@ desktop_t * page_t::find_desktop_of(tree_t * n) {
 	return nullptr;
 }
 
-void page_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
-	uint32_t attrs = c;
-	xcb_change_window_attributes(cnx->xcb(), w, XCB_CW_CURSOR, &attrs);
-}
-
 void page_t::update_windows_stack() {
 	std::vector<client_base_t *> clients = filter_class<client_base_t>(
 			tree_t::get_visible_children());
@@ -3628,39 +3625,12 @@ void page_t::update_keymap() {
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
 	add_compositor_damaged(rpage->get_damaged());
-	out += dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
+	out += std::dynamic_pointer_cast<renderable_t>(rpage->prepare_render());
  	rpage->repair_damaged(tree_t::get_visible_children());
 
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
 	}
-
-	/** Add all possible popups **/
-//	if(pat != nullptr) {
-//		out.push_back(pat);
-//	}
-
-//	if(ps->is_visible()) {
-//		out.push_back(ps);
-//	}
-
-//	if(pn0->is_visible()) {
-//		out.push_back(pn0);
-//	}
-
-	if(pfm->is_visible()) {
-		out.push_back(pfm);
-	}
-
-//	if(menu != nullptr) {
-//		out.push_back(menu);
-//	}
-//
-//	if(client_menu != nullptr) {
-//		out.push_back(client_menu);
-//	}
-
-//	_need_render = false;
 
 }
 
@@ -3851,8 +3821,8 @@ void page_t::_bind_all_default_event() {
 
 	/** Extension **/
 	_event_handler_bind(cnx->damage_event + XCB_DAMAGE_NOTIFY, &page_t::process_damage_notify_event);
-	_event_handler_bind(cnx->randr_event + RRNotify, &page_t::process_randr_notify_event);
-	_event_handler_bind(cnx->shape_event + ShapeNotify, &page_t::process_shape_notify_event);
+	_event_handler_bind(cnx->randr_event + XCB_RANDR_NOTIFY, &page_t::process_randr_notify_event);
+	_event_handler_bind(cnx->shape_event + XCB_SHAPE_NOTIFY, &page_t::process_shape_notify_event);
 
 }
 
@@ -4493,7 +4463,11 @@ void page_t::process_button_release_floating_move(xcb_generic_event_t const * _e
 		pfm->hide();
 
 		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
-		cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+
+		if (cnx->lock(mode_data_floating.f->orig())) {
+			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+			cnx->unlock();
+		}
 
 		mode_data_floating.f->set_floating_wished_position(
 				mode_data_floating.final_position);
@@ -4515,7 +4489,10 @@ void page_t::process_button_release_floating_resize(xcb_generic_event_t const * 
 		pfm->hide();
 
 		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
-		cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+		if (cnx->lock(mode_data_floating.f->orig())) {
+			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+			cnx->unlock();
+		}
 
 		mode_data_floating.f->set_floating_wished_position(
 				mode_data_floating.final_position);

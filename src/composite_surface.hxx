@@ -48,39 +48,56 @@ class composite_surface_t {
 	}
 
 	void destroy_damage() {
-		if(_damage != XCB_NONE) {
-			std::cout << "destroy damage for " << this << std::endl;
-			xcb_damage_destroy(_dpy->xcb(), _damage);
-			_damage = XCB_NONE;
+		if (_dpy->lock(_window_id)) {
+			if (_damage != XCB_NONE) {
+				std::cout << "destroy damage for " << this << std::endl;
+				xcb_damage_destroy(_dpy->xcb(), _damage);
+				_damage = XCB_NONE;
+			}
+			_dpy->unlock();
 		}
 	}
 
 public:
 
-	composite_surface_t(display_t * dpy, xcb_window_t w, bool composited) : _dpy(dpy), _window_id(w), _is_composited(composited) {
-		xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _window_id);
-		xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(_dpy->xcb(), _window_id);
+	composite_surface_t(display_t * dpy, xcb_window_t w, bool composited) :
+		_dpy(dpy),
+		_window_id(w),
+		_is_composited(composited)
+	{
+		if (_dpy->lock(_window_id)) {
+			xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(),
+					_window_id);
+			xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(
+					_dpy->xcb(), _window_id);
 
-		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_dpy->xcb(), ck0, 0);
-		xcb_get_window_attributes_reply_t * attrs = xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
+			xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(
+					_dpy->xcb(), ck0, 0);
+			xcb_get_window_attributes_reply_t * attrs =
+					xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
 
-		if(attrs == nullptr or geometry == nullptr) {
-			throw exception_t("fail to get window attribute");
-		}
+			if (attrs == nullptr or geometry == nullptr) {
+				throw exception_t("fail to get window attribute");
+			}
 
-		_depth = geometry->depth;
-		_vis = _dpy->get_visual_type(attrs->visual);
-		_width = geometry->width;
-		_height = geometry->height;
-		_pixmap = nullptr;
-		_damage = XCB_NONE;
+			_depth = geometry->depth;
+			_vis = _dpy->get_visual_type(attrs->visual);
+			_width = geometry->width;
+			_height = geometry->height;
+			_pixmap = nullptr;
+			_damage = XCB_NONE;
 
-		_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
+			_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
 
-		printf("create composite_surface (%p) %dx%d\n", this, _width, _height);
+			printf("create composite_surface (%p) %dx%d\n", this, _width,
+					_height);
 
-		if(_is_map and _is_composited) {
-			on_map();
+			if (_is_map and _is_composited) {
+				on_map();
+			}
+
+			_dpy->unlock();
+
 		}
 
 	}
@@ -93,17 +110,7 @@ public:
 		if(_dpy->lock(_window_id)) {
 			if(not _dpy->check_for_unmap_window(_window_id)) {
 				_is_map = true;
-				if (_is_composited) {
-					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
-					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
-							pixmap_id);
-					_pixmap = std::shared_ptr<pixmap_t>(
-							new pixmap_t(_dpy, _vis, pixmap_id, _width,
-									_height));
-					create_damage();
-				} else {
-					_pixmap = nullptr;
-				}
+				update_pixmap();
 			} else {
 				_is_map = false;
 			}
@@ -124,8 +131,9 @@ public:
 		if (width != _width or height != _height) {
 			_width = width;
 			_height = height;
+			_damaged += i_rect{0, 0, _width, _height};
 			if(_is_map) {
-				on_map();
+				update_pixmap();
 			}
 		}
 	}
@@ -189,6 +197,23 @@ public:
 			_pixmap = nullptr;
 		}
 		_is_composited = composited;
+	}
+
+	void update_pixmap() {
+		if (_dpy->lock(_window_id)) {
+			if (_is_composited) {
+				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
+						pixmap_id);
+				_pixmap = std::shared_ptr<pixmap_t>(
+						new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
+				create_damage();
+			} else {
+				_pixmap = nullptr;
+			}
+
+			_dpy->unlock();
+		}
 	}
 
 };

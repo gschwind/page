@@ -52,7 +52,9 @@ private:
 	/** hold notebook position **/
 	i_rect _notebook_wished_position;
 
+	/** the absolute position without border **/
 	i_rect _wished_position;
+
 	i_rect _orig_position;
 	i_rect _base_position;
 

@@ -117,7 +117,6 @@ public:
 		_wid = xcb_generate_id(_dpy->xcb());
 		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
 
-
 		update_layout();
 
 		_dpy->map(_wid);

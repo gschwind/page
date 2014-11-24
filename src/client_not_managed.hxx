@@ -53,7 +53,7 @@ public:
 		_is_hidden = false;
 		if (cnx()->lock(orig())) {
 			cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-			xcb_shape_select_input(cnx()->xcb(), orig(), true);
+			xcb_shape_select_input(cnx()->xcb(), orig(), 1);
 			_properties->update_shape();
 			cnx()->unlock();
 		}
