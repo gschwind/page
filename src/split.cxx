@@ -173,7 +173,7 @@ void split_t::update_allocation() {
 
 }
 
-double split_t::get_split_ratio() {
+double split_t::get_split_ratio() const {
 	return _split;
 }
 

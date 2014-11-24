@@ -55,7 +55,7 @@ public:
 	page_component_t * get_pack0();
 	page_component_t * get_pack1();
 	split_type_e get_split_type();
-	double get_split_ratio();
+	double get_split_ratio() const;
 	void set_theme(theme_t const * theme);
 	void set_pack0(page_component_t * x);
 	void set_pack1(page_component_t * x);
