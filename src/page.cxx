@@ -63,6 +63,8 @@ time_t const page_t::default_wait{1000000000L / 120L};
 
 page_t::page_t(int argc, char ** argv)
 {
+	identity_window = XCB_NONE;
+	cmgr = nullptr;
 
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
@@ -81,6 +83,7 @@ page_t::page_t(int argc, char ** argv)
 	char const * conf_file_name = 0;
 
 	_need_render = false;
+	_need_restack = false;
 
 	/** parse command line **/
 
@@ -107,7 +110,7 @@ page_t::page_t(int argc, char ** argv)
 	/* load configurations, from lower priority to high one */
 
 	/* load default configuration */
-	conf.merge_from_file_if_exist(std::string(DATA_DIR "/page/page.conf"));
+	conf.merge_from_file_if_exist(std::string{DATA_DIR "/page/page.conf"});
 
 	/* load homedir configuration */
 	{
@@ -208,6 +211,9 @@ void page_t::run() {
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
+	/** TODO: this must be set after being the official WM **/
+	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
+			WINDOW, 32, &identity_window, 1);
 
 	_bind_all_default_event();
 
@@ -215,7 +221,7 @@ void page_t::run() {
 	theme = new simple2_theme_t{cnx, conf};
 	cmgr = new composite_surface_manager_t{cnx};
 
-	/* start listen root event before anything each event will be stored to right run later */
+	/* start listen root event before anything, each event will be stored to be processed later */
 	cnx->select_input(cnx->root(), ROOT_EVENT_MASK);
 
 	start_compositor();
@@ -232,7 +238,7 @@ void page_t::run() {
 			_root_position.h);
 
 	/* create and add popups (overlay) */
-	pfm = std::shared_ptr<popup_frame_move_t>{new popup_frame_move_t(cnx, theme)};
+	pfm = nullptr;
 	pn0 = nullptr;
 	ps = nullptr;
 	pat = nullptr;
@@ -320,11 +326,7 @@ void page_t::run() {
 
 	int max = cnx->fd();
 
-	if (rnd != nullptr) {
-		rnd->render();
-		xcb_flush(cnx->xcb());
-	}
-
+	update_windows_stack();
 	xcb_flush(cnx->xcb());
 	running = true;
 	while (running) {
@@ -456,7 +458,7 @@ void page_t::scan() {
 			onmap(w);
 		} else {
 			/**
-			 * if the window is not map check if previous windows manager has set WM_STATE to iconic
+			 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
 			 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 			 **/
 			if (c->wm_state() != nullptr) {
@@ -3031,7 +3033,7 @@ void page_t::onmap(xcb_window_t w) {
 	}
 
 	if(cnx->check_for_unmap_window(w)) {
-		printf("do not manage %u because it wil be unmapped\n", w);
+		printf("do not manage %u because it will be unmapped\n", w);
 		cnx->ungrab();
 		return;
 	}
@@ -3539,19 +3541,16 @@ void page_t::remove(tree_t * t) {
 
 void page_t::create_identity_window() {
 	/* create an invisible window to identify page */
-
+	uint32_t pid = getpid();
 	uint32_t attrs = XCB_EVENT_MASK_STRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE;
 	uint32_t attrs_mask = XCB_CW_EVENT_MASK;
-	identity_window = cnx->create_input_only_window(cnx->root(), i_rect { -100,
-			-100, 1, 1 }, attrs_mask, &attrs);
-	std::string name("page");
+	identity_window = cnx->create_input_only_window(cnx->root(),
+			i_rect{-100, -100, 1, 1}, attrs_mask, &attrs);
+	std::string name{"page"};
 	cnx->change_property(identity_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
 			name.length() + 1);
 	cnx->change_property(identity_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
 			&identity_window, 1);
-	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
-			WINDOW, 32, &identity_window, 1);
-	uint32_t pid = getpid();
 	cnx->change_property(identity_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
 
 }
@@ -3814,7 +3813,6 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
 
 	_event_handler_bind(0, &page_t::process_error);
-
 
 	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, &page_t::process_fake_unmap_notify_event);
 	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, &page_t::process_fake_client_message_event);

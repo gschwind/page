@@ -971,6 +971,11 @@ std::string client_managed_t::get_node_name() const {
 	std::string s = _get_node_name<'M'>();
 	std::ostringstream oss;
 	oss << s << " " << orig() << " " << title();
+
+	if(_properties->geometry() != nullptr) {
+		oss << " " << _properties->geometry()->width << "x" << _properties->geometry()->height << "+" << _properties->geometry()->x << "+" << _properties->geometry()->y;
+	}
+
 	return oss.str();
 }
 
@@ -1049,7 +1054,7 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 
 		region dmg { _composite_surf->get_damaged() };
 		_composite_surf->clear_damaged();
-		dmg.translate(_base_position.x + _orig_position.x, _base_position.y + _orig_position.y);
+		dmg.translate(_base_position.x, _base_position.y);
 		auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
 				_base_position, dmg);
 		x->set_opaque_region(opa);

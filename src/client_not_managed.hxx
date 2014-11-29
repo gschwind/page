@@ -83,6 +83,16 @@ public:
 		std::string s = _get_node_name<'U'>();
 		std::ostringstream oss;
 		oss << s << " " << orig();
+		oss << " " << cnx()->get_atom_name(_properties->wm_type()) << " ";
+
+		if(_properties->net_wm_name() != nullptr) {
+			oss << " " << *_properties->net_wm_name();
+		}
+
+		if(_properties->geometry() != nullptr) {
+			oss << " " << _properties->geometry()->width << "x" << _properties->geometry()->height << "+" << _properties->geometry()->x << "+" << _properties->geometry()->y;
+		}
+
 		return oss.str();
 	}
 
