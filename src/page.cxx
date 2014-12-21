@@ -2790,8 +2790,33 @@ desktop_t * page_t::find_desktop_of(tree_t * n) {
 }
 
 void page_t::update_windows_stack() {
-	std::vector<client_base_t *> clients = filter_class<client_base_t>(
-			tree_t::get_visible_children());
+
+	std::vector<tree_t *> tree = tree_t::get_visible_children();
+
+	{
+		/**
+		 * only restack managed clients or unmanaged clients with transient_for
+		 * or unmanaged window with net_wm_window_type.
+		 * Other client are expected to restack themself (it's a guess).
+		 **/
+		int k = 0;
+		for (int i = 0; i < tree.size(); ++i) {
+			if (typeid(*tree[i]) == typeid(client_managed_t)) {
+				tree[k++] = tree[i];
+			} else if (typeid(*tree[i]) == typeid(client_not_managed_t)) {
+				client_not_managed_t * nc =
+						dynamic_cast<client_not_managed_t*>(tree[i]);
+				if (nc->wm_transient_for() != nullptr) {
+					tree[k++] = tree[i];
+				} else if(nc->net_wm_window_type() != nullptr) {
+					tree[k++] = tree[i];
+				}
+			}
+		}
+		tree.resize(k);
+	}
+
+	std::vector<client_base_t *> clients = filter_class<client_base_t>(tree);
 	std::reverse(clients.begin(), clients.end());
 	std::vector<xcb_window_t> stack;
 
@@ -2803,7 +2828,7 @@ void page_t::update_windows_stack() {
 		stack.push_back(i->base());
 	}
 
-	/** place page window on button **/
+	/** place page window at bottom **/
 	stack.push_back(rpage->wid());
 
 	xcb_window_t win = XCB_WINDOW_NONE;
