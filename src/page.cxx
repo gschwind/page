@@ -950,9 +950,9 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				mode_data_floating.popup_original_position = mw->get_base_position();
 				mode_data_floating.button = XCB_BUTTON_INDEX_3;
 
-				//pfm->move_resize(mw->get_base_position());
-				//pfm->update_window(mw, mw->title());
-				//pfm->show();
+				pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+				pfm->update_window(mw);
+				pfm->move_resize(mw->get_base_position());
 
 				if ((e->state & XCB_MOD_MASK_CONTROL)) {
 					process_mode = PROCESS_FLOATING_RESIZE;
@@ -1025,9 +1025,9 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
-						//pfm->move_resize(mw->get_base_position());
-						//pfm->update_window(mw, mw->title());
-						//pfm->show();
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm->update_window(mw);
+						pfm->move_resize(mw->get_base_position());
 
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE;
@@ -1037,9 +1037,9 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
 					} else {
 
-						//pfm->move_resize(mw->get_base_position());
-						//pfm->update_window(mw, mw->title());
-						//pfm->show();
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm->update_window(mw);
+						pfm->move_resize(mw->get_base_position());
 
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
 							process_mode = PROCESS_FLOATING_RESIZE;
@@ -1104,6 +1104,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
 							cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
+
 						}
 					}
 
@@ -2676,7 +2677,7 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 		if (mode_data_floating.f == mw) {
 			process_mode = PROCESS_NORMAL;
 
-			pfm->hide();
+			pfm = nullptr;
 
 			mode_data_floating.mode = RESIZE_NONE;
 			mode_data_floating.x_offset = 0;
@@ -4049,6 +4050,8 @@ void page_t::process_motion_notify_floating_move(
 	mode_data_floating.f->set_floating_wished_position(new_position);
 	mode_data_floating.f->reconfigure();
 
+	update_popup_position(pfm, new_position);
+
 	_need_render = true;
 }
 
@@ -4247,6 +4250,7 @@ void page_t::process_motion_notify_floating_move_by_client(xcb_generic_event_t c
 	mode_data_floating.f->set_floating_wished_position(new_position);
 	mode_data_floating.f->reconfigure();
 
+	update_popup_position(pfm, new_position);
 	_need_render = true;
 }
 
@@ -4483,7 +4487,8 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 void page_t::process_button_release_floating_move(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-		pfm->hide();
+
+		pfm = nullptr;
 
 		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
 
@@ -4509,7 +4514,8 @@ void page_t::process_button_release_floating_move(xcb_generic_event_t const * _e
 void page_t::process_button_release_floating_resize(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-		pfm->hide();
+
+		pfm = nullptr;
 
 		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
 		if (cnx->lock(mode_data_floating.f->orig())) {
@@ -4621,7 +4627,8 @@ void page_t::process_button_release_fullscreen_move(xcb_generic_event_t const * 
 void page_t::process_button_release_floating_move_by_client(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if (e->detail == mode_data_floating.button) {
-		pfm->hide();
+
+		pfm = nullptr;
 
 		xcb_ungrab_pointer(cnx->xcb(), e->time);
 
@@ -4791,6 +4798,12 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	if (pn0 != nullptr) {
 		if (pn0->id() == e->window) {
 			pn0->expose();
+		}
+	}
+
+	if (pfm != nullptr) {
+		if (pfm->id() == e->window) {
+			pfm->expose();
 		}
 	}
 

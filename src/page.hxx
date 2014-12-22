@@ -79,7 +79,7 @@ public:
 
 	/* popups (overlay) */
 	std::shared_ptr<popup_notebook0_t> pn0;
-	std::shared_ptr<popup_frame_move_t> pfm;
+	std::shared_ptr<popup_notebook0_t> pfm;
 	std::shared_ptr<popup_split_t> ps;
 	std::shared_ptr<popup_alt_tab_t> pat;
 
