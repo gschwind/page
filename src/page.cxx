@@ -1709,22 +1709,6 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					long button = e->data.data32[3];
 					long source = e->data.data32[4];
 
-					mode_data_floating.x_offset = x_root
-							- mw->get_base_position().x;
-					mode_data_floating.y_offset = y_root
-							- mw->get_base_position().y;
-					;
-					mode_data_floating.x_root = x_root;
-					mode_data_floating.y_root = y_root;
-					mode_data_floating.f = mw;
-					mode_data_floating.original_position =
-							mw->get_floating_wished_position();
-					mode_data_floating.final_position =
-							mw->get_floating_wished_position();
-					mode_data_floating.popup_original_position =
-							mw->get_base_position();
-					mode_data_floating.button = button;
-
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
 						safe_raise_window(mw);
 						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
@@ -1803,12 +1787,29 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					}
 
 					if (process_mode != PROCESS_NORMAL) {
-						xcb_grab_pointer(cnx->xcb(), false, cnx->root(),
+						xcb_grab_pointer(cnx->xcb(), true, cnx->root(),
 								XCB_EVENT_MASK_BUTTON_PRESS
 										| XCB_EVENT_MASK_BUTTON_RELEASE
 										| XCB_EVENT_MASK_BUTTON_MOTION,
 								XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 								XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+
+						mode_data_floating.x_offset = x_root
+								- mw->get_base_position().x;
+						mode_data_floating.y_offset = y_root
+								- mw->get_base_position().y;
+
+						mode_data_floating.x_root = x_root;
+						mode_data_floating.y_root = y_root;
+						mode_data_floating.f = mw;
+						mode_data_floating.original_position =
+								mw->get_floating_wished_position();
+						mode_data_floating.final_position =
+								mw->get_floating_wished_position();
+						mode_data_floating.popup_original_position =
+								mw->get_base_position();
+						mode_data_floating.button = button;
+
 					}
 
 					mw->unlock();
@@ -2200,6 +2201,8 @@ void page_t::notebook_close(notebook_t * nbk) {
 
 void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 		i_rect & position) {
+	if(p == nullptr)
+		return;
 	add_compositor_damaged(p->get_visible_region());
 	p->move_resize(position);
 	add_compositor_damaged(p->get_visible_region());
@@ -2207,6 +2210,8 @@ void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 
 void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
 		i_rect & position) {
+	if(p == nullptr)
+		return;
 	add_compositor_damaged(p->get_visible_region());
 	p->move_resize(position);
 	add_compositor_damaged(p->get_visible_region());
@@ -4624,46 +4629,49 @@ void page_t::process_button_release_fullscreen_move(xcb_generic_event_t const * 
 	}
 }
 
-void page_t::process_button_release_floating_move_by_client(xcb_generic_event_t const * _e) {
+void page_t::process_button_release_floating_move_by_client(
+		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == mode_data_floating.button) {
 
-		pfm = nullptr;
+	pfm = nullptr;
 
-		xcb_ungrab_pointer(cnx->xcb(), e->time);
+	xcb_ungrab_pointer(cnx->xcb(), e->time);
 
-		mode_data_floating.f->set_floating_wished_position(
-				mode_data_floating.final_position);
-		mode_data_floating.f->reconfigure();
+	mode_data_floating.f->set_floating_wished_position(
+			mode_data_floating.final_position);
+	mode_data_floating.f->reconfigure();
 
-		set_focus(mode_data_floating.f, e->time);
+	set_focus(mode_data_floating.f, e->time);
 
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+	process_mode = PROCESS_NORMAL;
+	_event_handler_bind(XCB_MOTION_NOTIFY,
+			&page_t::process_motion_notify_normal);
+	_event_handler_bind(XCB_BUTTON_RELEASE,
+			&page_t::process_button_release_normal);
 
-		mode_data_floating.reset();
-	}
+	mode_data_floating.reset();
+
 }
 
-void page_t::process_button_release_floating_resize_by_client(xcb_generic_event_t const * _e) {
+void page_t::process_button_release_floating_resize_by_client(
+		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == mode_data_floating.button) {
 
-		xcb_ungrab_pointer(cnx->xcb(), e->time);
+	xcb_ungrab_pointer(cnx->xcb(), e->time);
 
-		mode_data_floating.f->set_floating_wished_position(
-				mode_data_floating.final_position);
-		mode_data_floating.f->reconfigure();
+	mode_data_floating.f->set_floating_wished_position(
+			mode_data_floating.final_position);
+	mode_data_floating.f->reconfigure();
 
-		set_focus(mode_data_floating.f, e->time);
+	set_focus(mode_data_floating.f, e->time);
 
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+	process_mode = PROCESS_NORMAL;
+	_event_handler_bind(XCB_MOTION_NOTIFY,
+			&page_t::process_motion_notify_normal);
+	_event_handler_bind(XCB_BUTTON_RELEASE,
+			&page_t::process_button_release_normal);
 
-		mode_data_floating.reset();
-	}
+	mode_data_floating.reset();
 }
 
 void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e) {
