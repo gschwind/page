@@ -1098,13 +1098,16 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
 						} else {
+							pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+							pfm->update_window(mw);
+							pfm->move_resize(mw->get_base_position());
+
 							safe_raise_window(mw);
 							process_mode = PROCESS_FLOATING_MOVE;
 							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
 							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
 
 							cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
-
 						}
 					}
 
@@ -1703,11 +1706,11 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 				if (mw->lock()) {
 					xcb_cursor_t xc = XCB_NONE;
 
-					long x_root = e->data.data32[0];
-					long y_root = e->data.data32[1];
-					long direction = e->data.data32[2];
-					long button = e->data.data32[3];
-					long source = e->data.data32[4];
+					int x_root = e->data.data32[0];
+					int y_root = e->data.data32[1];
+					int direction = e->data.data32[2];
+					int button = e->data.data32[3];
+					int source = e->data.data32[4];
 
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
 						safe_raise_window(mw);
@@ -1787,7 +1790,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					}
 
 					if (process_mode != PROCESS_NORMAL) {
-						xcb_grab_pointer(cnx->xcb(), true, cnx->root(),
+						xcb_grab_pointer(cnx->xcb(), FALSE, cnx->root(),
 								XCB_EVENT_MASK_BUTTON_PRESS
 										| XCB_EVENT_MASK_BUTTON_RELEASE
 										| XCB_EVENT_MASK_BUTTON_MOTION,
@@ -1809,6 +1812,10 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 						mode_data_floating.popup_original_position =
 								mw->get_base_position();
 						mode_data_floating.button = button;
+
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm->update_window(mw);
+						pfm->move_resize(mw->get_base_position());
 
 					}
 
@@ -2207,16 +2214,6 @@ void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
 	p->move_resize(position);
 	add_compositor_damaged(p->get_visible_region());
 }
-
-void page_t::update_popup_position(std::shared_ptr<popup_frame_move_t> p,
-		i_rect & position) {
-	if(p == nullptr)
-		return;
-	add_compositor_damaged(p->get_visible_region());
-	p->move_resize(position);
-	add_compositor_damaged(p->get_visible_region());
-}
-
 
 /*
  * Compute the usable desktop area and dock allocation.
@@ -2801,9 +2798,9 @@ void page_t::update_windows_stack() {
 
 	{
 		/**
-		 * only restack managed clients or unmanaged clients with transient_for
+		 * only re-stack managed clients or unmanaged clients with transient_for
 		 * or unmanaged window with net_wm_window_type.
-		 * Other client are expected to restack themself (it's a guess).
+		 * Other client are expected to re-stack them self (it's a guess).
 		 **/
 		int k = 0;
 		for (int i = 0; i < tree.size(); ++i) {
@@ -2825,6 +2822,13 @@ void page_t::update_windows_stack() {
 	std::vector<client_base_t *> clients = filter_class<client_base_t>(tree);
 	std::reverse(clients.begin(), clients.end());
 	std::vector<xcb_window_t> stack;
+
+	/** place popup on top **/
+	if (pfm != nullptr)
+		stack.push_back(pfm->id());
+
+	if(pn0 != nullptr)
+		stack.push_back(pn0->id());
 
 	/** place overlay on top **/
 	if (rnd != nullptr)
@@ -4052,10 +4056,13 @@ void page_t::process_motion_notify_floating_move(
 	new_position.x += e->root_x - mode_data_floating.x_root;
 	new_position.y += e->root_y - mode_data_floating.y_root;
 	mode_data_floating.final_position = new_position;
-	mode_data_floating.f->set_floating_wished_position(new_position);
-	mode_data_floating.f->reconfigure();
+	//mode_data_floating.f->set_floating_wished_position(new_position);
+	//mode_data_floating.f->reconfigure();
 
-	update_popup_position(pfm, new_position);
+	i_rect new_popup_position = mode_data_floating.popup_original_position;
+	new_popup_position.x += e->root_x - mode_data_floating.x_root;
+	new_popup_position.y += e->root_y - mode_data_floating.y_root;
+	update_popup_position(pfm, new_popup_position);
 
 	_need_render = true;
 }
@@ -4135,16 +4142,18 @@ void page_t::process_motion_notify_floating_resize(
 	size.y += y_diff;
 	mode_data_floating.final_position = size;
 
-	mode_data_floating.f->set_floating_wished_position(size);
-	mode_data_floating.f->reconfigure();
+	//mode_data_floating.f->set_floating_wished_position(size);
+	//mode_data_floating.f->reconfigure();
 
 	i_rect popup_new_position = size;
-	popup_new_position.x -= theme->floating.margin.left;
-	popup_new_position.y -= theme->floating.margin.top;
-	popup_new_position.w += theme->floating.margin.left
-			+ theme->floating.margin.right;
-	popup_new_position.h += theme->floating.margin.top
-			+ theme->floating.margin.bottom;
+	if (mode_data_floating.f->has_motif_border()) {
+		popup_new_position.x -= theme->floating.margin.left;
+		popup_new_position.y -= theme->floating.margin.top;
+		popup_new_position.w += theme->floating.margin.left
+				+ theme->floating.margin.right;
+		popup_new_position.h += theme->floating.margin.top
+				+ theme->floating.margin.bottom;
+	}
 
 	update_popup_position(pfm, popup_new_position);
 	_need_render = true;
@@ -4252,10 +4261,13 @@ void page_t::process_motion_notify_floating_move_by_client(xcb_generic_event_t c
 	new_position.x += e->root_x - mode_data_floating.x_root;
 	new_position.y += e->root_y - mode_data_floating.y_root;
 	mode_data_floating.final_position = new_position;
-	mode_data_floating.f->set_floating_wished_position(new_position);
-	mode_data_floating.f->reconfigure();
+	//mode_data_floating.f->set_floating_wished_position(new_position);
+	//mode_data_floating.f->reconfigure();
 
-	update_popup_position(pfm, new_position);
+	i_rect new_popup_position = mode_data_floating.popup_original_position;
+	new_popup_position.x += e->root_x - mode_data_floating.x_root;
+	new_popup_position.y += e->root_y - mode_data_floating.y_root;
+	update_popup_position(pfm, new_popup_position);
 	_need_render = true;
 }
 
@@ -4334,16 +4346,18 @@ void page_t::process_motion_notify_floating_resize_by_client(
 	size.y += y_diff;
 	mode_data_floating.final_position = size;
 
-	mode_data_floating.f->set_floating_wished_position(size);
+	//mode_data_floating.f->set_floating_wished_position(size);
 	//mode_data_floating.f->reconfigure();
 
 	i_rect popup_new_position = size;
-	popup_new_position.x -= theme->floating.margin.left;
-	popup_new_position.y -= theme->floating.margin.top;
-	popup_new_position.w += theme->floating.margin.left
-			+ theme->floating.margin.right;
-	popup_new_position.h += theme->floating.margin.top
-			+ theme->floating.margin.bottom;
+	if (mode_data_floating.f->has_motif_border()) {
+		popup_new_position.x -= theme->floating.margin.left;
+		popup_new_position.y -= theme->floating.margin.top;
+		popup_new_position.w += theme->floating.margin.left
+				+ theme->floating.margin.right;
+		popup_new_position.h += theme->floating.margin.top
+				+ theme->floating.margin.bottom;
+	}
 
 	update_popup_position(pfm, popup_new_position);
 	_need_render = true;
@@ -4657,6 +4671,8 @@ void page_t::process_button_release_floating_resize_by_client(
 		xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 
+	pfm = nullptr;
+
 	xcb_ungrab_pointer(cnx->xcb(), e->time);
 
 	mode_data_floating.f->set_floating_wished_position(
@@ -4680,7 +4696,7 @@ void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e
 		if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab) {
 			mode_data_notebook_menu.active_grab = true;
 			xcb_grab_pointer(cnx->xcb(),
-					0,
+					FALSE,
 					rpage->wid(),
 					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
 					XCB_GRAB_MODE_ASYNC,
@@ -4718,7 +4734,7 @@ void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t con
 		if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
 			mode_data_notebook_client_menu.active_grab = true;
 			xcb_grab_pointer(cnx->xcb(),
-					0,
+					FALSE,
 					rpage->wid(),
 					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
 					XCB_GRAB_MODE_ASYNC,
