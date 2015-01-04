@@ -49,6 +49,7 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 				_floating_area(0),
 				_is_focused(false),
 				_is_iconic(true),
+				_demands_attention(false),
 				_cmgr(cmgr)
 {
 
