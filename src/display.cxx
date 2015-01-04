@@ -125,14 +125,13 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 	 * to be the official window manager.
 	 **/
 
-	xcb_generic_error_t * err;
 	xcb_window_t current_wm_sn_owner;
 
 	/** who is the current owner ? **/
 	xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
-	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+	xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, nullptr);
 
-	if(r == nullptr or err != nullptr) {
+	if(r == nullptr) {
 		std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
 		return false;
 	}
@@ -159,19 +158,21 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 			xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
 
 			xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
-			xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+			xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, nullptr);
 
 			/** If we are not the owner -> exit **/
-			if(r == nullptr or err != nullptr) {
+			if(r == nullptr) {
 				std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
-				return false;
-			} else if (r->owner != w) {
-				std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
-				free(r);
 				return false;
 			}
 
+			xcb_window_t new_wm_sn_owner = r->owner;
 			free(r);
+
+			if (new_wm_sn_owner != w) {
+				std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
+				return false;
+			}
 
 			/** Now we are the owner, wait for max. 5 second that the previous owner to exit */
 			{
@@ -206,18 +207,20 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 		xcb_set_selection_owner(_xcb, w, wm_sn_atom, XCB_CURRENT_TIME);
 
 		xcb_get_selection_owner_cookie_t ck = xcb_get_selection_owner(_xcb, wm_sn_atom);
-		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, &err);
+		xcb_get_selection_owner_reply_t * r = xcb_get_selection_owner_reply(_xcb, ck, nullptr);
 
-		if(r == nullptr or err != nullptr) {
+		if(r == nullptr) {
 			std::cout << "Error while getting selection owner of " << get_atom_name(wm_sn_atom) << std::endl;
-			return false;
-		} else if (r->owner != w) {
-			std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
-			free(r);
 			return false;
 		}
 
+		current_wm_sn_owner = r->owner;
 		free(r);
+
+		if (current_wm_sn_owner != w) {
+			std::cout << "Could not acquire the ownership of " << get_atom_name(wm_sn_atom) << std::endl;
+			return false;
+		}
 
 	}
 
@@ -246,7 +249,7 @@ bool display_t::register_cm(xcb_window_t w) {
 	current_cm = r->owner;
 	free(r);
 
-	if (r->owner != XCB_WINDOW_NONE) {
+	if (current_cm != XCB_WINDOW_NONE) {
 		std::cout << "Could not acquire the ownership of " << get_atom_name(cm_sn_atom) << std::endl;
 		return false;
 	} else {
@@ -259,7 +262,12 @@ bool display_t::register_cm(xcb_window_t w) {
 		if(r == nullptr or err != nullptr) {
 			std::cout << "Error while getting selection owner of " << get_atom_name(cm_sn_atom) << std::endl;
 			return false;
-		} else if (r->owner != w) {
+		}
+
+		current_cm = r->owner;
+		free(r);
+
+		if (current_cm != w) {
 			std::cout << "Could not acquire the ownership of " << get_atom_name(cm_sn_atom) << std::endl;
 			return false;
 		}
