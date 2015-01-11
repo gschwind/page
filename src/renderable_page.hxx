@@ -21,6 +21,9 @@
 
 namespace page {
 
+/**
+ * renderable_page is responsible to render page background (i.e. notebooks and background image)
+ **/
 class renderable_page_t {
 	display_t * _cnx;
 	theme_t * _theme;
@@ -105,7 +108,7 @@ public:
 
 	bool repair_damaged(std::vector<tree_t *> tree) {
 
-		if(_damaged.empty() and not _is_durty)
+		if(not _is_durty)
 			return false;
 
 		cairo_t * cr = cairo_create(_back_surf);
@@ -136,14 +139,10 @@ public:
 		cairo_destroy(cr);
 
 		_is_durty = false;
-		_damaged.clear();
+		_damaged += _position;
 
 		return true;
 
-	}
-
-	void add_damaged(i_rect area) {
-		_damaged += area;
 	}
 
 	std::shared_ptr<renderable_surface_t> prepare_render() {
@@ -152,6 +151,7 @@ public:
 		return _renderable;
 	}
 
+	/* mark renderable_page for redraw */
 	void mark_durty() {
 		_is_durty = true;
 	}
@@ -187,6 +187,10 @@ public:
 
 	xcb_window_t wid() {
 		return _win;
+	}
+
+	void expose() {
+		expose(_position);
 	}
 
 	void expose(region const & r) {
