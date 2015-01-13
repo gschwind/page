@@ -4775,23 +4775,27 @@ void page_t::add_compositor_damaged(region const & r) {
 
 void page_t::start_compositor() {
 #ifdef WITH_COMPOSITOR
-	try {
-		register_cm();
-	} catch(std::exception & e) {
-		std::cout << e.what() << std::endl;
-		return;
+	if (cnx->has_composite) {
+		try {
+			register_cm();
+		} catch (std::exception & e) {
+			std::cout << e.what() << std::endl;
+			return;
+		}
+		rnd = new compositor_t { cnx, cmgr };
+		cmgr->enable();
 	}
-	rnd = new compositor_t{cnx, cmgr};
-	cmgr->enable();
 #endif
 }
 
 void page_t::stop_compositor() {
 #ifdef WITH_COMPOSITOR
-	cnx->unregister_cm();
-	cmgr->disable();
-	delete rnd;
-	rnd = nullptr;
+	if (cnx->has_composite) {
+		cnx->unregister_cm();
+		cmgr->disable();
+		delete rnd;
+		rnd = nullptr;
+	}
 #endif
 }
 
