@@ -379,6 +379,7 @@ bool display_t::query_extension(char const * name, int * opcode, int * event, in
 
 
 bool display_t::check_composite_extension() {
+#ifdef WITH_COMPOSITOR
 	if (not query_extension(COMPOSITE_NAME, &composite_opcode, &composite_event, &composite_error)) {
 		return false;
 	} else {
@@ -392,6 +393,10 @@ bool display_t::check_composite_extension() {
 		printf(COMPOSITE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
 		return true;
 	}
+#else
+	return false;
+#endif
+
 }
 
 bool display_t::check_damage_extension() {
@@ -770,9 +775,7 @@ void display_t::check_x11_extension() {
 		throw std::runtime_error(RANDR_NAME " extension is not supported");
 	}
 
-	if (not check_composite_extension()) {
-		throw std::runtime_error("X Server doesn't support Composite 0.4");
-	}
+	has_composite = check_composite_extension();
 
 	if (not check_damage_extension()) {
 		throw std::runtime_error("Damage extension is not supported");

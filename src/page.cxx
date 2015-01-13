@@ -4774,6 +4774,7 @@ void page_t::add_compositor_damaged(region const & r) {
 }
 
 void page_t::start_compositor() {
+#ifdef WITH_COMPOSITOR
 	try {
 		register_cm();
 	} catch(std::exception & e) {
@@ -4782,13 +4783,16 @@ void page_t::start_compositor() {
 	}
 	rnd = new compositor_t{cnx, cmgr};
 	cmgr->enable();
+#endif
 }
 
 void page_t::stop_compositor() {
+#ifdef WITH_COMPOSITOR
 	cnx->unregister_cm();
 	cmgr->disable();
 	delete rnd;
 	rnd = nullptr;
+#endif
 }
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {

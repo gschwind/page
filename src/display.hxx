@@ -10,6 +10,8 @@
 #ifndef DISPLAY_HXX_
 #define DISPLAY_HXX_
 
+#include "config.hxx"
+
 #include <X11/Xlib.h>
 #include <X11/Xlib-xcb.h>
 
@@ -31,7 +33,10 @@
 #include <X11/extensions/Xrender.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xdamage.h>
+
+#ifdef WITH_COMPOSITOR
 #include <X11/extensions/Xcomposite.h>
+#endif
 
 #include <cstring>
 #include <cstdarg>
@@ -85,6 +90,7 @@ public:
 
 	/* composite event handler */
 	int composite_opcode, composite_event, composite_error;
+	bool has_composite;
 
 	/* fixes event handler */
 	int fixes_opcode, fixes_event, fixes_error;

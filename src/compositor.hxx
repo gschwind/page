@@ -176,6 +176,4 @@ public:
 
 }
 
-
-
 #endif /* RENDER_CONTEXT_HXX_ */

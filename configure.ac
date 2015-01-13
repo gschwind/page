@@ -58,10 +58,6 @@ PKG_CHECK_MODULES(CAIRO, cairo >= 1.0.0)
 AC_SUBST(CAIRO_CFLAGS)
 AC_SUBST(CAIRO_LIBS)
 
-PKG_CHECK_MODULES(XCOMPOSITE, xcomposite >= 0.4.0)
-AC_SUBST(XCOMPOSITE_CFLAGS)
-AC_SUBST(XCOMPOSITE_LIBS)
-
 PKG_CHECK_MODULES(XDAMAGE, xdamage >= 0.26)
 AC_SUBST(XDAMAGE_CFLAGS)
 AC_SUBST(XDAMAGE_LIBS)
@@ -108,10 +104,37 @@ AM_CONDITIONAL([WITH_PANGO], [test "x$WITH_PANGO" = "xyes"])
 
 # Define CTEMPLATE in config.h if we're going to compile against it
 if test "x$WITH_PANGO" = "xyes"; then
-    AC_DEFINE([WITH_PANGO], [], ["build using ctemplate library"])
+    AC_DEFINE([WITH_PANGO], [], ["build using pango library"])
     AC_MSG_NOTICE([pango code path will be enabled])
 else
     AC_MSG_NOTICE([pango code path will be enabled])
+fi
+
+# This adds the option of compiling without using the ctemplate library,
+# which has proved troublesome for compilation on some platforms
+AC_ARG_ENABLE(compositor,
+  [ --disable-compositor   Disable compositor code path],
+  [case "${enableval}" in
+     yes | no ) WITH_COMPOSITOR="${enableval}" ;;
+     *) AC_MSG_ERROR(bad value ${enableval} for --disable-compositor) ;;
+   esac],
+  [WITH_COMPOSITOR="yes"]
+)
+
+dnl Make sure we register this option with Automake, so we know whether to
+dnl descend into compositor for more configuration or not
+AM_CONDITIONAL([WITH_COMPOSITOR], [test "x$WITH_COMPOSITOR" = "xyes"])
+
+if test "x$WITH_COMPOSITOR" = "xyes"; then
+
+	PKG_CHECK_MODULES(XCOMPOSITE, xcomposite >= 0.4.0)
+	AC_SUBST(XCOMPOSITE_CFLAGS)
+	AC_SUBST(XCOMPOSITE_LIBS)
+
+    AC_DEFINE([WITH_COMPOSITOR], [], ["build compositor"])
+    AC_MSG_NOTICE([compositor code path will be enabled])
+else
+    AC_MSG_NOTICE([compositor code path will be disabled])
 fi
 
 AC_CHECK_LIB(rt, clock_gettime,
