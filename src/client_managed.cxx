@@ -305,6 +305,11 @@ void client_managed_t::reconfigure() {
 
 		}
 
+		/* avoid to hide title bar of floating windows */
+		if(_base_position.y < 0) {
+			_base_position.y = 0;
+		}
+
 		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
