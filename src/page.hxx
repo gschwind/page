@@ -367,8 +367,6 @@ private:
 
 	std::vector<page_event_t> * page_areas;
 
-	i_rect _allocation;
-
 public:
 
 	theme_t * theme;
@@ -575,7 +573,7 @@ public:
 	void set_allocation(i_rect const & r);
 
 	i_rect allocation() const {
-		return _allocation;
+		return _root_position;
 	}
 
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }

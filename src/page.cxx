@@ -2885,7 +2885,6 @@ void page_t::update_viewport_layout() {
 
 	_root_position = i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_desktop_geometry(_root_position.w, _root_position.h);
-	_allocation = _root_position;
 
 	xcb_randr_crtc_t primary;
 	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
@@ -3215,8 +3214,8 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 		/* HACK OLD FASHION FULLSCREEN */
 		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
-				and mw->geometry()->width == _allocation.w
-				and mw->geometry()->height == _allocation.h
+				and mw->geometry()->width == _root_position.w
+				and mw->geometry()->height == _root_position.h
 				and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 		}
@@ -3710,7 +3709,7 @@ void page_t::set_parent(page_component_t * parent) {
 }
 
 void page_t::set_allocation(i_rect const & r) {
-	_allocation = r;
+	throw exception_t("page_t::set_allocation should be called");
 }
 
 void page_t::children(std::vector<tree_t *> & out) const {
