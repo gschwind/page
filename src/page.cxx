@@ -3213,12 +3213,25 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		}
 
 		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
-				and mw->geometry()->width == _root_position.w
-				and mw->geometry()->height == _root_position.h
-				and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+		if (mw->wm_normal_hints() != nullptr) {
+			XSizeHints const * size_hints = mw->wm_normal_hints();
+			if ((size_hints->flags & PMaxSize)
+					and (size_hints->flags & PMinSize)) {
+				if (size_hints->min_width == _root_position.w
+						and size_hints->min_height == _root_position.h
+						and size_hints->max_width == _root_position.w
+						and size_hints->max_height == _root_position.h) {
+					mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+				}
+			}
 		}
+
+//		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
+//				and mw->geometry()->width == _root_position.w
+//				and mw->geometry()->height == _root_position.h
+//				and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+//			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+//		}
 
 		if (mw->is_fullscreen()) {
 			mw->normalize();
