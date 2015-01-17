@@ -144,6 +144,9 @@ page_t::page_t(int argc, char ** argv)
 	find_key_from_string(conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
 	find_key_from_string(conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
 
+	find_key_from_string(conf.get_string("default", "bind_bind_window"), bind_bind_window);
+	find_key_from_string(conf.get_string("default", "bind_fullscreen_window"), bind_fullscreen_window);
+	find_key_from_string(conf.get_string("default", "bind_float_window"), bind_float_window);
 
 	find_key_from_string(conf.get_string("default", "bind_debug_1"), bind_debug_1);
 	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
@@ -614,6 +617,44 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 		if(k == bind_left_desktop.ks and (e->state & bind_left_desktop.mod)) {
 			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e->time);
+		}
+
+		if(k == bind_bind_window.ks and (e->state & bind_bind_window.mod)) {
+			if(not _client_focused.empty()) {
+				if(_client_focused.front() != nullptr) {
+					if(_client_focused.front()->is(MANAGED_FULLSCREEN)) {
+						unfullscreen(_client_focused.front());
+					}
+
+					if(_client_focused.front()->is(MANAGED_FLOATING)) {
+						bind_window(_client_focused.front(), true);
+					}
+				}
+			}
+		}
+
+		if(k == bind_fullscreen_window.ks and (e->state & bind_fullscreen_window.mod)) {
+			if(not _client_focused.empty()) {
+				if(_client_focused.front() != nullptr) {
+					if(not _client_focused.front()->is(MANAGED_FULLSCREEN)) {
+						fullscreen(_client_focused.front(), nullptr);
+					}
+				}
+			}
+		}
+
+		if(k == bind_float_window.ks and (e->state & bind_float_window.mod)) {
+			if(not _client_focused.empty()) {
+				if(_client_focused.front() != nullptr) {
+					if(_client_focused.front()->is(MANAGED_FULLSCREEN)) {
+						unfullscreen(_client_focused.front());
+					}
+
+					if(_client_focused.front()->is(MANAGED_NOTEBOOK)) {
+						unbind_window(_client_focused.front());
+					}
+				}
+			}
 		}
 
 		if (rnd != nullptr) {
@@ -3645,6 +3686,9 @@ void page_t::update_grabkey() {
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_left_desktop, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_bind_window, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_fullscreen_window, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_float_window, keymap);
 
 	/* Alt-Tab */
 	if ((kc = keymap->find_keysim(XK_Tab))) {

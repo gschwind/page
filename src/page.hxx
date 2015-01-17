@@ -347,6 +347,10 @@ public:
 	key_desc_t bind_right_desktop;
 	key_desc_t bind_left_desktop;
 
+	key_desc_t bind_bind_window;
+	key_desc_t bind_fullscreen_window;
+	key_desc_t bind_float_window;
+
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;
 	key_desc_t bind_debug_3;

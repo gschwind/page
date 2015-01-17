@@ -7,12 +7,29 @@
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
 
-# bind page quit
+# quit page
 bind_page_quit=mod4+q
+
+# switch between fullscreen and floating/binded window
 bind_toggle_fullscreen=mod4+f
+
+# start/stop page compositor
 bind_toggle_compositor=mod4+0
+
+# switch to the next desktop
 bind_right_desktop=mod4+Right
+
+# switch to the previous desktop
 bind_left_desktop=mod4+Left
+
+# bind the focussed window
+bind_bind_window=mod4+b
+
+# fullscreen the focussed window
+bind_fullscreen_window=mod4+v
+
+# make floatting the focussed window
+bind_float_window=mod4+c
 
 # bind keys for debuging
 bind_debug_1=mod4+1
