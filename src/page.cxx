@@ -211,13 +211,16 @@ page_t::~page_t() {
 
 void page_t::run() {
 
-	cnx->grab();
+
 
 	/* check for required page extension */
 	cnx->check_x11_extension();
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
+
+	cnx->grab();
+
 	/** TODO: this must be set after being the official WM **/
 	cnx->change_property(cnx->root(), _NET_SUPPORTING_WM_CHECK,
 			WINDOW, 32, &identity_window, 1);
