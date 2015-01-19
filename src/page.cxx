@@ -209,6 +209,8 @@ page_t::~page_t() {
 
 void page_t::run() {
 
+	cnx->grab();
+
 	/* check for required page extension */
 	cnx->check_x11_extension();
 	/* Before doing anything, trying to register wm and cm */
@@ -226,8 +228,6 @@ void page_t::run() {
 
 	/* start listen root event before anything, each event will be stored to be processed later */
 	cnx->select_input(cnx->root(), ROOT_EVENT_MASK);
-
-	start_compositor();
 
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
@@ -331,6 +331,12 @@ void page_t::run() {
 
 	update_windows_stack();
 	xcb_flush(cnx->xcb());
+
+	cnx->ungrab();
+
+	/* start the compositor once the window manager is fully started */
+	start_compositor();
+
 	running = true;
 	while (running) {
 
