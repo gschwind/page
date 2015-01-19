@@ -3516,17 +3516,17 @@ void page_t::remove_client(client_base_t * c) {
 
 void page_t::get_all_children(std::vector<tree_t *> & out) const {
 
+	for(auto x: docks) {
+		out.push_back(x);
+		x->get_all_children(out);
+	}
+
 	for (auto v: _desktop_stack) {
 		out.push_back(v);
 		v->get_all_children(out);
 	}
 
 	for(auto x: below) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-	for(auto x: docks) {
 		out.push_back(x);
 		x->get_all_children(out);
 	}
