@@ -10,6 +10,8 @@
 /* According to POSIX.1-2001 */
 #include <sys/select.h>
 
+#include <poll.h>
+
 /* According to earlier standards */
 #include <sys/time.h>
 #include <sys/types.h>
@@ -321,13 +323,6 @@ void page_t::run() {
 			XCB_MOD_MASK_ANY);
 
 
-	_max_wait = default_wait;
-	_next_frame.update_to_current_time();
-
-	fd_set fds_read;
-	fd_set fds_intr;
-
-	int max = cnx->fd();
 
 	update_windows_stack();
 	xcb_flush(cnx->xcb());
@@ -337,23 +332,20 @@ void page_t::run() {
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
+	_max_wait = default_wait;
+	_next_frame.update_to_current_time();
+
+	struct pollfd pfds;
+	pfds.fd = cnx->fd();
+	pfds.events = POLLIN|POLLPRI|POLLERR;
+
 	running = true;
 	while (running) {
 
 		xcb_flush(cnx->xcb());
 
-		FD_ZERO(&fds_read);
-		FD_ZERO(&fds_intr);
-
-		FD_SET(cnx->fd(), &fds_read);
-		FD_SET(cnx->fd(), &fds_intr);
-
-		/**
-		 * wait for data in both X11 connection streams (compositor and page)
-		 **/
-		timespec max_wait = _max_wait;
-		int nfd = pselect(max + 1, &fds_read, NULL, &fds_intr, &max_wait,
-		NULL);
+		/* poll at less 250 times per second */
+		poll(&pfds, 1, 1000/250);
 
 		/** Here we try to process all pending events then render if needed **/
 		cnx->grab();
@@ -387,8 +379,6 @@ void page_t::run() {
 		if (cur_tic > _next_frame or _need_render) {
 			_need_render = false;
 			render();
-		} else {
-			_max_wait = _next_frame - cur_tic;
 		}
 
 		cnx->ungrab();
