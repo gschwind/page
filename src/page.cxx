@@ -3253,7 +3253,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		}
 
 		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->wm_normal_hints() != nullptr) {
+		if (mw->wm_normal_hints() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
 			XSizeHints const * size_hints = mw->wm_normal_hints();
 			if ((size_hints->flags & PMaxSize)
 					and (size_hints->flags & PMinSize)) {
