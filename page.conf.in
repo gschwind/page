@@ -46,6 +46,8 @@ exec_cmd_1=null
 bind_cmd_2=null
 exec_cmd_2=null
 
+# auto-focus old window when current focuced window is closed (can be true or false ONLY)
+auto_refocus=false
 
 [compositor]
 

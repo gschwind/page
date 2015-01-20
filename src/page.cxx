@@ -163,6 +163,12 @@ page_t::page_t(int argc, char ** argv)
 	exec_cmd_1 = conf.get_string("default", "exec_cmd_1");
 	exec_cmd_2 = conf.get_string("default", "exec_cmd_2");
 
+	if(conf.get_string("default", "auto_refocus") == "true") {
+		_auto_refocus = true;
+	} else {
+		_auto_refocus = false;
+	}
+
 }
 
 page_t::~page_t() {
@@ -432,7 +438,21 @@ void page_t::unmanage(client_managed_t * mw) {
 	rpage->mark_durty();
 
 	_clients_list.remove(mw);
-	delete mw;
+	delete mw; mw = nullptr;
+
+	if (_auto_refocus and not _client_focused.empty()) {
+		client_managed_t * xmw = _client_focused.front();
+		if (xmw != nullptr) {
+			if (xmw->is(MANAGED_NOTEBOOK)) {
+				notebook_t * nk = find_parent_notebook_for(xmw);
+				if (nk != nullptr) {
+					nk->activate_client(xmw);
+				}
+			}
+
+			set_focus(xmw, _last_focus_time);
+		}
+	}
 
 }
 

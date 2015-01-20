@@ -92,6 +92,9 @@ public:
 	/** data to set _NET_CLIENT_LIST **/
 	std::list<client_managed_t *> _clients_list;
 
+	/* auto-refocus a client if the current one is closed */
+	bool _auto_refocus;
+
 	struct mode_data_split_t {
 		split_t * split;
 		i_rect slider_area;
