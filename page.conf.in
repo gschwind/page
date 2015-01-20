@@ -37,6 +37,16 @@ bind_debug_2=mod4+2
 bind_debug_3=mod4+3
 bind_debug_4=mod4+4
 
+bind_cmd_0=mod4+t
+exec_cmd_0=/usr/bin/mate-terminal
+
+bind_cmd_1=null
+exec_cmd_1=null
+
+bind_cmd_2=null
+exec_cmd_2=null
+
+
 [compositor]
 
 # Compositor fade in time in nano second

@@ -246,9 +246,17 @@ std::vector<T0 *> filter_class(std::vector<T1 *> const & x) {
  * Parse std::string like "mod4+f" to modifier mask (mod) and keysym (ks)
  **/
 inline void find_key_from_string(std::string const desc, key_desc_t & k) {
+
+	/* no binding is set */
+	if(desc == "null") {
+		k.ks = XK_VoidSymbol;
+		k.mod = 0;
+		return;
+	}
+
 	std::size_t pos = desc.find("+");
 	if(pos == std::string::npos)
-		throw std::runtime_error("key description does not match modifier+keysym");
+		throw std::runtime_error("key description does not match modifier+keysym or null");
 	std::string modifier = desc.substr(0, pos);
 	std::string key = desc.substr(pos+1);
 

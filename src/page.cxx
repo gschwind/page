@@ -155,6 +155,14 @@ page_t::page_t(int argc, char ** argv)
 	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
 	find_key_from_string(conf.get_string("default", "bind_debug_4"), bind_debug_4);
 
+	find_key_from_string(conf.get_string("default", "bind_cmd_0"), bind_cmd_0);
+	find_key_from_string(conf.get_string("default", "bind_cmd_1"), bind_cmd_1);
+	find_key_from_string(conf.get_string("default", "bind_cmd_2"), bind_cmd_2);
+
+	exec_cmd_0 = conf.get_string("default", "exec_cmd_0");
+	exec_cmd_1 = conf.get_string("default", "exec_cmd_1");
+	exec_cmd_2 = conf.get_string("default", "exec_cmd_2");
+
 }
 
 page_t::~page_t() {
@@ -702,6 +710,18 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 					break;
 				}
 			}
+		}
+
+		if (k == bind_cmd_0.ks and (e->state & bind_cmd_0.mod)) {
+			run_cmd(exec_cmd_0);
+		}
+
+		if (k == bind_cmd_1.ks and (e->state & bind_cmd_1.mod)) {
+			run_cmd(exec_cmd_1);
+		}
+
+		if (k == bind_cmd_2.ks and (e->state & bind_cmd_2.mod)) {
+			run_cmd(exec_cmd_2);
 		}
 
 
@@ -3680,6 +3700,10 @@ void page_t::update_grabkey() {
 	grab_key(cnx->xcb(), cnx->root(), bind_debug_3, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_debug_4, keymap);
 
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_0, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_1, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_2, keymap);
+
 	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, keymap);
@@ -4901,6 +4925,53 @@ void page_t::process_error(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_generic_error_t const *>(_e);
 	cnx->print_error(e);
 }
+
+
+/* Inspired from openbox */
+void page_t::run_cmd(std::string const & cmd_with_args)
+{
+	printf("executing %s\n", cmd_with_args.c_str());
+
+    GError *e;
+    gchar **argv = NULL;
+    gchar *cmd;
+
+    if (cmd_with_args == "null")
+    	return;
+
+    cmd = g_filename_from_utf8(cmd_with_args.c_str(), -1, NULL, NULL, NULL);
+    if (!cmd) {
+        printf("Failed to convert the path \"%s\" from utf8\n", cmd_with_args.c_str());
+        return;
+    }
+
+    e = NULL;
+    if (!g_shell_parse_argv(cmd, NULL, &argv, &e)) {
+        printf("%s\n", e->message);
+        g_error_free(e);
+    } else {
+        gchar *program = NULL;
+        gboolean ok;
+
+        e = NULL;
+        ok = g_spawn_async(NULL, argv, NULL,
+                           (GSpawnFlags)(G_SPAWN_SEARCH_PATH |
+                           G_SPAWN_DO_NOT_REAP_CHILD),
+                           NULL, NULL, NULL, &e);
+        if (!ok) {
+            printf("%s\n", e->message);
+            g_error_free(e);
+        }
+
+        g_free(program);
+        g_strfreev(argv);
+    }
+
+    g_free(cmd);
+
+    return;
+}
+
 
 }
 

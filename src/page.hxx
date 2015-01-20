@@ -356,7 +356,16 @@ public:
 	key_desc_t bind_debug_3;
 	key_desc_t bind_debug_4;
 
+	key_desc_t bind_cmd_0;
+	key_desc_t bind_cmd_1;
+	key_desc_t bind_cmd_2;
+
 	keymap_t * keymap;
+
+	std::string exec_cmd_0;
+	std::string exec_cmd_1;
+	std::string exec_cmd_2;
+
 
 private:
 
@@ -638,6 +647,8 @@ public:
 
 	void start_compositor();
 	void stop_compositor();
+
+	void run_cmd(std::string const & cmd_with_args);
 
 };
 
