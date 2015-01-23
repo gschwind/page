@@ -95,6 +95,9 @@ public:
 	/* auto-refocus a client if the current one is closed */
 	bool _auto_refocus;
 
+	/* enable-shade */
+	bool _enable_shade_windows;
+
 	struct mode_data_split_t {
 		split_t * split;
 		i_rect slider_area;

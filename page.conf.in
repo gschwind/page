@@ -49,6 +49,9 @@ exec_cmd_2=null
 # auto-focus old window when current focuced window is closed (can be true or false ONLY)
 auto_refocus=false
 
+# allow to shade a window by clicking on notebook (can be true or false ONLY)
+enable_shade_windows=false
+
 [compositor]
 
 # Compositor fade in time in nano second

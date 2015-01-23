@@ -169,6 +169,12 @@ page_t::page_t(int argc, char ** argv)
 		_auto_refocus = false;
 	}
 
+	if(conf.get_string("default", "enable_shade_windows") == "true") {
+		_enable_shade_windows = true;
+	} else {
+		_enable_shade_windows = false;
+	}
+
 }
 
 page_t::~page_t() {
@@ -4528,18 +4534,20 @@ void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e
 				set_focus(mode_data_notebook.c, e->time);
 				mode_data_notebook.from->set_selected(mode_data_notebook.c);
 			} else {
-				if(mode_data_notebook.from->get_selected() == mode_data_notebook.c
-						and _client_focused.front() == mode_data_notebook.c) {
+				if (mode_data_notebook.from->get_selected()
+						== mode_data_notebook.c
+						and _client_focused.front() == mode_data_notebook.c
+						and _enable_shade_windows) {
 					/** focus root **/
 					set_focus(nullptr, e->time);
 					/** iconify **/
-					mode_data_notebook.from->iconify_client(mode_data_notebook.c);
+					mode_data_notebook.from->iconify_client(
+							mode_data_notebook.c);
 				} else {
 					set_focus(mode_data_notebook.c, e->time);
 					mode_data_notebook.from->set_selected(mode_data_notebook.c);
 				}
 			}
-
 		}
 
 		/* Automatically close empty notebook (disabled) */
