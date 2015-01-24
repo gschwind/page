@@ -260,25 +260,25 @@ public:
 		notebook_t * revert_notebook;
 	};
 
+	/* process_mode_e define possible state of page */
 	enum process_mode_e {
-		PROCESS_NORMAL,			// Process event as usual
-		PROCESS_SPLIT_GRAB,		// Process event when split is moving
-		PROCESS_NOTEBOOK_GRAB,	// Process event when notebook tab is moved
-		PROCESS_NOTEBOOK_BUTTON_PRESS,
-		PROCESS_FLOATING_MOVE,	// Process event when a floating window is moved
-		PROCESS_FLOATING_RESIZE,
-		PROCESS_FLOATING_CLOSE,
-		PROCESS_FLOATING_BIND,
-		PROCESS_FULLSCREEN_MOVE, // Alt + click to change fullscreen screen to another one
-		PROCESS_FLOATING_MOVE_BY_CLIENT, // Move requested by client
-		PROCESS_FLOATING_RESIZE_BY_CLIENT, // Resize requested by client
-		PROCESS_NOTEBOOK_MENU,
-		PROCESS_NOTEBOOK_CLIENT_MENU
+		PROCESS_NORMAL,						// default evant processing
+		PROCESS_SPLIT_GRAB,					// when split is moving
+		PROCESS_NOTEBOOK_GRAB,				// when notebook tab is moved
+		PROCESS_NOTEBOOK_BUTTON_PRESS,		// when click on close/unbind button
+		PROCESS_FLOATING_MOVE,				// when a floating window is moved
+		PROCESS_FLOATING_RESIZE,			// when resizing a floating window
+		PROCESS_FLOATING_CLOSE,				// when clicking close button of floating window
+		PROCESS_FLOATING_BIND,				// when clicking bind button
+		PROCESS_FULLSCREEN_MOVE,			// when mod4+click to change fullscreen window screen
+		PROCESS_FLOATING_MOVE_BY_CLIENT,	// when moving a floating window started by client himself
+		PROCESS_FLOATING_RESIZE_BY_CLIENT,	// when resizing a floating window started by client himself
+		PROCESS_NOTEBOOK_MENU,				// when notebook menu is shown
+		PROCESS_NOTEBOOK_CLIENT_MENU,		// when switch desktop menu is shown
+		PROCESS_ALT_TAB						// when alt-tab running
 	};
 
-	/* this define the current state of page */
 	process_mode_e process_mode;
-
 
 	enum key_press_mode_e {
 		KEY_PRESS_NORMAL,			// Process event as usual

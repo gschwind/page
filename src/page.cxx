@@ -102,7 +102,6 @@ page_t::page_t(int argc, char ** argv)
 
 	keymap = nullptr;
 	process_mode = PROCESS_NORMAL;
-	key_press_mode = KEY_PRESS_NORMAL;
 
 	cnx = new display_t();
 	rnd = nullptr;
@@ -795,7 +794,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 			std::vector<client_managed_t *> managed_window = get_managed_windows();
 
-			if (key_press_mode == KEY_PRESS_NORMAL and not managed_window.empty()) {
+			if (process_mode == PROCESS_NORMAL and not managed_window.empty()) {
 
 				/* Grab keyboard */
 				/** TODO: check for success or failure **/
@@ -804,7 +803,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
 				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 
-				key_press_mode = KEY_PRESS_ALT_TAB;
+				process_mode = PROCESS_ALT_TAB;
 				key_mode_data.selected = _client_focused.front();
 
 				int sel = 0;
@@ -846,12 +845,12 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	} else {
 		/** here we guess Mod1 is bound to Alt **/
 		if ((XK_Alt_L == k or XK_Alt_R == k)
-				and key_press_mode == KEY_PRESS_ALT_TAB) {
+				and process_mode == PROCESS_ALT_TAB) {
 
 			/** Ungrab Keyboard **/
 			xcb_ungrab_keyboard(cnx->xcb(), e->time);
 
-			key_press_mode = KEY_PRESS_NORMAL;
+			process_mode = PROCESS_NORMAL;
 
 			/**
 			 * do not use dynamic_cast because managed window can be already
@@ -883,8 +882,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 	client_managed_t * mw = find_managed_window_with(e->event);
 
-	switch (process_mode) {
-	case PROCESS_NORMAL:
+	if (process_mode == PROCESS_NORMAL) {
 
 		if (e->event == rpage->wid()
 				and e->child == XCB_NONE
@@ -1280,15 +1278,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				rpage->mark_durty();
 			}
 		}
-
-		break;
-	default:
-		break;
 	}
 
 
 	/**
-	 * if no change happenned to process mode
+	 * if no change happened to process mode
 	 * We allow events (remove the grab), and focus those window.
 	 **/
 	if (process_mode == PROCESS_NORMAL) {
@@ -4082,10 +4076,8 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 	}
 }
 
-
 void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	fprintf(stderr, "Warning: This case should not happen %s:%d\n", __FILE__, __LINE__);
 }
 
 void page_t::process_motion_notify_split_grab(xcb_generic_event_t const * _e) {
