@@ -905,14 +905,17 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 //			<< std::endl;
 
 
-	client_managed_t * mw = find_managed_window_with(e->event);
+	if (process_mode != PROCESS_NORMAL) {
+		/* continue to grab events */
+		xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
+		return;
+	}
 
-	if (process_mode == PROCESS_NORMAL) {
+	/** if this event is related to page **/
+	if(e->event == rpage->wid()) {
 
-		/* left click */
-		if (e->event == rpage->wid()
-				and e->child == XCB_NONE
-				and e->detail == XCB_BUTTON_INDEX_1) {
+		/* left click on page window */
+		if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
 
 			update_page_areas();
 
@@ -930,12 +933,8 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				(this->*_page_event_press_handler[b->type])(*b);
 			}
 
-		}
-
-		/* right click */
-		if (e->event == rpage->wid()
-				and e->child == XCB_NONE
-				and e->detail == XCB_BUTTON_INDEX_3) {
+		/* rigth click on page */
+		} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_3) {
 
 			update_page_areas();
 
@@ -976,8 +975,14 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
+	} else {
+
+
+		client_managed_t * mw = find_managed_window_with(e->event);
 
 		if (mw != nullptr) {
+			/** the event is related to managed window **/
+
 
 			if (mw->is(MANAGED_FLOATING)
 					and e->detail == XCB_BUTTON_INDEX_3
@@ -1197,8 +1202,8 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				rpage->mark_durty();
 			}
 		}
-	}
 
+	}
 
 	/**
 	 * if no change happened to process mode
