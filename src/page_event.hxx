@@ -22,8 +22,9 @@ class notebook_t;
 class split_t;
 class client_managed_t;
 
+/* page event area */
 enum page_event_type_e {
-	PAGE_EVENT_NONE,
+	PAGE_EVENT_NONE = 0,
 	PAGE_EVENT_NOTEBOOK_CLIENT,
 	PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE,
 	PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND,
@@ -32,7 +33,8 @@ enum page_event_type_e {
 	PAGE_EVENT_NOTEBOOK_HSPLIT,
 	PAGE_EVENT_NOTEBOOK_MARK,
 	PAGE_EVENT_NOTEBOOK_MENU,
-	PAGE_EVENT_SPLIT
+	PAGE_EVENT_SPLIT,
+	PAGE_EVENT_COUNT // must be the last one
 };
 
 struct page_event_t {
@@ -51,7 +53,7 @@ struct page_event_t {
 	};
 
 	page_event_t(page_event_type_e type = PAGE_EVENT_NONE) :
-			type(type), position(), nbk(0), clt(0) {
+			type(type), position(), nbk(nullptr), clt(nullptr) {
 	}
 
 	page_event_t(page_event_t const & x) :

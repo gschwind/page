@@ -60,7 +60,12 @@ class page_t : public page_component_t {
 	/** define callback function type for event handler **/
 	using callback_event_t = void (page_t::*) (xcb_generic_event_t const *);
 
+	using page_event_press_handler_t = void (page_t::*) (page_event_t const & x);
+
 	std::map<int, callback_event_t> _event_handlers;
+
+	/** store pointer to page event handlers **/
+	page_event_press_handler_t _page_event_press_handler[PAGE_EVENT_COUNT];
 
 	void _event_handler_bind(int type, callback_event_t f);
 	void _bind_all_default_event();
@@ -279,13 +284,6 @@ public:
 	};
 
 	process_mode_e process_mode;
-
-	enum key_press_mode_e {
-		KEY_PRESS_NORMAL,			// Process event as usual
-		KEY_PRESS_ALT_TAB,
-	};
-
-	key_press_mode_e key_press_mode;
 
 	struct key_mode_data_t {
 		client_managed_t * selected;
@@ -669,6 +667,18 @@ public:
 	void stop_compositor();
 
 	void run_cmd(std::string const & cmd_with_args);
+
+
+	void page_event_handler_nop(page_event_t const & pev);
+	void page_event_handler_notebook_client(page_event_t const & pev);
+	void page_event_handler_notebook_client_close(page_event_t const & pev);
+	void page_event_handler_notebook_client_unbind(page_event_t const & pev);
+	void page_event_handler_notebook_close(page_event_t const & pev);
+	void page_event_handler_notebook_vsplit(page_event_t const & pev);
+	void page_event_handler_notebook_hsplit(page_event_t const & pev);
+	void page_event_handler_notebook_mark(page_event_t const & pev);
+	void page_event_handler_notebook_menu(page_event_t const & pev);
+	void page_event_handler_split(page_event_t const & pev);
 
 };
 

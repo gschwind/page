@@ -65,6 +65,31 @@ time_t const page_t::default_wait{1000000000L / 120L};
 
 page_t::page_t(int argc, char ** argv)
 {
+
+
+	/* initialize page event handler functions */
+	_page_event_press_handler[PAGE_EVENT_NONE] =
+			&page_t::page_event_handler_nop;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT] =
+			&page_t::page_event_handler_notebook_client;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE] =
+			&page_t::page_event_handler_notebook_client_close;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND] =
+			&page_t::page_event_handler_notebook_client_unbind;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLOSE] =
+			&page_t::page_event_handler_notebook_close;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_VSPLIT] =
+			&page_t::page_event_handler_notebook_vsplit;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_HSPLIT] =
+			&page_t::page_event_handler_notebook_hsplit;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_MARK] =
+			&page_t::page_event_handler_notebook_mark;
+	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_MENU] =
+			&page_t::page_event_handler_notebook_menu;
+	_page_event_press_handler[PAGE_EVENT_SPLIT] =
+			&page_t::page_event_handler_split;
+
+
 	identity_window = XCB_NONE;
 	cmgr = nullptr;
 
@@ -884,6 +909,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 	if (process_mode == PROCESS_NORMAL) {
 
+		/* left click */
 		if (e->event == rpage->wid()
 				and e->child == XCB_NONE
 				and e->detail == XCB_BUTTON_INDEX_1) {
@@ -900,120 +926,13 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 			}
 
 			if (b != nullptr) {
-
-				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
-					process_mode = PROCESS_NOTEBOOK_GRAB;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
-
-					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = nullptr;
-					mode_data_notebook.zone = SELECT_NONE;
-					mode_data_notebook.ev = *b;
-
-					if(pn0 != nullptr) {
-						pn0->move_resize(mode_data_notebook.from->tab_area);
-						pn0->update_window(mode_data_notebook.c);
-					}
-					rpage->mark_durty();
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = 0;
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = 0;
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = 0;
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = 0;
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
-					process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
-
-					mode_data_notebook.c = const_cast<client_managed_t*>(b->clt);
-					mode_data_notebook.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook.ns = 0;
-
-				} else if (b->type == PAGE_EVENT_SPLIT) {
-
-					process_mode = PROCESS_SPLIT_GRAB;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
-
-					mode_data_split.split_ratio = b->spt->split();
-					mode_data_split.split = const_cast<split_t*>(b->spt);
-					mode_data_split.slider_area =
-							mode_data_split.split->get_split_bar_area();
-
-					ps = std::shared_ptr<popup_split_t>(new popup_split_t{cnx, theme, mode_data_split.split});
-					ps->set_position(mode_data_split.split_ratio);
-					add_compositor_damaged(ps->position());
-
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_MENU) {
-					process_mode = PROCESS_NOTEBOOK_MENU;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_menu);
-
-					mode_data_notebook_menu.from = const_cast<notebook_t*>(b->nbk);
-					mode_data_notebook_menu.b = b->position;
-
-					std::list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
-
-					int sel = 0;
-
-					std::vector<std::shared_ptr<notebook_dropdown_menu_t::item_t>> v;
-					int s = 0;
-
-					for (auto i : managed_window) {
-						std::shared_ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
-						v.push_back(cy);
-						if (i == _client_focused.front()) {
-							sel = s;
-						}
-						++s;
-					}
-
-					int x = mode_data_notebook_menu.from->allocation().x;
-					int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
-
-					menu = std::shared_ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
-				}
+				/* call corresponding event handler */
+				(this->*_page_event_press_handler[b->type])(*b);
 			}
 
 		}
 
+		/* right click */
 		if (e->event == rpage->wid()
 				and e->child == XCB_NONE
 				and e->detail == XCB_BUTTON_INDEX_3) {
@@ -5039,6 +4958,134 @@ void page_t::run_cmd(std::string const & cmd_with_args)
     return;
 }
 
+void page_t::page_event_handler_nop(page_event_t const & pev) {
+
+}
+
+void page_t::page_event_handler_notebook_client(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_GRAB;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
+
+	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = nullptr;
+	mode_data_notebook.zone = SELECT_NONE;
+	mode_data_notebook.ev = pev;
+
+	if(pn0 != nullptr) {
+		pn0->move_resize(mode_data_notebook.from->tab_area);
+		pn0->update_window(mode_data_notebook.c);
+	}
+	rpage->mark_durty();
+}
+
+void page_t::page_event_handler_notebook_client_close(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_client_unbind(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_close(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = 0;
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_vsplit(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = 0;
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_hsplit(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = 0;
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_mark(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+
+	mode_data_notebook.c = 0;
+	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook.ns = 0;
+}
+
+void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
+	process_mode = PROCESS_NOTEBOOK_MENU;
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_menu);
+
+	mode_data_notebook_menu.from = const_cast<notebook_t*>(pev.nbk);
+	mode_data_notebook_menu.b = pev.position;
+
+	std::list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
+
+	int sel = 0;
+
+	std::vector<std::shared_ptr<notebook_dropdown_menu_t::item_t>> v;
+	int s = 0;
+
+	for (auto i : managed_window) {
+		std::shared_ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
+		v.push_back(cy);
+		if (i == _client_focused.front()) {
+			sel = s;
+		}
+		++s;
+	}
+
+	int x = mode_data_notebook_menu.from->allocation().x;
+	int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
+
+	menu = std::shared_ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
+
+}
+
+void page_t::page_event_handler_split(page_event_t const & pev) {
+	process_mode = PROCESS_SPLIT_GRAB;
+
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
+
+	mode_data_split.split_ratio = pev.spt->split();
+	mode_data_split.split = const_cast<split_t*>(pev.spt);
+	mode_data_split.slider_area =
+			mode_data_split.split->get_split_bar_area();
+
+	ps = std::shared_ptr<popup_split_t>(new popup_split_t{cnx, theme, mode_data_split.split});
+	ps->set_position(mode_data_split.split_ratio);
+	add_compositor_damaged(ps->position());
+}
 
 }
 
