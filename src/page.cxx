@@ -158,10 +158,24 @@ page_t::page_t(int argc, char ** argv)
 	find_key_from_string(conf.get_string("default", "bind_cmd_0"), bind_cmd_0);
 	find_key_from_string(conf.get_string("default", "bind_cmd_1"), bind_cmd_1);
 	find_key_from_string(conf.get_string("default", "bind_cmd_2"), bind_cmd_2);
+	find_key_from_string(conf.get_string("default", "bind_cmd_3"), bind_cmd_3);
+	find_key_from_string(conf.get_string("default", "bind_cmd_4"), bind_cmd_4);
+	find_key_from_string(conf.get_string("default", "bind_cmd_5"), bind_cmd_5);
+	find_key_from_string(conf.get_string("default", "bind_cmd_6"), bind_cmd_6);
+	find_key_from_string(conf.get_string("default", "bind_cmd_7"), bind_cmd_7);
+	find_key_from_string(conf.get_string("default", "bind_cmd_8"), bind_cmd_8);
+	find_key_from_string(conf.get_string("default", "bind_cmd_9"), bind_cmd_9);
 
 	exec_cmd_0 = conf.get_string("default", "exec_cmd_0");
 	exec_cmd_1 = conf.get_string("default", "exec_cmd_1");
 	exec_cmd_2 = conf.get_string("default", "exec_cmd_2");
+	exec_cmd_3 = conf.get_string("default", "exec_cmd_3");
+	exec_cmd_4 = conf.get_string("default", "exec_cmd_4");
+	exec_cmd_5 = conf.get_string("default", "exec_cmd_5");
+	exec_cmd_6 = conf.get_string("default", "exec_cmd_6");
+	exec_cmd_7 = conf.get_string("default", "exec_cmd_7");
+	exec_cmd_8 = conf.get_string("default", "exec_cmd_8");
+	exec_cmd_9 = conf.get_string("default", "exec_cmd_9");
 
 	if(conf.get_string("default", "auto_refocus") == "true") {
 		_auto_refocus = true;
@@ -230,8 +244,6 @@ page_t::~page_t() {
 }
 
 void page_t::run() {
-
-
 
 	/* check for required page extension */
 	cnx->check_x11_extension();
@@ -748,6 +760,34 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 		if (k == bind_cmd_2.ks and (e->state & bind_cmd_2.mod)) {
 			run_cmd(exec_cmd_2);
+		}
+
+		if (k == bind_cmd_3.ks and (e->state & bind_cmd_3.mod)) {
+			run_cmd(exec_cmd_3);
+		}
+
+		if (k == bind_cmd_4.ks and (e->state & bind_cmd_4.mod)) {
+			run_cmd(exec_cmd_4);
+		}
+
+		if (k == bind_cmd_5.ks and (e->state & bind_cmd_5.mod)) {
+			run_cmd(exec_cmd_5);
+		}
+
+		if (k == bind_cmd_6.ks and (e->state & bind_cmd_6.mod)) {
+			run_cmd(exec_cmd_6);
+		}
+
+		if (k == bind_cmd_7.ks and (e->state & bind_cmd_7.mod)) {
+			run_cmd(exec_cmd_7);
+		}
+
+		if (k == bind_cmd_8.ks and (e->state & bind_cmd_8.mod)) {
+			run_cmd(exec_cmd_8);
+		}
+
+		if (k == bind_cmd_9.ks and (e->state & bind_cmd_9.mod)) {
+			run_cmd(exec_cmd_9);
 		}
 
 
@@ -3729,6 +3769,13 @@ void page_t::update_grabkey() {
 	grab_key(cnx->xcb(), cnx->root(), bind_cmd_0, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_cmd_1, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_cmd_2, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_3, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_4, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_5, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_6, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_7, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_8, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_9, keymap);
 
 	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);

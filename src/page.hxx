@@ -365,12 +365,26 @@ public:
 	key_desc_t bind_cmd_0;
 	key_desc_t bind_cmd_1;
 	key_desc_t bind_cmd_2;
+	key_desc_t bind_cmd_3;
+	key_desc_t bind_cmd_4;
+	key_desc_t bind_cmd_5;
+	key_desc_t bind_cmd_6;
+	key_desc_t bind_cmd_7;
+	key_desc_t bind_cmd_8;
+	key_desc_t bind_cmd_9;
 
 	keymap_t * keymap;
 
 	std::string exec_cmd_0;
 	std::string exec_cmd_1;
 	std::string exec_cmd_2;
+	std::string exec_cmd_3;
+	std::string exec_cmd_4;
+	std::string exec_cmd_5;
+	std::string exec_cmd_6;
+	std::string exec_cmd_7;
+	std::string exec_cmd_8;
+	std::string exec_cmd_9;
 
 
 private:

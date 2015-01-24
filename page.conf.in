@@ -46,6 +46,27 @@ exec_cmd_1=null
 bind_cmd_2=null
 exec_cmd_2=null
 
+bind_cmd_3=null
+exec_cmd_3=null
+
+bind_cmd_4=null
+exec_cmd_4=null
+
+bind_cmd_5=null
+exec_cmd_5=null
+
+bind_cmd_6=null
+exec_cmd_6=null
+
+bind_cmd_7=null
+exec_cmd_7=null
+
+bind_cmd_8=null
+exec_cmd_8=null
+
+bind_cmd_9=null
+exec_cmd_9=null
+
 # auto-focus old window when current focuced window is closed (can be true or false ONLY)
 auto_refocus=false
 
