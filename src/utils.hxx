@@ -684,6 +684,10 @@ std::string format(std::string const & s, T const & data) {
 	return tmp.str();
 }
 
+template<typename T>
+std::list<T> make_list(std::vector<T> const & v) {
+	return std::list<T>{v.begin(), v.end()};
+}
 
 
 }

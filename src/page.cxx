@@ -817,7 +817,18 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 		if (k == XK_Tab and ((e->state & 0x0f) == XCB_MOD_MASK_1)) {
 
-			std::vector<client_managed_t *> managed_window = get_managed_windows();
+			std::list<client_managed_t *> managed_window { make_list(
+					get_managed_windows()) };
+
+			/* reorder client to follow focused order */
+			for (auto i = _client_focused.rbegin();
+					i != _client_focused.rend();
+					++i) {
+				if (*i != nullptr) {
+					managed_window.remove(*i);
+					managed_window.push_front(*i);
+				}
+			}
 
 			if (process_mode == PROCESS_NORMAL and not managed_window.empty()) {
 
