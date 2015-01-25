@@ -30,6 +30,8 @@ private:
 	i_rect _allocation;
 	i_rect _workarea;
 
+	unsigned const _id;
+
 	/** map viewport to real outputs **/
 	std::map<xcb_randr_crtc_t, viewport_t *> _viewport_outputs;
 	std::list<viewport_t *> _viewport_stack;
@@ -48,14 +50,15 @@ public:
 		return _parent;
 	}
 
-	desktop_t() :
+	desktop_t(unsigned id) :
 		_allocation(),
 		_parent(nullptr),
 		_viewport_outputs(),
 		_default_pop(nullptr),
 		_is_hidden(false),
 		_workarea(),
-		_primary_viewport(nullptr)
+		_primary_viewport(nullptr),
+		_id(id)
 	{
 
 	}
@@ -323,6 +326,10 @@ public:
 
 	viewport_t * primary_viewport() {
 		return _primary_viewport;
+	}
+
+	int id() {
+		return _id;
 	}
 
 };

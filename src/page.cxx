@@ -96,7 +96,7 @@ page_t::page_t(int argc, char ** argv)
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
 	for(unsigned k = 0; k < 4; ++k) {
-		desktop_t * d = new desktop_t;
+		desktop_t * d = new desktop_t{k};
 		d->set_parent(this);
 		_desktop_list.push_back(d);
 		_desktop_stack.push_front(d);
@@ -2112,9 +2112,18 @@ void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
 	}
 
 	/**
+	 * switch to proper desktop
+	 **/
+
+
+	/**
 	 * raise the newly focused window at top, in respect of transient for.
 	 **/
 	safe_raise_window(new_focus);
+	desktop_t * new_desktop = find_desktop_of(new_focus);
+	if(new_desktop != nullptr) {
+		switch_to_desktop(new_desktop->id(), tfocus);
+	}
 
 	/**
 	 * if this is a notebook, mark the area for updates and activated the
@@ -3864,7 +3873,7 @@ void page_t::switch_to_desktop(int desktop, xcb_timestamp_t time) {
 		update_current_desktop();
 		update_desktop_visibility();
 		rpage->mark_durty();
-		set_focus(nullptr, time);
+		//set_focus(nullptr, time);
 	}
 }
 
