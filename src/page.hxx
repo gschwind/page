@@ -52,6 +52,200 @@
 
 namespace page {
 
+enum select_e {
+	SELECT_NONE,
+	SELECT_TAB,
+	SELECT_TOP,
+	SELECT_BOTTOM,
+	SELECT_LEFT,
+	SELECT_RIGHT,
+	SELECT_CENTER
+};
+
+struct mode_data_split_t {
+	split_t * split;
+	i_rect slider_area;
+	double split_ratio;
+
+	mode_data_split_t() {
+		reset();
+	}
+
+	void reset() {
+		split = nullptr;
+		slider_area = i_rect();
+		split_ratio = 0.5;
+	}
+
+};
+
+struct mode_data_notebook_t {
+	int start_x;
+	int start_y;
+	select_e zone;
+	client_managed_t * c;
+	notebook_t * from;
+	notebook_t * ns;
+	page_event_t ev;
+
+	mode_data_notebook_t() {
+		reset();
+	}
+
+	void reset() {
+		start_x = 0;
+		start_y = 0;
+		zone = SELECT_NONE;
+		c = nullptr;
+		from = nullptr;
+		ns = nullptr;
+	}
+
+};
+
+struct mode_data_notebook_menu_t {
+	notebook_t * from;
+	bool active_grab;
+	i_rect b;
+
+	mode_data_notebook_menu_t() {
+		reset();
+	}
+
+	void reset() {
+		from = nullptr;
+		active_grab = false;
+	}
+
+};
+
+struct mode_data_notebook_client_menu_t {
+	notebook_t * from;
+	client_managed_t * client;
+	bool active_grab;
+	i_rect b;
+
+	mode_data_notebook_client_menu_t() {
+		reset();
+	}
+
+	void reset() {
+		from = nullptr;
+		client = nullptr;
+		active_grab = false;
+	}
+
+};
+
+
+struct mode_data_bind_t {
+	int start_x;
+	int start_y;
+	select_e zone;
+	client_managed_t * c;
+	notebook_t * ns;
+
+	mode_data_bind_t() {
+		reset();
+	}
+
+	void reset() {
+		start_x = 0;
+		start_y = 0;
+		zone = SELECT_NONE;
+		c = nullptr;
+		ns = nullptr;
+	}
+
+};
+
+enum resize_mode_e {
+	RESIZE_NONE,
+	RESIZE_TOP_LEFT,
+	RESIZE_TOP,
+	RESIZE_TOP_RIGHT,
+	RESIZE_LEFT,
+	RESIZE_RIGHT,
+	RESIZE_BOTTOM_LEFT,
+	RESIZE_BOTTOM,
+	RESIZE_BOTTOM_RIGHT
+};
+
+struct mode_data_floating_t {
+	resize_mode_e mode;
+	int x_offset;
+	int y_offset;
+	int x_root;
+	int y_root;
+	i_rect original_position;
+	client_managed_t * f;
+	i_rect popup_original_position;
+	i_rect final_position;
+	unsigned int button;
+
+	mode_data_floating_t() {
+		reset();
+	}
+
+	void reset() {
+		mode = RESIZE_NONE;
+		x_offset = 0;
+		y_offset = 0;
+		x_root = 0;
+		y_root = 0;
+		original_position = i_rect();
+		f = nullptr;
+		popup_original_position = i_rect();
+		final_position = i_rect();
+		button = Button1;
+	}
+
+};
+
+struct mode_data_fullscreen_t {
+	client_managed_t * mw;
+	viewport_t * v;
+
+	mode_data_fullscreen_t() {
+		reset();
+	}
+
+	void reset() {
+		mw = nullptr;
+		v = nullptr;
+	}
+
+};
+
+struct fullscreen_data_t {
+	desktop_t * desktop;
+	viewport_t * viewport;
+	managed_window_type_e revert_type;
+	notebook_t * revert_notebook;
+};
+
+/* process_mode_e define possible state of page */
+enum process_mode_e {
+	PROCESS_NORMAL,						// default evant processing
+	PROCESS_SPLIT_GRAB,					// when split is moving
+	PROCESS_NOTEBOOK_GRAB,				// when notebook tab is moved
+	PROCESS_NOTEBOOK_BUTTON_PRESS,		// when click on close/unbind button
+	PROCESS_FLOATING_MOVE,				// when a floating window is moved
+	PROCESS_FLOATING_RESIZE,			// when resizing a floating window
+	PROCESS_FLOATING_CLOSE,				// when clicking close button of floating window
+	PROCESS_FLOATING_BIND,				// when clicking bind button
+	PROCESS_FULLSCREEN_MOVE,			// when mod4+click to change fullscreen window screen
+	PROCESS_FLOATING_MOVE_BY_CLIENT,	// when moving a floating window started by client himself
+	PROCESS_FLOATING_RESIZE_BY_CLIENT,	// when resizing a floating window started by client himself
+	PROCESS_NOTEBOOK_MENU,				// when notebook menu is shown
+	PROCESS_NOTEBOOK_CLIENT_MENU,		// when switch desktop menu is shown
+	PROCESS_ALT_TAB						// when alt-tab running
+};
+
+struct key_mode_data_t {
+	client_managed_t * selected;
+};
+
 class page_t : public page_component_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE;
@@ -71,16 +265,6 @@ class page_t : public page_component_t {
 	void _bind_all_default_event();
 
 public:
-
-	enum select_e {
-		SELECT_NONE,
-		SELECT_TAB,
-		SELECT_TOP,
-		SELECT_BOTTOM,
-		SELECT_LEFT,
-		SELECT_RIGHT,
-		SELECT_CENTER
-	};
 
 	/* popups (overlay) */
 	std::shared_ptr<popup_notebook0_t> pn0;
@@ -102,193 +286,7 @@ public:
 
 	/* enable-shade */
 	bool _enable_shade_windows;
-
-	struct mode_data_split_t {
-		split_t * split;
-		i_rect slider_area;
-		double split_ratio;
-
-		mode_data_split_t() {
-			reset();
-		}
-
-		void reset() {
-			split = nullptr;
-			slider_area = i_rect();
-			split_ratio = 0.5;
-		}
-
-	};
-
-	struct mode_data_notebook_t {
-		int start_x;
-		int start_y;
-		select_e zone;
-		client_managed_t * c;
-		notebook_t * from;
-		notebook_t * ns;
-		page_event_t ev;
-
-		mode_data_notebook_t() {
-			reset();
-		}
-
-		void reset() {
-			start_x = 0;
-			start_y = 0;
-			zone = SELECT_NONE;
-			c = nullptr;
-			from = nullptr;
-			ns = nullptr;
-		}
-
-	};
-
-	struct mode_data_notebook_menu_t {
-		notebook_t * from;
-		bool active_grab;
-		i_rect b;
-
-		mode_data_notebook_menu_t() {
-			reset();
-		}
-
-		void reset() {
-			from = nullptr;
-			active_grab = false;
-		}
-
-	};
-
-	struct mode_data_notebook_client_menu_t {
-		notebook_t * from;
-		client_managed_t * client;
-		bool active_grab;
-		i_rect b;
-
-		mode_data_notebook_client_menu_t() {
-			reset();
-		}
-
-		void reset() {
-			from = nullptr;
-			client = nullptr;
-			active_grab = false;
-		}
-
-	};
-
-
-	struct mode_data_bind_t {
-		int start_x;
-		int start_y;
-		select_e zone;
-		client_managed_t * c;
-		notebook_t * ns;
-
-		mode_data_bind_t() {
-			reset();
-		}
-
-		void reset() {
-			start_x = 0;
-			start_y = 0;
-			zone = SELECT_NONE;
-			c = nullptr;
-			ns = nullptr;
-		}
-
-	};
-
-	enum resize_mode_e {
-		RESIZE_NONE,
-		RESIZE_TOP_LEFT,
-		RESIZE_TOP,
-		RESIZE_TOP_RIGHT,
-		RESIZE_LEFT,
-		RESIZE_RIGHT,
-		RESIZE_BOTTOM_LEFT,
-		RESIZE_BOTTOM,
-		RESIZE_BOTTOM_RIGHT
-	};
-
-	struct mode_data_floating_t {
-		resize_mode_e mode;
-		int x_offset;
-		int y_offset;
-		int x_root;
-		int y_root;
-		i_rect original_position;
-		client_managed_t * f;
-		i_rect popup_original_position;
-		i_rect final_position;
-		unsigned int button;
-
-		mode_data_floating_t() {
-			reset();
-		}
-
-		void reset() {
-			mode = RESIZE_NONE;
-			x_offset = 0;
-			y_offset = 0;
-			x_root = 0;
-			y_root = 0;
-			original_position = i_rect();
-			f = nullptr;
-			popup_original_position = i_rect();
-			final_position = i_rect();
-			button = Button1;
-		}
-
-	};
-
-	struct mode_data_fullscreen_t {
-		client_managed_t * mw;
-		viewport_t * v;
-
-		mode_data_fullscreen_t() {
-			reset();
-		}
-
-		void reset() {
-			mw = nullptr;
-			v = nullptr;
-		}
-
-	};
-
-	struct fullscreen_data_t {
-		desktop_t * desktop;
-		viewport_t * viewport;
-		managed_window_type_e revert_type;
-		notebook_t * revert_notebook;
-	};
-
-	/* process_mode_e define possible state of page */
-	enum process_mode_e {
-		PROCESS_NORMAL,						// default evant processing
-		PROCESS_SPLIT_GRAB,					// when split is moving
-		PROCESS_NOTEBOOK_GRAB,				// when notebook tab is moved
-		PROCESS_NOTEBOOK_BUTTON_PRESS,		// when click on close/unbind button
-		PROCESS_FLOATING_MOVE,				// when a floating window is moved
-		PROCESS_FLOATING_RESIZE,			// when resizing a floating window
-		PROCESS_FLOATING_CLOSE,				// when clicking close button of floating window
-		PROCESS_FLOATING_BIND,				// when clicking bind button
-		PROCESS_FULLSCREEN_MOVE,			// when mod4+click to change fullscreen window screen
-		PROCESS_FLOATING_MOVE_BY_CLIENT,	// when moving a floating window started by client himself
-		PROCESS_FLOATING_RESIZE_BY_CLIENT,	// when resizing a floating window started by client himself
-		PROCESS_NOTEBOOK_MENU,				// when notebook menu is shown
-		PROCESS_NOTEBOOK_CLIENT_MENU,		// when switch desktop menu is shown
-		PROCESS_ALT_TAB						// when alt-tab running
-	};
-
 	process_mode_e process_mode;
-
-	struct key_mode_data_t {
-		client_managed_t * selected;
-	};
-
 	key_mode_data_t key_mode_data;
 
 	bool replace_wm;
