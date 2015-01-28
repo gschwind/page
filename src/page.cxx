@@ -1069,18 +1069,17 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					} else if (b->type == FLOATING_EVENT_BIND) {
 
 						mode_data_bind.c = mw;
-						mode_data_bind.ns = 0;
+						mode_data_bind.ns = nullptr;
 						mode_data_bind.zone = SELECT_NONE;
 
-						if(pn0 != nullptr) {
-						pn0->move_resize(mode_data_bind.c->get_base_position());
-						pn0->update_window(mw);
+						if (pn0 != nullptr) {
+							pn0->move_resize(mode_data_bind.c->get_base_position());
+							pn0->update_window(mw);
 						}
 
 						process_mode = PROCESS_FLOATING_BIND;
 						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_bind);
 						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_bind);
-
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
@@ -4488,28 +4487,28 @@ void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		if(pn0 != nullptr)
-		pn0 = nullptr;
+			pn0 = nullptr;
 
 		if (mode_data_notebook.zone == SELECT_TAB
-				&& mode_data_notebook.ns != 0
+				&& mode_data_notebook.ns != nullptr
 				&& mode_data_notebook.ns != mode_data_notebook.from) {
 			detach(mode_data_notebook.c);
 			insert_window_in_notebook(mode_data_notebook.c,
 					mode_data_notebook.ns, true);
 		} else if (mode_data_notebook.zone == SELECT_TOP
-				&& mode_data_notebook.ns != 0) {
+				&& mode_data_notebook.ns != nullptr) {
 			split_top(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_LEFT
-				&& mode_data_notebook.ns != 0) {
+				&& mode_data_notebook.ns != nullptr) {
 			split_left(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_BOTTOM
-				&& mode_data_notebook.ns != 0) {
+				&& mode_data_notebook.ns != nullptr) {
 			split_bottom(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_RIGHT
-				&& mode_data_notebook.ns != 0) {
+				&& mode_data_notebook.ns != nullptr) {
 			split_right(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_CENTER
-				&& mode_data_notebook.ns != 0) {
+				&& mode_data_notebook.ns != nullptr) {
 			unbind_window(mode_data_notebook.c);
 		} else {
 
@@ -4664,41 +4663,36 @@ void page_t::process_button_release_floating_bind(xcb_generic_event_t const * _e
 		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
 
 		if(pn0 != nullptr)
-		pn0 = nullptr;
+			pn0 = nullptr;
 
-		set_focus(mode_data_bind.c, e->time);
-
-		if (mode_data_bind.zone == SELECT_TAB && mode_data_bind.ns != 0) {
+		if (mode_data_bind.zone == SELECT_TAB and mode_data_bind.ns != nullptr) {
+			detach(mode_data_bind.c);
 			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			insert_window_in_notebook(mode_data_bind.c, mode_data_bind.ns,
-					true);
-
-			safe_raise_window(mode_data_bind.c);
-			rpage->mark_durty();
-			update_client_list();
-
+			insert_window_in_notebook(mode_data_bind.c, mode_data_bind.ns, true);
 		} else if (mode_data_bind.zone == SELECT_TOP
-				&& mode_data_bind.ns != 0) {
+				and mode_data_bind.ns != nullptr) {
 			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 			split_top(mode_data_bind.ns, mode_data_bind.c);
 		} else if (mode_data_bind.zone == SELECT_LEFT
-				&& mode_data_bind.ns != 0) {
+				and mode_data_bind.ns != nullptr) {
 			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 			split_left(mode_data_bind.ns, mode_data_bind.c);
 		} else if (mode_data_bind.zone == SELECT_BOTTOM
-				&& mode_data_bind.ns != 0) {
+				and mode_data_bind.ns != nullptr) {
 			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 			split_bottom(mode_data_bind.ns, mode_data_bind.c);
 		} else if (mode_data_bind.zone == SELECT_RIGHT
-				&& mode_data_bind.ns != 0) {
+				and mode_data_bind.ns != nullptr) {
 			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
 			split_right(mode_data_bind.ns, mode_data_bind.c);
 		} else {
 			bind_window(mode_data_bind.c, true);
 		}
 
+		set_focus(mode_data_bind.c, e->time);
+		if (mode_data_bind.ns != nullptr)
+			rpage->mark_durty();
 		mode_data_bind.reset();
-
 	}
 }
 
