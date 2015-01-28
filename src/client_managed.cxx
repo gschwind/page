@@ -107,9 +107,7 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 	}
 
 	/** check if the window has motif no border **/
-	{
-		_motif_has_border = _properties->has_motif_border();
-	}
+	_motif_has_border = _properties->has_motif_border();
 
 	/**
 	 * Create the base window, window that will content managed window
@@ -129,7 +127,7 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 	 * have alpha channel, use the window visual, otherwise always prefer
 	 * root visual.
 	 **/
-	if (_orig_depth == 32 && root_depth != 32) {
+	if (_orig_depth == 32 and root_depth != 32) {
 		_deco_visual = _orig_visual;
 		_deco_depth = _orig_depth;
 
@@ -235,8 +233,6 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 
 
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
-
-	_composite_surf = _cmgr->get_managed_composite_surface(_base);
 
 	update_icon();
 
@@ -797,13 +793,6 @@ void client_managed_t::normalize() {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 			map();
 		}
-
-		try {
-			_composite_surf = _cmgr->get_managed_composite_surface(base());
-		} catch (...) {
-			printf("Error while creating composite surface\n");
-		}
-
 		for (auto c : _children) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			if (mw != nullptr) {
@@ -819,11 +808,7 @@ void client_managed_t::iconify() {
 		_is_iconic = true;
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		_properties->set_wm_state(IconicState);
-
 		unmap();
-
-		_composite_surf.reset();
-
 		for (auto c : _children) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			if (mw != nullptr) {
@@ -995,7 +980,7 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 		return;
 	}
 
-	if (_composite_surf != nullptr and not _is_hidden) {
+	if (_cmgr->get_last_pixmap(_base) != nullptr and not _is_hidden) {
 
 		i_rect loc{base_position()};
 
@@ -1022,7 +1007,7 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 }
 
 std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
-	if (_composite_surf != nullptr) {
+	if (_cmgr->get_last_pixmap(_base) != nullptr) {
 
 		region vis;
 		region opa;
@@ -1058,10 +1043,10 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 
 		}
 
-		region dmg { _composite_surf->get_damaged() };
-		_composite_surf->clear_damaged();
+		region dmg { _cmgr->get_damaged(_base) };
+		_cmgr->clear_damaged(_base);
 		dmg.translate(_base_position.x, _base_position.y);
-		auto x = new renderable_pixmap_t(_composite_surf->get_pixmap(),
+		auto x = new renderable_pixmap_t(_cmgr->get_last_pixmap(_base),
 				_base_position, dmg);
 		x->set_opaque_region(opa);
 		x->set_visible_region(vis);

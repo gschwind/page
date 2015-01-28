@@ -28,8 +28,8 @@
 namespace page {
 
 class composite_surface_manager_t {
-	typedef std::map<xcb_window_t, std::weak_ptr<composite_surface_t>> _data_map_t;
-	typedef typename _data_map_t::iterator _map_iter_t;
+	using _data_map_t = std::map<xcb_window_t, std::shared_ptr<composite_surface_t>>;
+	using _map_iter_t = _data_map_t::iterator;
 
 	display_t * _dpy;
 	_data_map_t _data;
@@ -65,6 +65,12 @@ public:
 	void enable();
 	void disable();
 
+	void keep_composite_surface(xcb_window_t w);
+	void trash_composite_surface(xcb_window_t w);
+
+	std::shared_ptr<pixmap_t> get_last_pixmap(xcb_window_t w);
+	region get_damaged(xcb_window_t w);
+	void clear_damaged(xcb_window_t w);
 };
 
 }

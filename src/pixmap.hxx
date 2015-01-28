@@ -14,9 +14,8 @@
 namespace page {
 
 /**
- * Self managed pixmap.
- */
-
+ * Self managed pixmap and cairo.
+ **/
 class pixmap_t {
 
 	display_t * _dpy;
@@ -32,14 +31,8 @@ public:
 	}
 
 	~pixmap_t() {
-		if (_surf != nullptr) {
-			cairo_surface_destroy(_surf);
-			_surf = nullptr;
-		}
-		if (_pixmap_id != XCB_NONE) {
-			xcb_free_pixmap(_dpy->xcb(), _pixmap_id);
-			_pixmap_id = XCB_NONE;
-		}
+		cairo_surface_destroy(_surf);
+		xcb_free_pixmap(_dpy->xcb(), _pixmap_id);
 	}
 
 	cairo_surface_t * get_cairo_surface() {

@@ -107,8 +107,6 @@ private:
 	std::vector<floating_event_t> * _floating_area;
 
 	composite_surface_manager_t * _cmgr;
-	/** input surface, surface from we get data **/
-	std::shared_ptr<composite_surface_t> _composite_surf;
 
 	int _current_desktop;
 
@@ -185,8 +183,8 @@ public:
 		return _motif_has_border;
 	}
 
-	std::shared_ptr<composite_surface_t> surf() {
-		return _composite_surf;
+	std::shared_ptr<pixmap_t> get_last_pixmap() {
+		return _cmgr->get_last_pixmap(_base);
 	}
 
 	void set_current_desktop(int n) {
@@ -265,6 +263,14 @@ public:
 	void get_visible_children(std::vector<tree_t *> & out);
 
 	bool is_iconic();
+
+	void keep_composite_surface() {
+		_cmgr->keep_composite_surface(_base);
+	}
+
+	void trash_composite_surface() {
+		_cmgr->trash_composite_surface(_base);
+	}
 
 };
 

@@ -3361,7 +3361,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
-		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
+		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr);
 		uw->map();
 		safe_update_transient_for(uw);
 		add_compositor_damaged(uw->visible_area());
@@ -3374,7 +3374,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb
 }
 
 void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
-	client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr->get_managed_composite_surface(c->id()));
+	client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr);
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);

@@ -38,9 +38,9 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 
 		if(_selected != nullptr) {
 			/** get current surface then iconify **/
-			if (_selected->surf() != nullptr) {
+			if (_selected->get_last_pixmap() != nullptr) {
 				prev_loc = _selected->base_position();
-				prev_surf = _selected->surf()->get_pixmap();
+				prev_surf = _selected->get_last_pixmap();
 			}
 			_selected->iconify();
 		} else {
@@ -48,7 +48,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 			prev_surf.reset();
 		}
 
-		cur_surf = x->surf();
+		x->keep_composite_surface();
 		update_client_position(x);
 		x->normalize();
 		x->reconfigure();
@@ -103,10 +103,11 @@ void notebook_t::remove_client(client_managed_t * x) {
 	/** update selection **/
 	if (_selected == x) {
 		swap_start.update_to_current_time();
-		if (x->surf() != nullptr) {
-			prev_surf = x->surf()->get_pixmap();
+		if (x->get_last_pixmap() != nullptr) {
+			prev_surf = x->get_last_pixmap();
 			prev_loc = x->base_position();
 		}
+		_selected->trash_composite_surface();
 		_selected = nullptr;
 	}
 
@@ -134,16 +135,17 @@ void notebook_t::set_selected(client_managed_t * c) {
 	/** iconify current selected **/
 	if (_selected != nullptr and c != _selected) {
 		/** store current surface then iconify **/
-		if (_selected->surf() != nullptr) {
-			prev_surf = _selected->surf()->get_pixmap();
+		if (_selected->get_last_pixmap() != nullptr) {
+			prev_surf = _selected->get_last_pixmap();
 			prev_loc = _selected->base_position();
 		}
+		_selected->trash_composite_surface();
 		_selected->iconify();
 		fading_notebook.reset();
 	}
 
 	/** keep current surface in track **/
-	cur_surf = c->surf();
+	c->keep_composite_surface();
 	/** set selected **/
 	_selected = c;
 
@@ -166,14 +168,13 @@ void notebook_t::iconify_client(client_managed_t * x) {
 	swap_start.update_to_current_time();
 
 	if (_selected != nullptr) {
-		if (_selected->surf() != nullptr) {
-			prev_surf = _selected->surf()->get_pixmap();
+		if (_selected->get_last_pixmap() != nullptr) {
+			prev_surf = _selected->get_last_pixmap();
 			prev_loc = _selected->base_position();
 		}
+		_selected->trash_composite_surface();
 		_selected->iconify();
 	}
-
-	cur_surf.reset();
 
 }
 
@@ -407,8 +408,8 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 			i_rect next_pos;
 
 			if (_selected != nullptr) {
-				if (_selected->surf() != nullptr) {
-					next = _selected->surf()->get_pixmap();
+				if (_selected->get_last_pixmap() != nullptr) {
+					next = _selected->get_last_pixmap();
 					next_pos = _selected->get_base_position();
 				}
 			}
@@ -424,8 +425,8 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		//ratio = (cos(ratio*M_PI-M_PI)*1.05+1.0)/2.0;
 
 		if (_selected != nullptr) {
-			if (_selected->surf() != nullptr) {
-				fading_notebook->update_next(_selected->surf()->get_pixmap());
+			if (_selected->get_last_pixmap() != nullptr) {
+				fading_notebook->update_next(_selected->get_last_pixmap());
 				fading_notebook->update_next_pos(_selected->get_base_position());
 			}
 		}

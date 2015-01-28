@@ -56,9 +56,6 @@ class notebook_t : public page_component_t {
 	std::shared_ptr<pixmap_t> prev_surf;
 	i_rect prev_loc;
 
-	/* always handle current surface in case of unmap */
-	std::shared_ptr<composite_surface_t> cur_surf;
-
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
 
 	mutable theme_notebook_t theme_notebook;
