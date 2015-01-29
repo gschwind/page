@@ -91,19 +91,17 @@ void composite_surface_manager_t::cleanup() {
 
 void composite_surface_manager_t::enable() {
 	_enabled = true;
-	for(auto i: _data) {
-		i.second->set_composited(true);
-	}
 }
 
 void composite_surface_manager_t::disable() {
 	_enabled = false;
-	for(auto i: _data) {
-		i.second->set_composited(false);
-	}
+	_data.clear();
 }
 
 std::shared_ptr<pixmap_t> composite_surface_manager_t::get_last_pixmap(xcb_window_t w) {
+	if(not _enabled)
+		return nullptr;
+
 	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
 	if (x != _data.end()) {
@@ -117,6 +115,9 @@ std::shared_ptr<pixmap_t> composite_surface_manager_t::get_last_pixmap(xcb_windo
 }
 
 region composite_surface_manager_t::get_damaged(xcb_window_t w) {
+	if(not _enabled)
+		return region{};
+
 	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
 	if (x != _data.end()) {

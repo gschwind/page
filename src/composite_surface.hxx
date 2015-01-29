@@ -36,7 +36,6 @@ class composite_surface_t {
 	region _damaged;
 
 	bool _is_map;
-	bool _is_composited;
 	bool _is_destroyed;
 
 	void create_damage() {
@@ -70,7 +69,6 @@ public:
 			bool composited) :
 		_dpy(dpy),
 		_window_id(w),
-		_is_composited(composited),
 		_is_destroyed(false)
 	{
 		if (_dpy->lock(_window_id)) {
@@ -88,7 +86,7 @@ public:
 			printf("create composite_surface (%p) %dx%d\n", this, _width,
 					_height);
 
-			if (_is_map and _is_composited) {
+			if (_is_map) {
 				on_map();
 			}
 
@@ -164,16 +162,6 @@ public:
 		return _depth;
 	}
 
-	void set_composited(bool composited) {
-		if(composited) {
-			update_pixmap();
-		} else {
-			//destroy_damage();
-			_pixmap = nullptr;
-		}
-		_is_composited = composited;
-	}
-
 	void update_pixmap() {
 		/**
 		 * if we already know that the window is destroyed or
@@ -187,16 +175,14 @@ public:
 		if (_dpy->lock(_window_id)) {
 			/** check if the window will be unmapped soon **/
 			if (not _dpy->check_for_unmap_window(_window_id)) {
-				if (_is_composited) {
-					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
-					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
-							pixmap_id);
-					_pixmap = std::shared_ptr<pixmap_t>(
-							new pixmap_t(_dpy, _vis, pixmap_id, _width,
-									_height));
-					_damaged += i_rect { 0, 0, _width, _height };
-					_damaged += _dpy->read_damaged_region(_damage);
-				}
+				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
+						pixmap_id);
+				_pixmap = std::shared_ptr<pixmap_t>(
+						new pixmap_t(_dpy, _vis, pixmap_id, _width,
+								_height));
+				_damaged += i_rect { 0, 0, _width, _height };
+				_dpy->read_damaged_region(_damage);
 			}
 			_dpy->unlock();
 		}
