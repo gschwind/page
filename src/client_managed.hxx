@@ -264,14 +264,6 @@ public:
 
 	bool is_iconic();
 
-	void keep_composite_surface() {
-		_cmgr->keep_composite_surface(_base);
-	}
-
-	void trash_composite_surface() {
-		_cmgr->trash_composite_surface(_base);
-	}
-
 };
 
 }

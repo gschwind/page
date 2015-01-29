@@ -35,11 +35,9 @@ class composite_surface_t {
 	int _depth;
 	region _damaged;
 
-	int _keep_composited_surface_count;
-
 	bool _is_map;
 	bool _is_composited;
-	bool _is_destoyed;
+	bool _is_destroyed;
 
 	void create_damage() {
 		if (_damage == XCB_NONE) {
@@ -59,34 +57,23 @@ class composite_surface_t {
 				_damage = XCB_NONE;
 			}
 			_dpy->unlock();
-		} else {
-			_is_destoyed = true;
 		}
 	}
 
 public:
 
-	composite_surface_t(display_t * dpy, xcb_window_t w, bool composited) :
+	composite_surface_t(
+			display_t * dpy,
+			xcb_window_t w,
+			xcb_get_geometry_reply_t * geometry,
+			xcb_get_window_attributes_reply_t * attrs,
+			bool composited) :
 		_dpy(dpy),
 		_window_id(w),
 		_is_composited(composited),
-		_keep_composited_surface_count(0),
-		_is_destoyed(false)
+		_is_destroyed(false)
 	{
 		if (_dpy->lock(_window_id)) {
-			xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(),
-					_window_id);
-			xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(
-					_dpy->xcb(), _window_id);
-
-			xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(
-					_dpy->xcb(), ck0, 0);
-			xcb_get_window_attributes_reply_t * attrs =
-					xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
-
-			if (attrs == nullptr or geometry == nullptr) {
-				throw exception_t("fail to get window attribute");
-			}
 
 			_depth = geometry->depth;
 			_vis = _dpy->get_visual_type(attrs->visual);
@@ -107,10 +94,7 @@ public:
 
 			_dpy->unlock();
 
-		} else {
-			_is_destoyed = true;
 		}
-
 	}
 
 	~composite_surface_t() {
@@ -118,21 +102,8 @@ public:
 	}
 
 	void on_map() {
-		if(_is_destoyed)
-			return;
-
-		if(_dpy->lock(_window_id)) {
-			if(not _dpy->check_for_unmap_window(_window_id)) {
-				_is_map = true;
-				update_pixmap();
-			} else {
-				_is_map = false;
-			}
-
-			_dpy->unlock();
-		} else {
-			_is_destoyed = true;
-		}
+		_is_map = true;
+		update_pixmap();
 	}
 
 	void on_unmap() {
@@ -151,18 +122,10 @@ public:
 	}
 
 	void on_damage() {
-		if(_is_destoyed)
-			return;
 		if(_dpy->lock(_window_id)) {
 			_damaged += _dpy->read_damaged_region(_damage);
 			_dpy->unlock();
-		} else {
-			_is_destoyed = true;
 		}
-	}
-
-	void on_destroy() {
-		_is_destoyed = true;
 	}
 
 	display_t * dpy() {
@@ -203,16 +166,7 @@ public:
 
 	void set_composited(bool composited) {
 		if(composited) {
-			if(_dpy->lock(_window_id)) {
-				if(not _dpy->check_for_unmap_window(_window_id)) {
-					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
-					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
-					_pixmap = std::shared_ptr<pixmap_t>{new pixmap_t(_dpy, _vis, pixmap_id, _width, _height)};
-					_damaged += i_rect{0, 0, _width, _height};
-					_damaged += _dpy->read_damaged_region(_damage);
-				}
-				_dpy->unlock();
-			}
+			update_pixmap();
 		} else {
 			//destroy_damage();
 			_pixmap = nullptr;
@@ -221,53 +175,48 @@ public:
 	}
 
 	void update_pixmap() {
-		if(_is_destoyed)
+		/**
+		 * if we already know that the window is destroyed or
+		 * unmapped, return immediately.
+		 **/
+		if (_is_destroyed or not _is_map)
 			return;
-
+		/**
+		 * lock the window and chack if it will be destroyed soon
+		 **/
 		if (_dpy->lock(_window_id)) {
-			if (_is_composited) {
-				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
-				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
-						pixmap_id);
-				_pixmap = std::shared_ptr<pixmap_t>(
-						new pixmap_t(_dpy, _vis, pixmap_id, _width, _height));
-				_damaged += i_rect{0, 0, _width, _height};
-				_damaged += _dpy->read_damaged_region(_damage);
-			} else {
-				_pixmap = nullptr;
+			/** check if the window will be unmapped soon **/
+			if (not _dpy->check_for_unmap_window(_window_id)) {
+				if (_is_composited) {
+					xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+					xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
+							pixmap_id);
+					_pixmap = std::shared_ptr<pixmap_t>(
+							new pixmap_t(_dpy, _vis, pixmap_id, _width,
+									_height));
+					_damaged += i_rect { 0, 0, _width, _height };
+					_damaged += _dpy->read_damaged_region(_damage);
+				}
 			}
-
 			_dpy->unlock();
-		} else {
-			_is_destoyed = true;
 		}
 	}
 
-	int keep_composite_surface_count() {
-		return _keep_composited_surface_count;
+	void on_destroy() {
+		_is_destroyed = true;
 	}
 
-	void keep_composite_surface_count_incr() {
-		if(++_keep_composited_surface_count > 0 and _pixmap == nullptr) {
-			update_pixmap();
-		}
+	bool is_destroyed() const {
+		return _is_destroyed;
 	}
 
-	void keep_composite_surface_count_decr() {
-		if(--_keep_composited_surface_count == 0 and _pixmap != nullptr) {
-			_pixmap = nullptr;
-		}
-
-		/** sanity check **/
-		if(_keep_composited_surface_count < 0)
-			throw exception_t("to much call for composite_surface_t::keep_composite_surface_count_decr");
-
+	bool is_map() const {
+		return _is_map;
 	}
 
-	bool is_destroyed() {
-		return _is_destoyed;
+	void destroy_pixmap() {
+		_pixmap = nullptr;
 	}
-
 
 };
 

@@ -22,7 +22,7 @@
 namespace page {
 
 /**
- * Renderable object, are used to render a static scene graph (en optimise the scene graph)
+ * Renderable object, are used to render a static scene graph (and optimize the scene graph)
  **/
 class renderable_t : public leak_checker {
 public:
@@ -47,7 +47,7 @@ public:
 
 	/**
 	 * Derived class must return visible region,
-	 * If unknow the whole screen can be returned, but draw will be called each time.
+	 * If unknown the whole screen can be returned, but draw will be called each time.
 	 **/
 	virtual region get_visible_region() = 0;
 

@@ -231,7 +231,6 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 		unlock();
 	}
 
-
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
 	update_icon();
@@ -388,7 +387,9 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 		net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
 		net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
 		_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
+
 		_managed_type = type;
+
 		reconfigure();
 		unlock();
 	}

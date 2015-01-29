@@ -47,8 +47,6 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 			/** no prev surf is used **/
 			prev_surf.reset();
 		}
-
-		x->keep_composite_surface();
 		update_client_position(x);
 		x->normalize();
 		x->reconfigure();
@@ -107,7 +105,6 @@ void notebook_t::remove_client(client_managed_t * x) {
 			prev_surf = x->get_last_pixmap();
 			prev_loc = x->base_position();
 		}
-		_selected->trash_composite_surface();
 		_selected = nullptr;
 	}
 
@@ -139,16 +136,11 @@ void notebook_t::set_selected(client_managed_t * c) {
 			prev_surf = _selected->get_last_pixmap();
 			prev_loc = _selected->base_position();
 		}
-		_selected->trash_composite_surface();
 		_selected->iconify();
 		fading_notebook.reset();
 	}
-
-	/** keep current surface in track **/
-	c->keep_composite_surface();
 	/** set selected **/
 	_selected = c;
-
 }
 
 void notebook_t::update_client_position(client_managed_t * c) {
@@ -172,7 +164,6 @@ void notebook_t::iconify_client(client_managed_t * x) {
 			prev_surf = _selected->get_last_pixmap();
 			prev_loc = _selected->base_position();
 		}
-		_selected->trash_composite_surface();
 		_selected->iconify();
 	}
 

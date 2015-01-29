@@ -635,6 +635,10 @@ void display_t::clear_events() {
 	pending_event.clear();
 }
 
+std::list<xcb_generic_event_t *> const & display_t::get_pending_events_list() {
+	return pending_event;
+}
+
 xcb_cursor_t display_t::_load_cursor(uint16_t cursor_id) {
 	xcb_cursor_t cursor{xcb_generate_id(_xcb)};
 	xcb_create_glyph_cursor(_xcb, cursor, cursor_font, cursor_font, cursor_id, cursor_id+1, 0, 0, 0, 0xffff, 0xffff, 0xffff);

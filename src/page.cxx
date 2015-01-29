@@ -411,7 +411,7 @@ void page_t::run() {
 
 		while (cnx->has_pending_events()) {
 			while (cnx->has_pending_events()) {
-				cmgr->process_event(cnx->front_event());
+				cmgr->pre_process_event(cnx->front_event());
 				process_event(cnx->front_event());
 				cnx->pop_event();
 				xcb_flush(cnx->xcb());
@@ -439,6 +439,9 @@ void page_t::run() {
 			_need_render = false;
 			render();
 		}
+
+		/** clean up surfaces **/
+		cmgr->cleanup();
 
 		cnx->ungrab();
 

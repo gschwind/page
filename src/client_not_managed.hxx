@@ -50,7 +50,6 @@ public:
 			_net_wm_type(type),
 			_cmgr(cmgr)
 	{
-		_cmgr->keep_composite_surface(c->id());
 		_is_hidden = false;
 		if (cnx()->lock(orig())) {
 			cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
@@ -61,7 +60,6 @@ public:
 	}
 
 	~client_not_managed_t() {
-		_cmgr->trash_composite_surface(_properties->id());
 		cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
 	}
 

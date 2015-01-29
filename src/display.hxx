@@ -211,6 +211,8 @@ public:
 
 	void clear_events();
 
+	std::list<xcb_generic_event_t *> const & get_pending_events_list();
+
 	void load_cursors();
 	void unload_cursors();
 	xcb_cursor_t _load_cursor(uint16_t cursor_id);
@@ -308,7 +310,6 @@ public:
 			return false;
 		}
 		return true;
-
 	}
 
 	void unlock() {
