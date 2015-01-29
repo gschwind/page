@@ -148,6 +148,7 @@ public:
 	std::shared_ptr<renderable_surface_t> prepare_render() {
 		_renderable->clear_damaged();
 		_renderable->add_damaged(_damaged);
+		_damaged.clear();
 		return _renderable;
 	}
 

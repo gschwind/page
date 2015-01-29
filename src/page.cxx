@@ -1444,7 +1444,6 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 						/** only affect floating windows **/
 						mw->set_floating_wished_position(new_size);
 						mw->reconfigure();
-						add_compositor_damaged(mw->base_position());
 					}
 				}
 
