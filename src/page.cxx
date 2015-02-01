@@ -551,6 +551,9 @@ void page_t::scan() {
 
 	update_client_list();
 	update_workarea();
+	for(auto x: _desktop_list) {
+		reconfigure_docks(x);
+	}
 	_need_restack = true;
 
 	cnx->ungrab();
@@ -2429,6 +2432,119 @@ void page_t::compute_viewport_allocation(desktop_t * d, viewport_t * v) {
 
 }
 
+/*
+ * Reconfigure docks.
+ */
+void page_t::reconfigure_docks(desktop_t * d) {
+
+	/* Partial struct content definition */
+	enum {
+		PS_LEFT = 0,
+		PS_RIGHT = 1,
+		PS_TOP = 2,
+		PS_BOTTOM = 3,
+		PS_LEFT_START_Y = 4,
+		PS_LEFT_END_Y = 5,
+		PS_RIGHT_START_Y = 6,
+		PS_RIGHT_END_Y = 7,
+		PS_TOP_START_X = 8,
+		PS_TOP_END_X = 9,
+		PS_BOTTOM_START_X = 10,
+		PS_BOTTOM_END_X = 11,
+	};
+
+	auto children = filter_class<client_managed_t>(d->tree_t::get_all_children());
+	for(auto j: children) {
+
+		if(not j->is(MANAGED_DOCK))
+			continue;
+
+		int32_t ps[12];
+		bool has_strut{false};
+
+		if(j->net_wm_strut_partial() != nullptr) {
+			if(j->net_wm_strut_partial()->size() == 12) {
+				std::copy(j->net_wm_strut_partial()->begin(), j->net_wm_strut_partial()->end(), &ps[0]);
+				has_strut = true;
+			}
+		}
+
+		if (j->net_wm_strut() != nullptr and not has_strut) {
+			if(j->net_wm_strut()->size() == 4) {
+
+				/** if strut is found, fake strut_partial **/
+
+				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
+
+				if(ps[PS_TOP] > 0) {
+					ps[PS_TOP_START_X] = _root_position.x;
+					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
+				}
+
+				if(ps[PS_BOTTOM] > 0) {
+					ps[PS_BOTTOM_START_X] = _root_position.x;
+					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
+				}
+
+				if(ps[PS_LEFT] > 0) {
+					ps[PS_LEFT_START_Y] = _root_position.y;
+					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
+				}
+
+				if(ps[PS_RIGHT] > 0) {
+					ps[PS_RIGHT_START_Y] = _root_position.y;
+					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
+				}
+
+				has_strut = true;
+			}
+		}
+
+		if (has_strut) {
+
+			if (ps[PS_LEFT] > 0) {
+				i_rect pos;
+				pos.x = 0;
+				pos.y = ps[PS_LEFT_START_Y];
+				pos.w = ps[PS_LEFT];
+				pos.h = ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1;
+				j->set_floating_wished_position(pos);
+				continue;
+			}
+
+			if (ps[PS_RIGHT] > 0) {
+				i_rect pos;
+				pos.x = _root_position.w - ps[PS_RIGHT];
+				pos.y = ps[PS_RIGHT_START_Y];
+				pos.w = ps[PS_RIGHT];
+				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
+				j->set_floating_wished_position(pos);
+				continue;
+			}
+
+			if (ps[PS_TOP] > 0) {
+				i_rect pos;
+				pos.x = ps[PS_TOP_START_X];
+				pos.y = 0;
+				pos.w = ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1;
+				pos.h = ps[PS_TOP];
+				j->set_floating_wished_position(pos);
+				continue;
+			}
+
+			if (ps[PS_BOTTOM] > 0) {
+				i_rect pos;
+				pos.x = ps[PS_BOTTOM_START_X];
+				pos.y = _root_position.h - ps[PS_BOTTOM];
+				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
+				pos.h = ps[PS_BOTTOM];
+				j->set_floating_wished_position(pos);
+				continue;
+			}
+		}
+	}
+}
+
 void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties) {
 	if(state_properties == XCB_ATOM_NONE)
 		return;
@@ -3132,6 +3248,7 @@ void page_t::update_viewport_layout() {
 	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	update_workarea();
+	reconfigure_docks(_desktop_list[_current_desktop]);
 
 }
 
@@ -3948,6 +4065,7 @@ void page_t::show() {
 
 void page_t::switch_to_desktop(int desktop, xcb_timestamp_t time) {
 	if (desktop != _current_desktop) {
+		std::cout << "switch to desktop #" << desktop << std::endl;
 
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
 
