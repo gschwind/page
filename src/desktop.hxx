@@ -38,6 +38,8 @@ private:
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
 	std::list<client_managed_t *> _fullscreen_clients;
+
+
 	viewport_t * _primary_viewport;
 	notebook_t * _default_pop;
 	bool _is_hidden;
@@ -45,6 +47,8 @@ private:
 	desktop_t & operator= (desktop_t const &);
 
 public:
+
+	std::list<client_managed_t *> client_focus;
 
 	page_component_t * parent() const {
 		return _parent;
@@ -60,7 +64,7 @@ public:
 		_primary_viewport(nullptr),
 		_id(id)
 	{
-
+		client_focus.push_back(nullptr);
 	}
 
 	notebook_t * get_nearest_notebook();

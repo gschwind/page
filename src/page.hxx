@@ -390,7 +390,8 @@ private:
 
 	xcb_timestamp_t _last_focus_time;
 	xcb_timestamp_t _last_button_press;
-	std::list<client_managed_t *> _client_focused;
+
+	std::list<client_managed_t *> _global_client_focus_history;
 
 	i_rect _root_position;
 
