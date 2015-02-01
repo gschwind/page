@@ -264,6 +264,10 @@ public:
 
 	bool is_iconic();
 
+	xcb_window_t const * wm_transient_for() {
+		return _properties->wm_transient_for();
+	}
+
 };
 
 }

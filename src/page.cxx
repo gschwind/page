@@ -3284,8 +3284,16 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		update_client_list();
 		_need_restack = true;
 
-		mw->set_current_desktop(_current_desktop);
-		if(not _desktop_list[_current_desktop]->is_hidden()) {
+		int select_desktop = _current_desktop;
+		if(mw->wm_transient_for() != nullptr) {
+			auto parent = dynamic_cast<client_managed_t*>(find_client_with(*(mw->wm_transient_for())));
+			if(parent != nullptr) {
+				select_desktop = parent->current_desktop();
+			}
+		}
+
+		mw->set_current_desktop(select_desktop);
+		if(not _desktop_list[select_desktop]->is_hidden()) {
 			mw->show();
 		} else {
 			mw->hide();
@@ -3304,13 +3312,6 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				}
 			}
 		}
-
-//		if (mw->geometry()->x == 0 and mw->geometry()->y == 0
-//				and mw->geometry()->width == _root_position.w
-//				and mw->geometry()->height == _root_position.h
-//				and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-//			mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
-//		}
 
 		if (mw->is_fullscreen()) {
 			mw->normalize();
