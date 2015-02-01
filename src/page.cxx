@@ -783,6 +783,10 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 					cout << "[" << i->orig() << "] fullscreen : " << i->title()
 							<< endl;
 					break;
+				case MANAGED_DOCK:
+					cout << "[" << i->orig() << "] dock : " << i->title()
+							<< endl;
+					break;
 				}
 			}
 		}
@@ -1624,7 +1628,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 				rpage->mark_durty();
 			}
 
-			if (mw->is(MANAGED_FLOATING)) {
+			if (mw->is(MANAGED_FLOATING) or mw->is(MANAGED_DOCK)) {
 				mw->expose();
 			}
 		}
@@ -2551,6 +2555,56 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 					break;
 				}
 			}
+		} else if (mw->is(MANAGED_DOCK)) {
+
+			if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					break;
+				case _NET_WM_STATE_ADD:
+					//fullscreen(mw);
+					//update_desktop_visibility();
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					//toggle_fullscreen(mw);
+					//update_desktop_visibility();
+					break;
+				}
+				update_workarea();
+			} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->normalize();
+					break;
+				case _NET_WM_STATE_ADD:
+					/** I ignore it **/
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					/** IWMH say ignore it ? **/
+				default:
+					break;
+				}
+			} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
+				switch (type) {
+				case _NET_WM_STATE_REMOVE:
+					mw->set_demands_attention(false);
+					mw->expose();
+					rpage->mark_durty();
+					break;
+				case _NET_WM_STATE_ADD:
+					mw->set_demands_attention(true);
+					mw->expose();
+					rpage->mark_durty();
+					break;
+				case _NET_WM_STATE_TOGGLE:
+					mw->set_demands_attention(not mw->demands_attention());
+					mw->expose();
+					rpage->mark_durty();
+					break;
+				default:
+					break;
+				}
+			}
 		} else if (mw->is(MANAGED_FULLSCREEN)) {
 			if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 				switch (type) {
@@ -2713,6 +2767,8 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 void page_t::unbind_window(client_managed_t * mw) {
 	detach(mw);
 	/* update database */
+	if(mw->is(MANAGED_DOCK))
+		return;
 	mw->set_managed_type(MANAGED_FLOATING);
 	insert_in_tree_using_transient_for(mw);
 	mw->expose();
@@ -3185,7 +3241,7 @@ void page_t::onmap(xcb_window_t w) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_dock_window(props, type);
+						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
@@ -3326,7 +3382,8 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			}
 
 		} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP))
+				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)
+				or type == A(_NET_WM_WINDOW_TYPE_DOCK))
 				and get_transient_for(mw) == nullptr
 				and mw->has_motif_border()) {
 
@@ -3355,7 +3412,8 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				}
 			}
 
-			bind_window(mw, activate);
+			if(not mw->is(MANAGED_DOCK));
+				bind_window(mw, activate);
 			mw->reconfigure();
 		} else {
 			mw->normalize();
@@ -3470,6 +3528,8 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 			/* DO NOTHING */
 		} else if (mw->is(MANAGED_FULLSCREEN)) {
 			/* DO NOTHING */
+		} else if (mw->is(MANAGED_DOCK)) {
+			insert_in_tree_using_transient_for(mw);
 		}
 	} else if (typeid(*c) == typeid(client_not_managed_t)) {
 		client_not_managed_t * uw = dynamic_cast<client_not_managed_t*>(c);

@@ -29,7 +29,8 @@ namespace page {
 enum managed_window_type_e {
 	MANAGED_FLOATING,
 	MANAGED_NOTEBOOK,
-	MANAGED_FULLSCREEN
+	MANAGED_FULLSCREEN,
+	MANAGED_DOCK
 };
 
 class client_managed_t : public client_base_t {

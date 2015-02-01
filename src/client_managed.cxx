@@ -57,6 +57,9 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 
 	printf("window default position = %s\n", pos.to_string().c_str());
 
+	if(net_wm_type == A(_NET_WM_WINDOW_TYPE_DOCK))
+		_managed_type = MANAGED_DOCK;
+
 	_floating_wished_position = pos;
 	_notebook_wished_position = pos;
 	_base_position = pos;
@@ -86,7 +89,7 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 	/**
 	 * if x == 0 then place window at center of the screen
 	 **/
-	if (_floating_wished_position.x == 0) {
+	if (_floating_wished_position.x == 0 and not is(MANAGED_DOCK)) {
 		_floating_wished_position.x =
 				(_properties->geometry()->width - _floating_wished_position.w) / 2;
 	}
@@ -98,7 +101,7 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 	/**
 	 * if y == 0 then place window at center of the screen
 	 **/
-	if (_floating_wished_position.y == 0) {
+	if (_floating_wished_position.y == 0 and not is(MANAGED_DOCK)) {
 		_floating_wished_position.y = (_properties->geometry()->height - _floating_wished_position.h) / 2;
 	}
 
@@ -108,6 +111,10 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 
 	/** check if the window has motif no border **/
 	_motif_has_border = _properties->has_motif_border();
+
+	if(is(MANAGED_DOCK)) {
+		_motif_has_border = false;
+	}
 
 	/**
 	 * Create the base window, window that will content managed window
@@ -310,6 +317,14 @@ void client_managed_t::reconfigure() {
 		destroy_back_buffer();
 		create_back_buffer();
 
+	} else if (is(MANAGED_DOCK)) {
+		_wished_position = _floating_wished_position;
+		_base_position = _wished_position;
+
+		_orig_position.x = 0;
+		_orig_position.y = 0;
+		_orig_position.w = _wished_position.w;
+		_orig_position.h = _wished_position.h;
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
@@ -382,15 +397,24 @@ void client_managed_t::init_managed_type(managed_window_type_e type) {
 }
 
 void client_managed_t::set_managed_type(managed_window_type_e type) {
+
 	if (lock()) {
-		std::list<atom_e> net_wm_allowed_actions;
-		net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
-		net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
-		_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
+		if(_managed_type == MANAGED_DOCK) {
+			std::list<atom_e> net_wm_allowed_actions;
+			_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
+			reconfigure();
+		} else {
 
-		_managed_type = type;
+			std::list<atom_e> net_wm_allowed_actions;
+			net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
+			net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
+			_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
 
-		reconfigure();
+			_managed_type = type;
+
+			reconfigure();
+		}
+
 		unlock();
 	}
 }
