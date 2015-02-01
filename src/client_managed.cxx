@@ -1211,6 +1211,13 @@ bool client_managed_t::is_iconic() {
 	return _is_iconic;
 }
 
+bool client_managed_t::is_stiky() {
+	if(_properties->net_wm_state() != nullptr) {
+		return has_key(*_properties->net_wm_state(), A(_NET_WM_STATE_STICKY));
+	}
+	return false;
+}
+
 
 }
 

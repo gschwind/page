@@ -269,6 +269,8 @@ public:
 		return _properties->wm_transient_for();
 	}
 
+	bool is_stiky();
+
 };
 
 }

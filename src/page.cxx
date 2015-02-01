@@ -3944,9 +3944,20 @@ void page_t::show() {
 
 void page_t::switch_to_desktop(int desktop, xcb_timestamp_t time) {
 	if (desktop != _current_desktop) {
+
+		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
+
+		for(auto s : stiky_list) {
+			detach(s);
+			s->set_current_desktop(desktop);
+			insert_in_tree_using_transient_for(s);
+		}
+
 		_current_desktop = desktop;
 		_desktop_stack.remove(_desktop_list[_current_desktop]);
 		_desktop_stack.push_back(_desktop_list[_current_desktop]);
+
+		update_viewport_layout();
 		update_current_desktop();
 		update_desktop_visibility();
 		rpage->mark_durty();
@@ -5200,6 +5211,21 @@ void page_t::page_event_handler_split(page_event_t const & pev) {
 	ps = std::shared_ptr<popup_split_t>(new popup_split_t{cnx, theme, mode_data_split.split});
 	ps->set_position(mode_data_split.split_ratio);
 	add_compositor_damaged(ps->position());
+}
+
+std::vector<client_managed_t *> page_t::get_sticky_client_managed(tree_t * base) {
+	std::vector<tree_t *> childs;
+	base->get_all_children(childs);
+	std::vector<client_managed_t *> ret;
+	for(auto c: childs) {
+		client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
+		if(mw != nullptr) {
+			if(mw->is_stiky() and (not mw->is(MANAGED_NOTEBOOK)) and (not mw->is(MANAGED_FULLSCREEN)))
+				ret.push_back(mw);
+		}
+	}
+
+	return ret;
 }
 
 

@@ -679,6 +679,8 @@ public:
 	void page_event_handler_notebook_menu(page_event_t const & pev);
 	void page_event_handler_split(page_event_t const & pev);
 
+	std::vector<client_managed_t *> get_sticky_client_managed(tree_t * base);
+
 };
 
 
