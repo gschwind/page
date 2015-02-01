@@ -2076,16 +2076,19 @@ void page_t::update_workarea() {
 }
 
 /** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
-void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
+void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 
 	//if (new_focus != nullptr)
 	//	cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
 
+	if(tfocus == XCB_CURRENT_TIME and new_focus != nullptr)
+		std::cout << "Warning: Invalid focus time (0)" << std::endl;
+
 	/** ignore focus if time is too old **/
-	if(tfocus <= _last_focus_time and tfocus != CurrentTime)
+	if(tfocus <= _last_focus_time and tfocus != XCB_CURRENT_TIME)
 		return;
 
-	if(tfocus != CurrentTime)
+	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
 	client_managed_t * old_focus = nullptr;
@@ -2118,7 +2121,8 @@ void page_t::set_focus(client_managed_t * new_focus, Time tfocus) {
 	_client_focused.push_front(new_focus);
 
 	if(new_focus == nullptr) {
-		cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, _last_focus_time);
+		cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		cnx->set_net_active_window(XCB_NONE);
 		return;
 	}
 
@@ -3946,6 +3950,7 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_SELECTION_CLEAR, &page_t::process_selection_clear_event);
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
 	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
+	_event_handler_bind(XCB_FOCUS_IN, &page_t::process_focus_in);
 
 	_event_handler_bind(0, &page_t::process_error);
 
@@ -3971,6 +3976,23 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 		running = false;
 	if(e->selection == cnx->cm_sn_atom)
 		stop_compositor();
+}
+
+void page_t::process_focus_in(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+
+	std::cout << "Focus in 0x" << format("08x", e->event) << std::endl;
+
+	/** mimic the behaviour of dwm **/
+	if(not _client_focused.empty()) {
+		if(_client_focused.front() == nullptr)
+			return;
+
+		if(_client_focused.front()->orig() != e->event) {
+			_client_focused.front()->focus(XCB_CURRENT_TIME);
+		}
+	}
+
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
@@ -5118,6 +5140,8 @@ void page_t::page_event_handler_split(page_event_t const & pev) {
 	ps->set_position(mode_data_split.split_ratio);
 	add_compositor_damaged(ps->position());
 }
+
+
 
 }
 

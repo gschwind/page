@@ -409,7 +409,7 @@ public:
 	virtual ~page_t();
 
 	void set_default_pop(notebook_t * x);
-	void set_focus(client_managed_t * w, Time tfocus);
+	void set_focus(client_managed_t * w, xcb_timestamp_t tfocus);
 	compositor_t * get_render_context();
 	display_t * get_xconnection();
 
@@ -439,6 +439,7 @@ public:
 	void process_fake_unmap_notify_event(xcb_generic_event_t const * e);
 	void process_mapping_notify_event(xcb_generic_event_t const * e);
 	void process_selection_clear_event(xcb_generic_event_t const * e);
+	void process_focus_in(xcb_generic_event_t const * e);
 
 	void process_expose_event(xcb_generic_event_t const * e);
 
