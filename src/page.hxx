@@ -284,6 +284,8 @@ public:
 	/* auto-refocus a client if the current one is closed */
 	bool _auto_refocus;
 
+	bool _mouse_focus;
+
 	/* enable-shade */
 	bool _enable_shade_windows;
 	process_mode_e process_mode;
@@ -440,7 +442,8 @@ public:
 	void process_fake_unmap_notify_event(xcb_generic_event_t const * e);
 	void process_mapping_notify_event(xcb_generic_event_t const * e);
 	void process_selection_clear_event(xcb_generic_event_t const * e);
-	void process_focus_in(xcb_generic_event_t const * e);
+	void process_focus_in_event(xcb_generic_event_t const * e);
+	void process_enter_window_event(xcb_generic_event_t const * e);
 
 	void process_expose_event(xcb_generic_event_t const * e);
 

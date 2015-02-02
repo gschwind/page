@@ -70,6 +70,9 @@ exec_cmd_8=null
 bind_cmd_9=null
 exec_cmd_9=null
 
+# mouse auto-focus
+mouse_focus=false
+
 # auto-focus old window when current focuced window is closed (can be true or false ONLY)
 auto_refocus=false
 

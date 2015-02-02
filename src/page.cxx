@@ -212,6 +212,12 @@ page_t::page_t(int argc, char ** argv)
 		_enable_shade_windows = false;
 	}
 
+	if(conf.get_string("default", "mouse_focus") == "true") {
+		_mouse_focus = true;
+	} else {
+		_mouse_focus = false;
+	}
+
 }
 
 page_t::~page_t() {
@@ -4173,7 +4179,9 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_SELECTION_CLEAR, &page_t::process_selection_clear_event);
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
 	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
-	_event_handler_bind(XCB_FOCUS_IN, &page_t::process_focus_in);
+	_event_handler_bind(XCB_FOCUS_IN, &page_t::process_focus_in_event);
+	_event_handler_bind(XCB_ENTER_NOTIFY, &page_t::process_enter_window_event);
+
 
 	_event_handler_bind(0, &page_t::process_error);
 
@@ -4201,7 +4209,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 		stop_compositor();
 }
 
-void page_t::process_focus_in(xcb_generic_event_t const * _e) {
+void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
 	std::cout << "Focus in 0x" << format("08x", e->event) << std::endl;
@@ -4216,6 +4224,17 @@ void page_t::process_focus_in(xcb_generic_event_t const * _e) {
 		}
 	}
 
+}
+
+void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
+	if(not _mouse_focus)
+		return;
+
+	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
+	client_managed_t * mw = find_managed_window_with(e->event);
+	if(mw != nullptr) {
+		set_focus(mw, e->time);
+	}
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
