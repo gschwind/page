@@ -362,7 +362,7 @@ void page_t::run() {
 	}
 
 	/* setup _NET_ACTIVE_WINDOW */
-	set_focus(0, 0);
+	set_focus(nullptr, XCB_CURRENT_TIME);
 
 	scan();
 	_need_restack = true;
@@ -504,6 +504,7 @@ void page_t::unmanage(client_managed_t * mw) {
 				}
 			}
 
+			switch_to_desktop(xmw->current_desktop(), _last_focus_time);
 			set_focus(xmw, _last_focus_time);
 		}
 	}
@@ -921,6 +922,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			 * destroyed.
 			 **/
 			client_managed_t * mw = pat->get_selected();
+			switch_to_desktop(mw->current_desktop(), _last_focus_time);
 			set_focus(mw, e->time);
 
 			pat.reset();
@@ -1251,6 +1253,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		client_managed_t * mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
+			switch_to_desktop(mw->current_desktop(), _last_focus_time);
 			set_focus(mw, e->time);
 		}
 	} else {
@@ -1717,6 +1720,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		if (mw != nullptr) {
 			if (mw->current_desktop() == _current_desktop) {
 				if (mw->lock()) {
+					switch_to_desktop(mw->current_desktop(), _last_focus_time);
 					if (e->data.data32[1] == XCB_CURRENT_TIME) {
 						printf(
 								"Invalid focus request ... but stealing focus\n");
@@ -2152,10 +2156,6 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	 * raise the newly focused window at top, in respect of transient for.
 	 **/
 	safe_raise_window(new_focus);
-	desktop_t * new_desktop = find_desktop_of(new_focus);
-	if(new_desktop != nullptr) {
-		switch_to_desktop(new_desktop->id(), tfocus);
-	}
 
 	/**
 	 * if this is a notebook, mark the area for updates and activated the
@@ -3503,6 +3503,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
+				switch_to_desktop(mw->current_desktop(), _last_focus_time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
@@ -3547,6 +3548,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
+				switch_to_desktop(mw->current_desktop(), _last_focus_time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
