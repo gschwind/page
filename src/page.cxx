@@ -3509,11 +3509,10 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				mw->set_focus_state(false);
 			}
 
-		} else if ((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
-				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)
+		} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 				or type == A(_NET_WM_WINDOW_TYPE_DOCK))
-				and get_transient_for(mw) == nullptr
-				and mw->has_motif_border()) {
+				and get_transient_for(mw) == nullptr and mw->has_motif_border())
+				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 
 			/** select if the client want to appear mapped or iconic **/
 			bool activate = true;
