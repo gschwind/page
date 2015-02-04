@@ -3539,8 +3539,11 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				}
 			}
 
-			if(not mw->is(MANAGED_DOCK));
+			if(not mw->is(MANAGED_DOCK)) {
 				bind_window(mw, activate);
+			} else {
+				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+			}
 			mw->reconfigure();
 		} else {
 			mw->normalize();
