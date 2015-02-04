@@ -78,6 +78,7 @@ public:
 			i_rect const & area) const = 0;
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n,
 			i_rect const & area) const = 0;
+	virtual void render_empty(cairo_t * cr, i_rect const & area) const = 0;
 
 	virtual void render_floating(theme_managed_window_t * nw) const = 0;
 

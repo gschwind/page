@@ -149,6 +149,8 @@ public:
 
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n, i_rect const & area) const;
 	virtual void render_split(cairo_t * cr, theme_split_t const * s, i_rect const & area) const;
+	virtual void render_empty(cairo_t * cr, i_rect const & area) const;
+
 	virtual void render_floating(theme_managed_window_t * mw) const;
 
 

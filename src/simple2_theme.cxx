@@ -1032,6 +1032,26 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
+void simple2_theme_t::render_empty(cairo_t * cr, i_rect const & area) const {
+	CHECK_CAIRO(cairo_save(cr));
+
+	CHECK_CAIRO(cairo_reset_clip(cr));
+	CHECK_CAIRO(cairo_identity_matrix(cr));
+	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+
+	CHECK_CAIRO(cairo_rectangle(cr, area.x, area.y, area.w, area.h));
+	CHECK_CAIRO(cairo_clip(cr));
+
+	if (background_s != nullptr) {
+		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, 0.0, 0.0));
+	} else {
+		CHECK_CAIRO(cairo_set_source_rgba(cr, default_background_color));
+	}
+	CHECK_CAIRO(cairo_paint(cr));
+
+	CHECK_CAIRO(cairo_restore(cr));
+}
+
 
 
 void simple2_theme_t::render_floating(theme_managed_window_t * mw) const {

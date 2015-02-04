@@ -121,10 +121,13 @@ public:
 		area.x = 0;
 		area.y = 0;
 
+		region empty_area{_position};
+
 		for (auto &j : tree) {
 			split_t * rtree = dynamic_cast<split_t *>(j);
 			if (rtree != nullptr) {
 				rtree->render_legacy(cr, area);
+				empty_area -= rtree->get_split_bar_area();
 			}
 		}
 
@@ -132,7 +135,12 @@ public:
 			notebook_t * rtree = dynamic_cast<notebook_t *>(j);
 			if (rtree != nullptr) {
 				rtree->render_legacy(cr, area);
+				empty_area -= rtree->allocation();
 			}
+		}
+
+		for(auto &b: empty_area) {
+			_theme->render_empty(cr, b);
 		}
 
 		warn(cairo_get_reference_count(cr) == 1);
