@@ -2465,7 +2465,7 @@ void page_t::reconfigure_docks(desktop_t * d) {
 		if(not j->is(MANAGED_DOCK))
 			continue;
 
-		int32_t ps[12];
+		int32_t ps[12] = { 0 };
 		bool has_strut{false};
 
 		if(j->net_wm_strut_partial() != nullptr) {
@@ -2515,6 +2515,8 @@ void page_t::reconfigure_docks(desktop_t * d) {
 				pos.w = ps[PS_LEFT];
 				pos.h = ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
+				j->reconfigure();
+				j->normalize();
 				continue;
 			}
 
@@ -2525,6 +2527,8 @@ void page_t::reconfigure_docks(desktop_t * d) {
 				pos.w = ps[PS_RIGHT];
 				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
+				j->reconfigure();
+				j->normalize();
 				continue;
 			}
 
@@ -2535,6 +2539,8 @@ void page_t::reconfigure_docks(desktop_t * d) {
 				pos.w = ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1;
 				pos.h = ps[PS_TOP];
 				j->set_floating_wished_position(pos);
+				j->reconfigure();
+				j->normalize();
 				continue;
 			}
 
@@ -2545,6 +2551,8 @@ void page_t::reconfigure_docks(desktop_t * d) {
 				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
 				pos.h = ps[PS_BOTTOM];
 				j->set_floating_wished_position(pos);
+				j->reconfigure();
+				j->normalize();
 				continue;
 			}
 		}
