@@ -639,7 +639,7 @@ public:
 	}
 
 	void update_type() {
-		_wm_type = None;
+		_wm_type = XCB_NONE;
 
 		std::list<xcb_atom_t> net_wm_window_type;
 		bool override_redirect = (_wa->override_redirect == True)?true:false;
@@ -690,7 +690,6 @@ public:
 		/* TODO: make this ones */
 		static std::set<xcb_atom_t> known_type;
 		if (known_type.size() == 0) {
-			known_type.insert(A(_NET_CURRENT_DESKTOP));
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_TOOLBAR));
