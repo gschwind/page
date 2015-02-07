@@ -324,7 +324,16 @@ public:
 		return _win;
 	}
 
+	void expose() {
+		expose(_page_area);
+	}
+
 	void expose(region const & r) {
+		if(_is_hidden)
+			return;
+
+		repair_damaged();
+
 		cairo_surface_t * surf = cairo_xcb_surface_create(_cnx->xcb(), _win, _cnx->root_visual(), _effective_area.w, _effective_area.h);
 		cairo_t * cr = cairo_create(surf);
 		for(auto a: r) {
@@ -333,10 +342,6 @@ public:
 			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
 			cairo_fill(cr);
 		}
-
-		cairo_rectangle(cr, _page_area.x, _page_area.y, _page_area.w, _page_area.h);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.0);
-		cairo_fill(cr);
 
 		cairo_destroy(cr);
 		cairo_surface_destroy(surf);

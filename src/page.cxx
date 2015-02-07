@@ -1923,7 +1923,7 @@ void page_t::render() {
 	} else {
 		auto viewports = get_viewports();
 		for(auto x: viewports) {
-			x->expose(x->allocation());
+			x->expose();
 		}
 	}
 }
