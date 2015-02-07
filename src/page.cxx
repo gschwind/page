@@ -1622,6 +1622,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				notebook_t * n = find_parent_notebook_for(mw);
+				mark_durty(n);
 			}
 
 			if (mw->is(MANAGED_FLOATING) or mw->is(MANAGED_DOCK)) {
