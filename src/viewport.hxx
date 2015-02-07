@@ -272,10 +272,6 @@ public:
 
 		cairo_translate(cr, -_effective_area.x, -_effective_area.y);
 
-		cairo_rectangle(cr, _page_area.x, _page_area.y, _page_area.w, _page_area.h);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 1.0, 0.0);
-		cairo_fill(cr);
-
 		region empty_area{_page_area};
 
 		auto splits = filter_class<split_t>(tree_t::get_all_children());
