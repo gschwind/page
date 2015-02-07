@@ -38,9 +38,6 @@ class renderable_page_t {
 	bool _is_durty;
 	bool _is_visible;
 
-	int _width;
-	int _height;
-
 	/** rendering tabs is time consumming, thus use back buffer **/
 	cairo_surface_t * _back_surf;
 
@@ -54,9 +51,6 @@ public:
 		_is_durty = true;
 		_is_visible = true;
 		_has_alpha = false;
-
-		_width = width;
-		_height = height;
 
 		_cnx = cnx;
 
@@ -91,13 +85,25 @@ public:
 		xcb_create_window(_cnx->xcb(), depth, _win, _cnx->root(), 0, 0, width, height, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, value_mask, value);
 		_cnx->map(_win);
 
-		_pix = xcb_generate_id(cnx->xcb());
-		xcb_create_pixmap(cnx->xcb(), depth, _pix, _win, width, height);
-		_back_surf = cairo_xcb_surface_create(_cnx->xcb(), _pix, _cnx->root_visual(), width, height);
+		_pix = XCB_NONE;
 		_position = i_rect{0, 0, width, height};
+
+		update_renderable();
+
+	}
+
+	void update_renderable() {
+		if(_pix != XCB_NONE)
+			xcb_free_pixmap(_cnx->xcb(), _pix);
+		_pix = xcb_generate_id(_cnx->xcb());
+		xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), _pix, _win, _position.w, _position.h);
+
+		if(_back_surf != nullptr) {
+			cairo_surface_destroy(_back_surf);
+			_back_surf = nullptr;
+		}
+		_back_surf = cairo_xcb_surface_create(_cnx->xcb(), _pix, _cnx->root_visual(), _position.w, _position.h);
 		_renderable = std::shared_ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _position}};
-
-
 	}
 
 	~renderable_page_t() {
@@ -127,7 +133,7 @@ public:
 			split_t * rtree = dynamic_cast<split_t *>(j);
 			if (rtree != nullptr) {
 				rtree->render_legacy(cr, area);
-				empty_area -= rtree->get_split_bar_area();
+//				empty_area -= rtree->get_split_bar_area();
 			}
 		}
 
@@ -135,13 +141,13 @@ public:
 			notebook_t * rtree = dynamic_cast<notebook_t *>(j);
 			if (rtree != nullptr) {
 				rtree->render_legacy(cr, area);
-				empty_area -= rtree->allocation();
+//				empty_area -= rtree->allocation();
 			}
 		}
 
-		for(auto &b: empty_area) {
-			_theme->render_empty(cr, b);
-		}
+//		for(auto &b: empty_area) {
+//			_theme->render_empty(cr, b);
+//		}
 
 		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
@@ -167,11 +173,15 @@ public:
 
 	void move_resize(i_rect const & area) {
 		_position = area;
+		_cnx->move_resize(_win, _position);
+		update_renderable();
 	}
 
 	void move(int x, int y) {
 		_position.x = x;
 		_position.y = y;
+		_cnx->move_resize(_win, _position);
+		update_renderable();
 	}
 
 	void show() {
@@ -203,7 +213,7 @@ public:
 	}
 
 	void expose(region const & r) {
-		cairo_surface_t * surf = cairo_xcb_surface_create(_cnx->xcb(), _win, _cnx->root_visual(), _width, _height);
+		cairo_surface_t * surf = cairo_xcb_surface_create(_cnx->xcb(), _win, _cnx->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
 		for(auto a: r) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);

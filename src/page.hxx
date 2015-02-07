@@ -397,12 +397,8 @@ private:
 
 	i_rect _root_position;
 
-	std::vector<page_event_t> * page_areas;
-
 public:
-
 	theme_t * theme;
-	renderable_page_t * rpage;
 
 private:
 	page_t(page_t const &);
@@ -538,11 +534,12 @@ public:
 	notebook_t * get_another_notebook(tree_t * base = nullptr, tree_t * nbk = nullptr);
 	/* get all available notebooks with page */
 	std::vector<notebook_t *> get_notebooks(tree_t * base = nullptr);
+	std::vector<viewport_t *> get_viewports(tree_t * base = nullptr);
 	/* find where the managed window is */
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
 	std::vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(xcb_window_t w);
-	viewport_t * find_viewport_of(tree_t * n);
+	static viewport_t * find_viewport_of(tree_t * n);
 	desktop_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
@@ -597,7 +594,7 @@ public:
 
 	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
-	std::vector<page_event_t> * compute_page_areas(
+	std::vector<page_event_t> compute_page_areas(
 			std::list<tree_t const *> const & page) const;
 
 	page_component_t * parent() const;
@@ -685,6 +682,8 @@ public:
 
 	std::vector<client_managed_t *> get_sticky_client_managed(tree_t * base);
 	void reconfigure_docks(desktop_t * d);
+
+	void mark_durty(tree_t * t);
 
 };
 

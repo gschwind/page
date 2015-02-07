@@ -530,7 +530,7 @@ std::vector<T> operator +(std::vector<T> const & a, T const & b) {
 inline void cairo_clip(cairo_t * cr, i_rect const & clip) {
 	cairo_reset_clip(cr);
 	cairo_rectangle(cr, clip.x, clip.y, clip.w, clip.h);
-	cairo_clip(cr);
+	::cairo_clip(cr);
 }
 
 template<typename T>

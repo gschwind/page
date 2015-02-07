@@ -27,7 +27,6 @@ public:
 	virtual void render_legacy(cairo_t * cr, i_rect const & area) const = 0;
 	virtual void replace(page_component_t * src, page_component_t * by) = 0;
 	virtual void set_parent(page_component_t * t) = 0;
-	//virtual page_component_t * parent() const = 0;
 
 };
 

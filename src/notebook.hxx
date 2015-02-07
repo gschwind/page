@@ -236,6 +236,10 @@ public:
 		}
 	}
 
+	bool has_client(client_managed_t * c) {
+		return has_key(_client_map, c);
+	}
+
 };
 
 }
