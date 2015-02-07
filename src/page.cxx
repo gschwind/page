@@ -4804,6 +4804,9 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 			}
 
 			if (b != nullptr) {
+				mark_durty(mode_data_notebook.from);
+				mark_durty(mode_data_notebook.ns);
+
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					/** do noting **/
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
@@ -4823,8 +4826,6 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 				}
 			}
 		}
-		mark_durty(mode_data_notebook.from);
-		mark_durty(mode_data_notebook.ns);
 		mode_data_notebook.reset();
 	}
 }
@@ -5265,9 +5266,9 @@ void page_t::page_event_handler_notebook_close(page_event_t const & pev) {
 	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
 	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
 
-	mode_data_notebook.c = 0;
+	mode_data_notebook.c = nullptr;
 	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	mode_data_notebook.ns = nullptr;
 }
 
 void page_t::page_event_handler_notebook_vsplit(page_event_t const & pev) {
