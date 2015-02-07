@@ -4133,6 +4133,7 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_PROPERTY_NOTIFY, &page_t::process_property_notify_event);
 	_event_handler_bind(XCB_EXPOSE, &page_t::process_expose_event);
 	_event_handler_bind(XCB_FOCUS_IN, &page_t::process_focus_in_event);
+	_event_handler_bind(XCB_FOCUS_OUT, &page_t::process_focus_out_event);
 	_event_handler_bind(XCB_ENTER_NOTIFY, &page_t::process_enter_window_event);
 
 
@@ -4174,6 +4175,26 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 		if(_desktop_list[_current_desktop]->client_focus.front()->orig() != e->event) {
 			_desktop_list[_current_desktop]->client_focus.front()->focus(XCB_CURRENT_TIME);
+		}
+	}
+
+}
+
+void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+
+	std::cout << "Focus out 0x" << format("08x", e->event) << std::endl;
+
+	/** refocus the root window if those window have to be focused **/
+	if(not _desktop_list[_current_desktop]->client_focus.empty()) {
+		if(_desktop_list[_current_desktop]->client_focus.front() == nullptr) {
+			if(e->event == cnx->root()) {
+				cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+			}
+		}
+	} else {
+		if(e->event == cnx->root()) {
+			cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 		}
 	}
 

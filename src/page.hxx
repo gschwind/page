@@ -248,7 +248,7 @@ struct key_mode_data_t {
 
 class page_t : public page_component_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
-	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE;
+	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
 	static time_t const default_wait;
 
 	/** define callback function type for event handler **/
@@ -439,6 +439,7 @@ public:
 	void process_mapping_notify_event(xcb_generic_event_t const * e);
 	void process_selection_clear_event(xcb_generic_event_t const * e);
 	void process_focus_in_event(xcb_generic_event_t const * e);
+	void process_focus_out_event(xcb_generic_event_t const * e);
 	void process_enter_window_event(xcb_generic_event_t const * e);
 
 	void process_expose_event(xcb_generic_event_t const * e);
