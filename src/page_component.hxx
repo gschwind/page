@@ -19,9 +19,7 @@ class page_component_t : public tree_t {
 public:
 
 	page_component_t() { }
-
 	virtual ~page_component_t() { }
-
 	virtual void set_allocation(i_rect const & area) = 0;
 	virtual i_rect allocation() const = 0;
 	virtual void render_legacy(cairo_t * cr, i_rect const & area) const = 0;

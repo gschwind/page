@@ -2591,12 +2591,15 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				switch (type) {
 				case _NET_WM_STATE_REMOVE:
 					mw->set_demands_attention(false);
+					mark_durty(mw);
 					break;
 				case _NET_WM_STATE_ADD:
 					mw->set_demands_attention(true);
+					mark_durty(mw);
 					break;
 				case _NET_WM_STATE_TOGGLE:
 					mw->set_demands_attention(not mw->demands_attention());
+					mark_durty(mw);
 					break;
 				default:
 					break;
