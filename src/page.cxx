@@ -2116,7 +2116,7 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	_global_client_focus_history.push_front(new_focus);
 
 	if(new_focus == nullptr) {
-		cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 		cnx->set_net_active_window(XCB_NONE);
 		return;
 	}
@@ -2853,6 +2853,7 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 	insert_window_in_notebook(mw, nullptr, activate);
 	safe_raise_window(mw);
 	update_client_list();
+	mark_durty(mw);
 }
 
 void page_t::unbind_window(client_managed_t * mw) {
@@ -4191,13 +4192,13 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	/** refocus the root window if those window have to be focused **/
 	if(not _desktop_list[_current_desktop]->client_focus.empty()) {
 		if(_desktop_list[_current_desktop]->client_focus.front() == nullptr) {
-			if(e->event == cnx->root()) {
-				cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+			if(e->event == identity_window) {
+				cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 			}
 		}
 	} else {
-		if(e->event == cnx->root()) {
-			cnx->set_input_focus(cnx->root(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		if(e->event == identity_window) {
+			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 		}
 	}
 
