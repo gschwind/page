@@ -759,7 +759,7 @@ public:
 	std::string const *                     net_wm_visible_name() const { return __net_wm_visible_name; }
 	std::string const *                     net_wm_icon_name() const { return __net_wm_icon_name; }
 	std::string const *                     net_wm_visible_icon_name() const { return __net_wm_visible_icon_name; }
-	unsigned int const *               net_wm_desktop() const { return __net_wm_desktop; }
+	unsigned int const *                    net_wm_desktop() const { return __net_wm_desktop; }
 	std::list<xcb_atom_t> const *           net_wm_window_type() const { return __net_wm_window_type; }
 	std::list<xcb_atom_t> const *           net_wm_state() const { return __net_wm_state; }
 	std::list<xcb_atom_t> const *           net_wm_allowed_actions() const { return __net_wm_allowed_actions; }

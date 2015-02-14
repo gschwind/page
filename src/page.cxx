@@ -66,7 +66,6 @@ time_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
-
 	/* initialize page event handler functions */
 	_page_event_press_handler[PAGE_EVENT_NONE] =
 			&page_t::page_event_handler_nop;
@@ -875,8 +874,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			_need_render = true;
 
 		}
-
-
 
 	} else {
 		/** here we guess Mod1 is bound to Alt **/
@@ -1700,7 +1697,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			if (mw->current_desktop() == _current_desktop) {
+			if (mw->current_desktop() == _current_desktop or mw->current_desktop() == ALL_DESKTOP) {
 				if (mw->lock()) {
 					switch_to_desktop(mw->current_desktop(), _last_focus_time);
 					if (e->data.data32[1] == XCB_CURRENT_TIME) {
@@ -2783,16 +2780,23 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 }
 
 void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
+	/** just in case remove this window from the tree **/
 	detach(c);
+
 	client_base_t * transient_for = get_transient_for(c);
 	if (transient_for != nullptr) {
 		transient_for->add_subclient(c);
 	} else {
-		_desktop_list[c->current_desktop()]->add_floating_client(c);
-		if(_desktop_list[c->current_desktop()]->is_hidden()) {
-			c->hide();
-		} else {
+		if(c->current_desktop() == ALL_DESKTOP) {
+			_desktop_list[_current_desktop]->add_floating_client(c);
 			c->show();
+		} else {
+			_desktop_list[c->current_desktop()]->add_floating_client(c);
+			if(_desktop_list[c->current_desktop()]->is_hidden()) {
+				c->hide();
+			} else {
+				c->show();
+			}
 		}
 	}
 }
@@ -3435,16 +3439,34 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		update_client_list();
 		_need_restack = true;
 
-		int select_desktop = _current_desktop;
-		if(mw->wm_transient_for() != nullptr) {
-			auto parent = dynamic_cast<client_managed_t*>(find_client_with(*(mw->wm_transient_for())));
-			if(parent != nullptr) {
-				select_desktop = parent->current_desktop();
+		/* find the proper desktop for this window */
+		{
+			unsigned int const * desktop = mw->net_wm_desktop();
+			if(desktop != nullptr) {
+				if(*desktop == ALL_DESKTOP) {
+					mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+				} else if ((*desktop % _desktop_list.size()) != *desktop) {
+					mw->set_current_desktop(_current_desktop);
+				}
+			} else {
+				if(mw->wm_transient_for() != nullptr) {
+					auto parent = dynamic_cast<client_managed_t*>(find_client_with(*(mw->wm_transient_for())));
+					if(parent != nullptr) {
+						mw->set_current_desktop(parent->current_desktop());
+					} else {
+						if(mw->is_stiky()) {
+							mw->set_current_desktop(ALL_DESKTOP);
+						} else {
+							mw->set_current_desktop(_current_desktop);
+						}
+					}
+				}
 			}
 		}
 
-		mw->set_current_desktop(select_desktop);
-		if(not _desktop_list[select_desktop]->is_hidden()) {
+		if(mw->current_desktop() == ALL_DESKTOP) {
+			mw->show();
+		} else if(not _desktop_list[mw->current_desktop()]->is_hidden()) {
 			mw->show();
 		} else {
 			mw->hide();
@@ -3706,11 +3728,6 @@ void page_t::remove_client(client_base_t * c) {
 
 void page_t::get_all_children(std::vector<tree_t *> & out) const {
 
-	for(auto x: docks) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
 	for (auto v: _desktop_stack) {
 		out.push_back(v);
 		v->get_all_children(out);
@@ -3781,11 +3798,6 @@ void page_t::raise_child(tree_t * t) {
 		notifications.push_back(y);
 	}
 
-	if(has_key(docks, y)) {
-		docks.remove(y);
-		docks.push_back(y);
-	}
-
 	if(has_key(above, y)) {
 		above.remove(y);
 		above.push_back(y);
@@ -3806,7 +3818,6 @@ void page_t::remove(tree_t * t) {
 	root_subclients.remove(dynamic_cast<client_base_t *>(t));
 	tooltips.remove(dynamic_cast<client_not_managed_t *>(t));
 	notifications.remove(dynamic_cast<client_not_managed_t *>(t));
-	docks.remove(dynamic_cast<client_not_managed_t*>(t));
 	above.remove(dynamic_cast<client_not_managed_t*>(t));
 	below.remove(dynamic_cast<client_not_managed_t*>(t));
 
@@ -3977,10 +3988,6 @@ void page_t::children(std::vector<tree_t *> & out) const {
 		out.push_back(x);
 	}
 
-	for(auto x: docks) {
-		out.push_back(x);
-	}
-
 	for(auto x: root_subclients) {
 		out.push_back(x);
 	}
@@ -4030,15 +4037,13 @@ void page_t::show() {
 	}
 }
 
-void page_t::switch_to_desktop(int desktop, xcb_timestamp_t time) {
-	if (desktop != _current_desktop) {
+void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
+	if (desktop != _current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
 
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
 
 		for(auto s : stiky_list) {
-			detach(s);
-			s->set_current_desktop(desktop);
 			insert_in_tree_using_transient_for(s);
 		}
 

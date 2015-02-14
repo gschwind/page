@@ -109,8 +109,6 @@ private:
 
 	composite_surface_manager_t * _cmgr;
 
-	int _current_desktop;
-
 	bool _is_focused;
 	bool _motif_has_border;
 	bool _is_iconic;
@@ -188,13 +186,14 @@ public:
 		return _cmgr->get_last_pixmap(_base);
 	}
 
-	void set_current_desktop(int n) {
-		_current_desktop = n;
+	void set_current_desktop(unsigned int n) {
 		_properties->set_net_wm_desktop(n);
 	}
 
-	int current_desktop() {
-		return _current_desktop;
+	unsigned int current_desktop() {
+		if(net_wm_desktop() == nullptr)
+			return 0;
+		return *net_wm_desktop();
 	}
 
 	void net_wm_allowed_actions_add(atom_e atom);

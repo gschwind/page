@@ -242,8 +242,6 @@ client_managed_t::client_managed_t(xcb_atom_t net_wm_type,
 
 	update_icon();
 
-	_current_desktop = 0;
-
 }
 
 client_managed_t::~client_managed_t() {

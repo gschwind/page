@@ -56,11 +56,11 @@ protected:
 public:
 
 	client_base_t(client_base_t const & c) :
-		_properties(c._properties),
-		_title(c._title),
-		_children(c._children),
-		_parent(nullptr),
-		_is_hidden(true)
+		_properties{c._properties},
+		_title{c._title},
+		_children{c._children},
+		_parent{nullptr},
+		_is_hidden{true}
 	{
 
 	}

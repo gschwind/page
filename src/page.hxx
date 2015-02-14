@@ -316,7 +316,6 @@ public:
 
 	std::list<client_not_managed_t *> below;
 	std::list<client_base_t *> root_subclients;
-	std::list<client_not_managed_t *> docks;
 	std::list<client_not_managed_t *> tooltips;
 	std::list<client_not_managed_t *> notifications;
 	std::list<client_not_managed_t *> above;
@@ -327,7 +326,7 @@ public:
 
 	config_handler_t conf;
 
-	int _current_desktop;
+	unsigned int _current_desktop;
 	std::vector<desktop_t *> _desktop_list;
 
 	/** store the order of last shown desktop **/
@@ -571,11 +570,6 @@ public:
 		}
 	}
 
-	void detach_dock(client_not_managed_t * uw) {
-		docks.remove(uw);
-		uw->set_parent(nullptr);
-	}
-
 	void check_x11_extension();
 
 	void create_identity_window();
@@ -626,7 +620,7 @@ public:
 	void hide();
 	void show();
 
-	void switch_to_desktop(int desktop, xcb_timestamp_t time);
+	void switch_to_desktop(unsigned int desktop, xcb_timestamp_t time);
 
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();

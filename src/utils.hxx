@@ -689,6 +689,7 @@ std::list<T> make_list(std::vector<T> const & v) {
 	return std::list<T>{v.begin(), v.end()};
 }
 
+static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 
 }
 
