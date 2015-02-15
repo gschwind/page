@@ -3439,7 +3439,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		update_client_list();
 		_need_restack = true;
 
-		/* find the proper desktop for this window */
+		/* find the desktop for this window */
 		{
 			unsigned int const * desktop = mw->net_wm_desktop();
 			if(desktop != nullptr) {
@@ -3493,7 +3493,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(mw->current_desktop(), _last_focus_time);
+				switch_to_desktop(mw->current_desktop(), time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
@@ -3540,7 +3540,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(mw->current_desktop(), _last_focus_time);
+				switch_to_desktop(mw->current_desktop(), time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
