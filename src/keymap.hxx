@@ -22,7 +22,8 @@ class keymap_t {
 	int keycodes_per_modifier;
 	int keysyms_per_keycode;
 
-	/** KeySym is an unique key identifier used by X11, it's the equivalent of UNICODE id of a glyph
+	/**
+	 * KeySym is an unique key identifier used by X11, it's the equivalent of UNICODE id of a glyph
 	 * This table store a mapping between keycode (a key on keyboard) to a KeySym. keycode can be bound to
 	 * Several KeySim because key press can be modified by key modifier like shift or alt key.
 	 **/
