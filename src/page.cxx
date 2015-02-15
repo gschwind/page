@@ -474,7 +474,7 @@ void page_t::unmanage(client_managed_t * mw) {
 				}
 			}
 
-			switch_to_desktop(xmw->current_desktop(), _last_focus_time);
+			switch_to_desktop(find_current_desktop(xmw), _last_focus_time);
 			set_focus(xmw, _last_focus_time);
 		}
 	}
@@ -890,7 +890,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			 * destroyed.
 			 **/
 			client_managed_t * mw = pat->get_selected();
-			switch_to_desktop(mw->current_desktop(), _last_focus_time);
+			switch_to_desktop(find_current_desktop(mw), _last_focus_time);
 			set_focus(mw, e->time);
 
 			pat.reset();
@@ -1233,7 +1233,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		client_managed_t * mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			switch_to_desktop(mw->current_desktop(), _last_focus_time);
+			switch_to_desktop(find_current_desktop(mw), _last_focus_time);
 			set_focus(mw, e->time);
 		}
 	} else {
@@ -1697,9 +1697,9 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			if (mw->current_desktop() == _current_desktop or mw->current_desktop() == ALL_DESKTOP) {
+			if (find_current_desktop(mw) == _current_desktop or find_current_desktop(mw) == ALL_DESKTOP) {
 				if (mw->lock()) {
-					switch_to_desktop(mw->current_desktop(), _last_focus_time);
+					switch_to_desktop(find_current_desktop(mw), _last_focus_time);
 					if (e->data.data32[1] == XCB_CURRENT_TIME) {
 						printf(
 								"Invalid focus request ... but stealing focus\n");
@@ -2787,12 +2787,12 @@ void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
 	if (transient_for != nullptr) {
 		transient_for->add_subclient(c);
 	} else {
-		if(c->current_desktop() == ALL_DESKTOP) {
+		if(find_current_desktop(c) == ALL_DESKTOP) {
 			_desktop_list[_current_desktop]->add_floating_client(c);
 			c->show();
 		} else {
-			_desktop_list[c->current_desktop()]->add_floating_client(c);
-			if(_desktop_list[c->current_desktop()]->is_hidden()) {
+			_desktop_list[find_current_desktop(c)]->add_floating_client(c);
+			if(_desktop_list[find_current_desktop(c)]->is_hidden()) {
 				c->hide();
 			} else {
 				c->show();
@@ -3452,7 +3452,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				if(mw->wm_transient_for() != nullptr) {
 					auto parent = dynamic_cast<client_managed_t*>(find_client_with(*(mw->wm_transient_for())));
 					if(parent != nullptr) {
-						mw->set_current_desktop(parent->current_desktop());
+						mw->set_current_desktop(find_current_desktop(parent));
 					} else {
 						if(mw->is_stiky()) {
 							mw->set_current_desktop(ALL_DESKTOP);
@@ -3464,9 +3464,9 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			}
 		}
 
-		if(mw->current_desktop() == ALL_DESKTOP) {
+		if(find_current_desktop(mw) == ALL_DESKTOP) {
 			mw->show();
-		} else if(not _desktop_list[mw->current_desktop()]->is_hidden()) {
+		} else if(not _desktop_list[find_current_desktop(mw)]->is_hidden()) {
 			mw->show();
 		} else {
 			mw->hide();
@@ -3493,7 +3493,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(mw->current_desktop(), time);
+				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
@@ -3540,7 +3540,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			mw->reconfigure();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(mw->current_desktop(), time);
+				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
 				mw->set_focus_state(false);
@@ -5408,6 +5408,15 @@ void page_t::mark_durty(tree_t * t) {
 	viewport_t * v = find_viewport_of(t);
 	if(v != nullptr)
 		v->mark_durty();
+}
+
+unsigned int page_t::find_current_desktop(client_base_t * c) {
+	if(c->net_wm_desktop() != nullptr)
+		return *(c->net_wm_desktop());
+	auto d = find_desktop_of(c);
+	if(d != nullptr)
+		return d->id();
+	return _current_desktop;
 }
 
 }

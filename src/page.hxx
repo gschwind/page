@@ -680,6 +680,8 @@ public:
 
 	void mark_durty(tree_t * t);
 
+	unsigned int find_current_desktop(client_base_t * c);
+
 };
 
 

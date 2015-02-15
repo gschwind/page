@@ -186,12 +186,6 @@ public:
 		_properties->set_net_wm_desktop(n);
 	}
 
-	unsigned int current_desktop() {
-		if(net_wm_desktop() == nullptr)
-			return 0;
-		return *net_wm_desktop();
-	}
-
 	void net_wm_allowed_actions_add(atom_e atom);
 
 	bool lock();

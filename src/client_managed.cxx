@@ -382,14 +382,6 @@ void client_managed_t::delete_window(xcb_timestamp_t t) {
 	}
 }
 
-bool client_managed_t::check_orig_position(i_rect const & position) {
-	return position == _orig_position;
-}
-
-bool client_managed_t::check_base_position(i_rect const & position) {
-	return position == _base_position;
-}
-
 void client_managed_t::init_managed_type(managed_window_type_e type) {
 	_managed_type = type;
 }
