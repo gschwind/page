@@ -126,11 +126,7 @@ public:
 	void set_wished_position(i_rect const & position);
 	i_rect const & get_wished_position() const;
 
-	void delete_window(Time t);
-
-	bool check_orig_position(i_rect const & position);
-	bool check_base_position(i_rect const & position);
-
+	void delete_window(xcb_timestamp_t);
 
 	i_rect get_base_position() const;
 

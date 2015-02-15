@@ -3549,7 +3549,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
-		printf("Error while creating managed window\n");
+		printf("Unknown exception while creating managed window\n");
 		throw;
 	}
 }

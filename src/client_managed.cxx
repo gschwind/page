@@ -364,7 +364,7 @@ void client_managed_t::fake_configure() {
 	cnx()->fake_configure(_orig, _wished_position, 0);
 }
 
-void client_managed_t::delete_window(Time t) {
+void client_managed_t::delete_window(xcb_timestamp_t t) {
 	printf("request close for '%s'\n", title().c_str());
 
 	if (lock()) {
@@ -441,40 +441,39 @@ bool client_managed_t::is(managed_window_type_e type) {
 void client_managed_t::expose() {
 	if (is(MANAGED_FLOATING)) {
 
-			theme_managed_window_t fw;
+		theme_managed_window_t fw;
 
-			if(_bottom_buffer != nullptr) {
-				fw.cairo_bottom = cairo_create(_bottom_buffer);
-			} else {
-				fw.cairo_bottom = nullptr;
-			}
+		if (_bottom_buffer != nullptr) {
+			fw.cairo_bottom = cairo_create(_bottom_buffer);
+		} else {
+			fw.cairo_bottom = nullptr;
+		}
 
-			if(_top_buffer != nullptr) {
-				fw.cairo_top = cairo_create(_top_buffer);
-			} else {
-				fw.cairo_top = nullptr;
-			}
+		if (_top_buffer != nullptr) {
+			fw.cairo_top = cairo_create(_top_buffer);
+		} else {
+			fw.cairo_top = nullptr;
+		}
 
-			if(_right_buffer != nullptr) {
-				fw.cairo_right = cairo_create(_right_buffer);
-			} else {
-				fw.cairo_right = nullptr;
-			}
+		if (_right_buffer != nullptr) {
+			fw.cairo_right = cairo_create(_right_buffer);
+		} else {
+			fw.cairo_right = nullptr;
+		}
 
-			if(_left_buffer != nullptr) {
-				fw.cairo_left = cairo_create(_left_buffer);
-			} else {
-				fw.cairo_left = nullptr;
-			}
+		if (_left_buffer != nullptr) {
+			fw.cairo_left = cairo_create(_left_buffer);
+		} else {
+			fw.cairo_left = nullptr;
+		}
 
-			fw.focuced = is_focused();
-			fw.position = base_position();
-			fw.icon = icon();
-			fw.title = title();
-			fw.demand_attention = _demands_attention;
+		fw.focuced = is_focused();
+		fw.position = base_position();
+		fw.icon = icon();
+		fw.title = title();
+		fw.demand_attention = _demands_attention;
 
-			_theme->render_floating(&fw);
-
+		_theme->render_floating(&fw);
 
 		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
 
