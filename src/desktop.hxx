@@ -213,18 +213,12 @@ public:
 
 	void update_default_pop() {
 		_default_pop = nullptr;
-		std::vector<tree_t *> all_children;
-		get_all_children(all_children);
-		for(auto i: all_children) {
-			if(typeid(*i) == typeid(notebook_t)) {
-				dynamic_cast<notebook_t*>(i)->set_default(false);
-			}
-		}
-		for(auto i: all_children) {
-			if(typeid(*i) == typeid(notebook_t)) {
-				_default_pop = dynamic_cast<notebook_t*>(i);
+		for(auto i: filter_class<notebook_t>(tree_t::get_all_children())) {
+			if(_default_pop == nullptr) {
+				_default_pop = i;
 				_default_pop->set_default(true);
-				break;
+			} else {
+				i->set_default(false);
 			}
 		}
 	}
