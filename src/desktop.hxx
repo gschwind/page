@@ -249,14 +249,23 @@ public:
 	}
 
 	void remove(tree_t * src) {
-		for(auto i : _viewport_outputs) {
-			if(i.second == src) {
-				_viewport_outputs.erase(i.first);
-				return;
+
+		{
+			auto i = _viewport_outputs.begin();
+			while(i != _viewport_outputs.end()) {
+				if(i->second == src) {
+					i = _viewport_outputs.erase(i);
+				} else {
+					++i;
+				}
 			}
-			_viewport_stack.remove(dynamic_cast<viewport_t*>(src));
 		}
 
+		/**
+		 * use reinterpret_cast because we try to remove src pointer
+		 * and we don't care is type
+		 **/
+		_viewport_stack.remove(reinterpret_cast<viewport_t*>(src));
 		_dock_clients.remove(reinterpret_cast<client_not_managed_t*>(src));
 		_floating_clients.remove(reinterpret_cast<client_managed_t*>(src));
 		_fullscreen_clients.remove(reinterpret_cast<client_managed_t*>(src));
