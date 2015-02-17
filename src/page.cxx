@@ -2039,7 +2039,7 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 		bool prefer_activate) {
 	assert(x != nullptr);
 	if (n == nullptr)
-		n = _desktop_list[_current_desktop]->get_default_pop();
+		n = _desktop_list[_current_desktop]->default_pop();
 	assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
@@ -2236,7 +2236,7 @@ void page_t::notebook_close(notebook_t * nbk) {
 	 * if notebook that we want destroy was the default_pop, select
 	 * a new one.
 	 **/
-	if (_desktop_list[_current_desktop]->get_default_pop() == nbk) {
+	if (_desktop_list[_current_desktop]->default_pop() == nbk) {
 		_desktop_list[_current_desktop]->update_default_pop();
 		/* damage the new default pop to show the notebook mark properly */
 	}
@@ -3242,7 +3242,7 @@ void page_t::remove_viewport(desktop_t * d, viewport_t * v) {
 	/* Transfer clients to a valid notebook */
 	for (auto nbk : filter_class<notebook_t>(v->tree_t::get_all_children())) {
 		for (auto c : nbk->get_clients()) {
-			d->get_default_pop()->add_client(c, false);
+			d->default_pop()->add_client(c, false);
 		}
 	}
 
@@ -5108,7 +5108,7 @@ void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t con
 				if(selected != _current_desktop) {
 					detach(mode_data_notebook_client_menu.client);
 					mode_data_notebook_client_menu.client->set_parent(nullptr);
-					_desktop_list[selected]->get_default_pop()->add_client(mode_data_notebook_client_menu.client, false);
+					_desktop_list[selected]->default_pop()->add_client(mode_data_notebook_client_menu.client, false);
 					mode_data_notebook_client_menu.client->set_current_desktop(selected);
 				}
 			}
@@ -5373,7 +5373,7 @@ void page_t::page_event_handler_split(page_event_t const & pev) {
 	mode_data_split.slider_area =
 			mode_data_split.split->get_split_bar_area();
 
-	ps = std::shared_ptr<popup_split_t>(new popup_split_t{cnx, theme, mode_data_split.split});
+	ps = std::make_shared<popup_split_t>(cnx, theme, mode_data_split.split);
 	ps->set_position(mode_data_split.split_ratio);
 	add_compositor_damaged(ps->position());
 }

@@ -540,7 +540,7 @@ public:
 	std::vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(xcb_window_t w);
 	static viewport_t * find_viewport_of(tree_t * n);
-	desktop_t * find_desktop_of(tree_t * n);
+	static desktop_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
 	void update_viewport_layout();

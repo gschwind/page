@@ -67,16 +67,7 @@ public:
 		client_focus.push_back(nullptr);
 	}
 
-	notebook_t * get_nearest_notebook();
-
-	void set_raw_area(i_rect const & area);
-	void set_effective_area(i_rect const & area);
-
-	void notebook_close(notebook_t * src);
-
-	void render(cairo_t * cr, i_rect const & area) const {
-
-	}
+	void render(cairo_t * cr, i_rect const & area) const { }
 
 	void raise_child(tree_t * t) {
 
@@ -90,7 +81,6 @@ public:
 			_floating_clients.remove(mw);
 			_floating_clients.push_back(mw);
 		}
-
 
 		client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(t);
 		if(has_key(_dock_clients, uw)) {
@@ -148,13 +138,11 @@ public:
 
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
-	i_rect const & raw_area() const;
-
 	auto get_viewport_map() const -> std::map<xcb_randr_crtc_t, viewport_t *> const & {
 		return _viewport_outputs;
 	}
 
-	auto set_layout(std::map<xcb_randr_crtc_t, viewport_t *> new_layout) -> void {
+	auto set_layout(std::map<xcb_randr_crtc_t, viewport_t *> const & new_layout) -> void {
 		_viewport_outputs = new_layout;
 		_viewport_stack.clear();
 		for(auto i: _viewport_outputs) {
@@ -205,10 +193,6 @@ public:
 				out.push_back(i);
 		}
 
-	}
-
-	notebook_t * get_default_pop() {
-		return _default_pop;
 	}
 
 	void update_default_pop() {
