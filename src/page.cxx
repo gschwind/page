@@ -2884,19 +2884,8 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 	case PROCESS_NOTEBOOK_BUTTON_PRESS:
 
 		if (mode_data_notebook.c == mw) {
-			mode_data_notebook.c = 0;
-			process_mode = PROCESS_NORMAL;
-
-			if(pn0 != nullptr)
-				pn0 = nullptr;
-
-			mode_data_notebook.start_x = 0;
-			mode_data_notebook.start_y = 0;
-			mode_data_notebook.zone = SELECT_NONE;
-			mode_data_notebook.c = 0;
-			mode_data_notebook.from = 0;
-			mode_data_notebook.ns = 0;
-
+			mode_data_notebook.reset();
+			mode_data_notebook.c = nullptr;
 		}
 		break;
 
@@ -2907,54 +2896,34 @@ void page_t::cleanup_grab(client_managed_t * mw) {
 	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
 		if (mode_data_floating.f == mw) {
 			process_mode = PROCESS_NORMAL;
-
+			mode_data_floating.reset();
 			pfm = nullptr;
-
-			mode_data_floating.mode = RESIZE_NONE;
-			mode_data_floating.x_offset = 0;
-			mode_data_floating.y_offset = 0;
-			mode_data_floating.x_root = 0;
-			mode_data_floating.y_root = 0;
-			mode_data_floating.original_position = i_rect();
-			mode_data_floating.f = 0;
-			mode_data_floating.popup_original_position = i_rect();
-			mode_data_floating.final_position = i_rect();
-
 		}
 		break;
 
 	case PROCESS_FLOATING_BIND:
 		if (mode_data_bind.c == mw) {
-			mode_data_bind.c = 0;
 			process_mode = PROCESS_NORMAL;
-
-			if(pn0 != nullptr)
+			mode_data_bind.reset();
+			if (pn0 != nullptr)
 				pn0 = nullptr;
-
-			mode_data_bind.start_x = 0;
-			mode_data_bind.start_y = 0;
-			mode_data_bind.zone = SELECT_NONE;
-			mode_data_bind.c = 0;
-			mode_data_bind.ns = 0;
-
 		}
 		break;
 	case PROCESS_SPLIT_GRAB:
 		break;
 	case PROCESS_FULLSCREEN_MOVE:
 		if(mode_data_fullscreen.mw == mw) {
-			mode_data_fullscreen.mw = 0;
-			mode_data_fullscreen.v = 0;
+			process_mode = PROCESS_NORMAL;
+			mode_data_fullscreen.reset();
 			if(pn0 != nullptr)
 				pn0 = nullptr;
-			process_mode = PROCESS_NORMAL;
 		}
 		break;
 	case PROCESS_NOTEBOOK_MENU:
+		process_mode = PROCESS_NORMAL;
 		add_compositor_damaged(menu->get_visible_region());
 		menu.reset();
-		process_mode = PROCESS_NORMAL;
-		mode_data_notebook_menu.from = nullptr;
+		mode_data_notebook_menu.reset();
 		break;
 	case PROCESS_NOTEBOOK_CLIENT_MENU:
 		if (mode_data_notebook_client_menu.client == mw) {
