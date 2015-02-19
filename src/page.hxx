@@ -73,7 +73,7 @@ struct mode_data_split_t {
 
 	void reset() {
 		split = nullptr;
-		slider_area = i_rect();
+		slider_area = i_rect{};
 		split_ratio = 0.5;
 	}
 
@@ -193,10 +193,10 @@ struct mode_data_floating_t {
 		y_offset = 0;
 		x_root = 0;
 		y_root = 0;
-		original_position = i_rect();
+		original_position = i_rect{};
 		f = nullptr;
-		popup_original_position = i_rect();
-		final_position = i_rect();
+		popup_original_position = i_rect{};
+		final_position = i_rect{};
 		button = Button1;
 	}
 
@@ -278,7 +278,7 @@ public:
 	using client_dropdown_menu_t = dropdown_menu_t<int>;
 	std::shared_ptr<client_dropdown_menu_t> client_menu;
 
-	/** data to set _NET_CLIENT_LIST **/
+	/* store all managed client */
 	std::list<client_managed_t *> _clients_list;
 
 	/* auto-refocus a client if the current one is closed */
@@ -537,7 +537,6 @@ public:
 	std::vector<viewport_t *> get_viewports(tree_t * base = nullptr);
 	/* find where the managed window is */
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
-	std::vector<client_managed_t*> get_managed_windows();
 	client_managed_t * find_managed_window_with(xcb_window_t w);
 	static viewport_t * find_viewport_of(tree_t * n);
 	static desktop_t * find_desktop_of(tree_t * n);
@@ -681,6 +680,8 @@ public:
 	void mark_durty(tree_t * t);
 
 	unsigned int find_current_desktop(client_base_t * c);
+
+	void update_alt_tab_popup(client_managed_t * selected);
 
 };
 

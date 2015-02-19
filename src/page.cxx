@@ -126,7 +126,7 @@ page_t::page_t(int argc, char ** argv)
 	keymap = nullptr;
 	process_mode = PROCESS_NORMAL;
 
-	cnx = new display_t();
+	cnx = new display_t;
 	rnd = nullptr;
 
 	running = false;
@@ -462,6 +462,10 @@ void page_t::unmanage(client_managed_t * mw) {
 	update_workarea();
 
 	_clients_list.remove(mw);
+
+	if(process_mode == PROCESS_ALT_TAB)
+		update_alt_tab_popup(pat->get_selected());
+
 	delete mw; mw = nullptr;
 
 	if (_auto_refocus and not _desktop_list[_current_desktop]->client_focus.empty()) {
@@ -610,9 +614,8 @@ void page_t::update_client_list() {
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&client_list[0], client_list.size());
 
-	std::vector<client_managed_t *> lst = get_managed_windows();
 	std::list<xcb_window_t> tmp_client_list_stack;
-	for (auto i : lst) {
+	for (auto i : _clients_list) {
 		tmp_client_list_stack.remove(i->orig());
 		tmp_client_list_stack.push_back(i->orig());
 	}
@@ -750,8 +753,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if(k == bind_debug_4.ks and (e->state & bind_debug_4.mod)) {
 			_need_restack = true;
 			print_tree(0);
-			std::vector<client_managed_t *> lst = get_managed_windows();
-			for (auto i : lst) {
+			for (auto i : _clients_list) {
 				switch (i->get_type()) {
 				case MANAGED_NOTEBOOK:
 					cout << "[" << i->orig() << "] notebook : " << i->title()
@@ -816,20 +818,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 		if (k == XK_Tab and ((e->state & 0x0f) == XCB_MOD_MASK_1)) {
 
-			std::list<client_managed_t *> managed_window { make_list(
-					get_managed_windows()) };
-
-			/* reorder client to follow focused order */
-			for (auto i = _global_client_focus_history.rbegin();
-					i != _global_client_focus_history.rend();
-					++i) {
-				if (*i != nullptr) {
-					managed_window.remove(*i);
-					managed_window.push_front(*i);
-				}
-			}
-
-			if (process_mode == PROCESS_NORMAL and not managed_window.empty()) {
+			if (process_mode == PROCESS_NORMAL and not _clients_list.empty()) {
 
 				/* Grab keyboard */
 				/** TODO: check for success or failure **/
@@ -839,33 +828,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 
 				process_mode = PROCESS_ALT_TAB;
-				key_mode_data.selected = _desktop_list[_current_desktop]->client_focus.front();
-
-				int sel = 0;
-
-				std::vector<std::shared_ptr<cycle_window_entry_t>> v;
-				int s = 0;
-
-				for (auto i : managed_window) {
-					std::shared_ptr<icon64> icon{new icon64(*i)};
-					std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
-					v.push_back(cy);
-					if (i == _desktop_list[_current_desktop]->client_focus.front()) {
-						sel = s;
-					}
-					++s;
-				}
-
-				pat = std::shared_ptr<popup_alt_tab_t>{new popup_alt_tab_t{cnx, theme, v ,sel}};
-
-				/** show it on all viewport ? **/
-				viewport_t * viewport = _desktop_list[0]->get_any_viewport();
-				pat->move(viewport->raw_area().x
-										+ (viewport->raw_area().w - pat->position().w) / 2,
-								viewport->raw_area().y
-										+ (viewport->raw_area().h - pat->position().h) / 2);
-				pat->show();
-
+				update_alt_tab_popup(_desktop_list[_current_desktop]->client_focus.front());
 			} else {
 				xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
 			}
@@ -885,14 +848,9 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 			process_mode = PROCESS_NORMAL;
 
-			/**
-			 * do not use dynamic_cast because managed window can be already
-			 * destroyed.
-			 **/
 			client_managed_t * mw = pat->get_selected();
 			switch_to_desktop(find_current_desktop(mw), _last_focus_time);
 			set_focus(mw, e->time);
-
 			pat.reset();
 		}
 	}
@@ -3390,7 +3348,7 @@ void page_t::onmap(xcb_window_t w) {
 void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 
 	try {
-		client_managed_t * mw = new client_managed_t(type, c, theme, cmgr);
+		client_managed_t * mw = new client_managed_t{type, c, theme, cmgr};
 		_clients_list.push_back(mw);
 		manage_client(mw, type);
 	} catch (...) {
@@ -3585,10 +3543,6 @@ bool page_t::get_safe_net_wm_user_time(client_base_t * c, xcb_timestamp_t & time
 		return true;
 
 	}
-}
-
-std::vector<client_managed_t *> page_t::get_managed_windows() {
-	return filter_class<client_managed_t>(tree_t::get_all_children());
 }
 
 client_managed_t * page_t::find_managed_window_with(xcb_window_t w) {
@@ -5386,6 +5340,52 @@ unsigned int page_t::find_current_desktop(client_base_t * c) {
 	if(d != nullptr)
 		return d->id();
 	return _current_desktop;
+}
+
+/**
+ * Create the alt tab popup or update it with existing client_managed_t
+ *
+ * @input selected: the selected client, if not found first client is selected
+ *
+ **/
+void page_t::update_alt_tab_popup(client_managed_t * selected) {
+	auto managed_window = _clients_list;
+
+	/* reorder client to follow focused order */
+	for (auto i = _global_client_focus_history.rbegin();
+			i != _global_client_focus_history.rend();
+			++i) {
+		if (*i != nullptr) {
+			managed_window.remove(*i);
+			managed_window.push_front(*i);
+		}
+	}
+
+	int sel = 0;
+
+	/** create all menu entry and find the selected one **/
+	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
+	int s = 0;
+	for (auto i : managed_window) {
+		std::shared_ptr<icon64> icon{new icon64{*i}};
+		std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
+		v.push_back(cy);
+		if (i == selected) {
+			sel = s;
+		}
+		++s;
+	}
+
+	pat = std::make_shared<popup_alt_tab_t>(cnx, theme, v, sel);
+
+	/** TODO: show it on all viewport **/
+	viewport_t * viewport = _desktop_list[_current_desktop]->get_any_viewport();
+	pat->move(viewport->raw_area().x
+							+ (viewport->raw_area().w - pat->position().w) / 2,
+					viewport->raw_area().y
+							+ (viewport->raw_area().h - pat->position().h) / 2);
+	pat->show();
+
 }
 
 }
