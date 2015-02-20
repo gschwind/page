@@ -323,6 +323,7 @@ public:
 	bool running;
 	bool _need_render;
 	bool _need_restack;
+	bool _need_update_client_list;
 
 	config_handler_t conf;
 

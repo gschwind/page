@@ -109,6 +109,7 @@ page_t::page_t(int argc, char ** argv)
 
 	_need_render = false;
 	_need_restack = false;
+	_need_update_client_list = false;
 
 	/** parse command line **/
 
@@ -354,7 +355,6 @@ void page_t::run() {
 	set_focus(nullptr, XCB_CURRENT_TIME);
 
 	scan();
-	_need_restack = true;
 
 	update_keymap();
 	update_grabkey();
@@ -396,6 +396,11 @@ void page_t::run() {
 			if (_need_restack) {
 				_need_restack = false;
 				update_windows_stack();
+			}
+
+			if(_need_update_client_list) {
+				_need_update_client_list = false;
+				update_client_list();
 			}
 
 			cnx->sync();
@@ -458,7 +463,7 @@ void page_t::unmanage(client_managed_t * mw) {
 	mw->net_wm_state_delete();
 	mw->wm_state_delete();
 
-	update_client_list();
+	_need_update_client_list = true;;
 	update_workarea();
 
 	_clients_list.remove(mw);
@@ -530,7 +535,7 @@ void page_t::scan() {
 
 	free(r);
 
-	update_client_list();
+	_need_update_client_list = true;
 	update_workarea();
 	for(auto x: _desktop_list) {
 		reconfigure_docks(x);
@@ -605,7 +610,7 @@ void page_t::update_net_supported() {
 
 void page_t::update_client_list() {
 
-
+	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	std::vector<xcb_window_t> client_list;
 	for(auto c: _clients_list) {
 		client_list.push_back(c->orig());
@@ -614,17 +619,14 @@ void page_t::update_client_list() {
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&client_list[0], client_list.size());
 
-	std::list<xcb_window_t> tmp_client_list_stack;
-	for (auto i : _clients_list) {
-		tmp_client_list_stack.remove(i->orig());
-		tmp_client_list_stack.push_back(i->orig());
+	/** set _NET_CLIENT_LIST_STACKING : bottom to top staking **/
+	auto client_managed_list_stack = filter_class<client_managed_t>(tree_t::get_all_children());
+	std::vector<xcb_window_t> client_list_stack;
+	for(auto c: client_managed_list_stack) {
+		client_list_stack.push_back(c->orig());
 	}
-
-	std::vector<xcb_window_t> client_list_stack(tmp_client_list_stack.begin(),
-			tmp_client_list_stack.end());
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
 			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
-
 
 }
 
@@ -2814,7 +2816,7 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 	detach(mw);
 	insert_window_in_notebook(mw, nullptr, activate);
 	safe_raise_window(mw);
-	update_client_list();
+	_need_update_client_list = true;
 	mark_durty(mw);
 }
 
@@ -2828,7 +2830,7 @@ void page_t::unbind_window(client_managed_t * mw) {
 	mw->expose();
 	mw->normalize();
 	safe_raise_window(mw);
-	update_client_list();
+	_need_update_client_list = true;
 	_need_restack = true;
 }
 
@@ -3363,7 +3365,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 		safe_update_transient_for(mw);
 		mw->raise_child(nullptr);
-		update_client_list();
+		_need_update_client_list = true;
 		_need_restack = true;
 
 		/* find the desktop for this window */
@@ -3560,7 +3562,6 @@ client_managed_t * page_t::find_managed_window_with(xcb_window_t w) {
  **/
 void page_t::cleanup_not_managed_client(client_not_managed_t * c) {
 	remove_client(c);
-	update_client_list();
 }
 
 void page_t::safe_update_transient_for(client_base_t * c) {
