@@ -33,7 +33,7 @@ private:
 	unsigned const _id;
 
 	/** map viewport to real outputs **/
-	std::map<xcb_randr_crtc_t, viewport_t *> _viewport_outputs;
+	std::vector<viewport_t *> _viewport_outputs;
 	std::list<viewport_t *> _viewport_stack;
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
@@ -55,14 +55,13 @@ public:
 	}
 
 	desktop_t(unsigned id) :
-		_allocation(),
-		_parent(nullptr),
-		_viewport_outputs(),
-		_default_pop(nullptr),
-		_is_hidden(false),
-		_workarea(),
-		_primary_viewport(nullptr),
-		_id(id)
+		_allocation{},
+		_parent{nullptr},
+		_default_pop{nullptr},
+		_is_hidden{false},
+		_workarea{},
+		_primary_viewport{nullptr},
+		_id{id}
 	{
 		client_focus.push_back(nullptr);
 	}
@@ -108,7 +107,7 @@ public:
 			return;
 
 		for(auto i: _viewport_outputs) {
-			i.second->prepare_render(out, time);
+			i->prepare_render(out, time);
 		}
 
 		for(auto i: _dock_clients) {
@@ -138,16 +137,14 @@ public:
 
 	void render_legacy(cairo_t * cr, i_rect const & area) const { }
 
-	auto get_viewport_map() const -> std::map<xcb_randr_crtc_t, viewport_t *> const & {
+	auto get_viewport_map() const -> std::vector<viewport_t *> const & {
 		return _viewport_outputs;
 	}
 
-	auto set_layout(std::map<xcb_randr_crtc_t, viewport_t *> const & new_layout) -> void {
+	auto set_layout(std::vector<viewport_t *> const & new_layout) -> void {
 		_viewport_outputs = new_layout;
 		_viewport_stack.clear();
-		for(auto i: _viewport_outputs) {
-			_viewport_stack.push_back(i.second);
-		}
+		_viewport_stack.insert(_viewport_stack.end(), _viewport_outputs.begin(), _viewport_outputs.end());
 	}
 
 	auto get_any_viewport() const -> viewport_t * {
@@ -228,22 +225,14 @@ public:
 
 	void remove(tree_t * src) {
 
-		{
-			auto i = _viewport_outputs.begin();
-			while(i != _viewport_outputs.end()) {
-				if(i->second == src) {
-					i = _viewport_outputs.erase(i);
-				} else {
-					++i;
-				}
-			}
+		if(has_key(_viewport_outputs, reinterpret_cast<viewport_t*>(src))) {
+			throw exception_t("%s:%d invalid call of viewport::remove", __FILE__, __LINE__);
 		}
 
 		/**
 		 * use reinterpret_cast because we try to remove src pointer
 		 * and we don't care is type
 		 **/
-		_viewport_stack.remove(reinterpret_cast<viewport_t*>(src));
 		_dock_clients.remove(reinterpret_cast<client_not_managed_t*>(src));
 		_floating_clients.remove(reinterpret_cast<client_managed_t*>(src));
 		_fullscreen_clients.remove(reinterpret_cast<client_managed_t*>(src));

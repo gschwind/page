@@ -3047,7 +3047,6 @@ void page_t::update_viewport_layout() {
 	_root_position = i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_desktop_geometry(_root_position.w, _root_position.h);
 
-	xcb_randr_crtc_t primary;
 	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
 	std::vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
@@ -3063,68 +3062,69 @@ void page_t::update_viewport_layout() {
 		}
 	}
 
-	if(xcb_randr_get_screen_resources_crtcs_length(randr_resources) > 0) {
-		primary = crtc_list[0];
-	} else {
-		primary = 0;
+	/* compute all viewport  that does not overlap and cover the full area of crts */
+	region already_allocated;
+	std::vector<i_rect> viewport_allocation;
+	for(auto crtc: crtc_info) {
+		if(crtc.second->num_outputs <= 0)
+			continue;
+
+		/* the location of crts */
+		region location{crtc.second->x, crtc.second->y, crtc.second->width, crtc.second->height};
+		location -= already_allocated;
+		for(auto & b: location) {
+			viewport_allocation.push_back(b);
+		}
+		already_allocated += location;
 	}
 
 	for(auto d: _desktop_list) {
-		std::map<xcb_randr_crtc_t, viewport_t *> old_layout{d->get_viewport_map()};
-
+		/** get old layout to recycle old viewport, and keep unchanged outputs **/
+		std::vector<viewport_t *> old_layout{d->get_viewport_map()};
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
-		std::map<xcb_randr_crtc_t, viewport_t *> new_layout;
-		for(auto crtc: crtc_info) {
-			xcb_randr_get_crtc_info_reply_t * info = crtc.second;
-			if(info->num_outputs <= 0)
-				continue;
-
-			i_rect area{info->x, info->y, info->width, info->height};
-			/** if this crtc do not has a viewport **/
-			if (not has_key(old_layout, crtc.first)) {
-				/** then create a new one, and store it in new_layout **/
-				viewport_t * v = new viewport_t(cnx, theme, area);
-				v->set_parent(d);
-				new_layout[crtc.first] = v;
+		std::vector<viewport_t *> new_layout;
+		/** for each not overlaped rectangle **/
+		for(unsigned i = 0; i < viewport_allocation.size(); ++i) {
+			printf("%d: found viewport (%d,%d,%d,%d)\n", d->id(), viewport_allocation[i].x, viewport_allocation[i].y, viewport_allocation[i].w, viewport_allocation[i].h);
+			viewport_t * vp;
+			if(i < old_layout.size()) {
+				vp = old_layout[i];
+				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				/** update allocation, and store it to new_layout **/
-				old_layout[crtc.first]->set_raw_area(area);
-				new_layout[crtc.first] = old_layout[crtc.first];
+				vp = new viewport_t(cnx, theme, viewport_allocation[i]);
+				vp->set_parent(d);
 			}
-			compute_viewport_allocation(d, new_layout[crtc.first]);
-			if(crtc.first == primary) {
-				d->set_primary_viewport(new_layout[crtc.first]);
-			}
+			compute_viewport_allocation(d, vp);
+			new_layout.push_back(vp);
 		}
 
+		/** if no layout is found fallback to on screen **/
 		if(new_layout.size() < 1) {
-			/** fallback to one screen **/
 			i_rect area{_root_position};
-			/** if this crtc do not has a viewport **/
-			if (not has_key<xcb_randr_crtc_t>(old_layout, XCB_NONE)) {
-				/** then create a new one, and store it in new_layout **/
-				viewport_t * v = new viewport_t(cnx, theme, area);
-				v->set_parent(d);
-				new_layout[XCB_NONE] = v;
+			viewport_t * vp;
+			if(0 < old_layout.size()) {
+				vp = old_layout[0];
+				vp->set_raw_area(area);
 			} else {
-				/** update allocation, and store it to new_layout **/
-				old_layout[XCB_NONE]->set_raw_area(area);
-				new_layout[XCB_NONE] = old_layout[XCB_NONE];
+				vp = new viewport_t(cnx, theme, area);
+				vp->set_parent(d);
 			}
-			compute_viewport_allocation(d, new_layout[XCB_NONE]);
-			d->set_primary_viewport(new_layout[XCB_NONE]);
+			compute_viewport_allocation(d, vp);
+			new_layout.push_back(vp);
+		}
+
+		if(new_layout.size() > 0) {
+			d->set_primary_viewport(new_layout[0]);
 		}
 
 		d->set_layout(new_layout);
 		d->update_default_pop();
 
 		/** clean up obsolete layout **/
-		for (auto i: old_layout) {
-			if (not has_key(new_layout, i.first)) {
-				/** destroy this viewport **/
-				remove_viewport(d, i.second);
-				destroy_viewport(i.second);
-			}
+		for (unsigned i = new_layout.size(); i < old_layout.size(); ++i) {
+			/** destroy this viewport **/
+			remove_viewport(d, old_layout[i]);
+			destroy_viewport(old_layout[i]);
 		}
 
 	}
