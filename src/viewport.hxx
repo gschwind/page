@@ -264,6 +264,8 @@ public:
 	}
 
 	void repair_damaged() {
+		if(_back_surf == nullptr)
+			return;
 
 		if(not _is_durty)
 			return;
