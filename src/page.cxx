@@ -3978,10 +3978,6 @@ void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
 
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
 
-		for(auto s : stiky_list) {
-			insert_in_tree_using_transient_for(s);
-		}
-
 		/** remove the focus from the current window **/
 		{
 			/** NULL pointer is always in the list **/
@@ -4007,6 +4003,11 @@ void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
 		_current_desktop = desktop;
 		_desktop_stack.remove(_desktop_list[_current_desktop]);
 		_desktop_stack.push_back(_desktop_list[_current_desktop]);
+
+		/** move stiky to current desktop **/
+		for(auto s : stiky_list) {
+			insert_in_tree_using_transient_for(s);
+		}
 
 		update_viewport_layout();
 		update_current_desktop();
