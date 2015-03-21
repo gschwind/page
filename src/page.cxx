@@ -3122,6 +3122,19 @@ void page_t::update_viewport_layout() {
 			destroy_viewport(old_layout[i]);
 		}
 
+		if(new_layout.size() > 0) {
+			/** update position of floating managed clients to avoid offscreen floating window**/
+			for(auto x: filter_class<client_managed_t>(tree_t::get_all_children())) {
+				if(x->is(MANAGED_FLOATING)) {
+					auto r = x->position();
+					r.x = new_layout[0]->allocation().x + theme->floating.margin.left;
+					r.y = new_layout[0]->allocation().y + theme->floating.margin.top;
+					x->set_floating_wished_position(r);
+					x->reconfigure();
+				}
+			}
+		}
+
 	}
 
 	for(auto i: crtc_info) {
