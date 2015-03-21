@@ -3176,7 +3176,8 @@ void page_t::destroy_viewport(viewport_t * v) {
 	std::vector<tree_t *> lst;
 	v->get_all_children(lst);
 	for (auto i : lst) {
-		if (typeid(client_base_t) != typeid(*i)) {
+		client_base_t * cb = dynamic_cast<client_base_t*>(i);
+		if (cb == nullptr) {
 			delete i;
 		}
 	}
