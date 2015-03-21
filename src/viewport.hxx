@@ -269,27 +269,19 @@ public:
 			return;
 
 		cairo_t * cr = cairo_create(_back_surf);
-
-		cairo_translate(cr, -_effective_area.x, -_effective_area.y);
-
-		region empty_area{_page_area};
+		cairo_identity_matrix(cr);
 
 		auto splits = filter_class<split_t>(tree_t::get_all_children());
 		for (auto x : splits) {
-			x->render_legacy(cr, _page_area);
-			empty_area -= x->get_split_bar_area();
+			x->render_legacy(cr, _effective_area.x, _effective_area.y);
 		}
 
 		auto notebooks = filter_class<notebook_t>(tree_t::get_all_children());
 		for (auto x : notebooks) {
-			x->render_legacy(cr, _page_area);
-			empty_area -= x->allocation();
+			x->render_legacy(cr, _effective_area.x, _effective_area.y);
 		}
 
-		for(auto &b: empty_area) {
-			_theme->render_empty(cr, b);
-		}
-
+		cairo_surface_flush(_back_surf);
 		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 

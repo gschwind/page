@@ -177,7 +177,7 @@ public:
 	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
 	std::string get_node_name() const;
-	void render_legacy(cairo_t * cr, i_rect const & area) const;
+	void render_legacy(cairo_t * cr, int x_offset, int y_offset) const;
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
 
@@ -195,7 +195,7 @@ public:
 	i_rect compute_notebook_close_position(i_rect const & allocation) const;
 	i_rect compute_notebook_menu_position(i_rect const & allocation) const;
 
-	void compute_areas_for_notebook(std::vector<page_event_t> * l) const;
+	void compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const;
 
 	i_rect allocation() const {
 		return _allocation;
@@ -207,7 +207,7 @@ public:
 
 	void get_all_children(std::vector<tree_t *> & out) const;
 
-	void update_theme_notebook() const;
+	void update_theme_notebook(int x_offset, int y_offset) const;
 
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());

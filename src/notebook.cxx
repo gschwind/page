@@ -63,7 +63,6 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		}
 	}
 
-	update_theme_notebook();
 	return true;
 }
 
@@ -113,7 +112,6 @@ void notebook_t::remove_client(client_managed_t * x) {
 	x->set_parent(nullptr);
 	_clients.remove(x);
 	_client_map.erase(x);
-	update_theme_notebook();
 
 }
 
@@ -278,8 +276,6 @@ void notebook_t::set_allocation(i_rect const & area) {
 		_selected->reconfigure();
 	}
 
-	update_theme_notebook();
-
 }
 
 
@@ -374,9 +370,9 @@ std::string notebook_t::get_node_name() const {
 	return _get_node_name<'N'>();
 }
 
-void notebook_t::render_legacy(cairo_t * cr, i_rect const & area) const {
-	update_theme_notebook();
-	_theme->render_notebook(cr, &theme_notebook, area);
+void notebook_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
+	update_theme_notebook(x_offset, y_offset);
+	_theme->render_notebook(cr, &theme_notebook);
 }
 
 client_managed_t * notebook_t::get_selected() {
@@ -497,37 +493,45 @@ i_rect notebook_t::compute_notebook_menu_position(
 }
 
 
-void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l) const {
+void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const {
 
 	{
 		page_event_t nc(PAGE_EVENT_NOTEBOOK_CLOSE);
 		nc.position = compute_notebook_close_position(_allocation);
+		nc.position.x -= x_offset;
+		nc.position.y -= y_offset;
 		nc.nbk = this;
 		l->push_back(nc);
 
 		page_event_t nhs(PAGE_EVENT_NOTEBOOK_HSPLIT);
 		nhs.position = compute_notebook_hsplit_position(_allocation);
+		nhs.position.x -= x_offset;
+		nhs.position.y -= y_offset;
 		nhs.nbk = this;
 		l->push_back(nhs);
 
 		page_event_t nvs(PAGE_EVENT_NOTEBOOK_VSPLIT);
 		nvs.position = compute_notebook_vsplit_position(_allocation);
+		nvs.position.x -= x_offset;
+		nvs.position.y -= y_offset;
 		nvs.nbk = this;
 		l->push_back(nvs);
 
 		page_event_t nm(PAGE_EVENT_NOTEBOOK_MARK);
 		nm.position = compute_notebook_bookmark_position(_allocation);
+		nm.position.x -= x_offset;
+		nm.position.y -= y_offset;
 		nm.nbk = this;
 		l->push_back(nm);
 
 		page_event_t nmn(PAGE_EVENT_NOTEBOOK_MENU);
 		nmn.position = compute_notebook_menu_position(_allocation);
+		nmn.position.x -= x_offset;
+		nmn.position.y -= y_offset;
 		nmn.nbk = this;
 		l->push_back(nmn);
 
 	}
-
-	update_theme_notebook();
 
 	if(_clients.size() > 0) {
 
@@ -583,18 +587,21 @@ void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
 	}
 }
 
-void notebook_t::update_theme_notebook() const {
+void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 	theme_notebook.clients_tab.clear();
+	i_rect allocation{_allocation};
+	allocation.x -= x_offset;
+	allocation.y -= y_offset;
 
 	if (_clients.size() != 0) {
 		theme_notebook.clients_tab.resize(_clients.size());
 
 		double box_width = 33.0;
-		double selected_box_width = (_allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()) * box_width;
-		double offset = _allocation.x + 40.0;
+		double selected_box_width = (allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()) * box_width;
+		double offset = allocation.x + 40.0;
 
 		if (_selected != nullptr){
-			i_rect b { (int)floor(offset), _allocation.y, (int)floor(
+			i_rect b { (int)floor(offset), allocation.y, (int)floor(
 					(int)(offset + selected_box_width) - floor(offset)),
 					(int)_theme->notebook.margin.top - 1 };
 			theme_notebook.selected_client.position = b;
@@ -612,7 +619,7 @@ void notebook_t::update_theme_notebook() const {
 		offset += selected_box_width;
 		unsigned k = 0;
 		for (auto i : _clients) {
-				i_rect b { (int)floor(offset), _allocation.y, (int)(floor(
+				i_rect b { (int)floor(offset), allocation.y, (int)(floor(
 						offset + box_width) - floor(offset)),
 						(int)_theme->notebook.margin.top - 1 };
 			theme_notebook.clients_tab[k].position = b;
@@ -629,7 +636,7 @@ void notebook_t::update_theme_notebook() const {
 		theme_notebook.has_selected_client = false;
 	}
 
-	theme_notebook.allocation = _allocation;
+	theme_notebook.allocation = allocation;
 	if(_selected != nullptr) {
 		theme_notebook.client_position = _selected->base_position();
 	}

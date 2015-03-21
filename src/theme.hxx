@@ -74,10 +74,8 @@ public:
 	virtual ~theme_t() { }
 
 
-	virtual void render_split(cairo_t * cr, theme_split_t const * s,
-			i_rect const & area) const = 0;
-	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n,
-			i_rect const & area) const = 0;
+	virtual void render_split(cairo_t * cr, theme_split_t const * s) const = 0;
+	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const = 0;
 	virtual void render_empty(cairo_t * cr, i_rect const & area) const = 0;
 
 	virtual void render_floating(theme_managed_window_t * nw) const = 0;

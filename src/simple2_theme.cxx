@@ -387,18 +387,13 @@ void simple2_theme_t::rounded_i_rect(cairo_t * cr, double x, double y,
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
-void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n,
-		i_rect const & area) const {
+void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) const {
 
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_reset_clip(cr));
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 	CHECK_CAIRO(cairo_new_path(cr));
-
-	/** hope to optimize things **/
-	CHECK_CAIRO(cairo_rectangle(cr, area.x, area.y, area.w, area.h));
-	CHECK_CAIRO(cairo_clip(cr));
 
 	render_empty(cr, n->allocation);
 
@@ -948,14 +943,10 @@ void simple2_theme_t::render_notebook_normal(
 }
 
 void simple2_theme_t::render_split(cairo_t * cr,
-		theme_split_t const * s,
-		i_rect const & area) const {
+		theme_split_t const * s) const {
 
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
-
-	CHECK_CAIRO(cairo_rectangle(cr, area.x, area.y, area.w, area.h));
-	CHECK_CAIRO(cairo_clip(cr));
 
 	i_rect sarea = s->allocation;
 	if (background_s != nullptr) {

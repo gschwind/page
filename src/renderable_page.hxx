@@ -132,7 +132,7 @@ public:
 		for (auto &j : tree) {
 			split_t * rtree = dynamic_cast<split_t *>(j);
 			if (rtree != nullptr) {
-				rtree->render_legacy(cr, area);
+//				rtree->render_legacy(cr, area);
 //				empty_area -= rtree->get_split_bar_area();
 			}
 		}
@@ -140,7 +140,7 @@ public:
 		for (auto &j : tree) {
 			notebook_t * rtree = dynamic_cast<notebook_t *>(j);
 			if (rtree != nullptr) {
-				rtree->render_legacy(cr, area);
+//				rtree->render_legacy(cr, area);
 //				empty_area -= rtree->allocation();
 			}
 		}

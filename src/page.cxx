@@ -895,14 +895,12 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		/* left click on page window */
 		if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
 
-			std::vector<tree_t *> tmp = viewport_event->tree_t::get_all_children();
-			std::list<tree_t const *> lc(tmp.begin(), tmp.end());
-			std::vector<page_event_t> page_areas{compute_page_areas(lc)};
+			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
 
 			page_event_t * b = nullptr;
 			for (auto &i : page_areas) {
 				//printf("box = %s => %s\n", (i)->position.to_std::string().c_str(), typeid(*i).name());
-				if (i.position.is_inside(e->root_x, e->root_y)) {
+				if (i.position.is_inside(e->event_x, e->event_y)) {
 					b = &i;
 					break;
 				}
@@ -915,14 +913,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 		/* rigth click on page */
 		} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_3) {
-
-			std::vector<tree_t *> tmp = viewport_event->tree_t::get_all_children();
-			std::list<tree_t const *> lc(tmp.begin(), tmp.end());
-			std::vector<page_event_t> page_areas{compute_page_areas(lc)};
+			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
 
 			page_event_t * b = nullptr;
 			for (auto &i: page_areas) {
-				if (i.position.is_inside(e->root_x, e->root_y)) {
+				if (i.position.is_inside(e->event_x, e->event_y)) {
 					b = &(i);
 					break;
 				}
@@ -3857,16 +3852,18 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 }
 
 
-std::vector<page_event_t> page_t::compute_page_areas(
-		std::list<tree_t const *> const & page) const {
+std::vector<page_event_t> page_t::compute_page_areas(viewport_t * v) const {
 
+	std::vector<tree_t *> components = v->tree_t::get_all_children();
 	std::vector<page_event_t> ret;
 
-	for (auto i : page) {
-		if(dynamic_cast<split_t const *>(i)) {
+	for (auto i : components) {
+		if(typeid(*i) == typeid(split_t)) {
 			split_t const * s = dynamic_cast<split_t const *>(i);
 			page_event_t bsplit(PAGE_EVENT_SPLIT);
 			bsplit.position = s->compute_split_bar_location();
+			bsplit.position.x -= v->allocation().x;
+			bsplit.position.y -= v->allocation().y;
 
 			if(s->type() == VERTICAL_SPLIT) {
 				bsplit.position.w += theme->notebook.margin.right + theme->notebook.margin.left;
@@ -3878,9 +3875,9 @@ std::vector<page_event_t> page_t::compute_page_areas(
 
 			bsplit.spt = s;
 			ret.push_back(bsplit);
-		} else if (dynamic_cast<notebook_t const *>(i)) {
+		} else if (typeid(*i) == typeid(notebook_t)) {
 			notebook_t const * n = dynamic_cast<notebook_t const *>(i);
-			n->compute_areas_for_notebook(&ret);
+			n->compute_areas_for_notebook(&ret, v->allocation().x, v->allocation().y);
 		}
 	}
 
@@ -4744,14 +4741,11 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 		}
 
 		if (viewport_event != nullptr) {
-
-			std::vector<tree_t *> tmp = viewport_event->tree_t::get_all_children();
-			std::list<tree_t const *> lc(tmp.begin(), tmp.end());
-			std::vector<page_event_t> page_areas{compute_page_areas(lc)};
+			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
 
 			page_event_t * b = nullptr;
 			for (auto &i : page_areas) {
-				if (i.position.is_inside(e->root_x, e->root_y)) {
+				if (i.position.is_inside(e->event_x, e->event_y)) {
 					b = &i;
 					break;
 				}

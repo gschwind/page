@@ -590,7 +590,7 @@ public:
 	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
 	std::vector<page_event_t> compute_page_areas(
-			std::list<tree_t const *> const & page) const;
+			viewport_t * v) const;
 
 	page_component_t * parent() const;
 	void set_parent(tree_t * parent);

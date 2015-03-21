@@ -242,12 +242,14 @@ split_type_e split_t::type() const {
 	return _split_type;
 }
 
-void split_t::render_legacy(cairo_t * cr, i_rect const & area) const {
+void split_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
 	theme_split_t ts;
 	ts.split = _split;
 	ts.type = _split_type;
 	ts.allocation = compute_split_bar_location();
-	_theme->render_split(cr, &ts, area);
+	ts.allocation.x -= x_offset;
+	ts.allocation.y -= y_offset;
+	_theme->render_split(cr, &ts);
 }
 
 std::list<tree_t *> split_t::childs() const {

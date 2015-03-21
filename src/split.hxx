@@ -65,7 +65,7 @@ public:
 	void compute_split_size(double split, int & w, int & h) const;
 	double split() const;
 	split_type_e type() const;
-	void render_legacy(cairo_t * cr, i_rect const & area) const;
+	void render_legacy(cairo_t * cr, int x_offset, int y_offset) const;
 	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
 
