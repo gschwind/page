@@ -1207,6 +1207,12 @@ bool client_managed_t::is_stiky() {
 	return false;
 }
 
+bool client_managed_t::is_modal() {
+	if(_properties->net_wm_state() != nullptr) {
+		return has_key(*_properties->net_wm_state(), A(_NET_WM_STATE_MODAL));
+	}
+	return false;
+}
 
 }
 

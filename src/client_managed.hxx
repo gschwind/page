@@ -259,6 +259,7 @@ public:
 	}
 
 	bool is_stiky();
+	bool is_modal();
 
 };
 

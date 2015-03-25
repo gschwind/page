@@ -3232,7 +3232,7 @@ void page_t::onmap(xcb_window_t w) {
 	cnx->fetch_pending_events();
 
 	if(cnx->check_for_destroyed_window(w)) {
-		printf("do not manage %u because it wil be destoyed\n", w);
+		printf("do not manage %u because it will be destoyed\n", w);
 		cnx->ungrab();
 		return;
 	}
@@ -3286,7 +3286,7 @@ void page_t::onmap(xcb_window_t w) {
 					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-						create_unmanaged_window(props, type);
+						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
 						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
@@ -3424,6 +3424,9 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			}
 		}
 
+		/**
+		 * Here client that default to fullscreen
+		 **/
 		if (mw->is_fullscreen()) {
 			mw->normalize();
 			fullscreen(mw);
@@ -3437,9 +3440,14 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				mw->set_focus_state(false);
 			}
 
+			/**
+			 * Here client that default to notebook
+			 **/
 		} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 				or type == A(_NET_WM_WINDOW_TYPE_DOCK))
-				and get_transient_for(mw) == nullptr and mw->has_motif_border())
+				and get_transient_for(mw) == nullptr
+				and mw->has_motif_border()
+				and not mw->is_modal())
 				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 
 			/** select if the client want to appear mapped or iconic **/
@@ -3473,6 +3481,10 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 			}
 			mw->reconfigure();
+
+			/**
+			 * Here client that default to floating
+			 **/
 		} else {
 			mw->normalize();
 			mw->reconfigure();
