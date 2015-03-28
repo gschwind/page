@@ -11,12 +11,13 @@
 
 namespace page {
 
-notebook_t::notebook_t(theme_t const * theme) :
+notebook_t::notebook_t(theme_t const * theme, bool keep_selected) :
 		_theme{theme},
 		_parent{nullptr},
 		_is_default{false},
 		_selected{nullptr},
-		_is_hidden{false}
+		_is_hidden{false},
+		_keep_selected{keep_selected}
 {
 
 }
@@ -111,6 +112,18 @@ void notebook_t::remove_client(client_managed_t * x) {
 	x->set_parent(nullptr);
 	_clients.remove(x);
 
+	if(_keep_selected and not _children.empty() and _selected == nullptr) {
+		_selected = dynamic_cast<client_managed_t*>(_children.back());
+
+		if (_selected != nullptr) {
+			update_client_position (_selected);
+			_selected->normalize();
+			_selected->reconfigure();
+		}
+
+		fading_notebook.reset();
+	}
+
 }
 
 void notebook_t::set_selected(client_managed_t * c) {
@@ -122,8 +135,6 @@ void notebook_t::set_selected(client_managed_t * c) {
 	update_client_position(c);
 	c->normalize();
 	c->reconfigure();
-//	_clients.remove(c);
-//	_clients.push_front(c);
 
 	/** iconify current selected **/
 	if (_selected != nullptr and c != _selected) {
@@ -344,8 +355,7 @@ void notebook_t::set_default(bool x) {
 }
 
 std::list<tree_t *> notebook_t::childs() const {
-	std::list<tree_t *> ret(_children.begin(), _children.end());
-	return ret;
+	return std::list<tree_t *>{_children.begin(), _children.end()};
 }
 
 void notebook_t::raise_child(tree_t * t) {

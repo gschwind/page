@@ -2112,17 +2112,17 @@ display_t * page_t::get_xconnection() {
 }
 
 void page_t::split(notebook_t * nbk, split_type_e type) {
-	split_t * split = new split_t(type, theme);
+	split_t * split = new split_t{type, theme};
 	nbk->parent()->replace(nbk, split);
-	notebook_t * n = new notebook_t(theme);
+	notebook_t * n = new notebook_t{theme, _auto_refocus};
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(VERTICAL_SPLIT, theme);
+	notebook_t * n = new notebook_t{theme, _auto_refocus};
+	split_t * split = new split_t{VERTICAL_SPLIT, theme};
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -2133,8 +2133,8 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(VERTICAL_SPLIT, theme);
+	notebook_t * n = new notebook_t{theme, _auto_refocus};
+	split_t * split = new split_t{VERTICAL_SPLIT, theme};
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -2145,8 +2145,8 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(HORIZONTAL_SPLIT, theme);
+	notebook_t * n = new notebook_t{theme, _auto_refocus};
+	split_t * split = new split_t{HORIZONTAL_SPLIT, theme};
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -2157,8 +2157,8 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t(theme);
-	split_t * split = new split_t(HORIZONTAL_SPLIT, theme);
+	notebook_t * n = new notebook_t{theme, _auto_refocus};
+	split_t * split = new split_t{HORIZONTAL_SPLIT, theme};
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -3086,7 +3086,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = new viewport_t(cnx, theme, viewport_allocation[i]);
+				vp = new viewport_t{cnx, theme, viewport_allocation[i], _auto_refocus};
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -3101,7 +3101,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = new viewport_t(cnx, theme, area);
+				vp = new viewport_t{cnx, theme, area, _auto_refocus};
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);

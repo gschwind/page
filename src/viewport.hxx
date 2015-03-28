@@ -61,7 +61,7 @@ public:
 		return _parent;
 	}
 
-	viewport_t(display_t * cnx, theme_t * theme, i_rect const & area);
+	viewport_t(display_t * cnx, theme_t * theme, i_rect const & area, bool keep_focus);
 
 	~viewport_t() {
 		std::cout << "call " << __FUNCTION__ << std::endl;

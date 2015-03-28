@@ -48,7 +48,7 @@ class notebook_t : public page_component_t {
 
 	theme_t const * _theme;
 
-	/* child stack order */
+	/* child stack order the first one is the lowest one */
 	std::list<tree_t *> _children;
 
 	page::time_t swap_start;
@@ -62,6 +62,7 @@ class notebook_t : public page_component_t {
 
 	bool _is_default;
 	bool _is_hidden;
+	bool _keep_selected;
 
 public:
 
@@ -104,7 +105,7 @@ public:
 	void update_client_position(client_managed_t * c);
 
 public:
-	notebook_t(theme_t const * theme);
+	notebook_t(theme_t const * theme, bool keep_selected);
 	~notebook_t();
 	void update_allocation(i_rect & allocation);
 
@@ -235,6 +236,10 @@ public:
 
 	bool has_client(client_managed_t * c) {
 		return has_key(_clients, c);
+	}
+
+	void set_keep_selected(bool x) {
+		_keep_selected = x;
 	}
 
 };
