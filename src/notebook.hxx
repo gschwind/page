@@ -77,9 +77,6 @@ public:
 	std::list<client_managed_t *> _clients;
 	client_managed_t * _selected;
 
-	// set of map for fast check is window is in this notebook
-	set<client_managed_t *> _client_map;
-
 	i_rect client_area;
 
 	i_rect button_close;
@@ -237,7 +234,7 @@ public:
 	}
 
 	bool has_client(client_managed_t * c) {
-		return has_key(_client_map, c);
+		return has_key(_clients, c);
 	}
 
 };

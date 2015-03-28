@@ -31,7 +31,6 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	x->set_parent(this);
 	_children.push_back(x);
 	_clients.push_front(x);
-	_client_map.insert(x);
 
 	if(prefer_activate) {
 		swap_start.update_to_current_time();
@@ -85,7 +84,7 @@ void notebook_t::remove(tree_t * src) {
 }
 
 void notebook_t::activate_client(client_managed_t * x) {
-	if ((_client_map.find(x)) != _client_map.end()) {
+	if (has_key(_clients, x)) {
 		set_selected(x);
 	}
 }
@@ -111,7 +110,6 @@ void notebook_t::remove_client(client_managed_t * x) {
 	_children.remove(x);
 	x->set_parent(nullptr);
 	_clients.remove(x);
-	_client_map.erase(x);
 
 }
 
