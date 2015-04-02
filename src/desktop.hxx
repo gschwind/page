@@ -22,7 +22,7 @@
 
 namespace page {
 
-struct desktop_t: public page_component_t {
+struct workspace_t: public page_component_t {
 
 private:
 
@@ -32,8 +32,9 @@ private:
 
 	unsigned const _id;
 
-	/** map viewport to real outputs **/
+	/* list of viewports in creation order, to make a sane reconfiguration */
 	std::vector<viewport_t *> _viewport_outputs;
+	/* list of viewports in stack order to stack windows properly */
 	std::list<viewport_t *> _viewport_stack;
 	std::list<client_not_managed_t *> _dock_clients;
 	std::list<client_managed_t *> _floating_clients;
@@ -43,8 +44,8 @@ private:
 	viewport_t * _primary_viewport;
 	notebook_t * _default_pop;
 	bool _is_hidden;
-	desktop_t(desktop_t const & v);
-	desktop_t & operator= (desktop_t const &);
+	workspace_t(workspace_t const & v);
+	workspace_t & operator= (workspace_t const &);
 
 public:
 
@@ -54,7 +55,7 @@ public:
 		return _parent;
 	}
 
-	desktop_t(unsigned id) :
+	workspace_t(unsigned id) :
 		_allocation{},
 		_parent{nullptr},
 		_default_pop{nullptr},

@@ -218,7 +218,7 @@ struct mode_data_fullscreen_t {
 };
 
 struct fullscreen_data_t {
-	desktop_t * desktop;
+	workspace_t * desktop;
 	viewport_t * viewport;
 	managed_window_type_e revert_type;
 	notebook_t * revert_notebook;
@@ -328,10 +328,10 @@ public:
 	config_handler_t conf;
 
 	unsigned int _current_desktop;
-	std::vector<desktop_t *> _desktop_list;
+	std::vector<workspace_t *> _desktop_list;
 
 	/** store the order of last shown desktop **/
-	std::list<desktop_t *> _desktop_stack;
+	std::list<workspace_t *> _desktop_stack;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
@@ -504,7 +504,7 @@ public:
 	void update_popup_position(std::shared_ptr<popup_frame_move_t> p, i_rect & position);
 
 	/* compute the allocation of viewport taking in account DOCKs */
-	void compute_viewport_allocation(desktop_t * d, viewport_t * v);
+	void compute_viewport_allocation(workspace_t * d, viewport_t * v);
 
 	void cleanup_not_managed_client(client_not_managed_t * c);
 
@@ -540,11 +540,11 @@ public:
 	notebook_t * find_parent_notebook_for(client_managed_t * mw);
 	client_managed_t * find_managed_window_with(xcb_window_t w);
 	static viewport_t * find_viewport_of(tree_t * n);
-	static desktop_t * find_desktop_of(tree_t * n);
+	static workspace_t * find_desktop_of(tree_t * n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
 	void update_viewport_layout();
-	void remove_viewport(desktop_t * d, viewport_t * v);
+	void remove_viewport(workspace_t * d, viewport_t * v);
 	void destroy_viewport(viewport_t * v);
 	void onmap(xcb_window_t w);
 	void create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type);
@@ -676,7 +676,7 @@ public:
 	void page_event_handler_split(page_event_t const & pev);
 
 	std::vector<client_managed_t *> get_sticky_client_managed(tree_t * base);
-	void reconfigure_docks(desktop_t * d);
+	void reconfigure_docks(workspace_t * d);
 
 	void mark_durty(tree_t * t);
 

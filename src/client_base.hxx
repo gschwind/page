@@ -41,10 +41,10 @@ protected:
 
 	tree_t * _parent;
 
-	/** handle properties of client */
+	/* handle properties of client */
 	std::shared_ptr<client_properties_t> _properties;
 
-	/** sub-clients **/
+	/* sub-clients */
 	std::list<client_base_t *> _children;
 
 	// window title cache

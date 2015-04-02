@@ -447,7 +447,7 @@ struct property_t {
 
 };
 
-/** client properties **/
+/* client properties definitions :             EWMH/X11 name               EWMH/X11 type       C++ type */
 using wm_name_t =                   property_t<WM_NAME,                    STRING,             std::string>; // 8
 using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             std::string>; // 8
 using wm_normal_hints_t =           property_t<WM_NORMAL_HINTS,            WM_SIZE_HINTS,      XSizeHints>; // 32
