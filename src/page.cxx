@@ -46,6 +46,7 @@
 #include "client_not_managed.hxx"
 
 #include "simple2_theme.hxx"
+#include "tiny_theme.hxx"
 
 #include "notebook.hxx"
 #include "desktop.hxx"
@@ -287,9 +288,11 @@ void page_t::run() {
 
 	if(_theme_engine == "tiny") {
 		/* TODO */
-		theme = new simple2_theme_t{cnx, conf};
+		std::cout << "using tiny theme engine" << std::endl;
+		theme = new tiny_theme_t{cnx, conf};
 	} else {
 		/* The default theme engine */
+		std::cout << "using simple theme engine" << std::endl;
 		theme = new simple2_theme_t{cnx, conf};
 	}
 

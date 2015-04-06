@@ -34,6 +34,7 @@ page_SOURCES = \
 	viewport.cxx \
 	desktop.cxx \
 	simple2_theme.cxx \
+	tiny_theme.cxx \
 	client_managed.cxx \
 	client_not_managed.cxx \
 	config_handler.cxx \
