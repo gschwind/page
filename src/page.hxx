@@ -342,6 +342,7 @@ public:
 	std::list<xcb_atom_t> supported_list;
 
 	std::string page_base_dir;
+	std::string _theme_engine;
 
 	key_desc_t bind_page_quit;
 	key_desc_t bind_toggle_fullscreen;

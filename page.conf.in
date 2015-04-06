@@ -7,6 +7,9 @@
 #theme directory (page data directory)
 theme_dir=@prefix@/share/page/data/
 
+# select theme engine : simple or tiny
+theme_engine=simple
+
 # quit page
 bind_page_quit=mod4+q
 

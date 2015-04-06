@@ -154,6 +154,7 @@ page_t::page_t(int argc, char ** argv)
 	}
 
 	page_base_dir = conf.get_string("default", "theme_dir");
+	_theme_engine = conf.get_string("default", "theme_engine");
 
 	_last_focus_time = XCB_TIME_CURRENT_TIME;
 	_last_button_press = XCB_TIME_CURRENT_TIME;
@@ -283,7 +284,15 @@ void page_t::run() {
 	_bind_all_default_event();
 
 	/** Initialize theme **/
-	theme = new simple2_theme_t{cnx, conf};
+
+	if(_theme_engine == "tiny") {
+		/* TODO */
+		theme = new simple2_theme_t{cnx, conf};
+	} else {
+		/* The default theme engine */
+		theme = new simple2_theme_t{cnx, conf};
+	}
+
 	cmgr = new composite_surface_manager_t{cnx};
 
 	/* start listen root event before anything, each event will be stored to be processed later */
