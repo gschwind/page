@@ -183,15 +183,13 @@ public:
 
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 
-	i_rect compute_notebook_close_window_position(i_rect const & allocation,
-			int number_of_client, int selected_client_index) const;
-	i_rect compute_notebook_unbind_window_position(i_rect const & allocation,
-			int number_of_client, int selected_client_index) const;
-	i_rect compute_notebook_bookmark_position(i_rect const & allocation) const;
-	i_rect compute_notebook_vsplit_position(i_rect const & allocation) const;
-	i_rect compute_notebook_hsplit_position(i_rect const & allocation) const;
-	i_rect compute_notebook_close_position(i_rect const & allocation) const;
-	i_rect compute_notebook_menu_position(i_rect const & allocation) const;
+	i_rect compute_notebook_close_window_position(int number_of_client, int selected_client_index) const;
+	i_rect compute_notebook_unbind_window_position(int number_of_client, int selected_client_index) const;
+	i_rect compute_notebook_bookmark_position() const;
+	i_rect compute_notebook_vsplit_position() const;
+	i_rect compute_notebook_hsplit_position() const;
+	i_rect compute_notebook_close_position() const;
+	i_rect compute_notebook_menu_position() const;
 
 	void compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const;
 

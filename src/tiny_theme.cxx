@@ -84,12 +84,12 @@ i_rect tiny_theme_t::compute_notebook_menu_position(
 
 tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
 
-	notebook.margin.top = 12;
+	notebook.margin.top = 4;
 	notebook.margin.bottom = 4;
 	notebook.margin.left = 4;
 	notebook.margin.right = 4;
 
-	notebook.tab_height = 12;
+	notebook.tab_height = 22;
 	notebook.selected_close_width = 35;
 	notebook.selected_unbind_width = 20;
 

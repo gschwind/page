@@ -67,10 +67,12 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 }
 
 i_rect notebook_t::get_new_client_size() {
-	return i_rect(allocation().x + _theme->notebook.margin.left,
-			allocation().y + _theme->notebook.margin.top,
-			allocation().w - _theme->notebook.margin.right - _theme->notebook.margin.left,
-			allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom);
+	return i_rect{
+		allocation().x + _theme->notebook.margin.left,
+		allocation().y + _theme->notebook.margin.top + _theme->notebook.tab_height,
+		allocation().w - _theme->notebook.margin.right - _theme->notebook.margin.left,
+		allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom - _theme->notebook.tab_height
+	};
 }
 
 void notebook_t::replace(page_component_t * src, page_component_t * by) {
@@ -211,66 +213,67 @@ region notebook_t::get_area() {
 }
 
 void notebook_t::set_allocation(i_rect const & area) {
-	if (area == allocation())
+	if (area == _allocation)
 		return;
 
 	_allocation = area;
 
-	tab_area.x = allocation().x;
-	tab_area.y = allocation().y;
-	tab_area.w = allocation().w;
-	tab_area.h = _theme->notebook.margin.top;
+	tab_area.x = _allocation.x;
+	tab_area.y = _allocation.y;
+	tab_area.w = _allocation.w;
+	tab_area.h = _theme->notebook.tab_height;
 
-	top_area.x = allocation().x;
-	top_area.y = allocation().y + _theme->notebook.margin.top;
-	top_area.w = allocation().w;
-	top_area.h = (allocation().h - _theme->notebook.margin.top) * 0.2;
+	client_area.x = _allocation.x + _theme->notebook.margin.left;
+	client_area.y = _allocation.y + _theme->notebook.margin.top + _theme->notebook.tab_height;
+	client_area.w = _allocation.w - _theme->notebook.margin.left - _theme->notebook.margin.right;
+	client_area.h = _allocation.h - _theme->notebook.margin.top - _theme->notebook.margin.bottom - _theme->notebook.tab_height;
 
-	bottom_area.x = allocation().x;
-	bottom_area.y = allocation().y + _theme->notebook.margin.top + (0.8 * (allocation().h - _theme->notebook.margin.top));
-	bottom_area.w = allocation().w;
-	bottom_area.h = (allocation().h - _theme->notebook.margin.top) * 0.2;
+	top_area.x = _allocation.x;
+	top_area.y = _allocation.y + _theme->notebook.tab_height;
+	top_area.w = _allocation.w;
+	top_area.h = (_allocation.h - _theme->notebook.tab_height) * 0.2;
 
-	left_area.x = allocation().x;
-	left_area.y = allocation().y + _theme->notebook.margin.top;
-	left_area.w = allocation().w * 0.2;
-	left_area.h = (allocation().h - _theme->notebook.margin.top);
+	bottom_area.x = _allocation.x;
+	bottom_area.y = _allocation.y + (0.8 * (allocation().h - _theme->notebook.tab_height));
+	bottom_area.w = _allocation.w;
+	bottom_area.h = (_allocation.h - _theme->notebook.tab_height) * 0.2;
 
-	right_area.x = allocation().x + allocation().w * 0.8;
-	right_area.y = allocation().y + _theme->notebook.margin.top;
-	right_area.w = allocation().w * 0.2;
-	right_area.h = (allocation().h - _theme->notebook.margin.top);
+	left_area.x = _allocation.x;
+	left_area.y = _allocation.y + _theme->notebook.tab_height;
+	left_area.w = _allocation.w * 0.2;
+	left_area.h = (_allocation.h - _theme->notebook.tab_height);
 
-	popup_top_area.x = allocation().x;
-	popup_top_area.y = allocation().y + _theme->notebook.margin.top;
-	popup_top_area.w = allocation().w;
-	popup_top_area.h = (allocation().h - _theme->notebook.margin.top) * 0.5;
+	right_area.x = _allocation.x + _allocation.w * 0.8;
+	right_area.y = _allocation.y + _theme->notebook.tab_height;
+	right_area.w = _allocation.w * 0.2;
+	right_area.h = (_allocation.h - _theme->notebook.tab_height);
 
-	popup_bottom_area.x = allocation().x;
-	popup_bottom_area.y = allocation().y + _theme->notebook.margin.top
-			+ (0.5 * (allocation().h - _theme->notebook.margin.top));
-	popup_bottom_area.w = allocation().w;
-	popup_bottom_area.h = (allocation().h - _theme->notebook.margin.top) * 0.5;
+	popup_top_area.x = _allocation.x;
+	popup_top_area.y = _allocation.y + _theme->notebook.tab_height;
+	popup_top_area.w = _allocation.w;
+	popup_top_area.h = (_allocation.h - _theme->notebook.tab_height) * 0.5;
 
-	popup_left_area.x = allocation().x;
-	popup_left_area.y = allocation().y + _theme->notebook.margin.top;
-	popup_left_area.w = allocation().w * 0.5;
-	popup_left_area.h = (allocation().h - _theme->notebook.margin.top);
+	popup_bottom_area.x = _allocation.x;
+	popup_bottom_area.y = _allocation.y + _theme->notebook.tab_height
+			+ (0.5 * (_allocation.h - _theme->notebook.tab_height));
+	popup_bottom_area.w = _allocation.w;
+	popup_bottom_area.h = (_allocation.h - _theme->notebook.tab_height) * 0.5;
 
-	popup_right_area.x = allocation().x + allocation().w * 0.5;
-	popup_right_area.y = allocation().y + _theme->notebook.margin.top;
-	popup_right_area.w = allocation().w * 0.5;
-	popup_right_area.h = (allocation().h - _theme->notebook.margin.top);
+	popup_left_area.x = _allocation.x;
+	popup_left_area.y = _allocation.y + _theme->notebook.tab_height;
+	popup_left_area.w = _allocation.w * 0.5;
+	popup_left_area.h = (_allocation.h - _theme->notebook.tab_height);
 
-	popup_center_area.x = allocation().x + allocation().w * 0.2;
-	popup_center_area.y = allocation().y + _theme->notebook.margin.top + (allocation().h - _theme->notebook.margin.top) * 0.2;
-	popup_center_area.w = allocation().w * 0.6;
-	popup_center_area.h = (allocation().h - _theme->notebook.margin.top) * 0.6;
+	popup_right_area.x = _allocation.x + allocation().w * 0.5;
+	popup_right_area.y = _allocation.y + _theme->notebook.tab_height;
+	popup_right_area.w = _allocation.w * 0.5;
+	popup_right_area.h = (_allocation.h - _theme->notebook.tab_height);
 
-	client_area.x = allocation().x + _theme->notebook.margin.left;
-	client_area.y = allocation().y + _theme->notebook.margin.top;
-	client_area.w = allocation().w - _theme->notebook.margin.left - _theme->notebook.margin.right;
-	client_area.h = allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom;
+	popup_center_area.x = _allocation.x + allocation().w * 0.2;
+	popup_center_area.y = _allocation.y + _theme->notebook.tab_height + (allocation().h - _theme->notebook.tab_height) * 0.2;
+	popup_center_area.w = _allocation.w * 0.6;
+	popup_center_area.h = (_allocation.h - _theme->notebook.tab_height) * 0.6;
+
 
 	if(client_area.w <= 0) {
 		client_area.w = 1;
@@ -311,8 +314,11 @@ void notebook_t::compute_client_size_with_constraint(client_managed_t * c,
 
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	unsigned int height, width;
-	compute_client_size_with_constraint(c, allocation().w - _theme->notebook.margin.left - _theme->notebook.margin.right,
-			allocation().h - _theme->notebook.margin.top - _theme->notebook.margin.bottom, width, height);
+	compute_client_size_with_constraint(c,
+			client_area.w,
+			client_area.h,
+			width,
+			height);
 
 	/** if the client cannot fit into client_area, clip it **/
 	if(width > client_area.w) {
@@ -333,7 +339,6 @@ i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;
 
-	//printf("Computed client size %s\n", client_size.to_std::string().c_str());
 	return client_size;
 
 }
@@ -464,39 +469,58 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 
 }
 
-i_rect notebook_t::compute_notebook_bookmark_position(
-		i_rect const & allocation) const {
-	return i_rect{allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
-			16, 16};
+i_rect notebook_t::compute_notebook_bookmark_position() const {
+	return i_rect{
+		_allocation.x + _allocation.w
+		- _theme->notebook.close_width
+		- _theme->notebook.hsplit_width
+		- _theme->notebook.vsplit_width
+		- _theme->notebook.mark_width,
+		_allocation.y,
+		_theme->notebook.mark_width,
+		_theme->notebook.tab_height
+	};
 }
 
-i_rect notebook_t::compute_notebook_vsplit_position(
-		i_rect const & allocation) const {
-
-	return i_rect{allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
-			16, 16};
+i_rect notebook_t::compute_notebook_vsplit_position() const {
+	return i_rect{
+		_allocation.x + _allocation.w
+			- _theme->notebook.close_width
+			- _theme->notebook.hsplit_width
+			- _theme->notebook.vsplit_width,
+		_allocation.y,
+		_theme->notebook.vsplit_width,
+		_theme->notebook.tab_height
+	};
 }
 
-i_rect notebook_t::compute_notebook_hsplit_position(
-		i_rect const & allocation) const {
+i_rect notebook_t::compute_notebook_hsplit_position() const {
 
-	return i_rect{allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
-			16, 16};
+	return i_rect{
+		_allocation.x + _allocation.w - _theme->notebook.close_width - _theme->notebook.hsplit_width,
+		_allocation.y,
+		_theme->notebook.hsplit_width,
+		_theme->notebook.tab_height
+	};
 
 }
 
-i_rect notebook_t::compute_notebook_close_position(
-		i_rect const & allocation) const {
-
-	return i_rect{allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
-			16, 16};
+i_rect notebook_t::compute_notebook_close_position() const {
+	return i_rect{
+		_allocation.x + _allocation.w - _theme->notebook.close_width,
+		_allocation.y,
+		_theme->notebook.close_width,
+		_theme->notebook.tab_height
+	};
 }
 
-i_rect notebook_t::compute_notebook_menu_position(
-		i_rect const & allocation) const {
-
-	return i_rect{allocation.x, allocation.y,
-			40, 20};
+i_rect notebook_t::compute_notebook_menu_position() const {
+	return i_rect{
+		_allocation.x,
+		_allocation.y,
+		_theme->notebook.menu_button_width,
+		_theme->notebook.tab_height
+	};
 
 }
 
@@ -504,36 +528,36 @@ i_rect notebook_t::compute_notebook_menu_position(
 void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const {
 
 	{
-		page_event_t nc(PAGE_EVENT_NOTEBOOK_CLOSE);
-		nc.position = compute_notebook_close_position(_allocation);
+		page_event_t nc{PAGE_EVENT_NOTEBOOK_CLOSE};
+		nc.position = compute_notebook_close_position();
 		nc.position.x -= x_offset;
 		nc.position.y -= y_offset;
 		nc.nbk = this;
 		l->push_back(nc);
 
-		page_event_t nhs(PAGE_EVENT_NOTEBOOK_HSPLIT);
-		nhs.position = compute_notebook_hsplit_position(_allocation);
+		page_event_t nhs{PAGE_EVENT_NOTEBOOK_HSPLIT};
+		nhs.position = compute_notebook_hsplit_position();
 		nhs.position.x -= x_offset;
 		nhs.position.y -= y_offset;
 		nhs.nbk = this;
 		l->push_back(nhs);
 
-		page_event_t nvs(PAGE_EVENT_NOTEBOOK_VSPLIT);
-		nvs.position = compute_notebook_vsplit_position(_allocation);
+		page_event_t nvs{PAGE_EVENT_NOTEBOOK_VSPLIT};
+		nvs.position = compute_notebook_vsplit_position();
 		nvs.position.x -= x_offset;
 		nvs.position.y -= y_offset;
 		nvs.nbk = this;
 		l->push_back(nvs);
 
-		page_event_t nm(PAGE_EVENT_NOTEBOOK_MARK);
-		nm.position = compute_notebook_bookmark_position(_allocation);
+		page_event_t nm{PAGE_EVENT_NOTEBOOK_MARK};
+		nm.position = compute_notebook_bookmark_position();
 		nm.position.x -= x_offset;
 		nm.position.y -= y_offset;
 		nm.nbk = this;
 		l->push_back(nm);
 
-		page_event_t nmn(PAGE_EVENT_NOTEBOOK_MENU);
-		nmn.position = compute_notebook_menu_position(_allocation);
+		page_event_t nmn{PAGE_EVENT_NOTEBOOK_MENU};
+		nmn.position = compute_notebook_menu_position();
 		nmn.position.x -= x_offset;
 		nmn.position.y -= y_offset;
 		nmn.nbk = this;
@@ -546,27 +570,29 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 		if(_selected != nullptr) {
 			i_rect & b = theme_notebook.selected_client.position;
 
-			page_event_t ncclose(PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE);
+			page_event_t ncclose{PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE};
 
-			ncclose.position.x = b.x + b.w - 35;
+			ncclose.position.x = b.x + b.w - _theme->notebook.selected_close_width;
 			ncclose.position.y = b.y;
-			ncclose.position.w = 35;
-			ncclose.position.h = b.h-3;
+			ncclose.position.w = _theme->notebook.selected_close_width;
+			ncclose.position.h = _theme->notebook.tab_height;
 			ncclose.nbk = this;
 			ncclose.clt = _selected;
 			l->push_back(ncclose);
 
-			page_event_t ncub(PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND);
+			page_event_t ncub{PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND};
 
-			ncub.position.x = b.x + b.w - 25 - 30;
+			ncub.position.x = b.x + b.w
+					- _theme->notebook.selected_close_width
+					- _theme->notebook.selected_unbind_width;
 			ncub.position.y = b.y;
-			ncub.position.w = 16;
-			ncub.position.h = 16;
+			ncub.position.w = _theme->notebook.selected_unbind_width;
+			ncub.position.h = _theme->notebook.tab_height;
 			ncub.nbk = this;
 			ncub.clt = _selected;
 			l->push_back(ncub);
 
-			page_event_t nc(PAGE_EVENT_NOTEBOOK_CLIENT);
+			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
 			nc.position = b;
 			nc.nbk = this;
 			nc.clt = _selected;
@@ -577,7 +603,7 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 		auto c = _clients.begin();
 		for (unsigned k = 0; k < theme_notebook.clients_tab.size(); ++k) {
 			i_rect & b = theme_notebook.clients_tab[k].position;
-			page_event_t nc { PAGE_EVENT_NOTEBOOK_CLIENT };
+			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
 			nc.position = b;
 			nc.nbk = this;
 			nc.clt = *c;
@@ -604,15 +630,21 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 	if (_clients.size() != 0) {
 		theme_notebook.clients_tab.resize(_clients.size());
 
-		double box_width = 33.0;
-		double selected_box_width = (allocation.w - 17.0 * 5.0 - 40.0) - (_clients.size()) * box_width;
-		double offset = allocation.x + 40.0;
+		double selected_box_width = (allocation.w
+				- _theme->notebook.close_width
+				- _theme->notebook.hsplit_width
+				- _theme->notebook.vsplit_width
+				- _theme->notebook.mark_width
+				- _theme->notebook.menu_button_width)
+				- _clients.size() * _theme->notebook.iconic_tab_width;
+		double offset = allocation.x + _theme->notebook.menu_button_width;
 
 		if (_selected != nullptr){
-			i_rect b { (int)floor(offset), allocation.y, (int)floor(
+			theme_notebook.selected_client.position = i_rect{
+					(int)floor(offset),
+					allocation.y, (int)floor(
 					(int)(offset + selected_box_width) - floor(offset)),
-					(int)_theme->notebook.margin.top - 1 };
-			theme_notebook.selected_client.position = b;
+					(int)_theme->notebook.tab_height };
 			theme_notebook.selected_client.selected = true;
 			theme_notebook.selected_client.focuced = _selected->is_focused();
 			theme_notebook.selected_client.title = _selected->title();
@@ -627,17 +659,18 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 		offset += selected_box_width;
 		unsigned k = 0;
 		for (auto i : _clients) {
-				i_rect b { (int)floor(offset), allocation.y, (int)(floor(
-						offset + box_width) - floor(offset)),
-						(int)_theme->notebook.margin.top - 1 };
-			theme_notebook.clients_tab[k].position = b;
+			theme_notebook.clients_tab[k].position = i_rect{
+				(int)floor(offset),
+				allocation.y,
+				(int)(floor(offset + _theme->notebook.iconic_tab_width) - floor(offset)),
+				(int)_theme->notebook.tab_height};
 			theme_notebook.clients_tab[k].selected = (i == _selected);
 			theme_notebook.clients_tab[k].focuced = i->is_focused();
 			theme_notebook.clients_tab[k].title = i->title();
 			theme_notebook.clients_tab[k].demand_attention = i->demands_attention();
 			theme_notebook.clients_tab[k].icon = i->icon();
 			theme_notebook.clients_tab[k].is_iconic = i->is_iconic();
-			offset += box_width;
+			offset += _theme->notebook.iconic_tab_width;
 			++k;
 		}
 	} else {

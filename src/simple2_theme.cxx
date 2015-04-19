@@ -84,16 +84,17 @@ i_rect simple2_theme_t::compute_notebook_menu_position(
 
 simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
-	notebook.margin.top = 22;
+	notebook.margin.top = 4;
 	notebook.margin.bottom = 4;
 	notebook.margin.left = 4;
 	notebook.margin.right = 4;
 
 	notebook.tab_height = 22;
+	notebook.iconic_tab_width = 33;
 	notebook.selected_close_width = 35;
 	notebook.selected_unbind_width = 20;
 
-	notebook.menu_button_width;
+	notebook.menu_button_width = 40;
 	notebook.close_width = 17;
 	notebook.hsplit_width = 17;
 	notebook.vsplit_width = 17;
@@ -111,14 +112,11 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating.close_width = 35;
 	floating.bind_width = 20;
 
-
 	split.margin.top = 0;
 	split.margin.bottom = 0;
 	split.margin.left = 0;
 	split.margin.right = 0;
 	split.width = 10;
-
-
 
 	_cnx = cnx;
 

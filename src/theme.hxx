@@ -48,6 +48,7 @@ public:
 		margin_t margin;
 
 		unsigned tab_height;
+		unsigned iconic_tab_width;
 		unsigned selected_close_width;
 		unsigned selected_unbind_width;
 
