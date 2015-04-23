@@ -10,6 +10,8 @@
 #include <cairo/cairo-xcb.h>
 
 #include "config.hxx"
+#include "renderable_solid.hxx"
+#include "renderable_pixmap.hxx"
 #include "simple2_theme.hxx"
 #include "box.hxx"
 #include "color.hxx"
@@ -1454,6 +1456,9 @@ void simple2_theme_t::create_background_img() {
 
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
+		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
+		background_r = std::shared_ptr<renderable_t>(new renderable_pixmap_t(backgroun_px, i_rect{0,0,geometry->width,geometry->height}, region{}));
+
 		/**
 		 * WARNING: transform order and set_source_surface have huge
 		 * Consequence.
@@ -1614,6 +1619,12 @@ void simple2_theme_t::create_background_img() {
 
 	} else {
 		background_s = nullptr;
+
+		xcb_get_geometry_cookie_t ck = xcb_get_geometry(_cnx->xcb(), _cnx->root());
+		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck, 0);
+
+		background_r = std::shared_ptr<renderable_t>(new renderable_solid_t(default_background_color, i_rect{0,0,geometry->width,geometry->height}, region{}));
+
 	}
 }
 
@@ -1793,6 +1804,10 @@ void simple2_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, doubl
 	CHECK_CAIRO(cairo_line_to(cr, x + w - radius, y));
 	CHECK_CAIRO(cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
 
+}
+
+shared_ptr<renderable_t> simple2_theme_t::get_background(int width, int heigth) {
+	return background_r;
 }
 
 

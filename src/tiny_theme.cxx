@@ -10,6 +10,8 @@
 #include <cairo/cairo-xcb.h>
 
 #include "config.hxx"
+#include "renderable_solid.hxx"
+#include "renderable_pixmap.hxx"
 #include "tiny_theme.hxx"
 #include "box.hxx"
 #include "color.hxx"
@@ -27,8 +29,6 @@ inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 		//abort();
 	}
 }
-
-
 
 
 #define CHECK_CAIRO(x) do { \
@@ -90,6 +90,7 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
 	notebook.margin.right = 4;
 
 	notebook.tab_height = 22;
+	notebook.iconic_tab_width = 33;
 	notebook.selected_close_width = 35;
 	notebook.selected_unbind_width = 20;
 
@@ -110,7 +111,6 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating.margin.right = 6;
 	floating.close_width = 35;
 	floating.bind_width = 20;
-
 
 	split.margin.top = 0;
 	split.margin.bottom = 0;
@@ -1454,6 +1454,9 @@ void tiny_theme_t::create_background_img() {
 
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
+		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
+		background_r = std::shared_ptr<renderable_t>(new renderable_pixmap_t(backgroun_px, i_rect{0,0,geometry->width,geometry->height}, region{}));
+
 		/**
 		 * WARNING: transform order and set_source_surface have huge
 		 * Consequence.
@@ -1614,6 +1617,12 @@ void tiny_theme_t::create_background_img() {
 
 	} else {
 		background_s = nullptr;
+
+		xcb_get_geometry_cookie_t ck = xcb_get_geometry(_cnx->xcb(), _cnx->root());
+		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck, 0);
+
+		background_r = std::shared_ptr<renderable_t>(new renderable_solid_t(default_background_color, i_rect{0,0,geometry->width,geometry->height}, region{}));
+
 	}
 }
 
@@ -1793,6 +1802,10 @@ void tiny_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, double w
 	CHECK_CAIRO(cairo_line_to(cr, x + w - radius, y));
 	CHECK_CAIRO(cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
 
+}
+
+shared_ptr<renderable_t> tiny_theme_t::get_background(int width, int heigth) {
+	return background_r;
 }
 
 

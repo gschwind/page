@@ -5,29 +5,31 @@
  *      Author: gschwind
  */
 
-#ifndef RENDERABLE_PIXMAP_HXX_
-#define RENDERABLE_PIXMAP_HXX_
+#ifndef RENDERABLE_SOLID_HXX_
+#define RENDERABLE_SOLID_HXX_
 
-#include "pixmap.hxx"
+#include "utils.hxx"
+#include "renderable.hxx"
+#include "color.hxx"
 
 namespace page {
 
-class renderable_pixmap_t : public renderable_t {
+class renderable_solid_t : public renderable_t {
 
 	i_rect location;
-	std::shared_ptr<pixmap_t> surf;
+	color_t color;
 	region damaged;
 	region opaque_region;
 	region visible_region;
 
 public:
 
-	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, i_rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
-		opaque_region = region(loc);
-		visible_region = region(loc);
+	renderable_solid_t(color_t color, i_rect loc, region damaged) : damaged(damaged), color(color), location(loc) {
+		opaque_region = region{loc};
+		visible_region = region{loc};
 	}
 
-	virtual ~renderable_pixmap_t() { }
+	virtual ~renderable_solid_t() { }
 
 	/**
 	 * draw the area of a renderable to the destination surface
@@ -36,17 +38,12 @@ public:
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
 		cairo_save(cr);
-		if (surf != nullptr) {
-			if (surf->get_cairo_surface() != nullptr) {
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-				cairo_set_source_surface(cr, surf->get_cairo_surface(),
-						location.x, location.y);
-				region r = visible_region & area;
-				for (auto &i : r) {
-					cairo_clip(cr, i);
-					cairo_mask_surface(cr, surf->get_cairo_surface(), location.x, location.y);
-				}
-			}
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+		region r = visible_region & area;
+		for (auto &i : r) {
+			cairo_clip(cr, i);
+			cairo_fill(cr);
 		}
 		cairo_restore(cr);
 	}
@@ -56,7 +53,11 @@ public:
 	 * If unknown it's safe to leave this empty.
 	 **/
 	virtual region get_opaque_region() {
-		return opaque_region;
+		if(color.a > 0.0) {
+			return region{};
+		} else {
+			return opaque_region;
+		}
 	}
 
 	/**

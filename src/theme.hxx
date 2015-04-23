@@ -10,6 +10,8 @@
 #ifndef THEME_HXX_
 #define THEME_HXX_
 
+#include <typeinfo>
+
 #include <cairo/cairo.h>
 
 #include "leak_checker.hxx"
@@ -72,8 +74,7 @@ public:
 	} floating;
 
 
-	virtual ~theme_t() { }
-
+	virtual ~theme_t();
 
 	virtual void render_split(cairo_t * cr, theme_split_t const * s) const = 0;
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const = 0;
@@ -91,6 +92,8 @@ public:
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) = 0;
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) = 0;
 	virtual void update() = 0;
+
+	virtual shared_ptr<renderable_t> get_background(int width, int heigth) = 0;
 
 
 };

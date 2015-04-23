@@ -14,12 +14,17 @@
 #include <pango/pangocairo.h>
 #endif
 
+#include <memory>
+
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
+
 
 #include "theme.hxx"
 #include "color.hxx"
 #include "config_handler.hxx"
+#include "renderable.hxx"
+#include "pixmap.hxx"
 
 namespace page {
 
@@ -112,6 +117,8 @@ public:
 	std::string background_file;
 	std::string scale_mode;
 
+	std::shared_ptr<renderable_t> background_r;
+	std::shared_ptr<pixmap_t> backgroun_px;
 
 	tiny_theme_t(display_t * cnx, config_handler_t & conf);
 
@@ -202,6 +209,8 @@ public:
 	static void cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius);
+
+	virtual shared_ptr<renderable_t> get_background(int width, int heigth);
 
 };
 

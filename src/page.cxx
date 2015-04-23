@@ -64,6 +64,13 @@ namespace page {
 
 time_t const page_t::default_wait{1000000000L / 120L};
 
+/**
+ * TODO: To lazy to create file for this definition
+ **/
+theme_t::~theme_t() {
+
+}
+
 page_t::page_t(int argc, char ** argv)
 {
 
@@ -3842,6 +3849,8 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 	for(auto x: viewports) {
 		x->repair_damaged();
 	}
+
+	out.push_back(theme->get_background(0,0));
 
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);

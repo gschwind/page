@@ -11,6 +11,8 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-xcb.h>
 
+#include "display.hxx"
+
 namespace page {
 
 /**

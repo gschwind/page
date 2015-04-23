@@ -10,6 +10,8 @@
 #ifndef COLOR_HXX_
 #define COLOR_HXX_
 
+#include <stdexcept>
+
 namespace page {
 
 struct color_t {
@@ -36,7 +38,7 @@ struct color_t {
 			unsigned x = strtoul(c, 0, 16);
 			set(x);
 		} else {
-			throw runtime_error("bad color format");
+			throw std::runtime_error("bad color format");
 		}
 	}
 
