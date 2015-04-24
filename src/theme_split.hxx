@@ -17,6 +17,7 @@ enum split_type_e {
 };
 
 struct theme_split_t {
+	int root_x, root_y;
 	i_rect allocation;
 	split_type_e type;
 	double split;

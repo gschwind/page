@@ -393,7 +393,16 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 	CHECK_CAIRO(cairo_new_path(cr));
 
-	render_empty(cr, n->allocation);
+	CHECK_CAIRO(cairo_save(cr));
+	cairo_clip(cr, n->allocation);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	if (background_s != nullptr) {
+		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, -n->root_x, -n->root_y));
+	} else {
+		CHECK_CAIRO(cairo_set_source_rgba(cr, default_background_color));
+	}
+	CHECK_CAIRO(cairo_paint(cr));
+	CHECK_CAIRO(cairo_restore(cr));
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 
@@ -948,7 +957,7 @@ void tiny_theme_t::render_split(cairo_t * cr,
 
 	i_rect sarea = s->allocation;
 	if (background_s != nullptr) {
-		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, 0.0, 0.0));
+		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, -s->root_x, -s->root_y));
 	} else {
 		CHECK_CAIRO(cairo_set_source_rgba(cr, default_background_color));
 	}

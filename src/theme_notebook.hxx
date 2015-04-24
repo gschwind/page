@@ -11,6 +11,7 @@
 namespace page {
 
 struct theme_notebook_t {
+	int root_x, root_y;
 	i_rect allocation;
 	i_rect client_position;
 	theme_tab_t selected_client;

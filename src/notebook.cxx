@@ -627,6 +627,9 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 	allocation.x -= x_offset;
 	allocation.y -= y_offset;
 
+	theme_notebook.root_x = x_offset;
+	theme_notebook.root_y = y_offset;
+
 	if (_clients.size() != 0) {
 		theme_notebook.clients_tab.resize(_clients.size());
 

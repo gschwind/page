@@ -249,6 +249,8 @@ void split_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
 	ts.allocation = compute_split_bar_location();
 	ts.allocation.x -= x_offset;
 	ts.allocation.y -= y_offset;
+	ts.root_x = x_offset;
+	ts.root_y = y_offset;
 	_theme->render_split(cr, &ts);
 }
 
