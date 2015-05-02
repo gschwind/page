@@ -2787,7 +2787,11 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 	cout << "bind: " << mw->title() << endl;
 	detach(mw);
 	insert_window_in_notebook(mw, nullptr, activate);
-	safe_raise_window(mw);
+	if(activate) {
+		set_focus(mw, XCB_CURRENT_TIME);
+	} else {
+		safe_raise_window(mw);
+	}
 	_need_update_client_list = true;
 	mark_durty(mw);
 }
@@ -3414,7 +3418,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
-				mw->set_focus_state(false);
+				set_focus(mw, XCB_CURRENT_TIME);
 			}
 
 			/**
@@ -3447,7 +3451,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			}
 
 			if(mw->net_wm_state() != nullptr) {
-				if(has_key(*mw->net_wm_state(), static_cast<xcb_atom_t>(A(_NET_WM_STATE_HIDDEN)))) {
+				if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
 					activate = false;
 				}
 			}
@@ -3470,7 +3474,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
-				mw->set_focus_state(false);
+				set_focus(mw, XCB_CURRENT_TIME);
 			}
 		}
 	} catch (exception_t & e) {
