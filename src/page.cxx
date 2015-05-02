@@ -4003,11 +4003,7 @@ void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
 		update_viewport_layout();
 		update_current_desktop();
 		update_desktop_visibility();
-		if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-			set_focus(_desktop_list[_current_desktop]->client_focus.front(), time);
-		} else {
-			set_focus(nullptr, time);
-		}
+		set_focus(_desktop_list[_current_desktop]->client_focus.front(), time);
 	}
 }
 
