@@ -2051,10 +2051,7 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
-	client_managed_t * old_focus = nullptr;
-
-	/** NULL pointer is always in the list **/
-	old_focus = _desktop_list[_current_desktop]->client_focus.front();
+	auto old_focus = _desktop_list[_current_desktop]->client_focus.front();
 
 	if (old_focus != nullptr) {
 		/**
@@ -2109,7 +2106,10 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	/**
 	 * update the focus status
 	 **/
-	new_focus->focus(_last_focus_time);
+	if(tfocus != XCB_CURRENT_TIME)
+		new_focus->focus(_last_focus_time);
+	else
+		new_focus->focus(XCB_CURRENT_TIME);
 	mark_durty(new_focus);
 
 }
@@ -4102,36 +4102,42 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+	/* ignore all focus event related to the pointer */
+	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
+		return;
 
-	std::cout << "Focus in 0x" << format("08x", e->event) << std::endl;
+	//std::cout << "Focus in 0x" << format("08x", e->event) << std::endl;
 
-	/** mimic the behaviour of dwm **/
-	if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-		if(_desktop_list[_current_desktop]->client_focus.front() == nullptr)
-			return;
-
-		if(_desktop_list[_current_desktop]->client_focus.front()->orig() != e->event) {
-			_desktop_list[_current_desktop]->client_focus.front()->focus(XCB_CURRENT_TIME);
-		}
-	}
+	/**
+	 * Don't use focus in because we may not listen  all possible focus in events.
+	 *
+	 * Use focus out to detect an unexpected lose of focus.
+	 *
+	 **/
 
 }
 
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+	/* ignore all focus event related to the pointer */
+	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
+		return;
+	/* ignore all focus due to grabs */
+	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
+		return;
 
-	std::cout << "Focus out 0x" << format("08x", e->event) << std::endl;
+	//std::cout << "Focus out 0x" << format("08x", e->event) << std::endl;
 
-	/** refocus the root window if those window have to be focused **/
-	if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-		if(_desktop_list[_current_desktop]->client_focus.front() == nullptr) {
-			if(e->event == identity_window) {
-				cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
-			}
+	if (_desktop_list[_current_desktop]->client_focus.front() == nullptr) {
+		if (e->event == identity_window) {
+			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT,
+					XCB_CURRENT_TIME);
 		}
 	} else {
-		if(e->event == identity_window) {
-			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		auto focus = _desktop_list[_current_desktop]->client_focus.front();
+		/* only inferior focus is allowed */
+		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focus->orig()) {
+			focus->focus(XCB_CURRENT_TIME);
 		}
 	}
 
