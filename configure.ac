@@ -1,5 +1,5 @@
 
-AC_INIT([page], [1.5.2])
+AC_INIT([page], [1.5.3])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([-Wall -Werror])
