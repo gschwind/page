@@ -287,10 +287,10 @@ void client_managed_t::reconfigure() {
 			_base_position.w = _wished_position.w + _theme->floating.margin.left
 					+ _theme->floating.margin.right;
 			_base_position.h = _wished_position.h + _theme->floating.margin.top
-					+ _theme->floating.margin.bottom;
+					+ _theme->floating.margin.bottom + _theme->floating.title_height;
 
 			_orig_position.x = _theme->floating.margin.left;
-			_orig_position.y = _theme->floating.margin.top;
+			_orig_position.y = _theme->floating.margin.top + _theme->floating.title_height;
 			_orig_position.w = _wished_position.w;
 			_orig_position.h = _wished_position.h;
 
@@ -475,7 +475,7 @@ void client_managed_t::expose() {
 		if (_top_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr, 0, 0, _base_position.w,
-					_theme->floating.margin.top);
+					_theme->floating.margin.top+_theme->floating.title_height);
 			cairo_set_source_surface(_cr, _top_buffer, 0, 0);
 			cairo_fill(_cr);
 		}
@@ -494,12 +494,12 @@ void client_managed_t::expose() {
 		/** left **/
 		if (_left_buffer != nullptr) {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
-			cairo_rectangle(_cr, 0.0, _theme->floating.margin.top,
+			cairo_rectangle(_cr, 0.0, _theme->floating.margin.top + _theme->floating.title_height,
 					_theme->floating.margin.left,
 					_base_position.h - _theme->floating.margin.top
-							- _theme->floating.margin.bottom);
+							- _theme->floating.margin.bottom - _theme->floating.title_height);
 			cairo_set_source_surface(_cr, _left_buffer, 0.0,
-					_theme->floating.margin.top);
+					_theme->floating.margin.top + _theme->floating.title_height);
 			cairo_fill(_cr);
 		}
 
@@ -508,12 +508,12 @@ void client_managed_t::expose() {
 			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
 			cairo_rectangle(_cr,
 					_base_position.w - _theme->floating.margin.right,
-					_theme->floating.margin.top, _theme->floating.margin.right,
+					_theme->floating.margin.top + _theme->floating.title_height, _theme->floating.margin.right,
 					_base_position.h - _theme->floating.margin.top
-							- _theme->floating.margin.bottom);
+							- _theme->floating.margin.bottom - _theme->floating.title_height);
 			cairo_set_source_surface(_cr, _right_buffer,
 					_base_position.w - _theme->floating.margin.right,
-					_theme->floating.margin.top);
+					_theme->floating.margin.top + _theme->floating.title_height);
 			cairo_fill(_cr);
 		}
 
@@ -592,11 +592,11 @@ compute_floating_areas(theme_managed_window_t * mw) const {
 
 	floating_event_t ft(FLOATING_EVENT_TITLE);
 	ft.position = i_rect(x0, y0, w0,
-			_theme->floating.margin.top - _theme->floating.margin.bottom);
+			_theme->floating.title_height);
 	ret->push_back(ft);
 
 	floating_event_t fgt(FLOATING_EVENT_GRIP_TOP);
-	fgt.position = i_rect(x0, 0, w0, _theme->floating.margin.bottom);
+	fgt.position = i_rect(x0, 0, w0, _theme->floating.margin.top);
 	ret->push_back(fgt);
 
 	floating_event_t fgb(FLOATING_EVENT_GRIP_BOTTOM);
@@ -613,12 +613,12 @@ compute_floating_areas(theme_managed_window_t * mw) const {
 
 	floating_event_t fgtl(FLOATING_EVENT_GRIP_TOP_LEFT);
 	fgtl.position = i_rect(0, 0, _theme->floating.margin.left,
-			_theme->floating.margin.bottom);
+			_theme->floating.margin.top);
 	ret->push_back(fgtl);
 
 	floating_event_t fgtr(FLOATING_EVENT_GRIP_TOP_RIGHT);
 	fgtr.position = i_rect(x1, 0, _theme->floating.margin.right,
-			_theme->floating.margin.bottom);
+			_theme->floating.margin.top);
 	ret->push_back(fgtr);
 
 	floating_event_t fgbl(FLOATING_EVENT_GRIP_BOTTOM_LEFT);
@@ -641,7 +641,7 @@ i_rect client_managed_t::compute_floating_close_position(i_rect const & allocati
 	position.x = allocation.w - _theme->floating.close_width;
 	position.y = 0.0;
 	position.w = _theme->floating.close_width;
-	position.h = _theme->notebook.margin.top-3;
+	position.h = _theme->floating.title_height;
 
 	return position;
 }
@@ -652,8 +652,8 @@ compute_floating_bind_position(i_rect const & allocation) const {
 	i_rect position;
 	position.x = allocation.w - _theme->floating.bind_width - _theme->floating.close_width;
 	position.y = 0.0;
-	position.w = 16;
-	position.h = 16;
+	position.w = _theme->floating.bind_width;
+	position.h = _theme->floating.title_height;
 
 	return position;
 }
@@ -893,7 +893,7 @@ void client_managed_t::create_back_buffer() {
 
 	if (_theme->floating.margin.top > 0) {
 		_top_buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-				_base_position.w, _theme->floating.margin.top);
+				_base_position.w, _theme->floating.margin.top + _theme->floating.title_height);
 	} else {
 		_top_buffer = nullptr;
 	}

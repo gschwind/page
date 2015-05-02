@@ -69,6 +69,7 @@ public:
 
 	struct {
 		margin_t margin;
+		unsigned int title_height;
 		unsigned int close_width;
 		unsigned int bind_width;
 	} floating;

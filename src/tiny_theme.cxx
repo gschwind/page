@@ -94,7 +94,7 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
 	notebook.selected_close_width = 35;
 	notebook.selected_unbind_width = 20;
 
-	notebook.menu_button_width = 35;
+	notebook.menu_button_width = 40;
 	notebook.close_width = 17;
 	notebook.hsplit_width = 17;
 	notebook.vsplit_width = 17;
@@ -105,10 +105,11 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
 	split.margin.left = 0;
 	split.margin.right = 0;
 
-	floating.margin.top = 10;
+	floating.margin.top = 6;
 	floating.margin.bottom = 6;
 	floating.margin.left = 6;
 	floating.margin.right = 6;
+	floating.title_height = 22;
 	floating.close_width = 35;
 	floating.bind_width = 20;
 
@@ -1072,11 +1073,11 @@ void tiny_theme_t::render_floating_base(
 	if (mw->cairo_top != nullptr) {
 		cairo_t * cr = mw->cairo_top;
 
-		i_rect tab_area(0, 0, allocation.w, floating.margin.top);
+		i_rect tab_area(0, 0, allocation.w, floating.title_height);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
-		cairo_rectangle(cr, tab_area.x, tab_area.y, tab_area.w, tab_area.h);
+		cairo_rectangle(cr, tab_area.x, tab_area.y, tab_area.w, tab_area.h+floating.margin.top);
 		cairo_fill(cr);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
@@ -1108,8 +1109,8 @@ void tiny_theme_t::render_floating_base(
 		i_rect xncclose;
 		xncclose.x = b.x + b.w - floating.close_width;
 		xncclose.y = b.y;
-		xncclose.w = 35;
-		xncclose.h = notebook.margin.top-3;
+		xncclose.w = floating.close_width;
+		xncclose.h = floating.title_height - 4;
 
 		CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h+0.5));
 		CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
@@ -1146,7 +1147,7 @@ void tiny_theme_t::render_floating_base(
 		bicon.h = 16;
 		bicon.w = 16;
 		bicon.x += 10;
-		bicon.y += floating.margin.top - 22;
+		bicon.y += 4;
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 		if (mw->icon != 0) {
@@ -1165,7 +1166,7 @@ void tiny_theme_t::render_floating_base(
 		btext.h -= 0;
 		btext.w -= 3 * 16 + 12 + 30;
 		btext.x += 7 + 16 + 6;
-		btext.y += floating.margin.top - 23;
+		btext.y += 4;
 
 		cairo_save(cr);
 		/** draw title **/
@@ -1204,10 +1205,10 @@ void tiny_theme_t::render_floating_base(
 		/** draw close button **/
 
 		i_rect ncclose;
-		ncclose.x = tab_area.x + tab_area.w - floating.close_width + 10;
+		ncclose.x = tab_area.x + tab_area.w - floating.close_width + (floating.close_width-16)/2;
 		ncclose.y = tab_area.y;
-		ncclose.w = 16;
-		ncclose.h = 16;
+		ncclose.w = floating.close_width;
+		ncclose.h = floating.title_height - 4;
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, ncclose.x, ncclose.y, ncclose.w, ncclose.h));
@@ -1218,8 +1219,8 @@ void tiny_theme_t::render_floating_base(
 		i_rect ncub;
 		ncub.x = tab_area.x + tab_area.w - floating.bind_width - floating.close_width;
 		ncub.y = tab_area.y;
-		ncub.w = 16;
-		ncub.h = 16;
+		ncub.w = floating.bind_width;
+		ncub.h = floating.title_height;
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, ncub.x, ncub.y, ncub.w, ncub.h));
@@ -1270,7 +1271,7 @@ void tiny_theme_t::render_floating_base(
 		cairo_t * cr = mw->cairo_right;
 
 		i_rect b(0, 0, floating.margin.right,
-				allocation.h - floating.margin.top
+				allocation.h - floating.margin.top - floating.title_height
 						- floating.margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
@@ -1293,7 +1294,7 @@ void tiny_theme_t::render_floating_base(
 		cairo_t * cr = mw->cairo_left;
 
 		i_rect b(0, 0, floating.margin.left,
-				allocation.h - floating.margin.top
+				allocation.h - floating.margin.top - floating.title_height
 						- floating.margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
