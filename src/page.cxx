@@ -485,21 +485,20 @@ void page_t::unmanage(client_managed_t * mw) {
 
 	delete mw; mw = nullptr;
 
-	if (_auto_refocus and not _desktop_list[_current_desktop]->client_focus.empty()) {
-		client_managed_t * xmw = _desktop_list[_current_desktop]->client_focus.front();
-		if (xmw != nullptr) {
-			if (xmw->is(MANAGED_NOTEBOOK)) {
-				notebook_t * nk = find_parent_notebook_for(xmw);
-				if (nk != nullptr) {
-					nk->activate_client(xmw);
-				}
+	auto new_focus = _desktop_list[_current_desktop]->client_focus.front();
+
+	if (new_focus == nullptr or not _auto_refocus) {
+		set_focus(nullptr, XCB_CURRENT_TIME);
+	} else {
+		if (new_focus->is(MANAGED_NOTEBOOK)) {
+			notebook_t * nk = find_parent_notebook_for(new_focus);
+			if (nk != nullptr) {
+				nk->activate_client(new_focus);
 			}
-
-			switch_to_desktop(find_current_desktop(xmw), _last_focus_time);
-			set_focus(xmw, _last_focus_time);
 		}
+		switch_to_desktop(find_current_desktop(new_focus), XCB_CURRENT_TIME);
+		set_focus(new_focus, XCB_CURRENT_TIME);
 	}
-
 }
 
 void page_t::scan() {
