@@ -956,7 +956,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						int x = e->root_x;
 						int y = e->root_y;
 
-						client_menu = std::shared_ptr<client_dropdown_menu_t>{new client_dropdown_menu_t(cnx, theme, v, x, y, 300)};
+						client_menu = std::make_shared<client_dropdown_menu_t>(cnx, theme, v, x, y, 300);
 
 					}
 				}
@@ -5277,7 +5277,7 @@ void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
 	int s = 0;
 
 	for (auto i : managed_window) {
-		std::shared_ptr<notebook_dropdown_menu_t::item_t> cy{new notebook_dropdown_menu_t::item_t(i, i->icon(), i->title())};
+		auto cy = std::make_shared<notebook_dropdown_menu_t::item_t>(i, i->icon(), i->title());
 		v.push_back(cy);
 		if (i == _desktop_list[_current_desktop]->client_focus.front()) {
 			sel = s;
@@ -5286,9 +5286,9 @@ void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
 	}
 
 	int x = mode_data_notebook_menu.from->allocation().x;
-	int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.margin.top;
+	int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.tab_height;
 
-	menu = std::shared_ptr<notebook_dropdown_menu_t>{new notebook_dropdown_menu_t(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w)};
+	menu = std::make_shared<notebook_dropdown_menu_t>(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w);
 
 }
 
