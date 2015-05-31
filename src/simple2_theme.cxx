@@ -112,7 +112,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	floating.margin.left = 6;
 	floating.margin.right = 6;
 	floating.title_height = 22;
-	floating.close_width = 35;
+	floating.close_width = 48;
 	floating.bind_width = 20;
 
 	split.margin.top = 0;
@@ -734,26 +734,6 @@ void simple2_theme_t::render_notebook_selected(
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_stroke(cr);
 
-//	double radius = 6.5;
-//	CHECK_CAIRO(cairo_new_path(cr));
-//	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
-//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
-//
-//	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-//	cairo_stroke(cr);
-//
-//	radius = 5.5;
-//	CHECK_CAIRO(cairo_new_path(cr));
-//	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+1.5, xncclose.y-1.5 + xncclose.h));
-//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+1.5, xncclose.y+.5));
-//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5 - radius, xncclose.y+.5));
-//	CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w - 0.5 - radius, xncclose.y+.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
-//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5, xncclose.y + xncclose.h - 1.5));
-//	CHECK_CAIRO(cairo_close_path(cr));
-//	::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
-//	cairo_stroke(cr);
-
 	CHECK_CAIRO(cairo_restore(cr));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
@@ -1131,34 +1111,31 @@ void simple2_theme_t::render_floating_base(
 		i_rect xncclose;
 		xncclose.x = b.x + b.w - floating.close_width;
 		xncclose.y = b.y;
-		xncclose.w = floating.close_width;
+		xncclose.w = floating.close_width - 10;
 		xncclose.h = floating.title_height - 4;
 
 		CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h+0.5));
 		CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
 		CHECK_CAIRO(cairo_fill(cr));
 
-		double radius = 6.5;
 		CHECK_CAIRO(cairo_new_path(cr));
-		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5));
-		CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w -.5 - radius, xncclose.y+0.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -.5, xncclose.y + xncclose.h -.5));
-		CHECK_CAIRO(cairo_close_path(cr));
+		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+		::cairo_set_source_rgb(cr, 0xcc/255.0*.5, 0x44/255.0*.5, 0.0);
+		cairo_stroke(cr);
 
+		CHECK_CAIRO(cairo_new_path(cr));
+		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
 		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 		cairo_stroke(cr);
 
-		radius = 6.5;
 		CHECK_CAIRO(cairo_new_path(cr));
-		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+1.5, xncclose.y-1.5 + xncclose.h));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+1.5, xncclose.y+.5));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5 - radius, xncclose.y+.5));
-		CHECK_CAIRO(cairo_arc(cr, xncclose.x + xncclose.w - 0.5 - radius, xncclose.y+.5 + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x + xncclose.w -0.5, xncclose.y + xncclose.h -1.5));
-		CHECK_CAIRO(cairo_close_path(cr));
-		::cairo_set_source_rgb(cr, 0.9, 0.4, 0.3);
+		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 		cairo_stroke(cr);
 
 		CHECK_CAIRO(cairo_restore(cr));
@@ -1227,7 +1204,7 @@ void simple2_theme_t::render_floating_base(
 		/** draw close button **/
 
 		i_rect ncclose;
-		ncclose.x = tab_area.x + tab_area.w - floating.close_width + (floating.close_width-16)/2;
+		ncclose.x = tab_area.x + tab_area.w - (floating.close_width-10)/2 - 18;
 		ncclose.y = tab_area.y;
 		ncclose.w = floating.close_width;
 		ncclose.h = floating.title_height - 4;
