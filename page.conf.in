@@ -147,7 +147,7 @@ notebook_selected_outline_color    = 88000000
 # selected notebook (not active one) border color
 notebook_selected_border_color     = 224e9a06
 # selected notebook (not active one) background
-notebook_selected_background_color = 004e9a06
+notebook_selected_background_color = 22729fcf
 
 # demands attention notebook.
 #
@@ -213,5 +213,5 @@ floating_normal_outline_color      = 88000000
 # inactive floating border color.
 floating_normal_border_color       = 224e9a06
 # inactive floating text background
-floating_normal_background_color   = 004e9a06
+floating_normal_background_color   = 22729fcf
 
