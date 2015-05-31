@@ -134,6 +134,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	popup_background_color.set(
 			conf.get_string("simple_theme", "popup_background_color"));
 
+	grip_color.set(conf.get_string("simple_theme", "grip_color"));
+
 	notebook_active_text_color.set(
 			conf.get_string("simple_theme", "notebook_active_text_color"));
 	notebook_active_outline_color.set(
@@ -1033,13 +1035,13 @@ void simple2_theme_t::render_split(cairo_t * cr,
 		grip2.y += 16;
 	}
 
-	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, grip_color));
 	CHECK_CAIRO(cairo_rectangle(cr, grip0.x, grip0.y, grip0.w, grip0.h));
 	CHECK_CAIRO(cairo_fill(cr));
-	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, grip_color));
 	CHECK_CAIRO(cairo_rectangle(cr, grip1.x, grip1.y, grip1.w, grip1.h));
 	CHECK_CAIRO(cairo_fill(cr));
-	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, grip_color));
 	CHECK_CAIRO(cairo_rectangle(cr, grip2.x, grip2.y, grip2.w, grip2.h));
 	CHECK_CAIRO(cairo_fill(cr));
 

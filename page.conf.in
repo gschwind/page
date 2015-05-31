@@ -122,6 +122,9 @@ popup_text_color = FFFFFF
 popup_outline_color = 000000
 popup_background_color = 8ae234
 
+# grip square color
+grip_color = 00ff0000
+
 # active notebook is the notebook that have the focus.
 #
 # active notebook text font.
