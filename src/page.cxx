@@ -3427,7 +3427,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL)
 				or type == A(_NET_WM_WINDOW_TYPE_DOCK))
 				and get_transient_for(mw) == nullptr
-				and mw->has_motif_border()
+				//and mw->has_motif_border()
 				and not mw->is_modal())
 				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 
