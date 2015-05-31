@@ -25,6 +25,7 @@
 #include <memory>
 #include <sstream>
 
+#include "color.hxx"
 #include "box.hxx"
 #include "key_desc.hxx"
 #include "x11_func_name.hxx"
@@ -284,7 +285,7 @@ inline void find_key_from_string(std::string const desc, key_desc_t & k) {
 	}
 }
 
-static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
+static void draw_outer_graddien(cairo_t * cr, i_rect r, color_t const & iner_color, double _shadow_width) {
 
 	cairo_save(cr);
 
@@ -295,8 +296,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * grad0 = cairo_pattern_create_linear(r.x - _shadow_width, 0.0, r.x, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad0, 0.0, 0.0, 0.0, 0.0, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad0, 1.0, 0.0, 0.0, 0.0, 0.2);
+	cairo_pattern_add_color_stop_rgba(grad0, 0.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
+	cairo_pattern_add_color_stop_rgba(grad0, 1.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
 	cairo_mask(cr, grad0);
 	cairo_pattern_destroy(grad0);
 
@@ -307,8 +308,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * grad1 = cairo_pattern_create_linear(r.x + r.w, 0.0, r.x + r.w + _shadow_width, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad1, 1.0, 0.0, 0.0, 0.0, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad1, 0.0, 0.0, 0.0, 0.0, 0.2);
+	cairo_pattern_add_color_stop_rgba(grad1, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
+	cairo_pattern_add_color_stop_rgba(grad1, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
 	cairo_mask(cr, grad1);
 	cairo_pattern_destroy(grad1);
 
@@ -319,8 +320,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * grad2 = cairo_pattern_create_linear(0.0, r.y - _shadow_width, 0.0, r.y);
-	cairo_pattern_add_color_stop_rgba(grad2, 0.0, 0.0, 0.0, 0.0, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad2, 1.0, 0.0, 0.0, 0.0, 0.2);
+	cairo_pattern_add_color_stop_rgba(grad2, 0.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
+	cairo_pattern_add_color_stop_rgba(grad2, 1.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
 	cairo_mask(cr, grad2);
 	cairo_pattern_destroy(grad2);
 
@@ -331,8 +332,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * grad3 = cairo_pattern_create_linear(0.0, r.y + r.h, 0.0, r.y + r.h + _shadow_width);
-	cairo_pattern_add_color_stop_rgba(grad3, 1.0, 0.0, 0.0, 0.0, 0.0);
-	cairo_pattern_add_color_stop_rgba(grad3, 0.0, 0.0, 0.0, 0.0, 0.2);
+	cairo_pattern_add_color_stop_rgba(grad3, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
+	cairo_pattern_add_color_stop_rgba(grad3, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
 	cairo_mask(cr, grad3);
 	cairo_pattern_destroy(grad3);
 
@@ -344,8 +345,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * r0grad = cairo_pattern_create_radial(r.x, r.y, 0.0, r.x, r.y, _shadow_width);
-	cairo_pattern_add_color_stop_rgba(r0grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-	cairo_pattern_add_color_stop_rgba(r0grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_pattern_add_color_stop_rgba(r0grad, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
+	cairo_pattern_add_color_stop_rgba(r0grad, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
 	cairo_mask(cr, r0grad);
 	cairo_pattern_destroy(r0grad);
 
@@ -356,8 +357,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * r1grad = cairo_pattern_create_radial(r.x + r.w, r.y, 0.0, r.x + r.w, r.y, _shadow_width);
-	cairo_pattern_add_color_stop_rgba(r1grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-	cairo_pattern_add_color_stop_rgba(r1grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_pattern_add_color_stop_rgba(r1grad, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
+	cairo_pattern_add_color_stop_rgba(r1grad, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
 	cairo_mask(cr, r1grad);
 	cairo_pattern_destroy(r1grad);
 
@@ -368,8 +369,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * r2grad = cairo_pattern_create_radial(r.x, r.y + r.h, 0.0, r.x, r.y + r.h, _shadow_width);
-	cairo_pattern_add_color_stop_rgba(r2grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-	cairo_pattern_add_color_stop_rgba(r2grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_pattern_add_color_stop_rgba(r2grad, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
+	cairo_pattern_add_color_stop_rgba(r2grad, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
 	cairo_mask(cr, r2grad);
 	cairo_pattern_destroy(r2grad);
 
@@ -380,8 +381,8 @@ static void draw_outer_graddien(cairo_t * cr, i_rect r, double _shadow_width) {
 	cairo_clip(cr);
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_pattern_t * r3grad = cairo_pattern_create_radial(r.x + r.w, r.y + r.h, 0.0, r.x + r.w, r.y + r.h, _shadow_width);
-	cairo_pattern_add_color_stop_rgba(r3grad, 0.0, 0.0, 0.0, 0.0, 0.2);
-	cairo_pattern_add_color_stop_rgba(r3grad, 1.0, 0.0, 0.0, 0.0, 0.0);
+	cairo_pattern_add_color_stop_rgba(r3grad, 0.0, iner_color.r, iner_color.g, iner_color.b, iner_color.a);
+	cairo_pattern_add_color_stop_rgba(r3grad, 1.0, iner_color.r, iner_color.g, iner_color.b, 0.0);
 	cairo_mask(cr, r3grad);
 	cairo_pattern_destroy(r3grad);
 

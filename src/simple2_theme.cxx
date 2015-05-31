@@ -100,7 +100,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	notebook.close_width = 17;
 	notebook.hsplit_width = 17;
 	notebook.vsplit_width = 17;
-	notebook.mark_width = 17;
+	notebook.mark_width = 28;
 
 	split.margin.top = 0;
 	split.margin.bottom = 0;
@@ -474,24 +474,11 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(cairo_save(cr));
 		/** bottom shadow **/
 		i_rect b { n->allocation };
-		b.h = notebook.tab_height;
+		b.y += notebook.tab_height;
+		b.h -= notebook.tab_height;
 
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_clip(cr));
 
-		CHECK_CAIRO(cairo_set_source_rgb(cr, 0.0, 0.0, 0.0));
-		cairo_pattern_t * gradient = cairo_pattern_create_linear(0.0,
-				b.y + b.h - 6, 0.0, b.y + b.h + 10);
-		CHECK_CAIRO(
-				cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0,
-						0.0));
-		CHECK_CAIRO(
-				cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0,
-						1.0));
-		CHECK_CAIRO(cairo_mask(cr, gradient));
-		cairo_pattern_destroy(gradient);
-
-		cairo_reset_clip(cr);
+		draw_outer_graddien(cr, b, color_t{0.0, 0.0, 0.0, 0.25}, 5);
 
 		/* borders lines */
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -499,7 +486,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		cairo_rectangle(cr, n->allocation.x + 0.5,
 				n->allocation.y + notebook.tab_height - 0.5,
 				n->allocation.x + n->allocation.w - 1.0,
-				n->allocation.y + n->allocation.h - notebook.tab_height - 1.0);
+				n->allocation.y + n->allocation.h - notebook.tab_height);
 		::cairo_set_source_rgb(cr, 0.0, 0, 0);
 		cairo_stroke(cr);
 
@@ -1034,6 +1021,7 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	i_rect grip2;
 
 	if (sarea.w > sarea.h) {
+		/* vertical splitting of area, i.e. horizontal grip */
 		grip1.x = sarea.x + (sarea.w / 2.0) - 4.0;
 		grip1.y = sarea.y + (sarea.h / 2.0) - 4.0;
 		grip1.w = 8.0;
@@ -1042,15 +1030,6 @@ void simple2_theme_t::render_split(cairo_t * cr,
 		grip0.x -= 16;
 		grip2 = grip1;
 		grip2.x += 16;
-
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_new_path(cr);
-		cairo_move_to(cr, sarea.x, sarea.y + sarea.h/2+0.5);
-		cairo_line_to(cr, sarea.x + sarea.w, sarea.y + sarea.h/2+0.5);
-		cairo_stroke(cr);
-
-
-
 	} else {
 		grip1.x = sarea.x + (sarea.w / 2.0) - 4.0;
 		grip1.y = sarea.y + (sarea.h / 2.0) - 4.0;
@@ -1060,13 +1039,6 @@ void simple2_theme_t::render_split(cairo_t * cr,
 		grip0.y -= 16;
 		grip2 = grip1;
 		grip2.y += 16;
-
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_new_path(cr);
-		cairo_move_to(cr, sarea.x + sarea.w/2 + 0.5, sarea.y);
-		cairo_line_to(cr, sarea.x + sarea.w/2 + 0.5, sarea.y + sarea.h);
-		cairo_stroke(cr);
-
 	}
 
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0));

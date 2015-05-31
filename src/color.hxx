@@ -17,12 +17,9 @@ namespace page {
 struct color_t {
 	double r, g, b, a;
 
-	color_t() {
-		r = 0;
-		g = 0;
-		b = 0;
-		a = 0;
-	}
+	color_t() : r{0.0}, g{0.0}, b{0.0}, a{0.0} { }
+
+	color_t(double r, double g, double b, double a): r{r}, g{g}, b{b}, a{a} { }
 
 	color_t(unsigned color) {
 		set(color);
