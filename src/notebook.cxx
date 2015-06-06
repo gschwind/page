@@ -401,8 +401,8 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 	if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {
-			std::shared_ptr<pixmap_t> prev = prev_surf;
-			i_rect prev_pos = prev_loc;
+			auto prev = prev_surf;
+			auto prev_pos = prev_loc;
 
 			std::shared_ptr<pixmap_t> next { nullptr };
 			i_rect next_pos;
@@ -414,9 +414,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 				}
 			}
 
-			fading_notebook = std::shared_ptr<renderable_notebook_fading_t> {
-					new renderable_notebook_fading_t { prev, next, prev_pos,
-							next_pos } };
+			fading_notebook = std::make_shared<renderable_notebook_fading_t>(prev, next, prev_pos, next_pos);
 
 		}
 

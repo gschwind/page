@@ -586,9 +586,9 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 		i_rect b = compute_notebook_bookmark_position(n->allocation);
 
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
-		CHECK_CAIRO(cairo_fill(cr));
+		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+		//CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
+		//CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
@@ -605,9 +605,9 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 		i_rect b = compute_notebook_vsplit_position(n->allocation);
 
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
-		CHECK_CAIRO(cairo_fill(cr));
+		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+		//CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
+		//CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
@@ -618,9 +618,9 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 		i_rect b = compute_notebook_hsplit_position(n->allocation);
 
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
-		CHECK_CAIRO(cairo_fill(cr));
+		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+		//CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
+		//CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
@@ -631,9 +631,9 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 		i_rect b = compute_notebook_close_position(n->allocation);
 
-		CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
-		CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
-		CHECK_CAIRO(cairo_fill(cr));
+		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+		//CHECK_CAIRO(cairo_set_source_rgb(cr, notebook_normal_background_color));
+		//CHECK_CAIRO(cairo_fill(cr));
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));

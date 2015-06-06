@@ -60,7 +60,7 @@ public:
 
 		/**
 		 * old frame is static, just create a back buffer once
-		 * Hope that the background doesn't change
+		 * Hope that the background doesn't change (currently this look to be bugued)
 		 **/
 		if (tmpa == nullptr) {
 			tmpa = cairo_surface_create_similar(target, CAIRO_CONTENT_COLOR, tmp_pos.w, tmp_pos.h);
