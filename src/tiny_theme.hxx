@@ -78,6 +78,8 @@ public:
 	color_t popup_outline_color;
 	color_t popup_background_color;
 
+	color_t grip_color;
+
 	color_t notebook_active_text_color;
 	color_t notebook_active_outline_color;
 	color_t notebook_active_border_color;

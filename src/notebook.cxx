@@ -32,6 +32,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	x->set_parent(this);
 	_children.push_back(x);
 	_clients.push_front(x);
+	_client_to_tab[x] = std::make_shared<theme_tab_t>();
 
 	if(prefer_activate) {
 		swap_start.update_to_current_time();
@@ -113,6 +114,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 	_children.remove(x);
 	x->set_parent(nullptr);
 	_clients.remove(x);
+	_client_to_tab.erase(x);
 
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {
 		_selected = dynamic_cast<client_managed_t*>(_children.back());
@@ -566,7 +568,7 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 	if(_clients.size() > 0) {
 
 		if(_selected != nullptr) {
-			i_rect & b = theme_notebook.selected_client.position;
+			i_rect & b = theme_notebook.selected_client->position;
 
 			page_event_t ncclose{PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE};
 
@@ -599,10 +601,9 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 		}
 
 		auto c = _clients.begin();
-		for (unsigned k = 0; k < theme_notebook.clients_tab.size(); ++k) {
-			i_rect & b = theme_notebook.clients_tab[k].position;
+		for (auto const & tab: theme_notebook.clients_tab) {
 			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-			nc.position = b;
+			nc.position = tab->position;
 			nc.nbk = this;
 			nc.clt = *c;
 			l->push_back(nc);
@@ -629,8 +630,6 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 	theme_notebook.root_y = y_offset;
 
 	if (_clients.size() != 0) {
-		theme_notebook.clients_tab.resize(_clients.size());
-
 		double selected_box_width = (allocation.w
 				- _theme->notebook.close_width
 				- _theme->notebook.hsplit_width
@@ -641,17 +640,20 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 		double offset = allocation.x + _theme->notebook.menu_button_width;
 
 		if (_selected != nullptr){
-			theme_notebook.selected_client.position = i_rect{
+			/** copy the tab context **/
+			auto tab = make_shared<theme_tab_t>(*_client_to_tab[_selected]);
+			theme_notebook.selected_client = tab;
+			tab->position = i_rect{
 					(int)floor(offset),
 					allocation.y, (int)floor(
 					(int)(offset + selected_box_width) - floor(offset)),
 					(int)_theme->notebook.tab_height };
-			theme_notebook.selected_client.selected = true;
-			theme_notebook.selected_client.focuced = _selected->is_focused();
-			theme_notebook.selected_client.title = _selected->title();
-			theme_notebook.selected_client.demand_attention = _selected->demands_attention();
-			theme_notebook.selected_client.icon = _selected->icon();
-			theme_notebook.selected_client.is_iconic = _selected->is_iconic();
+			tab->selected = true;
+			tab->focuced = _selected->is_focused();
+			tab->title = _selected->title();
+			tab->demand_attention = _selected->demands_attention();
+			tab->icon = _selected->icon();
+			tab->is_iconic = _selected->is_iconic();
 			theme_notebook.has_selected_client = true;
 		} else {
 			theme_notebook.has_selected_client = false;
@@ -660,17 +662,19 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 		offset += selected_box_width;
 		unsigned k = 0;
 		for (auto i : _clients) {
-			theme_notebook.clients_tab[k].position = i_rect{
+			auto const & tab = _client_to_tab[i];
+			theme_notebook.clients_tab.push_back(tab);
+			tab->position = i_rect{
 				(int)floor(offset),
 				allocation.y,
 				(int)(floor(offset + _theme->notebook.iconic_tab_width) - floor(offset)),
 				(int)_theme->notebook.tab_height};
-			theme_notebook.clients_tab[k].selected = (i == _selected);
-			theme_notebook.clients_tab[k].focuced = i->is_focused();
-			theme_notebook.clients_tab[k].title = i->title();
-			theme_notebook.clients_tab[k].demand_attention = i->demands_attention();
-			theme_notebook.clients_tab[k].icon = i->icon();
-			theme_notebook.clients_tab[k].is_iconic = i->is_iconic();
+			tab->selected = (i == _selected);
+			tab->focuced = i->is_focused();
+			tab->title = i->title();
+			tab->demand_attention = i->demands_attention();
+			tab->icon = i->icon();
+			tab->is_iconic = i->is_iconic();
 			offset += _theme->notebook.iconic_tab_width;
 			++k;
 		}

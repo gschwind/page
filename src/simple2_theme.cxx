@@ -412,24 +412,24 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 
 	if (n->has_selected_client) {
-		if (n->selected_client.is_iconic) {
+		if (n->selected_client->is_iconic) {
 
-			if (n->selected_client.demand_attention) {
-				render_notebook_normal(cr, n->selected_client,
+			if (n->selected_client->demand_attention) {
+				render_notebook_normal(cr, *n->selected_client.get(),
 						notebook_attention_font,
 						notebook_attention_text_color,
 						notebook_attention_outline_color,
 						notebook_attention_border_color,
 						notebook_attention_background_color);
-			} else if (n->selected_client.selected) {
-				render_notebook_normal(cr, n->selected_client,
+			} else if (n->selected_client->selected) {
+				render_notebook_normal(cr, *n->selected_client.get(),
 						notebook_selected_font,
 						notebook_selected_text_color,
 						notebook_selected_outline_color,
 						notebook_selected_border_color,
 						notebook_selected_background_color);
 			} else {
-				render_notebook_normal(cr, n->selected_client,
+				render_notebook_normal(cr, *n->selected_client.get(),
 						notebook_normal_font,
 						notebook_normal_text_color,
 						notebook_normal_outline_color,
@@ -440,30 +440,30 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 
 	}
 
-	for (auto &i : n->clients_tab) {
-		if (i.focuced) {
-			render_notebook_normal(cr, i,
+	for (auto const & i : n->clients_tab) {
+		if (i->focuced) {
+			render_notebook_normal(cr, *i.get(),
 					notebook_active_font,
 					notebook_active_text_color,
 					notebook_active_outline_color,
 					notebook_active_border_color,
 					notebook_active_background_color);
-		} else if (i.demand_attention) {
-			render_notebook_normal(cr, i,
+		} else if (i->demand_attention) {
+			render_notebook_normal(cr, *i.get(),
 					notebook_attention_font,
 					notebook_attention_text_color,
 					notebook_attention_outline_color,
 					notebook_attention_border_color,
 					notebook_attention_background_color);
-		} else if (i.selected) {
-			render_notebook_normal(cr, i,
+		} else if (i->selected) {
+			render_notebook_normal(cr, *i.get(),
 					notebook_selected_font,
 					notebook_selected_text_color,
 					notebook_selected_outline_color,
 					notebook_selected_border_color,
 					notebook_selected_background_color);
 		} else {
-			render_notebook_normal(cr, i,
+			render_notebook_normal(cr, *i.get(),
 					notebook_normal_font,
 					notebook_normal_text_color,
 					notebook_normal_outline_color,
@@ -489,10 +489,10 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	}
 
 	if (n->has_selected_client) {
-		if (not n->selected_client.is_iconic) {
+		if (not n->selected_client->is_iconic) {
 
 			/* clear selected tab background */
-			i_rect a{n->selected_client.position};
+			i_rect a{n->selected_client->position};
 
 			a.x+=2;
 			a.w-=4;
@@ -509,21 +509,21 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 			CHECK_CAIRO(cairo_fill(cr));
 			CHECK_CAIRO(cairo_restore(cr));
 
-			if (n->selected_client.focuced) {
-				render_notebook_selected(cr, *n, n->selected_client,
+			if (n->selected_client->focuced) {
+				render_notebook_selected(cr, *n, *n->selected_client.get(),
 						notebook_active_font, notebook_active_text_color,
 						notebook_active_outline_color,
 						notebook_active_border_color,
 						notebook_active_background_color, 1.0);
-			} else if (n->selected_client.demand_attention) {
-				render_notebook_selected(cr, *n, n->selected_client,
+			} else if (n->selected_client->demand_attention) {
+				render_notebook_selected(cr, *n, *n->selected_client.get(),
 						notebook_attention_font,
 						notebook_attention_text_color,
 						notebook_attention_outline_color,
 						notebook_attention_border_color,
 						notebook_attention_background_color, 1.0);
 			} else {
-				render_notebook_selected(cr, *n, n->selected_client,
+				render_notebook_selected(cr, *n, *n->selected_client.get(),
 						notebook_selected_font, notebook_selected_text_color,
 						notebook_selected_outline_color,
 						notebook_selected_border_color,

@@ -18,6 +18,27 @@ struct theme_tab_t {
 	bool focuced;
 	bool demand_attention;
 	bool is_iconic;
+
+	theme_tab_t() :
+		position{},
+		title{},
+		icon{},
+		selected{},
+		focuced{},
+		demand_attention{},
+		is_iconic{}
+	{ }
+
+	theme_tab_t(theme_tab_t const & x) :
+		position{x.position},
+		title{x.title},
+		icon{x.icon},
+		selected{x.selected},
+		focuced{x.focuced},
+		demand_attention{x.demand_attention},
+		is_iconic{x.is_iconic}
+	{ }
+
 };
 
 }

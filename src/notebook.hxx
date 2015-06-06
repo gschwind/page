@@ -78,6 +78,9 @@ public:
 	std::list<client_managed_t *> _clients;
 	client_managed_t * _selected;
 
+	// link the client to the corresponding tab theme
+	mutable std::map<client_managed_t *, std::shared_ptr<theme_tab_t>> _client_to_tab;
+
 	i_rect client_area;
 
 	i_rect button_close;
