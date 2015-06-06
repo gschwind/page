@@ -49,6 +49,7 @@
 #include "page_event.hxx"
 #include "renderable_page.hxx"
 
+#include "mainloop.hxx"
 
 namespace page {
 
@@ -246,7 +247,7 @@ struct key_mode_data_t {
 	client_managed_t * selected;
 };
 
-class page_t : public page_component_t {
+class page_t : public page_component_t, public mainloop_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
 	static time_t const default_wait;
@@ -320,7 +321,6 @@ public:
 	std::list<client_not_managed_t *> notifications;
 	std::list<client_not_managed_t *> above;
 
-	bool running;
 	bool _need_render;
 	bool _need_restack;
 	bool _need_update_client_list;
@@ -387,9 +387,6 @@ public:
 
 
 private:
-
-	time_t _next_frame;
-	time_t _max_wait;
 
 	xcb_timestamp_t _last_focus_time;
 	xcb_timestamp_t _last_button_press;
@@ -684,6 +681,10 @@ public:
 	unsigned int find_current_desktop(client_base_t * c);
 
 	void update_alt_tab_popup(client_managed_t * selected);
+
+
+	void process_pending_events();
+	bool render_timeout();
 
 };
 

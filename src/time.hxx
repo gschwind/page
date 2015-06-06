@@ -115,6 +115,10 @@ public:
 		return nsec / 1000000L;
 	}
 
+	int64_t microseconds() {
+		return nsec / 1000L;
+	}
+
 
 };
 

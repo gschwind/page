@@ -138,8 +138,6 @@ page_t::page_t(int argc, char ** argv)
 	cnx = new display_t;
 	rnd = nullptr;
 
-	running = false;
-
 	/* load configurations, from lower priority to high one */
 
 	/* load default configuration */
@@ -379,66 +377,16 @@ void page_t::run() {
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
-	_max_wait = default_wait;
-	_next_frame.update_to_current_time();
-
 	struct pollfd pfds;
 	pfds.fd = cnx->fd();
 	pfds.events = POLLIN|POLLPRI|POLLERR;
 
-	running = true;
-	while (running) {
+	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
+	/* call this 120 times per second */
+	add_timeout(1000000000L/120L, [this]() -> bool { return this->render_timeout(); });
 
-		xcb_flush(cnx->xcb());
+	mainloop_t::run();
 
-		/* poll at less 250 times per second */
-		poll(&pfds, 1, 1000/250);
-
-		/** Here we try to process all pending events then render if needed **/
-		cnx->grab();
-
-		while (cnx->has_pending_events()) {
-			while (cnx->has_pending_events()) {
-				cmgr->pre_process_event(cnx->front_event());
-				process_event(cnx->front_event());
-				cnx->pop_event();
-				xcb_flush(cnx->xcb());
-			}
-
-			if (_need_restack) {
-				_need_restack = false;
-				update_windows_stack();
-			}
-
-			if(_need_update_client_list) {
-				_need_update_client_list = false;
-				update_client_list();
-			}
-
-			cnx->sync();
-
-		}
-
-		/**
-		 * Here we are sure that we have the proper state of the server, no one else
-		 * Have pending query.
-		 **/
-
-
-		/** render if no render occurred within previous 1/120 second **/
-		time_t cur_tic;
-		cur_tic.update_to_current_time();
-		if (cur_tic > _next_frame or _need_render) {
-			_need_render = false;
-			render();
-		}
-
-		/** clean up surfaces **/
-		cmgr->cleanup();
-
-		cnx->ungrab();
-
-	}
 }
 
 void page_t::unmanage(client_managed_t * mw) {
@@ -663,7 +611,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if(e->response_type == XCB_KEY_PRESS) {
 
 		if(k == bind_page_quit.ks and (e->state & bind_page_quit.mod)) {
-			running = false;
+			stop();
 		}
 
 		if (k == bind_close.ks and (e->state & bind_close.mod)) {
@@ -1717,7 +1665,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		}
 
 	} else if (e->type == A(PAGE_QUIT)) {
-		running = false;
+		stop();
 	} else if (e->type == A(WM_PROTOCOLS)) {
 
 	} else if (e->type == A(_NET_CLOSE_WINDOW)) {
@@ -1863,6 +1811,7 @@ void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 }
 
 void page_t::render() {
+	_need_render = false;
 	if (rnd != nullptr) {
 		/**
 		 * Try to render if any damage event is encountered. But limit general
@@ -1880,9 +1829,7 @@ void page_t::render() {
 		cnx->sync();
 
 		cur_tic.update_to_current_time();
-		/** slow down frame if render is slow **/
-		_next_frame = cur_tic + default_wait;
-		_max_wait = default_wait;
+
 	} else {
 		auto viewports = get_viewports();
 		for(auto x: viewports) {
@@ -4094,7 +4041,7 @@ void page_t::process_mapping_notify_event(xcb_generic_event_t const * e) {
 void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_selection_clear_event_t const *>(_e);
 	if(e->selection == cnx->wm_sn_atom)
-		running = false;
+		stop();
 	if(e->selection == cnx->cm_sn_atom)
 		stop_compositor();
 }
@@ -5393,6 +5340,49 @@ void page_t::update_alt_tab_popup(client_managed_t * selected) {
 							+ (viewport->raw_area().h - pat->position().h) / 2);
 	pat->show();
 
+}
+
+void page_t::process_pending_events() {
+	/** Here we try to process all pending events then render if needed **/
+	cnx->grab();
+
+	while (cnx->has_pending_events()) {
+		while (cnx->has_pending_events()) {
+			cmgr->pre_process_event(cnx->front_event());
+			process_event(cnx->front_event());
+			cnx->pop_event();
+			xcb_flush(cnx->xcb());
+		}
+
+		if (_need_restack) {
+			_need_restack = false;
+			update_windows_stack();
+		}
+
+		if(_need_update_client_list) {
+			_need_update_client_list = false;
+			update_client_list();
+		}
+
+		cnx->sync();
+
+	}
+
+	if (_need_render) {
+		render();
+	}
+
+	/** clean up surfaces **/
+	cmgr->cleanup();
+	cnx->ungrab();
+	xcb_flush(cnx->xcb());
+
+}
+
+bool page_t::render_timeout() {
+	_need_render = true;
+	process_pending_events();
+	return true;
 }
 
 }
