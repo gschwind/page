@@ -23,6 +23,10 @@ namespace page {
 
 class poll_callback_t {
 public:
+	short events;
+
+	poll_callback_t(short events) : events{events} { }
+
 	virtual void call(struct pollfd const &) = 0;
 	virtual ~poll_callback_t() { }
 };
@@ -37,7 +41,7 @@ public:
 
 	virtual ~poll_callback_impl_t() { }
 
-	poll_callback_impl_t(T const & func) : func{func} { }
+	poll_callback_impl_t(T const & func, short events) : poll_callback_t{events}, func{func} { }
 
 };
 
@@ -139,6 +143,17 @@ class mainloop_t {
 		}
 	}
 
+	void update_poll_list() {
+		poll_list.clear();
+		for(auto & x: poll_callback) {
+			struct pollfd tmp;
+			tmp.fd = x.first;
+			tmp.events = x.second->events;
+			tmp.revents = 0;
+			poll_list.push_back(tmp);
+		}
+	}
+
 public:
 
 	mainloop_t() : running{false} { }
@@ -179,23 +194,14 @@ public:
 
 	template<typename T>
 	void add_poll(int fd, short events, T callback) {
-		struct pollfd pfd = { fd, events, 0};
-		poll_list.push_back(pfd);
-		std::shared_ptr<poll_callback_impl_t<T>> x{new poll_callback_impl_t<T>(callback)};
+		std::shared_ptr<poll_callback_impl_t<T>> x{new poll_callback_impl_t<T>(callback, events)};
 		poll_callback[fd] = dynamic_pointer_cast<poll_callback_t>(x);
+		update_poll_list();
 	}
 
 	void remove_poll(int fd) {
-		auto old_poll_list = poll_list;
-		poll_list.clear();
-		for(auto & x: old_poll_list) {
-			if(x.fd != fd) {
-				poll_list.push_back(x);
-			}
-		}
-
 		poll_callback.erase(fd);
-
+		update_poll_list();
 	}
 
 	void stop() {

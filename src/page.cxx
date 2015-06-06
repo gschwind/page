@@ -377,10 +377,6 @@ void page_t::run() {
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
-	struct pollfd pfds;
-	pfds.fd = cnx->fd();
-	pfds.events = POLLIN|POLLPRI|POLLERR;
-
 	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	/* call this 120 times per second */
 	add_timeout(1000000000L/120L, [this]() -> bool { return this->render_timeout(); });
