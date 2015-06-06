@@ -14,6 +14,8 @@
 
 #include <cairo/cairo.h>
 
+#include "color.hxx"
+
 #include "leak_checker.hxx"
 #include "icon_handler.hxx"
 
@@ -95,6 +97,10 @@ public:
 	virtual void update() = 0;
 
 	virtual shared_ptr<renderable_t> get_background(int width, int heigth) = 0;
+
+	virtual color_t const & get_focused_color() const = 0;
+	virtual color_t const & get_selected_color() const = 0;
+	virtual color_t const & get_normal_color() const = 0;
 
 
 };

@@ -261,6 +261,10 @@ public:
 //
 //	}
 
+	virtual color_t const & get_focused_color() const;
+	virtual color_t const & get_selected_color() const;
+	virtual color_t const & get_normal_color() const;
+
 };
 
 }

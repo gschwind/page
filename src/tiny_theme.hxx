@@ -214,6 +214,10 @@ public:
 
 	virtual shared_ptr<renderable_t> get_background(int width, int heigth);
 
+	virtual color_t const & get_focused_color() const;
+	virtual color_t const & get_selected_color() const;
+	virtual color_t const & get_normal_color() const;
+
 };
 
 }

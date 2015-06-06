@@ -648,10 +648,14 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 					allocation.y, (int)floor(
 					(int)(offset + selected_box_width) - floor(offset)),
 					(int)_theme->notebook.tab_height };
-			tab->selected = true;
-			tab->focuced = _selected->is_focused();
+
+			if(_selected->is_focused()) {
+				tab->tab_color = _theme->get_focused_color();
+			} else {
+				tab->tab_color = _theme->get_selected_color();
+			}
+
 			tab->title = _selected->title();
-			tab->demand_attention = _selected->demands_attention();
 			tab->icon = _selected->icon();
 			tab->is_iconic = _selected->is_iconic();
 			theme_notebook.has_selected_client = true;
@@ -669,10 +673,15 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 				allocation.y,
 				(int)(floor(offset + _theme->notebook.iconic_tab_width) - floor(offset)),
 				(int)_theme->notebook.tab_height};
-			tab->selected = (i == _selected);
-			tab->focuced = i->is_focused();
+
+			if(i->is_focused()) {
+				tab->tab_color = _theme->get_focused_color();
+			} else if(_selected == i) {
+				tab->tab_color = _theme->get_selected_color();
+			} else {
+				tab->tab_color = _theme->get_normal_color();
+			}
 			tab->title = i->title();
-			tab->demand_attention = i->demands_attention();
 			tab->icon = i->icon();
 			tab->is_iconic = i->is_iconic();
 			offset += _theme->notebook.iconic_tab_width;
