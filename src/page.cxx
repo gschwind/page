@@ -4642,7 +4642,10 @@ void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e
 			split_right(mode_data_notebook.ns, mode_data_notebook.c);
 		} else if (mode_data_notebook.zone == SELECT_CENTER
 				&& mode_data_notebook.ns != nullptr) {
-			unbind_window(mode_data_notebook.c);
+			//unbind_window(mode_data_notebook.c);
+			detach(mode_data_notebook.c);
+			insert_window_in_notebook(mode_data_notebook.c,
+					mode_data_notebook.ns, true);
 		} else {
 
 			if(_desktop_list[_current_desktop]->client_focus.empty()) {
