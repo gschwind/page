@@ -11,40 +11,40 @@ theme_dir=@prefix@/share/page/data/
 theme_engine=simple
 
 # quit page
-bind_page_quit=mod4+q
+bind_page_quit=mod4 q
 
 # close window
-bind_close=mod1+F4
+bind_close=mod1 F4
 
 # switch between fullscreen and floating/binded window
-bind_toggle_fullscreen=mod4+f
+bind_toggle_fullscreen=mod4 f
 
 # start/stop page compositor
-bind_toggle_compositor=mod4+0
+bind_toggle_compositor=mod4 0
 
 # switch to the next desktop
-bind_right_desktop=mod4+Right
+bind_right_desktop=mod1 control Right
 
 # switch to the previous desktop
-bind_left_desktop=mod4+Left
+bind_left_desktop=mod1 control Left
 
 # bind the focussed window
-bind_bind_window=mod4+b
+bind_bind_window=mod4 b
 
 # fullscreen the focussed window
-bind_fullscreen_window=mod4+v
+bind_fullscreen_window=mod4 v
 
 # make floatting the focussed window
-bind_float_window=mod4+c
+bind_float_window=mod4 c
 
 # bind keys for debuging
-bind_debug_1=mod4+1
-bind_debug_2=mod4+2
-bind_debug_3=mod4+3
-bind_debug_4=mod4+4
+bind_debug_1=mod4 1
+bind_debug_2=mod4 2
+bind_debug_3=mod4 3
+bind_debug_4=mod4 4
 
-bind_cmd_0=mod4+t
-exec_cmd_0=/usr/bin/mate-terminal
+bind_cmd_0=mod4 t
+exec_cmd_0=/usr/bin/xterm
 
 bind_cmd_1=null
 exec_cmd_1=null
