@@ -57,6 +57,17 @@ struct ctassert {
 template <bool t>
 char ctassert<t>::A[N];
 
+template<typename T>
+struct dimention_t {
+	T width;
+	T height;
+
+	dimention_t(T w, T h) : width{w}, height{h} { }
+	dimention_t(dimention_t const & d) : width{d.width}, height{d.height} { }
+
+};
+
+
 template<typename T, typename _>
 bool has_key(std::map<T, _> const & x, T const & key) {
 	auto i = x.find(key);
@@ -100,87 +111,6 @@ _1 get_safe_value(std::map<_0, _1> & x, _0 key, _1 def) {
 		return i->second;
 	else
 		return def;
-}
-
-inline void compute_client_size_with_constraint(XSizeHints const & size_hints,
-		unsigned int wished_width, unsigned int wished_height, unsigned int & width,
-		unsigned int & height) {
-
-	/* default size if no size_hints is provided */
-	width = wished_width;
-	height = wished_height;
-
-	if (size_hints.flags & PMaxSize) {
-		if ((int)wished_width > size_hints.max_width)
-			wished_width = size_hints.max_width;
-		if ((int)wished_height > size_hints.max_height)
-			wished_height = size_hints.max_height;
-	}
-
-	if (size_hints.flags & PBaseSize) {
-		if ((int)wished_width < size_hints.base_width)
-			wished_width = size_hints.base_width;
-		if ((int)wished_height < size_hints.base_height)
-			wished_height = size_hints.base_height;
-	} else if (size_hints.flags & PMinSize) {
-		if ((int)wished_width < size_hints.min_width)
-			wished_width = size_hints.min_width;
-		if ((int)wished_height < size_hints.min_height)
-			wished_height = size_hints.min_height;
-	}
-
-	if (size_hints.flags & PAspect) {
-		if (size_hints.flags & PBaseSize) {
-			/**
-			 * ICCCM say if base is set subtract base before aspect checking
-			 * reference: ICCCM
-			 **/
-			if ((wished_width - size_hints.base_width) * size_hints.min_aspect.y
-					< (wished_height - size_hints.base_height)
-							* size_hints.min_aspect.x) {
-				/* reduce h */
-				wished_height = size_hints.base_height
-						+ ((wished_width - size_hints.base_width)
-								* size_hints.min_aspect.y)
-								/ size_hints.min_aspect.x;
-
-			} else if ((wished_width - size_hints.base_width)
-					* size_hints.max_aspect.y
-					> (wished_height - size_hints.base_height)
-							* size_hints.max_aspect.x) {
-				/* reduce w */
-				wished_width = size_hints.base_width
-						+ ((wished_height - size_hints.base_height)
-								* size_hints.max_aspect.x)
-								/ size_hints.max_aspect.y;
-			}
-		} else {
-			if (wished_width * size_hints.min_aspect.y
-					< wished_height * size_hints.min_aspect.x) {
-				/* reduce h */
-				wished_height = (wished_width * size_hints.min_aspect.y)
-						/ size_hints.min_aspect.x;
-
-			} else if (wished_width * size_hints.max_aspect.y
-					> wished_height * size_hints.max_aspect.x) {
-				/* reduce w */
-				wished_width = (wished_height * size_hints.max_aspect.x)
-						/ size_hints.max_aspect.y;
-			}
-		}
-
-	}
-
-	if (size_hints.flags & PResizeInc) {
-		wished_width -=
-				((wished_width - size_hints.base_width) % size_hints.width_inc);
-		wished_height -= ((wished_height - size_hints.base_height)
-				% size_hints.height_inc);
-	}
-
-	width = wished_width;
-	height = wished_height;
-
 }
 
 template<typename T>

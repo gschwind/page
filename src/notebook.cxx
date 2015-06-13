@@ -292,51 +292,25 @@ void notebook_t::set_allocation(i_rect const & area) {
 
 }
 
-
-void notebook_t::compute_client_size_with_constraint(client_managed_t * c,
-		unsigned int max_width, unsigned int max_height, unsigned int & width,
-		unsigned int & height) {
-
-	//printf("XXX max : %d %d\n", max_width, max_height);
-
-	/* default size if no size_hints is provided */
-	width = max_width;
-	height = max_height;
-
-	XSizeHints size_hints = { 0 };
-	if(!c->get_wm_normal_hints(&size_hints)) {
-		return;
-	}
-
-	::page::compute_client_size_with_constraint(size_hints, max_width,
-			max_height, width, height);
-
-	//printf("XXX result : %d %d\n", width, height);
-}
-
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
-	unsigned int height, width;
-	compute_client_size_with_constraint(c,
-			client_area.w,
-			client_area.h,
-			width,
-			height);
+	dimention_t<unsigned> size =
+			c->compute_size_with_constrain(client_area.w, client_area.h);
 
 	/** if the client cannot fit into client_area, clip it **/
-	if(width > client_area.w) {
-		width = client_area.w;
+	if(size.width > client_area.w) {
+		size.width = client_area.w;
 	}
 
-	if(height > client_area.h) {
-		height = client_area.h;
+	if(size.height > client_area.h) {
+		size.height = client_area.h;
 	}
 
 	/* compute the window placement within notebook */
 	i_rect client_size;
-	client_size.x = floor((client_area.w - width) / 2.0);
-	client_size.y = floor((client_area.h - height) / 2.0);
-	client_size.w = width;
-	client_size.h = height;
+	client_size.x = floor((client_area.w - size.width) / 2.0);
+	client_size.y = floor((client_area.h - size.height) / 2.0);
+	client_size.w = size.width;
+	client_size.h = size.height;
 
 	client_size.x += client_area.x;
 	client_size.y += client_area.y;

@@ -440,6 +440,78 @@ public:
 
 	}
 
+
+
+	/* find the bigger window that is smaller than w and h */
+	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h) {
+
+		/* has no constrain */
+		if (wm_normal_hints() == nullptr)
+			return dimention_t<unsigned> { w, h };
+
+		XSizeHints const * sh = wm_normal_hints();
+
+		if (sh->flags & PMaxSize) {
+			if ((int) w > sh->max_width)
+				w = sh->max_width;
+			if ((int) h > sh->max_height)
+				h = sh->max_height;
+		}
+
+		if (sh->flags & PBaseSize) {
+			if ((int) w < sh->base_width)
+				w = sh->base_width;
+			if ((int) h < sh->base_height)
+				h = sh->base_height;
+		} else if (sh->flags & PMinSize) {
+			if ((int) w < sh->min_width)
+				w = sh->min_width;
+			if ((int) h < sh->min_height)
+				h = sh->min_height;
+		}
+
+		if (sh->flags & PAspect) {
+			if (sh->flags & PBaseSize) {
+				/**
+				 * ICCCM say if base is set subtract base before aspect checking
+				 * reference: ICCCM
+				 **/
+				if ((w - sh->base_width) * sh->min_aspect.y
+						< (h - sh->base_height) * sh->min_aspect.x) {
+					/* reduce h */
+					h = sh->base_height
+							+ ((w - sh->base_width) * sh->min_aspect.y)
+									/ sh->min_aspect.x;
+
+				} else if ((w - sh->base_width) * sh->max_aspect.y
+						> (h - sh->base_height) * sh->max_aspect.x) {
+					/* reduce w */
+					w = sh->base_width
+							+ ((h - sh->base_height) * sh->max_aspect.x)
+									/ sh->max_aspect.y;
+				}
+			} else {
+				if (w * sh->min_aspect.y < h * sh->min_aspect.x) {
+					/* reduce h */
+					h = (w * sh->min_aspect.y) / sh->min_aspect.x;
+
+				} else if (w * sh->max_aspect.y > h * sh->max_aspect.x) {
+					/* reduce w */
+					w = (h * sh->max_aspect.x) / sh->max_aspect.y;
+				}
+			}
+
+		}
+
+		if (sh->flags & PResizeInc) {
+			w -= ((w - sh->base_width) % sh->width_inc);
+			h -= ((h - sh->base_height) % sh->height_inc);
+		}
+
+		return dimention_t<unsigned> { w, h };
+
+	}
+
 };
 
 }

@@ -157,17 +157,6 @@ public:
 
 	void update_close_area();
 
-	/*
-	 * Compute client size taking in account possible max_width and max_heigth
-	 * and the window Hints.
-	 * @output width: width result
-	 * @output height: height result
-	 */
-
-	static void compute_client_size_with_constraint(client_managed_t * c,
-			unsigned int max_width, unsigned int max_height,
-			unsigned int & width, unsigned int & height);
-
 	i_rect compute_client_size(client_managed_t * c);
 	i_rect const & get_allocation();
 	void set_theme(theme_t const * theme);

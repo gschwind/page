@@ -518,10 +518,6 @@ public:
 
 	void safe_raise_window(client_base_t * c);
 
-	/** move to client_base **/
-	void compute_client_size_with_constraint(xcb_window_t c,
-			unsigned int max_width, unsigned int max_height, unsigned int & width,
-			unsigned int & height);
 	/* attach floating window in a notebook */
 	void bind_window(client_managed_t * mw, bool activate);
 	/* detach notebooked window to a floating window */

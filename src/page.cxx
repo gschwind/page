@@ -1346,15 +1346,10 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 //						new_size.y = (b.h - new_size.h) / 2 + b.y;
 //					}
 
-					unsigned int final_width = new_size.w;
-					unsigned int final_height = new_size.h;
+					dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
 
-					compute_client_size_with_constraint(mw->orig(),
-							(unsigned) new_size.w, (unsigned) new_size.h,
-							final_width, final_height);
-
-					new_size.w = final_width;
-					new_size.h = final_height;
+					new_size.w = final_size.width;
+					new_size.h = final_size.height;
 
 					//printf("new_size = %s\n", new_size.to_string().c_str());
 
@@ -1565,13 +1560,10 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 
 			/* apply normal hint to floating window */
 			i_rect new_size = mw->get_wished_position();
-			unsigned int final_width = new_size.w;
-			unsigned int final_height = new_size.h;
-			compute_client_size_with_constraint(mw->orig(),
-					(unsigned) new_size.w, (unsigned) new_size.h, final_width,
-					final_height);
-			new_size.w = final_width;
-			new_size.h = final_height;
+
+			dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
+			new_size.w = final_size.width;
+			new_size.h = final_size.height;
 			mw->set_floating_wished_position(new_size);
 			mw->reconfigure();
 
@@ -2702,27 +2694,6 @@ void page_t::safe_raise_window(client_base_t * c) {
 	c->raise_child();
 	/** apply change **/
 	_need_restack = true;
-}
-
-void page_t::compute_client_size_with_constraint(xcb_window_t c,
-		unsigned int wished_width, unsigned int wished_height,
-		unsigned int & width, unsigned int & height) {
-
-	/* default size if no size_hints is provided */
-	width = wished_width;
-	height = wished_height;
-
-	client_base_t * _c = find_client_with(c);
-
-	if (_c == nullptr)
-		return;
-
-	if (_c->wm_normal_hints() == nullptr)
-		return;
-
-	page::compute_client_size_with_constraint(*(_c->wm_normal_hints()),
-			wished_width, wished_height, width, height);
-
 }
 
 void page_t::bind_window(client_managed_t * mw, bool activate) {
@@ -4315,12 +4286,10 @@ void page_t::process_motion_notify_floating_resize(
 	}
 
 	/* apply normal hints */
-	unsigned int final_width = size.w;
-	unsigned int final_height = size.h;
-	compute_client_size_with_constraint(mode_data_floating.f->orig(),
-			(unsigned) size.w, (unsigned) size.h, final_width, final_height);
-	size.w = final_width;
-	size.h = final_height;
+	dimention_t<unsigned> final_size =
+			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
+	size.w = final_size.width;
+	size.h = final_size.height;
 
 	if (size.h < 1)
 		size.h = 1;
@@ -4519,12 +4488,10 @@ void page_t::process_motion_notify_floating_resize_by_client(
 	}
 
 	/* apply mornal hints */
-	unsigned int final_width = size.w;
-	unsigned int final_height = size.h;
-	compute_client_size_with_constraint(mode_data_floating.f->orig(),
-			(unsigned) size.w, (unsigned) size.h, final_width, final_height);
-	size.w = final_width;
-	size.h = final_height;
+	dimention_t<unsigned> final_size =
+			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
+	size.w = final_size.width;
+	size.h = final_size.height;
 
 	if (size.h < 1)
 		size.h = 1;
