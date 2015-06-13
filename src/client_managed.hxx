@@ -41,9 +41,6 @@ private:
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK =  XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_BUTTON_RELEASE;
 
-	// theme used for window decoration
-	theme_t const * _theme;
-
 	managed_window_type_e _managed_type;
 	xcb_atom_t _net_wm_type;
 
@@ -107,8 +104,6 @@ private:
 
 	std::vector<floating_event_t> * _floating_area;
 
-	composite_surface_manager_t * _cmgr;
-
 	bool _is_focused;
 	bool _motif_has_border;
 	bool _is_iconic;
@@ -116,8 +111,7 @@ private:
 
 public:
 
-	client_managed_t(xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> c,
-			theme_t const * theme, composite_surface_manager_t * cmgr);
+	client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props);
 	virtual ~client_managed_t();
 
 	void reconfigure();
@@ -179,7 +173,7 @@ public:
 	}
 
 	std::shared_ptr<pixmap_t> get_last_pixmap() {
-		return _cmgr->get_last_pixmap(_base);
+		return _ctx->csm()->get_last_pixmap(_base);
 	}
 
 	void set_current_desktop(unsigned int n) {

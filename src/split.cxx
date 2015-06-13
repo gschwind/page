@@ -16,9 +16,16 @@
 
 namespace page {
 
-split_t::split_t(split_type_e type, theme_t const * theme) :
-		_theme(theme), _split_bar_area(), _split_type(type), _split(
-				0.5), _pack0(nullptr), _pack1(nullptr), _parent(nullptr), _is_hidden(false) {
+split_t::split_t(page_context_t * ctx, split_type_e type) :
+		_ctx{ctx},
+		_split_bar_area(),
+		_split_type(type),
+		_split{0.5},
+		_pack0(nullptr),
+		_pack1(nullptr),
+		_parent(nullptr),
+		_is_hidden(false)
+{
 
 }
 
@@ -39,19 +46,19 @@ void split_t::update_allocation_pack0() {
 		i_rect bpack0;
 		i_rect bpack1;
 
-		int w = allocation().w - 2 * _theme->split.margin.left - 2 * _theme->split.margin.right - _theme->split.width;
+		int w = allocation().w - 2 * _ctx->theme()->split.margin.left - 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
 		int w0 = floor(w * _split + 0.5);
 		int w1 = w - w0;
 
-		bpack0.x = allocation().x + _theme->split.margin.left;
-		bpack0.y = allocation().y + _theme->split.margin.top;
+		bpack0.x = allocation().x + _ctx->theme()->split.margin.left;
+		bpack0.y = allocation().y + _ctx->theme()->split.margin.top;
 		bpack0.w = w0;
-		bpack0.h = allocation().h - _theme->split.margin.top - _theme->split.margin.bottom;
+		bpack0.h = allocation().h - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 
-		bpack1.x = allocation().x + _theme->split.margin.left + w0 + _theme->split.margin.right + _theme->split.width + _theme->split.margin.left;
-		bpack1.y = allocation().y + _theme->split.margin.top;
+		bpack1.x = allocation().x + _ctx->theme()->split.margin.left + w0 + _ctx->theme()->split.margin.right + _ctx->theme()->split.width + _ctx->theme()->split.margin.left;
+		bpack1.y = allocation().y + _ctx->theme()->split.margin.top;
 		bpack1.w = w1;
-		bpack1.h = allocation().h - _theme->split.margin.top - _theme->split.margin.bottom;
+		bpack1.h = allocation().h - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 
 		if(_pack0)
 			_pack0->set_allocation(bpack0);
@@ -59,10 +66,10 @@ void split_t::update_allocation_pack0() {
 			_pack1->set_allocation(bpack1);
 
 	} else {
-		b.x = allocation().x + _theme->split.margin.left;
-		b.y = allocation().y + _theme->split.margin.top;
-		b.w = allocation().w - _theme->split.margin.left - _theme->split.margin.right;
-		b.h = floor(allocation().h * _split + 0.5) - _theme->split.width - _theme->split.margin.top - _theme->split.margin.bottom;
+		b.x = allocation().x + _ctx->theme()->split.margin.left;
+		b.y = allocation().y + _ctx->theme()->split.margin.top;
+		b.w = allocation().w - _ctx->theme()->split.margin.left - _ctx->theme()->split.margin.right;
+		b.h = floor(allocation().h * _split + 0.5) - _ctx->theme()->split.width - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 		_pack0->set_allocation(b);
 	}
 
@@ -75,10 +82,10 @@ void split_t::update_allocation_pack1() {
 	if (_split_type == VERTICAL_SPLIT) {
 
 	} else {
-		b.x = allocation().x + _theme->split.margin.left;
-		b.y = allocation().y + floor(allocation().h * _split + 0.5) + _theme->split.width + _theme->split.margin.top;
-		b.w = allocation().w - _theme->split.margin.left - _theme->split.margin.right;
-		b.h = allocation().h - floor(allocation().h * _split + 0.5) - _theme->split.width - _theme->split.margin.top - _theme->split.margin.bottom;
+		b.x = allocation().x + _ctx->theme()->split.margin.left;
+		b.y = allocation().y + floor(allocation().h * _split + 0.5) + _ctx->theme()->split.width + _ctx->theme()->split.margin.top;
+		b.w = allocation().w - _ctx->theme()->split.margin.left - _ctx->theme()->split.margin.right;
+		b.h = allocation().h - floor(allocation().h * _split + 0.5) - _ctx->theme()->split.width - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 	}
 	_pack1->set_allocation(b);
 }
@@ -133,35 +140,35 @@ void split_t::update_allocation() {
 
 	if (_split_type == VERTICAL_SPLIT) {
 
-		int w = allocation().w - 2 * _theme->split.margin.left - 2 * _theme->split.margin.right - _theme->split.width;
+		int w = allocation().w - 2 * _ctx->theme()->split.margin.left - 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
 		int w0 = floor(w * _split + 0.5);
 		int w1 = w - w0;
 
-		bpack0.x = allocation().x + _theme->split.margin.left;
-		bpack0.y = allocation().y + _theme->split.margin.top;
+		bpack0.x = allocation().x + _ctx->theme()->split.margin.left;
+		bpack0.y = allocation().y + _ctx->theme()->split.margin.top;
 		bpack0.w = w0;
-		bpack0.h = allocation().h - _theme->split.margin.top - _theme->split.margin.bottom;
+		bpack0.h = allocation().h - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 
-		bpack1.x = allocation().x + _theme->split.margin.left + w0 + _theme->split.margin.right + _theme->split.width + _theme->split.margin.left;
-		bpack1.y = allocation().y + _theme->split.margin.top;
+		bpack1.x = allocation().x + _ctx->theme()->split.margin.left + w0 + _ctx->theme()->split.margin.right + _ctx->theme()->split.width + _ctx->theme()->split.margin.left;
+		bpack1.y = allocation().y + _ctx->theme()->split.margin.top;
 		bpack1.w = w1;
-		bpack1.h = allocation().h - _theme->split.margin.top - _theme->split.margin.bottom;
+		bpack1.h = allocation().h - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
 
 
 	} else {
 
-		int h = allocation().h - 2 * _theme->split.margin.top - 2 * _theme->split.margin.bottom - _theme->split.width;
+		int h = allocation().h - 2 * _ctx->theme()->split.margin.top - 2 * _ctx->theme()->split.margin.bottom - _ctx->theme()->split.width;
 		int h0 = floor(h * _split + 0.5);
 		int h1 = h - h0;
 
-		bpack0.x = allocation().x + _theme->split.margin.left;
-		bpack0.y = allocation().y + _theme->split.margin.top;
-		bpack0.w = allocation().w - _theme->split.margin.left - _theme->split.margin.right;
+		bpack0.x = allocation().x + _ctx->theme()->split.margin.left;
+		bpack0.y = allocation().y + _ctx->theme()->split.margin.top;
+		bpack0.w = allocation().w - _ctx->theme()->split.margin.left - _ctx->theme()->split.margin.right;
 		bpack0.h = h0;
 
-		bpack1.x = allocation().x + _theme->split.margin.left;
-		bpack1.y = allocation().y + _theme->split.margin.top + h0 + _theme->split.margin.bottom + _theme->split.width + _theme->split.margin.top;
-		bpack1.w = allocation().w - _theme->split.margin.left - _theme->split.margin.right;
+		bpack1.x = allocation().x + _ctx->theme()->split.margin.left;
+		bpack1.y = allocation().y + _ctx->theme()->split.margin.top + h0 + _ctx->theme()->split.margin.bottom + _ctx->theme()->split.width + _ctx->theme()->split.margin.top;
+		bpack1.w = allocation().w - _ctx->theme()->split.margin.left - _ctx->theme()->split.margin.right;
 		bpack1.h = h1;
 
 	}
@@ -175,10 +182,6 @@ void split_t::update_allocation() {
 
 double split_t::get_split_ratio() const {
 	return _split;
-}
-
-void split_t::set_theme(theme_t const * theme) {
-	_theme = theme;
 }
 
 void split_t::set_pack0(page_component_t * x) {
@@ -206,19 +209,19 @@ void split_t::compute_split_location(double split, int & x,
 		int & y) const {
 	i_rect const & alloc = allocation();
 	if (_split_type == VERTICAL_SPLIT) {
-		int w = alloc.w - 2 * _theme->split.margin.left
-				- 2 * _theme->split.margin.right - _theme->split.width;
+		int w = alloc.w - 2 * _ctx->theme()->split.margin.left
+				- 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
 		int w0 = floor(w * split + 0.5);
-		x = alloc.x + _theme->split.margin.left + w0
-				+ _theme->split.margin.right;
+		x = alloc.x + _ctx->theme()->split.margin.left + w0
+				+ _ctx->theme()->split.margin.right;
 		y = alloc.y;
 	} else {
-		int h = alloc.h - 2 * _theme->split.margin.top
-				- 2 * _theme->split.margin.bottom - _theme->split.width;
+		int h = alloc.h - 2 * _ctx->theme()->split.margin.top
+				- 2 * _ctx->theme()->split.margin.bottom - _ctx->theme()->split.width;
 		int h0 = floor(h * split + 0.5);
 		x = alloc.x;
-		y = alloc.y + _theme->split.margin.top + h0
-				+ _theme->split.margin.bottom;
+		y = alloc.y + _ctx->theme()->split.margin.top + h0
+				+ _ctx->theme()->split.margin.bottom;
 	}
 }
 
@@ -226,11 +229,11 @@ void split_t::compute_split_location(double split, int & x,
 void split_t::compute_split_size(double split, int & w, int & h) const {
 	i_rect const & alloc = allocation();
 	if (_split_type == VERTICAL_SPLIT) {
-		w = _theme->split.width;
+		w = _ctx->theme()->split.width;
 		h = alloc.h;
 	} else {
 		w = alloc.w;
-		h = _theme->split.width;
+		h = _ctx->theme()->split.width;
 	}
 }
 
@@ -251,7 +254,7 @@ void split_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
 	ts.allocation.y -= y_offset;
 	ts.root_x = x_offset;
 	ts.root_y = y_offset;
-	_theme->render_split(cr, &ts);
+	_ctx->theme()->render_split(cr, &ts);
 }
 
 std::list<tree_t *> split_t::childs() const {
@@ -298,31 +301,31 @@ i_rect split_t::compute_split_bar_location() const {
 
 	if (_split_type == VERTICAL_SPLIT) {
 
-		int w = alloc.w - 2 * _theme->split.margin.left
-				- 2 * _theme->split.margin.right - _theme->split.width;
+		int w = alloc.w - 2 * _ctx->theme()->split.margin.left
+				- 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
 		int w0 = floor(w * _split + 0.5);
 
-		ret.x = alloc.x + _theme->split.margin.left + w0
-				+ _theme->split.margin.right;
+		ret.x = alloc.x + _ctx->theme()->split.margin.left + w0
+				+ _ctx->theme()->split.margin.right;
 		ret.y = alloc.y;
 
 	} else {
 
-		int h = alloc.h - 2 * _theme->split.margin.top
-				- 2 * _theme->split.margin.bottom - _theme->split.width;
+		int h = alloc.h - 2 * _ctx->theme()->split.margin.top
+				- 2 * _ctx->theme()->split.margin.bottom - _ctx->theme()->split.width;
 		int h0 = floor(h * _split + 0.5);
 
 		ret.x = alloc.x;
-		ret.y = alloc.y + _theme->split.margin.top + h0
-				+ _theme->split.margin.bottom;
+		ret.y = alloc.y + _ctx->theme()->split.margin.top + h0
+				+ _ctx->theme()->split.margin.bottom;
 	}
 
 	if (_split_type == VERTICAL_SPLIT) {
-		ret.w = _theme->split.width;
+		ret.w = _ctx->theme()->split.width;
 		ret.h = alloc.h;
 	} else {
 		ret.w = alloc.w;
-		ret.h = _theme->split.width;
+		ret.h = _ctx->theme()->split.width;
 	}
 
 	return ret;

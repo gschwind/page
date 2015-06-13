@@ -103,7 +103,7 @@ page_t::page_t(int argc, char ** argv)
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
 	for(unsigned k = 0; k < 4; ++k) {
-		workspace_t * d = new workspace_t{k};
+		workspace_t * d = new workspace_t{this, k};
 		d->set_parent(this);
 		_desktop_list.push_back(d);
 		_desktop_stack.push_front(d);
@@ -165,7 +165,7 @@ page_t::page_t(int argc, char ** argv)
 	_last_focus_time = XCB_TIME_CURRENT_TIME;
 	_last_button_press = XCB_TIME_CURRENT_TIME;
 
-	theme = nullptr;
+	_theme = nullptr;
 
 	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
 	find_key_from_string(conf.get_string("default", "bind_close"), bind_close);
@@ -247,7 +247,7 @@ page_t::~page_t() {
 		delete i;
 	}
 
-	delete theme;
+	delete _theme;
 	delete rnd;
 	delete keymap;
 
@@ -294,11 +294,11 @@ void page_t::run() {
 	if(_theme_engine == "tiny") {
 		/* TODO */
 		std::cout << "using tiny theme engine" << std::endl;
-		theme = new tiny_theme_t{cnx, conf};
+		_theme = new tiny_theme_t{cnx, conf};
 	} else {
 		/* The default theme engine */
 		std::cout << "using simple theme engine" << std::endl;
-		theme = new simple2_theme_t{cnx, conf};
+		_theme = new simple2_theme_t{cnx, conf};
 	}
 
 	cmgr = new composite_surface_manager_t{cnx};
@@ -900,7 +900,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						int x = e->root_x;
 						int y = e->root_y;
 
-						client_menu = std::make_shared<client_dropdown_menu_t>(cnx, theme, v, x, y, 300);
+						client_menu = std::make_shared<client_dropdown_menu_t>(cnx, _theme, v, x, y, 300);
 
 					}
 				}
@@ -930,7 +930,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				mode_data_floating.popup_original_position = mw->get_base_position();
 				mode_data_floating.button = XCB_BUTTON_INDEX_3;
 
-				pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+				pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 				pfm->update_window(mw);
 				pfm->move_resize(mw->get_base_position());
 
@@ -1004,7 +1004,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 						pfm->update_window(mw);
 						pfm->move_resize(mw->get_base_position());
 
@@ -1016,7 +1016,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 						cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
 					} else {
 
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 						pfm->update_window(mw);
 						pfm->move_resize(mw->get_base_position());
 
@@ -1077,7 +1077,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
 							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
 						} else {
-							pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+							pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 							pfm->update_window(mw);
 							pfm->move_resize(mw->get_base_position());
 
@@ -1107,7 +1107,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					mode_data_fullscreen.mw = mw;
 					mode_data_fullscreen.v = v;
 
-					pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+					pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 					pn0->update_window(mw);
 					pn0->move_resize(v->raw_area());
 				}
@@ -1125,7 +1125,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				mode_data_notebook.ns = 0;
 				mode_data_notebook.zone = SELECT_NONE;
 
-				pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(cnx, theme)};
+				pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(cnx, _theme)};
 				pn0->move_resize(mode_data_notebook.from->tab_area);
 				pn0->update_window(mw);
 
@@ -1776,7 +1776,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 								mw->get_base_position();
 						mode_data_floating.button = button;
 
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, theme}};
+						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
 						pfm->update_window(mw);
 						pfm->move_resize(mw->get_base_position());
 
@@ -2048,22 +2048,18 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 
 }
 
-display_t * page_t::get_xconnection() {
-	return cnx;
-}
-
 void page_t::split(notebook_t * nbk, split_type_e type) {
-	split_t * split = new split_t{type, theme};
+	split_t * split = new split_t{this, type};
 	nbk->parent()->replace(nbk, split);
-	notebook_t * n = new notebook_t{theme, _auto_refocus};
+	notebook_t * n = new notebook_t{this, _auto_refocus};
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t{theme, _auto_refocus};
-	split_t * split = new split_t{VERTICAL_SPLIT, theme};
+	notebook_t * n = new notebook_t{this, _auto_refocus};
+	split_t * split = new split_t{this, VERTICAL_SPLIT};
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -2074,8 +2070,8 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t{theme, _auto_refocus};
-	split_t * split = new split_t{VERTICAL_SPLIT, theme};
+	notebook_t * n = new notebook_t{this, _auto_refocus};
+	split_t * split = new split_t{this, VERTICAL_SPLIT};
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -2086,8 +2082,8 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t{theme, _auto_refocus};
-	split_t * split = new split_t{HORIZONTAL_SPLIT, theme};
+	notebook_t * n = new notebook_t{this, _auto_refocus};
+	split_t * split = new split_t{this, HORIZONTAL_SPLIT};
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -2098,8 +2094,8 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
-	notebook_t * n = new notebook_t{theme, _auto_refocus};
-	split_t * split = new split_t{HORIZONTAL_SPLIT, theme};
+	notebook_t * n = new notebook_t{this, _auto_refocus};
+	split_t * split = new split_t{this, HORIZONTAL_SPLIT};
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -2981,7 +2977,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = new viewport_t{cnx, theme, viewport_allocation[i], _auto_refocus};
+				vp = new viewport_t{this, viewport_allocation[i], _auto_refocus};
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -2996,7 +2992,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = new viewport_t{cnx, theme, area, _auto_refocus};
+				vp = new viewport_t{this, area, _auto_refocus};
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -3022,8 +3018,8 @@ void page_t::update_viewport_layout() {
 			for(auto x: filter_class<client_managed_t>(tree_t::get_all_children())) {
 				if(x->is(MANAGED_FLOATING)) {
 					auto r = x->position();
-					r.x = new_layout[0]->allocation().x + theme->floating.margin.left;
-					r.y = new_layout[0]->allocation().y + theme->floating.margin.top;
+					r.x = new_layout[0]->allocation().x + _theme->floating.margin.left;
+					r.y = new_layout[0]->allocation().y + _theme->floating.margin.top;
 					x->set_floating_wished_position(r);
 					x->reconfigure();
 				}
@@ -3254,7 +3250,7 @@ void page_t::onmap(xcb_window_t w) {
 void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 
 	try {
-		client_managed_t * mw = new client_managed_t{type, c, theme, cmgr};
+		auto mw = new client_managed_t{this, type, c};
 		_clients_list.push_back(mw);
 		manage_client(mw, type);
 	} catch (...) {
@@ -3401,7 +3397,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
-		client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr);
+		auto uw = new client_not_managed_t{this, type, c};
 		uw->map();
 		safe_update_transient_for(uw);
 		add_compositor_damaged(uw->visible_area());
@@ -3414,7 +3410,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb
 }
 
 void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
-	client_not_managed_t * uw = new client_not_managed_t(type, c, cmgr);
+	auto uw = new client_not_managed_t{this, type, c};
 	uw->map();
 	attach_dock(uw);
 	safe_raise_window(uw);
@@ -3767,7 +3763,7 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 		x->repair_damaged();
 	}
 
-	out.push_back(theme->get_background(0,0));
+	out.push_back(_theme->get_background(0,0));
 
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
@@ -3789,11 +3785,11 @@ std::vector<page_event_t> page_t::compute_page_areas(viewport_t * v) const {
 			bsplit.position.y -= v->allocation().y;
 
 			if(s->type() == VERTICAL_SPLIT) {
-				bsplit.position.w += theme->notebook.margin.right + theme->notebook.margin.left;
-				bsplit.position.x -= theme->notebook.margin.right;
+				bsplit.position.w += _theme->notebook.margin.right + _theme->notebook.margin.left;
+				bsplit.position.x -= _theme->notebook.margin.right;
 			} else {
-				bsplit.position.h += theme->notebook.margin.bottom;
-				bsplit.position.y -= theme->notebook.margin.bottom;
+				bsplit.position.h += _theme->notebook.margin.bottom;
+				bsplit.position.y -= _theme->notebook.margin.bottom;
 			}
 
 			bsplit.spt = s;
@@ -4099,7 +4095,7 @@ void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
 		update_viewport_layout();
 		if(rnd != nullptr)
 			rnd->update_layout();
-		theme->update();
+		_theme->update();
 	}
 
 	xcb_grab_button(cnx->xcb(), false, cnx->root(), DEFAULT_BUTTON_EVENT_MASK,
@@ -4161,7 +4157,7 @@ void page_t::process_motion_notify_notebook_grab(
 		/* do not start drag&drop for small move */
 		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
 			if(pn0 == nullptr) {
-				pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, theme});
+				pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
 			}
 		}
 
@@ -4333,12 +4329,12 @@ void page_t::process_motion_notify_floating_resize(
 
 	i_rect popup_new_position = size;
 	if (mode_data_floating.f->has_motif_border()) {
-		popup_new_position.x -= theme->floating.margin.left;
-		popup_new_position.y -= theme->floating.margin.top;
-		popup_new_position.w += theme->floating.margin.left
-				+ theme->floating.margin.right;
-		popup_new_position.h += theme->floating.margin.top
-				+ theme->floating.margin.bottom;
+		popup_new_position.x -= _theme->floating.margin.left;
+		popup_new_position.y -= _theme->floating.margin.top;
+		popup_new_position.w += _theme->floating.margin.left
+				+ _theme->floating.margin.right;
+		popup_new_position.h += _theme->floating.margin.top
+				+ _theme->floating.margin.bottom;
 	}
 
 	update_popup_position(pfm, popup_new_position);
@@ -4361,7 +4357,7 @@ void page_t::process_motion_notify_floating_bind(
 			|| e->root_y > mode_data_bind.start_y + 5) {
 
 		if(pn0 == nullptr) {
-			pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, theme});
+			pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
 		}
 
 	}
@@ -4535,12 +4531,12 @@ void page_t::process_motion_notify_floating_resize_by_client(
 
 	i_rect popup_new_position = size;
 	if (mode_data_floating.f->has_motif_border()) {
-		popup_new_position.x -= theme->floating.margin.left;
-		popup_new_position.y -= theme->floating.margin.top;
-		popup_new_position.w += theme->floating.margin.left
-				+ theme->floating.margin.right;
-		popup_new_position.h += theme->floating.margin.top
-				+ theme->floating.margin.bottom;
+		popup_new_position.x -= _theme->floating.margin.left;
+		popup_new_position.y -= _theme->floating.margin.top;
+		popup_new_position.w += _theme->floating.margin.left
+				+ _theme->floating.margin.right;
+		popup_new_position.h += _theme->floating.margin.top
+				+ _theme->floating.margin.bottom;
 	}
 
 	update_popup_position(pfm, popup_new_position);
@@ -5199,9 +5195,9 @@ void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
 	}
 
 	int x = mode_data_notebook_menu.from->allocation().x;
-	int y = mode_data_notebook_menu.from->allocation().y + theme->notebook.tab_height;
+	int y = mode_data_notebook_menu.from->allocation().y + _theme->notebook.tab_height;
 
-	menu = std::make_shared<notebook_dropdown_menu_t>(cnx, theme, v, x, y, mode_data_notebook_menu.from->allocation().w);
+	menu = std::make_shared<notebook_dropdown_menu_t>(cnx, _theme, v, x, y, mode_data_notebook_menu.from->allocation().w);
 
 }
 
@@ -5216,7 +5212,7 @@ void page_t::page_event_handler_split(page_event_t const & pev) {
 	mode_data_split.slider_area =
 			mode_data_split.split->get_split_bar_area();
 
-	ps = std::make_shared<popup_split_t>(cnx, theme, mode_data_split.split);
+	ps = std::make_shared<popup_split_t>(cnx, _theme, mode_data_split.split);
 	ps->set_position(mode_data_split.split_ratio);
 	add_compositor_damaged(ps->position());
 }
@@ -5296,7 +5292,7 @@ void page_t::update_alt_tab_popup(client_managed_t * selected) {
 		++s;
 	}
 
-	pat = std::make_shared<popup_alt_tab_t>(cnx, theme, v, sel);
+	pat = std::make_shared<popup_alt_tab_t>(cnx, _theme, v, sel);
 
 	/** TODO: show it on all viewport **/
 	viewport_t * viewport = _desktop_list[_current_desktop]->get_any_viewport();
@@ -5349,6 +5345,18 @@ bool page_t::render_timeout() {
 	_need_render = true;
 	process_pending_events();
 	return true;
+}
+
+theme_t const * page_t::theme() const {
+	return _theme;
+}
+
+composite_surface_manager_t * page_t::csm() const {
+	return cmgr;
+}
+
+display_t * page_t::dpy() const {
+	return cnx;
 }
 
 }

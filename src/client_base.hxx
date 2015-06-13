@@ -27,6 +27,7 @@
 #include "display.hxx"
 
 #include "tree.hxx"
+#include "page_context.hxx"
 
 namespace page {
 
@@ -38,7 +39,7 @@ typedef long card32;
  **/
 class client_base_t : public tree_t {
 protected:
-
+	page_context_t * _ctx;
 	tree_t * _parent;
 
 	/* handle properties of client */
@@ -60,6 +61,7 @@ protected:
 public:
 
 	client_base_t(client_base_t const & c) :
+		_ctx{c._ctx},
 		_properties{c._properties},
 		_title{c._title},
 		_children{c._children},
@@ -69,10 +71,11 @@ public:
 
 	}
 
-	client_base_t(std::shared_ptr<client_properties_t> props) :
-		_properties(props),
-		_children(),
-		_title()
+	client_base_t(page_context_t * ctx, std::shared_ptr<client_properties_t> props) :
+		_ctx{ctx},
+		_properties{props},
+		_children{},
+		_title{}
 	{
 		update_title();
 	}

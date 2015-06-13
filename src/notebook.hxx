@@ -24,6 +24,7 @@
 #include "renderable_pixmap.hxx"
 #include "renderable_empty.hxx"
 
+#include "page_context.hxx"
 #include "page_component.hxx"
 #include "client_managed.hxx"
 
@@ -42,11 +43,10 @@ class notebook_t : public page_component_t {
 	double const XN = 0.0;
 	page::time_t const animation_duration{0, 500000000};
 
+	page_context_t * _ctx;
 	page_component_t * _parent;
 
 	i_rect _allocation;
-
-	theme_t const * _theme;
 
 	/* child stack order the first one is the lowest one */
 	std::list<tree_t *> _children;
@@ -108,7 +108,7 @@ public:
 	void update_client_position(client_managed_t * c);
 
 public:
-	notebook_t(theme_t const * theme, bool keep_selected);
+	notebook_t(page_context_t * ctx, bool keep_selected);
 	~notebook_t();
 	void update_allocation(i_rect & allocation);
 

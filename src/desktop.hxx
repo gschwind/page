@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "utils.hxx"
+#include "page_context.hxx"
 #include "viewport.hxx"
 #include "client_managed.hxx"
 #include "client_not_managed.hxx"
@@ -25,7 +26,7 @@ namespace page {
 struct workspace_t: public page_component_t {
 
 private:
-
+	page_context_t * _ctx;
 	page_component_t * _parent;
 	i_rect _allocation;
 	i_rect _workarea;
@@ -55,7 +56,8 @@ public:
 		return _parent;
 	}
 
-	workspace_t(unsigned id) :
+	workspace_t(page_context_t * ctx, unsigned id) :
+		_ctx{ctx},
 		_allocation{},
 		_parent{nullptr},
 		_default_pop{nullptr},

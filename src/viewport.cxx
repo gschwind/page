@@ -14,8 +14,8 @@
 
 namespace page {
 
-viewport_t::viewport_t(display_t * cnx, theme_t * theme, i_rect const & area, bool keep_focus) :
-		_cnx(cnx),
+viewport_t::viewport_t(page_context_t * ctx, i_rect const & area, bool keep_focus) :
+		_ctx{ctx},
 		_raw_aera(area),
 		_effective_area(area),
 		_parent(nullptr),
@@ -27,8 +27,7 @@ viewport_t::viewport_t(display_t * cnx, theme_t * theme, i_rect const & area, bo
 {
 	_page_area = i_rect{0, 0, _effective_area.w, _effective_area.h};
 	_subtree = nullptr;
-	_theme = theme;
-	_subtree = new notebook_t{_theme, keep_focus};
+	_subtree = new notebook_t{_ctx, keep_focus};
 	_subtree->set_parent(this);
 	_subtree->set_allocation(_page_area);
 

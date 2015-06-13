@@ -11,16 +11,14 @@
 #define SPLIT_HXX_
 
 #include "theme.hxx"
+#include "page_context.hxx"
 #include "page_component.hxx"
 
 namespace page {
 
 class split_t : public page_component_t {
-
+	page_context_t * _ctx;
 	page_component_t * _parent;
-
-	theme_t const * _theme;
-
 
 	i_rect _allocation;
 	i_rect _split_bar_area;
@@ -44,7 +42,7 @@ class split_t : public page_component_t {
 	void update_allocation();
 
 public:
-	split_t(split_type_e type, theme_t const * theme);
+	split_t(page_context_t * ctx, split_type_e type);
 	~split_t();
 	void replace(page_component_t * src, page_component_t * by);
 	void compute_split_bar_area(i_rect & area, double split) const;

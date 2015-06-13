@@ -96,7 +96,7 @@ public:
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) = 0;
 	virtual void update() = 0;
 
-	virtual shared_ptr<renderable_t> get_background(int width, int heigth) = 0;
+	virtual std::shared_ptr<renderable_t> get_background(int width, int heigth) = 0;
 
 	virtual color_t const & get_focused_color() const = 0;
 	virtual color_t const & get_selected_color() const = 0;

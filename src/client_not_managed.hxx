@@ -35,8 +35,6 @@ private:
 
 	xcb_atom_t _net_wm_type;
 
-	composite_surface_manager_t * _cmgr;
-
 	mutable i_rect _base_position;
 
 	/* avoid copy */
@@ -45,10 +43,9 @@ private:
 
 public:
 
-	client_not_managed_t(xcb_atom_t type, std::shared_ptr<client_properties_t> c, composite_surface_manager_t * cmgr) :
-			client_base_t(c),
-			_net_wm_type(type),
-			_cmgr(cmgr)
+	client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_properties_t> c) :
+			client_base_t{ctx, c},
+			_net_wm_type{type}
 	{
 		_is_hidden = false;
 		if (cnx()->lock(orig())) {
@@ -109,7 +106,7 @@ public:
 			out += std::shared_ptr<renderable_t>{x};
 		}
 
-		if (_cmgr->get_last_pixmap(_properties->id()) != nullptr) {
+		if (_ctx->csm()->get_last_pixmap(_properties->id()) != nullptr) {
 			out += get_base_renderable();
 		}
 
@@ -135,7 +132,7 @@ public:
 	std::shared_ptr<renderable_t> get_base_renderable() {
 		_base_position = _properties->position();
 
-		std::shared_ptr<pixmap_t> surf = _cmgr->get_last_pixmap(_properties->id());
+		std::shared_ptr<pixmap_t> surf = _ctx->csm()->get_last_pixmap(_properties->id());
 		if (surf != nullptr) {
 
 			region vis;
@@ -165,8 +162,8 @@ public:
 			xopac.translate(_base_position.x, _base_position.y);
 			opa = vis & xopac;
 
-			region dmg { _cmgr->get_damaged(_properties->id()) };
-			_cmgr->clear_damaged(_properties->id());
+			region dmg { _ctx->csm()->get_damaged(_properties->id()) };
+			_ctx->csm()->clear_damaged(_properties->id());
 			dmg.translate(_base_position.x, _base_position.y);
 			auto x = new renderable_pixmap_t(surf,
 					_base_position, dmg);

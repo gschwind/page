@@ -247,7 +247,7 @@ struct key_mode_data_t {
 	client_managed_t * selected;
 };
 
-class page_t : public page_component_t, public mainloop_t {
+class page_t : public page_component_t, public mainloop_t, public page_context_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
 	static time_t const default_wait;
@@ -394,9 +394,9 @@ private:
 	std::list<client_managed_t *> _global_client_focus_history;
 
 	i_rect _root_position;
+	theme_t * _theme;
 
 public:
-	theme_t * theme;
 
 private:
 	page_t(page_t const &);
@@ -681,6 +681,14 @@ public:
 
 	void process_pending_events();
 	bool render_timeout();
+
+	/**
+	 * The page_context API
+	 **/
+
+	virtual theme_t const * theme() const;
+	virtual composite_surface_manager_t * csm() const;
+	virtual display_t * dpy() const;
 
 };
 
