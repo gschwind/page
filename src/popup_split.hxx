@@ -85,7 +85,7 @@ public:
 		_dpy{dpy},
 		_theme{theme},
 		_s_base{split},
-		_current_split{split->get_split_ratio()},
+		_current_split{split->ratio()},
 		_has_alpha{true},
 		_is_durty{true},
 		_is_visible{false},
@@ -229,7 +229,7 @@ public:
 	virtual void render(cairo_t * cr, region const & area) {
 
 		theme_split_t ts;
-		ts.split = _s_base->split();
+		ts.split = _s_base->ratio();
 		ts.type = _s_base->type();
 		ts.allocation = _s_base->allocation();
 

@@ -4124,7 +4124,7 @@ void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
 
 void page_t::process_motion_notify_split_grab(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	if (mode_data_split.split->get_split_type() == VERTICAL_SPLIT) {
+	if (mode_data_split.split->type() == VERTICAL_SPLIT) {
 		mode_data_split.split_ratio = (e->event_x
 				- mode_data_split.split->allocation().x)
 				/ (double) (mode_data_split.split->allocation().w);
@@ -5207,7 +5207,7 @@ void page_t::page_event_handler_split(page_event_t const & pev) {
 	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
 	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
 
-	mode_data_split.split_ratio = pev.spt->split();
+	mode_data_split.split_ratio = pev.spt->ratio();
 	mode_data_split.split = const_cast<split_t*>(pev.spt);
 	mode_data_split.slider_area =
 			mode_data_split.split->get_split_bar_area();
