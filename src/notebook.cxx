@@ -95,6 +95,9 @@ std::list<client_managed_t *> const & notebook_t::get_clients() {
 void notebook_t::remove_client(client_managed_t * x) {
 	assert(has_key(_clients, x));
 
+	if(x == nullptr)
+		return;
+
 	/** update selection **/
 	if (_selected == x) {
 		start_fading();

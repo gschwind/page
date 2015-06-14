@@ -32,7 +32,8 @@ class composite_surface_t {
 	xcb_window_t _window_id;
 	xcb_damage_damage_t _damage;
 	std::shared_ptr<pixmap_t> _pixmap;
-	int _width, _height;
+	unsigned _px_width, _px_height;
+	unsigned _width, _height;
 	int _depth;
 	region _damaged;
 
@@ -45,7 +46,7 @@ class composite_surface_t {
 			std::cout << "create damage for " << this << std::endl;
 			_damage = xcb_generate_id(_dpy->xcb());
 			xcb_damage_create(_dpy->xcb(), _damage, _window_id, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
-			_damaged += i_rect{0, 0, _width, _height};
+			_damaged += i_rect(0, 0, _width, _height);
 			_damaged += _dpy->read_damaged_region(_damage);
 		}
 	}
@@ -116,7 +117,6 @@ public:
 		if (width != _width or height != _height) {
 			_width = width;
 			_height = height;
-			_damaged += i_rect{0, 0, _width, _height};
 			update_pixmap();
 		}
 	}
@@ -152,12 +152,12 @@ public:
 		_damaged += r;
 	}
 
-	int width() {
-		return _width;
+	unsigned width() {
+		return _px_width;
 	}
 
-	int height() {
-		return _height;
+	unsigned height() {
+		return _px_height;
 	}
 
 	int depth() {
@@ -177,6 +177,8 @@ public:
 		if (_dpy->lock(_window_id)) {
 			/** check if the window will be unmapped soon **/
 			if (not _dpy->check_for_unmap_window(_window_id)) {
+				_px_width = _width;
+				_px_height = _height;
 				xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
 				xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id,
 						pixmap_id);
