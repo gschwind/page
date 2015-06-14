@@ -38,6 +38,7 @@ class composite_surface_t {
 
 	bool _is_map;
 	bool _is_destroyed;
+	bool _is_composited;
 
 	void create_damage() {
 		if (_damage == XCB_NONE) {
@@ -71,7 +72,8 @@ public:
 		_dpy(dpy),
 		_window_id(w),
 		_is_destroyed(false),
-		_ref_count{1U}
+		_ref_count{1U},
+		_is_composited{composited}
 	{
 		if (_dpy->lock(_window_id)) {
 
@@ -167,7 +169,7 @@ public:
 		 * if we already know that the window is destroyed or
 		 * unmapped, return immediately.
 		 **/
-		if (_is_destroyed or not _is_map)
+		if (_is_destroyed or not _is_map or not _is_composited)
 			return;
 		/**
 		 * lock the window and check if it will be destroyed soon
@@ -216,7 +218,15 @@ public:
 		return _ref_count;
 	}
 
+	void disable_composite() {
+		_is_composited = false;
+		destroy_pixmap();
+	}
 
+	void enable_composited() {
+		_is_composited = true;
+		update_pixmap();
+	}
 
 };
 

@@ -91,17 +91,19 @@ void composite_surface_manager_t::cleanup() {
 
 void composite_surface_manager_t::enable() {
 	_enabled = true;
+	for(auto x: _data) {
+		x.second->enable_composited();
+	}
 }
 
 void composite_surface_manager_t::disable() {
 	_enabled = false;
-	_data.clear();
+	for(auto x: _data) {
+		x.second->disable_composite();
+	}
 }
 
 void composite_surface_manager_t::register_window(xcb_window_t w) {
-	if(not _enabled)
-		return;
-
 	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
 	if (x != _data.end()) {
@@ -112,9 +114,6 @@ void composite_surface_manager_t::register_window(xcb_window_t w) {
 }
 
 void composite_surface_manager_t::unregister_window(xcb_window_t w) {
-	if(not _enabled)
-		return;
-
 	/** try to find a valid composite surface **/
 	auto x = _data.find(w);
 	if (x != _data.end()) {
