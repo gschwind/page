@@ -529,11 +529,11 @@ void client_managed_t::icccm_focus(xcb_timestamp_t t) {
 
 		if (_properties->wm_hints() != nullptr) {
 			if (_properties->wm_hints()->input != False) {
-				cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_PARENT, t);
+				cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_NONE, t);
 			}
 		} else {
 			/** no WM_HINTS, guess hints.input == True **/
-			cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_PARENT, t);
+			cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_NONE, t);
 		}
 
 		if (_properties->wm_protocols() != nullptr) {

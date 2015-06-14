@@ -329,7 +329,8 @@ void display_t::lower_window(xcb_window_t w) {
 }
 
 void display_t::set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time) {
-	xcb_set_input_focus(_xcb, revert_to, focus, time);
+	xcb_void_cookie_t ck = xcb_set_input_focus(_xcb, revert_to, focus, time);
+	std::cout << "set_input_focus #" << focus << " #" << ck.sequence << std::endl;
 }
 
 void display_t::fake_configure(xcb_window_t w, i_rect location, int border_width) {

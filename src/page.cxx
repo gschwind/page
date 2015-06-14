@@ -2011,7 +2011,7 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	_global_client_focus_history.push_front(new_focus);
 
 	if(new_focus == nullptr) {
-		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
 		cnx->set_net_active_window(XCB_NONE);
 		return;
 	}
@@ -3398,7 +3398,8 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
 		auto uw = new client_not_managed_t{this, type, c};
-		uw->map();
+		if(not uw->wa()->override_redirect)
+			uw->map();
 		safe_update_transient_for(uw);
 		add_compositor_damaged(uw->visible_area());
 	} catch (exception_t & e) {
@@ -3662,17 +3663,28 @@ void page_t::remove(tree_t * t) {
 void page_t::create_identity_window() {
 	/* create an invisible window to identify page */
 	uint32_t pid = getpid();
-	uint32_t attrs = XCB_EVENT_MASK_STRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE;
-	uint32_t attrs_mask = XCB_CW_EVENT_MASK;
-	identity_window = cnx->create_input_only_window(cnx->root(),
-			i_rect{-100, -100, 1, 1}, attrs_mask, &attrs);
+	uint32_t attrs[2];
+
+	/* OVERRIDE_REDIRECT */
+	attrs[0] = 1;
+	/* EVENT_MASK */
+	attrs[1] = XCB_EVENT_MASK_STRUCTURE_NOTIFY|XCB_EVENT_MASK_PROPERTY_CHANGE;
+
+	uint32_t attrs_mask = XCB_CW_OVERRIDE_REDIRECT|XCB_CW_EVENT_MASK;
+
+	/* Warning: This window must be focusable, thus it MUST be an INPUT_OUTPUT window */
+	identity_window = xcb_generate_id(cnx->xcb());
+	xcb_void_cookie_t ck = xcb_create_window(cnx->xcb(), XCB_COPY_FROM_PARENT, identity_window,
+			cnx->root(), -100, -100, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+			XCB_COPY_FROM_PARENT, attrs_mask, attrs);
+
 	std::string name{"page"};
 	cnx->change_property(identity_window, _NET_WM_NAME, UTF8_STRING, 8, name.c_str(),
 			name.length() + 1);
 	cnx->change_property(identity_window, _NET_SUPPORTING_WM_CHECK, WINDOW, 32,
 			&identity_window, 1);
 	cnx->change_property(identity_window, _NET_WM_PID, CARDINAL, 32, &pid, 1);
-
+	cnx->map(identity_window);
 }
 
 void page_t::register_wm() {
@@ -4011,23 +4023,122 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+
+//	std::cout << "Focus IN 0x" << format("08x", e->event) << " ";
+//
+//	switch(e->mode) {
+//	case XCB_NOTIFY_MODE_GRAB:
+//		std::cout << "MODE_GRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_NORMAL:
+//		std::cout << "MODE_NORMAL";
+//		break;
+//	case XCB_NOTIFY_MODE_UNGRAB:
+//		std::cout << "MODE_UNGRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_WHILE_GRABBED:
+//		std::cout << "MODE_WHILE_GRABBED";
+//		break;
+//	default:
+//		std::cout << "MODE_UNKNOWN";
+//	}
+//
+//	std::cout << " ";
+//
+//	switch(e->detail) {
+//	case XCB_NOTIFY_DETAIL_ANCESTOR:
+//		std::cout << "DETAIL_ANCESTOR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_INFERIOR:
+//		std::cout << "DETAIL_INFERIOR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONE:
+//		std::cout << "DETAIL_NONE";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONLINEAR:
+//		std::cout << "DETAIL_NONLINEAR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+//		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
+//		break;
+//	case XCB_NOTIFY_DETAIL_POINTER:
+//		std::cout << "DETAIL_POINTER";
+//		break;
+//	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
+//		std::cout << "DETAIL_POINTER_ROOT";
+//		break;
+//	case XCB_NOTIFY_DETAIL_VIRTUAL:
+//		std::cout << "DETAIL_ANCESTOR";
+//		break;
+//	}
+//
+//	std::cout << std::endl;
+
+
 	/* ignore all focus event related to the pointer */
 	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
 		return;
 
-	//std::cout << "Focus in 0x" << format("08x", e->event) << std::endl;
-
-	/**
-	 * Don't use focus in because we may not listen  all possible focus in events.
-	 *
-	 * Use focus out to detect an unexpected lose of focus.
-	 *
-	 **/
+	if (e->event == cnx->root() and e->detail == XCB_NOTIFY_DETAIL_NONE) {
+		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+	}
 
 }
 
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
+
+
+//	std::cout << "Focus OUT 0x" << format("08x", e->event) << " ";
+//
+//	switch(e->mode) {
+//	case XCB_NOTIFY_MODE_GRAB:
+//		std::cout << "MODE_GRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_NORMAL:
+//		std::cout << "MODE_NORMAL";
+//		break;
+//	case XCB_NOTIFY_MODE_UNGRAB:
+//		std::cout << "MODE_UNGRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_WHILE_GRABBED:
+//		std::cout << "MODE_WHILE_GRABBED";
+//		break;
+//	default:
+//		std::cout << "MODE_UNKNOWN";
+//	}
+//
+//	std::cout << " ";
+//
+//	switch(e->detail) {
+//	case XCB_NOTIFY_DETAIL_ANCESTOR:
+//		std::cout << "DETAIL_ANCESTOR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_INFERIOR:
+//		std::cout << "DETAIL_INFERIOR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONE:
+//		std::cout << "DETAIL_NONE";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONLINEAR:
+//		std::cout << "DETAIL_NONLINEAR";
+//		break;
+//	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+//		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
+//		break;
+//	case XCB_NOTIFY_DETAIL_POINTER:
+//		std::cout << "DETAIL_POINTER";
+//		break;
+//	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
+//		std::cout << "DETAIL_POINTER_ROOT";
+//		break;
+//	case XCB_NOTIFY_DETAIL_VIRTUAL:
+//		std::cout << "DETAIL_ANCESTOR";
+//		break;
+//	}
+//
+//	std::cout << std::endl;
+
 	/* ignore all focus event related to the pointer */
 	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
 		return;
@@ -4035,11 +4146,9 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
 		return;
 
-	//std::cout << "Focus out 0x" << format("08x", e->event) << std::endl;
-
 	if (_desktop_list[_current_desktop]->client_focus.front() == nullptr) {
-		if (e->event == identity_window) {
-			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT,
+		if (e->event == identity_window or e->event == cnx->root()) {
+			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
 					XCB_CURRENT_TIME);
 		}
 	} else {
