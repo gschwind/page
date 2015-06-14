@@ -44,7 +44,7 @@ private:
 		std::cout << "removing composite surface " << p << std::endl;
 	}
 
-	std::shared_ptr<pixmap_t>  _create_surface(xcb_window_t w);
+	void  _create_surface(xcb_window_t w);
 
 public:
 
@@ -62,8 +62,8 @@ public:
 	/** cleanup unmaped or destroyed window **/
 	void cleanup();
 
-	std::shared_ptr<composite_surface_t> get_managed_composite_surface(xcb_window_t w);
-	std::weak_ptr<composite_surface_t> get_weak_surface(xcb_window_t w);
+	void register_window(xcb_window_t w);
+	void unregister_window(xcb_window_t w);
 
 	void make_surface_stats(int & size, int & count);
 

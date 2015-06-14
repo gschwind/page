@@ -427,7 +427,9 @@ void page_t::unmanage(client_managed_t * mw) {
 	if(process_mode == PROCESS_ALT_TAB)
 		update_alt_tab_popup(pat->get_selected());
 
-	delete mw; mw = nullptr;
+	cmgr->unregister_window(mw->base());
+	delete mw;
+	mw = nullptr;
 
 	auto new_focus = _desktop_list[_current_desktop]->client_focus.front();
 
@@ -3248,9 +3250,9 @@ void page_t::onmap(xcb_window_t w) {
 
 
 void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
-
 	try {
 		auto mw = new client_managed_t{this, type, c};
+		cmgr->register_window(mw->base());
 		_clients_list.push_back(mw);
 		manage_client(mw, type);
 	} catch (...) {
@@ -3397,6 +3399,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 
 void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
+		cmgr->register_window(c->id());
 		auto uw = new client_not_managed_t{this, type, c};
 		if(not uw->wa()->override_redirect)
 			uw->map();
@@ -3411,6 +3414,7 @@ void page_t::create_unmanaged_window(std::shared_ptr<client_properties_t> c, xcb
 }
 
 void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom_t type) {
+	cmgr->register_window(c->id());
 	auto uw = new client_not_managed_t{this, type, c};
 	uw->map();
 	attach_dock(uw);
@@ -3560,6 +3564,7 @@ void page_t::remove_client(client_base_t * c) {
 			insert_in_tree_using_transient_for(c);
 		}
 	}
+	cmgr->unregister_window(c->base());
 	delete c;
 }
 

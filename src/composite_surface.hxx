@@ -26,6 +26,7 @@
 namespace page {
 
 class composite_surface_t {
+	unsigned _ref_count;
 	display_t * _dpy;
 	xcb_visualtype_t * _vis;
 	xcb_window_t _window_id;
@@ -69,7 +70,8 @@ public:
 			bool composited) :
 		_dpy(dpy),
 		_window_id(w),
-		_is_destroyed(false)
+		_is_destroyed(false),
+		_ref_count{1U}
 	{
 		if (_dpy->lock(_window_id)) {
 
@@ -113,9 +115,7 @@ public:
 			_width = width;
 			_height = height;
 			_damaged += i_rect{0, 0, _width, _height};
-			if(_is_map) {
-				update_pixmap();
-			}
+			update_pixmap();
 		}
 	}
 
@@ -170,7 +170,7 @@ public:
 		if (_is_destroyed or not _is_map)
 			return;
 		/**
-		 * lock the window and chack if it will be destroyed soon
+		 * lock the window and check if it will be destroyed soon
 		 **/
 		if (_dpy->lock(_window_id)) {
 			/** check if the window will be unmapped soon **/
@@ -203,6 +203,20 @@ public:
 	void destroy_pixmap() {
 		_pixmap = nullptr;
 	}
+
+	void incr_ref() {
+		++_ref_count;
+	}
+
+	void decr_ref() {
+		--_ref_count;
+	}
+
+	unsigned ref_count() {
+		return _ref_count;
+	}
+
+
 
 };
 

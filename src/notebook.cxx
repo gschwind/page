@@ -34,6 +34,8 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_clients.push_front(x);
 	_client_to_tab[x] = std::make_shared<theme_tab_t>();
 
+	_ctx->csm()->register_window(x->base());
+
 	if(prefer_activate) {
 		start_fading();
 
@@ -44,6 +46,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		update_client_position(x);
 		x->normalize();
 		x->reconfigure();
+
 		_selected = x;
 
 	} else {
@@ -112,9 +115,9 @@ void notebook_t::remove_client(client_managed_t * x) {
 			_selected->normalize();
 			_selected->reconfigure();
 		}
-
-		fading_notebook.reset();
 	}
+
+	_ctx->csm()->unregister_window(x->base());
 
 }
 
@@ -359,11 +362,12 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		//ratio = (cos(ratio*M_PI-M_PI)*1.05+1.0)/2.0;
 
 		if (_selected != nullptr) {
-			if (_selected->get_last_pixmap() != nullptr) {
+			if (_selected->get_last_pixmap() != nullptr and not _selected->is_iconic()) {
 				fading_notebook->update_client(_selected->get_last_pixmap(), _selected->get_base_position());
-				fading_notebook->update_client_area(client_area);
 			}
 		}
+
+		fading_notebook->update_client_area(client_area);
 
 		fading_notebook->set_ratio(ratio);
 		//printf("ratio = %f\n", ratio);
@@ -385,16 +389,18 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		}
 
 		if (_selected != nullptr) {
+			if (not _selected->is_iconic()) {
+				std::shared_ptr<renderable_t> x {
+						_selected->get_base_renderable() };
 
-			std::shared_ptr<renderable_t> x{_selected->get_base_renderable()};
+				if (x != nullptr) {
+					out += x;
+				}
 
-			if (x != nullptr) {
-				out += x;
-			}
-
-			/** bypass prepare_render of notebook childs **/
-			for (auto & i : _selected->childs()) {
-				i->prepare_render(out, time);
+				/** bypass prepare_render of notebook childs **/
+				for (auto & i : _selected->childs()) {
+					i->prepare_render(out, time);
+				}
 			}
 		}
 
@@ -645,15 +651,17 @@ void notebook_t::start_fading() {
 	_ctx->theme()->render_notebook(cr, &theme_notebook);
 
 	/* paste the current window */
-	if(_selected != nullptr) {
-		std::shared_ptr<pixmap_t> pix = _selected->get_last_pixmap();
-		if(pix != nullptr) {
-			i_rect pos = _selected->get_base_position();
-			i_rect cl{pos.x - client_area.x, pos.y - client_area.y, pos.w, pos.h};
-			cairo_clip(cr, cl);
-			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
-			cairo_set_source_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
-			cairo_mask_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
+	if (_selected != nullptr) {
+		if (not _selected->is_iconic()) {
+			std::shared_ptr<pixmap_t> pix = _selected->get_last_pixmap();
+			if (pix != nullptr) {
+				i_rect pos = _selected->get_base_position();
+				i_rect cl { pos.x - client_area.x, pos.y - client_area.y, pos.w, pos.h };
+				cairo_clip(cr, cl);
+				cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
+				cairo_set_source_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
+				cairo_mask_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
+			}
 		}
 	}
 

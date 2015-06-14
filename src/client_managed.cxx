@@ -121,8 +121,6 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 	xcb_window_t wdeco;
 	i_rect b = _floating_wished_position;
 
-
-
 	xcb_visualid_t root_visual = cnx()->root_visual()->visual_id;
 	int root_depth = cnx()->find_visual_depth(cnx()->root_visual()->visual_id);
 

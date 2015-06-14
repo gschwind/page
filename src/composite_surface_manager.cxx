@@ -70,21 +70,21 @@ void composite_surface_manager_t::pre_process_event(xcb_generic_event_t const * 
 
 void composite_surface_manager_t::cleanup() {
 
-	/** remove destroyed windows **/
-	for(auto i = _data.begin(); i != _data.end(); ) {
-		if(i->second->is_destroyed()) {
-			i = _data.erase(i);
-		} else {
-			++i;
-		}
-	}
-
-	/** destroy obsolete pixmap **/
-	for(auto & i : _data) {
-		if(not i.second->is_map()) {
-			i.second->destroy_pixmap();
-		}
-	}
+//	/** remove destroyed windows **/
+//	for(auto i = _data.begin(); i != _data.end(); ) {
+//		if(i->second->is_destroyed()) {
+//			i = _data.erase(i);
+//		} else {
+//			++i;
+//		}
+//	}
+//
+//	/** destroy obsolete pixmap **/
+//	for(auto & i : _data) {
+//		if(not i.second->is_map()) {
+//			i.second->destroy_pixmap();
+//		}
+//	}
 
 }
 
@@ -98,6 +98,33 @@ void composite_surface_manager_t::disable() {
 	_data.clear();
 }
 
+void composite_surface_manager_t::register_window(xcb_window_t w) {
+	if(not _enabled)
+		return;
+
+	/** try to find a valid composite surface **/
+	auto x = _data.find(w);
+	if (x != _data.end()) {
+		x->second->incr_ref();
+	} else {
+		return _create_surface(w);
+	}
+}
+
+void composite_surface_manager_t::unregister_window(xcb_window_t w) {
+	if(not _enabled)
+		return;
+
+	/** try to find a valid composite surface **/
+	auto x = _data.find(w);
+	if (x != _data.end()) {
+		x->second->decr_ref();
+		if(x->second->ref_count() == 0) {
+			_data.erase(x);
+		}
+	}
+}
+
 std::shared_ptr<pixmap_t> composite_surface_manager_t::get_last_pixmap(xcb_window_t w) {
 	if(not _enabled)
 		return nullptr;
@@ -106,8 +133,6 @@ std::shared_ptr<pixmap_t> composite_surface_manager_t::get_last_pixmap(xcb_windo
 	auto x = _data.find(w);
 	if (x != _data.end()) {
 		return x->second->get_pixmap();
-	} else {
-		return _create_surface(w);
 	}
 
 	return nullptr;
@@ -136,7 +161,7 @@ void composite_surface_manager_t::clear_damaged(xcb_window_t w) {
 	}
 }
 
-std::shared_ptr<pixmap_t>  composite_surface_manager_t::_create_surface(xcb_window_t w) {
+void composite_surface_manager_t::_create_surface(xcb_window_t w) {
 	if (_dpy->lock(w)) {
 
 		xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(),
@@ -150,21 +175,18 @@ std::shared_ptr<pixmap_t>  composite_surface_manager_t::_create_surface(xcb_wind
 				xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
 
 		if (attrs == nullptr or geometry == nullptr) {
-			return nullptr;
+			return;
 		}
 
 		if(attrs->_class != XCB_WINDOW_CLASS_INPUT_OUTPUT)
-			return nullptr;
+			return;
 
 		/** otherwise, create a new one **/
-		auto ret = std::shared_ptr<composite_surface_t> {
-				new composite_surface_t { _dpy, w, geometry, attrs, _enabled } };
+		auto ret = std::make_shared<composite_surface_t>(_dpy, w, geometry, attrs, _enabled);
 		_data[w] = ret;
 		_dpy->unlock();
-		return ret->get_pixmap();
 	}
 
-	return nullptr;
 }
 
 

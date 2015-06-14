@@ -49,10 +49,6 @@ public:
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
 
-		cairo_surface_t * target = cairo_get_target(cr);
-
-
-
 		cairo_save(cr);
 		if (client_surf != nullptr) {
 			cairo_clip(cr, client_pos);
@@ -62,19 +58,19 @@ public:
 		cairo_restore(cr);
 
 		cairo_save(cr);
-		for (auto &cl : area) {
-			/* client old surface if necessary */
-			i_rect tmp_pos;
-			tmp_pos.x = client_area.x;
-			tmp_pos.y = client_area.y;
-			tmp_pos.w = std::min(old_client_area.w, client_area.w);
-			tmp_pos.h = std::min(old_client_area.h, client_area.h);
-			cairo_clip(cr, tmp_pos);
-			cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0-ratio);
-			cairo_set_source_surface(cr, old_surface->get_cairo_surface(), tmp_pos.x, tmp_pos.y);
-			cairo_mask(cr, p0);
-			cairo_pattern_destroy(p0);
-		}
+		/* client old surface if necessary */
+		i_rect tmp_pos;
+		tmp_pos.x = client_area.x;
+		tmp_pos.y = client_area.y;
+		tmp_pos.w = std::min(old_client_area.w, client_area.w);
+		tmp_pos.h = std::min(old_client_area.h, client_area.h);
+		cairo_clip(cr, tmp_pos);
+		cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
+				1.0 - ratio);
+		cairo_set_source_surface(cr, old_surface->get_cairo_surface(),
+				tmp_pos.x, tmp_pos.y);
+		cairo_mask(cr, p0);
+		cairo_pattern_destroy(p0);
 		cairo_restore(cr);
 
 	}
@@ -92,11 +88,11 @@ public:
 	 * If unknow the whole screen can be returned, but draw will be called each time.
 	 **/
 	virtual region get_visible_region() {
-		return region(old_client_area);
+		return region(client_area);
 	}
 
 	virtual region get_damaged() {
-		return region(old_client_area);
+		return region(client_area);
 	}
 
 	void set_ratio(double x) {
