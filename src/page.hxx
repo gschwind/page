@@ -689,6 +689,7 @@ public:
 	virtual theme_t const * theme() const;
 	virtual composite_surface_manager_t * csm() const;
 	virtual display_t * dpy() const;
+	virtual compositor_t * cmp() const;
 
 };
 

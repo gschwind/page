@@ -284,8 +284,7 @@ void compositor_t::render() {
 	warn(cairo_get_reference_count(cr) == 1);
 	cairo_destroy(cr);
 
-	cairo_surface_t * front_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_overlay, _cnx->root_visual(), width,
-			height);
+	cairo_surface_t * front_buffer = get_front_surface();
 	cr = cairo_create(front_buffer);
 	cairo_set_source_surface(cr, _back_buffer, 0, 0);
 	cairo_paint(cr);
@@ -414,6 +413,17 @@ void compositor_t::pango_printf(cairo_t * cr, double x, double y,
 	cairo_restore(cr);
 #endif
 
+}
+
+cairo_surface_t * compositor_t::get_front_surface() const {
+	return cairo_xcb_surface_create(_cnx->xcb(), composite_overlay,
+			_cnx->root_visual(), width, height);
+}
+
+std::shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width, unsigned height) {
+	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
+	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, composite_overlay, width, height);
+	return std::make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
 }
 
 }

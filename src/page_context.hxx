@@ -10,6 +10,7 @@
 
 #include "display.hxx"
 #include "composite_surface_manager.hxx"
+#include "compositor.hxx"
 
 namespace page {
 
@@ -24,6 +25,7 @@ public:
 	virtual theme_t const * theme() const = 0;
 	virtual composite_surface_manager_t * csm() const = 0;
 	virtual display_t * dpy() const = 0;
+	virtual compositor_t * cmp() const = 0;
 
 
 };

@@ -53,9 +53,6 @@ class notebook_t : public page_component_t {
 
 	page::time_t swap_start;
 
-	std::shared_ptr<pixmap_t> prev_surf;
-	i_rect prev_loc;
-
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
 
 	mutable theme_notebook_t theme_notebook;
@@ -106,6 +103,8 @@ public:
 	void set_selected(client_managed_t * c);
 
 	void update_client_position(client_managed_t * c);
+
+	void start_fading();
 
 public:
 	notebook_t(page_context_t * ctx, bool keep_selected);

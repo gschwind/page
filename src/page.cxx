@@ -5468,5 +5468,9 @@ display_t * page_t::dpy() const {
 	return cnx;
 }
 
+compositor_t * page_t::cmp() const {
+	return rnd;
+}
+
 }
 

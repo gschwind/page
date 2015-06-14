@@ -35,19 +35,12 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_client_to_tab[x] = std::make_shared<theme_tab_t>();
 
 	if(prefer_activate) {
-		swap_start.update_to_current_time();
+		start_fading();
 
 		if(_selected != nullptr) {
-			/** get current surface then iconify **/
-			if (_selected->get_last_pixmap() != nullptr) {
-				prev_loc = _selected->base_position();
-				prev_surf = _selected->get_last_pixmap();
-			}
 			_selected->iconify();
-		} else {
-			/** no prev surf is used **/
-			prev_surf.reset();
 		}
+
 		update_client_position(x);
 		x->normalize();
 		x->reconfigure();
@@ -60,7 +53,6 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		} else {
 			/** no prev surf is used **/
 			_selected = x;
-			prev_surf.reset();
 		}
 	}
 
@@ -102,11 +94,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 
 	/** update selection **/
 	if (_selected == x) {
-		swap_start.update_to_current_time();
-		if (x->get_last_pixmap() != nullptr) {
-			prev_surf = x->get_last_pixmap();
-			prev_loc = x->base_position();
-		}
+		start_fading();
 		_selected = nullptr;
 	}
 
@@ -120,7 +108,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 		_selected = dynamic_cast<client_managed_t*>(_children.back());
 
 		if (_selected != nullptr) {
-			update_client_position (_selected);
+			update_client_position(_selected);
 			_selected->normalize();
 			_selected->reconfigure();
 		}
@@ -135,20 +123,14 @@ void notebook_t::set_selected(client_managed_t * c) {
 	if(_selected == c and not c->is_iconic())
 		return;
 
-	swap_start.update_to_current_time();
+	start_fading();
+
 	update_client_position(c);
 	c->normalize();
 	c->reconfigure();
 
-	/** iconify current selected **/
-	if (_selected != nullptr and c != _selected) {
-		/** store current surface then iconify **/
-		if (_selected->get_last_pixmap() != nullptr) {
-			prev_surf = _selected->get_last_pixmap();
-			prev_loc = _selected->base_position();
-		}
+	if(_selected != nullptr and c != _selected) {
 		_selected->iconify();
-		fading_notebook.reset();
 	}
 	/** set selected **/
 	_selected = c;
@@ -168,13 +150,9 @@ void notebook_t::iconify_client(client_managed_t * x) {
 	if(_selected != x)
 		return;
 
-	swap_start.update_to_current_time();
+	start_fading();
 
 	if (_selected != nullptr) {
-		if (_selected->get_last_pixmap() != nullptr) {
-			prev_surf = _selected->get_last_pixmap();
-			prev_loc = _selected->base_position();
-		}
 		_selected->iconify();
 	}
 
@@ -373,21 +351,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 	if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {
-			auto prev = prev_surf;
-			auto prev_pos = prev_loc;
-
-			std::shared_ptr<pixmap_t> next { nullptr };
-			i_rect next_pos;
-
-			if (_selected != nullptr) {
-				if (_selected->get_last_pixmap() != nullptr) {
-					next = _selected->get_last_pixmap();
-					next_pos = _selected->get_base_position();
-				}
-			}
-
-			fading_notebook = std::make_shared<renderable_notebook_fading_t>(prev, next, prev_pos, next_pos);
-
+			return;
 		}
 
 		double ratio = (static_cast<double>(time - swap_start) / static_cast<double const>(animation_duration));
@@ -396,8 +360,8 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 
 		if (_selected != nullptr) {
 			if (_selected->get_last_pixmap() != nullptr) {
-				fading_notebook->update_next(_selected->get_last_pixmap());
-				fading_notebook->update_next_pos(_selected->get_base_position());
+				fading_notebook->update_client(_selected->get_last_pixmap(), _selected->get_base_position());
+				fading_notebook->update_client_area(client_area);
 			}
 		}
 
@@ -413,7 +377,6 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 
 	} else {
 		/** animation is terminated **/
-		prev_surf.reset();
 		if(fading_notebook != nullptr) {
 			fading_notebook.reset();
 			/** force redraw of notebook **/
@@ -666,6 +629,38 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 		theme_notebook.client_position = _selected->base_position();
 	}
 	theme_notebook.is_default = is_default();
+}
+
+void notebook_t::start_fading() {
+	if(_ctx->cmp() == nullptr)
+		return;
+
+	swap_start.update_to_current_time();
+
+	update_theme_notebook(client_area.x, client_area.y);
+
+	auto pix = _ctx->cmp()->create_composite_pixmap(client_area.w, client_area.h);
+	cairo_surface_t * surf = pix->get_cairo_surface();
+	cairo_t * cr = cairo_create(surf);
+	_ctx->theme()->render_notebook(cr, &theme_notebook);
+
+	/* paste the current window */
+	if(_selected != nullptr) {
+		std::shared_ptr<pixmap_t> pix = _selected->get_last_pixmap();
+		if(pix != nullptr) {
+			i_rect pos = _selected->get_base_position();
+			i_rect cl{pos.x - client_area.x, pos.y - client_area.y, pos.w, pos.h};
+			cairo_clip(cr, cl);
+			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.0);
+			cairo_set_source_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
+			cairo_mask_surface(cr, pix->get_cairo_surface(), cl.x, cl.y);
+		}
+	}
+
+	cairo_destroy(cr);
+
+	fading_notebook = std::make_shared<renderable_notebook_fading_t>(pix, client_area);
+
 }
 
 

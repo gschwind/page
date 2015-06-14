@@ -115,6 +115,11 @@ public:
 	void renderable_remove(renderable_t * r);
 	void renderable_clear();
 
+
+	std::shared_ptr<pixmap_t> create_composite_pixmap(unsigned width, unsigned height);
+
+	cairo_surface_t * get_front_surface() const;
+
 	xcb_atom_t A(atom_e a) {
 		return (*_A)(a);
 	}
