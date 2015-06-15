@@ -52,6 +52,9 @@ class composite_surface_t {
 	}
 
 	void destroy_damage() {
+		if (_is_destroyed or not _is_map or not _is_composited or _is_freezed)
+			return;
+
 		if (_dpy->lock(_window_id)) {
 			if (_damage != XCB_NONE) {
 				xcb_damage_destroy(_dpy->xcb(), _damage);
@@ -120,6 +123,8 @@ public:
 	}
 
 	void on_damage() {
+		if (_is_destroyed or not _is_map or not _is_composited or _is_freezed)
+			return;
 		if(_dpy->lock(_window_id)) {
 			_damaged += _dpy->read_damaged_region(_damage);
 			_dpy->unlock();
