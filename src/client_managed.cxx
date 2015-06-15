@@ -435,7 +435,6 @@ bool client_managed_t::is(managed_window_type_e type) {
 }
 
 void client_managed_t::expose() {
-	std::cout << "expose" << std::endl;
 	if (is(MANAGED_FLOATING)) {
 
 		theme_managed_window_t fw;

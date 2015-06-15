@@ -637,7 +637,6 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 }
 
 void notebook_t::start_fading() {
-	std::cout << "start fading" << std::endl;
 	if(_ctx->cmp() == nullptr)
 		return;
 

@@ -593,11 +593,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		_last_focus_time = e->time;
 	}
 
-	printf("%s key = %d, mod4 = %s, mod1 = %s\n",
-			e->response_type == XCB_KEY_PRESS ? "KeyPress" : "KeyRelease",
-			e->detail,
-			e->state & XCB_MOD_MASK_4 ? "true" : "false",
-			e->state & XCB_MOD_MASK_1 ? "true" : "false");
+//	printf("%s key = %d, mod4 = %s, mod1 = %s\n",
+//			e->response_type == XCB_KEY_PRESS ? "KeyPress" : "KeyRelease",
+//			e->detail,
+//			e->state & XCB_MOD_MASK_4 ? "true" : "false",
+//			e->state & XCB_MOD_MASK_1 ? "true" : "false");
 
 
 	/* get KeyCode for Unmodified Key */
@@ -1592,7 +1592,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_client_message_event_t const *>(_e);
 	//std::shared_ptr<char> name = cnx->get_atom_name(e->type);
-	std::cout << "ClientMessage type = " << cnx->get_atom_name(e->type) << std::endl;
+	//std::cout << "ClientMessage type = " << cnx->get_atom_name(e->type) << std::endl;
 
 	xcb_window_t w = e->window;
 	if (w == XCB_NONE)
@@ -1935,7 +1935,7 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 			(this->*(x->second))(e);
 		}
 	} else {
-		std::cout << "not handled event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
+		//std::cout << "not handled event: " << cnx->event_type_name[(e->response_type&(~0x80))] << (e->response_type&(0x80)?" (fake)":"") << std::endl;
 	}
 }
 
@@ -2422,25 +2422,25 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		return;
 
 	/* debug print */
-	if(true) {
-		char const * action;
-		switch (type) {
-		case _NET_WM_STATE_REMOVE:
-			action = "remove";
-			break;
-		case _NET_WM_STATE_ADD:
-			action = "add";
-			break;
-		case _NET_WM_STATE_TOGGLE:
-			action = "toggle";
-			break;
-		default:
-			action = "invalid";
-			break;
-		}
-		std::cout << "_NET_WM_STATE: " << action << " "
-				<< cnx->get_atom_name(state_properties) << std::endl;
-	}
+//	if(true) {
+//		char const * action;
+//		switch (type) {
+//		case _NET_WM_STATE_REMOVE:
+//			action = "remove";
+//			break;
+//		case _NET_WM_STATE_ADD:
+//			action = "add";
+//			break;
+//		case _NET_WM_STATE_TOGGLE:
+//			action = "toggle";
+//			break;
+//		default:
+//			action = "invalid";
+//			break;
+//		}
+//		std::cout << "_NET_WM_STATE: " << action << " "
+//				<< cnx->get_atom_name(state_properties) << std::endl;
+//	}
 
 	client_managed_t * mw = find_managed_window_with(c);
 	if(mw == nullptr)

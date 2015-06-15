@@ -38,12 +38,6 @@ class composite_surface_manager_t {
 
 private:
 
-	/** called on surface destroy, maybe no more need of weak ptr **/
-	void remove(composite_surface_t * p) {
-		_data.erase(p->wid());
-		std::cout << "removing composite surface " << p << std::endl;
-	}
-
 	void  _create_surface(xcb_window_t w);
 
 public:
