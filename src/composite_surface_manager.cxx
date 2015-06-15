@@ -65,6 +65,13 @@ void composite_surface_manager_t::pre_process_event(xcb_generic_event_t const * 
 		if (x != _data.end()) {
 			x->second->on_unmap();
 		}
+	} else if (e->response_type == 0x80|XCB_UNMAP_NOTIFY) {
+		xcb_unmap_notify_event_t const * ev =
+				reinterpret_cast<xcb_unmap_notify_event_t const *>(e);
+		auto x = _data.find(ev->window);
+		if (x != _data.end()) {
+			x->second->on_unmap();
+		}
 	}
 }
 
@@ -188,6 +195,12 @@ void composite_surface_manager_t::_create_surface(xcb_window_t w) {
 
 }
 
+void composite_surface_manager_t::freeze(xcb_window_t w, bool b) {
+	auto x = _data.find(w);
+	if (x != _data.end()) {
+		x->second->freeze(b);
+	}
+}
 
 
 }

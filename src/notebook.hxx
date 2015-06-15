@@ -74,6 +74,7 @@ public:
 	// list of client to maintain tab order
 	std::list<client_managed_t *> _clients;
 	client_managed_t * _selected;
+	i_rect client_position;
 
 	// link the client to the corresponding tab theme
 	mutable std::map<client_managed_t *, std::shared_ptr<theme_tab_t>> _client_to_tab;

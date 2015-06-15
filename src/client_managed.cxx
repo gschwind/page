@@ -237,6 +237,10 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 	update_icon();
 
+	if(not is(MANAGED_NOTEBOOK)) {
+		_ctx->csm()->register_window(_base);
+	}
+
 }
 
 client_managed_t::~client_managed_t() {
@@ -267,6 +271,10 @@ client_managed_t::~client_managed_t() {
 
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
+
+	if(not is(MANAGED_NOTEBOOK)) {
+		_ctx->csm()->unregister_window(_base);
+	}
 
 }
 
@@ -377,12 +385,8 @@ void client_managed_t::delete_window(xcb_timestamp_t t) {
 	}
 }
 
-void client_managed_t::init_managed_type(managed_window_type_e type) {
-	_managed_type = type;
-}
-
 void client_managed_t::set_managed_type(managed_window_type_e type) {
-
+	managed_window_type_e old_type = _managed_type;
 	if (lock()) {
 		if(_managed_type == MANAGED_DOCK) {
 			std::list<atom_e> net_wm_allowed_actions;
@@ -402,6 +406,15 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 
 		unlock();
 	}
+
+	if(old_type != _managed_type) {
+		if(is(MANAGED_NOTEBOOK)) {
+			_ctx->csm()->unregister_window(_base);
+		} else {
+			_ctx->csm()->register_window(_base);
+		}
+	}
+
 }
 
 void client_managed_t::focus(xcb_timestamp_t t) {
@@ -422,6 +435,7 @@ bool client_managed_t::is(managed_window_type_e type) {
 }
 
 void client_managed_t::expose() {
+	std::cout << "expose" << std::endl;
 	if (is(MANAGED_FLOATING)) {
 
 		theme_managed_window_t fw;

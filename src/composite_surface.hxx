@@ -40,10 +40,10 @@ class composite_surface_t {
 	bool _is_map;
 	bool _is_destroyed;
 	bool _is_composited;
+	bool _is_freezed;
 
 	void create_damage() {
 		if (_damage == XCB_NONE) {
-			std::cout << "create damage for " << this << std::endl;
 			_damage = xcb_generate_id(_dpy->xcb());
 			xcb_damage_create(_dpy->xcb(), _damage, _window_id, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
 			_damaged += i_rect(0, 0, _width, _height);
@@ -54,7 +54,6 @@ class composite_surface_t {
 	void destroy_damage() {
 		if (_dpy->lock(_window_id)) {
 			if (_damage != XCB_NONE) {
-				std::cout << "destroy damage for " << this << std::endl;
 				xcb_damage_destroy(_dpy->xcb(), _damage);
 				_damage = XCB_NONE;
 			}
@@ -74,7 +73,8 @@ public:
 		_window_id(w),
 		_is_destroyed(false),
 		_ref_count{1U},
-		_is_composited{composited}
+		_is_composited{composited},
+		_is_freezed{false}
 	{
 		if (_dpy->lock(_window_id)) {
 
@@ -87,9 +87,6 @@ public:
 			create_damage();
 
 			_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
-
-			printf("create composite_surface (%p) %dx%d\n", this, _width,
-					_height);
 
 			if (_is_map) {
 				on_map();
@@ -106,6 +103,7 @@ public:
 
 	void on_map() {
 		_is_map = true;
+		_is_freezed = false;
 		update_pixmap();
 	}
 
@@ -169,7 +167,7 @@ public:
 		 * if we already know that the window is destroyed or
 		 * unmapped, return immediately.
 		 **/
-		if (_is_destroyed or not _is_map or not _is_composited)
+		if (_is_destroyed or not _is_map or not _is_composited or _is_freezed)
 			return;
 		/**
 		 * lock the window and check if it will be destroyed soon
@@ -185,7 +183,7 @@ public:
 				_pixmap = std::shared_ptr<pixmap_t>(
 						new pixmap_t(_dpy, _vis, pixmap_id, _width,
 								_height));
-				_damaged += i_rect { 0, 0, _width, _height };
+				_damaged += i_rect ( 0, 0, _width, _height );
 				_dpy->read_damaged_region(_damage);
 			}
 			_dpy->unlock();
@@ -227,7 +225,25 @@ public:
 
 	void enable_composited() {
 		_is_composited = true;
+		_is_freezed = false;
 		update_pixmap();
+	}
+
+	void freeze(bool x) {
+		_is_freezed = x;
+		if(_pixmap != nullptr) {
+			xcb_pixmap_t pix = xcb_generate_id(_dpy->xcb());
+			xcb_create_pixmap(_dpy->xcb(), _depth, pix, _dpy->root(), _px_width, _px_height);
+			auto xpix = std::make_shared<pixmap_t>(_dpy, _vis, pix, _px_width, _px_height);
+
+			cairo_surface_t * s = xpix->get_cairo_surface();
+			cairo_t * cr = cairo_create(s);
+			cairo_set_source_surface(cr, _pixmap->get_cairo_surface(), 0, 0);
+			cairo_paint(cr);
+			cairo_destroy(cr);
+
+			_pixmap = xpix;
+		}
 	}
 
 };

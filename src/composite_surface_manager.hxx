@@ -64,6 +64,7 @@ public:
 
 	void register_window(xcb_window_t w);
 	void unregister_window(xcb_window_t w);
+	void freeze(xcb_window_t w, bool x);
 
 	void make_surface_stats(int & size, int & count);
 

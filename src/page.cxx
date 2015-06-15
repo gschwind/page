@@ -1256,6 +1256,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	client_base_t * c = find_client(e->window);
 
 	if (c != nullptr) {
+		cmgr->freeze(c->base(), true);
 		add_compositor_damaged(c->visible_area());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
@@ -4801,6 +4802,7 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 					_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
+					cmgr->freeze(mode_data_notebook.c->base(), true);
 					mode_data_notebook.c->delete_window(e->time);
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					unbind_window(mode_data_notebook.c);
