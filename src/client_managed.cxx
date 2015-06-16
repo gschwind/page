@@ -1004,10 +1004,10 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 
 		if (_motif_has_border) {
 			if(is_focused()) {
-				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 7.0);
+				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
 				out += std::shared_ptr<renderable_t> { x };
 			} else {
-				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 7.0);
+				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
 				out += std::shared_ptr<renderable_t> { x };
 			}
 		}
