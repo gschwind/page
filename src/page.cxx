@@ -4802,7 +4802,6 @@ void page_t::process_button_release_notebook_button_press(xcb_generic_event_t co
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
 					_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
-					cmgr->freeze(mode_data_notebook.c->base(), true);
 					mode_data_notebook.c->delete_window(e->time);
 				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
 					unbind_window(mode_data_notebook.c);
