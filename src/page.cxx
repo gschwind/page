@@ -1816,8 +1816,7 @@ void page_t::render() {
 		rnd->push_back_renderable(ret);
 		rnd->render();
 
-		/** sync with X server to ensure all render are done **/
-		cnx->sync();
+		xcb_flush(cnx->xcb());
 
 		cur_tic.update_to_current_time();
 
@@ -5445,14 +5444,13 @@ void page_t::process_pending_events() {
 
 	}
 
+	cnx->ungrab();
+	xcb_flush(cnx->xcb());
+
 	if (_need_render) {
 		render();
 	}
 
-	/** clean up surfaces **/
-	cmgr->cleanup();
-	cnx->ungrab();
-	xcb_flush(cnx->xcb());
 
 }
 
