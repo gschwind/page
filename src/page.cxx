@@ -5444,6 +5444,8 @@ void page_t::process_pending_events() {
 
 	}
 
+	cmgr->apply_updates();
+
 	cnx->ungrab();
 	xcb_flush(cnx->xcb());
 

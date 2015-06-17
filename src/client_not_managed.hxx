@@ -54,10 +54,15 @@ public:
 			_properties->update_shape();
 			cnx()->unlock();
 		}
+
+		_ctx->csm()->register_window(orig());
+
 	}
 
 	~client_not_managed_t() {
 		cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
+		_ctx->csm()->unregister_window(orig());
+
 	}
 
 	xcb_atom_t net_wm_type() {

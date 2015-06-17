@@ -54,7 +54,7 @@ public:
 	void pre_process_event(xcb_generic_event_t const * e);
 
 	/** cleanup unmaped or destroyed window **/
-	void cleanup();
+	void apply_updates();
 
 	void register_window(xcb_window_t w);
 	void unregister_window(xcb_window_t w);

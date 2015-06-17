@@ -52,6 +52,10 @@ display_t::display_t() {
 	_fd = xcb_get_file_descriptor(_xcb);
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
+
+	_empty_region = xcb_generate_id(_xcb);
+	xcb_xfixes_create_region(_xcb, _empty_region, 0, 0);
+
 	update_default_visual();
 
 	/** get default WM_Sxx atom **/
@@ -740,6 +744,8 @@ region display_t::read_damaged_region(xcb_damage_damage_t d) {
 	/* create an empty region */
 	xcb_xfixes_region_t region{xcb_generate_id(_xcb)};
 	xcb_xfixes_create_region(_xcb, region, 0, 0);
+
+	xcb_xfixes_set_region(_xcb, region, 0, nullptr);
 
 	/* get damaged region and remove them from damaged status */
 	xcb_damage_subtract(_xcb, d, XCB_XFIXES_REGION_NONE, region);

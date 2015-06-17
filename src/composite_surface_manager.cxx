@@ -75,23 +75,20 @@ void composite_surface_manager_t::pre_process_event(xcb_generic_event_t const * 
 	}
 }
 
-void composite_surface_manager_t::cleanup() {
+void composite_surface_manager_t::apply_updates() {
 
-//	/** remove destroyed windows **/
-//	for(auto i = _data.begin(); i != _data.end(); ) {
-//		if(i->second->is_destroyed()) {
-//			i = _data.erase(i);
-//		} else {
-//			++i;
-//		}
-//	}
-//
-//	/** destroy obsolete pixmap **/
-//	for(auto & i : _data) {
-//		if(not i.second->is_map()) {
-//			i.second->destroy_pixmap();
-//		}
-//	}
+	for(auto s: _data) {
+		s.second->update_pixmap();
+
+		/* send all damage request */
+		s.second->start_gathering_damage();
+	}
+
+	for(auto s: _data) {
+
+		/* get all damage reply */
+		s.second->finish_gathering_damage();
+	}
 
 }
 
@@ -168,31 +165,7 @@ void composite_surface_manager_t::clear_damaged(xcb_window_t w) {
 }
 
 void composite_surface_manager_t::_create_surface(xcb_window_t w) {
-	if (_dpy->lock(w)) {
-
-		xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(),
-				w);
-		xcb_get_window_attributes_cookie_t ck1 = xcb_get_window_attributes(
-				_dpy->xcb(), w);
-
-		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(
-				_dpy->xcb(), ck0, 0);
-		xcb_get_window_attributes_reply_t * attrs =
-				xcb_get_window_attributes_reply(_dpy->xcb(), ck1, 0);
-
-		if (attrs == nullptr or geometry == nullptr) {
-			return;
-		}
-
-		if(attrs->_class != XCB_WINDOW_CLASS_INPUT_OUTPUT)
-			return;
-
-		/** otherwise, create a new one **/
-		auto ret = std::make_shared<composite_surface_t>(_dpy, w, geometry, attrs, _enabled);
-		_data[w] = ret;
-		_dpy->unlock();
-	}
-
+	_data[w] = std::make_shared<composite_surface_t>(_dpy, w, _enabled);
 }
 
 void composite_surface_manager_t::freeze(xcb_window_t w, bool b) {
