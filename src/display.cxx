@@ -53,9 +53,6 @@ display_t::display_t() {
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
 
-	_empty_region = xcb_generate_id(_xcb);
-	xcb_xfixes_create_region(_xcb, _empty_region, 0, 0);
-
 	update_default_visual();
 
 	/** get default WM_Sxx atom **/

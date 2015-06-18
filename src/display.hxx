@@ -80,8 +80,6 @@ class display_t {
 
 	int _grab_count;
 
-	xcb_xfixes_region_t _empty_region;
-
 public:
 
 	char const * event_type_name[128];
