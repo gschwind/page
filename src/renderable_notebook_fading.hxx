@@ -51,9 +51,14 @@ public:
 
 		cairo_save(cr);
 		if (client_surf != nullptr) {
-			cairo_clip(cr, client_pos);
-			cairo_set_source_surface(cr, client_surf->get_cairo_surface(), client_pos.x, client_pos.y);
-			cairo_mask_surface(cr, client_surf->get_cairo_surface(), client_pos.x, client_pos.y);
+			for (auto & c : area) {
+				cairo_reset_clip(cr);
+				cairo_clip(cr, client_pos&c);
+				cairo_set_source_surface(cr, client_surf->get_cairo_surface(),
+						client_pos.x, client_pos.y);
+				cairo_mask_surface(cr, client_surf->get_cairo_surface(),
+						client_pos.x, client_pos.y);
+			}
 		}
 		cairo_restore(cr);
 
@@ -64,12 +69,17 @@ public:
 		tmp_pos.y = client_area.y;
 		tmp_pos.w = std::min(old_client_area.w, client_area.w);
 		tmp_pos.h = std::min(old_client_area.h, client_area.h);
-		cairo_clip(cr, tmp_pos);
-		cairo_pattern_t * p0 = cairo_pattern_create_rgba(1.0, 1.0, 1.0,
-				1.0 - ratio);
-		cairo_set_source_surface(cr, old_surface->get_cairo_surface(),
-				tmp_pos.x, tmp_pos.y);
-		cairo_mask(cr, p0);
+		cairo_pattern_t * p0 =
+				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - ratio);
+
+		for (auto & c : area) {
+			cairo_reset_clip(cr);
+			cairo_clip(cr, tmp_pos & c);
+			cairo_set_source_surface(cr, old_surface->get_cairo_surface(),
+					tmp_pos.x, tmp_pos.y);
+			cairo_mask(cr, p0);
+		}
+
 		cairo_pattern_destroy(p0);
 		cairo_restore(cr);
 

@@ -313,7 +313,6 @@ void display_t::move_resize(xcb_window_t w, i_rect const & size) {
 	mask |= XCB_CONFIG_WINDOW_HEIGHT;
 	value[3] = size.h;
 	xcb_void_cookie_t ck = xcb_configure_window(_xcb, w, mask, value);
-
 	//printf("%08u move_resize(%u, %d, %d, %d, %d)\n", ck.sequence, w, size.x, size.y, size.w, size.h);
 
 }

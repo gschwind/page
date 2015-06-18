@@ -3774,14 +3774,7 @@ void page_t::update_keymap() {
 }
 
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
-
-	auto viewports = get_viewports();
-	for(auto x: viewports) {
-		x->repair_damaged();
-	}
-
 	out.push_back(_theme->get_background(0,0));
-
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
 	}
@@ -5438,6 +5431,11 @@ void page_t::process_pending_events() {
 		if(_need_update_client_list) {
 			_need_update_client_list = false;
 			update_client_list();
+		}
+
+		auto viewports = get_viewports();
+		for(auto x: viewports) {
+			x->repair_damaged();
 		}
 
 		cnx->sync();

@@ -125,7 +125,9 @@ class mainloop_t {
 				auto x = timeout_list.top();
 				timeout_list.pop();
 				if(x->call()) {
-					x->renew(curtime);
+					time_t cur;
+					cur.update_to_current_time();
+					x->renew(cur);
 					timeout_list.push(x);
 				}
 			} else {
