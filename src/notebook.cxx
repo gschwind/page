@@ -508,27 +508,32 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 		if(_selected != nullptr) {
 			i_rect & b = theme_notebook.selected_client->position;
 
-			page_event_t ncclose{PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE};
+			if (not _selected->is_iconic()) {
+				page_event_t ncclose { PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE };
 
-			ncclose.position.x = b.x + b.w - _ctx->theme()->notebook.selected_close_width;
-			ncclose.position.y = b.y;
-			ncclose.position.w = _ctx->theme()->notebook.selected_close_width;
-			ncclose.position.h = _ctx->theme()->notebook.tab_height;
-			ncclose.nbk = this;
-			ncclose.clt = _selected;
-			l->push_back(ncclose);
+				ncclose.position.x = b.x + b.w
+						- _ctx->theme()->notebook.selected_close_width;
+				ncclose.position.y = b.y;
+				ncclose.position.w =
+						_ctx->theme()->notebook.selected_close_width;
+				ncclose.position.h = _ctx->theme()->notebook.tab_height;
+				ncclose.nbk = this;
+				ncclose.clt = _selected;
+				l->push_back(ncclose);
 
-			page_event_t ncub{PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND};
+				page_event_t ncub { PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND };
 
-			ncub.position.x = b.x + b.w
-					- _ctx->theme()->notebook.selected_close_width
-					- _ctx->theme()->notebook.selected_unbind_width;
-			ncub.position.y = b.y;
-			ncub.position.w = _ctx->theme()->notebook.selected_unbind_width;
-			ncub.position.h = _ctx->theme()->notebook.tab_height;
-			ncub.nbk = this;
-			ncub.clt = _selected;
-			l->push_back(ncub);
+				ncub.position.x = b.x + b.w
+						- _ctx->theme()->notebook.selected_close_width
+						- _ctx->theme()->notebook.selected_unbind_width;
+				ncub.position.y = b.y;
+				ncub.position.w = _ctx->theme()->notebook.selected_unbind_width;
+				ncub.position.h = _ctx->theme()->notebook.tab_height;
+				ncub.nbk = this;
+				ncub.clt = _selected;
+				l->push_back(ncub);
+
+			}
 
 			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
 			nc.position = b;
