@@ -54,6 +54,9 @@ class notebook_t : public page_component_t {
 	page::time_t swap_start;
 
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
+	std::shared_ptr<renderable_pixmap_t> _exposay;
+	std::vector<page_event_t> _exposay_event;
+
 
 	mutable theme_notebook_t theme_notebook;
 
@@ -231,6 +234,8 @@ public:
 	void set_keep_selected(bool x) {
 		_keep_selected = x;
 	}
+
+	void start_exposay();
 
 };
 

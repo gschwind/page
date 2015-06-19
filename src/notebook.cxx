@@ -354,7 +354,9 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		return;
 	}
 
-	if (time < (swap_start + animation_duration)) {
+	if(_exposay != nullptr) {
+		out += dynamic_pointer_cast<renderable_t>(_exposay);
+	} else if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {
 			return;
@@ -554,6 +556,10 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 		}
 
 	}
+
+	if(_exposay != nullptr) {
+		l->insert(l->end(), _exposay_event.begin(), _exposay_event.end());
+	}
 }
 
 void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
@@ -642,6 +648,9 @@ void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
 }
 
 void notebook_t::start_fading() {
+
+	_exposay = nullptr;
+
 	if(_ctx->cmp() == nullptr)
 		return;
 
@@ -677,6 +686,159 @@ void notebook_t::start_fading() {
 	cairo_surface_flush(surf);
 
 	fading_notebook = std::make_shared<renderable_notebook_fading_t>(pix, _allocation);
+
+}
+
+void notebook_t::start_exposay() {
+
+	if(_ctx->cmp() == nullptr)
+		return;
+
+	if(_selected != nullptr)
+		iconify_client(_selected);
+
+	if(_clients.size() <= 0)
+		return;
+
+	_exposay_event.clear();
+
+	update_theme_notebook(client_area.x, client_area.y);
+
+	auto pix = _ctx->cmp()->create_composite_pixmap(client_area.w, client_area.h);
+	cairo_surface_t * surf = pix->get_cairo_surface();
+	cairo_t * cr = cairo_create(surf);
+	_ctx->theme()->render_notebook(cr, &theme_notebook);
+
+
+	unsigned clients_counts = _clients.size();
+
+	unsigned hcounts = 0;
+	unsigned hn = 0;
+	unsigned hm = 0;
+	while (hcounts < clients_counts) {
+		unsigned xwidth = client_area.w / ++hn;
+		if (xwidth > 0) {
+			hm = client_area.h / xwidth;
+			hcounts = hn * hm;
+		} else {
+			hm = 0;
+			hcounts = 0;
+		}
+	}
+
+	unsigned vcounts = 0;
+	unsigned vn = 0;
+	unsigned vm = 0;
+	while (vcounts < clients_counts) {
+		unsigned xheight = client_area.h / ++vm;
+		if (xheight > 0) {
+			vn = client_area.w / xheight;
+			vcounts = vn * vm;
+		} else {
+			vm = 0;
+			vcounts = 0;
+		}
+	}
+
+	unsigned n, m, width;
+	if(client_area.h/vm < client_area.w/hn) {
+		n = hn;
+		m = hm;
+		width = client_area.w/hn;
+	} else {
+		n = vn;
+		m = vm;
+		width = client_area.h/vm;
+	}
+
+	unsigned xoffset = (client_area.w-width*n)/2;
+	unsigned yoffset = (client_area.h-width*m)/2;
+
+	printf("n = %u, m = %u, w = %u\n", n, m, width);
+
+	auto it = _clients.begin();
+	for(int i = 0; i < _clients.size(); ++i) {
+		unsigned y = i / n;
+		unsigned x = i % n;
+		printf("x = %u, y = %u\n", x, y);
+
+		i_rect pdst(x*width+0.5+xoffset, y*width+0.5+yoffset, width-2.0, width-2.0);
+
+		cairo_reset_clip(cr);
+		cairo_set_line_width(cr, 1.0);
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+		cairo_rectangle(cr, pdst.x, pdst.y, pdst.w, pdst.h);
+		cairo_stroke(cr);
+
+		pdst.x += 8;
+		pdst.y += 8;
+		pdst.w -= 16;
+		pdst.h -= 16;
+
+		auto c = *it;
+
+		{
+			page_event_t nc { PAGE_EVENT_NOTEBOOK_CLIENT };
+			nc.position = pdst;
+			nc.nbk = this;
+			nc.clt = c;
+			_exposay_event.push_back(nc);
+		}
+
+		std::shared_ptr<pixmap_t> pix = c->get_last_pixmap();
+		if (pix != nullptr) {
+
+			cairo_surface_t * src = pix->get_cairo_surface();
+			cairo_save(cr);
+
+			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+
+			double src_width = pix->witdh();
+			double src_height = pix->height();
+
+			printf("w = %f, h = %f\n", src_width, src_height);
+
+			double x_ratio = pdst.w / src_width;
+			double y_ratio = pdst.h / src_height;
+
+			double x_offset, y_offset;
+
+			if (x_ratio < y_ratio) {
+
+				double yp = pdst.h / x_ratio;
+
+				x_offset = 0;
+				y_offset = (yp - src_height) / 2.0;
+				cairo_translate(cr, pdst.x, pdst.y);
+				cairo_scale(cr, x_ratio, x_ratio);
+				cairo_set_source_surface(cr, src, x_offset, y_offset);
+				cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+				cairo_fill(cr);
+
+			} else {
+				double xp = pdst.w / y_ratio;
+
+				y_offset = 0;
+				x_offset = (xp - src_width) / 2.0;
+				cairo_translate(cr, pdst.x, pdst.y);
+				cairo_scale(cr, y_ratio, y_ratio);
+				cairo_set_source_surface(cr, src, x_offset, y_offset);
+				cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+				cairo_fill(cr);
+			}
+
+			cairo_restore(cr);
+
+		}
+
+		++it;
+	}
+
+	cairo_destroy(cr);
+	cairo_surface_flush(surf);
+
+	_exposay = std::make_shared<renderable_pixmap_t>(pix, client_area, client_area);
 
 }
 

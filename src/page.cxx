@@ -883,6 +883,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 			if (b != nullptr) {
 				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
 					process_mode = PROCESS_NOTEBOOK_CLIENT_MENU;
+
 					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_client_menu);
 					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_client_menu);
 
@@ -5278,33 +5279,37 @@ void page_t::page_event_handler_notebook_mark(page_event_t const & pev) {
 }
 
 void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_MENU;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_menu);
+	//process_mode = PROCESS_NOTEBOOK_MENU;
 
-	mode_data_notebook_menu.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook_menu.b = pev.position;
+	const_cast<notebook_t*>(pev.nbk)->start_exposay();
+	mark_durty(const_cast<notebook_t*>(pev.nbk));
 
-	std::list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
-
-	int sel = 0;
-
-	std::vector<std::shared_ptr<notebook_dropdown_menu_t::item_t>> v;
-	int s = 0;
-
-	for (auto i : managed_window) {
-		auto cy = std::make_shared<notebook_dropdown_menu_t::item_t>(i, i->icon(), i->title());
-		v.push_back(cy);
-		if (i == _desktop_list[_current_desktop]->client_focus.front()) {
-			sel = s;
-		}
-		++s;
-	}
-
-	int x = mode_data_notebook_menu.from->allocation().x;
-	int y = mode_data_notebook_menu.from->allocation().y + _theme->notebook.tab_height;
-
-	menu = std::make_shared<notebook_dropdown_menu_t>(cnx, _theme, v, x, y, mode_data_notebook_menu.from->allocation().w);
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_menu);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_menu);
+//
+//	mode_data_notebook_menu.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook_menu.b = pev.position;
+//
+//	std::list<client_managed_t *> managed_window = mode_data_notebook_menu.from->get_clients();
+//
+//	int sel = 0;
+//
+//	std::vector<std::shared_ptr<notebook_dropdown_menu_t::item_t>> v;
+//	int s = 0;
+//
+//	for (auto i : managed_window) {
+//		auto cy = std::make_shared<notebook_dropdown_menu_t::item_t>(i, i->icon(), i->title());
+//		v.push_back(cy);
+//		if (i == _desktop_list[_current_desktop]->client_focus.front()) {
+//			sel = s;
+//		}
+//		++s;
+//	}
+//
+//	int x = mode_data_notebook_menu.from->allocation().x;
+//	int y = mode_data_notebook_menu.from->allocation().y + _theme->notebook.tab_height;
+//
+//	menu = std::make_shared<notebook_dropdown_menu_t>(cnx, _theme, v, x, y, mode_data_notebook_menu.from->allocation().w);
 
 }
 

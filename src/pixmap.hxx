@@ -23,6 +23,7 @@ class pixmap_t {
 	display_t * _dpy;
 	xcb_pixmap_t _pixmap_id;
 	cairo_surface_t * _surf;
+	unsigned _w, _h;
 
 public:
 
@@ -30,6 +31,8 @@ public:
 		_dpy = dpy;
 		_pixmap_id = p;
 		_surf = cairo_xcb_surface_create(dpy->xcb(), p, v, w, h);
+		_w = w;
+		_h = h;
 	}
 
 	~pixmap_t() {
@@ -37,8 +40,16 @@ public:
 		xcb_free_pixmap(_dpy->xcb(), _pixmap_id);
 	}
 
-	cairo_surface_t * get_cairo_surface() {
+	cairo_surface_t * get_cairo_surface() const {
 		return _surf;
+	}
+
+	unsigned witdh() const {
+		return _w;
+	}
+
+	unsigned height() const {
+		return _h;
 	}
 
 };
