@@ -64,6 +64,10 @@ namespace page {
 
 time_t const page_t::default_wait{1000000000L / 120L};
 
+//page_context_t::~page_context_t() {
+//
+//}
+
 /**
  * TODO: To lazy to create file for this definition
  **/
@@ -73,6 +77,8 @@ theme_t::~theme_t() {
 
 page_t::page_t(int argc, char ** argv)
 {
+
+	_grab_handler = nullptr;
 
 	/* initialize page event handler functions */
 	_page_event_press_handler[PAGE_EVENT_NONE] =
@@ -229,9 +235,6 @@ page_t::~page_t() {
 
 	cnx->unload_cursors();
 
-	pfm.reset();
-	pn0.reset();
-	ps.reset();
 	pat.reset();
 	menu.reset();
 	client_menu.reset();
@@ -292,9 +295,9 @@ void page_t::run() {
 	/** Initialize theme **/
 
 	if(_theme_engine == "tiny") {
-		/* TODO */
-		std::cout << "using tiny theme engine" << std::endl;
-		_theme = new tiny_theme_t{cnx, conf};
+//		/* TODO */
+//		std::cout << "using tiny theme engine" << std::endl;
+//		_theme = new tiny_theme_t{cnx, conf};
 	} else {
 		/* The default theme engine */
 		std::cout << "using simple theme engine" << std::endl;
@@ -313,9 +316,6 @@ void page_t::run() {
 
 	update_viewport_layout();
 
-	pfm = nullptr;
-	pn0 = nullptr;
-	ps = nullptr;
 	pat = nullptr;
 	menu = nullptr;
 
@@ -831,8 +831,8 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 //			<< std::endl;
 
 
-	if (process_mode != PROCESS_NORMAL) {
-		/* continue to grab events */
+	if(_grab_handler != nullptr) {
+		_grab_handler->button_press(e);
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
 		return;
 	}
@@ -870,48 +870,47 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 		/* rigth click on page */
 		} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_3) {
-			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
-
-			page_event_t * b = nullptr;
-			for (auto &i: page_areas) {
-				if (i.position.is_inside(e->event_x, e->event_y)) {
-					b = &(i);
-					break;
-				}
-			}
-
-			if (b != nullptr) {
-				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
-					process_mode = PROCESS_NOTEBOOK_CLIENT_MENU;
-
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_client_menu);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_client_menu);
-
-					if(mode_data_notebook_client_menu.active_grab == false) {
-						mode_data_notebook_client_menu.from = const_cast<notebook_t*>(b->nbk);
-						mode_data_notebook_client_menu.client = const_cast<client_managed_t *>(b->clt);
-						mode_data_notebook_client_menu.b = b->position;
-
-						std::vector<std::shared_ptr<client_dropdown_menu_t::item_t>> v;
-						for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-							std::ostringstream os;
-							os << "Desktop #" << k;
-							auto item = new client_dropdown_menu_t::item_t(k, nullptr, os.str());
-							v.push_back(std::shared_ptr<client_dropdown_menu_t::item_t>{item});
-						}
-
-						int x = e->root_x;
-						int y = e->root_y;
-
-						client_menu = std::make_shared<client_dropdown_menu_t>(cnx, _theme, v, x, y, 300);
-
-					}
-				}
-			}
+//			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
+//
+//			page_event_t * b = nullptr;
+//			for (auto &i: page_areas) {
+//				if (i.position.is_inside(e->event_x, e->event_y)) {
+//					b = &(i);
+//					break;
+//				}
+//			}
+//
+//			if (b != nullptr) {
+//				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
+//					process_mode = PROCESS_NOTEBOOK_CLIENT_MENU;
+//
+//					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_client_menu);
+//					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_client_menu);
+//
+//					if(mode_data_notebook_client_menu.active_grab == false) {
+//						mode_data_notebook_client_menu.from = const_cast<notebook_t*>(b->nbk);
+//						mode_data_notebook_client_menu.client = const_cast<client_managed_t *>(b->clt);
+//						mode_data_notebook_client_menu.b = b->position;
+//
+//						std::vector<std::shared_ptr<client_dropdown_menu_t::item_t>> v;
+//						for(unsigned k = 0; k < _desktop_list.size(); ++k) {
+//							std::ostringstream os;
+//							os << "Desktop #" << k;
+//							auto item = new client_dropdown_menu_t::item_t(k, nullptr, os.str());
+//							v.push_back(std::shared_ptr<client_dropdown_menu_t::item_t>{item});
+//						}
+//
+//						int x = e->root_x;
+//						int y = e->root_y;
+//
+//						client_menu = std::make_shared<client_dropdown_menu_t>(cnx, _theme, v, x, y, 300);
+//
+//					}
+//				}
+//			}
 		}
 
 	} else {
-
 
 		client_managed_t * mw = find_managed_window_with(e->event);
 
@@ -923,39 +922,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					and e->detail == XCB_BUTTON_INDEX_3
 					and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
 
-				mode_data_floating.x_offset = e->root_x - mw->base_position().x;
-				mode_data_floating.y_offset = e->root_y - mw->base_position().y;
-				mode_data_floating.x_root = e->root_x;
-				mode_data_floating.y_root = e->root_y;
-				mode_data_floating.f = mw;
-				mode_data_floating.original_position = mw->get_floating_wished_position();
-				mode_data_floating.final_position = mw->get_floating_wished_position();
-				mode_data_floating.popup_original_position = mw->get_base_position();
-				mode_data_floating.button = XCB_BUTTON_INDEX_3;
-
-				pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-				pfm->update_window(mw);
-				pfm->move_resize(mw->get_base_position());
-
 				if ((e->state & XCB_MOD_MASK_CONTROL)) {
-					process_mode = PROCESS_FLOATING_RESIZE;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-					mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-					cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
-					cnx->set_window_cursor(mw->orig(), cnx->xc_bottom_righ_corner);
+					grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
 				} else {
-					safe_raise_window(mw);
-					process_mode = PROCESS_FLOATING_MOVE;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
-
-					cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
-					cnx->set_window_cursor(mw->orig(), cnx->xc_fleur);
+					grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
 				}
-
-
 			} else if (mw->is(MANAGED_FLOATING)
 					and e->detail == XCB_BUTTON_INDEX_1
 					and e->child != mw->orig()
@@ -973,166 +944,45 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 				if (b != nullptr) {
 
-					mode_data_floating.x_offset = e->root_x - mw->base_position().x;
-					mode_data_floating.y_offset = e->root_y - mw->base_position().y;
-					mode_data_floating.x_root = e->root_x;
-					mode_data_floating.y_root = e->root_y;
-					mode_data_floating.f = mw;
-					mode_data_floating.original_position = mw->get_floating_wished_position();
-					mode_data_floating.final_position = mw->get_floating_wished_position();
-					mode_data_floating.popup_original_position = mw->get_base_position();
-					mode_data_floating.button = XCB_BUTTON_INDEX_1;
-
 					if (b->type == FLOATING_EVENT_CLOSE) {
-
-						mode_data_floating.f = mw;
-						process_mode = PROCESS_FLOATING_CLOSE;
-						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_close);
-						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_close);
-
+						mw->delete_window(e->time);
 					} else if (b->type == FLOATING_EVENT_BIND) {
-
-						mode_data_bind.c = mw;
-						mode_data_bind.ns = nullptr;
-						mode_data_bind.zone = SELECT_NONE;
-
-						if (pn0 != nullptr) {
-							pn0->move_resize(mode_data_bind.c->get_base_position());
-							pn0->update_window(mw);
-						}
-
-						process_mode = PROCESS_FLOATING_BIND;
-						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_bind);
-						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_bind);
-
+						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], b->position});
 					} else if (b->type == FLOATING_EVENT_TITLE) {
-
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-						pfm->update_window(mw);
-						pfm->move_resize(mw->get_base_position());
-
-						safe_raise_window(mw);
-						process_mode = PROCESS_FLOATING_MOVE;
-						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
-						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
-
-						cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
+						grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
 					} else {
-
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-						pfm->update_window(mw);
-						pfm->move_resize(mw->get_base_position());
-
 						if (b->type == FLOATING_EVENT_GRIP_TOP) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_TOP;
-							cnx->set_window_cursor(mw->base(), cnx->xc_top_side);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP});
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_BOTTOM;
-							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_side);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM});
 						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_LEFT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_left_side);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_LEFT});
 						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_RIGHT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_right_side);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_RIGHT});
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_top_left_corner);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT});
 						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_top_right_corner);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT});
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_left_corner);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT});
 						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize);
-
-							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							cnx->set_window_cursor(mw->base(), cnx->xc_bottom_righ_corner);
+							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
 						} else {
-							pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-							pfm->update_window(mw);
-							pfm->move_resize(mw->get_base_position());
-
-							safe_raise_window(mw);
-							process_mode = PROCESS_FLOATING_MOVE;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move);
-
-							cnx->set_window_cursor(mw->base(), cnx->xc_fleur);
+							grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
 						}
 					}
 
 				}
 
-			} else if (mw->is(MANAGED_FULLSCREEN) and e->detail == (XCB_BUTTON_INDEX_3)
+			} else if (mw->is(MANAGED_FULLSCREEN)
+					and e->detail == (XCB_BUTTON_INDEX_3)
 					and (e->state & (XCB_MOD_MASK_1))) {
-				fprintf(stderr, "start FULLSCREEN MOVE\n");
+				//fprintf(stderr, "start FULLSCREEN MOVE\n");
 				/** start moving fullscreen window **/
-				viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
-
-				if (v != 0) {
-					fprintf(stderr, "start FULLSCREEN MOVE\n");
-					process_mode = PROCESS_FULLSCREEN_MOVE;
-					_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_fullscreen_move);
-					_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_fullscreen_move);
-
-					mode_data_fullscreen.mw = mw;
-					mode_data_fullscreen.v = v;
-
-					pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-					pn0->update_window(mw);
-					pn0->move_resize(v->raw_area());
-				}
+				grab_start(new grab_fullscreen_client_t{this, mw, e->detail, e->root_x, e->root_y});
 			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 					and (e->state & (XCB_MOD_MASK_1))) {
-
-				notebook_t * n = find_parent_notebook_for(mw);
-
-				process_mode = PROCESS_NOTEBOOK_GRAB;
-				_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
-				_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
-
-				mode_data_notebook.c = mw;
-				mode_data_notebook.from = n;
-				mode_data_notebook.ns = 0;
-				mode_data_notebook.zone = SELECT_NONE;
-
-				pn0 = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t(cnx, _theme)};
-				pn0->move_resize(mode_data_notebook.from->tab_area);
-				pn0->update_window(mw);
-
-				//mode_data_notebook.from->set_selected(mode_data_notebook.c);
+				grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], i_rect{e->root_x-10, e->root_y-10, 20, 20}});
 			}
 		}
 
@@ -1142,7 +992,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	 * if no change happened to process mode
 	 * We allow events (remove the grab), and focus those window.
 	 **/
-	if (process_mode == PROCESS_NORMAL) {
+	if (_grab_handler == nullptr) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		client_managed_t * mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
@@ -1671,88 +1521,36 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
 
 				if (mw->lock()) {
-					xcb_cursor_t xc = XCB_NONE;
-
-					int x_root = e->data.data32[0];
-					int y_root = e->data.data32[1];
+					int root_x = e->data.data32[0];
+					int root_y = e->data.data32[1];
 					int direction = e->data.data32[2];
 					int button = e->data.data32[3];
 					int source = e->data.data32[4];
 
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
-						safe_raise_window(mw);
-						process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
-						_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move_by_client);
-						_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move_by_client);
-
-						xc = cnx->xc_fleur;
+						grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
 					} else {
 
 						if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_TOP;
-							xc = cnx->xc_top_side;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP});
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_BOTTOM;
-							xc = cnx->xc_bottom_side;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM});
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_LEFT;
-							xc = cnx->xc_left_side;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_LEFT});
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_RIGHT;
-							xc = cnx->xc_right_side;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_RIGHT});
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_TOP_LEFT;
-							xc = cnx->xc_top_left_corner;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_LEFT});
 						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_TOP_RIGHT;
-							xc = cnx->xc_top_right_corner;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT});
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_BOTTOM_LEFT;
-							xc = cnx->xc_bottom_left_corner;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT});
 						} else if (direction
 								== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
-							process_mode = PROCESS_FLOATING_RESIZE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_resize_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_resize_by_client);
-
-							mode_data_floating.mode = RESIZE_BOTTOM_RIGHT;
-							xc = cnx->xc_bottom_righ_corner;
+							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT});
 						} else {
-							safe_raise_window(mw);
-							process_mode = PROCESS_FLOATING_MOVE_BY_CLIENT;
-							_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_floating_move_by_client);
-							_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_floating_move_by_client);
-
-							xc = cnx->xc_fleur;
+							grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
 						}
 					}
 
@@ -1763,27 +1561,6 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 										| XCB_EVENT_MASK_BUTTON_MOTION,
 								XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 								XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-
-						mode_data_floating.x_offset = x_root
-								- mw->get_base_position().x;
-						mode_data_floating.y_offset = y_root
-								- mw->get_base_position().y;
-
-						mode_data_floating.x_root = x_root;
-						mode_data_floating.y_root = y_root;
-						mode_data_floating.f = mw;
-						mode_data_floating.original_position =
-								mw->get_floating_wished_position();
-						mode_data_floating.final_position =
-								mw->get_floating_wished_position();
-						mode_data_floating.popup_original_position =
-								mw->get_base_position();
-						mode_data_floating.button = button;
-
-						pfm = std::shared_ptr<popup_notebook0_t>{new popup_notebook0_t{cnx, _theme}};
-						pfm->update_window(mw);
-						pfm->move_resize(mw->get_base_position());
-
 					}
 
 					mw->unlock();
@@ -1870,7 +1647,7 @@ void page_t::fullscreen(client_managed_t * mw, viewport_t * v) {
 
 	// unfullscreen client that already use this screen
 	for (auto &x : _fullscreen_client_to_viewport) {
-		if (x.second.viewport == mode_data_fullscreen.v) {
+		if (x.second.viewport == v) {
 			unfullscreen(x.first);
 			break;
 		}
@@ -2156,15 +1933,6 @@ void page_t::notebook_close(notebook_t * nbk) {
 	delete nbk;
 	delete splt;
 
-}
-
-void page_t::update_popup_position(std::shared_ptr<popup_notebook0_t> p,
-		i_rect & position) {
-	if(p == nullptr)
-		return;
-	add_compositor_damaged(p->get_visible_region());
-	p->move_resize(position);
-	add_compositor_damaged(p->get_visible_region());
 }
 
 /*
@@ -2695,6 +2463,18 @@ void page_t::safe_raise_window(client_base_t * c) {
 	_need_restack = true;
 }
 
+
+void page_t::fullscreen_client_to_viewport(client_managed_t * c, viewport_t * v) {
+	if (has_key(_fullscreen_client_to_viewport, c)) {
+		fullscreen_data_t & data = _fullscreen_client_to_viewport[c];
+		if (v != data.viewport) {
+			data.viewport = v;
+			data.desktop = find_desktop_of(v);
+			update_desktop_visibility();
+		}
+	}
+}
+
 void page_t::bind_window(client_managed_t * mw, bool activate) {
 	/* update database */
 	cout << "bind: " << mw->title() << endl;
@@ -2725,67 +2505,72 @@ void page_t::unbind_window(client_managed_t * mw) {
 
 void page_t::cleanup_grab(client_managed_t * mw) {
 
-	switch (process_mode) {
-	case PROCESS_NORMAL:
-		break;
-
-	case PROCESS_NOTEBOOK_GRAB:
-	case PROCESS_NOTEBOOK_BUTTON_PRESS:
-
-		if (mode_data_notebook.c == mw) {
-			mode_data_notebook.reset();
-			mode_data_notebook.c = nullptr;
-		}
-		break;
-
-	case PROCESS_FLOATING_MOVE:
-	case PROCESS_FLOATING_RESIZE:
-	case PROCESS_FLOATING_CLOSE:
-	case PROCESS_FLOATING_MOVE_BY_CLIENT:
-	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
-		if (mode_data_floating.f == mw) {
-			process_mode = PROCESS_NORMAL;
-			mode_data_floating.reset();
-			pfm = nullptr;
-		}
-		break;
-
-	case PROCESS_FLOATING_BIND:
-		if (mode_data_bind.c == mw) {
-			process_mode = PROCESS_NORMAL;
-			mode_data_bind.reset();
-			if (pn0 != nullptr)
-				pn0 = nullptr;
-		}
-		break;
-	case PROCESS_SPLIT_GRAB:
-		break;
-	case PROCESS_FULLSCREEN_MOVE:
-		if(mode_data_fullscreen.mw == mw) {
-			process_mode = PROCESS_NORMAL;
-			mode_data_fullscreen.reset();
-			if(pn0 != nullptr)
-				pn0 = nullptr;
-		}
-		break;
-	case PROCESS_NOTEBOOK_MENU:
-		process_mode = PROCESS_NORMAL;
-		add_compositor_damaged(menu->get_visible_region());
-		menu.reset();
-		mode_data_notebook_menu.reset();
-		break;
-	case PROCESS_NOTEBOOK_CLIENT_MENU:
-		if (mode_data_notebook_client_menu.client == mw) {
-			if (mode_data_notebook_client_menu.active_grab) {
-				xcb_ungrab_pointer(cnx->xcb(), XCB_CURRENT_TIME);
-			}
-			add_compositor_damaged(client_menu->get_visible_region());
-			client_menu.reset();
-			process_mode = PROCESS_NORMAL;
-			mode_data_notebook_client_menu.reset();
-		}
-		break;
+	if(_grab_handler != nullptr) {
+		delete _grab_handler;
+		_grab_handler = nullptr;
 	}
+
+//	switch (process_mode) {
+//	case PROCESS_NORMAL:
+//		break;
+//
+//	case PROCESS_NOTEBOOK_GRAB:
+//	case PROCESS_NOTEBOOK_BUTTON_PRESS:
+//
+////		if (mode_data_notebook.c == mw) {
+////			mode_data_notebook.reset();
+////			mode_data_notebook.c = nullptr;
+////		}
+//		break;
+//
+//	case PROCESS_FLOATING_MOVE:
+//	case PROCESS_FLOATING_RESIZE:
+//	case PROCESS_FLOATING_CLOSE:
+//	case PROCESS_FLOATING_MOVE_BY_CLIENT:
+//	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
+//		if (mode_data_floating.f == mw) {
+//			process_mode = PROCESS_NORMAL;
+//			mode_data_floating.reset();
+//			pfm = nullptr;
+//		}
+//		break;
+//
+//	case PROCESS_FLOATING_BIND:
+//		if (mode_data_bind.c == mw) {
+//			process_mode = PROCESS_NORMAL;
+////			mode_data_bind.reset();
+////			if (pn0 != nullptr)
+////				pn0 = nullptr;
+//		}
+//		break;
+//	case PROCESS_SPLIT_GRAB:
+//		break;
+//	case PROCESS_FULLSCREEN_MOVE:
+//		if(mode_data_fullscreen.mw == mw) {
+//			process_mode = PROCESS_NORMAL;
+////			mode_data_fullscreen.reset();
+////			if(pn0 != nullptr)
+////				pn0 = nullptr;
+//		}
+//		break;
+//	case PROCESS_NOTEBOOK_MENU:
+//		process_mode = PROCESS_NORMAL;
+//		add_compositor_damaged(menu->get_visible_region());
+//		menu.reset();
+//		mode_data_notebook_menu.reset();
+//		break;
+//	case PROCESS_NOTEBOOK_CLIENT_MENU:
+//		if (mode_data_notebook_client_menu.client == mw) {
+//			if (mode_data_notebook_client_menu.active_grab) {
+//				xcb_ungrab_pointer(cnx->xcb(), XCB_CURRENT_TIME);
+//			}
+//			add_compositor_damaged(client_menu->get_visible_region());
+//			client_menu.reset();
+//			process_mode = PROCESS_NORMAL;
+//			mode_data_notebook_client_menu.reset();
+//		}
+//		break;
+//	}
 }
 
 /* look for a notebook in tree base, that is deferent from nbk */
@@ -2866,12 +2651,12 @@ void page_t::update_windows_stack() {
 	std::reverse(clients.begin(), clients.end());
 	std::vector<xcb_window_t> stack;
 
-	/** place popup on top **/
-	if (pfm != nullptr)
-		stack.push_back(pfm->id());
 
-	if(pn0 != nullptr)
-		stack.push_back(pn0->id());
+	for(auto x: _overlays) {
+		if(x->id() != XCB_WINDOW_NONE) {
+			stack.push_back(x->id());
+		}
+	}
 
 	/** place overlay on top **/
 	if (rnd != nullptr)
@@ -4228,107 +4013,110 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 
 void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	if(_grab_handler != nullptr) {
+		_grab_handler->button_motion(e);
+	}
 }
 
 void page_t::process_motion_notify_split_grab(xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	if (mode_data_split.split->type() == VERTICAL_SPLIT) {
-		mode_data_split.split_ratio = (e->event_x
-				- mode_data_split.split->allocation().x)
-				/ (double) (mode_data_split.split->allocation().w);
-	} else {
-		mode_data_split.split_ratio = (e->event_y
-				- mode_data_split.split->allocation().y)
-				/ (double) (mode_data_split.split->allocation().h);
-	}
-
-	if (mode_data_split.split_ratio > 0.95)
-		mode_data_split.split_ratio = 0.95;
-	if (mode_data_split.split_ratio < 0.05)
-		mode_data_split.split_ratio = 0.05;
-
-	/* Render slider with quite complex render method to avoid flickering */
-	i_rect old_area = mode_data_split.slider_area;
-	mode_data_split.split->compute_split_location(mode_data_split.split_ratio,
-			mode_data_split.slider_area.x, mode_data_split.slider_area.y);
-
-	ps->set_position(mode_data_split.split_ratio);
-	add_compositor_damaged(ps->position());
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//	if (mode_data_split.split->type() == VERTICAL_SPLIT) {
+//		mode_data_split.split_ratio = (e->event_x
+//				- mode_data_split.split->allocation().x)
+//				/ (double) (mode_data_split.split->allocation().w);
+//	} else {
+//		mode_data_split.split_ratio = (e->event_y
+//				- mode_data_split.split->allocation().y)
+//				/ (double) (mode_data_split.split->allocation().h);
+//	}
+//
+//	if (mode_data_split.split_ratio > 0.95)
+//		mode_data_split.split_ratio = 0.95;
+//	if (mode_data_split.split_ratio < 0.05)
+//		mode_data_split.split_ratio = 0.05;
+//
+//	/* Render slider with quite complex render method to avoid flickering */
+//	i_rect old_area = mode_data_split.slider_area;
+//	mode_data_split.split->compute_split_location(mode_data_split.split_ratio,
+//			mode_data_split.slider_area.x, mode_data_split.slider_area.y);
+//
+//	ps->set_position(mode_data_split.split_ratio);
+//	add_compositor_damaged(ps->position());
 
 }
 
 void page_t::process_motion_notify_notebook_grab(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	{
-
-		/* do not start drag&drop for small move */
-		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
-			if(pn0 == nullptr) {
-				pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
-			}
-		}
-
-		auto ln = filter_class<notebook_t>(
-				_desktop_list[_current_desktop]->tree_t::get_all_children());
-		for (auto i : ln) {
-			if (i->tab_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_TAB
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_TAB;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->tab_area);
-				}
-				break;
-			} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_RIGHT
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_RIGHT;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->popup_right_area);
-				}
-				break;
-			} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_TOP
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_TOP;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->popup_top_area);
-				}
-				break;
-			} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_BOTTOM
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_BOTTOM;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->popup_bottom_area);
-				}
-				break;
-			} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_LEFT
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_LEFT;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->popup_left_area);
-				}
-				break;
-			} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
-				if (mode_data_notebook.zone != SELECT_CENTER
-						|| mode_data_notebook.ns != i) {
-					mode_data_notebook.zone = SELECT_CENTER;
-					mode_data_notebook.ns = i;
-					if(pn0 != nullptr)
-					update_popup_position(pn0, i->popup_center_area);
-				}
-				break;
-			}
-		}
-	}
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//	{
+//
+//		/* do not start drag&drop for small move */
+//		if (!mode_data_notebook.ev.position.is_inside(e->root_x, e->root_y)) {
+//			if(pn0 == nullptr) {
+//				pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
+//			}
+//		}
+//
+//		auto ln = filter_class<notebook_t>(
+//				_desktop_list[_current_desktop]->tree_t::get_all_children());
+//		for (auto i : ln) {
+//			if (i->tab_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_TAB
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_TAB;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->tab_area);
+//				}
+//				break;
+//			} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_RIGHT
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_RIGHT;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->popup_right_area);
+//				}
+//				break;
+//			} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_TOP
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_TOP;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->popup_top_area);
+//				}
+//				break;
+//			} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_BOTTOM
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_BOTTOM;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->popup_bottom_area);
+//				}
+//				break;
+//			} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_LEFT
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_LEFT;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->popup_left_area);
+//				}
+//				break;
+//			} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
+//				if (mode_data_notebook.zone != SELECT_CENTER
+//						|| mode_data_notebook.ns != i) {
+//					mode_data_notebook.zone = SELECT_CENTER;
+//					mode_data_notebook.ns = i;
+//					if(pn0 != nullptr)
+//					update_popup_position(pn0, i->popup_center_area);
+//				}
+//				break;
+//			}
+//		}
+//	}
 
 }
 
@@ -4339,114 +4127,114 @@ void page_t::process_motion_notify_notebook_button_press(xcb_generic_event_t con
 
 void page_t::process_motion_notify_floating_move(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-
-	add_compositor_damaged(mode_data_floating.f->visible_area());
-
-	/* compute new window position */
-	i_rect new_position = mode_data_floating.original_position;
-	new_position.x += e->root_x - mode_data_floating.x_root;
-	new_position.y += e->root_y - mode_data_floating.y_root;
-	mode_data_floating.final_position = new_position;
-	//mode_data_floating.f->set_floating_wished_position(new_position);
-	//mode_data_floating.f->reconfigure();
-
-	i_rect new_popup_position = mode_data_floating.popup_original_position;
-	new_popup_position.x += e->root_x - mode_data_floating.x_root;
-	new_popup_position.y += e->root_y - mode_data_floating.y_root;
-	update_popup_position(pfm, new_popup_position);
-
-	_need_render = true;
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//
+//	add_compositor_damaged(mode_data_floating.f->visible_area());
+//
+//	/* compute new window position */
+//	i_rect new_position = mode_data_floating.original_position;
+//	new_position.x += e->root_x - mode_data_floating.x_root;
+//	new_position.y += e->root_y - mode_data_floating.y_root;
+//	mode_data_floating.final_position = new_position;
+//	//mode_data_floating.f->set_floating_wished_position(new_position);
+//	//mode_data_floating.f->reconfigure();
+//
+//	i_rect new_popup_position = mode_data_floating.popup_original_position;
+//	new_popup_position.x += e->root_x - mode_data_floating.x_root;
+//	new_popup_position.y += e->root_y - mode_data_floating.y_root;
+//	update_popup_position(pfm, new_popup_position);
+//
+//	_need_render = true;
 }
 
 void page_t::process_motion_notify_floating_resize(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-
-	add_compositor_damaged(mode_data_floating.f->visible_area());
-
-	i_rect size = mode_data_floating.original_position;
-
-	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_TOP) {
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-		size.h += e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-		size.h += e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-		size.h += e->root_y - mode_data_floating.y_root;
-	}
-
-	/* apply normal hints */
-	dimention_t<unsigned> final_size =
-			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
-	size.w = final_size.width;
-	size.h = final_size.height;
-
-	if (size.h < 1)
-		size.h = 1;
-	if (size.w < 1)
-		size.w = 1;
-
-	/* do not allow to large windows */
-	if (size.w > _root_position.w - 100)
-		size.w = _root_position.w - 100;
-	if (size.h > _root_position.h - 100)
-		size.h = _root_position.h - 100;
-
-	int x_diff = 0;
-	int y_diff = 0;
-
-	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_TOP) {
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-
-	}
-
-	size.x += x_diff;
-	size.y += y_diff;
-	mode_data_floating.final_position = size;
-
-	//mode_data_floating.f->set_floating_wished_position(size);
-	//mode_data_floating.f->reconfigure();
-
-	i_rect popup_new_position = size;
-	if (mode_data_floating.f->has_motif_border()) {
-		popup_new_position.x -= _theme->floating.margin.left;
-		popup_new_position.y -= _theme->floating.margin.top;
-		popup_new_position.w += _theme->floating.margin.left
-				+ _theme->floating.margin.right;
-		popup_new_position.h += _theme->floating.margin.top
-				+ _theme->floating.margin.bottom;
-	}
-
-	update_popup_position(pfm, popup_new_position);
-	_need_render = true;
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//
+//	add_compositor_damaged(mode_data_floating.f->visible_area());
+//
+//	i_rect size = mode_data_floating.original_position;
+//
+//	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_TOP) {
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	}
+//
+//	/* apply normal hints */
+//	dimention_t<unsigned> final_size =
+//			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
+//	size.w = final_size.width;
+//	size.h = final_size.height;
+//
+//	if (size.h < 1)
+//		size.h = 1;
+//	if (size.w < 1)
+//		size.w = 1;
+//
+//	/* do not allow to large windows */
+//	if (size.w > _root_position.w - 100)
+//		size.w = _root_position.w - 100;
+//	if (size.h > _root_position.h - 100)
+//		size.h = _root_position.h - 100;
+//
+//	int x_diff = 0;
+//	int y_diff = 0;
+//
+//	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_TOP) {
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+//
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+//
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+//
+//	}
+//
+//	size.x += x_diff;
+//	size.y += y_diff;
+//	mode_data_floating.final_position = size;
+//
+//	//mode_data_floating.f->set_floating_wished_position(size);
+//	//mode_data_floating.f->reconfigure();
+//
+//	i_rect popup_new_position = size;
+//	if (mode_data_floating.f->has_motif_border()) {
+//		popup_new_position.x -= _theme->floating.margin.left;
+//		popup_new_position.y -= _theme->floating.margin.top;
+//		popup_new_position.w += _theme->floating.margin.left
+//				+ _theme->floating.margin.right;
+//		popup_new_position.h += _theme->floating.margin.top
+//				+ _theme->floating.margin.bottom;
+//	}
+//
+//	update_popup_position(pfm, popup_new_position);
+//	_need_render = true;
 }
 
 void page_t::process_motion_notify_floating_close(xcb_generic_event_t const * _e) {
@@ -4456,199 +4244,199 @@ void page_t::process_motion_notify_floating_close(xcb_generic_event_t const * _e
 
 void page_t::process_motion_notify_floating_bind(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-
-	/* do not start drag&drop for small move */
-	if (e->root_x < mode_data_bind.start_x - 5
-			|| e->root_x > mode_data_bind.start_x + 5
-			|| e->root_y < mode_data_bind.start_y - 5
-			|| e->root_y > mode_data_bind.start_y + 5) {
-
-		if(pn0 == nullptr) {
-			pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
-		}
-
-	}
-
-	auto ln = filter_class<notebook_t>(
-			_desktop_list[_current_desktop]->tree_t::get_all_children());
-
-	for (auto i : ln) {
-		if (i->tab_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_TAB || mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_TAB;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->tab_area);
-			}
-			break;
-		} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_RIGHT || mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_RIGHT;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->popup_right_area);
-			}
-			break;
-		} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_TOP || mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_TOP;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->popup_top_area);
-			}
-			break;
-		} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_BOTTOM
-					|| mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_BOTTOM;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->popup_bottom_area);
-			}
-			break;
-		} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_LEFT || mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_LEFT;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->popup_left_area);
-			}
-			break;
-		} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
-			if (mode_data_bind.zone != SELECT_CENTER
-					|| mode_data_bind.ns != i) {
-				mode_data_bind.zone = SELECT_CENTER;
-				mode_data_bind.ns = i;
-				if(pn0 != nullptr)
-				update_popup_position(pn0, i->popup_center_area);
-			}
-			break;
-		}
-	}
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//
+//	/* do not start drag&drop for small move */
+//	if (e->root_x < mode_data_bind.start_x - 5
+//			|| e->root_x > mode_data_bind.start_x + 5
+//			|| e->root_y < mode_data_bind.start_y - 5
+//			|| e->root_y > mode_data_bind.start_y + 5) {
+//
+//		if(pn0 == nullptr) {
+//			pn0 = std::shared_ptr<popup_notebook0_t>(new popup_notebook0_t{cnx, _theme});
+//		}
+//
+//	}
+//
+//	auto ln = filter_class<notebook_t>(
+//			_desktop_list[_current_desktop]->tree_t::get_all_children());
+//
+//	for (auto i : ln) {
+//		if (i->tab_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_TAB || mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_TAB;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->tab_area);
+//			}
+//			break;
+//		} else if (i->right_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_RIGHT || mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_RIGHT;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->popup_right_area);
+//			}
+//			break;
+//		} else if (i->top_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_TOP || mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_TOP;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->popup_top_area);
+//			}
+//			break;
+//		} else if (i->bottom_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_BOTTOM
+//					|| mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_BOTTOM;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->popup_bottom_area);
+//			}
+//			break;
+//		} else if (i->left_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_LEFT || mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_LEFT;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->popup_left_area);
+//			}
+//			break;
+//		} else if (i->popup_center_area.is_inside(e->root_x, e->root_y)) {
+//			if (mode_data_bind.zone != NOTEBOOK_AREA_CENTER
+//					|| mode_data_bind.ns != i) {
+//				mode_data_bind.zone = NOTEBOOK_AREA_CENTER;
+//				mode_data_bind.ns = i;
+//				if(pn0 != nullptr)
+//				update_popup_position(pn0, i->popup_center_area);
+//			}
+//			break;
+//		}
+//	}
 }
 
 void page_t::process_motion_notify_fullscreen_move(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
-
-	if (v != nullptr) {
-		if (v != mode_data_fullscreen.v) {
-			if(pn0 != nullptr)
-			pn0->move_resize(v->raw_area());
-			mode_data_fullscreen.v = v;
-		}
-	}
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//	viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
+//
+//	if (v != nullptr) {
+//		if (v != mode_data_fullscreen.v) {
+//			if(pn0 != nullptr)
+//			pn0->move_resize(v->raw_area());
+//			mode_data_fullscreen.v = v;
+//		}
+//	}
 }
 
 void page_t::process_motion_notify_floating_move_by_client(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-	add_compositor_damaged(mode_data_floating.f->visible_area());
-
-	/* compute new window position */
-	i_rect new_position = mode_data_floating.original_position;
-	new_position.x += e->root_x - mode_data_floating.x_root;
-	new_position.y += e->root_y - mode_data_floating.y_root;
-	mode_data_floating.final_position = new_position;
-	//mode_data_floating.f->set_floating_wished_position(new_position);
-	//mode_data_floating.f->reconfigure();
-
-	i_rect new_popup_position = mode_data_floating.popup_original_position;
-	new_popup_position.x += e->root_x - mode_data_floating.x_root;
-	new_popup_position.y += e->root_y - mode_data_floating.y_root;
-	update_popup_position(pfm, new_popup_position);
-	_need_render = true;
+//	add_compositor_damaged(mode_data_floating.f->visible_area());
+//
+//	/* compute new window position */
+//	i_rect new_position = mode_data_floating.original_position;
+//	new_position.x += e->root_x - mode_data_floating.x_root;
+//	new_position.y += e->root_y - mode_data_floating.y_root;
+//	mode_data_floating.final_position = new_position;
+//	//mode_data_floating.f->set_floating_wished_position(new_position);
+//	//mode_data_floating.f->reconfigure();
+//
+//	i_rect new_popup_position = mode_data_floating.popup_original_position;
+//	new_popup_position.x += e->root_x - mode_data_floating.x_root;
+//	new_popup_position.y += e->root_y - mode_data_floating.y_root;
+//	update_popup_position(pfm, new_popup_position);
+//	_need_render = true;
 }
 
 void page_t::process_motion_notify_floating_resize_by_client(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
-
-	add_compositor_damaged(mode_data_floating.f->visible_area());
-
-	i_rect size = mode_data_floating.original_position;
-
-	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_TOP) {
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-		size.h -= e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-		size.w -= e->root_x - mode_data_floating.x_root;
-		size.h += e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-		size.h += e->root_y - mode_data_floating.y_root;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-		size.w += e->root_x - mode_data_floating.x_root;
-		size.h += e->root_y - mode_data_floating.y_root;
-	}
-
-	/* apply mornal hints */
-	dimention_t<unsigned> final_size =
-			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
-	size.w = final_size.width;
-	size.h = final_size.height;
-
-	if (size.h < 1)
-		size.h = 1;
-	if (size.w < 1)
-		size.w = 1;
-
-	/* do not allow to large windows */
-	if (size.w > _root_position.w - 100)
-		size.w = _root_position.w - 100;
-	if (size.h > _root_position.h - 100)
-		size.h = _root_position.h - 100;
-
-	int x_diff = 0;
-	int y_diff = 0;
-
-	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_TOP) {
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
-		y_diff = mode_data_floating.original_position.h - size.h;
-	} else if (mode_data_floating.mode == RESIZE_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
-
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
-		x_diff = mode_data_floating.original_position.w - size.w;
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
-
-	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
-
-	}
-
-	size.x += x_diff;
-	size.y += y_diff;
-	mode_data_floating.final_position = size;
-
-	//mode_data_floating.f->set_floating_wished_position(size);
-	//mode_data_floating.f->reconfigure();
-
-	i_rect popup_new_position = size;
-	if (mode_data_floating.f->has_motif_border()) {
-		popup_new_position.x -= _theme->floating.margin.left;
-		popup_new_position.y -= _theme->floating.margin.top;
-		popup_new_position.w += _theme->floating.margin.left
-				+ _theme->floating.margin.right;
-		popup_new_position.h += _theme->floating.margin.top
-				+ _theme->floating.margin.bottom;
-	}
-
-	update_popup_position(pfm, popup_new_position);
-	_need_render = true;
+//	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+//
+//	add_compositor_damaged(mode_data_floating.f->visible_area());
+//
+//	i_rect size = mode_data_floating.original_position;
+//
+//	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_TOP) {
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//		size.h -= e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+//		size.w -= e->root_x - mode_data_floating.x_root;
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+//		size.w += e->root_x - mode_data_floating.x_root;
+//		size.h += e->root_y - mode_data_floating.y_root;
+//	}
+//
+//	/* apply mornal hints */
+//	dimention_t<unsigned> final_size =
+//			mode_data_floating.f->compute_size_with_constrain(size.w, size.h);
+//	size.w = final_size.width;
+//	size.h = final_size.height;
+//
+//	if (size.h < 1)
+//		size.h = 1;
+//	if (size.w < 1)
+//		size.w = 1;
+//
+//	/* do not allow to large windows */
+//	if (size.w > _root_position.w - 100)
+//		size.w = _root_position.w - 100;
+//	if (size.h > _root_position.h - 100)
+//		size.h = _root_position.h - 100;
+//
+//	int x_diff = 0;
+//	int y_diff = 0;
+//
+//	if (mode_data_floating.mode == RESIZE_TOP_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_TOP) {
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_TOP_RIGHT) {
+//		y_diff = mode_data_floating.original_position.h - size.h;
+//	} else if (mode_data_floating.mode == RESIZE_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//	} else if (mode_data_floating.mode == RESIZE_RIGHT) {
+//
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_LEFT) {
+//		x_diff = mode_data_floating.original_position.w - size.w;
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM) {
+//
+//	} else if (mode_data_floating.mode == RESIZE_BOTTOM_RIGHT) {
+//
+//	}
+//
+//	size.x += x_diff;
+//	size.y += y_diff;
+//	mode_data_floating.final_position = size;
+//
+//	//mode_data_floating.f->set_floating_wished_position(size);
+//	//mode_data_floating.f->reconfigure();
+//
+//	i_rect popup_new_position = size;
+//	if (mode_data_floating.f->has_motif_border()) {
+//		popup_new_position.x -= _theme->floating.margin.left;
+//		popup_new_position.y -= _theme->floating.margin.top;
+//		popup_new_position.w += _theme->floating.margin.left
+//				+ _theme->floating.margin.right;
+//		popup_new_position.h += _theme->floating.margin.top
+//				+ _theme->floating.margin.bottom;
+//	}
+//
+//	update_popup_position(pfm, popup_new_position);
+//	_need_render = true;
 }
 
 void page_t::process_motion_notify_notebook_menu(xcb_generic_event_t const * _e) {
@@ -4663,408 +4451,410 @@ void page_t::process_motion_notify_notebook_client_menu(xcb_generic_event_t cons
 
 void page_t::process_button_release_normal(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	fprintf(stderr, "Warning: release and normal mode are incompatible\n");
+	if(_grab_handler != nullptr) {
+		_grab_handler->button_release(e);
+	}
 }
 
 void page_t::process_button_release_split_grab(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1) {
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		mark_durty(mode_data_split.split);
-
-		ps = nullptr;
-		add_compositor_damaged(mode_data_split.split->allocation());
-		mode_data_split.split->set_split(mode_data_split.split_ratio);
-		mode_data_split.reset();
-
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1) {
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		mark_durty(mode_data_split._split);
+//
+//		_ps = nullptr;
+//		add_compositor_damaged(mode_data_split._split->allocation());
+//		mode_data_split._split->set_split(mode_data_split._split_ratio);
+//		mode_data_split.reset();
+//
+//	}
 }
 
 void page_t::process_button_release_notebook_grab(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		if(pn0 != nullptr)
-			pn0 = nullptr;
-
-		if (mode_data_notebook.zone == SELECT_TAB
-				&& mode_data_notebook.ns != nullptr
-				&& mode_data_notebook.ns != mode_data_notebook.from) {
-			detach(mode_data_notebook.c);
-			insert_window_in_notebook(mode_data_notebook.c,
-					mode_data_notebook.ns, true);
-		} else if (mode_data_notebook.zone == SELECT_TOP
-				&& mode_data_notebook.ns != nullptr) {
-			split_top(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_LEFT
-				&& mode_data_notebook.ns != nullptr) {
-			split_left(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_BOTTOM
-				&& mode_data_notebook.ns != nullptr) {
-			split_bottom(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_RIGHT
-				&& mode_data_notebook.ns != nullptr) {
-			split_right(mode_data_notebook.ns, mode_data_notebook.c);
-		} else if (mode_data_notebook.zone == SELECT_CENTER
-				&& mode_data_notebook.ns != nullptr) {
-			//unbind_window(mode_data_notebook.c);
-			detach(mode_data_notebook.c);
-			insert_window_in_notebook(mode_data_notebook.c,
-					mode_data_notebook.ns, true);
-		} else {
-
-			if(_desktop_list[_current_desktop]->client_focus.empty()) {
-				set_focus(mode_data_notebook.c, e->time);
-				mode_data_notebook.from->set_selected(mode_data_notebook.c);
-			} else {
-				if (mode_data_notebook.from->get_selected()
-						== mode_data_notebook.c
-						and _desktop_list[_current_desktop]->client_focus.front() == mode_data_notebook.c
-						and _enable_shade_windows) {
-					/** focus root **/
-					set_focus(nullptr, e->time);
-					/** iconify **/
-					mode_data_notebook.from->iconify_client(
-							mode_data_notebook.c);
-				} else {
-					set_focus(mode_data_notebook.c, e->time);
-					mode_data_notebook.from->set_selected(mode_data_notebook.c);
-				}
-			}
-		}
-
-		/* Automatically close empty notebook (disabled) */
-//			if (mode_data_notebook.from->_clients.empty()
-//					&& mode_data_notebook.from->parent() != 0) {
-//				notebook_close(mode_data_notebook.from);
-//				update_allocation();
+//	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		if(pn0 != nullptr)
+//			pn0 = nullptr;
+//
+//		if (mode_data_notebook.zone == SELECT_TAB
+//				&& mode_data_notebook.ns != nullptr
+//				&& mode_data_notebook.ns != mode_data_notebook.from) {
+//			detach(mode_data_notebook.c);
+//			insert_window_in_notebook(mode_data_notebook.c,
+//					mode_data_notebook.ns, true);
+//		} else if (mode_data_notebook.zone == SELECT_TOP
+//				&& mode_data_notebook.ns != nullptr) {
+//			split_top(mode_data_notebook.ns, mode_data_notebook.c);
+//		} else if (mode_data_notebook.zone == SELECT_LEFT
+//				&& mode_data_notebook.ns != nullptr) {
+//			split_left(mode_data_notebook.ns, mode_data_notebook.c);
+//		} else if (mode_data_notebook.zone == SELECT_BOTTOM
+//				&& mode_data_notebook.ns != nullptr) {
+//			split_bottom(mode_data_notebook.ns, mode_data_notebook.c);
+//		} else if (mode_data_notebook.zone == SELECT_RIGHT
+//				&& mode_data_notebook.ns != nullptr) {
+//			split_right(mode_data_notebook.ns, mode_data_notebook.c);
+//		} else if (mode_data_notebook.zone == SELECT_CENTER
+//				&& mode_data_notebook.ns != nullptr) {
+//			//unbind_window(mode_data_notebook.c);
+//			detach(mode_data_notebook.c);
+//			insert_window_in_notebook(mode_data_notebook.c,
+//					mode_data_notebook.ns, true);
+//		} else {
+//
+//			if(_desktop_list[_current_desktop]->client_focus.empty()) {
+//				set_focus(mode_data_notebook.c, e->time);
+//				mode_data_notebook.from->set_selected(mode_data_notebook.c);
+//			} else {
+//				if (mode_data_notebook.from->get_selected()
+//						== mode_data_notebook.c
+//						and _desktop_list[_current_desktop]->client_focus.front() == mode_data_notebook.c
+//						and _enable_shade_windows) {
+//					/** focus root **/
+//					set_focus(nullptr, e->time);
+//					/** iconify **/
+//					mode_data_notebook.from->iconify_client(
+//							mode_data_notebook.c);
+//				} else {
+//					set_focus(mode_data_notebook.c, e->time);
+//					mode_data_notebook.from->set_selected(mode_data_notebook.c);
+//				}
 //			}
-		set_focus(mode_data_notebook.c, e->time);
-		mark_durty(mode_data_notebook.from);
-		mark_durty(mode_data_notebook.ns);
-
-		mode_data_notebook.reset();
-	}
+//		}
+//
+//		/* Automatically close empty notebook (disabled) */
+////			if (mode_data_notebook.from->_clients.empty()
+////					&& mode_data_notebook.from->parent() != 0) {
+////				notebook_close(mode_data_notebook.from);
+////				update_allocation();
+////			}
+//		set_focus(mode_data_notebook.c, e->time);
+//		mark_durty(mode_data_notebook.from);
+//		mark_durty(mode_data_notebook.ns);
+//
+//		mode_data_notebook.reset();
+//	}
 }
 
 void page_t::process_button_release_notebook_button_press(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1) {
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		viewport_t * viewport_event = nullptr;
-		auto viewports = get_viewports();
-		for(auto x: viewports) {
-			if(x->wid() == e->event) {
-				viewport_event = x;
-				break;
-			}
-		}
-
-		if (viewport_event != nullptr) {
-			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
-
-			page_event_t * b = nullptr;
-			for (auto &i : page_areas) {
-				if (i.position.is_inside(e->event_x, e->event_y)) {
-					b = &i;
-					break;
-				}
-			}
-
-			if (b != nullptr) {
-				mark_durty(mode_data_notebook.from);
-				mark_durty(mode_data_notebook.ns);
-
-				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
-					/** do noting **/
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
-					notebook_close(mode_data_notebook.from);
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
-					split(mode_data_notebook.from, HORIZONTAL_SPLIT);
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
-					split(mode_data_notebook.from, VERTICAL_SPLIT);
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
-					_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
-					mode_data_notebook.c->delete_window(e->time);
-				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
-					unbind_window(mode_data_notebook.c);
-				} else if (b->type == PAGE_EVENT_SPLIT) {
-					/** do nothing **/
-				}
-			}
-		}
-		mode_data_notebook.reset();
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1) {
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		viewport_t * viewport_event = nullptr;
+//		auto viewports = get_viewports();
+//		for(auto x: viewports) {
+//			if(x->wid() == e->event) {
+//				viewport_event = x;
+//				break;
+//			}
+//		}
+//
+//		if (viewport_event != nullptr) {
+//			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
+//
+//			page_event_t * b = nullptr;
+//			for (auto &i : page_areas) {
+//				if (i.position.is_inside(e->event_x, e->event_y)) {
+//					b = &i;
+//					break;
+//				}
+//			}
+//
+//			if (b != nullptr) {
+//				mark_durty(mode_data_notebook.from);
+//				mark_durty(mode_data_notebook.ns);
+//
+//				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
+//					/** do noting **/
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLOSE) {
+//					notebook_close(mode_data_notebook.from);
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_HSPLIT) {
+//					split(mode_data_notebook.from, HORIZONTAL_SPLIT);
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_VSPLIT) {
+//					split(mode_data_notebook.from, VERTICAL_SPLIT);
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_MARK) {
+//					_desktop_list[_current_desktop]->set_default_pop(mode_data_notebook.from);
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE) {
+//					mode_data_notebook.c->delete_window(e->time);
+//				} else if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND) {
+//					unbind_window(mode_data_notebook.c);
+//				} else if (b->type == PAGE_EVENT_SPLIT) {
+//					/** do nothing **/
+//				}
+//			}
+//		}
+//		mode_data_notebook.reset();
+//	}
 }
 
 void page_t::process_button_release_floating_move(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-
-		pfm = nullptr;
-
-		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
-
-		if (cnx->lock(mode_data_floating.f->orig())) {
-			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
-			cnx->unlock();
-		}
-
-		mode_data_floating.f->set_floating_wished_position(
-				mode_data_floating.final_position);
-		mode_data_floating.f->reconfigure();
-
-		set_focus(mode_data_floating.f, e->time);
-
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		mode_data_floating.reset();
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+//
+//		pfm = nullptr;
+//
+//		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
+//
+//		if (cnx->lock(mode_data_floating.f->orig())) {
+//			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+//			cnx->unlock();
+//		}
+//
+//		mode_data_floating.f->set_floating_wished_position(
+//				mode_data_floating.final_position);
+//		mode_data_floating.f->reconfigure();
+//
+//		set_focus(mode_data_floating.f, e->time);
+//
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		mode_data_floating.reset();
+//	}
 }
 
 void page_t::process_button_release_floating_resize(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-
-		pfm = nullptr;
-
-		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
-		if (cnx->lock(mode_data_floating.f->orig())) {
-			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
-			cnx->unlock();
-		}
-
-		mode_data_floating.f->set_floating_wished_position(
-				mode_data_floating.final_position);
-		mode_data_floating.f->reconfigure();
-
-		set_focus(mode_data_floating.f, e->time);
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		mode_data_floating.reset();
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+//
+//		pfm = nullptr;
+//
+//		cnx->set_window_cursor(mode_data_floating.f->base(), XCB_NONE);
+//		if (cnx->lock(mode_data_floating.f->orig())) {
+//			cnx->set_window_cursor(mode_data_floating.f->orig(), XCB_NONE);
+//			cnx->unlock();
+//		}
+//
+//		mode_data_floating.f->set_floating_wished_position(
+//				mode_data_floating.final_position);
+//		mode_data_floating.f->reconfigure();
+//
+//		set_focus(mode_data_floating.f, e->time);
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		mode_data_floating.reset();
+//	}
 }
 
 void page_t::process_button_release_floating_close(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1) {
-		client_managed_t * mw = mode_data_floating.f;
-		mw->delete_window(e->time);
-		/* cleanup */
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		mode_data_floating.reset();
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1) {
+//		client_managed_t * mw = mode_data_floating.f;
+//		mw->delete_window(e->time);
+//		/* cleanup */
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		mode_data_floating.reset();
+//	}
 }
 
 void page_t::process_button_release_floating_bind(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1) {
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		if(pn0 != nullptr)
-			pn0 = nullptr;
-
-		if (mode_data_bind.zone == SELECT_TAB and mode_data_bind.ns != nullptr) {
-			detach(mode_data_bind.c);
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			insert_window_in_notebook(mode_data_bind.c, mode_data_bind.ns, true);
-		} else if (mode_data_bind.zone == SELECT_TOP
-				and mode_data_bind.ns != nullptr) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_top(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_LEFT
-				and mode_data_bind.ns != nullptr) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_left(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_BOTTOM
-				and mode_data_bind.ns != nullptr) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_bottom(mode_data_bind.ns, mode_data_bind.c);
-		} else if (mode_data_bind.zone == SELECT_RIGHT
-				and mode_data_bind.ns != nullptr) {
-			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
-			split_right(mode_data_bind.ns, mode_data_bind.c);
-		} else {
-			bind_window(mode_data_bind.c, true);
-		}
-
-		set_focus(mode_data_bind.c, e->time);
-		mode_data_bind.reset();
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1) {
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		if(pn0 != nullptr)
+//			pn0 = nullptr;
+//
+//		if (mode_data_bind.zone == NOTEBOOK_AREA_TAB and mode_data_bind.ns != nullptr) {
+//			detach(mode_data_bind.c);
+//			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+//			insert_window_in_notebook(mode_data_bind.c, mode_data_bind.ns, true);
+//		} else if (mode_data_bind.zone == NOTEBOOK_AREA_TOP
+//				and mode_data_bind.ns != nullptr) {
+//			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+//			split_top(mode_data_bind.ns, mode_data_bind.c);
+//		} else if (mode_data_bind.zone == NOTEBOOK_AREA_LEFT
+//				and mode_data_bind.ns != nullptr) {
+//			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+//			split_left(mode_data_bind.ns, mode_data_bind.c);
+//		} else if (mode_data_bind.zone == NOTEBOOK_AREA_BOTTOM
+//				and mode_data_bind.ns != nullptr) {
+//			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+//			split_bottom(mode_data_bind.ns, mode_data_bind.c);
+//		} else if (mode_data_bind.zone == NOTEBOOK_AREA_RIGHT
+//				and mode_data_bind.ns != nullptr) {
+//			mode_data_bind.c->set_managed_type(MANAGED_NOTEBOOK);
+//			split_right(mode_data_bind.ns, mode_data_bind.c);
+//		} else {
+//			bind_window(mode_data_bind.c, true);
+//		}
+//
+//		set_focus(mode_data_bind.c, e->time);
+//		mode_data_bind.reset();
+//	}
 }
 
 void page_t::process_button_release_fullscreen_move(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
-		/** drop the fullscreen window to the new viewport **/
-
-		process_mode = PROCESS_NORMAL;
-		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-		viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
-		client_managed_t * c = mode_data_fullscreen.mw;
-		if (v != nullptr and has_key(_fullscreen_client_to_viewport, c)) {
-			fullscreen_data_t & data = _fullscreen_client_to_viewport[c];
-			if (v != data.viewport) {
-				data.viewport = v;
-				data.desktop = find_desktop_of(v);
-				update_desktop_visibility();
-			}
-		}
-
-		if(pn0 != nullptr)
-		pn0 = nullptr;
-
-		mode_data_fullscreen.reset();
-
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+//		/** drop the fullscreen window to the new viewport **/
+//
+//		process_mode = PROCESS_NORMAL;
+//		_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//		_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//		viewport_t * v = find_mouse_viewport(e->root_x, e->root_y);
+//		client_managed_t * c = mode_data_fullscreen.mw;
+//		if (v != nullptr and has_key(_fullscreen_client_to_viewport, c)) {
+//			fullscreen_data_t & data = _fullscreen_client_to_viewport[c];
+//			if (v != data.viewport) {
+//				data.viewport = v;
+//				data.desktop = find_desktop_of(v);
+//				update_desktop_visibility();
+//			}
+//		}
+//
+//		if(pn0 != nullptr)
+//		pn0 = nullptr;
+//
+//		mode_data_fullscreen.reset();
+//
+//	}
 }
 
 void page_t::process_button_release_floating_move_by_client(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-
-	pfm = nullptr;
-
-	xcb_ungrab_pointer(cnx->xcb(), e->time);
-
-	mode_data_floating.f->set_floating_wished_position(
-			mode_data_floating.final_position);
-	mode_data_floating.f->reconfigure();
-
-	set_focus(mode_data_floating.f, e->time);
-
-	process_mode = PROCESS_NORMAL;
-	_event_handler_bind(XCB_MOTION_NOTIFY,
-			&page_t::process_motion_notify_normal);
-	_event_handler_bind(XCB_BUTTON_RELEASE,
-			&page_t::process_button_release_normal);
-
-	mode_data_floating.reset();
+//	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
+//
+//	pfm = nullptr;
+//
+//	xcb_ungrab_pointer(cnx->xcb(), e->time);
+//
+//	mode_data_floating.f->set_floating_wished_position(
+//			mode_data_floating.final_position);
+//	mode_data_floating.f->reconfigure();
+//
+//	set_focus(mode_data_floating.f, e->time);
+//
+//	process_mode = PROCESS_NORMAL;
+//	_event_handler_bind(XCB_MOTION_NOTIFY,
+//			&page_t::process_motion_notify_normal);
+//	_event_handler_bind(XCB_BUTTON_RELEASE,
+//			&page_t::process_button_release_normal);
+//
+//	mode_data_floating.reset();
 
 }
 
 void page_t::process_button_release_floating_resize_by_client(
 		xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-
-	pfm = nullptr;
-
-	xcb_ungrab_pointer(cnx->xcb(), e->time);
-
-	mode_data_floating.f->set_floating_wished_position(
-			mode_data_floating.final_position);
-	mode_data_floating.f->reconfigure();
-
-	set_focus(mode_data_floating.f, e->time);
-
-	process_mode = PROCESS_NORMAL;
-	_event_handler_bind(XCB_MOTION_NOTIFY,
-			&page_t::process_motion_notify_normal);
-	_event_handler_bind(XCB_BUTTON_RELEASE,
-			&page_t::process_button_release_normal);
-
-	mode_data_floating.reset();
+//	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
+//
+//	pfm = nullptr;
+//
+//	xcb_ungrab_pointer(cnx->xcb(), e->time);
+//
+//	mode_data_floating.f->set_floating_wished_position(
+//			mode_data_floating.final_position);
+//	mode_data_floating.f->reconfigure();
+//
+//	set_focus(mode_data_floating.f, e->time);
+//
+//	process_mode = PROCESS_NORMAL;
+//	_event_handler_bind(XCB_MOTION_NOTIFY,
+//			&page_t::process_motion_notify_normal);
+//	_event_handler_bind(XCB_BUTTON_RELEASE,
+//			&page_t::process_button_release_normal);
+//
+//	mode_data_floating.reset();
 }
 
 void page_t::process_button_release_notebook_menu(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_1) {
-		viewport_t * v = find_viewport_of(mode_data_notebook_menu.from);
-		if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab and v != nullptr) {
-			mode_data_notebook_menu.active_grab = true;
-			xcb_grab_pointer(cnx->xcb(),
-					FALSE,
-					v->wid(),
-					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
-					XCB_GRAB_MODE_ASYNC,
-					XCB_GRAB_MODE_ASYNC,
-					XCB_NONE,
-					XCB_NONE,
-					e->time);
-		} else {
-			if (mode_data_notebook_menu.active_grab) {
-				xcb_ungrab_pointer(cnx->xcb(), e->time);
-				mode_data_notebook_menu.active_grab = false;
-			}
-
-			process_mode = PROCESS_NORMAL;
-			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-			if (menu->position().is_inside(e->root_x, e->root_y)) {
-				menu->update_cursor_position(e->root_x, e->root_y);
-				mode_data_notebook_menu.from->set_selected(
-						const_cast<client_managed_t*>(menu->get_selected()));
-			}
-			mode_data_notebook_menu.from = nullptr;
-			add_compositor_damaged(menu->get_visible_region());
-			menu.reset();
-		}
-	}
+//	if (e->detail == XCB_BUTTON_INDEX_1) {
+//		viewport_t * v = find_viewport_of(mode_data_notebook_menu.from);
+//		if(mode_data_notebook_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_menu.active_grab and v != nullptr) {
+//			mode_data_notebook_menu.active_grab = true;
+//			xcb_grab_pointer(cnx->xcb(),
+//					FALSE,
+//					v->wid(),
+//					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
+//					XCB_GRAB_MODE_ASYNC,
+//					XCB_GRAB_MODE_ASYNC,
+//					XCB_NONE,
+//					XCB_NONE,
+//					e->time);
+//		} else {
+//			if (mode_data_notebook_menu.active_grab) {
+//				xcb_ungrab_pointer(cnx->xcb(), e->time);
+//				mode_data_notebook_menu.active_grab = false;
+//			}
+//
+//			process_mode = PROCESS_NORMAL;
+//			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//			if (menu->position().is_inside(e->root_x, e->root_y)) {
+//				menu->update_cursor_position(e->root_x, e->root_y);
+//				mode_data_notebook_menu.from->set_selected(
+//						const_cast<client_managed_t*>(menu->get_selected()));
+//			}
+//			mode_data_notebook_menu.from = nullptr;
+//			add_compositor_damaged(menu->get_visible_region());
+//			menu.reset();
+//		}
+//	}
 }
 
 void page_t::process_button_release_notebook_client_menu(xcb_generic_event_t const * _e) {
-	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-	if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
-		if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
-			mode_data_notebook_client_menu.active_grab = true;
-			xcb_grab_pointer(cnx->xcb(),
-					FALSE,
-					cnx->root(),
-					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
-					XCB_GRAB_MODE_ASYNC,
-					XCB_GRAB_MODE_ASYNC,
-					XCB_NONE,
-					XCB_NONE,
-					e->time);
-		} else {
-			if (mode_data_notebook_client_menu.active_grab) {
-				xcb_ungrab_pointer(cnx->xcb(), e->time);
-				mode_data_notebook_client_menu.active_grab = false;
-			}
-
-			process_mode = PROCESS_NORMAL;
-			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
-			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-
-			if (client_menu->position().is_inside(e->root_x, e->root_y)) {
-				client_menu->update_cursor_position(e->root_x, e->root_y);
-				int selected = client_menu->get_selected();
-				printf("Change desktop %d for %u\n", selected, mode_data_notebook_client_menu.client->orig());
-				if(selected != _current_desktop) {
-					detach(mode_data_notebook_client_menu.client);
-					mode_data_notebook_client_menu.client->set_parent(nullptr);
-					_desktop_list[selected]->default_pop()->add_client(mode_data_notebook_client_menu.client, false);
-					mode_data_notebook_client_menu.client->set_current_desktop(selected);
-				}
-			}
-			mode_data_notebook_client_menu.reset();
-			add_compositor_damaged(client_menu->get_visible_region());
-			mark_durty(mode_data_notebook_client_menu.from);
-			client_menu.reset();
-		}
-	}
+//	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
+//	if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
+//		if(mode_data_notebook_client_menu.b.is_inside(e->event_x, e->event_y) and not mode_data_notebook_client_menu.active_grab) {
+//			mode_data_notebook_client_menu.active_grab = true;
+//			xcb_grab_pointer(cnx->xcb(),
+//					FALSE,
+//					cnx->root(),
+//					DEFAULT_BUTTON_EVENT_MASK|XCB_EVENT_MASK_POINTER_MOTION,
+//					XCB_GRAB_MODE_ASYNC,
+//					XCB_GRAB_MODE_ASYNC,
+//					XCB_NONE,
+//					XCB_NONE,
+//					e->time);
+//		} else {
+//			if (mode_data_notebook_client_menu.active_grab) {
+//				xcb_ungrab_pointer(cnx->xcb(), e->time);
+//				mode_data_notebook_client_menu.active_grab = false;
+//			}
+//
+//			process_mode = PROCESS_NORMAL;
+//			_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+//			_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
+//
+//			if (client_menu->position().is_inside(e->root_x, e->root_y)) {
+//				client_menu->update_cursor_position(e->root_x, e->root_y);
+//				int selected = client_menu->get_selected();
+//				printf("Change desktop %d for %u\n", selected, mode_data_notebook_client_menu.client->orig());
+//				if(selected != _current_desktop) {
+//					detach(mode_data_notebook_client_menu.client);
+//					mode_data_notebook_client_menu.client->set_parent(nullptr);
+//					_desktop_list[selected]->default_pop()->add_client(mode_data_notebook_client_menu.client, false);
+//					mode_data_notebook_client_menu.client->set_current_desktop(selected);
+//				}
+//			}
+//			mode_data_notebook_client_menu.reset();
+//			add_compositor_damaged(client_menu->get_visible_region());
+//			mark_durty(mode_data_notebook_client_menu.from);
+//			client_menu.reset();
+//		}
+//	}
 }
 
 void page_t::add_compositor_damaged(region const & r) {
@@ -5127,21 +4917,9 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 		}
 	}
 
-	if (pn0 != nullptr) {
-		if (pn0->id() == e->window) {
-			pn0->expose();
-		}
-	}
-
-	if (pfm != nullptr) {
-		if (pfm->id() == e->window) {
-			pfm->expose();
-		}
-	}
-
-	if (ps != nullptr) {
-		if (ps->id() == e->window) {
-			ps->expose();
+	for(auto x: _overlays) {
+		if(x->id() == e->window) {
+			x->expose();
 		}
 	}
 }
@@ -5202,80 +4980,96 @@ void page_t::page_event_handler_nop(page_event_t const & pev) {
 }
 
 void page_t::page_event_handler_notebook_client(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_GRAB;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
+//	process_mode = PROCESS_NOTEBOOK_GRAB;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
 
-	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = nullptr;
-	mode_data_notebook.zone = SELECT_NONE;
-	mode_data_notebook.ev = pev;
+	grab_start(new grab_bind_client_t{this, const_cast<client_managed_t*>(pev.clt), _desktop_list[_current_desktop], pev.position});
 
-	if(pn0 != nullptr) {
-		pn0->move_resize(mode_data_notebook.from->tab_area);
-		pn0->update_window(mode_data_notebook.c);
-	}
+
+//	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = nullptr;
+//	mode_data_notebook.zone = NOTEBOOK_AREA_NONE;
+//	mode_data_notebook.ev = pev;
+//
+//	if(pn0 != nullptr) {
+//		pn0->move_resize(mode_data_notebook.from->tab_area);
+//		pn0->update_window(mode_data_notebook.c);
+//	}
 }
 
 void page_t::page_event_handler_notebook_client_close(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = 0;
 
-	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	const_cast<client_managed_t*>(pev.clt)->delete_window(XCB_CURRENT_TIME);
 }
 
 void page_t::page_event_handler_notebook_client_unbind(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = 0;
 
-	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	unbind_window(const_cast<client_managed_t*>(pev.clt));
 }
 
 void page_t::page_event_handler_notebook_close(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = nullptr;
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = nullptr;
 
-	mode_data_notebook.c = nullptr;
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = nullptr;
+	notebook_close(const_cast<notebook_t*>(pev.nbk));
+
 }
 
 void page_t::page_event_handler_notebook_vsplit(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = 0;
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = 0;
 
-	mode_data_notebook.c = 0;
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	split(const_cast<notebook_t*>(pev.nbk), VERTICAL_SPLIT);
 }
 
 void page_t::page_event_handler_notebook_hsplit(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = 0;
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = 0;
 
-	mode_data_notebook.c = 0;
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	split(const_cast<notebook_t*>(pev.nbk), HORIZONTAL_SPLIT);
 }
 
 void page_t::page_event_handler_notebook_mark(page_event_t const & pev) {
-	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//	process_mode = PROCESS_NOTEBOOK_BUTTON_PRESS;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_button_press);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_button_press);
+//
+//	mode_data_notebook.c = 0;
+//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
+//	mode_data_notebook.ns = 0;
 
-	mode_data_notebook.c = 0;
-	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-	mode_data_notebook.ns = 0;
+	_desktop_list[_current_desktop]->set_default_pop(const_cast<notebook_t*>(pev.nbk));
 }
 
 void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
@@ -5314,19 +5108,21 @@ void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
 }
 
 void page_t::page_event_handler_split(page_event_t const & pev) {
-	process_mode = PROCESS_SPLIT_GRAB;
+//	process_mode = PROCESS_SPLIT_GRAB;
+//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
+//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
+//
+//	mode_data_split._split_ratio = pev.spt->ratio();
+//	mode_data_split._split = const_cast<split_t*>(pev.spt);
+//	mode_data_split._slider_area =
+//			mode_data_split._split->get_split_bar_area();
+//
+//	_ps = std::make_shared<popup_split_t>(cnx, _theme, mode_data_split._split);
+//	_ps->set_position(mode_data_split._split_ratio);
+//	add_compositor_damaged(_ps->position());
 
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_split_grab);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_split_grab);
+	grab_start(new grab_split_t{this, const_cast<split_t*>(pev.spt)});
 
-	mode_data_split.split_ratio = pev.spt->ratio();
-	mode_data_split.split = const_cast<split_t*>(pev.spt);
-	mode_data_split.slider_area =
-			mode_data_split.split->get_split_bar_area();
-
-	ps = std::make_shared<popup_split_t>(cnx, _theme, mode_data_split.split);
-	ps->set_position(mode_data_split.split_ratio);
-	add_compositor_damaged(ps->position());
 }
 
 std::vector<client_managed_t *> page_t::get_sticky_client_managed(tree_t * base) {
@@ -5480,6 +5276,535 @@ display_t * page_t::dpy() const {
 compositor_t * page_t::cmp() const {
 	return rnd;
 }
+
+void page_t::grab_start(grab_handler_t * handler) {
+	assert(_grab_handler == nullptr);
+	_grab_handler = handler;
+}
+
+void page_t::grab_stop() {
+	assert(_grab_handler != nullptr);
+	delete _grab_handler;
+	_grab_handler = nullptr;
+}
+
+void page_t::overlay_add(std::shared_ptr<overlay_t> x) {
+	_overlays.push_back(x);
+}
+
+void page_t::overlay_remove(std::shared_ptr<overlay_t> x) {
+	_overlays.remove(x);
+}
+
+void page_t::add_global_damage(region const & r) {
+	add_compositor_damaged(r);
+}
+
+grab_split_t::grab_split_t(page_context_t * ctx, split_t * s) : _ctx{ctx}, _split{s} {
+	_slider_area = _split->get_split_bar_area();
+	_split_ratio = _split->ratio();
+	_ps = std::make_shared<popup_split_t>(ctx, s);
+	_ctx->overlay_add(_ps);
+}
+
+grab_split_t::~grab_split_t() {
+	if(_ps != nullptr) {
+		_ctx->overlay_remove(_ps);
+	}
+}
+
+void grab_split_t::button_press(xcb_button_press_event_t const *) {
+	/* ignore */
+}
+
+void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
+	if (_split->type() == VERTICAL_SPLIT) {
+		_split_ratio = (e->event_x
+				- _split->allocation().x)
+				/ (double) (_split->allocation().w);
+	} else {
+		_split_ratio = (e->event_y
+				- _split->allocation().y)
+				/ (double) (_split->allocation().h);
+	}
+
+	if (_split_ratio > 0.95)
+		_split_ratio = 0.95;
+	if (_split_ratio < 0.05)
+		_split_ratio = 0.05;
+
+	/* Render slider with quite complex render method to avoid flickering */
+	i_rect old_area = _slider_area;
+	_split->compute_split_location(_split_ratio,
+			_slider_area.x, _slider_area.y);
+
+	_ps->set_position(_split_ratio);
+	_ctx->add_global_damage(_ps->position());
+}
+
+void grab_split_t::button_release(xcb_button_release_event_t const * e) {
+	if (e->detail == XCB_BUTTON_INDEX_1) {
+		_ctx->mark_durty(_split);
+		if(_ps != nullptr) {
+			_ctx->overlay_remove(_ps);
+			_ps = nullptr;
+		}
+		_ctx->add_global_damage(_split->allocation());
+		_split->set_split(_split_ratio);
+		_ctx->grab_stop();
+	}
+}
+
+grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, i_rect const & pos) :
+		ctx{ctx},
+		c{c},
+		current_workspace{current},
+		start_position{pos},
+		target_notebook{nullptr},
+		zone{NOTEBOOK_AREA_NONE},
+		pn0{nullptr}
+{
+
+
+}
+
+grab_bind_client_t::~grab_bind_client_t() {
+	if(pn0 != nullptr) {
+		ctx->overlay_remove(pn0);
+	}
+}
+
+void grab_bind_client_t::_find_target_notebook(int x, int y,
+		notebook_t * & target, notebook_area_e & zone) {
+
+	target = nullptr;
+	zone = NOTEBOOK_AREA_NONE;
+
+	/* place the popup */
+	auto ln = filter_class<notebook_t>(
+			current_workspace->tree_t::get_all_children());
+	for (auto i : ln) {
+		if(not i->allocation().is_inside(x, y))
+			continue;
+
+		if (i->tab_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_TAB;
+			target = i;
+			break;
+		} else if (i->right_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_RIGHT;
+			target = i;
+			break;
+		} else if (i->top_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_TOP;
+			target = i;
+			break;
+		} else if (i->bottom_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_BOTTOM;
+			target = i;
+			break;
+		} else if (i->left_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_LEFT;
+			target = i;
+			break;
+		} else if (i->popup_center_area.is_inside(x, y)) {
+			zone = NOTEBOOK_AREA_CENTER;
+			target = i;
+			break;
+		}
+	}
+}
+
+void grab_bind_client_t::button_press(xcb_button_press_event_t const * e) {
+
+}
+
+void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
+
+	/* do not start drag&drop for small move */
+	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
+		pn0 = std::make_shared<popup_notebook0_t>(ctx);
+		ctx->overlay_add(pn0);
+	}
+
+	if (pn0 == nullptr)
+		return;
+
+	notebook_t * new_target;
+	notebook_area_e new_zone;
+	_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
+
+	if(new_target != target_notebook or new_zone != zone) {
+		target_notebook = new_target;
+		zone = new_zone;
+		switch(zone) {
+		case NOTEBOOK_AREA_TAB:
+			pn0->move_resize(target_notebook->tab_area);
+			break;
+		case NOTEBOOK_AREA_RIGHT:
+				pn0->move_resize(target_notebook->popup_right_area);
+			break;
+		case NOTEBOOK_AREA_TOP:
+			pn0->move_resize(target_notebook->popup_top_area);
+			break;
+		case NOTEBOOK_AREA_BOTTOM:
+			pn0->move_resize(target_notebook->popup_bottom_area);
+			break;
+		case NOTEBOOK_AREA_LEFT:
+			pn0->move_resize(target_notebook->popup_left_area);
+			break;
+		case NOTEBOOK_AREA_CENTER:
+				pn0->move_resize(target_notebook->popup_center_area);
+			break;
+		}
+	}
+}
+
+void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
+	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+
+		_find_target_notebook(e->root_x, e->root_y, target_notebook, zone);
+
+		if(target_notebook == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
+			ctx->set_focus(c, e->time);
+			ctx->grab_stop();
+			return;
+		}
+
+		switch(zone) {
+		case NOTEBOOK_AREA_TAB:
+		case NOTEBOOK_AREA_CENTER:
+			if(target_notebook != c->parent()) {
+				ctx->detach(c);
+				ctx->insert_window_in_notebook(c, target_notebook, true);
+			}
+			break;
+		case NOTEBOOK_AREA_TOP:
+			ctx->split_top(target_notebook, c);
+			break;
+		case NOTEBOOK_AREA_LEFT:
+			ctx->split_left(target_notebook, c);
+			break;
+		case NOTEBOOK_AREA_BOTTOM:
+			ctx->split_bottom(target_notebook, c);
+			break;
+		case NOTEBOOK_AREA_RIGHT:
+			ctx->split_right(target_notebook, c);
+			break;
+		default:
+			notebook_t * parent = dynamic_cast<notebook_t *>(c->parent());
+			if (parent != nullptr) {
+				/* hide client if option allow shaded client */
+				if (parent->get_selected() == c
+						and current_workspace->client_focus.front() == c
+						and /*_enable_shade_windows*/true) {
+					ctx->set_focus(nullptr, e->time);
+					parent->iconify_client(c);
+				} else {
+					ctx->set_focus(c, e->time);
+					parent->set_selected(c);
+				}
+			}
+		}
+
+		ctx->grab_stop();
+
+	}
+}
+
+
+grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, client_managed_t * f, unsigned int button, int x, int y) :
+		_ctx{ctx},
+		f{f},
+		original_position{f->get_wished_position()},
+		final_position{f->get_wished_position()},
+		x_root{x},
+		y_root{y},
+		button{button},
+		popup_original_position{f->get_base_position()},
+		pfm{nullptr}
+{
+	_ctx->safe_raise_window(f);
+	pfm = std::make_shared<popup_notebook0_t>(_ctx);
+	pfm->move_resize(popup_original_position);
+	_ctx->overlay_add(pfm);
+	_ctx->dpy()->set_window_cursor(f->base(), _ctx->dpy()->xc_fleur);
+	_ctx->dpy()->set_window_cursor(f->orig(), _ctx->dpy()->xc_fleur);
+}
+
+grab_floating_move_t::~grab_floating_move_t() {
+	if (pfm != nullptr) {
+		_ctx->overlay_remove(pfm);
+	}
+}
+
+void grab_floating_move_t::button_press(xcb_button_press_event_t const * e) {
+	/* ignore */
+}
+
+void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
+
+	_ctx->add_global_damage(f->visible_area());
+
+	/* compute new window position */
+	i_rect new_position = original_position;
+	new_position.x += e->root_x - x_root;
+	new_position.y += e->root_y - y_root;
+	final_position = new_position;
+
+	i_rect new_popup_position = popup_original_position;
+	new_popup_position.x += e->root_x - x_root;
+	new_popup_position.y += e->root_y - y_root;
+	pfm->move_resize(new_popup_position);
+
+}
+
+void grab_floating_move_t::button_release(xcb_button_release_event_t const * e) {
+	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3 or e->detail == button) {
+
+		_ctx->dpy()->set_window_cursor(f->base(), XCB_NONE);
+
+		if (_ctx->dpy()->lock(f->orig())) {
+			_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
+			_ctx->dpy()->unlock();
+		}
+
+		f->set_floating_wished_position(final_position);
+		f->reconfigure();
+
+		_ctx->set_focus(f, e->time);
+		_ctx->grab_stop();
+	}
+}
+
+xcb_cursor_t grab_floating_resize_t::_get_cursor() {
+	switch(mode) {
+	case RESIZE_TOP:
+		return _ctx->dpy()->xc_top_side;
+		break;
+	case RESIZE_BOTTOM:
+		return _ctx->dpy()->xc_bottom_side;
+		break;
+	case RESIZE_LEFT:
+		return _ctx->dpy()->xc_left_side;
+		break;
+	case RESIZE_RIGHT:
+		return _ctx->dpy()->xc_right_side;
+		break;
+	case RESIZE_TOP_LEFT:
+		return _ctx->dpy()->xc_top_left_corner;
+		break;
+	case RESIZE_TOP_RIGHT:
+		return _ctx->dpy()->xc_top_right_corner;
+		break;
+	case RESIZE_BOTTOM_LEFT:
+		return _ctx->dpy()->xc_bottom_left_corner;
+		break;
+	case RESIZE_BOTTOM_RIGHT:
+		return _ctx->dpy()->xc_bottom_righ_corner;
+		break;
+	}
+}
+
+grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, client_managed_t * f, unsigned int button, int x, int y, resize_mode_e mode) :
+		_ctx{ctx},
+		f{f},
+		mode{mode},
+		x_root{x},
+		y_root{y},
+		original_position{f->get_wished_position()},
+		final_position{f->get_wished_position()},
+		button{button},
+		pfm{nullptr}
+
+{
+
+	_ctx->safe_raise_window(f);
+	pfm = std::make_shared<popup_notebook0_t>(_ctx);
+	pfm->move_resize(f->base_position());
+	_ctx->overlay_add(pfm);
+
+	_ctx->dpy()->set_window_cursor(f->base(), _get_cursor());
+
+}
+
+grab_floating_resize_t::~grab_floating_resize_t() {
+	if (pfm != nullptr) {
+		_ctx->overlay_remove(pfm);
+	}
+}
+
+void grab_floating_resize_t::button_press(xcb_button_press_event_t const * e) {
+
+}
+
+void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) {
+	_ctx->add_global_damage(f->visible_area());
+
+	i_rect size = original_position;
+
+	switch(mode) {
+	case RESIZE_TOP_LEFT:
+		size.w -= e->root_x - x_root;
+		size.h -= e->root_y - y_root;
+		break;
+	case RESIZE_TOP:
+		size.h -= e->root_y - y_root;
+		break;
+	case RESIZE_TOP_RIGHT:
+		size.w += e->root_x - x_root;
+		size.h -= e->root_y - y_root;
+		break;
+	case RESIZE_LEFT:
+		size.w -= e->root_x - x_root;
+		break;
+	case RESIZE_RIGHT:
+		size.w += e->root_x - x_root;
+		break;
+	case RESIZE_BOTTOM_LEFT:
+		size.w -= e->root_x - x_root;
+		size.h += e->root_y - y_root;
+		break;
+	case RESIZE_BOTTOM:
+		size.h += e->root_y - y_root;
+		break;
+	case RESIZE_BOTTOM_RIGHT:
+		size.w += e->root_x - x_root;
+		size.h += e->root_y - y_root;
+		break;
+	}
+
+	/* apply normal hints */
+	dimention_t<unsigned> final_size =
+			f->compute_size_with_constrain(size.w, size.h);
+	size.w = final_size.width;
+	size.h = final_size.height;
+
+	if (size.h < 1)
+		size.h = 1;
+	if (size.w < 1)
+		size.w = 1;
+
+	/* do not allow to large windows */
+//	if (size.w > _root_position.w - 100)
+//		size.w = _root_position.w - 100;
+//	if (size.h > _root_position.h - 100)
+//		size.h = _root_position.h - 100;
+
+	int x_diff = 0;
+	int y_diff = 0;
+
+	switch(mode) {
+	case RESIZE_TOP_LEFT:
+		x_diff = original_position.w - size.w;
+		y_diff = original_position.h - size.h;
+		break;
+	case RESIZE_TOP:
+		y_diff = original_position.h - size.h;
+		break;
+	case RESIZE_TOP_RIGHT:
+		y_diff = original_position.h - size.h;
+		break;
+	case RESIZE_LEFT:
+		x_diff = original_position.w - size.w;
+		break;
+	case RESIZE_RIGHT:
+		break;
+	case RESIZE_BOTTOM_LEFT:
+		x_diff = original_position.w - size.w;
+		break;
+	case RESIZE_BOTTOM:
+		break;
+	case RESIZE_BOTTOM_RIGHT:
+		break;
+	}
+
+	size.x += x_diff;
+	size.y += y_diff;
+	final_position = size;
+
+	i_rect popup_new_position = size;
+	if (f->has_motif_border()) {
+		popup_new_position.x -= _ctx->theme()->floating.margin.left;
+		popup_new_position.y -= _ctx->theme()->floating.margin.top;
+		popup_new_position.w += _ctx->theme()->floating.margin.left
+				+ _ctx->theme()->floating.margin.right;
+		popup_new_position.h += _ctx->theme()->floating.margin.top
+				+ _ctx->theme()->floating.margin.bottom;
+	}
+
+	pfm->move_resize(popup_new_position);
+
+}
+
+void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e) {
+	if (e->detail == button) {
+		_ctx->dpy()->set_window_cursor(f->base(), XCB_NONE);
+		if (_ctx->dpy()->lock(f->orig())) {
+			_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
+			_ctx->dpy()->unlock();
+		}
+		f->set_floating_wished_position(final_position);
+		f->reconfigure();
+		_ctx->set_focus(f, e->time);
+		_ctx->grab_stop();
+	}
+}
+
+grab_fullscreen_client_t::grab_fullscreen_client_t(page_context_t * ctx, client_managed_t * mw, unsigned int button, int x, int y) :
+ _ctx{ctx},
+ mw{mw},
+ pn0{nullptr},
+ button{button}
+{
+	v = _ctx->find_mouse_viewport(x, y);
+	pn0 = std::make_shared<popup_notebook0_t>(ctx);
+	pn0->move_resize(mw->base_position());
+	_ctx->overlay_add(pn0);
+}
+
+grab_fullscreen_client_t::~grab_fullscreen_client_t() {
+	if (pn0 != nullptr) {
+		_ctx->overlay_add(pn0);
+	}
+}
+
+void grab_fullscreen_client_t::button_press(xcb_button_press_event_t const * e) {
+
+}
+
+void grab_fullscreen_client_t::button_motion(xcb_motion_notify_event_t const * e) {
+	viewport_t * new_viewport = _ctx->find_mouse_viewport(e->root_x, e->root_y);
+
+	if(new_viewport != nullptr) {
+		v = new_viewport;
+	}
+
+	if(v != nullptr) {
+		pn0->move_resize(v->raw_area());
+	}
+
+}
+
+void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const * e) {
+	if (button == e->detail) {
+		/** drop the fullscreen window to the new viewport **/
+
+		viewport_t * new_viewport = _ctx->find_mouse_viewport(e->root_x, e->root_y);
+
+		if(new_viewport != nullptr) {
+			v = new_viewport;
+		}
+
+		if(v != nullptr) {
+			_ctx->fullscreen_client_to_viewport(mw, v);
+		}
+
+		_ctx->grab_stop();
+
+	}
+}
+
 
 }
 

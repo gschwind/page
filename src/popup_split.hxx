@@ -15,11 +15,10 @@
 
 namespace page {
 
-struct popup_split_t : public renderable_t {
+struct popup_split_t : public overlay_t {
 	static int const border_width = 6;
 
-	display_t * _dpy;
-	theme_t * _theme;
+	page_context_t * _ctx;
 	double _current_split;
 	split_t const * _s_base;
 
@@ -81,9 +80,8 @@ public:
 	}
 
 
-	popup_split_t(display_t * dpy, theme_t * theme, split_t const * split) :
-		_dpy{dpy},
-		_theme{theme},
+	popup_split_t(page_context_t * ctx, split_t const * split) :
+		_ctx{ctx},
 		_s_base{split},
 		_current_split{split->ratio()},
 		_has_alpha{true},
@@ -93,17 +91,17 @@ public:
 	{
 
 		/** if visual is 32 bits, this values are mandatory **/
-		xcb_colormap_t cmap = xcb_generate_id(_dpy->xcb());
-		xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _dpy->root(), _dpy->root_visual()->visual_id);
+		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
 
 		uint32_t value_mask = 0;
 		uint32_t value[5];
 
 		value_mask |= XCB_CW_BACK_PIXEL;
-		value[0] = _dpy->xcb_screen()->black_pixel;
+		value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_BORDER_PIXEL;
-		value[1] = _dpy->xcb_screen()->black_pixel;
+		value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
 		value[2] = True;
@@ -114,44 +112,44 @@ public:
 		value_mask |= XCB_CW_COLORMAP;
 		value[4] = cmap;
 
-		_wid = xcb_generate_id(_dpy->xcb());
-		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
+		_wid = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id, value_mask, value);
 
 		update_layout();
 
-		_dpy->map(_wid);
+		_ctx->dpy()->map(_wid);
 
 	}
 
 	~popup_split_t() {
-		xcb_destroy_window(_dpy->xcb(), _wid);
+		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 
 
 	void _compute_layout(i_rect & rect0, i_rect & rect1) {
 		if(_s_base->type() == HORIZONTAL_SPLIT) {
 
-			int ii = floor((_position.h - _theme->notebook.margin.top) * _current_split + 0.5);
+			int ii = floor((_position.h - _ctx->theme()->notebook.margin.top) * _current_split + 0.5);
 
 			rect0.x = 0;
 			rect0.w = _position.w;
 			rect1.x = 0;
 			rect1.w = _position.w;
 
-			rect0.y = _theme->notebook.margin.top;
+			rect0.y = _ctx->theme()->notebook.margin.top;
 			rect0.h = ii - 3;
 
-			rect1.y = _position.h - (_position.h - _theme->notebook.margin.top - ii - 3);
+			rect1.y = _position.h - (_position.h - _ctx->theme()->notebook.margin.top - ii - 3);
 			rect1.h = _position.h - rect1.y + 1;
 
 		} else {
 
 			int ii = floor(_position.w * _current_split + 0.5);
 
-			rect0.y = _theme->notebook.margin.top;
-			rect0.h = _position.h - _theme->notebook.margin.top;
-			rect1.y = _theme->notebook.margin.top;
-			rect1.h = _position.h - _theme->notebook.margin.top;
+			rect0.y = _ctx->theme()->notebook.margin.top;
+			rect0.h = _position.h - _ctx->theme()->notebook.margin.top;
+			rect1.y = _ctx->theme()->notebook.margin.top;
+			rect1.h = _position.h - _ctx->theme()->notebook.margin.top;
 
 			rect0.x = 0;
 			rect0.w = ii - 3;
@@ -212,10 +210,10 @@ public:
 		rects[7].height = rect1.h;
 
 		/** making clip and bounding region matching make window without border **/
-		xcb_shape_rectangles(_dpy->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 8, rects);
-		xcb_shape_rectangles(_dpy->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 8, rects);
+		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 8, rects);
+		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 8, rects);
 
-		_dpy->move_resize(_wid, _position);
+		_ctx->dpy()->move_resize(_wid, _position);
 
 		expose();
 
@@ -236,7 +234,7 @@ public:
 		for (auto const & a : area) {
 			cairo_save(cr);
 			cairo_clip(cr, a);
-			_theme->render_popup_split(cr, &ts, _current_split);
+			_ctx->theme()->render_popup_split(cr, &ts, _current_split);
 			cairo_restore(cr);
 		}
 
@@ -248,7 +246,7 @@ public:
 
 		_compute_layout(rect0, rect1);
 
-		cairo_surface_t * surf = cairo_xcb_surface_create(_dpy->xcb(), _wid, _dpy->root_visual(), _position.w, _position.h);
+		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
 
 		cairo_set_source_rgb(cr, 0.0, 0.4, 0.0);
@@ -297,7 +295,7 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
-	xcb_window_t id() {
+	xcb_window_t id() const {
 		return _wid;
 	}
 

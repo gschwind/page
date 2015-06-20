@@ -233,7 +233,7 @@ public:
 		value[2] = True;
 
 		value_mask |= XCB_CW_EVENT_MASK;
-		value[3] = XCB_EVENT_MASK_EXPOSURE;
+		value[3] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_POINTER_MOTION;
 
 		value_mask |= XCB_CW_COLORMAP;
 		value[4] = cmap;

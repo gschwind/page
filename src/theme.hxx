@@ -87,12 +87,12 @@ public:
 
 	virtual void render_popup_notebook0(cairo_t * cr,
 			icon64 * icon, unsigned int width,
-			unsigned int height, std::string const & title) = 0;
+			unsigned int height, std::string const & title) const = 0;
 	virtual void render_popup_move_frame(cairo_t * cr,
 			icon64 * icon, unsigned int width,
-			unsigned int height, std::string const & title) = 0;
+			unsigned int height, std::string const & title) const = 0;
 
-	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) = 0;
+	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) const = 0;
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) = 0;
 	virtual void update() = 0;
 

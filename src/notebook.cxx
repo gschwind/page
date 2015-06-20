@@ -754,13 +754,10 @@ void notebook_t::start_exposay() {
 	unsigned xoffset = (client_area.w-width*n)/2;
 	unsigned yoffset = (client_area.h-width*m)/2;
 
-	printf("n = %u, m = %u, w = %u\n", n, m, width);
-
 	auto it = _clients.begin();
 	for(int i = 0; i < _clients.size(); ++i) {
 		unsigned y = i / n;
 		unsigned x = i % n;
-		printf("x = %u, y = %u\n", x, y);
 
 		i_rect pdst(x*width+0.5+xoffset, y*width+0.5+yoffset, width-2.0, width-2.0);
 
@@ -796,8 +793,6 @@ void notebook_t::start_exposay() {
 
 			double src_width = pix->witdh();
 			double src_height = pix->height();
-
-			printf("w = %f, h = %f\n", src_width, src_height);
 
 			double x_ratio = pdst.w / src_width;
 			double y_ratio = pdst.h / src_height;

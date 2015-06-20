@@ -1293,7 +1293,7 @@ void simple2_theme_t::render_floating_base(
 }
 
 void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
-		unsigned int height, std::string const & title) {
+		unsigned int height, std::string const & title) const {
 
 
 	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
@@ -1352,7 +1352,7 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 }
 
 void simple2_theme_t::render_popup_move_frame(cairo_t * cr, icon64 * icon, unsigned int width,
-		unsigned int height, std::string const & title) {
+		unsigned int height, std::string const & title) const {
 	render_popup_notebook0(cr, icon, width, height, title);
 }
 
@@ -1612,7 +1612,7 @@ void simple2_theme_t::create_background_img() {
 }
 
 void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
-		double current_split) {
+		double current_split) const {
 
 	cairo_save(cr);
 

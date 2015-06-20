@@ -195,22 +195,13 @@ public:
 	) const;
 
 	virtual void render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
-			unsigned int height, std::string const & title);
+			unsigned int height, std::string const & title) const;
 	virtual void render_popup_move_frame(cairo_t * cr, icon64 * icon, unsigned int width,
-			unsigned int height, std::string const & title);
+			unsigned int height, std::string const & title) const;
 
-	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split);
+	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) const;
 
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected);
-
-//	virtual std::vector<page_event_t> * compute_page_areas(
-//			std::list<tree_t const *> const & page) const;
-//	virtual std::vector<floating_event_t> * compute_floating_areas(
-//			theme_managed_window_t * mw) const;
-
-
-//	void compute_areas_for_notebook(theme_notebook_t const * n,
-//			std::vector<page_event_t> * l) const;
 
 	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;
@@ -222,44 +213,6 @@ public:
 	static void cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius);
 
 	virtual shared_ptr<renderable_t> get_background(int width, int heigth);
-
-//	i_rect compute_split_bar_location(split_base_t const * s) const {
-//
-//		i_rect ret;
-//		i_rect const & alloc = s->allocation();
-//
-//		if (s->type() == VERTICAL_SPLIT) {
-//
-//			int w = alloc.w - 2 * split.margin.left
-//					- 2 * split.margin.right - split.width;
-//			int w0 = floor(w * s->split() + 0.5);
-//
-//			ret.x = alloc.x + split.margin.left + w0
-//					+ split.margin.right;
-//			ret.y = alloc.y;
-//
-//		} else {
-//
-//			int h = alloc.h - 2 * split.margin.top
-//					- 2 * split.margin.bottom - split.width;
-//			int h0 = floor(h * s->split() + 0.5);
-//
-//			ret.x = alloc.x;
-//			ret.y = alloc.y + split.margin.top + h0
-//					+ split.margin.bottom;
-//		}
-//
-//		if (s->type() == VERTICAL_SPLIT) {
-//			ret.w = split.width;
-//			ret.h = alloc.h;
-//		} else {
-//			ret.w = alloc.w;
-//			ret.h = split.width;
-//		}
-//
-//		return ret;
-//
-//	}
 
 	virtual color_t const & get_focused_color() const;
 	virtual color_t const & get_selected_color() const;

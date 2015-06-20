@@ -17,10 +17,10 @@
 
 namespace page {
 
-struct popup_notebook0_t : public renderable_t {
+struct popup_notebook0_t : public overlay_t {
 	static int const border_width = 6;
-	display_t * _dpy;
-	theme_t * _theme;
+
+	page_context_t * _ctx;
 	std::shared_ptr<icon64> icon;
 	std::string title;
 	bool _show;
@@ -35,8 +35,8 @@ protected:
 	xcb_window_t _wid;
 
 public:
-	popup_notebook0_t(display_t * dpy, theme_t * theme) :
-			_theme(theme), _position { -1, -1, 1, 1 } , _dpy{dpy} {
+	popup_notebook0_t(page_context_t * ctx) :
+			_position{-1, -1, 1, 1} , _ctx{ctx} {
 		icon = nullptr;
 		_show = false;
 		icon = nullptr;
@@ -45,17 +45,17 @@ public:
 		_is_visible = false;
 
 		/** if visual is 32 bits, this values are mandatory **/
-		xcb_colormap_t cmap = xcb_generate_id(_dpy->xcb());
-		xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _dpy->root(), _dpy->root_visual()->visual_id);
+		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
 
 		uint32_t value_mask = 0;
 		uint32_t value[5];
 
 		value_mask |= XCB_CW_BACK_PIXEL;
-		value[0] = _dpy->xcb_screen()->black_pixel;
+		value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_BORDER_PIXEL;
-		value[1] = _dpy->xcb_screen()->black_pixel;
+		value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
 		value[2] = True;
@@ -66,10 +66,10 @@ public:
 		value_mask |= XCB_CW_COLORMAP;
 		value[4] = cmap;
 
-		_wid = xcb_generate_id(_dpy->xcb());
-		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
+		_wid = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id, value_mask, value);
 
-		_dpy->map(_wid);
+		_ctx->dpy()->map(_wid);
 
 	}
 
@@ -79,6 +79,7 @@ public:
 	}
 
 	void move_resize(i_rect const & area) {
+		_ctx->add_global_damage(get_visible_region());
 		_position = area;
 
 		xcb_rectangle_t rects[4];
@@ -104,11 +105,12 @@ public:
 		rects[3].height = _position.h;
 
 		/** making clip and bounding region matching make window without border **/
-		xcb_shape_rectangles(_dpy->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 4, rects);
-		xcb_shape_rectangles(_dpy->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 4, rects);
+		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 4, rects);
+		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 4, rects);
 
-		_dpy->move_resize(_wid, area);
+		_ctx->dpy()->move_resize(_wid, area);
 		expose();
+		_ctx->add_global_damage(get_visible_region());
 	}
 
 	void move(int x, int y) {
@@ -148,7 +150,7 @@ public:
 	}
 
 	~popup_notebook0_t() {
-		xcb_destroy_window(_dpy->xcb(), _wid);
+		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 
 	void update_window(client_managed_t * c) {
@@ -179,15 +181,14 @@ public:
 			cairo_save(cr);
 			cairo_clip(cr, a);
 			cairo_translate(cr, _position.x, _position.y);
-			_theme->render_popup_notebook0(cr, icon.get(), _position.w, _position.h,
-					title);
+			_ctx->theme()->render_popup_notebook0(cr, icon.get(), _position.w, _position.h, title);
 			cairo_restore(cr);
 		}
 	}
 
 	void expose() {
 
-		cairo_surface_t * surf = cairo_xcb_surface_create(_dpy->xcb(), _wid, _dpy->root_visual(), _position.w, _position.h);
+		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
 
 		cairo_set_source_rgb(cr, 0.0, 0.4, 0.0);
@@ -219,7 +220,7 @@ public:
 
 	}
 
-	xcb_window_t id() {
+	xcb_window_t id() const {
 		return _wid;
 	}
 
