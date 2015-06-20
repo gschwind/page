@@ -266,12 +266,6 @@ public:
 	/* popups (overlay) */
 	std::shared_ptr<popup_alt_tab_t> pat;
 
-	using notebook_dropdown_menu_t = dropdown_menu_t<client_managed_t const *>;
-	std::shared_ptr<notebook_dropdown_menu_t> menu;
-
-	using client_dropdown_menu_t = dropdown_menu_t<int>;
-	std::shared_ptr<client_dropdown_menu_t> client_menu;
-
 	/* store all managed client */
 	std::list<client_managed_t *> _clients_list;
 
@@ -549,6 +543,8 @@ public:
 			i->add_dock_client(uw);
 		}
 	}
+
+	void process_notebook_client_menu(client_managed_t * c, int selected);
 
 	void check_x11_extension();
 

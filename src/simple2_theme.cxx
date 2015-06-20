@@ -1674,7 +1674,7 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 
 }
 
-void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) {
+void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) const {
 
 	cairo_save(cr);
 

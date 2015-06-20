@@ -201,7 +201,7 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split) const;
 
-	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected);
+	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) const;
 
 	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;

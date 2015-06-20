@@ -28,6 +28,11 @@
 namespace page {
 
 template<typename TDATA>
+class dropdown_menu_entry_t;
+
+
+
+template<typename TDATA>
 class dropdown_menu_entry_t {
 
 	theme_dropdown_menu_entry_t _theme_data;
@@ -67,52 +72,28 @@ public:
 
 };
 
-template<typename TDATA>
-class dropdown_menu_t : public renderable_t {
-
-public:
-	using item_t = dropdown_menu_entry_t<TDATA>;
-
-private:
-	theme_t * _theme;
-	display_t * _dpy;
-	std::vector<std::shared_ptr<item_t>> _items;
-	int _selected;
-
+struct dropdown_menu_overlay_t : public overlay_t {
+	page_context_t * _ctx;
 	xcb_pixmap_t _pix;
 	cairo_surface_t * _surf;
-
 	i_rect _position;
-
 	xcb_window_t _wid;
-
 	bool _is_durty;
 
-public:
-
-	dropdown_menu_t(display_t * cnx, theme_t * theme, std::vector<std::shared_ptr<item_t>> items, int x, int y, int width) : _theme(theme) {
-		_selected = -1;
-
+	dropdown_menu_overlay_t(page_context_t * ctx, i_rect position) : _ctx{ctx}, _position{position} {
 		_is_durty = true;
-		_dpy = cnx;
 
-		_items = items;
-		_position.x = x;
-		_position.y = y;
-		_position.w = width;
-		_position.h = 24*_items.size();
-
-		xcb_colormap_t cmap = xcb_generate_id(_dpy->xcb());
-		xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _dpy->root(), _dpy->root_visual()->visual_id);
+		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
 
 		uint32_t value_mask = 0;
 		uint32_t value[5];
 
 		value_mask |= XCB_CW_BACK_PIXEL;
-		value[0] = _dpy->xcb_screen()->black_pixel;
+		value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_BORDER_PIXEL;
-		value[1] = _dpy->xcb_screen()->black_pixel;
+		value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
 
 		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
 		value[2] = True;
@@ -123,79 +104,48 @@ public:
 		value_mask |= XCB_CW_COLORMAP;
 		value[4] = cmap;
 
-		_wid = xcb_generate_id(_dpy->xcb());
-		xcb_create_window(_dpy->xcb(), _dpy->root_depth(), _wid, _dpy->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _dpy->root_visual()->visual_id, value_mask, value);
+		_wid = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id, value_mask, value);
 
 
-		_pix = xcb_generate_id(_dpy->xcb());
-		xcb_create_pixmap(_dpy->xcb(), _dpy->root_depth(), _pix, _wid, _position.w, _position.h);
-		_surf = cairo_xcb_surface_create(_dpy->xcb(), _pix, _dpy->root_visual(), _position.w, _position.h);
-		update_backbuffer();
+		_pix = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_pixmap(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _pix, _wid, _position.w, _position.h);
+		_surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _pix, _ctx->dpy()->root_visual(), _position.w, _position.h);
 
-		_dpy->map(_wid);
 	}
 
-	~dropdown_menu_t() {
+	~dropdown_menu_overlay_t() {
 		cairo_surface_destroy(_surf);
-		xcb_free_pixmap(_dpy->xcb(), _pix);
-		xcb_destroy_window(_dpy->xcb(), _wid);
+		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
+		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 
-	TDATA const & get_selected() {
-		return _items[_selected]->data();
-	}
-
-	void update_backbuffer() {
-
-		cairo_t * cr = cairo_create(_surf);
-
-		for (unsigned k = 0; k < _items.size(); ++k) {
-			update_items_back_buffer(cr, k);
-		}
-
-		cairo_destroy(cr);
-
-		expose(i_rect(0,0,_position.w,_position.h));
-
-	}
-
-	void update_items_back_buffer(cairo_t * cr, int n) {
-		if (n >= 0 and n < _items.size()) {
-			i_rect area(0, 24 * n, _position.w, 24);
-			_theme->render_menuentry(cr, _items[n]->get_theme_item(), area, n == _selected);
-		}
-	}
-
-	void set_selected(int s) {
-		if(s >= 0 and s < _items.size() and s != _selected) {
-			std::swap(_selected, s);
-			cairo_t * cr = cairo_create(_surf);
-			update_items_back_buffer(cr, _selected);
-			update_items_back_buffer(cr, s);
-			cairo_destroy(cr);
-			_is_durty = true;
-
-			expose(i_rect(0,0,_position.w,_position.h));
-		}
-	}
-
-	void update_cursor_position(int x, int y) {
-		if (_position.is_inside(x, y)) {
-			int s = (int) floor((y - _position.y) / 24.0);
-			set_selected(s);
-		}
+	void map() {
+		_ctx->dpy()->map(_wid);
 	}
 
 	i_rect const & position() {
 		return _position;
 	}
 
-	xcb_window_t id() {
+	xcb_window_t id() const {
 		return _wid;
 	}
 
+	void expose() {
+		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(),
+				_wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
+		cairo_t * cr = cairo_create(surf);
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_surface(cr, _surf, 0.0, 0.0);
+		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
+		cairo_fill(cr);
+		cairo_destroy(cr);
+		cairo_surface_destroy(surf);
+	}
+
 	void expose(region const & r) {
-		cairo_surface_t * surf = cairo_xcb_surface_create(_dpy->xcb(), _wid, _dpy->root_visual(), _position.w, _position.h);
+		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
 		for(auto a: r) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -213,16 +163,7 @@ public:
 	 * @param area the area to redraw
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
-//		cairo_save(cr);
-//
-//		for (auto const & a : area) {
-//			cairo_clip(cr, a);
-//			cairo_rectangle(cr, _position.x, _position.y, _position.w, _position.h);
-//			cairo_set_source_surface(cr, _surf, _position.x, _position.y);
-//			cairo_fill(cr);
-//		}
-//
-//		cairo_restore(cr);
+
 	}
 
 	/**
@@ -252,8 +193,149 @@ public:
 			return region{};
 		}
 	}
+};
+
+template<typename TDATA, typename F>
+class dropdown_menu_t : public grab_handler_t {
+	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
+
+
+public:
+	using item_t = dropdown_menu_entry_t<TDATA>;
+
+private:
+	page_context_t * _ctx;
+	std::vector<std::shared_ptr<item_t>> _items;
+	int _selected;
+	std::shared_ptr<dropdown_menu_overlay_t> pop;
+	i_rect _start_position;
+
+	bool active_grab;
+	xcb_button_t _button;
+
+public:
+
+	F callback;
+
+	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, i_rect start_position, F f) :
+	_ctx{ctx},
+	_start_position{start_position},
+	_button{button},
+	callback{f}
+
+	{
+
+		active_grab = false;
+
+		_selected = -1;
+		_items = items;
+
+		i_rect _position;
+		_position.x = x;
+		_position.y = y;
+		_position.w = width;
+		_position.h = 24*_items.size();
+
+		pop = std::make_shared<dropdown_menu_overlay_t>(ctx, _position);
+		update_backbuffer();
+		pop->map();
+
+		_ctx->overlay_add(pop);
+
+	}
+
+	~dropdown_menu_t() {
+		_ctx->overlay_remove(pop);
+	}
+
+	TDATA const & get_selected() {
+		return _items[_selected]->data();
+	}
+
+	void update_backbuffer() {
+
+		cairo_t * cr = cairo_create(pop->_surf);
+
+		for (unsigned k = 0; k < _items.size(); ++k) {
+			update_items_back_buffer(cr, k);
+		}
+
+		cairo_destroy(cr);
+
+		pop->expose(i_rect(0,0,pop->_position.w,pop->_position.h));
+
+	}
+
+	void update_items_back_buffer(cairo_t * cr, int n) {
+		if (n >= 0 and n < _items.size()) {
+			i_rect area(0, 24 * n, pop->_position.w, 24);
+			_ctx->theme()->render_menuentry(cr, _items[n]->get_theme_item(), area, n == _selected);
+		}
+	}
+
+	void set_selected(int s) {
+		if(s >= 0 and s < _items.size() and s != _selected) {
+			std::swap(_selected, s);
+			cairo_t * cr = cairo_create(pop->_surf);
+			update_items_back_buffer(cr, _selected);
+			update_items_back_buffer(cr, s);
+			cairo_destroy(cr);
+			pop->_is_durty = true;
+
+			pop->expose(i_rect(0,0,pop->_position.w,pop->_position.h));
+
+		}
+	}
+
+	void update_cursor_position(int x, int y) {
+		if (pop->_position.is_inside(x, y)) {
+			int s = (int) floor((y - pop->_position.y) / 24.0);
+			set_selected(s);
+		}
+	}
+
+	virtual void button_press(xcb_button_press_event_t const * e) {
+
+	}
+
+
+	virtual void button_motion(xcb_motion_notify_event_t const * e) {
+		update_cursor_position(e->root_x, e->root_y);
+	}
+
+	virtual void button_release(xcb_button_release_event_t const * e) {
+		if (e->detail == XCB_BUTTON_INDEX_3
+				or e->detail == XCB_BUTTON_INDEX_1) {
+			if (_start_position.is_inside(e->event_x, e->event_y) and not active_grab) {
+				active_grab = true;
+				xcb_grab_pointer(_ctx->dpy()->xcb(),
+				FALSE, _ctx->dpy()->root(),
+						DEFAULT_BUTTON_EVENT_MASK
+								| XCB_EVENT_MASK_POINTER_MOTION,
+						XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+						XCB_NONE,
+						XCB_NONE, e->time);
+			} else {
+				if (active_grab) {
+					xcb_ungrab_pointer(_ctx->dpy()->xcb(), e->time);
+					active_grab = false;
+				}
+
+				if (pop->_position.is_inside(e->root_x, e->root_y)) {
+					update_cursor_position(e->root_x, e->root_y);
+					callback(get_selected());
+				}
+
+				_ctx->grab_stop();
+			}
+		}
+	}
+
 
 };
+
+
+
 
 }
 
