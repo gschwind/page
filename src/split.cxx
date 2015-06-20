@@ -231,20 +231,16 @@ std::list<tree_t *> split_t::childs() const {
 	return ret;
 }
 
-void split_t::raise_child(tree_t * t) {
-
+void split_t::activate(tree_t * t) {
 	if(has_key(_children, t)) {
+		if(_parent != nullptr) {
+			_parent->activate(this);
+		}
 		_children.remove(t);
 		_children.push_back(t);
-
-		if(_parent != nullptr) {
-			_parent->raise_child(this);
-		}
-
 	} else if (t != nullptr) {
 		throw exception_t("split_t::raise_child trying to raise a non child tree");
 	}
-
 }
 
 void split_t::remove(tree_t * t) {

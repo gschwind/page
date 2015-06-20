@@ -177,7 +177,7 @@ struct grab_floating_resize_t : public grab_handler_t {
 	int y_root;
 	i_rect original_position;
 	i_rect final_position;
-	unsigned int button;
+	xcb_button_t button;
 
 	std::shared_ptr<popup_notebook0_t> pfm;
 
@@ -185,44 +185,13 @@ struct grab_floating_resize_t : public grab_handler_t {
 
 public:
 
-	grab_floating_resize_t(page_context_t * _ctx, client_managed_t * f, unsigned int button, int x, int y, resize_mode_e mode);
+	grab_floating_resize_t(page_context_t * _ctx, client_managed_t * f, xcb_button_t button, int x, int y, resize_mode_e mode);
 
 	virtual ~grab_floating_resize_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
 
-
-};
-
-struct mode_data_floating_t : public grab_handler_t {
-	resize_mode_e mode;
-	int x_offset;
-	int y_offset;
-	int x_root;
-	int y_root;
-	i_rect original_position;
-	client_managed_t * f;
-	i_rect popup_original_position;
-	i_rect final_position;
-	unsigned int button;
-
-	mode_data_floating_t() {
-		reset();
-	}
-
-	void reset() {
-		mode = RESIZE_NONE;
-		x_offset = 0;
-		y_offset = 0;
-		x_root = 0;
-		y_root = 0;
-		original_position = i_rect{};
-		f = nullptr;
-		popup_original_position = i_rect{};
-		final_position = i_rect{};
-		button = Button1;
-	}
 
 };
 
@@ -570,6 +539,7 @@ public:
 	std::string get_node_name() const;
 	void replace(page_component_t * src, page_component_t * by);
 	void raise_child(tree_t * t);
+	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
 
 	void fullscreen_client_to_viewport(client_managed_t * c, viewport_t * v);
@@ -619,7 +589,6 @@ public:
 	void get_all_children(std::vector<tree_t *> & out) const;
 	void get_visible_children(std::vector<tree_t *> & out);
 
-
 	void render();
 
 	/** debug function that try to print the state of page in stdout **/
@@ -630,7 +599,7 @@ public:
 	void hide();
 	void show();
 
-	void switch_to_desktop(unsigned int desktop, xcb_timestamp_t time);
+	void switch_to_desktop(unsigned int desktop);
 
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();

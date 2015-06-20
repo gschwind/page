@@ -71,7 +71,15 @@ public:
 
 	void render(cairo_t * cr, i_rect const & area) const { }
 
-	void raise_child(tree_t * t) {
+
+	void activate(tree_t * t = nullptr) {
+
+		if(_parent != nullptr) {
+			_parent->activate(this);
+		}
+
+		if(t == nullptr)
+			return;
 
 		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
 		if(has_key(_fullscreen_clients, mw)) {
@@ -96,9 +104,6 @@ public:
 			_viewport_stack.push_back(v);
 		}
 
-		if(_parent != nullptr) {
-			_parent->raise_child(this);
-		}
 	}
 
 	std::string get_node_name() const {

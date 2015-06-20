@@ -67,7 +67,7 @@ public:
 	void compute_split_size(double split, int & w, int & h) const;
 	void render_legacy(cairo_t * cr, int x_offset, int y_offset) const;
 	std::list<tree_t *> childs() const;
-	void raise_child(tree_t * t = nullptr);
+	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 	i_rect compute_split_bar_location() const;

@@ -40,11 +40,6 @@ public:
 	virtual auto get_node_name() const -> std::string = 0;
 
 	/**
-	 * Put this node at front of stack recursively
-	 **/
-	virtual auto raise_child(tree_t * t = nullptr) -> void = 0;
-
-	/**
 	 * Remove i from direct child of this node (not recusively)
 	 **/
 	virtual auto remove(tree_t * t) -> void = 0;
@@ -83,6 +78,8 @@ public:
 	 * return the list of renderable object to draw this tree ordered and recursively
 	 **/
 	virtual auto prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) -> void = 0;
+
+	virtual void activate(tree_t * t = nullptr) = 0;
 
 	/**
 	 * Useful template to generate node name.

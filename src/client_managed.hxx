@@ -255,6 +255,8 @@ public:
 	bool is_stiky();
 	bool is_modal();
 
+	void activate(tree_t * t = nullptr);
+
 };
 
 }

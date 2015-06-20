@@ -411,39 +411,21 @@ public:
 		}
 	}
 
-	void raise_child(tree_t * t = nullptr) {
-
+	void activate(tree_t * t = nullptr) {
 		/** raise ourself **/
-		if(t == nullptr) {
-			if(_parent != nullptr) {
-				_parent->raise_child(this);
-			}
-
-			return;
+		if(_parent != nullptr) {
+			_parent->activate(this);
 		}
 
 		/** only client_base_t can be child of client_base_t **/
 		client_base_t * c = dynamic_cast<client_base_t *>(t);
 		if(has_key(_children, c) and c != nullptr) {
-
 			/** raise the child **/
 			_children.remove(c);
 			_children.push_back(c);
-
-			/** raise ourself **/
-			if(_parent != nullptr) {
-				_parent->raise_child(this);
-			}
-
-			return;
 		}
 
-		/** something is wrong with the code if we reach this line **/
-		throw exception_t("client_base::raise_child trying to raise a non child tree");
-
 	}
-
-
 
 	/* find the bigger window that is smaller than w and h */
 	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h) {

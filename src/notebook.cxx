@@ -38,17 +38,15 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 
 	if(prefer_activate) {
 		start_fading();
-
-		if(_selected != nullptr) {
-			_selected->iconify();
-		}
-
 		update_client_position(x);
 		x->normalize();
 		x->reconfigure();
 
-		_selected = x;
+		if (_selected != nullptr and _selected != x) {
+			_selected->iconify();
+		}
 
+		_selected = x;
 	} else {
 		x->iconify();
 		if(_selected != nullptr) {
@@ -319,14 +317,32 @@ std::list<tree_t *> notebook_t::childs() const {
 	return std::list<tree_t *>{_children.begin(), _children.end()};
 }
 
-void notebook_t::raise_child(tree_t * t) {
+void notebook_t::activate(tree_t * t) {
+
+	if(_parent != nullptr) {
+		_parent->activate(this);
+	}
 
 	if (has_key(_children, t)) {
 		_children.remove(t);
 		_children.push_back(t);
 
-		if(_parent != nullptr) {
-			_parent->raise_child(this);
+		auto mw = dynamic_cast<client_managed_t*>(t);
+
+		if (mw != nullptr) {
+			if (mw->is_iconic()) {
+				start_fading();
+				update_client_position(mw);
+				mw->normalize();
+				mw->reconfigure();
+			}
+
+			if (_selected != nullptr and _selected != mw) {
+				_selected->iconify();
+			}
+
+			_selected = mw;
+
 		}
 
 	} else if (t != nullptr) {
@@ -336,7 +352,9 @@ void notebook_t::raise_child(tree_t * t) {
 }
 
 std::string notebook_t::get_node_name() const {
-	return _get_node_name<'N'>();
+	std::ostringstream oss;
+	oss << _get_node_name<'N'>() << " selected = " << _selected;
+	return oss.str();
 }
 
 void notebook_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {

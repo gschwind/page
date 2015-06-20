@@ -169,6 +169,7 @@ public:
 	void set_default(bool x);
 	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
+	void activate(tree_t * t = nullptr);
 	std::string get_node_name() const;
 	void render_legacy(cairo_t * cr, int x_offset, int y_offset) const;
 	void render(cairo_t * cr, time_t time);

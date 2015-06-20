@@ -229,6 +229,8 @@ page_t::page_t(int argc, char ** argv)
 		_mouse_focus = false;
 	}
 
+	_global_client_focus_history.push_back(nullptr);
+
 }
 
 page_t::~page_t() {
@@ -361,10 +363,10 @@ void page_t::run() {
 
 	}
 
+	scan();
+
 	/* setup _NET_ACTIVE_WINDOW */
 	set_focus(nullptr, XCB_CURRENT_TIME);
-
-	scan();
 
 	update_keymap();
 	update_grabkey();
@@ -439,10 +441,10 @@ void page_t::unmanage(client_managed_t * mw) {
 		if (new_focus->is(MANAGED_NOTEBOOK)) {
 			notebook_t * nk = find_parent_notebook_for(new_focus);
 			if (nk != nullptr) {
-				nk->activate_client(new_focus);
+				new_focus->activate();
 			}
 		}
-		switch_to_desktop(find_current_desktop(new_focus), XCB_CURRENT_TIME);
+		new_focus->activate();
 		set_focus(new_focus, XCB_CURRENT_TIME);
 	}
 }
@@ -638,11 +640,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 
 		if(k == bind_right_desktop.ks and (e->state & bind_right_desktop.mod)) {
-			switch_to_desktop((_current_desktop + 1) % _desktop_list.size(), e->time);
+			switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
+			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
 		}
 
 		if(k == bind_left_desktop.ks and (e->state & bind_left_desktop.mod)) {
-			switch_to_desktop((_current_desktop - 1) % _desktop_list.size(), e->time);
+			switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
+			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
 		}
 
 		if(k == bind_bind_window.ks and (e->state & bind_bind_window.mod)) {
@@ -808,7 +812,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			process_mode = PROCESS_NORMAL;
 
 			client_managed_t * mw = pat->get_selected();
-			switch_to_desktop(find_current_desktop(mw), _last_focus_time);
+			mw->activate();
 			set_focus(mw, e->time);
 			pat.reset();
 		}
@@ -996,7 +1000,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		client_managed_t * mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			switch_to_desktop(find_current_desktop(mw), _last_focus_time);
+			mw->activate();
 			set_focus(mw, e->time);
 		}
 	} else {
@@ -1455,7 +1459,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		if (mw != nullptr) {
 			if (find_current_desktop(mw) == _current_desktop or find_current_desktop(mw) == ALL_DESKTOP) {
 				if (mw->lock()) {
-					switch_to_desktop(find_current_desktop(mw), _last_focus_time);
+					mw->activate();
 					if (e->data.data32[1] == XCB_CURRENT_TIME) {
 						printf(
 								"Invalid focus request ... but stealing focus\n");
@@ -1524,7 +1528,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					int root_x = e->data.data32[0];
 					int root_y = e->data.data32[1];
 					int direction = e->data.data32[2];
-					int button = e->data.data32[3];
+					xcb_button_t button = static_cast<xcb_button_t>(e->data.data32[3]);
 					int source = e->data.data32[4];
 
 					if (direction == _NET_WM_MOVERESIZE_MOVE) {
@@ -1570,7 +1574,8 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
 		if(e->data.data32[0] >= 0 and e->data.data32[0] < _desktop_list.size() and e->data.data32[0] != _current_desktop) {
-			switch_to_desktop(e->data.data32[0], XCB_CURRENT_TIME);
+			switch_to_desktop(e->data.data32[0]);
+			set_focus(_desktop_list[_current_desktop]->client_focus.front(), XCB_CURRENT_TIME);
 		}
 	}
 }
@@ -1749,42 +1754,20 @@ void page_t::update_workarea() {
 
 }
 
-/** If tfocus == CurrentTime, still the focus ... it's a known issue of X11 protocol + ICCCM */
 void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
-
-	//if (new_focus != nullptr)
-	//	cout << "try focus [" << new_focus->title() << "] " << tfocus << endl;
-
 	if(tfocus == XCB_CURRENT_TIME and new_focus != nullptr)
 		std::cout << "Warning: Invalid focus time (0)" << std::endl;
-
-	/** ignore focus if time is too old **/
 	if(tfocus <= _last_focus_time and tfocus != XCB_CURRENT_TIME)
 		return;
-
 	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
-	auto old_focus = _desktop_list[_current_desktop]->client_focus.front();
+	auto old_focus = _global_client_focus_history.front();
 
 	if (old_focus != nullptr) {
-		/**
-		 * update _NET_WM_STATE and grab button mode and mark decoration
-		 * durty (for floating window only)
-		 **/
 		old_focus->set_focus_state(false);
-
-		/**
-		 * if this is a notebook, mark the area for updates.
-		 **/
-		if (old_focus->is(MANAGED_NOTEBOOK)) {
-			notebook_t * n = find_parent_notebook_for(old_focus);
-		}
 	}
 
-	/**
-	 * put this managed window in front of list
-	 **/
 	_desktop_list[_current_desktop]->client_focus.remove(new_focus);
 	_desktop_list[_current_desktop]->client_focus.push_front(new_focus);
 	_global_client_focus_history.remove(new_focus);
@@ -1793,38 +1776,12 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 	if(new_focus == nullptr) {
 		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
 		cnx->set_net_active_window(XCB_NONE);
-		return;
+	} else {
+		cnx->set_net_active_window(new_focus->orig());
+		new_focus->focus(tfocus);
 	}
 
-	/**
-	 * raise the newly focused window at top, in respect of transient for.
-	 **/
-	safe_raise_window(new_focus);
-
-	/**
-	 * if this is a notebook, mark the area for updates and activated the
-	 * notebook
-	 **/
-	if (new_focus->is(MANAGED_NOTEBOOK)) {
-		notebook_t * n = find_parent_notebook_for(new_focus);
-		if (n != nullptr) {
-			n->activate_client(new_focus);
-		}
-	}
-
-	/**
-	 * change root window properties to the current focused window.
-	 **/
-	cnx->set_net_active_window(new_focus->orig());
-
-	/**
-	 * update the focus status
-	 **/
-	if(tfocus != XCB_CURRENT_TIME)
-		new_focus->focus(_last_focus_time);
-	else
-		new_focus->focus(XCB_CURRENT_TIME);
-	mark_durty(new_focus);
+	_need_restack = true;
 
 }
 
@@ -2235,7 +2192,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			case _NET_WM_STATE_REMOVE: {
 				notebook_t * n = dynamic_cast<notebook_t*>(mw->parent());
 				if (n != nullptr)
-					n->activate_client(mw);
+					mw->activate();
 			}
 
 				break;
@@ -2414,9 +2371,6 @@ void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
 }
 
 void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
-	/** just in case remove this window from the tree **/
-	detach(c);
-
 	client_base_t * transient_for = get_transient_for(c);
 	if (transient_for != nullptr) {
 		transient_for->add_subclient(c);
@@ -2458,7 +2412,7 @@ void page_t::detach(tree_t * t) {
 void page_t::safe_raise_window(client_base_t * c) {
 	//if(process_mode != PROCESS_NORMAL)
 	//	return;
-	c->raise_child();
+	c->activate();
 	/** apply change **/
 	_need_restack = true;
 }
@@ -3052,7 +3006,7 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 	try {
 
 		safe_update_transient_for(mw);
-		mw->raise_child(nullptr);
+		mw->activate();
 		_need_update_client_list = true;
 		_need_restack = true;
 
@@ -3111,9 +3065,9 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 			fullscreen(mw);
 			update_desktop_visibility();
 			mw->reconfigure();
+			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
 				set_focus(mw, XCB_CURRENT_TIME);
@@ -3167,9 +3121,9 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		} else {
 			mw->normalize();
 			mw->reconfigure();
+			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
-				switch_to_desktop(find_current_desktop(mw), time);
 				set_focus(mw, time);
 			} else {
 				set_focus(mw, XCB_CURRENT_TIME);
@@ -3271,36 +3225,33 @@ void page_t::safe_update_transient_for(client_base_t * c) {
 	if (typeid(*c) == typeid(client_managed_t)) {
 		client_managed_t * mw = dynamic_cast<client_managed_t*>(c);
 		if (mw->is(MANAGED_FLOATING)) {
+			detach(mw);
 			insert_in_tree_using_transient_for(mw);
 		} else if (mw->is(MANAGED_NOTEBOOK)) {
 			/* DO NOTHING */
 		} else if (mw->is(MANAGED_FULLSCREEN)) {
 			/* DO NOTHING */
 		} else if (mw->is(MANAGED_DOCK)) {
+			detach(mw);
 			insert_in_tree_using_transient_for(mw);
 		}
 	} else if (typeid(*c) == typeid(client_not_managed_t)) {
 		client_not_managed_t * uw = dynamic_cast<client_not_managed_t*>(c);
-
+		detach(uw);
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-			detach(uw);
 			tooltips.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-			detach(uw);
 			notifications.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-			detach(uw);
 			attach_dock(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
-			detach(uw);
 			above.push_back(uw);
 			uw->set_parent(this);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
-			detach(uw);
 			below.push_back(uw);
 			uw->set_parent(this);
 		} else {
@@ -3407,6 +3358,46 @@ void page_t::raise_child(tree_t * t) {
 		return;
 
 	/** TODO: raise a viewport **/
+
+	/* do nothing, not needed at this level */
+	client_base_t * x = dynamic_cast<client_base_t *>(t);
+	if(has_key(root_subclients, x)) {
+		root_subclients.remove(x);
+		root_subclients.push_back(x);
+	}
+
+	client_not_managed_t * y = dynamic_cast<client_not_managed_t *>(t);
+	if(has_key(tooltips, y)) {
+		tooltips.remove(y);
+		tooltips.push_back(y);
+	}
+
+	if(has_key(notifications, y)) {
+		notifications.remove(y);
+		notifications.push_back(y);
+	}
+
+	if(has_key(above, y)) {
+		above.remove(y);
+		above.push_back(y);
+	}
+
+	if(has_key(below, y)) {
+		below.remove(y);
+		below.push_back(y);
+	}
+}
+
+
+void page_t::activate(tree_t * t) {
+
+	if(t == nullptr)
+		return;
+
+	workspace_t * w = dynamic_cast<workspace_t*>(t);
+	if(w != nullptr) {
+		switch_to_desktop(w->id());
+	}
 
 	/* do nothing, not needed at this level */
 	client_base_t * x = dynamic_cast<client_base_t *>(t);
@@ -3673,33 +3664,11 @@ void page_t::show() {
 	}
 }
 
-void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
+void page_t::switch_to_desktop(unsigned int desktop) {
 	if (desktop != _current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
 
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
-
-		/** remove the focus from the current window **/
-		{
-			/** NULL pointer is always in the list **/
-			auto old_focus =
-					_desktop_list[_current_desktop]->client_focus.front();
-
-			if (old_focus != nullptr) {
-				/**
-				 * update _NET_WM_STATE and grab button mode and mark decoration
-				 * durty (for floating window only)
-				 **/
-				old_focus->set_focus_state(false);
-
-				/**
-				 * if this is a notebook, mark the area for updates.
-				 **/
-				if (old_focus->is(MANAGED_NOTEBOOK)) {
-					notebook_t * n = find_parent_notebook_for(old_focus);
-				}
-			}
-		}
 
 		_current_desktop = desktop;
 		_desktop_stack.remove(_desktop_list[_current_desktop]);
@@ -3707,13 +3676,13 @@ void page_t::switch_to_desktop(unsigned int desktop, xcb_timestamp_t time) {
 
 		/** move stiky to current desktop **/
 		for(auto s : stiky_list) {
+			detach(s);
 			insert_in_tree_using_transient_for(s);
 		}
 
 		update_viewport_layout();
 		update_current_desktop();
 		update_desktop_visibility();
-		set_focus(_desktop_list[_current_desktop]->client_focus.front(), time);
 	}
 }
 
@@ -5466,6 +5435,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		_find_target_notebook(e->root_x, e->root_y, target_notebook, zone);
 
 		if(target_notebook == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
+			c->activate();
 			ctx->set_focus(c, e->time);
 			ctx->grab_stop();
 			return;
@@ -5501,8 +5471,9 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 					ctx->set_focus(nullptr, e->time);
 					parent->iconify_client(c);
 				} else {
+					std::cout << "activate = " << c << endl;
+					c->activate();
 					ctx->set_focus(c, e->time);
-					parent->set_selected(c);
 				}
 			}
 		}
@@ -5606,7 +5577,7 @@ xcb_cursor_t grab_floating_resize_t::_get_cursor() {
 	}
 }
 
-grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, client_managed_t * f, unsigned int button, int x, int y, resize_mode_e mode) :
+grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, client_managed_t * f, xcb_button_t button, int x, int y, resize_mode_e mode) :
 		_ctx{ctx},
 		f{f},
 		mode{mode},
@@ -5804,7 +5775,6 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 
 	}
 }
-
 
 }
 

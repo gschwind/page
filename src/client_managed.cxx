@@ -1205,5 +1205,12 @@ bool client_managed_t::is_modal() {
 	return false;
 }
 
+void client_managed_t::activate(tree_t * t) {
+	client_base_t::activate(t);
+	if(is_iconic()) {
+		normalize();
+	}
+}
+
 }
 
