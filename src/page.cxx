@@ -4151,11 +4151,11 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 					XCB_CURRENT_TIME);
 		}
 	} else {
-		auto focus = _desktop_list[_current_desktop]->client_focus.front();
-		/* only inferior focus is allowed */
-		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focus->orig()) {
-			focus->focus(XCB_CURRENT_TIME);
-		}
+//		auto focus = _desktop_list[_current_desktop]->client_focus.front();
+//		/* only inferior focus is allowed */
+//		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focus->orig()) {
+//			focus->focus(XCB_CURRENT_TIME);
+//		}
 	}
 
 }
