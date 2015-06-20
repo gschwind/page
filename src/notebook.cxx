@@ -405,6 +405,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 			/** force redraw of notebook **/
 			std::shared_ptr<renderable_t> x{new renderable_empty_t{_allocation}};
 			out += x;
+			_ctx->mark_durty(this);
 		}
 
 		if (_selected != nullptr) {

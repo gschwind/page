@@ -215,6 +215,9 @@ private:
 
 public:
 
+	// currently gcc fail to build this
+	//std::function<void(TDATA)> callback;
+
 	F callback;
 
 	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, i_rect start_position, F f) :
@@ -333,7 +336,6 @@ public:
 
 
 };
-
 
 
 

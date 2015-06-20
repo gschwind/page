@@ -4951,23 +4951,11 @@ void page_t::page_event_handler_nop(page_event_t const & pev) {
 }
 
 void page_t::page_event_handler_notebook_client(page_event_t const & pev) {
-//	process_mode = PROCESS_NOTEBOOK_GRAB;
-//	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_notebook_grab);
-//	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_notebook_grab);
+	if(pev.clt == nullptr) {
+		return;
+	}
 
 	grab_start(new grab_bind_client_t{this, const_cast<client_managed_t*>(pev.clt), _desktop_list[_current_desktop], pev.position});
-
-
-//	mode_data_notebook.c = const_cast<client_managed_t*>(pev.clt);
-//	mode_data_notebook.from = const_cast<notebook_t*>(pev.nbk);
-//	mode_data_notebook.ns = nullptr;
-//	mode_data_notebook.zone = NOTEBOOK_AREA_NONE;
-//	mode_data_notebook.ev = pev;
-//
-//	if(pn0 != nullptr) {
-//		pn0->move_resize(mode_data_notebook.from->tab_area);
-//		pn0->update_window(mode_data_notebook.c);
-//	}
 }
 
 void page_t::page_event_handler_notebook_client_close(page_event_t const & pev) {
@@ -5454,8 +5442,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		case NOTEBOOK_AREA_TAB:
 		case NOTEBOOK_AREA_CENTER:
 			if(target_notebook != c->parent()) {
+				ctx->mark_durty(c);
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, target_notebook, true);
+				ctx->mark_durty(target_notebook);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
@@ -5473,6 +5463,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		default:
 			notebook_t * parent = dynamic_cast<notebook_t *>(c->parent());
 			if (parent != nullptr) {
+				ctx->mark_durty(c);
 				/* hide client if option allow shaded client */
 				if (parent->get_selected() == c
 						and current_workspace->client_focus.front() == c
