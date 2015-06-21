@@ -199,13 +199,12 @@ struct grab_fullscreen_client_t : public grab_handler_t {
 	page_context_t * _ctx;
 	client_managed_t * mw;
 	viewport_t * v;
-
 	std::shared_ptr<popup_notebook0_t> pn0;
-	unsigned int button;
+	xcb_button_t button;
 
 public:
 
-	grab_fullscreen_client_t(page_context_t * ctx, client_managed_t * mw, unsigned int button, int x, int y);
+	grab_fullscreen_client_t(page_context_t * ctx, client_managed_t * mw, xcb_button_t button, int x, int y);
 
 	virtual ~grab_fullscreen_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
