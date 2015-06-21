@@ -272,6 +272,11 @@ void notebook_t::set_allocation(i_rect const & area) {
 		_selected->reconfigure();
 	}
 
+	if(_exposay != nullptr) {
+		_exposay = nullptr;
+		start_exposay();
+	}
+
 }
 
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
