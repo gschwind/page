@@ -783,9 +783,6 @@ void notebook_t::start_exposay() {
 		cairo_reset_clip(cr);
 		cairo_set_line_width(cr, 1.0);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-		cairo_rectangle(cr, pdst.x, pdst.y, pdst.w, pdst.h);
-		cairo_stroke(cr);
 
 		pdst.x += 8;
 		pdst.y += 8;
@@ -802,49 +799,10 @@ void notebook_t::start_exposay() {
 			_exposay_event.push_back(nc);
 		}
 
-		std::shared_ptr<pixmap_t> pix = c->get_last_pixmap();
-		if (pix != nullptr) {
-
-			cairo_surface_t * src = pix->get_cairo_surface();
-			cairo_save(cr);
-
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-			double src_width = pix->witdh();
-			double src_height = pix->height();
-
-			double x_ratio = pdst.w / src_width;
-			double y_ratio = pdst.h / src_height;
-
-			double x_offset, y_offset;
-
-			if (x_ratio < y_ratio) {
-
-				double yp = pdst.h / x_ratio;
-
-				x_offset = 0;
-				y_offset = (yp - src_height) / 2.0;
-				cairo_translate(cr, pdst.x, pdst.y);
-				cairo_scale(cr, x_ratio, x_ratio);
-				cairo_set_source_surface(cr, src, x_offset, y_offset);
-				cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-				cairo_fill(cr);
-
-			} else {
-				double xp = pdst.w / y_ratio;
-
-				y_offset = 0;
-				x_offset = (xp - src_width) / 2.0;
-				cairo_translate(cr, pdst.x, pdst.y);
-				cairo_scale(cr, y_ratio, y_ratio);
-				cairo_set_source_surface(cr, src, x_offset, y_offset);
-				cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-				cairo_fill(cr);
-			}
-
-			cairo_restore(cr);
-
-		}
+		theme_thumbnail_t t;
+		t.pix = c->get_last_pixmap();
+		t.title = c->title();
+		_ctx->theme()->render_thumbnail(cr, pdst, t);
 
 		++it;
 	}

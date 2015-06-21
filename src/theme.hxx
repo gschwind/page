@@ -43,6 +43,10 @@ struct theme_dropdown_menu_entry_t {
 	std::string label;
 };
 
+struct theme_thumbnail_t {
+	std::shared_ptr<pixmap_t> pix;
+	std::string title;
+};
 
 class theme_t {
 
@@ -77,11 +81,14 @@ public:
 	} floating;
 
 
-	virtual ~theme_t();
+	theme_t() { }
+	virtual ~theme_t() { }
 
 	virtual void render_split(cairo_t * cr, theme_split_t const * s) const = 0;
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const = 0;
 	virtual void render_empty(cairo_t * cr, i_rect const & area) const = 0;
+
+	virtual void render_thumbnail(cairo_t * cr, i_rect position, theme_thumbnail_t const & t) const = 0;
 
 	virtual void render_floating(theme_managed_window_t * nw) const = 0;
 

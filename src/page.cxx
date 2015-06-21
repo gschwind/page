@@ -64,17 +64,6 @@ namespace page {
 
 time_t const page_t::default_wait{1000000000L / 120L};
 
-//page_context_t::~page_context_t() {
-//
-//}
-
-/**
- * TODO: To lazy to create file for this definition
- **/
-theme_t::~theme_t() {
-
-}
-
 page_t::page_t(int argc, char ** argv)
 {
 

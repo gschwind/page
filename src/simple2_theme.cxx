@@ -15,6 +15,7 @@
 #include "simple2_theme.hxx"
 #include "box.hxx"
 #include "color.hxx"
+#include "pixmap.hxx"
 #include <string>
 #include <algorithm>
 #include <iostream>
@@ -1009,6 +1010,103 @@ void simple2_theme_t::render_empty(cairo_t * cr, i_rect const & area) const {
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
+void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thumbnail_t const & t) const {
+
+	double y_text_offset = 0;
+
+	if (t.pix != nullptr) {
+		cairo_surface_t * src = t.pix->get_cairo_surface();
+		cairo_save(cr);
+
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+
+		i_rect thumbnail_pos = position;
+		thumbnail_pos.h -= 20;
+
+		double src_width = t.pix->witdh();
+		double src_height = t.pix->height();
+
+		double x_ratio = thumbnail_pos.w / src_width;
+		double y_ratio = thumbnail_pos.h / src_height;
+
+		double x_offset, y_offset;
+
+		if (x_ratio < y_ratio) {
+
+			double yp = thumbnail_pos.h / x_ratio;
+
+			x_offset = 0;
+			y_offset = (yp - src_height) / 2.0;
+			cairo_translate(cr, thumbnail_pos.x, thumbnail_pos.y);
+			cairo_scale(cr, x_ratio, x_ratio);
+			cairo_set_source_surface(cr, src, x_offset, y_offset);
+			cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+			cairo_fill(cr);
+
+			y_text_offset = src_height * x_ratio + (thumbnail_pos.h - (src_height * x_ratio)) / 2.0;
+
+		} else {
+			double xp = thumbnail_pos.w / y_ratio;
+
+			y_offset = 0;
+			x_offset = (xp - src_width) / 2.0;
+			cairo_translate(cr, thumbnail_pos.x, thumbnail_pos.y);
+			cairo_scale(cr, y_ratio, y_ratio);
+			cairo_set_source_surface(cr, src, x_offset, y_offset);
+			cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
+			cairo_fill(cr);
+
+			y_text_offset = src_height * y_ratio + (thumbnail_pos.h - (src_height * y_ratio)) / 2.0;
+		}
+
+		cairo_restore(cr);
+	} else {
+		y_text_offset = position.h - 20;
+	}
+
+	i_rect btext = position;
+	btext.y += y_text_offset;
+	btext.h = 20;
+
+	CHECK_CAIRO(cairo_save(cr));
+
+#ifdef WITH_PANGO
+
+	/* draw title */
+	CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_outline_color));
+
+	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
+
+	//CHECK_CAIRO(cairo_new_path(cr));
+
+	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
+	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+
+	{
+		PangoLayout * pango_layout = pango_layout_new(pango_context);
+		pango_layout_set_font_description(pango_layout, notebook_normal_font);
+		pango_cairo_update_layout(cr, pango_layout);
+		pango_layout_set_text(pango_layout, t.title.c_str(), -1);
+		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
+		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+		pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
+		pango_cairo_layout_path(cr, pango_layout);
+		g_object_unref(pango_layout);
+	}
+
+	CHECK_CAIRO(cairo_stroke_preserve(cr));
+
+	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+	CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_text_color));
+	CHECK_CAIRO(cairo_fill(cr));
+
+#endif
+
+	CHECK_CAIRO(cairo_restore(cr));
+
+}
 
 
 void simple2_theme_t::render_floating(theme_managed_window_t * mw) const {
