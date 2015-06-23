@@ -19,6 +19,12 @@ class time_t {
 
 public:
 
+	static time_t now() {
+		time_t ret;
+		ret.update_to_current_time();
+		return ret;
+	}
+
 	/* create new time in current time */
 	time_t() : nsec(0) { }
 	time_t(time_t const & t) : nsec(t.nsec) { }

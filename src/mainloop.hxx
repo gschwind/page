@@ -15,89 +15,55 @@
 #include <list>
 #include <queue>
 #include <vector>
+#include <functional>
+#include <iostream>
 
 #include "time.hxx"
 
 namespace page {
 
-
 class poll_callback_t {
+	struct pollfd _pfd;
+	std::function<void(struct pollfd const &)> _callback;
 public:
-	short events;
 
-	poll_callback_t(short events) : events{events} { }
-
-	virtual void call(struct pollfd const &) = 0;
-	virtual ~poll_callback_t() { }
-};
-
-template<typename T>
-class poll_callback_impl_t : public poll_callback_t {
-	T func;
-public:
-	virtual void call(struct pollfd const & x) {
-		func(x);
-	}
-
-	virtual ~poll_callback_impl_t() { }
-
-	poll_callback_impl_t(T const & func, short events) : poll_callback_t{events}, func{func} { }
-
+	poll_callback_t() : _pfd{-1, 0, 0}, _callback{[](struct pollfd const & x) { } } { }
+	template<typename F>
+	poll_callback_t(int fd, short events, F f) : _pfd{fd, events, 0}, _callback{f} { }
+	void call(struct pollfd const & x) const { _callback(x); }
+	struct pollfd pfd() const { return _pfd; }
 };
 
 class timeout_t {
-
-protected:
-	time_t timebound;
-	time_t delta;
+	time_t _timebound;
+	time_t _delta;
+	std::function<bool(void)> _callback;
 
 public:
 
-	timeout_t(time_t cur, time_t delta) : delta{delta}, timebound{cur+delta} { }
-	virtual ~timeout_t() { }
+	/* create new timeout from function */
+	template<typename F>
+	timeout_t(time_t cur, time_t delta, F f) : _delta{delta}, _timebound{cur+delta}, _callback{f} { }
 
-	virtual bool call() = 0;
+	/* copy/update timeout with curent time */
+	timeout_t(timeout_t const & x, time_t cur) : _delta{x._delta}, _timebound{cur+x._delta}, _callback{x._callback} { }
+
+	/* copy timeout with curent time */
+	timeout_t(timeout_t const & x) : _delta{x._delta}, _timebound{x._timebound}, _callback{x._callback} { }
+
+
+	bool call() const { return _callback(); }
 
 	void renew(time_t cur) {
-		timebound = cur + delta;
+		_timebound = cur + _delta;
 	}
 
-	bool operator<(timeout_t const & x) {
-		return timebound < x.timebound;
+	bool operator>(timeout_t const & x) const {
+		return _timebound > x._timebound;
 	}
 
-	bool operator>(timeout_t const & x) {
-		return timebound > x.timebound;
-	}
-
-	bool operator<=(timeout_t const & x) {
-		return timebound <= x.timebound;
-	}
-
-	bool operator>=(timeout_t const & x) {
-		return timebound >= x.timebound;
-	}
-
-	time_t get_bound() {
-		return timebound;
-	}
-
-};
-
-
-template<typename T>
-class timeout_impl_t : public timeout_t {
-	T func;
-public:
-
-	virtual ~timeout_impl_t() { }
-
-	bool call() {
-		return func();
-	}
-
-	timeout_impl_t(T const & func, time_t cur, time_t delta) : timeout_t(cur, delta), func{func} {
-
+	time_t get_bound() const {
+		return _timebound;
 	}
 
 };
@@ -105,13 +71,9 @@ public:
 
 class mainloop_t {
 
-	struct _timeout_comp_t {
-		bool operator()(std::shared_ptr<timeout_t> const & x, std::shared_ptr<timeout_t> const & y) { return *x < *y; }
-	};
-
 	std::vector<struct pollfd> poll_list;
-	std::priority_queue<std::shared_ptr<timeout_t>, std::vector<std::shared_ptr<timeout_t>>, _timeout_comp_t> timeout_list;
-	std::map<int, std::shared_ptr<poll_callback_t>> poll_callback;
+	std::priority_queue<timeout_t, std::vector<timeout_t>, std::greater<timeout_t>> timeout_list;
+	std::map<int, poll_callback_t> poll_callback;
 
 	time_t curtime;
 
@@ -119,40 +81,29 @@ class mainloop_t {
 
 	void run_timeout() {
 		curtime.update_to_current_time();
-
-		while(not timeout_list.empty()) {
-			if(timeout_list.top()->get_bound() <= curtime) {
-				auto x = timeout_list.top();
-				timeout_list.pop();
-				if(x->call()) {
-					time_t cur;
-					cur.update_to_current_time();
-					x->renew(cur);
-					timeout_list.push(x);
-				}
-			} else {
+		while (not timeout_list.empty()) {
+			auto const & x = timeout_list.top();
+			if (x.get_bound() > curtime)
 				break;
+			if (x.call()) {
+				timeout_list.push(timeout_t{x, time_t::now()});
 			}
+			timeout_list.pop();
 		}
-
 	}
 
 	void run_poll_callback() {
 		for(auto & pfd: poll_list) {
 			if(pfd.revents != 0) {
-				poll_callback[pfd.fd]->call(pfd);
+				poll_callback[pfd.fd].call(pfd);
 			}
 		}
 	}
 
 	void update_poll_list() {
 		poll_list.clear();
-		for(auto & x: poll_callback) {
-			struct pollfd tmp;
-			tmp.fd = x.first;
-			tmp.events = x.second->events;
-			tmp.revents = 0;
-			poll_list.push_back(tmp);
+		for(auto const & x: poll_callback) {
+			poll_list.push_back(x.second.pfd());
 		}
 	}
 
@@ -170,7 +121,7 @@ public:
 			time_t wait = 1000000000L;
 			if(not timeout_list.empty()) {
 				auto const & next = timeout_list.top();
-				wait = next->get_bound() - curtime;
+				wait = next.get_bound() - curtime;
 			}
 
 			if(poll_list.size() > 0) {
@@ -187,17 +138,14 @@ public:
 	}
 
 	template<typename T>
-	std::weak_ptr<timeout_t> add_timeout(time_t timeout, T func) {
-		std::shared_ptr<timeout_impl_t<T>> x{new timeout_impl_t<T>(func, curtime, timeout)};
-		timeout_list.push(dynamic_pointer_cast<timeout_t>(x));
-		return x;
+	void add_timeout(time_t timeout, T func) {
+		timeout_list.push(timeout_t{time_t::now(), timeout, func});
 	}
 
 
 	template<typename T>
 	void add_poll(int fd, short events, T callback) {
-		std::shared_ptr<poll_callback_impl_t<T>> x{new poll_callback_impl_t<T>(callback, events)};
-		poll_callback[fd] = dynamic_pointer_cast<poll_callback_t>(x);
+		poll_callback[fd] = poll_callback_t{fd, events, callback};
 		update_poll_list();
 	}
 
