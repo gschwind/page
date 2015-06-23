@@ -227,8 +227,6 @@ page_t::~page_t() {
 	cnx->unload_cursors();
 
 	pat.reset();
-//	menu.reset();
-//	client_menu.reset();
 
 	for (auto i : filter_class<client_managed_t>(tree_t::get_all_children())) {
 		if (cnx->lock(i->orig())) {
@@ -930,7 +928,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					if (b->type == FLOATING_EVENT_CLOSE) {
 						mw->delete_window(e->time);
 					} else if (b->type == FLOATING_EVENT_BIND) {
-						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], b->position});
+						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, b->position});
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 						grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
 					} else {
@@ -965,7 +963,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 				grab_start(new grab_fullscreen_client_t{this, mw, e->detail, e->root_x, e->root_y});
 			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 					and (e->state & (XCB_MOD_MASK_1))) {
-				grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], i_rect{e->root_x-10, e->root_y-10, 20, 20}});
+				grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
 			}
 		}
 
@@ -4100,7 +4098,7 @@ void page_t::page_event_handler_notebook_client(page_event_t const & pev) {
 		return;
 	}
 
-	grab_start(new grab_bind_client_t{this, const_cast<client_managed_t*>(pev.clt), _desktop_list[_current_desktop], pev.position});
+	grab_start(new grab_bind_client_t{this, const_cast<client_managed_t*>(pev.clt), _desktop_list[_current_desktop], XCB_BUTTON_INDEX_1, pev.position});
 }
 
 void page_t::page_event_handler_notebook_client_close(page_event_t const & pev) {
@@ -4373,14 +4371,15 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	}
 }
 
-grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, i_rect const & pos) :
+grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, xcb_button_t button, i_rect const & pos) :
 		ctx{ctx},
 		c{c},
 		current_workspace{current},
 		start_position{pos},
 		target_notebook{nullptr},
 		zone{NOTEBOOK_AREA_NONE},
-		pn0{nullptr}
+		pn0{nullptr},
+		_button{button}
 {
 
 
@@ -4479,7 +4478,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 }
 
 void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
-	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3) {
+	if (e->detail == _button) {
 
 		_find_target_notebook(e->root_x, e->root_y, target_notebook, zone);
 

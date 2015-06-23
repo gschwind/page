@@ -85,6 +85,7 @@ class grab_bind_client_t : public grab_handler_t {
 	client_managed_t * c;
 
 	i_rect start_position;
+	xcb_button_t _button;
 	notebook_area_e zone;
 	notebook_t * target_notebook;
 	workspace_t * current_workspace;
@@ -94,7 +95,7 @@ class grab_bind_client_t : public grab_handler_t {
 
 public:
 
-	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, i_rect const & pos);
+	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, xcb_button_t button, i_rect const & pos);
 
 	virtual ~grab_bind_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
