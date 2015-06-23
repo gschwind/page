@@ -928,7 +928,10 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					if (b->type == FLOATING_EVENT_CLOSE) {
 						mw->delete_window(e->time);
 					} else if (b->type == FLOATING_EVENT_BIND) {
-						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, b->position});
+						i_rect absolute_position = b->position;
+						absolute_position.x += mw->base_position().x;
+						absolute_position.y += mw->base_position().y;
+						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, absolute_position});
 					} else if (b->type == FLOATING_EVENT_TITLE) {
 						grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
 					} else {
@@ -4483,6 +4486,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		_find_target_notebook(e->root_x, e->root_y, target_notebook, zone);
 
 		if(target_notebook == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
+			if(c->is(MANAGED_FLOATING)) {
+				ctx->insert_window_in_notebook(c, nullptr, true);
+			}
+
 			c->activate();
 			ctx->set_focus(c, e->time);
 			ctx->grab_stop();
