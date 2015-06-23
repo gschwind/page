@@ -195,7 +195,7 @@ struct dropdown_menu_overlay_t : public overlay_t {
 	}
 };
 
-template<typename TDATA, typename F>
+template<typename TDATA>
 class dropdown_menu_t : public grab_handler_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 
@@ -213,18 +213,16 @@ private:
 	bool active_grab;
 	xcb_button_t _button;
 
+	std::function<void(TDATA)> _callback;
+
 public:
 
-	// currently gcc fail to build this
-	//std::function<void(TDATA)> callback;
-
-	F callback;
-
+	template<typename F>
 	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, i_rect start_position, F f) :
 	_ctx{ctx},
 	_start_position{start_position},
 	_button{button},
-	callback{f}
+	_callback{f}
 
 	{
 
@@ -326,7 +324,7 @@ public:
 
 				if (pop->_position.is_inside(e->root_x, e->root_y)) {
 					update_cursor_position(e->root_x, e->root_y);
-					callback(get_selected());
+					_callback(get_selected());
 				}
 
 				_ctx->grab_stop();

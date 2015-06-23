@@ -878,17 +878,17 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 					client_managed_t * c = const_cast<client_managed_t*>(b->clt);
 					auto callback = [this, c] (int selected) -> void { this->process_notebook_client_menu(c, selected); };
 
-					std::vector<std::shared_ptr<dropdown_menu_t<int, decltype(callback)>::item_t>> v;
+					std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
 					for(unsigned k = 0; k < _desktop_list.size(); ++k) {
 						std::ostringstream os;
 						os << "Desktop #" << k;
-						v.push_back(std::make_shared<dropdown_menu_t<int, decltype(callback)>::item_t>(k, nullptr, os.str()));
+						v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
 					}
 
 					int x = e->root_x;
 					int y = e->root_y;
 
-					grab_start(new dropdown_menu_t<int, decltype(callback)>{this, v, e->detail, x, y, 300, b->position, callback});
+					grab_start(new dropdown_menu_t<int>{this, v, e->detail, x, y, 300, b->position, callback});
 				}
 			}
 		}
