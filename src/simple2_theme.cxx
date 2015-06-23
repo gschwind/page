@@ -700,15 +700,15 @@ void simple2_theme_t::render_notebook_selected(
 	xncclose.w = notebook.selected_close_width - 10;
 	xncclose.h = b.h - 4;
 
-	CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h+0.5));
+	CHECK_CAIRO(cairo_rectangle(cr, xncclose.x, xncclose.y, xncclose.w, xncclose.h));
 	CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
 	CHECK_CAIRO(cairo_fill(cr));
 
-	CHECK_CAIRO(cairo_new_path(cr));
-	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-	::cairo_set_source_rgb(cr, 0xcc/255.0*.5, 0x44/255.0*.5, 0.0);
-	cairo_stroke(cr);
+//	CHECK_CAIRO(cairo_new_path(cr));
+//	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+//	::cairo_set_source_rgb(cr, 0xcc/255.0*.5, 0x44/255.0*.5, 0.0);
+//	cairo_stroke(cr);
 
 	CHECK_CAIRO(cairo_new_path(cr));
 	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
@@ -718,11 +718,11 @@ void simple2_theme_t::render_notebook_selected(
 	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_stroke(cr);
 
-	CHECK_CAIRO(cairo_new_path(cr));
-	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_stroke(cr);
+//	CHECK_CAIRO(cairo_new_path(cr));
+//	CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+//	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+//	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//	cairo_stroke(cr);
 
 	CHECK_CAIRO(cairo_restore(cr));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
@@ -871,6 +871,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
+	/* draw application icon */
 	i_rect bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
