@@ -13,6 +13,7 @@
 #include <cmath>
 
 #include "split.hxx"
+#include "grab_handlers.hxx"
 
 namespace page {
 
@@ -339,5 +340,22 @@ void split_t::set_parent(page_component_t * t) {
 	_parent = t;
 }
 
+bool split_t::button_press(xcb_button_press_event_t const * e) {
+	if (e->event != get_window()) {
+		return tree_t::button_press(e);
+	}
+
+	if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
+		i_rect wp = get_window_postion();
+		int x = wp.x + e->event_x;
+		int y = wp.y + e->event_y;
+
+		if(_split_bar_area.is_inside(x, y)) {
+			_ctx->grab_start(new grab_split_t{_ctx, this});
+			return true;
+		}
+	}
+	return false;
+}
 
 }

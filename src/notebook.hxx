@@ -55,7 +55,7 @@ class notebook_t : public page_component_t {
 
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
 	std::shared_ptr<renderable_pixmap_t> _exposay;
-	std::vector<page_event_t> _exposay_event;
+	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_event;
 
 
 	mutable theme_notebook_t theme_notebook;
@@ -87,7 +87,14 @@ public:
 	i_rect button_close;
 	i_rect button_vsplit;
 	i_rect button_hsplit;
-	i_rect button_pop;
+	i_rect button_select;
+	i_rect button_exposay;
+
+	/* list of tabs and exposay buttons */
+	std::vector<std::tuple<i_rect, client_managed_t*>> _client_buttons;
+
+	i_rect close_client_area;
+	i_rect undck_client_area;
 
 	i_rect tab_area;
 	i_rect top_area;
@@ -101,14 +108,15 @@ public:
 	i_rect popup_right_area;
 	i_rect popup_center_area;
 
-	i_rect close_client_area;
-	i_rect undck_client_area;
-
 	void set_selected(client_managed_t * c);
 
 	void update_client_position(client_managed_t * c);
 
 	void start_fading();
+
+	void _update_notebook_areas();
+
+	void process_notebook_client_menu(client_managed_t * c, int selected);
 
 public:
 	notebook_t(page_context_t * ctx, bool keep_selected);
@@ -187,8 +195,6 @@ public:
 	i_rect compute_notebook_close_position() const;
 	i_rect compute_notebook_menu_position() const;
 
-	void compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const;
-
 	i_rect allocation() const {
 		return _allocation;
 	}
@@ -237,6 +243,8 @@ public:
 	}
 
 	void start_exposay();
+
+	virtual bool button_press(xcb_button_press_event_t const * ev);
 
 };
 

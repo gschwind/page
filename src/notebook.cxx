@@ -7,7 +7,10 @@
  *
  */
 
+#include "desktop.hxx"
 #include "notebook.hxx"
+#include "dropdown_menu.hxx"
+#include "grab_handlers.hxx"
 
 namespace page {
 
@@ -277,6 +280,8 @@ void notebook_t::set_allocation(i_rect const & area) {
 		start_exposay();
 	}
 
+	_update_notebook_areas();
+
 }
 
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
@@ -488,46 +493,14 @@ i_rect notebook_t::compute_notebook_menu_position() const {
 
 }
 
+void notebook_t::_update_notebook_areas() {
+	_client_buttons.clear();
 
-void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const {
-
-	{
-		page_event_t nc{PAGE_EVENT_NOTEBOOK_CLOSE};
-		nc.position = compute_notebook_close_position();
-		nc.position.x -= x_offset;
-		nc.position.y -= y_offset;
-		nc.nbk = this;
-		l->push_back(nc);
-
-		page_event_t nhs{PAGE_EVENT_NOTEBOOK_HSPLIT};
-		nhs.position = compute_notebook_hsplit_position();
-		nhs.position.x -= x_offset;
-		nhs.position.y -= y_offset;
-		nhs.nbk = this;
-		l->push_back(nhs);
-
-		page_event_t nvs{PAGE_EVENT_NOTEBOOK_VSPLIT};
-		nvs.position = compute_notebook_vsplit_position();
-		nvs.position.x -= x_offset;
-		nvs.position.y -= y_offset;
-		nvs.nbk = this;
-		l->push_back(nvs);
-
-		page_event_t nm{PAGE_EVENT_NOTEBOOK_MARK};
-		nm.position = compute_notebook_bookmark_position();
-		nm.position.x -= x_offset;
-		nm.position.y -= y_offset;
-		nm.nbk = this;
-		l->push_back(nm);
-
-		page_event_t nmn{PAGE_EVENT_NOTEBOOK_MENU};
-		nmn.position = compute_notebook_menu_position();
-		nmn.position.x -= x_offset;
-		nmn.position.y -= y_offset;
-		nmn.nbk = this;
-		l->push_back(nmn);
-
-	}
+	button_close = compute_notebook_close_position();
+	button_hsplit = compute_notebook_hsplit_position();
+	button_vsplit = compute_notebook_vsplit_position();
+	button_select = compute_notebook_bookmark_position();
+	button_exposay = compute_notebook_menu_position();
 
 	if(_clients.size() > 0) {
 
@@ -535,56 +508,140 @@ void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x
 			i_rect & b = theme_notebook.selected_client->position;
 
 			if (not _selected->is_iconic()) {
-				page_event_t ncclose { PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE };
 
-				ncclose.position.x = b.x + b.w
+				close_client_area.x = b.x + b.w
 						- _ctx->theme()->notebook.selected_close_width;
-				ncclose.position.y = b.y;
-				ncclose.position.w =
+				close_client_area.y = b.y;
+				close_client_area.w =
 						_ctx->theme()->notebook.selected_close_width;
-				ncclose.position.h = _ctx->theme()->notebook.tab_height;
-				ncclose.nbk = this;
-				ncclose.clt = _selected;
-				l->push_back(ncclose);
+				close_client_area.h = _ctx->theme()->notebook.tab_height;
 
-				page_event_t ncub { PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND };
-
-				ncub.position.x = b.x + b.w
+				undck_client_area.x = b.x + b.w
 						- _ctx->theme()->notebook.selected_close_width
 						- _ctx->theme()->notebook.selected_unbind_width;
-				ncub.position.y = b.y;
-				ncub.position.w = _ctx->theme()->notebook.selected_unbind_width;
-				ncub.position.h = _ctx->theme()->notebook.tab_height;
-				ncub.nbk = this;
-				ncub.clt = _selected;
-				l->push_back(ncub);
+				undck_client_area.y = b.y;
+				undck_client_area.w = _ctx->theme()->notebook.selected_unbind_width;
+				undck_client_area.h = _ctx->theme()->notebook.tab_height;
 
 			}
 
-			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-			nc.position = b;
-			nc.nbk = this;
-			nc.clt = _selected;
-			l->push_back(nc);
+			_client_buttons.push_back(std::make_tuple(b, _selected));
 
+		} else {
+			close_client_area = i_rect{};
+			undck_client_area = i_rect{};
 		}
 
 		auto c = _clients.begin();
 		for (auto const & tab: theme_notebook.clients_tab) {
-			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-			nc.position = tab->position;
-			nc.nbk = this;
-			nc.clt = *c;
-			l->push_back(nc);
+			_client_buttons.push_back(std::make_tuple(tab->position, *c));
 			++c;
 		}
 
 	}
 
 	if(_exposay != nullptr) {
-		l->insert(l->end(), _exposay_event.begin(), _exposay_event.end());
+		_client_buttons.insert(_client_buttons.end(), _exposay_event.begin(), _exposay_event.end());
 	}
+
 }
+//
+//void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const {
+//
+//	{
+//		page_event_t nc{PAGE_EVENT_NOTEBOOK_CLOSE};
+//		nc.position = compute_notebook_close_position();
+//		nc.position.x -= x_offset;
+//		nc.position.y -= y_offset;
+//		nc.nbk = this;
+//		l->push_back(nc);
+//
+//		page_event_t nhs{PAGE_EVENT_NOTEBOOK_HSPLIT};
+//		nhs.position = compute_notebook_hsplit_position();
+//		nhs.position.x -= x_offset;
+//		nhs.position.y -= y_offset;
+//		nhs.nbk = this;
+//		l->push_back(nhs);
+//
+//		page_event_t nvs{PAGE_EVENT_NOTEBOOK_VSPLIT};
+//		nvs.position = compute_notebook_vsplit_position();
+//		nvs.position.x -= x_offset;
+//		nvs.position.y -= y_offset;
+//		nvs.nbk = this;
+//		l->push_back(nvs);
+//
+//		page_event_t nm{PAGE_EVENT_NOTEBOOK_MARK};
+//		nm.position = compute_notebook_bookmark_position();
+//		nm.position.x -= x_offset;
+//		nm.position.y -= y_offset;
+//		nm.nbk = this;
+//		l->push_back(nm);
+//
+//		page_event_t nmn{PAGE_EVENT_NOTEBOOK_MENU};
+//		nmn.position = compute_notebook_menu_position();
+//		nmn.position.x -= x_offset;
+//		nmn.position.y -= y_offset;
+//		nmn.nbk = this;
+//		l->push_back(nmn);
+//
+//	}
+//
+//	if(_clients.size() > 0) {
+//
+//		if(_selected != nullptr) {
+//			i_rect & b = theme_notebook.selected_client->position;
+//
+//			if (not _selected->is_iconic()) {
+//				page_event_t ncclose { PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE };
+//
+//				ncclose.position.x = b.x + b.w
+//						- _ctx->theme()->notebook.selected_close_width;
+//				ncclose.position.y = b.y;
+//				ncclose.position.w =
+//						_ctx->theme()->notebook.selected_close_width;
+//				ncclose.position.h = _ctx->theme()->notebook.tab_height;
+//				ncclose.nbk = this;
+//				ncclose.clt = _selected;
+//				l->push_back(ncclose);
+//
+//				page_event_t ncub { PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND };
+//
+//				ncub.position.x = b.x + b.w
+//						- _ctx->theme()->notebook.selected_close_width
+//						- _ctx->theme()->notebook.selected_unbind_width;
+//				ncub.position.y = b.y;
+//				ncub.position.w = _ctx->theme()->notebook.selected_unbind_width;
+//				ncub.position.h = _ctx->theme()->notebook.tab_height;
+//				ncub.nbk = this;
+//				ncub.clt = _selected;
+//				l->push_back(ncub);
+//
+//			}
+//
+//			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
+//			nc.position = b;
+//			nc.nbk = this;
+//			nc.clt = _selected;
+//			l->push_back(nc);
+//
+//		}
+//
+//		auto c = _clients.begin();
+//		for (auto const & tab: theme_notebook.clients_tab) {
+//			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
+//			nc.position = tab->position;
+//			nc.nbk = this;
+//			nc.clt = *c;
+//			l->push_back(nc);
+//			++c;
+//		}
+//
+//	}
+//
+//	if(_exposay != nullptr) {
+//		l->insert(l->end(), _exposay_event.begin(), _exposay_event.end());
+//	}
+//}
 
 void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
 	for(auto x: _children) {
@@ -796,13 +853,7 @@ void notebook_t::start_exposay() {
 
 		auto c = *it;
 
-		{
-			page_event_t nc { PAGE_EVENT_NOTEBOOK_CLIENT };
-			nc.position = pdst;
-			nc.nbk = this;
-			nc.clt = c;
-			_exposay_event.push_back(nc);
-		}
+		_exposay_event.push_back(std::make_tuple(pdst, c));
 
 		theme_thumbnail_t t;
 		t.pix = c->get_last_pixmap();
@@ -819,6 +870,107 @@ void notebook_t::start_exposay() {
 
 }
 
+bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
+	if (e->event != get_window()) {
+		return tree_t::button_press(e);
+	}
+
+	/* left click on page window */
+	if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
+		i_rect wp = get_window_postion();
+		int x = wp.x + e->event_x;
+		int y = wp.y + e->event_y;
+
+		if (button_close.is_inside(x, y)) {
+			_ctx->notebook_close(this);
+			return true;
+		} else if (button_hsplit.is_inside(x, y)) {
+			_ctx->split(this, HORIZONTAL_SPLIT);
+			return true;
+		} else if (button_vsplit.is_inside(x, y)) {
+			_ctx->split(this, VERTICAL_SPLIT);
+			return true;
+		} else if (button_select.is_inside(x, y)) {
+			_ctx->get_current_workspace()->set_default_pop(this);
+			return true;
+		} else if (button_exposay.is_inside(x, y)) {
+			start_exposay();
+			return true;
+		} else if (close_client_area.is_inside(x, y)) {
+			if(_selected != nullptr)
+				_selected->delete_window(e->time);
+			return true;
+		} else if (undck_client_area.is_inside(x, y)) {
+			if (_selected != nullptr)
+				_ctx->unbind_window(_selected);
+			return true;
+		} else {
+			for(auto & i: _client_buttons) {
+				if(std::get<0>(i).is_inside(x, y)) {
+					client_managed_t * c = std::get<1>(i);
+					_ctx->grab_start(new grab_bind_client_t{_ctx, c, _ctx->get_current_workspace(), XCB_BUTTON_INDEX_1, std::get<0>(i)});
+					return true;
+				}
+			}
+		}
+
+	/* rigth click on page */
+	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_3) {
+		i_rect wp = get_window_postion();
+		int x = wp.x + e->event_x;
+		int y = wp.y + e->event_y;
+
+		if (button_close.is_inside(x, y)) {
+			return false;
+		} else if (button_hsplit.is_inside(x, y)) {
+			return false;
+		} else if (button_vsplit.is_inside(x, y)) {
+			return false;
+		} else if (button_select.is_inside(x, y)) {
+			return false;
+		} else if (button_exposay.is_inside(x, y)) {
+			return false;
+		} else if (close_client_area.is_inside(x, y)) {
+			return false;
+		} else if (undck_client_area.is_inside(x, y)) {
+			return false;
+		} else {
+			for(auto & i: _client_buttons) {
+				if(std::get<0>(i).is_inside(x, y)) {
+					client_managed_t * c = std::get<1>(i);
+					auto callback = [this, c] (int selected) -> void { this->process_notebook_client_menu(c, selected); };
+
+					std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
+					for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
+						std::ostringstream os;
+						os << "Desktop #" << k;
+						v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
+					}
+
+					int x = e->root_x;
+					int y = e->root_y;
+
+					_ctx->grab_start(new dropdown_menu_t<int>{_ctx, v, e->detail, x, y, 300, std::get<0>(i), callback});
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+void notebook_t::process_notebook_client_menu(client_managed_t * c, int selected) {
+	printf("Change desktop %d for %u\n", selected, c->orig());
+	if (selected != _ctx->get_current_workspace()->id()) {
+		_ctx->mark_durty(c);
+		_ctx->detach(c);
+		c->set_parent(nullptr);
+		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
+		c->set_current_desktop(selected);
+		_ctx->mark_durty(c);
+	}
+}
 
 }

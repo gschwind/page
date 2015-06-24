@@ -497,6 +497,10 @@ public:
 
 	}
 
+	xcb_window_t get_window() {
+		return _properties->id();
+	}
+
 };
 
 }

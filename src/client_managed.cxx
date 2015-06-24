@@ -19,6 +19,7 @@
 #include "client_managed.hxx"
 #include "notebook.hxx"
 #include "utils.hxx"
+#include "grab_handlers.hxx"
 
 namespace page {
 
@@ -1210,6 +1211,94 @@ void client_managed_t::activate(tree_t * t) {
 	if(is_iconic()) {
 		normalize();
 	}
+}
+
+bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
+
+	if (not has_window(e->event)) {
+		return tree_t::button_press(e);
+	}
+
+	if (is(MANAGED_FLOATING)
+			and e->detail == XCB_BUTTON_INDEX_3
+			and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
+
+		if ((e->state & XCB_MOD_MASK_CONTROL)) {
+			_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
+		} else {
+			_ctx->grab_start(new grab_floating_move_t{_ctx, this, e->detail, e->root_x, e->root_y});
+		}
+
+		return true;
+	} else if (is(MANAGED_FLOATING)
+			and e->detail == XCB_BUTTON_INDEX_1
+			and e->child != orig()
+			and e->event == deco()) {
+
+		auto const * l = floating_areas();
+		floating_event_t const * b = nullptr;
+		for (auto &i : (*l)) {
+			if(i.position.is_inside(e->event_x, e->event_y)) {
+				b = &i;
+				break;
+			}
+		}
+
+		if (b != nullptr) {
+
+			if (b->type == FLOATING_EVENT_CLOSE) {
+				delete_window(e->time);
+			} else if (b->type == FLOATING_EVENT_BIND) {
+				i_rect absolute_position = b->position;
+				absolute_position.x += base_position().x;
+				absolute_position.y += base_position().y;
+				_ctx->grab_start(new grab_bind_client_t{_ctx, this, _ctx->get_current_workspace(), e->detail, absolute_position});
+			} else if (b->type == FLOATING_EVENT_TITLE) {
+				_ctx->grab_start(new grab_floating_move_t{_ctx, this, e->detail, e->root_x, e->root_y});
+			} else {
+				if (b->type == FLOATING_EVENT_GRIP_TOP) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_TOP});
+				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM});
+				} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_LEFT});
+				} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_RIGHT});
+				} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT});
+				} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT});
+				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT});
+				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
+					_ctx->grab_start(new grab_floating_resize_t{_ctx, this, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
+				} else {
+					_ctx->grab_start(new grab_floating_move_t{_ctx, this, e->detail, e->root_x, e->root_y});
+				}
+			}
+
+			return true;
+
+		}
+
+	} else if (is(MANAGED_FULLSCREEN)
+			and e->detail == (XCB_BUTTON_INDEX_3)
+			and (e->state & (XCB_MOD_MASK_1))) {
+		//fprintf(stderr, "start FULLSCREEN MOVE\n");
+		/** start moving fullscreen window **/
+		_ctx->grab_start(new grab_fullscreen_client_t{_ctx, this, e->detail, e->root_x, e->root_y});
+		return true;
+	} else if (is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
+			and (e->state & (XCB_MOD_MASK_1))) {
+		_ctx->grab_start(new grab_bind_client_t{_ctx, this, _ctx->get_current_workspace(), e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
+		return true;
+	}
+
+	return false;
+}
+
+xcb_window_t client_managed_t::get_window() {
+	return _base;
 }
 
 }

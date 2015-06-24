@@ -257,6 +257,11 @@ public:
 
 	void activate(tree_t * t = nullptr);
 
+	virtual bool button_press(xcb_button_press_event_t const * ev);
+
+	xcb_window_t get_window();
+
+
 };
 
 }

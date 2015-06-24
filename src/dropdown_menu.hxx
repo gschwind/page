@@ -39,8 +39,8 @@ class dropdown_menu_entry_t {
 
 	TDATA const _data;
 
-	dropdown_menu_entry_t(cycle_window_entry_t const &);
-	dropdown_menu_entry_t & operator=(cycle_window_entry_t const &);
+	dropdown_menu_entry_t(dropdown_menu_entry_t const &);
+	dropdown_menu_entry_t & operator=(dropdown_menu_entry_t const &);
 
 public:
 	dropdown_menu_entry_t(TDATA data, std::shared_ptr<icon16> icon, std::string label) :

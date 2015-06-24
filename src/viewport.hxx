@@ -336,6 +336,13 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
+	xcb_window_t get_window() {
+		return _win;
+	}
+
+	i_rect get_window_position() {
+		return _effective_area;
+	}
 
 };
 

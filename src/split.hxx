@@ -79,6 +79,8 @@ public:
 	void show();
 	void get_visible_children(std::vector<tree_t *> & out);
 
+	bool button_press(xcb_button_press_event_t const * ev);
+
 };
 
 }

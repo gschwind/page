@@ -37,6 +37,7 @@ page_SOURCES = \
 	tiny_theme.cxx \
 	client_managed.cxx \
 	client_not_managed.cxx \
+	grab_handlers.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
 	leak_checker.cxx

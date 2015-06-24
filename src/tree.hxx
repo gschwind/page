@@ -79,7 +79,50 @@ public:
 	 **/
 	virtual auto prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) -> void = 0;
 
+	/**
+	 * make the component active.
+	 **/
 	virtual void activate(tree_t * t = nullptr) = 0;
+
+
+	virtual bool button_press(xcb_button_press_event_t const * ev) {
+		for(auto x: tree_t::children()) {
+			if(x->button_press(ev))
+				return true;
+		}
+		return false;
+	}
+
+	virtual bool button_release(xcb_button_release_event_t const * ev) {
+		for(auto x: tree_t::children()) {
+			if(x->button_release(ev))
+				return true;
+		}
+		return false;
+	}
+
+	virtual bool button_motion(xcb_motion_notify_event_t const * ev) {
+		for(auto x: tree_t::children()) {
+			if(x->button_motion(ev))
+				return true;
+		}
+		return false;
+	}
+
+	virtual xcb_window_t get_window() {
+		if(parent() != nullptr)
+			return parent()->get_window();
+		else
+			return XCB_WINDOW_NONE;
+	}
+
+	virtual i_rect get_window_postion() {
+		if(parent() != nullptr)
+			return parent()->get_window_postion();
+		else
+			return i_rect{};
+	}
+
 
 	/**
 	 * Useful template to generate node name.
