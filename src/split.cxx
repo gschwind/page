@@ -339,21 +339,15 @@ void split_t::set_parent(page_component_t * t) {
 }
 
 bool split_t::button_press(xcb_button_press_event_t const * e) {
-	if (e->event != get_window()) {
+	if (e->event == get_window()
+			and e->child == XCB_NONE
+			and e->detail == XCB_BUTTON_INDEX_1
+			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
+		_ctx->grab_start(new grab_split_t { _ctx, this });
+		return true;
+	} else {
 		return tree_t::button_press(e);
 	}
-
-	if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
-		i_rect wp = get_window_postion();
-		int x = wp.x + e->event_x;
-		int y = wp.y + e->event_y;
-
-		if(_split_bar_area.is_inside(x, y)) {
-			_ctx->grab_start(new grab_split_t{_ctx, this});
-			return true;
-		}
-	}
-	return false;
 }
 
 }
