@@ -179,7 +179,7 @@ public:
 	void raise_child(tree_t * t = nullptr);
 	void activate(tree_t * t = nullptr);
 	std::string get_node_name() const;
-	void render_legacy(cairo_t * cr, int x_offset, int y_offset) const;
+	void render_legacy(cairo_t * cr) const;
 	void render(cairo_t * cr, time_t time);
 	bool need_render(time_t time);
 
@@ -205,7 +205,7 @@ public:
 
 	void get_all_children(std::vector<tree_t *> & out) const;
 
-	void update_theme_notebook(int x_offset, int y_offset) const;
+	void update_theme_notebook() const;
 
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());

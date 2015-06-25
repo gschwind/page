@@ -215,15 +215,13 @@ void split_t::compute_split_size(double split, int & w, int & h) const {
 	}
 }
 
-void split_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
+void split_t::render_legacy(cairo_t * cr) const {
 	theme_split_t ts;
 	ts.split = _ratio;
 	ts.type = _type;
 	ts.allocation = compute_split_bar_location();
-	ts.allocation.x -= x_offset;
-	ts.allocation.y -= y_offset;
-	ts.root_x = x_offset;
-	ts.root_y = y_offset;
+	ts.root_x = get_window_postion().x;
+	ts.root_y = get_window_postion().y;
 	_ctx->theme()->render_split(cr, &ts);
 }
 

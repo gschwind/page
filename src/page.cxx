@@ -1880,7 +1880,7 @@ void page_t::notebook_close(notebook_t * nbk) {
 void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 	/* Partial struct content definition */
-	enum {
+	enum : uint32_t {
 		PS_LEFT = 0,
 		PS_RIGHT = 1,
 		PS_TOP = 2,
@@ -1893,6 +1893,7 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 		PS_TOP_END_X = 9,
 		PS_BOTTOM_START_X = 10,
 		PS_BOTTOM_END_X = 11,
+		PS_LAST = 12
 	};
 
 	i_rect const raw_area = v->raw_area();
@@ -1904,7 +1905,7 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 	auto children = filter_class<client_base_t>(d->tree_t::get_all_children());
 	for(auto j: children) {
-		int32_t ps[12];
+		int32_t ps[PS_LAST];
 		bool has_strut{false};
 
 		if(j->net_wm_strut_partial() != nullptr) {

@@ -109,14 +109,14 @@ public:
 		return false;
 	}
 
-	virtual xcb_window_t get_window() {
+	virtual xcb_window_t get_window() const {
 		if(parent() != nullptr)
 			return parent()->get_window();
 		else
 			return XCB_WINDOW_NONE;
 	}
 
-	virtual i_rect get_window_postion() {
+	virtual i_rect get_window_postion() const {
 		if(parent() != nullptr)
 			return parent()->get_window_postion();
 		else

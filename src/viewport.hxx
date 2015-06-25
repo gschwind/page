@@ -274,12 +274,12 @@ public:
 
 		auto splits = filter_class<split_t>(tree_t::get_all_children());
 		for (auto x : splits) {
-			x->render_legacy(cr, _effective_area.x, _effective_area.y);
+			x->render_legacy(cr);
 		}
 
 		auto notebooks = filter_class<notebook_t>(tree_t::get_all_children());
 		for (auto x : notebooks) {
-			x->render_legacy(cr, _effective_area.x, _effective_area.y);
+			x->render_legacy(cr);
 		}
 
 		cairo_surface_flush(_back_surf);
@@ -336,11 +336,11 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
-	xcb_window_t get_window() {
+	xcb_window_t get_window() const {
 		return _win;
 	}
 
-	i_rect get_window_position() {
+	i_rect get_window_position() const {
 		return _effective_area;
 	}
 

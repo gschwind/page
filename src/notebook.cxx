@@ -367,8 +367,8 @@ std::string notebook_t::get_node_name() const {
 	return oss.str();
 }
 
-void notebook_t::render_legacy(cairo_t * cr, int x_offset, int y_offset) const {
-	update_theme_notebook(x_offset, y_offset);
+void notebook_t::render_legacy(cairo_t * cr) const {
+	update_theme_notebook();
 	_ctx->theme()->render_notebook(cr, &theme_notebook);
 }
 
@@ -494,6 +494,9 @@ i_rect notebook_t::compute_notebook_menu_position() const {
 }
 
 void notebook_t::_update_notebook_areas() {
+
+	update_theme_notebook();
+
 	_client_buttons.clear();
 
 	button_close = compute_notebook_close_position();
@@ -545,103 +548,7 @@ void notebook_t::_update_notebook_areas() {
 	}
 
 }
-//
-//void notebook_t::compute_areas_for_notebook(std::vector<page_event_t> * l, int x_offset, int y_offset) const {
-//
-//	{
-//		page_event_t nc{PAGE_EVENT_NOTEBOOK_CLOSE};
-//		nc.position = compute_notebook_close_position();
-//		nc.position.x -= x_offset;
-//		nc.position.y -= y_offset;
-//		nc.nbk = this;
-//		l->push_back(nc);
-//
-//		page_event_t nhs{PAGE_EVENT_NOTEBOOK_HSPLIT};
-//		nhs.position = compute_notebook_hsplit_position();
-//		nhs.position.x -= x_offset;
-//		nhs.position.y -= y_offset;
-//		nhs.nbk = this;
-//		l->push_back(nhs);
-//
-//		page_event_t nvs{PAGE_EVENT_NOTEBOOK_VSPLIT};
-//		nvs.position = compute_notebook_vsplit_position();
-//		nvs.position.x -= x_offset;
-//		nvs.position.y -= y_offset;
-//		nvs.nbk = this;
-//		l->push_back(nvs);
-//
-//		page_event_t nm{PAGE_EVENT_NOTEBOOK_MARK};
-//		nm.position = compute_notebook_bookmark_position();
-//		nm.position.x -= x_offset;
-//		nm.position.y -= y_offset;
-//		nm.nbk = this;
-//		l->push_back(nm);
-//
-//		page_event_t nmn{PAGE_EVENT_NOTEBOOK_MENU};
-//		nmn.position = compute_notebook_menu_position();
-//		nmn.position.x -= x_offset;
-//		nmn.position.y -= y_offset;
-//		nmn.nbk = this;
-//		l->push_back(nmn);
-//
-//	}
-//
-//	if(_clients.size() > 0) {
-//
-//		if(_selected != nullptr) {
-//			i_rect & b = theme_notebook.selected_client->position;
-//
-//			if (not _selected->is_iconic()) {
-//				page_event_t ncclose { PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE };
-//
-//				ncclose.position.x = b.x + b.w
-//						- _ctx->theme()->notebook.selected_close_width;
-//				ncclose.position.y = b.y;
-//				ncclose.position.w =
-//						_ctx->theme()->notebook.selected_close_width;
-//				ncclose.position.h = _ctx->theme()->notebook.tab_height;
-//				ncclose.nbk = this;
-//				ncclose.clt = _selected;
-//				l->push_back(ncclose);
-//
-//				page_event_t ncub { PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND };
-//
-//				ncub.position.x = b.x + b.w
-//						- _ctx->theme()->notebook.selected_close_width
-//						- _ctx->theme()->notebook.selected_unbind_width;
-//				ncub.position.y = b.y;
-//				ncub.position.w = _ctx->theme()->notebook.selected_unbind_width;
-//				ncub.position.h = _ctx->theme()->notebook.tab_height;
-//				ncub.nbk = this;
-//				ncub.clt = _selected;
-//				l->push_back(ncub);
-//
-//			}
-//
-//			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-//			nc.position = b;
-//			nc.nbk = this;
-//			nc.clt = _selected;
-//			l->push_back(nc);
-//
-//		}
-//
-//		auto c = _clients.begin();
-//		for (auto const & tab: theme_notebook.clients_tab) {
-//			page_event_t nc{PAGE_EVENT_NOTEBOOK_CLIENT};
-//			nc.position = tab->position;
-//			nc.nbk = this;
-//			nc.clt = *c;
-//			l->push_back(nc);
-//			++c;
-//		}
-//
-//	}
-//
-//	if(_exposay != nullptr) {
-//		l->insert(l->end(), _exposay_event.begin(), _exposay_event.end());
-//	}
-//}
+
 
 void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
 	for(auto x: _children) {
@@ -650,14 +557,12 @@ void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
 	}
 }
 
-void notebook_t::update_theme_notebook(int x_offset, int y_offset) const {
+void notebook_t::update_theme_notebook() const {
 	theme_notebook.clients_tab.clear();
 	i_rect allocation{_allocation};
-	allocation.x -= x_offset;
-	allocation.y -= y_offset;
 
-	theme_notebook.root_x = x_offset;
-	theme_notebook.root_y = y_offset;
+	theme_notebook.root_x = get_window_postion().x;
+	theme_notebook.root_y = get_window_postion().y;
 
 	if (_clients.size() != 0) {
 		double selected_box_width = (allocation.w
@@ -737,7 +642,7 @@ void notebook_t::start_fading() {
 
 	swap_start.update_to_current_time();
 
-	update_theme_notebook(_allocation.x, _allocation.y);
+	update_theme_notebook();
 
 	auto pix = _ctx->cmp()->create_composite_pixmap(_allocation.w, _allocation.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
@@ -783,7 +688,7 @@ void notebook_t::start_exposay() {
 
 	_exposay_event.clear();
 
-	update_theme_notebook(client_area.x, client_area.y);
+	update_theme_notebook();
 
 	auto pix = _ctx->cmp()->create_composite_pixmap(client_area.w, client_area.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
@@ -878,9 +783,8 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
 	/* left click on page window */
 	if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
-		i_rect wp = get_window_postion();
-		int x = wp.x + e->event_x;
-		int y = wp.y + e->event_y;
+		int x = e->event_x;
+		int y = e->event_y;
 
 		if (button_close.is_inside(x, y)) {
 			_ctx->notebook_close(this);
