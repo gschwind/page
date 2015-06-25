@@ -70,29 +70,6 @@ page_t::page_t(int argc, char ** argv)
 
 	_grab_handler = nullptr;
 
-	/* initialize page event handler functions */
-	_page_event_press_handler[PAGE_EVENT_NONE] =
-			&page_t::page_event_handler_nop;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT] =
-			&page_t::page_event_handler_notebook_client;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT_CLOSE] =
-			&page_t::page_event_handler_notebook_client_close;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLIENT_UNBIND] =
-			&page_t::page_event_handler_notebook_client_unbind;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_CLOSE] =
-			&page_t::page_event_handler_notebook_close;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_VSPLIT] =
-			&page_t::page_event_handler_notebook_vsplit;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_HSPLIT] =
-			&page_t::page_event_handler_notebook_hsplit;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_MARK] =
-			&page_t::page_event_handler_notebook_mark;
-	_page_event_press_handler[PAGE_EVENT_NOTEBOOK_MENU] =
-			&page_t::page_event_handler_notebook_menu;
-	_page_event_press_handler[PAGE_EVENT_SPLIT] =
-			&page_t::page_event_handler_split;
-
-
 	identity_window = XCB_NONE;
 	cmgr = nullptr;
 
@@ -1361,15 +1338,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 
 		if (mw != nullptr) {
 			mw->update_title();
-
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				notebook_t * n = find_parent_notebook_for(mw);
-				mark_durty(n);
-			}
-
-			if (mw->is(MANAGED_FLOATING) or mw->is(MANAGED_DOCK)) {
-				mw->expose();
-			}
+			mw->queue_redraw();
 		}
 
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
@@ -1773,6 +1742,7 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 	notebook_t * n = new notebook_t{this, _auto_refocus};
 	split->set_pack0(nbk);
 	split->set_pack1(n);
+	split->queue_redraw();
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
@@ -1785,6 +1755,7 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_workarea();
+	split->queue_redraw();
 }
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
@@ -1797,6 +1768,7 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_workarea();
+	split->queue_redraw();
 }
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
@@ -1809,6 +1781,7 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_workarea();
+	split->queue_redraw();
 }
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
@@ -1821,6 +1794,7 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	detach(c);
 	insert_window_in_notebook(c, n, true);
 	update_workarea();
+	split->queue_redraw();
 }
 
 void page_t::notebook_close(notebook_t * nbk) {
@@ -1828,6 +1802,8 @@ void page_t::notebook_close(notebook_t * nbk) {
 	 * Closing notebook mean destroying the split base of this
 	 * notebook, plus this notebook.
 	 **/
+
+	nbk->queue_redraw();
 
 	split_t * splt = dynamic_cast<split_t *>(nbk->parent());
 
@@ -2191,15 +2167,15 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->set_demands_attention(false);
-				mark_durty(mw);
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_ADD:
 				mw->set_demands_attention(true);
-				mark_durty(mw);
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				mw->set_demands_attention(not mw->demands_attention());
-				mark_durty(mw);
+				mw->queue_redraw();
 				break;
 			default:
 				break;
@@ -2423,7 +2399,6 @@ void page_t::bind_window(client_managed_t * mw, bool activate) {
 		safe_raise_window(mw);
 	}
 	_need_update_client_list = true;
-	mark_durty(mw);
 }
 
 void page_t::unbind_window(client_managed_t * mw) {
@@ -2441,73 +2416,10 @@ void page_t::unbind_window(client_managed_t * mw) {
 }
 
 void page_t::cleanup_grab(client_managed_t * mw) {
-
 	if(_grab_handler != nullptr) {
 		delete _grab_handler;
 		_grab_handler = nullptr;
 	}
-
-//	switch (process_mode) {
-//	case PROCESS_NORMAL:
-//		break;
-//
-//	case PROCESS_NOTEBOOK_GRAB:
-//	case PROCESS_NOTEBOOK_BUTTON_PRESS:
-//
-////		if (mode_data_notebook.c == mw) {
-////			mode_data_notebook.reset();
-////			mode_data_notebook.c = nullptr;
-////		}
-//		break;
-//
-//	case PROCESS_FLOATING_MOVE:
-//	case PROCESS_FLOATING_RESIZE:
-//	case PROCESS_FLOATING_CLOSE:
-//	case PROCESS_FLOATING_MOVE_BY_CLIENT:
-//	case PROCESS_FLOATING_RESIZE_BY_CLIENT:
-//		if (mode_data_floating.f == mw) {
-//			process_mode = PROCESS_NORMAL;
-//			mode_data_floating.reset();
-//			pfm = nullptr;
-//		}
-//		break;
-//
-//	case PROCESS_FLOATING_BIND:
-//		if (mode_data_bind.c == mw) {
-//			process_mode = PROCESS_NORMAL;
-////			mode_data_bind.reset();
-////			if (pn0 != nullptr)
-////				pn0 = nullptr;
-//		}
-//		break;
-//	case PROCESS_SPLIT_GRAB:
-//		break;
-//	case PROCESS_FULLSCREEN_MOVE:
-//		if(mode_data_fullscreen.mw == mw) {
-//			process_mode = PROCESS_NORMAL;
-////			mode_data_fullscreen.reset();
-////			if(pn0 != nullptr)
-////				pn0 = nullptr;
-//		}
-//		break;
-//	case PROCESS_NOTEBOOK_MENU:
-//		process_mode = PROCESS_NORMAL;
-//		add_compositor_damaged(menu->get_visible_region());
-//		menu.reset();
-//		mode_data_notebook_menu.reset();
-//		break;
-//	case PROCESS_NOTEBOOK_CLIENT_MENU:
-//		if (mode_data_notebook_client_menu.client == mw) {
-//			if (mode_data_notebook_client_menu.active_grab) {
-//				xcb_ungrab_pointer(cnx->xcb(), XCB_CURRENT_TIME);
-//			}
-//			add_compositor_damaged(client_menu->get_visible_region());
-//			client_menu.reset();
-//			process_mode = PROCESS_NORMAL;
-//			mode_data_notebook_client_menu.reset();
-//		}
-//		break;
-//	}
 }
 
 /* look for a notebook in tree base, that is deferent from nbk */
@@ -3983,18 +3895,6 @@ void page_t::process_button_release_normal(xcb_generic_event_t const * _e) {
 	}
 }
 
-void page_t::process_notebook_client_menu(client_managed_t * c, int selected) {
-	printf("Change desktop %d for %u\n", selected, c->orig());
-	if (selected != _current_desktop) {
-		mark_durty(c);
-		detach(c);
-		c->set_parent(nullptr);
-		_desktop_list[selected]->default_pop()->add_client(c, false);
-		c->set_current_desktop(selected);
-		mark_durty(c);
-	}
-}
-
 void page_t::add_compositor_damaged(region const & r) {
 	if(rnd != nullptr) {
 		rnd->add_damaged(r);
@@ -4101,58 +4001,6 @@ void page_t::run_cmd(std::string const & cmd_with_args)
     return;
 }
 
-void page_t::page_event_handler_nop(page_event_t const & pev) {
-
-}
-
-void page_t::page_event_handler_notebook_client(page_event_t const & pev) {
-	if(pev.clt == nullptr) {
-		return;
-	}
-
-	grab_start(new grab_bind_client_t{this, const_cast<client_managed_t*>(pev.clt), _desktop_list[_current_desktop], XCB_BUTTON_INDEX_1, pev.position});
-}
-
-void page_t::page_event_handler_notebook_client_close(page_event_t const & pev) {
-	mark_durty(const_cast<client_managed_t*>(pev.clt));
-	const_cast<client_managed_t*>(pev.clt)->delete_window(XCB_CURRENT_TIME);
-}
-
-void page_t::page_event_handler_notebook_client_unbind(page_event_t const & pev) {
-	mark_durty(const_cast<client_managed_t*>(pev.clt));
-	unbind_window(const_cast<client_managed_t*>(pev.clt));
-
-}
-
-void page_t::page_event_handler_notebook_close(page_event_t const & pev) {
-	mark_durty(const_cast<notebook_t*>(pev.nbk));
-	notebook_close(const_cast<notebook_t*>(pev.nbk));
-}
-
-void page_t::page_event_handler_notebook_vsplit(page_event_t const & pev) {
-	split(const_cast<notebook_t*>(pev.nbk), VERTICAL_SPLIT);
-	mark_durty(const_cast<notebook_t*>(pev.nbk));
-}
-
-void page_t::page_event_handler_notebook_hsplit(page_event_t const & pev) {
-	split(const_cast<notebook_t*>(pev.nbk), HORIZONTAL_SPLIT);
-	mark_durty(const_cast<notebook_t*>(pev.nbk));
-}
-
-void page_t::page_event_handler_notebook_mark(page_event_t const & pev) {
-	_desktop_list[_current_desktop]->set_default_pop(const_cast<notebook_t*>(pev.nbk));
-	mark_durty(const_cast<notebook_t*>(pev.nbk));
-}
-
-void page_t::page_event_handler_notebook_menu(page_event_t const & pev) {
-	const_cast<notebook_t*>(pev.nbk)->start_exposay();
-	mark_durty(const_cast<notebook_t*>(pev.nbk));
-}
-
-void page_t::page_event_handler_split(page_event_t const & pev) {
-	grab_start(new grab_split_t{this, const_cast<split_t*>(pev.spt)});
-}
-
 std::vector<client_managed_t *> page_t::get_sticky_client_managed(tree_t * base) {
 	std::vector<tree_t *> childs;
 	base->get_all_children(childs);
@@ -4177,12 +4025,6 @@ viewport_t * page_t::find_viewport_of(tree_t * t) {
 	}
 
 	return nullptr;
-}
-
-void page_t::mark_durty(tree_t * t) {
-	viewport_t * v = find_viewport_of(t);
-	if(v != nullptr)
-		v->mark_durty();
 }
 
 unsigned int page_t::find_current_desktop(client_base_t * c) {
@@ -4262,13 +4104,13 @@ void page_t::process_pending_events() {
 			update_client_list();
 		}
 
-		auto viewports = get_viewports();
-		for(auto x: viewports) {
-			x->repair_damaged();
-		}
-
 		cnx->sync();
 
+	}
+
+	auto viewports = get_viewports();
+	for(auto x: viewports) {
+		x->repair_damaged();
 	}
 
 	cmgr->apply_updates();
@@ -4279,7 +4121,6 @@ void page_t::process_pending_events() {
 	if (_need_render) {
 		render();
 	}
-
 
 }
 

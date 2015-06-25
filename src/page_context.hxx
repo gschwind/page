@@ -76,7 +76,6 @@ public:
 	virtual void split_top(notebook_t * nbk, client_managed_t * c) = 0;
 	virtual void split_bottom(notebook_t * nbk, client_managed_t * c) = 0;
 	virtual void set_focus(client_managed_t * w, xcb_timestamp_t tfocus) = 0;
-	virtual void mark_durty(tree_t * t) = 0;
 
 	virtual void notebook_close(notebook_t * nbk) = 0;
 	virtual void split(notebook_t * nbk, split_type_e type) = 0;

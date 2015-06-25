@@ -97,7 +97,7 @@ public:
 			throw exception_t("viewport::raise_child trying to raise a non child tree");
 		}
 
-		mark_durty();
+		queue_redraw();
 
 		if(_parent != nullptr and (t == _subtree or t == nullptr)) {
 			_parent->activate(this);
@@ -301,7 +301,7 @@ public:
 	}
 
 	/* mark renderable_page for redraw */
-	void mark_durty() {
+	void queue_redraw() {
 		_is_durty = true;
 	}
 

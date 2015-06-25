@@ -60,6 +60,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		}
 	}
 
+	queue_redraw();
 	return true;
 }
 
@@ -122,7 +123,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 	}
 
 	_ctx->csm()->unregister_window(x->base());
-
+	queue_redraw();
 }
 
 void notebook_t::set_selected(client_managed_t * c) {
@@ -414,7 +415,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 			/** force redraw of notebook **/
 			std::shared_ptr<renderable_t> x{new renderable_empty_t{_allocation}};
 			out += x;
-			_ctx->mark_durty(this);
+			queue_redraw();
 		}
 
 		if (_selected != nullptr) {
@@ -868,12 +869,11 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 void notebook_t::process_notebook_client_menu(client_managed_t * c, int selected) {
 	printf("Change desktop %d for %u\n", selected, c->orig());
 	if (selected != _ctx->get_current_workspace()->id()) {
-		_ctx->mark_durty(c);
 		_ctx->detach(c);
 		c->set_parent(nullptr);
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
-		_ctx->mark_durty(c);
+		queue_redraw();
 	}
 }
 

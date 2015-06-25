@@ -123,6 +123,11 @@ public:
 			return i_rect{};
 	}
 
+	virtual void queue_redraw() {
+		if (parent() != nullptr)
+			parent()->queue_redraw();
+	}
+
 
 	/**
 	 * Useful template to generate node name.

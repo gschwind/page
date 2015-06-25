@@ -54,7 +54,7 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	if (e->detail == XCB_BUTTON_INDEX_1) {
-		_ctx->mark_durty(_split);
+		_split->queue_redraw();
 		if(_ps != nullptr) {
 			_ctx->overlay_remove(_ps);
 			_ps = nullptr;
@@ -191,10 +191,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		case NOTEBOOK_AREA_TAB:
 		case NOTEBOOK_AREA_CENTER:
 			if(target_notebook != c->parent()) {
-				ctx->mark_durty(c);
+				target_notebook->queue_redraw();
+				c->queue_redraw();
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, target_notebook, true);
-				ctx->mark_durty(target_notebook);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
@@ -212,7 +212,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		default:
 			notebook_t * parent = dynamic_cast<notebook_t *>(c->parent());
 			if (parent != nullptr) {
-				ctx->mark_durty(c);
+				c->queue_redraw();
 				/* hide client if option allow shaded client */
 				if (parent->get_selected() == c
 						and current_workspace->client_focus.front() == c
