@@ -51,14 +51,13 @@ class grab_bind_client_t : public grab_handler_t {
 	xcb_button_t _button;
 	notebook_area_e zone;
 	notebook_t * target_notebook;
-	workspace_t * current_workspace;
 	std::shared_ptr<popup_notebook0_t> pn0;
 
 	void _find_target_notebook(int x, int y, notebook_t * & target, notebook_area_e & zone);
 
 public:
 
-	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, xcb_button_t button, i_rect const & pos);
+	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, i_rect const & pos);
 
 	virtual ~grab_bind_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);

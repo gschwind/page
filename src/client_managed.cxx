@@ -48,7 +48,8 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_floating_area(0),
 				_is_focused(false),
 				_is_iconic(true),
-				_demands_attention(false)
+				_demands_attention(false),
+				_is_durty{true}
 {
 
 	i_rect pos{_properties->position()};
@@ -355,7 +356,7 @@ void client_managed_t::reconfigure() {
 		unlock();
 
 	}
-	expose();
+	queue_redraw();
 
 }
 
@@ -1113,7 +1114,7 @@ void client_managed_t::set_focus_state(bool is_focused) {
 			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			grab_button_unfocused();
 		}
-		expose();
+		queue_redraw();
 		unlock();
 	}
 }
@@ -1210,13 +1211,14 @@ void client_managed_t::activate(tree_t * t) {
 	client_base_t::activate(t);
 	if(is_iconic()) {
 		normalize();
+		queue_redraw();
 	}
 }
 
 bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 
 	if (not has_window(e->event)) {
-		return tree_t::button_press(e);
+		return false;
 	}
 
 	if (is(MANAGED_FLOATING)
@@ -1252,7 +1254,7 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 				i_rect absolute_position = b->position;
 				absolute_position.x += base_position().x;
 				absolute_position.y += base_position().y;
-				_ctx->grab_start(new grab_bind_client_t{_ctx, this, _ctx->get_current_workspace(), e->detail, absolute_position});
+				_ctx->grab_start(new grab_bind_client_t{_ctx, this, e->detail, absolute_position});
 			} else if (b->type == FLOATING_EVENT_TITLE) {
 				_ctx->grab_start(new grab_floating_move_t{_ctx, this, e->detail, e->root_x, e->root_y});
 			} else {
@@ -1290,7 +1292,7 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 		return true;
 	} else if (is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 			and (e->state & (XCB_MOD_MASK_1))) {
-		_ctx->grab_start(new grab_bind_client_t{_ctx, this, _ctx->get_current_workspace(), e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
+		_ctx->grab_start(new grab_bind_client_t{_ctx, this, e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
 		return true;
 	}
 
@@ -1299,6 +1301,112 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 
 xcb_window_t client_managed_t::get_window() {
 	return _base;
+}
+
+void client_managed_t::queue_redraw() {
+	if(is(MANAGED_FLOATING)) {
+		_is_durty = true;
+	} else {
+		tree_t::queue_redraw();
+	}
+}
+
+void client_managed_t::trigger_redraw() {
+	/** trigger_redraw for childs **/
+	tree_t::trigger_redraw();
+
+	if (is(MANAGED_FLOATING) and _is_durty) {
+		_is_durty = false;
+
+		theme_managed_window_t fw;
+
+		if (_bottom_buffer != nullptr) {
+			fw.cairo_bottom = cairo_create(_bottom_buffer);
+		} else {
+			fw.cairo_bottom = nullptr;
+		}
+
+		if (_top_buffer != nullptr) {
+			fw.cairo_top = cairo_create(_top_buffer);
+		} else {
+			fw.cairo_top = nullptr;
+		}
+
+		if (_right_buffer != nullptr) {
+			fw.cairo_right = cairo_create(_right_buffer);
+		} else {
+			fw.cairo_right = nullptr;
+		}
+
+		if (_left_buffer != nullptr) {
+			fw.cairo_left = cairo_create(_left_buffer);
+		} else {
+			fw.cairo_left = nullptr;
+		}
+
+		fw.focuced = is_focused();
+		fw.position = base_position();
+		fw.icon = icon();
+		fw.title = title();
+		fw.demand_attention = _demands_attention;
+
+		_ctx->theme()->render_floating(&fw);
+
+		cairo_xcb_surface_set_size(_surf, _base_position.w, _base_position.h);
+
+		cairo_t * _cr = cairo_create(_surf);
+
+		/** top **/
+		if (_top_buffer != nullptr) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0, 0, _base_position.w,
+					_ctx->theme()->floating.margin.top+_ctx->theme()->floating.title_height);
+			cairo_set_source_surface(_cr, _top_buffer, 0, 0);
+			cairo_fill(_cr);
+		}
+
+		/** bottom **/
+		if (_bottom_buffer != nullptr) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0,
+					_base_position.h - _ctx->theme()->floating.margin.bottom,
+					_base_position.w, _ctx->theme()->floating.margin.bottom);
+			cairo_set_source_surface(_cr, _bottom_buffer, 0,
+					_base_position.h - _ctx->theme()->floating.margin.bottom);
+			cairo_fill(_cr);
+		}
+
+		/** left **/
+		if (_left_buffer != nullptr) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr, 0.0, _ctx->theme()->floating.margin.top + _ctx->theme()->floating.title_height,
+					_ctx->theme()->floating.margin.left,
+					_base_position.h - _ctx->theme()->floating.margin.top
+							- _ctx->theme()->floating.margin.bottom - _ctx->theme()->floating.title_height);
+			cairo_set_source_surface(_cr, _left_buffer, 0.0,
+					_ctx->theme()->floating.margin.top + _ctx->theme()->floating.title_height);
+			cairo_fill(_cr);
+		}
+
+		/** right **/
+		if (_right_buffer != nullptr) {
+			cairo_set_operator(_cr, CAIRO_OPERATOR_SOURCE);
+			cairo_rectangle(_cr,
+					_base_position.w - _ctx->theme()->floating.margin.right,
+					_ctx->theme()->floating.margin.top + _ctx->theme()->floating.title_height, _ctx->theme()->floating.margin.right,
+					_base_position.h - _ctx->theme()->floating.margin.top
+							- _ctx->theme()->floating.margin.bottom - _ctx->theme()->floating.title_height);
+			cairo_set_source_surface(_cr, _right_buffer,
+					_base_position.w - _ctx->theme()->floating.margin.right,
+					_ctx->theme()->floating.margin.top + _ctx->theme()->floating.title_height);
+			cairo_fill(_cr);
+		}
+
+		cairo_surface_flush(_surf);
+
+		warn(cairo_get_reference_count(_cr) == 1);
+		cairo_destroy(_cr);
+	}
 }
 
 }

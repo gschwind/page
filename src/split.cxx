@@ -220,8 +220,8 @@ void split_t::render_legacy(cairo_t * cr) const {
 	ts.split = _ratio;
 	ts.type = _type;
 	ts.allocation = compute_split_bar_location();
-	ts.root_x = get_window_postion().x;
-	ts.root_y = get_window_postion().y;
+	ts.root_x = get_window_position().x;
+	ts.root_y = get_window_position().y;
 	_ctx->theme()->render_split(cr, &ts);
 }
 
@@ -346,7 +346,7 @@ bool split_t::button_press(xcb_button_press_event_t const * e) {
 		_ctx->grab_start(new grab_split_t { _ctx, this });
 		return true;
 	} else {
-		return tree_t::button_press(e);
+		return false;
 	}
 }
 

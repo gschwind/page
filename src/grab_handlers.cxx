@@ -65,10 +65,9 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	}
 }
 
-grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, workspace_t * current, xcb_button_t button, i_rect const & pos) :
+grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, i_rect const & pos) :
 		ctx{ctx},
 		c{c},
-		current_workspace{current},
 		start_position{pos},
 		target_notebook{nullptr},
 		zone{NOTEBOOK_AREA_NONE},
@@ -93,11 +92,8 @@ void grab_bind_client_t::_find_target_notebook(int x, int y,
 
 	/* place the popup */
 	auto ln = filter_class<notebook_t>(
-			current_workspace->tree_t::get_all_children());
+			ctx->get_current_workspace()->tree_t::get_all_children());
 	for (auto i : ln) {
-		if(not i->allocation().is_inside(x, y))
-			continue;
-
 		if (i->tab_area.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TAB;
 			target = i;
@@ -215,7 +211,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				c->queue_redraw();
 				/* hide client if option allow shaded client */
 				if (parent->get_selected() == c
-						and current_workspace->client_focus.front() == c
+						and ctx->get_current_workspace()->client_focus.front() == c
 						and /*_enable_shade_windows*/true) {
 					ctx->set_focus(nullptr, e->time);
 					parent->iconify_client(c);

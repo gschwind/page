@@ -262,7 +262,7 @@ public:
 
 	}
 
-	void repair_damaged() {
+	void _redraw_back_buffer() {
 		if(_back_surf == nullptr)
 			return;
 
@@ -288,9 +288,12 @@ public:
 
 		_is_durty = false;
 		_damaged += _page_area;
+	}
 
-		return;
-
+	void trigger_redraw() {
+		/** redraw all child **/
+		tree_t::trigger_redraw();
+		_redraw_back_buffer();
 	}
 
 	std::shared_ptr<renderable_surface_t> prepare_render() {
@@ -313,15 +316,11 @@ public:
 		return _win;
 	}
 
-	void expose() {
-		expose(_page_area);
-	}
-
-	void expose(region const & r) {
+	void ___expose(region const & r) {
 		if(_is_hidden)
 			return;
 
-		repair_damaged();
+		_redraw_back_buffer();
 
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
 		cairo_t * cr = cairo_create(surf);

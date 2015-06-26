@@ -805,151 +805,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	button_press(e);
-
-//	viewport_t * viewport_event = nullptr;
-//	auto viewports = get_viewports();
-//	for(auto x: viewports) {
-//		if(x->wid() == e->event) {
-//			viewport_event = x;
-//			break;
-//		}
-//	}
-//
-//	/** if this event is related to page **/
-//	if(viewport_event != nullptr) {
-//
-//		/* left click on page window */
-//		if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_1) {
-//
-//			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
-//
-//			page_event_t * b = nullptr;
-//			for (auto &i : page_areas) {
-//				//printf("box = %s => %s\n", (i)->position.to_std::string().c_str(), typeid(*i).name());
-//				if (i.position.is_inside(e->event_x, e->event_y)) {
-//					b = &i;
-//					break;
-//				}
-//			}
-//
-//			if (b != nullptr) {
-//				/* call corresponding event handler */
-//				(this->*_page_event_press_handler[b->type])(*b);
-//			}
-//
-//		/* rigth click on page */
-//		} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_3) {
-//			std::vector<page_event_t> page_areas{compute_page_areas(viewport_event)};
-//
-//			page_event_t * b = nullptr;
-//			for (auto &i: page_areas) {
-//				if (i.position.is_inside(e->event_x, e->event_y)) {
-//					b = &(i);
-//					break;
-//				}
-//			}
-//
-//			if (b != nullptr) {
-//				if (b->type == PAGE_EVENT_NOTEBOOK_CLIENT) {
-//
-//					client_managed_t * c = const_cast<client_managed_t*>(b->clt);
-//					auto callback = [this, c] (int selected) -> void { this->process_notebook_client_menu(c, selected); };
-//
-//					std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
-//					for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-//						std::ostringstream os;
-//						os << "Desktop #" << k;
-//						v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
-//					}
-//
-//					int x = e->root_x;
-//					int y = e->root_y;
-//
-//					grab_start(new dropdown_menu_t<int>{this, v, e->detail, x, y, 300, b->position, callback});
-//				}
-//			}
-//		}
-//
-//	} else {
-
-//		client_managed_t * mw = find_managed_window_with(e->event);
-//
-//		if (mw != nullptr) {
-//			/** the event is related to managed window **/
-//
-//			if (mw->is(MANAGED_FLOATING)
-//					and e->detail == XCB_BUTTON_INDEX_3
-//					and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
-//
-//				if ((e->state & XCB_MOD_MASK_CONTROL)) {
-//					grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
-//				} else {
-//					grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
-//				}
-//			} else if (mw->is(MANAGED_FLOATING)
-//					and e->detail == XCB_BUTTON_INDEX_1
-//					and e->child != mw->orig()
-//					and e->event == mw->deco()) {
-//
-//				auto const * l = mw->floating_areas();
-//				floating_event_t const * b = nullptr;
-//				for (auto &i : (*l)) {
-//					if(i.position.is_inside(e->event_x, e->event_y)) {
-//						b = &i;
-//						break;
-//					}
-//				}
-//
-//
-//				if (b != nullptr) {
-//
-//					if (b->type == FLOATING_EVENT_CLOSE) {
-//						mw->delete_window(e->time);
-//					} else if (b->type == FLOATING_EVENT_BIND) {
-//						i_rect absolute_position = b->position;
-//						absolute_position.x += mw->base_position().x;
-//						absolute_position.y += mw->base_position().y;
-//						grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, absolute_position});
-//					} else if (b->type == FLOATING_EVENT_TITLE) {
-//						grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
-//					} else {
-//						if (b->type == FLOATING_EVENT_GRIP_TOP) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP});
-//						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM});
-//						} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_LEFT});
-//						} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_RIGHT});
-//						} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT});
-//						} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT});
-//						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT});
-//						} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
-//							grab_start(new grab_floating_resize_t{this, mw, e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
-//						} else {
-//							grab_start(new grab_floating_move_t{this, mw, e->detail, e->root_x, e->root_y});
-//						}
-//					}
-//
-//				}
-//
-//			} else if (mw->is(MANAGED_FULLSCREEN)
-//					and e->detail == (XCB_BUTTON_INDEX_3)
-//					and (e->state & (XCB_MOD_MASK_1))) {
-//				//fprintf(stderr, "start FULLSCREEN MOVE\n");
-//				/** start moving fullscreen window **/
-//				grab_start(new grab_fullscreen_client_t{this, mw, e->detail, e->root_x, e->root_y});
-//			} else if (mw->is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
-//					and (e->state & (XCB_MOD_MASK_1))) {
-//				grab_start(new grab_bind_client_t{this, mw, _desktop_list[_current_desktop], e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
-//			}
-//		}
-
-//	}
+	broadcast_button_press(e);
 
 	/**
 	 * if no change happened to process mode
@@ -1555,10 +1411,10 @@ void page_t::render() {
 		cur_tic.update_to_current_time();
 
 	} else {
-		auto viewports = get_viewports();
-		for(auto x: viewports) {
-			x->expose();
-		}
+//		auto viewports = get_viewports();
+//		for(auto x: viewports) {
+//			x->expose();
+//		}
 	}
 }
 
@@ -1742,7 +1598,6 @@ void page_t::split(notebook_t * nbk, split_type_e type) {
 	notebook_t * n = new notebook_t{this, _auto_refocus};
 	split->set_pack0(nbk);
 	split->set_pack1(n);
-	split->queue_redraw();
 }
 
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
@@ -1754,8 +1609,6 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_workarea();
-	split->queue_redraw();
 }
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
@@ -1767,8 +1620,6 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_workarea();
-	split->queue_redraw();
 }
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
@@ -1780,8 +1631,6 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(nbk);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_workarea();
-	split->queue_redraw();
 }
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
@@ -1793,8 +1642,6 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	split->set_pack1(n);
 	detach(c);
 	insert_window_in_notebook(c, n, true);
-	update_workarea();
-	split->queue_redraw();
 }
 
 void page_t::notebook_close(notebook_t * nbk) {
@@ -1802,8 +1649,6 @@ void page_t::notebook_close(notebook_t * nbk) {
 	 * Closing notebook mean destroying the split base of this
 	 * notebook, plus this notebook.
 	 **/
-
-	nbk->queue_redraw();
 
 	split_t * splt = dynamic_cast<split_t *>(nbk->parent());
 
@@ -2214,15 +2059,15 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->set_demands_attention(false);
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_ADD:
 				mw->set_demands_attention(true);
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				mw->set_demands_attention(not mw->demands_attention());
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			default:
 				break;
@@ -2261,15 +2106,15 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->set_demands_attention(false);
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_ADD:
 				mw->set_demands_attention(true);
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				mw->set_demands_attention(not mw->demands_attention());
-				mw->expose();
+				mw->queue_redraw();
 				break;
 			default:
 				break;
@@ -2408,7 +2253,7 @@ void page_t::unbind_window(client_managed_t * mw) {
 		return;
 	mw->set_managed_type(MANAGED_FLOATING);
 	insert_in_tree_using_transient_for(mw);
-	mw->expose();
+	mw->queue_redraw();
 	mw->normalize();
 	safe_raise_window(mw);
 	_need_update_client_list = true;
@@ -3881,7 +3726,7 @@ void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
 		_grab_handler->button_motion(e);
 		return;
 	} else {
-		button_motion(e);
+		broadcast_button_motion(e);
 	}
 }
 
@@ -3891,7 +3736,7 @@ void page_t::process_button_release_normal(xcb_generic_event_t const * _e) {
 		_grab_handler->button_release(e);
 		return;
 	} else {
-		button_release(e);
+		broadcast_button_release(e);
 	}
 }
 
@@ -3930,12 +3775,12 @@ void page_t::stop_compositor() {
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
 
-	auto viewports = get_viewports();
-	for(auto x: viewports) {
-		if(x->wid() == e->window) {
-			x->expose(i_rect(e->x, e->y, e->width, e->height));
-		}
-	}
+//	auto viewports = get_viewports();
+//	for(auto x: viewports) {
+//		if(x->wid() == e->window) {
+//			x->expose(i_rect(e->x, e->y, e->width, e->height));
+//		}
+//	}
 
 	if (pat != nullptr) {
 		if (pat->id() == e->window) {
@@ -4108,12 +3953,10 @@ void page_t::process_pending_events() {
 
 	}
 
-	auto viewports = get_viewports();
-	for(auto x: viewports) {
-		x->repair_damaged();
-	}
-
 	cmgr->apply_updates();
+
+	/* redraw page component that need a redraw */
+	broadcast_trigger_redraw();
 
 	cnx->ungrab();
 	xcb_flush(cnx->xcb());

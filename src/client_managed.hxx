@@ -108,6 +108,7 @@ private:
 	bool _motif_has_border;
 	bool _is_iconic;
 	bool _demands_attention;
+	bool _is_durty;
 
 public:
 
@@ -260,6 +261,9 @@ public:
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 
 	xcb_window_t get_window();
+
+	void queue_redraw();
+	void trigger_redraw();
 
 
 };

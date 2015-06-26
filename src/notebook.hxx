@@ -55,10 +55,9 @@ class notebook_t : public page_component_t {
 
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
 	std::shared_ptr<renderable_pixmap_t> _exposay;
-	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_event;
 
 
-	mutable theme_notebook_t theme_notebook;
+	theme_notebook_t theme_notebook;
 
 	bool _is_default;
 	bool _is_hidden;
@@ -79,9 +78,6 @@ public:
 	client_managed_t * _selected;
 	i_rect client_position;
 
-	// link the client to the corresponding tab theme
-	mutable std::map<client_managed_t *, std::shared_ptr<theme_tab_t>> _client_to_tab;
-
 	i_rect client_area;
 
 	i_rect button_close;
@@ -92,6 +88,7 @@ public:
 
 	/* list of tabs and exposay buttons */
 	std::vector<std::tuple<i_rect, client_managed_t*>> _client_buttons;
+	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_buttons;
 
 	i_rect close_client_area;
 	i_rect undck_client_area;
@@ -115,6 +112,8 @@ public:
 	void start_fading();
 
 	void _update_notebook_areas();
+	void _update_theme_notebook(theme_notebook_t & theme_notebook) const;
+	void _update_layout();
 
 	void process_notebook_client_menu(client_managed_t * c, int selected);
 
@@ -205,7 +204,7 @@ public:
 
 	void get_all_children(std::vector<tree_t *> & out) const;
 
-	void update_theme_notebook() const;
+
 
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
@@ -243,8 +242,12 @@ public:
 	}
 
 	void start_exposay();
+	void stop_exposay();
+	void start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
+
 
 	virtual bool button_press(xcb_button_press_event_t const * ev);
+	void do_layout();
 
 };
 

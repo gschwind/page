@@ -408,14 +408,14 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 
 	if (n->has_selected_client) {
-		if (n->selected_client->is_iconic) {
+		if (n->selected_client.is_iconic) {
 
-			render_notebook_normal(cr, *n->selected_client.get(),
+			render_notebook_normal(cr, n->selected_client,
 					notebook_normal_font,
 					notebook_normal_text_color,
 					notebook_normal_outline_color,
 					notebook_normal_border_color,
-					n->selected_client->tab_color);
+					n->selected_client.tab_color);
 
 		}
 
@@ -423,12 +423,12 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 
 	for (auto const & i : n->clients_tab) {
 
-		render_notebook_normal(cr, *i.get(),
+		render_notebook_normal(cr, i,
 				notebook_normal_font,
 				notebook_normal_text_color,
 				notebook_normal_outline_color,
 				notebook_normal_border_color,
-				i->tab_color);
+				i.tab_color);
 	}
 
 	{
@@ -448,10 +448,10 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 	}
 
 	if (n->has_selected_client) {
-		if (not n->selected_client->is_iconic) {
+		if (not n->selected_client.is_iconic) {
 
 			/* clear selected tab background */
-			i_rect a{n->selected_client->position};
+			i_rect a{n->selected_client.position};
 
 			a.x+=2;
 			a.w-=4;
@@ -469,11 +469,11 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 			CHECK_CAIRO(cairo_restore(cr));
 
 
-			render_notebook_selected(cr, *n, *n->selected_client.get(),
+			render_notebook_selected(cr, *n, n->selected_client,
 					notebook_selected_font, notebook_selected_text_color,
 					notebook_selected_outline_color,
 					notebook_selected_border_color,
-					n->selected_client->tab_color, 1.0);
+					n->selected_client.tab_color, 1.0);
 
 		}
 	}

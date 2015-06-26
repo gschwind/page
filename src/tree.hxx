@@ -85,40 +85,22 @@ public:
 	virtual void activate(tree_t * t = nullptr) = 0;
 
 
-	virtual bool button_press(xcb_button_press_event_t const * ev) {
-		for(auto x: tree_t::children()) {
-			if(x->button_press(ev))
-				return true;
-		}
-		return false;
-	}
+	virtual bool button_press(xcb_button_press_event_t const * ev) { return false; }
+	virtual bool button_release(xcb_button_release_event_t const * ev) { return false; }
+	virtual bool button_motion(xcb_motion_notify_event_t const * ev) { return false; }
 
-	virtual bool button_release(xcb_button_release_event_t const * ev) {
-		for(auto x: tree_t::children()) {
-			if(x->button_release(ev))
-				return true;
-		}
-		return false;
-	}
-
-	virtual bool button_motion(xcb_motion_notify_event_t const * ev) {
-		for(auto x: tree_t::children()) {
-			if(x->button_motion(ev))
-				return true;
-		}
-		return false;
-	}
+	virtual void trigger_redraw() { }
 
 	virtual xcb_window_t get_window() const {
 		if(parent() != nullptr)
 			return parent()->get_window();
 		else
-			return XCB_WINDOW_NONE;
+			return XCB_NONE;
 	}
 
-	virtual i_rect get_window_postion() const {
+	virtual i_rect get_window_position() const {
 		if(parent() != nullptr)
-			return parent()->get_window_postion();
+			return parent()->get_window_position();
 		else
 			return i_rect{};
 	}
@@ -178,6 +160,46 @@ public:
 		std::vector<tree_t *> ret;
 		get_visible_children(ret);
 		return ret;
+	}
+
+	void broadcast_trigger_redraw() {
+		for (auto x : tree_t::children())
+			x->broadcast_trigger_redraw();
+		trigger_redraw();
+	}
+
+	bool broadcast_button_press(xcb_button_press_event_t const * ev) {
+		if(button_press(ev))
+			return true;
+		for(auto x: tree_t::children()) {
+			if(x->broadcast_button_press(ev))
+				return true;
+		}
+		return false;
+	}
+
+	bool broadcast_button_release(xcb_button_release_event_t const * ev) {
+		if(button_release(ev))
+			return true;
+		for(auto x: tree_t::children()) {
+			if(x->broadcast_button_release(ev))
+				return true;
+		}
+		return false;
+	}
+
+	bool broadcast_button_motion(xcb_motion_notify_event_t const * ev) {
+		if(button_motion(ev))
+			return true;
+		for(auto x: tree_t::children()) {
+			if(x->broadcast_button_motion(ev))
+				return true;
+		}
+		return false;
+	}
+
+	i_rect to_root_position(i_rect const & r) {
+		return i_rect{r.x+get_window_position().x, r.y+get_window_position().y, r.w, r.h};
 	}
 
 };
