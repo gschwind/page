@@ -60,6 +60,9 @@ class notebook_t : public page_component_t {
 
 	theme_notebook_t theme_notebook;
 
+	theme_tab_t * _last_mouse_over;
+	client_managed_t * _last_client_over;
+
 	bool _is_default;
 	bool _is_hidden;
 	bool _keep_selected;
@@ -89,7 +92,7 @@ public:
 	i_rect button_exposay;
 
 	/* list of tabs and exposay buttons */
-	std::vector<std::tuple<i_rect, client_managed_t*>> _client_buttons;
+	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
 	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_buttons;
 
 	i_rect close_client_area;
@@ -250,7 +253,7 @@ public:
 
 
 	virtual bool button_press(xcb_button_press_event_t const * ev);
-	void do_layout();
+	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 
 };
 

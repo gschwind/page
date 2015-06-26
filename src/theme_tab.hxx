@@ -16,8 +16,8 @@ struct theme_tab_t {
 	i_rect position;
 	std::string title;
 	std::shared_ptr<icon16> icon;
-	bool is_iconic;
 	color_t tab_color;
+	bool is_iconic;
 
 	theme_tab_t() :
 		position{},

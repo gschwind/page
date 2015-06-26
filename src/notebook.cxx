@@ -21,7 +21,8 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_selected{nullptr},
 		_is_hidden{false},
 		_keep_selected{keep_selected},
-		_exposay{false}
+		_exposay{false},
+		_last_mouse_over{nullptr}
 {
 
 }
@@ -277,6 +278,9 @@ void notebook_t::_update_layout() {
 		update_client_position(c);
 	}
 
+	_last_mouse_over = nullptr;
+	_last_client_over = nullptr;
+
 	_update_theme_notebook(theme_notebook);
 	_update_notebook_areas();
 
@@ -508,7 +512,7 @@ void notebook_t::_update_notebook_areas() {
 
 			}
 
-			_client_buttons.push_back(std::make_tuple(b, _selected));
+			_client_buttons.push_back(std::make_tuple(b, _selected, &theme_notebook.selected_client));
 
 		} else {
 			close_client_area = i_rect{};
@@ -516,8 +520,8 @@ void notebook_t::_update_notebook_areas() {
 		}
 
 		auto c = _clients.begin();
-		for (auto const & tab: theme_notebook.clients_tab) {
-			_client_buttons.push_back(std::make_tuple(tab.position, *c));
+		for (auto & tab: theme_notebook.clients_tab) {
+			_client_buttons.push_back(std::make_tuple(tab.position, *c, &tab));
 			++c;
 		}
 
@@ -854,6 +858,75 @@ void notebook_t::process_notebook_client_menu(client_managed_t * c, int selected
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
 	}
+}
+
+bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
+
+	if (e->event != get_window()) {
+		return false;
+	}
+	int x = e->event_x;
+	int y = e->event_y;
+
+	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
+
+		if (button_close.is_inside(x, y)) {
+
+		} else if (button_hsplit.is_inside(x, y)) {
+
+		} else if (button_vsplit.is_inside(x, y)) {
+
+		} else if (button_select.is_inside(x, y)) {
+
+		} else if (button_exposay.is_inside(x, y)) {
+
+		} else if (close_client_area.is_inside(x, y)) {
+
+		} else if (undck_client_area.is_inside(x, y)) {
+
+		} else {
+
+			theme_tab_t * new_mouse_over = nullptr;
+			client_managed_t * xc = nullptr;
+
+			for (auto & i : _client_buttons) {
+				auto tab = std::get<2>(i);
+				auto c = std::get<1>(i);
+				if (std::get<0>(i).is_inside(x, y)) {
+					new_mouse_over = tab;
+					xc = c;
+					break;
+				}
+			}
+
+			if(new_mouse_over != _last_mouse_over) {
+				queue_redraw();
+
+				if (_last_mouse_over != nullptr) {
+					if (_last_client_over->is_focused()) {
+						_last_mouse_over->tab_color =
+								_ctx->theme()->get_focused_color();
+					} else if (_selected == _last_client_over) {
+						_last_mouse_over->tab_color =
+								_ctx->theme()->get_selected_color();
+					} else {
+						_last_mouse_over->tab_color =
+								_ctx->theme()->get_normal_color();
+					}
+				}
+
+				_last_mouse_over = new_mouse_over;
+				_last_client_over = xc;
+
+				if(_last_mouse_over != nullptr) {
+					_last_mouse_over->tab_color = color_t{1.0, 0.0, 0.0, 1.0};
+				}
+			}
+		}
+		return true;
+	}
+
+	return false;
 }
 
 
