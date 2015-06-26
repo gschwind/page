@@ -142,7 +142,6 @@ void notebook_t::set_selected(client_managed_t * c) {
 void notebook_t::update_client_position(client_managed_t * c) {
 	/* compute the window placement within notebook */
 	client_position = compute_client_size(c);
-	std::cout << get_window_position().to_string() << std::endl;
 	c->set_notebook_wished_position(to_root_position(client_position));
 	c->reconfigure();
 }
