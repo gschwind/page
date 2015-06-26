@@ -40,12 +40,12 @@ public:
 
 		if (t.pix != nullptr) {
 			cairo_save(cr);
-			_ctx->theme()->render_thumbnail(cr, _position, t);
-//			region r = _visible_region & area;
-//			for (auto &i : r) {
-//				cairo_reset_clip(cr);
-//				cairo_clip(cr, i);
-//			}
+			region r = _visible_region & area;
+			for (auto &i : r) {
+				cairo_reset_clip(cr);
+				cairo_clip(cr, i);
+				_ctx->theme()->render_thumbnail(cr, _position, t);
+			}
 			cairo_restore(cr);
 		}
 
