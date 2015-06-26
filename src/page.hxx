@@ -161,6 +161,8 @@ public:
 	key_desc_t bind_toggle_compositor;
 	key_desc_t bind_close;
 
+	key_desc_t bind_exposay_all;
+
 	key_desc_t bind_right_desktop;
 	key_desc_t bind_left_desktop;
 

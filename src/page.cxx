@@ -142,6 +142,7 @@ page_t::page_t(int argc, char ** argv)
 
 	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
 	find_key_from_string(conf.get_string("default", "bind_close"), bind_close);
+	find_key_from_string(conf.get_string("default", "bind_exposay_all"), bind_exposay_all);
 	find_key_from_string(conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
 	find_key_from_string(conf.get_string("default", "bind_toggle_compositor"), bind_toggle_compositor);
 	find_key_from_string(conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
@@ -584,6 +585,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 					client_managed_t * mw = _desktop_list[_current_desktop]->client_focus.front();
 					mw->delete_window(e->time);
 				}
+			}
+		}
+
+		if (k == bind_exposay_all.ks and (e->state & bind_exposay_all.mod)) {
+			auto child = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
+			for(auto c: child) {
+				c->start_exposay();
 			}
 		}
 
@@ -3273,6 +3281,7 @@ void page_t::update_grabkey() {
 
 	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_close, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_exposay_all, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, keymap);
