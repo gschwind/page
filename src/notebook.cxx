@@ -33,7 +33,10 @@ notebook_t::~notebook_t() {
 bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	assert(not has_key(_clients, x));
 	assert(x != nullptr);
-	stop_exposay();
+
+	if(_exposay)
+		prefer_activate = false;
+
 
 	x->set_parent(this);
 	_children.push_back(x);
@@ -42,6 +45,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_ctx->csm()->register_window(x->base());
 
 	if(prefer_activate) {
+		stop_exposay();
 		start_fading();
 		x->normalize();
 		if (_selected != nullptr and _selected != x) {
@@ -53,7 +57,7 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 		x->iconify();
 		if(_selected != nullptr) {
 			/* do nothing */
-		} else {
+		} else if (not _exposay) {
 			/** no prev surf is used **/
 			_selected = x;
 		}

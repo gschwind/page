@@ -180,10 +180,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			if(c->is(MANAGED_FLOATING)) {
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, nullptr, true);
+			} else {
+				c->activate();
+				ctx->set_focus(c, e->time);
 			}
-
-			c->activate();
-			ctx->set_focus(c, e->time);
 			ctx->grab_stop();
 			return;
 		}
