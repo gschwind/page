@@ -573,13 +573,20 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (k == 0)
 		return;
 
+
+	/** XCB_MOD_MASK_2 is num_lock, thus ignore his state **/
+	unsigned int state = e->state;
+	if(keymap->numlock_mod_mask() != 0) {
+		state &= ~keymap->numlock_mod_mask();
+	}
+
 	if(e->response_type == XCB_KEY_PRESS) {
 
-		if(k == bind_page_quit.ks and (e->state & bind_page_quit.mod)) {
+		if(k == bind_page_quit.ks and (state == bind_page_quit.mod)) {
 			stop();
 		}
 
-		if (k == bind_close.ks and (e->state & bind_close.mod)) {
+		if (k == bind_close.ks and (state == bind_close.mod)) {
 			if (not _desktop_list[_current_desktop]->client_focus.empty()) {
 				if (_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
 					client_managed_t * mw = _desktop_list[_current_desktop]->client_focus.front();
@@ -588,14 +595,14 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if (k == bind_exposay_all.ks and (e->state & bind_exposay_all.mod)) {
+		if (k == bind_exposay_all.ks and (state == bind_exposay_all.mod)) {
 			auto child = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
 			for(auto c: child) {
 				c->start_exposay();
 			}
 		}
 
-		if(k == bind_toggle_fullscreen.ks and (e->state & bind_toggle_fullscreen.mod)) {
+		if(k == bind_toggle_fullscreen.ks and (state == bind_toggle_fullscreen.mod)) {
 			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
 				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
 					toggle_fullscreen(_desktop_list[_current_desktop]->client_focus.front());
@@ -603,7 +610,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if(k == bind_toggle_compositor.ks and (e->state & bind_toggle_compositor.mod)) {
+		if(k == bind_toggle_compositor.ks and (state == bind_toggle_compositor.mod)) {
 			if(rnd == nullptr) {
 				start_compositor();
 			} else {
@@ -611,17 +618,17 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if(k == bind_right_desktop.ks and (e->state & bind_right_desktop.mod)) {
+		if(k == bind_right_desktop.ks and (state == bind_right_desktop.mod)) {
 			switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
 			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
 		}
 
-		if(k == bind_left_desktop.ks and (e->state & bind_left_desktop.mod)) {
+		if(k == bind_left_desktop.ks and (state == bind_left_desktop.mod)) {
 			switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
 			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
 		}
 
-		if(k == bind_bind_window.ks and (e->state & bind_bind_window.mod)) {
+		if(k == bind_bind_window.ks and (state == bind_bind_window.mod)) {
 			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
 				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
 					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
@@ -635,7 +642,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if(k == bind_fullscreen_window.ks and (e->state & bind_fullscreen_window.mod)) {
+		if(k == bind_fullscreen_window.ks and (state == bind_fullscreen_window.mod)) {
 			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
 				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
 					if(not _desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
@@ -645,7 +652,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if(k == bind_float_window.ks and (e->state & bind_float_window.mod)) {
+		if(k == bind_float_window.ks and (state == bind_float_window.mod)) {
 			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
 				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
 					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
@@ -660,7 +667,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 
 		if (rnd != nullptr) {
-			if (k == bind_debug_1.ks and (e->state & bind_debug_1.mod)) {
+			if (k == bind_debug_1.ks and (state == bind_debug_1.mod)) {
 				if (rnd->show_fps()) {
 					rnd->set_show_fps(false);
 				} else {
@@ -668,7 +675,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				}
 			}
 
-			if (k == bind_debug_2.ks and (e->state & bind_debug_2.mod)) {
+			if (k == bind_debug_2.ks and (state == bind_debug_2.mod)) {
 				if (rnd->show_damaged()) {
 					rnd->set_show_damaged(false);
 				} else {
@@ -676,7 +683,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				}
 			}
 
-			if (k == bind_debug_3.ks and (e->state & bind_debug_3.mod)) {
+			if (k == bind_debug_3.ks and (state == bind_debug_3.mod)) {
 				if (rnd->show_opac()) {
 					rnd->set_show_opac(false);
 				} else {
@@ -685,7 +692,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if(k == bind_debug_4.ks and (e->state & bind_debug_4.mod)) {
+		if(k == bind_debug_4.ks and (state == bind_debug_4.mod)) {
 			_need_restack = true;
 			print_tree(0);
 			for (auto i : _clients_list) {
@@ -710,48 +717,48 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if (k == bind_cmd_0.ks and (e->state & bind_cmd_0.mod)) {
+		if (k == bind_cmd_0.ks and (state == bind_cmd_0.mod)) {
 			run_cmd(exec_cmd_0);
 		}
 
-		if (k == bind_cmd_1.ks and (e->state & bind_cmd_1.mod)) {
+		if (k == bind_cmd_1.ks and (state == bind_cmd_1.mod)) {
 			run_cmd(exec_cmd_1);
 		}
 
-		if (k == bind_cmd_2.ks and (e->state & bind_cmd_2.mod)) {
+		if (k == bind_cmd_2.ks and (state == bind_cmd_2.mod)) {
 			run_cmd(exec_cmd_2);
 		}
 
-		if (k == bind_cmd_3.ks and (e->state & bind_cmd_3.mod)) {
+		if (k == bind_cmd_3.ks and (state == bind_cmd_3.mod)) {
 			run_cmd(exec_cmd_3);
 		}
 
-		if (k == bind_cmd_4.ks and (e->state & bind_cmd_4.mod)) {
+		if (k == bind_cmd_4.ks and (state == bind_cmd_4.mod)) {
 			run_cmd(exec_cmd_4);
 		}
 
-		if (k == bind_cmd_5.ks and (e->state & bind_cmd_5.mod)) {
+		if (k == bind_cmd_5.ks and (state == bind_cmd_5.mod)) {
 			run_cmd(exec_cmd_5);
 		}
 
-		if (k == bind_cmd_6.ks and (e->state & bind_cmd_6.mod)) {
+		if (k == bind_cmd_6.ks and (state == bind_cmd_6.mod)) {
 			run_cmd(exec_cmd_6);
 		}
 
-		if (k == bind_cmd_7.ks and (e->state & bind_cmd_7.mod)) {
+		if (k == bind_cmd_7.ks and (state == bind_cmd_7.mod)) {
 			run_cmd(exec_cmd_7);
 		}
 
-		if (k == bind_cmd_8.ks and (e->state & bind_cmd_8.mod)) {
+		if (k == bind_cmd_8.ks and (state == bind_cmd_8.mod)) {
 			run_cmd(exec_cmd_8);
 		}
 
-		if (k == bind_cmd_9.ks and (e->state & bind_cmd_9.mod)) {
+		if (k == bind_cmd_9.ks and (state == bind_cmd_9.mod)) {
 			run_cmd(exec_cmd_9);
 		}
 
 
-		if (k == XK_Tab and ((e->state & 0x0f) == XCB_MOD_MASK_1)) {
+		if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
 
 			if (process_mode == PROCESS_NORMAL and not _clients_list.empty()) {
 
