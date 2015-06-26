@@ -729,8 +729,8 @@ void notebook_t::_update_exposay() {
 		width = client_area.h/vm;
 	}
 
-	unsigned xoffset = (client_area.w-width*n)/2 + _allocation.x;
-	unsigned yoffset = (client_area.h-width*m)/2 + _allocation.y;
+	unsigned xoffset = (client_area.w-width*n)/2 + client_area.x;
+	unsigned yoffset = (client_area.h-width*m)/2 + client_area.y;
 
 	auto it = _clients.begin();
 	for(int i = 0; i < _clients.size(); ++i) {
