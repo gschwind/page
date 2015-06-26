@@ -178,6 +178,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 
 		if(target_notebook == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
 			if(c->is(MANAGED_FLOATING)) {
+				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, nullptr, true);
 			}
 
