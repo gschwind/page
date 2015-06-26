@@ -337,7 +337,13 @@ void client_managed_t::reconfigure() {
 	update_floating_areas();
 
 	if (lock()) {
-		cnx()->move_resize(_base, _base_position);
+
+		if(_is_iconic or _is_hidden) {
+			/* if iconic move outside visible area */
+			cnx()->move_resize(_base, i_rect{30000, 30000, _base_position.w, _base_position.h});
+		} else {
+			cnx()->move_resize(_base, _base_position);
+		}
 		cnx()->move_resize(_deco,
 				i_rect{0, 0, _base_position.w, _base_position.h});
 		cnx()->move_resize(_orig, _orig_position);
@@ -799,6 +805,7 @@ void client_managed_t::normalize() {
 		if (not _is_hidden) {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 			map();
+			reconfigure();
 		}
 		for (auto c : _children) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
@@ -813,9 +820,11 @@ void client_managed_t::normalize() {
 void client_managed_t::iconify() {
 	if (lock()) {
 		_is_iconic = true;
-		net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		_properties->set_wm_state(IconicState);
-		unmap();
+		//net_wm_state_add(_NET_WM_STATE_HIDDEN);
+		//_properties->set_wm_state(IconicState);
+		//if(_is_hidden)
+		//	unmap();
+		reconfigure();
 		for (auto c : _children) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 			if (mw != nullptr) {
@@ -1169,12 +1178,8 @@ void client_managed_t::hide() {
 
 void client_managed_t::show() {
 	_is_hidden = false;
-
-	if (not _is_iconic) {
-		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-		map();
-	}
-
+	net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+	map();
 	for(auto i: tree_t::children()) {
 		i->show();
 	}

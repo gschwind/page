@@ -27,6 +27,7 @@
 #include "page_context.hxx"
 #include "page_component.hxx"
 #include "client_managed.hxx"
+#include "renderable_thumbnail.hxx"
 
 namespace page {
 
@@ -54,14 +55,15 @@ class notebook_t : public page_component_t {
 	page::time_t swap_start;
 
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
-	std::shared_ptr<renderable_pixmap_t> _exposay;
 
+	std::vector<std::shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
 
 	theme_notebook_t theme_notebook;
 
 	bool _is_default;
 	bool _is_hidden;
 	bool _keep_selected;
+	bool _exposay;
 
 public:
 
@@ -242,6 +244,7 @@ public:
 	}
 
 	void start_exposay();
+	void _update_exposay();
 	void stop_exposay();
 	void start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
 

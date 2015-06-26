@@ -77,15 +77,25 @@ void composite_surface_manager_t::pre_process_event(xcb_generic_event_t const * 
 
 void composite_surface_manager_t::apply_updates() {
 
-	for(auto s: _data) {
-		s.second->update_pixmap();
+	/* remove obsolete references */
+	{
+		auto i = _data.begin();
+		while(i != _data.end()) {
+			if(i->second->ref_count() <= 0) {
+				i = _data.erase(i);
+			} else {
+				i->second->update_pixmap();
+				++i;
+			}
+		}
+	}
 
+	for(auto s: _data) {
 		/* send all damage request */
 		s.second->start_gathering_damage();
 	}
 
 	for(auto s: _data) {
-
 		/* get all damage reply */
 		s.second->finish_gathering_damage();
 	}
@@ -118,13 +128,13 @@ void composite_surface_manager_t::register_window(xcb_window_t w) {
 }
 
 void composite_surface_manager_t::unregister_window(xcb_window_t w) {
-	/** try to find a valid composite surface **/
+	/**
+	 * We just decrement reference here. We will cleanup on apply_updates()
+	 * This make register/unregister more versatile.
+	 **/
 	auto x = _data.find(w);
 	if (x != _data.end()) {
 		x->second->decr_ref();
-		if(x->second->ref_count() == 0) {
-			_data.erase(x);
-		}
 	}
 }
 
@@ -153,6 +163,20 @@ region composite_surface_manager_t::get_damaged(xcb_window_t w) {
 	}
 
 	return region{};
+
+}
+
+bool composite_surface_manager_t::has_damage(xcb_window_t w) {
+	if(not _enabled)
+		return false;
+
+	/** try to find a valid composite surface **/
+	auto x = _data.find(w);
+	if (x != _data.end()) {
+		return x->second->has_damage();
+	}
+
+	return false;
 
 }
 

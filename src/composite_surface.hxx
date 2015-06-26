@@ -61,15 +61,9 @@ class composite_surface_t {
 	}
 
 	void destroy_damage() {
-		if (_is_destroyed or not _is_map or not _is_composited or _is_freezed)
-			return;
-
-		if (_dpy->lock(_window_id)) {
-			if (_damage != XCB_NONE) {
-				xcb_damage_destroy(_dpy->xcb(), _damage);
-				_damage = XCB_NONE;
-			}
-			_dpy->unlock();
+		if (_damage != XCB_NONE) {
+			xcb_damage_destroy(_dpy->xcb(), _damage);
+			_damage = XCB_NONE;
 		}
 	}
 
@@ -152,6 +146,10 @@ public:
 		return _damaged;
 	}
 
+	bool has_damage() {
+		return not _damaged.empty();
+	}
+
 	void add_damaged(region const & r) {
 		_damaged += r;
 	}
@@ -226,6 +224,7 @@ public:
 
 	void on_destroy() {
 		_is_destroyed = true;
+		_damage = XCB_NONE;
 	}
 
 	bool is_destroyed() const {
