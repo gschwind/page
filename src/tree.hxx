@@ -198,7 +198,7 @@ public:
 		return false;
 	}
 
-	i_rect to_root_position(i_rect const & r) {
+	i_rect to_root_position(i_rect const & r) const {
 		return i_rect{r.x+get_window_position().x, r.y+get_window_position().y, r.w, r.h};
 	}
 

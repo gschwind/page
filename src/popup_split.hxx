@@ -87,7 +87,7 @@ public:
 		_has_alpha{true},
 		_is_durty{true},
 		_is_visible{false},
-		_position{split->allocation()}
+		_position{split->to_root_position(split->allocation())}
 	{
 
 		/** if visual is 32 bits, this values are mandatory **/

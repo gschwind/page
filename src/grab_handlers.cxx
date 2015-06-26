@@ -11,8 +11,9 @@
 namespace page {
 
 grab_split_t::grab_split_t(page_context_t * ctx, split_t * s) : _ctx{ctx}, _split{s} {
-	_slider_area = _split->get_split_bar_area();
+	_slider_area = _split->to_root_position(_split->get_split_bar_area());
 	_split_ratio = _split->ratio();
+	_split_root_allocation = _split->to_root_position(_split->allocation());
 	_ps = std::make_shared<popup_split_t>(ctx, s);
 	_ctx->overlay_add(_ps);
 }
@@ -28,14 +29,16 @@ void grab_split_t::button_press(xcb_button_press_event_t const *) {
 }
 
 void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
+
+
 	if (_split->type() == VERTICAL_SPLIT) {
-		_split_ratio = (e->event_x
-				- _split->allocation().x)
-				/ (double) (_split->allocation().w);
+		_split_ratio = (e->root_x
+				- _split_root_allocation.x)
+				/ (double) (_split_root_allocation.w);
 	} else {
-		_split_ratio = (e->event_y
-				- _split->allocation().y)
-				/ (double) (_split->allocation().h);
+		_split_ratio = (e->root_y
+				- _split_root_allocation.y)
+				/ (double) (_split_root_allocation.h);
 	}
 
 	if (_split_ratio > 0.95)
@@ -47,6 +50,7 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 	i_rect old_area = _slider_area;
 	_split->compute_split_location(_split_ratio,
 			_slider_area.x, _slider_area.y);
+	_slider_area = _split->to_root_position(_slider_area);
 
 	_ps->set_position(_split_ratio);
 	_ctx->add_global_damage(_ps->position());
@@ -59,7 +63,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 			_ctx->overlay_remove(_ps);
 			_ps = nullptr;
 		}
-		_ctx->add_global_damage(_split->allocation());
+		_ctx->add_global_damage(_split_root_allocation);
 		_split->set_split(_split_ratio);
 		_ctx->grab_stop();
 	}

@@ -30,6 +30,7 @@ class grab_split_t : public grab_handler_t {
 	page_context_t * _ctx;
 	split_t * _split;
 	i_rect _slider_area;
+	i_rect _split_root_allocation;
 	double _split_ratio;
 	std::shared_ptr<popup_split_t> _ps;
 
