@@ -160,6 +160,7 @@ public:
 	virtual void render_empty(cairo_t * cr, i_rect const & area) const;
 
 	virtual void render_thumbnail(cairo_t * cr, i_rect position, theme_thumbnail_t const & t) const;
+	virtual void render_thumbnail_title(cairo_t * cr, i_rect position, std::string const & title) const;
 
 	virtual void render_floating(theme_managed_window_t * mw) const;
 

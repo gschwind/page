@@ -210,6 +210,9 @@ private:
 	i_rect _root_position;
 	theme_t * _theme;
 
+	int _left_most_border;
+	int _top_most_border;
+
 public:
 
 private:
@@ -504,6 +507,8 @@ public:
 	virtual void overlay_remove(std::shared_ptr<overlay_t> x);
 
 	virtual void add_global_damage(region const & r);
+	virtual int left_most_border();
+	virtual int top_most_border();
 
 };
 

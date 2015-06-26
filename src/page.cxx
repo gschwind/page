@@ -2400,6 +2400,8 @@ void page_t::update_windows_stack() {
 }
 
 void page_t::update_viewport_layout() {
+	_left_most_border = std::numeric_limits<int>::max();
+	_top_most_border = std::numeric_limits<int>::max();
 
 	/** update root size infos **/
 	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(cnx->xcb(), cnx->root());
@@ -2428,6 +2430,16 @@ void page_t::update_viewport_layout() {
 		if(r != nullptr) {
 			crtc_info[crtc_list[k]] = r;
 		}
+
+		/** keep left more screen to move iconnified window there **/
+		if(r->x < _left_most_border) {
+			_left_most_border = r->x;
+		}
+
+		if(r->y < _top_most_border) {
+			_top_most_border = r->y;
+		}
+
 	}
 
 	/* compute all viewport  that does not overlap and cover the full area of crts */
@@ -4024,6 +4036,13 @@ workspace_t * page_t::get_workspace(int id) const {
 
 int page_t::get_workspace_count() const {
 	return _desktop_list.size();
+}
+
+int page_t::left_most_border() {
+	return _left_most_border;
+}
+int page_t::top_most_border() {
+	return _top_most_border;
 }
 
 

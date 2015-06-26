@@ -81,6 +81,9 @@ public:
 	virtual void split(notebook_t * nbk, split_type_e type) = 0;
 	virtual void unbind_window(client_managed_t * mw) = 0;
 
+	virtual int left_most_border() = 0;
+	virtual int top_most_border() = 0;
+
 
 };
 

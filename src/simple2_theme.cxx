@@ -1071,16 +1071,27 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 	btext.y += y_text_offset;
 	btext.h = 20;
 
-	CHECK_CAIRO(cairo_save(cr));
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_surface(cr, t.title->get_cairo_surface(), btext.x, btext.y);
+	cairo_paint(cr);
+	cairo_restore(cr);
 
+}
+
+
+void simple2_theme_t::render_thumbnail_title(cairo_t * cr, i_rect btext, std::string const & title) const {
 #ifdef WITH_PANGO
 
-	/* draw title */
+	CHECK_CAIRO(cairo_save(cr));
+
+	/* clear background */
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
+	cairo_paint(cr);
+
 	CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_outline_color));
-
 	CHECK_CAIRO(cairo_translate(cr, btext.x + 2, btext.y));
-
-	//CHECK_CAIRO(cairo_new_path(cr));
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 3.0));
 	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
@@ -1090,7 +1101,7 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 		PangoLayout * pango_layout = pango_layout_new(pango_context);
 		pango_layout_set_font_description(pango_layout, notebook_normal_font);
 		pango_cairo_update_layout(cr, pango_layout);
-		pango_layout_set_text(pango_layout, t.title.c_str(), -1);
+		pango_layout_set_text(pango_layout, title.c_str(), -1);
 		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
 		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
 		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
@@ -1104,13 +1115,11 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 	CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_text_color));
 	CHECK_CAIRO(cairo_fill(cr));
+	CHECK_CAIRO(cairo_restore(cr));
 
 #endif
 
-	CHECK_CAIRO(cairo_restore(cr));
-
 }
-
 
 void simple2_theme_t::render_floating(theme_managed_window_t * mw) const {
 
