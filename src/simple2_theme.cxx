@@ -1019,7 +1019,8 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 		cairo_surface_t * src = t.pix->get_cairo_surface();
 		cairo_save(cr);
 
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 
 		i_rect thumbnail_pos = position;
 		thumbnail_pos.h -= 20;
@@ -1037,12 +1038,13 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 			double yp = thumbnail_pos.h / x_ratio;
 
 			x_offset = 0;
-			y_offset = (yp - src_height) / 2.0;
+			y_offset = floor((yp - src_height) / 2.0);
+
 			cairo_translate(cr, thumbnail_pos.x, thumbnail_pos.y);
 			cairo_scale(cr, x_ratio, x_ratio);
 			cairo_set_source_surface(cr, src, x_offset, y_offset);
-			cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-			cairo_fill(cr);
+			cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+			cairo_paint(cr);
 
 			y_text_offset = src_height * x_ratio + (thumbnail_pos.h - (src_height * x_ratio)) / 2.0;
 
@@ -1050,12 +1052,12 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 			double xp = thumbnail_pos.w / y_ratio;
 
 			y_offset = 0;
-			x_offset = (xp - src_width) / 2.0;
+			x_offset = floor((xp - src_width) / 2.0);
 			cairo_translate(cr, thumbnail_pos.x, thumbnail_pos.y);
 			cairo_scale(cr, y_ratio, y_ratio);
 			cairo_set_source_surface(cr, src, x_offset, y_offset);
-			cairo_rectangle(cr, x_offset, y_offset, src_width, src_height);
-			cairo_fill(cr);
+			cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+			cairo_paint(cr);
 
 			y_text_offset = src_height * y_ratio + (thumbnail_pos.h - (src_height * y_ratio)) / 2.0;
 		}

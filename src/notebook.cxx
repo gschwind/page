@@ -20,7 +20,8 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_is_default{false},
 		_selected{nullptr},
 		_is_hidden{false},
-		_keep_selected{keep_selected}
+		_keep_selected{keep_selected},
+		_exposay{false}
 {
 
 }
@@ -32,6 +33,7 @@ notebook_t::~notebook_t() {
 bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	assert(not has_key(_clients, x));
 	assert(x != nullptr);
+	stop_exposay();
 
 	x->set_parent(this);
 	_children.push_back(x);
@@ -40,7 +42,6 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_ctx->csm()->register_window(x->base());
 
 	if(prefer_activate) {
-		stop_exposay();
 		start_fading();
 		x->normalize();
 		if (_selected != nullptr and _selected != x) {
@@ -128,13 +129,13 @@ void notebook_t::set_selected(client_managed_t * c) {
 	stop_exposay();
 	start_fading();
 
-	c->normalize();
-
 	if(_selected != nullptr and c != _selected) {
 		_selected->iconify();
 	}
 	/** set selected **/
 	_selected = c;
+	_selected->normalize();
+
 	_update_layout();
 }
 
@@ -268,18 +269,15 @@ void notebook_t::_update_layout() {
 		client_area.h = 1;
 	}
 
-	if(_selected != nullptr) {
-		update_client_position(_selected);
+	for(auto c: _clients) {
+		/* resize all client properly */
+		update_client_position(c);
 	}
 
 	_update_theme_notebook(theme_notebook);
 	_update_notebook_areas();
 
-	if(_exposay != nullptr) {
-		_exposay = nullptr;
-		start_exposay();
-	}
-
+	_update_exposay();
 }
 
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
@@ -334,21 +332,10 @@ void notebook_t::activate(tree_t * t) {
 	if (has_key(_children, t)) {
 		_children.remove(t);
 		_children.push_back(t);
-
 		auto mw = dynamic_cast<client_managed_t*>(t);
-
 		if (mw != nullptr) {
-			if (mw->is_iconic()) {
-				start_fading();
-				mw->normalize();
-			}
-			if (_selected != nullptr and _selected != mw) {
-				_selected->iconify();
-			}
-			_selected = mw;
+			set_selected(mw);
 		}
-		_update_layout();
-
 	} else if (t != nullptr) {
 		throw exception_t("notebook_t::raise_child trying to raise a non child tree");
 	}
@@ -375,9 +362,12 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		return;
 	}
 
-	if(_exposay != nullptr) {
-		out += dynamic_pointer_cast<renderable_t>(_exposay);
-	} else if (time < (swap_start + animation_duration)) {
+	if(_exposay) {
+		for(auto & i: _exposay_thumbnail)
+			out += dynamic_pointer_cast<renderable_t>(i);
+	}
+
+	if (time < (swap_start + animation_duration)) {
 
 		if (fading_notebook == nullptr) {
 			return;
@@ -405,9 +395,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		/** animation is terminated **/
 		if(fading_notebook != nullptr) {
 			fading_notebook.reset();
-			/** force redraw of notebook **/
-			std::shared_ptr<renderable_t> x{new renderable_empty_t{to_root_position(_allocation)}};
-			out += x;
+			_ctx->add_global_damage(to_root_position(_allocation));
 			_update_layout();
 		}
 
@@ -426,9 +414,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 				}
 			}
 		}
-
 	}
-
 }
 
 i_rect notebook_t::compute_notebook_bookmark_position() const {
@@ -617,9 +603,10 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 
 void notebook_t::start_fading() {
 
-	stop_exposay();
-
 	if(_ctx->cmp() == nullptr)
+		return;
+
+	if(fading_notebook != nullptr)
 		return;
 
 	swap_start.update_to_current_time();
@@ -660,26 +647,30 @@ void notebook_t::start_fading() {
 }
 
 void notebook_t::start_exposay() {
-
 	if(_ctx->cmp() == nullptr)
 		return;
 
-	if(_selected != nullptr)
+	if(_selected != nullptr) {
 		iconify_client(_selected);
+		_selected = nullptr;
+	}
 
-	if(_clients.size() <= 0)
+	_exposay = true;
+	_update_layout();
+}
+
+void notebook_t::_update_exposay() {
+	if(_ctx->cmp() == nullptr)
 		return;
 
 	_exposay_buttons.clear();
+	_exposay_thumbnail.clear();
 
-	auto pix = _ctx->cmp()->create_composite_pixmap(client_area.w, client_area.h);
-	cairo_surface_t * surf = pix->get_cairo_surface();
-	cairo_t * cr = cairo_create(surf);
-	cairo_save(cr);
-	cairo_translate(cr, -client_area.x, -client_area.y);
-	_ctx->theme()->render_notebook(cr, &theme_notebook);
-	cairo_restore(cr);
+	if(not _exposay)
+		return;
 
+	if(_clients.size() <= 0)
+		return;
 
 	unsigned clients_counts = _clients.size();
 
@@ -722,52 +713,43 @@ void notebook_t::start_exposay() {
 		width = client_area.h/vm;
 	}
 
-	unsigned xoffset = (client_area.w-width*n)/2;
-	unsigned yoffset = (client_area.h-width*m)/2;
+	unsigned xoffset = (client_area.w-width*n)/2 + _allocation.x;
+	unsigned yoffset = (client_area.h-width*m)/2 + _allocation.y;
 
 	auto it = _clients.begin();
 	for(int i = 0; i < _clients.size(); ++i) {
 		unsigned y = i / n;
 		unsigned x = i % n;
-
-		i_rect pdst(x*width+1.0+xoffset, y*width+1.0+yoffset, width-2.0, width-2.0);
-
-		cairo_reset_clip(cr);
-		cairo_set_line_width(cr, 1.0);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-		pdst.x += 8;
-		pdst.y += 8;
-		pdst.w -= 16;
-		pdst.h -= 16;
-
-		auto c = *it;
-
-		pdst.x += client_area.x + get_window_position().x;
-		pdst.y += client_area.y + get_window_position().y;
-		_exposay_buttons.push_back(std::make_tuple(pdst, c));
-
-		theme_thumbnail_t t;
-		t.pix = c->get_last_pixmap();
-		t.title = c->title();
-		_ctx->theme()->render_thumbnail(cr, pdst, t);
-
+		i_rect pdst(x*width+1.0+xoffset+8, y*width+1.0+yoffset+8, width-2.0-16, width-2.0-16);
+		_exposay_buttons.push_back(make_tuple(pdst, *it));
+		pdst = to_root_position(pdst);
+//		if(not _is_hidden)
+//			(*it)->show();
+//		else
+//			(*it)->hide();
+		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
 		++it;
 	}
 
-	cairo_destroy(cr);
-	cairo_surface_flush(surf);
 
-	_exposay = std::make_shared<renderable_pixmap_t>(pix, to_root_position(client_area), to_root_position(client_area));
 
 }
 
 void notebook_t::stop_exposay() {
-	if(_exposay != nullptr) {
-		_exposay = nullptr;
-		_exposay_buttons.clear();
-		_update_layout();
-	}
+	_exposay = false;
+	_exposay_buttons.clear();
+	_exposay_thumbnail.clear();
+	_ctx->add_global_damage(to_root_position(_allocation));
+	_update_layout();
+
+//	for(auto c: _clients) {
+//		c->hide();
+//	}
+//
+//	if(not _is_hidden and _selected != nullptr) {
+//		_selected->show();
+//	}
+
 }
 
 bool notebook_t::button_press(xcb_button_press_event_t const * e) {

@@ -67,6 +67,7 @@ public:
 
 	std::shared_ptr<pixmap_t> get_last_pixmap(xcb_window_t w);
 	region get_damaged(xcb_window_t w);
+	bool has_damage(xcb_window_t w);
 	void clear_damaged(xcb_window_t w);
 };
 
