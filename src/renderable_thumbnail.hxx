@@ -42,6 +42,7 @@ public:
 
 
 	virtual void render(cairo_t * cr, region const & area) {
+		_tt.pix = _c->get_last_pixmap();
 		if (_tt.pix != nullptr) {
 			cairo_save(cr);
 			region r = _visible_region & area;
@@ -52,6 +53,9 @@ public:
 			}
 			cairo_restore(cr);
 		}
+
+		_ctx->csm()->clear_damaged(_c->base());
+
 	}
 
 	/**
@@ -72,7 +76,6 @@ public:
 
 	virtual region get_damaged() {
 		if(_ctx->csm()->has_damage(_c->base())) {
-			_ctx->csm()->clear_damaged(_c->base());
 			return region{_position};
 		}
 		return region{};

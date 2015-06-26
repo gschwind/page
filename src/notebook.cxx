@@ -723,10 +723,6 @@ void notebook_t::_update_exposay() {
 		i_rect pdst(x*width+1.0+xoffset+8, y*width+1.0+yoffset+8, width-2.0-16, width-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, *it));
 		pdst = to_root_position(pdst);
-//		if(not _is_hidden)
-//			(*it)->show();
-//		else
-//			(*it)->hide();
 		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
 		++it;
 	}
@@ -741,15 +737,6 @@ void notebook_t::stop_exposay() {
 	_exposay_thumbnail.clear();
 	_ctx->add_global_damage(to_root_position(_allocation));
 	_update_layout();
-
-//	for(auto c: _clients) {
-//		c->hide();
-//	}
-//
-//	if(not _is_hidden and _selected != nullptr) {
-//		_selected->show();
-//	}
-
 }
 
 bool notebook_t::button_press(xcb_button_press_event_t const * e) {
