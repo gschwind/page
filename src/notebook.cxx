@@ -22,7 +22,8 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_is_hidden{false},
 		_keep_selected{keep_selected},
 		_exposay{false},
-		_last_mouse_over{nullptr}
+		_last_mouse_over{nullptr},
+		_last_client_over{nullptr}
 {
 
 }
@@ -370,8 +371,14 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 	}
 
 	if(_exposay) {
+
+		if(_exposay_mouse_over != nullptr) {
+			out += dynamic_pointer_cast<renderable_t>(_exposay_mouse_over);
+		}
+
 		for(auto & i: _exposay_thumbnail)
 			out += dynamic_pointer_cast<renderable_t>(i);
+
 	}
 
 	if (time < (swap_start + animation_duration)) {
@@ -672,6 +679,8 @@ void notebook_t::_update_exposay() {
 
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
+	_exposay_client_over = nullptr;
+	_exposay_mouse_over = nullptr;
 
 	if(not _exposay)
 		return;
@@ -920,6 +929,29 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 				if(_last_mouse_over != nullptr) {
 					_last_mouse_over->tab_color = color_t{1.0, 0.0, 0.0, 1.0};
+				}
+			}
+
+			i_rect thumbnail_position;
+			client_managed_t * ec = nullptr;
+
+			for (auto & i : _exposay_buttons) {
+				auto c = std::get<1>(i);
+				if (std::get<0>(i).is_inside(x, y)) {
+					ec = c;
+					thumbnail_position =std::get<0>(i);
+					break;
+				}
+			}
+
+			if(ec != _exposay_client_over) {
+				queue_redraw();
+				if (_exposay_mouse_over != nullptr) {
+					_exposay_mouse_over = nullptr;
+				}
+				_exposay_client_over = ec;
+				if(_exposay_client_over != nullptr) {
+					_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(thumbnail_position, 8);
 				}
 			}
 		}

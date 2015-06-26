@@ -8,6 +8,7 @@
 #ifndef RENDERABLE_UNMANAGED_OUTER_GRADIEN_HXX_
 #define RENDERABLE_UNMANAGED_OUTER_GRADIEN_HXX_
 
+#include "renderable.hxx"
 
 namespace page {
 

@@ -19,8 +19,6 @@
 #include "pixmap.hxx"
 #include "composite_surface.hxx"
 #include "renderable_notebook_fading.hxx"
-#include "page_event.hxx"
-#include "renderable_notebook_fading.hxx"
 #include "renderable_pixmap.hxx"
 #include "renderable_empty.hxx"
 
@@ -28,6 +26,7 @@
 #include "page_component.hxx"
 #include "client_managed.hxx"
 #include "renderable_thumbnail.hxx"
+#include "renderable_unmanaged_outer_gradien.hxx"
 
 namespace page {
 
@@ -94,6 +93,8 @@ public:
 	/* list of tabs and exposay buttons */
 	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
 	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_buttons;
+	std::shared_ptr<renderable_unmanaged_outer_gradien_t> _exposay_mouse_over;
+	client_managed_t * _exposay_client_over;
 
 	i_rect close_client_area;
 	i_rect undck_client_area;
