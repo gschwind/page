@@ -1155,7 +1155,7 @@ void simple2_theme_t::render_floating_base(
 		color_t const & background_color,
 		double border_width
 ) const {
-
+	double const border_factor = 0.6;
 	i_rect allocation = mw->position;
 
 	if (mw->cairo_top != nullptr) {
@@ -1184,14 +1184,15 @@ void simple2_theme_t::render_floating_base(
 		cairo_pattern_t * gradient;
 		gradient = cairo_pattern_create_linear(0.0, b.y-2.0, 0.0, b.y+b.h);
 		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 0.0, 1.0, 1.0, 1.0, (background_color.a)));
-		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, (background_color.a)*0.5));
+		CHECK_CAIRO(cairo_pattern_add_color_stop_rgba(gradient, 1.0, 1.0, 1.0, 1.0, (background_color.a)*0.8));
 		CHECK_CAIRO(cairo_mask(cr, gradient));
 		cairo_pattern_destroy(gradient);
 
-		/* draw black outline */
-		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.0));
 		cairo_set_line_width(cr, 1.0);
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+
+		/* draw black outline */
+		::cairo_set_source_rgb(cr, background_color.r*border_factor, background_color.g*border_factor, background_color.b*border_factor);
+		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.0));
 		CHECK_CAIRO(cairo_stroke(cr));
 
 		i_rect xncclose;
@@ -1204,25 +1205,25 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(::cairo_set_source_rgb(cr, 0xcc/255.0, 0x44/255.0, 0.0));
 		CHECK_CAIRO(cairo_fill(cr));
 
-		CHECK_CAIRO(cairo_new_path(cr));
-		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-		::cairo_set_source_rgb(cr, 0xcc/255.0*.5, 0x44/255.0*.5, 0.0);
-		cairo_stroke(cr);
+//		CHECK_CAIRO(cairo_new_path(cr));
+//		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+//		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+//		::cairo_set_source_rgb(cr, 0xcc/255.0*.5, 0x44/255.0*.5, 0.0);
+//		cairo_stroke(cr);
 
 		CHECK_CAIRO(cairo_new_path(cr));
 		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
 		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		::cairo_set_source_rgb(cr, background_color.r*border_factor, background_color.g*border_factor, background_color.b*border_factor);
 		cairo_stroke(cr);
 
-		CHECK_CAIRO(cairo_new_path(cr));
-		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
-		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_stroke(cr);
+//		CHECK_CAIRO(cairo_new_path(cr));
+//		CHECK_CAIRO(cairo_move_to(cr, xncclose.x+0.5, xncclose.y+0.5));
+//		CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
+//		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+//		cairo_stroke(cr);
 
 		CHECK_CAIRO(cairo_restore(cr));
 		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
@@ -1322,29 +1323,19 @@ void simple2_theme_t::render_floating_base(
 		i_rect b(0, 0, allocation.w, floating.margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.8);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_fill(cr);
 
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_new_path(cr);
-		cairo_move_to(cr,b.x, b.y+b.h-0.5);
-		cairo_line_to(cr, b.x+b.w, b.y+b.h-0.5);
+		::cairo_set_source_rgb(cr, background_color.r*border_factor, background_color.g*border_factor, background_color.b*border_factor);
 		cairo_set_line_width(cr, 1.0);
-		cairo_stroke(cr);
 
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		// bottom border
 		cairo_new_path(cr);
 		cairo_move_to(cr,b.x+0.5, b.y);
-		cairo_line_to(cr, b.x+0.5, b.y+b.h);
-		cairo_set_line_width(cr, 1.0);
-		cairo_stroke(cr);
-
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-		cairo_new_path(cr);
-		cairo_move_to(cr,b.x+b.w-0.5, b.y);
-		cairo_line_to(cr, b.x+b.w-0.5, b.y+b.h);
-		cairo_set_line_width(cr, 1.0);
+		cairo_line_to(cr, b.x+0.5, b.y+b.h-0.5);
+		cairo_line_to(cr, b.x+b.w-0.5, b.y+b.h-0.5);
+		cairo_line_to(cr,b.x+b.w-0.5, b.y);
 		cairo_stroke(cr);
 
 		warn(cairo_get_reference_count(cr) == 1);
@@ -1360,15 +1351,16 @@ void simple2_theme_t::render_floating_base(
 						- floating.margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.8);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_fill(cr);
 
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		::cairo_set_source_rgb(cr, background_color.r*border_factor, background_color.g*border_factor, background_color.b*border_factor);
+		cairo_set_line_width(cr, 1.0);
+
 		cairo_new_path(cr);
 		cairo_move_to(cr,b.x+b.w-0.5, b.y);
 		cairo_line_to(cr, b.x+b.w-0.5, b.y+b.h);
-		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
 		warn(cairo_get_reference_count(cr) == 1);
@@ -1384,15 +1376,16 @@ void simple2_theme_t::render_floating_base(
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.5);
+		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.8);
 		cairo_rectangle(cr, b.x, b.y, b.w, b.h);
 		cairo_fill(cr);
 
-		::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+		::cairo_set_source_rgb(cr, background_color.r*border_factor, background_color.g*border_factor, background_color.b*border_factor);
+		cairo_set_line_width(cr, 1.0);
+
 		cairo_new_path(cr);
 		cairo_move_to(cr,b.x+0.5, b.y);
 		cairo_line_to(cr, b.x+0.5, b.y+b.h);
-		cairo_set_line_width(cr, 1.0);
 		cairo_stroke(cr);
 
 		warn(cairo_get_reference_count(cr) == 1);
