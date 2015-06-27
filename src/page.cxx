@@ -137,6 +137,8 @@ page_t::page_t(int argc, char ** argv)
 
 	_last_focus_time = XCB_TIME_CURRENT_TIME;
 	_last_button_press = XCB_TIME_CURRENT_TIME;
+	_left_most_border = std::numeric_limits<int>::max();
+	_top_most_border = std::numeric_limits<int>::max();
 
 	_theme = nullptr;
 
@@ -1607,14 +1609,6 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 
 }
 
-void page_t::split(notebook_t * nbk, split_type_e type) {
-	split_t * split = new split_t{this, type};
-	nbk->parent()->replace(nbk, split);
-	notebook_t * n = new notebook_t{this, _auto_refocus};
-	split->set_pack0(nbk);
-	split->set_pack1(n);
-}
-
 void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	page_component_t * parent = nbk->parent();
 	notebook_t * n = new notebook_t{this, _auto_refocus};
@@ -1622,8 +1616,10 @@ void page_t::split_left(notebook_t * nbk, client_managed_t * c) {
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
-	detach(c);
-	insert_window_in_notebook(c, n, true);
+	if (c != nullptr) {
+		detach(c);
+		insert_window_in_notebook(c, n, true);
+	}
 }
 
 void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
@@ -1633,8 +1629,10 @@ void page_t::split_right(notebook_t * nbk, client_managed_t * c) {
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
-	detach(c);
-	insert_window_in_notebook(c, n, true);
+	if (c != nullptr) {
+		detach(c);
+		insert_window_in_notebook(c, n, true);
+	}
 }
 
 void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
@@ -1644,8 +1642,10 @@ void page_t::split_top(notebook_t * nbk, client_managed_t * c) {
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
-	detach(c);
-	insert_window_in_notebook(c, n, true);
+	if (c != nullptr) {
+		detach(c);
+		insert_window_in_notebook(c, n, true);
+	}
 }
 
 void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
@@ -1655,8 +1655,10 @@ void page_t::split_bottom(notebook_t * nbk, client_managed_t * c) {
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
-	detach(c);
-	insert_window_in_notebook(c, n, true);
+	if (c != nullptr) {
+		detach(c);
+		insert_window_in_notebook(c, n, true);
+	}
 }
 
 void page_t::notebook_close(notebook_t * nbk) {
@@ -3491,10 +3493,11 @@ void page_t::_event_handler_bind(int type, callback_event_t f) {
 }
 
 void page_t::_bind_all_default_event() {
+	_event_handlers.clear();
 
 	_event_handler_bind(XCB_BUTTON_PRESS, &page_t::process_button_press_event);
-	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release_normal);
-	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify_normal);
+	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release);
+	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify);
 	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_key_press_event);
 	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_key_press_event);
 	_event_handler_bind(XCB_CONFIGURE_NOTIFY, &page_t::process_configure_notify_event);
@@ -3748,7 +3751,7 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 	}
 }
 
-void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
+void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 	if(_grab_handler != nullptr) {
 		_grab_handler->button_motion(e);
@@ -3758,7 +3761,7 @@ void page_t::process_motion_notify_normal(xcb_generic_event_t const * _e) {
 	}
 }
 
-void page_t::process_button_release_normal(xcb_generic_event_t const * _e) {
+void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if(_grab_handler != nullptr) {
 		_grab_handler->button_release(e);

@@ -23,7 +23,8 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_keep_selected{keep_selected},
 		_exposay{false},
 		_last_mouse_over{nullptr},
-		_last_client_over{nullptr}
+		_last_client_over{nullptr},
+		_exposay_client_over{nullptr}
 {
 
 }
@@ -770,10 +771,10 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			_ctx->notebook_close(this);
 			return true;
 		} else if (button_hsplit.is_inside(x, y)) {
-			_ctx->split(this, HORIZONTAL_SPLIT);
+			_ctx->split_bottom(this, nullptr);
 			return true;
 		} else if (button_vsplit.is_inside(x, y)) {
-			_ctx->split(this, VERTICAL_SPLIT);
+			_ctx->split_right(this, nullptr);
 			return true;
 		} else if (button_select.is_inside(x, y)) {
 			_ctx->get_current_workspace()->set_default_pop(this);

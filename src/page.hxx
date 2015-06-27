@@ -243,6 +243,8 @@ public:
 	/** user inputs **/
 	void process_key_press_event(xcb_generic_event_t const * e);
 	void process_button_press_event(xcb_generic_event_t const * e);
+	void process_motion_notify(xcb_generic_event_t const * _e);
+	void process_button_release(xcb_generic_event_t const * _e);
 	/* SubstructureNotifyMask */
 	//void process_event(xcb_circulate_notify_event_t const * e);
 	void process_configure_notify_event(xcb_generic_event_t const * e);
@@ -438,35 +440,6 @@ public:
 
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();
-
-
-	void process_motion_notify_normal(xcb_generic_event_t const * e);
-	void process_motion_notify_split_grab(xcb_generic_event_t const * e);
-	void process_motion_notify_notebook_grab(xcb_generic_event_t const * e);
-	void process_motion_notify_notebook_button_press(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_move(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_resize(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_close(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_bind(xcb_generic_event_t const * e);
-	void process_motion_notify_fullscreen_move(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_move_by_client(xcb_generic_event_t const * e);
-	void process_motion_notify_floating_resize_by_client(xcb_generic_event_t const * e);
-	void process_motion_notify_notebook_menu(xcb_generic_event_t const * e);
-	void process_motion_notify_notebook_client_menu(xcb_generic_event_t const * e);
-
-	void process_button_release_normal(xcb_generic_event_t const * e);
-	void process_button_release_split_grab(xcb_generic_event_t const * e);
-	void process_button_release_notebook_grab(xcb_generic_event_t const * e);
-	void process_button_release_notebook_button_press(xcb_generic_event_t const * e);
-	void process_button_release_floating_move(xcb_generic_event_t const * e);
-	void process_button_release_floating_resize(xcb_generic_event_t const * e);
-	void process_button_release_floating_close(xcb_generic_event_t const * e);
-	void process_button_release_floating_bind(xcb_generic_event_t const * e);
-	void process_button_release_fullscreen_move(xcb_generic_event_t const * e);
-	void process_button_release_floating_move_by_client(xcb_generic_event_t const * e);
-	void process_button_release_floating_resize_by_client(xcb_generic_event_t const * e);
-	void process_button_release_notebook_menu(xcb_generic_event_t const * e);
-	void process_button_release_notebook_client_menu(xcb_generic_event_t const * e);
 
 	void process_error(xcb_generic_event_t const * e);
 
