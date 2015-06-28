@@ -648,6 +648,7 @@ void simple2_theme_t::render_notebook_selected(
 		color_t const & background_color,
 		double border_width
 ) const {
+	double const border_factor = 0.6;
 
 	i_rect tab_area = data.position;
 
@@ -680,7 +681,7 @@ void simple2_theme_t::render_notebook_selected(
 	/* draw black outline */
 	CHECK_CAIRO(cairo_rounded_tab3(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 5.5));
 	cairo_set_line_width(cr, 1.0);
-	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	::cairo_set_source_rgb(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor);
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
@@ -689,14 +690,14 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y+5.5, 1.0, 40.0));
 	cairo_clip(cr);
 
-	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	::cairo_set_source_rgb(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor);
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 
 	cairo_reset_clip(cr);
 	CHECK_CAIRO(cairo_rectangle(cr, b.x+b.w-1.0, b.y+5.5, 1.0, 40.0));
 	cairo_clip(cr);
 
-	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	::cairo_set_source_rgb(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor);
 	CHECK_CAIRO(cairo_mask(cr, gradient));
 
 
@@ -728,7 +729,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5 + xncclose.h-1.0));
 	CHECK_CAIRO(cairo_line_to(cr, xncclose.x+xncclose.w+0.5, xncclose.y+0.5));
-	::cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	::cairo_set_source_rgb(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor);
 	cairo_stroke(cr);
 
 	CHECK_CAIRO(cairo_restore(cr));
@@ -842,6 +843,7 @@ void simple2_theme_t::render_notebook_normal(
 		color_t const & border_color,
 		color_t const & background_color
 ) const {
+	double const border_factor = 0.6;
 
 	i_rect tab_area = data.position;
 	tab_area.x += 2;
@@ -877,7 +879,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
 	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 
-	CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+	CHECK_CAIRO(::cairo_set_source_rgba(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor, 1.0));
 	CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h-1.0, 5.5));
 	CHECK_CAIRO(cairo_stroke(cr));
 
