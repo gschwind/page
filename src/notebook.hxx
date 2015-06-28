@@ -54,18 +54,19 @@ class notebook_t : public page_component_t {
 	page::time_t swap_start;
 
 	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
-
 	std::vector<std::shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
 
 	theme_notebook_t theme_notebook;
-
-	theme_tab_t * _last_mouse_over;
-	client_managed_t * _last_client_over;
 
 	bool _is_default;
 	bool _is_hidden;
 	bool _keep_selected;
 	bool _exposay;
+
+	struct {
+		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab;
+		std::tuple<i_rect, client_managed_t *> * exposay;
+	} _mouse_over;
 
 public:
 
@@ -94,7 +95,6 @@ public:
 	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
 	std::vector<std::tuple<i_rect, client_managed_t *>> _exposay_buttons;
 	std::shared_ptr<renderable_unmanaged_outer_gradien_t> _exposay_mouse_over;
-	client_managed_t * _exposay_client_over;
 
 	i_rect close_client_area;
 	i_rect undck_client_area;
@@ -122,6 +122,9 @@ public:
 	void _update_layout();
 
 	void process_notebook_client_menu(client_managed_t * c, int selected);
+
+	void _mouse_over_reset();
+	void _mouse_over_set();
 
 public:
 	notebook_t(page_context_t * ctx, bool keep_selected);

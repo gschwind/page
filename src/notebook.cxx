@@ -22,9 +22,7 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_is_hidden{false},
 		_keep_selected{keep_selected},
 		_exposay{false},
-		_last_mouse_over{nullptr},
-		_last_client_over{nullptr},
-		_exposay_client_over{nullptr}
+		_mouse_over{nullptr, nullptr}
 {
 
 }
@@ -280,9 +278,8 @@ void notebook_t::_update_layout() {
 		update_client_position(c);
 	}
 
-	_last_mouse_over = nullptr;
-	_last_client_over = nullptr;
 
+	_mouse_over_reset();
 	_update_theme_notebook(theme_notebook);
 	_update_notebook_areas();
 
@@ -680,7 +677,6 @@ void notebook_t::_update_exposay() {
 
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
-	_exposay_client_over = nullptr;
 	_exposay_mouse_over = nullptr;
 
 	if(not _exposay)
@@ -879,88 +875,97 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 	int y = e->event_y;
 
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
+		notebook_button_e new_button_mouse_over = theme_notebook.button_mouse_over;
+		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab = _mouse_over.tab;
+		std::tuple<i_rect, client_managed_t *> * exposay = _mouse_over.exposay;
 
 		if (button_close.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
 		} else if (button_hsplit.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_HSPLIT;
 		} else if (button_vsplit.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_VSPLIT;
 		} else if (button_select.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_MASK;
 		} else if (button_exposay.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_EXPOSAY;
 		} else if (close_client_area.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_CLIENT_CLOSE;
 		} else if (undck_client_area.is_inside(x, y)) {
-
+			new_button_mouse_over = NOTEBOOK_BUTTON_CLIENT_UNBIND;
 		} else {
-
-			theme_tab_t * new_mouse_over = nullptr;
-			client_managed_t * xc = nullptr;
-
 			for (auto & i : _client_buttons) {
-				auto tab = std::get<2>(i);
-				auto c = std::get<1>(i);
 				if (std::get<0>(i).is_inside(x, y)) {
-					new_mouse_over = tab;
-					xc = c;
+					tab = &i;
 					break;
 				}
 			}
-
-			if(new_mouse_over != _last_mouse_over) {
-				queue_redraw();
-
-				if (_last_mouse_over != nullptr) {
-					if (_last_client_over->is_focused()) {
-						_last_mouse_over->tab_color =
-								_ctx->theme()->get_focused_color();
-					} else if (_selected == _last_client_over) {
-						_last_mouse_over->tab_color =
-								_ctx->theme()->get_selected_color();
-					} else {
-						_last_mouse_over->tab_color =
-								_ctx->theme()->get_normal_color();
-					}
-				}
-
-				_last_mouse_over = new_mouse_over;
-				_last_client_over = xc;
-
-				if(_last_mouse_over != nullptr) {
-					_last_mouse_over->tab_color = color_t{1.0, 0.0, 0.0, 1.0};
-				}
-			}
-
-			i_rect thumbnail_position;
-			client_managed_t * ec = nullptr;
 
 			for (auto & i : _exposay_buttons) {
-				auto c = std::get<1>(i);
 				if (std::get<0>(i).is_inside(x, y)) {
-					ec = c;
-					thumbnail_position =std::get<0>(i);
+					exposay = &i;
 					break;
-				}
-			}
-
-			if(ec != _exposay_client_over) {
-				queue_redraw();
-				if (_exposay_mouse_over != nullptr) {
-					_exposay_mouse_over = nullptr;
-				}
-				_exposay_client_over = ec;
-				if(_exposay_client_over != nullptr) {
-					_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(thumbnail_position, 8);
 				}
 			}
 		}
+
+		if(theme_notebook.button_mouse_over != new_button_mouse_over) {
+			_mouse_over_reset();
+			theme_notebook.button_mouse_over = new_button_mouse_over;
+			queue_redraw();
+		} else if (_mouse_over.tab != tab) {
+			_mouse_over_reset();
+			_mouse_over.tab = tab;
+			_mouse_over_set();
+			queue_redraw();
+		} else if (_mouse_over.exposay != exposay) {
+			_mouse_over_reset();
+			_mouse_over.exposay = exposay;
+			_mouse_over_set();
+			queue_redraw();
+		}
 		return true;
+	} else {
+		if(theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
+			_mouse_over_reset();
+			queue_redraw();
+		}
 	}
 
 	return false;
 }
 
+void notebook_t::_mouse_over_reset() {
+	if (_mouse_over.tab != nullptr) {
+		if (std::get<1>(*_mouse_over.tab)->is_focused()) {
+			std::get<2>(*_mouse_over.tab)->tab_color =
+					_ctx->theme()->get_focused_color();
+		} else if (_selected == std::get<1>(*_mouse_over.tab)) {
+			std::get<2>(*_mouse_over.tab)->tab_color =
+					_ctx->theme()->get_selected_color();
+		} else {
+			std::get<2>(*_mouse_over.tab)->tab_color =
+					_ctx->theme()->get_normal_color();
+		}
+	}
+
+	theme_notebook.button_mouse_over = NOTEBOOK_BUTTON_NONE;
+	_mouse_over.tab = nullptr;
+	_mouse_over.exposay = nullptr;
+	_exposay_mouse_over = nullptr;
+
+}
+
+void notebook_t::_mouse_over_set() {
+	if (_mouse_over.tab != nullptr) {
+		std::get<2>(*_mouse_over.tab)->tab_color = color_t{1.0, 0.0, 0.0, 1.0};
+	}
+
+	if(_mouse_over.exposay != nullptr) {
+		_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(std::get<0>(*_mouse_over.exposay), 8);
+	} else {
+		_exposay_mouse_over = nullptr;
+	}
+}
 
 }
