@@ -137,6 +137,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 
 	grip_color.set(conf.get_string("simple_theme", "grip_color"));
 
+	notebook_mouse_over_background_color.set(conf.get_string("simple_theme", "notebook_mouse_over_background_color"));
+
 	notebook_active_text_color.set(
 			conf.get_string("simple_theme", "notebook_active_text_color"));
 	notebook_active_outline_color.set(
@@ -1922,6 +1924,10 @@ color_t const & simple2_theme_t::get_selected_color() const {
 
 color_t const & simple2_theme_t::get_normal_color() const {
 	return notebook_normal_background_color;
+}
+
+color_t const & simple2_theme_t::get_mouse_over_color() const {
+	return notebook_mouse_over_background_color;
 }
 
 

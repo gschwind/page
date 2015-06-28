@@ -80,6 +80,8 @@ public:
 
 	color_t grip_color;
 
+	color_t notebook_mouse_over_background_color;
+
 	color_t notebook_active_text_color;
 	color_t notebook_active_outline_color;
 	color_t notebook_active_border_color;
@@ -220,6 +222,7 @@ public:
 	virtual color_t const & get_focused_color() const;
 	virtual color_t const & get_selected_color() const;
 	virtual color_t const & get_normal_color() const;
+	virtual color_t const & get_mouse_over_color() const;
 
 };
 

@@ -110,7 +110,7 @@ public:
 	virtual color_t const & get_focused_color() const = 0;
 	virtual color_t const & get_selected_color() const = 0;
 	virtual color_t const & get_normal_color() const = 0;
-
+	virtual color_t const & get_mouse_over_color() const = 0;
 
 };
 

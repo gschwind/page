@@ -958,7 +958,7 @@ void notebook_t::_mouse_over_reset() {
 
 void notebook_t::_mouse_over_set() {
 	if (_mouse_over.tab != nullptr) {
-		std::get<2>(*_mouse_over.tab)->tab_color = color_t{1.0, 0.0, 0.0, 1.0};
+		std::get<2>(*_mouse_over.tab)->tab_color = _ctx->theme()->get_mouse_over_color();
 	}
 
 	if(_mouse_over.exposay != nullptr) {
