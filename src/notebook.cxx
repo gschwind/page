@@ -734,6 +734,10 @@ void notebook_t::_update_exposay() {
 	for(int i = 0; i < _clients.size(); ++i) {
 		unsigned y = i / n;
 		unsigned x = i % n;
+
+		if(y == m-1)
+			xoffset = (client_area.w-width*n)/2 + client_area.x + (n*m - _clients.size())*width/2.0;
+
 		i_rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, *it));
 		pdst = to_root_position(pdst);
