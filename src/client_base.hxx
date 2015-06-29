@@ -286,11 +286,6 @@ public:
 		printf("Unexpected use of client_base_t::replace\n");
 	}
 
-	std::vector<tree_t *> childs() const {
-		std::vector<tree_t *> ret(_children.begin(), _children.end());
-		return ret;
-	}
-
 	xcb_atom_t wm_type() {
 		return _properties->wm_type();
 	}

@@ -82,16 +82,6 @@ public:
 		return not _is_hidden;
 	}
 
-	virtual std::list<tree_t *> childs() const {
-		std::list<tree_t *> ret;
-
-		if (_subtree != nullptr) {
-			ret.push_back(_subtree);
-		}
-
-		return ret;
-	}
-
 	void activate(tree_t * t) {
 		if(t != _subtree and t != nullptr) {
 			throw exception_t("viewport::raise_child trying to raise a non child tree");

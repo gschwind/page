@@ -183,7 +183,6 @@ public:
 	client_managed_t const * selected() const;
 	bool is_default() const;
 	void set_default(bool x);
-	std::list<tree_t *> childs() const;
 	void raise_child(tree_t * t = nullptr);
 	void activate(tree_t * t = nullptr);
 	std::string get_node_name() const;

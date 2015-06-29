@@ -370,7 +370,7 @@ void page_t::unmanage(client_managed_t * mw) {
 	detach(mw);
 
 	/* if managed window have active clients */
-	for(auto i: mw->childs()) {
+	for(auto i: mw->tree_t::children()) {
 		client_base_t * c = dynamic_cast<client_base_t *>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
@@ -3064,7 +3064,7 @@ void page_t::remove_client(client_base_t * c) {
 		}
 	}
 	detach(c);
-	for(auto i: c->childs()) {
+	for(auto i: c->tree_t::children()) {
 		client_base_t * c = dynamic_cast<client_base_t *>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);

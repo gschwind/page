@@ -66,7 +66,6 @@ public:
 	void compute_split_location(double split, int & x, int & y) const;
 	void compute_split_size(double split, int & w, int & h) const;
 	void render_legacy(cairo_t * cr) const;
-	std::list<tree_t *> childs() const;
 	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);

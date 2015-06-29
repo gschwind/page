@@ -325,10 +325,6 @@ void notebook_t::set_default(bool x) {
 	_is_default = x;
 }
 
-std::list<tree_t *> notebook_t::childs() const {
-	return std::list<tree_t *>{_children.begin(), _children.end()};
-}
-
 void notebook_t::activate(tree_t * t) {
 
 	if(_parent != nullptr) {
@@ -398,7 +394,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
 
 		if (_selected != nullptr) {
-			for(auto i: _selected->childs()) {
+			for(auto i: _selected->tree_t::children()) {
 				i->prepare_render(out, time);
 			}
 		}
@@ -421,7 +417,7 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 				}
 
 				/** bypass prepare_render of notebook childs **/
-				for (auto & i : _selected->childs()) {
+				for (auto & i : _selected->tree_t::children()) {
 					i->prepare_render(out, time);
 				}
 			}

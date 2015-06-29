@@ -225,11 +225,6 @@ void split_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_split(cr, &ts);
 }
 
-std::list<tree_t *> split_t::childs() const {
-	std::list<tree_t *> ret(_children.begin(), _children.end());
-	return ret;
-}
-
 void split_t::activate(tree_t * t) {
 	if(has_key(_children, t)) {
 		if(_parent != nullptr) {
