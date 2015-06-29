@@ -681,6 +681,9 @@ void notebook_t::_update_exposay() {
 	if(_clients.size() <= 0)
 		return;
 
+	double client_area_ratio_w = client_area.h / (double)client_area.w;
+	double client_area_ratio_h = client_area.w / (double)client_area.h;
+
 	unsigned clients_counts = _clients.size();
 
 	unsigned hcounts = 0;
@@ -689,7 +692,7 @@ void notebook_t::_update_exposay() {
 	while (hcounts < clients_counts) {
 		unsigned xwidth = client_area.w / ++hn;
 		if (xwidth > 0) {
-			hm = client_area.h / xwidth;
+			hm = client_area.h / ceil(xwidth*client_area_ratio_w);
 			hcounts = hn * hm;
 		} else {
 			hm = 0;
@@ -703,7 +706,7 @@ void notebook_t::_update_exposay() {
 	while (vcounts < clients_counts) {
 		unsigned xheight = client_area.h / ++vm;
 		if (xheight > 0) {
-			vn = client_area.w / xheight;
+			vn = client_area.w / ceil(xheight*client_area_ratio_h);
 			vcounts = vn * vm;
 		} else {
 			vm = 0;
@@ -711,25 +714,27 @@ void notebook_t::_update_exposay() {
 		}
 	}
 
-	unsigned n, m, width;
-	if(client_area.h/vm < client_area.w/hn) {
+	unsigned n, m, width, heigth;
+	if(vn > hn) {
 		n = hn;
 		m = hm;
 		width = client_area.w/hn;
+		heigth = client_area.h/hm;
 	} else {
 		n = vn;
 		m = vm;
-		width = client_area.h/vm;
+		width = client_area.w/vn;
+		heigth = client_area.h/vm;
 	}
 
 	unsigned xoffset = (client_area.w-width*n)/2 + client_area.x;
-	unsigned yoffset = (client_area.h-width*m)/2 + client_area.y;
+	unsigned yoffset = (client_area.h-heigth*m)/2 + client_area.y;
 
 	auto it = _clients.begin();
 	for(int i = 0; i < _clients.size(); ++i) {
 		unsigned y = i / n;
 		unsigned x = i % n;
-		i_rect pdst(x*width+1.0+xoffset+8, y*width+1.0+yoffset+8, width-2.0-16, width-2.0-16);
+		i_rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, *it));
 		pdst = to_root_position(pdst);
 		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
