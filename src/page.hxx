@@ -260,6 +260,7 @@ public:
 	void process_focus_in_event(xcb_generic_event_t const * e);
 	void process_focus_out_event(xcb_generic_event_t const * e);
 	void process_enter_window_event(xcb_generic_event_t const * e);
+	void process_leave_window_event(xcb_generic_event_t const * e);
 
 	void process_expose_event(xcb_generic_event_t const * e);
 

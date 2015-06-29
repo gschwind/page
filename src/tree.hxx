@@ -109,6 +109,8 @@ public:
 	virtual bool button_press(xcb_button_press_event_t const * ev) { return false; }
 	virtual bool button_release(xcb_button_release_event_t const * ev) { return false; }
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev) { return false; }
+	virtual bool leave(xcb_leave_notify_event_t const * ev) { return false; }
+	virtual bool enter(xcb_enter_notify_event_t const * ev) { return false; }
 
 	virtual void trigger_redraw() { }
 
@@ -227,6 +229,14 @@ public:
 
 	bool broadcast_button_motion(xcb_motion_notify_event_t const * ev) {
 		return _broadcast_deep_first(&tree_t::button_motion, ev);
+	}
+
+	bool broadcast_leave(xcb_leave_notify_event_t const * ev) {
+		return _broadcast_deep_first(&tree_t::leave, ev);
+	}
+
+	bool broadcast_enter(xcb_enter_notify_event_t const * ev) {
+		return _broadcast_deep_first(&tree_t::enter, ev);
 	}
 
 	i_rect to_root_position(i_rect const & r) const {

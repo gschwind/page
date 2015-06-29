@@ -3515,6 +3515,7 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_FOCUS_IN, &page_t::process_focus_in_event);
 	_event_handler_bind(XCB_FOCUS_OUT, &page_t::process_focus_out_event);
 	_event_handler_bind(XCB_ENTER_NOTIFY, &page_t::process_enter_window_event);
+	_event_handler_bind(XCB_LEAVE_NOTIFY, &page_t::process_leave_window_event);
 
 
 	_event_handler_bind(0, &page_t::process_error);
@@ -3684,14 +3685,21 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
+	broadcast_enter(e);
+
 	if(not _mouse_focus)
 		return;
 
-	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
 	client_managed_t * mw = find_managed_window_with(e->event);
 	if(mw != nullptr) {
 		set_focus(mw, e->time);
 	}
+}
+
+void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
+	broadcast_leave(e);
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
