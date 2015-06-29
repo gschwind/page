@@ -739,7 +739,7 @@ void notebook_t::_update_exposay() {
 			xoffset = (client_area.w-width*n)/2 + client_area.x + (n*m - _clients.size())*width/2.0;
 
 		i_rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, *it));
+		_exposay_buttons.push_back(make_tuple(pdst, *it, i));
 		pdst = to_root_position(pdst);
 		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
 		++it;
@@ -882,7 +882,7 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
 		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
 		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab = nullptr;
-		std::tuple<i_rect, client_managed_t *> * exposay = nullptr;
+		std::tuple<i_rect, client_managed_t *, int> * exposay = nullptr;
 
 		if (button_close.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
@@ -977,7 +977,7 @@ void notebook_t::_mouse_over_set() {
 	}
 
 	if(_mouse_over.exposay != nullptr) {
-		_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(std::get<0>(*_mouse_over.exposay), 8);
+		_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), 16);
 	} else {
 		_exposay_mouse_over = nullptr;
 	}
