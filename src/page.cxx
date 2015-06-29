@@ -3074,44 +3074,44 @@ void page_t::remove_client(client_base_t * c) {
 	delete c;
 }
 
-void page_t::get_all_children(std::vector<tree_t *> & out) const {
-
-	for (auto v: _desktop_stack) {
-		out.push_back(v);
-		v->get_all_children(out);
-	}
-
-	for(auto x: below) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-//	for(auto x: _fullscreen_client_to_viewport) {
-//		out.push_back(x.first);
-//		x.first->get_all_children(out);
+//void page_t::get_all_children(std::vector<tree_t *> & out) const {
+//
+//	for (auto v: _desktop_stack) {
+//		out.push_back(v);
+//		v->get_all_children(out);
 //	}
-
-	for(auto x: root_subclients) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-	for(auto x: tooltips) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-	for(auto x: notifications) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-	for(auto x: above) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-
-}
+//
+//	for(auto x: below) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//
+////	for(auto x: _fullscreen_client_to_viewport) {
+////		out.push_back(x.first);
+////		x.first->get_all_children(out);
+////	}
+//
+//	for(auto x: root_subclients) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//
+//	for(auto x: tooltips) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//
+//	for(auto x: notifications) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//
+//	for(auto x: above) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//
+//}
 
 std::string page_t::get_node_name() const {
 	return _get_node_name<'P'>();

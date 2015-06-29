@@ -530,12 +530,12 @@ void notebook_t::_update_notebook_areas() {
 }
 
 
-void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
-	for(auto x: _children) {
-		out.push_back(x);
-		x->get_all_children(out);
-	}
-}
+//void notebook_t::get_all_children(std::vector<tree_t *> & out) const {
+//	for(auto x: _children) {
+//		out.push_back(x);
+//		x->get_all_children(out);
+//	}
+//}
 
 void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const {
 	theme_notebook.clients_tab.clear();

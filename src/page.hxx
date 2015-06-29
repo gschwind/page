@@ -423,7 +423,7 @@ public:
 
 
 	void children(std::vector<tree_t *> & out) const;
-	void get_all_children(std::vector<tree_t *> & out) const;
+//	void get_all_children(std::vector<tree_t *> & out) const;
 	void get_visible_children(std::vector<tree_t *> & out);
 
 	void render();

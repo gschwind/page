@@ -373,12 +373,13 @@ public:
 		_children.remove(c);
 	}
 
-	void get_all_children(std::vector<tree_t *> & out) const {
-		for(auto x: _children) {
-			out.push_back(x);
-			x->get_all_children(out);
-		}
-	}
+//	void get_all_children(std::vector<tree_t *> & out) const {
+//		for(auto x: _children) {
+//			out.push_back(x);
+//			x->get_all_children(out);
+//		}
+//	}
+
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
 	}

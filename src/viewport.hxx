@@ -130,7 +130,7 @@ public:
 
 	i_rect const & raw_area() const;
 
-	void get_all_children(std::vector<tree_t *> & out) const;
+//	void get_all_children(std::vector<tree_t *> & out) const;
 
 	void children(std::vector<tree_t *> & out) const {
 		if(_subtree != nullptr) {

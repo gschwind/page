@@ -251,27 +251,27 @@ public:
 		_allocation = area;
 	}
 
-	void get_all_children(std::vector<tree_t *> & out) const {
-		for(auto i: _viewport_stack) {
-			out.push_back(i);
-			i->get_all_children(out);
-		}
-
-		for(auto i: _dock_clients) {
-			out.push_back(i);
-			i->get_all_children(out);
-		}
-
-		for(auto i: _floating_clients) {
-			out.push_back(i);
-			i->get_all_children(out);
-		}
-
-		for(auto i: _fullscreen_clients) {
-			out.push_back(i);
-			i->get_all_children(out);
-		}
-	}
+//	void get_all_children(std::vector<tree_t *> & out) const {
+//		for(auto i: _viewport_stack) {
+//			out.push_back(i);
+//			i->get_all_children(out);
+//		}
+//
+//		for(auto i: _dock_clients) {
+//			out.push_back(i);
+//			i->get_all_children(out);
+//		}
+//
+//		for(auto i: _floating_clients) {
+//			out.push_back(i);
+//			i->get_all_children(out);
+//		}
+//
+//		for(auto i: _fullscreen_clients) {
+//			out.push_back(i);
+//			i->get_all_children(out);
+//		}
+//	}
 
 	void hide() {
 		_is_hidden = true;

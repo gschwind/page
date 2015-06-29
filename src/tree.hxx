@@ -54,10 +54,6 @@ public:
 	 **/
 	virtual auto children(std::vector<tree_t *> & out) const -> void = 0;
 
-	/**
-	 * get all children recursively
-	 **/
-	virtual auto get_all_children(std::vector<tree_t *> & out) const -> void = 0;
 
 	/**
 	 * get all visible children
@@ -142,6 +138,16 @@ public:
 		std::vector<tree_t *> ret;
 		children(ret);
 		return ret;
+	}
+
+	/**
+	 * get all children recursively
+	 **/
+	void get_all_children(std::vector<tree_t *> & out) const {
+		for(auto x: children()) {
+			out.push_back(x);
+			x->get_all_children(out);
+		}
 	}
 
 	/**

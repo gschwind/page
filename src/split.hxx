@@ -72,7 +72,7 @@ public:
 	i_rect compute_split_bar_location() const;
 	void set_parent(tree_t * t);
 	void set_parent(page_component_t * t);
-	void get_all_children(std::vector<tree_t *> & out) const;
+//	void get_all_children(std::vector<tree_t *> & out) const;
 	void children(std::vector<tree_t *> & out) const;
 	void hide();
 	void show();
