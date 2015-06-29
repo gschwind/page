@@ -28,78 +28,84 @@ class region_t : public std::vector<i_rect_t<T>> {
 	/** this function reduce the number of boxes if possible **/
 	static region_t & clean_up(region_t & lst) {
 		merge_area_macro(lst);
-		remove_empty(lst);
 		return lst;
 	}
 
 	/** merge 2 i_rects when it is possible **/
 	static void merge_area_macro(region_t & list) {
+		if(list.size() < 2)
+			return;
+		/* store the current end of the list */
+		auto xend = list.end();
 		bool end = false;
 		while (not end) {
 			end = true;
-			for (auto i = list.begin(); i != list.end(); ++i) {
-				_box_t & bi = *i;
-				if (bi.is_null()) {
-					continue;
-				}
+			for (auto i = list.begin(); i != xend; ++i) {
 
-				for (auto j = i + 1; j != list.end(); ++j) {
-					_box_t & bj = *j;
-					if (bj.is_null()) {
-						continue;
-					}
+				for (auto j = i + 1; j != xend; ++j) {
 
 					/** left/right **/
-					if (bi.x + bi.w == bj.x and bi.y == bj.y and bi.h == bj.h) {
-						bi = _box_t(bi.x, bi.y, bj.w + bi.w, bi.h);
-						bj.w = 0;
+					if (i->x + i->w == j->x and i->y == j->y and i->h == j->h) {
+						*i = _box_t{i->x, i->y, j->w + i->w, i->h};
+						--xend;
+						*j = *xend;
+						--j;
 						end = false;
 						continue;
 					}
 
 					/** right/left **/
-					if (bi.x == bj.x + bj.w and bi.y == bj.y and bi.h == bj.h) {
-						bi = _box_t(bj.x, bj.y, bj.w + bi.w, bj.h);
-						bj.w = 0;
+					if (i->x == j->x + j->w and i->y == j->y and i->h == j->h) {
+						*i = _box_t{j->x, j->y, j->w + i->w, j->h};
+						--xend;
+						*j = *xend;
+						--j;
 						end = false;
 						continue;
 					}
 
 					/** top/bottom **/
-					if (bi.y == bj.y + bj.h and bi.x == bj.x and bi.w == bj.w) {
-						bi = _box_t(bj.x, bj.y, bj.w, bj.h + bi.h);
-						bj.w = 0;
+					if (i->y == j->y + j->h and i->x == j->x and i->w == j->w) {
+						*i = _box_t{j->x, j->y, j->w, j->h + i->h};
+						--xend;
+						*j = *xend;
+						--j;
 						end = false;
 						continue;
 					}
 
 					/** bottom/top **/
-					if (bi.y + bi.h == bj.y and bi.x == bj.x and bi.w == bj.w) {
-						bi = _box_t(bi.x, bi.y, bi.w, bj.h + bi.h);
-						bj.w = 0;
+					if (i->y + i->h == j->y and i->x == j->x and i->w == j->w) {
+						*i = _box_t{i->x, i->y, i->w, j->h + i->h};
+						--xend;
+						*j = *xend;
+						--j;
 						end = false;
 						continue;
 					}
 				}
 			}
 		}
+
+		list.resize(xend - list.begin());
+
 	}
 
-	/** remove empty boxes **/
-	static void remove_empty(region_t & list) {
-		auto i = list.begin();
-		auto j = list.begin();
-		while (j != list.end()) {
-			if(not j->is_null()) {
-				*i = *j;
-				++i;
-			}
-			++j;
-		}
-
-		/* reduce the list size */
-		list.resize(distance(list.begin(), i));
-	}
+//	/** remove empty boxes **/
+//	static void remove_empty(region_t & list) {
+//		auto i = list.begin();
+//		auto j = list.begin();
+//		while (j != list.end()) {
+//			if(not j->is_null()) {
+//				*i = *j;
+//				++i;
+//			}
+//			++j;
+//		}
+//
+//		/* reduce the list size */
+//		list.resize(distance(list.begin(), i));
+//	}
 
 	bool is_null() {
 		return this->empty();
