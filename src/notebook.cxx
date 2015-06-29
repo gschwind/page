@@ -692,7 +692,7 @@ void notebook_t::_update_exposay() {
 	while (hcounts < clients_counts) {
 		unsigned xwidth = client_area.w / ++hn;
 		if (xwidth > 0) {
-			hm = client_area.h / ceil(xwidth*client_area_ratio_w);
+			hm = client_area.h / floor(xwidth*client_area_ratio_w);
 			hcounts = hn * hm;
 		} else {
 			hm = 0;
@@ -706,7 +706,7 @@ void notebook_t::_update_exposay() {
 	while (vcounts < clients_counts) {
 		unsigned xheight = client_area.h / ++vm;
 		if (xheight > 0) {
-			vn = client_area.w / ceil(xheight*client_area_ratio_h);
+			vn = client_area.w / floor(xheight*client_area_ratio_h);
 			vcounts = vn * vm;
 		} else {
 			vm = 0;
@@ -727,8 +727,12 @@ void notebook_t::_update_exposay() {
 		heigth = client_area.h/vm;
 	}
 
-	unsigned xoffset = (client_area.w-width*n)/2 + client_area.x;
-	unsigned yoffset = (client_area.h-heigth*m)/2 + client_area.y;
+	while(n*(m-1) > clients_counts) {
+		--m;
+	}
+
+	unsigned xoffset = (client_area.w-width*n)/2.0 + client_area.x;
+	unsigned yoffset = (client_area.h-heigth*m)/2.0 + client_area.y;
 
 	auto it = _clients.begin();
 	for(int i = 0; i < _clients.size(); ++i) {
@@ -736,7 +740,7 @@ void notebook_t::_update_exposay() {
 		unsigned x = i % n;
 
 		if(y == m-1)
-			xoffset = (client_area.w-width*n)/2 + client_area.x + (n*m - _clients.size())*width/2.0;
+			xoffset = (client_area.w-width*n)/2.0 + client_area.x + (n*m - _clients.size())*width/2.0;
 
 		i_rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, *it, i));
