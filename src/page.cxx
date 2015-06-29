@@ -2588,9 +2588,7 @@ void page_t::remove_viewport(workspace_t * d, viewport_t * v) {
 }
 
 void page_t::destroy_viewport(viewport_t * v) {
-	std::vector<tree_t *> lst;
-	v->get_all_children(lst);
-	for (auto i : lst) {
+	for (auto i : v->get_all_children()) {
 		client_base_t * cb = dynamic_cast<client_base_t*>(i);
 		if (cb == nullptr) {
 			delete i;
@@ -3878,10 +3876,8 @@ void page_t::run_cmd(std::string const & cmd_with_args)
 }
 
 std::vector<client_managed_t *> page_t::get_sticky_client_managed(tree_t * base) {
-	std::vector<tree_t *> childs;
-	base->get_all_children(childs);
 	std::vector<client_managed_t *> ret;
-	for(auto c: childs) {
+	for(auto c: base->get_all_children()) {
 		client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
 		if(mw != nullptr) {
 			if(mw->is_stiky() and (not mw->is(MANAGED_NOTEBOOK)) and (not mw->is(MANAGED_FULLSCREEN)))

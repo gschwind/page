@@ -24,6 +24,31 @@ namespace page {
  * It define the stack order of each component drawn within page.
  **/
 class tree_t {
+
+	template<typename ... T>
+	bool _broadcast_root_first(bool (tree_t::* f)(T ... args), T ... args) {
+		if((this->*f)(args...))
+			return true;
+		for(auto x: tree_t::get_all_children_root_first()) {
+			if((x->*f)(args...))
+				return true;
+		}
+		return false;
+	}
+
+	template<typename ... T>
+	bool _broadcast_deep_first(bool (tree_t::* f)(T ... args), T ... args) {
+		for(auto x: tree_t::get_all_children_deep_first()) {
+			if((x->*f)(args...))
+				return true;
+		}
+		if((this->*f)(args...))
+			return true;
+		return false;
+	}
+
+	bool _trigger_redraw_handler() { trigger_redraw(); return false; }
+
 public:
 	tree_t() { }
 
@@ -143,10 +168,17 @@ public:
 	/**
 	 * get all children recursively
 	 **/
-	void get_all_children(std::vector<tree_t *> & out) const {
+	void get_all_children_deep_first(std::vector<tree_t *> & out) const {
+		for(auto x: children()) {
+			x->get_all_children_deep_first(out);
+			out.push_back(x);
+		}
+	}
+
+	void get_all_children_root_first(std::vector<tree_t *> & out) const {
 		for(auto x: children()) {
 			out.push_back(x);
-			x->get_all_children(out);
+			x->get_all_children_root_first(out);
 		}
 	}
 
@@ -155,9 +187,22 @@ public:
 	 **/
 	std::vector<tree_t *> get_all_children() const {
 		std::vector<tree_t *> ret;
-		get_all_children(ret);
+		get_all_children_root_first(ret);
 		return ret;
 	}
+
+	std::vector<tree_t *> get_all_children_deep_first() const {
+		std::vector<tree_t *> ret;
+		get_all_children_deep_first(ret);
+		return ret;
+	}
+
+	std::vector<tree_t *> get_all_children_root_first() const {
+		std::vector<tree_t *> ret;
+		get_all_children_root_first(ret);
+		return ret;
+	}
+
 
 	/**
 	 * Short cut to get_visible_children(std::vector<tree_t *> & out)
@@ -169,33 +214,19 @@ public:
 	}
 
 	void broadcast_trigger_redraw() {
-		for (auto x : tree_t::children())
-			x->broadcast_trigger_redraw();
-		trigger_redraw();
+		_broadcast_deep_first(&tree_t::_trigger_redraw_handler);
 	}
-
-	template<typename T>
-	bool broadcast_event(bool (tree_t::* f)(T e), T e) {
-		if((this->*f)(e))
-			return true;
-		for(auto x: tree_t::children()) {
-			if(x->broadcast_event(f, e))
-				return true;
-		}
-		return false;
-	}
-
 
 	bool broadcast_button_press(xcb_button_press_event_t const * ev) {
-		return broadcast_event(&tree_t::button_press, ev);
+		return _broadcast_deep_first(&tree_t::button_press, ev);
 	}
 
 	bool broadcast_button_release(xcb_button_release_event_t const * ev) {
-		return broadcast_event(&tree_t::button_release, ev);
+		return _broadcast_deep_first(&tree_t::button_release, ev);
 	}
 
 	bool broadcast_button_motion(xcb_motion_notify_event_t const * ev) {
-		return broadcast_event(&tree_t::button_motion, ev);
+		return _broadcast_deep_first(&tree_t::button_motion, ev);
 	}
 
 	i_rect to_root_position(i_rect const & r) const {
