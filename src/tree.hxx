@@ -27,7 +27,7 @@ class tree_t {
 public:
 	tree_t() { }
 
-	virtual ~tree_t();
+	virtual ~tree_t() { }
 
 	/**
 	 * Return parent within tree
@@ -168,34 +168,28 @@ public:
 		trigger_redraw();
 	}
 
-	bool broadcast_button_press(xcb_button_press_event_t const * ev) {
-		if(button_press(ev))
+	template<typename T>
+	bool broadcast_event(bool (tree_t::* f)(T e), T e) {
+		if((this->*f)(e))
 			return true;
 		for(auto x: tree_t::children()) {
-			if(x->broadcast_button_press(ev))
+			if(x->broadcast_event(f, e))
 				return true;
 		}
 		return false;
+	}
+
+
+	bool broadcast_button_press(xcb_button_press_event_t const * ev) {
+		return broadcast_event(&tree_t::button_press, ev);
 	}
 
 	bool broadcast_button_release(xcb_button_release_event_t const * ev) {
-		if(button_release(ev))
-			return true;
-		for(auto x: tree_t::children()) {
-			if(x->broadcast_button_release(ev))
-				return true;
-		}
-		return false;
+		return broadcast_event(&tree_t::button_release, ev);
 	}
 
 	bool broadcast_button_motion(xcb_motion_notify_event_t const * ev) {
-		if(button_motion(ev))
-			return true;
-		for(auto x: tree_t::children()) {
-			if(x->broadcast_button_motion(ev))
-				return true;
-		}
-		return false;
+		return broadcast_event(&tree_t::button_motion, ev);
 	}
 
 	i_rect to_root_position(i_rect const & r) const {

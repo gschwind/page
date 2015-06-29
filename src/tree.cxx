@@ -16,7 +16,5 @@
 
 namespace page {
 
-tree_t::~tree_t() { }
-
 
 }
