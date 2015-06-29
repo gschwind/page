@@ -224,7 +224,7 @@ public:
 		value[2] = True;
 
 		value_mask |= XCB_CW_EVENT_MASK;
-		value[3] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_POINTER_MOTION;
+		value[3] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW;
 
 		value_mask |= XCB_CW_COLORMAP;
 		value[4] = cmap;

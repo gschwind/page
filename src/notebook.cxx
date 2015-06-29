@@ -871,9 +871,9 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 	int y = e->event_y;
 
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
-		notebook_button_e new_button_mouse_over = theme_notebook.button_mouse_over;
-		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab = _mouse_over.tab;
-		std::tuple<i_rect, client_managed_t *> * exposay = _mouse_over.exposay;
+		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
+		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab = nullptr;
+		std::tuple<i_rect, client_managed_t *> * exposay = nullptr;
 
 		if (button_close.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
@@ -931,6 +931,16 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 	return false;
 }
 
+bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
+	if(ev->event == get_window()) {
+		if(theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
+			_mouse_over_reset();
+			queue_redraw();
+		}
+	}
+	return false;
+}
+
 void notebook_t::_mouse_over_reset() {
 	if (_mouse_over.tab != nullptr) {
 		if (std::get<1>(*_mouse_over.tab)->is_focused()) {
@@ -963,5 +973,7 @@ void notebook_t::_mouse_over_set() {
 		_exposay_mouse_over = nullptr;
 	}
 }
+
+
 
 }
