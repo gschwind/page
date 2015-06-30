@@ -22,7 +22,7 @@
 #include "renderable.hxx"
 #include "composite_surface_manager.hxx"
 #include "renderable_floating_outer_gradien.hxx"
-#include "renderable_unmanaged_outer_gradien.hxx"
+#include "renderable_unmanaged_gaussian_shadow.hxx"
 #include "renderable_pixmap.hxx"
 
 namespace page {
@@ -107,7 +107,7 @@ public:
 		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_MENU)
 				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-			auto x = new renderable_unmanaged_outer_gradien_t{pos, 4};
+			auto x = new renderable_unmanaged_gaussian_shadow_t<4>{pos, color_t{0.0, 0.0, 0.0, 1.0}};
 			out += std::shared_ptr<renderable_t>{x};
 		}
 
