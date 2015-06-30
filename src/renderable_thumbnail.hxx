@@ -23,6 +23,7 @@ class renderable_thumbnail_t : public renderable_t {
 
 	region _visible_region;
 	theme_thumbnail_t _tt;
+	bool _is_mouse_over;
 
 public:
 
@@ -31,7 +32,8 @@ public:
 		_c{c},
 		_position{position},
 		_visible_region{_position},
-		_title_width{0}
+		_title_width{0},
+		_is_mouse_over{false}
 	{
 		_tt.pix = _c->get_last_pixmap();
 		_tt.title = _ctx->cmp()->create_composite_pixmap(position.w, 20);
@@ -125,12 +127,16 @@ public:
 				cairo_set_source_surface(cr, _tt.title->get_cairo_surface(), _thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);
 				cairo_paint(cr);
 
-//				cairo_identity_matrix(cr);
-//				cairo_rectangle(cr, _thumbnail_position.x,
-//						_thumbnail_position.y, _thumbnail_position.w,
-//						_thumbnail_position.h);
-//				cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
-//				cairo_stroke(cr);
+				if (_is_mouse_over) {
+					cairo_identity_matrix(cr);
+					cairo_set_line_width(cr, 2.0);
+					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+					cairo_rectangle(cr, _thumbnail_position.x+1,
+							_thumbnail_position.y+1, _thumbnail_position.w-2.0,
+							_thumbnail_position.h+20-2.0);
+					cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+					cairo_stroke(cr);
+				}
 			}
 			cairo_restore(cr);
 		}
@@ -164,6 +170,10 @@ public:
 
 	i_rect get_real_position() {
 		return i_rect{_thumbnail_position.x, _thumbnail_position.y, _thumbnail_position.w, _thumbnail_position.h + 20};
+	}
+
+	void set_mouse_over(bool x) {
+		_is_mouse_over = x;
 	}
 
 

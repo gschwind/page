@@ -968,6 +968,10 @@ void notebook_t::_mouse_over_reset() {
 		}
 	}
 
+	if(_mouse_over.exposay) {
+		_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->set_mouse_over(false);
+	}
+
 	theme_notebook.button_mouse_over = NOTEBOOK_BUTTON_NONE;
 	_mouse_over.tab = nullptr;
 	_mouse_over.exposay = nullptr;
@@ -982,6 +986,7 @@ void notebook_t::_mouse_over_set() {
 
 	if(_mouse_over.exposay != nullptr) {
 		_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), 16);
+		_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->set_mouse_over(true);
 	} else {
 		_exposay_mouse_over = nullptr;
 	}
