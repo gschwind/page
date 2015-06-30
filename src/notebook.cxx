@@ -11,6 +11,7 @@
 #include "notebook.hxx"
 #include "dropdown_menu.hxx"
 #include "grab_handlers.hxx"
+#include "renderable_unmanaged_gaussian_shadow.hxx"
 
 namespace page {
 
@@ -985,7 +986,7 @@ void notebook_t::_mouse_over_set() {
 	}
 
 	if(_mouse_over.exposay != nullptr) {
-		_exposay_mouse_over = make_shared<renderable_unmanaged_outer_gradien_t>(_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), 16);
+		_exposay_mouse_over = make_shared<renderable_unmanaged_gaussian_shadow_t<16>>(_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), color_t{1.0, 0.0, 0.0, 1.0});
 		_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->set_mouse_over(true);
 	} else {
 		_exposay_mouse_over = nullptr;

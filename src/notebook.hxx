@@ -26,7 +26,7 @@
 #include "page_component.hxx"
 #include "client_managed.hxx"
 #include "renderable_thumbnail.hxx"
-#include "renderable_unmanaged_outer_gradien.hxx"
+#include "renderable_unmanaged_gaussian_shadow.hxx"
 
 namespace page {
 
@@ -94,7 +94,7 @@ public:
 	/* list of tabs and exposay buttons */
 	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
 	std::vector<std::tuple<i_rect, client_managed_t *, int>> _exposay_buttons;
-	std::shared_ptr<renderable_unmanaged_outer_gradien_t> _exposay_mouse_over;
+	std::shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
 
 	i_rect close_client_area;
 	i_rect undck_client_area;
