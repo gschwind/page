@@ -682,56 +682,37 @@ void notebook_t::_update_exposay() {
 	if(_clients.size() <= 0)
 		return;
 
-	double client_area_ratio_w = client_area.h / (double)client_area.w;
-	double client_area_ratio_h = client_area.w / (double)client_area.h;
-
 	unsigned clients_counts = _clients.size();
 
-	unsigned hcounts = 0;
-	unsigned hn = 0;
-	unsigned hm = 0;
-	while (hcounts < clients_counts) {
-		unsigned xwidth = client_area.w / ++hn;
-		if (xwidth > 0) {
-			hm = client_area.h / floor(xwidth*client_area_ratio_w);
-			hcounts = hn * hm;
-		} else {
-			hm = 0;
-			hcounts = 0;
-		}
-	}
+	/*
+	 * n is the number of column and m is the number of line of exposay.
+	 * Since most window are the size of client_area, we known that n*m will produce n = m
+	 * thus use square root to get n
+	 */
+	int n = static_cast<int>(ceil(sqrt(static_cast<double>(clients_counts))));
+	/* the square root may produce to much line (or column depend on the point of view
+	 * We choose to remove the exide of line, but we could prefer to remove column,
+	 * maybe later we will choose to select this on client_area.h/client_area.w ratio
+	 *
+	 *
+	 * /!\ This equation use the properties of integer division.
+	 *
+	 * we want :
+	 *  if client_counts == Q*n => m = Q
+	 *  if client_counts == Q*n+R with R != 0 => m = Q + 1
+	 *
+	 *  within the equation :
+	 *   when client_counts == Q*n => (client_counts - 1)/n + 1 == (Q - 1) + 1 == Q
+	 *   when client_counts == Q*n + R => (client_counts - 1)/n + 1 == (Q*n+R-1)/n + 1
+	 *     => when R == 1: (Q*n+R-1)/n + 1 == Q*n/n+1 = Q + 1
+	 *     => when 1 < R <= n-1 => (Q*n+R-1)/n + 1 == Q*n/n + (R-1)/n + 1 with (R-1)/n always == 0
+	 *        then (client_counts - 1)/n + 1 == Q + 1
+	 *
+	 */
+	int m = ((clients_counts - 1) / n) + 1;
 
-	unsigned vcounts = 0;
-	unsigned vn = 0;
-	unsigned vm = 0;
-	while (vcounts < clients_counts) {
-		unsigned xheight = client_area.h / ++vm;
-		if (xheight > 0) {
-			vn = client_area.w / floor(xheight*client_area_ratio_h);
-			vcounts = vn * vm;
-		} else {
-			vm = 0;
-			vcounts = 0;
-		}
-	}
-
-	unsigned n, m, width, heigth;
-	if(vn > hn) {
-		n = hn;
-		m = hm;
-		width = client_area.w/hn;
-		heigth = client_area.h/hm;
-	} else {
-		n = vn;
-		m = vm;
-		width = client_area.w/vn;
-		heigth = client_area.h/vm;
-	}
-
-	while(n*(m-1) > clients_counts) {
-		--m;
-	}
-
+	unsigned width = client_area.w/n;
+	unsigned heigth = client_area.h/m;
 	unsigned xoffset = (client_area.w-width*n)/2.0 + client_area.x;
 	unsigned yoffset = (client_area.h-heigth*m)/2.0 + client_area.y;
 
