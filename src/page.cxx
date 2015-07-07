@@ -1135,93 +1135,28 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	if(e->window == cnx->root())
 		return;
 
+	/** update the property **/
 	client_base_t * c = find_client(e->window);
-
 	if(c != nullptr) {
-		if(e->atom == A(WM_NAME)) {
-			c->update_wm_name();
-		} else if (e->atom == A(WM_ICON_NAME)) {
-			c->update_wm_icon_name();
-		} else if (e->atom == A(WM_NORMAL_HINTS)) {
-			c->update_wm_normal_hints();
-		} else if (e->atom == A(WM_HINTS)) {
-			c->update_wm_hints();
-		} else if (e->atom == A(WM_CLASS)) {
-			c->update_wm_class();
-		} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-			c->update_wm_transient_for();
-		} else if (e->atom == A(WM_PROTOCOLS)) {
-			c->update_wm_protocols();
-		} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
-			c->update_wm_colormap_windows();
-		} else if (e->atom == A(WM_CLIENT_MACHINE)) {
-			c->update_wm_client_machine();
-		} else if (e->atom == A(WM_STATE)) {
-			c->update_wm_state();
-		} else if (e->atom == A(_NET_WM_NAME)) {
-			c->update_net_wm_name();
-		} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
-			c->update_net_wm_visible_name();
-		} else if (e->atom == A(_NET_WM_ICON_NAME)) {
-			c->update_net_wm_icon_name();
-		} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
-			c->update_net_wm_visible_icon_name();
-		} else if (e->atom == A(_NET_WM_DESKTOP)) {
-			c->update_net_wm_desktop();
-		} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
-			c->update_net_wm_window_type();
-		} else if (e->atom == A(_NET_WM_STATE)) {
-			c->update_net_wm_state();
-		} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
-			c->update_net_wm_allowed_actions();
-		} else if (e->atom == A(_NET_WM_STRUT)) {
-			c->update_net_wm_struct();
-		} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-			c->update_net_wm_struct_partial();
-			update_workarea();
-		} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
-			c->update_net_wm_icon_geometry();
-		} else if (e->atom == A(_NET_WM_ICON)) {
-			c->update_net_wm_icon();
-		} else if (e->atom == A(_NET_WM_PID)) {
-			c->update_net_wm_pid();
-		} else if (e->atom == A(_NET_WM_USER_TIME)) {
-			c->update_net_wm_user_time();
-		} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
-			c->update_net_wm_user_time_window();
-		} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
-			c->update_net_frame_extents();
-		} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
-			c->update_net_wm_opaque_region();
-		} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
-			c->update_net_wm_bypass_compositor();
-		}  else if (e->atom == A(_MOTIF_WM_HINTS)) {
-			c->update_motif_hints();
-		}
-
+		c->on_property_notify(e);
 	}
 
-	xcb_window_t x = e->window;
-	client_managed_t * mw = find_managed_window_with(e->window);
+	client_managed_t * mw = dynamic_cast<client_managed_t*>(c);
+	if(mw == nullptr)
+		return;
 
 	if (e->atom == A(_NET_WM_USER_TIME)) {
-
-	} else if (e->atom == A(_NET_WM_NAME) || e->atom == A(WM_NAME)) {
-
-
-		if (mw != nullptr) {
-			mw->update_title();
-			mw->queue_redraw();
-		}
-
+		/* ignore */
+	} else if (e->atom == A(_NET_WM_NAME) or e->atom == A(WM_NAME)) {
+		mw->update_title();
+		mw->queue_redraw();
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 		update_workarea();
 	} else if (e->atom == A(_NET_WM_STRUT)) {
-		//x->mark_durty_net_wm_partial_struct();
-		//rpage->mark_durty();
+		update_workarea();
 	} else if (e->atom == A(_NET_WM_ICON)) {
-		if (mw != 0)
-			mw->update_icon();
+		mw->update_icon();
+		mw->queue_redraw();
 	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
 		/* update cache */
@@ -1234,29 +1169,26 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		//	manage_notebook(x);
 		//}
 	} else if (e->atom == A(WM_NORMAL_HINTS)) {
-		if (mw != nullptr) {
-
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				find_parent_notebook_for(mw)->update_client_position(mw);
-			}
-
-			/* apply normal hint to floating window */
-			i_rect new_size = mw->get_wished_position();
-
-			dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
-			new_size.w = final_size.width;
-			new_size.h = final_size.height;
-			mw->set_floating_wished_position(new_size);
-			mw->reconfigure();
-
+		if (mw->is(MANAGED_NOTEBOOK)) {
+			find_parent_notebook_for(mw)->update_client_position(mw);
 		}
+
+		/* apply normal hint to floating window */
+		i_rect new_size = mw->get_wished_position();
+
+		dimention_t<unsigned> final_size = mw->compute_size_with_constrain(
+				new_size.w, new_size.h);
+		new_size.w = final_size.width;
+		new_size.h = final_size.height;
+		mw->set_floating_wished_position(new_size);
+		mw->reconfigure();
 	} else if (e->atom == A(WM_PROTOCOLS)) {
+		/* do nothing */
 	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-		if (c != 0) {
-			safe_update_transient_for(c);
-			_need_restack = true;
-		}
+		safe_update_transient_for(mw);
+		_need_restack = true;
 	} else if (e->atom == A(WM_HINTS)) {
+		/* do nothing */
 	} else if (e->atom == A(_NET_WM_STATE)) {
 		/* this event are generated by page */
 		/* change of net_wm_state must be requested by client message */
@@ -1264,7 +1196,6 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/** this is set by page ... don't read it **/
 	} else if (e->atom == A(_NET_WM_DESKTOP)) {
 		/* this set by page in most case */
-		//x->read_net_wm_desktop();
 	}
 }
 
