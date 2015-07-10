@@ -82,6 +82,12 @@ public:
 			return;
 
 		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
+
+
+		if(t != nullptr) {
+			std::cout << "Raise > " << t->get_node_name() << std::endl;
+		}
+
 		if(has_key(_floating_layer, mw)) {
 			_floating_layer.remove(mw);
 			_floating_layer.push_back(mw);
@@ -172,17 +178,25 @@ public:
 	}
 
 	void add_floating_client(client_managed_t * c) {
-		_floating_layer.push_back(c);
+		if(c->is(MANAGED_DOCK)) {
+			_viewport_layer.push_back(c);
+		} else {
+			_floating_layer.push_back(c);
+		}
 		c->set_parent(this);
 	}
 
 	void add_dock_client(client_not_managed_t * c) {
-		_viewport_layer.push_back(c);
+
 		c->set_parent(this);
 	}
 
 	void add_fullscreen_client(client_managed_t * c) {
-		_floating_layer.push_back(c);
+		if(c->is(MANAGED_DOCK)) {
+			_viewport_layer.push_back(c);
+		} else {
+			_floating_layer.push_back(c);
+		}
 		c->set_parent(this);
 	}
 

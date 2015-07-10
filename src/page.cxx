@@ -1480,7 +1480,7 @@ void page_t::insert_window_in_notebook(client_managed_t * x, notebook_t * n,
 		bool prefer_activate) {
 	assert(x != nullptr);
 	if (n == nullptr)
-		n = _desktop_list[_current_desktop]->default_pop();
+		n = get_current_workspace()->default_pop();
 	assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
@@ -2128,7 +2128,7 @@ void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
 		transient_for->add_subclient(c);
 	} else {
 		if(find_current_desktop(c) == ALL_DESKTOP) {
-			_desktop_list[_current_desktop]->add_floating_client(c);
+			get_current_workspace()->add_floating_client(c);
 			c->show();
 		} else {
 			_desktop_list[find_current_desktop(c)]->add_floating_client(c);
@@ -2641,7 +2641,7 @@ void page_t::onmap(xcb_window_t w) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 						create_unmanaged_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_dock_window(props, type);
+						create_managed_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
 						create_unmanaged_window(props, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
@@ -2712,10 +2712,9 @@ void page_t::manage_client(client_managed_t * mw, xcb_atom_t type) {
 		{
 			unsigned int const * desktop = mw->net_wm_desktop();
 			if(desktop != nullptr) {
-				if(*desktop == ALL_DESKTOP) {
+				if(*desktop >= _desktop_list.size()) {
+					mw->set_current_desktop(ALL_DESKTOP);
 					mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-				} else if ((*desktop % _desktop_list.size()) != *desktop) {
-					mw->set_current_desktop(_current_desktop);
 				}
 			} else {
 				if(mw->wm_transient_for() != nullptr) {
@@ -3003,45 +3002,6 @@ void page_t::remove_client(client_base_t * c) {
 	delete c;
 }
 
-//void page_t::get_all_children(std::vector<tree_t *> & out) const {
-//
-//	for (auto v: _desktop_stack) {
-//		out.push_back(v);
-//		v->get_all_children(out);
-//	}
-//
-//	for(auto x: below) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//
-////	for(auto x: _fullscreen_client_to_viewport) {
-////		out.push_back(x.first);
-////		x.first->get_all_children(out);
-////	}
-//
-//	for(auto x: root_subclients) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//
-//	for(auto x: tooltips) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//
-//	for(auto x: notifications) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//
-//	for(auto x: above) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//
-//}
-
 std::string page_t::get_node_name() const {
 	return _get_node_name<'P'>();
 }
@@ -3049,43 +3009,6 @@ std::string page_t::get_node_name() const {
 void page_t::replace(page_component_t * src, page_component_t * by) {
 	printf("Unexpectected use of page::replace function\n");
 }
-
-void page_t::raise_child(tree_t * t) {
-
-	if(t == nullptr)
-		return;
-
-	/** TODO: raise a viewport **/
-
-	/* do nothing, not needed at this level */
-	client_base_t * x = dynamic_cast<client_base_t *>(t);
-	if(has_key(root_subclients, x)) {
-		root_subclients.remove(x);
-		root_subclients.push_back(x);
-	}
-
-	client_not_managed_t * y = dynamic_cast<client_not_managed_t *>(t);
-	if(has_key(tooltips, y)) {
-		tooltips.remove(y);
-		tooltips.push_back(y);
-	}
-
-	if(has_key(notifications, y)) {
-		notifications.remove(y);
-		notifications.push_back(y);
-	}
-
-	if(has_key(above, y)) {
-		above.remove(y);
-		above.push_back(y);
-	}
-
-	if(has_key(below, y)) {
-		below.remove(y);
-		below.push_back(y);
-	}
-}
-
 
 void page_t::activate(tree_t * t) {
 
