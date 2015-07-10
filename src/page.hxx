@@ -381,9 +381,7 @@ public:
 	void fullscreen_client_to_viewport(client_managed_t * c, viewport_t * v);
 
 	void attach_dock(client_not_managed_t * uw) {
-		for (auto i : _desktop_list) {
-			i->add_dock_client(uw);
-		}
+		get_current_workspace()->add_dock_client(uw);
 	}
 
 	void process_notebook_client_menu(client_managed_t * c, int selected);
