@@ -35,12 +35,12 @@ private:
 
 	/* list of viewports in creation order, to make a sane reconfiguration */
 	std::vector<viewport_t *> _viewport_outputs;
-	/* list of viewports in stack order to stack windows properly */
-	std::list<viewport_t *> _viewport_stack;
-	std::list<client_not_managed_t *> _dock_clients;
-	std::list<client_managed_t *> _floating_clients;
-	std::list<client_managed_t *> _fullscreen_clients;
 
+	/* dock + viewport belong this layer */
+	std::list<tree_t *> _viewport_layer;
+
+	/* floating and fullscreen window belong this layer */
+	std::list<client_managed_t *> _floating_layer;
 
 	viewport_t * _primary_viewport;
 	notebook_t * _default_pop;
@@ -82,26 +82,14 @@ public:
 			return;
 
 		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
-		if(has_key(_fullscreen_clients, mw)) {
-			_fullscreen_clients.remove(mw);
-			_fullscreen_clients.push_back(mw);
+		if(has_key(_floating_layer, mw)) {
+			_floating_layer.remove(mw);
+			_floating_layer.push_back(mw);
 		}
 
-		if(has_key(_floating_clients, mw)) {
-			_floating_clients.remove(mw);
-			_floating_clients.push_back(mw);
-		}
-
-		client_not_managed_t * uw = dynamic_cast<client_not_managed_t *>(t);
-		if(has_key(_dock_clients, uw)) {
-			_dock_clients.remove(uw);
-			_dock_clients.push_back(uw);
-		}
-
-		viewport_t * v = dynamic_cast<viewport_t *>(t);
-		if(has_key(_viewport_stack, v)) {
-			_viewport_stack.remove(v);
-			_viewport_stack.push_back(v);
+		if(has_key(_viewport_layer, t)) {
+			_viewport_layer.remove(t);
+			_viewport_layer.push_back(t);
 		}
 
 	}
@@ -114,19 +102,11 @@ public:
 		if(_is_hidden)
 			return;
 
-		for(auto i: _viewport_outputs) {
-			i->prepare_render(out, time);
+		for(auto x: _viewport_layer) {
+			x->prepare_render(out, time);
 		}
 
-		for(auto i: _dock_clients) {
-			i->prepare_render(out, time);
-		}
-
-		for(auto i: _floating_clients) {
-			i->prepare_render(out, time);
-		}
-
-		for(auto i: _fullscreen_clients) {
+		for(auto i: _floating_layer) {
 			i->prepare_render(out, time);
 		}
 	}
@@ -151,24 +131,17 @@ public:
 
 	auto set_layout(std::vector<viewport_t *> const & new_layout) -> void {
 		_viewport_outputs = new_layout;
-		_viewport_stack.clear();
-		_viewport_stack.insert(_viewport_stack.end(), _viewport_outputs.begin(), _viewport_outputs.end());
+		_viewport_layer.remove_if([](tree_t * t) -> bool { return typeid(viewport_t) == typeid(*t); });
+		_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
 	}
 
 	auto get_any_viewport() const -> viewport_t * {
-		if(_viewport_stack.size() > 0) {
-			return _viewport_stack.front();
-		} else {
-			return nullptr;
-		}
+		return _primary_viewport;
 	}
 
-	auto get_viewports() const -> std::vector< viewport_t * > {
-		std::vector<viewport_t *> ret;
-		for(auto i: _viewport_stack) {
-				ret.push_back(i);
-		}
-		return ret;
+	auto get_viewports() const -> std::vector<viewport_t *> {
+		auto tmp = filter_class<viewport_t>(_viewport_layer);
+		return std::vector<viewport_t *>{tmp.begin(), tmp.end()};
 	}
 
 	void set_default_pop(notebook_t * n) {
@@ -182,22 +155,8 @@ public:
 	}
 
 	void children(std::vector<tree_t *> & out) const {
-		for(auto i: _viewport_stack) {
-				out.push_back(i);
-		}
-
-		for(auto i: _dock_clients) {
-				out.push_back(i);
-		}
-
-		for(auto i: _floating_clients) {
-				out.push_back(i);
-		}
-
-		for(auto i: _fullscreen_clients) {
-				out.push_back(i);
-		}
-
+		out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
+		out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
 	}
 
 	void update_default_pop() {
@@ -213,17 +172,17 @@ public:
 	}
 
 	void add_floating_client(client_managed_t * c) {
-		_floating_clients.push_back(c);
+		_floating_layer.push_back(c);
 		c->set_parent(this);
 	}
 
 	void add_dock_client(client_not_managed_t * c) {
-		_dock_clients.push_back(c);
+		_viewport_layer.push_back(c);
 		c->set_parent(this);
 	}
 
 	void add_fullscreen_client(client_managed_t * c) {
-		_fullscreen_clients.push_back(c);
+		_floating_layer.push_back(c);
 		c->set_parent(this);
 	}
 
@@ -241,37 +200,13 @@ public:
 		 * use reinterpret_cast because we try to remove src pointer
 		 * and we don't care is type
 		 **/
-		_dock_clients.remove(reinterpret_cast<client_not_managed_t*>(src));
-		_floating_clients.remove(reinterpret_cast<client_managed_t*>(src));
-		_fullscreen_clients.remove(reinterpret_cast<client_managed_t*>(src));
-
+		_floating_layer.remove(reinterpret_cast<client_managed_t*>(src));
+		_viewport_layer.remove(src);
 	}
 
 	void set_allocation(i_rect const & area) {
 		_allocation = area;
 	}
-
-//	void get_all_children(std::vector<tree_t *> & out) const {
-//		for(auto i: _viewport_stack) {
-//			out.push_back(i);
-//			i->get_all_children(out);
-//		}
-//
-//		for(auto i: _dock_clients) {
-//			out.push_back(i);
-//			i->get_all_children(out);
-//		}
-//
-//		for(auto i: _floating_clients) {
-//			out.push_back(i);
-//			i->get_all_children(out);
-//		}
-//
-//		for(auto i: _fullscreen_clients) {
-//			out.push_back(i);
-//			i->get_all_children(out);
-//		}
-//	}
 
 	void hide() {
 		_is_hidden = true;
