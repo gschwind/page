@@ -74,11 +74,11 @@ public:
 
 	}
 
-	unsigned int numlock_mod_mask() {
+	unsigned int numlock_mod_mask() const {
 		return _numlock_mod_mask;
 	}
 
-	xcb_keysym_t get(xcb_keycode_t kc, int mod = 0) {
+	xcb_keysym_t get(xcb_keycode_t kc, int mod = 0) const {
 		assert(kc >= first_keycode and kc <= last_keycode);
 		assert(mod >= 0 and mod < keysyms_per_keycode);
 		if (_keydata.size() > 0) {
@@ -88,7 +88,7 @@ public:
 		}
 	}
 
-	xcb_keycode_t find_keysim(xcb_keysym_t ks) {
+	xcb_keycode_t find_keysim(xcb_keysym_t ks) const {
 		for(xcb_keysym_t i = 0; i <= (last_keycode - first_keycode + 1) * keysyms_per_keycode; ++i) {
 			if(ks == _keydata[i]) {
 				return (i / keysyms_per_keycode) + first_keycode;

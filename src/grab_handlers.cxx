@@ -526,4 +526,86 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 	}
 }
 
+grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
+	auto managed_window = _ctx->clients_list();
+	auto focus_history = _ctx->global_client_focus_history();
+	/* reorder client to follow focused order */
+	for (auto i = focus_history.rbegin();
+			i != focus_history.rend();
+			++i) {
+		if (*i != nullptr) {
+			managed_window.remove(*i);
+			managed_window.push_front(*i);
+		}
+	}
+
+	/** create all menu entry and find the selected one **/
+	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
+	for (auto i : managed_window) {
+		auto icon = std::make_shared<icon64>(*i);
+		auto cy = std::make_shared<cycle_window_entry_t>(i, i->title(), icon);
+		v.push_back(cy);
+	}
+
+	pat = std::make_shared<popup_alt_tab_t>(_ctx, v, 0);
+
+	/** TODO: show it on all viewport **/
+	viewport_t * viewport = _ctx->get_current_workspace()->get_any_viewport();
+	pat->move(viewport->raw_area().x
+							+ (viewport->raw_area().w - pat->position().w) / 2,
+					viewport->raw_area().y
+							+ (viewport->raw_area().h - pat->position().h) / 2);
+	pat->show();
+	pat->select_next();
+	_ctx->overlay_add(std::dynamic_pointer_cast<overlay_t>(pat));
+}
+
+grab_alt_tab_t::~grab_alt_tab_t() {
+	_ctx->overlay_remove(std::dynamic_pointer_cast<overlay_t>(pat));
+}
+
+void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
+	/* get KeyCode for Unmodified Key */
+	xcb_keysym_t k = _ctx->keymap()->get(e->detail);
+
+	if (k == 0)
+		return;
+
+	/** XCB_MOD_MASK_2 is num_lock, thus ignore his state **/
+	unsigned int state = e->state;
+	if(_ctx->keymap()->numlock_mod_mask() != 0) {
+		state &= ~(_ctx->keymap()->numlock_mod_mask());
+	}
+
+	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
+		pat->select_next();
+		_ctx->add_global_damage(pat->position());
+	}
+
+}
+
+void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
+	/* get KeyCode for Unmodified Key */
+	xcb_keysym_t k = _ctx->keymap()->get(e->detail);
+
+	if (k == 0)
+		return;
+
+	/** XCB_MOD_MASK_2 is num_lock, thus ignore his state **/
+	unsigned int state = e->state;
+	if(_ctx->keymap()->numlock_mod_mask() != 0) {
+		state &= ~(_ctx->keymap()->numlock_mod_mask());
+	}
+
+	/** here we guess Mod1 is bound to Alt **/
+	if (XK_Alt_L == k or XK_Alt_R == k) {
+		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
+		client_managed_t * mw = pat->get_selected();
+		mw->activate();
+		_ctx->set_focus(mw, e->time);
+		_ctx->grab_stop();
+	}
+
+}
+
 }

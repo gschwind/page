@@ -105,8 +105,7 @@ page_t::page_t(int argc, char ** argv)
 		++k;
 	}
 
-	keymap = nullptr;
-	process_mode = PROCESS_NORMAL;
+	_keymap = nullptr;
 
 	cnx = new display_t;
 	rnd = nullptr;
@@ -207,8 +206,6 @@ page_t::~page_t() {
 
 	cnx->unload_cursors();
 
-	pat.reset();
-
 	for (auto i : filter_class<client_managed_t>(tree_t::get_all_children())) {
 		if (cnx->lock(i->orig())) {
 			cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
@@ -222,7 +219,7 @@ page_t::~page_t() {
 
 	delete _theme;
 	delete rnd;
-	delete keymap;
+	delete _keymap;
 
 	// cleanup cairo, for valgrind happiness.
 	cairo_debug_reset_static_data();
@@ -285,8 +282,6 @@ void page_t::run() {
 	xcb_randr_select_input(cnx->xcb(), cnx->root(), XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE);
 
 	update_viewport_layout();
-
-	pat = nullptr;
 
 	cnx->load_cursors();
 	cnx->set_window_cursor(cnx->root(), cnx->xc_left_ptr);
@@ -392,9 +387,6 @@ void page_t::unmanage(client_managed_t * mw) {
 	update_workarea();
 
 	_clients_list.remove(mw);
-
-	if(process_mode == PROCESS_ALT_TAB)
-		update_alt_tab_popup(pat->get_selected());
 
 	cmgr->unregister_window(mw->base());
 	delete mw;
@@ -558,9 +550,6 @@ void page_t::update_client_list() {
 
 void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_key_press_event_t const *>(_e);
-	if(_last_focus_time > e->time) {
-		_last_focus_time = e->time;
-	}
 
 //	printf("%s key = %d, mod4 = %s, mod1 = %s\n",
 //			e->response_type == XCB_KEY_PRESS ? "KeyPress" : "KeyRelease",
@@ -568,9 +557,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 //			e->state & XCB_MOD_MASK_4 ? "true" : "false",
 //			e->state & XCB_MOD_MASK_1 ? "true" : "false");
 
-
 	/* get KeyCode for Unmodified Key */
-	xcb_keysym_t k = keymap->get(e->detail);
+	xcb_keysym_t k = _keymap->get(e->detail);
 
 	if (k == 0)
 		return;
@@ -578,225 +566,243 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	/** XCB_MOD_MASK_2 is num_lock, thus ignore his state **/
 	unsigned int state = e->state;
-	if(keymap->numlock_mod_mask() != 0) {
-		state &= ~keymap->numlock_mod_mask();
+	if(_keymap->numlock_mod_mask() != 0) {
+		state &= ~_keymap->numlock_mod_mask();
 	}
 
-	if(e->response_type == XCB_KEY_PRESS) {
+	if (k == bind_page_quit.ks and (state == bind_page_quit.mod)) {
+		stop();
+	}
 
-		if(k == bind_page_quit.ks and (state == bind_page_quit.mod)) {
-			stop();
+	if(_grab_handler != nullptr) {
+		_grab_handler->key_press(e);
+		return;
+	}
+
+	if (k == bind_close.ks and (state == bind_close.mod)) {
+		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+			if (_desktop_list[_current_desktop]->client_focus.front()
+					!= nullptr) {
+				client_managed_t * mw =
+						_desktop_list[_current_desktop]->client_focus.front();
+				mw->delete_window(e->time);
+			}
 		}
+	}
 
-		if (k == bind_close.ks and (state == bind_close.mod)) {
-			if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-				if (_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
-					client_managed_t * mw = _desktop_list[_current_desktop]->client_focus.front();
-					mw->delete_window(e->time);
+	if (k == bind_exposay_all.ks and (state == bind_exposay_all.mod)) {
+		auto child = filter_class<notebook_t>(
+				_desktop_list[_current_desktop]->tree_t::get_all_children());
+		for (auto c : child) {
+			c->start_exposay();
+		}
+	}
+
+	if (k == bind_toggle_fullscreen.ks
+			and (state == bind_toggle_fullscreen.mod)) {
+		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+			if (_desktop_list[_current_desktop]->client_focus.front()
+					!= nullptr) {
+				toggle_fullscreen(
+						_desktop_list[_current_desktop]->client_focus.front());
+			}
+		}
+	}
+
+	if (k == bind_toggle_compositor.ks
+			and (state == bind_toggle_compositor.mod)) {
+		if (rnd == nullptr) {
+			start_compositor();
+		} else {
+			stop_compositor();
+		}
+	}
+
+	if (k == bind_right_desktop.ks and (state == bind_right_desktop.mod)) {
+		switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
+		set_focus(_desktop_list[_current_desktop]->client_focus.front(),
+				e->time);
+	}
+
+	if (k == bind_left_desktop.ks and (state == bind_left_desktop.mod)) {
+		switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
+		set_focus(_desktop_list[_current_desktop]->client_focus.front(),
+				e->time);
+	}
+
+	if (k == bind_bind_window.ks and (state == bind_bind_window.mod)) {
+		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+			if (_desktop_list[_current_desktop]->client_focus.front()
+					!= nullptr) {
+				if (_desktop_list[_current_desktop]->client_focus.front()->is(
+						MANAGED_FULLSCREEN)) {
+					unfullscreen(
+							_desktop_list[_current_desktop]->client_focus.front());
+				}
+
+				if (_desktop_list[_current_desktop]->client_focus.front()->is(
+						MANAGED_FLOATING)) {
+					bind_window(
+							_desktop_list[_current_desktop]->client_focus.front(),
+							true);
 				}
 			}
 		}
+	}
 
-		if (k == bind_exposay_all.ks and (state == bind_exposay_all.mod)) {
-			auto child = filter_class<notebook_t>(_desktop_list[_current_desktop]->tree_t::get_all_children());
-			for(auto c: child) {
-				c->start_exposay();
-			}
-		}
-
-		if(k == bind_toggle_fullscreen.ks and (state == bind_toggle_fullscreen.mod)) {
-			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
-					toggle_fullscreen(_desktop_list[_current_desktop]->client_focus.front());
+	if (k == bind_fullscreen_window.ks
+			and (state == bind_fullscreen_window.mod)) {
+		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+			if (_desktop_list[_current_desktop]->client_focus.front()
+					!= nullptr) {
+				if (not _desktop_list[_current_desktop]->client_focus.front()->is(
+						MANAGED_FULLSCREEN)) {
+					fullscreen(
+							_desktop_list[_current_desktop]->client_focus.front(),
+							nullptr);
 				}
 			}
 		}
+	}
 
-		if(k == bind_toggle_compositor.ks and (state == bind_toggle_compositor.mod)) {
-			if(rnd == nullptr) {
-				start_compositor();
+	if (k == bind_float_window.ks and (state == bind_float_window.mod)) {
+		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+			if (_desktop_list[_current_desktop]->client_focus.front()
+					!= nullptr) {
+				if (_desktop_list[_current_desktop]->client_focus.front()->is(
+						MANAGED_FULLSCREEN)) {
+					unfullscreen(
+							_desktop_list[_current_desktop]->client_focus.front());
+				}
+
+				if (_desktop_list[_current_desktop]->client_focus.front()->is(
+						MANAGED_NOTEBOOK)) {
+					unbind_window(
+							_desktop_list[_current_desktop]->client_focus.front());
+				}
+			}
+		}
+	}
+
+	if (rnd != nullptr) {
+		if (k == bind_debug_1.ks and (state == bind_debug_1.mod)) {
+			if (rnd->show_fps()) {
+				rnd->set_show_fps(false);
 			} else {
-				stop_compositor();
+				rnd->set_show_fps(true);
 			}
 		}
 
-		if(k == bind_right_desktop.ks and (state == bind_right_desktop.mod)) {
-			switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
-			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
-		}
-
-		if(k == bind_left_desktop.ks and (state == bind_left_desktop.mod)) {
-			switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
-			set_focus(_desktop_list[_current_desktop]->client_focus.front(), e->time);
-		}
-
-		if(k == bind_bind_window.ks and (state == bind_bind_window.mod)) {
-			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
-					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
-						unfullscreen(_desktop_list[_current_desktop]->client_focus.front());
-					}
-
-					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FLOATING)) {
-						bind_window(_desktop_list[_current_desktop]->client_focus.front(), true);
-					}
-				}
-			}
-		}
-
-		if(k == bind_fullscreen_window.ks and (state == bind_fullscreen_window.mod)) {
-			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
-					if(not _desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
-						fullscreen(_desktop_list[_current_desktop]->client_focus.front(), nullptr);
-					}
-				}
-			}
-		}
-
-		if(k == bind_float_window.ks and (state == bind_float_window.mod)) {
-			if(not _desktop_list[_current_desktop]->client_focus.empty()) {
-				if(_desktop_list[_current_desktop]->client_focus.front() != nullptr) {
-					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_FULLSCREEN)) {
-						unfullscreen(_desktop_list[_current_desktop]->client_focus.front());
-					}
-
-					if(_desktop_list[_current_desktop]->client_focus.front()->is(MANAGED_NOTEBOOK)) {
-						unbind_window(_desktop_list[_current_desktop]->client_focus.front());
-					}
-				}
-			}
-		}
-
-		if (rnd != nullptr) {
-			if (k == bind_debug_1.ks and (state == bind_debug_1.mod)) {
-				if (rnd->show_fps()) {
-					rnd->set_show_fps(false);
-				} else {
-					rnd->set_show_fps(true);
-				}
-			}
-
-			if (k == bind_debug_2.ks and (state == bind_debug_2.mod)) {
-				if (rnd->show_damaged()) {
-					rnd->set_show_damaged(false);
-				} else {
-					rnd->set_show_damaged(true);
-				}
-			}
-
-			if (k == bind_debug_3.ks and (state == bind_debug_3.mod)) {
-				if (rnd->show_opac()) {
-					rnd->set_show_opac(false);
-				} else {
-					rnd->set_show_opac(true);
-				}
-			}
-		}
-
-		if(k == bind_debug_4.ks and (state == bind_debug_4.mod)) {
-			_need_restack = true;
-			print_tree(0);
-			for (auto i : _clients_list) {
-				switch (i->get_type()) {
-				case MANAGED_NOTEBOOK:
-					cout << "[" << i->orig() << "] notebook : " << i->title()
-							<< endl;
-					break;
-				case MANAGED_FLOATING:
-					cout << "[" << i->orig() << "] floating : " << i->title()
-							<< endl;
-					break;
-				case MANAGED_FULLSCREEN:
-					cout << "[" << i->orig() << "] fullscreen : " << i->title()
-							<< endl;
-					break;
-				case MANAGED_DOCK:
-					cout << "[" << i->orig() << "] dock : " << i->title()
-							<< endl;
-					break;
-				}
-			}
-		}
-
-		if (k == bind_cmd_0.ks and (state == bind_cmd_0.mod)) {
-			run_cmd(exec_cmd_0);
-		}
-
-		if (k == bind_cmd_1.ks and (state == bind_cmd_1.mod)) {
-			run_cmd(exec_cmd_1);
-		}
-
-		if (k == bind_cmd_2.ks and (state == bind_cmd_2.mod)) {
-			run_cmd(exec_cmd_2);
-		}
-
-		if (k == bind_cmd_3.ks and (state == bind_cmd_3.mod)) {
-			run_cmd(exec_cmd_3);
-		}
-
-		if (k == bind_cmd_4.ks and (state == bind_cmd_4.mod)) {
-			run_cmd(exec_cmd_4);
-		}
-
-		if (k == bind_cmd_5.ks and (state == bind_cmd_5.mod)) {
-			run_cmd(exec_cmd_5);
-		}
-
-		if (k == bind_cmd_6.ks and (state == bind_cmd_6.mod)) {
-			run_cmd(exec_cmd_6);
-		}
-
-		if (k == bind_cmd_7.ks and (state == bind_cmd_7.mod)) {
-			run_cmd(exec_cmd_7);
-		}
-
-		if (k == bind_cmd_8.ks and (state == bind_cmd_8.mod)) {
-			run_cmd(exec_cmd_8);
-		}
-
-		if (k == bind_cmd_9.ks and (state == bind_cmd_9.mod)) {
-			run_cmd(exec_cmd_9);
-		}
-
-
-		if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
-
-			if (process_mode == PROCESS_NORMAL and not _clients_list.empty()) {
-
-				/* Grab keyboard */
-				/** TODO: check for success or failure **/
-				xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
-
-				process_mode = PROCESS_ALT_TAB;
-				update_alt_tab_popup(_desktop_list[_current_desktop]->client_focus.front());
+		if (k == bind_debug_2.ks and (state == bind_debug_2.mod)) {
+			if (rnd->show_damaged()) {
+				rnd->set_show_damaged(false);
 			} else {
-				xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
+				rnd->set_show_damaged(true);
 			}
-
-			pat->select_next();
-			_need_render = true;
-
 		}
 
-	} else {
-		/** here we guess Mod1 is bound to Alt **/
-		if ((XK_Alt_L == k or XK_Alt_R == k)
-				and process_mode == PROCESS_ALT_TAB) {
-
-			/** Ungrab Keyboard **/
-			xcb_ungrab_keyboard(cnx->xcb(), e->time);
-
-			process_mode = PROCESS_NORMAL;
-
-			client_managed_t * mw = pat->get_selected();
-			mw->activate();
-			set_focus(mw, e->time);
-			pat.reset();
+		if (k == bind_debug_3.ks and (state == bind_debug_3.mod)) {
+			if (rnd->show_opac()) {
+				rnd->set_show_opac(false);
+			} else {
+				rnd->set_show_opac(true);
+			}
 		}
+	}
+
+	if (k == bind_debug_4.ks and (state == bind_debug_4.mod)) {
+		_need_restack = true;
+		print_tree(0);
+		for (auto i : _clients_list) {
+			switch (i->get_type()) {
+			case MANAGED_NOTEBOOK:
+				cout << "[" << i->orig() << "] notebook : " << i->title()
+						<< endl;
+				break;
+			case MANAGED_FLOATING:
+				cout << "[" << i->orig() << "] floating : " << i->title()
+						<< endl;
+				break;
+			case MANAGED_FULLSCREEN:
+				cout << "[" << i->orig() << "] fullscreen : " << i->title()
+						<< endl;
+				break;
+			case MANAGED_DOCK:
+				cout << "[" << i->orig() << "] dock : " << i->title() << endl;
+				break;
+			}
+		}
+	}
+
+	if (k == bind_cmd_0.ks and (state == bind_cmd_0.mod)) {
+		run_cmd(exec_cmd_0);
+	}
+
+	if (k == bind_cmd_1.ks and (state == bind_cmd_1.mod)) {
+		run_cmd(exec_cmd_1);
+	}
+
+	if (k == bind_cmd_2.ks and (state == bind_cmd_2.mod)) {
+		run_cmd(exec_cmd_2);
+	}
+
+	if (k == bind_cmd_3.ks and (state == bind_cmd_3.mod)) {
+		run_cmd(exec_cmd_3);
+	}
+
+	if (k == bind_cmd_4.ks and (state == bind_cmd_4.mod)) {
+		run_cmd(exec_cmd_4);
+	}
+
+	if (k == bind_cmd_5.ks and (state == bind_cmd_5.mod)) {
+		run_cmd(exec_cmd_5);
+	}
+
+	if (k == bind_cmd_6.ks and (state == bind_cmd_6.mod)) {
+		run_cmd(exec_cmd_6);
+	}
+
+	if (k == bind_cmd_7.ks and (state == bind_cmd_7.mod)) {
+		run_cmd(exec_cmd_7);
+	}
+
+	if (k == bind_cmd_8.ks and (state == bind_cmd_8.mod)) {
+		run_cmd(exec_cmd_8);
+	}
+
+	if (k == bind_cmd_9.ks and (state == bind_cmd_9.mod)) {
+		run_cmd(exec_cmd_9);
+	}
+
+	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
+
+		if (_grab_handler == nullptr and not _clients_list.empty()) {
+
+			/* Grab keyboard */
+			/** TODO: check for success or failure **/
+			xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time,
+					XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
+			xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+			grab_start(new grab_alt_tab_t{this});
+
+		} else {
+			xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
+		}
+
+		_need_render = true;
+
+	}
+
+}
+
+void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_key_release_event_t const *>(_e);
+
+	if(_grab_handler != nullptr) {
+		_grab_handler->key_release(e);
+		return;
 	}
 
 }
@@ -1277,7 +1283,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	} else if (e->type == A(_NET_WM_MOVERESIZE)) {
 		if (mw != nullptr) {
-			if (mw->is(MANAGED_FLOATING) and process_mode == PROCESS_NORMAL) {
+			if (mw->is(MANAGED_FLOATING) and _grab_handler == nullptr) {
 
 				if (mw->lock()) {
 					int root_x = e->data.data32[0];
@@ -1313,7 +1319,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 						}
 					}
 
-					if (process_mode != PROCESS_NORMAL) {
+					if (_grab_handler != nullptr) {
 						xcb_grab_pointer(cnx->xcb(), FALSE, cnx->root(),
 								XCB_EVENT_MASK_BUTTON_PRESS
 										| XCB_EVENT_MASK_BUTTON_RELEASE
@@ -3102,62 +3108,62 @@ void page_t::register_cm() {
 	}
 }
 
-void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * keymap) {
+void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * _keymap) {
 	int kc = 0;
-	if ((kc = keymap->find_keysim(key.ks))) {
+	if ((kc = _keymap->find_keysim(key.ks))) {
 		xcb_grab_key(xcb, true, w, key.mod, kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-		if(keymap->numlock_mod_mask() != 0) {
-			xcb_grab_key(xcb, true, w, key.mod| keymap->numlock_mod_mask(), kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+		if(_keymap->numlock_mod_mask() != 0) {
+			xcb_grab_key(xcb, true, w, key.mod| _keymap->numlock_mod_mask(), kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 		}
 	}
 }
 
 /**
- * Update grab keys aware of current keymap
+ * Update grab keys aware of current _keymap
  */
 void page_t::update_grabkey() {
 
-	assert(keymap != nullptr);
+	assert(_keymap != nullptr);
 
 	/** ungrab all previews key **/
 	xcb_ungrab_key(cnx->xcb(), XCB_GRAB_ANY, cnx->root(), XCB_MOD_MASK_ANY);
 
 	int kc = 0;
 
-	grab_key(cnx->xcb(), cnx->root(), bind_debug_1, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_debug_2, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_debug_3, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_debug_4, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_1, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_2, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_3, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_debug_4, _keymap);
 
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_0, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_1, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_2, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_3, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_4, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_5, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_6, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_7, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_8, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_9, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_0, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_1, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_2, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_3, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_4, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_5, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_6, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_7, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_8, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd_9, _keymap);
 
-	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_close, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_exposay_all, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_left_desktop, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_bind_window, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_fullscreen_window, keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_float_window, keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_close, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_exposay_all, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_toggle_fullscreen, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_toggle_compositor, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_right_desktop, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_left_desktop, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_bind_window, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_fullscreen_window, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_float_window, _keymap);
 
 	/* Alt-Tab */
-	if ((kc = keymap->find_keysim(XK_Tab))) {
+	if ((kc = _keymap->find_keysim(XK_Tab))) {
 		xcb_grab_key(cnx->xcb(), true, cnx->root(), XCB_MOD_MASK_1, kc,
 				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
-		if (keymap->numlock_mod_mask() != 0) {
+		if (_keymap->numlock_mod_mask() != 0) {
 			xcb_grab_key(cnx->xcb(), true, cnx->root(),
-					XCB_MOD_MASK_1 | keymap->numlock_mod_mask(), kc,
+					XCB_MOD_MASK_1 | _keymap->numlock_mod_mask(), kc,
 					XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
 		}
 	}
@@ -3166,10 +3172,10 @@ void page_t::update_grabkey() {
 }
 
 void page_t::update_keymap() {
-	if(keymap != nullptr) {
-		delete keymap;
+	if(_keymap != nullptr) {
+		delete _keymap;
 	}
-	keymap = new keymap_t(cnx->xcb());
+	_keymap = new keymap_t(cnx->xcb());
 }
 
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
@@ -3351,7 +3357,7 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(XCB_BUTTON_RELEASE, &page_t::process_button_release);
 	_event_handler_bind(XCB_MOTION_NOTIFY, &page_t::process_motion_notify);
 	_event_handler_bind(XCB_KEY_PRESS, &page_t::process_key_press_event);
-	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_key_press_event);
+	_event_handler_bind(XCB_KEY_RELEASE, &page_t::process_key_release_event);
 	_event_handler_bind(XCB_CONFIGURE_NOTIFY, &page_t::process_configure_notify_event);
 	_event_handler_bind(XCB_CREATE_NOTIFY, &page_t::process_create_notify_event);
 	_event_handler_bind(XCB_DESTROY_NOTIFY, &page_t::process_destroy_notify_event);
@@ -3666,19 +3672,6 @@ void page_t::stop_compositor() {
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
 
-//	auto viewports = get_viewports();
-//	for(auto x: viewports) {
-//		if(x->wid() == e->window) {
-//			x->expose(i_rect(e->x, e->y, e->width, e->height));
-//		}
-//	}
-
-	if (pat != nullptr) {
-		if (pat->id() == e->window) {
-			pat->expose(i_rect(e->x, e->y, e->width, e->height));
-		}
-	}
-
 	for(auto x: _overlays) {
 		if(x->id() == e->window) {
 			x->expose();
@@ -3777,42 +3770,42 @@ unsigned int page_t::find_current_desktop(client_base_t * c) {
  *
  **/
 void page_t::update_alt_tab_popup(client_managed_t * selected) {
-	auto managed_window = _clients_list;
-
-	/* reorder client to follow focused order */
-	for (auto i = _global_client_focus_history.rbegin();
-			i != _global_client_focus_history.rend();
-			++i) {
-		if (*i != nullptr) {
-			managed_window.remove(*i);
-			managed_window.push_front(*i);
-		}
-	}
-
-	int sel = 0;
-
-	/** create all menu entry and find the selected one **/
-	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
-	int s = 0;
-	for (auto i : managed_window) {
-		std::shared_ptr<icon64> icon{new icon64{*i}};
-		std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
-		v.push_back(cy);
-		if (i == selected) {
-			sel = s;
-		}
-		++s;
-	}
-
-	pat = std::make_shared<popup_alt_tab_t>(cnx, _theme, v, sel);
-
-	/** TODO: show it on all viewport **/
-	viewport_t * viewport = _desktop_list[_current_desktop]->get_any_viewport();
-	pat->move(viewport->raw_area().x
-							+ (viewport->raw_area().w - pat->position().w) / 2,
-					viewport->raw_area().y
-							+ (viewport->raw_area().h - pat->position().h) / 2);
-	pat->show();
+//	auto managed_window = _clients_list;
+//
+//	/* reorder client to follow focused order */
+//	for (auto i = _global_client_focus_history.rbegin();
+//			i != _global_client_focus_history.rend();
+//			++i) {
+//		if (*i != nullptr) {
+//			managed_window.remove(*i);
+//			managed_window.push_front(*i);
+//		}
+//	}
+//
+//	int sel = 0;
+//
+//	/** create all menu entry and find the selected one **/
+//	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
+//	int s = 0;
+//	for (auto i : managed_window) {
+//		std::shared_ptr<icon64> icon{new icon64{*i}};
+//		std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
+//		v.push_back(cy);
+//		if (i == selected) {
+//			sel = s;
+//		}
+//		++s;
+//	}
+//
+//	pat = std::make_shared<popup_alt_tab_t>(cnx, _theme, v, sel);
+//
+//	/** TODO: show it on all viewport **/
+//	viewport_t * viewport = _desktop_list[_current_desktop]->get_any_viewport();
+//	pat->move(viewport->raw_area().x
+//							+ (viewport->raw_area().w - pat->position().w) / 2,
+//					viewport->raw_area().y
+//							+ (viewport->raw_area().h - pat->position().h) / 2);
+//	pat->show();
 
 }
 
@@ -3922,6 +3915,17 @@ int page_t::top_most_border() {
 	return _top_most_border;
 }
 
+std::list<client_managed_t *> page_t::global_client_focus_history() {
+	return _global_client_focus_history;
+}
+
+std::list<client_managed_t *> page_t::clients_list() {
+	return _clients_list;
+}
+
+keymap_t const * page_t::keymap() const {
+	return _keymap;
+}
 
 }
 

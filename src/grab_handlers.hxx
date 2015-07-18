@@ -12,6 +12,7 @@
 #include "desktop.hxx"
 #include "popup_split.hxx"
 #include "popup_notebook0.hxx"
+#include "popup_alt_tab.hxx"
 
 
 namespace page {
@@ -41,6 +42,8 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
 
 };
 
@@ -64,7 +67,8 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
 };
 
 struct grab_notebook_menu_t  : public grab_handler_t {
@@ -129,7 +133,8 @@ struct grab_floating_move_t : public grab_handler_t {
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
 };
 
 struct grab_floating_resize_t : public grab_handler_t {
@@ -155,7 +160,8 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
 
 };
 
@@ -174,7 +180,24 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
+};
 
+struct grab_alt_tab_t : public grab_handler_t {
+	page_context_t * _ctx;
+	std::shared_ptr<popup_alt_tab_t> pat;
+
+public:
+
+	grab_alt_tab_t(page_context_t * ctx);
+
+	virtual ~grab_alt_tab_t();
+	virtual void button_press(xcb_button_press_event_t const * e) { }
+	virtual void button_motion(xcb_motion_notify_event_t const * e) { }
+	virtual void button_release(xcb_button_release_event_t const * e) { }
+	virtual void key_press(xcb_key_press_event_t const * ev);
+	virtual void key_release(xcb_key_release_event_t const * ev);
 };
 
 }

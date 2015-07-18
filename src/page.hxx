@@ -97,9 +97,6 @@ class page_t : public page_component_t, public mainloop_t, public page_context_t
 
 public:
 
-	/* popups (overlay) */
-	std::shared_ptr<popup_alt_tab_t> pat;
-
 	/* store all managed client */
 	std::list<client_managed_t *> _clients_list;
 
@@ -110,14 +107,11 @@ public:
 
 	/* enable-shade */
 	bool _enable_shade_windows;
-	process_mode_e process_mode;
 
 private:
 	grab_handler_t * _grab_handler;
 
 public:
-	key_mode_data_t key_mode_data;
-
 	bool replace_wm;
 
 	/** window that handle page identity for others clients */
@@ -186,7 +180,7 @@ public:
 	key_desc_t bind_cmd_8;
 	key_desc_t bind_cmd_9;
 
-	keymap_t * keymap;
+	keymap_t * _keymap;
 
 	std::string exec_cmd_0;
 	std::string exec_cmd_1;
@@ -242,6 +236,7 @@ public:
 
 	/** user inputs **/
 	void process_key_press_event(xcb_generic_event_t const * e);
+	void process_key_release_event(xcb_generic_event_t const * e);
 	void process_button_press_event(xcb_generic_event_t const * e);
 	void process_motion_notify(xcb_generic_event_t const * _e);
 	void process_button_release(xcb_generic_event_t const * _e);
@@ -483,6 +478,11 @@ public:
 	virtual void add_global_damage(region const & r);
 	virtual int left_most_border();
 	virtual int top_most_border();
+
+	virtual std::list<client_managed_t *> global_client_focus_history();
+	virtual std::list<client_managed_t *> clients_list();
+
+	virtual keymap_t const * keymap() const;
 
 };
 

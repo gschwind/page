@@ -332,6 +332,9 @@ public:
 		}
 	}
 
+	virtual void key_press(xcb_key_press_event_t const * ev) { }
+	virtual void key_release(xcb_key_release_event_t const * ev) { }
+
 
 };
 

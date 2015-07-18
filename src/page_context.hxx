@@ -15,6 +15,7 @@
 #include "composite_surface_manager.hxx"
 #include "compositor.hxx"
 #include "theme_split.hxx"
+#include "keymap.hxx"
 
 namespace page {
 
@@ -38,6 +39,8 @@ struct grab_handler_t {
 	virtual void button_press(xcb_button_press_event_t const *) = 0;
 	virtual void button_motion(xcb_motion_notify_event_t const *) = 0;
 	virtual void button_release(xcb_button_release_event_t const *) = 0;
+	virtual void key_press(xcb_key_press_event_t const * ev) = 0;
+	virtual void key_release(xcb_key_release_event_t const * ev) = 0;
 };
 
 /**
@@ -169,6 +172,10 @@ public:
 	virtual int left_most_border() = 0;
 	virtual int top_most_border() = 0;
 
+	virtual std::list<client_managed_t *> global_client_focus_history() = 0;
+	virtual std::list<client_managed_t *> clients_list() = 0;
+
+	virtual keymap_t const * keymap() const = 0;
 
 };
 
