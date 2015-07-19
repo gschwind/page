@@ -78,8 +78,9 @@ enum process_mode_e {
 	PROCESS_ALT_TAB						// when alt-tab running
 };
 
-struct key_mode_data_t {
-	client_managed_t * selected;
+struct key_bind_cmd_t {
+	key_desc_t key;
+	std::string cmd;
 };
 
 class page_t : public page_component_t, public mainloop_t, public page_context_t {
@@ -164,35 +165,14 @@ public:
 	key_desc_t bind_fullscreen_window;
 	key_desc_t bind_float_window;
 
+	keymap_t * _keymap;
+
 	key_desc_t bind_debug_1;
 	key_desc_t bind_debug_2;
 	key_desc_t bind_debug_3;
 	key_desc_t bind_debug_4;
 
-	key_desc_t bind_cmd_0;
-	key_desc_t bind_cmd_1;
-	key_desc_t bind_cmd_2;
-	key_desc_t bind_cmd_3;
-	key_desc_t bind_cmd_4;
-	key_desc_t bind_cmd_5;
-	key_desc_t bind_cmd_6;
-	key_desc_t bind_cmd_7;
-	key_desc_t bind_cmd_8;
-	key_desc_t bind_cmd_9;
-
-	keymap_t * _keymap;
-
-	std::string exec_cmd_0;
-	std::string exec_cmd_1;
-	std::string exec_cmd_2;
-	std::string exec_cmd_3;
-	std::string exec_cmd_4;
-	std::string exec_cmd_5;
-	std::string exec_cmd_6;
-	std::string exec_cmd_7;
-	std::string exec_cmd_8;
-	std::string exec_cmd_9;
-
+	std::array<key_bind_cmd_t, 10> bind_cmd;
 
 private:
 

@@ -158,27 +158,28 @@ page_t::page_t(int argc, char ** argv)
 	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
 	find_key_from_string(conf.get_string("default", "bind_debug_4"), bind_debug_4);
 
-	find_key_from_string(conf.get_string("default", "bind_cmd_0"), bind_cmd_0);
-	find_key_from_string(conf.get_string("default", "bind_cmd_1"), bind_cmd_1);
-	find_key_from_string(conf.get_string("default", "bind_cmd_2"), bind_cmd_2);
-	find_key_from_string(conf.get_string("default", "bind_cmd_3"), bind_cmd_3);
-	find_key_from_string(conf.get_string("default", "bind_cmd_4"), bind_cmd_4);
-	find_key_from_string(conf.get_string("default", "bind_cmd_5"), bind_cmd_5);
-	find_key_from_string(conf.get_string("default", "bind_cmd_6"), bind_cmd_6);
-	find_key_from_string(conf.get_string("default", "bind_cmd_7"), bind_cmd_7);
-	find_key_from_string(conf.get_string("default", "bind_cmd_8"), bind_cmd_8);
-	find_key_from_string(conf.get_string("default", "bind_cmd_9"), bind_cmd_9);
 
-	exec_cmd_0 = conf.get_string("default", "exec_cmd_0");
-	exec_cmd_1 = conf.get_string("default", "exec_cmd_1");
-	exec_cmd_2 = conf.get_string("default", "exec_cmd_2");
-	exec_cmd_3 = conf.get_string("default", "exec_cmd_3");
-	exec_cmd_4 = conf.get_string("default", "exec_cmd_4");
-	exec_cmd_5 = conf.get_string("default", "exec_cmd_5");
-	exec_cmd_6 = conf.get_string("default", "exec_cmd_6");
-	exec_cmd_7 = conf.get_string("default", "exec_cmd_7");
-	exec_cmd_8 = conf.get_string("default", "exec_cmd_8");
-	exec_cmd_9 = conf.get_string("default", "exec_cmd_9");
+	find_key_from_string(conf.get_string("default", "bind_cmd_0"), bind_cmd[0].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_1"), bind_cmd[1].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_2"), bind_cmd[2].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_3"), bind_cmd[3].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_4"), bind_cmd[4].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_5"), bind_cmd[5].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_6"), bind_cmd[6].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_7"), bind_cmd[7].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_8"), bind_cmd[8].key);
+	find_key_from_string(conf.get_string("default", "bind_cmd_9"), bind_cmd[9].key);
+
+	bind_cmd[0].cmd = conf.get_string("default", "exec_cmd_0");
+	bind_cmd[1].cmd = conf.get_string("default", "exec_cmd_1");
+	bind_cmd[2].cmd = conf.get_string("default", "exec_cmd_2");
+	bind_cmd[3].cmd = conf.get_string("default", "exec_cmd_3");
+	bind_cmd[4].cmd = conf.get_string("default", "exec_cmd_4");
+	bind_cmd[5].cmd = conf.get_string("default", "exec_cmd_5");
+	bind_cmd[6].cmd = conf.get_string("default", "exec_cmd_6");
+	bind_cmd[7].cmd = conf.get_string("default", "exec_cmd_7");
+	bind_cmd[8].cmd = conf.get_string("default", "exec_cmd_8");
+	bind_cmd[9].cmd = conf.get_string("default", "exec_cmd_9");
 
 	if(conf.get_string("default", "auto_refocus") == "true") {
 		_auto_refocus = true;
@@ -265,6 +266,8 @@ void page_t::run() {
 //		/* TODO */
 //		std::cout << "using tiny theme engine" << std::endl;
 //		_theme = new tiny_theme_t{cnx, conf};
+		std::cout << "using simple theme engine" << std::endl;
+		_theme = new simple2_theme_t{cnx, conf};
 	} else {
 		/* The default theme engine */
 		std::cout << "using simple theme engine" << std::endl;
@@ -734,44 +737,10 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 	}
 
-	if (k == bind_cmd_0.ks and (state == bind_cmd_0.mod)) {
-		run_cmd(exec_cmd_0);
-	}
-
-	if (k == bind_cmd_1.ks and (state == bind_cmd_1.mod)) {
-		run_cmd(exec_cmd_1);
-	}
-
-	if (k == bind_cmd_2.ks and (state == bind_cmd_2.mod)) {
-		run_cmd(exec_cmd_2);
-	}
-
-	if (k == bind_cmd_3.ks and (state == bind_cmd_3.mod)) {
-		run_cmd(exec_cmd_3);
-	}
-
-	if (k == bind_cmd_4.ks and (state == bind_cmd_4.mod)) {
-		run_cmd(exec_cmd_4);
-	}
-
-	if (k == bind_cmd_5.ks and (state == bind_cmd_5.mod)) {
-		run_cmd(exec_cmd_5);
-	}
-
-	if (k == bind_cmd_6.ks and (state == bind_cmd_6.mod)) {
-		run_cmd(exec_cmd_6);
-	}
-
-	if (k == bind_cmd_7.ks and (state == bind_cmd_7.mod)) {
-		run_cmd(exec_cmd_7);
-	}
-
-	if (k == bind_cmd_8.ks and (state == bind_cmd_8.mod)) {
-		run_cmd(exec_cmd_8);
-	}
-
-	if (k == bind_cmd_9.ks and (state == bind_cmd_9.mod)) {
-		run_cmd(exec_cmd_9);
+	for(int i; i < bind_cmd.size(); ++i) {
+		if (k == bind_cmd[i].key.ks and (state == bind_cmd[i].key.mod)) {
+			run_cmd(bind_cmd[i].cmd);
+		}
 	}
 
 	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
@@ -3135,16 +3104,16 @@ void page_t::update_grabkey() {
 	grab_key(cnx->xcb(), cnx->root(), bind_debug_3, _keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_debug_4, _keymap);
 
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_0, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_1, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_2, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_3, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_4, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_5, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_6, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_7, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_8, _keymap);
-	grab_key(cnx->xcb(), cnx->root(), bind_cmd_9, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[0].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[1].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[2].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[3].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[4].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[5].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[6].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[7].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[8].key, _keymap);
+	grab_key(cnx->xcb(), cnx->root(), bind_cmd[9].key, _keymap);
 
 	grab_key(cnx->xcb(), cnx->root(), bind_page_quit, _keymap);
 	grab_key(cnx->xcb(), cnx->root(), bind_close, _keymap);
