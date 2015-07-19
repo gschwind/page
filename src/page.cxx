@@ -3641,6 +3641,8 @@ void page_t::stop_compositor() {
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
 
+	broadcast_expose(e);
+
 	for(auto x: _overlays) {
 		if(x->id() == e->window) {
 			x->expose();

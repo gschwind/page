@@ -47,6 +47,14 @@ class tree_t {
 		return false;
 	}
 
+	template<typename ... T>
+	void _broadcast_deep_first(void (tree_t::* f)(T ... args), T ... args) {
+		for(auto x: tree_t::get_all_children_deep_first()) {
+			(x->*f)(args...);
+		}
+		(this->*f)(args...);
+	}
+
 	bool _trigger_redraw_handler() { trigger_redraw(); return false; }
 
 public:
@@ -111,6 +119,7 @@ public:
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev) { return false; }
 	virtual bool leave(xcb_leave_notify_event_t const * ev) { return false; }
 	virtual bool enter(xcb_enter_notify_event_t const * ev) { return false; }
+	virtual void expose(xcb_expose_event_t const * ev) { }
 
 	virtual void trigger_redraw() { }
 
@@ -237,6 +246,10 @@ public:
 
 	bool broadcast_enter(xcb_enter_notify_event_t const * ev) {
 		return _broadcast_deep_first(&tree_t::enter, ev);
+	}
+
+	void broadcast_expose(xcb_expose_event_t const * ev) {
+		_broadcast_deep_first(&tree_t::expose, ev);
 	}
 
 	i_rect to_root_position(i_rect const & r) const {

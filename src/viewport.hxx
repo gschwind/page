@@ -36,6 +36,7 @@ class viewport_t: public page_component_t {
 
 	bool _is_durty;
 	bool _is_hidden;
+	bool _exposed;
 
 	/** rendering tabs is time consuming, thus use back buffer **/
 	cairo_surface_t * _back_surf;
@@ -277,6 +278,7 @@ public:
 		cairo_destroy(cr);
 
 		_is_durty = false;
+		_exposed = true;
 		_damaged += _page_area;
 	}
 
@@ -284,6 +286,12 @@ public:
 		/** redraw all child **/
 		tree_t::trigger_redraw();
 		_redraw_back_buffer();
+
+		if(_exposed and _ctx->cmp() == nullptr) {
+			_exposed = false;
+			___expose();
+		}
+
 	}
 
 	std::shared_ptr<renderable_surface_t> prepare_render() {
@@ -306,20 +314,16 @@ public:
 		return _win;
 	}
 
-	void ___expose(region const & r) {
+	void ___expose() {
 		if(_is_hidden)
 			return;
 
-		_redraw_back_buffer();
-
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
 		cairo_t * cr = cairo_create(surf);
-		for(auto a: r) {
-			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(cr, _back_surf, 0.0, 0.0);
-			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-			cairo_fill(cr);
-		}
+		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_surface(cr, _back_surf, 0.0, 0.0);
+		cairo_rectangle(cr, 0.0, 0.0, _effective_area.w, _effective_area.h);
+		cairo_fill(cr);
 
 		cairo_destroy(cr);
 		cairo_surface_destroy(surf);
@@ -331,6 +335,12 @@ public:
 
 	i_rect get_window_position() const {
 		return _effective_area;
+	}
+
+	void expose(xcb_expose_event_t const * e) {
+		if(e->window == _win) {
+			_exposed = true;
+		}
 	}
 
 };
