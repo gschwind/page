@@ -2668,6 +2668,11 @@ void page_t::create_managed_window(std::shared_ptr<client_properties_t> c, xcb_a
 		cmgr->register_window(mw->base());
 		_clients_list.push_back(mw);
 		manage_client(mw, type);
+
+		if(mw->net_wm_strut() != nullptr or mw->net_wm_strut_partial() != nullptr) {
+			update_workarea();
+		}
+
 	} catch (...) {
 		printf("Error while creating managed window\n");
 		throw;
