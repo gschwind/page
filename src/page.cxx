@@ -1124,7 +1124,6 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/* ignore */
 	} else if (e->atom == A(_NET_WM_NAME) or e->atom == A(WM_NAME)) {
 		mw->update_title();
-		mw->queue_redraw();
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 		update_workarea();
 	} else if (e->atom == A(_NET_WM_STRUT)) {
@@ -1328,16 +1327,8 @@ void page_t::render() {
 		prepare_render(ret, cur_tic);
 		rnd->push_back_renderable(ret);
 		rnd->render();
-
 		xcb_flush(cnx->xcb());
-
 		cur_tic.update_to_current_time();
-
-	} else {
-//		auto viewports = get_viewports();
-//		for(auto x: viewports) {
-//			x->expose();
-//		}
 	}
 }
 
@@ -3867,6 +3858,7 @@ void page_t::overlay_remove(std::shared_ptr<overlay_t> x) {
 }
 
 void page_t::add_global_damage(region const & r) {
+	_need_render = true;
 	add_compositor_damaged(r);
 }
 

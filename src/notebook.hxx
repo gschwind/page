@@ -79,7 +79,15 @@ public:
 		SELECT_RIGHT
 	};
 	// list of client to maintain tab order
+
+	struct _client_context_t {
+		std::function<void(client_managed_t*)> * title_change_func;
+		std::function<void(client_managed_t*)> * destoy_func;
+	};
+
 	std::list<client_managed_t *> _clients;
+	std::map<client_managed_t *, _client_context_t> _clients_context;
+
 	client_managed_t * _selected;
 	i_rect client_position;
 
@@ -90,6 +98,7 @@ public:
 	i_rect button_hsplit;
 	i_rect button_select;
 	i_rect button_exposay;
+
 
 	/* list of tabs and exposay buttons */
 	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
@@ -252,6 +261,9 @@ public:
 	void _update_exposay();
 	void stop_exposay();
 	void start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
+
+	void client_title_change(client_managed_t * c);
+	void client_destroy(client_managed_t * c);
 
 
 	virtual bool button_press(xcb_button_press_event_t const * ev);

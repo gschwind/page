@@ -39,10 +39,13 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	if(_exposay)
 		prefer_activate = false;
 
-
 	x->set_parent(this);
 	_children.push_back(x);
 	_clients.push_front(x);
+
+	_clients_context[x] = _client_context_t{};
+	_clients_context[x].title_change_func = x->on_title_change.connect(this, &notebook_t::client_title_change);
+	_clients_context[x].destoy_func = x->on_destroy.connect(this, &notebook_t::client_destroy);
 
 	_ctx->csm()->register_window(x->base());
 
@@ -115,6 +118,11 @@ void notebook_t::remove_client(client_managed_t * x) {
 	_children.remove(x);
 	x->set_parent(nullptr);
 	_clients.remove(x);
+
+	x->on_title_change.disconnect(_clients_context[x].title_change_func);
+	x->on_destroy.disconnect(_clients_context[x].destoy_func);
+	_clients_context.erase(x);
+
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {
 		_selected = dynamic_cast<client_managed_t*>(_children.back());
 
@@ -205,8 +213,6 @@ void notebook_t::set_allocation(i_rect const & area) {
 }
 
 void notebook_t::_update_layout() {
-	queue_redraw();
-
 	client_area.x = _allocation.x + _ctx->theme()->notebook.margin.left;
 	client_area.y = _allocation.y + _ctx->theme()->notebook.margin.top + _ctx->theme()->notebook.tab_height;
 	client_area.w = _allocation.w - _ctx->theme()->notebook.margin.left - _ctx->theme()->notebook.margin.right;
@@ -285,6 +291,8 @@ void notebook_t::_update_layout() {
 	_update_notebook_areas();
 
 	_update_exposay();
+
+	queue_redraw();
 }
 
 i_rect notebook_t::compute_client_size(client_managed_t * c) {
@@ -974,6 +982,21 @@ void notebook_t::_mouse_over_set() {
 	}
 }
 
+void notebook_t::client_title_change(client_managed_t * c) {
+	for(auto & x: _client_buttons) {
+		if(c == std::get<1>(x)) {
+			std::get<2>(x)->title = c->title();
+		}
+	}
 
+	if(c == _selected) {
+		theme_notebook.selected_client.title = c->title();
+	}
+	queue_redraw();
+}
+
+void notebook_t::client_destroy(client_managed_t * c) {
+	this->remove_client(c);
+}
 
 }

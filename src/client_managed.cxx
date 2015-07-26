@@ -52,6 +52,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_is_durty{true}
 {
 
+	update_title();
 	i_rect pos{_properties->position()};
 
 	printf("window default position = %s\n", pos.to_string().c_str());
@@ -245,6 +246,8 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 }
 
 client_managed_t::~client_managed_t() {
+
+	on_destroy.signal(this);
 
 	unselect_inputs();
 
@@ -1412,6 +1415,24 @@ void client_managed_t::trigger_redraw() {
 		warn(cairo_get_reference_count(_cr) == 1);
 		cairo_destroy(_cr);
 	}
+}
+
+void client_managed_t::update_title() {
+		_is_durty = true;
+
+		std::string name;
+		if (_properties->net_wm_name() != nullptr) {
+			_title = *(_properties->net_wm_name());
+		} else if (_properties->wm_name() != nullptr) {
+			_title = *(_properties->wm_name());
+		} else {
+			std::stringstream s(std::stringstream::in | std::stringstream::out);
+			s << "#" << (_properties->id()) << " (noname)";
+			_title = s.str();
+		}
+
+		on_title_change.signal(this);
+
 }
 
 }

@@ -631,6 +631,42 @@ std::list<T> make_list(std::vector<T> const & v) {
 
 static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 
+
+template<typename ... F>
+class signal_t {
+	using _func_t = std::function<void(F...)>;
+	std::list<_func_t *> _callback_list;
+
+public:
+
+	template<typename T0>
+	_func_t * connect(T0 * ths, void(T0::*func)(F ...)) {
+		_func_t * ret = new _func_t{[ths, func](F ... args) -> void { (ths->*func)(args...); }};
+		_callback_list.push_back(ret);
+		return ret;
+	}
+
+	template<typename G>
+	_func_t * connect(G func) {
+		_func_t * ret = new _func_t{func};
+		_callback_list.push_back(ret);
+		return ret;
+	}
+
+	void disconnect(_func_t * f) {
+		_callback_list.remove(f);
+		delete f;
+	}
+
+	void signal(F ... args) {
+		for(auto f: _callback_list) {
+			(*f)(args...);
+		}
+	}
+
+};
+
+
 }
 
 

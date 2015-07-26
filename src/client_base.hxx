@@ -48,9 +48,6 @@ protected:
 	/* sub-clients */
 	std::list<client_base_t *> _children;
 
-	// window title cache
-	std::string _title;
-
 	bool _is_hidden;
 
 	/** short cut **/
@@ -63,7 +60,6 @@ public:
 	client_base_t(client_base_t const & c) :
 		_ctx{c._ctx},
 		_properties{c._properties},
-		_title{c._title},
 		_children{c._children},
 		_parent{nullptr},
 		_is_hidden{true}
@@ -74,17 +70,15 @@ public:
 	client_base_t(page_context_t * ctx, std::shared_ptr<client_properties_t> props) :
 		_ctx{ctx},
 		_properties{props},
-		_children{},
-		_title{}
+		_children{}
 	{
-		update_title();
+
 	}
 
 	virtual ~client_base_t() { }
 
 	void read_all_properties() {
 		_properties->read_all_properties();
-		update_title();
 	}
 
 	bool read_window_attributes() {
@@ -234,19 +228,6 @@ public:
 
 public:
 
-	void update_title() {
-			std::string name;
-			if (_properties->net_wm_name() != nullptr) {
-				_title = *(_properties->net_wm_name());
-			} else if (_properties->wm_name() != nullptr) {
-				_title = *(_properties->wm_name());
-			} else {
-				std::stringstream s(std::stringstream::in | std::stringstream::out);
-				s << "#" << (_properties->id()) << " (noname)";
-				_title = s.str();
-			}
-	}
-
 	void add_subclient(client_base_t * s) {
 		assert(s != nullptr);
 		_children.push_back(s);
@@ -261,10 +242,6 @@ public:
 	void remove_subclient(client_base_t * s) {
 		_children.remove(s);
 		s->set_parent(nullptr);
-	}
-
-	std::string const & title() const {
-		return _title;
 	}
 
 	bool is_window(xcb_window_t w) {

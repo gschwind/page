@@ -65,6 +65,10 @@ private:
 	cairo_surface_t * _left_buffer;
 	cairo_surface_t * _right_buffer;
 
+
+	// window title cache
+	std::string _title;
+
 	// icon cache
 	std::shared_ptr<icon16> _icon;
 
@@ -111,6 +115,9 @@ private:
 	bool _is_durty;
 
 public:
+
+	signal_t<client_managed_t *> on_title_change;
+	signal_t<client_managed_t *> on_destroy;
 
 	client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props);
 	virtual ~client_managed_t();
@@ -264,6 +271,12 @@ public:
 
 	void queue_redraw();
 	void trigger_redraw();
+
+	void update_title();
+
+	std::string const & title() const {
+		return _title;
+	}
 
 
 };

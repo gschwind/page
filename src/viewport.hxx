@@ -280,6 +280,10 @@ public:
 		_is_durty = false;
 		_exposed = true;
 		_damaged += _page_area;
+
+		/* tell page to render */
+		_ctx->add_global_damage(_effective_area);
+
 	}
 
 	void trigger_redraw() {
@@ -303,6 +307,7 @@ public:
 
 	/* mark renderable_page for redraw */
 	void queue_redraw() {
+		printf("queue redraw %s\n", get_node_name().c_str());
 		_is_durty = true;
 	}
 
