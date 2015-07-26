@@ -36,11 +36,7 @@ public:
 		_is_mouse_over{false}
 	{
 		_tt.pix = _c->get_last_pixmap();
-		_tt.title = _ctx->cmp()->create_composite_pixmap(position.w, 20);
-		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-		_ctx->theme()->render_thumbnail_title(cr, i_rect{0, 0, position.w, 20}, c->title());
-		cairo_destroy(cr);
-
+		update_title();
 	}
 
 	virtual ~renderable_thumbnail_t() { }
@@ -174,6 +170,13 @@ public:
 
 	void set_mouse_over(bool x) {
 		_is_mouse_over = x;
+	}
+
+	void update_title() {
+		_tt.title = _ctx->cmp()->create_composite_pixmap(_position.w, 20);
+		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
+		_ctx->theme()->render_thumbnail_title(cr, i_rect{0, 0, _position.w, 20}, _c->title());
+		cairo_destroy(cr);
 	}
 
 

@@ -989,6 +989,12 @@ void notebook_t::client_title_change(client_managed_t * c) {
 		}
 	}
 
+	for(auto & x: _exposay_buttons) {
+		if(c == std::get<1>(x)) {
+			_exposay_thumbnail[std::get<2>(x)]->update_title();
+		}
+	}
+
 	if(c == _selected) {
 		theme_notebook.selected_client.title = c->title();
 	}
