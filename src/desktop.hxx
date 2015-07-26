@@ -83,11 +83,6 @@ public:
 
 		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
 
-
-		if(t != nullptr) {
-			std::cout << "Raise > " << t->get_node_name() << std::endl;
-		}
-
 		if(has_key(_floating_layer, mw)) {
 			_floating_layer.remove(mw);
 			_floating_layer.push_back(mw);

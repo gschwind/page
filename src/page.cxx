@@ -3150,39 +3150,6 @@ void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, pa
 	}
 }
 
-
-std::vector<page_event_t> page_t::compute_page_areas(viewport_t * v) const {
-
-//	std::vector<tree_t *> components = v->tree_t::get_all_children();
-	std::vector<page_event_t> ret;
-//
-//	for (auto i : components) {
-//		if(typeid(*i) == typeid(split_t)) {
-//			split_t const * s = dynamic_cast<split_t const *>(i);
-//			page_event_t bsplit(PAGE_EVENT_SPLIT);
-//			bsplit.position = s->compute_split_bar_location();
-//			bsplit.position.x -= v->allocation().x;
-//			bsplit.position.y -= v->allocation().y;
-//
-//			if(s->type() == VERTICAL_SPLIT) {
-//				bsplit.position.w += _theme->notebook.margin.right + _theme->notebook.margin.left;
-//				bsplit.position.x -= _theme->notebook.margin.right;
-//			} else {
-//				bsplit.position.h += _theme->notebook.margin.bottom;
-//				bsplit.position.y -= _theme->notebook.margin.bottom;
-//			}
-//
-//			bsplit.spt = s;
-//			ret.push_back(bsplit);
-//		} else if (typeid(*i) == typeid(notebook_t)) {
-//			notebook_t const * n = dynamic_cast<notebook_t const *>(i);
-//			n->compute_areas_for_notebook(&ret, v->allocation().x, v->allocation().y);
-//		}
-//	}
-
-	return ret;
-}
-
 page_component_t * page_t::parent() const {
 	return nullptr;
 }
@@ -3728,52 +3695,6 @@ unsigned int page_t::find_current_desktop(client_base_t * c) {
 	if(d != nullptr)
 		return d->id();
 	return _current_desktop;
-}
-
-/**
- * Create the alt tab popup or update it with existing client_managed_t
- *
- * @input selected: the selected client, if not found first client is selected
- *
- **/
-void page_t::update_alt_tab_popup(client_managed_t * selected) {
-//	auto managed_window = _clients_list;
-//
-//	/* reorder client to follow focused order */
-//	for (auto i = _global_client_focus_history.rbegin();
-//			i != _global_client_focus_history.rend();
-//			++i) {
-//		if (*i != nullptr) {
-//			managed_window.remove(*i);
-//			managed_window.push_front(*i);
-//		}
-//	}
-//
-//	int sel = 0;
-//
-//	/** create all menu entry and find the selected one **/
-//	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
-//	int s = 0;
-//	for (auto i : managed_window) {
-//		std::shared_ptr<icon64> icon{new icon64{*i}};
-//		std::shared_ptr<cycle_window_entry_t> cy{new cycle_window_entry_t{i, i->title(), icon}};
-//		v.push_back(cy);
-//		if (i == selected) {
-//			sel = s;
-//		}
-//		++s;
-//	}
-//
-//	pat = std::make_shared<popup_alt_tab_t>(cnx, _theme, v, sel);
-//
-//	/** TODO: show it on all viewport **/
-//	viewport_t * viewport = _desktop_list[_current_desktop]->get_any_viewport();
-//	pat->move(viewport->raw_area().x
-//							+ (viewport->raw_area().w - pat->position().w) / 2,
-//					viewport->raw_area().y
-//							+ (viewport->raw_area().h - pat->position().h) / 2);
-//	pat->show();
-
 }
 
 void page_t::process_pending_events() {

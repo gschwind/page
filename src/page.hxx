@@ -397,7 +397,6 @@ public:
 
 
 	void children(std::vector<tree_t *> & out) const;
-//	void get_all_children(std::vector<tree_t *> & out) const;
 	void get_visible_children(std::vector<tree_t *> & out);
 
 	void render();
@@ -430,9 +429,6 @@ public:
 	void mark_durty(tree_t * t);
 
 	unsigned int find_current_desktop(client_base_t * c);
-
-	void update_alt_tab_popup(client_managed_t * selected);
-
 
 	void process_pending_events();
 	bool render_timeout();
