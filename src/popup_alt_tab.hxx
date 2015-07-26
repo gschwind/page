@@ -47,20 +47,24 @@ class popup_alt_tab_t : public overlay_t {
 	cairo_surface_t * _surf;
 
 	i_rect _position;
-	std::vector<std::shared_ptr<cycle_window_entry_t>> _client_list;
-	int _selected;
+	std::list<std::shared_ptr<cycle_window_entry_t>> _client_list;
+	std::list<std::shared_ptr<cycle_window_entry_t>>::iterator _selected;
 	bool _is_visible;
 	bool _is_durty;
 
+	std::map<client_managed_t *, std::function<void(client_managed_t*)> *> destroy_func;
+
 public:
 
-	popup_alt_tab_t(page_context_t * ctx, std::vector<std::shared_ptr<cycle_window_entry_t>> client_list, int selected) :
+	popup_alt_tab_t(page_context_t * ctx, std::list<std::shared_ptr<cycle_window_entry_t>> client_list, int selected) :
 		_ctx{ctx},
-		_selected{selected},
+		_selected{},
 		_client_list{client_list},
 		_is_durty{true},
 		_is_visible{false}
 	{
+
+		_selected = _client_list.begin();
 
 		_position.x = 0;
 		_position.y = 0;
@@ -104,6 +108,10 @@ public:
 
 		_ctx->dpy()->map(_wid);
 
+		for(auto const & x: _client_list) {
+			destroy_func[x->id] = x->id->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
+		}
+
 	}
 
 	void mark_durty() {
@@ -135,16 +143,23 @@ public:
 	~popup_alt_tab_t() {
 		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+
+		for(auto const & x: destroy_func) {
+			x.first->on_destroy.disconnect(x.second);
+		}
+
 	}
 
 	void select_next() {
-		_selected = (_selected + 1) % _client_list.size();
+		++_selected;
+		if(_selected == _client_list.end())
+			_selected = _client_list.begin();
 		update_backbuffer();
 		expose();
 	}
 
 	client_managed_t * get_selected() {
-		return _client_list[_selected]->id;
+		return (*_selected)->id;
 	}
 
 	void update_backbuffer() {
@@ -177,7 +192,7 @@ public:
 				}
 			}
 
-			if (n == _selected) {
+			if (i == *_selected) {
 				/** draw a beautiful yellow box **/
 				cairo_set_line_width(cr, 2.0);
 				::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
@@ -235,6 +250,15 @@ public:
 			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
 			cairo_fill(cr);
 		}
+	}
+
+	void destroy_client(client_managed_t * c) {
+		while((*_selected)->id == c) {
+			select_next();
+		}
+
+		_client_list.remove_if([c](std::shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id == c; });
+		destroy_func.erase(c);
 	}
 
 };

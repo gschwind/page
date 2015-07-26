@@ -540,7 +540,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 	}
 
 	/** create all menu entry and find the selected one **/
-	std::vector<std::shared_ptr<cycle_window_entry_t>> v;
+	std::list<std::shared_ptr<cycle_window_entry_t>> v;
 	for (auto i : managed_window) {
 		auto icon = std::make_shared<icon64>(*i);
 		auto cy = std::make_shared<cycle_window_entry_t>(i, i->title(), icon);

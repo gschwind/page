@@ -639,6 +639,12 @@ class signal_t {
 
 public:
 
+	~signal_t() {
+		for(auto x: _callback_list) {
+			delete x;
+		}
+	}
+
 	template<typename T0>
 	_func_t * connect(T0 * ths, void(T0::*func)(F ...)) {
 		_func_t * ret = new _func_t{[ths, func](F ... args) -> void { (ths->*func)(args...); }};
