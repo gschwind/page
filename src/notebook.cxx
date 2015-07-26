@@ -30,7 +30,7 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 
 notebook_t::~notebook_t() {
 	for(auto const & x:_clients_context) {
-		x.first->on_destroy.disconnect(x.second.title_change_func);
+		x.first->on_title_change.disconnect(x.second.title_change_func);
 		x.first->on_destroy.disconnect(x.second.destoy_func);
 	}
 }

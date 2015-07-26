@@ -307,7 +307,6 @@ public:
 
 	/* mark renderable_page for redraw */
 	void queue_redraw() {
-		printf("queue redraw %s\n", get_node_name().c_str());
 		_is_durty = true;
 	}
 
