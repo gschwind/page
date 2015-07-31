@@ -445,19 +445,6 @@ public:
 
 	}
 
-
-	bool has_motif_border() {
-		if (_motif_hints != nullptr) {
-			if (_motif_hints->flags & MWM_HINTS_DECORATIONS) {
-				if (not (_motif_hints->decorations & MWM_DECOR_BORDER)
-						and not ((_motif_hints->decorations & MWM_DECOR_ALL))) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
 	void set_net_wm_desktop(unsigned int n) {
 		_cnx->change_property(_id, _NET_WM_DESKTOP, CARDINAL, 32, &n, 1);
 		//safe_delete(__net_wm_desktop);
@@ -714,20 +701,6 @@ public:
 				break;
 			}
 		}
-
-		/** HACK FOR ECLIPSE **/
-		{
-			if (_wm_class != nullptr
-					and __net_wm_state != nullptr
-					and _wm_type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				if ((*(_wm_class))[0] == "Eclipse") {
-					if(has_key(*__net_wm_state, static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)))) {
-						_wm_type = A(_NET_WM_WINDOW_TYPE_DND);
-					}
-				}
-			}
-		}
-
 	}
 
 	xcb_atom_t wm_type() const { return _wm_type; }

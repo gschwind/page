@@ -109,13 +109,6 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 		_floating_wished_position.y = _ctx->theme()->floating.margin.top;
 	}
 
-	/** check if the window has motif no border **/
-	_motif_has_border = _properties->has_motif_border();
-
-	if(is(MANAGED_DOCK)) {
-		_motif_has_border = false;
-	}
-
 	/**
 	 * Create the base window, window that will content managed window
 	 **/
@@ -285,7 +278,7 @@ void client_managed_t::reconfigure() {
 	if (is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
 
-		if (_motif_has_border) {
+		if (prefer_window_border()) {
 			_base_position.x = _wished_position.x
 					- _ctx->theme()->floating.margin.left;
 			_base_position.y = _wished_position.y - _ctx->theme()->floating.margin.top;
@@ -1003,7 +996,7 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 
 		i_rect loc{base_position()};
 
-		if (_motif_has_border) {
+		if (prefer_window_border()) {
 			if(is_focused()) {
 				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
 				out += std::shared_ptr<renderable_t> { x };
@@ -1433,6 +1426,25 @@ void client_managed_t::update_title() {
 
 		on_title_change.signal(this);
 
+}
+
+bool client_managed_t::prefer_window_border() const {
+
+	if (_properties->motif_hints() != nullptr) {
+		if(not (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS))
+			return true;
+
+		if(_properties->motif_hints()->decorations & MWM_DECOR_BORDER)
+			return true;
+
+		if(_properties->motif_hints()->decorations & MWM_DECOR_ALL)
+			return true;
+
+		return false;
+
+	}
+
+	return true;
 }
 
 }

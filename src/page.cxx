@@ -1170,6 +1170,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/** this is set by page ... don't read it **/
 	} else if (e->atom == A(_NET_WM_DESKTOP)) {
 		/* this set by page in most case */
+	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
+		mw->reconfigure();
 	}
 }
 

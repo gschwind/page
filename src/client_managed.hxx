@@ -109,7 +109,6 @@ private:
 	std::vector<floating_event_t> * _floating_area;
 
 	bool _is_focused;
-	bool _motif_has_border;
 	bool _is_iconic;
 	bool _demands_attention;
 	bool _is_durty;
@@ -174,10 +173,6 @@ public:
 
 	bool is_focused() const {
 		return _is_focused;
-	}
-
-	bool motif_has_border() {
-		return _motif_has_border;
 	}
 
 	std::shared_ptr<pixmap_t> get_last_pixmap() {
@@ -277,6 +272,8 @@ public:
 	std::string const & title() const {
 		return _title;
 	}
+
+	bool prefer_window_border() const;
 
 
 };
