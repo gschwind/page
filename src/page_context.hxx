@@ -177,6 +177,8 @@ public:
 
 	virtual keymap_t const * keymap() const = 0;
 
+	virtual bool menu_drop_down_shadow() const = 0;
+
 };
 
 

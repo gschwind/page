@@ -131,6 +131,7 @@ public:
 	bool _need_render;
 	bool _need_restack;
 	bool _need_update_client_list;
+	bool _menu_drop_down_shadow;
 
 	config_handler_t conf;
 
@@ -459,6 +460,7 @@ public:
 	virtual std::list<client_managed_t *> clients_list();
 
 	virtual keymap_t const * keymap() const;
+	virtual bool menu_drop_down_shadow() const;
 
 };
 

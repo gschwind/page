@@ -91,6 +91,7 @@ page_t::page_t(int argc, char ** argv)
 	_need_render = false;
 	_need_restack = false;
 	_need_update_client_list = false;
+	_menu_drop_down_shadow = false;
 
 	/** parse command line **/
 
@@ -197,6 +198,12 @@ page_t::page_t(int argc, char ** argv)
 		_mouse_focus = true;
 	} else {
 		_mouse_focus = false;
+	}
+
+	if(conf.get_string("default", "menu_drop_down_shadow") == "true") {
+		_menu_drop_down_shadow = true;
+	} else {
+		_menu_drop_down_shadow = false;
 	}
 
 	_global_client_focus_history.push_back(nullptr);
@@ -3816,6 +3823,10 @@ std::list<client_managed_t *> page_t::clients_list() {
 
 keymap_t const * page_t::keymap() const {
 	return _keymap;
+}
+
+bool page_t::menu_drop_down_shadow() const {
+	return _menu_drop_down_shadow;
 }
 
 }

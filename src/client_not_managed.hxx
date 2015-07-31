@@ -103,12 +103,15 @@ public:
 		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
 
-		xcb_atom_t t = _properties->wm_type();
-		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
-				or t == A(_NET_WM_WINDOW_TYPE_MENU)
-				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-			auto x = new renderable_unmanaged_gaussian_shadow_t<4>{pos, color_t{0.0, 0.0, 0.0, 1.0}};
-			out += std::shared_ptr<renderable_t>{x};
+		if (_ctx->menu_drop_down_shadow()) {
+			xcb_atom_t t = _properties->wm_type();
+			if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
+					or t == A(_NET_WM_WINDOW_TYPE_MENU)
+					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+				auto x = new renderable_unmanaged_gaussian_shadow_t<4> { pos,
+						color_t { 0.0, 0.0, 0.0, 1.0 } };
+				out += std::shared_ptr<renderable_t> { x };
+			}
 		}
 
 		if (_ctx->csm()->get_last_pixmap(_properties->id()) != nullptr) {
