@@ -326,11 +326,17 @@ void split_t::get_visible_children(std::vector<tree_t *> & out) {
 }
 
 void split_t::set_parent(tree_t * t) {
-	throw exception_t("split_t cannot have tree_t has parent");
-}
+	if(t == nullptr) {
+		_parent = nullptr;
+		return;
+	}
 
-void split_t::set_parent(page_component_t * t) {
-	_parent = t;
+	auto xt = dynamic_cast<page_component_t*>(t);
+	if(xt == nullptr) {
+		throw exception_t("page_component_t must have a page_component_t as parent");
+	} else {
+		_parent = xt;
+	}
 }
 
 bool split_t::button_press(xcb_button_press_event_t const * e) {

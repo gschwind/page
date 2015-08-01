@@ -386,7 +386,6 @@ public:
 
 	page_component_t * parent() const;
 	void set_parent(tree_t * parent);
-	void set_parent(page_component_t * parent);
 
 	void set_allocation(i_rect const & r);
 

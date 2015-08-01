@@ -30,18 +30,14 @@
 
 namespace page {
 
-class client_managed_t;
+using namespace std;
+using time_t = page::time_t;
 
-struct img_t {
-  unsigned int   width;
-  unsigned int   height;
-  unsigned int   bytes_per_pixel; /* 3:RGB, 4:RGBA */
-  unsigned char  pixel_data[16 * 16 * 4 + 1];
-};
+class client_managed_t;
+class grab_bind_client_t;
 
 class notebook_t : public page_component_t {
-	double const XN = 0.0;
-	page::time_t const animation_duration{0, 500000000};
+	time_t const animation_duration{0, 500000000};
 
 	page_context_t * _ctx;
 	page_component_t * _parent;
@@ -49,12 +45,12 @@ class notebook_t : public page_component_t {
 	i_rect _allocation;
 
 	/* child stack order the first one is the lowest one */
-	std::list<tree_t *> _children;
+	list<tree_t *> _children;
 
-	page::time_t swap_start;
+	time_t swap_start;
 
-	std::shared_ptr<renderable_notebook_fading_t> fading_notebook;
-	std::vector<std::shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
+	shared_ptr<renderable_notebook_fading_t> fading_notebook;
+	vector<shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
 
 	theme_notebook_t theme_notebook;
 
@@ -64,11 +60,9 @@ class notebook_t : public page_component_t {
 	bool _exposay;
 
 	struct {
-		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab;
-		std::tuple<i_rect, client_managed_t *, int> * exposay;
+		tuple<i_rect, client_managed_t *, theme_tab_t *> * tab;
+		tuple<i_rect, client_managed_t *, int> * exposay;
 	} _mouse_over;
-
-public:
 
 	enum select_e {
 		SELECT_NONE,
@@ -78,7 +72,6 @@ public:
 		SELECT_LEFT,
 		SELECT_RIGHT
 	};
-	// list of client to maintain tab order
 
 	struct _client_context_t {
 		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
@@ -87,12 +80,14 @@ public:
 		decltype(client_managed_t::on_deactivate)::signal_func_t    deactivate_func;
 	};
 
-	std::list<client_managed_t *> _clients;
-	std::map<client_managed_t *, _client_context_t> _clients_context;
+	// list to maintain the client order
+	list<client_managed_t *> _clients;
+	map<client_managed_t *, _client_context_t> _clients_context;
 
 	client_managed_t * _selected;
-	i_rect client_position;
 
+
+	i_rect client_position;
 	i_rect client_area;
 
 	i_rect button_close;
@@ -100,12 +95,6 @@ public:
 	i_rect button_hsplit;
 	i_rect button_select;
 	i_rect button_exposay;
-
-
-	/* list of tabs and exposay buttons */
-	std::vector<std::tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
-	std::vector<std::tuple<i_rect, client_managed_t *, int>> _exposay_buttons;
-	std::shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
 
 	i_rect close_client_area;
 	i_rect undck_client_area;
@@ -122,9 +111,13 @@ public:
 	i_rect popup_right_area;
 	i_rect popup_center_area;
 
+	/* list of tabs and exposay buttons */
+	vector<tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
+	vector<tuple<i_rect, client_managed_t *, int>> _exposay_buttons;
+	shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
+
 	void set_selected(client_managed_t * c);
 
-	void update_client_position(client_managed_t * c);
 
 	void start_fading();
 
@@ -137,74 +130,6 @@ public:
 	void _mouse_over_reset();
 	void _mouse_over_set();
 
-public:
-	notebook_t(page_context_t * ctx, bool keep_selected);
-	~notebook_t();
-	void update_allocation(i_rect & allocation);
-
-	bool process_button_press_event(XEvent const * e);
-
-	void replace(page_component_t * src, page_component_t * by);
-	void close(tree_t * src);
-	void remove(tree_t * src);
-
-	std::list<client_managed_t *> const & get_clients();
-
-	bool add_client(client_managed_t * c, bool prefer_activate);
-	void remove_client(client_managed_t * c);
-
-	void activate_client(client_managed_t * x);
-	void iconify_client(client_managed_t * x);
-
-	i_rect get_new_client_size();
-
-	void select_next();
-	void delete_all();
-
-	virtual void unmap_all();
-	virtual void map_all();
-
-	notebook_t * get_nearest_notebook();
-
-	virtual i_rect get_absolute_extend();
-	virtual region get_area();
-
-	void set_allocation(i_rect const & area);
-
-	void set_parent(tree_t * t) {
-		if(t != nullptr) {
-			throw exception_t("notebook_t cannot have tree_t has parent");
-		} else {
-			_parent = nullptr;
-		}
-	}
-
-	void set_parent(page_component_t * t) {
-		_parent = t;
-	}
-
-	client_managed_t * find_client_tab(int x, int y);
-
-	void update_close_area();
-
-	i_rect compute_client_size(client_managed_t * c);
-	i_rect const & get_allocation();
-	void set_theme(theme_t const * theme);
-	std::list<client_managed_t const *> clients() const;
-	client_managed_t const * selected() const;
-	bool is_default() const;
-	void set_default(bool x);
-	void raise_child(tree_t * t = nullptr);
-	void activate(tree_t * t = nullptr);
-	std::string get_node_name() const;
-	void render_legacy(cairo_t * cr) const;
-	void render(cairo_t * cr, time_t time);
-	bool need_render(time_t time);
-
-	client_managed_t * get_selected();
-
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
-
 	i_rect compute_notebook_close_window_position(int number_of_client, int selected_client_index) const;
 	i_rect compute_notebook_unbind_window_position(int number_of_client, int selected_client_index) const;
 	i_rect compute_notebook_bookmark_position() const;
@@ -213,65 +138,92 @@ public:
 	i_rect compute_notebook_close_position() const;
 	i_rect compute_notebook_menu_position() const;
 
-	i_rect allocation() const {
-		return _allocation;
-	}
-
-	page_component_t * parent() const {
-		return _parent;
-	}
-
-//	void get_all_children(std::vector<tree_t *> & out) const;
-
-
-	void children(std::vector<tree_t *> & out) const {
-		out.insert(out.end(), _children.begin(), _children.end());
-	}
-
-	void hide() {
-		_is_hidden = true;
-		for(auto i: tree_t::children()) {
-			i->hide();
-		}
-	}
-
-	void show() {
-		_is_hidden = false;
-		for(auto i: tree_t::children()) {
-			i->show();
-		}
-	}
-
-	void get_visible_children(std::vector<tree_t *> & out) {
-		if (not _is_hidden) {
-			out.push_back(this);
-			for (auto i : tree_t::children()) {
-				i->get_visible_children(out);
-			}
-		}
-	}
-
-	bool has_client(client_managed_t * c) {
-		return has_key(_clients, c);
-	}
-
-	void set_keep_selected(bool x) {
-		_keep_selected = x;
-	}
-
-	void start_exposay();
-	void _update_exposay();
-	void stop_exposay();
-	void start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
-
 	void client_title_change(client_managed_t * c);
 	void client_destroy(client_managed_t * c);
 	void client_activate(client_managed_t * c);
 	void client_deactivate(client_managed_t * c);
 
+	void update_allocation(i_rect & allocation);
+
+	bool process_button_press_event(XEvent const * e);
+
+
+	void remove_client(client_managed_t * c);
+
+	void activate_client(client_managed_t * x);
+
+
+	i_rect get_new_client_size();
+
+	void select_next();
+	void delete_all();
+
+	notebook_t * get_nearest_notebook();
+
+	auto find_client_tab(int x, int y) -> client_managed_t *;
+
+	void update_close_area();
+
+	i_rect compute_client_size(client_managed_t * c);
+	i_rect const & get_allocation();
+	void set_theme(theme_t const * theme);
+	auto clients() const -> list<client_managed_t const *>;
+	auto selected() const -> client_managed_t const *;
+	bool is_default() const;
+
+	void raise_child(tree_t * t = nullptr);
+
+	void render(cairo_t * cr, time_t time);
+	bool need_render(time_t time);
+
+	bool has_client(client_managed_t * c);
+	void set_keep_selected(bool x);
+	void _update_exposay();
+	void stop_exposay();
+	void start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
+
+public:
+
+	notebook_t(page_context_t * ctx, bool keep_selected);
+	~notebook_t();
+
+	/**
+	 * tree_t interface
+	 **/
+	virtual auto parent() const -> page_component_t *;
+	virtual auto get_node_name() const -> string;
+	virtual void remove(tree_t * src);
+	virtual void set_parent(tree_t * t);
+	virtual void children(vector<tree_t *> & out) const;
+	virtual void get_visible_children(vector<tree_t *> & out);
+	virtual void hide();
+	virtual void show();
+	virtual void prepare_render(vector<shared_ptr<renderable_t>> & out, time_t const & time);
+	virtual void activate(tree_t * t = nullptr);
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
+
+	/**
+	 * page_component_t interface
+	 **/
+	virtual void set_allocation(i_rect const & area);
+	virtual i_rect allocation() const;
+	virtual void replace(page_component_t * src, page_component_t * by);
+
+	/**
+	 * notebook_t interface
+	 **/
+	void set_default(bool x);
+	void render_legacy(cairo_t * cr) const;
+	void start_exposay();
+	void update_client_position(client_managed_t * c);
+	void iconify_client(client_managed_t * x);
+	bool add_client(client_managed_t * c, bool prefer_activate);
+	auto get_clients() -> list<client_managed_t *> const &;
+
+	/* TODO : remove it */
+	friend grab_bind_client_t;
 
 };
 

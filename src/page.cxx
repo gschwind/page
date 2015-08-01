@@ -3164,10 +3164,6 @@ void page_t::set_parent(tree_t * parent) {
 	throw exception_t("page::page_t can't have parent nor tree_t parent");
 }
 
-void page_t::set_parent(page_component_t * parent) {
-	throw exception_t("page::page_t can't have parent");
-}
-
 void page_t::set_allocation(i_rect const & r) {
 	throw exception_t("page_t::set_allocation should be called");
 }

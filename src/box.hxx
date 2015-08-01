@@ -152,7 +152,6 @@ struct i_rect_t {
 //typedef i_rect_t<double> i_rect;
 
 using i_rect = i_rect_t<int>;
-using d_rect = i_rect_t<double>;
 
 
 }

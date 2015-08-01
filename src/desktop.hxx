@@ -113,11 +113,17 @@ public:
 	}
 
 	void set_parent(tree_t * t) {
-		throw exception_t("viewport cannot have tree_t as parent");
-	}
+		if(t == nullptr) {
+			_parent = nullptr;
+			return;
+		}
 
-	void set_parent(page_component_t * t) {
-		_parent = t;
+		auto xt = dynamic_cast<page_component_t*>(t);
+		if(xt == nullptr) {
+			throw exception_t("page_component_t must have a page_component_t as parent");
+		} else {
+			_parent = xt;
+		}
 	}
 
 	i_rect allocation() const {

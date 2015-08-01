@@ -215,7 +215,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			if (parent != nullptr) {
 				c->queue_redraw();
 				/* hide client if option allow shaded client */
-				if (parent->get_selected() == c
+				if (parent->selected() == c
 						and ctx->get_current_workspace()->client_focus.front() == c
 						and /*_enable_shade_windows*/true) {
 					ctx->set_focus(nullptr, e->time);

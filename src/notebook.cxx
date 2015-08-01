@@ -182,32 +182,6 @@ notebook_t * notebook_t::get_nearest_notebook() {
 	return this;
 }
 
-void notebook_t::unmap_all() {
-	if (_selected != nullptr) {
-		iconify_client(_selected);
-	}
-}
-
-void notebook_t::map_all() {
-	if (_selected != nullptr) {
-		_selected->normalize();
-	}
-}
-
-i_rect notebook_t::get_absolute_extend() {
-	return allocation();
-}
-
-region notebook_t::get_area() {
-	if (_selected != nullptr) {
-		region area{allocation()};
-		area -= _selected->get_base_position();
-		return area;
-	} else {
-		return region(allocation());
-	}
-}
-
 void notebook_t::set_allocation(i_rect const & area) {
 	_allocation = area;
 	_update_layout();
@@ -364,10 +338,6 @@ std::string notebook_t::get_node_name() const {
 
 void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &theme_notebook);
-}
-
-client_managed_t * notebook_t::get_selected() {
-	return _selected;
 }
 
 void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
@@ -1008,6 +978,63 @@ void notebook_t::client_activate(client_managed_t * c) {
 void notebook_t::client_deactivate(client_managed_t * c) {
 	_update_layout();
 	queue_redraw();
+}
+
+void notebook_t::set_parent(tree_t * t) {
+	if(t == nullptr) {
+		_parent = nullptr;
+		return;
+	}
+
+	auto xt = dynamic_cast<page_component_t*>(t);
+	if(xt == nullptr) {
+		throw exception_t("page_component_t must have a page_component_t as parent");
+	} else {
+		_parent = xt;
+	}
+}
+
+i_rect notebook_t::allocation() const {
+	return _allocation;
+}
+
+page_component_t * notebook_t::parent() const {
+	return _parent;
+}
+
+void notebook_t::children(vector<tree_t *> & out) const {
+	out.insert(out.end(), _children.begin(), _children.end());
+}
+
+void notebook_t::hide() {
+	_is_hidden = true;
+	for(auto i: tree_t::children()) {
+		i->hide();
+	}
+}
+
+void notebook_t::show() {
+	_is_hidden = false;
+	for(auto i: tree_t::children()) {
+		i->show();
+	}
+}
+
+void notebook_t::get_visible_children(vector<tree_t *> & out) {
+	if (not _is_hidden) {
+		out.push_back(this);
+		for (auto i : tree_t::children()) {
+			i->get_visible_children(out);
+		}
+	}
+}
+
+bool notebook_t::has_client(client_managed_t * c) {
+	return has_key(_clients, c);
+}
+
+void notebook_t::set_keep_selected(bool x) {
+	_keep_selected = x;
 }
 
 }
