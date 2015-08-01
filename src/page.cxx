@@ -13,9 +13,9 @@
 #include <poll.h>
 
 /* According to earlier standards */
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
+//#include <sys/time.h>
+//#include <sys/types.h>
+//#include <unistd.h>
 
 #include <cairo.h>
 #include <cairo-xlib.h>
@@ -62,6 +62,8 @@
 #define _NET_WM_STATE_TOGGLE 2
 
 namespace page {
+
+using time_t = page::time_t;
 
 time_t const page_t::default_wait{1000000000L / 120L};
 
@@ -3149,7 +3151,7 @@ void page_t::update_keymap() {
 	_keymap = new keymap_t(cnx->xcb());
 }
 
-void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time) {
 	out.push_back(_theme->get_background(0,0));
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);

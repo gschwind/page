@@ -325,6 +325,8 @@ xcb_cursor_t grab_floating_resize_t::_get_cursor() {
 		return _ctx->dpy()->xc_bottom_righ_corner;
 		break;
 	}
+
+	return XCB_WINDOW_NONE;
 }
 
 grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, client_managed_t * f, xcb_button_t button, int x, int y, resize_mode_e mode) :

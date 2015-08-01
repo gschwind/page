@@ -12,6 +12,8 @@
 #ifndef TIME_HXX_
 #define TIME_HXX_
 
+#include <time.h>
+
 namespace page {
 
 class time_t {

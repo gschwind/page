@@ -15,6 +15,9 @@
 
 namespace page {
 
+using namespace std;
+using time_t = page::time_t;
+
 notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_ctx{ctx},
 		_parent{nullptr},
@@ -100,7 +103,7 @@ void notebook_t::_activate_client(client_managed_t * x) {
 	}
 }
 
-std::list<client_managed_t *> const & notebook_t::get_clients() {
+list<client_managed_t *> const & notebook_t::get_clients() {
 	return _clients;
 }
 
@@ -325,8 +328,8 @@ void notebook_t::activate(tree_t * t) {
 
 }
 
-std::string notebook_t::get_node_name() const {
-	std::ostringstream oss;
+string notebook_t::get_node_name() const {
+	ostringstream oss;
 	oss << _get_node_name<'N'>() << " selected = " << _selected;
 	return oss.str();
 }
@@ -335,7 +338,7 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 }
 
-void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time_t const & time) {
 
 	if(_is_hidden) {
 		return;
@@ -619,7 +622,7 @@ void notebook_t::_start_fading() {
 	cairo_destroy(cr);
 	cairo_surface_flush(surf);
 
-	fading_notebook = std::make_shared<renderable_notebook_fading_t>(pix, to_root_position(_allocation));
+	fading_notebook = make_shared<renderable_notebook_fading_t>(pix, to_root_position(_allocation));
 
 }
 

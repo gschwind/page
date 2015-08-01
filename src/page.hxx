@@ -53,6 +53,8 @@
 
 namespace page {
 
+using time_t = page::time_t;
+
 struct fullscreen_data_t {
 	workspace_t * desktop;
 	viewport_t * viewport;
@@ -379,7 +381,7 @@ public:
 
 	client_managed_t * find_hidden_client_with(xcb_window_t w);
 
-	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
+	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time);
 
 	std::vector<page_event_t> compute_page_areas(
 			viewport_t * v) const;

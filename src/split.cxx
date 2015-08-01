@@ -17,6 +17,8 @@
 
 namespace page {
 
+using time_t = page::time_t;
+
 split_t::split_t(page_context_t * ctx, split_type_e type) :
 		_ctx{ctx},
 		_split_bar_area(),
@@ -245,7 +247,7 @@ void split_t::remove(tree_t * t) {
 	}
 }
 
-void split_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+void split_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time) {
 	if(_is_hidden)
 		return;
 	for(auto i: _children) {
