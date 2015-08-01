@@ -71,19 +71,6 @@ public:
 	virtual void key_release(xcb_key_release_event_t const * ev) { }
 };
 
-struct grab_notebook_menu_t  : public grab_handler_t {
-	notebook_t * from;
-	bool active_grab;
-	rect b;
-
-	grab_notebook_menu_t(notebook_t);
-	virtual ~grab_notebook_menu_t();
-	virtual void button_press(xcb_button_press_event_t const * e);
-	virtual void button_motion(xcb_motion_notify_event_t const * e);
-	virtual void button_release(xcb_button_release_event_t const * e);
-
-};
-
 struct mode_data_notebook_client_menu_t  : public grab_handler_t {
 	notebook_t * from;
 	client_managed_t * client;
