@@ -83,6 +83,8 @@ public:
 	struct _client_context_t {
 		std::function<void(client_managed_t*)> * title_change_func;
 		std::function<void(client_managed_t*)> * destoy_func;
+		std::function<void(client_managed_t*)> * activate_func;
+		std::function<void(client_managed_t*)> * deactivate_func;
 	};
 
 	std::list<client_managed_t *> _clients;
@@ -264,7 +266,8 @@ public:
 
 	void client_title_change(client_managed_t * c);
 	void client_destroy(client_managed_t * c);
-
+	void client_activate(client_managed_t * c);
+	void client_deactivate(client_managed_t * c);
 
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);

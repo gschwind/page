@@ -1115,9 +1115,11 @@ void client_managed_t::set_focus_state(bool is_focused) {
 		if (_is_focused) {
 			net_wm_state_add(_NET_WM_STATE_FOCUSED);
 			grab_button_focused();
+			on_activate.signal(this);
 		} else {
 			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			grab_button_unfocused();
+			on_deactivate.signal(this);
 		}
 		queue_redraw();
 		unlock();

@@ -117,6 +117,8 @@ public:
 
 	signal_t<client_managed_t *> on_title_change;
 	signal_t<client_managed_t *> on_destroy;
+	signal_t<client_managed_t *> on_activate;
+	signal_t<client_managed_t *> on_deactivate;
 
 	client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props);
 	virtual ~client_managed_t();

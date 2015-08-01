@@ -49,6 +49,8 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	_clients_context[x] = _client_context_t{};
 	_clients_context[x].title_change_func = x->on_title_change.connect(this, &notebook_t::client_title_change);
 	_clients_context[x].destoy_func = x->on_destroy.connect(this, &notebook_t::client_destroy);
+	_clients_context[x].activate_func = x->on_activate.connect(this, &notebook_t::client_activate);
+	_clients_context[x].deactivate_func = x->on_deactivate.connect(this, &notebook_t::client_deactivate);
 
 	_ctx->csm()->register_window(x->base());
 
@@ -124,6 +126,8 @@ void notebook_t::remove_client(client_managed_t * x) {
 
 	x->on_title_change.disconnect(_clients_context[x].title_change_func);
 	x->on_destroy.disconnect(_clients_context[x].destoy_func);
+	x->on_activate.disconnect(_clients_context[x].activate_func);
+	x->on_deactivate.disconnect(_clients_context[x].deactivate_func);
 	_clients_context.erase(x);
 
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {
@@ -1000,6 +1004,16 @@ void notebook_t::client_title_change(client_managed_t * c) {
 
 void notebook_t::client_destroy(client_managed_t * c) {
 	this->remove_client(c);
+}
+
+void notebook_t::client_activate(client_managed_t * c) {
+	_update_layout();
+	queue_redraw();
+}
+
+void notebook_t::client_deactivate(client_managed_t * c) {
+	_update_layout();
+	queue_redraw();
 }
 
 }
