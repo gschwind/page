@@ -22,9 +22,11 @@
 
 namespace page {
 
+using namespace std;
+
 class poll_callback_t {
 	struct pollfd _pfd;
-	std::function<void(struct pollfd const &)> _callback;
+	function<void(struct pollfd const &)> _callback;
 public:
 
 	poll_callback_t() : _pfd{-1, 0, 0}, _callback{[](struct pollfd const & x) { } } { }
@@ -34,10 +36,22 @@ public:
 	struct pollfd pfd() const { return _pfd; }
 };
 
+class mainloop_t;
+
 class timeout_t {
+
+	friend mainloop_t;
+
 	time64_t _timebound;
 	time64_t _delta;
-	std::function<bool(void)> _callback;
+	function<bool(void)> _callback;
+
+
+	bool _call() const { return _callback(); }
+
+	void _renew(time64_t cur) {
+		_timebound = cur + _delta;
+	}
 
 public:
 
@@ -51,15 +65,12 @@ public:
 	/* copy timeout with curent time */
 	timeout_t(timeout_t const & x) : _delta{x._delta}, _timebound{x._timebound}, _callback{x._callback} { }
 
-
-	bool call() const { return _callback(); }
-
-	void renew(time64_t cur) {
-		_timebound = cur + _delta;
-	}
-
 	bool operator>(timeout_t const & x) const {
 		return _timebound > x._timebound;
+	}
+
+	bool operator<(timeout_t const & x) const {
+		return _timebound < x._timebound;
 	}
 
 	time64_t get_bound() const {
@@ -71,24 +82,61 @@ public:
 
 class mainloop_t {
 
-	std::vector<struct pollfd> poll_list;
-	std::priority_queue<timeout_t, std::vector<timeout_t>, std::greater<timeout_t>> timeout_list;
-	std::map<int, poll_callback_t> poll_callback;
+	vector<struct pollfd> poll_list;
+	list<weak_ptr<timeout_t>> timeout_list;
+	map<int, poll_callback_t> poll_callback;
 
 	time64_t curtime;
 
 	bool running;
 
+	void _cleanup_timeout() {
+		auto i = timeout_list.begin();
+		while(i != timeout_list.end()) {
+			if((*i).expired()) {
+				i = timeout_list.erase(i);
+			} else {
+				++i;
+			}
+		}
+	}
+
+	void _insert_sorted(shared_ptr<timeout_t> x) {
+		auto i = timeout_list.begin();
+		while(i != timeout_list.end()) {
+			if((*i).expired()) {
+				i = timeout_list.erase(i);
+			} else {
+				if(*(*i).lock() > *x) {
+					break;
+				} else {
+					++i;
+				}
+			}
+		}
+
+		timeout_list.insert(i, x);
+
+	}
+
 	void run_timeout() {
 		curtime.update_to_current_time();
-		while (not timeout_list.empty()) {
-			auto const & x = timeout_list.top();
-			if (x.get_bound() > curtime)
-				break;
-			if (x.call()) {
-				timeout_list.push(timeout_t{x, time64_t::now()});
+		auto i = timeout_list.begin();
+		while(i != timeout_list.end()) {
+			if((*i).expired()) {
+				i = timeout_list.erase(i);
+			} else {
+				auto x = (*i).lock();
+				if (x->get_bound() > curtime)
+					break;
+
+				i = timeout_list.erase(i);
+				if (x->_call()) {
+					x->_renew(time64_t::now());
+					_insert_sorted(x);
+				}
+				++i;
 			}
-			timeout_list.pop();
 		}
 	}
 
@@ -119,9 +167,18 @@ public:
 		while (running) {
 
 			time64_t wait = 1000000000L;
+
+			while(not timeout_list.empty()) {
+				if(timeout_list.front().expired()) {
+					timeout_list.pop_front();
+				} else {
+					break;
+				}
+			}
+
 			if(not timeout_list.empty()) {
-				auto const & next = timeout_list.top();
-				wait = next.get_bound() - curtime;
+				auto const & next = timeout_list.front();
+				wait = next.lock()->get_bound() - curtime;
 			}
 
 			if(poll_list.size() > 0) {
@@ -138,10 +195,11 @@ public:
 	}
 
 	template<typename T>
-	void add_timeout(time64_t timeout, T func) {
-		timeout_list.push(timeout_t{time64_t::now(), timeout, func});
+	shared_ptr<timeout_t> add_timeout(time64_t timeout, T func) {
+		auto x = make_shared<timeout_t>(time64_t::now(), timeout, func);
+		_insert_sorted(x);
+		return x;
 	}
-
 
 	template<typename T>
 	void add_poll(int fd, short events, T callback) {

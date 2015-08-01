@@ -353,7 +353,7 @@ void page_t::run() {
 
 	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	/* call this 120 times per second */
-	add_timeout(1000000000L/120L, [this]() -> bool { return this->render_timeout(); });
+	auto handle = add_timeout(1000000000L/120L, [this]() -> bool { return this->render_timeout(); });
 
 	mainloop_t::run();
 
