@@ -237,7 +237,7 @@ public:
 	bool has_window(xcb_window_t w) const;
 	virtual std::string get_node_name() const;
 	display_t * cnx();
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time);
 	std::shared_ptr<renderable_t> get_base_renderable();
 	virtual rect const & base_position() const;
 	virtual rect const & orig_position() const;

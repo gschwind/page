@@ -53,8 +53,6 @@
 
 namespace page {
 
-using time_t = page::time_t;
-
 struct fullscreen_data_t {
 	workspace_t * desktop;
 	viewport_t * viewport;
@@ -88,7 +86,7 @@ struct key_bind_cmd_t {
 class page_t : public page_component_t, public mainloop_t, public page_context_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
-	static time_t const default_wait;
+	static time64_t const default_wait;
 
 	/** define callback function type for event handler **/
 	using callback_event_t = void (page_t::*) (xcb_generic_event_t const *);
@@ -370,8 +368,8 @@ public:
 	void register_wm();
 	void register_cm();
 
-	void render(cairo_t * cr, page::time_t time);
-	bool need_render(time_t time);
+	void render(cairo_t * cr, time64_t time);
+	bool need_render(time64_t time);
 
 	bool check_for_managed_window(xcb_window_t w);
 	bool check_for_destroyed_window(xcb_window_t w);
@@ -381,7 +379,7 @@ public:
 
 	client_managed_t * find_hidden_client_with(xcb_window_t w);
 
-	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time);
+	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time);
 
 	std::vector<page_event_t> compute_page_areas(
 			viewport_t * v) const;

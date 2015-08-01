@@ -99,7 +99,7 @@ public:
 		return _get_node_name<'D'>();
 	}
 
-	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
 		if(_is_hidden)
 			return;
 

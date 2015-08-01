@@ -18,8 +18,6 @@
 
 namespace page {
 
-using time_t = page::time_t;
-
 /**
  * tree_t is the base of the hierarchy of desktop, viewports,
  * client_managed and unmanaged, etc...
@@ -108,7 +106,7 @@ public:
 	/**
 	 * return the list of renderable object to draw this tree ordered and recursively
 	 **/
-	virtual auto prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time) -> void = 0;
+	virtual auto prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) -> void = 0;
 
 	/**
 	 * make the component active.

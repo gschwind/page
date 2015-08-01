@@ -119,7 +119,7 @@ compositor_t::~compositor_t() {
 };
 
 void compositor_t::render() {
-	page::time_t cur;
+	page::time64_t cur;
 	cur.update_to_current_time();
 
 

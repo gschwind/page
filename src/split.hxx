@@ -16,8 +16,6 @@
 
 namespace page {
 
-using time_t = page::time_t;
-
 class split_t : public page_component_t {
 	page_context_t * _ctx;
 	page_component_t * _parent;
@@ -70,7 +68,7 @@ public:
 	void render_legacy(cairo_t * cr) const;
 	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time);
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time);
 	rect compute_split_bar_location() const;
 	void set_parent(tree_t * t);
 	void set_parent(page_component_t * t);

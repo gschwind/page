@@ -986,7 +986,7 @@ display_t * client_managed_t::cnx() {
 	return _properties->cnx();
 }
 
-void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time) {
 
 	if(_is_hidden) {
 		return;

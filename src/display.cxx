@@ -177,15 +177,15 @@ bool display_t::register_wm(xcb_window_t w, bool replace) {
 
 			/** Now we are the owner, wait for max. 5 second that the previous owner to exit */
 			{
-				page::time_t end;
-				page::time_t cur;
+				page::time64_t end;
+				page::time64_t cur;
 
 				struct pollfd fds[1];
 				fds[0].fd = fd();
 				fds[0].events = POLLIN | POLLOUT | POLLERR | POLLHUP;
 
 				cur.update_to_current_time();
-				end = cur + page::time_t{5L, 0L};
+				end = cur + page::time64_t{5L, 0L};
 
 				bool destroyed = false;
 				xcb_flush(_xcb);

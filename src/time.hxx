@@ -16,25 +16,25 @@
 
 namespace page {
 
-class time_t {
+class time64_t {
 	int64_t nsec;
 
 public:
 
-	static time_t now() {
-		time_t ret;
+	static time64_t now() {
+		time64_t ret;
 		ret.update_to_current_time();
 		return ret;
 	}
 
 	/* create new time in current time */
-	time_t() : nsec(0) { }
-	time_t(time_t const & t) : nsec(t.nsec) { }
+	time64_t() : nsec(0) { }
+	time64_t(time64_t const & t) : nsec(t.nsec) { }
 
 	/* convert from int64_t */
-	time_t(int64_t nsec) : nsec(nsec) { }
+	time64_t(int64_t nsec) : nsec(nsec) { }
 
-	time_t(long sec, long nsec) {
+	time64_t(long sec, long nsec) {
 		this->nsec = static_cast<int64_t>(sec) * static_cast<int64_t>(1000000000L) + static_cast<int64_t>(nsec);
 	}
 
@@ -65,53 +65,53 @@ public:
 		// nsec = (cur_tic.tv_sec - ((cur_tic.tv_sec / 1000000000L) * 1000000000L)) * 1000000000L + cur_tic.tv_nsec;
 	}
 
-	time_t & operator= (int64_t x) {
+	time64_t & operator= (int64_t x) {
 		nsec = x;
 		return *this;
 	}
 
-	time_t & operator= (time_t const & t) {
+	time64_t & operator= (time64_t const & t) {
 		// do not check for self copying, since self copying is safe
 		nsec = t.nsec;
 		return *this;
 	}
 
-	time_t operator+ (time_t const & t) const {
-		time_t x;
+	time64_t operator+ (time64_t const & t) const {
+		time64_t x;
 		x.nsec = nsec + t.nsec;
 		return x;
 	}
 
-	time_t operator- (time_t const & t) const {
-		time_t x;
+	time64_t operator- (time64_t const & t) const {
+		time64_t x;
 		x.nsec = nsec - t.nsec;
 		return x;
 	}
 
-	time_t & operator+= (time_t const & t) {
+	time64_t & operator+= (time64_t const & t) {
 		nsec += t.nsec;
 		return *this;
 	}
 
-	time_t & operator-= (time_t const & t) {
+	time64_t & operator-= (time64_t const & t) {
 		nsec -= t.nsec;
 		return *this;
 	}
 
 
-	bool operator> (time_t const & t) const {
+	bool operator> (time64_t const & t) const {
 		return nsec > t.nsec;
 	}
 
-	bool operator< (time_t const & t) const {
+	bool operator< (time64_t const & t) const {
 		return nsec < t.nsec;
 	}
 
-	bool operator>= (time_t const & t) const {
+	bool operator>= (time64_t const & t) const {
 		return nsec >= t.nsec;
 	}
 
-	bool operator<= (time_t const & t) const {
+	bool operator<= (time64_t const & t) const {
 		return nsec <= t.nsec;
 	}
 

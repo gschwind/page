@@ -31,13 +31,12 @@
 namespace page {
 
 using namespace std;
-using time_t = page::time_t;
 
 class client_managed_t;
 class grab_bind_client_t;
 
 class notebook_t : public page_component_t {
-	time_t const animation_duration{0, 500000000};
+	time64_t const animation_duration{0, 500000000};
 
 	page_context_t * _ctx;
 	page_component_t * _parent;
@@ -47,7 +46,7 @@ class notebook_t : public page_component_t {
 	/* child stack order the first one is the lowest one */
 	list<tree_t *> _children;
 
-	time_t _swap_start;
+	time64_t _swap_start;
 
 	shared_ptr<renderable_notebook_fading_t> fading_notebook;
 	vector<shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
@@ -184,7 +183,7 @@ public:
 	virtual void get_visible_children(vector<tree_t *> & out);
 	virtual void hide();
 	virtual void show();
-	virtual void prepare_render(vector<shared_ptr<renderable_t>> & out, time_t const & time);
+	virtual void prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t const & time);
 	virtual void activate(tree_t * t = nullptr);
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);

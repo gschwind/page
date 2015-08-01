@@ -213,7 +213,7 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
-	bool need_render(time_t time) {
+	bool need_render(time64_t time) {
 		return _is_durty;
 	}
 

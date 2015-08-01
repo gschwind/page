@@ -58,7 +58,7 @@ private:
 
 	static int const _FPS_WINDOWS = 80;
 	int _fps_top;
-	page::time_t _fps_history[_FPS_WINDOWS];
+	page::time64_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
 	bool _show_damaged;
 	bool _show_opac;

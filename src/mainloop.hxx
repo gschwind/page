@@ -35,18 +35,18 @@ public:
 };
 
 class timeout_t {
-	time_t _timebound;
-	time_t _delta;
+	time64_t _timebound;
+	time64_t _delta;
 	std::function<bool(void)> _callback;
 
 public:
 
 	/* create new timeout from function */
 	template<typename F>
-	timeout_t(time_t cur, time_t delta, F f) : _delta{delta}, _timebound{cur+delta}, _callback{f} { }
+	timeout_t(time64_t cur, time64_t delta, F f) : _delta{delta}, _timebound{cur+delta}, _callback{f} { }
 
 	/* copy/update timeout with curent time */
-	timeout_t(timeout_t const & x, time_t cur) : _delta{x._delta}, _timebound{cur+x._delta}, _callback{x._callback} { }
+	timeout_t(timeout_t const & x, time64_t cur) : _delta{x._delta}, _timebound{cur+x._delta}, _callback{x._callback} { }
 
 	/* copy timeout with curent time */
 	timeout_t(timeout_t const & x) : _delta{x._delta}, _timebound{x._timebound}, _callback{x._callback} { }
@@ -54,7 +54,7 @@ public:
 
 	bool call() const { return _callback(); }
 
-	void renew(time_t cur) {
+	void renew(time64_t cur) {
 		_timebound = cur + _delta;
 	}
 
@@ -62,7 +62,7 @@ public:
 		return _timebound > x._timebound;
 	}
 
-	time_t get_bound() const {
+	time64_t get_bound() const {
 		return _timebound;
 	}
 
@@ -75,7 +75,7 @@ class mainloop_t {
 	std::priority_queue<timeout_t, std::vector<timeout_t>, std::greater<timeout_t>> timeout_list;
 	std::map<int, poll_callback_t> poll_callback;
 
-	time_t curtime;
+	time64_t curtime;
 
 	bool running;
 
@@ -86,7 +86,7 @@ class mainloop_t {
 			if (x.get_bound() > curtime)
 				break;
 			if (x.call()) {
-				timeout_list.push(timeout_t{x, time_t::now()});
+				timeout_list.push(timeout_t{x, time64_t::now()});
 			}
 			timeout_list.pop();
 		}
@@ -118,7 +118,7 @@ public:
 		running = true;
 		while (running) {
 
-			time_t wait = 1000000000L;
+			time64_t wait = 1000000000L;
 			if(not timeout_list.empty()) {
 				auto const & next = timeout_list.top();
 				wait = next.get_bound() - curtime;
@@ -138,8 +138,8 @@ public:
 	}
 
 	template<typename T>
-	void add_timeout(time_t timeout, T func) {
-		timeout_list.push(timeout_t{time_t::now(), timeout, func});
+	void add_timeout(time64_t timeout, T func) {
+		timeout_list.push(timeout_t{time64_t::now(), timeout, func});
 	}
 
 

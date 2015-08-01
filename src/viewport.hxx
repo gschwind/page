@@ -23,8 +23,6 @@
 
 namespace page {
 
-using time_t = page::time_t;
-
 class viewport_t: public page_component_t {
 
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION;
@@ -101,7 +99,7 @@ public:
 		return _get_node_name<'V'>();
 	}
 
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time) {
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
 		if(_is_hidden)
 			return;
 		_renderable->clear_damaged();

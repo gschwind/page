@@ -98,7 +98,7 @@ public:
 		return oss.str();
 	}
 
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
+	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time) {
 
 		rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
@@ -124,7 +124,7 @@ public:
 
 	}
 
-	virtual bool need_render(time_t time) {
+	virtual bool need_render(time64_t time) {
 		return false;
 	}
 

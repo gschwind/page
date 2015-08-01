@@ -16,7 +16,6 @@
 namespace page {
 
 using namespace std;
-using time_t = page::time_t;
 
 notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_ctx{ctx},
@@ -338,7 +337,7 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 }
 
-void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time_t const & time) {
+void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t const & time) {
 
 	if(_is_hidden) {
 		return;

@@ -63,9 +63,7 @@
 
 namespace page {
 
-using time_t = page::time_t;
-
-time_t const page_t::default_wait{1000000000L / 120L};
+time64_t const page_t::default_wait{1000000000L / 120L};
 
 page_t::page_t(int argc, char ** argv)
 {
@@ -1328,7 +1326,7 @@ void page_t::render() {
 		 * Try to render if any damage event is encountered. But limit general
 		 * rendering to 60 fps.
 		 **/
-		time_t cur_tic;
+		time64_t cur_tic;
 		cur_tic.update_to_current_time();
 		rnd->clear_renderable();
 		std::vector<std::shared_ptr<renderable_t>> ret;
@@ -3151,7 +3149,7 @@ void page_t::update_keymap() {
 	_keymap = new keymap_t(cnx->xcb());
 }
 
-void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time_t const & time) {
+void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
 	out.push_back(_theme->get_background(0,0));
 	for(auto i: tree_t::children()) {
 		i->prepare_render(out, time);
