@@ -1195,18 +1195,15 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			if (find_current_desktop(mw) == _current_desktop or find_current_desktop(mw) == ALL_DESKTOP) {
-				if (mw->lock()) {
-					mw->activate();
-					if (e->data.data32[1] == XCB_CURRENT_TIME) {
-						printf(
-								"Invalid focus request ... but stealing focus\n");
-						set_focus(mw, XCB_CURRENT_TIME);
-					} else {
-						set_focus(mw, e->data.data32[1]);
-					}
-					mw->unlock();
+			if (mw->lock()) {
+				mw->activate();
+				if (e->data.data32[1] == XCB_CURRENT_TIME) {
+					printf("Invalid focus request ... but stealing focus\n");
+					set_focus(mw, XCB_CURRENT_TIME);
+				} else {
+					set_focus(mw, e->data.data32[1]);
 				}
+				mw->unlock();
 			}
 		}
 	} else if (e->type == A(_NET_WM_STATE)) {
