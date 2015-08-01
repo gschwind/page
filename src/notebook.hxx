@@ -81,10 +81,10 @@ public:
 	// list of client to maintain tab order
 
 	struct _client_context_t {
-		std::function<void(client_managed_t*)> * title_change_func;
-		std::function<void(client_managed_t*)> * destoy_func;
-		std::function<void(client_managed_t*)> * activate_func;
-		std::function<void(client_managed_t*)> * deactivate_func;
+		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
+		decltype(client_managed_t::on_destroy)::signal_func_t       destoy_func;
+		decltype(client_managed_t::on_activate)::signal_func_t      activate_func;
+		decltype(client_managed_t::on_deactivate)::signal_func_t    deactivate_func;
 	};
 
 	std::list<client_managed_t *> _clients;

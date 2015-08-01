@@ -29,10 +29,7 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 }
 
 notebook_t::~notebook_t() {
-	for(auto const & x:_clients_context) {
-		x.first->on_title_change.disconnect(x.second.title_change_func);
-		x.first->on_destroy.disconnect(x.second.destoy_func);
-	}
+
 }
 
 bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
@@ -124,10 +121,7 @@ void notebook_t::remove_client(client_managed_t * x) {
 	x->set_parent(nullptr);
 	_clients.remove(x);
 
-	x->on_title_change.disconnect(_clients_context[x].title_change_func);
-	x->on_destroy.disconnect(_clients_context[x].destoy_func);
-	x->on_activate.disconnect(_clients_context[x].activate_func);
-	x->on_deactivate.disconnect(_clients_context[x].deactivate_func);
+	/* disconnect all signals */
 	_clients_context.erase(x);
 
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {

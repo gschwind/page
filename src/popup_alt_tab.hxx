@@ -52,7 +52,7 @@ class popup_alt_tab_t : public overlay_t {
 	bool _is_visible;
 	bool _is_durty;
 
-	std::map<client_managed_t *, std::function<void(client_managed_t*)> *> destroy_func;
+	std::map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> destroy_func;
 
 public:
 
@@ -143,11 +143,6 @@ public:
 	~popup_alt_tab_t() {
 		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
-
-		for(auto const & x: destroy_func) {
-			x.first->on_destroy.disconnect(x.second);
-		}
-
 	}
 
 	void select_next() {

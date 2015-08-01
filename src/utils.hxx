@@ -634,39 +634,65 @@ static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 
 template<typename ... F>
 class signal_t {
-	using _func_t = std::function<void(F...)>;
-	std::list<_func_t *> _callback_list;
+	using _func_t = std::function<void(F ...)>;
+	std::list<std::weak_ptr<_func_t> > _callback_list;
 
 public:
 
+	using signal_func_t = std::shared_ptr<_func_t>;
+
 	~signal_t() {
-		for(auto x: _callback_list) {
-			delete x;
-		}
+
 	}
 
+	/**
+	 * Connect a function to this signal and return a reference to this function. This function
+	 * is not owned by the signal (i.e. signal only keep a weak ptr to the function). The caller
+	 * must keep the returned shared ptr until he want to remove the signal. The caller can
+	 * disconnect signal or turn the shared_ptr to nullptr to remove the handler from the signal queue.
+	 **/
 	template<typename T0>
-	_func_t * connect(T0 * ths, void(T0::*func)(F ...)) {
-		_func_t * ret = new _func_t{[ths, func](F ... args) -> void { (ths->*func)(args...); }};
+	signal_func_t connect(T0 * ths, void(T0::*func)(F ...)) {
+		auto ret = std::make_shared<_func_t>([ths, func](F ... args) -> void { (ths->*func)(args...); });
 		_callback_list.push_back(ret);
 		return ret;
+	}
+
+	signal_func_t connect(signal_func_t func) {
+		_callback_list.push_back(func);
+		return func;
 	}
 
 	template<typename G>
-	_func_t * connect(G func) {
-		_func_t * ret = new _func_t{func};
+	signal_func_t connect(G func) {
+		auto ret = std::make_shared<_func_t>(func);
 		_callback_list.push_back(ret);
 		return ret;
 	}
 
-	void disconnect(_func_t * f) {
-		_callback_list.remove(f);
-		delete f;
+	void disconnect(signal_func_t f) {
+		auto i = _callback_list.begin();
+		while(i != _callback_list.end()) {
+			if((*i).expired()) {
+				i = _callback_list.erase(i);
+			} else {
+				if(f == (*i).lock()) {
+					i = _callback_list.erase(i);
+				} else {
+					++i;
+				}
+			}
+		}
 	}
 
 	void signal(F ... args) {
-		for(auto f: _callback_list) {
-			(*f)(args...);
+		auto i = _callback_list.begin();
+		while(i != _callback_list.end()) {
+			if((*i).expired()) {
+				i = _callback_list.erase(i);
+			} else {
+				(*((*i++).lock()))(args...);
+			}
 		}
 	}
 
