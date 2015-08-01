@@ -20,15 +20,15 @@ class split_t : public page_component_t {
 	page_context_t * _ctx;
 	page_component_t * _parent;
 
-	i_rect _allocation;
-	i_rect _split_bar_area;
+	rect _allocation;
+	rect _split_bar_area;
 	split_type_e _type;
 	double _ratio;
 	page_component_t * _pack0;
 	page_component_t * _pack1;
 
-	i_rect bpack0;
-	i_rect bpack1;
+	rect bpack0;
+	rect bpack1;
 
 	std::list<tree_t *> _children;
 
@@ -46,10 +46,10 @@ public:
 	~split_t();
 
 	/* access to stuff */
-	auto get_split_bar_area() const -> i_rect const & { return _split_bar_area; }
+	auto get_split_bar_area() const -> rect const & { return _split_bar_area; }
 	auto get_pack0() const -> page_component_t * { return _pack0; }
 	auto get_pack1() const -> page_component_t * { return _pack1; }
-	auto allocation() const -> i_rect { return _allocation; }
+	auto allocation() const -> rect { return _allocation; }
 	auto ratio() const -> double { return _ratio; }
 	auto type() const -> split_type_e { return _type; }
 	auto parent() const -> page_component_t * { return _parent; }
@@ -57,8 +57,8 @@ public:
 
 
 	void replace(page_component_t * src, page_component_t * by);
-	void compute_split_bar_area(i_rect & area, double split) const;
-	void set_allocation(i_rect const & area);
+	void compute_split_bar_area(rect & area, double split) const;
+	void set_allocation(rect const & area);
 	void set_split(double split);
 	void set_theme(theme_t const * theme);
 	void set_pack0(page_component_t * x);
@@ -69,7 +69,7 @@ public:
 	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
-	i_rect compute_split_bar_location() const;
+	rect compute_split_bar_location() const;
 	void set_parent(tree_t * t);
 	void set_parent(page_component_t * t);
 //	void get_all_children(std::vector<tree_t *> & out) const;

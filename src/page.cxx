@@ -986,9 +986,9 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 				if ((e->value_mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT)) != 0) {
 
-					i_rect old_size = mw->get_floating_wished_position();
+					rect old_size = mw->get_floating_wished_position();
 					/** compute floating size **/
-					i_rect new_size = mw->get_floating_wished_position();
+					rect new_size = mw->get_floating_wished_position();
 
 					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
 						new_size.x = e->x;
@@ -1155,7 +1155,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		}
 
 		/* apply normal hint to floating window */
-		i_rect new_size = mw->get_wished_position();
+		rect new_size = mw->get_wished_position();
 
 		dimention_t<unsigned> final_size = mw->compute_size_with_constrain(
 				new_size.w, new_size.h);
@@ -1637,7 +1637,7 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 		PS_LAST = 12
 	};
 
-	i_rect const raw_area = v->raw_area();
+	rect const raw_area = v->raw_area();
 
 	int margin_left = _root_position.x + raw_area.x;
 	int margin_top = _root_position.y + raw_area.y;
@@ -1691,9 +1691,9 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 			if (ps[PS_LEFT] > 0) {
 				/* check if raw area intersect current viewport */
-				i_rect b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
+				rect b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
-				i_rect x = raw_area & b;
+				rect x = raw_area & b;
 				if (!x.is_null()) {
 					margin_left = std::max(margin_left, ps[PS_LEFT]);
 				}
@@ -1701,10 +1701,10 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 			if (ps[PS_RIGHT] > 0) {
 				/* check if raw area intersect current viewport */
-				i_rect b(_root_position.w - ps[PS_RIGHT],
+				rect b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
-				i_rect x = raw_area & b;
+				rect x = raw_area & b;
 				if (!x.is_null()) {
 					margin_right = std::max(margin_right, ps[PS_RIGHT]);
 				}
@@ -1712,9 +1712,9 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 			if (ps[PS_TOP] > 0) {
 				/* check if raw area intersect current viewport */
-				i_rect b(ps[PS_TOP_START_X], 0,
+				rect b(ps[PS_TOP_START_X], 0,
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
-				i_rect x = raw_area & b;
+				rect x = raw_area & b;
 				if (!x.is_null()) {
 					margin_top = std::max(margin_top, ps[PS_TOP]);
 				}
@@ -1722,11 +1722,11 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 
 			if (ps[PS_BOTTOM] > 0) {
 				/* check if raw area intersect current viewport */
-				i_rect b(ps[PS_BOTTOM_START_X],
+				rect b(ps[PS_BOTTOM_START_X],
 						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
-				i_rect x = raw_area & b;
+				rect x = raw_area & b;
 				if (!x.is_null()) {
 					margin_bottom = std::max(margin_bottom, ps[PS_BOTTOM]);
 				}
@@ -1734,7 +1734,7 @@ void page_t::compute_viewport_allocation(workspace_t * d, viewport_t * v) {
 		}
 	}
 
-	i_rect final_size;
+	rect final_size;
 
 	final_size.x = margin_left;
 	final_size.w = _root_position.w - margin_right - margin_left;
@@ -1816,7 +1816,7 @@ void page_t::reconfigure_docks(workspace_t * d) {
 		if (has_strut) {
 
 			if (ps[PS_LEFT] > 0) {
-				i_rect pos;
+				rect pos;
 				pos.x = 0;
 				pos.y = ps[PS_LEFT_START_Y];
 				pos.w = ps[PS_LEFT];
@@ -1828,7 +1828,7 @@ void page_t::reconfigure_docks(workspace_t * d) {
 			}
 
 			if (ps[PS_RIGHT] > 0) {
-				i_rect pos;
+				rect pos;
 				pos.x = _root_position.w - ps[PS_RIGHT];
 				pos.y = ps[PS_RIGHT_START_Y];
 				pos.w = ps[PS_RIGHT];
@@ -1840,7 +1840,7 @@ void page_t::reconfigure_docks(workspace_t * d) {
 			}
 
 			if (ps[PS_TOP] > 0) {
-				i_rect pos;
+				rect pos;
 				pos.x = ps[PS_TOP_START_X];
 				pos.y = 0;
 				pos.w = ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1;
@@ -1852,7 +1852,7 @@ void page_t::reconfigure_docks(workspace_t * d) {
 			}
 
 			if (ps[PS_BOTTOM] > 0) {
-				i_rect pos;
+				rect pos;
 				pos.x = ps[PS_BOTTOM_START_X];
 				pos.y = _root_position.h - ps[PS_BOTTOM];
 				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
@@ -2334,7 +2334,7 @@ void page_t::update_viewport_layout() {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-	_root_position = i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
+	_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_desktop_geometry(_root_position.w, _root_position.h);
 
 	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
@@ -2364,7 +2364,7 @@ void page_t::update_viewport_layout() {
 
 	/* compute all viewport  that does not overlap and cover the full area of crts */
 	region already_allocated;
-	std::vector<i_rect> viewport_allocation;
+	std::vector<rect> viewport_allocation;
 	for(auto crtc: crtc_info) {
 		if(crtc.second->num_outputs <= 0)
 			continue;
@@ -2400,7 +2400,7 @@ void page_t::update_viewport_layout() {
 
 		/** if no layout is found fallback to on screen **/
 		if(new_layout.size() < 1) {
-			i_rect area{_root_position};
+			rect area{_root_position};
 			viewport_t * vp;
 			if(0 < old_layout.size()) {
 				vp = old_layout[0];
@@ -3164,7 +3164,7 @@ void page_t::set_parent(tree_t * parent) {
 	throw exception_t("page::page_t can't have parent nor tree_t parent");
 }
 
-void page_t::set_allocation(i_rect const & r) {
+void page_t::set_allocation(rect const & r) {
 	throw exception_t("page_t::set_allocation should be called");
 }
 

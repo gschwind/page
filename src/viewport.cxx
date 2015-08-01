@@ -14,7 +14,7 @@
 
 namespace page {
 
-viewport_t::viewport_t(page_context_t * ctx, i_rect const & area, bool keep_focus) :
+viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus) :
 		_ctx{ctx},
 		_raw_aera{area},
 		_effective_area{area},
@@ -25,7 +25,7 @@ viewport_t::viewport_t(page_context_t * ctx, i_rect const & area, bool keep_focu
 		_pix{XCB_NONE},
 		_back_surf{nullptr}
 {
-	_page_area = i_rect{0, 0, _effective_area.w, _effective_area.h};
+	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
 	_subtree = nullptr;
 	_subtree = new notebook_t{_ctx, keep_focus};
@@ -55,19 +55,19 @@ void viewport_t::remove(tree_t * src) {
 
 }
 
-void viewport_t::set_allocation(i_rect const & area) {
+void viewport_t::set_allocation(rect const & area) {
 	_effective_area = area;
-	_page_area = i_rect{0, 0, _effective_area.w, _effective_area.h};
+	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	if(_subtree != nullptr)
 		_subtree->set_allocation(_page_area);
 	update_renderable();
 }
 
-void viewport_t::set_raw_area(i_rect const & area) {
+void viewport_t::set_raw_area(rect const & area) {
 	_raw_aera = area;
 }
 
-i_rect const & viewport_t::raw_area() const {
+rect const & viewport_t::raw_area() const {
 	return _raw_aera;
 }
 

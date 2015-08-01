@@ -47,7 +47,7 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 		_split_ratio = 0.05;
 
 	/* Render slider with quite complex render method to avoid flickering */
-	i_rect old_area = _slider_area;
+	rect old_area = _slider_area;
 	_split->compute_split_location(_split_ratio,
 			_slider_area.x, _slider_area.y);
 	_slider_area = _split->to_root_position(_slider_area);
@@ -69,7 +69,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	}
 }
 
-grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, i_rect const & pos) :
+grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, rect const & pos) :
 		ctx{ctx},
 		c{c},
 		start_position{pos},
@@ -268,12 +268,12 @@ void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
 	_ctx->add_global_damage(f->visible_area());
 
 	/* compute new window position */
-	i_rect new_position = original_position;
+	rect new_position = original_position;
 	new_position.x += e->root_x - x_root;
 	new_position.y += e->root_y - y_root;
 	final_position = new_position;
 
-	i_rect new_popup_position = popup_original_position;
+	rect new_popup_position = popup_original_position;
 	new_popup_position.x += e->root_x - x_root;
 	new_popup_position.y += e->root_y - y_root;
 	pfm->move_resize(new_popup_position);
@@ -362,7 +362,7 @@ void grab_floating_resize_t::button_press(xcb_button_press_event_t const * e) {
 void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) {
 	_ctx->add_global_damage(f->visible_area());
 
-	i_rect size = original_position;
+	rect size = original_position;
 
 	switch(mode) {
 	case RESIZE_TOP_LEFT:
@@ -444,7 +444,7 @@ void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) 
 	size.y += y_diff;
 	final_position = size;
 
-	i_rect popup_new_position = size;
+	rect popup_new_position = size;
 	if (f->has_motif_border()) {
 		popup_new_position.x -= _ctx->theme()->floating.margin.left;
 		popup_new_position.y -= _ctx->theme()->floating.margin.top;

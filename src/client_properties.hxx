@@ -430,7 +430,7 @@ public:
 				xcb_rectangle_iterator_t i =
 						xcb_shape_get_rectangles_rectangles_iterator(r1);
 				while (i.rem > 0) {
-					*_shape += i_rect { i.data->x, i.data->y, i.data->width,
+					*_shape += rect { i.data->x, i.data->y, i.data->width,
 							i.data->height };
 					xcb_rectangle_next(&i);
 				}
@@ -810,7 +810,7 @@ public:
 		_geometry->border_width = e->border_width;
 	}
 
-	i_rect position() const { return i_rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
+	rect position() const { return rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
 
 };
 

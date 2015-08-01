@@ -34,18 +34,18 @@ split_t::~split_t() {
 
 }
 
-void split_t::set_allocation(i_rect const & allocation) {
+void split_t::set_allocation(rect const & allocation) {
 	_allocation = allocation;
 	update_allocation();
 }
 
 void split_t::update_allocation_pack0() {
 
-	i_rect b;
+	rect b;
 	if (_type == VERTICAL_SPLIT) {
 
-		i_rect bpack0;
-		i_rect bpack1;
+		rect bpack0;
+		rect bpack1;
 
 		int w = allocation().w - 2 * _ctx->theme()->split.margin.left - 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
 		int w0 = floor(w * _ratio + 0.5);
@@ -79,7 +79,7 @@ void split_t::update_allocation_pack0() {
 void split_t::update_allocation_pack1() {
 	if (_pack1 == nullptr)
 		return;
-	i_rect b;
+	rect b;
 	if (_type == VERTICAL_SPLIT) {
 
 	} else {
@@ -185,7 +185,7 @@ void split_t::set_pack1(page_component_t * x) {
 /* compute the slider area */
 void split_t::compute_split_location(double split, int & x,
 		int & y) const {
-	i_rect const & alloc = allocation();
+	rect const & alloc = allocation();
 	if (_type == VERTICAL_SPLIT) {
 		int w = alloc.w - 2 * _ctx->theme()->split.margin.left
 				- 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
@@ -205,7 +205,7 @@ void split_t::compute_split_location(double split, int & x,
 
 /* compute the slider area */
 void split_t::compute_split_size(double split, int & w, int & h) const {
-	i_rect const & alloc = allocation();
+	rect const & alloc = allocation();
 	if (_type == VERTICAL_SPLIT) {
 		w = _ctx->theme()->split.width;
 		h = alloc.h;
@@ -253,10 +253,10 @@ void split_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, p
 	}
 }
 
-i_rect split_t::compute_split_bar_location() const {
+rect split_t::compute_split_bar_location() const {
 
-	i_rect ret;
-	i_rect const & alloc = _allocation;
+	rect ret;
+	rect const & alloc = _allocation;
 
 	if (_type == VERTICAL_SPLIT) {
 

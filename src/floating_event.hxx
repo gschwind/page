@@ -29,7 +29,7 @@ enum floating_event_type_e {
 
 struct floating_event_t {
 	floating_event_type_e type;
-	i_rect position;
+	rect position;
 
 	floating_event_t(floating_event_type_e type = FLOATING_EVENT_NONE) :
 			type(type), position() {

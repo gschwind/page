@@ -45,16 +45,16 @@ private:
 	xcb_atom_t _net_wm_type;
 
 	/** hold floating position **/
-	i_rect _floating_wished_position;
+	rect _floating_wished_position;
 
 	/** hold notebook position **/
-	i_rect _notebook_wished_position;
+	rect _notebook_wished_position;
 
 	/** the absolute position without border **/
-	i_rect _wished_position;
+	rect _wished_position;
 
-	i_rect _orig_position;
-	i_rect _base_position;
+	rect _orig_position;
+	rect _base_position;
 
 	// the output surface (i.e. surface where we write things)
 	cairo_surface_t * _surf;
@@ -97,14 +97,14 @@ private:
 	xcb_window_t _input_bottom_left;
 	xcb_window_t _input_bottom_right;
 
-	i_rect _area_top;
-	i_rect _area_left;
-	i_rect _area_right;
-	i_rect _area_bottom;
-	i_rect _area_top_left;
-	i_rect _area_top_right;
-	i_rect _area_bottom_left;
-	i_rect _area_bottom_right;
+	rect _area_top;
+	rect _area_left;
+	rect _area_right;
+	rect _area_bottom;
+	rect _area_top_left;
+	rect _area_top_right;
+	rect _area_bottom_left;
+	rect _area_bottom_right;
 
 	std::vector<floating_event_t> * _floating_area;
 
@@ -126,12 +126,12 @@ public:
 	void reconfigure();
 	void fake_configure();
 
-	void set_wished_position(i_rect const & position);
-	i_rect const & get_wished_position() const;
+	void set_wished_position(rect const & position);
+	rect const & get_wished_position() const;
 
 	void delete_window(xcb_timestamp_t);
 
-	i_rect get_base_position() const;
+	rect get_base_position() const;
 
 	void set_managed_type(managed_window_type_e type);
 
@@ -225,10 +225,10 @@ public:
 	void normalize();
 	void iconify();
 	void wm_state_delete();
-	void set_floating_wished_position(i_rect const & pos);
-	void set_notebook_wished_position(i_rect const & pos);
-	i_rect const & get_wished_position();
-	i_rect const & get_floating_wished_position();
+	void set_floating_wished_position(rect const & pos);
+	void set_notebook_wished_position(rect const & pos);
+	rect const & get_wished_position();
+	rect const & get_floating_wished_position();
 	void destroy_back_buffer();
 	void create_back_buffer();
 	std::vector<floating_event_t> const * floating_areas();
@@ -239,13 +239,13 @@ public:
 	display_t * cnx();
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time);
 	std::shared_ptr<renderable_t> get_base_renderable();
-	virtual i_rect const & base_position() const;
-	virtual i_rect const & orig_position() const;
+	virtual rect const & base_position() const;
+	virtual rect const & orig_position() const;
 	std::vector<floating_event_t> * compute_floating_areas(
 			theme_managed_window_t * mw) const;
-	i_rect compute_floating_bind_position(
-			i_rect const & allocation) const;
-	i_rect compute_floating_close_position(i_rect const & allocation) const;
+	rect compute_floating_bind_position(
+			rect const & allocation) const;
+	rect compute_floating_close_position(rect const & allocation) const;
 	region visible_area() const;
 	void hide();
 	void show();

@@ -48,38 +48,38 @@ inline void cairo_set_source_rgb(cairo_t * cr, color_t const & color) {
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, color.r, color.g, color.b, 1.0));
 }
 
-i_rect simple2_theme_t::compute_notebook_bookmark_position(
-		i_rect const & allocation) const {
-	return i_rect(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
+rect simple2_theme_t::compute_notebook_bookmark_position(
+		rect const & allocation) const {
+	return rect(allocation.x + allocation.w - 4 * 17 - 2, allocation.y + 2,
 			16, 16).floor();
 }
 
-i_rect simple2_theme_t::compute_notebook_vsplit_position(
-		i_rect const & allocation) const {
+rect simple2_theme_t::compute_notebook_vsplit_position(
+		rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
+	return rect(allocation.x + allocation.w - 3 * 17 - 2, allocation.y + 2,
 			16, 16).floor();
 }
 
-i_rect simple2_theme_t::compute_notebook_hsplit_position(
-		i_rect const & allocation) const {
+rect simple2_theme_t::compute_notebook_hsplit_position(
+		rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
+	return rect(allocation.x + allocation.w - 2 * 17 - 2, allocation.y + 2,
 			16, 16).floor();
 
 }
 
-i_rect simple2_theme_t::compute_notebook_close_position(
-		i_rect const & allocation) const {
+rect simple2_theme_t::compute_notebook_close_position(
+		rect const & allocation) const {
 
-	return i_rect(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
+	return rect(allocation.x + allocation.w - 1 * 17 - 2, allocation.y + 2,
 			16, 16).floor();
 }
 
-i_rect simple2_theme_t::compute_notebook_menu_position(
-		i_rect const & allocation) const {
+rect simple2_theme_t::compute_notebook_menu_position(
+		rect const & allocation) const {
 
-	return i_rect(allocation.x, allocation.y,
+	return rect(allocation.x, allocation.y,
 			40, 20).floor();
 
 }
@@ -441,7 +441,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 		CHECK_CAIRO(cairo_save(cr));
 		/** bottom shadow **/
-		i_rect b { n->allocation };
+		rect b { n->allocation };
 		b.y += notebook.tab_height;
 		b.h -= notebook.tab_height;
 		draw_outer_graddien(cr, b, color_t{0.0, 0.0, 0.0, 0.25}, 5);
@@ -458,7 +458,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		if (not n->selected_client.is_iconic) {
 
 			/* clear selected tab background */
-			i_rect a{n->selected_client.position};
+			rect a{n->selected_client.position};
 
 			a.x+=2;
 			a.w-=4;
@@ -490,7 +490,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	{
 
 		cairo_save(cr);
-		i_rect btext = compute_notebook_menu_position(n->allocation);
+		rect btext = compute_notebook_menu_position(n->allocation);
 
 		if(n->button_mouse_over == NOTEBOOK_BUTTON_EXPOSAY) {
 			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
@@ -543,7 +543,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 
 
 	{
-		i_rect b = compute_notebook_bookmark_position(n->allocation);
+		rect b = compute_notebook_bookmark_position(n->allocation);
 
 		if(n->button_mouse_over == NOTEBOOK_BUTTON_MASK) {
 			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
@@ -564,7 +564,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	}
 
 	{
-		i_rect b = compute_notebook_vsplit_position(n->allocation);
+		rect b = compute_notebook_vsplit_position(n->allocation);
 
 		if(n->button_mouse_over == NOTEBOOK_BUTTON_VSPLIT) {
 			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
@@ -578,7 +578,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	}
 
 	{
-		i_rect b = compute_notebook_hsplit_position(n->allocation);
+		rect b = compute_notebook_hsplit_position(n->allocation);
 
 		if(n->button_mouse_over == NOTEBOOK_BUTTON_HSPLIT) {
 			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
@@ -592,7 +592,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 	}
 
 	{
-		i_rect b = compute_notebook_close_position(n->allocation);
+		rect b = compute_notebook_close_position(n->allocation);
 
 		if(n->button_mouse_over == NOTEBOOK_BUTTON_CLOSE) {
 			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
@@ -610,8 +610,8 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 }
 
 
-static void draw_notebook_border(cairo_t * cr, i_rect const & alloc,
-		i_rect const & tab_area, color_t const & color,
+static void draw_notebook_border(cairo_t * cr, rect const & alloc,
+		rect const & tab_area, color_t const & color,
 		double border_width) {
 
 	double half = border_width / 2.0;
@@ -650,7 +650,7 @@ void simple2_theme_t::render_notebook_selected(
 ) const {
 	double const border_factor = 0.6;
 
-	i_rect tab_area = data.position;
+	rect tab_area = data.position;
 
 	tab_area.x += 2;
 	tab_area.w -= 4;
@@ -661,7 +661,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
 	/** draw the tab background **/
-	i_rect b = tab_area;
+	rect b = tab_area;
 
 	CHECK_CAIRO(cairo_save(cr));
 
@@ -710,7 +710,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.5));
 	CHECK_CAIRO(cairo_clip(cr));
 
-	i_rect xncclose;
+	rect xncclose;
 	xncclose.x = b.x + b.w - notebook.selected_close_width;
 	xncclose.y = b.y;
 	xncclose.w = notebook.selected_close_width - 10;
@@ -736,7 +736,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/** draw application icon **/
-	i_rect bicon = tab_area;
+	rect bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
 	bicon.x += 10;
@@ -755,7 +755,7 @@ void simple2_theme_t::render_notebook_selected(
 
 #ifdef WITH_PANGO
 	/** draw application title **/
-	i_rect btext = tab_area;
+	rect btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 3 * 16 + 12 + 30;
 	btext.x += 7 + 16 + 6;
@@ -797,7 +797,7 @@ void simple2_theme_t::render_notebook_selected(
 
 	/** draw close button **/
 
-	i_rect ncclose;
+	rect ncclose;
 	ncclose.x = tab_area.x + tab_area.w - (notebook.selected_close_width-10)/2 - 18;
 	ncclose.y = tab_area.y;
 	ncclose.w = 16;
@@ -809,7 +809,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_mask_surface(cr, close_button1_s, ncclose.x, ncclose.y));
 
 	/** draw unbind button **/
-	i_rect ncub;
+	rect ncub;
 	ncub.x = tab_area.x + tab_area.w - notebook.selected_unbind_width
 			- notebook.selected_close_width;
 	ncub.y = tab_area.y;
@@ -826,7 +826,7 @@ void simple2_theme_t::render_notebook_selected(
 	CHECK_CAIRO(cairo_set_source_surface(cr, unbind_button_s, ncub.x, ncub.y));
 	CHECK_CAIRO(cairo_mask_surface(cr, unbind_button_s, ncub.x, ncub.y));
 
-	i_rect area = data.position;
+	rect area = data.position;
 	area.y += notebook.margin.top - 4;
 	area.h -= notebook.margin.top - 4;
 
@@ -845,7 +845,7 @@ void simple2_theme_t::render_notebook_normal(
 ) const {
 	double const border_factor = 0.6;
 
-	i_rect tab_area = data.position;
+	rect tab_area = data.position;
 	tab_area.x += 2;
 	tab_area.w -= 4;
 	tab_area.y += 3;
@@ -857,7 +857,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 
 	/** draw the tab background **/
-	i_rect b = tab_area;
+	rect b = tab_area;
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_OVER));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
@@ -886,7 +886,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/* draw application icon */
-	i_rect bicon = tab_area;
+	rect bicon = tab_area;
 	bicon.h = 16;
 	bicon.w = 16;
 	bicon.x += 6;
@@ -906,7 +906,7 @@ void simple2_theme_t::render_notebook_normal(
 
 	CHECK_CAIRO(cairo_restore(cr));
 
-	i_rect btext = tab_area;
+	rect btext = tab_area;
 	btext.h -= 0;
 	btext.w -= 1 * 16 + 12;
 	btext.x += 3 + 16 + 6;
@@ -965,7 +965,7 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	CHECK_CAIRO(cairo_save(cr));
 	CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 
-	i_rect sarea = s->allocation;
+	rect sarea = s->allocation;
 	if (background_s != nullptr) {
 		CHECK_CAIRO(cairo_set_source_surface(cr, background_s, -s->root_x, -s->root_y));
 	} else {
@@ -974,9 +974,9 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	CHECK_CAIRO(cairo_rectangle(cr, sarea.x, sarea.y, sarea.w, sarea.h));
 	CHECK_CAIRO(cairo_fill(cr));
 
-	i_rect grip0;
-	i_rect grip1;
-	i_rect grip2;
+	rect grip0;
+	rect grip1;
+	rect grip2;
 
 	if (sarea.w > sarea.h) {
 		/* vertical splitting of area, i.e. horizontal grip */
@@ -1012,7 +1012,7 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
-void simple2_theme_t::render_empty(cairo_t * cr, i_rect const & area) const {
+void simple2_theme_t::render_empty(cairo_t * cr, rect const & area) const {
 	CHECK_CAIRO(cairo_save(cr));
 	cairo_clip(cr, area);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
@@ -1025,7 +1025,7 @@ void simple2_theme_t::render_empty(cairo_t * cr, i_rect const & area) const {
 	CHECK_CAIRO(cairo_restore(cr));
 }
 
-void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thumbnail_t const & t) const {
+void simple2_theme_t::render_thumbnail(cairo_t * cr, rect position, theme_thumbnail_t const & t) const {
 
 	double y_text_offset = 0;
 
@@ -1036,7 +1036,7 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 
-		i_rect thumbnail_pos = position;
+		rect thumbnail_pos = position;
 		thumbnail_pos.h -= 20;
 
 		double src_width = t.pix->witdh();
@@ -1081,7 +1081,7 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 		y_text_offset = position.h - 20;
 	}
 
-	i_rect btext = position;
+	rect btext = position;
 	btext.y += y_text_offset;
 	btext.h = 20;
 
@@ -1094,7 +1094,7 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, i_rect position, theme_thum
 }
 
 
-void simple2_theme_t::render_thumbnail_title(cairo_t * cr, i_rect btext, std::string const & title) const {
+void simple2_theme_t::render_thumbnail_title(cairo_t * cr, rect btext, std::string const & title) const {
 #ifdef WITH_PANGO
 
 	CHECK_CAIRO(cairo_save(cr));
@@ -1170,12 +1170,12 @@ void simple2_theme_t::render_floating_base(
 		double border_width
 ) const {
 	double const border_factor = 0.6;
-	i_rect allocation = mw->position;
+	rect allocation = mw->position;
 
 	if (mw->cairo_top != nullptr) {
 		cairo_t * cr = mw->cairo_top;
 
-		i_rect tab_area(0, 0, allocation.w, floating.title_height);
+		rect tab_area(0, 0, allocation.w, floating.title_height);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
@@ -1186,7 +1186,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
 		/** draw the tab background **/
-		i_rect b = tab_area;
+		rect b = tab_area;
 
 		CHECK_CAIRO(cairo_save(cr));
 
@@ -1209,7 +1209,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h+30.0, 7.0));
 		CHECK_CAIRO(cairo_stroke(cr));
 
-		i_rect xncclose;
+		rect xncclose;
 		xncclose.x = b.x + b.w - floating.close_width;
 		xncclose.y = b.y;
 		xncclose.w = floating.close_width - 10;
@@ -1243,7 +1243,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 		/** draw application icon **/
-		i_rect bicon = tab_area;
+		rect bicon = tab_area;
 		bicon.h = 16;
 		bicon.w = 16;
 		bicon.x += 10;
@@ -1262,7 +1262,7 @@ void simple2_theme_t::render_floating_base(
 
 	#ifdef WITH_PANGO
 		/** draw application title **/
-		i_rect btext = tab_area;
+		rect btext = tab_area;
 		btext.h -= 0;
 		btext.w -= 3 * 16 + 12 + 30;
 		btext.x += 7 + 16 + 6;
@@ -1304,7 +1304,7 @@ void simple2_theme_t::render_floating_base(
 
 		/** draw close button **/
 
-		i_rect ncclose;
+		rect ncclose;
 		ncclose.x = tab_area.x + tab_area.w - (floating.close_width-10)/2 - 18;
 		ncclose.y = tab_area.y;
 		ncclose.w = floating.close_width;
@@ -1316,7 +1316,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_mask_surface(cr, close_button1_s, ncclose.x, ncclose.y));
 
 		/** draw unbind button **/
-		i_rect ncub;
+		rect ncub;
 		ncub.x = tab_area.x + tab_area.w - floating.bind_width - floating.close_width;
 		ncub.y = tab_area.y;
 		ncub.w = floating.bind_width;
@@ -1334,7 +1334,7 @@ void simple2_theme_t::render_floating_base(
 	if (mw->cairo_bottom != nullptr) {
 		cairo_t * cr = mw->cairo_bottom;
 
-		i_rect b(0, 0, allocation.w, floating.margin.bottom);
+		rect b(0, 0, allocation.w, floating.margin.bottom);
 
 		CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 		::cairo_set_source_rgba(cr, background_color.r, background_color.g, background_color.b, (background_color.a)*0.8);
@@ -1360,7 +1360,7 @@ void simple2_theme_t::render_floating_base(
 	if (mw->cairo_right != nullptr) {
 		cairo_t * cr = mw->cairo_right;
 
-		i_rect b(0, 0, floating.margin.right,
+		rect b(0, 0, floating.margin.right,
 				allocation.h - floating.margin.top - floating.title_height
 						- floating.margin.bottom);
 
@@ -1384,7 +1384,7 @@ void simple2_theme_t::render_floating_base(
 	if (mw->cairo_left != nullptr) {
 		cairo_t * cr = mw->cairo_left;
 
-		i_rect b(0, 0, floating.margin.left,
+		rect b(0, 0, floating.margin.left,
 				allocation.h - floating.margin.top - floating.title_height
 						- floating.margin.bottom);
 
@@ -1557,7 +1557,7 @@ void simple2_theme_t::create_background_img() {
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
 		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
-		background_r = std::shared_ptr<renderable_t>(new renderable_pixmap_t(backgroun_px, i_rect{0,0,geometry->width,geometry->height}, region{}));
+		background_r = std::shared_ptr<renderable_t>(new renderable_pixmap_t(backgroun_px, rect{0,0,geometry->width,geometry->height}, region{}));
 
 		/**
 		 * WARNING: transform order and set_source_surface have huge
@@ -1723,7 +1723,7 @@ void simple2_theme_t::create_background_img() {
 		xcb_get_geometry_cookie_t ck = xcb_get_geometry(_cnx->xcb(), _cnx->root());
 		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck, 0);
 
-		background_r = std::shared_ptr<renderable_t>(new renderable_solid_t(default_background_color, i_rect{0,0,geometry->width,geometry->height}, region{}));
+		background_r = std::shared_ptr<renderable_t>(new renderable_solid_t(default_background_color, rect{0,0,geometry->width,geometry->height}, region{}));
 
 	}
 }
@@ -1736,10 +1736,10 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE));
 
-	i_rect const & alloc = s->allocation;
+	rect const & alloc = s->allocation;
 
-	i_rect rect0;
-	i_rect rect1;
+	rect rect0;
+	rect rect1;
 
 	if(s->type == HORIZONTAL_SPLIT) {
 
@@ -1791,7 +1791,7 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 
 }
 
-void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected) const {
+void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, rect const & area, bool selected) const {
 
 	cairo_save(cr);
 
@@ -1807,7 +1807,7 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
 
 	/** draw application icon **/
-	i_rect bicon = area;
+	rect bicon = area;
 	bicon.h = 16;
 	bicon.w = 16;
 	bicon.x += 5;
@@ -1826,7 +1826,7 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t
 
 #ifdef WITH_PANGO
 	/** draw application title **/
-	i_rect btext = area;
+	rect btext = area;
 	btext.h -= 0;
 	btext.w -= 0;
 	btext.x += 24;

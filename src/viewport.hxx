@@ -44,11 +44,11 @@ class viewport_t: public page_component_t {
 	std::shared_ptr<renderable_surface_t> _renderable;
 
 	/** area without considering dock windows **/
-	i_rect _raw_aera;
+	rect _raw_aera;
 
 	/** area considering dock windows **/
-	i_rect _effective_area;
-	i_rect _page_area;
+	rect _effective_area;
+	rect _page_area;
 	page_component_t * _subtree;
 
 	viewport_t(viewport_t const & v);
@@ -60,7 +60,7 @@ public:
 		return _parent;
 	}
 
-	viewport_t(page_context_t * ctx, i_rect const & area, bool keep_focus);
+	viewport_t(page_context_t * ctx, rect const & area, bool keep_focus);
 
 	~viewport_t() {
 		std::cout << "call " << __FUNCTION__ << std::endl;
@@ -74,10 +74,10 @@ public:
 
 	notebook_t * get_nearest_notebook();
 
-	virtual void set_allocation(i_rect const & area);
+	virtual void set_allocation(rect const & area);
 
-	void set_raw_area(i_rect const & area);
-	void set_effective_area(i_rect const & area);
+	void set_raw_area(rect const & area);
+	void set_effective_area(rect const & area);
 
 	bool is_visible() {
 		return not _is_hidden;
@@ -125,17 +125,17 @@ public:
 		}
 	}
 
-	i_rect allocation() const {
+	rect allocation() const {
 		return _effective_area;
 	}
 
-	i_rect const & page_area() const {
+	rect const & page_area() const {
 		return _page_area;
 	}
 
-	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+	void render_legacy(cairo_t * cr, rect const & area) const { }
 
-	i_rect const & raw_area() const;
+	rect const & raw_area() const;
 
 //	void get_all_children(std::vector<tree_t *> & out) const;
 
@@ -168,7 +168,7 @@ public:
 
 	}
 
-	i_rect const & raw_area() {
+	rect const & raw_area() {
 		return _raw_aera;
 	}
 
@@ -343,7 +343,7 @@ public:
 		return _win;
 	}
 
-	i_rect get_window_position() const {
+	rect get_window_position() const {
 		return _effective_area;
 	}
 

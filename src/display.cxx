@@ -293,7 +293,7 @@ void display_t::remove_from_save_set(xcb_window_t w) {
 	xcb_change_save_set(_xcb, XCB_SET_MODE_DELETE, w);
 }
 
-void display_t::move_resize(xcb_window_t w, i_rect const & size) {
+void display_t::move_resize(xcb_window_t w, rect const & size) {
 
 	uint16_t mask = 0;
 	uint32_t value[4];
@@ -333,7 +333,7 @@ void display_t::set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp
 	//std::cout << "set_input_focus #" << focus << " #" << ck.sequence << std::endl;
 }
 
-void display_t::fake_configure(xcb_window_t w, i_rect location, int border_width) {
+void display_t::fake_configure(xcb_window_t w, rect location, int border_width) {
 	xcb_configure_notify_event_t xev;
 	xev.response_type = XCB_CONFIGURE_NOTIFY;
 	xev.event = w;
@@ -685,7 +685,7 @@ void display_t::set_window_cursor(xcb_window_t w, xcb_cursor_t c) {
 }
 
 xcb_window_t display_t::create_input_only_window(xcb_window_t parent,
-		i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs) {
+		rect const & pos, uint32_t attrs_mask, uint32_t * attrs) {
 	xcb_window_t id = xcb_generate_id(_xcb);
 	xcb_void_cookie_t ck = xcb_create_window(_xcb, XCB_COPY_FROM_PARENT, id,
 			parent, pos.x, pos.y, pos.w, pos.h, 0, XCB_WINDOW_CLASS_INPUT_ONLY,
@@ -756,7 +756,7 @@ region display_t::read_damaged_region(xcb_damage_damage_t d) {
 		xcb_rectangle_iterator_t i = xcb_xfixes_fetch_region_rectangles_iterator(r);
 		while(i.rem > 0) {
 			//printf("rect %dx%d+%d+%d\n", i.data->width, i.data->height, i.data->x, i.data->y);
-			result += i_rect{i.data->x, i.data->y, i.data->width, i.data->height};
+			result += rect{i.data->x, i.data->y, i.data->width, i.data->height};
 			xcb_rectangle_next(&i);
 		}
 		free(r);

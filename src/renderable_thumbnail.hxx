@@ -15,10 +15,10 @@ namespace page {
 
 class renderable_thumbnail_t : public renderable_t {
 	page_context_t * _ctx;
-	i_rect _position;
+	rect _position;
 	int _title_width;
 
-	i_rect _thumbnail_position;
+	rect _thumbnail_position;
 	client_managed_t * _c;
 
 	region _visible_region;
@@ -27,7 +27,7 @@ class renderable_thumbnail_t : public renderable_t {
 
 public:
 
-	renderable_thumbnail_t(page_context_t * ctx, i_rect const & position, client_managed_t * c) :
+	renderable_thumbnail_t(page_context_t * ctx, rect const & position, client_managed_t * c) :
 		_ctx{ctx},
 		_c{c},
 		_position{position},
@@ -46,7 +46,7 @@ public:
 		_tt.pix = _c->get_last_pixmap();
 
 		if (_tt.pix != nullptr) {
-			i_rect tmp = _position;
+			rect tmp = _position;
 			tmp.h -= 20;
 
 			double src_width = _tt.pix->witdh();
@@ -59,7 +59,7 @@ public:
 
 			if (x_ratio < y_ratio) {
 
-				_thumbnail_position = i_rect(tmp.x,
+				_thumbnail_position = rect(tmp.x,
 						tmp.y + (tmp.h - src_height * x_ratio) / 2.0, tmp.w,
 						src_height * x_ratio
 
@@ -83,7 +83,7 @@ public:
 
 			} else {
 
-				_thumbnail_position = i_rect(
+				_thumbnail_position = rect(
 						tmp.x + (tmp.w - src_width * y_ratio) / 2.0, tmp.y,
 						src_width * y_ratio, tmp.h);
 
@@ -110,7 +110,7 @@ public:
 				_tt.title = _ctx->cmp()->create_composite_pixmap(
 						_thumbnail_position.w, 20);
 				cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-				_ctx->theme()->render_thumbnail_title(cr, i_rect { 0, 0,
+				_ctx->theme()->render_thumbnail_title(cr, rect { 0, 0,
 						_thumbnail_position.w, 20 }, _c->title());
 				cairo_destroy(cr);
 			}
@@ -164,8 +164,8 @@ public:
 		return region{};
 	}
 
-	i_rect get_real_position() {
-		return i_rect{_thumbnail_position.x, _thumbnail_position.y, _thumbnail_position.w, _thumbnail_position.h + 20};
+	rect get_real_position() {
+		return rect{_thumbnail_position.x, _thumbnail_position.y, _thumbnail_position.w, _thumbnail_position.h + 20};
 	}
 
 	void set_mouse_over(bool x) {
@@ -175,7 +175,7 @@ public:
 	void update_title() {
 		_tt.title = _ctx->cmp()->create_composite_pixmap(_position.w, 20);
 		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-		_ctx->theme()->render_thumbnail_title(cr, i_rect{0, 0, _position.w, 20}, _c->title());
+		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c->title());
 		cairo_destroy(cr);
 	}
 

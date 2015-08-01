@@ -251,8 +251,8 @@ public:
 	virtual bool has_window(xcb_window_t w) const = 0;
 	virtual xcb_window_t base() const = 0;
 	virtual xcb_window_t orig() const = 0;
-	virtual i_rect const & base_position() const = 0;
-	virtual i_rect const & orig_position() const = 0;
+	virtual rect const & base_position() const = 0;
+	virtual rect const & orig_position() const = 0;
 	virtual region visible_area() const = 0;
 
 	virtual std::string get_node_name() const {
@@ -328,7 +328,7 @@ public:
 	/* OTHERs */
 	auto motif_hints() const -> motif_wm_hints_t const * { return _properties->motif_hints(); }
 	auto shape() const -> region const * { return _properties->shape(); }
-	auto position() -> i_rect { return _properties->position(); }
+	auto position() -> rect { return _properties->position(); }
 
 
 	void on_property_notify(xcb_property_notify_event_t const * e) {

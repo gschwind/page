@@ -14,7 +14,7 @@ namespace page {
 
 class renderable_pixmap_t : public renderable_t {
 
-	i_rect location;
+	rect location;
 	std::shared_ptr<pixmap_t> surf;
 	region damaged;
 	region opaque_region;
@@ -22,7 +22,7 @@ class renderable_pixmap_t : public renderable_t {
 
 public:
 
-	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, i_rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
+	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
 		opaque_region = region(loc);
 		visible_region = region(loc);
 	}

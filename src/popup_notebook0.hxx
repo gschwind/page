@@ -26,7 +26,7 @@ struct popup_notebook0_t : public overlay_t {
 	bool _show;
 
 protected:
-	i_rect _position;
+	rect _position;
 
 	bool _has_alpha;
 	bool _is_durty;
@@ -78,7 +78,7 @@ public:
 		_is_durty = true;
 	}
 
-	void move_resize(i_rect const & area) {
+	void move_resize(rect const & area) {
 		_ctx->add_global_damage(get_visible_region());
 		_position = area;
 
@@ -118,7 +118,7 @@ public:
 		_position.y = y;
 	}
 
-	i_rect const & position() {
+	rect const & position() {
 		return _position;
 	}
 

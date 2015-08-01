@@ -42,7 +42,7 @@ class notebook_t : public page_component_t {
 	page_context_t * _ctx;
 	page_component_t * _parent;
 
-	i_rect _allocation;
+	rect _allocation;
 
 	/* child stack order the first one is the lowest one */
 	list<tree_t *> _children;
@@ -60,8 +60,8 @@ class notebook_t : public page_component_t {
 	bool _exposay;
 
 	struct {
-		tuple<i_rect, client_managed_t *, theme_tab_t *> * tab;
-		tuple<i_rect, client_managed_t *, int> * exposay;
+		tuple<rect, client_managed_t *, theme_tab_t *> * tab;
+		tuple<rect, client_managed_t *, int> * exposay;
 	} _mouse_over;
 
 	enum select_e {
@@ -87,33 +87,33 @@ class notebook_t : public page_component_t {
 	client_managed_t * _selected;
 
 
-	i_rect client_position;
-	i_rect client_area;
+	rect client_position;
+	rect client_area;
 
-	i_rect button_close;
-	i_rect button_vsplit;
-	i_rect button_hsplit;
-	i_rect button_select;
-	i_rect button_exposay;
+	rect button_close;
+	rect button_vsplit;
+	rect button_hsplit;
+	rect button_select;
+	rect button_exposay;
 
-	i_rect close_client_area;
-	i_rect undck_client_area;
+	rect close_client_area;
+	rect undck_client_area;
 
-	i_rect tab_area;
-	i_rect top_area;
-	i_rect bottom_area;
-	i_rect left_area;
-	i_rect right_area;
+	rect tab_area;
+	rect top_area;
+	rect bottom_area;
+	rect left_area;
+	rect right_area;
 
-	i_rect popup_top_area;
-	i_rect popup_bottom_area;
-	i_rect popup_left_area;
-	i_rect popup_right_area;
-	i_rect popup_center_area;
+	rect popup_top_area;
+	rect popup_bottom_area;
+	rect popup_left_area;
+	rect popup_right_area;
+	rect popup_center_area;
 
 	/* list of tabs and exposay buttons */
-	vector<tuple<i_rect, client_managed_t *, theme_tab_t *>> _client_buttons;
-	vector<tuple<i_rect, client_managed_t *, int>> _exposay_buttons;
+	vector<tuple<rect, client_managed_t *, theme_tab_t *>> _client_buttons;
+	vector<tuple<rect, client_managed_t *, int>> _exposay_buttons;
 	shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
 
 	void set_selected(client_managed_t * c);
@@ -130,20 +130,20 @@ class notebook_t : public page_component_t {
 	void _mouse_over_reset();
 	void _mouse_over_set();
 
-	i_rect compute_notebook_close_window_position(int number_of_client, int selected_client_index) const;
-	i_rect compute_notebook_unbind_window_position(int number_of_client, int selected_client_index) const;
-	i_rect compute_notebook_bookmark_position() const;
-	i_rect compute_notebook_vsplit_position() const;
-	i_rect compute_notebook_hsplit_position() const;
-	i_rect compute_notebook_close_position() const;
-	i_rect compute_notebook_menu_position() const;
+	rect compute_notebook_close_window_position(int number_of_client, int selected_client_index) const;
+	rect compute_notebook_unbind_window_position(int number_of_client, int selected_client_index) const;
+	rect compute_notebook_bookmark_position() const;
+	rect compute_notebook_vsplit_position() const;
+	rect compute_notebook_hsplit_position() const;
+	rect compute_notebook_close_position() const;
+	rect compute_notebook_menu_position() const;
 
 	void client_title_change(client_managed_t * c);
 	void client_destroy(client_managed_t * c);
 	void client_activate(client_managed_t * c);
 	void client_deactivate(client_managed_t * c);
 
-	void update_allocation(i_rect & allocation);
+	void update_allocation(rect & allocation);
 
 	bool process_button_press_event(XEvent const * e);
 
@@ -153,7 +153,7 @@ class notebook_t : public page_component_t {
 	void activate_client(client_managed_t * x);
 
 
-	i_rect get_new_client_size();
+	rect get_new_client_size();
 
 	void select_next();
 	void delete_all();
@@ -164,8 +164,8 @@ class notebook_t : public page_component_t {
 
 	void update_close_area();
 
-	i_rect compute_client_size(client_managed_t * c);
-	i_rect const & get_allocation();
+	rect compute_client_size(client_managed_t * c);
+	rect const & get_allocation();
 	void set_theme(theme_t const * theme);
 	auto clients() const -> list<client_managed_t const *>;
 	auto selected() const -> client_managed_t const *;
@@ -207,8 +207,8 @@ public:
 	/**
 	 * page_component_t interface
 	 **/
-	virtual void set_allocation(i_rect const & area);
-	virtual i_rect allocation() const;
+	virtual void set_allocation(rect const & area);
+	virtual rect allocation() const;
 	virtual void replace(page_component_t * src, page_component_t * by);
 
 	/**

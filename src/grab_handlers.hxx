@@ -30,8 +30,8 @@ enum notebook_area_e {
 class grab_split_t : public grab_handler_t {
 	page_context_t * _ctx;
 	split_t * _split;
-	i_rect _slider_area;
-	i_rect _split_root_allocation;
+	rect _slider_area;
+	rect _split_root_allocation;
 	double _split_ratio;
 	std::shared_ptr<popup_split_t> _ps;
 
@@ -51,7 +51,7 @@ class grab_bind_client_t : public grab_handler_t {
 	page_context_t * ctx;
 	client_managed_t * c;
 
-	i_rect start_position;
+	rect start_position;
 	xcb_button_t _button;
 	notebook_area_e zone;
 	notebook_t * target_notebook;
@@ -61,7 +61,7 @@ class grab_bind_client_t : public grab_handler_t {
 
 public:
 
-	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, i_rect const & pos);
+	grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, rect const & pos);
 
 	virtual ~grab_bind_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -74,7 +74,7 @@ public:
 struct grab_notebook_menu_t  : public grab_handler_t {
 	notebook_t * from;
 	bool active_grab;
-	i_rect b;
+	rect b;
 
 	grab_notebook_menu_t(notebook_t);
 	virtual ~grab_notebook_menu_t();
@@ -88,7 +88,7 @@ struct mode_data_notebook_client_menu_t  : public grab_handler_t {
 	notebook_t * from;
 	client_managed_t * client;
 	bool active_grab;
-	i_rect b;
+	rect b;
 
 	mode_data_notebook_client_menu_t() {
 		reset();
@@ -119,10 +119,10 @@ struct grab_floating_move_t : public grab_handler_t {
 	page_context_t * _ctx;
 	int x_root;
 	int y_root;
-	i_rect original_position;
-	i_rect popup_original_position;
+	rect original_position;
+	rect popup_original_position;
 	client_managed_t * f;
-	i_rect final_position;
+	rect final_position;
 	unsigned int button;
 
 	std::shared_ptr<popup_notebook0_t> pfm;
@@ -144,8 +144,8 @@ struct grab_floating_resize_t : public grab_handler_t {
 	resize_mode_e mode;
 	int x_root;
 	int y_root;
-	i_rect original_position;
-	i_rect final_position;
+	rect original_position;
+	rect final_position;
 	xcb_button_t button;
 
 	std::shared_ptr<popup_notebook0_t> pfm;

@@ -22,7 +22,7 @@ struct popup_split_t : public overlay_t {
 	double _current_split;
 	split_t const * _s_base;
 
-	i_rect _position;
+	rect _position;
 
 	bool _has_alpha;
 	bool _is_durty;
@@ -48,7 +48,7 @@ public:
 		return _is_visible;
 	}
 
-	i_rect const & position() {
+	rect const & position() {
 		return _position;
 	}
 
@@ -126,7 +126,7 @@ public:
 	}
 
 
-	void _compute_layout(i_rect & rect0, i_rect & rect1) {
+	void _compute_layout(rect & rect0, rect & rect1) {
 		if(_s_base->type() == HORIZONTAL_SPLIT) {
 
 			int ii = floor((_position.h - _ctx->theme()->notebook.margin.top) * _current_split + 0.5);
@@ -162,8 +162,8 @@ public:
 
 	void update_layout() {
 
-		i_rect rect0;
-		i_rect rect1;
+		rect rect0;
+		rect rect1;
 
 		_compute_layout(rect0, rect1);
 
@@ -241,8 +241,8 @@ public:
 	}
 
 	void expose() {
-		i_rect rect0;
-		i_rect rect1;
+		rect rect0;
+		rect rect1;
 
 		_compute_layout(rect0, rect1);
 

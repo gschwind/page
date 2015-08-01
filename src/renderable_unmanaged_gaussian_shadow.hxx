@@ -39,12 +39,12 @@ class renderable_unmanaged_gaussian_shadow_t : public renderable_t {
 	static cairo_surface_t * surf[MAX];
 	static cairo_pattern_t * pattern[MAX];
 
-	i_rect _r;
+	rect _r;
 	color_t _color;
 
 public:
 
-	renderable_unmanaged_gaussian_shadow_t(i_rect r, color_t c) :
+	renderable_unmanaged_gaussian_shadow_t(rect r, color_t c) :
 			_r(r), _color{c} {
 
 		if(surf[0] == nullptr) {
@@ -97,7 +97,7 @@ public:
 			/** draw left shawdow **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x - SIZE, _r.y, SIZE, _r.h));
+			cairo_clip(cr, cl & rect(_r.x - SIZE, _r.y, SIZE, _r.h));
 			cairo_translate(cr, _r.x - SIZE, _r.y);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[LEFT]);
@@ -106,7 +106,7 @@ public:
 			/** draw right shadow **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x + _r.w, _r.y, SIZE, _r.h));
+			cairo_clip(cr, cl & rect(_r.x + _r.w, _r.y, SIZE, _r.h));
 			cairo_translate(cr, _r.x + _r.w, _r.y);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[RIGHT]);
@@ -115,7 +115,7 @@ public:
 			/** draw top shadow **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x, _r.y - SIZE, _r.w, SIZE));
+			cairo_clip(cr, cl & rect(_r.x, _r.y - SIZE, _r.w, SIZE));
 			cairo_translate(cr, _r.x, _r.y - SIZE);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[TOP]);
@@ -124,7 +124,7 @@ public:
 			/** draw bottom shadow **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x, _r.y + _r.h, _r.w, SIZE));
+			cairo_clip(cr, cl & rect(_r.x, _r.y + _r.h, _r.w, SIZE));
 			cairo_translate(cr, _r.x, _r.y + _r.h);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[BOT]);
@@ -133,7 +133,7 @@ public:
 			/** draw top-left corner **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x - SIZE, _r.y - SIZE, SIZE, SIZE));
+			cairo_clip(cr, cl & rect(_r.x - SIZE, _r.y - SIZE, SIZE, SIZE));
 			cairo_translate(cr, _r.x - SIZE, _r.y - SIZE);
 			::cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
 			cairo_mask(cr, pattern[TOP_LEFT]);
@@ -142,7 +142,7 @@ public:
 			/** draw top-right corner **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x + _r.w, _r.y - SIZE, SIZE, SIZE));
+			cairo_clip(cr, cl & rect(_r.x + _r.w, _r.y - SIZE, SIZE, SIZE));
 			cairo_translate(cr, _r.x + _r.w, _r.y - SIZE);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[TOP_RIGHT]);
@@ -151,7 +151,7 @@ public:
 			/** bottom-left corner **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x - SIZE, _r.y + _r.h, SIZE, SIZE));
+			cairo_clip(cr, cl & rect(_r.x - SIZE, _r.y + _r.h, SIZE, SIZE));
 			cairo_translate(cr, _r.x - SIZE, _r.y + _r.h);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[BOT_LEFT]);
@@ -160,7 +160,7 @@ public:
 			/** draw bottom-right corner **/
 			cairo_save(cr);
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_clip(cr, cl & i_rect(_r.x + _r.w, _r.y + _r.h, SIZE, SIZE));
+			cairo_clip(cr, cl & rect(_r.x + _r.w, _r.y + _r.h, SIZE, SIZE));
 			cairo_translate(cr, _r.x + _r.w, _r.y + _r.h);
 			::cairo_set_source_rgb(cr, _color.r, _color.g, _color.b);
 			cairo_mask(cr, pattern[BOT_RIGHT]);
@@ -185,14 +185,14 @@ public:
 	 **/
 	virtual region get_visible_region() {
 		region ret;
-		ret += i_rect(_r.x - SIZE, _r.y, SIZE, _r.h);
-		ret += i_rect(_r.x + _r.w, _r.y, SIZE, _r.h);
-		ret += i_rect(_r.x, _r.y - SIZE, _r.w, SIZE);
-		ret += i_rect(_r.x, _r.y + _r.h, _r.w, SIZE);
-		ret += i_rect(_r.x - SIZE, _r.y - SIZE, SIZE, SIZE);
-		ret += i_rect(_r.x + _r.w, _r.y - SIZE, SIZE, SIZE);
-		ret += i_rect(_r.x - SIZE, _r.y + _r.h, SIZE, SIZE);
-		ret += i_rect(_r.x + _r.w, _r.y + _r.h, SIZE, SIZE);
+		ret += rect(_r.x - SIZE, _r.y, SIZE, _r.h);
+		ret += rect(_r.x + _r.w, _r.y, SIZE, _r.h);
+		ret += rect(_r.x, _r.y - SIZE, _r.w, SIZE);
+		ret += rect(_r.x, _r.y + _r.h, _r.w, SIZE);
+		ret += rect(_r.x - SIZE, _r.y - SIZE, SIZE, SIZE);
+		ret += rect(_r.x + _r.w, _r.y - SIZE, SIZE, SIZE);
+		ret += rect(_r.x - SIZE, _r.y + _r.h, SIZE, SIZE);
+		ret += rect(_r.x + _r.w, _r.y + _r.h, SIZE, SIZE);
 		return ret;
 	}
 

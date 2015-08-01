@@ -13,7 +13,7 @@
 namespace page {
 
 struct theme_tab_t {
-	i_rect position;
+	rect position;
 	std::string title;
 	std::shared_ptr<icon16> icon;
 	color_t tab_color;

@@ -46,7 +46,7 @@ class popup_alt_tab_t : public overlay_t {
 
 	cairo_surface_t * _surf;
 
-	i_rect _position;
+	rect _position;
 	std::list<std::shared_ptr<cycle_window_entry_t>> _client_list;
 	std::list<std::shared_ptr<cycle_window_entry_t>>::iterator _selected;
 	bool _is_visible;
@@ -136,7 +136,7 @@ public:
 		return _is_visible;
 	}
 
-	i_rect const & position() {
+	rect const & position() {
 		return _position;
 	}
 
@@ -159,7 +159,7 @@ public:
 
 	void update_backbuffer() {
 
-		i_rect a{0,0,_position.w,_position.h};
+		rect a{0,0,_position.w,_position.h};
 		cairo_t * cr = cairo_create(_surf);
 		//cairo_clip(cr, a);
 		//cairo_translate(cr, _position.x, _position.y);

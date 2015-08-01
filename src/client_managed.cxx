@@ -53,7 +53,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 {
 
 	update_title();
-	i_rect pos{_properties->position()};
+	rect pos{_properties->position()};
 
 	printf("window default position = %s\n", pos.to_string().c_str());
 
@@ -115,7 +115,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 	xcb_window_t wbase;
 	xcb_window_t wdeco;
-	i_rect b = _floating_wished_position;
+	rect b = _floating_wished_position;
 
 	xcb_visualid_t root_visual = cnx()->root_visual()->visual_id;
 	int root_depth = cnx()->find_visual_depth(cnx()->root_visual()->visual_id);
@@ -324,7 +324,7 @@ void client_managed_t::reconfigure() {
 	} else {
 		_wished_position = _notebook_wished_position;
 		_base_position = _notebook_wished_position;
-		_orig_position = i_rect(0, 0, _base_position.w, _base_position.h);
+		_orig_position = rect(0, 0, _base_position.w, _base_position.h);
 
 		destroy_back_buffer();
 
@@ -336,12 +336,12 @@ void client_managed_t::reconfigure() {
 
 		if(_is_iconic or _is_hidden) {
 			/* if iconic move outside visible area */
-			cnx()->move_resize(_base, i_rect{_ctx->left_most_border()-1-_base_position.w, _ctx->top_most_border(), _base_position.w, _base_position.h});
+			cnx()->move_resize(_base, rect{_ctx->left_most_border()-1-_base_position.w, _ctx->top_most_border(), _base_position.w, _base_position.h});
 		} else {
 			cnx()->move_resize(_base, _base_position);
 		}
 		cnx()->move_resize(_deco,
-				i_rect{0, 0, _base_position.w, _base_position.h});
+				rect{0, 0, _base_position.w, _base_position.h});
 		cnx()->move_resize(_orig, _orig_position);
 
 		cnx()->move_resize(_input_top, _area_top);
@@ -413,7 +413,7 @@ void client_managed_t::focus(xcb_timestamp_t t) {
 	icccm_focus(t);
 }
 
-i_rect client_managed_t::get_base_position() const {
+rect client_managed_t::get_base_position() const {
 	return _base_position;
 }
 
@@ -586,43 +586,43 @@ compute_floating_areas(theme_managed_window_t * mw) const {
 			- _ctx->theme()->floating.margin.bottom;
 
 	floating_event_t ft(FLOATING_EVENT_TITLE);
-	ft.position = i_rect(x0, y0, w0,
+	ft.position = rect(x0, y0, w0,
 			_ctx->theme()->floating.title_height);
 	ret->push_back(ft);
 
 	floating_event_t fgt(FLOATING_EVENT_GRIP_TOP);
-	fgt.position = i_rect(x0, 0, w0, _ctx->theme()->floating.margin.top);
+	fgt.position = rect(x0, 0, w0, _ctx->theme()->floating.margin.top);
 	ret->push_back(fgt);
 
 	floating_event_t fgb(FLOATING_EVENT_GRIP_BOTTOM);
-	fgb.position = i_rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
+	fgb.position = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
 	ret->push_back(fgb);
 
 	floating_event_t fgl(FLOATING_EVENT_GRIP_LEFT);
-	fgl.position = i_rect(0, y0, _ctx->theme()->floating.margin.left, h0);
+	fgl.position = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
 	ret->push_back(fgl);
 
 	floating_event_t fgr(FLOATING_EVENT_GRIP_RIGHT);
-	fgr.position = i_rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
+	fgr.position = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
 	ret->push_back(fgr);
 
 	floating_event_t fgtl(FLOATING_EVENT_GRIP_TOP_LEFT);
-	fgtl.position = i_rect(0, 0, _ctx->theme()->floating.margin.left,
+	fgtl.position = rect(0, 0, _ctx->theme()->floating.margin.left,
 			_ctx->theme()->floating.margin.top);
 	ret->push_back(fgtl);
 
 	floating_event_t fgtr(FLOATING_EVENT_GRIP_TOP_RIGHT);
-	fgtr.position = i_rect(x1, 0, _ctx->theme()->floating.margin.right,
+	fgtr.position = rect(x1, 0, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.top);
 	ret->push_back(fgtr);
 
 	floating_event_t fgbl(FLOATING_EVENT_GRIP_BOTTOM_LEFT);
-	fgbl.position = i_rect(0, y1, _ctx->theme()->floating.margin.left,
+	fgbl.position = rect(0, y1, _ctx->theme()->floating.margin.left,
 			_ctx->theme()->floating.margin.bottom);
 	ret->push_back(fgbl);
 
 	floating_event_t fgbr(FLOATING_EVENT_GRIP_BOTTOM_RIGHT);
-	fgbr.position = i_rect(x1, y1, _ctx->theme()->floating.margin.right,
+	fgbr.position = rect(x1, y1, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.bottom);
 	ret->push_back(fgbr);
 
@@ -630,9 +630,9 @@ compute_floating_areas(theme_managed_window_t * mw) const {
 
 }
 
-i_rect client_managed_t::compute_floating_close_position(i_rect const & allocation) const {
+rect client_managed_t::compute_floating_close_position(rect const & allocation) const {
 
-	i_rect position;
+	rect position;
 	position.x = allocation.w - _ctx->theme()->floating.close_width;
 	position.y = 0.0;
 	position.w = _ctx->theme()->floating.close_width;
@@ -641,10 +641,10 @@ i_rect client_managed_t::compute_floating_close_position(i_rect const & allocati
 	return position;
 }
 
-i_rect client_managed_t::
-compute_floating_bind_position(i_rect const & allocation) const {
+rect client_managed_t::
+compute_floating_bind_position(rect const & allocation) const {
 
-	i_rect position;
+	rect position;
 	position.x = allocation.w - _ctx->theme()->floating.bind_width - _ctx->theme()->floating.close_width;
 	position.y = 0.0;
 	position.w = _ctx->theme()->floating.bind_width;
@@ -843,19 +843,19 @@ void client_managed_t::wm_state_delete() {
 	}
 }
 
-void client_managed_t::set_floating_wished_position(i_rect const & pos) {
+void client_managed_t::set_floating_wished_position(rect const & pos) {
 	_floating_wished_position = pos;
 }
 
-void client_managed_t::set_notebook_wished_position(i_rect const & pos) {
+void client_managed_t::set_notebook_wished_position(rect const & pos) {
 	_notebook_wished_position = pos;
 }
 
-i_rect const & client_managed_t::get_wished_position() {
+rect const & client_managed_t::get_wished_position() {
 	return _wished_position;
 }
 
-i_rect const & client_managed_t::get_floating_wished_position() {
+rect const & client_managed_t::get_floating_wished_position() {
 	return _floating_wished_position;
 }
 
@@ -950,18 +950,18 @@ void client_managed_t::update_floating_areas() {
 	int h0 = _base_position.h - _ctx->theme()->floating.margin.bottom
 			- _ctx->theme()->floating.margin.bottom;
 
-	_area_top = i_rect(x0, 0, w0, _ctx->theme()->floating.margin.bottom);
-	_area_bottom = i_rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
-	_area_left = i_rect(0, y0, _ctx->theme()->floating.margin.left, h0);
-	_area_right = i_rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
+	_area_top = rect(x0, 0, w0, _ctx->theme()->floating.margin.bottom);
+	_area_bottom = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
+	_area_left = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
+	_area_right = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
 
-	_area_top_left = i_rect(0, 0, _ctx->theme()->floating.margin.left,
+	_area_top_left = rect(0, 0, _ctx->theme()->floating.margin.left,
 			_ctx->theme()->floating.margin.bottom);
-	_area_top_right = i_rect(x1, 0, _ctx->theme()->floating.margin.right,
+	_area_top_right = rect(x1, 0, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.bottom);
-	_area_bottom_left = i_rect(0, y1, _ctx->theme()->floating.margin.left,
+	_area_bottom_left = rect(0, y1, _ctx->theme()->floating.margin.left,
 			_ctx->theme()->floating.margin.bottom);
-	_area_bottom_right = i_rect(x1, y1, _ctx->theme()->floating.margin.right,
+	_area_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.bottom);
 
 }
@@ -994,7 +994,7 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 
 	if (_ctx->csm()->get_last_pixmap(_base) != nullptr and not _is_hidden) {
 
-		i_rect loc{base_position()};
+		rect loc{base_position()};
 
 		if (prefer_window_border()) {
 			if(is_focused()) {
@@ -1029,7 +1029,7 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 			opa = _base_position;
 		} else {
 
-			vis = i_rect{0,0,_base_position.w,_base_position.h};
+			vis = rect{0,0,_base_position.w,_base_position.h};
 
 			if (shape() != nullptr) {
 				region shp{*shape()};
@@ -1043,7 +1043,7 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 				xopac = region { *(net_wm_opaque_region()) };
 			} else {
 				if (geometry()->depth == 24) {
-					xopac = i_rect{0, 0, _orig_position.w, _orig_position.h};
+					xopac = rect{0, 0, _orig_position.w, _orig_position.h};
 				}
 			}
 
@@ -1070,18 +1070,18 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 	}
 }
 
-i_rect const & client_managed_t::base_position() const {
+rect const & client_managed_t::base_position() const {
 	return _base_position;
 }
 
-i_rect const & client_managed_t::orig_position() const {
+rect const & client_managed_t::orig_position() const {
 	return _orig_position;
 }
 
 region client_managed_t::visible_area() const {
 
 	if(_managed_type == MANAGED_FLOATING) {
-		i_rect vis{base_position()};
+		rect vis{base_position()};
 		vis.x -= 32;
 		vis.y -= 32;
 		vis.w += 64;
@@ -1254,7 +1254,7 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 			if (b->type == FLOATING_EVENT_CLOSE) {
 				delete_window(e->time);
 			} else if (b->type == FLOATING_EVENT_BIND) {
-				i_rect absolute_position = b->position;
+				rect absolute_position = b->position;
 				absolute_position.x += base_position().x;
 				absolute_position.y += base_position().y;
 				_ctx->grab_start(new grab_bind_client_t{_ctx, this, e->detail, absolute_position});
@@ -1295,7 +1295,7 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 		return true;
 	} else if (is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 			and (e->state & (XCB_MOD_MASK_1))) {
-		_ctx->grab_start(new grab_bind_client_t{_ctx, this, e->detail, i_rect{e->root_x-10, e->root_y-10, 20, 20}});
+		_ctx->grab_start(new grab_bind_client_t{_ctx, this, e->detail, rect{e->root_x-10, e->root_y-10, 20, 20}});
 		return true;
 	}
 

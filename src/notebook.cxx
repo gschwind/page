@@ -74,8 +74,8 @@ bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
 	return true;
 }
 
-i_rect notebook_t::get_new_client_size() {
-	return i_rect(
+rect notebook_t::get_new_client_size() {
+	return rect(
 		allocation().x + _ctx->theme()->notebook.margin.left,
 		allocation().y + _ctx->theme()->notebook.margin.top + _ctx->theme()->notebook.tab_height,
 		allocation().w - _ctx->theme()->notebook.margin.right - _ctx->theme()->notebook.margin.left,
@@ -182,7 +182,7 @@ notebook_t * notebook_t::get_nearest_notebook() {
 	return this;
 }
 
-void notebook_t::set_allocation(i_rect const & area) {
+void notebook_t::set_allocation(rect const & area) {
 	_allocation = area;
 	_update_layout();
 }
@@ -270,7 +270,7 @@ void notebook_t::_update_layout() {
 	queue_redraw();
 }
 
-i_rect notebook_t::compute_client_size(client_managed_t * c) {
+rect notebook_t::compute_client_size(client_managed_t * c) {
 	dimention_t<unsigned> size =
 			c->compute_size_with_constrain(client_area.w, client_area.h);
 
@@ -284,7 +284,7 @@ i_rect notebook_t::compute_client_size(client_managed_t * c) {
 	}
 
 	/* compute the window placement within notebook */
-	i_rect client_size;
+	rect client_size;
 	client_size.x = floor((client_area.w - size.width) / 2.0);
 	client_size.y = floor((client_area.h - size.height) / 2.0);
 	client_size.w = size.width;
@@ -407,8 +407,8 @@ void notebook_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out
 	}
 }
 
-i_rect notebook_t::compute_notebook_bookmark_position() const {
-	return i_rect(
+rect notebook_t::compute_notebook_bookmark_position() const {
+	return rect(
 		_allocation.x + _allocation.w
 		- _ctx->theme()->notebook.close_width
 		- _ctx->theme()->notebook.hsplit_width
@@ -420,8 +420,8 @@ i_rect notebook_t::compute_notebook_bookmark_position() const {
 	);
 }
 
-i_rect notebook_t::compute_notebook_vsplit_position() const {
-	return i_rect(
+rect notebook_t::compute_notebook_vsplit_position() const {
+	return rect(
 		_allocation.x + _allocation.w
 			- _ctx->theme()->notebook.close_width
 			- _ctx->theme()->notebook.hsplit_width
@@ -432,9 +432,9 @@ i_rect notebook_t::compute_notebook_vsplit_position() const {
 	);
 }
 
-i_rect notebook_t::compute_notebook_hsplit_position() const {
+rect notebook_t::compute_notebook_hsplit_position() const {
 
-	return i_rect(
+	return rect(
 		_allocation.x + _allocation.w - _ctx->theme()->notebook.close_width - _ctx->theme()->notebook.hsplit_width,
 		_allocation.y,
 		_ctx->theme()->notebook.hsplit_width,
@@ -443,8 +443,8 @@ i_rect notebook_t::compute_notebook_hsplit_position() const {
 
 }
 
-i_rect notebook_t::compute_notebook_close_position() const {
-	return i_rect(
+rect notebook_t::compute_notebook_close_position() const {
+	return rect(
 		_allocation.x + _allocation.w - _ctx->theme()->notebook.close_width,
 		_allocation.y,
 		_ctx->theme()->notebook.close_width,
@@ -452,8 +452,8 @@ i_rect notebook_t::compute_notebook_close_position() const {
 	);
 }
 
-i_rect notebook_t::compute_notebook_menu_position() const {
-	return i_rect(
+rect notebook_t::compute_notebook_menu_position() const {
+	return rect(
 		_allocation.x,
 		_allocation.y,
 		_ctx->theme()->notebook.menu_button_width,
@@ -475,7 +475,7 @@ void notebook_t::_update_notebook_areas() {
 	if(_clients.size() > 0) {
 
 		if(_selected != nullptr) {
-			i_rect & b = theme_notebook.selected_client.position;
+			rect & b = theme_notebook.selected_client.position;
 
 			if (not _selected->is_iconic()) {
 
@@ -498,8 +498,8 @@ void notebook_t::_update_notebook_areas() {
 			_client_buttons.push_back(std::make_tuple(b, _selected, &theme_notebook.selected_client));
 
 		} else {
-			close_client_area = i_rect{};
-			undck_client_area = i_rect{};
+			close_client_area = rect{};
+			undck_client_area = rect{};
 		}
 
 		auto c = _clients.begin();
@@ -529,7 +529,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 		if (_selected != nullptr) {
 			/** copy the tab context **/
 			theme_notebook.selected_client = theme_tab_t{};
-			theme_notebook.selected_client.position = i_rect{
+			theme_notebook.selected_client.position = rect{
 					(int)floor(offset),
 							_allocation.y, (int)floor(
 					(int)(offset + selected_box_width) - floor(offset)),
@@ -553,7 +553,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 		for (auto i : _clients) {
 			theme_notebook.clients_tab.push_back(theme_tab_t{});
 			auto & tab = theme_notebook.clients_tab.back();
-			tab.position = i_rect{
+			tab.position = rect{
 				(int)floor(offset),
 				_allocation.y,
 				(int)(floor(offset + _ctx->theme()->notebook.iconic_tab_width) - floor(offset)),
@@ -607,8 +607,8 @@ void notebook_t::start_fading() {
 		if (not _selected->is_iconic()) {
 			std::shared_ptr<pixmap_t> pix = _selected->get_last_pixmap();
 			if (pix != nullptr) {
-				i_rect pos = client_position;
-				i_rect cl { pos.x, pos.y, pos.w, pos.h };
+				rect pos = client_position;
+				rect cl { pos.x, pos.y, pos.w, pos.h };
 
 				cairo_reset_clip(cr);
 				cairo_clip(cr, cl);
@@ -697,7 +697,7 @@ void notebook_t::_update_exposay() {
 		if(y == m-1)
 			xoffset = (client_area.w-width*n)/2.0 + client_area.x + (n*m - _clients.size())*width/2.0;
 
-		i_rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
+		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, *it, i));
 		pdst = to_root_position(pdst);
 		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
@@ -816,7 +816,7 @@ void notebook_t::start_client_menu(client_managed_t * c, xcb_button_t button, ui
 		os << "Desktop #" << k;
 		v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
 	}
-	_ctx->grab_start(new dropdown_menu_t<int>{_ctx, v, button, x, y, 300, i_rect{x-10, y-10, 20, 20}, callback});
+	_ctx->grab_start(new dropdown_menu_t<int>{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}, callback});
 
 }
 
@@ -840,8 +840,8 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
 		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
-		std::tuple<i_rect, client_managed_t *, theme_tab_t *> * tab = nullptr;
-		std::tuple<i_rect, client_managed_t *, int> * exposay = nullptr;
+		std::tuple<rect, client_managed_t *, theme_tab_t *> * tab = nullptr;
+		std::tuple<rect, client_managed_t *, int> * exposay = nullptr;
 
 		if (button_close.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
@@ -994,7 +994,7 @@ void notebook_t::set_parent(tree_t * t) {
 	}
 }
 
-i_rect notebook_t::allocation() const {
+rect notebook_t::allocation() const {
 	return _allocation;
 }
 

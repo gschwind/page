@@ -16,7 +16,7 @@ namespace page {
 
 class renderable_solid_t : public renderable_t {
 
-	i_rect location;
+	rect location;
 	color_t color;
 	region damaged;
 	region opaque_region;
@@ -24,7 +24,7 @@ class renderable_solid_t : public renderable_t {
 
 public:
 
-	renderable_solid_t(color_t color, i_rect loc, region damaged) : damaged(damaged), color(color), location(loc) {
+	renderable_solid_t(color_t color, rect loc, region damaged) : damaged(damaged), color(color), location(loc) {
 		opaque_region = region{loc};
 		visible_region = region{loc};
 	}

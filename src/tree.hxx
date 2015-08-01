@@ -130,11 +130,11 @@ public:
 			return XCB_NONE;
 	}
 
-	virtual i_rect get_window_position() const {
+	virtual rect get_window_position() const {
 		if(parent() != nullptr)
 			return parent()->get_window_position();
 		else
-			return i_rect{};
+			return rect{};
 	}
 
 	virtual void queue_redraw() {
@@ -252,8 +252,8 @@ public:
 		_broadcast_deep_first(&tree_t::expose, ev);
 	}
 
-	i_rect to_root_position(i_rect const & r) const {
-		return i_rect{r.x+get_window_position().x, r.y+get_window_position().y, r.w, r.h};
+	rect to_root_position(rect const & r) const {
+		return rect{r.x+get_window_position().x, r.y+get_window_position().y, r.w, r.h};
 	}
 
 };

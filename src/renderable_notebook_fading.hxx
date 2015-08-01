@@ -22,16 +22,16 @@ class renderable_notebook_fading_t : public renderable_t {
 
 	double ratio;
 
-	i_rect old_client_area;
+	rect old_client_area;
 	std::shared_ptr<pixmap_t> old_surface;
 
-	i_rect client_area;
-	i_rect client_pos;
+	rect client_area;
+	rect client_pos;
 	std::shared_ptr<pixmap_t> client_surf;
 
 public:
 
-	renderable_notebook_fading_t(std::shared_ptr<pixmap_t> old_surface, i_rect old_client_area) :
+	renderable_notebook_fading_t(std::shared_ptr<pixmap_t> old_surface, rect old_client_area) :
 		old_client_area(old_client_area),
 		old_surface(old_surface),
 		ratio(0.5) {
@@ -64,7 +64,7 @@ public:
 
 		cairo_save(cr);
 		/* client old surface if necessary */
-		i_rect tmp_pos;
+		rect tmp_pos;
 		tmp_pos.x = client_area.x;
 		tmp_pos.y = client_area.y;
 		tmp_pos.w = std::min(old_client_area.w, client_area.w);
@@ -109,11 +109,11 @@ public:
 		ratio = std::min(std::max(0.0, x), 1.0);
 	}
 
-	void update_client_area(i_rect const & pos) {
+	void update_client_area(rect const & pos) {
 		client_area = pos;
 	}
 
-	void update_client(std::shared_ptr<pixmap_t> const & surf, i_rect const & pos) {
+	void update_client(std::shared_ptr<pixmap_t> const & surf, rect const & pos) {
 		client_pos = pos;
 		client_surf = surf;
 	}

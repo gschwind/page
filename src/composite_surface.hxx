@@ -55,7 +55,7 @@ class composite_surface_t {
 		if (_damage == XCB_NONE) {
 			_damage = xcb_generate_id(_dpy->xcb());
 			xcb_damage_create(_dpy->xcb(), _damage, _window_id, XCB_DAMAGE_REPORT_LEVEL_NON_EMPTY);
-			_damaged += i_rect(0, 0, _width, _height);
+			_damaged += rect(0, 0, _width, _height);
 			_has_damage_pending = true;
 		}
 	}
@@ -219,7 +219,7 @@ public:
 		xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
 		xcb_composite_name_window_pixmap(_dpy->xcb(), _window_id, pixmap_id);
 		_pixmap = std::make_shared<pixmap_t>(_dpy, _vis, pixmap_id, _width, _height);
-		_damaged += i_rect(0, 0, _width, _height);
+		_damaged += rect(0, 0, _width, _height);
 	}
 
 	void on_destroy() {
@@ -301,7 +301,7 @@ public:
 				auto iter = xcb_xfixes_fetch_region_rectangles_iterator(r);
 				while(iter.rem > 0) {
 					//printf("rect %dx%d+%d+%d\n", i.data->width, i.data->height, i.data->x, i.data->y);
-					_damaged += i_rect{iter.data->x, iter.data->y, iter.data->width, iter.data->height};
+					_damaged += rect{iter.data->x, iter.data->y, iter.data->width, iter.data->height};
 					xcb_rectangle_next(&iter);
 				}
 				free(r);

@@ -32,7 +32,7 @@ class renderable_page_t {
 	xcb_pixmap_t _pix;
 	xcb_window_t _win;
 
-	i_rect _position;
+	rect _position;
 
 	bool _has_alpha;
 	bool _is_durty;
@@ -86,7 +86,7 @@ public:
 		_cnx->map(_win);
 
 		_pix = XCB_NONE;
-		_position = i_rect{0, 0, width, height};
+		_position = rect{0, 0, width, height};
 
 		update_renderable();
 
@@ -123,7 +123,7 @@ public:
 		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
 		cairo_fill(cr);
 
-		i_rect area = _position;
+		rect area = _position;
 		area.x = 0;
 		area.y = 0;
 
@@ -171,7 +171,7 @@ public:
 		_is_durty = true;
 	}
 
-	void move_resize(i_rect const & area) {
+	void move_resize(rect const & area) {
 		_position = area;
 		_cnx->move_resize(_win, _position);
 		update_renderable();
@@ -196,7 +196,7 @@ public:
 		return _is_visible;
 	}
 
-	i_rect const & position() {
+	rect const & position() {
 		return _position;
 	}
 

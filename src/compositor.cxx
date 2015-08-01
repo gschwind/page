@@ -30,7 +30,7 @@ namespace page {
 } while(false)
 
 
-static void _draw_crossed_box(cairo_t * cr, i_rect const & box, double r, double g,
+static void _draw_crossed_box(cairo_t * cr, rect const & box, double r, double g,
 		double b) {
 
 	cairo_save(cr);
@@ -338,13 +338,13 @@ void compositor_t::update_layout() {
 	_desktop_region.clear();
 
 	for(auto i: crtc_info) {
-		i_rect area{i.second->x, i.second->y, i.second->width, i.second->height};
+		rect area{i.second->x, i.second->y, i.second->width, i.second->height};
 		_desktop_region += area;
 	}
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
 
-	_damaged += i_rect{geometry->x, geometry->y, geometry->width, geometry->height};
+	_damaged += rect{geometry->x, geometry->y, geometry->width, geometry->height};
 
 	composite_back_buffer = xcb_generate_id(_cnx->xcb());
 	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), composite_back_buffer,

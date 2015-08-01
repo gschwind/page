@@ -158,7 +158,7 @@ public:
 
 	void add_to_save_set(xcb_window_t w);
 	void remove_from_save_set(xcb_window_t w);
-	void move_resize(xcb_window_t w, i_rect const & size);
+	void move_resize(xcb_window_t w, rect const & size);
 	void set_window_border_width(xcb_window_t w, unsigned int width);
 	void raise_window(xcb_window_t w);
 
@@ -170,7 +170,7 @@ public:
 	void delete_property(xcb_window_t w, atom_e property);
 	void lower_window(xcb_window_t w);
 	void set_input_focus(xcb_window_t focus, int revert_to, xcb_timestamp_t time);
-	void fake_configure(xcb_window_t w, i_rect location, int border_width);
+	void fake_configure(xcb_window_t w, rect location, int border_width);
 
 	bool check_composite_extension();
 	bool check_damage_extension();
@@ -219,7 +219,7 @@ public:
 
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 
-	xcb_window_t create_input_only_window(xcb_window_t parent, i_rect const & pos, uint32_t attrs_mask, uint32_t * attrs);
+	xcb_window_t create_input_only_window(xcb_window_t parent, rect const & pos, uint32_t attrs_mask, uint32_t * attrs);
 
 	/** undocumented : http://lists.freedesktop.org/pipermail/xorg/2005-January/005954.html **/
 	void allow_input_passthrough(xcb_window_t w);

@@ -16,7 +16,7 @@
 namespace page {
 
 struct theme_managed_window_t {
-	i_rect position;
+	rect position;
 	std::string title;
 	std::shared_ptr<icon16> icon;
 	cairo_t * cairo_top;

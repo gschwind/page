@@ -26,8 +26,8 @@ enum notebook_button_e {
 struct theme_notebook_t {
 	int root_x, root_y;
 	notebook_button_e button_mouse_over;
-	i_rect allocation;
-	i_rect client_position;
+	rect allocation;
+	rect client_position;
 	theme_tab_t selected_client;
 	std::vector<theme_tab_t> clients_tab;
 	bool is_default;

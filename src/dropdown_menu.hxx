@@ -76,11 +76,11 @@ struct dropdown_menu_overlay_t : public overlay_t {
 	page_context_t * _ctx;
 	xcb_pixmap_t _pix;
 	cairo_surface_t * _surf;
-	i_rect _position;
+	rect _position;
 	xcb_window_t _wid;
 	bool _is_durty;
 
-	dropdown_menu_overlay_t(page_context_t * ctx, i_rect position) : _ctx{ctx}, _position{position} {
+	dropdown_menu_overlay_t(page_context_t * ctx, rect position) : _ctx{ctx}, _position{position} {
 		_is_durty = true;
 
 		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
@@ -124,7 +124,7 @@ struct dropdown_menu_overlay_t : public overlay_t {
 		_ctx->dpy()->map(_wid);
 	}
 
-	i_rect const & position() {
+	rect const & position() {
 		return _position;
 	}
 
@@ -208,7 +208,7 @@ private:
 	std::vector<std::shared_ptr<item_t>> _items;
 	int _selected;
 	std::shared_ptr<dropdown_menu_overlay_t> pop;
-	i_rect _start_position;
+	rect _start_position;
 
 	bool active_grab;
 	xcb_button_t _button;
@@ -218,7 +218,7 @@ private:
 public:
 
 	template<typename F>
-	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, i_rect start_position, F f) :
+	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position, F f) :
 	_ctx{ctx},
 	_start_position{start_position},
 	_button{button},
@@ -231,7 +231,7 @@ public:
 		_selected = -1;
 		_items = items;
 
-		i_rect _position;
+		rect _position;
 		_position.x = x;
 		_position.y = y;
 		_position.w = width;
@@ -263,13 +263,13 @@ public:
 
 		cairo_destroy(cr);
 
-		pop->expose(i_rect(0,0,pop->_position.w,pop->_position.h));
+		pop->expose(rect(0,0,pop->_position.w,pop->_position.h));
 
 	}
 
 	void update_items_back_buffer(cairo_t * cr, int n) {
 		if (n >= 0 and n < _items.size()) {
-			i_rect area(0, 24 * n, pop->_position.w, 24);
+			rect area(0, 24 * n, pop->_position.w, 24);
 			_ctx->theme()->render_menuentry(cr, _items[n]->get_theme_item(), area, n == _selected);
 		}
 	}
@@ -283,7 +283,7 @@ public:
 			cairo_destroy(cr);
 			pop->_is_durty = true;
 
-			pop->expose(i_rect(0,0,pop->_position.w,pop->_position.h));
+			pop->expose(rect(0,0,pop->_position.w,pop->_position.h));
 
 		}
 	}

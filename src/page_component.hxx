@@ -20,8 +20,8 @@ public:
 
 	page_component_t() { }
 	virtual ~page_component_t() { }
-	virtual void set_allocation(i_rect const & area) = 0;
-	virtual i_rect allocation() const = 0;
+	virtual void set_allocation(rect const & area) = 0;
+	virtual rect allocation() const = 0;
 	virtual void replace(page_component_t * src, page_component_t * by) = 0;
 
 };

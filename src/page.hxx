@@ -184,7 +184,7 @@ private:
 
 	std::list<std::shared_ptr<overlay_t>> _overlays;
 
-	i_rect _root_position;
+	rect _root_position;
 	theme_t * _theme;
 
 	int _left_most_border;
@@ -387,13 +387,13 @@ public:
 	page_component_t * parent() const;
 	void set_parent(tree_t * parent);
 
-	void set_allocation(i_rect const & r);
+	void set_allocation(rect const & r);
 
-	i_rect allocation() const {
+	rect allocation() const {
 		return _root_position;
 	}
 
-	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+	void render_legacy(cairo_t * cr, rect const & area) const { }
 
 
 	void children(std::vector<tree_t *> & out) const;

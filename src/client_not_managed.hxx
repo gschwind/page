@@ -35,7 +35,7 @@ private:
 
 	xcb_atom_t _net_wm_type;
 
-	mutable i_rect _base_position;
+	mutable rect _base_position;
 
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);
@@ -100,7 +100,7 @@ public:
 
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time_t const & time) {
 
-		i_rect pos(_properties->geometry()->x, _properties->geometry()->y,
+		rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
 
 		if (_ctx->menu_drop_down_shadow()) {
@@ -129,7 +129,7 @@ public:
 	}
 
 	region visible_area() const {
-		i_rect rec{base_position()};
+		rect rec{base_position()};
 		rec.x -= 4;
 		rec.y -= 4;
 		rec.w += 8;
@@ -146,14 +146,14 @@ public:
 			region vis;
 			region opa;
 
-			vis = i_rect { 0, 0, _base_position.w, _base_position.h };
+			vis = rect { 0, 0, _base_position.w, _base_position.h };
 
 			if (shape() != nullptr) {
 				region shp;
 				shp = *shape();
 				vis = shp;
 			} else {
-				vis = i_rect { 0, 0, _base_position.w, _base_position.h };
+				vis = rect { 0, 0, _base_position.w, _base_position.h };
 			}
 
 			region xopac;
@@ -161,7 +161,7 @@ public:
 				xopac = region { *(net_wm_opaque_region()) };
 			} else {
 				if (geometry()->depth == 24) {
-					xopac = i_rect { 0, 0, _base_position.w, _base_position.h };
+					xopac = rect { 0, 0, _base_position.w, _base_position.h };
 				}
 			}
 
@@ -193,12 +193,12 @@ public:
 		return _properties->id();
 	}
 
-	virtual i_rect const & base_position() const {
+	virtual rect const & base_position() const {
 		_base_position = _properties->position();
 		return _base_position;
 	}
 
-	virtual i_rect const & orig_position() const {
+	virtual rect const & orig_position() const {
 		_base_position = _properties->position();
 		return _base_position;
 	}

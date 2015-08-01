@@ -28,8 +28,8 @@ struct workspace_t: public page_component_t {
 private:
 	page_context_t * _ctx;
 	page_component_t * _parent;
-	i_rect _allocation;
-	i_rect _workarea;
+	rect _allocation;
+	rect _workarea;
 
 	unsigned const _id;
 
@@ -69,7 +69,7 @@ public:
 		client_focus.push_back(nullptr);
 	}
 
-	void render(cairo_t * cr, i_rect const & area) const { }
+	void render(cairo_t * cr, rect const & area) const { }
 
 
 	void activate(tree_t * t = nullptr) {
@@ -126,11 +126,11 @@ public:
 		}
 	}
 
-	i_rect allocation() const {
+	rect allocation() const {
 		return _allocation;
 	}
 
-	void render_legacy(cairo_t * cr, i_rect const & area) const { }
+	void render_legacy(cairo_t * cr, rect const & area) const { }
 
 	auto get_viewport_map() const -> std::vector<viewport_t *> const & {
 		return _viewport_outputs;
@@ -219,7 +219,7 @@ public:
 		_viewport_layer.remove(src);
 	}
 
-	void set_allocation(i_rect const & area) {
+	void set_allocation(rect const & area) {
 		_allocation = area;
 	}
 
@@ -250,11 +250,11 @@ public:
 		}
 	}
 
-	void set_workarea(i_rect const & r) {
+	void set_workarea(rect const & r) {
 		_workarea = r;
 	}
 
-	i_rect const & workarea() {
+	rect const & workarea() {
 		return _workarea;
 	}
 

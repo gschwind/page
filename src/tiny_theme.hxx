@@ -126,29 +126,29 @@ public:
 
 	virtual ~tiny_theme_t();
 
-	i_rect compute_notebook_close_window_position(
-			i_rect const & allocation, int number_of_client,
+	rect compute_notebook_close_window_position(
+			rect const & allocation, int number_of_client,
 			int selected_client_index) const;
-	i_rect compute_notebook_unbind_window_position(
-			i_rect const & allocation, int number_of_client,
+	rect compute_notebook_unbind_window_position(
+			rect const & allocation, int number_of_client,
 			int selected_client_index) const;
 
-	i_rect compute_notebook_bookmark_position(
-			i_rect const & allocation) const;
-	i_rect compute_notebook_vsplit_position(
-			i_rect const & allocation) const;
-	i_rect compute_notebook_hsplit_position(
-			i_rect const & allocation) const;
-	i_rect compute_notebook_close_position(
-			i_rect const & allocation) const;
+	rect compute_notebook_bookmark_position(
+			rect const & allocation) const;
+	rect compute_notebook_vsplit_position(
+			rect const & allocation) const;
+	rect compute_notebook_hsplit_position(
+			rect const & allocation) const;
+	rect compute_notebook_close_position(
+			rect const & allocation) const;
 
-	i_rect compute_notebook_menu_position(
-			i_rect const & allocation) const;
+	rect compute_notebook_menu_position(
+			rect const & allocation) const;
 
-	i_rect compute_floating_close_position(
-			i_rect const & _allocation) const;
-	i_rect compute_floating_bind_position(
-			i_rect const & _allocation) const;
+	rect compute_floating_close_position(
+			rect const & _allocation) const;
+	rect compute_floating_bind_position(
+			rect const & _allocation) const;
 
 	static void rounded_i_rect(cairo_t * cr, double x, double y, double w,
 			double h, double r);
@@ -157,7 +157,7 @@ public:
 
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const;
 	virtual void render_split(cairo_t * cr, theme_split_t const * s) const;
-	virtual void render_empty(cairo_t * cr, i_rect const & area) const;
+	virtual void render_empty(cairo_t * cr, rect const & area) const;
 
 	virtual void render_floating(theme_managed_window_t * mw) const;
 
@@ -201,7 +201,7 @@ public:
 
 	virtual void render_popup_split(cairo_t * cr, theme_split_t const * s, double current_split);
 
-	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, i_rect const & area, bool selected);
+	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, rect const & area, bool selected);
 
 	void draw_hatched_i_rect(cairo_t * cr, int space, int x, int y, int w,
 			int h) const;
