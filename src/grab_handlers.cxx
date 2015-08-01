@@ -98,27 +98,27 @@ void grab_bind_client_t::_find_target_notebook(int x, int y,
 	auto ln = filter_class<notebook_t>(
 			ctx->get_current_workspace()->tree_t::get_all_children());
 	for (auto i : ln) {
-		if (i->_tab_area.is_inside(x, y)) {
+		if (i->_area.tab.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TAB;
 			target = i;
 			break;
-		} else if (i->_right_area.is_inside(x, y)) {
+		} else if (i->_area.right.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_RIGHT;
 			target = i;
 			break;
-		} else if (i->_top_area.is_inside(x, y)) {
+		} else if (i->_area.top.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TOP;
 			target = i;
 			break;
-		} else if (i->_bottom_area.is_inside(x, y)) {
+		} else if (i->_area.bottom.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_BOTTOM;
 			target = i;
 			break;
-		} else if (i->_left_area.is_inside(x, y)) {
+		} else if (i->_area.left.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_LEFT;
 			target = i;
 			break;
-		} else if (i->_popup_center_area.is_inside(x, y)) {
+		} else if (i->_area.popup_center.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_CENTER;
 			target = i;
 			break;
@@ -150,22 +150,22 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 		zone = new_zone;
 		switch(zone) {
 		case NOTEBOOK_AREA_TAB:
-			pn0->move_resize(target_notebook->_tab_area);
+			pn0->move_resize(target_notebook->_area.tab);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
-				pn0->move_resize(target_notebook->_popup_right_area);
+				pn0->move_resize(target_notebook->_area.popup_right);
 			break;
 		case NOTEBOOK_AREA_TOP:
-			pn0->move_resize(target_notebook->_popup_top_area);
+			pn0->move_resize(target_notebook->_area.popup_top);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
-			pn0->move_resize(target_notebook->_popup_bottom_area);
+			pn0->move_resize(target_notebook->_area.popup_bottom);
 			break;
 		case NOTEBOOK_AREA_LEFT:
-			pn0->move_resize(target_notebook->_popup_left_area);
+			pn0->move_resize(target_notebook->_area.popup_left);
 			break;
 		case NOTEBOOK_AREA_CENTER:
-				pn0->move_resize(target_notebook->_popup_center_area);
+				pn0->move_resize(target_notebook->_area.popup_center);
 			break;
 		}
 	}

@@ -86,30 +86,32 @@ class notebook_t : public page_component_t {
 
 	client_managed_t * _selected;
 
-
-	rect _client_position;
 	rect _client_area;
+	rect _client_position;
 
-	rect _button_close;
-	rect _button_vsplit;
-	rect _button_hsplit;
-	rect _button_select;
-	rect _button_exposay;
+	struct {
+		rect button_close;
+		rect button_vsplit;
+		rect button_hsplit;
+		rect button_select;
+		rect button_exposay;
 
-	rect _close_client_area;
-	rect _undck_client_area;
+		rect close_client;
+		rect undck_client;
 
-	rect _tab_area;
-	rect _top_area;
-	rect _bottom_area;
-	rect _left_area;
-	rect _right_area;
+		rect tab;
+		rect top;
+		rect bottom;
+		rect left;
+		rect right;
 
-	rect _popup_top_area;
-	rect _popup_bottom_area;
-	rect _popup_left_area;
-	rect _popup_right_area;
-	rect _popup_center_area;
+		rect popup_top;
+		rect popup_bottom;
+		rect popup_left;
+		rect popup_right;
+		rect popup_center;
+
+	} _area;
 
 	/* list of tabs and exposay buttons */
 	vector<tuple<rect, client_managed_t *, theme_tab_t *>> _client_buttons;
