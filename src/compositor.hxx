@@ -35,6 +35,8 @@
 
 namespace page {
 
+using namespace std;
+
 class compositor_t {
 
 private:
@@ -49,16 +51,16 @@ private:
 	int width;
 	int height;
 
-	std::shared_ptr<atom_handler_t> _A;
+	shared_ptr<atom_handler_t> _A;
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	std::vector<std::shared_ptr<renderable_t>> _graph_scene;
+	vector<shared_ptr<renderable_t>> _graph_scene;
 
 	static int const _FPS_WINDOWS = 80;
 	int _fps_top;
-	page::time64_t _fps_history[_FPS_WINDOWS];
+	time64_t _fps_history[_FPS_WINDOWS];
 	bool _show_fps;
 	bool _show_damaged;
 	bool _show_opac;
@@ -116,7 +118,10 @@ public:
 	void renderable_clear();
 
 
-	std::shared_ptr<pixmap_t> create_composite_pixmap(unsigned width, unsigned height);
+	shared_ptr<pixmap_t> create_composite_pixmap(unsigned width, unsigned height);
+
+	shared_ptr<pixmap_t> create_screenshot();
+
 
 	cairo_surface_t * get_front_surface() const;
 

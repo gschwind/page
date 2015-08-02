@@ -24,6 +24,8 @@
 
 namespace page {
 
+using namespace std;
+
 #define CHECK_CAIRO(x) do { \
 	x;\
 	/*print_cairo_status(cr, __FILE__, __LINE__);*/ \
@@ -169,8 +171,8 @@ void compositor_t::render() {
 	_fps_history[_fps_top] = cur;
 	_damaged_area[_fps_top] = _damaged.area();
 
-	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width,
-			height);
+
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width, height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
 
@@ -420,10 +422,25 @@ cairo_surface_t * compositor_t::get_front_surface() const {
 			_cnx->root_visual(), width, height);
 }
 
-std::shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width, unsigned height) {
+shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width, unsigned height) {
 	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
 	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
-	return std::make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+	return make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+}
+
+shared_ptr<pixmap_t> compositor_t::create_screenshot() {
+	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
+	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
+	auto screenshot = make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+
+	cairo_t * cr = cairo_create(screenshot->get_cairo_surface());
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width, height);
+	cairo_set_source_surface(cr, _back_buffer, 0.0, 0.0);
+	cairo_paint(cr);
+	cairo_surface_destroy(_back_buffer);
+	cairo_destroy(cr);
+	return screenshot;
 }
 
 }
