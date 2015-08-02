@@ -354,54 +354,40 @@ void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t
 
 	}
 
-	if (time < (_swap_start + animation_duration)) {
 
-		if (fading_notebook == nullptr) {
-			return;
-		}
-
-		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
-		ratio = ratio*1.05 - 0.025;
-		if (_selected != nullptr) {
-			if (_selected->get_last_pixmap() != nullptr and not _selected->is_iconic()) {
-				fading_notebook->update_client(_selected->get_last_pixmap(), _selected->get_base_position());
-			}
-		}
-
-		fading_notebook->update_client_area(to_root_position(_allocation));
-		fading_notebook->set_ratio(ratio);
-		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
-
-		if (_selected != nullptr) {
-			for(auto i: _selected->tree_t::children()) {
-				i->prepare_render(out, time);
-			}
-		}
-
-	} else {
+	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
-		if(fading_notebook != nullptr) {
-			fading_notebook.reset();
-			_ctx->add_global_damage(to_root_position(_allocation));
-			_update_layout();
-		}
+		fading_notebook.reset();
+		_ctx->add_global_damage(to_root_position(_allocation));
+		_update_layout();
+	}
 
-		if (_selected != nullptr) {
-			if (not _selected->is_iconic()) {
-				std::shared_ptr<renderable_t> x {
-						_selected->get_base_renderable() };
-
-				if (x != nullptr) {
-					out += x;
-				}
-
-				/** bypass prepare_render of notebook childs **/
-				for (auto & i : _selected->tree_t::children()) {
-					i->prepare_render(out, time);
-				}
+	if (_selected != nullptr) {
+		if (not _selected->is_iconic()) {
+			std::shared_ptr<renderable_t> x { _selected->get_base_renderable() };
+			if (x != nullptr) {
+				out += x;
 			}
 		}
 	}
+
+	if (fading_notebook != nullptr) {
+		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
+		ratio = ratio*1.05 - 0.025;
+		fading_notebook->set_ratio(ratio);
+		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
+
+	}
+
+	if (_selected != nullptr) {
+		if (not _selected->is_iconic()) {
+			/** bypass prepare_render of notebook childs **/
+			for (auto & i : _selected->tree_t::children()) {
+				i->prepare_render(out, time);
+			}
+		}
+	}
+
 }
 
 rect notebook_t::_compute_notebook_bookmark_position() const {
@@ -590,6 +576,9 @@ void notebook_t::_start_fading() {
 
 	_swap_start.update_to_current_time();
 
+	/**
+	 * Create image of notebook as it was just before fading start
+	 **/
 	auto pix = _ctx->cmp()->create_composite_pixmap(_allocation.w, _allocation.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
 	cairo_t * cr = cairo_create(surf);

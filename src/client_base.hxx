@@ -70,7 +70,9 @@ public:
 	client_base_t(page_context_t * ctx, std::shared_ptr<client_properties_t> props) :
 		_ctx{ctx},
 		_properties{props},
-		_children{}
+		_children{},
+		_is_hidden{false},
+		_parent{nullptr}
 	{
 
 	}
@@ -411,13 +413,6 @@ public:
 			return;
 		_children.remove(c);
 	}
-
-//	void get_all_children(std::vector<tree_t *> & out) const {
-//		for(auto x: _children) {
-//			out.push_back(x);
-//			x->get_all_children(out);
-//		}
-//	}
 
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());

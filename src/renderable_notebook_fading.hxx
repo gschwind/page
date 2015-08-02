@@ -18,23 +18,21 @@
 
 namespace page {
 
+using namespace std;
+
 class renderable_notebook_fading_t : public renderable_t {
+	double _ratio;
 
-	double ratio;
-
-	rect old_client_area;
-	std::shared_ptr<pixmap_t> old_surface;
-
-	rect client_area;
-	rect client_pos;
-	std::shared_ptr<pixmap_t> client_surf;
+	rect _old_client_area;
+	shared_ptr<pixmap_t> _old_surface;
 
 public:
 
-	renderable_notebook_fading_t(std::shared_ptr<pixmap_t> old_surface, rect old_client_area) :
-		old_client_area(old_client_area),
-		old_surface(old_surface),
-		ratio(0.5) {
+	renderable_notebook_fading_t(shared_ptr<pixmap_t> old_surface, rect old_client_area) :
+		_old_client_area{old_client_area},
+		_old_surface{old_surface},
+		_ratio{0.5}
+	{
 
 	}
 
@@ -50,33 +48,14 @@ public:
 	virtual void render(cairo_t * cr, region const & area) {
 
 		cairo_save(cr);
-		if (client_surf != nullptr) {
-			for (auto & c : area) {
-				cairo_reset_clip(cr);
-				cairo_clip(cr, client_pos&c);
-				cairo_set_source_surface(cr, client_surf->get_cairo_surface(),
-						client_pos.x, client_pos.y);
-				cairo_mask_surface(cr, client_surf->get_cairo_surface(),
-						client_pos.x, client_pos.y);
-			}
-		}
-		cairo_restore(cr);
-
-		cairo_save(cr);
-		/* client old surface if necessary */
-		rect tmp_pos;
-		tmp_pos.x = client_area.x;
-		tmp_pos.y = client_area.y;
-		tmp_pos.w = std::min(old_client_area.w, client_area.w);
-		tmp_pos.h = std::min(old_client_area.h, client_area.h);
 		cairo_pattern_t * p0 =
-				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - ratio);
+				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - _ratio);
 
 		for (auto & c : area) {
 			cairo_reset_clip(cr);
-			cairo_clip(cr, tmp_pos & c);
-			cairo_set_source_surface(cr, old_surface->get_cairo_surface(),
-					tmp_pos.x, tmp_pos.y);
+			cairo_clip(cr, _old_client_area & c);
+			cairo_set_source_surface(cr, _old_surface->get_cairo_surface(),
+					_old_client_area.x, _old_client_area.y);
 			cairo_mask(cr, p0);
 		}
 
@@ -90,7 +69,7 @@ public:
 	 * If unknown it's safe to leave this empty.
 	 **/
 	virtual region get_opaque_region() {
-		return region();
+		return region{};
 	}
 
 	/**
@@ -98,24 +77,15 @@ public:
 	 * If unknow the whole screen can be returned, but draw will be called each time.
 	 **/
 	virtual region get_visible_region() {
-		return region(client_area);
+		return region{_old_client_area};
 	}
 
 	virtual region get_damaged() {
-		return region(client_area);
+		return region{_old_client_area};
 	}
 
 	void set_ratio(double x) {
-		ratio = std::min(std::max(0.0, x), 1.0);
-	}
-
-	void update_client_area(rect const & pos) {
-		client_area = pos;
-	}
-
-	void update_client(std::shared_ptr<pixmap_t> const & surf, rect const & pos) {
-		client_pos = pos;
-		client_surf = surf;
+		_ratio = std::min(std::max(0.0, x), 1.0);
 	}
 
 };
