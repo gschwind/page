@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "renderable.hxx"
-#include "renderable_surface.hxx"
 #include "split.hxx"
 #include "theme.hxx"
 #include "page_context.hxx"
@@ -39,9 +38,9 @@ class viewport_t: public page_component_t {
 	bool _exposed;
 
 	/** rendering tabs is time consuming, thus use back buffer **/
-	cairo_surface_t * _back_surf;
+	shared_ptr<pixmap_t> _back_surf;
 
-	std::shared_ptr<renderable_surface_t> _renderable;
+	std::shared_ptr<renderable_pixmap_t> _renderable;
 
 	/** area without considering dock windows **/
 	rect _raw_aera;
@@ -102,6 +101,8 @@ public:
 	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
 		if(_is_hidden)
 			return;
+		if(_renderable == nullptr)
+			update_renderable();
 		_renderable->clear_damaged();
 		_renderable->add_damaged(_damaged);
 		_damaged.clear();
@@ -191,22 +192,17 @@ public:
 		}
 
 		if(_back_surf != nullptr) {
-			cairo_surface_destroy(_back_surf);
-			_back_surf = nullptr;
+			_back_surf.reset();
 		}
 
 	}
 
 	void update_renderable() {
-		destroy_renderable();
-		_is_durty = true;
-		_ctx->dpy()->move_resize(_win, _effective_area);
-		_pix = xcb_generate_id(_ctx->dpy()->xcb());
-		xcb_create_pixmap(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _pix, _win, _effective_area.w, _effective_area.h);
-		_back_surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _pix, _ctx->dpy()->root_visual(), _page_area.w, _page_area	.h);
-		_renderable = std::shared_ptr<renderable_surface_t>{new renderable_surface_t{_back_surf, _effective_area}};
+		if(_ctx->cmp() != nullptr) {
+			_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
+			_renderable = std::make_shared<renderable_pixmap_t>(_back_surf, _effective_area, _effective_area);
+		}
 	}
-
 
 	void create_window() {
 		_win = xcb_generate_id(_ctx->dpy()->xcb());
@@ -266,7 +262,7 @@ public:
 		if(not _is_durty)
 			return;
 
-		cairo_t * cr = cairo_create(_back_surf);
+		cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
 		cairo_identity_matrix(cr);
 
 		auto splits = filter_class<split_t>(tree_t::get_all_children());
@@ -279,7 +275,7 @@ public:
 			x->render_legacy(cr);
 		}
 
-		cairo_surface_flush(_back_surf);
+		cairo_surface_flush(_back_surf->get_cairo_surface());
 		warn(cairo_get_reference_count(cr) == 1);
 		cairo_destroy(cr);
 
@@ -304,13 +300,6 @@ public:
 
 	}
 
-	std::shared_ptr<renderable_surface_t> prepare_render() {
-		_renderable->clear_damaged();
-		_renderable->add_damaged(_damaged);
-		_damaged.clear();
-		return _renderable;
-	}
-
 	/* mark renderable_page for redraw */
 	void queue_redraw() {
 		_is_durty = true;
@@ -331,7 +320,7 @@ public:
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
 		cairo_t * cr = cairo_create(surf);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_surface(cr, _back_surf, 0.0, 0.0);
+		cairo_set_source_surface(cr, _back_surf->get_cairo_surface(), 0.0, 0.0);
 		cairo_rectangle(cr, 0.0, 0.0, _effective_area.w, _effective_area.h);
 		cairo_fill(cr);
 

@@ -22,7 +22,7 @@ class renderable_pixmap_t : public renderable_t {
 
 public:
 
-	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged) : damaged(damaged), surf(s), location(loc) {
+	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) : damaged(damaged), surf(s), location(loc) {
 		opaque_region = region(loc);
 		visible_region = region(loc);
 	}
@@ -79,6 +79,13 @@ public:
 		visible_region = r;
 	}
 
+	void clear_damaged() {
+		damaged.clear();
+	}
+
+	void add_damaged(region const & r) {
+		damaged += r;
+	}
 
 };
 

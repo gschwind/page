@@ -47,7 +47,6 @@
 #include "desktop.hxx"
 
 #include "page_event.hxx"
-#include "renderable_page.hxx"
 
 #include "mainloop.hxx"
 
