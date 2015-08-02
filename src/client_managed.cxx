@@ -818,8 +818,8 @@ void client_managed_t::iconify() {
 		_is_iconic = true;
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		_properties->set_wm_state(IconicState);
-		if(_is_hidden)
-			unmap();
+		//if(_is_hidden)
+		//	unmap();
 		reconfigure();
 		for (auto c : _children) {
 			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
@@ -1168,7 +1168,8 @@ void client_managed_t::unmap() {
 void client_managed_t::hide() {
 	_is_hidden = true;
 	net_wm_state_add(_NET_WM_STATE_HIDDEN);
-	unmap();
+	//unmap();
+	reconfigure();
 	for(auto i: tree_t::children()) {
 		i->hide();
 	}
@@ -1177,6 +1178,7 @@ void client_managed_t::hide() {
 void client_managed_t::show() {
 	_is_hidden = false;
 	net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+	reconfigure();
 	map();
 	for(auto i: tree_t::children()) {
 		i->show();
