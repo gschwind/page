@@ -31,6 +31,8 @@ public:
 	time64_t() : nsec(0) { }
 	time64_t(time64_t const & t) : nsec(t.nsec) { }
 
+	time64_t(double sec) : nsec{static_cast<int64_t>(sec * 1000000000.0)} { }
+
 	/* convert from int64_t */
 	time64_t(int64_t nsec) : nsec(nsec) { }
 
@@ -48,7 +50,7 @@ public:
 	/**
 	 * Caution: limited to 54 bits while nsec store 64 bits
 	 */
-	operator double() const {
+	explicit operator double() const {
 		return static_cast<double>(nsec);
 	}
 

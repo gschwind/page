@@ -2379,6 +2379,7 @@ void page_t::update_viewport_layout() {
 	}
 
 	for(auto d: _desktop_list) {
+		d->set_allocation(_root_position);
 		/** get old layout to recycle old viewport, and keep unchanged outputs **/
 		std::vector<viewport_t *> old_layout{d->get_viewport_map()};
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
@@ -3229,6 +3230,19 @@ void page_t::show() {
 void page_t::switch_to_desktop(unsigned int desktop) {
 	if (desktop != _current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
+
+		if(desktop<_current_desktop) {
+			if((_current_desktop-desktop) <= (_desktop_list.size()/2))
+				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
+			else
+				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
+
+		} else {
+			if((desktop-_current_desktop) <= (_desktop_list.size()/2))
+				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
+			else
+				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
+		}
 
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
 

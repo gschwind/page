@@ -14,6 +14,7 @@
 
 namespace page {
 
+time64_t const workspace_t::_switch_duration{0.5};
 
 
 }

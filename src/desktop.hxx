@@ -20,8 +20,16 @@
 #include "viewport.hxx"
 #include "client_managed.hxx"
 #include "client_not_managed.hxx"
+#include "renderable_pixmap.hxx"
 
 namespace page {
+
+using namespace std;
+
+enum workspace_switch_direction_e {
+	WORKSPACE_SWITCH_LEFT,
+	WORKSPACE_SWITCH_RIGHT
+};
 
 struct workspace_t: public page_component_t {
 
@@ -34,13 +42,13 @@ private:
 	unsigned const _id;
 
 	/* list of viewports in creation order, to make a sane reconfiguration */
-	std::vector<viewport_t *> _viewport_outputs;
+	vector<viewport_t *> _viewport_outputs;
 
 	/* dock + viewport belong this layer */
-	std::list<tree_t *> _viewport_layer;
+	list<tree_t *> _viewport_layer;
 
 	/* floating and fullscreen window belong this layer */
-	std::list<client_managed_t *> _floating_layer;
+	list<client_managed_t *> _floating_layer;
 
 	viewport_t * _primary_viewport;
 	notebook_t * _default_pop;
@@ -48,9 +56,15 @@ private:
 	workspace_t(workspace_t const & v);
 	workspace_t & operator= (workspace_t const &);
 
+	static time64_t const _switch_duration;
+
+	time64_t _switch_start_time;
+	shared_ptr<pixmap_t> _switch_screenshot;
+	workspace_switch_direction_e _switch_direction;
+
 public:
 
-	std::list<client_managed_t *> client_focus;
+	list<client_managed_t *> client_focus;
 
 	page_component_t * parent() const {
 		return _parent;
@@ -110,6 +124,24 @@ public:
 		for(auto i: _floating_layer) {
 			i->prepare_render(out, time);
 		}
+
+		if (_switch_screenshot != nullptr and time < (_switch_start_time + _switch_duration)) {
+			_ctx->add_global_damage(_allocation);
+			double ratio = (static_cast<double>(time - _switch_start_time) / static_cast<double const>(_switch_duration));
+			ratio = ratio*1.05 - 0.025;
+			ratio = min(1.0, max(0.0, ratio));
+			rect pos{_allocation};
+			if(_switch_direction == WORKSPACE_SWITCH_LEFT) {
+				pos.x += ratio*_switch_screenshot->witdh();
+			} else {
+				pos.x -= ratio*_switch_screenshot->witdh();
+			}
+			out += dynamic_pointer_cast<renderable_t>(make_shared<renderable_pixmap_t>(_switch_screenshot, pos, pos));
+		} else if (_switch_screenshot != nullptr) {
+			_ctx->add_global_damage(_allocation);
+			_switch_screenshot = nullptr;
+		}
+
 	}
 
 	void set_parent(tree_t * t) {
@@ -268,6 +300,16 @@ public:
 
 	int id() {
 		return _id;
+	}
+
+	void start_switch(workspace_switch_direction_e direction) {
+		if(_ctx->cmp() == nullptr)
+			return;
+
+		_switch_direction = direction;
+		_switch_start_time.update_to_current_time();
+		_switch_screenshot = _ctx->cmp()->create_screenshot();
+
 	}
 
 };
