@@ -200,6 +200,8 @@ public:
 			_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
 			_renderable = std::make_shared<renderable_pixmap_t>(_back_surf, _effective_area, _effective_area);
 		}
+
+		_ctx->dpy()->move_resize(_win, _effective_area);
 	}
 
 	void create_window() {

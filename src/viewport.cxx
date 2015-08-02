@@ -71,11 +71,5 @@ rect const & viewport_t::raw_area() const {
 	return _raw_aera;
 }
 
-//void viewport_t::get_all_children(std::vector<tree_t *> & out) const {
-//	if (_subtree != nullptr) {
-//		out.push_back(_subtree);
-//		_subtree->get_all_children(out);
-//	}
-//}
 
 }
