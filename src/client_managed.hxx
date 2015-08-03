@@ -217,6 +217,7 @@ private:
 public:
 
 	bool is_fullscreen();
+	bool skip_task_bar();
 	xcb_atom_t net_wm_type();
 	bool get_wm_normal_hints(XSizeHints * size_hints);
 	void net_wm_state_add(atom_e atom);

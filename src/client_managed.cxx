@@ -756,6 +756,14 @@ bool client_managed_t::is_fullscreen() {
 	return false;
 }
 
+bool client_managed_t::skip_task_bar() {
+	if (_properties->net_wm_state() != nullptr) {
+		return has_key(*(_properties->net_wm_state()),
+				static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)));
+	}
+	return false;
+}
+
 xcb_atom_t client_managed_t::net_wm_type() {
 	return _net_wm_type;
 }
