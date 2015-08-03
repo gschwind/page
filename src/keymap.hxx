@@ -15,6 +15,8 @@
 
 namespace page {
 
+using namespace std;
+
 class keymap_t {
 
 	int first_keycode;
@@ -27,8 +29,8 @@ class keymap_t {
 	 * This table store a mapping between keycode (a key on keyboard) to a KeySym. keycode can be bound to
 	 * Several KeySim because key press can be modified by key modifier like shift or alt key.
 	 **/
-	std::vector<xcb_keysym_t> _keydata;
-	std::vector<xcb_keycode_t> _moddata;
+	vector<xcb_keysym_t> _keydata;
+	vector<xcb_keycode_t> _moddata;
 
 	unsigned int _numlock_mod_mask;
 
@@ -55,7 +57,6 @@ public:
 
 		_moddata.clear();
 		_moddata.insert(_moddata.end(), &moddata[0], &moddata[xcb_get_modifier_mapping_keycodes_length(modmap)]);
-
 
 		_numlock_mod_mask = 0;
 

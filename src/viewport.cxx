@@ -23,7 +23,8 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 		_is_durty{true},
 		_win{XCB_NONE},
 		_pix{XCB_NONE},
-		_back_surf{nullptr}
+		_back_surf{nullptr},
+		_exposed{false}
 {
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();

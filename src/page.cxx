@@ -3075,7 +3075,7 @@ void page_t::register_cm() {
 	}
 }
 
-void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * _keymap) {
+inline void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * _keymap) {
 	int kc = 0;
 	if ((kc = _keymap->find_keysim(key.ks))) {
 		xcb_grab_key(xcb, true, w, key.mod, kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
@@ -3142,7 +3142,7 @@ void page_t::update_keymap() {
 	if(_keymap != nullptr) {
 		delete _keymap;
 	}
-	_keymap = new keymap_t(cnx->xcb());
+	_keymap = new keymap_t{cnx->xcb()};
 }
 
 void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
