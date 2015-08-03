@@ -72,7 +72,9 @@ public:
 
 };
 
-struct dropdown_menu_overlay_t : public overlay_t {
+struct dropdown_menu_overlay_t : public tree_t {
+	tree_t * _parent;
+
 	page_context_t * _ctx;
 	xcb_pixmap_t _pix;
 	cairo_surface_t * _surf;
@@ -193,6 +195,15 @@ struct dropdown_menu_overlay_t : public overlay_t {
 			return region{};
 		}
 	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
+	}
+
 };
 
 template<typename TDATA>
@@ -207,7 +218,7 @@ private:
 	page_context_t * _ctx;
 	std::vector<std::shared_ptr<item_t>> _items;
 	int _selected;
-	std::shared_ptr<dropdown_menu_overlay_t> pop;
+	dropdown_menu_overlay_t * pop;
 	rect _start_position;
 
 	bool active_grab;
@@ -237,7 +248,7 @@ public:
 		_position.w = width;
 		_position.h = 24*_items.size();
 
-		pop = std::make_shared<dropdown_menu_overlay_t>(ctx, _position);
+		pop = new dropdown_menu_overlay_t{ctx, _position};
 		update_backbuffer();
 		pop->map();
 
@@ -247,6 +258,7 @@ public:
 
 	~dropdown_menu_t() {
 		_ctx->overlay_remove(pop);
+		delete pop;
 	}
 
 	TDATA const & get_selected() {

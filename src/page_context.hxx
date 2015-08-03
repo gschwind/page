@@ -26,13 +26,6 @@ class client_base_t;
 class client_managed_t;
 class workspace_t;
 
-struct overlay_t : public renderable_t {
-	overlay_t() { }
-	virtual ~overlay_t() { }
-	virtual xcb_window_t id() const = 0;
-	virtual void expose() = 0;
-};
-
 
 struct grab_handler_t {
 	virtual ~grab_handler_t() { }
@@ -58,8 +51,8 @@ public:
 	virtual display_t * dpy() const = 0;
 	virtual compositor_t * cmp() const = 0;
 
-	virtual void overlay_add(std::shared_ptr<overlay_t> x) = 0;
-	virtual void overlay_remove(std::shared_ptr<overlay_t> x) = 0;
+	virtual void overlay_add(tree_t * x) = 0;
+	virtual void overlay_remove(tree_t * x) = 0;
 
 	virtual void add_global_damage(region const & r) = 0;
 

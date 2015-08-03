@@ -17,7 +17,7 @@
 
 namespace page {
 
-struct popup_notebook0_t : public overlay_t {
+struct popup_notebook0_t : public tree_t {
 	static int const border_width = 6;
 
 	page_context_t * _ctx;

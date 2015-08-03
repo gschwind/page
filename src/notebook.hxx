@@ -183,11 +183,15 @@ public:
 	virtual void get_visible_children(vector<tree_t *> & out);
 	virtual void hide();
 	virtual void show();
-	virtual void prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t const & time);
+	virtual void update_layout(time64_t const time);
 	virtual void activate(tree_t * t = nullptr);
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
+	virtual void render(cairo_t * cr, region const & area);
+	virtual region get_opaque_region();
+	virtual region get_visible_region();
+	virtual region get_damaged();
 
 	/**
 	 * page_component_t interface

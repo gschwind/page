@@ -8,11 +8,13 @@
 #ifndef RENDERABLE_PIXMAP_HXX_
 #define RENDERABLE_PIXMAP_HXX_
 
+#include "tree.hxx"
 #include "pixmap.hxx"
 
 namespace page {
 
-class renderable_pixmap_t : public renderable_t {
+class renderable_pixmap_t : public tree_t {
+	tree_t * _parent;
 
 	rect location;
 	std::shared_ptr<pixmap_t> surf;
@@ -22,7 +24,12 @@ class renderable_pixmap_t : public renderable_t {
 
 public:
 
-	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) : damaged(damaged), surf(s), location(loc) {
+	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) :
+		damaged{damaged},
+		surf{s},
+		location{loc},
+		_parent{nullptr}
+	{
 		opaque_region = region(loc);
 		visible_region = region(loc);
 	}
@@ -85,6 +92,14 @@ public:
 
 	void add_damaged(region const & r) {
 		damaged += r;
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
 	}
 
 };

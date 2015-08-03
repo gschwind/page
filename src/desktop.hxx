@@ -60,6 +60,8 @@ private:
 
 	time64_t _switch_start_time;
 	shared_ptr<pixmap_t> _switch_screenshot;
+	renderable_pixmap_t * _switch_renderable;
+
 	workspace_switch_direction_e _switch_direction;
 
 public:
@@ -78,7 +80,8 @@ public:
 		_is_hidden{false},
 		_workarea{},
 		_primary_viewport{nullptr},
-		_id{id}
+		_id{id},
+		_switch_renderable{nullptr}
 	{
 		client_focus.push_back(nullptr);
 	}
@@ -113,17 +116,9 @@ public:
 		return _get_node_name<'D'>();
 	}
 
-	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
+	virtual void update_layout(time64_t const time) {
 		if(_is_hidden)
 			return;
-
-		for(auto x: _viewport_layer) {
-			x->prepare_render(out, time);
-		}
-
-		for(auto i: _floating_layer) {
-			i->prepare_render(out, time);
-		}
 
 		if (_switch_screenshot != nullptr and time < (_switch_start_time + _switch_duration)) {
 			_ctx->add_global_damage(_allocation);
@@ -136,10 +131,14 @@ public:
 			} else {
 				pos.x -= ratio*_switch_screenshot->witdh();
 			}
-			out += dynamic_pointer_cast<renderable_t>(make_shared<renderable_pixmap_t>(_switch_screenshot, pos, pos));
+
+			delete _switch_renderable;
+			_switch_renderable = new renderable_pixmap_t{_switch_screenshot, pos, pos};
 		} else if (_switch_screenshot != nullptr) {
 			_ctx->add_global_damage(_allocation);
 			_switch_screenshot = nullptr;
+			delete _switch_renderable;
+			_switch_renderable = nullptr;
 		}
 
 	}
@@ -196,6 +195,8 @@ public:
 	void children(std::vector<tree_t *> & out) const {
 		out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 		out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
+		if(_switch_renderable != nullptr)
+			out.push_back(_switch_renderable);
 	}
 
 	void update_default_pop() {

@@ -64,6 +64,7 @@ page_t::page_t(int argc, char ** argv)
 {
 
 	_grab_handler = nullptr;
+	_background = nullptr;
 
 	identity_window = XCB_NONE;
 	cmgr = nullptr;
@@ -274,6 +275,10 @@ void page_t::run() {
 		/* The default theme engine */
 		std::cout << "using simple theme engine" << std::endl;
 		_theme = new simple2_theme_t{cnx, conf};
+	}
+
+	if(_theme->get_background() != nullptr) {
+		_background = new renderable_pixmap_t(_theme->get_background(), allocation(), region{});
 	}
 
 	cmgr = new composite_surface_manager_t{cnx};
@@ -1321,15 +1326,12 @@ void page_t::render() {
 		 * Try to render if any damage event is encountered. But limit general
 		 * rendering to 60 fps.
 		 **/
-		time64_t cur_tic;
-		cur_tic.update_to_current_time();
-		rnd->clear_renderable();
-		std::vector<std::shared_ptr<renderable_t>> ret;
-		prepare_render(ret, cur_tic);
-		rnd->push_back_renderable(ret);
-		rnd->render();
+
+		broadcast_update_layout(time64_t::now());
+
+		/* will collect all damage, if there is no damage, will no nothing. */
+		rnd->render(this);
 		xcb_flush(cnx->xcb());
-		cur_tic.update_to_current_time();
 	}
 }
 
@@ -2251,42 +2253,26 @@ void page_t::update_windows_stack() {
 				} else if(nc->net_wm_window_type() != nullptr) {
 					tree[k++] = tree[i];
 				}
+			} else if(tree[i]->get_xid() != XCB_WINDOW_NONE) {
+				tree[k++] = tree[i];
 			}
 		}
 		tree.resize(k);
 	}
 
-	std::vector<client_base_t *> clients = filter_class<client_base_t>(tree);
-	std::reverse(clients.begin(), clients.end());
+	std::reverse(tree.begin(), tree.end());
 	std::vector<xcb_window_t> stack;
 
-
-	for(auto x: _overlays) {
-		if(x->id() != XCB_WINDOW_NONE) {
-			stack.push_back(x->id());
-		}
-	}
-
-	/** place overlay on top **/
 	if (rnd != nullptr)
 		stack.push_back(rnd->get_composite_overlay());
 
-	for (auto i : clients) {
-		stack.push_back(i->base());
+	for (auto i : tree) {
+		stack.push_back(i->get_xid());
 	}
-
-	/** place page window at bottom **/
-	//stack.push_back(rpage->wid());
-	auto viewports = get_viewports();
-	for(auto x: viewports) {
-		if(x->is_visible()) {
-			stack.push_back(x->wid());
-		}
-	}
-
-	xcb_window_t win = XCB_WINDOW_NONE;
 
 	unsigned k = 0;
+
+	/* place the first one on top */
 	if (stack.size() > k) {
 		uint32_t value[1];
 		uint32_t mask{0};
@@ -2297,6 +2283,7 @@ void page_t::update_windows_stack() {
 		++k;
 	}
 
+	/* place following windows bellow */
 	while (stack.size() > k) {
 		uint32_t value[2];
 		uint32_t mask { 0 };
@@ -3145,13 +3132,6 @@ void page_t::update_keymap() {
 	_keymap = new keymap_t{cnx->xcb()};
 }
 
-void page_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
-	out.push_back(_theme->get_background(0,0));
-	for(auto i: tree_t::children()) {
-		i->prepare_render(out, time);
-	}
-}
-
 page_component_t * page_t::parent() const {
 	return nullptr;
 }
@@ -3188,6 +3168,11 @@ void page_t::children(std::vector<tree_t *> & out) const {
 	for(auto x: above) {
 		out.push_back(x);
 	}
+
+	for(auto x: _overlays) {
+		out.push_back(x);
+	}
+
 }
 
 /** debug function that try to print the state of page in stdout **/
@@ -3614,14 +3599,7 @@ void page_t::stop_compositor() {
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
-
 	broadcast_expose(e);
-
-	for(auto x: _overlays) {
-		if(x->id() == e->window) {
-			x->expose();
-		}
-	}
 }
 
 void page_t::process_error(xcb_generic_event_t const * _e) {
@@ -3781,11 +3759,11 @@ void page_t::grab_stop() {
 	_grab_handler = nullptr;
 }
 
-void page_t::overlay_add(std::shared_ptr<overlay_t> x) {
+void page_t::overlay_add(tree_t * x) {
 	_overlays.push_back(x);
 }
 
-void page_t::overlay_remove(std::shared_ptr<overlay_t> x) {
+void page_t::overlay_remove(tree_t * x) {
 	_overlays.remove(x);
 }
 

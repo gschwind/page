@@ -37,6 +37,9 @@ private:
 
 	mutable rect _base_position;
 
+	renderable_unmanaged_gaussian_shadow_t<4> * _shadow;
+	renderable_pixmap_t * _base_renderable;
+
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);
 	client_not_managed_t & operator=(client_not_managed_t const &);
@@ -98,7 +101,7 @@ public:
 		return oss.str();
 	}
 
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time) {
+	virtual void udpate_layout(time64_t const time) {
 
 		rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);
@@ -108,20 +111,16 @@ public:
 			if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
 					or t == A(_NET_WM_WINDOW_TYPE_MENU)
 					or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-				auto x = new renderable_unmanaged_gaussian_shadow_t<4> { pos,
+
+				delete _shadow;
+				_shadow = new renderable_unmanaged_gaussian_shadow_t<4> { pos,
 						color_t { 0.0, 0.0, 0.0, 1.0 } };
-				out += std::shared_ptr<renderable_t> { x };
 			}
 		}
 
 		if (_ctx->csm()->get_last_pixmap(_properties->id()) != nullptr) {
-			out += get_base_renderable();
+			update_base_renderable();
 		}
-
-		for(auto i: _children) {
-			i->prepare_render(out, time);
-		}
-
 	}
 
 	virtual bool need_render(time64_t time) {
@@ -137,7 +136,7 @@ public:
 		return rec;
 	}
 
-	std::shared_ptr<renderable_t> get_base_renderable() {
+	void update_base_renderable() {
 		_base_position = _properties->position();
 
 		std::shared_ptr<pixmap_t> surf = _ctx->csm()->get_last_pixmap(_properties->id());
@@ -177,11 +176,8 @@ public:
 					_base_position, dmg);
 			x->set_opaque_region(opa);
 			x->set_visible_region(vis);
-			return std::shared_ptr<renderable_t>{x};
-
-		} else {
-			/* return null */
-			return std::shared_ptr<renderable_t>{};
+			delete _base_renderable;
+			_base_renderable = x;
 		}
 	}
 
@@ -208,6 +204,14 @@ public:
 		for (auto i : tree_t::children()) {
 			i->get_visible_children(out);
 		}
+	}
+
+	void children(std::vector<tree_t *> & out) const {
+		if(_shadow != nullptr)
+			out.push_back(_shadow);
+		if(_base_renderable != nullptr)
+			out.push_back(_base_renderable);
+		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
 };

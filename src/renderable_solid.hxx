@@ -8,13 +8,15 @@
 #ifndef RENDERABLE_SOLID_HXX_
 #define RENDERABLE_SOLID_HXX_
 
+#include "tree.hxx"
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "color.hxx"
 
 namespace page {
 
-class renderable_solid_t : public renderable_t {
+class renderable_solid_t : public tree_t {
+	tree_t * _parent;
 
 	rect location;
 	color_t color;
@@ -79,6 +81,15 @@ public:
 	void set_visible_region(region const & r) {
 		visible_region = r;
 	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
+	}
+
 
 
 };

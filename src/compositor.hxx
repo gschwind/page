@@ -30,7 +30,7 @@
 
 #include "box.hxx"
 #include "region.hxx"
-#include "renderable.hxx"
+#include "tree.hxx"
 #include "composite_surface_manager.hxx"
 
 namespace page {
@@ -55,8 +55,6 @@ private:
 
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
-
-	vector<shared_ptr<renderable_t>> _graph_scene;
 
 	static int const _FPS_WINDOWS = 80;
 	int _fps_top;
@@ -106,17 +104,17 @@ public:
 	compositor_t(display_t * cnx, composite_surface_manager_t * cmgr);
 
 	void update_layout();
-	void render();
+
+
+	/**
+	 * render a tree on screen
+	 **/
+	void render(tree_t * t);
 
 	void destroy_composite_surface(xcb_window_t w);
 	void set_fade_in_time(int nsec);
 	void set_fade_out_time(int nsec);
 	xcb_window_t get_composite_overlay();
-
-	void renderable_add(renderable_t * r);
-	void renderable_remove(renderable_t * r);
-	void renderable_clear();
-
 
 	shared_ptr<pixmap_t> create_composite_pixmap(unsigned width, unsigned height);
 
@@ -165,18 +163,6 @@ public:
 
 	void add_damaged(region const & r) {
 		_damaged += r;
-	}
-
-	void clear_renderable() {
-		_graph_scene.clear();
-	}
-
-	void push_back_renderable(std::shared_ptr<renderable_t> r) {
-		_graph_scene.push_back(r);
-	}
-
-	void push_back_renderable(std::vector<std::shared_ptr<renderable_t>> const & r) {
-		_graph_scene.insert(_graph_scene.end(), r.begin(), r.end());
 	}
 
 	void pango_printf(cairo_t * cr, double x, double y, char const * fmt, ...);

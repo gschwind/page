@@ -15,8 +15,10 @@
 
 namespace page {
 
-struct popup_split_t : public overlay_t {
+struct popup_split_t : public tree_t {
 	static int const border_width = 6;
+
+	tree_t * _parent;
 
 	page_context_t * _ctx;
 	double _current_split;
@@ -297,6 +299,14 @@ public:
 
 	xcb_window_t id() const {
 		return _wid;
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
 	}
 
 };

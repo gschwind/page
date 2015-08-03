@@ -8,12 +8,14 @@
 #ifndef SRC_RENDERABLE_THUMBNAIL_HXX_
 #define SRC_RENDERABLE_THUMBNAIL_HXX_
 
-
+#include "tree.hxx"
 #include "pixmap.hxx"
 
 namespace page {
 
-class renderable_thumbnail_t : public renderable_t {
+class renderable_thumbnail_t : public tree_t {
+	tree_t * _parent;
+
 	page_context_t * _ctx;
 	rect _position;
 	int _title_width;
@@ -178,6 +180,15 @@ public:
 		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c->title());
 		cairo_destroy(cr);
 	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
+	}
+
 
 
 };

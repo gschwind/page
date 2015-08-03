@@ -994,8 +994,7 @@ display_t * client_managed_t::cnx() {
 	return _properties->cnx();
 }
 
-void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time) {
-
+void client_managed_t::update_layout(time64_t const time) {
 	if(_is_hidden) {
 		return;
 	}
@@ -1005,28 +1004,21 @@ void client_managed_t::prepare_render(std::vector<std::shared_ptr<renderable_t>>
 		rect loc{base_position()};
 
 		if (prefer_window_border() and not is(MANAGED_DOCK)) {
+			delete _shadow;
 			if(is_focused()) {
-				auto x = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
-				out += std::shared_ptr<renderable_t> { x };
+				_shadow = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
 			} else {
-				auto x = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
-				out += std::shared_ptr<renderable_t> { x };
+				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
 			}
 		}
 
-		std::shared_ptr<renderable_t> x { get_base_renderable() };
-		if (x != nullptr) {
-			out += x;
-		}
-	}
+		update_base_renderable();
 
-	for(auto i: _children) {
-		i->prepare_render(out, time);
 	}
 
 }
 
-std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
+void client_managed_t::update_base_renderable() {
 	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
 
 		region vis;
@@ -1070,12 +1062,10 @@ std::shared_ptr<renderable_t> client_managed_t::get_base_renderable() {
 				_base_position, dmg);
 		x->set_opaque_region(opa);
 		x->set_visible_region(vis);
-		return std::shared_ptr<renderable_t>{x};
-
-	} else {
-		/* return null */
-		return std::shared_ptr<renderable_t>{};
+		delete _base_renderable;
+		_base_renderable = x;
 	}
+
 }
 
 rect const & client_managed_t::base_position() const {
@@ -1454,6 +1444,14 @@ bool client_managed_t::prefer_window_border() const {
 	}
 
 	return true;
+}
+
+void client_managed_t::children(std::vector<tree_t *> & out) const {
+	if(_shadow != nullptr)
+		out.push_back(_shadow);
+	if(_base_renderable != nullptr)
+		out.push_back(_base_renderable);
+	out.insert(out.end(), _children.begin(), _children.end());
 }
 
 }

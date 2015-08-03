@@ -18,6 +18,8 @@
 
 namespace page {
 
+using namespace std;
+
 /**
  * tree_t is the base of the hierarchy of desktop, viewports,
  * client_managed and unmanaged, etc...
@@ -34,6 +36,14 @@ class tree_t {
 				return true;
 		}
 		return false;
+	}
+
+	template<typename ... T>
+	bool _broadcast_root_first(void (tree_t::* f)(T ... args), T ... args) {
+		(this->*f)(args...);
+		for(auto x: tree_t::get_all_children_root_first()) {
+			(x->*f)(args...);
+		}
 	}
 
 	template<typename ... T>
@@ -70,12 +80,16 @@ public:
 	/**
 	 * Return the name of this tree node
 	 **/
-	virtual auto get_node_name() const -> std::string = 0;
+	virtual auto get_node_name() const -> string {
+		return string{"ANONYMOUS NODE"};
+	}
 
 	/**
 	 * Remove i from direct child of this node (not recusively)
 	 **/
-	virtual auto remove(tree_t * t) -> void = 0;
+	virtual auto remove(tree_t * t) -> void {
+		/* because by default we have no child, by default remove do nothing */
+	}
 
 	/**
 	 * Change parent of this node to parent.
@@ -85,34 +99,76 @@ public:
 	/**
 	 * Return direct children of this node (net recursive)
 	 **/
-	virtual auto children(std::vector<tree_t *> & out) const -> void = 0;
+	virtual auto children(std::vector<tree_t *> & out) const -> void {
+		/* by default we have no child */
+	}
 
 
 	/**
 	 * get all visible children
 	 **/
-	virtual auto get_visible_children(std::vector<tree_t *> & out) -> void = 0;
+	virtual auto get_visible_children(vector<tree_t *> & out) -> void {
+		/* by default we have no child, thus we do nothing here */
+	}
 
 	/**
 	 * Hide this node recursively
 	 **/
-	virtual auto hide() -> void = 0;
+	virtual auto hide() -> void { }
 
 	/**
 	 * Show this node recursively
 	 **/
-	virtual auto show() -> void = 0;
+	virtual auto show() -> void { }
 
 	/**
 	 * return the list of renderable object to draw this tree ordered and recursively
 	 **/
-	virtual auto prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) -> void = 0;
+	virtual auto update_layout(time64_t const time) -> void {
+		/* by default do not update anything */
+	}
+
+	/**
+	 * draw the area of a renderable to the destination surface
+	 * @param cr the destination surface context
+	 * @param area the area to redraw
+	 **/
+	virtual void render(cairo_t * cr, region const & area) {
+		/* by default tree_t do not render any thing */
+	}
+
+	/**
+	 * Derived class must return opaque region for this object,
+	 * If unknown it's safe to leave this empty.
+	 **/
+	virtual region get_opaque_region() {
+		/* by default tree_t is invisible */
+		return region{};
+	}
+
+	/**
+	 * Derived class must return visible region,
+	 * If unknown the whole screen can be returned, but draw will be called each time.
+	 **/
+	virtual region get_visible_region() {
+		/* by default tree_t is invisible */
+		return region{};
+	}
+
+	/**
+	 * return currently damaged area (absolute)
+	 **/
+	virtual region get_damaged() {
+		/* by default tree_t has no damage */
+		return region{};
+	}
 
 	/**
 	 * make the component active.
 	 **/
-	virtual void activate(tree_t * t = nullptr) = 0;
+	virtual void activate(tree_t * t = nullptr) {
 
+	}
 
 	virtual bool button_press(xcb_button_press_event_t const * ev) { return false; }
 	virtual bool button_release(xcb_button_release_event_t const * ev) { return false; }
@@ -122,6 +178,11 @@ public:
 	virtual void expose(xcb_expose_event_t const * ev) { }
 
 	virtual void trigger_redraw() { }
+
+	/**
+	 * return the root top level xid or XCB_WINDOW_NONE if not applicable.
+	 **/
+	virtual xcb_window_t get_xid() const { return XCB_WINDOW_NONE; }
 
 	virtual xcb_window_t get_window() const {
 		if(parent() != nullptr)
@@ -147,11 +208,11 @@ public:
 	 * Useful template to generate node name.
 	 **/
 	template<char const c>
-	std::string _get_node_name() const {
+	string _get_node_name() const {
 		char buffer[64];
 		snprintf(buffer, 64, "%c #%016lx #%016lx", c, (uintptr_t) parent(),
 				(uintptr_t) this);
-		return std::string(buffer);
+		return string(buffer);
 	}
 
 	/**
@@ -160,7 +221,7 @@ public:
 	void print_tree(int level = 0) const {
 		char space[] = "                               ";
 		space[level] = 0;
-		std::cout << space << get_node_name() << std::endl;
+		cout << space << get_node_name() << endl;
 		for(auto i: children()) {
 			i->print_tree(level+1);
 		}
@@ -170,8 +231,8 @@ public:
 	/**
 	 * Short cut to children(std::vector<tree_t *> & out)
 	 **/
-	std::vector<tree_t *> children() const {
-		std::vector<tree_t *> ret;
+	vector<tree_t *> children() const {
+		vector<tree_t *> ret;
 		children(ret);
 		return ret;
 	}
@@ -179,14 +240,14 @@ public:
 	/**
 	 * get all children recursively
 	 **/
-	void get_all_children_deep_first(std::vector<tree_t *> & out) const {
+	void get_all_children_deep_first(vector<tree_t *> & out) const {
 		for(auto x: children()) {
 			x->get_all_children_deep_first(out);
 			out.push_back(x);
 		}
 	}
 
-	void get_all_children_root_first(std::vector<tree_t *> & out) const {
+	void get_all_children_root_first(vector<tree_t *> & out) const {
 		for(auto x: children()) {
 			out.push_back(x);
 			x->get_all_children_root_first(out);
@@ -196,20 +257,20 @@ public:
 	/**
 	 * Short cut to get_all_children(std::vector<tree_t *> & out)
 	 **/
-	std::vector<tree_t *> get_all_children() const {
-		std::vector<tree_t *> ret;
+	vector<tree_t *> get_all_children() const {
+		vector<tree_t *> ret;
 		get_all_children_root_first(ret);
 		return ret;
 	}
 
-	std::vector<tree_t *> get_all_children_deep_first() const {
-		std::vector<tree_t *> ret;
+	vector<tree_t *> get_all_children_deep_first() const {
+		vector<tree_t *> ret;
 		get_all_children_deep_first(ret);
 		return ret;
 	}
 
-	std::vector<tree_t *> get_all_children_root_first() const {
-		std::vector<tree_t *> ret;
+	vector<tree_t *> get_all_children_root_first() const {
+		vector<tree_t *> ret;
 		get_all_children_root_first(ret);
 		return ret;
 	}
@@ -218,8 +279,8 @@ public:
 	/**
 	 * Short cut to get_visible_children(std::vector<tree_t *> & out)
 	 **/
-	std::vector<tree_t *> get_visible_children() {
-		std::vector<tree_t *> ret;
+	vector<tree_t *> get_visible_children() {
+		vector<tree_t *> ret;
 		get_visible_children(ret);
 		return ret;
 	}
@@ -250,6 +311,10 @@ public:
 
 	void broadcast_expose(xcb_expose_event_t const * ev) {
 		_broadcast_deep_first(&tree_t::expose, ev);
+	}
+
+	void broadcast_update_layout(time64_t const time) {
+		_broadcast_root_first(&tree_t::update_layout, time);
 	}
 
 	rect to_root_position(rect const & r) const {

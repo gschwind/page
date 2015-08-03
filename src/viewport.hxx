@@ -40,7 +40,7 @@ class viewport_t: public page_component_t {
 	/** rendering tabs is time consuming, thus use back buffer **/
 	shared_ptr<pixmap_t> _back_surf;
 
-	std::shared_ptr<renderable_pixmap_t> _renderable;
+	renderable_pixmap_t * _renderable;
 
 	/** area without considering dock windows **/
 	rect _raw_aera;
@@ -98,7 +98,7 @@ public:
 		return _get_node_name<'V'>();
 	}
 
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time) {
+	virtual void update_layout(time64_t const time) {
 		if(_is_hidden)
 			return;
 		if(_renderable == nullptr)
@@ -106,10 +106,6 @@ public:
 		_renderable->clear_damaged();
 		_renderable->add_damaged(_damaged);
 		_damaged.clear();
-		out.push_back(_renderable);
-		if(_subtree != nullptr) {
-			_subtree->prepare_render(out, time);
-		}
 	}
 
 	void set_parent(tree_t * t) {
@@ -139,6 +135,7 @@ public:
 	rect const & raw_area() const;
 
 	void children(std::vector<tree_t *> & out) const {
+		out.push_back(_renderable);
 		if(_subtree != nullptr) {
 			out.push_back(_subtree);
 		}
@@ -174,6 +171,7 @@ public:
 	void get_visible_children(std::vector<tree_t *> & out) {
 		if (not _is_hidden) {
 			out.push_back(this);
+			out.push_back(_renderable);
 			for (auto i : tree_t::children()) {
 				i->get_visible_children(out);
 			}
@@ -182,6 +180,7 @@ public:
 
 	void destroy_renderable() {
 
+		delete _renderable;
 		_renderable = nullptr;
 
 		if(_pix != XCB_NONE) {
@@ -198,7 +197,8 @@ public:
 	void update_renderable() {
 		if(_ctx->cmp() != nullptr) {
 			_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
-			_renderable = std::make_shared<renderable_pixmap_t>(_back_surf, _effective_area, _effective_area);
+			_renderable = new renderable_pixmap_t{_back_surf, _effective_area, _effective_area};
+			_renderable->set_parent(this);
 		}
 
 		_ctx->dpy()->move_resize(_win, _effective_area);
@@ -305,11 +305,15 @@ public:
 		_is_durty = true;
 	}
 
-	region const & get_damaged() {
+	region const & xxx_get_damaged() {
 		return _damaged;
 	}
 
 	xcb_window_t wid() {
+		return _win;
+	}
+
+	xcb_window_t get_xid() {
 		return _win;
 	}
 

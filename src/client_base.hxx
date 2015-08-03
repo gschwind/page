@@ -531,6 +531,10 @@ public:
 		return _properties->id();
 	}
 
+	xcb_window_t get_xid() {
+		return base();
+	}
+
 };
 
 }

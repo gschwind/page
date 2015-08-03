@@ -8,11 +8,12 @@
 #ifndef RENDERABLE_UNMANAGED_OUTER_GRADIEN_HXX_
 #define RENDERABLE_UNMANAGED_OUTER_GRADIEN_HXX_
 
-#include "renderable.hxx"
+#include "tree.hxx"
 
 namespace page {
 
-class renderable_unmanaged_outer_gradien_t : public renderable_t {
+class renderable_unmanaged_outer_gradien_t : public tree_t {
+	tree_t * _parent;
 
 	rect _r;
 	int _shadow_width;
@@ -154,6 +155,14 @@ public:
 
 	virtual region get_damaged() {
 		return region{};
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() {
+		return _parent;
 	}
 
 

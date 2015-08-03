@@ -23,6 +23,8 @@
 
 #include "floating_event.hxx"
 #include "composite_surface.hxx"
+#include "renderable_floating_outer_gradien.hxx"
+#include "renderable_pixmap.hxx"
 
 namespace page {
 
@@ -71,6 +73,9 @@ private:
 
 	// icon cache
 	std::shared_ptr<icon16> _icon;
+
+	renderable_floating_outer_gradien_t * _shadow;
+	renderable_pixmap_t * _base_renderable;
 
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &);
@@ -238,8 +243,8 @@ public:
 	bool has_window(xcb_window_t w) const;
 	virtual std::string get_node_name() const;
 	display_t * cnx();
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, page::time64_t const & time);
-	std::shared_ptr<renderable_t> get_base_renderable();
+	virtual void udpate_layout(time64_t const time);
+	void update_base_renderable();
 	virtual rect const & base_position() const;
 	virtual rect const & orig_position() const;
 	std::vector<floating_event_t> * compute_floating_areas(
@@ -277,7 +282,7 @@ public:
 	}
 
 	bool prefer_window_border() const;
-
+	virtual void children(std::vector<tree_t *> & out) const;
 
 };
 

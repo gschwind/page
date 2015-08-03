@@ -68,7 +68,7 @@ public:
 	void render_legacy(cairo_t * cr) const;
 	void activate(tree_t * t = nullptr);
 	void remove(tree_t * t);
-	virtual void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time);
+	virtual void update_layout(time64_t const time);
 	rect compute_split_bar_location() const;
 	void set_parent(tree_t * t);
 	void set_parent(page_component_t * t);

@@ -41,7 +41,9 @@ public:
 
 };
 
-class popup_alt_tab_t : public overlay_t {
+class popup_alt_tab_t : public tree_t {
+	tree_t * _parent;
+
 	page_context_t * _ctx;
 
 	xcb_window_t _wid;
@@ -257,6 +259,14 @@ public:
 
 		_client_list.remove_if([c](std::shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id == c; });
 		destroy_func.erase(c);
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
 	}
 
 };

@@ -337,23 +337,11 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 }
 
-void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t const & time) {
+void notebook_t::update_layout(time64_t const time) {
 
 	if(_is_hidden) {
 		return;
 	}
-
-	if(_exposay) {
-
-		if(_exposay_mouse_over != nullptr) {
-			out += dynamic_pointer_cast<renderable_t>(_exposay_mouse_over);
-		}
-
-		for(auto & i: _exposay_thumbnail)
-			out += dynamic_pointer_cast<renderable_t>(i);
-
-	}
-
 
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
@@ -362,30 +350,10 @@ void notebook_t::prepare_render(vector<shared_ptr<renderable_t>> & out, time64_t
 		_update_layout();
 	}
 
-	if (_selected != nullptr) {
-		if (not _selected->is_iconic()) {
-			std::shared_ptr<renderable_t> x { _selected->get_base_renderable() };
-			if (x != nullptr) {
-				out += x;
-			}
-		}
-	}
-
 	if (fading_notebook != nullptr) {
 		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
 		ratio = ratio*1.05 - 0.025;
 		fading_notebook->set_ratio(ratio);
-		out += dynamic_pointer_cast<renderable_t>(fading_notebook);
-
-	}
-
-	if (_selected != nullptr) {
-		if (not _selected->is_iconic()) {
-			/** bypass prepare_render of notebook childs **/
-			for (auto & i : _selected->tree_t::children()) {
-				i->prepare_render(out, time);
-			}
-		}
 	}
 
 }
@@ -990,6 +958,11 @@ page_component_t * notebook_t::parent() const {
 
 void notebook_t::children(vector<tree_t *> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
+
+	if (fading_notebook != nullptr) {
+		out.push_back(fading_notebook.get());
+	}
+
 }
 
 void notebook_t::hide() {
@@ -1021,6 +994,63 @@ bool notebook_t::_has_client(client_managed_t * c) {
 
 void notebook_t::_set_keep_selected(bool x) {
 	_keep_selected = x;
+}
+
+
+void notebook_t::render(cairo_t * cr, region const & area) {
+	if(_is_hidden) {
+		return;
+	}
+
+	if(_exposay) {
+		if(_exposay_mouse_over != nullptr)
+			_exposay_mouse_over->render(cr, area);
+		for(auto & i: _exposay_thumbnail)
+			i->render(cr, area);
+	}
+
+}
+
+region notebook_t::get_opaque_region() {
+	region ret;
+	if(_is_hidden) {
+		return ret;
+	}
+	if(_exposay) {
+		if(_exposay_mouse_over != nullptr)
+			ret += _exposay_mouse_over->get_opaque_region();
+		for(auto & i: _exposay_thumbnail)
+			ret += i->get_opaque_region();
+	}
+	return ret;
+}
+
+region notebook_t::get_visible_region() {
+	region ret;
+	if(_is_hidden) {
+		return ret;
+	}
+	if(_exposay) {
+		if(_exposay_mouse_over != nullptr)
+			ret += _exposay_mouse_over->get_visible_region();
+		for(auto & i: _exposay_thumbnail)
+			ret += i->get_visible_region();
+	}
+	return ret;
+}
+
+region notebook_t::get_damaged() {
+	region ret;
+	if(_is_hidden) {
+		return ret;
+	}
+	if(_exposay) {
+		if(_exposay_mouse_over != nullptr)
+			ret += _exposay_mouse_over->get_damaged();
+		for(auto & i: _exposay_thumbnail)
+			ret += i->get_damaged();
+	}
+	return ret;
 }
 
 }

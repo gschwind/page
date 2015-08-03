@@ -12,13 +12,16 @@
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
 
+#include "tree.hxx"
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "region.hxx"
 
+
 namespace page {
 
-class renderable_floating_outer_gradien_t : public renderable_t {
+class renderable_floating_outer_gradien_t : public tree_t {
+	tree_t * _parent;
 
 	rect _r;
 	double _shadow_width;
@@ -227,6 +230,14 @@ public:
 
 	virtual region get_damaged() {
 		return region{};
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
 	}
 
 

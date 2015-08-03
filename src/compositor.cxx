@@ -120,10 +120,9 @@ compositor_t::~compositor_t() {
 	release_composite_overlay();
 };
 
-void compositor_t::render() {
-	page::time64_t cur;
-	cur.update_to_current_time();
+void compositor_t::render(tree_t * t) {
 
+	std::vector<tree_t *> _graph_scene = t->get_all_children();
 
 	/**
 	 * remove masked damaged.
@@ -158,6 +157,7 @@ void compositor_t::render() {
 
 	_damaged &= _desktop_region;
 
+	/** no damage at all => no repair to do, return **/
 	if(_damaged.empty())
 		return;
 
@@ -167,6 +167,7 @@ void compositor_t::render() {
 
 	_need_render = false;
 
+	time64_t cur = time64_t::now();
 	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
 	_fps_history[_fps_top] = cur;
 	_damaged_area[_fps_top] = _damaged.area();
@@ -370,13 +371,8 @@ void compositor_t::update_layout() {
 
 }
 
-
 xcb_window_t compositor_t::get_composite_overlay() {
 	return composite_overlay;
-}
-
-void compositor_t::renderable_clear() {
-	_graph_scene.clear();
 }
 
 void compositor_t::pango_printf(cairo_t * cr, double x, double y,

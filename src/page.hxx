@@ -36,7 +36,6 @@
 #include "popup_alt_tab.hxx"
 #include "popup_notebook0.hxx"
 #include "popup_split.hxx"
-#include "popup_frame_move.hxx"
 
 #include "dropdown_menu.hxx"
 
@@ -51,6 +50,8 @@
 #include "mainloop.hxx"
 
 namespace page {
+
+using namespace std;
 
 struct fullscreen_data_t {
 	workspace_t * desktop;
@@ -127,6 +128,8 @@ public:
 	std::list<client_not_managed_t *> notifications;
 	std::list<client_not_managed_t *> above;
 
+	renderable_pixmap_t * _background;
+
 	bool _need_render;
 	bool _need_restack;
 	bool _need_update_client_list;
@@ -179,9 +182,9 @@ private:
 	xcb_timestamp_t _last_focus_time;
 	xcb_timestamp_t _last_button_press;
 
-	std::list<client_managed_t *> _global_client_focus_history;
+	list<client_managed_t *> _global_client_focus_history;
 
-	std::list<std::shared_ptr<overlay_t>> _overlays;
+	list<tree_t *> _overlays;
 
 	rect _root_position;
 	theme_t * _theme;
@@ -378,10 +381,9 @@ public:
 
 	client_managed_t * find_hidden_client_with(xcb_window_t w);
 
-	void prepare_render(std::vector<std::shared_ptr<renderable_t>> & out, time64_t const & time);
+	void prepare_render(vector<tree_t *> & out, time64_t const & time);
 
-	std::vector<page_event_t> compute_page_areas(
-			viewport_t * v) const;
+	vector<page_event_t> compute_page_areas(viewport_t * v) const;
 
 	page_component_t * parent() const;
 	void set_parent(tree_t * parent);
@@ -447,15 +449,15 @@ public:
 
 	virtual void grab_start(grab_handler_t * handler);
 	virtual void grab_stop();
-	virtual void overlay_add(std::shared_ptr<overlay_t> x);
-	virtual void overlay_remove(std::shared_ptr<overlay_t> x);
+	virtual void overlay_add(tree_t * x);
+	virtual void overlay_remove(tree_t * x);
 
 	virtual void add_global_damage(region const & r);
 	virtual int left_most_border();
 	virtual int top_most_border();
 
-	virtual std::list<client_managed_t *> global_client_focus_history();
-	virtual std::list<client_managed_t *> clients_list();
+	virtual list<client_managed_t *> global_client_focus_history();
+	virtual list<client_managed_t *> clients_list();
 
 	virtual keymap_t const * keymap() const;
 	virtual bool menu_drop_down_shadow() const;
