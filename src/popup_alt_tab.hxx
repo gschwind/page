@@ -17,12 +17,15 @@
 
 #include "renderable.hxx"
 #include "icon_handler.hxx"
+#include "renderable_thumbnail.hxx"
 
 namespace page {
 
+using namespace std;
+
 struct cycle_window_entry_t {
-	std::shared_ptr<icon64> icon;
-	std::string title;
+	shared_ptr<icon64> icon;
+	string title;
 	client_managed_t * id;
 
 private:
@@ -47,12 +50,12 @@ class popup_alt_tab_t : public overlay_t {
 	cairo_surface_t * _surf;
 
 	rect _position;
-	std::list<std::shared_ptr<cycle_window_entry_t>> _client_list;
-	std::list<std::shared_ptr<cycle_window_entry_t>>::iterator _selected;
+	list<shared_ptr<cycle_window_entry_t>> _client_list;
+	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
 	bool _is_visible;
 	bool _is_durty;
 
-	std::map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> destroy_func;
+	map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> destroy_func;
 
 public:
 
