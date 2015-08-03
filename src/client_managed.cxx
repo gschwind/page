@@ -1438,10 +1438,7 @@ bool client_managed_t::prefer_window_border() const {
 		if(not (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS))
 			return true;
 
-		if(_properties->motif_hints()->decorations & MWM_DECOR_BORDER)
-			return true;
-
-		if(_properties->motif_hints()->decorations & MWM_DECOR_ALL)
+		if(_properties->motif_hints()->decorations != 0x00)
 			return true;
 
 		return false;
