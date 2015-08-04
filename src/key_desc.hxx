@@ -14,6 +14,10 @@ namespace page {
 struct key_desc_t {
 	KeySym ks;
 	unsigned int mod;
+
+	bool operator==(key_desc_t const & x) {
+		return (ks == x.ks) and (mod == x.mod);
+	}
 };
 
 

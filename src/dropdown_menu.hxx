@@ -218,7 +218,7 @@ private:
 	page_context_t * _ctx;
 	std::vector<std::shared_ptr<item_t>> _items;
 	int _selected;
-	dropdown_menu_overlay_t * pop;
+	shared_ptr<dropdown_menu_overlay_t> pop;
 	rect _start_position;
 
 	bool active_grab;
@@ -248,7 +248,7 @@ public:
 		_position.w = width;
 		_position.h = 24*_items.size();
 
-		pop = new dropdown_menu_overlay_t{ctx, _position};
+		pop = make_shared<dropdown_menu_overlay_t>(ctx, _position);
 		update_backbuffer();
 		pop->map();
 
@@ -257,8 +257,7 @@ public:
 	}
 
 	~dropdown_menu_t() {
-		_ctx->overlay_remove(pop);
-		delete pop;
+		_ctx->detach(pop);
 	}
 
 	TDATA const & get_selected() {

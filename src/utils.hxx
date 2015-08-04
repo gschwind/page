@@ -33,6 +33,8 @@
 
 namespace page {
 
+using namespace std;
+
 #define warn(test) \
 	do { \
 		if(not (test)) { \
@@ -149,12 +151,14 @@ reverse_range<T> reverse_iterate (T& x)
   return reverse_range<T> (x);
 }
 
-
 template<typename T0, typename T1>
-std::list<T0 *> filter_class(std::list<T1 *> const & x) {
-	std::list<T0 *> ret;
+std::list<std::shared_ptr<T0>> filter_class_lock(std::list<std::weak_ptr<T1>> const & x) {
+	std::list<std::shared_ptr<T0>> ret;
 	for (auto i : x) {
-		T0 * n = dynamic_cast<T0 *>(i);
+		if(i.expired())
+			continue;
+
+		auto n = dynamic_pointer_cast<T0>(i.lock());
 		if (n != nullptr) {
 			ret.push_back(n);
 		}
@@ -163,10 +167,52 @@ std::list<T0 *> filter_class(std::list<T1 *> const & x) {
 }
 
 template<typename T0, typename T1>
-std::vector<T0 *> filter_class(std::vector<T1 *> const & x) {
-	std::vector<T0 *> ret;
+std::vector<std::shared_ptr<T0>> filter_class_lock(std::vector<std::weak_ptr<T1>> const & x) {
+	std::vector<std::shared_ptr<T0>> ret;
 	for (auto i : x) {
-		T0 * n = dynamic_cast<T0 *>(i);
+		if(i.expired())
+			continue;
+
+		auto n = dynamic_pointer_cast<T0>(i.lock());
+		if (n != nullptr) {
+			ret.push_back(n);
+		}
+	}
+	return ret;
+}
+
+template<typename T0, typename T1>
+std::list<std::weak_ptr<T0>> filter_class(std::list<std::weak_ptr<T1>> const & x) {
+	std::list<std::weak_ptr<T0>> ret;
+	for (auto i : x) {
+		if(i.expired())
+			continue;
+
+		auto n = dynamic_pointer_cast<T0>(i.lock());
+		if (n != nullptr) {
+			ret.push_back(n);
+		}
+	}
+	return ret;
+}
+
+template<typename T0, typename T1>
+std::vector<std::weak_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> const & x) {
+	std::vector<std::weak_ptr<T0>> ret;
+	for (auto i : x) {
+		auto n = dynamic_pointer_cast<T0>(i);
+		if (n != nullptr) {
+			ret.push_back(n);
+		}
+	}
+	return ret;
+}
+
+template<typename T0, typename T1>
+std::list<std::weak_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const & x) {
+	std::list<std::weak_ptr<T0>> ret;
+	for (auto i : x) {
+		auto n = dynamic_pointer_cast<T0>(i);
 		if (n != nullptr) {
 			ret.push_back(n);
 		}

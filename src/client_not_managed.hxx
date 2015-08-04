@@ -48,9 +48,11 @@ public:
 
 	client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_properties_t> c) :
 			client_base_t{ctx, c},
-			_net_wm_type{type}
+			_net_wm_type{type},
+			_shadow{nullptr},
+			_base_renderable{nullptr}
 	{
-		_is_hidden = false;
+		_is_visible = true;
 		if (cnx()->lock(orig())) {
 			cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 			xcb_shape_select_input(cnx()->xcb(), orig(), 1);
@@ -199,18 +201,11 @@ public:
 		return _base_position;
 	}
 
-	void get_visible_children(std::vector<tree_t *> & out) {
-		out.push_back(this);
-		for (auto i : tree_t::children()) {
-			i->get_visible_children(out);
-		}
-	}
-
-	void children(std::vector<tree_t *> & out) const {
-		if(_shadow != nullptr)
-			out.push_back(_shadow);
-		if(_base_renderable != nullptr)
-			out.push_back(_base_renderable);
+	void children(vector<weak_ptr<tree_t>> & out) const {
+//		if(_shadow != nullptr)
+//			out.push_back(_shadow);
+//		if(_base_renderable != nullptr)
+//			out.push_back(_base_renderable);
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 

@@ -72,8 +72,8 @@ page_t::page_t(int argc, char ** argv)
 	/** initialize the empty desktop **/
 	_current_desktop = 0;
 	for(unsigned k = 0; k < 4; ++k) {
-		workspace_t * d = new workspace_t{this, k};
-		d->set_parent(this);
+		auto d = make_shared<workspace_t>(this, k);
+		d->set_parent(shared_from_this());
 		_desktop_list.push_back(d);
 		_desktop_stack.push_front(d);
 		d->hide();
@@ -202,23 +202,17 @@ page_t::page_t(int argc, char ** argv)
 		_menu_drop_down_shadow = false;
 	}
 
-	_global_client_focus_history.push_back(nullptr);
-
 }
 
 page_t::~page_t() {
 
 	cnx->unload_cursors();
 
-	for (auto i : filter_class<client_managed_t>(tree_t::get_all_children())) {
+	for (auto i : filter_class_lock<client_managed_t>(tree_t::get_all_children())) {
 		if (cnx->lock(i->orig())) {
 			cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
 			cnx->unlock();
 		}
-	}
-
-	for (auto i : tree_t::get_all_children()) {
-		delete i;
 	}
 
 	delete _theme;
@@ -359,24 +353,31 @@ void page_t::run() {
 
 }
 
-void page_t::unmanage(client_managed_t * mw) {
+void page_t::unmanage(weak_ptr<client_managed_t> _mw) {
+	if(_mw.expired())
+		return;
+
+	auto mw = _mw.lock();
+
+	detach(mw);
+
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab(mw);
 
 	printf("unmanaging : '%s'\n", mw->title().c_str());
 
-	if (has_key(_fullscreen_client_to_viewport, mw)) {
-		fullscreen_data_t & data = _fullscreen_client_to_viewport[mw];
+	if (has_key(_fullscreen_client_to_viewport, mw.get())) {
+		fullscreen_data_t & data = _fullscreen_client_to_viewport[mw.get()];
 		if(not data.desktop->is_hidden())
 			data.viewport->show();
-		_fullscreen_client_to_viewport.erase(mw);
+		_fullscreen_client_to_viewport.erase(mw.get());
 	}
 
-	detach(mw);
+
 
 	/* if managed window have active clients */
 	for(auto i: mw->tree_t::children()) {
-		client_base_t * c = dynamic_cast<client_base_t *>(i);
+		auto c = dynamic_pointer_cast<client_base_t>(i.lock());
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
 		}
@@ -399,22 +400,22 @@ void page_t::unmanage(client_managed_t * mw) {
 	_clients_list.remove(mw);
 
 	cmgr->unregister_window(mw->base());
-	delete mw;
-	mw = nullptr;
 
-	auto new_focus = _desktop_list[_current_desktop]->client_focus.front();
+	if (not _desktop_list[_current_desktop]->client_focus.empty()) {
+		auto new_focus = _desktop_list[_current_desktop]->client_focus.front().lock();
 
-	if (new_focus == nullptr or not _auto_refocus) {
-		set_focus(nullptr, XCB_CURRENT_TIME);
-	} else {
-		if (new_focus->is(MANAGED_NOTEBOOK)) {
-			notebook_t * nk = find_parent_notebook_for(new_focus);
-			if (nk != nullptr) {
-				new_focus->activate();
+		if (not _auto_refocus) {
+			set_focus(nullptr, XCB_CURRENT_TIME);
+		} else {
+			if (new_focus->is(MANAGED_NOTEBOOK)) {
+				notebook_t * nk = find_parent_notebook_for(new_focus);
+				if (nk != nullptr) {
+					new_focus->activate();
+				}
 			}
+			new_focus->activate();
+			set_focus(new_focus, XCB_CURRENT_TIME);
 		}
-		new_focus->activate();
-		set_focus(new_focus, XCB_CURRENT_TIME);
 	}
 }
 
@@ -541,14 +542,14 @@ void page_t::update_client_list() {
 	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	std::vector<xcb_window_t> client_list;
 	for(auto c: _clients_list) {
-		client_list.push_back(c->orig());
+		client_list.push_back(c.lock()->orig());
 	}
 
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&client_list[0], client_list.size());
 
 	/** set _NET_CLIENT_LIST_STACKING : bottom to top staking **/
-	auto client_managed_list_stack = filter_class<client_managed_t>(tree_t::get_all_children());
+	auto client_managed_list_stack = filter_class_lock<client_managed_t>(tree_t::get_all_children());
 	std::vector<xcb_window_t> client_list_stack;
 	for(auto c: client_managed_list_stack) {
 		client_list_stack.push_back(c->orig());
@@ -568,19 +569,22 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 //			e->state & XCB_MOD_MASK_1 ? "true" : "false");
 
 	/* get KeyCode for Unmodified Key */
-	xcb_keysym_t k = _keymap->get(e->detail);
 
-	if (k == 0)
+	key_desc_t key;
+
+	key.ks = _keymap->get(e->detail);
+	key.mod = e->state;
+
+	if (key.ks == 0)
 		return;
 
 
 	/** XCB_MOD_MASK_2 is num_lock, thus ignore his state **/
-	unsigned int state = e->state;
 	if(_keymap->numlock_mod_mask() != 0) {
-		state &= ~_keymap->numlock_mod_mask();
+		key.mod &= ~_keymap->numlock_mod_mask();
 	}
 
-	if (k == bind_page_quit.ks and (state == bind_page_quit.mod)) {
+	if (key == bind_page_quit) {
 		stop();
 	}
 
@@ -589,38 +593,28 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	if (k == bind_close.ks and (state == bind_close.mod)) {
+	if (key == bind_close) {
 		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-			if (_desktop_list[_current_desktop]->client_focus.front()
-					!= nullptr) {
-				client_managed_t * mw =
-						_desktop_list[_current_desktop]->client_focus.front();
-				mw->delete_window(e->time);
-			}
+			auto mw = _desktop_list[_current_desktop]->client_focus.front().lock();
+			mw->delete_window(e->time);
 		}
 	}
 
-	if (k == bind_exposay_all.ks and (state == bind_exposay_all.mod)) {
-		auto child = filter_class<notebook_t>(
+	if (key == bind_exposay_all) {
+		auto child = filter_class_lock<notebook_t>(
 				_desktop_list[_current_desktop]->tree_t::get_all_children());
 		for (auto c : child) {
 			c->start_exposay();
 		}
 	}
 
-	if (k == bind_toggle_fullscreen.ks
-			and (state == bind_toggle_fullscreen.mod)) {
+	if (key == bind_toggle_fullscreen) {
 		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-			if (_desktop_list[_current_desktop]->client_focus.front()
-					!= nullptr) {
-				toggle_fullscreen(
-						_desktop_list[_current_desktop]->client_focus.front());
-			}
+			toggle_fullscreen(_desktop_list[_current_desktop]->client_focus.front().lock());
 		}
 	}
 
-	if (k == bind_toggle_compositor.ks
-			and (state == bind_toggle_compositor.mod)) {
+	if (key == bind_toggle_compositor) {
 		if (rnd == nullptr) {
 			start_compositor();
 		} else {
@@ -628,74 +622,55 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 	}
 
-	if (k == bind_right_desktop.ks and (state == bind_right_desktop.mod)) {
+	if (key == bind_right_desktop) {
 		switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
-		set_focus(_desktop_list[_current_desktop]->client_focus.front(),
-				e->time);
+		set_focus(_desktop_list[_current_desktop]->client_focus.front().lock(), e->time);
 	}
 
-	if (k == bind_left_desktop.ks and (state == bind_left_desktop.mod)) {
+	if (key == bind_left_desktop) {
 		switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
-		set_focus(_desktop_list[_current_desktop]->client_focus.front(),
-				e->time);
+		set_focus(_desktop_list[_current_desktop]->client_focus.front().lock(), e->time);
 	}
 
-	if (k == bind_bind_window.ks and (state == bind_bind_window.mod)) {
+	if (key == bind_bind_window) {
 		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-			if (_desktop_list[_current_desktop]->client_focus.front()
-					!= nullptr) {
-				if (_desktop_list[_current_desktop]->client_focus.front()->is(
-						MANAGED_FULLSCREEN)) {
-					unfullscreen(
-							_desktop_list[_current_desktop]->client_focus.front());
-				}
-
-				if (_desktop_list[_current_desktop]->client_focus.front()->is(
-						MANAGED_FLOATING)) {
-					bind_window(
-							_desktop_list[_current_desktop]->client_focus.front(),
-							true);
-				}
+			auto mw = _desktop_list[_current_desktop]->client_focus.front().lock();
+			if (mw->is(MANAGED_FULLSCREEN)) {
+				unfullscreen(mw);
+			} else if (mw->is(MANAGED_FLOATING)) {
+				bind_window(mw, true);
 			}
 		}
 	}
 
-	if (k == bind_fullscreen_window.ks
-			and (state == bind_fullscreen_window.mod)) {
+	if (key == bind_fullscreen_window) {
 		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-			if (_desktop_list[_current_desktop]->client_focus.front()
-					!= nullptr) {
-				if (not _desktop_list[_current_desktop]->client_focus.front()->is(
-						MANAGED_FULLSCREEN)) {
-					fullscreen(
-							_desktop_list[_current_desktop]->client_focus.front(),
-							nullptr);
-				}
+			auto mw =
+					_desktop_list[_current_desktop]->client_focus.front().lock();
+			if (not mw->is(MANAGED_FULLSCREEN)) {
+				fullscreen(mw);
 			}
 		}
 	}
 
-	if (k == bind_float_window.ks and (state == bind_float_window.mod)) {
+	if (key == bind_float_window) {
 		if (not _desktop_list[_current_desktop]->client_focus.empty()) {
-			if (_desktop_list[_current_desktop]->client_focus.front()
-					!= nullptr) {
-				if (_desktop_list[_current_desktop]->client_focus.front()->is(
-						MANAGED_FULLSCREEN)) {
-					unfullscreen(
-							_desktop_list[_current_desktop]->client_focus.front());
-				}
+			if (_desktop_list[_current_desktop]->client_focus.front()->is(
+					MANAGED_FULLSCREEN)) {
+				unfullscreen(
+						_desktop_list[_current_desktop]->client_focus.front());
+			}
 
-				if (_desktop_list[_current_desktop]->client_focus.front()->is(
-						MANAGED_NOTEBOOK)) {
-					unbind_window(
-							_desktop_list[_current_desktop]->client_focus.front());
-				}
+			if (_desktop_list[_current_desktop]->client_focus.front()->is(
+					MANAGED_NOTEBOOK)) {
+				unbind_window(
+						_desktop_list[_current_desktop]->client_focus.front());
 			}
 		}
 	}
 
 	if (rnd != nullptr) {
-		if (k == bind_debug_1.ks and (state == bind_debug_1.mod)) {
+		if (key == bind_debug_1) {
 			if (rnd->show_fps()) {
 				rnd->set_show_fps(false);
 			} else {
@@ -703,7 +678,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if (k == bind_debug_2.ks and (state == bind_debug_2.mod)) {
+		if (key == bind_debug_2) {
 			if (rnd->show_damaged()) {
 				rnd->set_show_damaged(false);
 			} else {
@@ -711,7 +686,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			}
 		}
 
-		if (k == bind_debug_3.ks and (state == bind_debug_3.mod)) {
+		if (key == bind_debug_3) {
 			if (rnd->show_opac()) {
 				rnd->set_show_opac(false);
 			} else {
@@ -720,10 +695,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		}
 	}
 
-	if (k == bind_debug_4.ks and (state == bind_debug_4.mod)) {
+	if (key == bind_debug_4) {
 		_need_restack = true;
 		print_tree(0);
-		for (auto i : _clients_list) {
+		for (auto _i : _clients_list) {
+			auto i = _i.lock();
 			switch (i->get_type()) {
 			case MANAGED_NOTEBOOK:
 				cout << "[" << i->orig() << "] notebook : " << i->title()
@@ -745,12 +721,12 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	for(int i; i < bind_cmd.size(); ++i) {
-		if (k == bind_cmd[i].key.ks and (state == bind_cmd[i].key.mod)) {
+		if (key == bind_cmd[i].key) {
 			run_cmd(bind_cmd[i].cmd);
 		}
 	}
 
-	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
+	if (key.ks == XK_Tab and (key.mod == XCB_MOD_MASK_1)) {
 
 		if (_grab_handler == nullptr and not _clients_list.empty()) {
 
@@ -812,10 +788,10 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	 **/
 	if (_grab_handler == nullptr) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
-		client_managed_t * mw = find_managed_window_with(e->event);
-		if (mw != nullptr) {
-			mw->activate();
-			set_focus(mw, e->time);
+		auto mw = find_managed_window_with(e->event);
+		if (not mw.expired()) {
+			mw.lock()->activate();
+			set_focus(mw.lock(), e->time);
 		}
 	} else {
 		/* Do not replay events, grab them and process them until Release Button */
@@ -1478,7 +1454,7 @@ void page_t::update_workarea() {
 
 }
 
-void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
+void page_t::set_focus(shared_ptr<client_managed_t> const & new_focus, xcb_timestamp_t tfocus) {
 	if(tfocus == XCB_CURRENT_TIME and new_focus != nullptr)
 		std::cout << "Warning: Invalid focus time (0)" << std::endl;
 	if(tfocus <= _last_focus_time and tfocus != XCB_CURRENT_TIME)
@@ -1492,10 +1468,10 @@ void page_t::set_focus(client_managed_t * new_focus, xcb_timestamp_t tfocus) {
 		old_focus->set_focus_state(false);
 	}
 
-	_desktop_list[_current_desktop]->client_focus.remove(new_focus);
-	_desktop_list[_current_desktop]->client_focus.push_front(new_focus);
-	_global_client_focus_history.remove(new_focus);
-	_global_client_focus_history.push_front(new_focus);
+	_desktop_list[_current_desktop]->client_focus.remove(new_focus.get());
+	_desktop_list[_current_desktop]->client_focus.push_front(new_focus.get());
+	_global_client_focus_history.remove(new_focus.get());
+	_global_client_focus_history.push_front(new_focus.get());
 
 	if(new_focus == nullptr) {
 		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
@@ -2080,32 +2056,36 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 	}
 }
 
-void page_t::insert_in_tree_using_transient_for(client_base_t * c) {
+void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
+	/* ensure the removal */
 	detach(c);
-	client_base_t * transient_for = get_transient_for(c);
-	if (transient_for != nullptr) {
-		transient_for->add_subclient(c);
-	} else {
-		root_subclients.push_back(c);
-		c->set_parent(this);
-	}
-}
 
-void page_t::insert_in_tree_using_transient_for(client_managed_t * c) {
-	client_base_t * transient_for = get_transient_for(c);
-	if (transient_for != nullptr) {
-		transient_for->add_subclient(c);
-	} else {
-		if(find_current_desktop(c) == ALL_DESKTOP) {
-			get_current_workspace()->add_floating_client(c);
-			c->show();
+	auto mw = dynamic_pointer_cast<client_managed_t>(c);
+	if (mw != nullptr) {
+		client_base_t * transient_for = get_transient_for(c);
+		if (transient_for != nullptr) {
+			transient_for->add_subclient(c);
 		} else {
-			_desktop_list[find_current_desktop(c)]->add_floating_client(c);
-			if(_desktop_list[find_current_desktop(c)]->is_hidden()) {
-				c->hide();
-			} else {
+			if (find_current_desktop(c) == ALL_DESKTOP) {
+				get_current_workspace().lock()->add_floating_client(c);
 				c->show();
+			} else {
+				_desktop_list[find_current_desktop(c)]->add_floating_client(c);
+				if (_desktop_list[find_current_desktop(c)]->is_hidden()) {
+					c->hide();
+				} else {
+					c->show();
+				}
 			}
+		}
+	} else {
+
+		client_base_t * transient_for = get_transient_for(c);
+		if (transient_for != nullptr) {
+			transient_for->add_subclient(c);
+		} else {
+			root_subclients.push_back(c);
+			c->set_parent(shared_from_this());
 		}
 	}
 }
@@ -2122,12 +2102,14 @@ client_base_t * page_t::get_transient_for(client_base_t * c) {
 	return transient_for;
 }
 
-void page_t::detach(tree_t * t) {
-	remove(t);
-	for(auto i : tree_t::get_all_children()) {
-		i->remove(t);
-	}
-	t->set_parent(nullptr);
+auto page_t::detach(weak_ptr<tree_t> t) -> shared_ptr<tree_t> {
+	if(t.expired())
+		return shared_ptr<tree_t>{};
+
+	auto ret = t.lock();
+	_broadcast_root_first(&tree_t::remove, t);
+	ret->clear_parent();
+
 }
 
 void page_t::safe_raise_window(client_base_t * c) {
@@ -2819,13 +2801,13 @@ void page_t::create_dock_window(std::shared_ptr<client_properties_t> c, xcb_atom
 	update_workarea();
 }
 
-viewport_t * page_t::find_mouse_viewport(int x, int y) const {
-	std::vector<viewport_t*> viewports = _desktop_list[_current_desktop]->get_viewports();
+weak_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
+	auto viewports = _desktop_list[_current_desktop]->get_viewports();
 	for (auto v: viewports) {
-		if (v->raw_area().is_inside(x, y))
+		if (v.lock()->raw_area().is_inside(x, y))
 			return v;
 	}
-	return nullptr;
+	return weak_ptr<viewport_t>{};
 }
 
 /**
@@ -2926,17 +2908,17 @@ void page_t::set_desktop_geometry(long width, long height) {
 			CARDINAL, 32, desktop_geometry, 2);
 }
 
-client_base_t * page_t::find_client_with(xcb_window_t w) {
+weak_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
 	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
-		if(i->has_window(w)) {
+		if(i.lock()->has_window(w)) {
 			return i;
 		}
 	}
 	return nullptr;
 }
 
-client_base_t * page_t::find_client(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(tree_t::get_all_children())) {
+shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
+	for(auto i: filter_class_lock<client_base_t>(tree_t::get_all_children())) {
 		if(i->orig() == w) {
 			return i;
 		}
@@ -2966,8 +2948,8 @@ std::string page_t::get_node_name() const {
 	return _get_node_name<'P'>();
 }
 
-void page_t::replace(page_component_t * src, page_component_t * by) {
-	printf("Unexpectected use of page::replace function\n");
+void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component_t> by) {
+	throw exception_t{"Unexpectected use of page::replace function\n"};
 }
 
 void page_t::activate(tree_t * t) {
@@ -3009,17 +2991,13 @@ void page_t::activate(tree_t * t) {
 	}
 }
 
-void page_t::remove(tree_t * t) {
+void page_t::remove(shared_ptr<tree_t> const & t) {
 
-	if(has_key(std::vector<tree_t*>{_desktop_list.begin(), _desktop_list.end()}, t)) {
-		throw exception_t("ERROR: using page::remove to remove desktop is not recommended, use page::remove_viewport instead");
-	}
-
-	root_subclients.remove(dynamic_cast<client_base_t *>(t));
-	tooltips.remove(dynamic_cast<client_not_managed_t *>(t));
-	notifications.remove(dynamic_cast<client_not_managed_t *>(t));
-	above.remove(dynamic_cast<client_not_managed_t*>(t));
-	below.remove(dynamic_cast<client_not_managed_t*>(t));
+	root_subclients.remove(dynamic_pointer_cast<client_base_t>(t));
+	tooltips.remove(dynamic_pointer_cast<client_not_managed_t>(t));
+	notifications.remove(dynamic_pointer_cast<client_not_managed_t>(t));
+	above.remove(dynamic_pointer_cast<client_not_managed_t>(t));
+	below.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 
 }
 
@@ -3538,7 +3516,7 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 	auto se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
 	if (se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
 		xcb_window_t w = se->affected_window;
-		client_base_t * c = find_client(w);
+		shared_ptr<client_base_t> c = find_client(w);
 		if (c != nullptr) {
 			c->update_shape();
 		}
@@ -3759,20 +3737,14 @@ void page_t::grab_stop() {
 	_grab_handler = nullptr;
 }
 
-void page_t::overlay_add(tree_t * x) {
+void page_t::overlay_add(shared_ptr<tree_t> x) {
 	_overlays.push_back(x);
-}
-
-void page_t::overlay_remove(tree_t * x) {
-	_overlays.remove(x);
 }
 
 void page_t::add_global_damage(region const & r) {
 	_need_render = true;
 	add_compositor_damaged(r);
 }
-
-
 
 workspace_t * page_t::get_current_workspace() const {
 	return _desktop_list[_current_desktop];

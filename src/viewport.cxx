@@ -19,7 +19,6 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 		_raw_aera{area},
 		_effective_area{area},
 		_parent{nullptr},
-		_is_hidden{false},
 		_is_durty{true},
 		_win{XCB_NONE},
 		_pix{XCB_NONE},
@@ -28,9 +27,9 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 {
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
-	_subtree = nullptr;
-	_subtree = new notebook_t{_ctx, keep_focus};
-	_subtree->set_parent(this);
+	_subtree.reset();
+	_subtree = make_shared<notebook_t>(_ctx, keep_focus);
+	_subtree->set_parent(shared_from_this());
 	_subtree->set_allocation(_page_area);
 }
 
@@ -38,22 +37,19 @@ void viewport_t::replace(page_component_t * src, page_component_t * by) {
 	//printf("replace %p by %p\n", src, by);
 
 	if (_subtree == src) {
-		_subtree->set_parent(nullptr);
+		_subtree->clear_parent();
 		_subtree = by;
-		_subtree->set_parent(this);
+		_subtree->set_parent(shared_from_this());
 		_subtree->set_allocation(_page_area);
 	} else {
 		throw std::runtime_error("viewport: bad child replacement!");
 	}
 }
 
-void viewport_t::remove(tree_t * src) {
+void viewport_t::remove(shared_ptr<tree_t> const & src) {
 	if(src == _subtree) {
-		cout << "WARNING do not use viewport_t::remove to remove subtree element" << endl;
-		_subtree = nullptr;
-		return;
+		_subtree.reset();
 	}
-
 }
 
 void viewport_t::set_allocation(rect const & area) {

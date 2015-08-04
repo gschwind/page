@@ -19,13 +19,8 @@ namespace page {
 
 split_t::split_t(page_context_t * ctx, split_type_e type) :
 		_ctx{ctx},
-		_split_bar_area(),
-		_type(type),
-		_ratio{0.5},
-		_pack0(nullptr),
-		_pack1(nullptr),
-		_parent(nullptr),
-		_is_hidden(false)
+		_type{type},
+		_ratio{0.5}
 {
 
 }
@@ -95,11 +90,11 @@ void split_t::replace(page_component_t * src, page_component_t * by) {
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src, by);
 		set_pack0(by);
-		src->set_parent(nullptr);
+		src->clear_parent();
 	} else if (_pack1 == src) {
 		printf("replace %p by %p\n", src, by);
 		set_pack1(by);
-		src->set_parent(nullptr);
+		src->clear_parent();
 	} else {
 		throw std::runtime_error("split: bad child replacement!");
 	}
@@ -166,7 +161,7 @@ void split_t::set_pack0(page_component_t * x) {
 	_children.remove(_pack0);
 	_pack0 = x;
 	if (_pack0 != nullptr) {
-		_pack0->set_parent(this);
+		_pack0->set_parent(shared_from_this());
 		_children.push_back(_pack0);
 		update_allocation();
 	}
@@ -176,7 +171,7 @@ void split_t::set_pack1(page_component_t * x) {
 	_children.remove(_pack1);
 	_pack1 = x;
 	if (_pack1 != nullptr) {
-		_pack1->set_parent(this);
+		_pack1->set_parent(shared_from_this());
 		_children.push_back(_pack1);
 		update_allocation();
 	}
@@ -237,7 +232,7 @@ void split_t::activate(tree_t * t) {
 	}
 }
 
-void split_t::remove(tree_t * t) {
+void split_t::remove(shared_ptr<tree_t> const & t) {
 	if (_pack0 == t) {
 		set_pack0(nullptr);
 	} else if (_pack1 == t) {
@@ -286,38 +281,23 @@ rect split_t::compute_split_bar_location() const {
 	return ret;
 
 }
-//
-//void split_t::get_all_children(std::vector<tree_t *> & out) const {
-//	for(auto x: _children) {
-//		out.push_back(x);
-//		x->get_all_children(out);
-//	}
-//}
+
 
 void split_t::children(std::vector<tree_t *> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 
 void split_t::hide() {
-	_is_hidden = true;
+	_is_visible = false;
 	for(auto i: tree_t::children()) {
 		i->hide();
 	}
 }
 
 void split_t::show() {
-	_is_hidden = false;
+	_is_visible = thue;
 	for(auto i: tree_t::children()) {
 		i->show();
-	}
-}
-
-void split_t::get_visible_children(std::vector<tree_t *> & out) {
-	if (not _is_hidden) {
-		out.push_back(this);
-		for (auto i : tree_t::children()) {
-			i->get_visible_children(out);
-		}
 	}
 }
 

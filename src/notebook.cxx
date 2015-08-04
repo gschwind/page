@@ -89,8 +89,8 @@ void notebook_t::replace(page_component_t * src, page_component_t * by) {
 	throw std::runtime_error("cannot replace in notebook");
 }
 
-void notebook_t::remove(tree_t * src) {
-	client_managed_t * mw = dynamic_cast<client_managed_t*>(src);
+void notebook_t::remove(shared_ptr<tree_t> const & src) {
+	auto mw = dynamic_pointer_cast<client_managed_t>(src);
 	if (has_key(_clients, mw) and mw != nullptr) {
 		_remove_client(mw);
 	}
@@ -106,7 +106,7 @@ list<client_managed_t *> const & notebook_t::get_clients() {
 	return _clients;
 }
 
-void notebook_t::_remove_client(client_managed_t * x) {
+void notebook_t::_remove_client(shared_ptr<client_managed_t> const & x) {
 	assert(has_key(_clients, x));
 
 	if(x == nullptr)
@@ -120,7 +120,7 @@ void notebook_t::_remove_client(client_managed_t * x) {
 
 	// cleanup
 	_children.remove(x);
-	x->set_parent(nullptr);
+	x->clear_parent();
 	_clients.remove(x);
 
 	/* disconnect all signals */

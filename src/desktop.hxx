@@ -35,24 +35,24 @@ struct workspace_t: public page_component_t {
 
 private:
 	page_context_t * _ctx;
-	page_component_t * _parent;
+
 	rect _allocation;
 	rect _workarea;
 
 	unsigned const _id;
 
 	/* list of viewports in creation order, to make a sane reconfiguration */
-	vector<viewport_t *> _viewport_outputs;
+	vector<shared_ptr<viewport_t>> _viewport_outputs;
 
 	/* dock + viewport belong this layer */
-	list<tree_t *> _viewport_layer;
+	list<shared_ptr<tree_t>> _viewport_layer;
 
 	/* floating and fullscreen window belong this layer */
-	list<client_managed_t *> _floating_layer;
+	list<shared_ptr<client_managed_t>> _floating_layer;
 
 	viewport_t * _primary_viewport;
-	notebook_t * _default_pop;
-	bool _is_hidden;
+	weak_ptr<notebook_t> _default_pop;
+
 	workspace_t(workspace_t const & v);
 	workspace_t & operator= (workspace_t const &);
 
@@ -66,48 +66,43 @@ private:
 
 public:
 
-	list<client_managed_t *> client_focus;
-
-	page_component_t * parent() const {
-		return _parent;
-	}
+	list<weak_ptr<client_managed_t>> client_focus;
 
 	workspace_t(page_context_t * ctx, unsigned id) :
 		_ctx{ctx},
 		_allocation{},
-		_parent{nullptr},
-		_default_pop{nullptr},
-		_is_hidden{false},
+		_default_pop{},
 		_workarea{},
 		_primary_viewport{nullptr},
 		_id{id},
-		_switch_renderable{nullptr}
+		_switch_renderable{nullptr},
+		_switch_direction{WORKSPACE_SWITCH_LEFT}
 	{
-		client_focus.push_back(nullptr);
+
 	}
 
 	void render(cairo_t * cr, rect const & area) const { }
 
 
-	void activate(tree_t * t = nullptr) {
+	void activate(weak_ptr<tree_t> t) {
 
-		if(_parent != nullptr) {
-			_parent->activate(this);
+		if(not _parent.expired()) {
+			_parent.lock()->activate(shared_from_this());
 		}
 
-		if(t == nullptr)
+		if(t.expired())
 			return;
 
-		client_managed_t * mw = dynamic_cast<client_managed_t *>(t);
+		auto mw = dynamic_pointer_cast<client_managed_t>(t.lock());
 
 		if(has_key(_floating_layer, mw)) {
 			_floating_layer.remove(mw);
 			_floating_layer.push_back(mw);
 		}
 
-		if(has_key(_viewport_layer, t)) {
-			_viewport_layer.remove(t);
-			_viewport_layer.push_back(t);
+		if(has_key(_viewport_layer, t.lock())) {
+			_viewport_layer.remove(t.lock());
+			_viewport_layer.push_back(t.lock());
 		}
 
 	}
@@ -117,7 +112,7 @@ public:
 	}
 
 	virtual void update_layout(time64_t const time) {
-		if(_is_hidden)
+		if(not _is_visible)
 			return;
 
 		if (_switch_screenshot != nullptr and time < (_switch_start_time + _switch_duration)) {
@@ -143,33 +138,19 @@ public:
 
 	}
 
-	void set_parent(tree_t * t) {
-		if(t == nullptr) {
-			_parent = nullptr;
-			return;
-		}
-
-		auto xt = dynamic_cast<page_component_t*>(t);
-		if(xt == nullptr) {
-			throw exception_t("page_component_t must have a page_component_t as parent");
-		} else {
-			_parent = xt;
-		}
-	}
-
 	rect allocation() const {
 		return _allocation;
 	}
 
 	void render_legacy(cairo_t * cr, rect const & area) const { }
 
-	auto get_viewport_map() const -> std::vector<viewport_t *> const & {
+	auto get_viewport_map() const -> vector<shared_ptr<viewport_t>> const & {
 		return _viewport_outputs;
 	}
 
-	auto set_layout(std::vector<viewport_t *> const & new_layout) -> void {
+	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void {
 		_viewport_outputs = new_layout;
-		_viewport_layer.remove_if([](tree_t * t) -> bool { return typeid(viewport_t) == typeid(*t); });
+		_viewport_layer.remove_if([](shared_ptr<tree_t> const & t) -> bool { return typeid(viewport_t) == typeid(*t.get()); });
 		_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
 	}
 
@@ -177,70 +158,62 @@ public:
 		return _primary_viewport;
 	}
 
-	auto get_viewports() const -> std::vector<viewport_t *> {
+	auto get_viewports() const -> vector<weak_ptr<viewport_t>> {
 		auto tmp = filter_class<viewport_t>(_viewport_layer);
-		return std::vector<viewport_t *>{tmp.begin(), tmp.end()};
+		return vector<weak_ptr<viewport_t>>{tmp.begin(), tmp.end()};
 	}
 
-	void set_default_pop(notebook_t * n) {
-		_default_pop->set_default(false);
-		_default_pop = n;
-		_default_pop->set_default(true);
+	void set_default_pop(weak_ptr<notebook_t> n) {
+		if (not _default_pop.expired()) {
+			_default_pop.lock()->set_default(false);
+		}
+
+		if (not n.expired()) {
+			_default_pop = n;
+			_default_pop.lock()->set_default(true);
+		}
 	}
 
-	notebook_t * default_pop() {
+	weak_ptr<notebook_t> default_pop() {
 		return _default_pop;
 	}
 
-	void children(std::vector<tree_t *> & out) const {
+	void children(vector<weak_ptr<tree_t>> & out) const {
 		out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 		out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
-		if(_switch_renderable != nullptr)
-			out.push_back(_switch_renderable);
+		//if(_switch_renderable != nullptr)
+		//	out.push_back(_switch_renderable);
 	}
 
 	void update_default_pop() {
-		_default_pop = nullptr;
-		for(auto i: filter_class<notebook_t>(tree_t::get_all_children())) {
-			if(_default_pop == nullptr) {
-				_default_pop = i;
-				_default_pop->set_default(true);
-			} else {
-				i->set_default(false);
-			}
+		_default_pop.reset();
+		for(auto i: filter_class_lock<notebook_t>(tree_t::get_all_children())) {
+			i->set_default(true);
+			_default_pop = i;
 		}
 	}
 
-	void add_floating_client(client_managed_t * c) {
-		if(c->is(MANAGED_DOCK)) {
-			_viewport_layer.push_back(c);
+	void add_floating_client(weak_ptr<client_managed_t> c) {
+		if(c.expired())
+			return;
+
+		auto xc = c.lock();
+		xc->set_parent(shared_from_this());
+
+		if(xc->is(MANAGED_DOCK)) {
+			_viewport_layer.push_back(xc);
 		} else {
-			_floating_layer.push_back(c);
+			_floating_layer.push_back(xc);
 		}
-		c->set_parent(this);
-	}
-
-	void add_dock_client(client_not_managed_t * c) {
-
-		c->set_parent(this);
-	}
-
-	void add_fullscreen_client(client_managed_t * c) {
-		if(c->is(MANAGED_DOCK)) {
-			_viewport_layer.push_back(c);
-		} else {
-			_floating_layer.push_back(c);
-		}
-		c->set_parent(this);
 	}
 
 	void replace(page_component_t * src, page_component_t * by) {
 		throw std::runtime_error("desktop_t::replace implemented yet!");
 	}
 
-	void remove(tree_t * src) {
+	void remove(shared_ptr<tree_t> const & src) {
 
-		if(has_key(_viewport_outputs, reinterpret_cast<viewport_t*>(src))) {
+		if(has_key(_viewport_outputs, dynamic_pointer_cast<viewport_t>(src))) {
 			throw exception_t("%s:%d invalid call of viewport::remove", __FILE__, __LINE__);
 		}
 
@@ -248,7 +221,7 @@ public:
 		 * use reinterpret_cast because we try to remove src pointer
 		 * and we don't care is type
 		 **/
-		_floating_layer.remove(reinterpret_cast<client_managed_t*>(src));
+		_floating_layer.remove(dynamic_pointer_cast<client_managed_t>(src));
 		_viewport_layer.remove(src);
 	}
 
@@ -256,31 +229,8 @@ public:
 		_allocation = area;
 	}
 
-	void hide() {
-		_is_hidden = true;
-		for(auto i: tree_t::children()) {
-			i->hide();
-		}
-	}
-
-	void show() {
-		_is_hidden = false;
-		for(auto i: tree_t::children()) {
-			i->show();
-		}
-	}
-
 	bool is_hidden() {
-		return _is_hidden;
-	}
-
-	void get_visible_children(std::vector<tree_t *> & out) {
-		if (not _is_hidden) {
-			out.push_back(this);
-			for (auto i : tree_t::children()) {
-				i->get_visible_children(out);
-			}
-		}
+		return not _is_visible;
 	}
 
 	void set_workarea(rect const & r) {

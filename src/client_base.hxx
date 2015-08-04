@@ -31,7 +31,10 @@
 
 namespace page {
 
-typedef long card32;
+using namespace std;
+
+using card32 = long;
+
 
 /**
  * client_base_t handle all foreign windows, it's the base of
@@ -40,15 +43,12 @@ typedef long card32;
 class client_base_t : public tree_t {
 protected:
 	page_context_t * _ctx;
-	tree_t * _parent;
 
 	/* handle properties of client */
-	std::shared_ptr<client_properties_t> _properties;
+	shared_ptr<client_properties_t> _properties;
 
 	/* sub-clients */
-	std::list<client_base_t *> _children;
-
-	bool _is_hidden;
+	list<shared_ptr<client_base_t>> _children;
 
 	/** short cut **/
 	xcb_atom_t A(atom_e atom) {
@@ -60,9 +60,7 @@ public:
 	client_base_t(client_base_t const & c) :
 		_ctx{c._ctx},
 		_properties{c._properties},
-		_children{c._children},
-		_parent{nullptr},
-		_is_hidden{true}
+		_children{c._children}
 	{
 
 	}
@@ -70,9 +68,7 @@ public:
 	client_base_t(page_context_t * ctx, std::shared_ptr<client_properties_t> props) :
 		_ctx{ctx},
 		_properties{props},
-		_children{},
-		_is_hidden{false},
-		_parent{nullptr}
+		_children{}
 	{
 
 	}
@@ -230,20 +226,15 @@ public:
 
 public:
 
-	void add_subclient(client_base_t * s) {
+	void add_subclient(shared_ptr<client_base_t> s) {
 		assert(s != nullptr);
 		_children.push_back(s);
-		s->set_parent(this);
-		if(_is_hidden) {
-			s->hide();
-		} else {
+		s->set_parent(shared_from_this());
+		if(_is_visible) {
 			s->show();
+		} else {
+			s->hide();
 		}
-	}
-
-	void remove_subclient(client_base_t * s) {
-		_children.remove(s);
-		s->set_parent(nullptr);
 	}
 
 	bool is_window(xcb_window_t w) {
@@ -290,41 +281,41 @@ public:
 	auto geometry() const -> xcb_get_geometry_reply_t const * { return _properties->geometry(); }
 
 	/* ICCCM (read-only properties for WM) */
-	auto wm_name() const -> std::string const * { return _properties->wm_name(); }
-	auto wm_icon_name() const -> std::string const * { return _properties->wm_icon_name(); };
+	auto wm_name() const -> string const * { return _properties->wm_name(); }
+	auto wm_icon_name() const -> string const * { return _properties->wm_icon_name(); };
 	auto wm_normal_hints() const -> XSizeHints const * { return _properties->wm_normal_hints(); }
 	auto wm_hints() const -> XWMHints const * { return _properties->wm_hints(); }
-	auto wm_class() const -> std::vector<std::string> const * { return _properties->wm_class(); }
+	auto wm_class() const -> vector<string> const * { return _properties->wm_class(); }
 	auto wm_transient_for() const -> xcb_window_t const * { return _properties->wm_transient_for(); }
-	auto wm_protocols() const -> std::list<xcb_atom_t> const * { return _properties->wm_protocols(); }
-	auto wm_colormap_windows() const -> std::vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
-	auto wm_client_machine() const -> std::string const * { return _properties->wm_client_machine(); }
+	auto wm_protocols() const -> list<xcb_atom_t> const * { return _properties->wm_protocols(); }
+	auto wm_colormap_windows() const -> vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
+	auto wm_client_machine() const -> string const * { return _properties->wm_client_machine(); }
 
 	/* ICCCM (read-write properties for WM) */
 	auto wm_state() const -> wm_state_data_t const * {return _properties->wm_state(); }
 
 	/* EWMH (read-only properties for WM) */
-	auto net_wm_name() const -> std::string const * { return _properties->net_wm_name(); }
-	auto net_wm_visible_name() const -> std::string const * { return _properties->net_wm_visible_name(); }
-	auto net_wm_icon_name() const -> std::string const * { return _properties->net_wm_icon_name(); }
-	auto net_wm_visible_icon_name() const -> std::string const * { return _properties->net_wm_visible_icon_name(); }
-	auto net_wm_window_type() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_window_type(); }
-	auto net_wm_allowed_actions() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_allowed_actions(); }
-	auto net_wm_strut() const -> std::vector<int> const * { return _properties->net_wm_strut(); }
-	auto net_wm_strut_partial() const -> std::vector<int> const * { return _properties->net_wm_strut_partial(); }
-	auto net_wm_icon_geometry() const -> std::vector<int> const * { return _properties->net_wm_icon_geometry(); }
-	auto net_wm_icon() const -> std::vector<uint32_t> const * { return _properties->net_wm_icon(); }
+	auto net_wm_name() const -> string const * { return _properties->net_wm_name(); }
+	auto net_wm_visible_name() const -> string const * { return _properties->net_wm_visible_name(); }
+	auto net_wm_icon_name() const -> string const * { return _properties->net_wm_icon_name(); }
+	auto net_wm_visible_icon_name() const -> string const * { return _properties->net_wm_visible_icon_name(); }
+	auto net_wm_window_type() const -> list<xcb_atom_t> const * { return _properties->net_wm_window_type(); }
+	auto net_wm_allowed_actions() const -> list<xcb_atom_t> const * { return _properties->net_wm_allowed_actions(); }
+	auto net_wm_strut() const -> vector<int> const * { return _properties->net_wm_strut(); }
+	auto net_wm_strut_partial() const -> vector<int> const * { return _properties->net_wm_strut_partial(); }
+	auto net_wm_icon_geometry() const -> vector<int> const * { return _properties->net_wm_icon_geometry(); }
+	auto net_wm_icon() const -> vector<uint32_t> const * { return _properties->net_wm_icon(); }
 	auto net_wm_pid() const -> unsigned int const * { return _properties->net_wm_pid(); }
 	auto net_wm_handled_icons() const -> bool;// { return _properties->net_wm_handled_icons(); }
 	auto net_wm_user_time() const -> uint32_t const * { return _properties->net_wm_user_time(); }
 	auto net_wm_user_time_window() const -> xcb_window_t const * { return _properties->net_wm_user_time_window(); }
-	auto net_wm_opaque_region() const -> std::vector<int> const * { return _properties->net_wm_opaque_region(); }
+	auto net_wm_opaque_region() const -> vector<int> const * { return _properties->net_wm_opaque_region(); }
 	auto net_wm_bypass_compositor() const -> unsigned int const * { return _properties->net_wm_bypass_compositor(); }
 
 	/* EWMH (read-write properties for WM) */
 	auto net_wm_desktop() const -> unsigned int const * { return _properties->net_wm_desktop(); }
-	auto net_wm_state() const -> std::list<xcb_atom_t> const * { return _properties->net_wm_state(); }
-	auto net_frame_extents() const -> std::vector<int> const * { return _properties->net_frame_extents(); }
+	auto net_wm_state() const -> list<xcb_atom_t> const * { return _properties->net_wm_state(); }
+	auto net_frame_extents() const -> vector<int> const * { return _properties->net_frame_extents(); }
 
 
 	/* OTHERs */
@@ -395,61 +386,32 @@ public:
 		}
 	}
 
-	/**
-	 * tree_t interface implementation
-	 **/
 
-	void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	tree_t * parent() const {
-		return _parent;
-	}
-
-	void remove(tree_t * t) {
-		client_base_t * c = dynamic_cast<client_base_t *>(t);
+	void remove(weak_ptr<tree_t> t) {
+		if(t.expired())
+			return;
+		auto c = dynamic_pointer_cast<client_base_t>(t.lock());
 		if(c == nullptr)
 			return;
 		_children.remove(c);
 	}
 
-	void children(std::vector<tree_t *> & out) const {
+	void children(vector<weak_ptr<tree_t>> & out) const {
 		out.insert(out.end(), _children.begin(), _children.end());
 	}
 
-	void hide() {
-		_is_hidden = true;
-		for(auto i: tree_t::children()) {
-			i->hide();
-		}
-	}
+	void activate(weak_ptr<tree_t> t) {
+		if(t.expired())
+			return;
 
-	void show() {
-		_is_hidden = false;
-		for(auto i: tree_t::children()) {
-			i->show();
-		}
-	}
-
-	void get_visible_children(std::vector<tree_t *> & out) {
-		if (not _is_hidden) {
-			out.push_back(this);
-			for (auto i : tree_t::children()) {
-				i->get_visible_children(out);
-			}
-		}
-	}
-
-	void activate(tree_t * t = nullptr) {
 		/** raise ourself **/
-		if(_parent != nullptr) {
-			_parent->activate(this);
+		if(not _parent.expired()) {
+			_parent.lock()->activate(shared_from_this());
 		}
 
 		/** only client_base_t can be child of client_base_t **/
-		client_base_t * c = dynamic_cast<client_base_t *>(t);
-		if(has_key(_children, c) and c != nullptr) {
+		auto c = dynamic_pointer_cast<client_base_t>(t.lock());
+		if(has_key(_children, c)) {
 			/** raise the child **/
 			_children.remove(c);
 			_children.push_back(c);

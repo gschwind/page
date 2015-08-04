@@ -146,7 +146,7 @@ class notebook_t : public page_component_t {
 
 	void _update_allocation(rect & allocation);
 
-	void _remove_client(client_managed_t * c);
+	void _remove_client(shared_ptr<client_managed_t> const & c);
 
 	void _activate_client(client_managed_t * x);
 
@@ -177,7 +177,7 @@ public:
 	 **/
 	virtual auto parent() const -> page_component_t *;
 	virtual auto get_node_name() const -> string;
-	virtual void remove(tree_t * src);
+	virtual void remove(shared_ptr<tree_t> const & src);
 	virtual void set_parent(tree_t * t);
 	virtual void children(vector<tree_t *> & out) const;
 	virtual void get_visible_children(vector<tree_t *> & out);

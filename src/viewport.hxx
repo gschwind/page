@@ -27,14 +27,13 @@ class viewport_t: public page_component_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION;
 
 	page_context_t * _ctx;
-	page_component_t * _parent;
+
 	region _damaged;
 
 	xcb_pixmap_t _pix;
 	xcb_window_t _win;
 
 	bool _is_durty;
-	bool _is_hidden;
 	bool _exposed;
 
 	/** rendering tabs is time consuming, thus use back buffer **/
@@ -48,16 +47,13 @@ class viewport_t: public page_component_t {
 	/** area considering dock windows **/
 	rect _effective_area;
 	rect _page_area;
-	page_component_t * _subtree;
+
+	shared_ptr<page_component_t> _subtree;
 
 	viewport_t(viewport_t const & v);
 	viewport_t & operator= (viewport_t const &);
 
 public:
-
-	page_component_t * parent() const {
-		return _parent;
-	}
 
 	viewport_t(page_context_t * ctx, rect const & area, bool keep_focus);
 
@@ -69,7 +65,7 @@ public:
 	}
 
 	virtual void replace(page_component_t * src, page_component_t * by);
-	virtual void remove(tree_t * src);
+	virtual void remove(shared_ptr<tree_t> const & src);
 
 	notebook_t * get_nearest_notebook();
 
@@ -79,19 +75,22 @@ public:
 	void set_effective_area(rect const & area);
 
 	bool is_visible() {
-		return not _is_hidden;
+		return _is_visible;
 	}
 
-	void activate(tree_t * t) {
-		if(t != _subtree and t != nullptr) {
-			throw exception_t("viewport::raise_child trying to raise a non child tree");
+	void activate(weak_ptr<tree_t> t) {
+		if(not t.expired()) {
+			if(t.lock() != _subtree) {
+				throw exception_t("invalid call of viewport_t::activate");
+			}
 		}
 
 		queue_redraw();
 
-		if(_parent != nullptr and (t == _subtree or t == nullptr)) {
-			_parent->activate(this);
+		if(not _parent.expired()) {
+			_parent.lock()->activate(shared_from_this());
 		}
+
 	}
 
 	virtual std::string get_node_name() const {
@@ -99,27 +98,13 @@ public:
 	}
 
 	virtual void update_layout(time64_t const time) {
-		if(_is_hidden)
+		if(not _is_visible)
 			return;
 		if(_renderable == nullptr)
 			update_renderable();
 		_renderable->clear_damaged();
 		_renderable->add_damaged(_damaged);
 		_damaged.clear();
-	}
-
-	void set_parent(tree_t * t) {
-		if(t == nullptr) {
-			_parent = nullptr;
-			return;
-		}
-
-		auto xt = dynamic_cast<page_component_t*>(t);
-		if(xt == nullptr) {
-			throw exception_t("page_component_t must have a page_component_t as parent");
-		} else {
-			_parent = xt;
-		}
 	}
 
 	rect allocation() const {
@@ -134,48 +119,27 @@ public:
 
 	rect const & raw_area() const;
 
-	void children(std::vector<tree_t *> & out) const {
-		out.push_back(_renderable);
+	void children(std::vector<weak_ptr<tree_t>> & out) const {
+		//out.push_back(_renderable);
 		if(_subtree != nullptr) {
 			out.push_back(_subtree);
 		}
 	}
 
 	void hide() {
-		_is_hidden = true;
-
-		for(auto i: tree_t::children()) {
-			i->hide();
-		}
-
+		_is_visible = false;
 		_ctx->dpy()->unmap(_win);
 		destroy_renderable();
 	}
 
 	void show() {
-		_is_hidden = false;
-
-		for(auto i: tree_t::children()) {
-			i->show();
-		}
-
+		_is_visible = true;
 		_ctx->dpy()->map(_win);
 		update_renderable();
-
 	}
 
 	rect const & raw_area() {
 		return _raw_aera;
-	}
-
-	void get_visible_children(std::vector<tree_t *> & out) {
-		if (not _is_hidden) {
-			out.push_back(this);
-			out.push_back(_renderable);
-			for (auto i : tree_t::children()) {
-				i->get_visible_children(out);
-			}
-		}
 	}
 
 	void destroy_renderable() {
@@ -265,12 +229,12 @@ public:
 		cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
 		cairo_identity_matrix(cr);
 
-		auto splits = filter_class<split_t>(tree_t::get_all_children());
+		auto splits = filter_class_lock<split_t>(tree_t::get_all_children());
 		for (auto x : splits) {
 			x->render_legacy(cr);
 		}
 
-		auto notebooks = filter_class<notebook_t>(tree_t::get_all_children());
+		auto notebooks = filter_class_lock<notebook_t>(tree_t::get_all_children());
 		for (auto x : notebooks) {
 			x->render_legacy(cr);
 		}
@@ -318,7 +282,7 @@ public:
 	}
 
 	void ___expose() {
-		if(_is_hidden)
+		if(not _is_visible)
 			return;
 
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);

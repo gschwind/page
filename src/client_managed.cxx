@@ -334,7 +334,7 @@ void client_managed_t::reconfigure() {
 
 	if (lock()) {
 
-		if(_is_iconic or _is_hidden) {
+		if(_is_iconic or not _is_visible) {
 			/* if iconic move outside visible area */
 			cnx()->move_resize(_base, rect{_ctx->left_most_border()-1-_base_position.w, _ctx->top_most_border(), _base_position.w, _base_position.h});
 		} else {
@@ -806,7 +806,7 @@ void client_managed_t::normalize() {
 	if (lock()) {
 		_is_iconic = false;
 		_properties->set_wm_state(NormalState);
-		if (not _is_hidden) {
+		if (_is_visible) {
 			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 			map();
 		}
@@ -1083,11 +1083,10 @@ void client_managed_t::unlock() {
 }
 
 void client_managed_t::update_layout(time64_t const time) {
-	if(_is_hidden) {
+	if(not _is_visible)
 		return;
-	}
 
-	if (_ctx->csm()->get_last_pixmap(_base) != nullptr and not _is_hidden) {
+	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
 
 		rect loc{base_position()};
 
@@ -1099,11 +1098,8 @@ void client_managed_t::update_layout(time64_t const time) {
 				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
 			}
 		}
-
 		update_base_renderable();
-
 	}
-
 }
 
 void client_managed_t::set_focus_state(bool is_focused) {
@@ -1163,32 +1159,23 @@ void client_managed_t::unmap() {
 }
 
 void client_managed_t::hide() {
-	_is_hidden = true;
+	_is_visible = false;
 	net_wm_state_add(_NET_WM_STATE_HIDDEN);
 	//unmap();
 	reconfigure();
-	for(auto i: tree_t::children()) {
-		i->hide();
-	}
+	//for(auto i: tree_t::children()) {
+	//	i->hide();
+	//}
 }
 
 void client_managed_t::show() {
-	_is_hidden = false;
+	_is_visible = true;
 	net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 	reconfigure();
 	map();
-	for(auto i: tree_t::children()) {
-		i->show();
-	}
-}
-
-void client_managed_t::get_visible_children(std::vector<tree_t *> & out) {
-	if (not _is_hidden) {
-		out.push_back(this);
-		for (auto i : tree_t::children()) {
-			i->get_visible_children(out);
-		}
-	}
+	//for(auto i: tree_t::children()) {
+	//	i->show();
+	//}
 }
 
 bool client_managed_t::is_iconic() {

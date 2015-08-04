@@ -18,21 +18,18 @@ namespace page {
 
 class split_t : public page_component_t {
 	page_context_t * _ctx;
-	page_component_t * _parent;
 
 	rect _allocation;
 	rect _split_bar_area;
 	split_type_e _type;
 	double _ratio;
-	page_component_t * _pack0;
-	page_component_t * _pack1;
+	shared_ptr<page_component_t> _pack0;
+	shared_ptr<page_component_t> _pack1;
 
 	rect bpack0;
 	rect bpack1;
 
-	std::list<tree_t *> _children;
-
-	bool _is_hidden;
+	list<shared_ptr<tree_t>> _children;
 
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
@@ -47,12 +44,11 @@ public:
 
 	/* access to stuff */
 	auto get_split_bar_area() const -> rect const & { return _split_bar_area; }
-	auto get_pack0() const -> page_component_t * { return _pack0; }
-	auto get_pack1() const -> page_component_t * { return _pack1; }
+	auto get_pack0() const -> weak_ptr<page_component_t> { return _pack0; }
+	auto get_pack1() const -> weak_ptr<page_component_t> { return _pack1; }
 	auto allocation() const -> rect { return _allocation; }
 	auto ratio() const -> double { return _ratio; }
 	auto type() const -> split_type_e { return _type; }
-	auto parent() const -> page_component_t * { return _parent; }
 	auto get_node_name() const -> std::string { return _get_node_name<'S'>(); }
 
 
@@ -67,7 +63,7 @@ public:
 	void compute_split_size(double split, int & w, int & h) const;
 	void render_legacy(cairo_t * cr) const;
 	void activate(tree_t * t = nullptr);
-	void remove(tree_t * t);
+	void remove(shared_ptr<tree_t> const & t);
 	virtual void update_layout(time64_t const time);
 	rect compute_split_bar_location() const;
 	void set_parent(tree_t * t);
