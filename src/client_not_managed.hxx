@@ -101,7 +101,7 @@ public:
 		return oss.str();
 	}
 
-	virtual void udpate_layout(time64_t const time) {
+	virtual void update_layout(time64_t const time) {
 
 		rect pos(_properties->geometry()->x, _properties->geometry()->y,
 				_properties->geometry()->width, _properties->geometry()->height);

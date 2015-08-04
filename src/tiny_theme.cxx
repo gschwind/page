@@ -1438,7 +1438,6 @@ void tiny_theme_t::create_background_img() {
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
 		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
-		background_r = std::shared_ptr<renderable_t>(new renderable_pixmap_t(backgroun_px, rect{0,0,geometry->width,geometry->height}, region{}));
 
 		/**
 		 * WARNING: transform order and set_source_surface have huge
@@ -1603,8 +1602,6 @@ void tiny_theme_t::create_background_img() {
 
 		xcb_get_geometry_cookie_t ck = xcb_get_geometry(_cnx->xcb(), _cnx->root());
 		xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck, 0);
-
-		background_r = std::shared_ptr<renderable_t>(new renderable_solid_t(default_background_color, rect{0,0,geometry->width,geometry->height}, region{}));
 
 	}
 }
@@ -1787,8 +1784,8 @@ void tiny_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, double w
 
 }
 
-shared_ptr<renderable_t> tiny_theme_t::get_background(int width, int heigth) {
-	return background_r;
+shared_ptr<pixmap_t> tiny_theme_t::get_background(int width, int heigth) {
+	return backgroun_px;
 }
 
 color_t const & tiny_theme_t::get_focused_color() const {

@@ -14,7 +14,7 @@ grab_split_t::grab_split_t(page_context_t * ctx, split_t * s) : _ctx{ctx}, _spli
 	_slider_area = _split->to_root_position(_split->get_split_bar_area());
 	_split_ratio = _split->ratio();
 	_split_root_allocation = _split->to_root_position(_split->allocation());
-	_ps = std::make_shared<popup_split_t>(ctx, s);
+	_ps = new popup_split_t{ctx, s};
 	_ctx->overlay_add(_ps);
 }
 
@@ -22,6 +22,8 @@ grab_split_t::~grab_split_t() {
 	if(_ps != nullptr) {
 		_ctx->overlay_remove(_ps);
 	}
+
+	delete _ps;
 }
 
 void grab_split_t::button_press(xcb_button_press_event_t const *) {
@@ -134,7 +136,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	/* do not start drag&drop for small move */
 	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
-		pn0 = std::make_shared<popup_notebook0_t>(ctx);
+		pn0 = new popup_notebook0_t{ctx};
 		ctx->overlay_add(pn0);
 	}
 
@@ -246,7 +248,7 @@ grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, client_managed_
 		pfm{nullptr}
 {
 	_ctx->safe_raise_window(f);
-	pfm = std::make_shared<popup_notebook0_t>(_ctx);
+	pfm = new popup_notebook0_t{_ctx};
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
 	_ctx->dpy()->set_window_cursor(f->base(), _ctx->dpy()->xc_fleur);
@@ -343,7 +345,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, client_mana
 {
 
 	_ctx->safe_raise_window(f);
-	pfm = std::make_shared<popup_notebook0_t>(_ctx);
+	pfm = new popup_notebook0_t{_ctx};
 	pfm->move_resize(f->base_position());
 	_ctx->overlay_add(pfm);
 
@@ -355,6 +357,7 @@ grab_floating_resize_t::~grab_floating_resize_t() {
 	if (pfm != nullptr) {
 		_ctx->overlay_remove(pfm);
 	}
+	delete pfm;
 }
 
 void grab_floating_resize_t::button_press(xcb_button_press_event_t const * e) {
@@ -481,7 +484,7 @@ grab_fullscreen_client_t::grab_fullscreen_client_t(page_context_t * ctx, client_
  button{button}
 {
 	v = _ctx->find_mouse_viewport(x, y);
-	pn0 = std::make_shared<popup_notebook0_t>(ctx);
+	pn0 = new popup_notebook0_t{ctx};
 	pn0->move_resize(mw->base_position());
 	_ctx->overlay_add(pn0);
 }
@@ -556,7 +559,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 		v.push_back(cy);
 	}
 
-	pat = std::make_shared<popup_alt_tab_t>(_ctx, v, 0);
+	pat = new popup_alt_tab_t{_ctx, v, 0};
 
 	/** TODO: show it on all viewport **/
 	viewport_t * viewport = _ctx->get_current_workspace()->get_any_viewport();
@@ -566,11 +569,11 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 							+ (viewport->raw_area().h - pat->position().h) / 2);
 	pat->show();
 	pat->select_next();
-	_ctx->overlay_add(std::dynamic_pointer_cast<overlay_t>(pat));
+	_ctx->overlay_add(pat);
 }
 
 grab_alt_tab_t::~grab_alt_tab_t() {
-	_ctx->overlay_remove(std::dynamic_pointer_cast<overlay_t>(pat));
+	_ctx->overlay_remove(pat);
 }
 
 void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {

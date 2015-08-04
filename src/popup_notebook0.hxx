@@ -20,6 +20,8 @@ namespace page {
 struct popup_notebook0_t : public tree_t {
 	static int const border_width = 6;
 
+	tree_t * _parent;
+
 	page_context_t * _ctx;
 	std::shared_ptr<icon64> icon;
 	std::string title;
@@ -36,7 +38,7 @@ protected:
 
 public:
 	popup_notebook0_t(page_context_t * ctx) :
-			_position{-1, -1, 1, 1} , _ctx{ctx} {
+			_position{-1, -1, 1, 1} , _ctx{ctx}, _parent{nullptr} {
 		icon = nullptr;
 		_show = false;
 		icon = nullptr;
@@ -222,6 +224,14 @@ public:
 
 	xcb_window_t id() const {
 		return _wid;
+	}
+
+	virtual void set_parent(tree_t * t) {
+		_parent = t;
+	}
+
+	virtual tree_t * parent() const {
+		return _parent;
 	}
 
 };

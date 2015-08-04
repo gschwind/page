@@ -243,7 +243,6 @@ public:
 	bool has_window(xcb_window_t w) const;
 	virtual std::string get_node_name() const;
 	display_t * cnx();
-	virtual void udpate_layout(time64_t const time);
 	void update_base_renderable();
 	virtual rect const & base_position() const;
 	virtual rect const & orig_position() const;
@@ -283,6 +282,7 @@ public:
 
 	bool prefer_window_border() const;
 	virtual void children(std::vector<tree_t *> & out) const;
+	virtual void update_layout(time64_t const time);
 
 };
 

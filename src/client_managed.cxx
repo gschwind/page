@@ -994,30 +994,6 @@ display_t * client_managed_t::cnx() {
 	return _properties->cnx();
 }
 
-void client_managed_t::update_layout(time64_t const time) {
-	if(_is_hidden) {
-		return;
-	}
-
-	if (_ctx->csm()->get_last_pixmap(_base) != nullptr and not _is_hidden) {
-
-		rect loc{base_position()};
-
-		if (prefer_window_border() and not is(MANAGED_DOCK)) {
-			delete _shadow;
-			if(is_focused()) {
-				_shadow = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
-			} else {
-				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
-			}
-		}
-
-		update_base_renderable();
-
-	}
-
-}
-
 void client_managed_t::update_base_renderable() {
 	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
 
@@ -1106,6 +1082,29 @@ void client_managed_t::unlock() {
 	cnx()->ungrab();
 }
 
+void client_managed_t::update_layout(time64_t const time) {
+	if(_is_hidden) {
+		return;
+	}
+
+	if (_ctx->csm()->get_last_pixmap(_base) != nullptr and not _is_hidden) {
+
+		rect loc{base_position()};
+
+		if (prefer_window_border() and not is(MANAGED_DOCK)) {
+			delete _shadow;
+			if(is_focused()) {
+				_shadow = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
+			} else {
+				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
+			}
+		}
+
+		update_base_renderable();
+
+	}
+
+}
 
 void client_managed_t::set_focus_state(bool is_focused) {
 	if (lock()) {

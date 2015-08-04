@@ -1910,7 +1910,7 @@ void simple2_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, doubl
 }
 
 shared_ptr<pixmap_t> simple2_theme_t::get_background() {
-	return background_px;
+	return backgroun_px;
 }
 
 color_t const & simple2_theme_t::get_focused_color() const {
