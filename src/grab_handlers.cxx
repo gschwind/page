@@ -10,17 +10,19 @@
 
 namespace page {
 
-grab_split_t::grab_split_t(page_context_t * ctx, split_t * s) : _ctx{ctx}, _split{s} {
+using namespace std;
+
+grab_split_t::grab_split_t(page_context_t * ctx, shared_ptr<split_t> s) : _ctx{ctx}, _split{s} {
 	_slider_area = _split->to_root_position(_split->get_split_bar_area());
 	_split_ratio = _split->ratio();
 	_split_root_allocation = _split->to_root_position(_split->allocation());
-	_ps = new popup_split_t{ctx, s};
+	_ps = make_shared<popup_split_t>(ctx, s);
 	_ctx->overlay_add(_ps);
 }
 
 grab_split_t::~grab_split_t() {
 	if(_ps != nullptr) {
-		_ctx->overlay_remove(_ps);
+		_ctx->detach(_ps);
 	}
 
 	delete _ps;
@@ -31,9 +33,12 @@ void grab_split_t::button_press(xcb_button_press_event_t const *) {
 }
 
 void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
+	if(_split.expired()) {
+		_ctx->grab_stop();
+		return;
+	}
 
-
-	if (_split->type() == VERTICAL_SPLIT) {
+	if (_split.lock()->type() == VERTICAL_SPLIT) {
 		_split_ratio = (e->root_x
 				- _split_root_allocation.x)
 				/ (double) (_split_root_allocation.w);
@@ -50,28 +55,33 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	/* Render slider with quite complex render method to avoid flickering */
 	rect old_area = _slider_area;
-	_split->compute_split_location(_split_ratio,
+	_split.lock()->compute_split_location(_split_ratio,
 			_slider_area.x, _slider_area.y);
-	_slider_area = _split->to_root_position(_slider_area);
+	_slider_area = _split.lock()->to_root_position(_slider_area);
 
 	_ps->set_position(_split_ratio);
 	_ctx->add_global_damage(_ps->position());
 }
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
+	if(_split.expired()) {
+		_ctx->grab_stop();
+		return;
+	}
+
 	if (e->detail == XCB_BUTTON_INDEX_1) {
-		_split->queue_redraw();
+		_split.lock()->queue_redraw();
 		if(_ps != nullptr) {
-			_ctx->overlay_remove(_ps);
+			_ctx->detach(_ps);
 			_ps = nullptr;
 		}
 		_ctx->add_global_damage(_split_root_allocation);
-		_split->set_split(_split_ratio);
+		_split.lock()->set_split(_split_ratio);
 		_ctx->grab_stop();
 	}
 }
 
-grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * c, xcb_button_t button, rect const & pos) :
+grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos) :
 		ctx{ctx},
 		c{c},
 		start_position{pos},
@@ -86,19 +96,19 @@ grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, client_managed_t * 
 
 grab_bind_client_t::~grab_bind_client_t() {
 	if(pn0 != nullptr) {
-		ctx->overlay_remove(pn0);
+		ctx->detach(pn0);
 	}
 }
 
 void grab_bind_client_t::_find_target_notebook(int x, int y,
-		notebook_t * & target, notebook_area_e & zone) {
+		shared_ptr<notebook_t> & target, notebook_area_e & zone) {
 
 	target = nullptr;
 	zone = NOTEBOOK_AREA_NONE;
 
 	/* place the popup */
 	auto ln = filter_class<notebook_t>(
-			ctx->get_current_workspace()->tree_t::get_all_children());
+			ctx->get_current_workspace()->get_all_children());
 	for (auto i : ln) {
 		if (i->_area.tab.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TAB;
@@ -134,6 +144,7 @@ void grab_bind_client_t::button_press(xcb_button_press_event_t const * e) {
 
 void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 
+
 	/* do not start drag&drop for small move */
 	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
 		pn0 = new popup_notebook0_t{ctx};
@@ -143,7 +154,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if (pn0 == nullptr)
 		return;
 
-	notebook_t * new_target;
+	shared_ptr<notebook_t> new_target;
 	notebook_area_e new_zone;
 	_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
 
@@ -152,22 +163,22 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 		zone = new_zone;
 		switch(zone) {
 		case NOTEBOOK_AREA_TAB:
-			pn0->move_resize(target_notebook->_area.tab);
+			pn0->move_resize(new_target->_area.tab);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
-				pn0->move_resize(target_notebook->_area.popup_right);
+				pn0->move_resize(new_target->_area.popup_right);
 			break;
 		case NOTEBOOK_AREA_TOP:
-			pn0->move_resize(target_notebook->_area.popup_top);
+			pn0->move_resize(new_target->_area.popup_top);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
-			pn0->move_resize(target_notebook->_area.popup_bottom);
+			pn0->move_resize(new_target->_area.popup_bottom);
 			break;
 		case NOTEBOOK_AREA_LEFT:
-			pn0->move_resize(target_notebook->_area.popup_left);
+			pn0->move_resize(new_target->_area.popup_left);
 			break;
 		case NOTEBOOK_AREA_CENTER:
-				pn0->move_resize(target_notebook->_area.popup_center);
+				pn0->move_resize(new_target->_area.popup_center);
 			break;
 		}
 	}
@@ -176,9 +187,10 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 	if (e->detail == _button) {
 
-		_find_target_notebook(e->root_x, e->root_y, target_notebook, zone);
+		shared_ptr<notebook_t> new_target;
+		_find_target_notebook(e->root_x, e->root_y, new_target, zone);
 
-		if(target_notebook == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
+		if(new_target == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
 			if(c->is(MANAGED_FLOATING)) {
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, nullptr, true);
@@ -213,7 +225,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			ctx->split_right(target_notebook, c);
 			break;
 		default:
-			notebook_t * parent = dynamic_cast<notebook_t *>(c->parent());
+			auto parent = dynamic_pointer_cast<notebook_t>(c->parent().lock());
 			if (parent != nullptr) {
 				c->queue_redraw();
 				/* hide client if option allow shaded client */

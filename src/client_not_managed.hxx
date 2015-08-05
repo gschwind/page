@@ -201,7 +201,7 @@ public:
 		return _base_position;
 	}
 
-	void children(vector<weak_ptr<tree_t>> & out) const {
+	void children(vector<shared_ptr<tree_t>> & out) const {
 //		if(_shadow != nullptr)
 //			out.push_back(_shadow);
 //		if(_base_renderable != nullptr)

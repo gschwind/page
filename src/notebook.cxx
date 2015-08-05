@@ -34,14 +34,14 @@ notebook_t::~notebook_t() {
 
 }
 
-bool notebook_t::add_client(client_managed_t * x, bool prefer_activate) {
+bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate) {
 	assert(not has_key(_clients, x));
 	assert(x != nullptr);
 
 	if(_exposay)
 		prefer_activate = false;
 
-	x->set_parent(this);
+	x->set_parent(shared_from_this());
 	_children.push_back(x);
 	_clients.push_front(x);
 
@@ -96,17 +96,17 @@ void notebook_t::remove(shared_ptr<tree_t> const & src) {
 	}
 }
 
-void notebook_t::_activate_client(client_managed_t * x) {
+void notebook_t::_activate_client(shared_ptr<client_managed_t> x) {
 	if (has_key(_clients, x)) {
 		_set_selected(x);
 	}
 }
 
-list<client_managed_t *> const & notebook_t::get_clients() {
+list<shared_ptr<client_managed_t>> const & notebook_t::get_clients() {
 	return _clients;
 }
 
-void notebook_t::_remove_client(shared_ptr<client_managed_t> const & x) {
+void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	assert(has_key(_clients, x));
 
 	if(x == nullptr)
@@ -138,7 +138,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> const & x) {
 	_ctx->csm()->unregister_window(x->base());
 }
 
-void notebook_t::_set_selected(client_managed_t * c) {
+void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 	/** already selected **/
 	if(_selected == c and not c->is_iconic())
 		return;
@@ -156,14 +156,14 @@ void notebook_t::_set_selected(client_managed_t * c) {
 	_update_layout();
 }
 
-void notebook_t::update_client_position(client_managed_t * c) {
+void notebook_t::update_client_position(shared_ptr<client_managed_t> c) {
 	/* compute the window placement within notebook */
 	_client_position = _compute_client_size(c);
 	c->set_notebook_wished_position(to_root_position(_client_position));
 	c->reconfigure();
 }
 
-void notebook_t::iconify_client(client_managed_t * x) {
+void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 	assert(has_key(_clients, x));
 
 	/** already iconified **/
@@ -267,7 +267,7 @@ void notebook_t::_update_layout() {
 	queue_redraw();
 }
 
-rect notebook_t::_compute_client_size(client_managed_t * c) {
+rect notebook_t::_compute_client_size(shared_ptr<client_managed_t> c) {
 	dimention_t<unsigned> size =
 			c->compute_size_with_constrain(_client_area.w, _client_area.h);
 
@@ -707,7 +707,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		} else {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					client_managed_t * c = std::get<1>(i);
+					shared_ptr<client_managed_t> c = std::get<1>(i);
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
 					return true;
 				}
@@ -715,7 +715,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					client_managed_t * c = std::get<1>(i);
+					shared_ptr<client_managed_t> c = std::get<1>(i);
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
 					return true;
 				}
@@ -762,7 +762,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
 }
 
-void notebook_t::_start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y) {
+void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y) {
 	auto callback = [this, c] (int selected) -> void { this->_process_notebook_client_menu(c, selected); };
 	std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
@@ -774,7 +774,7 @@ void notebook_t::_start_client_menu(client_managed_t * c, xcb_button_t button, u
 
 }
 
-void notebook_t::_process_notebook_client_menu(client_managed_t * c, int selected) {
+void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected) {
 	printf("Change desktop %d for %u\n", selected, c->orig());
 	if (selected != _ctx->get_current_workspace()->id()) {
 		_ctx->detach(c);
@@ -794,8 +794,8 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
 		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
-		std::tuple<rect, client_managed_t *, theme_tab_t *> * tab = nullptr;
-		std::tuple<rect, client_managed_t *, int> * exposay = nullptr;
+		std::tuple<rect, shared_ptr<client_managed_t>, theme_tab_t *> * tab = nullptr;
+		std::tuple<rect, shared_ptr<client_managed_t>, int> * exposay = nullptr;
 
 		if (_area.button_close.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
@@ -901,7 +901,7 @@ void notebook_t::_mouse_over_set() {
 	}
 }
 
-void notebook_t::_client_title_change(client_managed_t * c) {
+void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
 	for(auto & x: _client_buttons) {
 		if(c == std::get<1>(x)) {
 			std::get<2>(x)->title = c->title();
@@ -920,16 +920,16 @@ void notebook_t::_client_title_change(client_managed_t * c) {
 	queue_redraw();
 }
 
-void notebook_t::_client_destroy(client_managed_t * c) {
+void notebook_t::_client_destroy(shared_ptr<client_managed_t> c) {
 	this->_remove_client(c);
 }
 
-void notebook_t::_client_activate(client_managed_t * c) {
+void notebook_t::_client_activate(shared_ptr<client_managed_t> c) {
 	_update_layout();
 	queue_redraw();
 }
 
-void notebook_t::_client_deactivate(client_managed_t * c) {
+void notebook_t::_client_deactivate(shared_ptr<client_managed_t> c) {
 	_update_layout();
 	queue_redraw();
 }
@@ -988,7 +988,7 @@ void notebook_t::get_visible_children(vector<tree_t *> & out) {
 	}
 }
 
-bool notebook_t::_has_client(client_managed_t * c) {
+bool notebook_t::_has_client(shared_ptr<client_managed_t> c) {
 	return has_key(_clients, c);
 }
 

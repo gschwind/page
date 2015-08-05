@@ -57,16 +57,16 @@ public:
 
 	virtual void add_global_damage(region const & r) = 0;
 
-	virtual void safe_raise_window(weak_ptr<client_base_t> c) = 0;
+	virtual void safe_raise_window(shared_ptr<client_base_t> c) = 0;
 
-	virtual weak_ptr<viewport_t> find_mouse_viewport(int x, int y) const = 0;
+	virtual shared_ptr<viewport_t> find_mouse_viewport(int x, int y) const = 0;
 
 	/**
 	 * Get the current workspace.
 	 *
 	 * @return: a pointer to the current workspace
 	 **/
-	virtual weak_ptr<workspace_t> get_current_workspace() const = 0;
+	virtual shared_ptr<workspace_t> const & get_current_workspace() const = 0;
 
 	/**
 	 * Get a given workspace from id. Desktop id start from 0 to workspace count(excluding).
@@ -74,7 +74,7 @@ public:
 	 * @input id: the id of the desktop.
 	 * @return: the workscape with the id.
 	 */
-	virtual weak_ptr<workspace_t> get_workspace(int id) const = 0;
+	virtual shared_ptr<workspace_t> const & get_workspace(int id) const = 0;
 
 	/**
 	 * Give how much workspace are available workspace.
@@ -105,7 +105,7 @@ public:
 	 * @return: a shared_ptr of this node, if the shared_ptr is lost, the node
 	 *          is destroyed.
 	 **/
-	virtual void detach(shared_ptr<tree_t> const & t) = 0;
+	virtual void detach(shared_ptr<tree_t> t) = 0;
 
 	/**
 	 * add a client to a notebook.
@@ -116,7 +116,7 @@ public:
 	 * @input n: the target notebook
 	 * @input prefer_activate: set to true to ask to show the client after inserting it.
 	 **/
-	virtual void insert_window_in_notebook(weak_ptr<client_managed_t> x, weak_ptr<notebook_t> n, bool prefer_activate) = 0;
+	virtual void insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_ptr<notebook_t> n, bool prefer_activate) = 0;
 
 	/**
 	 * Take a client and put it into fullscreen at given viewport.
@@ -126,14 +126,14 @@ public:
 	 * @input c: client to set fullscreen.
 	 * @input v: the target viewport, if nullptr select the default one.
 	 **/
-	virtual void fullscreen_client_to_viewport(weak_ptr<client_managed_t> c, weak_ptr<viewport_t> v) = 0;
+	virtual void fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v) = 0;
 
 	/**
 	 * Remove a client from a note book and turn it to floating mode
 	 *
 	 * @input mw: the client to make floating.
 	 **/
-	virtual void unbind_window(weak_ptr<client_managed_t> mw) = 0;
+	virtual void unbind_window(shared_ptr<client_managed_t> mw) = 0;
 
 	/**
 	 * Split a notebook in two notebooks, inserting a client to the new one
@@ -141,10 +141,10 @@ public:
 	 * @input nbk: notebook to split
 	 * @input c: the client to add to the new notebook. if nullptr no client is inserted.
 	 **/
-	virtual void split_left(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c) = 0;
-	virtual void split_right(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c) = 0;
-	virtual void split_top(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c) = 0;
-	virtual void split_bottom(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c) = 0;
+	virtual void split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) = 0;
+	virtual void split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) = 0;
+	virtual void split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) = 0;
+	virtual void split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) = 0;
 
 	/**
 	 * Focus the client w at time stamp tfocus
@@ -152,7 +152,7 @@ public:
 	 * @input w: the client to focus.
 	 * @input tfocus: timestamp of focus.
 	 */
-	virtual void set_focus(shared_ptr<client_managed_t> const & w, xcb_timestamp_t tfocus) = 0;
+	virtual void set_focus(shared_ptr<client_managed_t> w, xcb_timestamp_t tfocus) = 0;
 
 	/**
 	 * Close a given notebook. i.e. unsplit it.
@@ -160,7 +160,7 @@ public:
 	 *
 	 * @input nbk: the notebook to close.
 	 **/
-	virtual void notebook_close(weak_ptr<notebook_t> nbk) = 0;
+	virtual void notebook_close(shared_ptr<notebook_t> nbk) = 0;
 
 	/**
 	 * This function enable the placement of client outside the screen without unmap them.
@@ -169,7 +169,7 @@ public:
 	virtual int top_most_border() = 0;
 
 	virtual list<weak_ptr<client_managed_t>> global_client_focus_history() = 0;
-	virtual list<weak_ptr<client_managed_t>> clients_list() = 0;
+	virtual vector<shared_ptr<client_managed_t>> clients_list() = 0;
 
 	virtual keymap_t const * keymap() const = 0;
 

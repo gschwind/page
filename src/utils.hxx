@@ -197,8 +197,8 @@ std::list<std::weak_ptr<T0>> filter_class(std::list<std::weak_ptr<T1>> const & x
 }
 
 template<typename T0, typename T1>
-std::vector<std::weak_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> const & x) {
-	std::vector<std::weak_ptr<T0>> ret;
+std::vector<std::shared_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> const & x) {
+	std::vector<std::shared_ptr<T0>> ret;
 	for (auto i : x) {
 		auto n = dynamic_pointer_cast<T0>(i);
 		if (n != nullptr) {
@@ -209,8 +209,8 @@ std::vector<std::weak_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> con
 }
 
 template<typename T0, typename T1>
-std::list<std::weak_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const & x) {
-	std::list<std::weak_ptr<T0>> ret;
+std::list<std::shared_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const & x) {
+	std::list<std::shared_ptr<T0>> ret;
 	for (auto i : x) {
 		auto n = dynamic_pointer_cast<T0>(i);
 		if (n != nullptr) {
@@ -219,6 +219,17 @@ std::list<std::weak_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const &
 	}
 	return ret;
 }
+
+template<typename T0>
+std::list<std::weak_ptr<T0>> weak(std::list<std::shared_ptr<T0>> const & x) {
+	return std::list<std::shared_ptr<T0>>{x.begin(), x.end()};
+}
+
+template<typename T0>
+std::vector<std::weak_ptr<T0>> weak(std::vector<std::shared_ptr<T0>> const & x) {
+	return std::vector<std::weak_ptr<T0>>{x.begin(), x.end()};
+}
+
 
 /**
  * Parse std::string like "mod4+f" to modifier mask (mod) and keysym (ks)

@@ -33,7 +33,7 @@ client_base_t::client_base_t(page_context_t * ctx, shared_ptr<client_properties_
 
 }
 
-virtual client_base_t::~client_base_t() { }
+client_base_t::~client_base_t() { }
 
 void client_base_t::read_all_properties() {
 	_properties->read_all_properties();
@@ -201,7 +201,7 @@ bool client_base_t::is_window(xcb_window_t w) {
 	return w == _properties->id();
 }
 
-virtual std::string client_base_t::get_node_name() const {
+string client_base_t::get_node_name() const {
 	return _get_node_name<'c'>();
 }
 

@@ -84,25 +84,25 @@ public:
 	void render(cairo_t * cr, rect const & area) const { }
 
 
-	void activate(weak_ptr<tree_t> t) {
+	void activate(shared_ptr<tree_t> t) {
 
 		if(not _parent.expired()) {
 			_parent.lock()->activate(shared_from_this());
 		}
 
-		if(t.expired())
+		if(t == nullptr)
 			return;
 
-		auto mw = dynamic_pointer_cast<client_managed_t>(t.lock());
+		auto mw = dynamic_pointer_cast<client_managed_t>(t);
 
 		if(has_key(_floating_layer, mw)) {
 			_floating_layer.remove(mw);
 			_floating_layer.push_back(mw);
 		}
 
-		if(has_key(_viewport_layer, t.lock())) {
-			_viewport_layer.remove(t.lock());
-			_viewport_layer.push_back(t.lock());
+		if(has_key(_viewport_layer, t)) {
+			_viewport_layer.remove(t);
+			_viewport_layer.push_back(t);
 		}
 
 	}
@@ -158,27 +158,27 @@ public:
 		return _primary_viewport;
 	}
 
-	auto get_viewports() const -> vector<weak_ptr<viewport_t>> {
+	auto get_viewports() const -> vector<shared_ptr<viewport_t>> {
 		auto tmp = filter_class<viewport_t>(_viewport_layer);
-		return vector<weak_ptr<viewport_t>>{tmp.begin(), tmp.end()};
+		return vector<shared_ptr<viewport_t>>{tmp.begin(), tmp.end()};
 	}
 
-	void set_default_pop(weak_ptr<notebook_t> n) {
+	void set_default_pop(shared_ptr<notebook_t> n) {
 		if (not _default_pop.expired()) {
 			_default_pop.lock()->set_default(false);
 		}
 
-		if (not n.expired()) {
+		if (n != nullptr) {
 			_default_pop = n;
 			_default_pop.lock()->set_default(true);
 		}
 	}
 
-	weak_ptr<notebook_t> default_pop() {
-		return _default_pop;
+	shared_ptr<notebook_t> default_pop() {
+		return _default_pop.lock();
 	}
 
-	void children(vector<weak_ptr<tree_t>> & out) const {
+	void children(vector<shared_ptr<tree_t>> & out) const {
 		out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 		out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
 		//if(_switch_renderable != nullptr)
@@ -187,23 +187,23 @@ public:
 
 	void update_default_pop() {
 		_default_pop.reset();
-		for(auto i: filter_class_lock<notebook_t>(tree_t::get_all_children())) {
+		for(auto i: filter_class<notebook_t>(get_all_children())) {
 			i->set_default(true);
 			_default_pop = i;
+			return;
 		}
 	}
 
-	void add_floating_client(weak_ptr<client_managed_t> c) {
-		if(c.expired())
+	void add_floating_client(shared_ptr<client_managed_t> c) {
+		if(c != nullptr)
 			return;
 
-		auto xc = c.lock();
-		xc->set_parent(shared_from_this());
+		c->set_parent(shared_from_this());
 
-		if(xc->is(MANAGED_DOCK)) {
-			_viewport_layer.push_back(xc);
+		if(c->is(MANAGED_DOCK)) {
+			_viewport_layer.push_back(c);
 		} else {
-			_floating_layer.push_back(xc);
+			_floating_layer.push_back(c);
 		}
 	}
 

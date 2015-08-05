@@ -39,12 +39,11 @@ class notebook_t : public page_component_t {
 	time64_t const animation_duration{0, 500000000};
 
 	page_context_t * _ctx;
-	page_component_t * _parent;
 
 	rect _allocation;
 
 	/* child stack order the first one is the lowest one */
-	list<tree_t *> _children;
+	list<shared_ptr<tree_t>> _children;
 
 	time64_t _swap_start;
 
@@ -80,10 +79,10 @@ class notebook_t : public page_component_t {
 	};
 
 	// list to maintain the client order
-	list<client_managed_t *> _clients;
-	map<client_managed_t *, _client_context_t> _clients_context;
+	list<shared_ptr<client_managed_t>> _clients;
+	map<weak_ptr<client_managed_t>, _client_context_t> _clients_context;
 
-	client_managed_t * _selected;
+	shared_ptr<client_managed_t> _selected;
 
 	rect _client_area;
 	rect _client_position;
@@ -139,33 +138,33 @@ class notebook_t : public page_component_t {
 	rect _compute_notebook_close_position() const;
 	rect _compute_notebook_menu_position() const;
 
-	void _client_title_change(client_managed_t * c);
-	void _client_destroy(client_managed_t * c);
-	void _client_activate(client_managed_t * c);
-	void _client_deactivate(client_managed_t * c);
+	void _client_title_change(shared_ptr<client_managed_t> c);
+	void _client_destroy(shared_ptr<client_managed_t> c);
+	void _client_activate(shared_ptr<client_managed_t> c);
+	void _client_deactivate(shared_ptr<client_managed_t> c);
 
 	void _update_allocation(rect & allocation);
 
-	void _remove_client(shared_ptr<client_managed_t> const & c);
+	void _remove_client(shared_ptr<client_managed_t> c);
 
-	void _activate_client(client_managed_t * x);
+	void _activate_client(shared_ptr<client_managed_t> x);
 
 
 	rect _get_new_client_size();
 
 	void _select_next();
 
-	rect _compute_client_size(client_managed_t * c);
+	rect _compute_client_size(shared_ptr<client_managed_t> c);
 
-	auto clients() const -> list<client_managed_t const *>;
-	auto selected() const -> client_managed_t const *;
+	auto clients() const -> list<shared_ptr<client_managed_t>>;
+	auto selected() const -> shared_ptr<client_managed_t>;
 	bool is_default() const;
 
-	bool _has_client(client_managed_t * c);
+	bool _has_client(shared_ptr<client_managed_t> c);
 	void _set_keep_selected(bool x);
 	void _update_exposay();
 	void _stop_exposay();
-	void _start_client_menu(client_managed_t * c, xcb_button_t button, uint16_t x, uint16_t y);
+	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
 
 public:
 
@@ -175,16 +174,13 @@ public:
 	/**
 	 * tree_t interface
 	 **/
-	virtual auto parent() const -> page_component_t *;
 	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> const & src);
-	virtual void set_parent(tree_t * t);
-	virtual void children(vector<tree_t *> & out) const;
-	virtual void get_visible_children(vector<tree_t *> & out);
+	virtual void remove(shared_ptr<tree_t> src);
+	virtual void children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void hide();
 	virtual void show();
 	virtual void update_layout(time64_t const time);
-	virtual void activate(tree_t * t = nullptr);
+	virtual void activate(shared_ptr<tree_t> t);
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
@@ -206,10 +202,10 @@ public:
 	void set_default(bool x);
 	void render_legacy(cairo_t * cr) const;
 	void start_exposay();
-	void update_client_position(client_managed_t * c);
-	void iconify_client(client_managed_t * x);
-	bool add_client(client_managed_t * c, bool prefer_activate);
-	auto get_clients() -> list<client_managed_t *> const &;
+	void update_client_position(shared_ptr<client_managed_t> c);
+	void iconify_client(shared_ptr<client_managed_t> x);
+	bool add_client(shared_ptr<client_managed_t> c, bool prefer_activate);
+	auto get_clients() -> list<shared_ptr<client_managed_t>> const &;
 
 	/* TODO : remove it */
 	friend grab_bind_client_t;

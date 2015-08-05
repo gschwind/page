@@ -229,12 +229,12 @@ public:
 		cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
 		cairo_identity_matrix(cr);
 
-		auto splits = filter_class_lock<split_t>(tree_t::get_all_children());
+		auto splits = filter_class<split_t>(get_all_children());
 		for (auto x : splits) {
 			x->render_legacy(cr);
 		}
 
-		auto notebooks = filter_class_lock<notebook_t>(tree_t::get_all_children());
+		auto notebooks = filter_class<notebook_t>(get_all_children());
 		for (auto x : notebooks) {
 			x->render_legacy(cr);
 		}

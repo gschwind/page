@@ -54,10 +54,10 @@ namespace page {
 using namespace std;
 
 struct fullscreen_data_t {
-	workspace_t * desktop;
-	viewport_t * viewport;
+	weak_ptr<workspace_t> desktop;
+	weak_ptr<viewport_t> viewport;
 	managed_window_type_e revert_type;
-	notebook_t * revert_notebook;
+	weak_ptr<notebook_t> revert_notebook;
 };
 
 /* process_mode_e define possible state of page */
@@ -97,9 +97,6 @@ class page_t : public page_component_t, public mainloop_t, public page_context_t
 	void _bind_all_default_event();
 
 public:
-
-	/* store all managed client */
-	list<weak_ptr<client_managed_t>> _clients_list;
 
 	/* auto-refocus a client if the current one is closed */
 	bool _auto_refocus;
@@ -147,7 +144,7 @@ public:
 	 * Store data to allow proper revert fullscreen window to
 	 * their original positions
 	 **/
-	map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
+	map<weak_ptr<client_managed_t> , fullscreen_data_t> _fullscreen_client_to_viewport;
 
 	list<xcb_atom_t> supported_list;
 
@@ -203,8 +200,8 @@ public:
 	page_t(int argc, char ** argv);
 	virtual ~page_t();
 
-	void set_default_pop(weak_ptr<notebook_t> x);
-	void set_focus(shared_ptr<client_managed_t> const & w, xcb_timestamp_t tfocus);
+	void set_default_pop(shared_ptr<notebook_t> x);
+	void set_focus(shared_ptr<client_managed_t> w, xcb_timestamp_t tfocus);
 	compositor_t * get_render_context();
 	display_t * get_xconnection();
 
@@ -273,95 +270,96 @@ public:
 	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> wa);
 
 	/* unmanage a managed window */
-	void unmanage(weak_ptr<client_managed_t> mw);
+	void unmanage(shared_ptr<client_managed_t> mw);
 
 	/* put a managed window into a given notebook */
-	void insert_window_in_notebook(weak_ptr<client_managed_t> x, weak_ptr<notebook_t> n, bool prefer_activate);
+	void insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_ptr<notebook_t> n, bool prefer_activate);
 
 	/* update viewport and childs allocation */
 	void update_workarea();
 
 	/* turn a managed window into fullscreen */
-	void fullscreen(weak_ptr<client_managed_t> c, weak_ptr<viewport_t> v);
+	void fullscreen(shared_ptr<client_managed_t> c);
+	void fullscreen(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v);
 
 	/* switch a fullscreened and managed window into floating or notebook window */
-	void unfullscreen(weak_ptr<client_managed_t> c);
+	void unfullscreen(shared_ptr<client_managed_t> c);
 
 	/* toggle fullscreen */
-	void toggle_fullscreen(weak_ptr<client_managed_t> c);
+	void toggle_fullscreen(shared_ptr<client_managed_t> c);
 
 	/* split a notebook into two notebook */
-	void split(weak_ptr<notebook_t> nbk, split_type_e type);
-	void split_left(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c);
-	void split_right(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c);
-	void split_top(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c);
-	void split_bottom(weak_ptr<notebook_t> nbk, weak_ptr<client_managed_t> c);
+	void split(shared_ptr<notebook_t> nbk, split_type_e type);
+	void split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
+	void split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
+	void split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
+	void split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
 
 	/* close a notebook and unsplit the parent */
-	void notebook_close(weak_ptr<notebook_t> src);
+	void notebook_close(shared_ptr<notebook_t> src);
 
 	/* compute the allocation of viewport taking in account DOCKs */
-	void compute_viewport_allocation(weak_ptr<workspace_t> d, weak_ptr<viewport_t> v);
+	void compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
 
-	void cleanup_not_managed_client(weak_ptr<client_not_managed_t> c);
+	void cleanup_not_managed_client(shared_ptr<client_not_managed_t> c);
 
 	void process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties);
 
 	void insert_in_tree_using_transient_for(shared_ptr<client_base_t> c);
 
-	void safe_update_transient_for(weak_ptr<client_base_t> c);
+	void safe_update_transient_for(shared_ptr<client_base_t> c);
 
-	client_base_t * get_transient_for(weak_ptr<client_base_t> c);
-	void logical_raise(weak_ptr<client_base_t> c);
+	shared_ptr<client_base_t> get_transient_for(shared_ptr<client_base_t> c);
+	void logical_raise(shared_ptr<client_base_t> c);
 
-	void detach(shared_ptr<tree_t> const & t);
+	void detach(shared_ptr<tree_t> t);
 
-	void safe_raise_window(weak_ptr<client_base_t> c);
+	void safe_raise_window(shared_ptr<client_base_t> c);
 
 	/* attach floating window in a notebook */
-	void bind_window(weak_ptr<client_managed_t> mw, bool activate);
+	void bind_window(shared_ptr<client_managed_t> mw, bool activate);
 	/* detach notebooked window to a floating window */
-	void unbind_window(weak_ptr<client_managed_t> mw);
+	void unbind_window(shared_ptr<client_managed_t> mw);
 	void grab_pointer();
 	/* if grab is linked to a given window remove this grab */
-	void cleanup_grab(weak_ptr<client_managed_t> mw);
+	void cleanup_grab();
 	/* find a valid notebook, that is in subtree base and that is no nbk */
-	weak_ptr<notebook_t> get_another_notebook(weak_ptr<tree_t> base, weak_ptr<tree_t> nbk);
+	shared_ptr<notebook_t> get_another_notebook(shared_ptr<tree_t> base, shared_ptr<tree_t> nbk);
 	/* get all available notebooks with page */
-	vector<weak_ptr<notebook_t>> get_notebooks(weak_ptr<tree_t> base);
-	vector<weak_ptr<viewport_t>> get_viewports(weak_ptr<tree_t> base);
+	vector<shared_ptr<notebook_t>> get_notebooks(shared_ptr<tree_t> base);
+	vector<shared_ptr<viewport_t>> get_viewports(shared_ptr<tree_t> base);
 	/* find where the managed window is */
-	weak_ptr<notebook_t> find_parent_notebook_for(weak_ptr<client_managed_t> mw);
-	weak_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
-	static weak_ptr<viewport_t> find_viewport_of(weak_ptr<tree_t> n);
-	static weak_ptr<workspace_t> find_desktop_of(weak_ptr<tree_t> n);
+	shared_ptr<notebook_t> find_parent_notebook_for(shared_ptr<client_managed_t> mw);
+	shared_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
+	static shared_ptr<viewport_t> find_viewport_of(shared_ptr<tree_t> n);
+	static shared_ptr<workspace_t> find_desktop_of(shared_ptr<tree_t> n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
 	void update_viewport_layout();
-	void remove_viewport(weak_ptr<workspace_t> d, weak_ptr<viewport_t> v);
-	void destroy_viewport(weak_ptr<viewport_t> v);
+	void remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
+	void destroy_viewport(shared_ptr<viewport_t> v);
 	void onmap(xcb_window_t w);
 	void create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
-	void manage_client(weak_ptr<client_managed_t> mw, xcb_atom_t type);
+	void manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type);
 	void ackwoledge_configure_request(xcb_configure_request_event_t const * e);
 	void create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
 	void create_dock_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
-	bool get_safe_net_wm_user_time(weak_ptr<client_base_t> c, xcb_timestamp_t & time);
+	bool get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time);
 	void update_page_areas();
 	void set_desktop_geometry(long width, long height);
-	client_base_t * find_client_with(xcb_window_t w);
+	shared_ptr<client_base_t> find_client_with(xcb_window_t w);
 	shared_ptr<client_base_t> find_client(xcb_window_t w);
-	void remove_client(client_base_t * c);
+	void remove_client(shared_ptr<client_base_t> c);
 	string get_node_name() const;
 
 	void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component_t> by);
 
-	void raise_child(weak_ptr<tree_t> t);
-	void activate(weak_ptr<tree_t> t);
+	void raise_child(shared_ptr<tree_t> t);
+	void activate(shared_ptr<tree_t> t);
 	void remove(shared_ptr<tree_t> const & t);
 
-	void fullscreen_client_to_viewport(weak_ptr<client_managed_t> c, weak_ptr<viewport_t> v);
-	void process_notebook_client_menu(weak_ptr<client_managed_t> c, int selected);
+	void fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v);
+	void process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
 
 	void check_x11_extension();
 
@@ -378,7 +376,7 @@ public:
 	void update_keymap();
 	void update_grabkey();
 
-	weak_ptr<client_managed_t> find_hidden_client_with(xcb_window_t w);
+	shared_ptr<client_managed_t> find_hidden_client_with(xcb_window_t w);
 
 	vector<page_event_t> compute_page_areas(viewport_t * v) const;
 
@@ -391,7 +389,7 @@ public:
 	void render_legacy(cairo_t * cr, rect const & area) const { }
 
 
-	void children(vector<weak_ptr<tree_t>> & out) const;
+	void children(vector<shared_ptr<tree_t>> & out) const;
 
 	void render();
 
@@ -417,12 +415,12 @@ public:
 
 	void run_cmd(string const & cmd_with_args);
 
-	vector<weak_ptr<client_managed_t>> get_sticky_client_managed(tree_t * base);
-	void reconfigure_docks(weak_ptr<workspace_t> d);
+	vector<shared_ptr<client_managed_t>> get_sticky_client_managed(shared_ptr<tree_t> base);
+	void reconfigure_docks(shared_ptr<workspace_t> const & d);
 
-	void mark_durty(weak_ptr<tree_t> t);
+	void mark_durty(shared_ptr<tree_t> t);
 
-	unsigned int find_current_desktop(weak_ptr<client_base_t> c);
+	unsigned int find_current_desktop(shared_ptr<client_base_t> c);
 
 	void process_pending_events();
 	bool render_timeout();
@@ -436,8 +434,8 @@ public:
 	virtual display_t * dpy() const;
 	virtual compositor_t * cmp() const;
 
-	virtual weak_ptr<workspace_t> get_current_workspace() const;
-	virtual weak_ptr<workspace_t> get_workspace(int id) const;
+	virtual shared_ptr<workspace_t> const & get_current_workspace() const;
+	virtual shared_ptr<workspace_t> const & get_workspace(int id) const;
 	virtual int get_workspace_count() const;
 
 	virtual void grab_start(grab_handler_t * handler);
@@ -449,12 +447,12 @@ public:
 	virtual int top_most_border();
 
 	virtual list<weak_ptr<client_managed_t>> global_client_focus_history();
-	virtual list<weak_ptr<client_managed_t>> clients_list();
+	virtual vector<shared_ptr<client_managed_t>> clients_list();
 
 	virtual keymap_t const * keymap() const;
 	virtual bool menu_drop_down_shadow() const;
 
-	virtual weak_ptr<viewport_t> find_mouse_viewport(int x, int y) const;
+	virtual shared_ptr<viewport_t> find_mouse_viewport(int x, int y) const;
 
 
 };

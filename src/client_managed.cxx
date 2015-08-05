@@ -23,7 +23,9 @@
 
 namespace page {
 
-client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props) :
+using namespace std;
+
+client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, shared_ptr<client_properties_t> props) :
 				client_base_t{ctx, props},
 				_managed_type(MANAGED_FLOATING),
 				_net_wm_type(net_wm_type),

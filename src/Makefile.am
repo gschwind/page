@@ -24,6 +24,8 @@ AM_CXXFLAGS =  \
 	-fno-strict-aliasing
 
 page_SOURCES = \
+	tree.cxx \
+	client_base.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
@@ -40,7 +42,7 @@ page_SOURCES = \
 	grab_handlers.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
-	leak_checker.cxx
+	leak_checker.cxx 
 
 page_LDADD = \
 	$(X11_LIBS) \
