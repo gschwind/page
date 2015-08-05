@@ -51,451 +51,157 @@ protected:
 	list<shared_ptr<client_base_t>> _children;
 
 	/** short cut **/
-	xcb_atom_t A(atom_e atom) {
-		return _properties->cnx()->A(atom);
-	}
+	auto A(atom_e atom) -> xcb_atom_t;
 
 public:
 
-	client_base_t(client_base_t const & c) :
-		_ctx{c._ctx},
-		_properties{c._properties},
-		_children{c._children}
-	{
+	client_base_t(client_base_t const & c);
+	client_base_t(page_context_t * ctx, shared_ptr<client_properties_t> props);
 
-	}
+	virtual ~client_base_t();
 
-	client_base_t(page_context_t * ctx, std::shared_ptr<client_properties_t> props) :
-		_ctx{ctx},
-		_properties{props},
-		_children{}
-	{
+	void read_all_properties();
+	bool read_window_attributes();
 
-	}
+	void update_wm_name();
+	void update_wm_icon_name();
+	void update_wm_normal_hints();
+	void update_wm_hints();
+	void update_wm_class();
+	void update_wm_transient_for();
+	void update_wm_protocols();
+	void update_wm_colormap_windows();
+	void update_wm_client_machine();
+	void update_wm_state();
 
-	virtual ~client_base_t() { }
-
-	void read_all_properties() {
-		_properties->read_all_properties();
-	}
-
-	bool read_window_attributes() {
-		return _properties->read_window_attributes();
-	}
-
-	void update_wm_name() {
-		_properties->update_wm_name();
-	}
-
-	void update_wm_icon_name() {
-		_properties->update_wm_icon_name();
-	}
-
-	void update_wm_normal_hints() {
-		_properties->update_wm_normal_hints();
-	}
-
-	void update_wm_hints() {
-		_properties->update_wm_hints();
-	}
-
-	void update_wm_class() {
-		_properties->update_wm_class();
-	}
-
-	void update_wm_transient_for() {
-		_properties->update_wm_transient_for();
-	}
-
-	void update_wm_protocols() {
-		_properties->update_wm_protocols();
-	}
-
-	void update_wm_colormap_windows() {
-		_properties->update_wm_colormap_windows();
-	}
-
-	void update_wm_client_machine() {
-		_properties->update_wm_client_machine();
-	}
-
-	void update_wm_state() {
-		_properties->update_wm_state();
-	}
-
-	/* EWMH */
-
-	void update_net_wm_name() {
-		_properties->update_net_wm_name();
-	}
-
-	void update_net_wm_visible_name() {
-		_properties->update_net_wm_visible_name();
-	}
-
-	void update_net_wm_icon_name() {
-		_properties->update_net_wm_icon_name();
-	}
-
-	void update_net_wm_visible_icon_name() {
-		_properties->update_net_wm_visible_icon_name();
-	}
-
-	void update_net_wm_desktop() {
-		_properties->update_net_wm_desktop();
-	}
-
-	void update_net_wm_window_type() {
-		_properties->update_net_wm_window_type();
-	}
-
-	void update_net_wm_state() {
-		_properties->update_net_wm_state();
-	}
-
-	void update_net_wm_allowed_actions() {
-		_properties->update_net_wm_allowed_actions();
-	}
-
-	void update_net_wm_struct() {
-		_properties->update_net_wm_struct();
-	}
-
-	void update_net_wm_struct_partial() {
-		_properties->update_net_wm_struct_partial();
-	}
-
-	void update_net_wm_icon_geometry() {
-		_properties->update_net_wm_icon_geometry();
-	}
-
-	void update_net_wm_icon() {
-		_properties->update_net_wm_icon();
-	}
-
-	void update_net_wm_pid() {
-		_properties->update_net_wm_pid();
-	}
-
+	void update_net_wm_name();
+	void update_net_wm_visible_name();
+	void update_net_wm_icon_name();
+	void update_net_wm_visible_icon_name();
+	void update_net_wm_desktop();
+	void update_net_wm_window_type();
+	void update_net_wm_state();
+	void update_net_wm_allowed_actions();
+	void update_net_wm_struct();
+	void update_net_wm_struct_partial();
+	void update_net_wm_icon_geometry();
+	void update_net_wm_icon();
+	void update_net_wm_pid();
 	void update_net_wm_handled_icons();
+	void update_net_wm_user_time();
+	void update_net_wm_user_time_window();
+	void update_net_frame_extents();
+	void update_net_wm_opaque_region();
+	void update_net_wm_bypass_compositor();
 
-	void update_net_wm_user_time() {
-		_properties->update_net_wm_user_time();
-	}
+	void update_motif_hints();
+	void update_shape();
 
-	void update_net_wm_user_time_window() {
-		_properties->update_net_wm_user_time_window();
-	}
+	bool has_motif_border();
 
-	void update_net_frame_extents() {
-		_properties->update_net_frame_extents();
-	}
+	void set_net_wm_desktop(unsigned long n);
 
-	void update_net_wm_opaque_region() {
-		_properties->update_net_wm_opaque_region();
-	}
+	void add_subclient(shared_ptr<client_base_t> s);
+	bool is_window(xcb_window_t w);
 
-	void update_net_wm_bypass_compositor() {
-		_properties->update_net_wm_bypass_compositor();
-	}
+	xcb_atom_t wm_type();
+	void print_window_attributes();
+	void print_properties();
 
-	void update_motif_hints() {
-		_properties->update_motif_hints();
-	}
-
-	void update_shape() {
-		_properties->update_shape();
-	}
-
-
-	bool has_motif_border() {
-		if (_properties->motif_hints() != nullptr) {
-			if (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS) {
-				if (not (_properties->motif_hints()->decorations & MWM_DECOR_BORDER)
-						and not ((_properties->motif_hints()->decorations & MWM_DECOR_ALL))) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	void set_net_wm_desktop(unsigned long n) {
-		_properties->set_net_wm_desktop(n);
-	}
-
-public:
-
-	void add_subclient(shared_ptr<client_base_t> s) {
-		assert(s != nullptr);
-		_children.push_back(s);
-		s->set_parent(shared_from_this());
-		if(_is_visible) {
-			s->show();
-		} else {
-			s->hide();
-		}
-	}
-
-	bool is_window(xcb_window_t w) {
-		return w == _properties->id();
-	}
-
-	virtual bool has_window(xcb_window_t w) const = 0;
-	virtual xcb_window_t base() const = 0;
-	virtual xcb_window_t orig() const = 0;
-	virtual rect const & base_position() const = 0;
-	virtual rect const & orig_position() const = 0;
-	virtual region visible_area() const = 0;
-
-	virtual std::string get_node_name() const {
-		return _get_node_name<'c'>();
-	}
-
-	virtual void replace(tree_t * src, tree_t * by) {
-		printf("Unexpected use of client_base_t::replace\n");
-	}
-
-	xcb_atom_t wm_type() {
-		return _properties->wm_type();
-	}
-
-	void print_window_attributes() {
-		_properties->print_window_attributes();
-	}
-
-	void print_properties() {
-		_properties->print_properties();
-	}
-
-	void process_event(xcb_configure_notify_event_t const * e) {
-		_properties->process_event(e);
-	}
-
-	auto cnx() const -> display_t * { return _properties->cnx(); }
-
-	/* window attributes */
-	auto wa() const -> xcb_get_window_attributes_reply_t const * { return _properties->wa(); }
-
-	/* window geometry */
-	auto geometry() const -> xcb_get_geometry_reply_t const * { return _properties->geometry(); }
+	void process_event(xcb_configure_notify_event_t const * e);
+	auto cnx() const -> display_t *;
+	auto wa() const -> xcb_get_window_attributes_reply_t const * ;
+	auto geometry() const -> xcb_get_geometry_reply_t const *;
 
 	/* ICCCM (read-only properties for WM) */
-	auto wm_name() const -> string const * { return _properties->wm_name(); }
-	auto wm_icon_name() const -> string const * { return _properties->wm_icon_name(); };
-	auto wm_normal_hints() const -> XSizeHints const * { return _properties->wm_normal_hints(); }
-	auto wm_hints() const -> XWMHints const * { return _properties->wm_hints(); }
-	auto wm_class() const -> vector<string> const * { return _properties->wm_class(); }
-	auto wm_transient_for() const -> xcb_window_t const * { return _properties->wm_transient_for(); }
-	auto wm_protocols() const -> list<xcb_atom_t> const * { return _properties->wm_protocols(); }
-	auto wm_colormap_windows() const -> vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
-	auto wm_client_machine() const -> string const * { return _properties->wm_client_machine(); }
+	auto wm_name() const -> string const *;
+	auto wm_icon_name() const -> string const *;
+	auto wm_normal_hints() const -> XSizeHints const *;
+	auto wm_hints() const -> XWMHints const *;
+	auto wm_class() const -> vector<string> const *;
+	auto wm_transient_for() const -> xcb_window_t const *;
+	auto wm_protocols() const -> list<xcb_atom_t> const *;
+	auto wm_colormap_windows() const -> vector<xcb_window_t> const *;
+	auto wm_client_machine() const -> string const *;
 
 	/* ICCCM (read-write properties for WM) */
-	auto wm_state() const -> wm_state_data_t const * {return _properties->wm_state(); }
+	auto wm_state() const -> wm_state_data_t const *;
 
 	/* EWMH (read-only properties for WM) */
-	auto net_wm_name() const -> string const * { return _properties->net_wm_name(); }
-	auto net_wm_visible_name() const -> string const * { return _properties->net_wm_visible_name(); }
-	auto net_wm_icon_name() const -> string const * { return _properties->net_wm_icon_name(); }
-	auto net_wm_visible_icon_name() const -> string const * { return _properties->net_wm_visible_icon_name(); }
-	auto net_wm_window_type() const -> list<xcb_atom_t> const * { return _properties->net_wm_window_type(); }
-	auto net_wm_allowed_actions() const -> list<xcb_atom_t> const * { return _properties->net_wm_allowed_actions(); }
-	auto net_wm_strut() const -> vector<int> const * { return _properties->net_wm_strut(); }
-	auto net_wm_strut_partial() const -> vector<int> const * { return _properties->net_wm_strut_partial(); }
-	auto net_wm_icon_geometry() const -> vector<int> const * { return _properties->net_wm_icon_geometry(); }
-	auto net_wm_icon() const -> vector<uint32_t> const * { return _properties->net_wm_icon(); }
-	auto net_wm_pid() const -> unsigned int const * { return _properties->net_wm_pid(); }
-	auto net_wm_handled_icons() const -> bool;// { return _properties->net_wm_handled_icons(); }
-	auto net_wm_user_time() const -> uint32_t const * { return _properties->net_wm_user_time(); }
-	auto net_wm_user_time_window() const -> xcb_window_t const * { return _properties->net_wm_user_time_window(); }
-	auto net_wm_opaque_region() const -> vector<int> const * { return _properties->net_wm_opaque_region(); }
-	auto net_wm_bypass_compositor() const -> unsigned int const * { return _properties->net_wm_bypass_compositor(); }
+	auto net_wm_name() const -> string const *;
+	auto net_wm_visible_name() const -> string const * ;
+	auto net_wm_icon_name() const -> string const * ;
+	auto net_wm_visible_icon_name() const -> string const * ;
+	auto net_wm_window_type() const -> list<xcb_atom_t> const * ;
+	auto net_wm_allowed_actions() const -> list<xcb_atom_t> const *;
+	auto net_wm_strut() const -> vector<int> const *;
+	auto net_wm_strut_partial() const -> vector<int> const *;
+	auto net_wm_icon_geometry() const -> vector<int> const *;
+	auto net_wm_icon() const -> vector<uint32_t> const *;
+	auto net_wm_pid() const -> unsigned int const *;
+	auto net_wm_handled_icons() const -> bool;
+	auto net_wm_user_time() const -> uint32_t const *;
+	auto net_wm_user_time_window() const -> xcb_window_t const *;
+	auto net_wm_opaque_region() const -> vector<int> const *;
+	auto net_wm_bypass_compositor() const -> unsigned int const *;
 
 	/* EWMH (read-write properties for WM) */
-	auto net_wm_desktop() const -> unsigned int const * { return _properties->net_wm_desktop(); }
-	auto net_wm_state() const -> list<xcb_atom_t> const * { return _properties->net_wm_state(); }
-	auto net_frame_extents() const -> vector<int> const * { return _properties->net_frame_extents(); }
-
+	auto net_wm_desktop() const -> unsigned int const *;
+	auto net_wm_state() const -> list<xcb_atom_t> const * ;
+	auto net_frame_extents() const -> vector<int> const *;
 
 	/* OTHERs */
-	auto motif_hints() const -> motif_wm_hints_t const * { return _properties->motif_hints(); }
-	auto shape() const -> region const * { return _properties->shape(); }
-	auto position() -> rect { return _properties->position(); }
+	auto motif_hints() const -> motif_wm_hints_t const *;
+	auto shape() const -> region const *;
+	auto position() -> rect;
 
 
-	void on_property_notify(xcb_property_notify_event_t const * e) {
-		if (e->atom == A(WM_NAME)) {
-			update_wm_name();
-		} else if (e->atom == A(WM_ICON_NAME)) {
-			update_wm_icon_name();
-		} else if (e->atom == A(WM_NORMAL_HINTS)) {
-			update_wm_normal_hints();
-		} else if (e->atom == A(WM_HINTS)) {
-			update_wm_hints();
-		} else if (e->atom == A(WM_CLASS)) {
-			update_wm_class();
-		} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-			update_wm_transient_for();
-		} else if (e->atom == A(WM_PROTOCOLS)) {
-			update_wm_protocols();
-		} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
-			update_wm_colormap_windows();
-		} else if (e->atom == A(WM_CLIENT_MACHINE)) {
-			update_wm_client_machine();
-		} else if (e->atom == A(WM_STATE)) {
-			update_wm_state();
-		} else if (e->atom == A(_NET_WM_NAME)) {
-			update_net_wm_name();
-		} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
-			update_net_wm_visible_name();
-		} else if (e->atom == A(_NET_WM_ICON_NAME)) {
-			update_net_wm_icon_name();
-		} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
-			update_net_wm_visible_icon_name();
-		} else if (e->atom == A(_NET_WM_DESKTOP)) {
-			update_net_wm_desktop();
-		} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
-			update_net_wm_window_type();
-		} else if (e->atom == A(_NET_WM_STATE)) {
-			update_net_wm_state();
-		} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
-			update_net_wm_allowed_actions();
-		} else if (e->atom == A(_NET_WM_STRUT)) {
-			update_net_wm_struct();
-		} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-			update_net_wm_struct_partial();
-		} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
-			update_net_wm_icon_geometry();
-		} else if (e->atom == A(_NET_WM_ICON)) {
-			update_net_wm_icon();
-		} else if (e->atom == A(_NET_WM_PID)) {
-			update_net_wm_pid();
-		} else if (e->atom == A(_NET_WM_USER_TIME)) {
-			update_net_wm_user_time();
-		} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
-			update_net_wm_user_time_window();
-		} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
-			update_net_frame_extents();
-		} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
-			update_net_wm_opaque_region();
-		} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
-			update_net_wm_bypass_compositor();
-		} else if (e->atom == A(_MOTIF_WM_HINTS)) {
-			update_motif_hints();
-		}
-	}
-
-
-	void remove(weak_ptr<tree_t> t) {
-		if(t.expired())
-			return;
-		auto c = dynamic_pointer_cast<client_base_t>(t.lock());
-		if(c == nullptr)
-			return;
-		_children.remove(c);
-	}
-
-	void children(vector<weak_ptr<tree_t>> & out) const {
-		out.insert(out.end(), _children.begin(), _children.end());
-	}
-
-	void activate(weak_ptr<tree_t> t) {
-		if(t.expired())
-			return;
-
-		/** raise ourself **/
-		if(not _parent.expired()) {
-			_parent.lock()->activate(shared_from_this());
-		}
-
-		/** only client_base_t can be child of client_base_t **/
-		auto c = dynamic_pointer_cast<client_base_t>(t.lock());
-		if(has_key(_children, c)) {
-			/** raise the child **/
-			_children.remove(c);
-			_children.push_back(c);
-		}
-
-	}
+	void on_property_notify(xcb_property_notify_event_t const * e);
 
 	/* find the bigger window that is smaller than w and h */
-	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h) {
+	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h);
 
-		/* has no constrain */
-		if (wm_normal_hints() == nullptr)
-			return dimention_t<unsigned> { w, h };
 
-		XSizeHints const * sh = wm_normal_hints();
+	/**
+	 * tree_t virtual API
+	 **/
 
-		if (sh->flags & PMaxSize) {
-			if ((int) w > sh->max_width)
-				w = sh->max_width;
-			if ((int) h > sh->max_height)
-				h = sh->max_height;
-		}
+	// virtual void hide();
+	// virtual void show();
+	virtual auto get_node_name() const -> string;
+	virtual void remove(shared_ptr<tree_t> t);
 
-		if (sh->flags & PBaseSize) {
-			if ((int) w < sh->base_width)
-				w = sh->base_width;
-			if ((int) h < sh->base_height)
-				h = sh->base_height;
-		} else if (sh->flags & PMinSize) {
-			if ((int) w < sh->min_width)
-				w = sh->min_width;
-			if ((int) h < sh->min_height)
-				h = sh->min_height;
-		}
+	virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	// virtual void update_layout(time64_t const time);
+	// virtual void render(cairo_t * cr, region const & area);
 
-		if (sh->flags & PAspect) {
-			if (sh->flags & PBaseSize) {
-				/**
-				 * ICCCM say if base is set subtract base before aspect checking
-				 * reference: ICCCM
-				 **/
-				if ((w - sh->base_width) * sh->min_aspect.y
-						< (h - sh->base_height) * sh->min_aspect.x) {
-					/* reduce h */
-					h = sh->base_height
-							+ ((w - sh->base_width) * sh->min_aspect.y)
-									/ sh->min_aspect.x;
+	// virtual auto get_opaque_region() -> region;
+	// virtual auto get_visible_region() -> region;
+	// virtual auto get_damaged() -> region;
 
-				} else if ((w - sh->base_width) * sh->max_aspect.y
-						> (h - sh->base_height) * sh->max_aspect.x) {
-					/* reduce w */
-					w = sh->base_width
-							+ ((h - sh->base_height) * sh->max_aspect.x)
-									/ sh->max_aspect.y;
-				}
-			} else {
-				if (w * sh->min_aspect.y < h * sh->min_aspect.x) {
-					/* reduce h */
-					h = (w * sh->min_aspect.y) / sh->min_aspect.x;
+	virtual void activate(shared_ptr<tree_t> t);
+	// virtual bool button_press(xcb_button_press_event_t const * ev);
+	// virtual bool button_release(xcb_button_release_event_t const * ev);
+	// virtual bool button_motion(xcb_motion_notify_event_t const * ev);
+	// virtual bool leave(xcb_leave_notify_event_t const * ev);
+	// virtual bool enter(xcb_enter_notify_event_t const * ev);
+	// virtual void expose(xcb_expose_event_t const * ev);
+	// virtual void trigger_redraw();
 
-				} else if (w * sh->max_aspect.y > h * sh->max_aspect.x) {
-					/* reduce w */
-					w = (h * sh->max_aspect.x) / sh->max_aspect.y;
-				}
-			}
+	virtual auto get_xid() const -> xcb_window_t;
+	virtual auto get_parent_xid() const -> xcb_window_t;
+	// virtual rect get_window_position() const;
+	// virtual void queue_redraw();
 
-		}
+	/**
+	 * client base API
+	 **/
 
-		if (sh->flags & PResizeInc) {
-			w -= ((w - sh->base_width) % sh->width_inc);
-			h -= ((h - sh->base_height) % sh->height_inc);
-		}
-
-		return dimention_t<unsigned> { w, h };
-
-	}
-
-	xcb_window_t get_window() {
-		return _properties->id();
-	}
-
-	xcb_window_t get_xid() {
-		return base();
-	}
+	virtual bool has_window(xcb_window_t w) const = 0;
+	virtual auto base() const -> xcb_window_t = 0;
+	virtual auto orig() const -> xcb_window_t = 0;
+	virtual auto base_position() const -> rect const & = 0;
+	virtual auto orig_position() const -> rect const & = 0;
 
 };
 
