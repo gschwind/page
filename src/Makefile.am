@@ -26,6 +26,7 @@ AM_CXXFLAGS =  \
 page_SOURCES = \
 	tree.cxx \
 	client_base.cxx \
+	client_not_managed.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
@@ -38,7 +39,6 @@ page_SOURCES = \
 	simple2_theme.cxx \
 	tiny_theme.cxx \
 	client_managed.cxx \
-	client_not_managed.cxx \
 	grab_handlers.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
