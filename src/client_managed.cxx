@@ -814,7 +814,7 @@ void client_managed_t::normalize() {
 		}
 		reconfigure();
 		for (auto c : _children) {
-			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
+			auto mw = dynamic_pointer_cast<client_managed_t>(c);
 			if (mw != nullptr) {
 				mw->normalize();
 			}
@@ -832,7 +832,7 @@ void client_managed_t::iconify() {
 		//	unmap();
 		reconfigure();
 		for (auto c : _children) {
-			client_managed_t * mw = dynamic_cast<client_managed_t *>(c);
+			auto mw = dynamic_pointer_cast<client_managed_t>(c);
 			if (mw != nullptr) {
 				mw->iconify();
 			}
@@ -1054,7 +1054,7 @@ rect const & client_managed_t::orig_position() const {
 	return _orig_position;
 }
 
-region client_managed_t::visible_area() const {
+region client_managed_t::get_visible_region() {
 
 	if(_managed_type == MANAGED_FLOATING) {
 		rect vis{base_position()};
@@ -1165,9 +1165,6 @@ void client_managed_t::hide() {
 	net_wm_state_add(_NET_WM_STATE_HIDDEN);
 	//unmap();
 	reconfigure();
-	//for(auto i: tree_t::children()) {
-	//	i->hide();
-	//}
 }
 
 void client_managed_t::show() {
@@ -1175,9 +1172,6 @@ void client_managed_t::show() {
 	net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 	reconfigure();
 	map();
-	//for(auto i: tree_t::children()) {
-	//	i->show();
-	//}
 }
 
 bool client_managed_t::is_iconic() {
@@ -1198,7 +1192,7 @@ bool client_managed_t::is_modal() {
 	return false;
 }
 
-void client_managed_t::activate(tree_t * t) {
+void client_managed_t::activate(shared_ptr<tree_t> t) {
 	client_base_t::activate(t);
 	if(is_iconic()) {
 		normalize();
@@ -1288,10 +1282,6 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 	}
 
 	return false;
-}
-
-xcb_window_t client_managed_t::get_window() {
-	return _base;
 }
 
 void client_managed_t::queue_redraw() {
@@ -1434,12 +1424,58 @@ bool client_managed_t::prefer_window_border() const {
 	return true;
 }
 
-void client_managed_t::children(std::vector<tree_t *> & out) const {
-	if(_shadow != nullptr)
-		out.push_back(_shadow);
-	if(_base_renderable != nullptr)
-		out.push_back(_base_renderable);
-	out.insert(out.end(), _children.begin(), _children.end());
+shared_ptr<icon16> client_managed_t::icon() const {
+	return _icon;
+}
+
+void client_managed_t::update_icon() {
+	_icon = std::shared_ptr<icon16>{new icon16(*this)};
+}
+
+xcb_window_t client_managed_t::orig() const {
+	return _properties->id();
+}
+
+xcb_window_t client_managed_t::base() const {
+	return _base;
+}
+
+xcb_window_t client_managed_t::deco() const {
+	return _deco;
+}
+
+xcb_atom_t client_managed_t::A(atom_e atom) {
+	return cnx()->A(atom);
+}
+
+
+bool client_managed_t::is_focused() const {
+	return _is_focused;
+}
+
+shared_ptr<pixmap_t> client_managed_t::get_last_pixmap() {
+	return _ctx->csm()->get_last_pixmap(_base);
+}
+
+void client_managed_t::set_current_desktop(unsigned int n) {
+	_properties->set_net_wm_desktop(n);
+}
+
+void client_managed_t::set_demands_attention(bool x) {
+	if (x) {
+		_properties->net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
+	} else {
+		_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+	}
+	_demands_attention = x;
+}
+
+bool client_managed_t::demands_attention() {
+	return _demands_attention;
+}
+
+string const & client_managed_t::title() const {
+	return _title;
 }
 
 }

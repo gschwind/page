@@ -27,6 +27,7 @@ page_SOURCES = \
 	tree.cxx \
 	client_base.cxx \
 	client_not_managed.cxx \
+	client_managed.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
@@ -38,7 +39,6 @@ page_SOURCES = \
 	desktop.cxx \
 	simple2_theme.cxx \
 	tiny_theme.cxx \
-	client_managed.cxx \
 	grab_handlers.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
