@@ -59,7 +59,7 @@ class grab_bind_client_t : public grab_handler_t {
 	weak_ptr<notebook_t> target_notebook;
 	shared_ptr<popup_notebook0_t> pn0;
 
-	void _find_target_notebook(int x, int y, notebook_t * & target, notebook_area_e & zone);
+	void _find_target_notebook(int x, int y, shared_ptr<notebook_t> & target, notebook_area_e & zone);
 
 public:
 
@@ -84,8 +84,8 @@ struct mode_data_notebook_client_menu_t  : public grab_handler_t {
 	}
 
 	void reset() {
-		from = nullptr;
-		client = nullptr;
+		from.reset();
+		client.reset();
 		active_grab = false;
 	}
 
@@ -114,7 +114,7 @@ struct grab_floating_move_t : public grab_handler_t {
 	rect final_position;
 	unsigned int button;
 
-	popup_notebook0_t * pfm;
+	shared_ptr<popup_notebook0_t> pfm;
 
 	grab_floating_move_t(page_context_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y);
 
@@ -128,7 +128,7 @@ struct grab_floating_move_t : public grab_handler_t {
 
 struct grab_floating_resize_t : public grab_handler_t {
 	page_context_t * _ctx;
-	client_managed_t * f;
+	weak_ptr<client_managed_t> f;
 
 	resize_mode_e mode;
 	int x_root;
@@ -137,7 +137,7 @@ struct grab_floating_resize_t : public grab_handler_t {
 	rect final_position;
 	xcb_button_t button;
 
-	popup_notebook0_t * pfm;
+	shared_ptr<popup_notebook0_t> pfm;
 
 	xcb_cursor_t _get_cursor();
 

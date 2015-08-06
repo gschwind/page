@@ -28,6 +28,7 @@ page_SOURCES = \
 	client_base.cxx \
 	client_not_managed.cxx \
 	client_managed.cxx \
+	grab_handlers.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
@@ -39,7 +40,6 @@ page_SOURCES = \
 	desktop.cxx \
 	simple2_theme.cxx \
 	tiny_theme.cxx \
-	grab_handlers.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
 	leak_checker.cxx 

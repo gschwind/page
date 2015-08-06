@@ -26,14 +26,14 @@ using namespace std;
 struct cycle_window_entry_t {
 	shared_ptr<icon64> icon;
 	string title;
-	client_managed_t * id;
+	weak_ptr<client_managed_t> id;
 
 private:
 	cycle_window_entry_t(cycle_window_entry_t const &);
 	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	cycle_window_entry_t(client_managed_t * mw, std::string title, std::shared_ptr<icon64> icon) :
+	cycle_window_entry_t(weak_ptr<client_managed_t> mw, string title, shared_ptr<icon64> icon) :
 			icon(icon), title(title), id(mw) {
 	}
 
@@ -42,8 +42,6 @@ public:
 };
 
 class popup_alt_tab_t : public tree_t {
-	tree_t * _parent;
-
 	page_context_t * _ctx;
 
 	xcb_window_t _wid;
@@ -61,7 +59,7 @@ class popup_alt_tab_t : public tree_t {
 
 public:
 
-	popup_alt_tab_t(page_context_t * ctx, std::list<std::shared_ptr<cycle_window_entry_t>> client_list, int selected) :
+	popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<cycle_window_entry_t>> client_list, int selected) :
 		_ctx{ctx},
 		_selected{},
 		_client_list{client_list},
@@ -114,7 +112,8 @@ public:
 		_ctx->dpy()->map(_wid);
 
 		for(auto const & x: _client_list) {
-			destroy_func[x->id] = x->id->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
+			if(not x->id.expired())
+				destroy_func[x->id.lock().get()] = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
 		}
 
 	}

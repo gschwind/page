@@ -177,6 +177,7 @@ private:
 
 public:
 
+	auto shared_from_this() -> shared_ptr<client_managed_t>;
 	bool is_fullscreen();
 	bool skip_task_bar();
 	xcb_atom_t net_wm_type();
