@@ -408,6 +408,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	}
 
 	mw = nullptr;
+
 	/** if the window is destroyed, this not work, see fix on destroy **/
 	for(auto x: _desktop_list) {
 		x->client_focus.remove_if([](weak_ptr<tree_t> w) { return w.expired(); });
@@ -1470,10 +1471,11 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
-	auto old_focus = _global_client_focus_history.front().lock();
-
-	if (old_focus != nullptr) {
-		old_focus->set_focus_state(false);
+	{
+		shared_ptr<client_managed_t> old_focus;
+		if (global_history_front(old_focus)) {
+			old_focus->set_focus_state(false);
+		}
 	}
 
 	_desktop_list[_current_desktop]->client_focus.remove_if([new_focus](weak_ptr<client_managed_t> x) { return x.lock() == new_focus; });
@@ -1575,7 +1577,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	}
 
 	/* move all client from destroyed notebook to new default pop */
-	auto clients = nbk->get_clients();
+	auto clients = filter_class<client_managed_t>(nbk->tree_t::children());
 	for(auto i : clients) {
 		insert_window_in_notebook(i, nullptr, false);
 	}
@@ -2366,10 +2368,6 @@ void page_t::update_viewport_layout() {
 			new_layout.push_back(vp);
 		}
 
-		if(new_layout.size() > 0) {
-			d->set_primary_viewport(new_layout[0]);
-		}
-
 		d->set_layout(new_layout);
 		d->update_default_pop();
 
@@ -2436,7 +2434,7 @@ void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v
 
 	/* Transfer clients to a valid notebook */
 	for (auto nbk : filter_class<notebook_t>(v->get_all_children())) {
-		for (auto c : nbk->get_clients()) {
+		for (auto c : filter_class<client_managed_t>(nbk->tree_t::children())) {
 			d->default_pop()->add_client(c, false);
 		}
 	}
@@ -2497,7 +2495,7 @@ void page_t::onmap(xcb_window_t w) {
 
 	{
 		try {
-			shared_ptr<client_properties_t> props{make_shared<client_properties_t>(cnx, w)};
+			auto props = make_shared<client_properties_t>(cnx, w);
 			if (props->read_window_attributes()) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
@@ -2592,6 +2590,7 @@ void page_t::create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t
 	try {
 		auto mw = make_shared<client_managed_t>(this, type, c);
 		cmgr->register_window(mw->base());
+		cout << cnx << " " << mw->cnx() << endl;
 		manage_client(mw, type);
 
 		if(mw->net_wm_strut() != nullptr or mw->net_wm_strut_partial() != nullptr) {
@@ -3717,6 +3716,20 @@ xcb_atom_t page_t::A(atom_e atom) {
 
 void page_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
 	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
+}
+
+bool page_t::global_history_front(shared_ptr<client_managed_t> & out) {
+	while(not _global_client_focus_history.empty()) {
+		if(_global_client_focus_history.front().expired()) {
+			_global_client_focus_history.pop_front();
+		} else {
+			break;
+		}
+	}
+	if(not _global_client_focus_history.empty()) {
+		out = _global_client_focus_history.front().lock();
+	}
+	return false;
 }
 
 }

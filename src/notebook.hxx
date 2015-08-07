@@ -72,6 +72,7 @@ class notebook_t : public page_component_t {
 	};
 
 	struct _client_context_t {
+		shared_ptr<client_managed_t> client;
 		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
 		decltype(client_managed_t::on_destroy)::signal_func_t       destoy_func;
 		decltype(client_managed_t::on_activate)::signal_func_t      activate_func;
@@ -79,8 +80,7 @@ class notebook_t : public page_component_t {
 	};
 
 	// list to maintain the client order
-	list<shared_ptr<client_managed_t>> _clients;
-	map<client_managed_t *, _client_context_t> _clients_context;
+	list<_client_context_t> _clients;
 
 	shared_ptr<client_managed_t> _selected;
 
@@ -139,7 +139,7 @@ class notebook_t : public page_component_t {
 	rect _compute_notebook_menu_position() const;
 
 	void _client_title_change(shared_ptr<client_managed_t> c);
-	void _client_destroy(shared_ptr<client_managed_t> c);
+	void _client_destroy(client_managed_t * c);
 	void _client_activate(shared_ptr<client_managed_t> c);
 	void _client_deactivate(shared_ptr<client_managed_t> c);
 
@@ -160,13 +160,14 @@ class notebook_t : public page_component_t {
 	auto selected() const -> shared_ptr<client_managed_t>;
 	bool is_default() const;
 
-	bool _has_client(shared_ptr<client_managed_t> c);
+	bool _has_client(shared_ptr<client_managed_t> c) const;
 	void _set_keep_selected(bool x);
 	void _update_exposay();
 	void _stop_exposay();
 	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
 
 	shared_ptr<notebook_t> shared_from_this();
+
 
 public:
 
@@ -207,7 +208,6 @@ public:
 	void update_client_position(shared_ptr<client_managed_t> c);
 	void iconify_client(shared_ptr<client_managed_t> x);
 	bool add_client(shared_ptr<client_managed_t> c, bool prefer_activate);
-	auto get_clients() -> list<shared_ptr<client_managed_t>> const &;
 
 	/* TODO : remove it */
 	friend grab_bind_client_t;

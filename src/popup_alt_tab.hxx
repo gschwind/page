@@ -23,12 +23,13 @@ namespace page {
 
 using namespace std;
 
-struct cycle_window_entry_t {
+class cycle_window_entry_t {
 	shared_ptr<icon64> icon;
 	string title;
 	weak_ptr<client_managed_t> id;
 
-private:
+	decltype(client_managed_t::on_destroy)::signal_func_t destroy_func;
+
 	cycle_window_entry_t(cycle_window_entry_t const &);
 	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
@@ -38,6 +39,8 @@ public:
 	}
 
 	~cycle_window_entry_t() { }
+
+	friend class popup_alt_tab_t;
 
 };
 
@@ -54,8 +57,6 @@ class popup_alt_tab_t : public tree_t {
 	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
 	bool _is_visible;
 	bool _is_durty;
-
-	map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> destroy_func;
 
 public:
 
@@ -113,7 +114,7 @@ public:
 
 		for(auto const & x: _client_list) {
 			if(not x->id.expired())
-				destroy_func[x->id.lock().get()] = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
+				x->destroy_func = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
 		}
 
 	}
@@ -251,19 +252,8 @@ public:
 		}
 	}
 
-	void _cleanup_list() {
+	void destroy_client(client_managed_t * c) {
 		_client_list.remove_if([](shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id.expired(); });
-	}
-
-	void destroy_client(shared_ptr<client_managed_t> c) {
-		_cleanup_list();
-
-		while((*_selected)->id.lock() == c) {
-			select_next();
-		}
-
-		_client_list.remove_if([c](shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id.lock() == c; });
-		destroy_func.erase(c.get());
 	}
 
 };

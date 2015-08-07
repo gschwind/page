@@ -125,8 +125,8 @@ private:
 
 public:
 
+	signal_t<client_managed_t *> on_destroy;
 	signal_t<shared_ptr<client_managed_t>> on_title_change;
-	signal_t<shared_ptr<client_managed_t>> on_destroy;
 	signal_t<shared_ptr<client_managed_t>> on_activate;
 	signal_t<shared_ptr<client_managed_t>> on_deactivate;
 
@@ -174,6 +174,8 @@ private:
 	void ungrab_all_button();
 	void select_inputs();
 	void unselect_inputs();
+
+	void _update_title();
 
 public:
 

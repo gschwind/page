@@ -104,7 +104,7 @@ private:
 public:
 
 	client_properties_t(display_t * cnx, xcb_window_t id) :
-			_cnx(cnx), _id(id) {
+			_cnx{cnx}, _id{id} {
 
 		_wa = nullptr;
 		_geometry = nullptr;

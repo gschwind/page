@@ -599,7 +599,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 		if(i.lock()->skip_task_bar())
 			continue;
 
-		auto icon = make_shared<icon64>(i.lock());
+		auto icon = make_shared<icon64>(i.lock().get());
 		auto cy = make_shared<cycle_window_entry_t>(i.lock(), i.lock()->title(), icon);
 		v.push_back(cy);
 	}

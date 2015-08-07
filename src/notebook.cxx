@@ -34,7 +34,7 @@ notebook_t::~notebook_t() {
 }
 
 bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate) {
-	assert(not has_key(_clients, x));
+	assert(not _has_client(x));
 	assert(x != nullptr);
 
 	if(_exposay)
@@ -42,16 +42,16 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 
 	x->set_parent(shared_from_this());
 	_children.push_back(x);
-	_clients.push_front(x);
 
 	_client_context_t a;
 
+	a.client = x;
 	a.title_change_func = x->on_title_change.connect(this, &notebook_t::_client_title_change);
 	a.destoy_func = x->on_destroy.connect(this, &notebook_t::_client_destroy);
 	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
 	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
 
-	_clients_context[x.get()] = a;
+	_clients.push_front(a);
 
 	_ctx->csm()->register_window(x->base());
 
@@ -93,23 +93,19 @@ void notebook_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 
 void notebook_t::remove(shared_ptr<tree_t> src) {
 	auto mw = dynamic_pointer_cast<client_managed_t>(src);
-	if (has_key(_clients, mw) and mw != nullptr) {
+	if (_has_client(mw) and mw != nullptr) {
 		_remove_client(mw);
 	}
 }
 
 void notebook_t::_activate_client(shared_ptr<client_managed_t> x) {
-	if (has_key(_clients, x)) {
+	if (_has_client(x)) {
 		_set_selected(x);
 	}
 }
 
-list<shared_ptr<client_managed_t>> const & notebook_t::get_clients() {
-	return _clients;
-}
-
 void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
-	assert(has_key(_clients, x));
+	assert(_has_client(x));
 
 	if(x == nullptr)
 		return;
@@ -123,10 +119,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	// cleanup
 	_children.remove(x);
 	x->clear_parent();
-	_clients.remove(x);
-
-	/* disconnect all signals */
-	_clients_context.erase(x.get());
+	_clients.remove_if([x](_client_context_t const & y) { return x == y.client; });
 
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {
 		_selected = dynamic_pointer_cast<client_managed_t>(_children.back());
@@ -166,7 +159,7 @@ void notebook_t::update_client_position(shared_ptr<client_managed_t> c) {
 }
 
 void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
-	assert(has_key(_clients, x));
+	assert(_has_client(x));
 
 	/** already iconified **/
 	if(_selected != x)
@@ -254,9 +247,9 @@ void notebook_t::_update_layout() {
 		_client_area.h = 1;
 	}
 
-	for(auto c: _clients) {
+	for(auto & c: _clients) {
 		/* resize all client properly */
-		update_client_position(c);
+		update_client_position(c.client);
 	}
 
 
@@ -457,7 +450,7 @@ void notebook_t::_update_notebook_areas() {
 
 		auto c = _clients.begin();
 		for (auto & tab: _theme_notebook.clients_tab) {
-			_client_buttons.push_back(make_tuple(tab.position, weak_ptr<client_managed_t>{*c}, &tab));
+			_client_buttons.push_back(make_tuple(tab.position, weak_ptr<client_managed_t>{c->client}, &tab));
 			++c;
 		}
 
@@ -503,7 +496,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 		}
 
 		offset += selected_box_width;
-		for (auto i : _clients) {
+		for (auto & i : _clients) {
 			theme_notebook.clients_tab.push_back(theme_tab_t{});
 			auto & tab = theme_notebook.clients_tab.back();
 			tab.position = rect{
@@ -513,16 +506,16 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 				(int)_ctx->theme()->notebook.tab_height
 			};
 
-			if(i->is_focused()) {
+			if(i.client->is_focused()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
-			} else if(_selected == i) {
+			} else if(_selected == i.client) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
 			} else {
 				tab.tab_color = _ctx->theme()->get_normal_color();
 			}
-			tab.title = i->title();
-			tab.icon = i->icon();
-			tab.is_iconic = i->is_iconic();
+			tab.title = i.client->title();
+			tab.icon = i.client->icon();
+			tab.is_iconic = i.client->is_iconic();
 			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 	} else {
@@ -654,9 +647,9 @@ void notebook_t::_update_exposay() {
 			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x + (n*m - _clients.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{*it}, i));
+		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{it->client}, i));
 		pdst = to_root_position(pdst);
-		_exposay_thumbnail.push_back(make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
+		_exposay_thumbnail.push_back(make_shared<renderable_thumbnail_t>(_ctx, pdst, it->client));
 		++it;
 	}
 
@@ -923,8 +916,8 @@ void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
 	queue_redraw();
 }
 
-void notebook_t::_client_destroy(shared_ptr<client_managed_t> c) {
-	this->_remove_client(c);
+void notebook_t::_client_destroy(client_managed_t * c) {
+	throw exception_t("not expected call of %d", __PRETTY_FUNCTION__);
 }
 
 void notebook_t::_client_activate(shared_ptr<client_managed_t> c) {
@@ -959,8 +952,12 @@ void notebook_t::show() {
 	}
 }
 
-bool notebook_t::_has_client(shared_ptr<client_managed_t> c) {
-	return has_key(_clients, c);
+bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
+	for(auto &i: _clients) {
+		if(i.client == c)
+			return true;
+	}
+	return false;
 }
 
 void notebook_t::_set_keep_selected(bool x) {

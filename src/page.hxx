@@ -376,6 +376,8 @@ public:
 	void process_pending_events();
 	bool render_timeout();
 
+	bool global_history_front(shared_ptr<client_managed_t> & out);
+
 
 	/**
 	 * tree_t virtual API

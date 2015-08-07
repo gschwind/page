@@ -30,14 +30,14 @@ class icon_handler_t {
 	};
 
 public:
-	icon_handler_t(shared_ptr<client_base_t> c) {
+	icon_handler_t(client_base_t * c) {
 		icon_surf = nullptr;
 
-		std::vector<uint32_t> const * net_wm_icon = c->net_wm_icon();
+		vector<uint32_t> const * net_wm_icon = c->net_wm_icon();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 
-			std::vector<_icon_ref_t> icons;
+			vector<_icon_ref_t> icons;
 
 			/* find all icons in net_wm_icon */
 			for(unsigned offset = 0; offset+2 < net_wm_icon->size();) {

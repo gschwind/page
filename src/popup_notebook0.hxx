@@ -156,7 +156,7 @@ public:
 	}
 
 	void update_window(shared_ptr<client_managed_t> c) {
-		icon = make_shared<icon64>(c);
+		icon = make_shared<icon64>(c.get());
 		this->title = c->title();
 	}
 

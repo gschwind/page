@@ -97,6 +97,13 @@ auto workspace_t::set_layout(vector<shared_ptr<viewport_t>> const & new_layout) 
 	_viewport_outputs = new_layout;
 	_viewport_layer.remove_if([](shared_ptr<tree_t> const & t) -> bool { return typeid(viewport_t) == typeid(*t.get()); });
 	_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
+
+	if(_viewport_outputs.size() > 0) {
+		_primary_viewport = _viewport_outputs[0];
+	} else {
+		_primary_viewport.reset();
+	}
+
 }
 
 auto workspace_t::get_any_viewport() const -> shared_ptr<viewport_t> {
@@ -187,7 +194,7 @@ rect const & workspace_t::workarea() {
 }
 
 void workspace_t::set_primary_viewport(shared_ptr<viewport_t> v) {
-	if(not has_key(_viewport_layer, dynamic_pointer_cast<tree_t>(v)))
+	if(not has_key(_viewport_outputs, v))
 		throw exception_t("invalid primary viewport");
 	_primary_viewport = v;
 }

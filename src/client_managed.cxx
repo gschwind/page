@@ -51,10 +51,12 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_is_focused(false),
 				_is_iconic(true),
 				_demands_attention(false),
-				_is_durty{true}
+				_is_durty{true},
+				_shadow{nullptr},
+				_base_renderable{nullptr}
 {
 
-	update_title();
+	_update_title();
 	rect pos{_properties->position()};
 
 	printf("window default position = %s\n", pos.to_string().c_str());
@@ -242,7 +244,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 client_managed_t::~client_managed_t() {
 
-	on_destroy.signal(shared_from_this());
+	on_destroy.signal(this);
 
 	unselect_inputs();
 
@@ -1394,22 +1396,25 @@ void client_managed_t::trigger_redraw() {
 	}
 }
 
-void client_managed_t::update_title() {
+void client_managed_t::_update_title() {
 		_is_durty = true;
 
-		std::string name;
+		string name;
 		if (_properties->net_wm_name() != nullptr) {
 			_title = *(_properties->net_wm_name());
 		} else if (_properties->wm_name() != nullptr) {
 			_title = *(_properties->wm_name());
 		} else {
-			std::stringstream s(std::stringstream::in | std::stringstream::out);
+			stringstream s(std::stringstream::in | std::stringstream::out);
 			s << "#" << (_properties->id()) << " (noname)";
 			_title = s.str();
 		}
 
-		on_title_change.signal(shared_from_this());
+}
 
+void client_managed_t::update_title() {
+	_update_title();
+	on_title_change.signal(shared_from_this());
 }
 
 bool client_managed_t::prefer_window_border() const {
@@ -1433,7 +1438,7 @@ shared_ptr<icon16> client_managed_t::icon() const {
 }
 
 void client_managed_t::update_icon() {
-	_icon = make_shared<icon16>(shared_from_this());
+	_icon = make_shared<icon16>(this);
 }
 
 xcb_window_t client_managed_t::orig() const {
