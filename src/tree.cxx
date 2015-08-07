@@ -99,10 +99,10 @@ void tree_t::render_finished() {
  * Derived class must return opaque region for this object,
  * If unknown it's safe to leave this empty.
  **/
-region tree_t::get_opaque_region() {
-	/* by default tree_t is invisible */
-	return region { };
-}
+//region tree_t::get_opaque_region() {
+//	/* by default tree_t is invisible */
+//	return region { };
+//}
 
 /**
  * Derived class must return visible region,
@@ -116,10 +116,10 @@ region tree_t::get_opaque_region() {
 /**
  * return currently damaged area (absolute)
  **/
-region tree_t::get_damaged() {
-	/* by default tree_t has no damage */
-	return region { };
-}
+//region tree_t::get_damaged() {
+//	/* by default tree_t has no damage */
+//	return region { };
+//}
 
 /**
  * make the component active.

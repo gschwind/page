@@ -232,7 +232,7 @@ public:
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
-	// virtual auto get_damaged() -> region;
+	virtual auto get_damaged() -> region;
 
 	virtual void activate(shared_ptr<tree_t> t);
 	virtual bool button_press(xcb_button_press_event_t const * ev);

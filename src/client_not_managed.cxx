@@ -110,6 +110,13 @@ region client_not_managed_t::get_opaque_region() {
 	return xopac;
 }
 
+region client_not_managed_t::get_damaged() {
+	region dmg { _ctx->csm()->get_damaged(_properties->id()) };
+	_ctx->csm()->clear_damaged(_properties->id());
+	dmg.translate(_base_position.x, _base_position.y);
+	return dmg;
+}
+
 void client_not_managed_t::update_base_renderable() {
 	_base_position = _properties->position();
 

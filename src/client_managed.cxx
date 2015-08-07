@@ -1088,6 +1088,13 @@ region client_managed_t::get_opaque_region() {
 	return xopac;
 }
 
+region client_managed_t::get_damaged() {
+	region dmg { _ctx->csm()->get_damaged(_base) };
+	_ctx->csm()->clear_damaged(_base);
+	dmg.translate(_base_position.x, _base_position.y);
+	return dmg;
+}
+
 bool client_managed_t::lock() {
 	cnx()->grab();
 	cnx()->fetch_pending_events();
