@@ -313,4 +313,10 @@ rect split_t::allocation() const {
 	return _allocation;
 }
 
+auto split_t::get_visible_region() -> region {
+	/** workspace do not render any thing **/
+	return region{};
+}
+
+
 }

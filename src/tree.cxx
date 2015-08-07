@@ -91,6 +91,10 @@ void tree_t::render(cairo_t * cr, region const & area) {
 	/* by default tree_t do not render any thing */
 }
 
+void tree_t::render_finished() {
+
+}
+
 /**
  * Derived class must return opaque region for this object,
  * If unknown it's safe to leave this empty.
@@ -104,10 +108,10 @@ region tree_t::get_opaque_region() {
  * Derived class must return visible region,
  * If unknown the whole screen can be returned, but draw will be called each time.
  **/
-region tree_t::get_visible_region() {
-	/* by default tree_t is invisible */
-	return region { };
-}
+//region tree_t::get_visible_region() {
+//	/* by default tree_t is invisible */
+//	return region { };
+//}
 
 /**
  * return currently damaged area (absolute)

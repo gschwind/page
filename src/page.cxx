@@ -3732,5 +3732,10 @@ bool page_t::global_history_front(shared_ptr<client_managed_t> & out) {
 	return false;
 }
 
+
+auto page_t::get_visible_region() -> region {
+	return region{_root_position};
+}
+
 }
 

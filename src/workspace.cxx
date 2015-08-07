@@ -217,5 +217,11 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 
 }
 
+auto workspace_t::get_visible_region() -> region {
+	/** workspace do not render any thing **/
+	return region{};
+}
+
+
 
 }
