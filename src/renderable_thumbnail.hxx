@@ -14,14 +14,13 @@
 namespace page {
 
 class renderable_thumbnail_t : public tree_t {
-	tree_t * _parent;
-
 	page_context_t * _ctx;
 	rect _position;
 	int _title_width;
 
 	rect _thumbnail_position;
-	client_managed_t * _c;
+
+	weak_ptr<client_managed_t> _c;
 
 	region _visible_region;
 	theme_thumbnail_t _tt;
@@ -29,7 +28,7 @@ class renderable_thumbnail_t : public tree_t {
 
 public:
 
-	renderable_thumbnail_t(page_context_t * ctx, rect const & position, client_managed_t * c) :
+	renderable_thumbnail_t(page_context_t * ctx, rect const & position, shared_ptr<client_managed_t> c) :
 		_ctx{ctx},
 		_c{c},
 		_position{position},
@@ -37,7 +36,7 @@ public:
 		_title_width{0},
 		_is_mouse_over{false}
 	{
-		_tt.pix = _c->get_last_pixmap();
+		_tt.pix = c->get_last_pixmap();
 		update_title();
 	}
 
@@ -45,7 +44,8 @@ public:
 
 
 	virtual void render(cairo_t * cr, region const & area) {
-		_tt.pix = _c->get_last_pixmap();
+		if(not _c.expired())
+			_tt.pix = _c.lock()->get_last_pixmap();
 
 		if (_tt.pix != nullptr) {
 			rect tmp = _position;
@@ -113,7 +113,7 @@ public:
 						_thumbnail_position.w, 20);
 				cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
 				_ctx->theme()->render_thumbnail_title(cr, rect { 0, 0,
-						_thumbnail_position.w, 20 }, _c->title());
+						_thumbnail_position.w, 20 }, _c.lock()->title());
 				cairo_destroy(cr);
 			}
 
@@ -139,7 +139,7 @@ public:
 			cairo_restore(cr);
 		}
 
-		_ctx->csm()->clear_damaged(_c->base());
+		_ctx->csm()->clear_damaged(_c.lock()->base());
 
 	}
 
@@ -160,7 +160,7 @@ public:
 	}
 
 	virtual region get_damaged() {
-		if(_ctx->csm()->has_damage(_c->base())) {
+		if(_ctx->csm()->has_damage(_c.lock()->base())) {
 			return region{_position};
 		}
 		return region{};
@@ -177,19 +177,9 @@ public:
 	void update_title() {
 		_tt.title = _ctx->cmp()->create_composite_pixmap(_position.w, 20);
 		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c->title());
+		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c.lock()->title());
 		cairo_destroy(cr);
 	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
-	}
-
-
 
 };
 

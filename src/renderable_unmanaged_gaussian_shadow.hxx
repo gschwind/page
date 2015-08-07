@@ -22,8 +22,6 @@ inline double _gaussian(double const sigma, double d) {
 
 template<unsigned const SIZE>
 class renderable_unmanaged_gaussian_shadow_t : public tree_t {
-	tree_t * _parent;
-
 	enum {
 		TOP_LEFT = 0,
 		TOP = 1,
@@ -200,15 +198,6 @@ public:
 	virtual region get_damaged() {
 		return region{};
 	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
-	}
-
 
 };
 

@@ -18,8 +18,6 @@ namespace page {
  * this on. i.e. is a fake damaged area.
  */
 class renderable_empty_t : public tree_t {
-	tree_t * _parent;
-
 	region damaged;
 public:
 
@@ -55,15 +53,6 @@ public:
 	virtual region get_damaged() {
 		return damaged;
 	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
-	}
-
 
 };
 

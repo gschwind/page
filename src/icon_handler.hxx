@@ -30,10 +30,10 @@ class icon_handler_t {
 	};
 
 public:
-	icon_handler_t(client_base_t const & c) {
+	icon_handler_t(shared_ptr<client_base_t> c) {
 		icon_surf = nullptr;
 
-		std::vector<uint32_t> const * net_wm_icon = c.net_wm_icon();
+		std::vector<uint32_t> const * net_wm_icon = c->net_wm_icon();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 

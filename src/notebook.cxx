@@ -19,7 +19,6 @@ using namespace std;
 
 notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_ctx{ctx},
-		_parent{nullptr},
 		_is_default{false},
 		_selected{nullptr},
 		_is_hidden{false},
@@ -45,11 +44,14 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	_children.push_back(x);
 	_clients.push_front(x);
 
-	_clients_context[x] = _client_context_t{};
-	_clients_context[x].title_change_func = x->on_title_change.connect(this, &notebook_t::_client_title_change);
-	_clients_context[x].destoy_func = x->on_destroy.connect(this, &notebook_t::_client_destroy);
-	_clients_context[x].activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
-	_clients_context[x].deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
+	_client_context_t a;
+
+	a.title_change_func = x->on_title_change.connect(this, &notebook_t::_client_title_change);
+	a.destoy_func = x->on_destroy.connect(this, &notebook_t::_client_destroy);
+	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
+	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
+
+	_clients_context[x.get()] = a;
 
 	_ctx->csm()->register_window(x->base());
 
@@ -89,7 +91,7 @@ void notebook_t::replace(page_component_t * src, page_component_t * by) {
 	throw std::runtime_error("cannot replace in notebook");
 }
 
-void notebook_t::remove(shared_ptr<tree_t> const & src) {
+void notebook_t::remove(shared_ptr<tree_t> src) {
 	auto mw = dynamic_pointer_cast<client_managed_t>(src);
 	if (has_key(_clients, mw) and mw != nullptr) {
 		_remove_client(mw);
@@ -124,10 +126,10 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	_clients.remove(x);
 
 	/* disconnect all signals */
-	_clients_context.erase(x);
+	_clients_context.erase(x.get());
 
 	if(_keep_selected and not _children.empty() and _selected == nullptr) {
-		_selected = dynamic_cast<client_managed_t*>(_children.back());
+		_selected = dynamic_pointer_cast<client_managed_t>(_children.back());
 
 		if (_selected != nullptr) {
 			_selected->normalize();
@@ -294,7 +296,7 @@ rect notebook_t::_compute_client_size(shared_ptr<client_managed_t> c) {
 
 }
 
-client_managed_t const * notebook_t::selected() const {
+shared_ptr<client_managed_t> notebook_t::selected() const {
 	return _selected;
 }
 
@@ -308,16 +310,16 @@ void notebook_t::set_default(bool x) {
 	queue_redraw();
 }
 
-void notebook_t::activate(tree_t * t) {
+void notebook_t::activate(shared_ptr<tree_t> t) {
 
-	if(_parent != nullptr) {
-		_parent->activate(this);
+	if(_parent.lock() != nullptr) {
+		_parent.lock()->activate(shared_from_this());
 	}
 
 	if (has_key(_children, t)) {
 		_children.remove(t);
 		_children.push_back(t);
-		auto mw = dynamic_cast<client_managed_t*>(t);
+		auto mw = dynamic_pointer_cast<client_managed_t>(t);
 		if (mw != nullptr) {
 			_set_selected(mw);
 		}
@@ -446,7 +448,7 @@ void notebook_t::_update_notebook_areas() {
 
 			}
 
-			_client_buttons.push_back(std::make_tuple(b, _selected, &_theme_notebook.selected_client));
+			_client_buttons.push_back(std::make_tuple(b, weak_ptr<client_managed_t>{_selected}, &_theme_notebook.selected_client));
 
 		} else {
 			_area.close_client = rect{};
@@ -455,7 +457,7 @@ void notebook_t::_update_notebook_areas() {
 
 		auto c = _clients.begin();
 		for (auto & tab: _theme_notebook.clients_tab) {
-			_client_buttons.push_back(std::make_tuple(tab.position, *c, &tab));
+			_client_buttons.push_back(make_tuple(tab.position, weak_ptr<client_managed_t>{*c}, &tab));
 			++c;
 		}
 
@@ -652,9 +654,9 @@ void notebook_t::_update_exposay() {
 			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x + (n*m - _clients.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, *it, i));
+		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{*it}, i));
 		pdst = to_root_position(pdst);
-		_exposay_thumbnail.push_back(std::make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
+		_exposay_thumbnail.push_back(make_shared<renderable_thumbnail_t>(_ctx, pdst, *it));
 		++it;
 	}
 
@@ -672,7 +674,7 @@ void notebook_t::_stop_exposay() {
 
 bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
-	if (e->event != get_window()) {
+	if (e->event != get_parent_xid()) {
 		return false;
 	}
 
@@ -682,16 +684,16 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		int y = e->event_y;
 
 		if (_area.button_close.is_inside(x, y)) {
-			_ctx->notebook_close(this);
+			_ctx->notebook_close(shared_from_this());
 			return true;
 		} else if (_area.button_hsplit.is_inside(x, y)) {
-			_ctx->split_bottom(this, nullptr);
+			_ctx->split_bottom(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_vsplit.is_inside(x, y)) {
-			_ctx->split_right(this, nullptr);
+			_ctx->split_right(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_select.is_inside(x, y)) {
-			_ctx->get_current_workspace()->set_default_pop(this);
+			_ctx->get_current_workspace()->set_default_pop(shared_from_this());
 			return true;
 		} else if (_area.button_exposay.is_inside(x, y)) {
 			start_exposay();
@@ -707,7 +709,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		} else {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					shared_ptr<client_managed_t> c = std::get<1>(i);
+					auto c = std::get<1>(i).lock();
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
 					return true;
 				}
@@ -715,7 +717,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					shared_ptr<client_managed_t> c = std::get<1>(i);
+					auto c = std::get<1>(i).lock();
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
 					return true;
 				}
@@ -744,14 +746,14 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		} else {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					_start_client_menu(std::get<1>(i), e->detail, e->root_x, e->root_y);
+					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y);
 					return true;
 				}
 			}
 
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					_start_client_menu(std::get<1>(i), e->detail, e->root_x, e->root_y);
+					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y);
 					return true;
 				}
 			}
@@ -786,16 +788,17 @@ void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, i
 
 bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 
-	if (e->event != get_window()) {
+	if (e->event != get_parent_xid()) {
 		return false;
 	}
+
 	int x = e->event_x;
 	int y = e->event_y;
 
 	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
 		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
-		std::tuple<rect, shared_ptr<client_managed_t>, theme_tab_t *> * tab = nullptr;
-		std::tuple<rect, shared_ptr<client_managed_t>, int> * exposay = nullptr;
+		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab = nullptr;
+		tuple<rect, weak_ptr<client_managed_t>, int> * exposay = nullptr;
 
 		if (_area.button_close.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLOSE;
@@ -854,7 +857,7 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 }
 
 bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
-	if(ev->event == get_window()) {
+	if(ev->event == get_parent_xid()) {
 		if(_theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
 			_mouse_over_reset();
 			queue_redraw();
@@ -865,10 +868,10 @@ bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
 
 void notebook_t::_mouse_over_reset() {
 	if (_mouse_over.tab != nullptr) {
-		if (std::get<1>(*_mouse_over.tab)->is_focused()) {
+		if (std::get<1>(*_mouse_over.tab).lock()->is_focused()) {
 			std::get<2>(*_mouse_over.tab)->tab_color =
 					_ctx->theme()->get_focused_color();
-		} else if (_selected == std::get<1>(*_mouse_over.tab)) {
+		} else if (_selected == std::get<1>(*_mouse_over.tab).lock()) {
 			std::get<2>(*_mouse_over.tab)->tab_color =
 					_ctx->theme()->get_selected_color();
 		} else {
@@ -903,13 +906,13 @@ void notebook_t::_mouse_over_set() {
 
 void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
 	for(auto & x: _client_buttons) {
-		if(c == std::get<1>(x)) {
+		if(c == std::get<1>(x).lock()) {
 			std::get<2>(x)->title = c->title();
 		}
 	}
 
 	for(auto & x: _exposay_buttons) {
-		if(c == std::get<1>(x)) {
+		if(c == std::get<1>(x).lock()) {
 			_exposay_thumbnail[std::get<2>(x)]->update_title();
 		}
 	}
@@ -934,35 +937,12 @@ void notebook_t::_client_deactivate(shared_ptr<client_managed_t> c) {
 	queue_redraw();
 }
 
-void notebook_t::set_parent(tree_t * t) {
-	if(t == nullptr) {
-		_parent = nullptr;
-		return;
-	}
-
-	auto xt = dynamic_cast<page_component_t*>(t);
-	if(xt == nullptr) {
-		throw exception_t("page_component_t must have a page_component_t as parent");
-	} else {
-		_parent = xt;
-	}
-}
-
 rect notebook_t::allocation() const {
 	return _allocation;
 }
 
-page_component_t * notebook_t::parent() const {
-	return _parent;
-}
-
-void notebook_t::children(vector<tree_t *> & out) const {
+void notebook_t::children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
-
-	if (fading_notebook != nullptr) {
-		out.push_back(fading_notebook.get());
-	}
-
 }
 
 void notebook_t::hide() {
@@ -976,15 +956,6 @@ void notebook_t::show() {
 	_is_hidden = false;
 	for(auto i: tree_t::children()) {
 		i->show();
-	}
-}
-
-void notebook_t::get_visible_children(vector<tree_t *> & out) {
-	if (not _is_hidden) {
-		out.push_back(this);
-		for (auto i : tree_t::children()) {
-			i->get_visible_children(out);
-		}
 	}
 }
 
@@ -1051,6 +1022,10 @@ region notebook_t::get_damaged() {
 			ret += i->get_damaged();
 	}
 	return ret;
+}
+
+shared_ptr<notebook_t> notebook_t::shared_from_this() {
+	return dynamic_pointer_cast<notebook_t>(tree_t::shared_from_this());
 }
 
 }

@@ -13,18 +13,20 @@
 
 namespace page {
 
+using namespace std;
+
 class renderable_pixmap_t : public tree_t {
 	tree_t * _parent;
 
 	rect location;
-	std::shared_ptr<pixmap_t> surf;
+	shared_ptr<pixmap_t> surf;
 	region damaged;
 	region opaque_region;
 	region visible_region;
 
 public:
 
-	renderable_pixmap_t(std::shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) :
+	renderable_pixmap_t(shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) :
 		damaged{damaged},
 		surf{s},
 		location{loc},
@@ -58,18 +60,10 @@ public:
 		cairo_restore(cr);
 	}
 
-	/**
-	 * Derived class must return opaque region for this object,
-	 * If unknown it's safe to leave this empty.
-	 **/
 	virtual region get_opaque_region() {
 		return opaque_region;
 	}
 
-	/**
-	 * Derived class must return visible region,
-	 * If unknow the whole screen can be returned, but draw will be called each time.
-	 **/
 	virtual region get_visible_region() {
 		return visible_region;
 	}
@@ -92,14 +86,6 @@ public:
 
 	void add_damaged(region const & r) {
 		damaged += r;
-	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
 	}
 
 };

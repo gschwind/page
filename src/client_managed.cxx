@@ -242,7 +242,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 client_managed_t::~client_managed_t() {
 
-	on_destroy.signal(this);
+	on_destroy.signal(shared_from_this());
 
 	unselect_inputs();
 
@@ -1114,11 +1114,11 @@ void client_managed_t::set_focus_state(bool is_focused) {
 		if (_is_focused) {
 			net_wm_state_add(_NET_WM_STATE_FOCUSED);
 			grab_button_focused();
-			on_activate.signal(this);
+			on_activate.signal(shared_from_this());
 		} else {
 			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			grab_button_unfocused();
-			on_deactivate.signal(this);
+			on_deactivate.signal(shared_from_this());
 		}
 		queue_redraw();
 		unlock();
@@ -1408,7 +1408,7 @@ void client_managed_t::update_title() {
 			_title = s.str();
 		}
 
-		on_title_change.signal(this);
+		on_title_change.signal(shared_from_this());
 
 }
 
@@ -1433,7 +1433,7 @@ shared_ptr<icon16> client_managed_t::icon() const {
 }
 
 void client_managed_t::update_icon() {
-	_icon = std::shared_ptr<icon16>{new icon16(*this)};
+	_icon = make_shared<icon16>(shared_from_this());
 }
 
 xcb_window_t client_managed_t::orig() const {

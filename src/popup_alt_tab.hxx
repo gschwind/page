@@ -157,7 +157,7 @@ public:
 		expose();
 	}
 
-	client_managed_t * get_selected() {
+	weak_ptr<client_managed_t> get_selected() {
 		return (*_selected)->id;
 	}
 
@@ -251,21 +251,19 @@ public:
 		}
 	}
 
-	void destroy_client(client_managed_t * c) {
-		while((*_selected)->id == c) {
+	void _cleanup_list() {
+		_client_list.remove_if([](shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id.expired(); });
+	}
+
+	void destroy_client(shared_ptr<client_managed_t> c) {
+		_cleanup_list();
+
+		while((*_selected)->id.lock() == c) {
 			select_next();
 		}
 
-		_client_list.remove_if([c](std::shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id == c; });
-		destroy_func.erase(c);
-	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
+		_client_list.remove_if([c](shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id.lock() == c; });
+		destroy_func.erase(c.get());
 	}
 
 };

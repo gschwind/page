@@ -83,9 +83,9 @@ grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, shared_ptr<client_m
 		ctx{ctx},
 		c{c},
 		start_position{pos},
-		target_notebook{nullptr},
+		target_notebook{},
 		zone{NOTEBOOK_AREA_NONE},
-		pn0{nullptr},
+		pn0{},
 		_button{button}
 {
 
@@ -154,7 +154,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 	notebook_area_e new_zone;
 	_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
 
-	if(new_target != target_notebook or new_zone != zone) {
+	if(new_target != target_notebook.lock() or new_zone != zone) {
 		target_notebook = new_target;
 		zone = new_zone;
 		switch(zone) {
@@ -231,9 +231,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			auto parent = dynamic_pointer_cast<notebook_t>(c->parent().lock());
 			if (parent != nullptr) {
 				c->queue_redraw();
+
 				/* hide client if option allow shaded client */
 				if (parent->selected() == c
-						and ctx->get_current_workspace()->client_focus.front() == c
+						and ((not ctx->get_current_workspace()->client_focus.empty())?ctx->get_current_workspace()->client_focus.front().lock() == c:false)
 						and /*_enable_shade_windows*/true) {
 					ctx->set_focus(nullptr, e->time);
 					parent->iconify_client(c);
@@ -542,7 +543,7 @@ void grab_fullscreen_client_t::button_motion(xcb_motion_notify_event_t const * e
 
 	shared_ptr<viewport_t> new_viewport = _ctx->find_mouse_viewport(e->root_x, e->root_y);
 
-	if(new_viewport != v) {
+	if(new_viewport != v.lock()) {
 		if(new_viewport != nullptr) {
 			pn0->move_resize(new_viewport->raw_area());
 		}
@@ -572,7 +573,8 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 }
 
 grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
-	list<weak_ptr<client_managed_t>> managed_window = _ctx->clients_list();
+	auto _x = _ctx->clients_list();
+	list<weak_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
 
 	auto focus_history = _ctx->global_client_focus_history();
 	/* reorder client to follow focused order */
@@ -580,7 +582,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 			i != focus_history.rend();
 			++i) {
 		if (not i->expired()) {
-			managed_window.remove(*i);
+			managed_window.remove_if([i](weak_ptr<client_managed_t> x) -> bool { return i->lock() == x.lock(); });
 			managed_window.push_front(*i);
 		}
 	}

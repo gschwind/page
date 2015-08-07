@@ -22,10 +22,7 @@ namespace page {
 using namespace std;
 
 class renderable_notebook_fading_t : public tree_t {
-	tree_t * _parent;
-
 	double _ratio;
-
 	rect _old_client_area;
 	shared_ptr<pixmap_t> _old_surface;
 
@@ -88,17 +85,8 @@ public:
 	}
 
 	void set_ratio(double x) {
-		_ratio = std::min(std::max(0.0, x), 1.0);
+		_ratio = min(max(0.0, x), 1.0);
 	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
-	}
-
 
 };
 

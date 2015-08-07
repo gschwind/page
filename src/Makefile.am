@@ -29,11 +29,11 @@ page_SOURCES = \
 	client_not_managed.cxx \
 	client_managed.cxx \
 	grab_handlers.cxx \
+	notebook.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
 	tree.cxx \
-	notebook.cxx \
 	split.cxx \
 	compositor.cxx \
 	viewport.cxx \

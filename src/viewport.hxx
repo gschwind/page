@@ -162,7 +162,7 @@ public:
 		if(_ctx->cmp() != nullptr) {
 			_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
 			_renderable = new renderable_pixmap_t{_back_surf, _effective_area, _effective_area};
-			_renderable->set_parent(this);
+			_renderable->set_parent(shared_from_this());
 		}
 
 		_ctx->dpy()->move_resize(_win, _effective_area);

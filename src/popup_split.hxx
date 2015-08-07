@@ -22,7 +22,8 @@ struct popup_split_t : public tree_t {
 
 	page_context_t * _ctx;
 	double _current_split;
-	split_t const * _s_base;
+
+	weak_ptr<split_t> _s_base;
 
 	rect _position;
 
@@ -82,7 +83,7 @@ public:
 	}
 
 
-	popup_split_t(page_context_t * ctx, split_t const * split) :
+	popup_split_t(page_context_t * ctx, shared_ptr<split_t> split) :
 		_ctx{ctx},
 		_s_base{split},
 		_current_split{split->ratio()},
@@ -129,7 +130,7 @@ public:
 
 
 	void _compute_layout(rect & rect0, rect & rect1) {
-		if(_s_base->type() == HORIZONTAL_SPLIT) {
+		if(_s_base.lock()->type() == HORIZONTAL_SPLIT) {
 
 			int ii = floor((_position.h - _ctx->theme()->notebook.margin.top) * _current_split + 0.5);
 
@@ -229,9 +230,9 @@ public:
 	virtual void render(cairo_t * cr, region const & area) {
 
 		theme_split_t ts;
-		ts.split = _s_base->ratio();
-		ts.type = _s_base->type();
-		ts.allocation = _s_base->allocation();
+		ts.split = _s_base.lock()->ratio();
+		ts.type = _s_base.lock()->type();
+		ts.allocation = _s_base.lock()->allocation();
 
 		for (auto const & a : area) {
 			cairo_save(cr);

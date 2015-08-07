@@ -13,8 +13,6 @@
 namespace page {
 
 class renderable_unmanaged_outer_gradien_t : public tree_t {
-	tree_t * _parent;
-
 	rect _r;
 	int _shadow_width;
 

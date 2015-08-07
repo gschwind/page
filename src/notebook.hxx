@@ -58,8 +58,8 @@ class notebook_t : public page_component_t {
 	bool _exposay;
 
 	struct {
-		tuple<rect, client_managed_t *, theme_tab_t *> * tab;
-		tuple<rect, client_managed_t *, int> * exposay;
+		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab;
+		tuple<rect, weak_ptr<client_managed_t>, int> * exposay;
 	} _mouse_over;
 
 	enum select_e {
@@ -80,7 +80,7 @@ class notebook_t : public page_component_t {
 
 	// list to maintain the client order
 	list<shared_ptr<client_managed_t>> _clients;
-	map<weak_ptr<client_managed_t>, _client_context_t> _clients_context;
+	map<client_managed_t *, _client_context_t> _clients_context;
 
 	shared_ptr<client_managed_t> _selected;
 
@@ -112,11 +112,11 @@ class notebook_t : public page_component_t {
 	} _area;
 
 	/* list of tabs and exposay buttons */
-	vector<tuple<rect, client_managed_t *, theme_tab_t *>> _client_buttons;
-	vector<tuple<rect, client_managed_t *, int>> _exposay_buttons;
+	vector<tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *>> _client_buttons;
+	vector<tuple<rect, weak_ptr<client_managed_t>, int>> _exposay_buttons;
 	shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
 
-	void _set_selected(client_managed_t * c);
+	void _set_selected(shared_ptr<client_managed_t> c);
 
 
 	void _start_fading();
@@ -125,7 +125,7 @@ class notebook_t : public page_component_t {
 	void _update_theme_notebook(theme_notebook_t & theme_notebook) const;
 	void _update_layout();
 
-	void _process_notebook_client_menu(client_managed_t * c, int selected);
+	void _process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
 
 	void _mouse_over_reset();
 	void _mouse_over_set();
@@ -165,6 +165,8 @@ class notebook_t : public page_component_t {
 	void _update_exposay();
 	void _stop_exposay();
 	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
+
+	shared_ptr<notebook_t> shared_from_this();
 
 public:
 

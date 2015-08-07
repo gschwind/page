@@ -21,8 +21,6 @@
 namespace page {
 
 class renderable_floating_outer_gradien_t : public tree_t {
-	tree_t * _parent;
-
 	rect _r;
 	double _shadow_width;
 	double _radius;
@@ -231,15 +229,6 @@ public:
 	virtual region get_damaged() {
 		return region{};
 	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
-	}
-
 
 };
 
