@@ -87,7 +87,7 @@ rect notebook_t::_get_new_client_size() {
 	);
 }
 
-void notebook_t::replace(page_component_t * src, page_component_t * by) {
+void notebook_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
 	throw std::runtime_error("cannot replace in notebook");
 }
 

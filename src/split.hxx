@@ -37,6 +37,7 @@ class split_t : public page_component_t {
 	void update_allocation_pack0();
 	void update_allocation_pack1();
 	void update_allocation();
+	shared_ptr<split_t> shared_from_this();
 
 public:
 	split_t(page_context_t * ctx, split_type_e type);
@@ -44,36 +45,62 @@ public:
 
 	/* access to stuff */
 	auto get_split_bar_area() const -> rect const & { return _split_bar_area; }
-	auto get_pack0() const -> weak_ptr<page_component_t> { return _pack0; }
-	auto get_pack1() const -> weak_ptr<page_component_t> { return _pack1; }
-	auto allocation() const -> rect { return _allocation; }
+	auto get_pack0() const -> shared_ptr<page_component_t> { return _pack0; }
+	auto get_pack1() const -> shared_ptr<page_component_t> { return _pack1; }
 	auto ratio() const -> double { return _ratio; }
 	auto type() const -> split_type_e { return _type; }
-	auto get_node_name() const -> std::string { return _get_node_name<'S'>(); }
+	void render_legacy(cairo_t * cr) const;
 
 
-	void replace(page_component_t * src, page_component_t * by);
 	void compute_split_bar_area(rect & area, double split) const;
-	void set_allocation(rect const & area);
 	void set_split(double split);
 	void set_theme(theme_t const * theme);
-	void set_pack0(page_component_t * x);
-	void set_pack1(page_component_t * x);
+	void set_pack0(shared_ptr<page_component_t> x);
+	void set_pack1(shared_ptr<page_component_t> x);
 	void compute_split_location(double split, int & x, int & y) const;
 	void compute_split_size(double split, int & w, int & h) const;
-	void render_legacy(cairo_t * cr) const;
-	void activate(tree_t * t = nullptr);
-	void remove(shared_ptr<tree_t> const & t);
 	virtual void update_layout(time64_t const time);
 	rect compute_split_bar_location() const;
-	void set_parent(tree_t * t);
-	void set_parent(page_component_t * t);
-	void children(std::vector<tree_t *> & out) const;
-	void hide();
-	void show();
-	void get_visible_children(std::vector<tree_t *> & out);
 
-	bool button_press(xcb_button_press_event_t const * ev);
+
+	/**
+	 * tree_t virtual API
+	 **/
+
+	//virtual void hide();
+	//virtual void show();
+	virtual auto get_node_name() const -> string;
+	virtual void remove(shared_ptr<tree_t> t);
+
+	virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	//virtual void update_layout(time64_t const time);
+	//virtual void render(cairo_t * cr, region const & area);
+
+	//virtual auto get_opaque_region() -> region;
+	//virtual auto get_visible_region() -> region;
+	//virtual auto get_damaged() -> region;
+
+	virtual void activate(shared_ptr<tree_t> t);
+	virtual bool button_press(xcb_button_press_event_t const * ev);
+	//virtual bool button_release(xcb_button_release_event_t const * ev);
+	//virtual bool button_motion(xcb_motion_notify_event_t const * ev);
+	//virtual bool leave(xcb_leave_notify_event_t const * ev);
+	//virtual bool enter(xcb_enter_notify_event_t const * ev);
+	//virtual void expose(xcb_expose_event_t const * ev);
+	//virtual void trigger_redraw();
+
+	//virtual auto get_xid() const -> xcb_window_t;
+	//virtual auto get_parent_xid() const -> xcb_window_t;
+	//virtual rect get_window_position() const;
+	//virtual void queue_redraw();
+
+	/**
+	 * page_component_t virtual API
+	 **/
+
+	virtual void set_allocation(rect const & area);
+	virtual rect allocation() const;
+	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) = 0;
 
 };
 

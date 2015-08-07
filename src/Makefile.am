@@ -30,14 +30,14 @@ page_SOURCES = \
 	client_managed.cxx \
 	grab_handlers.cxx \
 	notebook.cxx \
+	split.cxx \
+	viewport.cxx \
+	desktop.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \
 	tree.cxx \
-	split.cxx \
 	compositor.cxx \
-	viewport.cxx \
-	desktop.cxx \
 	simple2_theme.cxx \
 	tiny_theme.cxx \
 	config_handler.cxx \

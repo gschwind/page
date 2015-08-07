@@ -17,6 +17,8 @@
 
 namespace page {
 
+using namespace std;
+
 split_t::split_t(page_context_t * ctx, split_type_e type) :
 		_ctx{ctx},
 		_type{type},
@@ -86,13 +88,13 @@ void split_t::update_allocation_pack1() {
 	_pack1->set_allocation(b);
 }
 
-void split_t::replace(page_component_t * src, page_component_t * by) {
+void split_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
 	if (_pack0 == src) {
-		printf("replace %p by %p\n", src, by);
+		printf("replace %p by %p\n", src.get(), by.get());
 		set_pack0(by);
 		src->clear_parent();
 	} else if (_pack1 == src) {
-		printf("replace %p by %p\n", src, by);
+		printf("replace %p by %p\n", src.get(), by.get());
 		set_pack1(by);
 		src->clear_parent();
 	} else {
@@ -157,7 +159,7 @@ void split_t::update_allocation() {
 
 }
 
-void split_t::set_pack0(page_component_t * x) {
+void split_t::set_pack0(shared_ptr<page_component_t> x) {
 	_children.remove(_pack0);
 	_pack0 = x;
 	if (_pack0 != nullptr) {
@@ -167,7 +169,7 @@ void split_t::set_pack0(page_component_t * x) {
 	}
 }
 
-void split_t::set_pack1(page_component_t * x) {
+void split_t::set_pack1(shared_ptr<page_component_t> x) {
 	_children.remove(_pack1);
 	_pack1 = x;
 	if (_pack1 != nullptr) {
@@ -220,10 +222,10 @@ void split_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_split(cr, &ts);
 }
 
-void split_t::activate(tree_t * t) {
+void split_t::activate(shared_ptr<tree_t> t) {
 	if(has_key(_children, t)) {
-		if(_parent != nullptr) {
-			_parent->activate(this);
+		if(_parent.lock() != nullptr) {
+			_parent.lock()->activate(shared_from_this());
 		}
 		_children.remove(t);
 		_children.push_back(t);
@@ -232,7 +234,7 @@ void split_t::activate(tree_t * t) {
 	}
 }
 
-void split_t::remove(shared_ptr<tree_t> const & t) {
+void split_t::remove(shared_ptr<tree_t> t) {
 	if (_pack0 == t) {
 		set_pack0(nullptr);
 	} else if (_pack1 == t) {
@@ -283,48 +285,24 @@ rect split_t::compute_split_bar_location() const {
 }
 
 
-void split_t::children(std::vector<tree_t *> & out) const {
+void split_t::children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 
-void split_t::hide() {
-	_is_visible = false;
-	for(auto i: tree_t::children()) {
-		i->hide();
-	}
-}
-
-void split_t::show() {
-	_is_visible = thue;
-	for(auto i: tree_t::children()) {
-		i->show();
-	}
-}
-
-void split_t::set_parent(tree_t * t) {
-	if(t == nullptr) {
-		_parent = nullptr;
-		return;
-	}
-
-	auto xt = dynamic_cast<page_component_t*>(t);
-	if(xt == nullptr) {
-		throw exception_t("page_component_t must have a page_component_t as parent");
-	} else {
-		_parent = xt;
-	}
-}
-
 bool split_t::button_press(xcb_button_press_event_t const * e) {
-	if (e->event == get_window()
+	if (e->event == get_parent_xid()
 			and e->child == XCB_NONE
 			and e->detail == XCB_BUTTON_INDEX_1
 			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
-		_ctx->grab_start(new grab_split_t { _ctx, this });
+		_ctx->grab_start(new grab_split_t { _ctx, shared_from_this() });
 		return true;
 	} else {
 		return false;
 	}
+}
+
+shared_ptr<split_t> split_t::shared_from_this() {
+	return dynamic_pointer_cast<split_t>(tree_t::shared_from_this());
 }
 
 }

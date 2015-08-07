@@ -196,7 +196,7 @@ public:
 	 **/
 	virtual void set_allocation(rect const & area);
 	virtual rect allocation() const;
-	virtual void replace(page_component_t * src, page_component_t * by);
+	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 	/**
 	 * notebook_t interface
