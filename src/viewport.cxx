@@ -22,7 +22,6 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 		_effective_area{area},
 		_is_durty{true},
 		_win{XCB_NONE},
-		_pix{XCB_NONE},
 		_back_surf{nullptr},
 		_exposed{false}
 {
@@ -30,8 +29,6 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 	create_window();
 	_subtree.reset();
 	_subtree = make_shared<notebook_t>(_ctx, keep_focus);
-	_subtree->set_parent(shared_from_this());
-	_subtree->set_allocation(_page_area);
 }
 
 viewport_t::~viewport_t() {
@@ -135,25 +132,14 @@ void viewport_t::show() {
 }
 
 void viewport_t::destroy_renderable() {
-
-	delete _renderable;
-	_renderable = nullptr;
-
-	if(_pix != XCB_NONE) {
-		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
-		_pix = XCB_NONE;
-	}
-
-	if(_back_surf != nullptr) {
-		_back_surf.reset();
-	}
-
+	_renderable.reset();
+	_back_surf.reset();
 }
 
 void viewport_t::update_renderable() {
 	if(_ctx->cmp() != nullptr) {
 		_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
-		_renderable = new renderable_pixmap_t{_back_surf, _effective_area, _effective_area};
+		_renderable = make_shared<renderable_pixmap_t>(_back_surf, _effective_area, _effective_area);
 		_renderable->set_parent(shared_from_this());
 	}
 
@@ -206,8 +192,6 @@ void viewport_t::create_window() {
 			XCB_NONE,
 			XCB_BUTTON_INDEX_ANY,
 			XCB_MOD_MASK_ANY);
-
-	_pix = XCB_NONE;
 
 }
 
@@ -296,6 +280,11 @@ void viewport_t::expose(xcb_expose_event_t const * e) {
 	if(e->window == _win) {
 		_exposed = true;
 	}
+}
+
+void viewport_t::_post_init() {
+	_subtree->set_parent(shared_from_this());
+	_subtree->set_allocation(_page_area);
 }
 
 

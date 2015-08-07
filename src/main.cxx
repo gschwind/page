@@ -18,9 +18,9 @@ int main(int argc, char * * argv) {
 	//signal(SIGABRT, sig_handler);
 
 	try {
-		page::page_t * m = new page::page_t{argc, argv};
+		auto m = make_shared<page::page_t>(argc, argv);
 		m->run();
-		delete m;
+		m = nullptr;
 		page::leak_checker::check_everinthing_delete();
 	} catch (page::exception & e) {
 		fprintf(stdout, "%s\n", e.what());

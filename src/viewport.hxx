@@ -32,7 +32,6 @@ class viewport_t: public page_component_t {
 
 	region _damaged;
 
-	xcb_pixmap_t _pix;
 	xcb_window_t _win;
 
 	bool _is_durty;
@@ -40,8 +39,7 @@ class viewport_t: public page_component_t {
 
 	/** rendering tabs is time consuming, thus use back buffer **/
 	shared_ptr<pixmap_t> _back_surf;
-
-	renderable_pixmap_t * _renderable;
+	shared_ptr<renderable_pixmap_t> _renderable;
 
 	/** area without considering dock windows **/
 	rect _raw_aera;
@@ -65,8 +63,17 @@ class viewport_t: public page_component_t {
 	void create_window();
 	void _redraw_back_buffer();
 	void paint_expose();
+	void _post_init();
 
 public:
+	template<typename ... Args>
+	static shared_ptr<viewport_t> create(Args ... args) {
+		auto x = make_shared<viewport_t>(args...);
+		x->_post_init();
+		return x;
+	}
+
+
 	viewport_t(page_context_t * ctx, rect const & area, bool keep_focus);
 	virtual ~viewport_t();
 

@@ -69,18 +69,6 @@ page_t::page_t(int argc, char ** argv)
 	identity_window = XCB_NONE;
 	cmgr = nullptr;
 
-	/** initialize the empty desktop **/
-	_current_desktop = 0;
-	for(unsigned k = 0; k < 4; ++k) {
-		auto d = make_shared<workspace_t>(this, k);
-		d->set_parent(shared_from_this());
-		_desktop_list.push_back(d);
-		_desktop_stack.push_front(d);
-		d->hide();
-	}
-
-	_desktop_list[_current_desktop]->show();
-
 	replace_wm = false;
 	char const * conf_file_name = 0;
 
@@ -243,6 +231,20 @@ page_t::~page_t() {
 }
 
 void page_t::run() {
+
+	/** initialize the empty desktop **/
+	_current_desktop = 0;
+	for(unsigned k = 0; k < 4; ++k) {
+		auto d = make_shared<workspace_t>(this, k);
+
+		/** /!\ shared_from_this CANNOT be call in constructor **/
+		d->set_parent(shared_from_this());
+		_desktop_list.push_back(d);
+		_desktop_stack.push_front(d);
+		d->hide();
+	}
+
+	_desktop_list[_current_desktop]->show();
 
 	/* check for required page extension */
 	cnx->check_x11_extension();
@@ -2342,7 +2344,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = make_shared<viewport_t>(this, viewport_allocation[i], _auto_refocus);
+				vp = viewport_t::create(this, viewport_allocation[i], _auto_refocus);
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -2357,7 +2359,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = make_shared<viewport_t>(this, area, _auto_refocus);
+				vp = viewport_t::create(this, area, _auto_refocus);
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
