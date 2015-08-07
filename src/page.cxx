@@ -1303,9 +1303,10 @@ void page_t::render() {
 		 **/
 
 		broadcast_update_layout(time64_t::now());
-
 		/* will collect all damage, if there is no damage, will no nothing. */
 		rnd->render(this);
+
+
 		xcb_flush(cnx->xcb());
 	}
 }
@@ -3743,6 +3744,12 @@ auto page_t::get_opaque_region() -> region {
 
 auto page_t::get_damaged() -> region {
 	return region{};
+}
+
+void page_t::render(cairo_t * cr, region const & area) {
+	if(_background != nullptr) {
+		_background->render(cr, area);
+	}
 }
 
 }

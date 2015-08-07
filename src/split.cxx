@@ -329,4 +329,9 @@ auto split_t::get_damaged() -> region {
 	return region{};
 }
 
+void split_t::render(cairo_t * cr, region const & area) {
+
+}
+
+
 }

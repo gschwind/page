@@ -1507,5 +1507,12 @@ string const & client_managed_t::title() const {
 	return _title;
 }
 
+void client_managed_t::render(cairo_t * cr, region const & area) {
+	if(_base_renderable != nullptr) {
+		_base_renderable->render(cr, area);
+	}
+}
+
+
 }
 

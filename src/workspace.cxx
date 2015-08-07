@@ -232,4 +232,8 @@ auto workspace_t::get_damaged() -> region {
 	return region{};
 }
 
+void workspace_t::render(cairo_t * cr, region const & area) {
+
+}
+
 }

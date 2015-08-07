@@ -180,5 +180,11 @@ rect const & client_not_managed_t::orig_position() const {
 	return _base_position;
 }
 
+void client_not_managed_t::render(cairo_t * cr, region const & area) {
+	if(_base_renderable != nullptr) {
+		_base_renderable->render(cr, area);
+	}
+}
+
 
 }

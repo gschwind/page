@@ -295,4 +295,10 @@ auto viewport_t::get_opaque_region() -> region {
 	return region{_effective_area};
 }
 
+void viewport_t::render(cairo_t * cr, region const & area) {
+	if(_renderable != nullptr) {
+		_renderable->render(cr, area);
+	}
+}
+
 }

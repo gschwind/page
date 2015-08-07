@@ -975,6 +975,10 @@ void notebook_t::render(cairo_t * cr, region const & area) {
 			_exposay_mouse_over->render(cr, area);
 		for(auto & i: _exposay_thumbnail)
 			i->render(cr, area);
+	} else {
+		if(_selected != nullptr) {
+			_selected->render(cr, area);
+		}
 	}
 
 }
