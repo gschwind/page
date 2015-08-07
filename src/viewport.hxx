@@ -56,7 +56,6 @@ class viewport_t: public page_component_t {
 	viewport_t & operator= (viewport_t const &);
 
 	auto get_nearest_notebook() -> shared_ptr<notebook_t>;
-	void set_raw_area(rect const & area);
 	void set_effective_area(rect const & area);
 	bool is_visible();
 	auto page_area() const -> rect const &;
@@ -72,6 +71,7 @@ public:
 	virtual ~viewport_t();
 
 	auto raw_area() const -> rect const &;
+	void set_raw_area(rect const & area);
 
 	/**
 	 * tree_t virtual API

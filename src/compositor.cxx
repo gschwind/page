@@ -122,7 +122,7 @@ compositor_t::~compositor_t() {
 
 void compositor_t::render(tree_t * t) {
 
-	std::vector<tree_t *> _graph_scene = t->get_all_children();
+	auto _graph_scene = t->get_all_children();
 
 	/**
 	 * remove masked damaged.

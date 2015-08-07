@@ -64,18 +64,6 @@ private:
 
 	workspace_switch_direction_e _switch_direction;
 
-	auto get_viewport_map() const -> vector<shared_ptr<viewport_t>> const &;
-	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
-	auto get_viewports() const -> vector<shared_ptr<viewport_t>> ;
-	void update_default_pop();
-	void add_floating_client(shared_ptr<client_managed_t> c);
-	bool is_hidden();
-	void set_workarea(rect const & r);
-	auto workarea() -> rect const &;
-	void set_primary_viewport(shared_ptr<viewport_t> v);
-	auto primary_viewport() const -> shared_ptr<viewport_t>;
-	void start_switch(workspace_switch_direction_e direction);
-
 public:
 
 	workspace_t(page_context_t * ctx, unsigned id);
@@ -85,6 +73,18 @@ public:
 	void set_default_pop(shared_ptr<notebook_t> n);
 	auto default_pop() -> shared_ptr<notebook_t>;
 	int  id();
+	auto primary_viewport() const -> shared_ptr<viewport_t>;
+	void start_switch(workspace_switch_direction_e direction);
+	bool is_hidden();
+	void set_workarea(rect const & r);
+	auto workarea() -> rect const &;
+	auto get_viewports() const -> vector<shared_ptr<viewport_t>> ;
+	void update_default_pop();
+	auto get_viewport_map() const -> vector<shared_ptr<viewport_t>>;
+	void set_primary_viewport(shared_ptr<viewport_t> v);
+	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
+	void add_floating_client(shared_ptr<client_managed_t> c);
+
 
 	/**
 	 * tree_t virtual API

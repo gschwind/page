@@ -756,6 +756,9 @@ public:
 };
 
 
+template<typename T>
+bool is_expired(weak_ptr<T> x) { return x.expired(); }
+
 }
 
 

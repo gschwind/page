@@ -100,7 +100,7 @@ public:
 
 	virtual void set_allocation(rect const & area);
 	virtual rect allocation() const;
-	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) = 0;
+	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 };
 

@@ -89,7 +89,7 @@ rect workspace_t::allocation() const {
 	return _allocation;
 }
 
-auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> const & {
+auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> {
 	return _viewport_outputs;
 }
 
