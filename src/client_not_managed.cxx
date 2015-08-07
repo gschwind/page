@@ -186,5 +186,21 @@ void client_not_managed_t::render(cairo_t * cr, region const & area) {
 	}
 }
 
+void client_not_managed_t::hide() {
+	for(auto x: _children) {
+		x->hide();
+	}
+
+	_is_visible = false;
+	//unmap();
+}
+
+void client_not_managed_t::show() {
+	_is_visible = true;
+	//map();
+	for(auto x: _children) {
+		x->show();
+	}
+}
 
 }

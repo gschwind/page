@@ -236,4 +236,20 @@ void workspace_t::render(cairo_t * cr, region const & area) {
 
 }
 
+void workspace_t::hide() {
+	for(auto x: tree_t::children()) {
+		x->hide();
+	}
+
+	_is_visible = false;
+}
+
+void workspace_t::show() {
+	_is_visible = true;
+
+	for(auto x: tree_t::children()) {
+		x->show();
+	}
+}
+
 }

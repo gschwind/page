@@ -53,7 +53,6 @@ class notebook_t : public page_component_t {
 	theme_notebook_t _theme_notebook;
 
 	bool _is_default;
-	bool _is_hidden;
 	bool _keep_selected;
 	bool _exposay;
 

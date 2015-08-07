@@ -113,13 +113,16 @@ rect const & viewport_t::page_area() const {
 }
 
 void viewport_t::children(vector<shared_ptr<tree_t>> & out) const {
-	//out.push_back(_renderable);
 	if(_subtree != nullptr) {
 		out.push_back(_subtree);
 	}
 }
 
 void viewport_t::hide() {
+	if(_subtree != nullptr) {
+		_subtree->hide();
+	}
+
 	_is_visible = false;
 	_ctx->dpy()->unmap(_win);
 	destroy_renderable();
@@ -129,6 +132,9 @@ void viewport_t::show() {
 	_is_visible = true;
 	_ctx->dpy()->map(_win);
 	update_renderable();
+	if(_subtree != nullptr) {
+		_subtree->show();
+	}
 }
 
 void viewport_t::destroy_renderable() {

@@ -56,8 +56,8 @@ public:
 	 * tree_t virtual API
 	 **/
 
-	// virtual void hide();
-	// virtual void show();
+	virtual void hide();
+	virtual void show();
 	virtual auto get_node_name() const -> string;
 	// virtual void remove(shared_ptr<tree_t> t);
 

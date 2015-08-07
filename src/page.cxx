@@ -244,7 +244,7 @@ void page_t::run() {
 		d->hide();
 	}
 
-	_desktop_list[_current_desktop]->show();
+	get_current_workspace()->show();
 
 	/* check for required page extension */
 	cnx->check_x11_extension();
@@ -3147,7 +3147,6 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 			detach(s);
 			insert_in_tree_using_transient_for(s);
 		}
-
 		update_viewport_layout();
 		update_current_desktop();
 		update_desktop_visibility();

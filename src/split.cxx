@@ -333,5 +333,22 @@ void split_t::render(cairo_t * cr, region const & area) {
 
 }
 
+void split_t::hide() {
+	if(_pack0 != nullptr)
+		_pack0->hide();
+	if(_pack1 != nullptr)
+		_pack1->hide();
+	_is_visible = false;
+}
+
+void split_t::show() {
+	_is_visible = true;
+	if(_pack1 != nullptr)
+		_pack1->show();
+	if(_pack0 != nullptr)
+		_pack0->show();
+}
+
+
 
 }

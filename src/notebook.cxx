@@ -21,7 +21,6 @@ notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
 		_ctx{ctx},
 		_is_default{false},
 		_selected{nullptr},
-		_is_hidden{false},
 		_keep_selected{keep_selected},
 		_exposay{false},
 		_mouse_over{nullptr, nullptr}
@@ -334,7 +333,7 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 
 void notebook_t::update_layout(time64_t const time) {
 
-	if(_is_hidden) {
+	if(not _is_visible) {
 		return;
 	}
 
@@ -939,17 +938,16 @@ void notebook_t::children(vector<shared_ptr<tree_t>> & out) const {
 }
 
 void notebook_t::hide() {
-	_is_hidden = true;
 	for(auto i: tree_t::children()) {
 		i->hide();
 	}
+	_is_visible = false;
 }
 
 void notebook_t::show() {
-	_is_hidden = false;
-	for(auto i: tree_t::children()) {
-		i->show();
-	}
+	_is_visible = true;
+	if(_selected != nullptr)
+		_selected->show();
 }
 
 bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
@@ -966,7 +964,7 @@ void notebook_t::_set_keep_selected(bool x) {
 
 
 void notebook_t::render(cairo_t * cr, region const & area) {
-	if(_is_hidden) {
+	if(not _is_visible) {
 		return;
 	}
 
@@ -985,7 +983,7 @@ void notebook_t::render(cairo_t * cr, region const & area) {
 
 region notebook_t::get_opaque_region() {
 	region ret;
-	if(_is_hidden) {
+	if(not _is_visible) {
 		return ret;
 	}
 	if(_exposay) {
@@ -999,7 +997,7 @@ region notebook_t::get_opaque_region() {
 
 region notebook_t::get_visible_region() {
 	region ret;
-	if(_is_hidden) {
+	if(not _is_visible) {
 		return ret;
 	}
 	if(_exposay) {
@@ -1013,7 +1011,7 @@ region notebook_t::get_visible_region() {
 
 region notebook_t::get_damaged() {
 	region ret;
-	if(_is_hidden) {
+	if(not _is_visible) {
 		return ret;
 	}
 	if(_exposay) {

@@ -1187,8 +1187,13 @@ void client_managed_t::unmap() {
 }
 
 void client_managed_t::hide() {
+	for(auto x: _children) {
+		x->hide();
+	}
+
 	_is_visible = false;
 	net_wm_state_add(_NET_WM_STATE_HIDDEN);
+	// do not unmap, just put it outside the screen.
 	//unmap();
 	reconfigure();
 }
@@ -1198,6 +1203,9 @@ void client_managed_t::show() {
 	net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 	reconfigure();
 	map();
+	for(auto x: _children) {
+		x->show();
+	}
 }
 
 bool client_managed_t::is_iconic() {
