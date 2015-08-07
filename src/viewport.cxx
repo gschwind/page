@@ -14,11 +14,12 @@
 
 namespace page {
 
+using namespace std;
+
 viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus) :
 		_ctx{ctx},
 		_raw_aera{area},
 		_effective_area{area},
-		_parent{nullptr},
 		_is_durty{true},
 		_win{XCB_NONE},
 		_pix{XCB_NONE},
@@ -33,7 +34,14 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus)
 	_subtree->set_allocation(_page_area);
 }
 
-void viewport_t::replace(page_component_t * src, page_component_t * by) {
+viewport_t::~viewport_t() {
+	std::cout << "call " << __FUNCTION__ << std::endl;
+	destroy_renderable();
+	xcb_destroy_window(_ctx->dpy()->xcb(), _win);
+	_win = XCB_NONE;
+}
+
+void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
 	//printf("replace %p by %p\n", src, by);
 
 	if (_subtree == src) {
@@ -46,7 +54,7 @@ void viewport_t::replace(page_component_t * src, page_component_t * by) {
 	}
 }
 
-void viewport_t::remove(shared_ptr<tree_t> const & src) {
+void viewport_t::remove(shared_ptr<tree_t> src) {
 	if(src == _subtree) {
 		_subtree.reset();
 	}
@@ -67,6 +75,229 @@ void viewport_t::set_raw_area(rect const & area) {
 rect const & viewport_t::raw_area() const {
 	return _raw_aera;
 }
+
+bool viewport_t::is_visible() {
+	return _is_visible;
+}
+
+void viewport_t::activate(shared_ptr<tree_t> t) {
+	if(t != _subtree) {
+		throw exception_t("invalid call of viewport_t::activate");
+	}
+
+	queue_redraw();
+
+	if(not _parent.expired()) {
+		_parent.lock()->activate(shared_from_this());
+	}
+
+}
+
+string viewport_t::get_node_name() const {
+	return _get_node_name<'V'>();
+}
+
+void viewport_t::update_layout(time64_t const time) {
+	if(not _is_visible)
+		return;
+	if(_renderable == nullptr)
+		update_renderable();
+	_renderable->clear_damaged();
+	_renderable->add_damaged(_damaged);
+	_damaged.clear();
+}
+
+rect viewport_t::allocation() const {
+	return _effective_area;
+}
+
+rect const & viewport_t::page_area() const {
+	return _page_area;
+}
+
+void viewport_t::children(vector<shared_ptr<tree_t>> & out) const {
+	//out.push_back(_renderable);
+	if(_subtree != nullptr) {
+		out.push_back(_subtree);
+	}
+}
+
+void viewport_t::hide() {
+	_is_visible = false;
+	_ctx->dpy()->unmap(_win);
+	destroy_renderable();
+}
+
+void viewport_t::show() {
+	_is_visible = true;
+	_ctx->dpy()->map(_win);
+	update_renderable();
+}
+
+void viewport_t::destroy_renderable() {
+
+	delete _renderable;
+	_renderable = nullptr;
+
+	if(_pix != XCB_NONE) {
+		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
+		_pix = XCB_NONE;
+	}
+
+	if(_back_surf != nullptr) {
+		_back_surf.reset();
+	}
+
+}
+
+void viewport_t::update_renderable() {
+	if(_ctx->cmp() != nullptr) {
+		_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
+		_renderable = new renderable_pixmap_t{_back_surf, _effective_area, _effective_area};
+		_renderable->set_parent(shared_from_this());
+	}
+
+	_ctx->dpy()->move_resize(_win, _effective_area);
+}
+
+void viewport_t::create_window() {
+	_win = xcb_generate_id(_ctx->dpy()->xcb());
+
+	xcb_visualid_t visual = _ctx->dpy()->root_visual()->visual_id;
+	int depth = _ctx->dpy()->root_depth();
+
+	/** if visual is 32 bits, this values are mandatory **/
+	xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
+	xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), visual);
+
+	uint32_t value_mask = 0;
+	uint32_t value[5];
+
+	value_mask |= XCB_CW_BACK_PIXEL;
+	value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
+
+	value_mask |= XCB_CW_BORDER_PIXEL;
+	value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
+
+	value_mask |= XCB_CW_OVERRIDE_REDIRECT;
+	value[2] = True;
+
+	value_mask |= XCB_CW_EVENT_MASK;
+	value[3] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_POINTER_MOTION | XCB_EVENT_MASK_LEAVE_WINDOW;
+
+	value_mask |= XCB_CW_COLORMAP;
+	value[4] = cmap;
+
+	_win = xcb_generate_id(_ctx->dpy()->xcb());
+	xcb_create_window(_ctx->dpy()->xcb(), depth, _win, _ctx->dpy()->root(), _effective_area.x, _effective_area.y, _effective_area.w, _effective_area.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, value_mask, value);
+
+	_ctx->dpy()->set_window_cursor(_win, _ctx->dpy()->xc_left_ptr);
+
+	/**
+	 * This grab will freeze input for all client, all mouse button, until
+	 * we choose what to do with them with XAllowEvents. we can choose to keep
+	 * grabbing events or release event and allow further processing by other clients.
+	 **/
+	xcb_grab_button(_ctx->dpy()->xcb(), false, _win,
+			DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC,
+			XCB_GRAB_MODE_ASYNC,
+			XCB_NONE,
+			XCB_NONE,
+			XCB_BUTTON_INDEX_ANY,
+			XCB_MOD_MASK_ANY);
+
+	_pix = XCB_NONE;
+
+}
+
+void viewport_t::_redraw_back_buffer() {
+	if(_back_surf == nullptr)
+		return;
+
+	if(not _is_durty)
+		return;
+
+	cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
+	cairo_identity_matrix(cr);
+
+	auto splits = filter_class<split_t>(get_all_children());
+	for (auto x : splits) {
+		x->render_legacy(cr);
+	}
+
+	auto notebooks = filter_class<notebook_t>(get_all_children());
+	for (auto x : notebooks) {
+		x->render_legacy(cr);
+	}
+
+	cairo_surface_flush(_back_surf->get_cairo_surface());
+	warn(cairo_get_reference_count(cr) == 1);
+	cairo_destroy(cr);
+
+	_is_durty = false;
+	_exposed = true;
+	_damaged += _page_area;
+
+	/* tell page to render */
+	_ctx->add_global_damage(_effective_area);
+
+}
+
+void viewport_t::trigger_redraw() {
+	/** redraw all child **/
+	tree_t::trigger_redraw();
+	_redraw_back_buffer();
+
+	if(_exposed and _ctx->cmp() == nullptr) {
+		_exposed = false;
+		paint_expose();
+	}
+
+}
+
+/* mark renderable_page for redraw */
+void viewport_t::queue_redraw() {
+	_is_durty = true;
+}
+
+region viewport_t::get_damaged() {
+	return _damaged;
+}
+
+xcb_window_t viewport_t::get_parent_xid() const {
+	return _win;
+}
+
+xcb_window_t viewport_t::get_xid() const {
+	return _win;
+}
+
+void viewport_t::paint_expose() {
+	if(not _is_visible)
+		return;
+
+	cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
+	cairo_t * cr = cairo_create(surf);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(), 0.0, 0.0);
+	cairo_rectangle(cr, 0.0, 0.0, _effective_area.w, _effective_area.h);
+	cairo_fill(cr);
+
+	cairo_destroy(cr);
+	cairo_surface_destroy(surf);
+}
+
+rect viewport_t::get_window_position() const {
+	return _effective_area;
+}
+
+void viewport_t::expose(xcb_expose_event_t const * e) {
+	if(e->window == _win) {
+		_exposed = true;
+	}
+}
+
 
 
 }
