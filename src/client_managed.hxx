@@ -240,8 +240,8 @@ public:
 	// virtual bool enter(xcb_enter_notify_event_t const * ev);
 	// virtual void expose(xcb_expose_event_t const * ev);
 
-	virtual auto get_xid() const -> xcb_window_t;
-	virtual auto get_parent_xid() const -> xcb_window_t;
+	// virtual auto get_xid() const -> xcb_window_t;
+	// virtual auto get_parent_xid() const -> xcb_window_t;
 	// virtual rect get_window_position() const;
 
 	virtual void queue_redraw();

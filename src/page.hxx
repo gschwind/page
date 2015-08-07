@@ -317,7 +317,6 @@ public:
 	void update_windows_stack();
 	void update_viewport_layout();
 	void remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
-	void destroy_viewport(shared_ptr<viewport_t> v);
 	void onmap(xcb_window_t w);
 	void create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
 	void manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type);
@@ -388,8 +387,8 @@ public:
 	virtual void remove(shared_ptr<tree_t> t);
 
 	virtual void children(vector<shared_ptr<tree_t>> & out) const;
-	virtual void update_layout(time64_t const time);
-	virtual void render(cairo_t * cr, region const & area);
+	//virtual void update_layout(time64_t const time);
+	//virtual void render(cairo_t * cr, region const & area);
 
 	//virtual auto get_opaque_region() -> region;
 	//virtual auto get_visible_region() -> region;

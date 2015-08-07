@@ -36,7 +36,6 @@ page_SOURCES = \
 	main.cxx \
 	page.cxx \
 	display.cxx \
-	tree.cxx \
 	compositor.cxx \
 	simple2_theme.cxx \
 	tiny_theme.cxx \

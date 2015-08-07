@@ -438,6 +438,14 @@ dimention_t<unsigned> client_base_t::compute_size_with_constrain(unsigned w, uns
 
 }
 
+auto client_base_t::get_xid() const -> xcb_window_t {
+	return base();
+}
+
+auto client_base_t::get_parent_xid() const -> xcb_window_t {
+	return base();
+}
 
 }
+
 

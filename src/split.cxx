@@ -305,4 +305,12 @@ shared_ptr<split_t> split_t::shared_from_this() {
 	return dynamic_pointer_cast<split_t>(tree_t::shared_from_this());
 }
 
+auto split_t::get_node_name() const -> string {
+	return _get_node_name<'S'>();
+}
+
+rect split_t::allocation() const {
+	return _allocation;
+}
+
 }

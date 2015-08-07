@@ -2375,7 +2375,7 @@ void page_t::update_viewport_layout() {
 		for (unsigned i = new_layout.size(); i < old_layout.size(); ++i) {
 			/** destroy this viewport **/
 			remove_viewport(d, old_layout[i]);
-			destroy_viewport(old_layout[i]);
+			old_layout[i] = nullptr;
 		}
 
 		if(new_layout.size() > 0) {
@@ -3713,6 +3713,9 @@ xcb_atom_t page_t::A(atom_e atom) {
 	return cnx->A(atom);
 }
 
+void page_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
+	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
+}
 
 }
 

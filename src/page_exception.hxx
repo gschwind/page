@@ -11,40 +11,32 @@
 #define PAGE_EXCEPTION_HXX_
 
 #include <exception>
-#include <cstring>
+#include <string>
 
 namespace page {
 
+using namespace std;
+
 class exception : public std::exception {
-	char const * msg;
-	char const * file;
-	unsigned line;
+	string msg;
 public:
 
-	exception(char const * msg, char const * file, unsigned line) :
-			msg(msg), file(file), line(line) {
-
+	template<typename ... Args>
+	exception(char const * fmt, Args ... args) {
+	    size_t size = std::snprintf(nullptr, 0, fmt, args ... ) + 1;
+	    unique_ptr<char[]> buf{new char[size]};
+	    std::snprintf( buf.get(), size, fmt, args ... );
+	    msg = string( buf.get(), buf.get() + size - 1 );
 	}
 
 	~exception() throw () { }
 
 	char const * what() const throw () {
-		static char buffer[1024] = "";
-		snprintf(buffer, 1024, "Error: %s in %s at %u", msg, file, line);
-		return buffer;
+		return msg.c_str();
 	}
 
 };
 
 }
-
-/** define my custom assert **/
-#define page_assert(test) \
-	do { \
-		if(not (test)) \
-			throw exception(#test, __FILE__, __LINE__); \
-	} while(false)
-
-
 
 #endif /* PAGE_EXCEPTION_HXX_ */
