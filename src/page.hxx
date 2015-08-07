@@ -455,6 +455,47 @@ public:
 	virtual shared_ptr<viewport_t> find_mouse_viewport(int x, int y) const;
 
 
+	/**
+	 * tree_t virtual API
+	 **/
+
+	virtual void hide();
+	virtual void show();
+	virtual auto get_node_name() const -> string;
+	virtual void remove(shared_ptr<tree_t> t);
+
+	virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	virtual void update_layout(time64_t const time);
+	virtual void render(cairo_t * cr, region const & area);
+
+	virtual auto get_opaque_region() -> region;
+	virtual auto get_visible_region() -> region;
+	virtual auto get_damaged() -> region;
+
+	virtual void activate(shared_ptr<tree_t> t);
+	virtual bool button_press(xcb_button_press_event_t const * ev);
+	virtual bool button_release(xcb_button_release_event_t const * ev);
+	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
+	virtual bool leave(xcb_leave_notify_event_t const * ev);
+	virtual bool enter(xcb_enter_notify_event_t const * ev);
+	virtual void expose(xcb_expose_event_t const * ev);
+	virtual void trigger_redraw();
+
+	virtual auto get_xid() const -> xcb_window_t;
+	virtual auto get_parent_xid() const -> xcb_window_t;
+	virtual rect get_window_position() const;
+	virtual void queue_redraw();
+
+	/**
+	 * page_component_t virtual API
+	 **/
+
+	virtual void set_allocation(rect const & area);
+	virtual rect allocation() const;
+	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
+
+
+
 };
 
 
