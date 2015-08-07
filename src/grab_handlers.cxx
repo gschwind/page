@@ -607,7 +607,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 	pat = make_shared<popup_alt_tab_t>(_ctx, v, 0);
 
 	/** TODO: show it on all viewport **/
-	viewport_t * viewport = _ctx->get_current_workspace()->get_any_viewport();
+	auto viewport = _ctx->get_current_workspace()->get_any_viewport();
 	pat->move(viewport->raw_area().x
 							+ (viewport->raw_area().w - pat->position().w) / 2,
 					viewport->raw_area().y

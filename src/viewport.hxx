@@ -113,8 +113,6 @@ public:
 	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 
-
-
 };
 
 }
