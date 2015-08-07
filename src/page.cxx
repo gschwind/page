@@ -1303,11 +1303,13 @@ void page_t::render() {
 		 **/
 
 		broadcast_update_layout(time64_t::now());
+
 		/* will collect all damage, if there is no damage, will no nothing. */
 		rnd->render(this);
-
-
 		xcb_flush(cnx->xcb());
+
+		broadcast_render_finished();
+
 	}
 }
 
@@ -2067,29 +2069,20 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 	/* ensure the removal */
 	detach(c);
 
-	auto mw = dynamic_pointer_cast<client_managed_t>(c);
-	if (mw != nullptr) {
-		shared_ptr<client_base_t> transient_for = get_transient_for(c);
-		if (transient_for != nullptr) {
-			transient_for->add_subclient(c);
-		} else {
-			if (find_current_desktop(c) == ALL_DESKTOP) {
+	auto transient_for = get_transient_for(c);
+	if(transient_for != nullptr) {
+		transient_for->add_subclient(c);
+	} else {
+		auto mw = dynamic_pointer_cast<client_managed_t>(c);
+
+		if (mw != nullptr) {
+			int workspace = find_current_desktop(c);
+			if (workspace == ALL_DESKTOP) {
 				get_current_workspace()->add_floating_client(dynamic_pointer_cast<client_managed_t>(c));
 				c->show();
 			} else {
-				get_workspace(find_current_desktop(c))->add_floating_client(dynamic_pointer_cast<client_managed_t>(c));
-				if (get_workspace(find_current_desktop(c))->is_hidden()) {
-					c->hide();
-				} else {
-					c->show();
-				}
+				get_workspace(workspace)->add_floating_client(dynamic_pointer_cast<client_managed_t>(c));
 			}
-		}
-	} else {
-
-		shared_ptr<client_base_t> transient_for = get_transient_for(c);
-		if (transient_for != nullptr) {
-			transient_for->add_subclient(c);
 		} else {
 			root_subclients.push_back(c);
 			c->set_parent(shared_from_this());
@@ -2097,25 +2090,24 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 	}
 }
 
-shared_ptr<client_base_t> page_t::get_transient_for(shared_ptr<client_base_t> c) {
+shared_ptr<client_base_t> page_t::get_transient_for(
+		shared_ptr<client_base_t> c) {
+	assert(c != nullptr);
 	shared_ptr<client_base_t> transient_for = nullptr;
-	if(c != nullptr) {
-		if(c->wm_transient_for() != nullptr) {
-			transient_for = find_client_with(*(c->wm_transient_for()));
-			if(transient_for == nullptr)
-				printf("Warning transient for an unknown client\n");
-		}
+	if (c->wm_transient_for() != nullptr) {
+		transient_for = find_client_with(*(c->wm_transient_for()));
+		if (transient_for == nullptr)
+			printf("Warning transient for an unknown client\n");
 	}
 	return transient_for;
 }
 
 void page_t::detach(shared_ptr<tree_t> t) {
-	if(t == nullptr)
-		return;
-
-	_broadcast_root_first(&tree_t::remove, t);
-	t->clear_parent();
-
+	assert(t != nullptr);
+	if(not t->parent().expired()) {
+		_broadcast_root_first(&tree_t::remove, t);
+		t->clear_parent();
+	}
 }
 
 void page_t::safe_raise_window(shared_ptr<client_base_t> c) {
@@ -2921,29 +2913,24 @@ void page_t::activate(shared_ptr<tree_t> t) {
 	/* do nothing, not needed at this level */
 	auto x = dynamic_pointer_cast<client_base_t>(t);
 	if(has_key(root_subclients, x)) {
-		root_subclients.remove(x);
-		root_subclients.push_back(x);
+		move_back(root_subclients, x);
 	}
 
 	auto y = dynamic_pointer_cast<client_not_managed_t>(t);
 	if(has_key(tooltips, y)) {
-		tooltips.remove(y);
-		tooltips.push_back(y);
+		move_back(tooltips, y);
 	}
 
 	if(has_key(notifications, y)) {
-		notifications.remove(y);
-		notifications.push_back(y);
+		move_back(notifications, y);
 	}
 
 	if(has_key(above, y)) {
-		above.remove(y);
-		above.push_back(y);
+		move_back(above, y);
 	}
 
 	if(has_key(below, y)) {
-		below.remove(y);
-		below.push_back(y);
+		move_back(below, y);
 	}
 }
 

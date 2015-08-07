@@ -39,7 +39,6 @@ class viewport_t: public page_component_t {
 
 	/** rendering tabs is time consuming, thus use back buffer **/
 	shared_ptr<pixmap_t> _back_surf;
-	shared_ptr<renderable_pixmap_t> _renderable;
 
 	/** area without considering dock windows **/
 	rect _raw_aera;
@@ -92,6 +91,7 @@ public:
 	virtual void children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
+	virtual void render_finished();
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;

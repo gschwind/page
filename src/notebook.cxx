@@ -42,7 +42,8 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	x->set_parent(shared_from_this());
 	_children.push_back(x);
 
-	_client_context_t a;
+	_clients.emplace_front();
+	auto & a = _clients.front();
 
 	a.client = x;
 	a.title_change_func = x->on_title_change.connect(this, &notebook_t::_client_title_change);
@@ -50,7 +51,6 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
 	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
 
-	_clients.push_front(a);
 
 	_ctx->csm()->register_window(x->base());
 
@@ -309,8 +309,8 @@ void notebook_t::activate(shared_ptr<tree_t> t) {
 	}
 
 	if (has_key(_children, t)) {
-		_children.remove(t);
-		_children.push_back(t);
+		move_back(_children, t);
+
 		auto mw = dynamic_pointer_cast<client_managed_t>(t);
 		if (mw != nullptr) {
 			_set_selected(mw);
@@ -946,6 +946,7 @@ void notebook_t::hide() {
 
 void notebook_t::show() {
 	_is_visible = true;
+
 	if(_selected != nullptr)
 		_selected->show();
 }

@@ -95,12 +95,10 @@ string viewport_t::get_node_name() const {
 }
 
 void viewport_t::update_layout(time64_t const time) {
-	if(not _is_visible)
-		return;
-	if(_renderable == nullptr)
-		update_renderable();
-	_renderable->clear_damaged();
-	_renderable->add_damaged(_damaged);
+
+}
+
+void viewport_t::render_finished() {
 	_damaged.clear();
 }
 
@@ -138,17 +136,13 @@ void viewport_t::show() {
 }
 
 void viewport_t::destroy_renderable() {
-	_renderable.reset();
 	_back_surf.reset();
 }
 
 void viewport_t::update_renderable() {
 	if(_ctx->cmp() != nullptr) {
 		_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
-		_renderable = make_shared<renderable_pixmap_t>(_back_surf, _effective_area, _effective_area);
-		_renderable->set_parent(shared_from_this());
 	}
-
 	_ctx->dpy()->move_resize(_win, _effective_area);
 }
 
@@ -302,9 +296,24 @@ auto viewport_t::get_opaque_region() -> region {
 }
 
 void viewport_t::render(cairo_t * cr, region const & area) {
-	if(_renderable != nullptr) {
-		_renderable->render(cr, area);
+	if(not _is_visible)
+		return;
+
+	if(_back_surf == nullptr)
+		return;
+	if(_back_surf->get_cairo_surface() == nullptr)
+		return;
+
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(),
+			_effective_area.x, _effective_area.y);
+	region r = region{_effective_area} & area;
+	for (auto &i : r) {
+		cairo_clip(cr, i);
+		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _effective_area.x, _effective_area.y);
 	}
+	cairo_restore(cr);
 }
 
 }

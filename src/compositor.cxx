@@ -122,7 +122,7 @@ compositor_t::~compositor_t() {
 
 void compositor_t::render(tree_t * t) {
 
-	auto _graph_scene = t->get_all_children();
+	auto _graph_scene = t->get_all_children_root_first();
 
 	/**
 	 * remove masked damaged.
@@ -132,19 +132,19 @@ void compositor_t::render(tree_t * t) {
 
 	/** check if we have at less 2 object, otherwise we cannot have overlap **/
 	if (_graph_scene.size() >= 2) {
-		std::vector<region> r_damaged;
-		std::vector<region> r_opac;
+		vector<region> r_damaged;
+		//vector<region> r_opac;
 		for (auto &i : _graph_scene) {
 			r_damaged.push_back(i->get_damaged());
-			r_opac.push_back(i->get_opaque_region());
+			//r_opac.push_back(i->get_opaque_region());
 		}
 
 		/** mask_area accumulate opac area, from top level object, to bottom **/
-		region mask_area { };
-		for (int k = r_opac.size() - 1; k >= 0; --k) {
-			r_damaged[k] -= mask_area;
-			mask_area += r_opac[k];
-		}
+//		region mask_area { };
+//		for (int k = r_opac.size() - 1; k >= 0; --k) {
+//			r_damaged[k] -= mask_area;
+//			mask_area += r_opac[k];
+//		}
 
 		for (auto &i : r_damaged) {
 			_damaged += i;
@@ -162,7 +162,7 @@ void compositor_t::render(tree_t * t) {
 		return;
 
 	if (_show_fps) {
-		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+200,100};
+		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+400,100};
 	}
 
 	_need_render = false;
@@ -231,7 +231,7 @@ void compositor_t::render(tree_t * t) {
 			cairo_translate(cr, _debug_x, _debug_y);
 
 			cairo_set_source_rgba(cr, 0.2, 0.2, 0.2, 0.5);
-			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0+200, 100.0);
+			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0+300, 100.0);
 			cairo_fill(cr);
 
 			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);

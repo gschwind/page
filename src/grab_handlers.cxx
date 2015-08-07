@@ -21,9 +21,8 @@ grab_split_t::grab_split_t(page_context_t * ctx, shared_ptr<split_t> s) : _ctx{c
 }
 
 grab_split_t::~grab_split_t() {
-	if(_ps != nullptr) {
+	if(_ps != nullptr)
 		_ctx->detach(_ps);
-	}
 }
 
 void grab_split_t::button_press(xcb_button_press_event_t const *) {
@@ -93,7 +92,8 @@ grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, shared_ptr<client_m
 }
 
 grab_bind_client_t::~grab_bind_client_t() {
-	ctx->detach(pn0);
+	if(pn0 != nullptr)
+		ctx->detach(pn0);
 }
 
 void grab_bind_client_t::_find_target_notebook(int x, int y,
@@ -272,9 +272,8 @@ grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, shared_ptr<clie
 }
 
 grab_floating_move_t::~grab_floating_move_t() {
-	if (pfm != nullptr) {
+	if (pfm != nullptr)
 		_ctx->detach(pfm);
-	}
 }
 
 void grab_floating_move_t::button_press(xcb_button_press_event_t const * e) {
@@ -366,8 +365,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, shared_ptr<
 		y_root{y},
 		original_position{f->get_wished_position()},
 		final_position{f->get_wished_position()},
-		button{button},
-		pfm{}
+		button{button}
 
 {
 
@@ -381,7 +379,8 @@ grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, shared_ptr<
 }
 
 grab_floating_resize_t::~grab_floating_resize_t() {
-	_ctx->detach(pfm);
+	if(pfm != nullptr)
+		_ctx->detach(pfm);
 }
 
 void grab_floating_resize_t::button_press(xcb_button_press_event_t const * e) {
@@ -526,9 +525,8 @@ grab_fullscreen_client_t::grab_fullscreen_client_t(page_context_t * ctx, shared_
 }
 
 grab_fullscreen_client_t::~grab_fullscreen_client_t() {
-	if (pn0 != nullptr) {
+	if (pn0 != nullptr)
 		_ctx->detach(pn0);
-	}
 }
 
 void grab_fullscreen_client_t::button_press(xcb_button_press_event_t const * e) {

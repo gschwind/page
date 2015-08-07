@@ -40,6 +40,10 @@ void tree_t::clear_parent() {
 	_parent.reset();
 }
 
+bool tree_t::is_visible() const {
+	return _is_visible;
+}
+
 /**
  * Hide this node recursively
  **/
@@ -200,6 +204,8 @@ vector<shared_ptr<tree_t>> tree_t::children() const {
  **/
 void tree_t::get_all_children_deep_first(
 		vector<shared_ptr<tree_t>> & out) const {
+	auto child = children();
+	std::reverse(child.begin(), child.end());
 	for (auto x : children()) {
 		x->get_all_children_deep_first(out);
 		out.push_back(x);
@@ -263,6 +269,11 @@ void tree_t::broadcast_expose(xcb_expose_event_t const * ev) {
 void tree_t::broadcast_update_layout(time64_t const time) {
 	_broadcast_root_first(&tree_t::update_layout, time);
 }
+
+void tree_t::broadcast_render_finished() {
+	_broadcast_root_first(&tree_t::render_finished);
+}
+
 
 rect tree_t::to_root_position(rect const & r) const {
 	return rect { r.x + get_window_position().x, r.y + get_window_position().y,

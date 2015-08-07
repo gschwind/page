@@ -115,6 +115,9 @@ private:
 	bool _demands_attention;
 	bool _is_durty;
 
+	mutable region _opaque_region_cache;
+	mutable region _visible_region_cache;
+	mutable region _damage_cache;
 
 private:
 	/* private to avoid copy */
@@ -177,6 +180,9 @@ private:
 
 	void _update_title();
 
+	void _update_visible_region();
+	void _update_opaque_region();
+
 public:
 
 	auto shared_from_this() -> shared_ptr<client_managed_t>;
@@ -229,6 +235,7 @@ public:
 	// virtual void children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
+	virtual void render_finished();
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;

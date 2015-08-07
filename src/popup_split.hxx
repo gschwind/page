@@ -29,7 +29,6 @@ struct popup_split_t : public tree_t {
 
 	bool _has_alpha;
 	bool _is_durty;
-	bool _is_visible;
 
 	xcb_window_t _wid;
 
@@ -89,7 +88,6 @@ public:
 		_current_split{split->ratio()},
 		_has_alpha{true},
 		_is_durty{true},
-		_is_visible{false},
 		_position{split->to_root_position(split->allocation())}
 	{
 

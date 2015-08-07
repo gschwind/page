@@ -275,6 +275,8 @@ client_managed_t::~client_managed_t() {
 
 	_ctx->csm()->unregister_window(_base);
 
+	_ctx->add_global_damage(_visible_region_cache);
+
 }
 
 auto client_managed_t::shared_from_this() -> shared_ptr<client_managed_t> {
@@ -282,6 +284,8 @@ auto client_managed_t::shared_from_this() -> shared_ptr<client_managed_t> {
 }
 
 void client_managed_t::reconfigure() {
+
+	_damage_cache += get_visible_region();
 
 	if (is(MANAGED_FLOATING)) {
 		_wished_position = _floating_wished_position;
@@ -366,7 +370,9 @@ void client_managed_t::reconfigure() {
 		unlock();
 
 	}
-	queue_redraw();
+
+	_update_visible_region();
+	_damage_cache += get_visible_region();
 
 }
 
@@ -1039,11 +1045,8 @@ void client_managed_t::update_base_renderable() {
 
 		}
 
-		region dmg { _ctx->csm()->get_damaged(_base) };
-		_ctx->csm()->clear_damaged(_base);
-		dmg.translate(_base_position.x, _base_position.y);
 		auto x = new renderable_pixmap_t(_ctx->csm()->get_last_pixmap(_base),
-				_base_position, dmg);
+				_base_position, _damage_cache);
 		x->set_opaque_region(opa);
 		x->set_visible_region(vis);
 		delete _base_renderable;
@@ -1061,38 +1064,15 @@ rect const & client_managed_t::orig_position() const {
 }
 
 region client_managed_t::get_visible_region() {
-	rect vis{base_position()};
-
-	if(_managed_type == MANAGED_FLOATING) {
-		vis.x -= 32;
-		vis.y -= 32;
-		vis.w += 64;
-		vis.h += 64;
-	}
-
-	return vis;
+	return _visible_region_cache;
 }
 
 region client_managed_t::get_opaque_region() {
-	region xopac;
-	if (net_wm_opaque_region() != nullptr) {
-		xopac = region { *(net_wm_opaque_region()) };
-	} else {
-		if (geometry()->depth == 24) {
-			xopac = rect{0, 0, _orig_position.w, _orig_position.h};
-		}
-	}
-
-	xopac.translate(_orig_position.x, _orig_position.y);
-
-	return xopac;
+	return _opaque_region_cache;
 }
 
 region client_managed_t::get_damaged() {
-	region dmg { _ctx->csm()->get_damaged(_base) };
-	_ctx->csm()->clear_damaged(_base);
-	dmg.translate(_base_position.x, _base_position.y);
-	return dmg;
+	return _damage_cache;
 }
 
 bool client_managed_t::lock() {
@@ -1114,6 +1094,13 @@ void client_managed_t::update_layout(time64_t const time) {
 	if(not _is_visible)
 		return;
 
+	_update_opaque_region();
+	/** update damage_cache **/
+	region dmg = _ctx->csm()->get_damaged(_base);
+	dmg.translate(_base_position.x, _base_position.y);
+	_damage_cache += dmg;
+	_ctx->csm()->clear_damaged(_base);
+
 	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
 
 		rect loc{base_position()};
@@ -1128,7 +1115,15 @@ void client_managed_t::update_layout(time64_t const time) {
 		}
 		update_base_renderable();
 	}
+
+
+
 }
+
+void client_managed_t::render_finished() {
+	_damage_cache.clear();
+}
+
 
 void client_managed_t::set_focus_state(bool is_focused) {
 	if (lock()) {
@@ -1519,6 +1514,31 @@ void client_managed_t::render(cairo_t * cr, region const & area) {
 	if(_base_renderable != nullptr) {
 		_base_renderable->render(cr, area);
 	}
+}
+
+void client_managed_t::_update_visible_region() {
+	/** update visible cache **/
+	rect vis{base_position()};
+	if(_managed_type == MANAGED_FLOATING) {
+		vis.x -= 32;
+		vis.y -= 32;
+		vis.w += 64;
+		vis.h += 64;
+	}
+
+	_visible_region_cache = region{vis};
+}
+
+void client_managed_t::_update_opaque_region() {
+	/** update opaque region cache **/
+	if (net_wm_opaque_region() != nullptr) {
+		_opaque_region_cache = region { *(net_wm_opaque_region()) };
+	} else {
+		if (geometry()->depth == 24) {
+			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
+		}
+	}
+	_opaque_region_cache.translate(_orig_position.x, _orig_position.y);
 }
 
 

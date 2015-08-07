@@ -133,8 +133,6 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 void workspace_t::children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
-	//if(_switch_renderable != nullptr)
-	//	out.push_back(_switch_renderable);
 }
 
 void workspace_t::update_default_pop() {
@@ -156,6 +154,12 @@ void workspace_t::add_floating_client(shared_ptr<client_managed_t> c) {
 		_viewport_layer.push_back(c);
 	} else {
 		_floating_layer.push_back(c);
+	}
+
+	if(_is_visible) {
+		c->show();
+	} else {
+		c->hide();
 	}
 }
 

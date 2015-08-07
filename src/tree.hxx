@@ -94,6 +94,8 @@ public:
 	void set_parent(shared_ptr<tree_t> parent);
 	void clear_parent();
 
+	bool is_visible() const;
+
 	void print_tree(int level = 0) const;
 
 	vector<shared_ptr<tree_t>> children() const;
@@ -113,6 +115,7 @@ public:
 	bool broadcast_enter(xcb_enter_notify_event_t const * ev);
 	void broadcast_expose(xcb_expose_event_t const * ev);
 	void broadcast_update_layout(time64_t const time);
+	void broadcast_render_finished();
 
 	rect to_root_position(rect const & r) const;
 

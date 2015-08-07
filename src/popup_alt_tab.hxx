@@ -55,7 +55,6 @@ class popup_alt_tab_t : public tree_t {
 	rect _position;
 	list<shared_ptr<cycle_window_entry_t>> _client_list;
 	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
-	bool _is_visible;
 	bool _is_durty;
 
 public:
@@ -64,8 +63,7 @@ public:
 		_ctx{ctx},
 		_selected{},
 		_client_list{client_list},
-		_is_durty{true},
-		_is_visible{false}
+		_is_durty{true}
 	{
 
 		_selected = _client_list.begin();

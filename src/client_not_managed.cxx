@@ -35,6 +35,7 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type
 client_not_managed_t::~client_not_managed_t() {
 	cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
 	_ctx->csm()->unregister_window(orig());
+	_ctx->add_global_damage(_visible_region_cache);
 
 }
 
@@ -64,6 +65,16 @@ string client_not_managed_t::get_node_name() const {
 }
 
 void client_not_managed_t::update_layout(time64_t const time) {
+	if(not _is_visible)
+		return;
+
+	_update_visible_region();
+	_update_opaque_region();
+
+	region dmg { _ctx->csm()->get_damaged(_properties->id()) };
+	dmg.translate(_base_position.x, _base_position.y);
+	_damage_cache += dmg;
+	_ctx->csm()->clear_damaged(_properties->id());
 
 	rect pos(_properties->geometry()->x, _properties->geometry()->y,
 			_properties->geometry()->width, _properties->geometry()->height);
@@ -83,38 +94,38 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	if (_ctx->csm()->get_last_pixmap(_properties->id()) != nullptr) {
 		update_base_renderable();
 	}
+
+
+
 }
 
 region client_not_managed_t::get_visible_region() {
-	rect rec{base_position()};
-	rec.x -= 4;
-	rec.y -= 4;
-	rec.w += 8;
-	rec.h += 8;
-	return rec;
+	return _visible_region_cache;
+}
+
+void client_not_managed_t::_update_visible_region() {
+	/** update visible cache **/
+	_visible_region_cache = region{_base_position};
+}
+
+void client_not_managed_t::_update_opaque_region() {
+	/** update opaque region cache **/
+	if (net_wm_opaque_region() != nullptr) {
+		_opaque_region_cache = region { *(net_wm_opaque_region()) };
+	} else {
+		if (geometry()->depth == 24) {
+			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
+		}
+	}
+	_opaque_region_cache.translate(_base_position.x, _base_position.y);
 }
 
 region client_not_managed_t::get_opaque_region() {
-	region xopac;
-	if (net_wm_opaque_region() != nullptr) {
-		xopac = region { *(net_wm_opaque_region()) };
-	} else {
-		if (geometry()->depth == 24) {
-			xopac = region{0, 0, base_position().w, base_position().h};
-		} else {
-			/* the window may be transparent */
-		}
-	}
-
-	xopac.translate(base_position().x, base_position().y);
-	return xopac;
+	return _opaque_region_cache;
 }
 
 region client_not_managed_t::get_damaged() {
-	region dmg { _ctx->csm()->get_damaged(_properties->id()) };
-	_ctx->csm()->clear_damaged(_properties->id());
-	dmg.translate(_base_position.x, _base_position.y);
-	return dmg;
+	return _damage_cache;
 }
 
 void client_not_managed_t::update_base_renderable() {
@@ -150,11 +161,8 @@ void client_not_managed_t::update_base_renderable() {
 		xopac.translate(_base_position.x, _base_position.y);
 		opa = vis & xopac;
 
-		region dmg { _ctx->csm()->get_damaged(_properties->id()) };
-		_ctx->csm()->clear_damaged(_properties->id());
-		dmg.translate(_base_position.x, _base_position.y);
 		auto x = new renderable_pixmap_t(surf,
-				_base_position, dmg);
+				_base_position, _damage_cache);
 		x->set_opaque_region(opa);
 		x->set_visible_region(vis);
 		delete _base_renderable;
@@ -201,6 +209,10 @@ void client_not_managed_t::show() {
 	for(auto x: _children) {
 		x->show();
 	}
+}
+
+void client_not_managed_t::render_finished() {
+	_damage_cache.clear();
 }
 
 }

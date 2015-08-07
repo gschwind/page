@@ -32,7 +32,6 @@ protected:
 
 	bool _has_alpha;
 	bool _is_durty;
-	bool _is_visible;
 
 	xcb_window_t _wid;
 

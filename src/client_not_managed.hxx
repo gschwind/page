@@ -40,9 +40,16 @@ private:
 	renderable_unmanaged_gaussian_shadow_t<4> * _shadow;
 	renderable_pixmap_t * _base_renderable;
 
+	mutable region _opaque_region_cache;
+	mutable region _visible_region_cache;
+	mutable region _damage_cache;
+
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);
 	client_not_managed_t & operator=(client_not_managed_t const &);
+
+	void _update_visible_region();
+	void _update_opaque_region();
 
 public:
 
@@ -64,6 +71,7 @@ public:
 	// virtual void children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
+	virtual void render_finished();
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
