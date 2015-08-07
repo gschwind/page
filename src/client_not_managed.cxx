@@ -94,6 +94,22 @@ region client_not_managed_t::get_visible_region() {
 	return rec;
 }
 
+region client_not_managed_t::get_opaque_region() {
+	region xopac;
+	if (net_wm_opaque_region() != nullptr) {
+		xopac = region { *(net_wm_opaque_region()) };
+	} else {
+		if (geometry()->depth == 24) {
+			xopac = region{0, 0, base_position().w, base_position().h};
+		} else {
+			/* the window may be transparent */
+		}
+	}
+
+	xopac.translate(base_position().x, base_position().y);
+	return xopac;
+}
+
 void client_not_managed_t::update_base_renderable() {
 	_base_position = _properties->position();
 

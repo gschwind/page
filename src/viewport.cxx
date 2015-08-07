@@ -291,4 +291,8 @@ auto viewport_t::get_visible_region() -> region {
 	return region{_effective_area};
 }
 
+auto viewport_t::get_opaque_region() -> region {
+	return region{_effective_area};
+}
+
 }

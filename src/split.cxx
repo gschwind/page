@@ -314,9 +314,19 @@ rect split_t::allocation() const {
 }
 
 auto split_t::get_visible_region() -> region {
-	/** workspace do not render any thing **/
+	/** split do not render any thing **/
 	return region{};
 }
 
+
+auto split_t::get_opaque_region() -> region {
+	/** split do not render any thing **/
+	return region{};
+}
+
+auto split_t::get_damaged() -> region {
+	/** split do not render any thing **/
+	return region{};
+}
 
 }

@@ -131,7 +131,7 @@ public:
 	virtual void render(cairo_t * cr, region const & area);
 	virtual void render_finished();
 
-	virtual auto get_opaque_region() -> region;
+	virtual auto get_opaque_region() -> region = 0;
 	virtual auto get_visible_region() -> region = 0;
 	virtual auto get_damaged() -> region;
 

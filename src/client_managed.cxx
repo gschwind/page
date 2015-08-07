@@ -1061,18 +1061,31 @@ rect const & client_managed_t::orig_position() const {
 }
 
 region client_managed_t::get_visible_region() {
+	rect vis{base_position()};
 
 	if(_managed_type == MANAGED_FLOATING) {
-		rect vis{base_position()};
 		vis.x -= 32;
 		vis.y -= 32;
 		vis.w += 64;
 		vis.h += 64;
-		return vis;
 	}
 
-	return base_position();
+	return vis;
+}
 
+region client_managed_t::get_opaque_region() {
+	region xopac;
+	if (net_wm_opaque_region() != nullptr) {
+		xopac = region { *(net_wm_opaque_region()) };
+	} else {
+		if (geometry()->depth == 24) {
+			xopac = rect{0, 0, _orig_position.w, _orig_position.h};
+		}
+	}
+
+	xopac.translate(_orig_position.x, _orig_position.y);
+
+	return xopac;
 }
 
 bool client_managed_t::lock() {

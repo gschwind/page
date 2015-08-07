@@ -65,7 +65,7 @@ public:
 	virtual void update_layout(time64_t const time);
 	// virtual void render(cairo_t * cr, region const & area);
 
-	// virtual auto get_opaque_region() -> region;
+	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
 	// virtual auto get_damaged() -> region;
 

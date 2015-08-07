@@ -3737,5 +3737,13 @@ auto page_t::get_visible_region() -> region {
 	return region{_root_position};
 }
 
+auto page_t::get_opaque_region() -> region {
+	return region{_root_position};
+}
+
+auto page_t::get_damaged() -> region {
+	return region{};
+}
+
 }
 
