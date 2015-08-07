@@ -43,7 +43,7 @@
 #include "notebook.hxx"
 #include "split.hxx"
 #include "viewport.hxx"
-#include "desktop.hxx"
+#include "workspace.hxx"
 
 #include "page_event.hxx"
 

@@ -7,7 +7,7 @@
  *
  */
 
-#include "desktop.hxx"
+#include "workspace.hxx"
 #include "notebook.hxx"
 #include "dropdown_menu.hxx"
 #include "grab_handlers.hxx"

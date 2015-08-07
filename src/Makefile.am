@@ -32,7 +32,7 @@ page_SOURCES = \
 	notebook.cxx \
 	split.cxx \
 	viewport.cxx \
-	desktop.cxx \
+	workspace.cxx \
 	main.cxx \
 	page.cxx \
 	display.cxx \

@@ -9,7 +9,7 @@
 #define SRC_GRAB_HANDLERS_HXX_
 
 #include "split.hxx"
-#include "desktop.hxx"
+#include "workspace.hxx"
 #include "popup_split.hxx"
 #include "popup_notebook0.hxx"
 #include "popup_alt_tab.hxx"

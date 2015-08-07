@@ -45,7 +45,7 @@
 #include "tiny_theme.hxx"
 
 #include "notebook.hxx"
-#include "desktop.hxx"
+#include "workspace.hxx"
 #include "split.hxx"
 #include "page.hxx"
 

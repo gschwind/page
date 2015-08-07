@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <typeinfo>
 #include "viewport.hxx"
-#include "desktop.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
