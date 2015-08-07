@@ -522,6 +522,8 @@ grab_fullscreen_client_t::grab_fullscreen_client_t(page_context_t * ctx, shared_
 	pn0 = make_shared<popup_notebook0_t>(ctx);
 	pn0->move_resize(mw->base_position());
 	_ctx->overlay_add(pn0);
+	pn0->show();
+
 }
 
 grab_fullscreen_client_t::~grab_fullscreen_client_t() {
@@ -616,7 +618,9 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 }
 
 grab_alt_tab_t::~grab_alt_tab_t() {
-	_ctx->detach(pat);
+	cout << "grab_atl_tab terminated" << endl;
+	if(pat != nullptr)
+		_ctx->detach(pat);
 }
 
 void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {

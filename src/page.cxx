@@ -2105,8 +2105,10 @@ shared_ptr<client_base_t> page_t::get_transient_for(
 void page_t::detach(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
 	if(not t->parent().expired()) {
-		_broadcast_root_first(&tree_t::remove, t);
-		t->clear_parent();
+		t->parent().lock()->remove(t);
+
+		//_broadcast_root_first(&tree_t::remove, t);
+		//t->clear_parent();
 	}
 }
 
@@ -2940,6 +2942,7 @@ void page_t::remove(shared_ptr<tree_t> t) {
 	notifications.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	above.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	below.remove(dynamic_pointer_cast<client_not_managed_t>(t));
+	_overlays.remove(t);
 }
 
 void page_t::create_identity_window() {
@@ -3651,6 +3654,7 @@ void page_t::grab_stop() {
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
 	_overlays.push_back(x);
+	x->set_parent(shared_from_this());
 }
 
 void page_t::add_global_damage(region const & r) {

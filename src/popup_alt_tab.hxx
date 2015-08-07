@@ -129,14 +129,12 @@ public:
 
 	void show() {
 		_is_visible = true;
+		_ctx->dpy()->map(_wid);
 	}
 
 	void hide() {
 		_is_visible = false;
-	}
-
-	bool is_visible() {
-		return _is_visible;
+		_ctx->dpy()->unmap(_wid);
 	}
 
 	rect const & position() {
@@ -146,6 +144,7 @@ public:
 	~popup_alt_tab_t() {
 		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+		_client_list.clear();
 	}
 
 	void select_next() {
@@ -161,6 +160,7 @@ public:
 	}
 
 	void update_backbuffer() {
+		_is_durty = true;
 
 		rect a{0,0,_position.w,_position.h};
 		cairo_t * cr = cairo_create(_surf);
@@ -216,21 +216,16 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
-	bool need_render(time64_t time) {
-		return _is_durty;
-	}
-
-	xcb_window_t id() const {
-		return _wid;
-	}
-
 	region get_damaged() {
 		if(_is_durty) {
-			_is_durty = false;
 			return region{_position};
 		} else {
 			return region{};
 		}
+	}
+
+	void render_finished() {
+		_is_durty = false;
 	}
 
 	region get_opaque_region() {
@@ -253,6 +248,19 @@ public:
 	void destroy_client(client_managed_t * c) {
 		_client_list.remove_if([](shared_ptr<cycle_window_entry_t> const & x) -> bool { return x->id.expired(); });
 	}
+
+	xcb_window_t get_xid() const {
+		return _wid;
+	}
+
+	xcb_window_t get_parent_xid () const {
+		return _wid;
+	}
+
+	string get_node_name() const {
+		return string{"popup_alt_tab_t"};
+	}
+
 
 };
 
