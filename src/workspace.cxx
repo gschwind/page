@@ -39,7 +39,7 @@ void workspace_t::activate() {
 
 void workspace_t::activate(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
-	assert(has_key(tree_t::children(), t));
+	assert(has_key(children(), t));
 	activate();
 
 	auto mw = dynamic_pointer_cast<client_managed_t>(t);
@@ -128,7 +128,7 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 	return _default_pop.lock();
 }
 
-void workspace_t::children(vector<shared_ptr<tree_t>> & out) const {
+void workspace_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
 }
@@ -238,7 +238,7 @@ void workspace_t::render(cairo_t * cr, region const & area) {
 }
 
 void workspace_t::hide() {
-	for(auto x: tree_t::children()) {
+	for(auto x: children()) {
 		x->hide();
 	}
 
@@ -248,7 +248,7 @@ void workspace_t::hide() {
 void workspace_t::show() {
 	_is_visible = true;
 
-	for(auto x: tree_t::children()) {
+	for(auto x: children()) {
 		x->show();
 	}
 }

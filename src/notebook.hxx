@@ -178,7 +178,7 @@ public:
 	 **/
 	virtual auto get_node_name() const -> string;
 	virtual void remove(shared_ptr<tree_t> src);
-	virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void hide();
 	virtual void show();
 	virtual void update_layout(time64_t const time);

@@ -934,12 +934,12 @@ rect notebook_t::allocation() const {
 	return _allocation;
 }
 
-void notebook_t::children(vector<shared_ptr<tree_t>> & out) const {
+void notebook_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 
 void notebook_t::hide() {
-	for(auto i: tree_t::children()) {
+	for(auto i: children()) {
 		i->hide();
 	}
 	_is_visible = false;

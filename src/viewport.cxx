@@ -112,7 +112,7 @@ rect const & viewport_t::page_area() const {
 	return _page_area;
 }
 
-void viewport_t::children(vector<shared_ptr<tree_t>> & out) const {
+void viewport_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	if(_subtree != nullptr) {
 		out.push_back(_subtree);
 	}

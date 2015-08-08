@@ -374,7 +374,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	}
 
 	/* if managed window have active clients */
-	for(auto i: mw->tree_t::children()) {
+	for(auto i: mw->children()) {
 		auto c = dynamic_pointer_cast<client_base_t>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
@@ -1565,7 +1565,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	}
 
 	/* move all client from destroyed notebook to new default pop */
-	auto clients = filter_class<client_managed_t>(nbk->tree_t::children());
+	auto clients = filter_class<client_managed_t>(nbk->children());
 	for(auto i : clients) {
 		insert_window_in_notebook(i, nullptr, false);
 	}
@@ -2414,7 +2414,7 @@ void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v
 
 	/* Transfer clients to a valid notebook */
 	for (auto nbk : filter_class<notebook_t>(v->get_all_children())) {
-		for (auto c : filter_class<client_managed_t>(nbk->tree_t::children())) {
+		for (auto c : filter_class<client_managed_t>(nbk->children())) {
 			d->default_pop()->add_client(c, false);
 		}
 	}
@@ -2872,7 +2872,7 @@ shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
 void page_t::remove_client(shared_ptr<client_base_t> c) {
 	auto parent = c->parent().lock();
 	detach(c);
-	for(auto i: c->tree_t::children()) {
+	for(auto i: c->children()) {
 		auto c = dynamic_pointer_cast<client_base_t>(i);
 		if(c != nullptr) {
 			insert_in_tree_using_transient_for(c);
@@ -2895,7 +2895,7 @@ void page_t::activate() {
 
 void page_t::activate(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
-	assert(has_key(tree_t::children(), t));
+	assert(has_key(children(), t));
 
 	auto w = dynamic_pointer_cast<workspace_t>(t);
 	if(w != nullptr) {
@@ -3048,7 +3048,7 @@ void page_t::set_allocation(rect const & r) {
 	throw exception_t("page_t::set_allocation should be called");
 }
 
-void page_t::children(vector<shared_ptr<tree_t>> & out) const {
+void page_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	for (auto i: _desktop_stack) {
 		out.push_back(i);
 	}

@@ -286,7 +286,7 @@ rect split_t::compute_split_bar_location() const {
 }
 
 
-void split_t::children(vector<shared_ptr<tree_t>> & out) const {
+void split_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 

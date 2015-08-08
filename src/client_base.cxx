@@ -345,7 +345,7 @@ void client_base_t::remove(shared_ptr<tree_t> t) {
 	_children.remove(c);
 }
 
-void client_base_t::children(vector<shared_ptr<tree_t>> & out) const {
+void client_base_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 

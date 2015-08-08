@@ -166,14 +166,14 @@ public:
 	 * tree_t virtual API
 	 **/
 
-	using tree_t::children;
+	using tree_t::append_children;
 
 	// virtual void hide();
 	// virtual void show();
 	virtual auto get_node_name() const -> string;
 	virtual void remove(shared_ptr<tree_t> t);
 
-	virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	// virtual void update_layout(time64_t const time);
 	// virtual void render(cairo_t * cr, region const & area);
 

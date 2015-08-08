@@ -75,7 +75,7 @@ void tree_t::remove(shared_ptr<tree_t> t) {
 /**
  * Return direct children of this node (net recursive)
  **/
-auto tree_t::children(vector<shared_ptr<tree_t>> & out) const -> void {
+auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void {
 	/* by default we have no child */
 }
 
@@ -204,7 +204,7 @@ void tree_t::print_tree(int level) const {
  **/
 vector<shared_ptr<tree_t>> tree_t::children() const {
 	vector<shared_ptr<tree_t>> ret;
-	children(ret);
+	append_children(ret);
 	return ret;
 }
 
