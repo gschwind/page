@@ -21,30 +21,28 @@ using namespace std;
 
 struct popup_notebook0_t : public tree_t {
 	static int const border_width = 6;
-
 	page_context_t * _ctx;
-	shared_ptr<icon64> icon;
-	string title;
-	bool _show;
 
 protected:
 	rect _position;
-
-	bool _has_alpha;
-	bool _is_durty;
+	bool _exposed;
+	bool _damaged;
 
 	xcb_window_t _wid;
 
 public:
 	popup_notebook0_t(page_context_t * ctx) :
 			_position{-1, -1, 1, 1} , _ctx{ctx} {
-		icon = nullptr;
-		_show = false;
-		icon = nullptr;
-		_has_alpha = true;
-		_is_durty = true;
-		_is_visible = false;
 
+		_is_visible = false;
+		_exposed = false;
+		_damaged = false;
+
+		_create_window();
+
+	}
+
+	void _create_window() {
 		/** if visual is 32 bits, this values are mandatory **/
 		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
 		xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
@@ -70,13 +68,6 @@ public:
 		_wid = xcb_generate_id(_ctx->dpy()->xcb());
 		xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id, value_mask, value);
 
-		_ctx->dpy()->map(_wid);
-
-	}
-
-
-	void mark_durty() {
-		_is_durty = true;
 	}
 
 	void move_resize(rect const & area) {
@@ -110,13 +101,15 @@ public:
 		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 4, rects);
 
 		_ctx->dpy()->move_resize(_wid, area);
-		expose();
 		_ctx->add_global_damage(get_visible_region());
+		_damaged = true;
 	}
 
 	void move(int x, int y) {
+		_ctx->add_global_damage(get_visible_region());
 		_position.x = x;
 		_position.y = y;
+		_damaged = true;
 	}
 
 	rect const & position() {
@@ -143,7 +136,7 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		if(_is_durty) {
+		if(_damaged) {
 			return region{_position};
 		} else {
 			return region{};
@@ -154,40 +147,28 @@ public:
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 
-	void update_window(shared_ptr<client_managed_t> c) {
-		icon = make_shared<icon64>(c.get());
-		this->title = c->title();
-	}
-
 	void show() {
 		_is_visible = true;
-		_show = true;
+		_damaged = true;
+		_ctx->dpy()->map(_wid);
 	}
 
 	void hide() {
 		_is_visible = false;
-		_show = false;
-	}
-
-	bool is_visible() {
-		return _show;
+		_ctx->dpy()->unmap(_wid);
 	}
 
 	virtual void render(cairo_t * cr, region const & area) {
-
-		if(not _is_visible)
-			return;
-
 		for (auto &a : area) {
 			cairo_save(cr);
 			cairo_clip(cr, a);
 			cairo_translate(cr, _position.x, _position.y);
-			_ctx->theme()->render_popup_notebook0(cr, icon.get(), _position.w, _position.h, title);
+			_ctx->theme()->render_popup_notebook0(cr, (icon64*)nullptr, _position.w, _position.h, string{"none"});
 			cairo_restore(cr);
 		}
 	}
 
-	void expose() {
+	void _paint_exposed() {
 
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
@@ -221,8 +202,28 @@ public:
 
 	}
 
-	xcb_window_t id() const {
+	xcb_window_t get_xid() const {
 		return _wid;
+	}
+
+	xcb_window_t get_parent_xid() const {
+		return _wid;
+	}
+
+	void expose(xcb_expose_event_t const * ev) {
+		if(ev->window == _wid)
+			_exposed = true;
+	}
+
+	void trigger_redraw() {
+		if(_exposed) {
+			_exposed = false;
+			_paint_exposed();
+		}
+	}
+
+	void render_finished() {
+		_damaged = false;
 	}
 
 };

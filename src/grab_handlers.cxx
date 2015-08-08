@@ -145,6 +145,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
 		pn0 = make_shared<popup_notebook0_t>(ctx);
 		ctx->overlay_add(pn0);
+		pn0->show();
 	}
 
 	if (pn0 == nullptr)
@@ -267,6 +268,7 @@ grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, shared_ptr<clie
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
+	pfm->show();
 	_ctx->dpy()->set_window_cursor(f->base(), _ctx->dpy()->xc_fleur);
 	_ctx->dpy()->set_window_cursor(f->orig(), _ctx->dpy()->xc_fleur);
 }
@@ -373,6 +375,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, shared_ptr<
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(f->base_position());
 	_ctx->overlay_add(pfm);
+	pfm->show();
 
 	_ctx->dpy()->set_window_cursor(f->base(), _get_cursor());
 
