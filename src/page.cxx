@@ -527,21 +527,41 @@ void page_t::update_net_supported() {
 
 void page_t::update_client_list() {
 
+	auto managed = filter_class<client_managed_t>(get_all_children());
+
+	/** sort managed client in focus order **/
+	if(not global_focus_history_is_empty()) {
+		auto k = managed.begin();
+		for(auto & c: global_client_focus_history()) {
+			auto pos = std::find(k, managed.end(), c.lock());
+			if(pos != managed.end()) {
+				std::swap(*k, *pos);
+				++k;
+			}
+		}
+	}
+
+
 	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	vector<xcb_window_t> xid_client_list;
-	for(auto c: clients_list()) {
-		xid_client_list.push_back(c->orig());
+	for(auto i = managed.rbegin(); i != managed.rend(); ++i) {
+		xid_client_list.push_back((*i)->orig());
 	}
 
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST, WINDOW, 32,
 			&xid_client_list[0], xid_client_list.size());
 
+}
+
+void page_t::update_client_list_stacking() {
+
 	/** set _NET_CLIENT_LIST_STACKING : bottom to top staking **/
-	auto client_managed_list_stack = filter_class<client_managed_t>(get_all_children());
+	auto managed = filter_class<client_managed_t>(get_all_children());
 	vector<xcb_window_t> client_list_stack;
-	for(auto c: client_managed_list_stack) {
+	for(auto c: managed) {
 		client_list_stack.push_back(c->orig());
 	}
+
 	cnx->change_property(cnx->root(), _NET_CLIENT_LIST_STACKING,
 			WINDOW, 32, &client_list_stack[0], client_list_stack.size());
 
@@ -2208,16 +2228,7 @@ void page_t::update_windows_stack() {
 		 **/
 		int k = 0;
 		for (int i = 0; i < tree.size(); ++i) {
-			if (typeid(*tree[i].get()) == typeid(client_managed_t)) {
-				tree[k++] = tree[i];
-			} else if (typeid(*tree[i].get()) == typeid(client_not_managed_t)) {
-				auto nc = dynamic_pointer_cast<client_not_managed_t>(tree[i]);
-				if (nc->wm_transient_for() != nullptr) {
-					tree[k++] = tree[i];
-				} else if(nc->net_wm_window_type() != nullptr) {
-					tree[k++] = tree[i];
-				}
-			} else if(tree[i]->get_xid() != XCB_WINDOW_NONE) {
+			if(tree[i]->get_xid() != XCB_WINDOW_NONE) {
 				tree[k++] = tree[i];
 			}
 		}
@@ -3597,11 +3608,13 @@ void page_t::process_pending_events() {
 		if (_need_restack) {
 			_need_restack = false;
 			update_windows_stack();
+			_need_update_client_list = true;
 		}
 
 		if(_need_update_client_list) {
 			_need_update_client_list = false;
 			update_client_list();
+			update_client_list_stacking();
 		}
 
 		cnx->sync();

@@ -258,6 +258,7 @@ public:
 
 	/* update _NET_CLIENT_LIST_STACKING and _NET_CLIENT_LIST */
 	void update_client_list();
+	void update_client_list_stacking();
 
 	/* update _NET_SUPPORTED */
 	void update_net_supported();
