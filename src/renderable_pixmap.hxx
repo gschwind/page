@@ -8,6 +8,7 @@
 #ifndef RENDERABLE_PIXMAP_HXX_
 #define RENDERABLE_PIXMAP_HXX_
 
+#include "page_context.hxx"
 #include "tree.hxx"
 #include "pixmap.hxx"
 
@@ -16,24 +17,22 @@ namespace page {
 using namespace std;
 
 class renderable_pixmap_t : public tree_t {
-	tree_t * _parent;
+	page_context_t * _ctx;
 
-	rect location;
-	shared_ptr<pixmap_t> surf;
-	region damaged;
-	region opaque_region;
-	region visible_region;
+	rect _location;
+	shared_ptr<pixmap_t> _surf;
+	region _damaged;
+	region _opaque_region;
 
 public:
 
-	renderable_pixmap_t(shared_ptr<pixmap_t> s, rect loc, region damaged = region{}) :
-		damaged{damaged},
-		surf{s},
-		location{loc},
-		_parent{nullptr}
+	renderable_pixmap_t(page_context_t * ctx, shared_ptr<pixmap_t> s, int x, int y) :
+		_ctx{ctx},
+		_surf{s}
 	{
-		opaque_region = region(loc);
-		visible_region = region(loc);
+		_location = rect(x, y, s->witdh(), s->height());
+		_opaque_region = region(0, 0, s->witdh(), s->height());
+		_damaged = _location;
 	}
 
 	virtual ~renderable_pixmap_t() { }
@@ -45,15 +44,15 @@ public:
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
 		cairo_save(cr);
-		if (surf != nullptr) {
-			if (surf->get_cairo_surface() != nullptr) {
+		if (_surf != nullptr) {
+			if (_surf->get_cairo_surface() != nullptr) {
 				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-				cairo_set_source_surface(cr, surf->get_cairo_surface(),
-						location.x, location.y);
-				region r = visible_region & area;
+				cairo_set_source_surface(cr, _surf->get_cairo_surface(),
+						_location.x, _location.y);
+				region r = region{_location} & area;
 				for (auto &i : r) {
 					cairo_clip(cr, i);
-					cairo_mask_surface(cr, surf->get_cairo_surface(), location.x, location.y);
+					cairo_mask_surface(cr, _surf->get_cairo_surface(), _location.x, _location.y);
 				}
 			}
 		}
@@ -61,31 +60,32 @@ public:
 	}
 
 	virtual region get_opaque_region() {
-		return opaque_region;
+		region ret = _opaque_region;
+		ret.translate(_location.x, _location.y);
+		return ret;
 	}
 
 	virtual region get_visible_region() {
-		return visible_region;
+		return region{_location};
 	}
 
 	virtual region get_damaged() {
-		return damaged;
+		return _damaged;
+	}
+
+	virtual void render_finished() {
+		_damaged.clear();
 	}
 
 	void set_opaque_region(region const & r) {
-		opaque_region = r;
+		_opaque_region = r;
 	}
 
-	void set_visible_region(region const & r) {
-		visible_region = r;
-	}
-
-	void clear_damaged() {
-		damaged.clear();
-	}
-
-	void add_damaged(region const & r) {
-		damaged += r;
+	void move(int x, int y) {
+		_damaged += _location;
+		_location.x = x;
+		_location.y = y;
+		_damaged += _location;
 	}
 
 };

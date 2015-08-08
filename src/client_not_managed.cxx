@@ -90,13 +90,6 @@ void client_not_managed_t::update_layout(time64_t const time) {
 					color_t { 0.0, 0.0, 0.0, 1.0 } };
 		}
 	}
-
-	if (_ctx->csm()->get_last_pixmap(_properties->id()) != nullptr) {
-		update_base_renderable();
-	}
-
-
-
 }
 
 region client_not_managed_t::get_visible_region() {
@@ -128,48 +121,6 @@ region client_not_managed_t::get_damaged() {
 	return _damage_cache;
 }
 
-void client_not_managed_t::update_base_renderable() {
-	_base_position = _properties->position();
-
-	std::shared_ptr<pixmap_t> surf = _ctx->csm()->get_last_pixmap(_properties->id());
-	if (surf != nullptr) {
-
-		region vis;
-		region opa;
-
-		vis = rect { 0, 0, _base_position.w, _base_position.h };
-
-		if (shape() != nullptr) {
-			region shp;
-			shp = *shape();
-			vis = shp;
-		} else {
-			vis = rect { 0, 0, _base_position.w, _base_position.h };
-		}
-
-		region xopac;
-		if (net_wm_opaque_region() != nullptr) {
-			xopac = region { *(net_wm_opaque_region()) };
-		} else {
-			if (geometry()->depth == 24) {
-				xopac = rect { 0, 0, _base_position.w, _base_position.h };
-			}
-		}
-
-		vis.translate(_base_position.x, _base_position.y);
-
-		xopac.translate(_base_position.x, _base_position.y);
-		opa = vis & xopac;
-
-		auto x = new renderable_pixmap_t(surf,
-				_base_position, _damage_cache);
-		x->set_opaque_region(opa);
-		x->set_visible_region(vis);
-		delete _base_renderable;
-		_base_renderable = x;
-	}
-}
-
 xcb_window_t client_not_managed_t::base() const {
 	return _properties->id();
 }
@@ -189,9 +140,22 @@ rect const & client_not_managed_t::orig_position() const {
 }
 
 void client_not_managed_t::render(cairo_t * cr, region const & area) {
-	if(_base_renderable != nullptr) {
-		_base_renderable->render(cr, area);
+	auto pix = _ctx->csm()->get_last_pixmap(_properties->id());
+
+	if (pix != nullptr) {
+		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(),
+				_base_position.x, _base_position.y);
+		region r = region{_base_position} & area;
+		for (auto &i : r) {
+			cairo_clip(cr, i);
+			cairo_mask_surface(cr, pix->get_cairo_surface(),
+					_base_position.x, _base_position.y);
+		}
+		cairo_restore(cr);
 	}
+
 }
 
 void client_not_managed_t::hide() {

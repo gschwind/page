@@ -206,7 +206,6 @@ public:
 	void update_floating_areas();
 	void set_opaque_region(xcb_window_t w, region & region);
 	display_t * cnx();
-	void update_base_renderable();
 
 	vector<floating_event_t> * compute_floating_areas(theme_managed_window_t * mw) const;
 	rect compute_floating_bind_position(rect const & allocation) const;

@@ -65,7 +65,6 @@ page_t::page_t(int argc, char ** argv)
 
 	_current_desktop = 0;
 	_grab_handler = nullptr;
-	_background = nullptr;
 
 	identity_window = XCB_NONE;
 	cmgr = nullptr;
@@ -271,10 +270,6 @@ void page_t::run() {
 		/* The default theme engine */
 		std::cout << "using simple theme engine" << std::endl;
 		_theme = new simple2_theme_t{cnx, conf};
-	}
-
-	if(_theme->get_background() != nullptr) {
-		_background = new renderable_pixmap_t(_theme->get_background(), allocation(), region{});
 	}
 
 	cmgr = new composite_surface_manager_t{cnx};
@@ -3731,8 +3726,20 @@ auto page_t::get_damaged() -> region {
 }
 
 void page_t::render(cairo_t * cr, region const & area) {
-	if(_background != nullptr) {
-		_background->render(cr, area);
+	auto pix = _theme->get_background();
+
+	if (pix != nullptr) {
+		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(),
+				_root_position.x, _root_position.y);
+		region r = region{_root_position} & area;
+		for (auto &i : r) {
+			cairo_clip(cr, i);
+			cairo_mask_surface(cr, pix->get_cairo_surface(),
+					_root_position.x, _root_position.y);
+		}
+		cairo_restore(cr);
 	}
 }
 

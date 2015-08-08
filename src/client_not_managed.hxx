@@ -57,7 +57,6 @@ public:
 	~client_not_managed_t();
 
 	auto net_wm_type() -> xcb_atom_t;
-	void update_base_renderable();
 
 	/**
 	 * tree_t virtual API

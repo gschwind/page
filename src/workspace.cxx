@@ -52,7 +52,7 @@ void workspace_t::activate(shared_ptr<tree_t> t) {
 	}
 }
 
-std::string workspace_t::get_node_name() const {
+string workspace_t::get_node_name() const {
 	return _get_node_name<'D'>();
 }
 
@@ -60,24 +60,21 @@ void workspace_t::update_layout(time64_t const time) {
 	if(not _is_visible)
 		return;
 
-	if (_switch_screenshot != nullptr and time < (_switch_start_time + _switch_duration)) {
+	if (_switch_renderable != nullptr and time < (_switch_start_time + _switch_duration)) {
 		_ctx->add_global_damage(_allocation);
 		double ratio = (static_cast<double>(time - _switch_start_time) / static_cast<double const>(_switch_duration));
 		ratio = ratio*1.05 - 0.025;
 		ratio = min(1.0, max(0.0, ratio));
-		rect pos{_allocation};
+		int new_x = _allocation.x;
 		if(_switch_direction == WORKSPACE_SWITCH_LEFT) {
-			pos.x += ratio*_switch_screenshot->witdh();
+			new_x += ratio*_switch_screenshot->witdh();
 		} else {
-			pos.x -= ratio*_switch_screenshot->witdh();
+			new_x -= ratio*_switch_screenshot->witdh();
 		}
-
-		delete _switch_renderable;
-		_switch_renderable = new renderable_pixmap_t{_switch_screenshot, pos, pos};
-	} else if (_switch_screenshot != nullptr) {
+		_switch_renderable->move(new_x, _allocation.y);
+	} else if (_switch_renderable != nullptr) {
 		_ctx->add_global_damage(_allocation);
 		_switch_screenshot = nullptr;
-		delete _switch_renderable;
 		_switch_renderable = nullptr;
 	}
 
@@ -131,6 +128,9 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 void workspace_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
+	if(_switch_renderable != nullptr) {
+		out.push_back(_switch_renderable);
+	}
 }
 
 void workspace_t::update_default_pop() {
@@ -215,6 +215,8 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_direction = direction;
 	_switch_start_time.update_to_current_time();
 	_switch_screenshot = _ctx->cmp()->create_screenshot();
+	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _allocation.x, _allocation.y);
+	_switch_renderable->show();
 
 }
 

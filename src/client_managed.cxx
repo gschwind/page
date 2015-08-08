@@ -999,53 +999,6 @@ display_t * client_managed_t::cnx() {
 	return _properties->cnx();
 }
 
-void client_managed_t::update_base_renderable() {
-	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
-
-		region vis;
-		region opa;
-
-		if(_managed_type == MANAGED_FULLSCREEN) {
-			vis = _base_position;
-			opa = _base_position;
-		} else {
-
-			vis = rect{0,0,_base_position.w,_base_position.h};
-
-			if (shape() != nullptr) {
-				region shp{*shape()};
-				vis -= _orig_position;
-				shp.translate(_orig_position.x, _orig_position.y);
-				vis += shp;
-			}
-
-			region xopac;
-			if (net_wm_opaque_region() != nullptr) {
-				xopac = region { *(net_wm_opaque_region()) };
-			} else {
-				if (geometry()->depth == 24) {
-					xopac = rect{0, 0, _orig_position.w, _orig_position.h};
-				}
-			}
-
-			vis.translate(_base_position.x, _base_position.y);
-
-			xopac.translate(_base_position.x + _orig_position.x,
-					_base_position.y + _orig_position.y);
-			opa = vis & xopac;
-
-		}
-
-		auto x = new renderable_pixmap_t(_ctx->csm()->get_last_pixmap(_base),
-				_base_position, _damage_cache);
-		x->set_opaque_region(opa);
-		x->set_visible_region(vis);
-		delete _base_renderable;
-		_base_renderable = x;
-	}
-
-}
-
 rect const & client_managed_t::base_position() const {
 	return _base_position;
 }
@@ -1105,11 +1058,7 @@ void client_managed_t::update_layout(time64_t const time) {
 				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
 			}
 		}
-		update_base_renderable();
 	}
-
-
-
 }
 
 void client_managed_t::render_finished() {
@@ -1508,8 +1457,20 @@ string const & client_managed_t::title() const {
 }
 
 void client_managed_t::render(cairo_t * cr, region const & area) {
-	if(_base_renderable != nullptr) {
-		_base_renderable->render(cr, area);
+	auto pix = _ctx->csm()->get_last_pixmap(_base);
+
+	if (pix != nullptr) {
+		cairo_save(cr);
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(),
+				_base_position.x, _base_position.y);
+		region r = region{_base_position} & area;
+		for (auto &i : r) {
+			cairo_clip(cr, i);
+			cairo_mask_surface(cr, pix->get_cairo_surface(),
+					_base_position.x, _base_position.y);
+		}
+		cairo_restore(cr);
 	}
 }
 
