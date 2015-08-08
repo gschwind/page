@@ -817,37 +817,28 @@ void client_managed_t::net_wm_state_delete() {
 }
 
 void client_managed_t::normalize() {
+	if(not _is_iconic)
+		return;
+
 	if (lock()) {
 		_is_iconic = false;
 		_properties->set_wm_state(NormalState);
-		if (_is_visible) {
-			net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-			map();
-		}
-		reconfigure();
-		for (auto c : _children) {
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			if (mw != nullptr) {
-				mw->normalize();
-			}
+		for (auto c : filter_class<client_managed_t>(_children)) {
+			c->normalize();
 		}
 		unlock();
 	}
 }
 
 void client_managed_t::iconify() {
+	if(_is_iconic)
+		return;
+
 	if (lock()) {
 		_is_iconic = true;
-		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		_properties->set_wm_state(IconicState);
-		//if(_is_hidden)
-		//	unmap();
-		reconfigure();
-		for (auto c : _children) {
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			if (mw != nullptr) {
-				mw->iconify();
-			}
+		for (auto c : filter_class<client_managed_t>(_children)) {
+			c->iconify();
 		}
 		unlock();
 	}

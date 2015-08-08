@@ -1369,6 +1369,7 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 	mw->set_notebook_wished_position(data.viewport.lock()->raw_area());
 	mw->reconfigure();
 	mw->normalize();
+	mw->show();
 	_need_restack = true;
 }
 
@@ -1795,8 +1796,8 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.w = ps[PS_LEFT];
 				pos.h = ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
-				j->reconfigure();
 				j->normalize();
+				j->show();
 				continue;
 			}
 
@@ -1807,8 +1808,8 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.w = ps[PS_RIGHT];
 				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
-				j->reconfigure();
 				j->normalize();
+				j->show();
 				continue;
 			}
 
@@ -1819,8 +1820,8 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.w = ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1;
 				pos.h = ps[PS_TOP];
 				j->set_floating_wished_position(pos);
-				j->reconfigure();
 				j->normalize();
+				j->show();
 				continue;
 			}
 
@@ -1831,8 +1832,8 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
 				pos.h = ps[PS_BOTTOM];
 				j->set_floating_wished_position(pos);
-				j->reconfigure();
 				j->normalize();
+				j->show();
 				continue;
 			}
 		}
@@ -1938,7 +1939,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->normalize();
+				mw->activate();
 				break;
 			case _NET_WM_STATE_ADD:
 				/** I ignore it **/
@@ -1985,7 +1986,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->normalize();
+				mw->activate();
 				break;
 			case _NET_WM_STATE_ADD:
 				/** I ignore it **/
@@ -2143,6 +2144,7 @@ void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
 	insert_in_tree_using_transient_for(mw);
 	mw->queue_redraw();
 	mw->normalize();
+	mw->show();
 	safe_raise_window(mw);
 	_need_update_client_list = true;
 	_need_restack = true;
@@ -2651,7 +2653,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			mw->normalize();
 			fullscreen(mw);
 			update_desktop_visibility();
-			mw->reconfigure();
+			mw->show();
 			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
@@ -2707,7 +2709,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			 **/
 		} else {
 			mw->normalize();
-			mw->reconfigure();
+			mw->show();
 			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {

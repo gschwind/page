@@ -57,20 +57,20 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	if(prefer_activate) {
 		_stop_exposay();
 		_start_fading();
-		x->normalize();
 		if (_selected != nullptr and _selected != x) {
 			_selected->iconify();
+			_selected->hide();
 		}
 
 		_selected = x;
+		_selected->normalize();
+		if(_is_visible) {
+			_selected->show();
+		}
+
 	} else {
 		x->iconify();
-		if(_selected != nullptr) {
-			/* do nothing */
-		} else if (not _exposay) {
-			/** no prev surf is used **/
-			_selected = x;
-		}
+		x->hide();
 	}
 
 	_update_layout();
@@ -125,6 +125,9 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 
 		if (_selected != nullptr) {
 			_selected->normalize();
+			if(_is_visible) {
+				_selected->show();
+			}
 		}
 	}
 
@@ -142,10 +145,14 @@ void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 
 	if(_selected != nullptr and c != _selected) {
 		_selected->iconify();
+		_selected->hide();
 	}
 	/** set selected **/
 	_selected = c;
 	_selected->normalize();
+	if(_is_visible) {
+		_selected->show();
+	}
 
 	_update_layout();
 }
@@ -168,6 +175,7 @@ void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 
 	if (_selected != nullptr) {
 		_selected->iconify();
+		_selected->hide();
 	}
 
 	_update_layout();
