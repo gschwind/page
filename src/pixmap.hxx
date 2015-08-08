@@ -30,7 +30,6 @@ class pixmap_t {
 public:
 
 	pixmap_t(display_t * dpy, xcb_visualtype_t * v, xcb_pixmap_t p, unsigned w, unsigned h) {
-		cout << "d = " << dpy << " xx = " << v << endl;
 		_dpy = dpy;
 		_pixmap_id = p;
 		_surf = cairo_xcb_surface_create(dpy->xcb(), p, v, w, h);

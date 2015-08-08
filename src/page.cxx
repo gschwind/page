@@ -243,8 +243,6 @@ void page_t::run() {
 		d->hide();
 	}
 
-	get_current_workspace()->show();
-
 	/* check for required page extension */
 	cnx->check_x11_extension();
 	/* Before doing anything, trying to register wm and cm */
@@ -342,6 +340,10 @@ void page_t::run() {
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
+
+	get_current_workspace()->show();
+	add_global_damage(_root_position);
+
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	auto handle = add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
@@ -391,6 +393,8 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 		x->client_focus_history_remove(mw);
 	}
 
+	global_focus_history_remove(mw);
+
 	shared_ptr<client_managed_t> new_focus;
 	if (get_current_workspace()->client_focus_history_front(new_focus)) {
 		if (not _auto_refocus) {
@@ -400,12 +404,6 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 			set_focus(new_focus, XCB_CURRENT_TIME);
 		}
 	}
-
-	mw = nullptr;
-
-
-	_global_client_focus_history.remove_if([](weak_ptr<tree_t> x) { return x.expired(); });
-
 
 }
 
@@ -1464,19 +1462,17 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 
 	{
 		shared_ptr<client_managed_t> old_focus;
-		if (global_history_front(old_focus)) {
+		if (global_focus_history_front(old_focus)) {
 			old_focus->set_focus_state(false);
 		}
 	}
-
-	get_current_workspace()->client_focus_history_move_front(new_focus);
-	_global_client_focus_history.remove_if([new_focus](weak_ptr<client_managed_t> x) { return x.lock() == new_focus; });
-	_global_client_focus_history.push_front(new_focus);
 
 	if(new_focus == nullptr) {
 		cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
 		cnx->set_net_active_window(XCB_NONE);
 	} else {
+		get_current_workspace()->client_focus_history_move_front(new_focus);
+		global_focus_history_move_front(new_focus);
 		cnx->set_net_active_window(new_focus->orig());
 		new_focus->focus(tfocus);
 	}
@@ -1496,6 +1492,7 @@ void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t>
 		detach(c);
 		insert_window_in_notebook(c, n, true);
 	}
+	split->show();
 }
 
 void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
@@ -1509,6 +1506,7 @@ void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t
 		detach(c);
 		insert_window_in_notebook(c, n, true);
 	}
+	split->show();
 }
 
 void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
@@ -1522,6 +1520,7 @@ void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> 
 		detach(c);
 		insert_window_in_notebook(c, n, true);
 	}
+	split->show();
 }
 
 void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
@@ -1535,6 +1534,7 @@ void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_
 		detach(c);
 		insert_window_in_notebook(c, n, true);
 	}
+	split->show();
 }
 
 void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
@@ -3671,10 +3671,6 @@ int page_t::top_most_border() {
 	return _top_most_border;
 }
 
-list<weak_ptr<client_managed_t>> page_t::global_client_focus_history() {
-	return _global_client_focus_history;
-}
-
 vector<shared_ptr<client_managed_t>> page_t::clients_list() {
 	return filter_class<client_managed_t>(get_all_children());
 }
@@ -3699,18 +3695,30 @@ void page_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component
 	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
 }
 
-bool page_t::global_history_front(shared_ptr<client_managed_t> & out) {
-	while(not _global_client_focus_history.empty()) {
-		if(_global_client_focus_history.front().expired()) {
-			_global_client_focus_history.pop_front();
-		} else {
-			break;
-		}
-	}
-	if(not _global_client_focus_history.empty()) {
-		out = _global_client_focus_history.front().lock();
+list<weak_ptr<client_managed_t>> page_t::global_client_focus_history() {
+	_global_focus_history.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	return _global_focus_history;
+}
+
+bool page_t::global_focus_history_front(shared_ptr<client_managed_t> & out) {
+	if(not global_focus_history_is_empty()) {
+		out = _global_focus_history.front().lock();
+		return true;
 	}
 	return false;
+}
+
+void page_t::global_focus_history_remove(shared_ptr<client_managed_t> in) {
+	_global_focus_history.remove_if([in](weak_ptr<tree_t> w) { return w.expired() or w.lock() == in; });
+}
+
+void page_t::global_focus_history_move_front(shared_ptr<client_managed_t> in) {
+	move_front(_global_focus_history, in);
+}
+
+bool page_t::global_focus_history_is_empty() {
+	_global_focus_history.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	return _global_focus_history.empty();
 }
 
 

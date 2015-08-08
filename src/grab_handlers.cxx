@@ -63,16 +63,13 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	if(_split.expired()) {
+		_ctx->add_global_damage(_split_root_allocation);
 		_ctx->grab_stop();
 		return;
 	}
 
 	if (e->detail == XCB_BUTTON_INDEX_1) {
 		_split.lock()->queue_redraw();
-		if(_ps != nullptr) {
-			_ctx->detach(_ps);
-			_ps = nullptr;
-		}
 		_ctx->add_global_damage(_split_root_allocation);
 		_split.lock()->set_split(_split_ratio);
 		_ctx->grab_stop();

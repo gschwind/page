@@ -539,9 +539,6 @@ void notebook_t::_start_fading() {
 	if(fading_notebook != nullptr)
 		return;
 
-	if(_exposay)
-		return;
-
 	_swap_start.update_to_current_time();
 
 	/**
@@ -592,10 +589,6 @@ void notebook_t::start_exposay() {
 	if(_selected != nullptr) {
 		iconify_client(_selected);
 		_selected = nullptr;
-	}
-
-	if(fading_notebook != nullptr) {
-		fading_notebook = nullptr;
 	}
 
 	_ctx->add_global_damage(to_root_position(_allocation));

@@ -177,7 +177,7 @@ private:
 	xcb_timestamp_t _last_focus_time;
 	xcb_timestamp_t _last_button_press;
 
-	list<weak_ptr<client_managed_t>> _global_client_focus_history;
+	list<weak_ptr<client_managed_t>> _global_focus_history;
 
 	list<shared_ptr<tree_t>> _overlays;
 
@@ -373,8 +373,10 @@ public:
 	void process_pending_events();
 	bool render_timeout();
 
-	bool global_history_front(shared_ptr<client_managed_t> & out);
-
+	bool global_focus_history_front(shared_ptr<client_managed_t> & out);
+	void global_focus_history_remove(shared_ptr<client_managed_t> in);
+	void global_focus_history_move_front(shared_ptr<client_managed_t> in);
+	bool global_focus_history_is_empty();
 
 	/**
 	 * tree_t virtual API
