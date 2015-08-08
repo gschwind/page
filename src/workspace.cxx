@@ -144,9 +144,8 @@ void workspace_t::update_default_pop() {
 	}
 }
 
-void workspace_t::add_floating_client(shared_ptr<client_managed_t> c) {
-	if(c != nullptr)
-		return;
+void workspace_t::attach(shared_ptr<client_managed_t> c) {
+	assert(c != nullptr);
 
 	c->set_parent(shared_from_this());
 

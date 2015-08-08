@@ -221,7 +221,7 @@ void viewport_t::_redraw_back_buffer() {
 
 	_is_durty = false;
 	_exposed = true;
-	_damaged += _page_area;
+	_damaged += _effective_area;
 
 	/* tell page to render */
 	_ctx->add_global_damage(_effective_area);
@@ -298,7 +298,6 @@ auto viewport_t::get_opaque_region() -> region {
 void viewport_t::render(cairo_t * cr, region const & area) {
 	if(not _is_visible)
 		return;
-
 	if(_back_surf == nullptr)
 		return;
 	if(_back_surf->get_cairo_surface() == nullptr)

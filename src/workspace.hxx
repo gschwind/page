@@ -83,7 +83,7 @@ public:
 	auto get_viewport_map() const -> vector<shared_ptr<viewport_t>>;
 	void set_primary_viewport(shared_ptr<viewport_t> v);
 	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
-	void add_floating_client(shared_ptr<client_managed_t> c);
+	void attach(shared_ptr<client_managed_t> c);
 
 
 	/**

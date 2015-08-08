@@ -50,7 +50,7 @@ class popup_alt_tab_t : public tree_t {
 	xcb_window_t _wid;
 	xcb_pixmap_t _pix;
 
-	cairo_surface_t * _surf;
+	shared_ptr<pixmap_t> _surf;
 
 	rect _position;
 	list<shared_ptr<cycle_window_entry_t>> _client_list;
@@ -100,11 +100,7 @@ public:
 				XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id,
 				value_mask, value);
 
-		_pix = xcb_generate_id(_ctx->dpy()->xcb());
-		xcb_create_pixmap(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _pix, _wid,
-				_position.w, _position.h);
-		_surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _pix, _ctx->dpy()->root_visual(),
-				_position.w, _position.h);
+		_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h);
 
 		update_backbuffer();
 
@@ -115,10 +111,6 @@ public:
 				x->destroy_func = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
 		}
 
-	}
-
-	void mark_durty() {
-		_is_durty = true;
 	}
 
 	void move(int x, int y) {
@@ -163,7 +155,7 @@ public:
 		_is_durty = true;
 
 		rect a{0,0,_position.w,_position.h};
-		cairo_t * cr = cairo_create(_surf);
+		cairo_t * cr = cairo_create(_surf->get_cairo_surface());
 		//cairo_clip(cr, a);
 		//cairo_translate(cr, _position.x, _position.y);
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
@@ -209,7 +201,7 @@ public:
 				_ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_surface(cr, _surf, 0.0, 0.0);
+		cairo_set_source_surface(cr, _surf->get_cairo_surface(), 0.0, 0.0);
 		cairo_rectangle(cr, 0, 0, _position.w, _position.h);
 		cairo_fill(cr);
 		cairo_destroy(cr);
@@ -239,7 +231,7 @@ public:
 	void render(cairo_t * cr, region const & area) {
 		for (auto & a : area) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(cr, _surf, 0.0, 0.0);
+			cairo_set_source_surface(cr, _surf->get_cairo_surface(), 0.0, 0.0);
 			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
 			cairo_fill(cr);
 		}
