@@ -1095,6 +1095,7 @@ void client_managed_t::update_layout(time64_t const time) {
 		return;
 
 	_update_opaque_region();
+
 	/** update damage_cache **/
 	region dmg = _ctx->csm()->get_damaged(_base);
 	dmg.translate(_base_position.x, _base_position.y);
@@ -1519,6 +1520,8 @@ void client_managed_t::render(cairo_t * cr, region const & area) {
 void client_managed_t::_update_visible_region() {
 	/** update visible cache **/
 	rect vis{base_position()};
+
+	/* add the shadow */
 	if(_managed_type == MANAGED_FLOATING) {
 		vis.x -= 32;
 		vis.y -= 32;
@@ -1535,10 +1538,10 @@ void client_managed_t::_update_opaque_region() {
 		_opaque_region_cache = region { *(net_wm_opaque_region()) };
 	} else {
 		if (geometry()->depth == 24) {
-			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
+			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
 		}
 	}
-	_opaque_region_cache.translate(_orig_position.x, _orig_position.y);
+	_opaque_region_cache.translate(_base_position.x+_orig_position.x, _base_position.y+_orig_position.y);
 }
 
 
