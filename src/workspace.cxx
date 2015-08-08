@@ -31,27 +31,25 @@ workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
 
 }
 
-void workspace_t::activate(shared_ptr<tree_t> t) {
-
+void workspace_t::activate() {
 	if(not _parent.expired()) {
 		_parent.lock()->activate(shared_from_this());
 	}
+}
 
-	if(t == nullptr)
-		return;
+void workspace_t::activate(shared_ptr<tree_t> t) {
+	assert(t != nullptr);
+	assert(has_key(tree_t::children(), t));
+	activate();
 
 	auto mw = dynamic_pointer_cast<client_managed_t>(t);
-
 	if(has_key(_floating_layer, mw)) {
-		_floating_layer.remove(mw);
-		_floating_layer.push_back(mw);
+		move_back(_floating_layer, mw);
 	}
 
 	if(has_key(_viewport_layer, t)) {
-		_viewport_layer.remove(t);
-		_viewport_layer.push_back(t);
+		move_back(_viewport_layer, t);
 	}
-
 }
 
 std::string workspace_t::get_node_name() const {

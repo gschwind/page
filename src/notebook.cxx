@@ -302,21 +302,22 @@ void notebook_t::set_default(bool x) {
 	queue_redraw();
 }
 
-void notebook_t::activate(shared_ptr<tree_t> t) {
-
+void notebook_t::activate() {
 	if(_parent.lock() != nullptr) {
 		_parent.lock()->activate(shared_from_this());
 	}
+}
 
-	if (has_key(_children, t)) {
-		move_back(_children, t);
+void notebook_t::activate(shared_ptr<tree_t> t) {
+	assert(t != nullptr);
+	assert(has_key(_children, t));
 
-		auto mw = dynamic_pointer_cast<client_managed_t>(t);
-		if (mw != nullptr) {
-			_set_selected(mw);
-		}
-	} else if (t != nullptr) {
-		throw exception_t("notebook_t::raise_child trying to raise a non child tree");
+	activate();
+	move_back(_children, t);
+
+	auto mw = dynamic_pointer_cast<client_managed_t>(t);
+	if (mw != nullptr) {
+		_set_selected(mw);
 	}
 
 }

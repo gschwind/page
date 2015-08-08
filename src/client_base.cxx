@@ -350,22 +350,10 @@ void client_base_t::children(vector<shared_ptr<tree_t>> & out) const {
 }
 
 void client_base_t::activate(shared_ptr<tree_t> t) {
-	if(t != nullptr)
-		return;
-
-	/** raise ourself **/
-	if(not _parent.expired()) {
-		_parent.lock()->activate(shared_from_this());
-	}
-
-	/** only client_base_t can be child of client_base_t **/
-	auto c = dynamic_pointer_cast<client_base_t>(t);
-	if(has_key(_children, c)) {
-		/** raise the child **/
-		_children.remove(c);
-		_children.push_back(c);
-	}
-
+	assert(t != nullptr);
+	assert(has_key(_children, t));
+	tree_t::activate();
+	move_back(_children, t);
 }
 
 /* find the bigger window that is smaller than w and h */

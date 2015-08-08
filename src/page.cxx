@@ -399,10 +399,10 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 			if (new_focus->is(MANAGED_NOTEBOOK)) {
 				auto nk = find_parent_notebook_for(new_focus);
 				if (nk != nullptr) {
-					new_focus->activate(nullptr);
+					new_focus->activate();
 				}
 			}
-			new_focus->activate(nullptr);
+			new_focus->activate();
 			set_focus(new_focus, XCB_CURRENT_TIME);
 		}
 	}
@@ -788,7 +788,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		auto mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			mw->activate(nullptr);
+			mw->activate();
 			set_focus(mw, e->time);
 		}
 	} else {
@@ -1170,7 +1170,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
 			if (mw->lock()) {
-				mw->activate(nullptr);
+				mw->activate();
 				if (e->data.data32[1] == XCB_CURRENT_TIME) {
 					printf("Invalid focus request ... but stealing focus\n");
 					set_focus(mw, XCB_CURRENT_TIME);
@@ -1898,7 +1898,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			case _NET_WM_STATE_REMOVE: {
 				auto n = dynamic_pointer_cast<notebook_t>(mw->parent().lock());
 				if (n != nullptr)
-					mw->activate(nullptr);
+					mw->activate();
 			}
 
 				break;
@@ -2113,7 +2113,7 @@ void page_t::detach(shared_ptr<tree_t> t) {
 }
 
 void page_t::safe_raise_window(shared_ptr<client_base_t> c) {
-	c->activate(nullptr);
+	c->activate();
 	/** apply change **/
 	_need_restack = true;
 }
@@ -2603,7 +2603,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	try {
 
 		safe_update_transient_for(mw);
-		mw->activate(nullptr);
+		mw->activate();
 		_need_update_client_list = true;
 		_need_restack = true;
 
@@ -2661,7 +2661,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			fullscreen(mw);
 			update_desktop_visibility();
 			mw->reconfigure();
-			mw->activate(nullptr);
+			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
 				set_focus(mw, time);
@@ -2717,7 +2717,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		} else {
 			mw->normalize();
 			mw->reconfigure();
-			mw->activate(nullptr);
+			mw->activate();
 			xcb_timestamp_t time = 0;
 			if (get_safe_net_wm_user_time(mw, time)) {
 				set_focus(mw, time);
@@ -2741,6 +2741,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 			uw->show();
 		safe_update_transient_for(uw);
 		add_compositor_damaged(uw->get_visible_region());
+		uw->activate();
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
@@ -2903,9 +2904,13 @@ void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component
 	throw exception_t{"Unexpectected use of page::replace function\n"};
 }
 
+void page_t::activate() {
+	/* has no parent */
+}
+
 void page_t::activate(shared_ptr<tree_t> t) {
-	if(t != nullptr)
-		return;
+	assert(t != nullptr);
+	assert(has_key(tree_t::children(), t));
 
 	auto w = dynamic_pointer_cast<workspace_t>(t);
 	if(w != nullptr) {

@@ -128,7 +128,16 @@ void tree_t::render_finished() {
 /**
  * make the component active.
  **/
+
+void tree_t::activate() {
+	/** raise ourself **/
+	if(not _parent.expired()) {
+		_parent.lock()->activate(shared_from_this());
+	}
+}
+
 void tree_t::activate(shared_ptr<tree_t> t) {
+	/* must move_back t in the right layer */
 }
 
 bool tree_t::button_press(xcb_button_press_event_t const * ev) {

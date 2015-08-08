@@ -124,37 +124,18 @@ void compositor_t::render(tree_t * t) {
 
 	auto _graph_scene = t->get_all_children_root_first();
 
-	/**
-	 * remove masked damaged.
-	 * i.e. if a damage occur on window partially or fully recovered by
-	 * another window, we ignore this damaged region.
-	 **/
-
-	/** check if we have at less 2 object, otherwise we cannot have overlap **/
-	if (_graph_scene.size() >= 2) {
-		vector<region> r_damaged;
-		//vector<region> r_opac;
-		for (auto &i : _graph_scene) {
-			r_damaged.push_back(i->get_damaged());
-			//r_opac.push_back(i->get_opaque_region());
-		}
-
-		/** mask_area accumulate opac area, from top level object, to bottom **/
-//		region mask_area { };
-//		for (int k = r_opac.size() - 1; k >= 0; --k) {
-//			r_damaged[k] -= mask_area;
-//			mask_area += r_opac[k];
-//		}
-
-		for (auto &i : r_damaged) {
-			_damaged += i;
-		}
-	} else {
-		for (auto &i : _graph_scene) {
-			_damaged += i->get_damaged();
-		}
+	/** remove invisible elements **/
+	{
+		auto end = std::remove_if(_graph_scene.begin(), _graph_scene.end(), [](shared_ptr<tree_t> const & x) { return not x->is_visible(); });
+		_graph_scene.resize(std::distance(_graph_scene.begin(), end));
 	}
 
+	/** collect damaged area **/
+	for (auto &i : _graph_scene) {
+		_damaged += i->get_damaged();
+	}
+
+	/** clip damage area to visible screen **/
 	_damaged &= _desktop_region;
 
 	/** no damage at all => no repair to do, return **/
@@ -177,9 +158,8 @@ void compositor_t::render(tree_t * t) {
 
 	cairo_t * cr = cairo_create(_back_buffer);
 
-	/** handler 1 pass area **/
+	/** compute area where we have only direct rendering **/
 	region _direct_render;
-
 	for(auto & i: _graph_scene) {
 		_direct_render -= i->get_visible_region();
 		_direct_render += i->get_opaque_region();
@@ -191,22 +171,21 @@ void compositor_t::render(tree_t * t) {
 
 	region _composited_area = _damaged - _direct_render;
 
-	/** render all composited area **/
+	/** pass 1 render all composited area **/
 	for (auto & dmg : _composited_area) {
 		for (auto &i : _graph_scene) {
 			i->render(cr, dmg);
 		}
 	}
 
-	/** render 1 pass area **/
-	for(auto i = _graph_scene.rbegin(); i != _graph_scene.rend(); ++i) {
+	/** pass 2 from to to bottom, render opaque area **/
+	for (auto i = _graph_scene.rbegin(); i != _graph_scene.rend(); ++i) {
 		region x = (*i)->get_opaque_region() & _direct_render;
 		for (auto & dmg : x) {
-				(*i)->render(cr, dmg);
-				if(_show_opac)
-					_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
+			(*i)->render(cr, dmg);
+			if (_show_opac)
+				_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
 		}
-
 		_direct_render -= x;
 	}
 

@@ -198,7 +198,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, nullptr, true);
 			} else {
-				c->activate(nullptr);
+				c->activate();
 				ctx->set_focus(c, e->time);
 			}
 			ctx->grab_stop();
@@ -240,7 +240,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 					parent->iconify_client(c);
 				} else {
 					std::cout << "activate = " << c << endl;
-					c->activate(nullptr);
+					c->activate();
 					ctx->set_focus(c, e->time);
 				}
 			}
@@ -668,7 +668,7 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 	/** here we guess Mod1 is bound to Alt **/
 	if (XK_Alt_L == k or XK_Alt_R == k) {
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		mw->activate(nullptr);
+		mw->activate();
 		_ctx->set_focus(mw, e->time);
 		_ctx->grab_stop();
 	}

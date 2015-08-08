@@ -1222,12 +1222,17 @@ bool client_managed_t::is_modal() {
 	return false;
 }
 
-void client_managed_t::activate(shared_ptr<tree_t> t) {
-	client_base_t::activate(t);
+void client_managed_t::activate() {
+
+	if(not _parent.expired()) {
+		_parent.lock()->activate(shared_from_this());
+	}
+
 	if(is_iconic()) {
 		normalize();
 		queue_redraw();
 	}
+
 }
 
 bool client_managed_t::button_press(xcb_button_press_event_t const * e) {

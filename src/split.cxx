@@ -222,16 +222,17 @@ void split_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_split(cr, &ts);
 }
 
-void split_t::activate(shared_ptr<tree_t> t) {
-	if(has_key(_children, t)) {
-		if(_parent.lock() != nullptr) {
-			_parent.lock()->activate(shared_from_this());
-		}
-		_children.remove(t);
-		_children.push_back(t);
-	} else if (t != nullptr) {
-		throw exception_t("split_t::raise_child trying to raise a non child tree");
+void split_t::activate() {
+	if(_parent.lock() != nullptr) {
+		_parent.lock()->activate(shared_from_this());
 	}
+}
+
+void split_t::activate(shared_ptr<tree_t> t) {
+	assert(t != nullptr);
+	assert(has_key(_children, t));
+	activate();
+	move_back(_children, t);
 }
 
 void split_t::remove(shared_ptr<tree_t> t) {

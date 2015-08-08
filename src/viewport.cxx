@@ -77,17 +77,19 @@ bool viewport_t::is_visible() {
 	return _is_visible;
 }
 
-void viewport_t::activate(shared_ptr<tree_t> t) {
-	if(t != _subtree) {
-		throw exception_t("invalid call of viewport_t::activate");
-	}
-
-	queue_redraw();
-
+void viewport_t::activate() {
 	if(not _parent.expired()) {
 		_parent.lock()->activate(shared_from_this());
 	}
 
+	queue_redraw();
+}
+
+
+void viewport_t::activate(shared_ptr<tree_t> t) {
+	assert(t != nullptr);
+	assert(t == _subtree);
+	activate();
 }
 
 string viewport_t::get_node_name() const {

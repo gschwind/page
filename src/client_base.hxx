@@ -48,7 +48,7 @@ protected:
 	shared_ptr<client_properties_t> _properties;
 
 	/* sub-clients */
-	list<shared_ptr<client_base_t>> _children;
+	list<shared_ptr<tree_t>> _children;
 
 	/** short cut **/
 	auto A(atom_e atom) -> xcb_atom_t;
@@ -166,6 +166,8 @@ public:
 	 * tree_t virtual API
 	 **/
 
+	using tree_t::children;
+
 	// virtual void hide();
 	// virtual void show();
 	virtual auto get_node_name() const -> string;
@@ -179,6 +181,7 @@ public:
 	// virtual auto get_visible_region() -> region;
 	// virtual auto get_damaged() -> region;
 
+	using tree_t::activate; // virtual void activate();
 	virtual void activate(shared_ptr<tree_t> t);
 	// virtual bool button_press(xcb_button_press_event_t const * ev);
 	// virtual bool button_release(xcb_button_release_event_t const * ev);

@@ -73,12 +73,8 @@ protected:
 
 	template<char const c>
 	string _get_node_name() const {
-		char buffer[64];
-		snprintf(buffer, 64, "%c #%016lx #%016lx", c, (uintptr_t) ((_parent.expired())?0U:_parent.lock().get()),
-				(uintptr_t) this);
-		return string(buffer);
+		return format("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), (uintptr_t)_parent.lock().get(), (uintptr_t) this);
 	}
-
 
 	weak_ptr<tree_t> _parent;
 	bool _is_visible;
@@ -132,20 +128,22 @@ public:
 	virtual void children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area) = 0;
+	virtual void trigger_redraw();
 	virtual void render_finished();
 
 	virtual auto get_opaque_region() -> region = 0;
 	virtual auto get_visible_region() -> region = 0;
 	virtual auto get_damaged() -> region = 0;
 
+	virtual void activate();
 	virtual void activate(shared_ptr<tree_t> t);
+
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_release(xcb_button_release_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
 	virtual bool enter(xcb_enter_notify_event_t const * ev);
 	virtual void expose(xcb_expose_event_t const * ev);
-	virtual void trigger_redraw();
 
 	virtual auto get_xid() const -> xcb_window_t;
 	virtual auto get_parent_xid() const -> xcb_window_t;
