@@ -41,6 +41,7 @@ page_SOURCES = \
 	tiny_theme.cxx \
 	config_handler.cxx \
 	composite_surface_manager.cxx \
+	popup_alt_tab.cxx \
 	leak_checker.cxx 
 
 page_LDADD = \
