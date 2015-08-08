@@ -234,14 +234,19 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			if (parent != nullptr) {
 				c->queue_redraw();
 
-				/* hide client if option allow shaded client */
-				if (parent->selected() == c
-						and ((not ctx->get_current_workspace()->client_focus.empty())?ctx->get_current_workspace()->client_focus.front().lock() == c:false)
-						and /*_enable_shade_windows*/true) {
-					ctx->set_focus(nullptr, e->time);
-					parent->iconify_client(c);
+				shared_ptr<client_managed_t> focused;
+				if(not ctx->get_current_workspace()->client_focus_history_front(focused)) {
+					/* hide client if option allow shaded client */
+					if (parent->selected() == c
+							and /*_enable_shade_windows*/true) {
+						ctx->set_focus(nullptr, e->time);
+						parent->iconify_client(c);
+					} else {
+						std::cout << "activate = " << c << endl;
+						c->activate();
+						ctx->set_focus(c, e->time);
+					}
 				} else {
-					std::cout << "activate = " << c << endl;
 					c->activate();
 					ctx->set_focus(c, e->time);
 				}

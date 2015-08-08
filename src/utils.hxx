@@ -760,16 +760,29 @@ template<typename T>
 bool is_expired(weak_ptr<T> x) { return x.expired(); }
 
 template<typename T>
-void move_back(std::list<T> & l, T const & v) {
-	auto pos = std::find(l.begin(), l.end(), v);
+void move_front(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {
+	auto pos = std::find_if(l.rbegin(), l.rend(), [v](weak_ptr<T> & l) { return l.lock() == v; });
+	l.splice(l.begin(), l, pos.base());
+}
+
+template<typename T>
+void move_back(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {
+	auto pos = std::find_if(l.begin(), l.end(), [v](weak_ptr<T> & l) { return l.lock() == v; });
 	l.splice(l.end(), l, pos);
 }
 
 template<typename T>
 void move_front(std::list<T> & l, T const & v) {
-	auto pos = std::find(l.begin(), l.end(), v);
-	l.splice(l.begin(), l, pos);
+	auto pos = std::find(l.rbegin(), l.rend(), v);
+	l.splice(l.begin(), l, pos.base());
 }
+
+template<typename T>
+void move_back(std::list<T> & l, T const & v) {
+	auto pos = std::find(l.begin(), l.end(), v);
+	l.splice(l.end(), l, pos);
+}
+
 
 static std::string format(char const * fmt, ...) {
 	va_list l;

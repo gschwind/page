@@ -253,4 +253,31 @@ void workspace_t::show() {
 	}
 }
 
+bool workspace_t::client_focus_history_front(shared_ptr<client_managed_t> & out) {
+	while(not _client_focus_history.empty()) {
+		if(_client_focus_history.front().expired()) {
+			_client_focus_history.pop_front();
+		} else {
+			break;
+		}
+	}
+	if(not _client_focus_history.empty()) {
+		out = _client_focus_history.front().lock();
+	}
+	return false;
+}
+
+void workspace_t::client_focus_history_remove(shared_ptr<client_managed_t> in) {
+	_client_focus_history.remove_if([in](weak_ptr<tree_t> w) { return w.expired() or w.lock() == in; });
+}
+
+void workspace_t::client_focus_history_move_front(shared_ptr<client_managed_t> in) {
+	move_front(_client_focus_history, in);
+}
+
+bool workspace_t::client_focus_history_is_empty() {
+	_client_focus_history.remove_if([](weak_ptr<tree_t> w) { return w.expired(); });
+	return _client_focus_history.empty();
+}
+
 }

@@ -64,11 +64,13 @@ private:
 
 	workspace_switch_direction_e _switch_direction;
 
+	list<weak_ptr<client_managed_t>> _client_focus_history;
+
 public:
 
 	workspace_t(page_context_t * ctx, unsigned id);
 
-	list<weak_ptr<client_managed_t>> client_focus;
+
 	auto get_any_viewport() const -> shared_ptr<viewport_t>;
 	void set_default_pop(shared_ptr<notebook_t> n);
 	auto default_pop() -> shared_ptr<notebook_t>;
@@ -85,6 +87,10 @@ public:
 	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
 	void attach(shared_ptr<client_managed_t> c);
 
+	bool client_focus_history_front(shared_ptr<client_managed_t> & out);
+	void client_focus_history_remove(shared_ptr<client_managed_t> in);
+	void client_focus_history_move_front(shared_ptr<client_managed_t> in);
+	bool client_focus_history_is_empty();
 
 	/**
 	 * tree_t virtual API

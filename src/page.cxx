@@ -63,6 +63,7 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
+	_current_desktop = 0;
 	_grab_handler = nullptr;
 	_background = nullptr;
 
@@ -390,18 +391,16 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 
 	cmgr->unregister_window(mw->base());
 
-	if (not get_current_workspace()->client_focus.empty()) {
-		auto new_focus = get_current_workspace()->client_focus.front().lock();
+	/** if the window is destroyed, this not work, see fix on destroy **/
+	for(auto x: _desktop_list) {
+		x->client_focus_history_remove(mw);
+	}
 
+	shared_ptr<client_managed_t> new_focus;
+	if (get_current_workspace()->client_focus_history_front(new_focus)) {
 		if (not _auto_refocus) {
 			set_focus(nullptr, XCB_CURRENT_TIME);
 		} else {
-			if (new_focus->is(MANAGED_NOTEBOOK)) {
-				auto nk = find_parent_notebook_for(new_focus);
-				if (nk != nullptr) {
-					new_focus->activate();
-				}
-			}
 			new_focus->activate();
 			set_focus(new_focus, XCB_CURRENT_TIME);
 		}
@@ -409,10 +408,6 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 
 	mw = nullptr;
 
-	/** if the window is destroyed, this not work, see fix on destroy **/
-	for(auto x: _desktop_list) {
-		x->client_focus.remove_if([](weak_ptr<tree_t> w) { return w.expired(); });
-	}
 
 	_global_client_focus_history.remove_if([](weak_ptr<tree_t> x) { return x.expired(); });
 
@@ -594,8 +589,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_close) {
-		if (not get_current_workspace()->client_focus.empty()) {
-			auto mw = get_current_workspace()->client_focus.front().lock();
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
 			mw->delete_window(e->time);
 		}
 	}
@@ -608,8 +603,9 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_toggle_fullscreen) {
-		if (not get_current_workspace()->client_focus.empty()) {
-			toggle_fullscreen(get_current_workspace()->client_focus.front().lock());
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
+			toggle_fullscreen(mw);
 		}
 	}
 
@@ -623,17 +619,27 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if (key == bind_right_desktop) {
 		switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
-		set_focus(get_current_workspace()->client_focus.front().lock(), e->time);
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
+			set_focus(mw, e->time);
+		} else {
+			set_focus(nullptr, e->time);
+		}
 	}
 
 	if (key == bind_left_desktop) {
 		switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
-		set_focus(get_current_workspace()->client_focus.front().lock(), e->time);
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
+			set_focus(mw, e->time);
+		} else {
+			set_focus(nullptr, e->time);
+		}
 	}
 
 	if (key == bind_bind_window) {
-		if (not get_current_workspace()->client_focus.empty()) {
-			auto mw = get_current_workspace()->client_focus.front().lock();
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
 			if (mw->is(MANAGED_FULLSCREEN)) {
 				unfullscreen(mw);
 			} else if (mw->is(MANAGED_FLOATING)) {
@@ -643,9 +649,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_fullscreen_window) {
-		if (not get_current_workspace()->client_focus.empty()) {
-			auto mw =
-					get_current_workspace()->client_focus.front().lock();
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
 			if (not mw->is(MANAGED_FULLSCREEN)) {
 				fullscreen(mw);
 			}
@@ -653,16 +658,14 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_float_window) {
-		if (not get_current_workspace()->client_focus.empty()) {
-			if (get_current_workspace()->client_focus.front().lock()->is(
-					MANAGED_FULLSCREEN)) {
-				unfullscreen(
-						get_current_workspace()->client_focus.front().lock());
+		shared_ptr<client_managed_t> mw;
+		if (get_current_workspace()->client_focus_history_front(mw)) {
+			if (mw->is(MANAGED_FULLSCREEN)) {
+				unfullscreen(mw);
 			}
 
-			if (get_current_workspace()->client_focus.front().lock()->is(
-					MANAGED_NOTEBOOK)) {
-				unbind_window(get_current_workspace()->client_focus.front().lock());
+			if (mw->is(MANAGED_NOTEBOOK)) {
+				unbind_window(mw);
 			}
 		}
 	}
@@ -1277,10 +1280,14 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
-		if(e->data.data32[0] >= 0 and e->data.data32[0] < _desktop_list.size() and e->data.data32[0] != _current_desktop
-				and not get_current_workspace()->client_focus.empty()) {
+		if(e->data.data32[0] >= 0 and e->data.data32[0] < _desktop_list.size() and e->data.data32[0] != _current_desktop) {
 			switch_to_desktop(e->data.data32[0]);
-			set_focus(get_current_workspace()->client_focus.front().lock(), XCB_CURRENT_TIME);
+			shared_ptr<client_managed_t> mw;
+			if (get_current_workspace()->client_focus_history_front(mw)) {
+				set_focus(mw, e->data.data32[1]);
+			} else {
+				set_focus(nullptr, e->data.data32[1]);
+			}
 		}
 	}
 }
@@ -1466,8 +1473,7 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 		}
 	}
 
-	_desktop_list[_current_desktop]->client_focus.remove_if([new_focus](weak_ptr<client_managed_t> x) { return x.lock() == new_focus; });
-	_desktop_list[_current_desktop]->client_focus.push_front(new_focus);
+	get_current_workspace()->client_focus_history_move_front(new_focus);
 	_global_client_focus_history.remove_if([new_focus](weak_ptr<client_managed_t> x) { return x.lock() == new_focus; });
 	_global_client_focus_history.push_front(new_focus);
 
@@ -3340,17 +3346,17 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
 		return;
 
-	if (get_current_workspace()->client_focus.empty()) {
+	shared_ptr<client_managed_t> focused;
+	if (not get_current_workspace()->client_focus_history_front(focused)) {
 		if (e->event == identity_window or e->event == cnx->root()) {
 			cnx->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
 					XCB_CURRENT_TIME);
 		}
 	} else {
-//		auto focus = _desktop_list[_current_desktop]->client_focus.front();
-//		/* only inferior focus is allowed */
-//		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focus->orig()) {
-//			focus->focus(XCB_CURRENT_TIME);
-//		}
+		/* only inferior focus is allowed */
+		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focused->orig()) {
+			focused->focus(XCB_CURRENT_TIME);
+		}
 	}
 
 }
