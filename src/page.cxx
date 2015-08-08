@@ -72,7 +72,6 @@ page_t::page_t(int argc, char ** argv)
 	replace_wm = false;
 	char const * conf_file_name = 0;
 
-	_need_render = false;
 	_need_restack = false;
 	_need_update_client_list = false;
 	_menu_drop_down_shadow = false;
@@ -347,11 +346,12 @@ void page_t::run() {
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
+	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
-	/* call this 120 times per second */
-	auto handle = add_timeout(1000000000L/120L, [this]() -> bool { return this->render_timeout(); });
+	auto handle = add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
 
 	mainloop_t::run();
+
 
 }
 
@@ -740,11 +740,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
 		}
-
-		_need_render = true;
-
 	}
-
 }
 
 void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
@@ -883,7 +879,6 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 		add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
-			_need_render = true;
 		}
 	}
 }
@@ -1291,25 +1286,15 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
-	_need_render = true;
+
 }
 
 void page_t::render() {
-	_need_render = false;
 	if (rnd != nullptr) {
-		/**
-		 * Try to render if any damage event is encountered. But limit general
-		 * rendering to 60 fps.
-		 **/
-
 		broadcast_update_layout(time64_t::now());
-
-		/* will collect all damage, if there is no damage, will no nothing. */
 		rnd->render(this);
-		xcb_flush(cnx->xcb());
-
 		broadcast_render_finished();
-
+		xcb_flush(cnx->xcb());
 	}
 }
 
@@ -3618,16 +3603,13 @@ void page_t::process_pending_events() {
 	cnx->ungrab();
 	xcb_flush(cnx->xcb());
 
-	if (_need_render) {
-		render();
-	}
+	render();
+
 
 }
 
 bool page_t::render_timeout() {
-	_need_render = true;
 	process_pending_events();
-	return true;
 }
 
 theme_t const * page_t::theme() const {
@@ -3663,7 +3645,6 @@ void page_t::overlay_add(shared_ptr<tree_t> x) {
 }
 
 void page_t::add_global_damage(region const & r) {
-	_need_render = true;
 	add_compositor_damaged(r);
 }
 

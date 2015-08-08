@@ -46,16 +46,14 @@ public:
 
 class popup_alt_tab_t : public tree_t {
 	page_context_t * _ctx;
-
 	xcb_window_t _wid;
-	xcb_pixmap_t _pix;
-
 	shared_ptr<pixmap_t> _surf;
-
 	rect _position;
 	list<shared_ptr<cycle_window_entry_t>> _client_list;
 	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
 	bool _is_durty;
+	bool _exposed;
+	bool _damaged;
 
 public:
 
@@ -63,7 +61,9 @@ public:
 		_ctx{ctx},
 		_selected{},
 		_client_list{client_list},
-		_is_durty{true}
+		_is_durty{true},
+		_exposed{true},
+		_damaged{true}
 	{
 
 		_selected = _client_list.begin();
@@ -73,6 +73,20 @@ public:
 		_position.w = 80 * 4;
 		_position.h = 80 * (_client_list.size()/4 + 1);
 
+		_create_composite_window();
+
+		_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h);
+		_ctx->dpy()->map(_wid);
+
+		for(auto const & x: _client_list) {
+			if(not x->id.expired())
+				x->destroy_func = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
+		}
+
+	}
+
+
+	void _create_composite_window() {
 		xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
 		xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
 
@@ -99,24 +113,14 @@ public:
 				_position.x, _position.y, _position.w, _position.h, 0,
 				XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id,
 				value_mask, value);
-
-		_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h);
-
-		update_backbuffer();
-
-		_ctx->dpy()->map(_wid);
-
-		for(auto const & x: _client_list) {
-			if(not x->id.expired())
-				x->destroy_func = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
-		}
-
 	}
 
 	void move(int x, int y) {
+		_ctx->add_global_damage(_position);
 		_position.x = x;
 		_position.y = y;
 		_ctx->dpy()->move_resize(_wid, _position);
+		_ctx->add_global_damage(_position);
 	}
 
 	void show() {
@@ -134,7 +138,6 @@ public:
 	}
 
 	~popup_alt_tab_t() {
-		xcb_free_pixmap(_ctx->dpy()->xcb(), _pix);
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 		_client_list.clear();
 	}
@@ -143,8 +146,8 @@ public:
 		++_selected;
 		if(_selected == _client_list.end())
 			_selected = _client_list.begin();
-		update_backbuffer();
-		expose();
+		_is_durty = true;
+		_exposed = true;
 	}
 
 	weak_ptr<client_managed_t> get_selected() {
@@ -152,7 +155,11 @@ public:
 	}
 
 	void update_backbuffer() {
-		_is_durty = true;
+		if(not _is_durty)
+			return;
+
+		_is_durty = false;
+		_damaged = true;
 
 		rect a{0,0,_position.w,_position.h};
 		cairo_t * cr = cairo_create(_surf->get_cairo_surface());
@@ -196,7 +203,7 @@ public:
 		cairo_destroy(cr);
 	}
 
-	void expose() {
+	void paint_exposed() {
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid,
 				_ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
@@ -209,15 +216,11 @@ public:
 	}
 
 	region get_damaged() {
-		if(_is_durty) {
+		if(_damaged) {
 			return region{_position};
 		} else {
 			return region{};
 		}
-	}
-
-	void render_finished() {
-		_is_durty = false;
 	}
 
 	region get_opaque_region() {
@@ -229,12 +232,14 @@ public:
 	}
 
 	void render(cairo_t * cr, region const & area) {
+		cairo_save(cr);
 		for (auto & a : area) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-			cairo_set_source_surface(cr, _surf->get_cairo_surface(), 0.0, 0.0);
-			cairo_rectangle(cr, a.x, a.y, a.w, a.h);
-			cairo_fill(cr);
+			cairo_clip(cr, a);
+			cairo_set_source_surface(cr, _surf->get_cairo_surface(), _position.x, _position.y);
+			cairo_paint(cr);
 		}
+		cairo_restore(cr);
 	}
 
 	void destroy_client(client_managed_t * c) {
@@ -253,6 +258,28 @@ public:
 		return string{"popup_alt_tab_t"};
 	}
 
+	virtual void trigger_redraw() {
+		if(_exposed) {
+			_exposed = false;
+			update_backbuffer();
+			paint_exposed();
+		}
+	}
+
+	virtual void render_finished() {
+		_damaged = false;
+	}
+
+	virtual void update_layout(time64_t const time) {
+		update_backbuffer();
+	}
+
+	virtual void expose(xcb_expose_event_t const * ev) {
+		if(ev->window == _wid)
+			_exposed = true;
+	}
+
+	using tree_t::activate;
 
 };
 

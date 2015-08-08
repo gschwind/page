@@ -128,7 +128,6 @@ public:
 
 	renderable_pixmap_t * _background;
 
-	bool _need_render;
 	bool _need_restack;
 	bool _need_update_client_list;
 	bool _menu_drop_down_shadow;

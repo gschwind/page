@@ -776,12 +776,11 @@ static std::string format(char const * fmt, ...) {
 	va_start(l, fmt);
 	int n = vsnprintf(nullptr, 0, fmt, l);
 	va_end(l);
-	std::vector<char> buf(n+1);
+	std::string ret(n, '#');
 	va_start(l, fmt);
-	vsnprintf(&buf[0], n+1, fmt, l);
-	buf.resize(n);
+	vsnprintf(&ret[0], n+1, fmt, l);
 	va_end(l);
-	return std::string{buf.begin(), buf.end()};
+	return ret;
 }
 
 }
