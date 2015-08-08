@@ -24,6 +24,7 @@
 #include <set>
 #include <memory>
 #include <sstream>
+#include <iostream>
 
 #include "color.hxx"
 #include "box.hxx"
@@ -761,26 +762,42 @@ bool is_expired(weak_ptr<T> x) { return x.expired(); }
 
 template<typename T>
 void move_front(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {
-	auto pos = std::find_if(l.rbegin(), l.rend(), [v](weak_ptr<T> & l) { return l.lock() == v; });
-	l.splice(l.begin(), l, pos.base());
+	auto pos = std::find_if(l.begin(), l.end(), [v](weak_ptr<T> & l) { return l.lock() == v; });
+	if(pos != l.end()) {
+		l.splice(l.begin(), l, pos);
+	} else {
+		l.push_front(v);
+	}
 }
 
 template<typename T>
 void move_back(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {
 	auto pos = std::find_if(l.begin(), l.end(), [v](weak_ptr<T> & l) { return l.lock() == v; });
-	l.splice(l.end(), l, pos);
+	if(pos != l.end()) {
+		l.splice(l.end(), l, pos);
+	} else {
+		l.push_back(v);
+	}
 }
 
 template<typename T>
 void move_front(std::list<T> & l, T const & v) {
-	auto pos = std::find(l.rbegin(), l.rend(), v);
-	l.splice(l.begin(), l, pos.base());
+	auto pos = std::find(l.begin(), l.end(), v);
+	if(pos != l.end()) {
+		l.splice(l.begin(), l, pos);
+	} else {
+		l.push_front(v);
+	}
 }
 
 template<typename T>
 void move_back(std::list<T> & l, T const & v) {
 	auto pos = std::find(l.begin(), l.end(), v);
-	l.splice(l.end(), l, pos);
+	if(pos != l.end()) {
+		l.splice(l.end(), l, pos);
+	} else {
+		l.push_back(v);
+	}
 }
 
 

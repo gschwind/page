@@ -690,7 +690,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_debug_4) {
-		_need_restack = true;
 		print_tree(0);
 		for (auto i : clients_list()) {
 			switch (i->get_type()) {
@@ -710,6 +709,16 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				cout << "[" << i->orig() << "] dock : " << i->title() << endl;
 				break;
 			}
+		}
+
+		if(not global_focus_history_is_empty()) {
+			cout << "active window is : ";
+			for(auto & focus: global_client_focus_history()) {
+				cout << focus.lock()->orig() << ",";
+			}
+			cout << endl;
+		} else {
+			cout << "active window is : " << "NONE" << endl;
 		}
 	}
 
@@ -3709,7 +3718,7 @@ bool page_t::global_focus_history_front(shared_ptr<client_managed_t> & out) {
 }
 
 void page_t::global_focus_history_remove(shared_ptr<client_managed_t> in) {
-	_global_focus_history.remove_if([in](weak_ptr<tree_t> w) { return w.expired() or w.lock() == in; });
+	_global_focus_history.remove_if([in](weak_ptr<tree_t> const & w) { return w.expired() or w.lock() == in; });
 }
 
 void page_t::global_focus_history_move_front(shared_ptr<client_managed_t> in) {
