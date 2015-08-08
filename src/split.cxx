@@ -160,7 +160,10 @@ void split_t::update_allocation() {
 }
 
 void split_t::set_pack0(shared_ptr<page_component_t> x) {
-	_children.remove(_pack0);
+	if(_pack0 != nullptr) {
+		_children.remove(_pack0);
+		_pack0->clear_parent();
+	}
 	_pack0 = x;
 	if (_pack0 != nullptr) {
 		_pack0->set_parent(shared_from_this());
@@ -170,7 +173,10 @@ void split_t::set_pack0(shared_ptr<page_component_t> x) {
 }
 
 void split_t::set_pack1(shared_ptr<page_component_t> x) {
-	_children.remove(_pack1);
+	if(_pack1 != nullptr) {
+		_children.remove(_pack1);
+		_pack1->clear_parent();
+	}
 	_pack1 = x;
 	if (_pack1 != nullptr) {
 		_pack1->set_parent(shared_from_this());

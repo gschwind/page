@@ -604,6 +604,10 @@ void notebook_t::_update_exposay() {
 	_exposay_thumbnail.clear();
 	_exposay_mouse_over = nullptr;
 
+	_theme_notebook.button_mouse_over = NOTEBOOK_BUTTON_NONE;
+	_mouse_over.tab = nullptr;
+	_mouse_over.exposay = nullptr;
+
 	if(not _exposay)
 		return;
 

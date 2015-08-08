@@ -2122,9 +2122,6 @@ void page_t::detach(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
 	if(not t->parent().expired()) {
 		t->parent().lock()->remove(t);
-
-		//_broadcast_root_first(&tree_t::remove, t);
-		//t->clear_parent();
 	}
 }
 
@@ -3143,8 +3140,7 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
 
 		_current_desktop = desktop;
-		_desktop_stack.remove(_desktop_list[_current_desktop]);
-		_desktop_stack.push_back(_desktop_list[_current_desktop]);
+		move_back(_desktop_stack, _desktop_list[_current_desktop]);
 
 		/** move stiky to current desktop **/
 		for(auto s : stiky_list) {

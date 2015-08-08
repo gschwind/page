@@ -53,6 +53,7 @@ void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 
 void viewport_t::remove(shared_ptr<tree_t> src) {
 	if(src == _subtree) {
+		_subtree->clear_parent();
 		_subtree.reset();
 	}
 }
