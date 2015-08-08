@@ -26,28 +26,20 @@ struct popup_split_t : public tree_t {
 	weak_ptr<split_t> _s_base;
 
 	rect _position;
-
-	bool _has_alpha;
-	bool _is_durty;
+	bool _exposed;
+	bool _damaged;
 
 	xcb_window_t _wid;
 
 public:
-
-	void mark_durty() {
-		_is_durty = true;
-	}
-
 	void show() {
 		_is_visible = true;
+		_damaged = true;
 	}
 
 	void hide() {
 		_is_visible = false;
-	}
-
-	bool is_visible() {
-		return _is_visible;
+		_ctx->add_global_damage(get_visible_region());
 	}
 
 	rect const & position() {
@@ -74,7 +66,7 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		if(_is_durty) {
+		if(_damaged) {
 			return region{_position};
 		} else {
 			return region{};
@@ -86,8 +78,6 @@ public:
 		_ctx{ctx},
 		_s_base{split},
 		_current_split{split->ratio()},
-		_has_alpha{true},
-		_is_durty{true},
 		_position{split->to_root_position(split->allocation())}
 	{
 
@@ -216,7 +206,7 @@ public:
 
 		_ctx->dpy()->move_resize(_wid, _position);
 
-		expose();
+		_damaged = true;
 
 	}
 
@@ -241,7 +231,7 @@ public:
 
 	}
 
-	void expose() {
+	void _paint_exposed() {
 		rect rect0;
 		rect rect1;
 
@@ -296,16 +286,28 @@ public:
 		cairo_surface_destroy(surf);
 	}
 
-	xcb_window_t id() const {
+	xcb_window_t get_xid() const {
 		return _wid;
 	}
 
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
+	xcb_window_t get_parent_xid() const {
+		return _wid;
 	}
 
-	virtual tree_t * parent() const {
-		return _parent;
+	void expose(xcb_expose_event_t const * ev) {
+		if(ev->window == _wid)
+			_exposed = true;
+	}
+
+	void trigger_redraw() {
+		if(_exposed) {
+			_exposed = false;
+			_paint_exposed();
+		}
+	}
+
+	void render_finished() {
+		_damaged = false;
 	}
 
 };

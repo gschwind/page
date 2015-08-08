@@ -18,6 +18,7 @@ grab_split_t::grab_split_t(page_context_t * ctx, shared_ptr<split_t> s) : _ctx{c
 	_split_root_allocation = s->to_root_position(s->allocation());
 	_ps = make_shared<popup_split_t>(ctx, s);
 	_ctx->overlay_add(_ps);
+	_ps->show();
 }
 
 grab_split_t::~grab_split_t() {
