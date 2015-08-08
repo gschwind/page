@@ -217,6 +217,7 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_screenshot = _ctx->cmp()->create_screenshot();
 	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _allocation.x, _allocation.y);
 	_switch_renderable->show();
+	_switch_renderable->set_parent(shared_from_this());
 
 }
 

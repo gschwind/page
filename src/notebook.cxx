@@ -341,11 +341,6 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 }
 
 void notebook_t::update_layout(time64_t const time) {
-
-	if(not _is_visible) {
-		return;
-	}
-
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
 		fading_notebook.reset();
@@ -358,7 +353,6 @@ void notebook_t::update_layout(time64_t const time) {
 		ratio = ratio*1.05 - 0.025;
 		fading_notebook->set_ratio(ratio);
 	}
-
 }
 
 rect notebook_t::_compute_notebook_bookmark_position() const {
@@ -580,8 +574,10 @@ void notebook_t::_start_fading() {
 
 	cairo_destroy(cr);
 	cairo_surface_flush(surf);
-
-	fading_notebook = make_shared<renderable_notebook_fading_t>(pix, to_root_position(_allocation));
+	rect pos = to_root_position(_allocation);
+	fading_notebook = make_shared<renderable_notebook_fading_t>(_ctx, pix, pos.x, pos.y);
+	fading_notebook->show();
+	fading_notebook->set_parent(shared_from_this());
 
 }
 
@@ -944,6 +940,9 @@ rect notebook_t::allocation() const {
 
 void notebook_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
+	if(fading_notebook != nullptr) {
+		out.push_back(fading_notebook);
+	}
 }
 
 void notebook_t::hide() {

@@ -68,6 +68,8 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	if(not _is_visible)
 		return;
 
+	_base_position = _properties->position();
+
 	_update_visible_region();
 	_update_opaque_region();
 

@@ -2726,7 +2726,8 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 		cmgr->register_window(c->id());
 		auto uw = make_shared<client_not_managed_t>(this, type, c);
 		if(not uw->wa()->override_redirect)
-			uw->show();
+			this->cnx->map(uw->orig());
+		uw->show();
 		safe_update_transient_for(uw);
 		add_compositor_damaged(uw->get_visible_region());
 		uw->activate();

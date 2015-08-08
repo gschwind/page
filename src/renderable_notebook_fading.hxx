@@ -22,17 +22,24 @@ namespace page {
 using namespace std;
 
 class renderable_notebook_fading_t : public tree_t {
+	page_context_t * _ctx;
+
 	double _ratio;
-	rect _old_client_area;
-	shared_ptr<pixmap_t> _old_surface;
+	rect _location;
+	shared_ptr<pixmap_t> _surface;
+	region _damaged;
+	region _opaque_region;
 
 public:
 
-	renderable_notebook_fading_t(shared_ptr<pixmap_t> old_surface, rect old_client_area) :
-		_old_client_area{old_client_area},
-		_old_surface{old_surface},
-		_ratio{0.5}
+	renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
+		_surface{surface},
+		_ratio{1.0},
+		_ctx{ctx}
 	{
+		_location = rect(x, y, surface->witdh(), surface->height());
+		_opaque_region = region(0, 0, surface->witdh(), surface->height());
+		_damaged = _location;
 
 	}
 
@@ -51,11 +58,12 @@ public:
 		cairo_pattern_t * p0 =
 				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - _ratio);
 
+		region r = region{_location} & area;
 		for (auto & c : area) {
 			cairo_reset_clip(cr);
-			cairo_clip(cr, _old_client_area & c);
-			cairo_set_source_surface(cr, _old_surface->get_cairo_surface(),
-					_old_client_area.x, _old_client_area.y);
+			cairo_clip(cr, c);
+			cairo_set_source_surface(cr, _surface->get_cairo_surface(),
+					_location.x, _location.y);
 			cairo_mask(cr, p0);
 		}
 
@@ -64,28 +72,36 @@ public:
 
 	}
 
-	/**
-	 * Derived class must return opaque region for this object,
-	 * If unknown it's safe to leave this empty.
-	 **/
+	void set_ratio(double x) {
+		_damaged += _location;
+		_ratio = min(max(0.0, x), 1.0);
+	}
+
 	virtual region get_opaque_region() {
 		return region{};
 	}
 
-	/**
-	 * Derived class must return visible region,
-	 * If unknow the whole screen can be returned, but draw will be called each time.
-	 **/
 	virtual region get_visible_region() {
-		return region{_old_client_area};
+		return region{_location};
 	}
 
 	virtual region get_damaged() {
-		return region{_old_client_area};
+		return _damaged;
 	}
 
-	void set_ratio(double x) {
-		_ratio = min(max(0.0, x), 1.0);
+	virtual void render_finished() {
+		_damaged.clear();
+	}
+
+	void set_opaque_region(region const & r) {
+		_opaque_region = r;
+	}
+
+	void move(int x, int y) {
+		_damaged += _location;
+		_location.x = x;
+		_location.y = y;
+		_damaged += _location;
 	}
 
 };
