@@ -539,6 +539,9 @@ void notebook_t::_start_fading() {
 	if(fading_notebook != nullptr)
 		return;
 
+	if(_exposay)
+		return;
+
 	_swap_start.update_to_current_time();
 
 	/**
@@ -546,6 +549,7 @@ void notebook_t::_start_fading() {
 	 **/
 	auto pix = _ctx->cmp()->create_composite_pixmap(_allocation.w, _allocation.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
+	cout << surf << endl;
 	cairo_t * cr = cairo_create(surf);
 	cairo_save(cr);
 	cairo_translate(cr, -_allocation.x, -_allocation.y);
@@ -590,6 +594,11 @@ void notebook_t::start_exposay() {
 		_selected = nullptr;
 	}
 
+	if(fading_notebook != nullptr) {
+		fading_notebook = nullptr;
+	}
+
+	_ctx->add_global_damage(to_root_position(_allocation));
 	_exposay = true;
 	_update_layout();
 }
@@ -653,7 +662,9 @@ void notebook_t::_update_exposay() {
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{it->client}, i));
 		pdst = to_root_position(pdst);
-		_exposay_thumbnail.push_back(make_shared<renderable_thumbnail_t>(_ctx, pdst, it->client));
+		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, pdst, it->client);
+		_exposay_thumbnail.push_back(thumbnail);
+		thumbnail->show();
 		++it;
 	}
 
@@ -663,6 +674,7 @@ void notebook_t::_update_exposay() {
 
 void notebook_t::_stop_exposay() {
 	_exposay = false;
+	_mouse_over.exposay = nullptr;
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
 	_ctx->add_global_damage(to_root_position(_allocation));
@@ -713,7 +725,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			}
 
 			for(auto & i: _exposay_buttons) {
-				if(std::get<0>(i).is_inside(x, y)) {
+				if(std::get<0>(i).is_inside(x, y) and not std::get<1>(i).expired()) {
 					auto c = std::get<1>(i).lock();
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
 					return true;
@@ -877,7 +889,7 @@ void notebook_t::_mouse_over_reset() {
 		}
 	}
 
-	if(_mouse_over.exposay) {
+	if(_mouse_over.exposay != nullptr) {
 		_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->set_mouse_over(false);
 	}
 
@@ -940,9 +952,16 @@ rect notebook_t::allocation() const {
 
 void notebook_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
+
+	if(_exposay) {
+		out.insert(out.end(), _exposay_thumbnail.begin(), _exposay_thumbnail.end());
+	}
+
 	if(fading_notebook != nullptr) {
 		out.push_back(fading_notebook);
 	}
+
+
 }
 
 void notebook_t::hide() {
@@ -973,63 +992,19 @@ void notebook_t::_set_keep_selected(bool x) {
 
 
 void notebook_t::render(cairo_t * cr, region const & area) {
-	if(not _is_visible) {
-		return;
-	}
-
-	if(_exposay) {
-		if(_exposay_mouse_over != nullptr)
-			_exposay_mouse_over->render(cr, area);
-		for(auto & i: _exposay_thumbnail)
-			i->render(cr, area);
-	} else {
-		if(_selected != nullptr) {
-			_selected->render(cr, area);
-		}
-	}
 
 }
 
 region notebook_t::get_opaque_region() {
-	region ret;
-	if(not _is_visible) {
-		return ret;
-	}
-	if(_exposay) {
-		if(_exposay_mouse_over != nullptr)
-			ret += _exposay_mouse_over->get_opaque_region();
-		for(auto & i: _exposay_thumbnail)
-			ret += i->get_opaque_region();
-	}
-	return ret;
+	return region{};
 }
 
 region notebook_t::get_visible_region() {
-	region ret;
-	if(not _is_visible) {
-		return ret;
-	}
-	if(_exposay) {
-		if(_exposay_mouse_over != nullptr)
-			ret += _exposay_mouse_over->get_visible_region();
-		for(auto & i: _exposay_thumbnail)
-			ret += i->get_visible_region();
-	}
-	return ret;
+	return region{};
 }
 
 region notebook_t::get_damaged() {
-	region ret;
-	if(not _is_visible) {
-		return ret;
-	}
-	if(_exposay) {
-		if(_exposay_mouse_over != nullptr)
-			ret += _exposay_mouse_over->get_damaged();
-		for(auto & i: _exposay_thumbnail)
-			ret += i->get_damaged();
-	}
-	return ret;
+	return region{};
 }
 
 shared_ptr<notebook_t> notebook_t::shared_from_this() {

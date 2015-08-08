@@ -398,6 +398,7 @@ cairo_surface_t * compositor_t::get_front_surface() const {
 }
 
 shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width, unsigned height) {
+	cout << "create_composite " << width << "x" << height << endl;
 	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
 	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
 	return make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);

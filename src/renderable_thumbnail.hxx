@@ -26,13 +26,15 @@ class renderable_thumbnail_t : public tree_t {
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
+	region _damaged_cache;
+
 public:
 
 	renderable_thumbnail_t(page_context_t * ctx, rect const & position, shared_ptr<client_managed_t> c) :
 		_ctx{ctx},
 		_c{c},
 		_position{position},
-		_visible_region{_position},
+		_visible_region{position},
 		_title_width{0},
 		_is_mouse_over{false}
 	{
@@ -44,8 +46,10 @@ public:
 
 
 	virtual void render(cairo_t * cr, region const & area) {
-		if(not _c.expired())
-			_tt.pix = _c.lock()->get_last_pixmap();
+		if(_c.expired())
+			return;
+
+		_tt.pix = _c.lock()->get_last_pixmap();
 
 		if (_tt.pix != nullptr) {
 			rect tmp = _position;
@@ -139,8 +143,6 @@ public:
 			cairo_restore(cr);
 		}
 
-		_ctx->csm()->clear_damaged(_c.lock()->base());
-
 	}
 
 	/**
@@ -160,10 +162,7 @@ public:
 	}
 
 	virtual region get_damaged() {
-		if(_ctx->csm()->has_damage(_c.lock()->base())) {
-			return region{_position};
-		}
-		return region{};
+		return _damaged_cache;
 	}
 
 	rect get_real_position() {
@@ -171,6 +170,7 @@ public:
 	}
 
 	void set_mouse_over(bool x) {
+		_damaged_cache += region{_position};
 		_is_mouse_over = x;
 	}
 
@@ -181,8 +181,24 @@ public:
 		cairo_destroy(cr);
 	}
 
-};
 
+	void render_finished() {
+		_damaged_cache.clear();
+	}
+
+	void update_layout(time64_t const time) {
+		if(_c.expired())
+			return;
+
+		/** update damage cache **/
+		xcb_window_t w = _c.lock()->base();
+
+		if(_ctx->csm()->has_damage(w)) {
+			_damaged_cache += region{_position};
+			_ctx->csm()->clear_damaged(w);
+		}
+	}
+};
 
 
 }
