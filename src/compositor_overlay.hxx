@@ -36,9 +36,11 @@ struct compositor_overlay_t : public tree_t {
 	shared_ptr<pixmap_t> _back_surf;
 	rect _position;
 
+	bool _has_damage;
+
 public:
 
-	compositor_overlay_t(page_context_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos} {
+	compositor_overlay_t(page_context_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos}, _has_damage{false} {
 
 #ifdef WITH_PANGO
 		_fps_font_desc = pango_font_description_from_string("Mono 11");
@@ -78,7 +80,10 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		return region{_position};
+		if(_has_damage)
+			return region{_position};
+		else
+			return region{};
 	}
 
 
@@ -92,7 +97,20 @@ public:
 	}
 
 	void update_layout(time64_t const t) {
-		_update_back_buffer();
+		_has_damage = false;
+
+		auto child = _parent.lock()->get_all_children();
+		for(auto & c: child) {
+			if(not c->is_visible())
+				continue;
+			if(not c->get_damaged().empty()) {
+				_has_damage = true;
+				break;
+			}
+		}
+
+		if(_has_damage)
+			_update_back_buffer();
 	}
 
 	void _update_back_buffer() {
