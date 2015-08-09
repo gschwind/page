@@ -44,6 +44,7 @@
 #include "split.hxx"
 #include "viewport.hxx"
 #include "workspace.hxx"
+#include "compositor_overlay.hxx"
 
 #include "page_event.hxx"
 
@@ -125,6 +126,8 @@ public:
 	list<shared_ptr<client_not_managed_t>> tooltips;
 	list<shared_ptr<client_not_managed_t>> notifications;
 	list<shared_ptr<client_not_managed_t>> above;
+
+	shared_ptr<compositor_overlay_t> _fps_overlay;
 
 	bool _need_restack;
 	bool _need_update_client_list;

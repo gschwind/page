@@ -83,7 +83,10 @@ void compositor_t::release_composite_overlay() {
 	composite_overlay = XCB_NONE;
 }
 
-compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) : _cnx(cnx), _cmgr(cmgr) {
+compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) :
+		_cnx(cnx),
+		_cmgr(cmgr)
+		{
 	composite_back_buffer = XCB_NONE;
 
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->xcb()));
@@ -91,12 +94,8 @@ compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) 
 	/* initialize composite */
 	init_composite_overlay();
 
-	_fps_top = 0;
-	_show_fps = false;
 	_show_damaged = false;
 	_show_opac = false;
-	_debug_x = 0;
-	_debug_y = 0;
 
 #ifdef WITH_PANGO
 	_fps_font_desc = pango_font_description_from_string("Ubuntu Mono Bold 11");
@@ -111,10 +110,11 @@ compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) 
 
 compositor_t::~compositor_t() {
 
+#ifdef WITH_PANGO
 	pango_font_description_free(_fps_font_desc);
-
 	g_object_unref(_fps_context);
 	g_object_unref(_fps_font_map);
+#endif
 
 	if(composite_back_buffer != XCB_NONE) {
 		xcb_free_pixmap(_cnx->xcb(), composite_back_buffer);
@@ -145,17 +145,16 @@ void compositor_t::render(tree_t * t) {
 	if(_damaged.empty())
 		return;
 
-	if (_show_fps) {
-		_damaged += region{_debug_x,_debug_y,_FPS_WINDOWS*2+400,100};
+	time64_t cur = time64_t::now();
+	_fps_history.push_front(cur);
+	if(_fps_history.size() > _FPS_WINDOWS) {
+		_fps_history.pop_back();
 	}
 
-	_need_render = false;
-
-	time64_t cur = time64_t::now();
-	_fps_top = (_fps_top + 1) % _FPS_WINDOWS;
-	_fps_history[_fps_top] = cur;
-	_damaged_area[_fps_top] = _damaged.area();
-
+	_damaged_area.push_front(_damaged.area()/_desktop_region_area);
+	if(_damaged_area.size() > _FPS_WINDOWS) {
+		_damaged_area.pop_back();
+	}
 
 	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width, height);
 
@@ -170,7 +169,10 @@ void compositor_t::render(tree_t * t) {
 
 	_direct_render &= _damaged;
 
-	_direct_render_area[_fps_top] = _direct_render.area();
+	_direct_render_area.push_front(_direct_render.area() / _desktop_region_area);
+	if(_direct_render_area.size() > _FPS_WINDOWS) {
+		_direct_render_area.pop_back();
+	}
 
 	region _composited_area = _damaged - _direct_render;
 
@@ -195,70 +197,6 @@ void compositor_t::render(tree_t * t) {
 	if (_show_damaged) {
 		for (auto &i : _damaged) {
 			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
-		}
-	}
-
-	if (_show_fps) {
-		int _fps_head = (_fps_top + 1) % _FPS_WINDOWS;
-		if (static_cast<int64_t>(_fps_history[_fps_head]) != 0L) {
-
-
-			double fps = (_FPS_WINDOWS * 1000000000.0)
-					/ (static_cast<int64_t>(_fps_history[_fps_top])
-							- static_cast<int64_t>(_fps_history[_fps_head]));
-
-			cairo_save(cr);
-			cairo_identity_matrix(cr);
-			cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-			cairo_translate(cr, _debug_x, _debug_y);
-
-			cairo_set_source_rgba(cr, 0.2, 0.2, 0.2, 0.5);
-			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0+300, 100.0);
-			cairo_fill(cr);
-
-			cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-			cairo_rectangle(cr, 0.0, 0.0, _FPS_WINDOWS*2.0, 100.0);
-			cairo_stroke(cr);
-
-			cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-
-			cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
-			cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
-			cairo_new_path(cr);
-
-			double ref = _desktop_region.area();
-			double xdmg = _damaged_area[_fps_top];
-			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
-
-			for(int i = 1; i < _FPS_WINDOWS; ++i) {
-				int frm = (_fps_top + i) % _FPS_WINDOWS;
-				double xdmg = _damaged_area[frm];
-				cairo_line_to(cr, i * 2.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
-			}
-			cairo_stroke(cr);
-
-			cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-			xdmg = _direct_render_area[_fps_top];
-			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
-
-			for(int i = 1; i < _FPS_WINDOWS; ++i) {
-				int frm = (_fps_top + i) % _FPS_WINDOWS;
-				double xdmg = _direct_render_area[frm];
-				cairo_line_to(cr, i * 2.0, 100.0 - std::min((xdmg/ref)*100.0, 100.0));
-			}
-			cairo_stroke(cr);
-
-			int surf_count;
-			int surf_size;
-
-			_cmgr->make_surface_stats(surf_size, surf_count);
-
-			pango_printf(cr, _FPS_WINDOWS*2+20,0,  "fps:       %6.1f", fps);
-			pango_printf(cr, _FPS_WINDOWS*2+20,30, "surface count: %d", surf_count);
-			pango_printf(cr, _FPS_WINDOWS*2+20,45, "surface size: %d KB", surf_size/1024);
-
-			cairo_restore(cr);
-
 		}
 	}
 
@@ -312,12 +250,6 @@ void compositor_t::update_layout() {
 		if(r != nullptr) {
 			crtc_info[crtc_list[k]] = r;
 		}
-
-		if(k == 0) {
-			_debug_x = r->x + 40;
-			_debug_y = r->y + r->height - 120;
-		}
-
 	}
 
 	_desktop_region.clear();
@@ -326,6 +258,8 @@ void compositor_t::update_layout() {
 		rect area{i.second->x, i.second->y, i.second->width, i.second->height};
 		_desktop_region += area;
 	}
+
+	_desktop_region_area = _desktop_region.area();
 
 	printf("layout = %s\n", _desktop_region.to_string().c_str());
 
@@ -420,6 +354,25 @@ shared_ptr<pixmap_t> compositor_t::create_screenshot() {
 	cairo_destroy(cr);
 	return screenshot;
 }
+
+double compositor_t::get_fps() {
+	int64_t diff = _fps_history.front() - _fps_history.back();
+	if (diff > 0L) {
+		return (_fps_history.size() * 1000000000.0) / diff;
+	} else {
+		return NAN;
+	}
+}
+
+deque<double> const & compositor_t::get_direct_area_history() {
+	return _direct_render_area;
+}
+
+deque<double> const & compositor_t::get_damaged_area_history() {
+	return _damaged_area;
+}
+
+
 
 }
 

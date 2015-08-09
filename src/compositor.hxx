@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <vector>
+#include <deque>
 
 #include "display.hxx"
 #include "time.hxx"
@@ -56,21 +57,16 @@ private:
 	/* throw compositor_fail_t on compositor already working */
 	struct compositor_fail_t { };
 
-	static int const _FPS_WINDOWS = 80;
-	int _fps_top;
-	time64_t _fps_history[_FPS_WINDOWS];
-	bool _show_fps;
+	static std::size_t const _FPS_WINDOWS = 80;
 	bool _show_damaged;
 	bool _show_opac;
-	int _damaged_area[_FPS_WINDOWS];
-	int _direct_render_area[_FPS_WINDOWS];
-	int _debug_x;
-	int _debug_y;
-
-	bool _need_render;
+	deque<time64_t> _fps_history;
+	deque<double> _damaged_area;
+	deque<double> _direct_render_area;
 
 	region _damaged;
 	region _desktop_region;
+	double _desktop_region_area;
 
 
 #ifdef WITH_PANGO
@@ -127,16 +123,6 @@ public:
 		return (*_A)(a);
 	}
 
-	bool show_fps() {
-		return _show_fps;
-	}
-
-	void set_show_fps(bool b) {
-		if(_show_fps != b)
-			_damaged += _desktop_region;
-		_show_fps = b;
-	}
-
 	bool show_damaged() {
 		return _show_damaged;
 	}
@@ -157,16 +143,15 @@ public:
 		_show_opac = b;
 	}
 
-	void need_render() {
-		_need_render = true;
-	}
-
 	void add_damaged(region const & r) {
 		_damaged += r;
 	}
 
 	void pango_printf(cairo_t * cr, double x, double y, char const * fmt, ...);
 
+	double get_fps();
+	deque<double> const & get_direct_area_history();
+	deque<double> const & get_damaged_area_history();
 
 };
 
