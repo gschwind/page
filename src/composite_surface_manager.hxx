@@ -30,11 +30,26 @@ namespace page {
 using namespace std;
 
 class composite_surface_manager_t {
-	using _data_map_t = map<xcb_window_t, shared_ptr<composite_surface_t>>;
+	using _data_map_t = map<xcb_window_t, weak_ptr<composite_surface_t>>;
+	using _data_list_t = list<shared_ptr<composite_surface_t>>;
 	using _map_iter_t = _data_map_t::iterator;
 
 	display_t * _dpy;
-	_data_map_t _data;
+
+
+	/**
+	 * list all available surfaces.
+	 * Note: xid can be reused after being freed, this mean that some
+	 * surface may be in this list but do not have a valid xid anymore.
+	 * The following index store the up-to-date xid to surface.
+	 **/
+	_data_list_t _data;
+
+	/**
+	 * map current valid xid to current composite_surface_t
+	 **/
+	_data_map_t _index;
+
 
 	bool _enabled;
 
