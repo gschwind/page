@@ -85,7 +85,7 @@ void composite_surface_manager_t::apply_updates() {
 		/* remove obsolete references */
 		auto i = _data.begin();
 		while(i != _data.end()) {
-			if((*i)->ref_count() <= 0) {
+			if(not (*i)->_has_views()) {
 				i = _data.erase(i);
 			} else {
 				(*i)->apply_change();
@@ -140,31 +140,14 @@ void composite_surface_manager_t::disable() {
 	}
 }
 
-auto composite_surface_manager_t::register_window(xcb_window_t w) -> weak_ptr<composite_surface_t> {
+auto composite_surface_manager_t::register_window(xcb_window_t w) -> shared_ptr<composite_surface_view_t> {
 	/** try to find a valid composite surface **/
 	auto x = _index.find(w);
-	if (x != _index.end()) {
-		x->second.lock()->incr_ref();
-		return x->second;
-	} else {
-		return _create_surface(w);
+	if (x == _index.end()) {
+		_create_surface(w);
 	}
-}
 
-void composite_surface_manager_t::register_window(weak_ptr<composite_surface_t> w) {
-	assert(not w.expired());
-	w.lock()->incr_ref();
-}
-
-void composite_surface_manager_t::unregister_window(weak_ptr<composite_surface_t> w) {
-	assert(not w.expired());
-	assert(w.lock()->ref_count() > 0);
-	/**
-	 * We just decrement reference here. We will cleanup on apply_updates()
-	 * This make register/unregister more versatile.
-	 **/
-
-	w.lock()->decr_ref();
+	return _index[w].lock()->create_view();
 
 }
 

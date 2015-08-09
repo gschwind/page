@@ -50,7 +50,7 @@ protected:
 	/* sub-clients */
 	list<shared_ptr<tree_t>> _children;
 
-	weak_ptr<composite_surface_t> _base_surface;
+	shared_ptr<composite_surface_view_t> _base_surface;
 
 	/** short cut **/
 	auto A(atom_e atom) -> xcb_atom_t;

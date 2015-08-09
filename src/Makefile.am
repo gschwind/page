@@ -40,6 +40,7 @@ page_SOURCES = \
 	simple2_theme.cxx \
 	tiny_theme.cxx \
 	config_handler.cxx \
+	composite_surface.cxx \
 	composite_surface_manager.cxx \
 	popup_alt_tab.cxx \
 	leak_checker.cxx 

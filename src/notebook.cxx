@@ -552,7 +552,7 @@ void notebook_t::_start_fading() {
 	if (_selected != nullptr) {
 		update_client_position(_selected);
 		if (not _selected->is_iconic()) {
-			shared_ptr<pixmap_t> pix = _selected->get_surface().lock()->get_pixmap();
+			shared_ptr<pixmap_t> pix = _selected->create_surface_view()->get_pixmap();
 			if (pix != nullptr) {
 				rect pos = _client_position;
 				rect cl { pos.x, pos.y, pos.w, pos.h };

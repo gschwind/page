@@ -21,7 +21,7 @@ class renderable_thumbnail_t : public tree_t {
 	rect _thumbnail_position;
 
 	weak_ptr<client_managed_t> _c;
-	weak_ptr<composite_surface_t> _client_surface;
+	shared_ptr<composite_surface_view_t> _client_surface;
 
 	region _visible_region;
 	theme_thumbnail_t _tt;
@@ -39,15 +39,13 @@ public:
 		_title_width{0},
 		_is_mouse_over{false}
 	{
-
-		_client_surface = c->get_surface();
-		_ctx->csm()->register_window(_client_surface);
-		_tt.pix = _client_surface.lock()->get_pixmap();
+		_client_surface = c->create_surface_view();
+		_tt.pix = _client_surface->get_pixmap();
 		update_title();
 	}
 
 	virtual ~renderable_thumbnail_t() {
-		_ctx->csm()->unregister_window(_client_surface);
+
 	}
 
 
@@ -55,7 +53,7 @@ public:
 		if(_c.expired())
 			return;
 
-		_tt.pix = _client_surface.lock()->get_pixmap();
+		_tt.pix = _client_surface->get_pixmap();
 
 		if (_tt.pix != nullptr) {
 			rect tmp = _position;
@@ -187,7 +185,6 @@ public:
 		cairo_destroy(cr);
 	}
 
-
 	void render_finished() {
 		_damaged_cache.clear();
 	}
@@ -199,9 +196,9 @@ public:
 		/** update damage cache **/
 		xcb_window_t w = _c.lock()->base();
 
-		if(_client_surface.lock()->has_damage()) {
+		if(_client_surface->has_damage()) {
 			_damaged_cache += region{_position};
-			_client_surface.lock()->clear_damaged();
+			_client_surface->clear_damaged();
 		}
 	}
 };

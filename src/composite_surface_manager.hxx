@@ -73,9 +73,7 @@ public:
 	/** cleanup unmaped or destroyed window **/
 	void apply_updates();
 
-	auto register_window(xcb_window_t w) -> weak_ptr<composite_surface_t>;
-	void register_window(weak_ptr<composite_surface_t> w);
-	void unregister_window(weak_ptr<composite_surface_t> w);
+	auto register_window(xcb_window_t w) -> shared_ptr<composite_surface_view_t>;
 	void make_surface_stats(int & size, int & count);
 	void enable();
 	void disable();

@@ -273,8 +273,6 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
 
-	_ctx->csm()->unregister_window(_base_surface);
-
 	_ctx->add_global_damage(_visible_region_cache);
 
 }
@@ -1040,12 +1038,12 @@ void client_managed_t::update_layout(time64_t const time) {
 		return;
 
 	/** update damage_cache **/
-	region dmg = _base_surface.lock()->get_damaged();
+	region dmg = _base_surface->get_damaged();
 	dmg.translate(_base_position.x, _base_position.y);
 	_damage_cache += dmg;
-	_base_surface.lock()->clear_damaged();
+	_base_surface->clear_damaged();
 
-	if (_base_surface.lock()->get_pixmap() != nullptr) {
+	if (_base_surface->get_pixmap() != nullptr) {
 		rect loc{base_position()};
 		if (prefer_window_border() and not is(MANAGED_DOCK)) {
 			delete _shadow;
@@ -1428,8 +1426,8 @@ bool client_managed_t::is_focused() const {
 	return _is_focused;
 }
 
-weak_ptr<composite_surface_t> client_managed_t::get_surface() {
-	return _base_surface;
+shared_ptr<composite_surface_view_t> client_managed_t::create_surface_view() {
+	return _ctx->csm()->register_window(_base);
 }
 
 void client_managed_t::set_current_desktop(unsigned int n) {
@@ -1454,7 +1452,7 @@ string const & client_managed_t::title() const {
 }
 
 void client_managed_t::render(cairo_t * cr, region const & area) {
-	auto pix = _base_surface.lock()->get_pixmap();
+	auto pix = _base_surface->get_pixmap();
 
 	if (pix != nullptr) {
 		cairo_save(cr);
