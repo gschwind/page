@@ -237,9 +237,6 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 	update_icon();
 
-	_base_surface = _ctx->csm()->register_window(_base);
-
-
 }
 
 client_managed_t::~client_managed_t() {
@@ -1127,6 +1124,9 @@ void client_managed_t::hide() {
 	// do not unmap, just put it outside the screen.
 	//unmap();
 	reconfigure();
+
+	/* we no not need the view anymore */
+	_base_surface = nullptr;
 }
 
 void client_managed_t::show() {
@@ -1137,6 +1137,8 @@ void client_managed_t::show() {
 	for(auto x: _children) {
 		x->show();
 	}
+
+	_base_surface = create_surface_view();
 }
 
 bool client_managed_t::is_iconic() {
