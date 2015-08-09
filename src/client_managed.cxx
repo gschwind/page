@@ -371,6 +371,7 @@ void client_managed_t::reconfigure() {
 
 	}
 
+	_update_opaque_region();
 	_update_visible_region();
 	_damage_cache += get_visible_region();
 
@@ -1037,8 +1038,6 @@ void client_managed_t::unlock() {
 void client_managed_t::update_layout(time64_t const time) {
 	if(not _is_visible)
 		return;
-
-	_update_opaque_region();
 
 	/** update damage_cache **/
 	region dmg = _ctx->csm()->get_damaged(_base);

@@ -1173,6 +1173,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/* this set by page in most case */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		mw->reconfigure();
+	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
+		mw->reconfigure();
 	}
 }
 
@@ -3476,6 +3478,11 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 		shared_ptr<client_base_t> c = find_client(w);
 		if (c != nullptr) {
 			c->update_shape();
+		}
+
+		auto mw = dynamic_pointer_cast<client_managed_t>(c);
+		if(mw != nullptr) {
+			mw->reconfigure();
 		}
 	}
 }
