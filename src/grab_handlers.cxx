@@ -624,7 +624,6 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
 }
 
 grab_alt_tab_t::~grab_alt_tab_t() {
-	cout << "grab_atl_tab terminated" << endl;
 	if(pat != nullptr)
 		_ctx->detach(pat);
 }

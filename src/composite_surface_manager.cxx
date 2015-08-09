@@ -48,8 +48,6 @@ void composite_surface_manager_t::pre_process_event(xcb_generic_event_t const * 
 		auto x = _index.find(ev->drawable);
 		if (x != _index.end()) {
 			x->second.lock()->on_damage();
-		} else {
-			std::cout << "damage received but not corresponding surface found" << std::endl;
 		}
 	} else 	if (e->response_type == XCB_DESTROY_NOTIFY) {
 		xcb_destroy_notify_event_t const * ev = reinterpret_cast<xcb_destroy_notify_event_t const *>(e);

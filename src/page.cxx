@@ -684,7 +684,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (rnd != nullptr) {
 		if (key == bind_debug_1) {
 			if (_fps_overlay == nullptr) {
-				cout << "show fps" << endl;
 				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{100, 100, 400, 100});
 				_fps_overlay->show();
 			} else {

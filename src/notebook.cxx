@@ -541,7 +541,6 @@ void notebook_t::_start_fading() {
 	 **/
 	auto pix = _ctx->cmp()->create_composite_pixmap(_allocation.w, _allocation.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
-	cout << surf << endl;
 	cairo_t * cr = cairo_create(surf);
 	cairo_save(cr);
 	cairo_translate(cr, -_allocation.x, -_allocation.y);
