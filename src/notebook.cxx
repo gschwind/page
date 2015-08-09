@@ -539,7 +539,7 @@ void notebook_t::_start_fading() {
 	/**
 	 * Create image of notebook as it was just before fading start
 	 **/
-	auto pix = _ctx->cmp()->create_composite_pixmap(_allocation.w, _allocation.h);
+	auto pix = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _allocation.w, _allocation.h);
 	cairo_surface_t * surf = pix->get_cairo_surface();
 	cairo_t * cr = cairo_create(surf);
 	cairo_save(cr);

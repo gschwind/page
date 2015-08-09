@@ -33,7 +33,7 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<cycle_win
 
 	_create_composite_window();
 
-	_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h);
+	_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _position.w, _position.h);
 	_ctx->dpy()->map(_wid);
 
 	for(auto const & x: _client_list) {

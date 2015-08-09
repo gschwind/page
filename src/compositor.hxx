@@ -112,8 +112,6 @@ public:
 	void set_fade_out_time(int nsec);
 	xcb_window_t get_composite_overlay();
 
-	shared_ptr<pixmap_t> create_composite_pixmap(unsigned width, unsigned height, pixmap_format_e format = PIXMAP_RGB);
-
 	shared_ptr<pixmap_t> create_screenshot();
 
 

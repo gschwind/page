@@ -140,7 +140,7 @@ void viewport_t::destroy_renderable() {
 
 void viewport_t::update_renderable() {
 	if(_ctx->cmp() != nullptr) {
-		_back_surf = _ctx->cmp()->create_composite_pixmap(_page_area.w, _page_area.h);
+		_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _page_area.w, _page_area.h);
 	}
 	_ctx->dpy()->move_resize(_win, _effective_area);
 }

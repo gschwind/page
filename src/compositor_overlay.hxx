@@ -48,7 +48,7 @@ public:
 		_fps_context = pango_font_map_create_context(_fps_font_map);
 #endif
 
-		_back_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h, PIXMAP_RGBA);
+		_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, _position.w, _position.h);
 
 	}
 

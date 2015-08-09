@@ -117,8 +117,7 @@ public:
 
 			if (_title_width != _thumbnail_position.w) {
 				_title_width = _thumbnail_position.w;
-				_tt.title = _ctx->cmp()->create_composite_pixmap(
-						_thumbnail_position.w, 20);
+				_tt.title = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _thumbnail_position.w, 20);
 				cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
 				_ctx->theme()->render_thumbnail_title(cr, rect { 0, 0,
 						_thumbnail_position.w, 20 }, _c.lock()->title());
@@ -179,7 +178,7 @@ public:
 	}
 
 	void update_title() {
-		_tt.title = _ctx->cmp()->create_composite_pixmap(_position.w, 20);
+		_tt.title = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _position.w, 20);
 		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
 		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c.lock()->title());
 		cairo_destroy(cr);
