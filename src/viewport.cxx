@@ -74,10 +74,6 @@ rect const & viewport_t::raw_area() const {
 	return _raw_aera;
 }
 
-bool viewport_t::is_visible() {
-	return _is_visible;
-}
-
 void viewport_t::activate() {
 	if(not _parent.expired()) {
 		_parent.lock()->activate(shared_from_this());

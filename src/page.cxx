@@ -1,7 +1,7 @@
 /*
  * page.cxx
  *
- * copyright (2010-2014) Benoit Gschwind
+ * copyright (2010-2015) Benoit Gschwind
  *
  * This code is licensed under the GPLv3. see COPYING file for more details.
  *
@@ -366,7 +366,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 
 	if (has_key(_fullscreen_client_to_viewport, mw.get())) {
 		fullscreen_data_t & data = _fullscreen_client_to_viewport[mw.get()];
-		if(not data.desktop.lock()->is_hidden())
+		if(data.workspace.lock()->is_visible())
 			data.viewport.lock()->show();
 		_fullscreen_client_to_viewport.erase(mw.get());
 	}
@@ -1333,12 +1333,12 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw) {
 		return;
 
 	shared_ptr<viewport_t> v;
-	fullscreen_data_t data;
 	if(mw->is(MANAGED_NOTEBOOK)) {
-		v = find_viewport_of(data.revert_notebook.lock());
+		v = find_viewport_of(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
-		v = _desktop_list[0]->get_any_viewport();
+		v = get_current_workspace()->get_any_viewport();
 	} else {
+		cout << "WARNING: a dock trying to become fullscreen" << endl;
 		return;
 	}
 
@@ -1346,6 +1346,7 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw) {
 }
 
 void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> v) {
+	assert(v != nullptr);
 
 	if(mw->is(MANAGED_FULLSCREEN))
 		return;
@@ -1353,7 +1354,6 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 	/* WARNING: Call order is important, change it with caution */
 
 	fullscreen_data_t data;
-	data.client = mw;
 
 	if(mw->is(MANAGED_NOTEBOOK)) {
 		/**
@@ -1363,16 +1363,20 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 		 * 2. search the viewport for this notebook, and use it as default
 		 *    fullscreen host or use the first available viewport.
 		 **/
-		data.revert_notebook = find_parent_notebook_for(mw);
 		data.revert_type = MANAGED_NOTEBOOK;
-		data.viewport = v;
-		detach(mw);
+		data.revert_notebook = find_parent_notebook_for(mw);
 	} else if (mw->is(MANAGED_FLOATING)) {
-		detach(mw);
 		data.revert_type = MANAGED_FLOATING;
 		data.revert_notebook.reset();
-		data.viewport = v;
+	} else {
+		cout << "WARNING: a dock trying to become fullscreen" << endl;
+		return;
 	}
+
+
+	auto workspace = find_desktop_of(v);
+
+	detach(mw);
 
 	// unfullscreen client that already use this screen
 	for (auto &x : _fullscreen_client_to_viewport) {
@@ -1382,22 +1386,31 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 		}
 	}
 
-	mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
-	data.desktop = find_desktop_of(data.viewport.lock());
-	data.viewport.lock()->hide();
-	mw->set_managed_type(MANAGED_FULLSCREEN);
-	data.desktop.lock()->attach(mw);
+	data.client = mw;
+	data.workspace = workspace;
+	data.viewport = v;
+
 	_fullscreen_client_to_viewport[mw.get()] = data;
-	mw->set_notebook_wished_position(data.viewport.lock()->raw_area());
+
+	mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+	mw->set_managed_type(MANAGED_FULLSCREEN);
+	workspace->attach(mw);
+
+	/* it's a trick */
+	mw->set_notebook_wished_position(v->raw_area());
 	mw->reconfigure();
 	mw->normalize();
 	mw->show();
+	v->hide();
 	_need_restack = true;
 }
 
 void page_t::unfullscreen(shared_ptr<client_managed_t> mw) {
 	/* WARNING: Call order is important, change it with caution */
+
+	/** just in case **/
 	mw->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
+
 	if(!has_key(_fullscreen_client_to_viewport, mw.get()))
 		return;
 
@@ -1406,14 +1419,31 @@ void page_t::unfullscreen(shared_ptr<client_managed_t> mw) {
 	fullscreen_data_t data = _fullscreen_client_to_viewport[mw.get()];
 	_fullscreen_client_to_viewport.erase(mw.get());
 
-	auto d = data.desktop.lock();
-	auto v = data.viewport.lock();
+	shared_ptr<workspace_t> d;
+
+	if(data.workspace.expired()) {
+		d = get_current_workspace();
+	} else {
+		d = data.workspace.lock();
+	}
+
+	shared_ptr<viewport_t> v;
+
+	if(data.viewport.expired()) {
+		v = d->get_any_viewport();
+	} else {
+		v = data.viewport.lock();
+	}
 
 	if (data.revert_type == MANAGED_NOTEBOOK) {
-		/** TODO: handle if notebook has disapeared **/
-		auto old = data.revert_notebook;
+		shared_ptr<notebook_t> n;
+		if(data.revert_notebook.expired()) {
+			n = d->default_pop();
+		} else {
+			n = data.revert_notebook.lock();
+		}
 		mw->set_managed_type(MANAGED_NOTEBOOK);
-		old.lock()->add_client(mw, true);
+		n->add_client(mw, true);
 		mw->reconfigure();
 	} else {
 		mw->set_managed_type(MANAGED_FLOATING);
@@ -1421,11 +1451,13 @@ void page_t::unfullscreen(shared_ptr<client_managed_t> mw) {
 		mw->reconfigure();
 	}
 
-	if(not d->is_hidden()) {
+	if(d->is_visible() and not v->is_visible()) {
 		v->show();
 	}
 
 	update_workarea();
+
+	_need_restack = true;
 
 }
 
@@ -2137,7 +2169,7 @@ void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, share
 		fullscreen_data_t & data = _fullscreen_client_to_viewport[c.get()];
 		if (v != data.viewport.lock()) {
 			data.viewport = v;
-			data.desktop = find_desktop_of(v);
+			data.workspace = find_desktop_of(v);
 			update_desktop_visibility();
 		}
 	}
@@ -2638,7 +2670,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 		if(find_current_desktop(mw) == ALL_DESKTOP) {
 			mw->show();
-		} else if(not _desktop_list[find_current_desktop(mw)]->is_hidden()) {
+		} else if(not _desktop_list[find_current_desktop(mw)]->is_visible()) {
 			mw->show();
 		} else {
 			mw->hide();
@@ -3170,8 +3202,8 @@ void page_t::update_desktop_visibility() {
 	/** and show the desktop that have to be show **/
 	_desktop_list[_current_desktop]->show();
 
-	for(auto i: _fullscreen_client_to_viewport) {
-		if(not i.second.desktop.lock()->is_hidden()) {
+	for(auto & i: _fullscreen_client_to_viewport) {
+		if(not i.second.workspace.lock()->is_visible()) {
 			i.second.viewport.lock()->hide();
 		}
 	}

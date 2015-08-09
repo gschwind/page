@@ -77,7 +77,6 @@ public:
 	int  id();
 	auto primary_viewport() const -> shared_ptr<viewport_t>;
 	void start_switch(workspace_switch_direction_e direction);
-	bool is_hidden();
 	void set_workarea(rect const & r);
 	auto workarea() -> rect const &;
 	auto get_viewports() const -> vector<shared_ptr<viewport_t>> ;

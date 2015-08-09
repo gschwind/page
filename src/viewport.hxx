@@ -54,7 +54,6 @@ class viewport_t: public page_component_t {
 
 	auto get_nearest_notebook() -> shared_ptr<notebook_t>;
 	void set_effective_area(rect const & area);
-	bool is_visible();
 	auto page_area() const -> rect const &;
 
 	void destroy_renderable();

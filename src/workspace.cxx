@@ -182,10 +182,6 @@ void workspace_t::set_allocation(rect const & area) {
 	_allocation = area;
 }
 
-bool workspace_t::is_hidden() {
-	return not _is_visible;
-}
-
 void workspace_t::set_workarea(rect const & r) {
 	_workarea = r;
 }

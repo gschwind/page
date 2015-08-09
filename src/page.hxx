@@ -1,7 +1,7 @@
 /*
  * page.hxx
  *
- * copyright (2010-2014) Benoit Gschwind
+ * copyright (2010-2015) Benoit Gschwind
  *
  * This code is licensed under the GPLv3. see COPYING file for more details.
  *
@@ -55,7 +55,7 @@ using namespace std;
 
 struct fullscreen_data_t {
 	weak_ptr<client_managed_t> client;
-	weak_ptr<workspace_t> desktop;
+	weak_ptr<workspace_t> workspace;
 	weak_ptr<viewport_t> viewport;
 	managed_window_type_e revert_type;
 	weak_ptr<notebook_t> revert_notebook;
