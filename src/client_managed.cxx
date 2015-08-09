@@ -1463,7 +1463,7 @@ void client_managed_t::render(cairo_t * cr, region const & area) {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cr, pix->get_cairo_surface(),
 				_base_position.x, _base_position.y);
-		region r = region{_base_position} & area;
+		region r = get_visible_region() & area;
 		for (auto &i : r) {
 			cairo_clip(cr, i);
 			cairo_mask_surface(cr, pix->get_cairo_surface(),
@@ -1505,6 +1505,21 @@ void client_managed_t::_update_opaque_region() {
 	}
 
 	_opaque_region_cache.translate(_base_position.x+_orig_position.x, _base_position.y+_orig_position.y);
+}
+
+void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e) {
+	client_base_t::on_property_notify(e);
+
+	if (e->atom == A(_NET_WM_NAME) or e->atom == A(WM_NAME)) {
+		update_title();
+		queue_redraw();
+	} else if (e->atom == A(_NET_WM_ICON)) {
+		update_icon();
+		queue_redraw();
+	} if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
+		_update_opaque_region();
+	}
+
 }
 
 

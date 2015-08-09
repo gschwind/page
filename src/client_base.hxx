@@ -155,9 +155,6 @@ public:
 	auto shape() const -> region const *;
 	auto position() -> rect;
 
-
-	void on_property_notify(xcb_property_notify_event_t const * e);
-
 	/* find the bigger window that is smaller than w and h */
 	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h);
 
@@ -205,6 +202,7 @@ public:
 	virtual auto orig() const -> xcb_window_t = 0;
 	virtual auto base_position() const -> rect const & = 0;
 	virtual auto orig_position() const -> rect const & = 0;
+	virtual void on_property_notify(xcb_property_notify_event_t const * e);
 
 };
 

@@ -100,7 +100,7 @@ public:
 	virtual auto orig() const -> xcb_window_t;
 	virtual auto base_position() const -> rect const &;
 	virtual auto orig_position() const -> rect const &;
-
+	virtual void on_property_notify(xcb_property_notify_event_t const * e);
 
 };
 

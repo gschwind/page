@@ -1123,15 +1123,10 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 
 	if (e->atom == A(_NET_WM_USER_TIME)) {
 		/* ignore */
-	} else if (e->atom == A(_NET_WM_NAME) or e->atom == A(WM_NAME)) {
-		mw->update_title();
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
 		update_workarea();
 	} else if (e->atom == A(_NET_WM_STRUT)) {
 		update_workarea();
-	} else if (e->atom == A(_NET_WM_ICON)) {
-		mw->update_icon();
-		mw->queue_redraw();
 	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
 		/* window type must be set on map, I guess it should never change ? */
 		/* update cache */
@@ -1173,9 +1168,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/* this set by page in most case */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		mw->reconfigure();
-	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
-		mw->reconfigure();
 	}
+
 }
 
 void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
@@ -3484,6 +3478,7 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 		if(mw != nullptr) {
 			mw->reconfigure();
 		}
+
 	}
 }
 

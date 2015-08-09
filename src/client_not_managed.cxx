@@ -108,12 +108,17 @@ void client_not_managed_t::_update_opaque_region() {
 	_opaque_region_cache.clear();
 
 	if (net_wm_opaque_region() != nullptr) {
-		_opaque_region_cache = region { *(net_wm_opaque_region()) };
+		_opaque_region_cache = region{*(net_wm_opaque_region())};
 	} else {
-		if (geometry()->depth == 24) {
+		if (geometry()->depth != 32) {
 			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
 		}
 	}
+
+	if(shape() != nullptr) {
+		_opaque_region_cache &= *shape();
+	}
+
 	_opaque_region_cache.translate(_base_position.x, _base_position.y);
 }
 
@@ -181,6 +186,15 @@ void client_not_managed_t::show() {
 
 void client_not_managed_t::render_finished() {
 	_damage_cache.clear();
+}
+
+void client_not_managed_t::on_property_notify(xcb_property_notify_event_t const * e) {
+	client_base_t::on_property_notify(e);
+
+	if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
+		_update_opaque_region();
+	}
+
 }
 
 }
