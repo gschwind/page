@@ -17,6 +17,11 @@ namespace page {
 
 using namespace std;
 
+enum pixmap_format_e {
+	PIXMAP_RGB,
+	PIXMAP_RGBA
+};
+
 /**
  * Self managed pixmap and cairo.
  **/

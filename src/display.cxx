@@ -507,7 +507,7 @@ void display_t::update_default_visual() {
 	}
 }
 
-xcb_visualtype_t * display_t::default_visual() {
+xcb_visualtype_t * display_t::default_visual_rgba() {
 	return _xcb_default_visual_type;
 }
 

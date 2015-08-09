@@ -334,10 +334,17 @@ cairo_surface_t * compositor_t::get_front_surface() const {
 			_cnx->root_visual(), width, height);
 }
 
-shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width, unsigned height) {
-	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
-	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
-	return make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+shared_ptr<pixmap_t> compositor_t::create_composite_pixmap(unsigned width,
+		unsigned height, pixmap_format_e format) {
+	if (format == PIXMAP_RGB) {
+		xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
+		xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
+		return make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+	} else {
+		xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
+		xcb_create_pixmap(_cnx->xcb(), 32, pix, _cnx->root(), width, height);
+		return make_shared<pixmap_t>(_cnx, _cnx->default_visual_rgba(), pix, width, height);
+	}
 }
 
 shared_ptr<pixmap_t> compositor_t::create_screenshot() {

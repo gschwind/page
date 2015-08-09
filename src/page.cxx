@@ -684,11 +684,16 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (rnd != nullptr) {
 		if (key == bind_debug_1) {
 			if (_fps_overlay == nullptr) {
-				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{100, 100, 400, 100});
+
+				auto v = get_current_workspace()->get_any_viewport();
+				int y_pos = v->allocation().y + v->allocation().h - 100;
+				int x_pos = v->allocation().x + (v->allocation().w - 400)/2;
+
+				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
 				_fps_overlay->set_parent(shared_from_this());
 				_fps_overlay->show();
 			} else {
-				add_global_damage(rect{100, 100, 400, 100});
+				add_global_damage(_fps_overlay->get_visible_region());
 				_fps_overlay = nullptr;
 			}
 		}

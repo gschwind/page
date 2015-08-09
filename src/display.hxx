@@ -130,7 +130,7 @@ public:
 	int fd();
 	xcb_window_t root();
 	xcb_connection_t * xcb();
-	xcb_visualtype_t * default_visual();
+	xcb_visualtype_t * default_visual_rgba();
 	xcb_visualtype_t * root_visual();
 
 	xcb_screen_t * xcb_screen();

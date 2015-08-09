@@ -163,7 +163,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 		 * Create RGB window for back ground
 		 **/
 
-		_deco_visual = cnx()->default_visual()->visual_id;
+		_deco_visual = cnx()->default_visual_rgba()->visual_id;
 		_deco_depth = 32;
 
 		/** if visual is 32 bits, this values are mandatory **/

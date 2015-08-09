@@ -48,7 +48,7 @@ public:
 		_fps_context = pango_font_map_create_context(_fps_font_map);
 #endif
 
-		_back_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h);
+		_back_surf = _ctx->cmp()->create_composite_pixmap(_position.w, _position.h, PIXMAP_RGBA);
 
 	}
 
@@ -122,11 +122,10 @@ public:
 		deque<double> const & _direct_render_area = _ctx->cmp()->get_direct_area_history();
 		std::size_t _FPS_WINDOWS = _direct_render_area.size();
 
-		cairo_save(cr);
 		cairo_identity_matrix(cr);
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
+		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.7);
 		cairo_paint(cr);
 
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -139,9 +138,9 @@ public:
 		{
 			int j = 0;
 			auto i = _damaged_area.begin();
-			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((*(i++))*100.0, 100.0));
+			cairo_move_to(cr, 0 * 5.0, 95.0 - std::min((*(i++))*90.0, 90.0));
 			while(i != _damaged_area.end())
-				cairo_line_to(cr, (j++) * 2.0, 100.0 - std::min((*(i++))*100.0, 100.0));
+				cairo_line_to(cr, (j++) * 2.0, 95.0 - std::min((*(i++))*90.0, 90.0));
 		}
 		cairo_stroke(cr);
 
@@ -149,9 +148,9 @@ public:
 		{
 			int j = 0;
 			auto i = _direct_render_area.begin();
-			cairo_move_to(cr, 0 * 5.0, 100.0 - std::min((*(i++))*100.0, 100.0));
+			cairo_move_to(cr, 0 * 5.0, 95.0 - std::min((*(i++))*90.0, 90.0));
 			while(i != _direct_render_area.end())
-				cairo_line_to(cr, (j++) * 2.0, 100.0 - std::min((*(i++))*100.0, 100.0));
+				cairo_line_to(cr, (j++) * 2.0, 95.0 - std::min((*(i++))*90.0, 90.0));
 		}
 		cairo_stroke(cr);
 
@@ -160,11 +159,9 @@ public:
 
 		_ctx->csm()->make_surface_stats(surf_size, surf_count);
 
-		pango_printf(cr, 80*2+20,0,  "fps:        %10.1f", fps);
-		pango_printf(cr, 80*2+20,30, "s. count:   %8d", surf_count);
-		pango_printf(cr, 80*2+20,50, "s. memory:  %8d KB", surf_size/1024);
-
-		cairo_restore(cr);
+		pango_printf(cr, 80*2+20,0,  "fps:       %8.1f", fps);
+		pango_printf(cr, 80*2+20,30, "s. count:  %6d", surf_count);
+		pango_printf(cr, 80*2+20,50, "s. memory: %6d KB", surf_size/1024);
 
 		cairo_destroy(cr);
 	}
@@ -204,7 +201,7 @@ public:
 		pango_cairo_layout_path(cr, pango_layout);
 		g_object_unref(pango_layout);
 
-		cairo_set_line_width(cr, 3.0);
+		cairo_set_line_width(cr, 5.0);
 		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 		cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
