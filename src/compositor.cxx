@@ -69,12 +69,15 @@ void compositor_t::init_composite_overlay() {
 
 	/* user input pass through composite overlay (mouse click for example)) */
 	_cnx->allow_input_passthrough(composite_overlay);
+
+	// DISABLE auto redirection.
 	/** Automatically redirect windows, but paint sub-windows manually */
-	xcb_composite_redirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
+	// xcb_composite_redirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
 }
 
 void compositor_t::release_composite_overlay() {
-	xcb_composite_unredirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
+	// DISABLE auto redirection.
+	//xcb_composite_unredirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
 	_cnx->disable_input_passthrough(composite_overlay);
 	xcb_composite_release_overlay_window(_cnx->xcb(), composite_overlay);
 	composite_overlay = XCB_NONE;

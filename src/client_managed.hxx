@@ -48,6 +48,8 @@ private:
 	managed_window_type_e _managed_type;
 	xcb_atom_t _net_wm_type;
 
+	weak_ptr<composite_surface_t> _base_surface;
+
 	/** hold floating position **/
 	rect _floating_wished_position;
 
@@ -156,8 +158,7 @@ public:
 	xcb_atom_t A(atom_e atom);
 	void icccm_focus(xcb_timestamp_t t);
 
-
-	shared_ptr<pixmap_t> get_last_pixmap();
+	weak_ptr<composite_surface_t> get_surface();
 	void set_current_desktop(unsigned int n);
 	void net_wm_allowed_actions_add(atom_e atom);
 

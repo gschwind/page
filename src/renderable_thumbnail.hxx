@@ -21,6 +21,7 @@ class renderable_thumbnail_t : public tree_t {
 	rect _thumbnail_position;
 
 	weak_ptr<client_managed_t> _c;
+	weak_ptr<composite_surface_t> _client_surface;
 
 	region _visible_region;
 	theme_thumbnail_t _tt;
@@ -38,18 +39,23 @@ public:
 		_title_width{0},
 		_is_mouse_over{false}
 	{
-		_tt.pix = c->get_last_pixmap();
+
+		_client_surface = c->get_surface();
+		_ctx->csm()->register_window(_client_surface);
+		_tt.pix = _client_surface.lock()->get_pixmap();
 		update_title();
 	}
 
-	virtual ~renderable_thumbnail_t() { }
+	virtual ~renderable_thumbnail_t() {
+		_ctx->csm()->unregister_window(_client_surface);
+	}
 
 
 	virtual void render(cairo_t * cr, region const & area) {
 		if(_c.expired())
 			return;
 
-		_tt.pix = _c.lock()->get_last_pixmap();
+		_tt.pix = _client_surface.lock()->get_pixmap();
 
 		if (_tt.pix != nullptr) {
 			rect tmp = _position;
@@ -193,9 +199,9 @@ public:
 		/** update damage cache **/
 		xcb_window_t w = _c.lock()->base();
 
-		if(_ctx->csm()->has_damage(w)) {
+		if(_client_surface.lock()->has_damage()) {
 			_damaged_cache += region{_position};
-			_ctx->csm()->clear_damaged(w);
+			_client_surface.lock()->clear_damaged();
 		}
 	}
 };

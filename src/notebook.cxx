@@ -51,9 +51,6 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
 	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
 
-
-	_ctx->csm()->register_window(x->base());
-
 	if(prefer_activate) {
 		_stop_exposay();
 		_start_fading();
@@ -130,9 +127,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 			}
 		}
 	}
-
 	_update_layout();
-	_ctx->csm()->unregister_window(x->base());
 }
 
 void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
@@ -557,7 +552,7 @@ void notebook_t::_start_fading() {
 	if (_selected != nullptr) {
 		update_client_position(_selected);
 		if (not _selected->is_iconic()) {
-			std::shared_ptr<pixmap_t> pix = _selected->get_last_pixmap();
+			shared_ptr<pixmap_t> pix = _selected->get_surface().lock()->get_pixmap();
 			if (pix != nullptr) {
 				rect pos = _client_position;
 				rect cl { pos.x, pos.y, pos.w, pos.h };

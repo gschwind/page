@@ -237,7 +237,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 	update_icon();
 
-	_ctx->csm()->register_window(_base);
+	_base_surface = _ctx->csm()->register_window(_base);
 
 
 }
@@ -273,7 +273,7 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
 
-	_ctx->csm()->unregister_window(_base);
+	_ctx->csm()->unregister_window(_base_surface);
 
 	_ctx->add_global_damage(_visible_region_cache);
 
@@ -1040,15 +1040,13 @@ void client_managed_t::update_layout(time64_t const time) {
 		return;
 
 	/** update damage_cache **/
-	region dmg = _ctx->csm()->get_damaged(_base);
+	region dmg = _base_surface.lock()->get_damaged();
 	dmg.translate(_base_position.x, _base_position.y);
 	_damage_cache += dmg;
-	_ctx->csm()->clear_damaged(_base);
+	_base_surface.lock()->clear_damaged();
 
-	if (_ctx->csm()->get_last_pixmap(_base) != nullptr) {
-
+	if (_base_surface.lock()->get_pixmap() != nullptr) {
 		rect loc{base_position()};
-
 		if (prefer_window_border() and not is(MANAGED_DOCK)) {
 			delete _shadow;
 			if(is_focused()) {
@@ -1430,8 +1428,8 @@ bool client_managed_t::is_focused() const {
 	return _is_focused;
 }
 
-shared_ptr<pixmap_t> client_managed_t::get_last_pixmap() {
-	return _ctx->csm()->get_last_pixmap(_base);
+weak_ptr<composite_surface_t> client_managed_t::get_surface() {
+	return _base_surface;
 }
 
 void client_managed_t::set_current_desktop(unsigned int n) {
@@ -1456,7 +1454,7 @@ string const & client_managed_t::title() const {
 }
 
 void client_managed_t::render(cairo_t * cr, region const & area) {
-	auto pix = _ctx->csm()->get_last_pixmap(_base);
+	auto pix = _base_surface.lock()->get_pixmap();
 
 	if (pix != nullptr) {
 		cairo_save(cr);

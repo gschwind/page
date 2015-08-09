@@ -386,8 +386,6 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	_need_update_client_list = true;;
 	update_workarea();
 
-	cmgr->unregister_window(mw->base());
-
 	/** if the window is destroyed, this not work, see fix on destroy **/
 	for(auto x: _desktop_list) {
 		x->client_focus_history_remove(mw);
@@ -919,7 +917,6 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto c = find_client(e->window);
 
 	if (c != nullptr) {
-		cmgr->freeze(c->base(), true);
 		add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			auto mw = dynamic_pointer_cast<client_managed_t>(c);
@@ -2617,7 +2614,6 @@ void page_t::onmap(xcb_window_t w) {
 void page_t::create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
 		auto mw = make_shared<client_managed_t>(this, type, c);
-		cmgr->register_window(mw->base());
 		cout << cnx << " " << mw->cnx() << endl;
 		manage_client(mw, type);
 
@@ -2768,7 +2764,6 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
-		cmgr->register_window(c->id());
 		auto uw = make_shared<client_not_managed_t>(this, type, c);
 		if(not uw->wa()->override_redirect)
 			this->cnx->map(uw->orig());
@@ -2785,7 +2780,6 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 }
 
 void page_t::create_dock_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
-	cmgr->register_window(c->id());
 	auto uw = make_shared<client_not_managed_t>(this, type, c);
 	uw->show();
 	insert_in_tree_using_transient_for(uw);
@@ -2927,7 +2921,6 @@ void page_t::remove_client(shared_ptr<client_base_t> c) {
 			insert_in_tree_using_transient_for(c);
 		}
 	}
-	cmgr->unregister_window(c->base());
 }
 
 string page_t::get_node_name() const {

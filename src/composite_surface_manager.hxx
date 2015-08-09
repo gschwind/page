@@ -27,8 +27,10 @@
 
 namespace page {
 
+using namespace std;
+
 class composite_surface_manager_t {
-	using _data_map_t = std::map<xcb_window_t, std::shared_ptr<composite_surface_t>>;
+	using _data_map_t = map<xcb_window_t, shared_ptr<composite_surface_t>>;
 	using _map_iter_t = _data_map_t::iterator;
 
 	display_t * _dpy;
@@ -38,14 +40,14 @@ class composite_surface_manager_t {
 
 private:
 
-	void  _create_surface(xcb_window_t w);
+	auto  _create_surface(xcb_window_t w) -> weak_ptr<composite_surface_t>;
 
 public:
 
 	~composite_surface_manager_t() {
 		/* sanity check */
 		if(not _data.empty()) {
-			std::cout << "WARNING: composite_surface_manager is not empty while destroying." << std::endl;
+			cout << "WARNING: composite_surface_manager is not empty while destroying." << endl;
 		}
 	}
 
@@ -56,19 +58,13 @@ public:
 	/** cleanup unmaped or destroyed window **/
 	void apply_updates();
 
-	void register_window(xcb_window_t w);
-	void unregister_window(xcb_window_t w);
-	void freeze(xcb_window_t w, bool x);
-
+	auto register_window(xcb_window_t w) -> weak_ptr<composite_surface_t>;
+	void register_window(weak_ptr<composite_surface_t> w);
+	void unregister_window(weak_ptr<composite_surface_t> w);
 	void make_surface_stats(int & size, int & count);
-
 	void enable();
 	void disable();
 
-	std::shared_ptr<pixmap_t> get_last_pixmap(xcb_window_t w);
-	region get_damaged(xcb_window_t w);
-	bool has_damage(xcb_window_t w);
-	void clear_damaged(xcb_window_t w);
 };
 
 }

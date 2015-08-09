@@ -28,13 +28,13 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type
 		cnx()->unlock();
 	}
 
-	_ctx->csm()->register_window(orig());
+	_base_surface = _ctx->csm()->register_window(orig());
 
 }
 
 client_not_managed_t::~client_not_managed_t() {
 	cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
-	_ctx->csm()->unregister_window(orig());
+	_ctx->csm()->unregister_window(_base_surface);
 	_ctx->add_global_damage(_visible_region_cache);
 
 }
@@ -73,10 +73,10 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	_update_visible_region();
 	_update_opaque_region();
 
-	region dmg { _ctx->csm()->get_damaged(_properties->id()) };
+	region dmg { _base_surface.lock()->get_damaged() };
 	dmg.translate(_base_position.x, _base_position.y);
 	_damage_cache += dmg;
-	_ctx->csm()->clear_damaged(_properties->id());
+	_base_surface.lock()->clear_damaged();
 
 	rect pos(_properties->geometry()->x, _properties->geometry()->y,
 			_properties->geometry()->width, _properties->geometry()->height);
@@ -149,7 +149,7 @@ rect const & client_not_managed_t::orig_position() const {
 }
 
 void client_not_managed_t::render(cairo_t * cr, region const & area) {
-	auto pix = _ctx->csm()->get_last_pixmap(_properties->id());
+	auto pix = _base_surface.lock()->get_pixmap();
 
 	if (pix != nullptr) {
 		cairo_save(cr);
