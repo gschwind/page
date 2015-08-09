@@ -296,9 +296,9 @@ void compositor_t::update_layout() {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-	std::map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
+	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
-	std::vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
+	vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
 	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
 	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
 		ckx[k] = xcb_randr_get_crtc_info(_cnx->xcb(), crtc_list[k], XCB_CURRENT_TIME);

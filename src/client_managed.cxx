@@ -1491,13 +1491,20 @@ void client_managed_t::_update_visible_region() {
 
 void client_managed_t::_update_opaque_region() {
 	/** update opaque region cache **/
+	_opaque_region_cache.clear();
+
 	if (net_wm_opaque_region() != nullptr) {
-		_opaque_region_cache = region { *(net_wm_opaque_region()) };
+		_opaque_region_cache = region{*(net_wm_opaque_region())};
 	} else {
-		if (geometry()->depth == 24) {
+		if (geometry()->depth != 32) {
 			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
 		}
 	}
+
+	if(shape() != nullptr) {
+		_opaque_region_cache &= *shape();
+	}
+
 	_opaque_region_cache.translate(_base_position.x+_orig_position.x, _base_position.y+_orig_position.y);
 }
 

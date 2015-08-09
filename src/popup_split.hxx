@@ -217,12 +217,15 @@ public:
 	}
 
 	virtual void render(cairo_t * cr, region const & area) {
+		if(_s_base.expired())
+			return;
 
 		theme_split_t ts;
 		ts.split = _s_base.lock()->ratio();
 		ts.type = _s_base.lock()->type();
 		ts.allocation = _s_base.lock()->allocation();
 
+		region r = area & get_visible_region();
 		for (auto const & a : area) {
 			cairo_save(cr);
 			cairo_clip(cr, a);

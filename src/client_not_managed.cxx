@@ -105,6 +105,8 @@ void client_not_managed_t::_update_visible_region() {
 
 void client_not_managed_t::_update_opaque_region() {
 	/** update opaque region cache **/
+	_opaque_region_cache.clear();
+
 	if (net_wm_opaque_region() != nullptr) {
 		_opaque_region_cache = region { *(net_wm_opaque_region()) };
 	} else {

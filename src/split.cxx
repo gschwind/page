@@ -157,6 +157,8 @@ void split_t::update_allocation() {
 	if(_pack1 != nullptr)
 		_pack1->set_allocation(bpack1);
 
+	_ctx->add_global_damage(to_root_position(_allocation));
+
 }
 
 void split_t::set_pack0(shared_ptr<page_component_t> x) {
