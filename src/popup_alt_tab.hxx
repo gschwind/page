@@ -17,6 +17,7 @@
 
 #include "renderable.hxx"
 #include "icon_handler.hxx"
+#include "renderable_thumbnail.hxx"
 
 #include "client_managed.hxx"
 
@@ -53,6 +54,10 @@ class popup_alt_tab_t : public tree_t {
 	rect _position;
 	list<shared_ptr<cycle_window_entry_t>> _client_list;
 	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
+
+	list<shared_ptr<renderable_thumbnail_t>> _clients_thumbnails;
+
+
 	bool _is_durty;
 	bool _exposed;
 	bool _damaged;
@@ -62,9 +67,19 @@ class popup_alt_tab_t : public tree_t {
 	void paint_exposed();
 	void destroy_client(client_managed_t * c);
 
+	void _init();
+
 public:
 
 	popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<cycle_window_entry_t>> client_list, int selected);
+
+	template<typename ... Args>
+	static shared_ptr<popup_alt_tab_t> create(Args ... args) {
+		auto ths = make_shared<popup_alt_tab_t>(args...);
+		ths->_init();
+		return ths;
+	}
+
 	virtual ~popup_alt_tab_t();
 
 	void move(int x, int y);
@@ -81,7 +96,7 @@ public:
 	virtual auto get_node_name() const -> string;
 	// virtual void remove(shared_ptr<tree_t> t);
 
-	//virtual void children(vector<shared_ptr<tree_t>> & out) const;
+	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 	virtual void trigger_redraw();

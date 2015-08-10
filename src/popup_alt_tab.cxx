@@ -37,8 +37,9 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<cycle_win
 	_ctx->dpy()->map(_wid);
 
 	for(auto const & x: _client_list) {
-		if(not x->id.expired())
+		if(not x->id.expired()) {
 			x->destroy_func = x->id.lock()->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
+		}
 	}
 
 }
@@ -83,11 +84,43 @@ void popup_alt_tab_t::move(int x, int y) {
 	_position.y = y;
 	_ctx->dpy()->move_resize(_wid, _position);
 	_ctx->add_global_damage(_position);
+
+
+	int n = 0;
+	for (auto i : _clients_thumbnails) {
+		int x = n % 4;
+		int y = n / 4;
+		rect pos{_position.x + x * 80, _position.y + y * 80, 80, 80};
+		i->move_to(pos);
+		++n;
+	}
+
 }
 
 void popup_alt_tab_t::show() {
 	_is_visible = true;
 	_ctx->dpy()->map(_wid);
+}
+
+void popup_alt_tab_t::_init() {
+	int n = 0;
+	for (auto i : _client_list) {
+		if(i->id.expired())
+			continue;
+
+		int x = n % 4;
+		int y = n / 4;
+		rect pos{100 + x * 80, 100 + y * 80, 80, 80};
+
+		_clients_thumbnails.push_back(make_shared<renderable_thumbnail_t>(_ctx, pos, i->id.lock()));
+		_clients_thumbnails.back()->set_parent(shared_from_this());
+		_clients_thumbnails.back()->show();
+		if (i == *_selected) {
+			/** draw a beautiful yellow box **/
+			_clients_thumbnails.back()->set_mouse_over(true);
+		}
+		++n;
+	}
 }
 
 void popup_alt_tab_t::hide() {
@@ -191,14 +224,14 @@ region popup_alt_tab_t::get_visible_region() {
 }
 
 void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
-	cairo_save(cr);
-	for (auto & a : area) {
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_clip(cr, a);
-		cairo_set_source_surface(cr, _surf->get_cairo_surface(), _position.x, _position.y);
-		cairo_paint(cr);
-	}
-	cairo_restore(cr);
+//	cairo_save(cr);
+//	for (auto & a : area) {
+//		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+//		cairo_clip(cr, a);
+//		cairo_set_source_surface(cr, _surf->get_cairo_surface(), _position.x, _position.y);
+//		cairo_paint(cr);
+//	}
+//	cairo_restore(cr);
 }
 
 void popup_alt_tab_t::destroy_client(client_managed_t * c) {
@@ -236,6 +269,10 @@ void popup_alt_tab_t::update_layout(time64_t const time) {
 void popup_alt_tab_t::expose(xcb_expose_event_t const * ev) {
 	if(ev->window == _wid)
 		_exposed = true;
+}
+
+void popup_alt_tab_t::append_children(vector<shared_ptr<tree_t>> & out) const {
+	out.insert(out.end(), _clients_thumbnails.begin(), _clients_thumbnails.end());
 }
 
 

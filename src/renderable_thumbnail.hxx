@@ -10,6 +10,7 @@
 
 #include "tree.hxx"
 #include "pixmap.hxx"
+#include "client_managed.hxx"
 
 namespace page {
 
@@ -182,6 +183,15 @@ public:
 		cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
 		_ctx->theme()->render_thumbnail_title(cr, rect{0, 0, _position.w, 20}, _c.lock()->title());
 		cairo_destroy(cr);
+	}
+
+
+	void move_to(rect const & pos) {
+		_damaged_cache += _position;
+		_position = pos;
+		_visible_region = pos;
+		_damaged_cache += _position;
+		update_title();
 	}
 
 	void render_finished() {
