@@ -897,9 +897,18 @@ void notebook_t::_mouse_over_set() {
 	if (_mouse_over.tab != nullptr) {
 		std::get<2>(*_mouse_over.tab)->tab_color = _ctx->theme()->get_mouse_over_color();
 
-		tooltips = make_shared<renderable_thumbnail_t>(_ctx, rect{0, 0, 256, 256}, std::get<1>(*_mouse_over.tab).lock());
+		rect tab_pos = to_root_position(std::get<2>(*_mouse_over.tab)->position);
+
+		rect pos;
+		pos.x = tab_pos.x + tab_pos.w - 256;
+		pos.y = tab_pos.y + tab_pos.h;
+		pos.w = 256;
+		pos.h = 256;
+
+		tooltips = make_shared<renderable_thumbnail_t>(_ctx, pos, std::get<1>(*_mouse_over.tab).lock());
 		tooltips->set_parent(shared_from_this());
 		tooltips->show();
+		tooltips->set_mouse_over(true);
 	}
 
 	if(_mouse_over.exposay != nullptr) {
