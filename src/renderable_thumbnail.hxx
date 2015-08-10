@@ -40,9 +40,7 @@ public:
 		_title_width{0},
 		_is_mouse_over{false}
 	{
-		_client_surface = c->create_surface_view();
-		_tt.pix = _client_surface->get_pixmap();
-		update_title();
+
 	}
 
 	virtual ~renderable_thumbnail_t() {
@@ -116,13 +114,9 @@ public:
 
 			}
 
-			if (_title_width != _thumbnail_position.w) {
+			if (_title_width != _thumbnail_position.w or _tt.title == nullptr) {
 				_title_width = _thumbnail_position.w;
-				_tt.title = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _thumbnail_position.w, 20);
-				cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-				_ctx->theme()->render_thumbnail_title(cr, rect { 0, 0,
-						_thumbnail_position.w, 20 }, _c.lock()->title());
-				cairo_destroy(cr);
+				update_title();
 			}
 
 			cairo_save(cr);
@@ -199,17 +193,33 @@ public:
 	}
 
 	void update_layout(time64_t const time) {
-		if(_c.expired())
+		if(_c.expired() or not _is_visible)
 			return;
-
-		/** update damage cache **/
-		xcb_window_t w = _c.lock()->base();
 
 		if(_client_surface->has_damage()) {
 			_damaged_cache += region{_position};
 			_client_surface->clear_damaged();
 		}
 	}
+
+	void show() {
+		_is_visible = true;
+
+		if (not _c.expired()) {
+			_client_surface = _c.lock()->create_surface_view();
+		}
+	}
+
+	void hide() {
+		_is_visible = false;
+
+		_client_surface = nullptr;
+		_tt.pix = nullptr;
+		_tt.title = nullptr;
+
+	}
+
+
 };
 
 
