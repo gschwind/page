@@ -47,6 +47,7 @@ class notebook_t : public page_component_t {
 
 	time64_t _swap_start;
 
+	shared_ptr<renderable_thumbnail_t> tooltips;
 	shared_ptr<renderable_notebook_fading_t> fading_notebook;
 	vector<shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
 
