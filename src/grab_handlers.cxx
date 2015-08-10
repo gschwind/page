@@ -578,46 +578,9 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 	}
 }
 
-grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx) : _ctx{ctx} {
-	auto _x = _ctx->clients_list();
-	list<weak_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
+grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window) : _ctx{ctx} {
 
-	auto focus_history = _ctx->global_client_focus_history();
-	/* reorder client to follow focused order */
-	for (auto i = focus_history.rbegin();
-			i != focus_history.rend();
-			++i) {
-		if (not i->expired()) {
-			managed_window.remove_if([i](weak_ptr<client_managed_t> x) -> bool { return i->lock() == x.lock(); });
-			managed_window.push_front(*i);
-		}
-	}
-
-	/** create all menu entry and find the selected one **/
-	list<shared_ptr<cycle_window_entry_t>> v;
-	for (auto i : managed_window) {
-		if(i.expired())
-			continue;
-
-		if(i.lock()->is(MANAGED_DOCK))
-			continue;
-
-		if(i.lock()->skip_task_bar())
-			continue;
-
-		auto icon = make_shared<icon64>(i.lock().get());
-		auto cy = make_shared<cycle_window_entry_t>(i.lock(), i.lock()->title(), icon);
-		v.push_back(cy);
-	}
-
-	pat = popup_alt_tab_t::create(_ctx, v, 0);
-
-	/** TODO: show it on all viewport **/
-	auto viewport = _ctx->get_current_workspace()->get_any_viewport();
-	pat->move(viewport->raw_area().x
-							+ (viewport->raw_area().w - pat->position().w) / 2,
-					viewport->raw_area().y
-							+ (viewport->raw_area().h - pat->position().h) / 2);
+	pat = popup_alt_tab_t::create(_ctx, managed_window);
 	pat->show();
 	pat->select_next();
 	_ctx->overlay_add(pat);

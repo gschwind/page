@@ -27,21 +27,25 @@ namespace page {
 using namespace std;
 
 class cycle_window_entry_t {
-	shared_ptr<icon64> icon;
+	weak_ptr<client_managed_t> client;
+
 	string title;
-	weak_ptr<client_managed_t> id;
+	shared_ptr<icon64> icon;
+	shared_ptr<renderable_thumbnail_t> _thumbnail;
 
 	decltype(client_managed_t::on_destroy)::signal_func_t destroy_func;
 
-	cycle_window_entry_t(cycle_window_entry_t const &);
-	cycle_window_entry_t & operator=(cycle_window_entry_t const &);
 
 public:
-	cycle_window_entry_t(weak_ptr<client_managed_t> mw, string title, shared_ptr<icon64> icon) :
-			icon(icon), title(title), id(mw) {
-	}
+	cycle_window_entry_t() { }
 
-	~cycle_window_entry_t() { }
+	cycle_window_entry_t(cycle_window_entry_t const & x) :
+		client{x.client},
+		title{x.title},
+		icon{x.icon},
+		_thumbnail{x._thumbnail},
+		destroy_func{x.destroy_func}
+	{ }
 
 	friend class popup_alt_tab_t;
 
@@ -49,14 +53,11 @@ public:
 
 class popup_alt_tab_t : public tree_t {
 	page_context_t * _ctx;
-	xcb_window_t _wid;
-	shared_ptr<pixmap_t> _surf;
+	//xcb_window_t _wid;
+	//shared_ptr<pixmap_t> _surf;
 	rect _position;
-	list<shared_ptr<cycle_window_entry_t>> _client_list;
-	list<shared_ptr<cycle_window_entry_t>>::iterator _selected;
-
-	list<shared_ptr<renderable_thumbnail_t>> _clients_thumbnails;
-
+	list<cycle_window_entry_t> _client_list;
+	list<cycle_window_entry_t>::iterator _selected;
 
 	bool _is_durty;
 	bool _exposed;
@@ -71,7 +72,7 @@ class popup_alt_tab_t : public tree_t {
 
 public:
 
-	popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<cycle_window_entry_t>> client_list, int selected);
+	popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> client_list);
 
 	template<typename ... Args>
 	static shared_ptr<popup_alt_tab_t> create(Args ... args) {

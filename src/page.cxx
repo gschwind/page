@@ -464,7 +464,7 @@ void page_t::scan() {
 }
 
 void page_t::update_net_supported() {
-	std::vector<xcb_atom_t> supported_list;
+	vector<xcb_atom_t> supported_list;
 
 	supported_list.push_back(A(_NET_WM_NAME));
 	supported_list.push_back(A(_NET_WM_USER_TIME));
@@ -759,17 +759,34 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		auto xclients_list = clients_list();
 		if (_grab_handler == nullptr and not xclients_list.empty()) {
 
-			/* Grab keyboard */
-			/** TODO: check for success or failure **/
-			xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time,
-					XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+			auto _x = clients_list();
+			list<shared_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
 
-			/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-			xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
-			grab_start(new grab_alt_tab_t{this});
+			auto focus_history = global_client_focus_history();
+			/* reorder client to follow focused order */
+			for (auto i = focus_history.rbegin();
+					i != focus_history.rend();
+					++i) {
+				if (not i->expired()) {
+					auto x = std::find_if(managed_window.begin(), managed_window.end(), [i](shared_ptr<client_managed_t> const & x) -> bool { return x == i->lock(); });
+					if(x != managed_window.end()) {
+						managed_window.splice(managed_window.begin(), managed_window, x);
+					}
+				}
+			}
 
-		} else {
-			xcb_allow_events(cnx->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
+			managed_window.remove_if([](shared_ptr<client_managed_t> const & c) { return c->skip_task_bar() or c->is(MANAGED_DOCK); });
+
+			if(managed_window.size() > 1) {
+				/* Grab keyboard */
+				/** TODO: check for success or failure **/
+				xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time,
+						XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
+				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+				grab_start(new grab_alt_tab_t{this, managed_window});
+			}
 		}
 	}
 }

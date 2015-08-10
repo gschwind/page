@@ -179,7 +179,7 @@ struct grab_alt_tab_t : public grab_handler_t {
 
 public:
 
-	grab_alt_tab_t(page_context_t * ctx);
+	grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window);
 
 	virtual ~grab_alt_tab_t();
 	virtual void button_press(xcb_button_press_event_t const * e) { }
