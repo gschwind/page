@@ -37,7 +37,31 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 
 	while(true) {
 		int width = _position.w/nx;
-		ny = client_list.size() / nx;
+
+
+		/* the square root may produce to much line (or column depend on the point of view
+		 * We choose to remove the exide of line, but we could prefer to remove column,
+		 * maybe later we will choose to select this on client_area.h/client_area.w ratio
+		 *
+		 *
+		 * /!\ This equation use the properties of integer division.
+		 *
+		 * we want :
+		 *  if client_counts == Q*n => m = Q
+		 *  if client_counts == Q*n+R with R != 0 => m = Q + 1
+		 *
+		 *  within the equation :
+		 *   when client_counts == Q*n => (client_counts - 1)/n + 1 == (Q - 1) + 1 == Q
+		 *   when client_counts == Q*n + R => (client_counts - 1)/n + 1 == (Q*n+R-1)/n + 1
+		 *     => when R == 1: (Q*n+R-1)/n + 1 == Q*n/n+1 = Q + 1
+		 *     => when 1 < R <= n-1 => (Q*n+R-1)/n + 1 == Q*n/n + (R-1)/n + 1 with (R-1)/n always == 0
+		 *        then (client_counts - 1)/n + 1 == Q + 1
+		 *
+		 */
+
+		ny = ((client_list.size() - 1) / nx) + 1;
+
+
 		if(ny * width < _position.h)
 			break;
 		nx++;
