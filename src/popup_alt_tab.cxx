@@ -28,8 +28,8 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 
 
 
-	//_create_composite_window();
-	//_ctx->dpy()->map(_wid);
+	_create_composite_window();
+	_ctx->dpy()->map(_wid);
 	//_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _position.w, _position.h);
 
 	int nx = 1;
@@ -69,12 +69,41 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 }
 
 popup_alt_tab_t::~popup_alt_tab_t() {
-	//xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+	xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	_client_list.clear();
 	_selected = _client_list.end();
 }
 
 void popup_alt_tab_t::_create_composite_window() {
+
+		//xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
+		//xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
+
+		uint32_t value_mask = 0;
+		uint32_t value[2];
+
+		//value_mask |= XCB_CW_BACK_PIXEL;
+		//value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
+
+		//value_mask |= XCB_CW_BORDER_PIXEL;
+		//value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
+
+		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
+		value[0] = True;
+
+		value_mask |= XCB_CW_EVENT_MASK;
+		value[1] = XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE;
+
+		//value_mask |= XCB_CW_COLORMAP;
+		//value[4] = cmap;
+
+		_wid = xcb_generate_id(_ctx->dpy()->xcb());
+		xcb_create_window(_ctx->dpy()->xcb(), 0, _wid, _ctx->dpy()->root(),
+				_position.x, _position.y, _position.w, _position.h, 0,
+				XCB_WINDOW_CLASS_INPUT_ONLY, _ctx->dpy()->root_visual()->visual_id,
+				value_mask, value);
+
+
 //	xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
 //	xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
 //
@@ -95,12 +124,12 @@ void popup_alt_tab_t::_create_composite_window() {
 //
 //	value_mask |= XCB_CW_COLORMAP;
 //	value[4] = cmap;
-
-	//_wid = xcb_generate_id(_ctx->dpy()->xcb());
-	//xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(),
-	//		_position.x, _position.y, _position.w, _position.h, 0,
-	//		XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id,
-	//		value_mask, value);
+//
+//	_wid = xcb_generate_id(_ctx->dpy()->xcb());
+//	xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(),
+//			_position.x, _position.y, _position.w, _position.h, 0,
+//			XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id,
+//			value_mask, value);
 }
 
 void popup_alt_tab_t::move(int x, int y) {
@@ -113,7 +142,7 @@ void popup_alt_tab_t::move(int x, int y) {
 
 void popup_alt_tab_t::show() {
 	_is_visible = true;
-	///_ctx->dpy()->map(_wid);
+	_ctx->dpy()->map(_wid);
 }
 
 void popup_alt_tab_t::_init() {
@@ -126,7 +155,7 @@ void popup_alt_tab_t::_init() {
 
 void popup_alt_tab_t::hide() {
 	_is_visible = false;
-	//_ctx->dpy()->unmap(_wid);
+	_ctx->dpy()->unmap(_wid);
 }
 
 rect const & popup_alt_tab_t::position() {
@@ -272,12 +301,12 @@ void popup_alt_tab_t::destroy_client(client_managed_t * c) {
 }
 
 xcb_window_t popup_alt_tab_t::get_xid() const {
-	//return _wid;
+	return _wid;
 	return XCB_WINDOW_NONE;
 }
 
 xcb_window_t popup_alt_tab_t::get_parent_xid () const {
-	//return _wid;
+	return _wid;
 	return XCB_WINDOW_NONE;
 }
 
@@ -310,6 +339,27 @@ void popup_alt_tab_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	for(auto & e: _client_list) {
 		out.push_back(e._thumbnail);
 	}
+}
+
+void popup_alt_tab_t::_select_from_mouse(int x, int y) {
+	auto i = _client_list.begin();
+	while(i != _client_list.end()) {
+		if(i->_thumbnail->get_visible_region().is_inside(x, y)) {
+			_selected->_thumbnail->set_mouse_over(false);
+			_selected = i;
+			_selected->_thumbnail->set_mouse_over(true);
+			break;
+		}
+		++i;
+	}
+}
+
+void popup_alt_tab_t::grab_button_press(xcb_button_press_event_t const * ev) {
+	_select_from_mouse(ev->root_x, ev->root_y);
+}
+
+void popup_alt_tab_t::grab_button_motion(xcb_motion_notify_event_t const * ev) {
+	_select_from_mouse(ev->root_x, ev->root_y);
 }
 
 

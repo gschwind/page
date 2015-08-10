@@ -53,7 +53,7 @@ public:
 
 class popup_alt_tab_t : public tree_t {
 	page_context_t * _ctx;
-	//xcb_window_t _wid;
+	xcb_window_t _wid;
 	//shared_ptr<pixmap_t> _surf;
 	rect _position;
 	list<cycle_window_entry_t> _client_list;
@@ -69,6 +69,8 @@ class popup_alt_tab_t : public tree_t {
 	void destroy_client(client_managed_t * c);
 
 	void _init();
+
+	void _select_from_mouse(int x, int y);
 
 public:
 
@@ -87,6 +89,9 @@ public:
 	rect const & position();
 	void select_next();
 	weak_ptr<client_managed_t> get_selected();
+
+	void grab_button_press(xcb_button_press_event_t const * ev);
+	void grab_button_motion(xcb_motion_notify_event_t const * ev);
 
 	/**
 	 * tree_t virtual API

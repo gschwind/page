@@ -367,6 +367,8 @@ public:
 	void stop_compositor();
 	void run_cmd(string const & cmd_with_args);
 
+	void start_alt_tab(xcb_timestamp_t time);
+
 	vector<shared_ptr<client_managed_t>> get_sticky_client_managed(shared_ptr<tree_t> base);
 	void reconfigure_docks(shared_ptr<workspace_t> const & d);
 

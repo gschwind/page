@@ -73,8 +73,6 @@ public:
 };
 
 struct dropdown_menu_overlay_t : public tree_t {
-	tree_t * _parent;
-
 	page_context_t * _ctx;
 	xcb_pixmap_t _pix;
 	cairo_surface_t * _surf;
@@ -194,14 +192,6 @@ struct dropdown_menu_overlay_t : public tree_t {
 		} else {
 			return region{};
 		}
-	}
-
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() const {
-		return _parent;
 	}
 
 };

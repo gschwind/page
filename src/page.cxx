@@ -755,38 +755,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key.ks == XK_Tab and (key.mod == XCB_MOD_MASK_1)) {
-
-		auto xclients_list = clients_list();
-		if (_grab_handler == nullptr and not xclients_list.empty()) {
-
-			auto _x = clients_list();
-			list<shared_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
-
-			auto focus_history = global_client_focus_history();
-			/* reorder client to follow focused order */
-			for (auto i = focus_history.rbegin();
-					i != focus_history.rend();
-					++i) {
-				if (not i->expired()) {
-					auto x = std::find_if(managed_window.begin(), managed_window.end(), [i](shared_ptr<client_managed_t> const & x) -> bool { return x == i->lock(); });
-					if(x != managed_window.end()) {
-						managed_window.splice(managed_window.begin(), managed_window, x);
-					}
-				}
-			}
-
-			managed_window.remove_if([](shared_ptr<client_managed_t> const & c) { return c->skip_task_bar() or c->is(MANAGED_DOCK); });
-
-			if(managed_window.size() > 1) {
-				/* Grab keyboard */
-				/** TODO: check for success or failure **/
-				xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), e->time,
-						XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-				/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-				xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
-				grab_start(new grab_alt_tab_t{this, managed_window});
-			}
+		if (_grab_handler == nullptr) {
+			start_alt_tab(e->time);
 		}
 	}
 }
@@ -3510,7 +3480,11 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 		_grab_handler->button_motion(e);
 		return;
 	} else {
-		broadcast_button_motion(e);
+		if(e->root_x == 0 and e->root_y == 0) {
+			start_alt_tab(e->time);
+		} else {
+			broadcast_button_motion(e);
+		}
 	}
 }
 
@@ -3823,6 +3797,37 @@ void page_t::render(cairo_t * cr, region const & area) {
 					_root_position.x, _root_position.y);
 		}
 		cairo_restore(cr);
+	}
+}
+
+void page_t::start_alt_tab(xcb_timestamp_t time) {
+	auto _x = clients_list();
+	list<shared_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
+
+	auto focus_history = global_client_focus_history();
+	/* reorder client to follow focused order */
+	for (auto i = focus_history.rbegin();
+			i != focus_history.rend();
+			++i) {
+		if (not i->expired()) {
+			auto x = std::find_if(managed_window.begin(), managed_window.end(), [i](shared_ptr<client_managed_t> const & x) -> bool { return x == i->lock(); });
+			if(x != managed_window.end()) {
+				managed_window.splice(managed_window.begin(), managed_window, x);
+			}
+		}
+	}
+
+	managed_window.remove_if([](shared_ptr<client_managed_t> const & c) { return c->skip_task_bar() or c->is(MANAGED_DOCK); });
+
+	if(managed_window.size() > 1) {
+		/* Grab keyboard */
+		/** TODO: check for success or failure **/
+		xcb_grab_keyboard_unchecked(cnx->xcb(), false, cnx->root(), time,
+				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+		/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
+		xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, time);
+		grab_start(new grab_alt_tab_t{this, managed_window, time});
 	}
 }
 

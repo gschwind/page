@@ -578,17 +578,56 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 	}
 }
 
-grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window) : _ctx{ctx} {
+grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
 
 	pat = popup_alt_tab_t::create(_ctx, managed_window);
 	pat->show();
 	pat->select_next();
 	_ctx->overlay_add(pat);
+
+	xcb_grab_pointer(_ctx->dpy()->xcb(),
+	FALSE, pat->get_xid(),
+	XCB_EVENT_MASK_BUTTON_PRESS
+		| XCB_EVENT_MASK_BUTTON_RELEASE
+		| XCB_EVENT_MASK_BUTTON_MOTION
+		| XCB_EVENT_MASK_POINTER_MOTION,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+			XCB_NONE,
+			XCB_NONE, time);
+
 }
 
 grab_alt_tab_t::~grab_alt_tab_t() {
 	if(pat != nullptr)
 		_ctx->detach(pat);
+
+	xcb_ungrab_pointer(_ctx->dpy()->xcb(), XCB_CURRENT_TIME);
+}
+
+void grab_alt_tab_t::button_press(xcb_button_press_event_t const * e) {
+
+	pat->grab_button_press(e);
+
+	if (e->detail == XCB_BUTTON_INDEX_1) {
+
+		weak_ptr<client_managed_t> _mw = pat->get_selected();
+		if(_mw.expired()) {
+			xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
+			_ctx->grab_stop();
+			return;
+		}
+
+		auto mw = _mw.lock();
+
+		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
+		mw->activate();
+		_ctx->set_focus(mw, e->time);
+		_ctx->grab_stop();
+	}
+}
+
+void grab_alt_tab_t::button_motion(xcb_motion_notify_event_t const * e) {
+	pat->grab_button_motion(e);
 }
 
 void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
@@ -631,6 +670,14 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 	unsigned int state = e->state;
 	if(_ctx->keymap()->numlock_mod_mask() != 0) {
 		state &= ~(_ctx->keymap()->numlock_mod_mask());
+	}
+
+
+	if (XK_Escape == k) {
+		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
+		//mw->activate();
+		_ctx->set_focus(mw, e->time);
+		_ctx->grab_stop();
 	}
 
 	/** here we guess Mod1 is bound to Alt **/

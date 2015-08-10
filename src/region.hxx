@@ -418,6 +418,14 @@ public:
 		return ret;
 	}
 
+	bool is_inside(T x, T y) const {
+		for(auto & b: *this) {
+			if(b.is_inside(x, y))
+				return true;
+		}
+		return false;
+	}
+
 };
 
 typedef region_t<int> region;
