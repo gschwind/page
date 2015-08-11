@@ -19,12 +19,11 @@ class renderable_thumbnail_t : public tree_t {
 	rect _position;
 	int _title_width;
 
+	double _ratio;
 	rect _thumbnail_position;
 
 	weak_ptr<client_managed_t> _c;
 	shared_ptr<composite_surface_view_t> _client_surface;
-
-	region _visible_region;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
@@ -36,9 +35,9 @@ public:
 		_ctx{ctx},
 		_c{c},
 		_position{position},
-		_visible_region{position},
 		_title_width{0},
-		_is_mouse_over{false}
+		_is_mouse_over{false},
+		_ratio{1.0}
 	{
 
 	}
@@ -47,99 +46,80 @@ public:
 
 	}
 
+	/** @return scale factor */
+	static double fit_to(double target_width, double target_height, double src_width, double src_height) {
+		double x_ratio = target_width / src_width;
+		double y_ratio = target_height / src_height;
+		if (x_ratio < y_ratio) {
+			return x_ratio;
+		} else {
+			return y_ratio;
+		}
+	}
+
 
 	virtual void render(cairo_t * cr, region const & area) {
-		if(_c.expired())
+		if(_c.expired() or _tt.pix == nullptr)
 			return;
 
-		_tt.pix = _client_surface->get_pixmap();
+		rect tmp = _position;
+		tmp.h -= 20;
 
-		if (_tt.pix != nullptr) {
-			rect tmp = _position;
-			tmp.h -= 20;
+		int src_width = _tt.pix->witdh();
+		int src_height = _tt.pix->height();
 
-			double src_width = _tt.pix->witdh();
-			double src_height = _tt.pix->height();
+		double ratio = fit_to(tmp.w, tmp.h, src_width, src_height);
 
-			double x_ratio = tmp.w / src_width;
-			double y_ratio = tmp.h / src_height;
+		_thumbnail_position = rect(
+				tmp.x + (tmp.w - src_width  * ratio) / 2.0,
+				tmp.y + (tmp.h - src_height * ratio) / 2.0,
+				src_width  * ratio,
+				src_height * ratio
+			);
 
-			double x_offset, y_offset;
-
-			if (x_ratio < y_ratio) {
-
-				_thumbnail_position = rect(tmp.x,
-						tmp.y + (tmp.h - src_height * x_ratio) / 2.0, tmp.w,
-						src_height * x_ratio
-
-						);
-
-				region r = area & _thumbnail_position;
-				for (auto &i : r) {
-					cairo_save(cr);
-					cairo_reset_clip(cr);
-					cairo_clip(cr, i);
-					cairo_translate(cr, _thumbnail_position.x,
-							_thumbnail_position.y);
-					cairo_scale(cr, x_ratio, x_ratio);
-					cairo_set_source_surface(cr, _tt.pix->get_cairo_surface(),
-							0.0, 0.0);
-					cairo_pattern_set_filter(cairo_get_source(cr),
-							CAIRO_FILTER_NEAREST);
-					cairo_paint(cr);
-					cairo_restore(cr);
-				}
-
-			} else {
-
-				_thumbnail_position = rect(
-						tmp.x + (tmp.w - src_width * y_ratio) / 2.0, tmp.y,
-						src_width * y_ratio, tmp.h);
-
-				region r = area & _thumbnail_position;
-				for (auto &i : r) {
-					cairo_save(cr);
-					cairo_reset_clip(cr);
-					cairo_clip(cr, i);
-					cairo_translate(cr, _thumbnail_position.x,
-							_thumbnail_position.y);
-					cairo_scale(cr, y_ratio, y_ratio);
-					cairo_set_source_surface(cr, _tt.pix->get_cairo_surface(),
-							x_offset, y_offset);
-					cairo_pattern_set_filter(cairo_get_source(cr),
-							CAIRO_FILTER_NEAREST);
-					cairo_paint(cr);
-					cairo_restore(cr);
-				}
-
-			}
-
-			if (_title_width != _thumbnail_position.w or _tt.title == nullptr) {
-				_title_width = _thumbnail_position.w;
-				update_title();
-			}
-
-			cairo_save(cr);
-			region r = _visible_region & area;
+		{
+			region r = area & _thumbnail_position;
 			for (auto &i : r) {
+				cairo_save(cr);
 				cairo_reset_clip(cr);
 				cairo_clip(cr, i);
-				cairo_set_source_surface(cr, _tt.title->get_cairo_surface(), _thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);
-				cairo_paint(cr);
-
-				if (_is_mouse_over) {
-					cairo_identity_matrix(cr);
-					cairo_set_line_width(cr, 2.0);
-					cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
-					cairo_rectangle(cr, _thumbnail_position.x+1,
-							_thumbnail_position.y+1, _thumbnail_position.w-2.0,
-							_thumbnail_position.h+20-2.0);
-					cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-					cairo_stroke(cr);
-				}
+				cairo_translate(cr, _thumbnail_position.x,
+						_thumbnail_position.y);
+				cairo_scale(cr, ratio, ratio);
+				cairo_set_source_surface(cr, _tt.pix->get_cairo_surface(),
+						0.0, 0.0);
+				cairo_pattern_set_filter(cairo_get_source(cr),
+						CAIRO_FILTER_NEAREST);
+				cairo_paint(cr);;
+				cairo_restore(cr);
 			}
-			cairo_restore(cr);
 		}
+
+		if (_title_width != _thumbnail_position.w or _tt.title == nullptr) {
+			_title_width = _thumbnail_position.w;
+			update_title();
+		}
+
+		cairo_save(cr);
+		region r =  area & get_real_position();
+		for (auto &i : r) {
+			cairo_reset_clip(cr);
+			cairo_clip(cr, i);
+			cairo_set_source_surface(cr, _tt.title->get_cairo_surface(), _thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);
+			cairo_paint(cr);
+
+			if (_is_mouse_over) {
+				cairo_identity_matrix(cr);
+				cairo_set_line_width(cr, 2.0);
+				cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+				cairo_rectangle(cr, _thumbnail_position.x+1,
+						_thumbnail_position.y+1, _thumbnail_position.w-2.0,
+						_thumbnail_position.h+20-2.0);
+				cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
+				cairo_stroke(cr);
+			}
+		}
+		cairo_restore(cr);
 
 	}
 
@@ -156,7 +136,7 @@ public:
 	 * If unknow the whole screen can be returned, but draw will be called each time.
 	 **/
 	virtual region get_visible_region() {
-		return _visible_region;
+		return get_real_position();
 	}
 
 	virtual region get_damaged() {
@@ -168,7 +148,7 @@ public:
 	}
 
 	void set_mouse_over(bool x) {
-		_damaged_cache += region{_position};
+		_damaged_cache += region{get_real_position()};
 		_is_mouse_over = x;
 	}
 
@@ -181,10 +161,9 @@ public:
 
 
 	void move_to(rect const & pos) {
-		_damaged_cache += _position;
+		_damaged_cache += get_real_position();
 		_position = pos;
-		_visible_region = pos;
-		_damaged_cache += _position;
+		_damaged_cache += get_real_position();
 		update_title();
 	}
 
@@ -196,8 +175,27 @@ public:
 		if(_c.expired() or not _is_visible)
 			return;
 
+		_tt.pix = _client_surface->get_pixmap();
+
+		if (_tt.pix != nullptr) {
+			rect tmp = _position;
+			tmp.h -= 20;
+
+			int src_width = _tt.pix->witdh();
+			int src_height = _tt.pix->height();
+
+			_ratio = fit_to(tmp.w, tmp.h, src_width, src_height);
+
+			_thumbnail_position = rect(
+					tmp.x + (tmp.w - src_width  * _ratio) / 2.0,
+					tmp.y + (tmp.h - src_height * _ratio) / 2.0,
+					src_width  * _ratio,
+					src_height * _ratio
+				);
+		}
+
 		if(_client_surface->has_damage()) {
-			_damaged_cache += region{_position};
+			_damaged_cache += region{get_real_position()};
 			_client_surface->clear_damaged();
 		}
 	}
