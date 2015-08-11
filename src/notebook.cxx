@@ -906,10 +906,12 @@ void notebook_t::_mouse_over_set() {
 		pos.w = 256;
 		pos.h = 256;
 
-		tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
-		tooltips->set_parent(shared_from_this());
-		tooltips->show();
-		tooltips->set_mouse_over(true);
+		if(std::get<2>(*_mouse_over.tab) != &_theme_notebook.selected_client) {
+			tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
+			tooltips->set_parent(shared_from_this());
+			tooltips->show();
+			tooltips->set_mouse_over(true);
+		}
 	}
 
 	if(_mouse_over.exposay != nullptr) {
