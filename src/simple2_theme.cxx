@@ -1413,16 +1413,21 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 		unsigned int height, std::string const & title) const {
 
 
-	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
-	CHECK_CAIRO(cairo_clip(cr));
-	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
-	cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 0.5);
-	CHECK_CAIRO(cairo_mask(cr, p));
-	cairo_pattern_destroy(p);
-	cairo_reset_clip(cr);
-	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
+//	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
+//	CHECK_CAIRO(cairo_clip(cr));
+//	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
+//	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
+//	cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 0.5);
+//	CHECK_CAIRO(cairo_mask(cr, p));
+//	cairo_pattern_destroy(p);
+//	cairo_reset_clip(cr);
+//	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
 	//draw_hatched_i_rect(cr, 40, 1, 1, width - 2, height - 2);
+
+	cairo_set_line_width(cr, 3.0);
+	cairo_set_source_rgb(cr, popup_background_color);
+	cairo_rounded_tab2(cr, 3, 3, width - 6, height - 6, 10.0);
+	cairo_stroke(cr);
 
 	if (icon != nullptr) {
 		double x_offset = (width - 64) / 2.0;
@@ -1884,6 +1889,14 @@ void simple2_theme_t::cairo_rounded_tab(cairo_t * cr, double x, double y, double
  * Draw rectangle with all corner rounded
  **/
 void simple2_theme_t::cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius) {
+
+	if(radius * 2 > w) {
+		radius = w / 2.0;
+	}
+
+	if(radius * 2 > h) {
+		radius = h / 2.0;
+	}
 
 	CHECK_CAIRO(cairo_new_path(cr));
 	CHECK_CAIRO(cairo_move_to(cr, x, y + h - radius));
