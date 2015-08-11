@@ -653,7 +653,7 @@ void notebook_t::_update_exposay() {
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{it->client}, i));
 		pdst = to_root_position(pdst);
-		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, pdst, it->client);
+		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->client, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
@@ -906,7 +906,7 @@ void notebook_t::_mouse_over_set() {
 		pos.w = 256;
 		pos.h = 256;
 
-		tooltips = make_shared<renderable_thumbnail_t>(_ctx, pos, std::get<1>(*_mouse_over.tab).lock());
+		tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
 		tooltips->set_parent(shared_from_this());
 		tooltips->show();
 		tooltips->set_mouse_over(true);

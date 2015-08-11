@@ -14,13 +14,27 @@
 
 namespace page {
 
+enum thumnail_anchor_e {
+	ANCHOR_TOP,
+	ANCHOR_LEFT,
+	ANCHOR_BOTTOM,
+	ANCHOR_RIGHT,
+	ANCHOR_TOP_LEFT,
+	ANCHOR_TOP_RIGHT,
+	ANCHOR_BOTTOM_LEFT,
+	ANCHOR_BOTTOM_RIGHT,
+	ANCHOR_CENTER
+};
+
+
 class renderable_thumbnail_t : public tree_t {
 	page_context_t * _ctx;
-	rect _position;
 	int _title_width;
 
-	double _ratio;
+	thumnail_anchor_e _target_anchor;
+	rect _target_position;
 	rect _thumbnail_position;
+	double _ratio;
 
 	weak_ptr<client_managed_t> _c;
 	shared_ptr<composite_surface_view_t> _client_surface;
@@ -31,13 +45,14 @@ class renderable_thumbnail_t : public tree_t {
 
 public:
 
-	renderable_thumbnail_t(page_context_t * ctx, rect const & position, shared_ptr<client_managed_t> c) :
+	renderable_thumbnail_t(page_context_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
 		_ctx{ctx},
 		_c{c},
-		_position{position},
 		_title_width{0},
 		_is_mouse_over{false},
-		_ratio{1.0}
+		_ratio{1.0},
+		_target_position{target_position},
+		_target_anchor{target_anchor}
 	{
 
 	}
@@ -62,21 +77,6 @@ public:
 		if(_c.expired() or _tt.pix == nullptr)
 			return;
 
-		rect tmp = _position;
-		tmp.h -= 20;
-
-		int src_width = _tt.pix->witdh();
-		int src_height = _tt.pix->height();
-
-		double ratio = fit_to(tmp.w, tmp.h, src_width, src_height);
-
-		_thumbnail_position = rect(
-				tmp.x + (tmp.w - src_width  * ratio) / 2.0,
-				tmp.y + (tmp.h - src_height * ratio) / 2.0,
-				src_width  * ratio,
-				src_height * ratio
-			);
-
 		{
 			region r = area & _thumbnail_position;
 			for (auto &i : r) {
@@ -85,7 +85,7 @@ public:
 				cairo_clip(cr, i);
 				cairo_translate(cr, _thumbnail_position.x,
 						_thumbnail_position.y);
-				cairo_scale(cr, ratio, ratio);
+				cairo_scale(cr, _ratio, _ratio);
 				cairo_set_source_surface(cr, _tt.pix->get_cairo_surface(),
 						0.0, 0.0);
 				cairo_pattern_set_filter(cairo_get_source(cr),
@@ -160,10 +160,9 @@ public:
 	}
 
 
-	void move_to(rect const & pos) {
+	void move_to(rect const & target_position) {
 		_damaged_cache += get_real_position();
-		_position = pos;
-		_damaged_cache += get_real_position();
+		_target_position = target_position;
 		update_title();
 	}
 
@@ -178,20 +177,51 @@ public:
 		_tt.pix = _client_surface->get_pixmap();
 
 		if (_tt.pix != nullptr) {
-			rect tmp = _position;
-			tmp.h -= 20;
 
 			int src_width = _tt.pix->witdh();
 			int src_height = _tt.pix->height();
 
-			_ratio = fit_to(tmp.w, tmp.h, src_width, src_height);
+			_ratio = fit_to(_target_position.w, _target_position.h, src_width, src_height);
 
-			_thumbnail_position = rect(
-					tmp.x + (tmp.w - src_width  * _ratio) / 2.0,
-					tmp.y + (tmp.h - src_height * _ratio) / 2.0,
-					src_width  * _ratio,
-					src_height * _ratio
-				);
+			_thumbnail_position = rect(0, 0, src_width  * _ratio, src_height * _ratio);
+
+
+			switch(_target_anchor) {
+			case ANCHOR_TOP:
+			case ANCHOR_TOP_LEFT:
+			case ANCHOR_TOP_RIGHT:
+				_thumbnail_position.y = _target_position.y;
+				break;
+			case ANCHOR_LEFT:
+			case ANCHOR_CENTER:
+			case ANCHOR_RIGHT:
+				_thumbnail_position.y = _target_position.y + ((_target_position.h - 20) - src_height * _ratio) / 2.0;
+				break;
+			case ANCHOR_BOTTOM:
+			case ANCHOR_BOTTOM_LEFT:
+			case ANCHOR_BOTTOM_RIGHT:
+				_thumbnail_position.y = _target_position.y + (_target_position.h - 20) - src_height * _ratio;
+				break;
+			}
+
+			switch(_target_anchor) {
+			case ANCHOR_LEFT:
+			case ANCHOR_TOP_LEFT:
+			case ANCHOR_BOTTOM_LEFT:
+				_thumbnail_position.x = _target_position.x;
+				break;
+			case ANCHOR_TOP:
+			case ANCHOR_BOTTOM:
+			case ANCHOR_CENTER:
+				_thumbnail_position.x = _target_position.x + (_target_position.w - src_width * _ratio) / 2.0;
+				break;
+			case ANCHOR_RIGHT:
+			case ANCHOR_TOP_RIGHT:
+			case ANCHOR_BOTTOM_RIGHT:
+				_thumbnail_position.x = _target_position.x + _target_position.w - src_width * _ratio;
+				break;
+			}
+
 		}
 
 		if(_client_surface->has_damage()) {

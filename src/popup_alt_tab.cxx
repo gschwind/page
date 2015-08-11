@@ -81,7 +81,7 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 		entry.client = c;
 		entry.title = c->title();
 		entry.icon = make_shared<icon64>(c.get());
-		entry._thumbnail = make_shared<renderable_thumbnail_t>(_ctx, pos, c);
+		entry._thumbnail = make_shared<renderable_thumbnail_t>(_ctx, c, pos, ANCHOR_CENTER);
 		entry.destroy_func = c->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
 		_client_list.push_back(entry);
 		++i;
