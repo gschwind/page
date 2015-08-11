@@ -75,7 +75,12 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 		int x = i % nx;
 		int y = i / nx;
 
-		rect pos{x*width+5+_position.x, y*height+5+_position.y, width-10, height-10};
+		int x_offset = 0;
+		if(y == ny - 1) {
+			x_offset = (_position.w - width * (client_list.size() - y*nx)) / 2.0;
+		}
+
+		rect pos{x*width+20+_position.x+x_offset, y*height+20+_position.y, width-40, height-40};
 
 		cycle_window_entry_t entry;
 		entry.client = c;
