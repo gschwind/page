@@ -711,6 +711,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 				if(std::get<0>(i).is_inside(x, y)) {
 					auto c = std::get<1>(i).lock();
 					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
+					_mouse_over_reset();
 					return true;
 				}
 			}
