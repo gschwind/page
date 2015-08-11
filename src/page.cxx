@@ -2609,7 +2609,6 @@ void page_t::onmap(xcb_window_t w) {
 void page_t::create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
 	try {
 		auto mw = make_shared<client_managed_t>(this, type, c);
-		cout << cnx << " " << mw->cnx() << endl;
 		manage_client(mw, type);
 
 		if(mw->net_wm_strut() != nullptr or mw->net_wm_strut_partial() != nullptr) {

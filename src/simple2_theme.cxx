@@ -1118,7 +1118,7 @@ void simple2_theme_t::render_thumbnail_title(cairo_t * cr, rect btext, std::stri
 		pango_layout_set_text(pango_layout, title.c_str(), -1);
 		pango_layout_set_width(pango_layout, btext.w * PANGO_SCALE);
 		pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
-		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+		pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_MIDDLE);
 		pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
 		pango_cairo_layout_path(cr, pango_layout);
 		g_object_unref(pango_layout);
