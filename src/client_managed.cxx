@@ -1494,7 +1494,7 @@ void client_managed_t::_update_opaque_region() {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
 	} else {
 		if (geometry()->depth != 32) {
-			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
+			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
 		}
 	}
 
