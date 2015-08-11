@@ -21,6 +21,7 @@
 #include <utility>
 #include <iostream>
 
+#include "utils.hxx"
 #include "display.hxx"
 #include "composite_surface.hxx"
 
@@ -58,6 +59,8 @@ private:
 	auto  _create_surface(xcb_window_t w) -> weak_ptr<composite_surface_t>;
 
 public:
+
+	signal_t<xcb_window_t, bool> on_visibility_change;
 
 	~composite_surface_manager_t() {
 		/* sanity check */

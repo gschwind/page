@@ -348,6 +348,8 @@ void page_t::run() {
 	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	auto handle = add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
 
+	auto on_visibility_change_func = cmgr->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
+
 	mainloop_t::run();
 
 
@@ -3827,6 +3829,17 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 		/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
 		xcb_allow_events(cnx->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, time);
 		grab_start(new grab_alt_tab_t{this, managed_window, time});
+	}
+}
+
+void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
+	auto client = dynamic_pointer_cast<client_managed_t>(find_client_with(xid));
+	if(client != nullptr) {
+		if(visible) {
+			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+		} else {
+			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+		}
 	}
 }
 

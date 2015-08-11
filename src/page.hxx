@@ -384,6 +384,8 @@ public:
 	void global_focus_history_move_front(shared_ptr<client_managed_t> in);
 	bool global_focus_history_is_empty();
 
+	void on_visibility_change_handler(xcb_window_t xid, bool visible);
+
 	/**
 	 * tree_t virtual API
 	 **/

@@ -84,6 +84,7 @@ void composite_surface_manager_t::apply_updates() {
 		auto i = _data.begin();
 		while(i != _data.end()) {
 			if(not (*i)->_has_views()) {
+				on_visibility_change.signal((*i)->wid(), false);
 				i = _data.erase(i);
 			} else {
 				(*i)->apply_change();
@@ -155,6 +156,8 @@ auto composite_surface_manager_t::_create_surface(xcb_window_t w) -> weak_ptr<co
 		x->enable_redirect();
 	_data.push_back(x);
 	_index[w] = x;
+
+	on_visibility_change.signal(x->wid(), true);
 	return x;
 }
 
