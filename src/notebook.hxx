@@ -171,7 +171,7 @@ class notebook_t : public page_component_t {
 
 public:
 
-	notebook_t(page_context_t * ctx, bool keep_selected);
+	notebook_t(page_context_t * ctx);
 	virtual ~notebook_t();
 
 	/**

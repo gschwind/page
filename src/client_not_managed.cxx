@@ -16,9 +16,7 @@ using namespace std;
 
 client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_properties_t> c) :
 		client_base_t{ctx, c},
-		_net_wm_type{type},
-		_shadow{nullptr},
-		_base_renderable{nullptr}
+		_net_wm_type{type}
 {
 	_is_visible = true;
 	if (cnx()->lock(orig())) {
@@ -80,17 +78,6 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	rect pos(_properties->geometry()->x, _properties->geometry()->y,
 			_properties->geometry()->width, _properties->geometry()->height);
 
-	if (_ctx->menu_drop_down_shadow()) {
-		xcb_atom_t t = _properties->wm_type();
-		if (t == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)
-				or t == A(_NET_WM_WINDOW_TYPE_MENU)
-				or t == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-
-			delete _shadow;
-			_shadow = new renderable_unmanaged_gaussian_shadow_t<4> { pos,
-					color_t { 0.0, 0.0, 0.0, 1.0 } };
-		}
-	}
 }
 
 region client_not_managed_t::get_visible_region() {

@@ -38,6 +38,14 @@ struct grab_handler_t {
 	virtual void key_release(xcb_key_release_event_t const * ev) = 0;
 };
 
+struct page_configuration_t {
+	bool _replace_wm;
+	bool _menu_drop_down_shadow;
+	bool _auto_refocus;
+	bool _mouse_focus;
+	bool _enable_shade_windows;
+};
+
 /**
  * Page context is a pseudo global context for page.
  * This interface allow any page component to perform action on page context.
@@ -53,6 +61,7 @@ public:
 	 * page_context_t virtual API
 	 **/
 
+	virtual auto conf() const -> page_configuration_t const & = 0;
 	virtual auto theme() const -> theme_t const * = 0;
 	virtual auto csm() const -> composite_surface_manager_t * = 0;
 	virtual auto dpy() const -> display_t * = 0;
@@ -81,7 +90,6 @@ public:
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>> = 0;
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>> = 0;
 	virtual auto keymap() const -> keymap_t const * = 0;
-	virtual bool menu_drop_down_shadow() const = 0;
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
 
 };

@@ -16,23 +16,21 @@ namespace page {
 
 using namespace std;
 
-viewport_t::viewport_t(page_context_t * ctx, rect const & area, bool keep_focus) :
+viewport_t::viewport_t(page_context_t * ctx, rect const & area) :
 		_ctx{ctx},
 		_raw_aera{area},
 		_effective_area{area},
 		_is_durty{true},
 		_win{XCB_NONE},
 		_back_surf{nullptr},
-		_exposed{false}
+		_exposed{false},
+		_subtree{nullptr}
 {
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
-	_subtree.reset();
-	_subtree = make_shared<notebook_t>(_ctx, keep_focus);
 }
 
 viewport_t::~viewport_t() {
-	std::cout << "call " << __FUNCTION__ << std::endl;
 	destroy_renderable();
 	xcb_destroy_window(_ctx->dpy()->xcb(), _win);
 	_win = XCB_NONE;
@@ -281,11 +279,6 @@ void viewport_t::expose(xcb_expose_event_t const * e) {
 	}
 }
 
-void viewport_t::_post_init() {
-	_subtree->set_parent(shared_from_this());
-	_subtree->set_allocation(_page_area);
-}
-
 auto viewport_t::get_visible_region() -> region {
 	return region{_effective_area};
 }
@@ -312,6 +305,14 @@ void viewport_t::render(cairo_t * cr, region const & area) {
 		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _effective_area.x, _effective_area.y);
 	}
 	cairo_restore(cr);
+}
+
+void viewport_t::create_default_subtree() {
+	if (_subtree == nullptr) {
+		_subtree = make_shared<notebook_t>(_ctx);
+		_subtree->set_parent(shared_from_this());
+		_subtree->set_allocation(_page_area);
+	}
 }
 
 }

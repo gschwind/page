@@ -37,9 +37,6 @@ private:
 
 	mutable rect _base_position;
 
-	renderable_unmanaged_gaussian_shadow_t<4> * _shadow;
-	renderable_pixmap_t * _base_renderable;
-
 	mutable region _opaque_region_cache;
 	mutable region _visible_region_cache;
 	mutable region _damage_cache;

@@ -67,12 +67,15 @@ page_t::page_t(int argc, char ** argv)
 
 	identity_window = XCB_NONE;
 
-	_replace_wm = false;
 	char const * conf_file_name = 0;
+
+	configuration._replace_wm = false;
 
 	_need_restack = false;
 	_need_update_client_list = false;
-	_menu_drop_down_shadow = false;
+
+
+	configuration._menu_drop_down_shadow = false;
 
 	/** parse command line **/
 
@@ -80,7 +83,7 @@ page_t::page_t(int argc, char ** argv)
 	while(k < argc) {
 		string x = argv[k];
 		if(x == "--replace") {
-			_replace_wm = true;
+			configuration._replace_wm = true;
 		} else {
 			conf_file_name = argv[k];
 		}
@@ -95,7 +98,7 @@ page_t::page_t(int argc, char ** argv)
 	/* load configurations, from lower priority to high one */
 
 	/* load default configuration */
-	conf.merge_from_file_if_exist(string{DATA_DIR "/page/page.conf"});
+	_conf.merge_from_file_if_exist(string{DATA_DIR "/page/page.conf"});
 
 	/* load homedir configuration */
 	{
@@ -103,18 +106,18 @@ page_t::page_t(int argc, char ** argv)
 		if(chome != nullptr) {
 			string xhome = chome;
 			string file = xhome + "/.page.conf";
-			conf.merge_from_file_if_exist(file);
+			_conf.merge_from_file_if_exist(file);
 		}
 	}
 
 	/* load file in arguments if provided */
 	if (conf_file_name != nullptr) {
 		string s(conf_file_name);
-		conf.merge_from_file_if_exist(s);
+		_conf.merge_from_file_if_exist(s);
 	}
 
-	page_base_dir = conf.get_string("default", "theme_dir");
-	_theme_engine = conf.get_string("default", "theme_engine");
+	page_base_dir = _conf.get_string("default", "theme_dir");
+	_theme_engine = _conf.get_string("default", "theme_engine");
 
 	_last_focus_time = XCB_TIME_CURRENT_TIME;
 	_last_button_press = XCB_TIME_CURRENT_TIME;
@@ -123,68 +126,68 @@ page_t::page_t(int argc, char ** argv)
 
 	_theme = nullptr;
 
-	find_key_from_string(conf.get_string("default", "bind_page_quit"), bind_page_quit);
-	find_key_from_string(conf.get_string("default", "bind_close"), bind_close);
-	find_key_from_string(conf.get_string("default", "bind_exposay_all"), bind_exposay_all);
-	find_key_from_string(conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
-	find_key_from_string(conf.get_string("default", "bind_toggle_compositor"), bind_toggle_compositor);
-	find_key_from_string(conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
-	find_key_from_string(conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
+	find_key_from_string(_conf.get_string("default", "bind_page_quit"), bind_page_quit);
+	find_key_from_string(_conf.get_string("default", "bind_close"), bind_close);
+	find_key_from_string(_conf.get_string("default", "bind_exposay_all"), bind_exposay_all);
+	find_key_from_string(_conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
+	find_key_from_string(_conf.get_string("default", "bind_toggle_compositor"), bind_toggle_compositor);
+	find_key_from_string(_conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
+	find_key_from_string(_conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
 
-	find_key_from_string(conf.get_string("default", "bind_bind_window"), bind_bind_window);
-	find_key_from_string(conf.get_string("default", "bind_fullscreen_window"), bind_fullscreen_window);
-	find_key_from_string(conf.get_string("default", "bind_float_window"), bind_float_window);
+	find_key_from_string(_conf.get_string("default", "bind_bind_window"), bind_bind_window);
+	find_key_from_string(_conf.get_string("default", "bind_fullscreen_window"), bind_fullscreen_window);
+	find_key_from_string(_conf.get_string("default", "bind_float_window"), bind_float_window);
 
-	find_key_from_string(conf.get_string("default", "bind_debug_1"), bind_debug_1);
-	find_key_from_string(conf.get_string("default", "bind_debug_2"), bind_debug_2);
-	find_key_from_string(conf.get_string("default", "bind_debug_3"), bind_debug_3);
-	find_key_from_string(conf.get_string("default", "bind_debug_4"), bind_debug_4);
+	find_key_from_string(_conf.get_string("default", "bind_debug_1"), bind_debug_1);
+	find_key_from_string(_conf.get_string("default", "bind_debug_2"), bind_debug_2);
+	find_key_from_string(_conf.get_string("default", "bind_debug_3"), bind_debug_3);
+	find_key_from_string(_conf.get_string("default", "bind_debug_4"), bind_debug_4);
 
 
-	find_key_from_string(conf.get_string("default", "bind_cmd_0"), bind_cmd[0].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_1"), bind_cmd[1].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_2"), bind_cmd[2].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_3"), bind_cmd[3].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_4"), bind_cmd[4].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_5"), bind_cmd[5].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_6"), bind_cmd[6].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_7"), bind_cmd[7].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_8"), bind_cmd[8].key);
-	find_key_from_string(conf.get_string("default", "bind_cmd_9"), bind_cmd[9].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_0"), bind_cmd[0].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_1"), bind_cmd[1].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_2"), bind_cmd[2].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_3"), bind_cmd[3].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_4"), bind_cmd[4].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_5"), bind_cmd[5].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_6"), bind_cmd[6].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_7"), bind_cmd[7].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_8"), bind_cmd[8].key);
+	find_key_from_string(_conf.get_string("default", "bind_cmd_9"), bind_cmd[9].key);
 
-	bind_cmd[0].cmd = conf.get_string("default", "exec_cmd_0");
-	bind_cmd[1].cmd = conf.get_string("default", "exec_cmd_1");
-	bind_cmd[2].cmd = conf.get_string("default", "exec_cmd_2");
-	bind_cmd[3].cmd = conf.get_string("default", "exec_cmd_3");
-	bind_cmd[4].cmd = conf.get_string("default", "exec_cmd_4");
-	bind_cmd[5].cmd = conf.get_string("default", "exec_cmd_5");
-	bind_cmd[6].cmd = conf.get_string("default", "exec_cmd_6");
-	bind_cmd[7].cmd = conf.get_string("default", "exec_cmd_7");
-	bind_cmd[8].cmd = conf.get_string("default", "exec_cmd_8");
-	bind_cmd[9].cmd = conf.get_string("default", "exec_cmd_9");
+	bind_cmd[0].cmd = _conf.get_string("default", "exec_cmd_0");
+	bind_cmd[1].cmd = _conf.get_string("default", "exec_cmd_1");
+	bind_cmd[2].cmd = _conf.get_string("default", "exec_cmd_2");
+	bind_cmd[3].cmd = _conf.get_string("default", "exec_cmd_3");
+	bind_cmd[4].cmd = _conf.get_string("default", "exec_cmd_4");
+	bind_cmd[5].cmd = _conf.get_string("default", "exec_cmd_5");
+	bind_cmd[6].cmd = _conf.get_string("default", "exec_cmd_6");
+	bind_cmd[7].cmd = _conf.get_string("default", "exec_cmd_7");
+	bind_cmd[8].cmd = _conf.get_string("default", "exec_cmd_8");
+	bind_cmd[9].cmd = _conf.get_string("default", "exec_cmd_9");
 
-	if(conf.get_string("default", "auto_refocus") == "true") {
-		_auto_refocus = true;
+	if(_conf.get_string("default", "auto_refocus") == "true") {
+		configuration._auto_refocus = true;
 	} else {
-		_auto_refocus = false;
+		configuration._auto_refocus = false;
 	}
 
-	if(conf.get_string("default", "enable_shade_windows") == "true") {
-		_enable_shade_windows = true;
+	if(_conf.get_string("default", "enable_shade_windows") == "true") {
+		configuration._enable_shade_windows = true;
 	} else {
-		_enable_shade_windows = false;
+		configuration._enable_shade_windows = false;
 	}
 
-	if(conf.get_string("default", "mouse_focus") == "true") {
-		_mouse_focus = true;
+	if(_conf.get_string("default", "mouse_focus") == "true") {
+		configuration._mouse_focus = true;
 	} else {
-		_mouse_focus = false;
+		configuration._mouse_focus = false;
 	}
 
-	if(conf.get_string("default", "menu_drop_down_shadow") == "true") {
-		_menu_drop_down_shadow = true;
+	if(_conf.get_string("default", "menu_drop_down_shadow") == "true") {
+		configuration._menu_drop_down_shadow = true;
 	} else {
-		_menu_drop_down_shadow = false;
+		configuration._menu_drop_down_shadow = false;
 	}
 
 }
@@ -224,9 +227,6 @@ void page_t::run() {
 	start_compositor();
 
 	_dpy->grab();
-
-
-
 	_dpy->change_property(_dpy->root(), _NET_SUPPORTING_WM_CHECK,
 			WINDOW, 32, &identity_window, 1);
 
@@ -239,11 +239,11 @@ void page_t::run() {
 //		std::cout << "using tiny theme engine" << std::endl;
 //		_theme = new tiny_theme_t{cnx, conf};
 		cout << "using simple theme engine" << endl;
-		_theme = new simple2_theme_t{_dpy, conf};
+		_theme = new simple2_theme_t{_dpy, _conf};
 	} else {
 		/* The default theme engine */
 		cout << "using simple theme engine" << endl;
-		_theme = new simple2_theme_t{_dpy, conf};
+		_theme = new simple2_theme_t{_dpy, _conf};
 	}
 
 	/* start listen root event before anything, each event will be stored to be processed later */
@@ -405,7 +405,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 
 	shared_ptr<client_managed_t> new_focus;
 	if (get_current_workspace()->client_focus_history_front(new_focus)) {
-		if (not _auto_refocus) {
+		if (not configuration._auto_refocus) {
 			set_focus(nullptr, XCB_CURRENT_TIME);
 		} else {
 			new_focus->activate();
@@ -1542,7 +1542,7 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 
 void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
-	auto n = make_shared<notebook_t>(this, _auto_refocus);
+	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(n);
@@ -1556,7 +1556,7 @@ void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t>
 
 void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
-	auto n = make_shared<notebook_t>(this, _auto_refocus);
+	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
@@ -1570,7 +1570,7 @@ void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t
 
 void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
-	auto n = make_shared<notebook_t>(this, _auto_refocus);
+	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(n);
@@ -1584,7 +1584,7 @@ void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> 
 
 void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
-	auto n = make_shared<notebook_t>(this, _auto_refocus);
+	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
@@ -2376,7 +2376,8 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = viewport_t::create(this, viewport_allocation[i], _auto_refocus);
+				vp = make_shared<viewport_t>(this, viewport_allocation[i]);
+				vp->create_default_subtree();
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -2391,7 +2392,8 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = viewport_t::create(this, area, _auto_refocus);
+				vp = make_shared<viewport_t>(this, area);
+				vp->create_default_subtree();
 				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
@@ -2482,8 +2484,8 @@ void page_t::onmap(xcb_window_t w) {
 			return;
 	if(w == _dpy->root())
 		return;
-	auto viewports = _root->get_all_children();
-	for(auto x: viewports) {
+
+	for(auto const & x: _root->get_all_children()) {
 		if(x->get_xid() == w)
 			return;
 	}
@@ -2960,7 +2962,7 @@ void page_t::create_identity_window() {
 }
 
 void page_t::register_wm() {
-	if (!_dpy->register_wm(identity_window, _replace_wm)) {
+	if (!_dpy->register_wm(identity_window, configuration._replace_wm)) {
 		throw exception_t("Cannot register window manager");
 	}
 }
@@ -3320,7 +3322,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
 	_root->broadcast_enter(e);
 
-	if(not _mouse_focus)
+	if(not configuration._mouse_focus)
 		return;
 
 	auto mw = find_managed_window_with(e->event);
@@ -3648,10 +3650,6 @@ keymap_t const * page_t::keymap() const {
 	return _keymap;
 }
 
-bool page_t::menu_drop_down_shadow() const {
-	return _menu_drop_down_shadow;
-}
-
 xcb_atom_t page_t::A(atom_e atom) {
 	return _dpy->A(atom);
 }
@@ -3723,6 +3721,11 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 		}
 	}
 }
+
+auto page_t::conf() const -> page_configuration_t const & {
+	return configuration;
+}
+
 
 }
 

@@ -61,22 +61,16 @@ class viewport_t: public page_component_t {
 	void create_window();
 	void _redraw_back_buffer();
 	void paint_expose();
-	void _post_init();
 
 public:
-	template<typename ... Args>
-	static shared_ptr<viewport_t> create(Args ... args) {
-		auto x = make_shared<viewport_t>(args...);
-		x->_post_init();
-		return x;
-	}
 
-
-	viewport_t(page_context_t * ctx, rect const & area, bool keep_focus);
+	viewport_t(page_context_t * ctx, rect const & area);
 	virtual ~viewport_t();
 
 	auto raw_area() const -> rect const &;
 	void set_raw_area(rect const & area);
+	void create_default_subtree();
+
 
 	/**
 	 * tree_t virtual API

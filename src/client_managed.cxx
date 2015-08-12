@@ -47,7 +47,6 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_orig(props->id()),
 				_base(XCB_WINDOW_NONE),
 				_deco(XCB_WINDOW_NONE),
-				_floating_area(0),
 				_is_focused(false),
 				_is_iconic(true),
 				_demands_attention(false),
@@ -1230,7 +1229,6 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 	} else if (is(MANAGED_FULLSCREEN)
 			and e->detail == (XCB_BUTTON_INDEX_3)
 			and (e->state & (XCB_MOD_MASK_1))) {
-		//fprintf(stderr, "start FULLSCREEN MOVE\n");
 		/** start moving fullscreen window **/
 		_ctx->grab_start(new grab_fullscreen_client_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
 		return true;

@@ -17,11 +17,11 @@ namespace page {
 
 using namespace std;
 
-notebook_t::notebook_t(page_context_t * ctx, bool keep_selected) :
+notebook_t::notebook_t(page_context_t * ctx) :
 		_ctx{ctx},
 		_is_default{false},
 		_selected{nullptr},
-		_keep_selected{keep_selected},
+		_keep_selected{ctx->conf()._auto_refocus},
 		_exposay{false},
 		_mouse_over{nullptr, nullptr}
 {

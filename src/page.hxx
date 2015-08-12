@@ -119,15 +119,12 @@ public:
 	composite_surface_manager_t * _csmgr;
 	theme_t * _theme;
 
-	bool _replace_wm;
+	page_configuration_t configuration;
+
 	bool _need_restack;
 	bool _need_update_client_list;
-	bool _menu_drop_down_shadow;
-	bool _auto_refocus;
-	bool _mouse_focus;
-	bool _enable_shade_windows;
 
-	config_handler_t conf;
+	config_handler_t _conf;
 
 
 	/**
@@ -374,6 +371,7 @@ public:
 	 * page_context_t virtual API
 	 **/
 
+	virtual auto conf() const -> page_configuration_t const &;
 	virtual auto theme() const -> theme_t const *;
 	virtual auto csm() const -> composite_surface_manager_t *;
 	virtual auto dpy() const -> display_t *;
@@ -402,7 +400,6 @@ public:
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>>;
 	virtual auto keymap() const -> keymap_t const *;
-	virtual bool menu_drop_down_shadow() const;
 
 };
 
