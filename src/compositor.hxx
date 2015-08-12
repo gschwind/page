@@ -53,10 +53,7 @@ private:
 
 	shared_ptr<atom_handler_t> _A;
 
-	/* throw compositor_fail_t on compositor already working */
-	struct compositor_fail_t { };
-
-	static std::size_t const _FPS_WINDOWS = 80;
+	static size_t const _FPS_WINDOWS = 80;
 	bool _show_damaged;
 	bool _show_opac;
 	deque<time64_t> _fps_history;
@@ -66,13 +63,6 @@ private:
 	region _damaged;
 	region _desktop_region;
 	double _desktop_region_area;
-
-
-#ifdef WITH_PANGO
-	PangoFontDescription * _fps_font_desc;
-	PangoFontMap * _fps_font_map;
-	PangoContext * _fps_context;
-#endif
 
 private:
 

@@ -63,22 +63,21 @@ static unsigned long const AllEventMask = 0x01ffffff;
 class display_t {
 
 	int _fd;
+	int _default_screen;
+
 	xcb_connection_t * _xcb;
 	xcb_screen_t * _screen;
 
-	int _default_screen;
-
 	uint32_t _xcb_default_visual_depth;
 	xcb_visualtype_t * _xcb_default_visual_type;
-
 	xcb_visualtype_t * _xcb_root_visual_type;
 
 	std::map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
 	std::map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
-
 	std::list<xcb_generic_event_t *> pending_event;
 
 	int _grab_count;
+
 
 public:
 
@@ -106,7 +105,7 @@ public:
 	/* overlay composite */
 	xcb_window_t composite_overlay;
 
-	std::shared_ptr<atom_handler_t> _A;
+	shared_ptr<atom_handler_t> _A;
 
 	xcb_font_t cursor_font;
 
@@ -211,7 +210,7 @@ public:
 
 	void clear_events();
 
-	std::list<xcb_generic_event_t *> const & get_pending_events_list();
+	list<xcb_generic_event_t *> const & get_pending_events_list();
 
 	void load_cursors();
 	void unload_cursors();
@@ -279,6 +278,8 @@ public:
 		if(err != nullptr) {
 			std::cout << "Fail to sync with the server" << std::endl;
 		}
+
+		xcb_discard_reply(_xcb, ck.sequence);
 	}
 
 	bool query_extension(char const * name, int * opcode, int * event, int * error);

@@ -38,13 +38,15 @@ public:
 		_dpy = dpy;
 		_pixmap_id = p;
 		_surf = cairo_xcb_surface_create(dpy->xcb(), p, v, w, h);
+		if(cairo_surface_status(_surf) != CAIRO_STATUS_SUCCESS) {
+			throw exception_t{"unable to create cairo_surface in %s", __PRETTY_FUNCTION__};
+		}
 		_w = w;
 		_h = h;
 	}
 
 	pixmap_t(display_t * dpy, pixmap_format_e format, unsigned width, unsigned height) :
-		_dpy{dpy},
-		_w{width}, _h{height}
+		_dpy{dpy}, _w{width}, _h{height}
 	{
 		if (format == PIXMAP_RGB) {
 			_pixmap_id = xcb_generate_id(_dpy->xcb());

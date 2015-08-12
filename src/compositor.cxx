@@ -97,24 +97,12 @@ compositor_t::compositor_t(display_t * cnx) :
 	_show_damaged = false;
 	_show_opac = false;
 
-#ifdef WITH_PANGO
-	_fps_font_desc = pango_font_description_from_string("Ubuntu Mono Bold 11");
-	_fps_font_map = pango_cairo_font_map_new();
-	_fps_context = pango_font_map_create_context(_fps_font_map);
-#endif
-
 	/* this will scan for all windows */
 	update_layout();
 
 }
 
 compositor_t::~compositor_t() {
-
-#ifdef WITH_PANGO
-	pango_font_description_free(_fps_font_desc);
-	g_object_unref(_fps_context);
-	g_object_unref(_fps_font_map);
-#endif
 
 	if(composite_back_buffer != XCB_NONE) {
 		xcb_free_pixmap(_dpy->xcb(), composite_back_buffer);
@@ -289,44 +277,6 @@ void compositor_t::update_layout() {
 
 xcb_window_t compositor_t::get_composite_overlay() {
 	return composite_overlay;
-}
-
-void compositor_t::pango_printf(cairo_t * cr, double x, double y,
-		char const * fmt, ...) {
-
-#ifdef WITH_PANGO
-
-	va_list l;
-	va_start(l, fmt);
-
-	cairo_save(cr);
-	cairo_move_to(cr, x, y);
-	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-	static char buffer[4096];
-	vsnprintf(buffer, 4096, fmt, l);
-
-	PangoLayout * pango_layout = pango_layout_new(_fps_context);
-	pango_layout_set_font_description(pango_layout, _fps_font_desc);
-	pango_cairo_update_layout(cr, pango_layout);
-	pango_layout_set_text(pango_layout, buffer, -1);
-	pango_cairo_layout_path(cr, pango_layout);
-	g_object_unref(pango_layout);
-
-	cairo_set_line_width(cr, 3.0);
-	cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-	cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-
-	cairo_stroke_preserve(cr);
-
-	cairo_set_line_width(cr, 1.0);
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_fill(cr);
-
-	cairo_restore(cr);
-#endif
-
 }
 
 cairo_surface_t * compositor_t::get_front_surface() const {

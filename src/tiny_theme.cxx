@@ -1437,7 +1437,7 @@ void tiny_theme_t::create_background_img() {
 
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
-		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
+		backgroun_px = make_shared<pixmap_t>(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height);
 
 		/**
 		 * WARNING: transform order and set_source_surface have huge

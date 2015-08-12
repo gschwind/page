@@ -768,6 +768,7 @@ void simple2_theme_t::render_notebook_selected(
 	{
 
 		{
+			cairo_new_path(cr);
 			PangoLayout * pango_layout = pango_layout_new(pango_context);
 			pango_layout_set_font_description(pango_layout, pango_font);
 			pango_cairo_update_layout(cr, pango_layout);
@@ -1559,9 +1560,11 @@ void simple2_theme_t::create_background_img() {
 		background_p = xcb_generate_id(_cnx->xcb());
 		xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), background_p, _cnx->root(), geometry->width, geometry->height);
 
+		if(background_s != nullptr)
+			cairo_surface_destroy(background_s);
 		background_s = cairo_xcb_surface_create(_cnx->xcb(), background_p, _cnx->root_visual(), geometry->width, geometry->height);
 
-		backgroun_px = std::shared_ptr<pixmap_t>(new pixmap_t(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height));
+		backgroun_px = make_shared<pixmap_t>(_cnx, _cnx->root_visual(), background_p, geometry->width, geometry->height);
 
 		/**
 		 * WARNING: transform order and set_source_surface have huge

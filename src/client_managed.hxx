@@ -78,10 +78,6 @@ private:
 	// icon cache
 	shared_ptr<icon16> _icon;
 
-	renderable_floating_outer_gradien_t * _shadow;
-	renderable_pixmap_t * _base_renderable;
-
-
 	xcb_visualid_t _orig_visual;
 	int _orig_depth;
 

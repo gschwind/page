@@ -83,7 +83,7 @@ enum process_mode_e {
 
 struct key_bind_cmd_t {
 	key_desc_t key;
-	std::string cmd;
+	string cmd;
 };
 
 class page_t : public page_context_t {
@@ -105,30 +105,27 @@ class page_t : public page_context_t {
 
 public:
 
-	/* auto-refocus a client if the current one is closed */
-	bool _auto_refocus;
-
-	bool _mouse_focus;
-
-	/* enable-shade */
-	bool _enable_shade_windows;
-
 private:
 	grab_handler_t * _grab_handler;
 
 public:
-	bool replace_wm;
+
 
 	/** window that handle page identity for others clients */
 	xcb_window_t identity_window;
 
-	display_t * cnx;
-	compositor_t * rnd;
-	composite_surface_manager_t * cmgr;
+	display_t * _dpy;
+	compositor_t * _compositor;
+	composite_surface_manager_t * _csmgr;
+	theme_t * _theme;
 
+	bool _replace_wm;
 	bool _need_restack;
 	bool _need_update_client_list;
 	bool _menu_drop_down_shadow;
+	bool _auto_refocus;
+	bool _mouse_focus;
+	bool _enable_shade_windows;
 
 	config_handler_t conf;
 
@@ -173,8 +170,6 @@ private:
 	xcb_timestamp_t _last_button_press;
 
 	list<weak_ptr<client_managed_t>> _global_focus_history;
-
-	theme_t * _theme;
 
 	int _left_most_border;
 	int _top_most_border;

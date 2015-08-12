@@ -167,6 +167,8 @@ void composite_surface_t::apply_change() {
 
 		_is_map = (attrs->map_state != XCB_MAP_STATE_UNMAPPED);
 
+		free(geometry);
+		free(attrs);
 	}
 
 

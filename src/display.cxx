@@ -38,7 +38,7 @@ xcb_window_t display_t::root() {
 	return _screen->root;
 }
 
-/* conveniant macro to get atom XID */
+/* convenient macro to get atom XID */
 xcb_atom_t display_t::A(atom_e atom) {
 	return (*_A)(atom);
 }
@@ -68,6 +68,11 @@ display_t::display_t() {
 }
 
 display_t::~display_t() {
+
+	for(auto x: pending_event) {
+		free(x);
+	}
+
 	xcb_disconnect(_xcb);
 }
 
@@ -78,6 +83,7 @@ void display_t::grab() {
 		if(err != nullptr) {
 			throw exception_t{"%s:%d unable to grab X11 server", __FILE__, __LINE__};
 		}
+		xcb_discard_reply(_xcb, ck.sequence);
 	}
 	++_grab_count;
 }
@@ -392,6 +398,7 @@ bool display_t::check_composite_extension() {
 			throw exception_t("ERROR: fail to get " COMPOSITE_NAME " version");
 
 		printf(COMPOSITE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
 		return true;
 	}
 #else
@@ -485,7 +492,7 @@ void display_t::update_default_visual() {
 	_screen = screen_of_display(xcb(), _default_screen);
 
 	printf("found screen %p\n", _screen);
-	if (_screen) {
+	if (_screen != nullptr) {
 		xcb_depth_iterator_t depth_iter;
 		depth_iter = xcb_screen_allowed_depths_iterator(_screen);
 		for (; depth_iter.rem; xcb_depth_next(&depth_iter)) {

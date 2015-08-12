@@ -51,9 +51,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_is_focused(false),
 				_is_iconic(true),
 				_demands_attention(false),
-				_is_durty{true},
-				_shadow{nullptr},
-				_base_renderable{nullptr}
+				_is_durty{true}
 {
 
 	_update_title();
@@ -1040,17 +1038,6 @@ void client_managed_t::update_layout(time64_t const time) {
 	_damage_cache += dmg;
 	_base_surface->clear_damaged();
 
-	if (_base_surface->get_pixmap() != nullptr) {
-		rect loc{base_position()};
-		if (prefer_window_border() and not is(MANAGED_DOCK)) {
-			delete _shadow;
-			if(is_focused()) {
-				_shadow = new renderable_floating_outer_gradien_t(loc, 18.0, 8.0);
-			} else {
-				_shadow = new renderable_floating_outer_gradien_t(loc, 8.0, 8.0);
-			}
-		}
-	}
 }
 
 void client_managed_t::render_finished() {
