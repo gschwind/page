@@ -216,7 +216,7 @@ public:
 	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius);
 
-	virtual shared_ptr<pixmap_t> get_background();
+	virtual shared_ptr<pixmap_t> get_background() const;
 
 	virtual color_t const & get_focused_color() const;
 	virtual color_t const & get_selected_color() const;

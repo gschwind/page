@@ -190,8 +190,6 @@ public:
 			run_timeout();
 
 		}
-
-
 	}
 
 	template<typename T>

@@ -49,6 +49,7 @@
 #include "page_event.hxx"
 
 #include "mainloop.hxx"
+#include "page_root.hxx"
 
 namespace page {
 
@@ -85,7 +86,7 @@ struct key_bind_cmd_t {
 	std::string cmd;
 };
 
-class page_t : public page_component_t, public mainloop_t, public page_context_t {
+class page_t : public page_context_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
 	static time64_t const default_wait;
@@ -97,6 +98,10 @@ class page_t : public page_component_t, public mainloop_t, public page_context_t
 
 	void _event_handler_bind(int type, callback_event_t f);
 	void _bind_all_default_event();
+
+	mainloop_t _mainloop;
+
+	shared_ptr<page_root_t> _root;
 
 public:
 
@@ -121,25 +126,12 @@ public:
 	compositor_t * rnd;
 	composite_surface_manager_t * cmgr;
 
-	list<shared_ptr<client_not_managed_t>> below;
-	list<shared_ptr<client_base_t>> root_subclients;
-	list<shared_ptr<client_not_managed_t>> tooltips;
-	list<shared_ptr<client_not_managed_t>> notifications;
-	list<shared_ptr<client_not_managed_t>> above;
-
-	shared_ptr<compositor_overlay_t> _fps_overlay;
-
 	bool _need_restack;
 	bool _need_update_client_list;
 	bool _menu_drop_down_shadow;
 
 	config_handler_t conf;
 
-	unsigned int _current_desktop;
-	vector<shared_ptr<workspace_t>> _desktop_list;
-
-	/** store the order of last shown desktop **/
-	list<shared_ptr<workspace_t>> _desktop_stack;
 
 	/**
 	 * Store data to allow proper revert fullscreen window to
@@ -182,9 +174,6 @@ private:
 
 	list<weak_ptr<client_managed_t>> _global_focus_history;
 
-	list<shared_ptr<tree_t>> _overlays;
-
-	rect _root_position;
 	theme_t * _theme;
 
 	int _left_most_border;
@@ -385,46 +374,6 @@ public:
 	bool global_focus_history_is_empty();
 
 	void on_visibility_change_handler(xcb_window_t xid, bool visible);
-
-	/**
-	 * tree_t virtual API
-	 **/
-
-	//virtual void hide();
-	//virtual void show();
-	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> t);
-
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
-	//virtual void update_layout(time64_t const time);
-	virtual void render(cairo_t * cr, region const & area);
-
-	virtual auto get_opaque_region() -> region;
-	virtual auto get_visible_region() -> region;
-	virtual auto get_damaged() -> region;
-
-	virtual void activate();
-	virtual void activate(shared_ptr<tree_t> t);
-	//virtual bool button_press(xcb_button_press_event_t const * ev);
-	//virtual bool button_release(xcb_button_release_event_t const * ev);
-	//virtual bool button_motion(xcb_motion_notify_event_t const * ev);
-	//virtual bool leave(xcb_leave_notify_event_t const * ev);
-	//virtual bool enter(xcb_enter_notify_event_t const * ev);
-	//virtual void expose(xcb_expose_event_t const * ev);
-	//virtual void trigger_redraw();
-
-	//virtual auto get_xid() const -> xcb_window_t;
-	//virtual auto get_parent_xid() const -> xcb_window_t;
-	//virtual rect get_window_position() const;
-	//virtual void queue_redraw();
-
-	/**
-	 * page_component_t virtual API
-	 **/
-
-	virtual void set_allocation(rect const & area);
-	virtual rect allocation() const;
-	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 	/**
 	 * page_context_t virtual API

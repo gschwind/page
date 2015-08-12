@@ -63,7 +63,6 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
-	_current_desktop = 0;
 	_grab_handler = nullptr;
 
 	identity_window = XCB_NONE;
@@ -195,12 +194,18 @@ page_t::~page_t() {
 
 	cnx->unload_cursors();
 
-	for (auto i : filter_class<client_managed_t>(get_all_children())) {
+	for (auto & i : filter_class<client_managed_t>(_root->get_all_children())) {
 		if (cnx->lock(i->orig())) {
 			cnx->reparentwindow(i->orig(), cnx->root(), 0, 0);
 			cnx->unlock();
 		}
+
+		detach(i);
+
 	}
+
+	/** destroy the tree **/
+	_root = nullptr;
 
 	delete _theme;
 	delete rnd;
@@ -232,14 +237,16 @@ page_t::~page_t() {
 void page_t::run() {
 
 	/** initialize the empty desktop **/
-	_current_desktop = 0;
+
+	_root = make_shared<page_root_t>(this);
+
 	for(unsigned k = 0; k < 4; ++k) {
 		auto d = make_shared<workspace_t>(this, k);
 
 		/** /!\ shared_from_this CANNOT be call in constructor **/
-		d->set_parent(shared_from_this());
-		_desktop_list.push_back(d);
-		_desktop_stack.push_front(d);
+		d->set_parent(_root);
+		_root->_desktop_list.push_back(d);
+		_root->_desktop_stack.push_front(d);
 		d->hide();
 	}
 
@@ -288,7 +295,7 @@ void page_t::run() {
 	update_net_supported();
 
 	/* update number of desktop */
-	uint32_t number_of_desktop = _desktop_list.size();
+	uint32_t number_of_desktop = _root->_desktop_list.size();
 	cnx->change_property(cnx->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
 
@@ -304,7 +311,7 @@ void page_t::run() {
 
 	{
 		std::vector<char> names_list;
-		for (unsigned k = 0; k < _desktop_list.size(); ++k) {
+		for (unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
 			std::ostringstream os;
 			os << "Desktop #" << k;
 			std::string s { os.str() };
@@ -342,15 +349,18 @@ void page_t::run() {
 
 
 	get_current_workspace()->show();
-	add_global_damage(_root_position);
+	add_global_damage(_root->_root_position);
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
-	add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
-	auto handle = add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
+	_mainloop.add_poll(cnx->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
+	auto handle = _mainloop.add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
 
 	auto on_visibility_change_func = cmgr->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
+	_mainloop.run();
 
-	mainloop_t::run();
+	handle = nullptr;
+	on_visibility_change_func = nullptr;
+	_mainloop.remove_poll(cnx->fd());
 
 
 }
@@ -389,7 +399,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	update_workarea();
 
 	/** if the window is destroyed, this not work, see fix on destroy **/
-	for(auto x: _desktop_list) {
+	for(auto x: _root->_desktop_list) {
 		x->client_focus_history_remove(mw);
 	}
 
@@ -454,7 +464,7 @@ void page_t::scan() {
 
 	_need_update_client_list = true;
 	update_workarea();
-	for(auto x: _desktop_list) {
+	for(auto x: _root->_desktop_list) {
 		reconfigure_docks(x);
 	}
 	_need_restack = true;
@@ -527,7 +537,7 @@ void page_t::update_net_supported() {
 
 void page_t::update_client_list() {
 
-	auto managed = filter_class<client_managed_t>(get_all_children());
+	auto managed = filter_class<client_managed_t>(_root->get_all_children());
 
 	/** sort managed client in focus order **/
 	if(not global_focus_history_is_empty()) {
@@ -556,7 +566,7 @@ void page_t::update_client_list() {
 void page_t::update_client_list_stacking() {
 
 	/** set _NET_CLIENT_LIST_STACKING : bottom to top staking **/
-	auto managed = filter_class<client_managed_t>(get_all_children());
+	auto managed = filter_class<client_managed_t>(_root->get_all_children());
 	vector<xcb_window_t> client_list_stack;
 	for(auto c: managed) {
 		client_list_stack.push_back(c->orig());
@@ -593,7 +603,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_page_quit) {
-		stop();
+		_mainloop.stop();
 	}
 
 	if(_grab_handler != nullptr) {
@@ -631,7 +641,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_right_desktop) {
-		switch_to_desktop((_current_desktop + 1) % _desktop_list.size());
+		switch_to_desktop((_root->_current_desktop + 1) % _root->_desktop_list.size());
 		shared_ptr<client_managed_t> mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			set_focus(mw, e->time);
@@ -641,7 +651,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_left_desktop) {
-		switch_to_desktop((_current_desktop - 1) % _desktop_list.size());
+		switch_to_desktop((_root->_current_desktop - 1) % _root->_desktop_list.size());
 		shared_ptr<client_managed_t> mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			set_focus(mw, e->time);
@@ -685,18 +695,18 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if (rnd != nullptr) {
 		if (key == bind_debug_1) {
-			if (_fps_overlay == nullptr) {
+			if (_root->_fps_overlay == nullptr) {
 
 				auto v = get_current_workspace()->get_any_viewport();
 				int y_pos = v->allocation().y + v->allocation().h - 100;
 				int x_pos = v->allocation().x + (v->allocation().w - 400)/2;
 
-				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
-				_fps_overlay->set_parent(shared_from_this());
-				_fps_overlay->show();
+				_root->_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
+				_root->_fps_overlay->set_parent(_root);
+				_root->_fps_overlay->show();
 			} else {
-				add_global_damage(_fps_overlay->get_visible_region());
-				_fps_overlay = nullptr;
+				add_global_damage(_root->_fps_overlay->get_visible_region());
+				_root->_fps_overlay = nullptr;
 			}
 		}
 
@@ -718,7 +728,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_debug_4) {
-		print_tree(0);
+		_root->print_tree(0);
 		for (auto i : clients_list()) {
 			switch (i->get_type()) {
 			case MANAGED_NOTEBOOK:
@@ -794,7 +804,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	broadcast_button_press(e);
+	_root->broadcast_button_press(e);
 
 	/**
 	 * if no change happened to process mode
@@ -826,7 +836,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	/** damage corresponding area **/
 	if(e->event == cnx->root()) {
-		add_compositor_damaged(_root_position);
+		add_compositor_damaged(_root->_root_position);
 	}
 
 }
@@ -1230,7 +1240,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		}
 
 	} else if (e->type == A(PAGE_QUIT)) {
-		stop();
+		_mainloop.stop();
 	} else if (e->type == A(WM_PROTOCOLS)) {
 
 	} else if (e->type == A(_NET_CLOSE_WINDOW)) {
@@ -1292,7 +1302,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
-		if(e->data.data32[0] >= 0 and e->data.data32[0] < _desktop_list.size() and e->data.data32[0] != _current_desktop) {
+		if(e->data.data32[0] >= 0 and e->data.data32[0] < _root->_desktop_list.size() and e->data.data32[0] != _root->_current_desktop) {
 			switch_to_desktop(e->data.data32[0]);
 			shared_ptr<client_managed_t> mw;
 			if (get_current_workspace()->client_focus_history_front(mw)) {
@@ -1310,9 +1320,9 @@ void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 
 void page_t::render() {
 	if (rnd != nullptr) {
-		broadcast_update_layout(time64_t::now());
-		rnd->render(this);
-		broadcast_render_finished();
+		_root->broadcast_update_layout(time64_t::now());
+		rnd->render(_root.get());
+		_root->broadcast_render_finished();
 		xcb_flush(cnx->xcb());
 	}
 }
@@ -1483,19 +1493,19 @@ void page_t::insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_pt
 
 /* update viewport and childs allocation */
 void page_t::update_workarea() {
-	for (auto d : _desktop_list) {
+	for (auto d : _root->_desktop_list) {
 		for (auto v : d->get_viewports()) {
 			compute_viewport_allocation(d, v);
 		}
 		d->set_workarea(d->primary_viewport()->allocation());
 	}
 
-	std::vector<uint32_t> workarea_data(_desktop_list.size()*4);
-	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-		workarea_data[k*4+0] = _desktop_list[k]->workarea().x;
-		workarea_data[k*4+1] = _desktop_list[k]->workarea().y;
-		workarea_data[k*4+2] = _desktop_list[k]->workarea().w;
-		workarea_data[k*4+3] = _desktop_list[k]->workarea().h;
+	std::vector<uint32_t> workarea_data(_root->_desktop_list.size()*4);
+	for(unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
+		workarea_data[k*4+0] = _root->_desktop_list[k]->workarea().x;
+		workarea_data[k*4+1] = _root->_desktop_list[k]->workarea().y;
+		workarea_data[k*4+2] = _root->_desktop_list[k]->workarea().w;
+		workarea_data[k*4+3] = _root->_desktop_list[k]->workarea().h;
 	}
 
 	cnx->change_property(cnx->root(), _NET_WORKAREA, CARDINAL, 32,
@@ -1629,7 +1639,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	 **/
 	for (auto & i : _fullscreen_client_to_viewport) {
 		if (i.second.revert_notebook.lock() == nbk) {
-			i.second.revert_notebook = _desktop_list[_current_desktop]->default_pop();
+			i.second.revert_notebook = _root->_desktop_list[_root->_current_desktop]->default_pop();
 		}
 	}
 
@@ -1659,10 +1669,10 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 
 	rect const raw_area = v->raw_area();
 
-	int margin_left = _root_position.x + raw_area.x;
-	int margin_top = _root_position.y + raw_area.y;
-	int margin_right = _root_position.w - raw_area.x - raw_area.w;
-	int margin_bottom = _root_position.h - raw_area.y - raw_area.h;
+	int margin_left = _root->_root_position.x + raw_area.x;
+	int margin_top = _root->_root_position.y + raw_area.y;
+	int margin_right = _root->_root_position.w - raw_area.x - raw_area.w;
+	int margin_bottom = _root->_root_position.h - raw_area.y - raw_area.h;
 
 	auto children = filter_class<client_base_t>(d->get_all_children());
 	for(auto j: children) {
@@ -1684,23 +1694,23 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
-					ps[PS_TOP_START_X] = _root_position.x;
-					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
+					ps[PS_TOP_START_X] = _root->_root_position.x;
+					ps[PS_TOP_END_X] = _root->_root_position.x + _root->_root_position.w;
 				}
 
 				if(ps[PS_BOTTOM] > 0) {
-					ps[PS_BOTTOM_START_X] = _root_position.x;
-					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
+					ps[PS_BOTTOM_START_X] = _root->_root_position.x;
+					ps[PS_BOTTOM_END_X] = _root->_root_position.x + _root->_root_position.w;
 				}
 
 				if(ps[PS_LEFT] > 0) {
-					ps[PS_LEFT_START_Y] = _root_position.y;
-					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
+					ps[PS_LEFT_START_Y] = _root->_root_position.y;
+					ps[PS_LEFT_END_Y] = _root->_root_position.y + _root->_root_position.h;
 				}
 
 				if(ps[PS_RIGHT] > 0) {
-					ps[PS_RIGHT_START_Y] = _root_position.y;
-					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
+					ps[PS_RIGHT_START_Y] = _root->_root_position.y;
+					ps[PS_RIGHT_END_Y] = _root->_root_position.y + _root->_root_position.h;
 				}
 
 				has_strut = true;
@@ -1721,7 +1731,7 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 
 			if (ps[PS_RIGHT] > 0) {
 				/* check if raw area intersect current viewport */
-				rect b(_root_position.w - ps[PS_RIGHT],
+				rect b(_root->_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
 				rect x = raw_area & b;
@@ -1743,7 +1753,7 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 			if (ps[PS_BOTTOM] > 0) {
 				/* check if raw area intersect current viewport */
 				rect b(ps[PS_BOTTOM_START_X],
-						_root_position.h - ps[PS_BOTTOM],
+						_root->_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
 				rect x = raw_area & b;
@@ -1757,9 +1767,9 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 	rect final_size;
 
 	final_size.x = margin_left;
-	final_size.w = _root_position.w - margin_right - margin_left;
+	final_size.w = _root->_root_position.w - margin_right - margin_left;
 	final_size.y = margin_top;
-	final_size.h = _root_position.h - margin_bottom - margin_top;
+	final_size.h = _root->_root_position.h - margin_bottom - margin_top;
 
 	v->set_allocation(final_size);
 
@@ -1810,23 +1820,23 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
-					ps[PS_TOP_START_X] = _root_position.x;
-					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
+					ps[PS_TOP_START_X] = _root->_root_position.x;
+					ps[PS_TOP_END_X] = _root->_root_position.x + _root->_root_position.w;
 				}
 
 				if(ps[PS_BOTTOM] > 0) {
-					ps[PS_BOTTOM_START_X] = _root_position.x;
-					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
+					ps[PS_BOTTOM_START_X] = _root->_root_position.x;
+					ps[PS_BOTTOM_END_X] = _root->_root_position.x + _root->_root_position.w;
 				}
 
 				if(ps[PS_LEFT] > 0) {
-					ps[PS_LEFT_START_Y] = _root_position.y;
-					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
+					ps[PS_LEFT_START_Y] = _root->_root_position.y;
+					ps[PS_LEFT_END_Y] = _root->_root_position.y + _root->_root_position.h;
 				}
 
 				if(ps[PS_RIGHT] > 0) {
-					ps[PS_RIGHT_START_Y] = _root_position.y;
-					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
+					ps[PS_RIGHT_START_Y] = _root->_root_position.y;
+					ps[PS_RIGHT_END_Y] = _root->_root_position.y + _root->_root_position.h;
 				}
 
 				has_strut = true;
@@ -1849,7 +1859,7 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 
 			if (ps[PS_RIGHT] > 0) {
 				rect pos;
-				pos.x = _root_position.w - ps[PS_RIGHT];
+				pos.x = _root->_root_position.w - ps[PS_RIGHT];
 				pos.y = ps[PS_RIGHT_START_Y];
 				pos.w = ps[PS_RIGHT];
 				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
@@ -1874,7 +1884,7 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 			if (ps[PS_BOTTOM] > 0) {
 				rect pos;
 				pos.x = ps[PS_BOTTOM_START_X];
-				pos.y = _root_position.h - ps[PS_BOTTOM];
+				pos.y = _root->_root_position.h - ps[PS_BOTTOM];
 				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
 				pos.h = ps[PS_BOTTOM];
 				j->set_floating_wished_position(pos);
@@ -2122,8 +2132,8 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 				get_workspace(workspace)->attach(dynamic_pointer_cast<client_managed_t>(c));
 			}
 		} else {
-			root_subclients.push_back(c);
-			c->set_parent(shared_from_this());
+			_root->root_subclients.push_back(c);
+			c->set_parent(_root);
 		}
 	}
 }
@@ -2205,7 +2215,7 @@ shared_ptr<notebook_t> page_t::get_another_notebook(shared_ptr<tree_t> base, sha
 	vector<shared_ptr<notebook_t>> l;
 
 	if (base == nullptr) {
-		l = filter_class<notebook_t>(get_all_children());
+		l = filter_class<notebook_t>(_root->get_all_children());
 	} else {
 		l = filter_class<notebook_t>(base->get_all_children());;
 	}
@@ -2237,7 +2247,7 @@ shared_ptr<workspace_t> page_t::find_desktop_of(shared_ptr<tree_t> n) {
 
 void page_t::update_windows_stack() {
 
-	auto tree = get_all_children();
+	auto tree = _root->get_all_children();
 
 	{
 		/**
@@ -2310,8 +2320,8 @@ void page_t::update_viewport_layout() {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-	_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
-	set_desktop_geometry(_root_position.w, _root_position.h);
+	_root->_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
+	set_desktop_geometry(_root->_root_position.w, _root->_root_position.h);
 
 	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
@@ -2354,8 +2364,8 @@ void page_t::update_viewport_layout() {
 		already_allocated += location;
 	}
 
-	for(auto d: _desktop_list) {
-		d->set_allocation(_root_position);
+	for(auto d: _root->_desktop_list) {
+		d->set_allocation(_root->_root_position);
 		/** get old layout to recycle old viewport, and keep unchanged outputs **/
 		vector<shared_ptr<viewport_t>> old_layout = d->get_viewport_map();
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
@@ -2377,7 +2387,7 @@ void page_t::update_viewport_layout() {
 
 		/** if no layout is found fallback to on screen **/
 		if(new_layout.size() < 1) {
-			rect area{_root_position};
+			rect area{_root->_root_position};
 			shared_ptr<viewport_t> vp;
 			if(0 < old_layout.size()) {
 				vp = old_layout[0];
@@ -2402,7 +2412,7 @@ void page_t::update_viewport_layout() {
 
 		if(new_layout.size() > 0) {
 			/** update position of floating managed clients to avoid offscreen floating window**/
-			for(auto x: filter_class<client_managed_t>(get_all_children())) {
+			for(auto x: filter_class<client_managed_t>(_root->get_all_children())) {
 				if(x->is(MANAGED_FLOATING)) {
 					auto r = x->position();
 					r.x = new_layout[0]->allocation().x + _theme->floating.margin.left;
@@ -2431,16 +2441,16 @@ void page_t::update_viewport_layout() {
 	update_desktop_visibility();
 
 	/* set viewport */
-	std::vector<uint32_t> viewport(_desktop_list.size()*2);
-	std::fill_n(viewport.begin(), _desktop_list.size()*2, 0);
+	std::vector<uint32_t> viewport(_root->_desktop_list.size()*2);
+	std::fill_n(viewport.begin(), _root->_desktop_list.size()*2, 0);
 	cnx->change_property(cnx->root(), _NET_DESKTOP_VIEWPORT,
-			CARDINAL, 32, &viewport[0], _desktop_list.size()*2);
+			CARDINAL, 32, &viewport[0], _root->_desktop_list.size()*2);
 
 	/* define desktop geometry */
-	set_desktop_geometry(_root_position.w, _root_position.h);
+	set_desktop_geometry(_root->_root_position.w, _root->_root_position.h);
 
 	update_workarea();
-	reconfigure_docks(_desktop_list[_current_desktop]);
+	reconfigure_docks(_root->_desktop_list[_root->_current_desktop]);
 
 }
 
@@ -2474,7 +2484,7 @@ void page_t::onmap(xcb_window_t w) {
 			return;
 	if(w == cnx->root())
 		return;
-	auto viewports = get_all_children();
+	auto viewports = _root->get_all_children();
 	for(auto x: viewports) {
 		if(x->get_xid() == w)
 			return;
@@ -2636,7 +2646,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		{
 			unsigned int const * desktop = mw->net_wm_desktop();
 			if(desktop != nullptr) {
-				if(*desktop >= _desktop_list.size()) {
+				if(*desktop >= _root->_desktop_list.size()) {
 					mw->set_current_desktop(ALL_DESKTOP);
 					mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 				}
@@ -2649,7 +2659,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 						if(mw->is_stiky()) {
 							mw->set_current_desktop(ALL_DESKTOP);
 						} else {
-							mw->set_current_desktop(_current_desktop);
+							mw->set_current_desktop(_root->_current_desktop);
 						}
 					}
 				}
@@ -2658,7 +2668,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 		if(find_current_desktop(mw) == ALL_DESKTOP) {
 			mw->show();
-		} else if(not _desktop_list[find_current_desktop(mw)]->is_visible()) {
+		} else if(not _root->_desktop_list[find_current_desktop(mw)]->is_visible()) {
 			mw->show();
 		} else {
 			mw->hide();
@@ -2669,10 +2679,10 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			XSizeHints const * size_hints = mw->wm_normal_hints();
 			if ((size_hints->flags & PMaxSize)
 					and (size_hints->flags & PMinSize)) {
-				if (size_hints->min_width == _root_position.w
-						and size_hints->min_height == _root_position.h
-						and size_hints->max_width == _root_position.w
-						and size_hints->max_height == _root_position.h) {
+				if (size_hints->min_width == _root->_root_position.w
+						and size_hints->min_height == _root->_root_position.h
+						and size_hints->max_width == _root->_root_position.w
+						and size_hints->max_height == _root->_root_position.h) {
 					mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 				}
 			}
@@ -2861,21 +2871,21 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
 		detach(uw);
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-			tooltips.push_back(uw);
-			uw->set_parent(shared_from_this());
+			_root->tooltips.push_back(uw);
+			uw->set_parent(_root);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-			notifications.push_back(uw);
-			uw->set_parent(shared_from_this());
+			_root->notifications.push_back(uw);
+			uw->set_parent(_root);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			insert_in_tree_using_transient_for(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
-			above.push_back(uw);
-			uw->set_parent(shared_from_this());
+			_root->above.push_back(uw);
+			uw->set_parent(_root);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
-			below.push_back(uw);
-			uw->set_parent(shared_from_this());
+			_root->below.push_back(uw);
+			uw->set_parent(_root);
 		} else {
 			insert_in_tree_using_transient_for(uw);
 		}
@@ -2892,7 +2902,7 @@ void page_t::set_desktop_geometry(long width, long height) {
 }
 
 shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(get_all_children())) {
+	for(auto i: filter_class<client_base_t>(_root->get_all_children())) {
 		if(i->has_window(w)) {
 			return i;
 		}
@@ -2901,7 +2911,7 @@ shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
 }
 
 shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(get_all_children())) {
+	for(auto i: filter_class<client_base_t>(_root->get_all_children())) {
 		if(i->orig() == w) {
 			return i;
 		}
@@ -2920,58 +2930,8 @@ void page_t::remove_client(shared_ptr<client_base_t> c) {
 	}
 }
 
-string page_t::get_node_name() const {
-	return _get_node_name<'P'>();
-}
-
 void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component_t> by) {
 	throw exception_t{"Unexpectected use of page::replace function\n"};
-}
-
-void page_t::activate() {
-	/* has no parent */
-}
-
-void page_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(children(), t));
-
-	auto w = dynamic_pointer_cast<workspace_t>(t);
-	if(w != nullptr) {
-		switch_to_desktop(w->id());
-	}
-
-	/* do nothing, not needed at this level */
-	auto x = dynamic_pointer_cast<client_base_t>(t);
-	if(has_key(root_subclients, x)) {
-		move_back(root_subclients, x);
-	}
-
-	auto y = dynamic_pointer_cast<client_not_managed_t>(t);
-	if(has_key(tooltips, y)) {
-		move_back(tooltips, y);
-	}
-
-	if(has_key(notifications, y)) {
-		move_back(notifications, y);
-	}
-
-	if(has_key(above, y)) {
-		move_back(above, y);
-	}
-
-	if(has_key(below, y)) {
-		move_back(below, y);
-	}
-}
-
-void page_t::remove(shared_ptr<tree_t> t) {
-	root_subclients.remove(dynamic_pointer_cast<client_base_t>(t));
-	tooltips.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	notifications.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	above.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	below.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	_overlays.remove(t);
 }
 
 void page_t::create_identity_window() {
@@ -3083,52 +3043,13 @@ void page_t::update_keymap() {
 	_keymap = new keymap_t{cnx->xcb()};
 }
 
-void page_t::set_allocation(rect const & r) {
-	throw exception_t("page_t::set_allocation should be called");
-}
-
-void page_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	for (auto i: _desktop_stack) {
-		out.push_back(i);
-	}
-
-	for(auto x: below) {
-		out.push_back(x);
-	}
-
-	for(auto x: root_subclients) {
-		out.push_back(x);
-	}
-
-	for(auto x: tooltips) {
-		out.push_back(x);
-	}
-
-	for(auto x: notifications) {
-		out.push_back(x);
-	}
-
-	for(auto x: above) {
-		out.push_back(x);
-	}
-
-	for(auto x: _overlays) {
-		out.push_back(x);
-	}
-
-	if(_fps_overlay != nullptr) {
-		out.push_back(_fps_overlay);
-	}
-
-}
-
 /** debug function that try to print the state of page in stdout **/
 void page_t::print_state() const {
-	print_tree(0);
-	cout << "_current_desktop = " << _current_desktop << endl;
+	_root->print_tree(0);
+	cout << "_current_desktop = " << _root->_current_desktop << endl;
 
 	cout << "clients list:" << endl;
-	for(auto c: filter_class<client_base_t>(get_all_children())) {
+	for(auto c: filter_class<client_base_t>(_root->get_all_children())) {
 		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent().lock().get() << endl;
 	}
 	cout << "end" << endl;;
@@ -3137,32 +3058,32 @@ void page_t::print_state() const {
 
 void page_t::update_current_desktop() const {
 	/* set current desktop */
-	uint32_t current_desktop = _current_desktop;
+	uint32_t current_desktop = _root->_current_desktop;
 	cnx->change_property(cnx->root(), _NET_CURRENT_DESKTOP, CARDINAL,
 			32, &current_desktop, 1);
 }
 
 void page_t::switch_to_desktop(unsigned int desktop) {
-	if (desktop != _current_desktop and desktop != ALL_DESKTOP) {
+	if (desktop != _root->_current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
 
-		if(desktop<_current_desktop) {
-			if((_current_desktop-desktop) <= (_desktop_list.size()/2))
-				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
+		if(desktop<_root->_current_desktop) {
+			if((_root->_current_desktop-desktop) <= (_root->_desktop_list.size()/2))
+				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
 			else
-				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
+				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
 
 		} else {
-			if((desktop-_current_desktop) <= (_desktop_list.size()/2))
-				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
+			if((desktop-_root->_current_desktop) <= (_root->_desktop_list.size()/2))
+				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
 			else
-				_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
+				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
 		}
 
-		auto stiky_list = get_sticky_client_managed(_desktop_list[_current_desktop]);
+		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
 
-		_current_desktop = desktop;
-		move_back(_desktop_stack, _desktop_list[_current_desktop]);
+		_root->_current_desktop = desktop;
+		move_back(_root->_desktop_stack, _root->_desktop_list[_root->_current_desktop]);
 
 		/** move stiky to current desktop **/
 		for(auto s : stiky_list) {
@@ -3183,14 +3104,14 @@ void page_t::update_fullscreen_clients_position() {
 
 void page_t::update_desktop_visibility() {
 	/** hide only desktop that must be hidden first **/
-	for(unsigned k = 0; k < _desktop_list.size(); ++k) {
-		if(k != _current_desktop) {
-			_desktop_list[k]->hide();
+	for(unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
+		if(k != _root->_current_desktop) {
+			_root->_desktop_list[k]->hide();
 		}
 	}
 
 	/** and show the desktop that have to be show **/
-	_desktop_list[_current_desktop]->show();
+	_root->_desktop_list[_root->_current_desktop]->show();
 
 	for(auto & i: _fullscreen_client_to_viewport) {
 		if(not i.second.workspace.lock()->is_visible()) {
@@ -3252,7 +3173,7 @@ void page_t::process_mapping_notify_event(xcb_generic_event_t const * e) {
 void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_selection_clear_event_t const *>(_e);
 	if(e->selection == cnx->wm_sn_atom)
-		stop();
+		_mainloop.stop();
 	if(e->selection == cnx->cm_sn_atom)
 		stop_compositor();
 }
@@ -3399,7 +3320,7 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
-	broadcast_enter(e);
+	_root->broadcast_enter(e);
 
 	if(not _mouse_focus)
 		return;
@@ -3412,7 +3333,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
-	broadcast_leave(e);
+	_root->broadcast_leave(e);
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
@@ -3485,7 +3406,7 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 		if(e->root_x == 0 and e->root_y == 0) {
 			start_alt_tab(e->time);
 		} else {
-			broadcast_button_motion(e);
+			_root->broadcast_button_motion(e);
 		}
 	}
 }
@@ -3496,7 +3417,7 @@ void page_t::process_button_release(xcb_generic_event_t const * _e) {
 		_grab_handler->button_release(e);
 		return;
 	} else {
-		broadcast_button_release(e);
+		_root->broadcast_button_release(e);
 	}
 }
 
@@ -3515,7 +3436,7 @@ void page_t::start_compositor() {
 			std::cout << e.what() << std::endl;
 			return;
 		}
-		rnd = new compositor_t { cnx, cmgr };
+		rnd = new compositor_t{cnx};
 		cmgr->enable();
 	}
 #endif
@@ -3534,7 +3455,7 @@ void page_t::stop_compositor() {
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
-	broadcast_expose(e);
+	_root->broadcast_expose(e);
 }
 
 void page_t::process_error(xcb_generic_event_t const * _e) {
@@ -3618,7 +3539,7 @@ unsigned int page_t::find_current_desktop(shared_ptr<client_base_t> c) {
 	auto d = find_desktop_of(c);
 	if(d != nullptr)
 		return d->id();
-	return _current_desktop;
+	return _root->_current_desktop;
 }
 
 void page_t::process_pending_events() {
@@ -3652,7 +3573,7 @@ void page_t::process_pending_events() {
 	cmgr->apply_updates();
 
 	/* redraw page component that need a redraw */
-	broadcast_trigger_redraw();
+	_root->broadcast_trigger_redraw();
 
 	cnx->ungrab();
 	xcb_flush(cnx->xcb());
@@ -3694,8 +3615,8 @@ void page_t::grab_stop() {
 }
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
-	_overlays.push_back(x);
-	x->set_parent(shared_from_this());
+	_root->_overlays.push_back(x);
+	x->set_parent(_root);
 }
 
 void page_t::add_global_damage(region const & r) {
@@ -3703,15 +3624,15 @@ void page_t::add_global_damage(region const & r) {
 }
 
 shared_ptr<workspace_t> const & page_t::get_current_workspace() const {
-	return _desktop_list[_current_desktop];
+	return _root->_desktop_list[_root->_current_desktop];
 }
 
 shared_ptr<workspace_t> const & page_t::get_workspace(int id) const {
-	return _desktop_list[id];
+	return _root->_desktop_list[id];
 }
 
 int page_t::get_workspace_count() const {
-	return _desktop_list.size();
+	return _root->_desktop_list.size();
 }
 
 int page_t::left_most_border() {
@@ -3722,7 +3643,7 @@ int page_t::top_most_border() {
 }
 
 vector<shared_ptr<client_managed_t>> page_t::clients_list() {
-	return filter_class<client_managed_t>(get_all_children());
+	return filter_class<client_managed_t>(_root->get_all_children());
 }
 
 keymap_t const * page_t::keymap() const {
@@ -3733,16 +3654,8 @@ bool page_t::menu_drop_down_shadow() const {
 	return _menu_drop_down_shadow;
 }
 
-rect page_t::allocation() const {
-	return _root_position;
-}
-
 xcb_atom_t page_t::A(atom_e atom) {
 	return cnx->A(atom);
-}
-
-void page_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
-	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
 }
 
 list<weak_ptr<client_managed_t>> page_t::global_client_focus_history() {
@@ -3769,37 +3682,6 @@ void page_t::global_focus_history_move_front(shared_ptr<client_managed_t> in) {
 bool page_t::global_focus_history_is_empty() {
 	_global_focus_history.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
 	return _global_focus_history.empty();
-}
-
-
-auto page_t::get_visible_region() -> region {
-	return region{_root_position};
-}
-
-auto page_t::get_opaque_region() -> region {
-	return region{_root_position};
-}
-
-auto page_t::get_damaged() -> region {
-	return region{};
-}
-
-void page_t::render(cairo_t * cr, region const & area) {
-	auto pix = _theme->get_background();
-
-	if (pix != nullptr) {
-		cairo_save(cr);
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		cairo_set_source_surface(cr, pix->get_cairo_surface(),
-				_root_position.x, _root_position.y);
-		region r = region{_root_position} & area;
-		for (auto &i : r) {
-			cairo_clip(cr, i);
-			cairo_mask_surface(cr, pix->get_cairo_surface(),
-					_root_position.x, _root_position.y);
-		}
-		cairo_restore(cr);
-	}
 }
 
 void page_t::start_alt_tab(xcb_timestamp_t time) {

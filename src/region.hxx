@@ -14,10 +14,13 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "box.hxx"
 
 namespace page {
+
+using namespace std;
 
 template<typename T>
 class region_t : public std::vector<i_rect_t<T>> {
@@ -32,15 +35,15 @@ class region_t : public std::vector<i_rect_t<T>> {
 	}
 
 	/** merge 2 i_rects when it is possible **/
-	static void merge_area_macro(region_t & list) {
-		if(list.size() < 2)
+	static void merge_area_macro(region_t & lst) {
+		if(lst.size() < 2)
 			return;
 		/* store the current end of the list */
-		auto xend = list.end();
+		auto xend = lst.end();
 		bool end = false;
 		while (not end) {
 			end = true;
-			for (auto i = list.begin(); i != xend; ++i) {
+			for (auto i = lst.begin(); i != xend; ++i) {
 
 				for (auto j = i + 1; j != xend; ++j) {
 
@@ -87,7 +90,18 @@ class region_t : public std::vector<i_rect_t<T>> {
 			}
 		}
 
-		list.resize(xend - list.begin());
+		lst.resize(xend - lst.begin());
+
+//		for(auto const & i: lst) {
+//			for(auto const & j: lst) {
+//				if(&i == &j) {
+//					continue;
+//				}
+//				if(i.has_intersection(j)) {
+//					cout << "WARNING : box overlaps" << endl;
+//				}
+//			}
+//		}
 
 	}
 

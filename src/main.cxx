@@ -21,7 +21,6 @@ int main(int argc, char * * argv) {
 		auto m = make_shared<page::page_t>(argc, argv);
 		m->run();
 		m = nullptr;
-		page::leak_checker::check_everinthing_delete();
 	} catch (page::exception & e) {
 		fprintf(stdout, "%s\n", e.what());
 		fprintf(stderr, "%s\n", e.what());

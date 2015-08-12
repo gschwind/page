@@ -33,7 +33,7 @@ page_SOURCES = \
 	split.cxx \
 	viewport.cxx \
 	workspace.cxx \
-	main.cxx \
+	page_root.cxx \
 	page.cxx \
 	display.cxx \
 	compositor.cxx \
@@ -43,6 +43,7 @@ page_SOURCES = \
 	composite_surface.cxx \
 	composite_surface_manager.cxx \
 	popup_alt_tab.cxx \
+	main.cxx \
 	leak_checker.cxx 
 
 page_LDADD = \

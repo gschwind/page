@@ -59,8 +59,8 @@ static void _draw_crossed_box(cairo_t * cr, rect const & box, double r, double g
 
 void compositor_t::init_composite_overlay() {
 	/* create and map the composite overlay window */
-	xcb_composite_get_overlay_window_cookie_t ck = xcb_composite_get_overlay_window(_cnx->xcb(), _cnx->root());
-	xcb_composite_get_overlay_window_reply_t * r = xcb_composite_get_overlay_window_reply(_cnx->xcb(), ck, 0);
+	xcb_composite_get_overlay_window_cookie_t ck = xcb_composite_get_overlay_window(_dpy->xcb(), _dpy->root());
+	xcb_composite_get_overlay_window_reply_t * r = xcb_composite_get_overlay_window_reply(_dpy->xcb(), ck, 0);
 	if(r == nullptr) {
 		throw exception_t("cannot create compositor window overlay");
 	}
@@ -68,7 +68,7 @@ void compositor_t::init_composite_overlay() {
 	composite_overlay = r->overlay_win;
 
 	/* user input pass through composite overlay (mouse click for example)) */
-	_cnx->allow_input_passthrough(composite_overlay);
+	_dpy->allow_input_passthrough(composite_overlay);
 
 	// DISABLE auto redirection.
 	/** Automatically redirect windows, but paint sub-windows manually */
@@ -78,18 +78,17 @@ void compositor_t::init_composite_overlay() {
 void compositor_t::release_composite_overlay() {
 	// DISABLE auto redirection.
 	//xcb_composite_unredirect_subwindows(_cnx->xcb(), _cnx->root(), XCB_COMPOSITE_REDIRECT_MANUAL);
-	_cnx->disable_input_passthrough(composite_overlay);
-	xcb_composite_release_overlay_window(_cnx->xcb(), composite_overlay);
+	_dpy->disable_input_passthrough(composite_overlay);
+	xcb_composite_release_overlay_window(_dpy->xcb(), composite_overlay);
 	composite_overlay = XCB_NONE;
 }
 
-compositor_t::compositor_t(display_t * cnx, composite_surface_manager_t * cmgr) :
-		_cnx(cnx),
-		_cmgr(cmgr)
+compositor_t::compositor_t(display_t * cnx) :
+		_dpy(cnx)
 		{
 	composite_back_buffer = XCB_NONE;
 
-	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_cnx->xcb()));
+	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_dpy->xcb()));
 
 	/* initialize composite */
 	init_composite_overlay();
@@ -117,7 +116,7 @@ compositor_t::~compositor_t() {
 #endif
 
 	if(composite_back_buffer != XCB_NONE) {
-		xcb_free_pixmap(_cnx->xcb(), composite_back_buffer);
+		xcb_free_pixmap(_dpy->xcb(), composite_back_buffer);
 	}
 
 	release_composite_overlay();
@@ -156,7 +155,7 @@ void compositor_t::render(tree_t * t) {
 		_damaged_area.pop_back();
 	}
 
-	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width, height);
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_dpy->xcb(), composite_back_buffer, _dpy->root_visual(), width, height);
 
 	cairo_t * cr = cairo_create(_back_buffer);
 
@@ -221,17 +220,17 @@ void compositor_t::render(tree_t * t) {
 void compositor_t::update_layout() {
 
 	if(composite_back_buffer != XCB_NONE) {
-		xcb_free_pixmap(_cnx->xcb(), composite_back_buffer);
+		xcb_free_pixmap(_dpy->xcb(), composite_back_buffer);
 		composite_back_buffer = XCB_NONE;
 	}
 
 	/** update root size infos **/
 
-	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_cnx->xcb(), _cnx->root());
-	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_cnx->xcb(), _cnx->root());
+	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _dpy->root());
+	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_dpy->xcb(), _dpy->root());
 
-	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_cnx->xcb(), ck0, nullptr);
-	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(_cnx->xcb(), ck1, 0);
+	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_dpy->xcb(), ck0, nullptr);
+	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(_dpy->xcb(), ck1, 0);
 
 	if(geometry == nullptr or randr_resources == nullptr) {
 		throw exception_t("FATAL: cannot read root window attributes");
@@ -242,11 +241,11 @@ void compositor_t::update_layout() {
 	vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
 	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
 	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		ckx[k] = xcb_randr_get_crtc_info(_cnx->xcb(), crtc_list[k], XCB_CURRENT_TIME);
+		ckx[k] = xcb_randr_get_crtc_info(_dpy->xcb(), crtc_list[k], XCB_CURRENT_TIME);
 	}
 
 	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_cnx->xcb(), ckx[k], 0);
+		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0);
 		if(r != nullptr) {
 			crtc_info[crtc_list[k]] = r;
 		}
@@ -265,8 +264,8 @@ void compositor_t::update_layout() {
 
 	_damaged += rect{geometry->x, geometry->y, geometry->width, geometry->height};
 
-	composite_back_buffer = xcb_generate_id(_cnx->xcb());
-	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), composite_back_buffer,
+	composite_back_buffer = xcb_generate_id(_dpy->xcb());
+	xcb_create_pixmap(_dpy->xcb(), _dpy->root_depth(), composite_back_buffer,
 			composite_overlay, geometry->width, geometry->height);
 
 	width = geometry->width;
@@ -330,18 +329,18 @@ void compositor_t::pango_printf(cairo_t * cr, double x, double y,
 }
 
 cairo_surface_t * compositor_t::get_front_surface() const {
-	return cairo_xcb_surface_create(_cnx->xcb(), composite_overlay,
-			_cnx->root_visual(), width, height);
+	return cairo_xcb_surface_create(_dpy->xcb(), composite_overlay,
+			_dpy->root_visual(), width, height);
 }
 
 shared_ptr<pixmap_t> compositor_t::create_screenshot() {
-	xcb_pixmap_t pix = xcb_generate_id(_cnx->xcb());
-	xcb_create_pixmap(_cnx->xcb(), _cnx->root_depth(), pix, _cnx->root(), width, height);
-	auto screenshot = make_shared<pixmap_t>(_cnx, _cnx->root_visual(), pix, width, height);
+	xcb_pixmap_t pix = xcb_generate_id(_dpy->xcb());
+	xcb_create_pixmap(_dpy->xcb(), _dpy->root_depth(), pix, _dpy->root(), width, height);
+	auto screenshot = make_shared<pixmap_t>(_dpy, _dpy->root_visual(), pix, width, height);
 
 	cairo_t * cr = cairo_create(screenshot->get_cairo_surface());
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_cnx->xcb(), composite_back_buffer, _cnx->root_visual(), width, height);
+	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_dpy->xcb(), composite_back_buffer, _dpy->root_visual(), width, height);
 	cairo_set_source_surface(cr, _back_buffer, 0.0, 0.0);
 	cairo_paint(cr);
 	cairo_surface_destroy(_back_buffer);

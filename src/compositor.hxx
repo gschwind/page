@@ -32,7 +32,7 @@
 #include "box.hxx"
 #include "region.hxx"
 #include "tree.hxx"
-#include "composite_surface_manager.hxx"
+#include "pixmap.hxx"
 
 namespace page {
 
@@ -42,8 +42,7 @@ class compositor_t {
 
 private:
 
-	display_t * _cnx;
-	composite_surface_manager_t * _cmgr;
+	display_t * _dpy;
 
 	xcb_window_t cm_window;
 	xcb_window_t composite_overlay;
@@ -97,7 +96,7 @@ private:
 public:
 	//region read_damaged_region(xcb_damage_damage_t d);
 	~compositor_t();
-	compositor_t(display_t * cnx, composite_surface_manager_t * cmgr);
+	compositor_t(display_t * cnx);
 
 	void update_layout();
 
