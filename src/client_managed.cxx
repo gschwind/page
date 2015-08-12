@@ -53,6 +53,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_is_durty{true}
 {
 
+	_floating_area = nullptr;
 	_update_title();
 	rect pos{_properties->position()};
 
