@@ -69,6 +69,9 @@ public:
 			}
 		}
 
+		free(keymap);
+		free(modmap);
+
 	}
 
 	~keymap_t() {
@@ -90,7 +93,7 @@ public:
 	}
 
 	xcb_keycode_t find_keysim(xcb_keysym_t ks) const {
-		for(xcb_keysym_t i = 0; i <= (last_keycode - first_keycode + 1) * keysyms_per_keycode; ++i) {
+		for(xcb_keysym_t i = 0; i < (last_keycode - first_keycode + 1) * keysyms_per_keycode; ++i) {
 			if(ks == _keydata[i]) {
 				return (i / keysyms_per_keycode) + first_keycode;
 			}

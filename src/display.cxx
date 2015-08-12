@@ -412,6 +412,7 @@ bool display_t::check_damage_extension() {
 			throw exception_t("ERROR: fail to get " DAMAGE_NAME " version");
 
 		printf(DAMAGE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
 		return true;
 	}
 }
@@ -428,6 +429,7 @@ bool display_t::check_xfixes_extension() {
 			throw exception_t("ERROR: fail to get " XFIXES_NAME " version");
 
 		printf(XFIXES_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
 		return true;
 	}
 }
@@ -445,6 +447,7 @@ bool display_t::check_shape_extension() {
 			throw exception_t("ERROR: fail to get " SHAPENAME " version");
 
 		printf(SHAPENAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
 		return true;
 	}
 }
@@ -461,6 +464,7 @@ bool display_t::check_randr_extension() {
 			throw exception_t("ERROR: fail to get " RANDR_NAME " version");
 
 		printf(RANDR_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
 		return true;
 	}
 }
@@ -856,7 +860,9 @@ xcb_atom_t display_t::get_atom(char const * name) {
 	xcb_intern_atom_reply_t * r = xcb_intern_atom_reply(_xcb, ck, 0);
 	if(r == nullptr)
 		throw exception_t("Error while getting atom '%s'", name);
-	return r->atom;
+	xcb_atom_t atom = r->atom;
+	free(r);
+	return atom;
 }
 
 void display_t::print_error(xcb_generic_error_t const * err) {

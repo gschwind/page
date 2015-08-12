@@ -66,6 +66,7 @@ void compositor_t::init_composite_overlay() {
 	}
 
 	composite_overlay = r->overlay_win;
+	free(r);
 
 	/* user input pass through composite overlay (mouse click for example)) */
 	_dpy->allow_input_passthrough(composite_overlay);
