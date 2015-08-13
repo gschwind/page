@@ -1484,7 +1484,7 @@ void page_t::insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_pt
 	assert(n != nullptr);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
-
+	_need_restack = true;
 }
 
 /* update viewport and childs allocation */
@@ -2148,6 +2148,9 @@ shared_ptr<client_base_t> page_t::get_transient_for(
 
 void page_t::detach(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
+
+	/** detach a tree_t will cause it to be restacked, at less **/
+	add_global_damage(t->get_visible_region());
 	if(not t->parent().expired()) {
 		t->parent().lock()->remove(t);
 	}
@@ -2172,8 +2175,6 @@ void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, share
 }
 
 void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
-	/* update database */
-	cout << "bind: " << mw->title() << endl;
 	detach(mw);
 	insert_window_in_notebook(mw, nullptr, activate);
 	if(activate) {
@@ -2182,6 +2183,7 @@ void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 		safe_raise_window(mw);
 	}
 	_need_update_client_list = true;
+	_need_restack = true;
 }
 
 void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
@@ -2774,8 +2776,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 			this->_dpy->map(uw->orig());
 		uw->show();
 		safe_update_transient_for(uw);
-		//add_compositor_damaged(uw->get_visible_region());
-		uw->activate();
+		//uw->activate();
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
@@ -2865,6 +2866,10 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 			detach(mw);
 			insert_in_tree_using_transient_for(mw);
 		}
+
+		_need_restack = true;
+		_need_update_client_list = true;
+
 	} else if (typeid(*c.get()) == typeid(client_not_managed_t)) {
 		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
 		detach(uw);
