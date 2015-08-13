@@ -296,7 +296,7 @@ void viewport_t::render(cairo_t * cr, region const & area) {
 		return;
 
 	cairo_save(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(),
 			_effective_area.x, _effective_area.y);
 	region r = region{_effective_area} & area;

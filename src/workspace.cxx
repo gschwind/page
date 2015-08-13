@@ -37,18 +37,41 @@ void workspace_t::activate() {
 	}
 }
 
+static bool is_dock(shared_ptr<tree_t> const & x) {
+	auto c = dynamic_pointer_cast<client_managed_t>(x);
+	if(c != nullptr) {
+		return c->is(MANAGED_DOCK);
+	}
+	return false;
+}
+
 void workspace_t::activate(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
 	assert(has_key(children(), t));
 	activate();
 
-	auto mw = dynamic_pointer_cast<client_managed_t>(t);
-	if(has_key(_floating_layer, mw)) {
-		move_back(_floating_layer, mw);
-	}
+	/** view port can be above dock but not above floating **/
+	if(typeid(viewport_t) == typeid(*t.get())) {
+		list<shared_ptr<tree_t>> docks;
 
-	if(has_key(_viewport_layer, t)) {
-		move_back(_viewport_layer, t);
+		auto d = std::find_if(_floating_layer.begin(), _floating_layer.end(), is_dock);
+		while(d != _floating_layer.end()) {
+			docks.splice(docks.end(), _floating_layer, d);
+			d = std::find_if(_floating_layer.begin(), _floating_layer.end(), is_dock);
+		}
+
+		_floating_layer.splice(_floating_layer.begin(), docks, docks.begin(), docks.end());
+
+	} else {
+
+		if(has_key(_floating_layer, t)) {
+			move_back(_floating_layer, t);
+		}
+
+		if(has_key(_fullscreen_layer, t)) {
+			move_back(_fullscreen_layer, t);
+		}
+
 	}
 }
 
@@ -90,8 +113,8 @@ auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> {
 
 auto workspace_t::set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void {
 	_viewport_outputs = new_layout;
-	_viewport_layer.remove_if([](shared_ptr<tree_t> const & t) -> bool { return typeid(viewport_t) == typeid(*t.get()); });
-	_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
+	_floating_layer.remove_if([](shared_ptr<tree_t> const & t) -> bool { return typeid(viewport_t) == typeid(*t.get()); });
+	_floating_layer.insert(_floating_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
 
 	if(_viewport_outputs.size() > 0) {
 		_primary_viewport = _viewport_outputs[0];
@@ -106,7 +129,7 @@ auto workspace_t::get_any_viewport() const -> shared_ptr<viewport_t> {
 }
 
 auto workspace_t::get_viewports() const -> vector<shared_ptr<viewport_t>> {
-	auto tmp = filter_class<viewport_t>(_viewport_layer);
+	auto tmp = filter_class<viewport_t>(_floating_layer);
 	return vector<shared_ptr<viewport_t>>{tmp.begin(), tmp.end()};
 }
 
@@ -126,8 +149,8 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 }
 
 void workspace_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
+	out.insert(out.end(), _fullscreen_layer.begin(), _fullscreen_layer.end());
 	if(_switch_renderable != nullptr) {
 		out.push_back(_switch_renderable);
 	}
@@ -147,8 +170,8 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 
 	c->set_parent(shared_from_this());
 
-	if(c->is(MANAGED_DOCK)) {
-		_viewport_layer.push_back(c);
+	if(c->is(MANAGED_FULLSCREEN)) {
+		_fullscreen_layer.push_back(c);
 	} else {
 		_floating_layer.push_back(c);
 	}
@@ -174,8 +197,8 @@ void workspace_t::remove(shared_ptr<tree_t> src) {
 	 * use reinterpret_cast because we try to remove src pointer
 	 * and we don't care is type
 	 **/
-	_floating_layer.remove(dynamic_pointer_cast<client_managed_t>(src));
-	_viewport_layer.remove(src);
+	_floating_layer.remove(src);
+	_fullscreen_layer.remove(src);
 }
 
 void workspace_t::set_allocation(rect const & area) {
