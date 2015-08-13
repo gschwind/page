@@ -339,7 +339,6 @@ void notebook_t::update_layout(time64_t const time) {
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
 		fading_notebook.reset();
-		_ctx->add_global_damage(to_root_position(_allocation));
 		_update_layout();
 	}
 
@@ -585,7 +584,6 @@ void notebook_t::start_exposay() {
 		_selected = nullptr;
 	}
 
-	_ctx->add_global_damage(to_root_position(_allocation));
 	_exposay = true;
 	_update_layout();
 }
@@ -668,7 +666,6 @@ void notebook_t::_stop_exposay() {
 	_mouse_over.exposay = nullptr;
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
-	_ctx->add_global_damage(to_root_position(_allocation));
 	_update_layout();
 }
 

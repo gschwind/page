@@ -312,7 +312,6 @@ void page_t::run() {
 	_dpy->ungrab();
 
 	get_current_workspace()->show();
-	add_global_damage(_root->_root_position);
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
@@ -703,7 +702,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				_root->_fps_overlay->set_parent(_root);
 				_root->_fps_overlay->show();
 			} else {
-				add_global_damage(_root->_fps_overlay->get_visible_region());
 				_root->_fps_overlay = nullptr;
 			}
 		}
@@ -834,7 +832,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	/** damage corresponding area **/
 	if(e->event == _dpy->root()) {
-		add_compositor_damaged(_root->_root_position);
+		//add_compositor_damaged(_root->_root_position);
 	}
 
 }
@@ -904,7 +902,7 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
 	auto c = find_client(e->window);
 	if (c != nullptr) {
-		add_compositor_damaged(c->get_visible_region());
+		//add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
 		}
@@ -922,7 +920,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto c = find_client(e->window);
 
 	if (c != nullptr) {
-		add_compositor_damaged(c->get_visible_region());
+		//add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			auto mw = dynamic_pointer_cast<client_managed_t>(c);
 
@@ -972,7 +970,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 	if (c != nullptr) {
 
-		add_compositor_damaged(c->get_visible_region());
+		//add_compositor_damaged(c->get_visible_region());
 
 		if(typeid(*c) == typeid(client_managed_t)) {
 
@@ -2776,7 +2774,7 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 			this->_dpy->map(uw->orig());
 		uw->show();
 		safe_update_transient_for(uw);
-		add_compositor_damaged(uw->get_visible_region());
+		//add_compositor_damaged(uw->get_visible_region());
 		uw->activate();
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
@@ -3421,12 +3419,6 @@ void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	}
 }
 
-void page_t::add_compositor_damaged(region const & r) {
-	if(_compositor != nullptr) {
-		_compositor->add_damaged(r);
-	}
-}
-
 void page_t::start_compositor() {
 #ifdef WITH_COMPOSITOR
 	if (_dpy->has_composite) {
@@ -3620,7 +3612,9 @@ void page_t::overlay_add(shared_ptr<tree_t> x) {
 }
 
 void page_t::add_global_damage(region const & r) {
-	add_compositor_damaged(r);
+	if(_compositor != nullptr) {
+		_compositor->add_damaged(r);
+	}
 }
 
 shared_ptr<workspace_t> const & page_t::get_current_workspace() const {

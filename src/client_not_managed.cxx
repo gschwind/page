@@ -31,9 +31,8 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type
 }
 
 client_not_managed_t::~client_not_managed_t() {
+	_ctx->add_global_damage(get_visible_region());
 	cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
-	_ctx->add_global_damage(_visible_region_cache);
-
 }
 
 xcb_atom_t client_not_managed_t::net_wm_type() {
@@ -158,6 +157,7 @@ void client_not_managed_t::hide() {
 		x->hide();
 	}
 
+	_ctx->add_global_damage(get_visible_region());
 	_is_visible = false;
 	//unmap();
 }

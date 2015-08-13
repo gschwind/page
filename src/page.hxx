@@ -343,7 +343,6 @@ public:
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();
 	void process_error(xcb_generic_event_t const * e);
-	void add_compositor_damaged(region const & r);
 	void start_compositor();
 	void stop_compositor();
 	void run_cmd(string const & cmd_with_args);

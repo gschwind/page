@@ -58,7 +58,7 @@ public:
 	}
 
 	virtual ~renderable_thumbnail_t() {
-
+		_ctx->add_global_damage(get_real_position());
 	}
 
 	/** @return scale factor */
@@ -240,6 +240,7 @@ public:
 
 	void hide() {
 		_is_visible = false;
+		_ctx->add_global_damage(get_real_position());
 
 		_client_surface = nullptr;
 		_tt.pix = nullptr;

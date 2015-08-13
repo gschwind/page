@@ -39,7 +39,6 @@ public:
 
 	void hide() {
 		_is_visible = false;
-		_ctx->add_global_damage(get_visible_region());
 	}
 
 	rect const & position() {
@@ -113,7 +112,6 @@ public:
 	}
 
 	~popup_split_t() {
-		_ctx->add_global_damage(get_visible_region());
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 

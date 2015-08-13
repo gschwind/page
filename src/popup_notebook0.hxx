@@ -26,7 +26,7 @@ struct popup_notebook0_t : public tree_t {
 protected:
 	rect _position;
 	bool _exposed;
-	bool _damaged;
+	region _damaged;
 
 	xcb_window_t _wid;
 
@@ -36,7 +36,6 @@ public:
 
 		_is_visible = false;
 		_exposed = false;
-		_damaged = false;
 
 		_create_window();
 
@@ -71,7 +70,7 @@ public:
 	}
 
 	void move_resize(rect const & area) {
-		_ctx->add_global_damage(get_visible_region());
+		_damaged += _position;
 		_position = area;
 
 		xcb_rectangle_t rects[4];
@@ -101,15 +100,14 @@ public:
 		xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 4, rects);
 
 		_ctx->dpy()->move_resize(_wid, area);
-		_ctx->add_global_damage(get_visible_region());
-		_damaged = true;
+		_damaged += _position;
 	}
 
 	void move(int x, int y) {
-		_ctx->add_global_damage(get_visible_region());
+		_damaged += _position;
 		_position.x = x;
 		_position.y = y;
-		_damaged = true;
+		_damaged += _position;
 	}
 
 	rect const & position() {
@@ -136,11 +134,7 @@ public:
 	 * return currently damaged area (absolute)
 	 **/
 	virtual region get_damaged()  {
-		if(_damaged) {
-			return region{_position};
-		} else {
-			return region{};
-		}
+		return _damaged;
 	}
 
 	~popup_notebook0_t() {
@@ -149,7 +143,7 @@ public:
 
 	void show() {
 		_is_visible = true;
-		_damaged = true;
+		_damaged = _position;
 		_ctx->dpy()->map(_wid);
 	}
 
@@ -223,7 +217,7 @@ public:
 	}
 
 	void render_finished() {
-		_damaged = false;
+		_damaged.clear();
 	}
 
 };

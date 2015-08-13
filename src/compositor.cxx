@@ -174,6 +174,9 @@ void compositor_t::render(tree_t * t) {
 		for (auto &i : _graph_scene) {
 			i->render(cr, dmg);
 		}
+		if (_show_damaged) {
+			_draw_crossed_box(cr, dmg, 1.0, 0.0, 1.0);
+		}
 	}
 
 	/** pass 2 from top to bottom, render opaque area **/
@@ -185,12 +188,6 @@ void compositor_t::render(tree_t * t) {
 				_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
 		}
 		_direct_render -= x;
-	}
-
-	if (_show_damaged) {
-		for (auto &i : damaged) {
-			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
-		}
 	}
 
 	_damaged.clear();

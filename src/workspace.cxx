@@ -84,7 +84,6 @@ void workspace_t::update_layout(time64_t const time) {
 		return;
 
 	if (_switch_renderable != nullptr and time < (_switch_start_time + _switch_duration)) {
-		_ctx->add_global_damage(_allocation);
 		double ratio = (static_cast<double>(time - _switch_start_time) / static_cast<double const>(_switch_duration));
 		ratio = ratio*1.05 - 0.025;
 		ratio = min(1.0, max(0.0, ratio));
@@ -96,7 +95,6 @@ void workspace_t::update_layout(time64_t const time) {
 		}
 		_switch_renderable->move(new_x, _allocation.y);
 	} else if (_switch_renderable != nullptr) {
-		_ctx->add_global_damage(_allocation);
 		_switch_screenshot = nullptr;
 		_switch_renderable = nullptr;
 	}

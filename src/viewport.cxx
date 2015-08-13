@@ -220,9 +220,6 @@ void viewport_t::_redraw_back_buffer() {
 	_exposed = true;
 	_damaged += _effective_area;
 
-	/* tell page to render */
-	_ctx->add_global_damage(_effective_area);
-
 }
 
 void viewport_t::trigger_redraw() {

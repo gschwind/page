@@ -217,6 +217,8 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 client_managed_t::~client_managed_t() {
 
+	_ctx->add_global_damage(get_visible_region());
+
 	on_destroy.signal(this);
 
 	unselect_inputs_unsafe();
@@ -241,8 +243,6 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
 
-	_ctx->add_global_damage(_visible_region_cache);
-
 }
 
 auto client_managed_t::shared_from_this() -> shared_ptr<client_managed_t> {
@@ -250,7 +250,6 @@ auto client_managed_t::shared_from_this() -> shared_ptr<client_managed_t> {
 }
 
 void client_managed_t::reconfigure() {
-
 	_damage_cache += get_visible_region();
 
 	if (is(MANAGED_FLOATING)) {
@@ -340,7 +339,6 @@ void client_managed_t::reconfigure() {
 	_update_opaque_region();
 	_update_visible_region();
 	_damage_cache += get_visible_region();
-
 }
 
 void client_managed_t::fake_configure_unsafe() {
@@ -1030,6 +1028,8 @@ void client_managed_t::hide() {
 		x->hide();
 	}
 
+	_ctx->add_global_damage(get_visible_region());
+
 	_is_visible = false;
 	// do not unmap, just put it outside the screen.
 	//unmap();
@@ -1037,6 +1037,7 @@ void client_managed_t::hide() {
 
 	/* we no not need the view anymore */
 	_base_surface = nullptr;
+
 }
 
 void client_managed_t::show() {
@@ -1381,6 +1382,7 @@ void client_managed_t::_update_opaque_region() {
 
 	if (net_wm_opaque_region() != nullptr) {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
+		_opaque_region_cache &= rect{0, 0, _orig_position.w, _orig_position.h};
 	} else {
 		if (geometry()->depth != 32) {
 			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
@@ -1389,6 +1391,7 @@ void client_managed_t::_update_opaque_region() {
 
 	if(shape() != nullptr) {
 		_opaque_region_cache &= *shape();
+		_opaque_region_cache &= rect{0, 0, _orig_position.w, _orig_position.h};
 	}
 
 	_opaque_region_cache.translate(_base_position.x+_orig_position.x, _base_position.y+_orig_position.y);

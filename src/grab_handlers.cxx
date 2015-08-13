@@ -58,19 +58,16 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 	_slider_area = _split.lock()->to_root_position(_slider_area);
 
 	_ps->set_position(_split_ratio);
-	_ctx->add_global_damage(_ps->position());
 }
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	if(_split.expired()) {
-		_ctx->add_global_damage(_split_root_allocation);
 		_ctx->grab_stop();
 		return;
 	}
 
 	if (e->detail == XCB_BUTTON_INDEX_1) {
 		_split.lock()->queue_redraw();
-		_ctx->add_global_damage(_split_root_allocation);
 		_split.lock()->set_split(_split_ratio);
 		_ctx->grab_stop();
 	}
@@ -291,8 +288,6 @@ void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
 		return;
 	}
 
-	_ctx->add_global_damage(f.lock()->get_visible_region());
-
 	/* compute new window position */
 	rect new_position = original_position;
 	new_position.x += e->root_x - x_root;
@@ -398,8 +393,6 @@ void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) 
 		_ctx->grab_stop();
 		return;
 	}
-
-	_ctx->add_global_damage(f.lock()->get_visible_region());
 
 	rect size = original_position;
 
@@ -645,7 +638,6 @@ void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
 
 	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
 		pat->select_next();
-		_ctx->add_global_damage(pat->position());
 	}
 
 }
