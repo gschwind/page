@@ -264,7 +264,8 @@ grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, shared_ptr<clie
 		popup_original_position{f->get_base_position()},
 		pfm{}
 {
-	_ctx->safe_raise_window(f);
+
+	f->activate();
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
@@ -369,7 +370,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, shared_ptr<
 
 {
 
-	_ctx->safe_raise_window(f);
+	f->activate();
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(f->base_position());
 	_ctx->overlay_add(pfm);

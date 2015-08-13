@@ -392,7 +392,10 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	mw->net_wm_state_delete();
 	mw->wm_state_delete();
 
-	_need_update_client_list = true;;
+	if(not mw->skip_task_bar()) {
+		_need_update_client_list = true;
+	}
+
 	update_workarea();
 
 	/** if the window is destroyed, this not work, see fix on destroy **/
@@ -459,11 +462,13 @@ void page_t::scan() {
 
 	free(r);
 
-	_need_update_client_list = true;
+
 	update_workarea();
 	for(auto x: _root->_desktop_list) {
 		reconfigure_docks(x);
 	}
+
+	_need_update_client_list = true;
 	_need_restack = true;
 
 	_dpy->ungrab();
@@ -856,9 +861,8 @@ void page_t::process_destroy_notify_event(xcb_generic_event_t const * _e) {
 		} else if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
 		}
-	}
 
-	_need_restack = true;
+	}
 }
 
 void page_t::process_gravity_notify_event(xcb_generic_event_t const * e) {
@@ -941,7 +945,7 @@ void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 	auto c = find_client_with(e->window);
 	if (c != nullptr) {
 		if (e->place == XCB_PLACE_ON_TOP) {
-			safe_raise_window(c);
+			c->activate();
 		} else if (e->place == XCB_PLACE_ON_BOTTOM) {
 			_dpy->lower_window(e->window);
 		}
@@ -1485,6 +1489,7 @@ void page_t::insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_pt
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
 	_need_restack = true;
+	_need_update_client_list = true;
 }
 
 /* update viewport and childs allocation */
@@ -2156,13 +2161,6 @@ void page_t::detach(shared_ptr<tree_t> t) {
 	}
 }
 
-void page_t::safe_raise_window(shared_ptr<client_base_t> c) {
-	c->activate();
-	/** apply change **/
-	_need_restack = true;
-}
-
-
 void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v) {
 	if (has_key(_fullscreen_client_to_viewport, c.get())) {
 		fullscreen_data_t & data = _fullscreen_client_to_viewport[c.get()];
@@ -2180,7 +2178,7 @@ void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 	if(activate) {
 		set_focus(mw, XCB_CURRENT_TIME);
 	} else {
-		safe_raise_window(mw);
+		mw->activate();
 	}
 	_need_update_client_list = true;
 	_need_restack = true;
@@ -2196,7 +2194,7 @@ void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
 	mw->queue_redraw();
 	mw->normalize();
 	mw->show();
-	safe_raise_window(mw);
+	mw->activate();
 	_need_update_client_list = true;
 	_need_restack = true;
 }
@@ -2639,8 +2637,11 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 		safe_update_transient_for(mw);
 		mw->activate();
-		_need_update_client_list = true;
-		_need_restack = true;
+
+		if(not mw->skip_task_bar()) {
+			_need_update_client_list = true;
+			_need_restack = true;
+		}
 
 		/* find the desktop for this window */
 		{
@@ -2785,14 +2786,6 @@ void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom
 	}
 }
 
-void page_t::create_dock_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
-	auto uw = make_shared<client_not_managed_t>(this, type, c);
-	uw->show();
-	insert_in_tree_using_transient_for(uw);
-	safe_raise_window(uw);
-	update_workarea();
-}
-
 shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
 	auto viewports = get_current_workspace()->get_viewports();
 	for (auto v: viewports) {
@@ -2866,10 +2859,6 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 			detach(mw);
 			insert_in_tree_using_transient_for(mw);
 		}
-
-		_need_restack = true;
-		_need_update_client_list = true;
-
 	} else if (typeid(*c.get()) == typeid(client_not_managed_t)) {
 		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
 		detach(uw);

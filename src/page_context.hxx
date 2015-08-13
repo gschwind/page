@@ -68,7 +68,6 @@ public:
 	virtual auto cmp() const -> compositor_t * = 0;
 	virtual void overlay_add(shared_ptr<tree_t> x) = 0;
 	virtual void add_global_damage(region const & r) = 0;
-	virtual void safe_raise_window(shared_ptr<client_base_t> c) = 0;
 	virtual auto find_mouse_viewport(int x, int y) const -> shared_ptr<viewport_t> = 0;
 	virtual auto get_current_workspace() const -> shared_ptr<workspace_t> const & = 0;
 	virtual auto get_workspace(int id) const -> shared_ptr<workspace_t> const & = 0;
