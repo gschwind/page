@@ -121,16 +121,21 @@ void compositor_t::render(tree_t * t) {
 		_graph_scene.resize(std::distance(_graph_scene.begin(), end));
 	}
 
+	region damaged;
 	/** collect damaged area **/
 	for (auto &i : _graph_scene) {
-		_damaged += i->get_damaged();
+		/* not damaged opaque area cancel damaged of sub window */
+		damaged -= i->get_opaque_region();
+		damaged += i->get_damaged();
 	}
 
+	damaged += _damaged;
+
 	/** clip damage area to visible screen **/
-	_damaged &= _desktop_region;
+	damaged &= _desktop_region;
 
 	/** no damage at all => no repair to do, return **/
-	if(_damaged.empty())
+	if(damaged.empty())
 		return;
 
 	time64_t cur = time64_t::now();
@@ -139,7 +144,7 @@ void compositor_t::render(tree_t * t) {
 		_fps_history.pop_back();
 	}
 
-	_damaged_area.push_front(_damaged.area()/_desktop_region_area);
+	_damaged_area.push_front(damaged.area()/_desktop_region_area);
 	if(_damaged_area.size() > _FPS_WINDOWS) {
 		_damaged_area.pop_back();
 	}
@@ -155,23 +160,23 @@ void compositor_t::render(tree_t * t) {
 		_direct_render += i->get_opaque_region();
 	}
 
-	_direct_render &= _damaged;
+	_direct_render &= damaged;
 
 	_direct_render_area.push_front(_direct_render.area() / _desktop_region_area);
 	if(_direct_render_area.size() > _FPS_WINDOWS) {
 		_direct_render_area.pop_back();
 	}
 
-	region _composited_area = _damaged - _direct_render;
+	region _composited_area = damaged - _direct_render;
 
-	/** pass 1 render all composited area **/
+	/** pass 1 render all composited area from bottom to top **/
 	for (auto & dmg : _composited_area) {
 		for (auto &i : _graph_scene) {
 			i->render(cr, dmg);
 		}
 	}
 
-	/** pass 2 from to to bottom, render opaque area **/
+	/** pass 2 from top to bottom, render opaque area **/
 	for (auto i = _graph_scene.rbegin(); i != _graph_scene.rend(); ++i) {
 		region x = (*i)->get_opaque_region() & _direct_render;
 		for (auto & dmg : x) {
@@ -183,7 +188,7 @@ void compositor_t::render(tree_t * t) {
 	}
 
 	if (_show_damaged) {
-		for (auto &i : _damaged) {
+		for (auto &i : damaged) {
 			_draw_crossed_box(cr, i, 1.0, 0.0, 0.0);
 		}
 	}

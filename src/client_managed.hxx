@@ -217,7 +217,7 @@ public:
 	void wm_state_delete();
 	bool is_fullscreen();
 	bool skip_task_bar();
-	rect const & get_floating_wished_position();
+	auto get_floating_wished_position() -> rect const & ;
 	bool lock();
 	void unlock();
 	void set_focus_state(bool is_focused);
