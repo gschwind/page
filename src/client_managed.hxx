@@ -38,7 +38,6 @@ enum managed_window_type_e {
 };
 
 class client_managed_t : public client_base_t {
-private:
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = XCB_EVENT_MASK_EXPOSURE;
@@ -106,7 +105,21 @@ private:
 	rect _area_bottom_left;
 	rect _area_bottom_right;
 
-	vector<floating_event_t> * _floating_area;
+	struct floating_area_t {
+		rect close_button;
+		rect bind_button;
+		rect title_button;
+		rect grip_top;
+		rect grip_bottom;
+		rect grip_left;
+		rect grip_right;
+		rect grip_top_left;
+		rect grip_top_right;
+		rect grip_bottom_left;
+		rect grip_bottom_right;
+	};
+
+	floating_area_t _floating_area;
 
 	bool _is_focused;
 	bool _is_iconic;
@@ -117,107 +130,102 @@ private:
 	mutable region _visible_region_cache;
 	mutable region _damage_cache;
 
-private:
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &);
 	client_managed_t & operator=(client_managed_t const &);
 
 	void init_managed_type(managed_window_type_e type);
 
+	void fake_configure_unsafe();
+	void set_wished_position(rect const & position);
+	rect const & get_wished_position() const;
+
+	cairo_t * get_cairo_context();
+
+	void update_icon();
+	void set_theme(theme_t const * theme);
+	void expose();
+
+	xcb_window_t deco() const;
+	xcb_atom_t A(atom_e atom);
+	void icccm_focus_unsafe(xcb_timestamp_t t);
+
+	void net_wm_allowed_actions_add(atom_e atom);
+
+	void map_unsafe();
+	void unmap_unsafe();
+	void grab_button_focused_unsafe();
+	void grab_button_unfocused_unsafe();
+	void ungrab_all_button_unsafe();
+	void select_inputs_unsafe();
+	void unselect_inputs_unsafe();
+
+	void _update_title();
+	void _update_visible_region();
+	void _update_opaque_region();
+	void _apply_floating_hints_constraint();
+
+	auto shared_from_this() -> shared_ptr<client_managed_t>;
+
+	xcb_atom_t net_wm_type();
+	bool get_wm_normal_hints(XSizeHints * size_hints);
+
+	void destroy_back_buffer();
+	void create_back_buffer();
+	void update_floating_areas();
+	void set_opaque_region(xcb_window_t w, region & region);
+	display_t * cnx();
+
+	void compute_floating_areas();
+	rect compute_floating_bind_position(rect const & allocation) const;
+	rect compute_floating_close_position(rect const & allocation) const;
+
+	void update_title();
+	bool prefer_window_border() const;
+
 public:
+
+	client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props);
+	virtual ~client_managed_t();
 
 	signal_t<client_managed_t *> on_destroy;
 	signal_t<shared_ptr<client_managed_t>> on_title_change;
 	signal_t<shared_ptr<client_managed_t>> on_activate;
 	signal_t<shared_ptr<client_managed_t>> on_deactivate;
 
-	client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> props);
-	virtual ~client_managed_t();
 
-	void reconfigure();
-	void fake_configure();
-	void set_wished_position(rect const & position);
-	rect const & get_wished_position() const;
-	void delete_window(xcb_timestamp_t);
-	rect get_base_position() const;
-	void set_managed_type(managed_window_type_e type);
-	cairo_t * get_cairo_context();
-	void focus(xcb_timestamp_t t);
-	managed_window_type_e get_type();
-	shared_ptr<icon16> icon() const;
-	void update_icon();
-	void set_theme(theme_t const * theme);
 	bool is(managed_window_type_e type);
-	void expose();
-
-	xcb_window_t deco() const;
-	xcb_atom_t A(atom_e atom);
-	void icccm_focus(xcb_timestamp_t t);
-
-	shared_ptr<composite_surface_view_t> create_surface_view();
+	auto title() const -> string const &;
+	auto create_surface_view() -> shared_ptr<composite_surface_view_t>;
+	auto get_wished_position() -> rect const &;
+	void set_floating_wished_position(rect const & pos);
+	rect get_base_position() const;
+	void reconfigure();
+	void normalize();
+	void iconify();
+	bool is_focused() const;
+	bool is_iconic();
+	void delete_window(xcb_timestamp_t);
+	auto icon() const -> shared_ptr<icon16>;
+	void set_notebook_wished_position(rect const & pos);
 	void set_current_desktop(unsigned int n);
-	void net_wm_allowed_actions_add(atom_e atom);
-
-	bool lock();
-	void unlock();
-	void set_focus_state(bool is_focused);
-
-	void set_demands_attention(bool x);
-	bool demands_attention();
-
-private:
-
-	void map();
-	void unmap();
-	void grab_button_focused();
-	void grab_button_unfocused();
-	void ungrab_all_button();
-	void select_inputs();
-	void unselect_inputs();
-
-	void _update_title();
-
-	void _update_visible_region();
-	void _update_opaque_region();
-
-public:
-
-	auto shared_from_this() -> shared_ptr<client_managed_t>;
-	bool is_fullscreen();
-	bool skip_task_bar();
-	xcb_atom_t net_wm_type();
-	bool get_wm_normal_hints(XSizeHints * size_hints);
+	bool is_stiky();
+	bool is_modal();
 	void net_wm_state_add(atom_e atom);
 	void net_wm_state_remove(atom_e atom);
 	void net_wm_state_delete();
-	void normalize();
-	void iconify();
 	void wm_state_delete();
-	void set_floating_wished_position(rect const & pos);
-	void set_notebook_wished_position(rect const & pos);
-	rect const & get_wished_position();
+	bool is_fullscreen();
+	bool skip_task_bar();
 	rect const & get_floating_wished_position();
-	void destroy_back_buffer();
-	void create_back_buffer();
-	vector<floating_event_t> const * floating_areas();
-	void update_floating_areas();
-	void set_opaque_region(xcb_window_t w, region & region);
-	display_t * cnx();
-
-	vector<floating_event_t> * compute_floating_areas(theme_managed_window_t * mw) const;
-	rect compute_floating_bind_position(rect const & allocation) const;
-	rect compute_floating_close_position(rect const & allocation) const;
-
-	bool is_iconic();
-	bool is_stiky();
-	bool is_modal();
-	bool is_focused() const;
-
-	void update_title();
-
-	string const & title() const;
-
-	bool prefer_window_border() const;
+	bool lock();
+	void unlock();
+	void set_focus_state(bool is_focused);
+	void set_demands_attention(bool x);
+	bool demands_attention();
+	void focus(xcb_timestamp_t t);
+	auto get_type() -> managed_window_type_e;
+	void set_managed_type(managed_window_type_e type);
 
 	/**
 	 * tree_t virtual API

@@ -27,33 +27,31 @@ using namespace std;
 
 client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, shared_ptr<client_properties_t> props) :
 				client_base_t{ctx, props},
-				_managed_type(MANAGED_FLOATING),
-				_net_wm_type(net_wm_type),
-				_floating_wished_position(),
-				_notebook_wished_position(),
-				_wished_position(),
-				_orig_position(),
-				_base_position(),
-				_surf(0),
-				_top_buffer(0),
-				_bottom_buffer(0),
-				_left_buffer(0),
-				_right_buffer(0),
+				_managed_type{MANAGED_FLOATING},
+				_net_wm_type{net_wm_type},
+				_floating_wished_position{},
+				_notebook_wished_position{},
+				_wished_position{},
+				_orig_position{},
+				_base_position{},
+				_surf{nullptr},
+				_top_buffer{nullptr},
+				_bottom_buffer{nullptr},
+				_left_buffer{nullptr},
+				_right_buffer{nullptr},
 				_icon(nullptr),
-				_orig_visual(0),
-				_orig_depth(-1),
-				_deco_visual(0),
-				_deco_depth(-1),
+				_orig_visual{0},
+				_orig_depth{-1},
+				_deco_visual{0},
+				_deco_depth{-1},
 				_orig(props->id()),
-				_base(XCB_WINDOW_NONE),
-				_deco(XCB_WINDOW_NONE),
-				_is_focused(false),
-				_is_iconic(true),
-				_demands_attention(false),
-				_is_durty{true}
+				_base{XCB_WINDOW_NONE},
+				_deco{XCB_WINDOW_NONE},
+				_is_focused{false},
+				_is_iconic{true},
+				_demands_attention{false}
 {
 
-	_floating_area = nullptr;
 	_update_title();
 	rect pos{_properties->position()};
 
@@ -67,30 +65,13 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 	_base_position = pos;
 	_orig_position = pos;
 
-	if(_properties->wm_normal_hints()!= nullptr) {
-		XSizeHints const * s = _properties->wm_normal_hints();
-
-		if (s->flags & PBaseSize) {
-			if (_floating_wished_position.w < s->base_width)
-				_floating_wished_position.w = s->base_width;
-			if (_floating_wished_position.h < s->base_height)
-				_floating_wished_position.h = s->base_height;
-		} else if (s->flags & PMinSize) {
-			if (_floating_wished_position.w < s->min_width)
-				_floating_wished_position.w = s->min_width;
-			if (_floating_wished_position.h < s->min_height)
-				_floating_wished_position.h = s->min_height;
-		}
-
-	}
+	_apply_floating_hints_constraint();
 
 
 	_orig_visual = _properties->wa()->visual;
 	_orig_depth = _properties->geometry()->depth;
 
-	/**
-	 * if x == 0 then place window at center of the screen
-	 **/
+	/** if x == 0 then place window at center of the screen **/
 	if (_floating_wished_position.x == 0 and not is(MANAGED_DOCK)) {
 		_floating_wished_position.x =
 				(_properties->geometry()->width - _floating_wished_position.w) / 2;
@@ -221,11 +202,8 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 
 	if (lock()) {
 		cnx()->add_to_save_set(orig());
-		/* set border to zero */
-		select_inputs();
-		/* Grab button click */
-		grab_button_unfocused();
-
+		select_inputs_unsafe();
+		grab_button_unfocused_unsafe();
 		cnx()->set_border_width(orig(), 0);
 		cnx()->reparentwindow(_orig, _base, 0, 0);
 		unlock();
@@ -241,17 +219,12 @@ client_managed_t::~client_managed_t() {
 
 	on_destroy.signal(this);
 
-	unselect_inputs();
+	unselect_inputs_unsafe();
 
 	if (_surf != nullptr) {
 		warn(cairo_surface_get_reference_count(_surf) == 1);
 		cairo_surface_destroy(_surf);
 		_surf = nullptr;
-	}
-
-	if (_floating_area != nullptr) {
-		delete _floating_area;
-		_floating_area = nullptr;
 	}
 
 	destroy_back_buffer();
@@ -359,7 +332,7 @@ void client_managed_t::reconfigure() {
 		cnx()->move_resize(_input_bottom_left, _area_bottom_left);
 		cnx()->move_resize(_input_bottom_right, _area_bottom_right);
 
-		fake_configure();
+		fake_configure_unsafe();
 		unlock();
 
 	}
@@ -370,7 +343,7 @@ void client_managed_t::reconfigure() {
 
 }
 
-void client_managed_t::fake_configure() {
+void client_managed_t::fake_configure_unsafe() {
 	//printf("fake_reconfigure = %dx%d+%d+%d\n", _wished_position.w,
 	//		_wished_position.h, _wished_position.x, _wished_position.y);
 	cnx()->fake_configure(_orig, _wished_position, 0);
@@ -418,7 +391,7 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 
 void client_managed_t::focus(xcb_timestamp_t t) {
 	set_focus_state(true);
-	icccm_focus(t);
+	icccm_focus_unsafe(t);
 }
 
 rect client_managed_t::get_base_position() const {
@@ -527,114 +500,69 @@ void client_managed_t::expose() {
 	}
 }
 
-void client_managed_t::icccm_focus(xcb_timestamp_t t) {
-	//fprintf(stderr, "Focus time = %lu\n", t);
+void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 
-	if (lock()) {
+	if(_demands_attention) {
+		_demands_attention = false;
+		_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+	}
 
-		if(_demands_attention) {
-			_demands_attention = false;
-			_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
-		}
-
-		if (_properties->wm_hints() != nullptr) {
-			if (_properties->wm_hints()->input != False) {
-				cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_NONE, t);
-			}
-		} else {
-			/** no WM_HINTS, guess hints.input == True **/
+	if (_properties->wm_hints() != nullptr) {
+		if (_properties->wm_hints()->input != False) {
 			cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_NONE, t);
 		}
+	} else {
+		/** no WM_HINTS, guess hints.input == True **/
+		cnx()->set_input_focus(_orig, XCB_INPUT_FOCUS_NONE, t);
+	}
 
-		if (_properties->wm_protocols() != nullptr) {
-			if (has_key(*(_properties->wm_protocols()),
-					static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
+	if (_properties->wm_protocols() != nullptr) {
+		if (has_key(*(_properties->wm_protocols()),
+				static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
 
-				xcb_client_message_event_t ev;
-				ev.response_type = XCB_CLIENT_MESSAGE;
-				ev.format = 32;
-				ev.type = A(WM_PROTOCOLS);
-				ev.window = _orig;
-				ev.data.data32[0] = A(WM_TAKE_FOCUS);
-				ev.data.data32[1] = t;
+			xcb_client_message_event_t ev;
+			ev.response_type = XCB_CLIENT_MESSAGE;
+			ev.format = 32;
+			ev.type = A(WM_PROTOCOLS);
+			ev.window = _orig;
+			ev.data.data32[0] = A(WM_TAKE_FOCUS);
+			ev.data.data32[1] = t;
 
-				xcb_send_event(cnx()->xcb(), 0, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
+			xcb_send_event(cnx()->xcb(), 0, _orig, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
 
-			}
 		}
-
-		unlock();
-
 	}
 
 }
 
-std::vector<floating_event_t> * client_managed_t::
-compute_floating_areas(theme_managed_window_t * mw) const {
+void client_managed_t::compute_floating_areas() {
 
-	std::vector<floating_event_t> * ret = new std::vector<floating_event_t>();
+	rect position{0, 0, _base_position.w, _base_position.h};
 
-	floating_event_t fc(FLOATING_EVENT_CLOSE);
-	fc.position = compute_floating_close_position(mw->position);
-	ret->push_back(fc);
-
-	floating_event_t fb(FLOATING_EVENT_BIND);
-	fb.position = compute_floating_bind_position(mw->position);
-	ret->push_back(fb);
+	_floating_area.close_button = compute_floating_close_position(position);
+	_floating_area.bind_button = compute_floating_bind_position(position);
 
 	int x0 = _ctx->theme()->floating.margin.left;
-	int x1 = mw->position.w - _ctx->theme()->floating.margin.right;
+	int x1 = position.w - _ctx->theme()->floating.margin.right;
 
 	int y0 = _ctx->theme()->floating.margin.bottom;
-	int y1 = mw->position.h - _ctx->theme()->floating.margin.bottom;
+	int y1 = position.h - _ctx->theme()->floating.margin.bottom;
 
-	int w0 = mw->position.w - _ctx->theme()->floating.margin.left
+	int w0 = position.w - _ctx->theme()->floating.margin.left
 			- _ctx->theme()->floating.margin.right;
-	int h0 = mw->position.h - _ctx->theme()->floating.margin.bottom
+	int h0 = position.h - _ctx->theme()->floating.margin.bottom
 			- _ctx->theme()->floating.margin.bottom;
 
-	floating_event_t ft(FLOATING_EVENT_TITLE);
-	ft.position = rect(x0, y0, w0,
-			_ctx->theme()->floating.title_height);
-	ret->push_back(ft);
+	_floating_area.title_button = rect(x0, y0, w0, _ctx->theme()->floating.title_height);
 
-	floating_event_t fgt(FLOATING_EVENT_GRIP_TOP);
-	fgt.position = rect(x0, 0, w0, _ctx->theme()->floating.margin.top);
-	ret->push_back(fgt);
-
-	floating_event_t fgb(FLOATING_EVENT_GRIP_BOTTOM);
-	fgb.position = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
-	ret->push_back(fgb);
-
-	floating_event_t fgl(FLOATING_EVENT_GRIP_LEFT);
-	fgl.position = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
-	ret->push_back(fgl);
-
-	floating_event_t fgr(FLOATING_EVENT_GRIP_RIGHT);
-	fgr.position = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
-	ret->push_back(fgr);
-
-	floating_event_t fgtl(FLOATING_EVENT_GRIP_TOP_LEFT);
-	fgtl.position = rect(0, 0, _ctx->theme()->floating.margin.left,
-			_ctx->theme()->floating.margin.top);
-	ret->push_back(fgtl);
-
-	floating_event_t fgtr(FLOATING_EVENT_GRIP_TOP_RIGHT);
-	fgtr.position = rect(x1, 0, _ctx->theme()->floating.margin.right,
-			_ctx->theme()->floating.margin.top);
-	ret->push_back(fgtr);
-
-	floating_event_t fgbl(FLOATING_EVENT_GRIP_BOTTOM_LEFT);
-	fgbl.position = rect(0, y1, _ctx->theme()->floating.margin.left,
-			_ctx->theme()->floating.margin.bottom);
-	ret->push_back(fgbl);
-
-	floating_event_t fgbr(FLOATING_EVENT_GRIP_BOTTOM_RIGHT);
-	fgbr.position = rect(x1, y1, _ctx->theme()->floating.margin.right,
-			_ctx->theme()->floating.margin.bottom);
-	ret->push_back(fgbr);
-
-	return ret;
+	_floating_area.grip_top = rect(x0, 0, w0, _ctx->theme()->floating.margin.top);
+	_floating_area.grip_bottom = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
+	_floating_area.grip_left = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
+	_floating_area.grip_right = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
+	_floating_area.grip_top_left = rect(0, 0, _ctx->theme()->floating.margin.left, _ctx->theme()->floating.margin.top);
+	_floating_area.grip_top_right = rect(x1, 0, _ctx->theme()->floating.margin.right, _ctx->theme()->floating.margin.top);
+	_floating_area.grip_bottom_left = rect(0, y1, _ctx->theme()->floating.margin.left, _ctx->theme()->floating.margin.bottom);
+	_floating_area.grip_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right, _ctx->theme()->floating.margin.bottom);
 
 }
 
@@ -649,8 +577,7 @@ rect client_managed_t::compute_floating_close_position(rect const & allocation) 
 	return position;
 }
 
-rect client_managed_t::
-compute_floating_bind_position(rect const & allocation) const {
+rect client_managed_t::compute_floating_bind_position(rect const & allocation) const {
 
 	rect position;
 	position.x = allocation.w - _ctx->theme()->floating.bind_width - _ctx->theme()->floating.close_width;
@@ -661,99 +588,105 @@ compute_floating_bind_position(rect const & allocation) const {
 	return position;
 }
 
+/**
+ * set usual passive button grab for a focused client.
+ *
+ * unsafe: need to lock the _orig window to use it.
+ **/
+void client_managed_t::grab_button_focused_unsafe() {
+	/** First ungrab all **/
+	ungrab_all_button_unsafe();
+	/** for decoration, grab all **/
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
-void client_managed_t::grab_button_focused() {
-	if (lock()) {
-		/** First ungrab all **/
-		ungrab_all_button();
+	/** for base, just grab some modified buttons **/
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
 
-		/** for decoration, grab all **/
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
-
-		/** for base, just grab some modified buttons **/
-		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
-
-		/** for base, just grab some modified buttons **/
-		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+	/** for base, just grab some modified buttons **/
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_CONTROL);
-
-		unlock();
-	}
 }
 
-void client_managed_t::grab_button_unfocused() {
-	if (lock()) {
-		/** First ungrab all **/
-		ungrab_all_button();
+/**
+ * set usual passive button grab for a not focused client.
+ *
+ * unsafe: need to lock the _orig window to use it.
+ **/
+void client_managed_t::grab_button_unfocused_unsafe() {
+	/** First ungrab all **/
+	ungrab_all_button_unsafe();
 
-		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
-		/** for decoration, grab all **/
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+	/** for decoration, grab all **/
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-		xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-				XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
-
-		unlock();
-	}
+	xcb_grab_button(cnx()->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 }
 
 
-void client_managed_t::ungrab_all_button() {
+/**
+ * Remove all passive grab on windows
+ *
+ * unsafe: need to lock the _orig window to use it.
+ **/
+void client_managed_t::ungrab_all_button_unsafe() {
 	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
 	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
-	if (cnx()->lock(_orig)) {
-		xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _orig, XCB_MOD_MASK_ANY);
-		cnx()->unlock();
-	}
+	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _orig, XCB_MOD_MASK_ANY);
 }
 
-void client_managed_t::select_inputs() {
+/**
+ * select usual input events
+ *
+ * unsafe: need to lock the _orig window to use it.
+ **/
+void client_managed_t::select_inputs_unsafe() {
 	cnx()->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 	cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-	if (lock()) {
-		cnx()->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
-		xcb_shape_select_input(cnx()->xcb(), _orig, 1);
-		unlock();
-	}
+	cnx()->select_input(_orig, MANAGED_ORIG_WINDOW_EVENT_MASK);
+	xcb_shape_select_input(cnx()->xcb(), _orig, 1);
 }
 
-void client_managed_t::unselect_inputs() {
+/**
+ * Remove all selected input event
+ *
+ * unsafe: need to lock the _orig window to use it.
+ **/
+void client_managed_t::unselect_inputs_unsafe() {
 	cnx()->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
 	cnx()->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
-	if (cnx()->lock(_orig)) {
-		cnx()->select_input(_orig, XCB_EVENT_MASK_NO_EVENT);
-		xcb_shape_select_input(cnx()->xcb(), _orig, false);
-		cnx()->unlock();
-	}
+	cnx()->select_input(_orig, XCB_EVENT_MASK_NO_EVENT);
+	xcb_shape_select_input(cnx()->xcb(), _orig, false);
 }
 
 bool client_managed_t::is_fullscreen() {
@@ -930,21 +863,10 @@ void client_managed_t::create_back_buffer() {
 
 }
 
-std::vector<floating_event_t> const * client_managed_t::floating_areas() {
-	return _floating_area;
-}
-
 void client_managed_t::update_floating_areas() {
-
-	if (_floating_area != 0) {
-		delete _floating_area;
-	}
-
 	theme_managed_window_t tm;
 	tm.position = _base_position;
 	tm.title = _title;
-
-	_floating_area = compute_floating_areas(&tm);
 
 	int x0 = _ctx->theme()->floating.margin.left;
 	int x1 = _base_position.w - _ctx->theme()->floating.margin.right;
@@ -971,15 +893,17 @@ void client_managed_t::update_floating_areas() {
 	_area_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.bottom);
 
+	compute_floating_areas();
+
 }
 
 bool client_managed_t::has_window(xcb_window_t w) const {
 	return w == _properties->id() or w == _base or w == _deco;
 }
 
-std::string client_managed_t::get_node_name() const {
-	std::string s = _get_node_name<'M'>();
-	std::ostringstream oss;
+string client_managed_t::get_node_name() const {
+	string s = _get_node_name<'M'>();
+	ostringstream oss;
 	oss << s << " " << orig() << " " << title();
 
 	if(_properties->geometry() != nullptr) {
@@ -1050,11 +974,11 @@ void client_managed_t::set_focus_state(bool is_focused) {
 		_is_focused = is_focused;
 		if (_is_focused) {
 			net_wm_state_add(_NET_WM_STATE_FOCUSED);
-			grab_button_focused();
+			grab_button_focused_unsafe();
 			on_activate.signal(shared_from_this());
 		} else {
 			net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-			grab_button_unfocused();
+			grab_button_unfocused_unsafe();
 			on_deactivate.signal(shared_from_this());
 		}
 		queue_redraw();
@@ -1069,7 +993,7 @@ void client_managed_t::net_wm_allowed_actions_add(atom_e atom) {
 	}
 }
 
-void client_managed_t::map() {
+void client_managed_t::map_unsafe() {
 	cnx()->map(_orig);
 	cnx()->map(_deco);
 	cnx()->map(_base);
@@ -1085,7 +1009,7 @@ void client_managed_t::map() {
 	cnx()->map(_input_bottom_right);
 }
 
-void client_managed_t::unmap() {
+void client_managed_t::unmap_unsafe() {
 	cnx()->unmap(_base);
 	cnx()->unmap(_deco);
 	cnx()->unmap(_orig);
@@ -1107,7 +1031,6 @@ void client_managed_t::hide() {
 	}
 
 	_is_visible = false;
-	//net_wm_state_add(_NET_WM_STATE_HIDDEN);
 	// do not unmap, just put it outside the screen.
 	//unmap();
 	reconfigure();
@@ -1118,9 +1041,8 @@ void client_managed_t::hide() {
 
 void client_managed_t::show() {
 	_is_visible = true;
-	//net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 	reconfigure();
-	map();
+	map_unsafe();
 	for(auto x: _children) {
 		x->show();
 	}
@@ -1181,51 +1103,38 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 			and e->child != orig()
 			and e->event == deco()) {
 
-		auto const * l = floating_areas();
-		floating_event_t const * b = nullptr;
-		for (auto &i : (*l)) {
-			if(i.position.is_inside(e->event_x, e->event_y)) {
-				b = &i;
-				break;
-			}
-		}
-
-		if (b != nullptr) {
-
-			if (b->type == FLOATING_EVENT_CLOSE) {
-				delete_window(e->time);
-			} else if (b->type == FLOATING_EVENT_BIND) {
-				rect absolute_position = b->position;
-				absolute_position.x += base_position().x;
-				absolute_position.y += base_position().y;
-				_ctx->grab_start(new grab_bind_client_t{_ctx, shared_from_this(), e->detail, absolute_position});
-			} else if (b->type == FLOATING_EVENT_TITLE) {
-				_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
+		if (_floating_area.close_button.is_inside(e->event_x, e->event_y)) {
+			delete_window(e->time);
+		} else if (_floating_area.bind_button.is_inside(e->event_x, e->event_y)) {
+			rect absolute_position = _floating_area.bind_button;
+			absolute_position.x += base_position().x;
+			absolute_position.y += base_position().y;
+			_ctx->grab_start(new grab_bind_client_t{_ctx, shared_from_this(), e->detail, absolute_position});
+		} else if (_floating_area.title_button.is_inside(e->event_x, e->event_y)) {
+			_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
+		} else {
+			if (_floating_area.grip_top.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP});
+			} else if (_floating_area.grip_bottom.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM});
+			} else if (_floating_area.grip_left.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_LEFT});
+			} else if (_floating_area.grip_right.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_RIGHT});
+			} else if (_floating_area.grip_top_left.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT});
+			} else if (_floating_area.grip_top_right.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT});
+			} else if (_floating_area.grip_bottom_left.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT});
+			} else if (_floating_area.grip_bottom_right.is_inside(e->event_x, e->event_y)) {
+				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
 			} else {
-				if (b->type == FLOATING_EVENT_GRIP_TOP) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP});
-				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM});
-				} else if (b->type == FLOATING_EVENT_GRIP_LEFT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_LEFT});
-				} else if (b->type == FLOATING_EVENT_GRIP_RIGHT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_RIGHT});
-				} else if (b->type == FLOATING_EVENT_GRIP_TOP_LEFT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT});
-				} else if (b->type == FLOATING_EVENT_GRIP_TOP_RIGHT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT});
-				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_LEFT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT});
-				} else if (b->type == FLOATING_EVENT_GRIP_BOTTOM_RIGHT) {
-					_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
-				} else {
-					_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
-				}
+				_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
 			}
-
-			return true;
-
 		}
+
+		return true;
 
 	} else if (is(MANAGED_FULLSCREEN)
 			and e->detail == (XCB_BUTTON_INDEX_3)
@@ -1349,19 +1258,18 @@ void client_managed_t::trigger_redraw() {
 }
 
 void client_managed_t::_update_title() {
-		_is_durty = true;
+	_is_durty = true;
 
-		string name;
-		if (_properties->net_wm_name() != nullptr) {
-			_title = *(_properties->net_wm_name());
-		} else if (_properties->wm_name() != nullptr) {
-			_title = *(_properties->wm_name());
-		} else {
-			stringstream s(std::stringstream::in | std::stringstream::out);
-			s << "#" << (_properties->id()) << " (noname)";
-			_title = s.str();
-		}
-
+	string name;
+	if (_properties->net_wm_name() != nullptr) {
+		_title = *(_properties->net_wm_name());
+	} else if (_properties->wm_name() != nullptr) {
+		_title = *(_properties->wm_name());
+	} else {
+		stringstream s(stringstream::in | stringstream::out);
+		s << "#" << (_properties->id()) << " (noname)";
+		_title = s.str();
+	}
 }
 
 void client_managed_t::update_title() {
@@ -1370,18 +1278,13 @@ void client_managed_t::update_title() {
 }
 
 bool client_managed_t::prefer_window_border() const {
-
 	if (_properties->motif_hints() != nullptr) {
 		if(not (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS))
 			return true;
-
 		if(_properties->motif_hints()->decorations != 0x00)
 			return true;
-
 		return false;
-
 	}
-
 	return true;
 }
 
@@ -1506,6 +1409,32 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 
 }
 
+void client_managed_t::_apply_floating_hints_constraint() {
+
+	if(_properties->wm_normal_hints()!= nullptr) {
+		XSizeHints const * s = _properties->wm_normal_hints();
+
+		if (s->flags & PBaseSize) {
+			if (_floating_wished_position.w < s->base_width)
+				_floating_wished_position.w = s->base_width;
+			if (_floating_wished_position.h < s->base_height)
+				_floating_wished_position.h = s->base_height;
+		} else if (s->flags & PMinSize) {
+			if (_floating_wished_position.w < s->min_width)
+				_floating_wished_position.w = s->min_width;
+			if (_floating_wished_position.h < s->min_height)
+				_floating_wished_position.h = s->min_height;
+		}
+
+		if (s->flags & PMaxSize) {
+			if (_floating_wished_position.w > s->max_width)
+				_floating_wished_position.w = s->max_width;
+			if (_floating_wished_position.h > s->max_height)
+				_floating_wished_position.h = s->max_height;
+		}
+
+	}
+}
 
 }
 
