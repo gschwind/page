@@ -68,6 +68,9 @@ public:
 	cairo_surface_t * unbind_button_s;
 	cairo_surface_t * bind_button_s;
 
+	cairo_surface_t * left_scroll_arrow_button_s;
+	cairo_surface_t * right_scroll_arrow_button_s;
+
 	cairo_surface_t * background_s;
 
 	xcb_pixmap_t background_p;

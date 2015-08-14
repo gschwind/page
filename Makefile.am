@@ -21,6 +21,8 @@ nobase_dist_pagedata_DATA = \
 	data/pop.png \
 	data/pop_selected.png \
 	data/vsplit_button.png \
+	data/go-next.png \
+	data/go-previous.png \
 	page.conf
 
 # allow replacement of mate window manager

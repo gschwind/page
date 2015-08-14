@@ -103,6 +103,9 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	notebook.vsplit_width = 17;
 	notebook.mark_width = 28;
 
+	notebook.left_scroll_arrow_width = 16;
+	notebook.right_scroll_arrow_width = 16;
+
 	split.margin.top = 0;
 	split.margin.bottom = 0;
 	split.margin.left = 0;
@@ -232,6 +235,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	pops_button_s = nullptr;
 	unbind_button_s = nullptr;
 	bind_button_s = nullptr;
+	left_scroll_arrow_button_s = nullptr;
+	right_scroll_arrow_button_s = nullptr;
 
 	has_background = conf.has_key("simple_theme", "background_png");
 	if(has_background)
@@ -308,6 +313,21 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 			throw std::runtime_error("file not found!");
 	}
 
+	if (left_scroll_arrow_button_s == nullptr) {
+		std::string filename = conf_img_dir + "/go-previous.png";
+		printf("Load: %s\n", filename.c_str());
+		left_scroll_arrow_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if (left_scroll_arrow_button_s == nullptr)
+			throw std::runtime_error("file not found!");
+	}
+
+	if (right_scroll_arrow_button_s == nullptr) {
+		std::string filename = conf_img_dir + "/go-next.png";
+		printf("Load: %s\n", filename.c_str());
+		right_scroll_arrow_button_s = cairo_image_surface_create_from_png(filename.c_str());
+		if (right_scroll_arrow_button_s == nullptr)
+			throw std::runtime_error("file not found!");
+	}
 
 	notebook_active_font_name = conf.get_string("simple_theme", "notebook_active_font").c_str();
 	notebook_selected_font_name = conf.get_string("simple_theme", "notebook_selected_font").c_str();
@@ -359,6 +379,10 @@ simple2_theme_t::~simple2_theme_t() {
 	cairo_surface_destroy(unbind_button_s);
 	warn(cairo_surface_get_reference_count(bind_button_s) == 1);
 	cairo_surface_destroy(bind_button_s);
+	warn(cairo_surface_get_reference_count(left_scroll_arrow_button_s) == 1);
+	cairo_surface_destroy(left_scroll_arrow_button_s);
+	warn(cairo_surface_get_reference_count(right_scroll_arrow_button_s) == 1);
+	cairo_surface_destroy(right_scroll_arrow_button_s);
 
 	pango_font_description_free(notebook_active_font);
 	pango_font_description_free(notebook_selected_font);
@@ -616,6 +640,36 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(cairo_set_source_surface(cr, close_button_s, b.x, b.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, close_button_s, b.x, b.y));
 	}
+
+	if(n->has_scroll_arrow) {
+		rect b = n->left_arrow_position;
+
+		if(n->button_mouse_over == NOTEBOOK_BUTTON_LEFT_SCROLL_ARROW) {
+			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
+			CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+			cairo_fill(cr);
+		}
+
+		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+		CHECK_CAIRO(cairo_set_source_surface(cr, left_scroll_arrow_button_s, b.x, b.y+3));
+		CHECK_CAIRO(cairo_mask_surface(cr, left_scroll_arrow_button_s, b.x, b.y+3));
+	}
+
+	if(n->has_scroll_arrow) {
+		rect b = n->right_arrow_position;
+
+		if(n->button_mouse_over == NOTEBOOK_BUTTON_RIGHT_SCROLL_ARROW) {
+			cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.4);
+			CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+			cairo_fill(cr);
+		}
+
+		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
+		CHECK_CAIRO(cairo_set_source_surface(cr, right_scroll_arrow_button_s, b.x, b.y+3));
+		CHECK_CAIRO(cairo_mask_surface(cr, right_scroll_arrow_button_s, b.x, b.y+3));
+	}
+
+
 
 	CHECK_CAIRO(cairo_restore(cr));
 

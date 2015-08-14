@@ -55,8 +55,8 @@ class notebook_t : public page_component_t {
 	theme_notebook_t _theme_notebook;
 
 	int _theme_client_tabs_offset;
-	mutable vector<theme_tab_t> _theme_client_tabs;
-	mutable rect _theme_client_tabs_area;
+	vector<theme_tab_t> _theme_client_tabs;
+	rect _theme_client_tabs_area;
 
 	bool _is_default;
 	bool _keep_selected;
@@ -64,6 +64,7 @@ class notebook_t : public page_component_t {
 
 	bool _can_hsplit;
 	bool _can_vsplit;
+	bool _has_scroll_arrow;
 
 	struct {
 		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab;
@@ -102,6 +103,9 @@ class notebook_t : public page_component_t {
 		rect button_select;
 		rect button_exposay;
 
+		rect left_scroll_arrow;
+		rect right_scroll_arrow;
+
 		rect close_client;
 		rect undck_client;
 
@@ -130,7 +134,7 @@ class notebook_t : public page_component_t {
 	void _start_fading();
 
 	void _update_notebook_areas();
-	void _update_theme_notebook(theme_notebook_t & theme_notebook) const;
+	void _update_theme_notebook(theme_notebook_t & theme_notebook);
 	void _update_layout();
 
 	void _process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
@@ -173,6 +177,9 @@ class notebook_t : public page_component_t {
 	void _update_exposay();
 	void _stop_exposay();
 	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
+
+	void _scroll_left(int x);
+	void _scroll_right(int x);
 
 	shared_ptr<notebook_t> shared_from_this();
 

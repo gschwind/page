@@ -518,7 +518,7 @@ void notebook_t::_update_notebook_areas() {
 	}
 }
 
-void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const {
+void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 	theme_notebook.root_x = get_window_position().x;
 	theme_notebook.root_y = get_window_position().y;
 	theme_notebook.can_hsplit = _can_hsplit;
@@ -599,6 +599,37 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 			tab.is_iconic = i.client->is_iconic();
 			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
+
+		_area.left_scroll_arrow = rect{};
+		_area.right_scroll_arrow = rect{};
+		if(_theme_client_tabs_area.w < _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w) {
+			_has_scroll_arrow = true;
+			theme_notebook.has_scroll_arrow = true;
+
+			_area.left_scroll_arrow.x = _theme_client_tabs_area.x;
+			_area.left_scroll_arrow.y = _allocation.y;
+			_area.left_scroll_arrow.w = _ctx->theme()->notebook.left_scroll_arrow_width;
+			_area.left_scroll_arrow.h = _ctx->theme()->notebook.tab_height;
+
+			_area.right_scroll_arrow.x = _theme_client_tabs_area.x + _theme_client_tabs_area.w - _ctx->theme()->notebook.right_scroll_arrow_width;
+			_area.right_scroll_arrow.y = _allocation.y;
+			_area.right_scroll_arrow.w = _ctx->theme()->notebook.left_scroll_arrow_width;
+			_area.right_scroll_arrow.h = _ctx->theme()->notebook.tab_height;
+
+			theme_notebook.left_arrow_position = _area.left_scroll_arrow;
+			theme_notebook.right_arrow_position = _area.right_scroll_arrow;
+
+			_theme_client_tabs_area.w -= (_ctx->theme()->notebook.left_scroll_arrow_width + _ctx->theme()->notebook.right_scroll_arrow_width);
+			_theme_client_tabs_area.x += _ctx->theme()->notebook.left_scroll_arrow_width;
+
+		} else {
+			_area.left_scroll_arrow = rect{};
+			_area.right_scroll_arrow = rect{};
+			_has_scroll_arrow = false;
+			theme_notebook.has_scroll_arrow = false;
+		}
+
+
 	} else {
 		theme_notebook.has_selected_client = false;
 	}
@@ -608,6 +639,9 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 		theme_notebook.client_position = _client_position;
 	}
 	theme_notebook.is_default = is_default();
+
+
+
 }
 
 void notebook_t::_start_fading() {
@@ -811,6 +845,12 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			if (_selected != nullptr)
 				_ctx->unbind_window(_selected);
 			return true;
+		} else if (_area.left_scroll_arrow.is_inside(x, y)) {
+			_scroll_left(30);
+			return true;
+		} else if (_area.right_scroll_arrow.is_inside(x, y)) {
+			_scroll_right(30);
+			return true;
 		} else {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
@@ -866,38 +906,12 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		}
 	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_4) {
 		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
-
-			if(_theme_client_tabs_area.w == _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_offset) {
-				return true;
-			}
-
-			if(_theme_client_tabs.size() < 1)
-				return true;
-
-			if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
-				return true;
-
-			_theme_client_tabs_offset += 15;
-
-			_update_notebook_areas();
-			queue_redraw();
+			_scroll_left(15);
 			return true;
 		}
 	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_5) {
 		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
-			if(_theme_client_tabs_offset == 0)
-				return true;
-
-			if(_theme_client_tabs.size() < 1)
-				return true;
-
-			if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
-				return true;
-
-			_theme_client_tabs_offset -= 15;
-
-			_update_notebook_areas();
-			queue_redraw();
+			_scroll_right(15);
 			return true;
 		}
 	}
@@ -956,6 +970,10 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLIENT_CLOSE;
 		} else if (_area.undck_client.is_inside(x, y)) {
 			new_button_mouse_over = NOTEBOOK_BUTTON_CLIENT_UNBIND;
+		} else if (_area.left_scroll_arrow.is_inside(x, y)) {
+			new_button_mouse_over = NOTEBOOK_BUTTON_LEFT_SCROLL_ARROW;
+		} else if (_area.right_scroll_arrow.is_inside(x, y)) {
+			new_button_mouse_over = NOTEBOOK_BUTTON_RIGHT_SCROLL_ARROW;
 		} else {
 			for (auto & i : _client_buttons) {
 				if (std::get<0>(i).is_inside(x, y)) {
@@ -1178,6 +1196,39 @@ void notebook_t::get_min_allocation(int & width, int & height) const {
 			+ _ctx->theme()->notebook.mark_width
 			+ _ctx->theme()->notebook.menu_button_width
 			+ _ctx->theme()->notebook.iconic_tab_width * 4;
+}
+
+void  notebook_t::_scroll_left(int x) {
+	if(_theme_client_tabs_area.w == _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_offset) {
+		return;
+	}
+
+	if(_theme_client_tabs.size() < 1)
+		return;
+
+	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
+		return;
+
+	_theme_client_tabs_offset += x;
+
+	_update_notebook_areas();
+	queue_redraw();
+}
+
+void  notebook_t::_scroll_right(int x) {
+	if(_theme_client_tabs_offset == 0)
+		return;
+
+	if(_theme_client_tabs.size() < 1)
+		return;
+
+	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
+		return;
+
+	_theme_client_tabs_offset -= x;
+
+	_update_notebook_areas();
+	queue_redraw();
 }
 
 }

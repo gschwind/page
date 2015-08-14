@@ -20,7 +20,9 @@ enum notebook_button_e {
 	NOTEBOOK_BUTTON_MASK,
 	NOTEBOOK_BUTTON_CLIENT_CLOSE,
 	NOTEBOOK_BUTTON_CLIENT_UNBIND,
-	NOTEBOOK_BUTTON_EXPOSAY
+	NOTEBOOK_BUTTON_EXPOSAY,
+	NOTEBOOK_BUTTON_LEFT_SCROLL_ARROW,
+	NOTEBOOK_BUTTON_RIGHT_SCROLL_ARROW
 };
 
 struct theme_notebook_t {
@@ -28,12 +30,15 @@ struct theme_notebook_t {
 	notebook_button_e button_mouse_over;
 	rect allocation;
 	rect client_position;
+	rect left_arrow_position;
+	rect right_arrow_position;
 	theme_tab_t selected_client;
 	int client_count;
 	bool is_default;
 	bool has_selected_client;
 	bool can_vsplit;
 	bool can_hsplit;
+	bool has_scroll_arrow;
 
 	theme_notebook_t() :
 		root_x{}, root_y{},
@@ -45,7 +50,8 @@ struct theme_notebook_t {
 		can_vsplit{},
 		can_hsplit{},
 		button_mouse_over{NOTEBOOK_BUTTON_NONE},
-		client_count{0}
+		client_count{0},
+		has_scroll_arrow{false}
 	{
 
 	}
@@ -58,8 +64,10 @@ struct theme_notebook_t {
 		is_default{x.is_default},
 		has_selected_client{x.has_selected_client},
 		button_mouse_over{x.button_mouse_over},
-		can_hsplit{false},
-		can_vsplit{false}
+		can_hsplit{x.can_hsplit},
+		can_vsplit{x.can_vsplit},
+		client_count{x.client_count},
+		has_scroll_arrow{x.has_scroll_arrow}
 	{
 
 	}

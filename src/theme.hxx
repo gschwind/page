@@ -66,6 +66,9 @@ public:
 		unsigned vsplit_width;
 		unsigned mark_width;
 
+		unsigned left_scroll_arrow_width;
+		unsigned right_scroll_arrow_width;
+
 	} notebook;
 
 	struct {
