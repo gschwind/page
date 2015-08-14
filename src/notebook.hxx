@@ -57,6 +57,9 @@ class notebook_t : public page_component_t {
 	bool _keep_selected;
 	bool _exposay;
 
+	bool _can_hsplit;
+	bool _can_vsplit;
+
 	struct {
 		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab;
 		tuple<rect, weak_ptr<client_managed_t>, int> * exposay;

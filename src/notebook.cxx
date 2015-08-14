@@ -183,6 +183,24 @@ void notebook_t::set_allocation(rect const & area) {
 }
 
 void notebook_t::_update_layout() {
+
+	int min_width;
+	int min_height;
+	get_min_allocation(min_width, min_height);
+
+	if(_allocation.w < min_width * 2 + _ctx->theme()->split.margin.left  + _ctx->theme()->split.margin.right  + _ctx->theme()->split.width) {
+		_can_vsplit = false;
+	} else {
+		_can_vsplit = true;
+	}
+
+	if(_allocation.h < min_height * 2 + _ctx->theme()->split.margin.top  + _ctx->theme()->split.margin.bottom  + _ctx->theme()->split.width) {
+		_can_hsplit = false;
+	} else {
+		_can_hsplit = true;
+	}
+
+
 	_client_area.x = _allocation.x + _ctx->theme()->notebook.margin.left;
 	_client_area.y = _allocation.y + _ctx->theme()->notebook.margin.top + _ctx->theme()->notebook.tab_height;
 	_client_area.w = _allocation.w - _ctx->theme()->notebook.margin.left - _ctx->theme()->notebook.margin.right;
@@ -195,25 +213,35 @@ void notebook_t::_update_layout() {
 	_area.tab.w = _allocation.w;
 	_area.tab.h = _ctx->theme()->notebook.tab_height;
 
-	_area.top.x = _allocation.x + window_position.x;
-	_area.top.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
-	_area.top.w = _allocation.w;
-	_area.top.h = (_allocation.h - _ctx->theme()->notebook.tab_height) * 0.2;
+	if(_can_hsplit) {
+		_area.top.x = _allocation.x + window_position.x;
+		_area.top.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
+		_area.top.w = _allocation.w;
+		_area.top.h = (_allocation.h - _ctx->theme()->notebook.tab_height) * 0.2;
 
-	_area.bottom.x = _allocation.x + window_position.x;
-	_area.bottom.y = _allocation.y + window_position.y + (0.8 * (allocation().h - _ctx->theme()->notebook.tab_height));
-	_area.bottom.w = _allocation.w;
-	_area.bottom.h = (_allocation.h - _ctx->theme()->notebook.tab_height) * 0.2;
+		_area.bottom.x = _allocation.x + window_position.x;
+		_area.bottom.y = _allocation.y + window_position.y + (0.8 * (allocation().h - _ctx->theme()->notebook.tab_height));
+		_area.bottom.w = _allocation.w;
+		_area.bottom.h = (_allocation.h - _ctx->theme()->notebook.tab_height) * 0.2;
+	} else {
+		_area.top = rect{};
+		_area.bottom = rect{};
+	}
 
-	_area.left.x = _allocation.x + window_position.x;
-	_area.left.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
-	_area.left.w = _allocation.w * 0.2;
-	_area.left.h = (_allocation.h - _ctx->theme()->notebook.tab_height);
+	if(_can_vsplit) {
+		_area.left.x = _allocation.x + window_position.x;
+		_area.left.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
+		_area.left.w = _allocation.w * 0.2;
+		_area.left.h = (_allocation.h - _ctx->theme()->notebook.tab_height);
 
-	_area.right.x = _allocation.x + window_position.x + _allocation.w * 0.8;
-	_area.right.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
-	_area.right.w = _allocation.w * 0.2;
-	_area.right.h = (_allocation.h - _ctx->theme()->notebook.tab_height);
+		_area.right.x = _allocation.x + window_position.x + _allocation.w * 0.8;
+		_area.right.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
+		_area.right.w = _allocation.w * 0.2;
+		_area.right.h = (_allocation.h - _ctx->theme()->notebook.tab_height);
+	} else {
+		_area.left = rect{};
+		_area.right = rect{};
+	}
 
 	_area.popup_top.x = _allocation.x + window_position.x;
 	_area.popup_top.y = _allocation.y + window_position.y + _ctx->theme()->notebook.tab_height;
@@ -457,22 +485,8 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 	theme_notebook.clients_tab.clear();
 	theme_notebook.root_x = get_window_position().x;
 	theme_notebook.root_y = get_window_position().y;
-
-	int min_width;
-	int min_height;
-	get_min_allocation(min_width, min_height);
-
-	if(_allocation.w < min_width * 2 + _ctx->theme()->split.margin.left  + _ctx->theme()->split.margin.right  + _ctx->theme()->split.width) {
-		theme_notebook.can_vsplit = false;
-	} else {
-		theme_notebook.can_vsplit = true;
-	}
-
-	if(_allocation.h < min_height * 2 + _ctx->theme()->split.margin.top  + _ctx->theme()->split.margin.bottom  + _ctx->theme()->split.width) {
-		theme_notebook.can_hsplit = false;
-	} else {
-		theme_notebook.can_hsplit = true;
-	}
+	theme_notebook.can_hsplit = _can_hsplit;
+	theme_notebook.can_vsplit = _can_vsplit;
 
 	if (_clients.size() != 0) {
 		double selected_box_width = (_allocation.w
@@ -700,11 +714,11 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			_ctx->notebook_close(shared_from_this());
 			return true;
 		} else if (_area.button_hsplit.is_inside(x, y)) {
-			if(_theme_notebook.can_hsplit)
+			if(_can_hsplit)
 				_ctx->split_bottom(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_vsplit.is_inside(x, y)) {
-			if(_theme_notebook.can_vsplit)
+			if(_can_vsplit)
 				_ctx->split_right(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_select.is_inside(x, y)) {
