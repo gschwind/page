@@ -65,10 +65,10 @@ class client_managed_t : public client_base_t {
 	cairo_surface_t * _surf;
 
 	// border surface of floating window
-	cairo_surface_t * _top_buffer;
-	cairo_surface_t * _bottom_buffer;
-	cairo_surface_t * _left_buffer;
-	cairo_surface_t * _right_buffer;
+	shared_ptr<pixmap_t> _top_buffer;
+	shared_ptr<pixmap_t> _bottom_buffer;
+	shared_ptr<pixmap_t> _left_buffer;
+	shared_ptr<pixmap_t> _right_buffer;
 
 
 	// window title cache
@@ -124,7 +124,8 @@ class client_managed_t : public client_base_t {
 	bool _is_focused;
 	bool _is_iconic;
 	bool _demands_attention;
-	bool _is_durty;
+	bool _is_resized;
+	bool _is_exposed;
 
 	mutable region _opaque_region_cache;
 	mutable region _visible_region_cache;
@@ -144,7 +145,6 @@ class client_managed_t : public client_base_t {
 
 	void update_icon();
 	void set_theme(theme_t const * theme);
-	void expose();
 
 	xcb_window_t deco() const;
 	xcb_atom_t A(atom_e atom);
@@ -182,6 +182,9 @@ class client_managed_t : public client_base_t {
 
 	void update_title();
 	bool prefer_window_border() const;
+
+	void _update_backbuffers();
+	void _paint_exposed();
 
 public:
 
@@ -252,7 +255,7 @@ public:
 	// virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	// virtual bool leave(xcb_leave_notify_event_t const * ev);
 	// virtual bool enter(xcb_enter_notify_event_t const * ev);
-	// virtual void expose(xcb_expose_event_t const * ev);
+	virtual void expose(xcb_expose_event_t const * ev);
 
 	// virtual auto get_xid() const -> xcb_window_t;
 	// virtual auto get_parent_xid() const -> xcb_window_t;

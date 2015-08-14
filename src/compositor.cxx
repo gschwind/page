@@ -170,24 +170,26 @@ void compositor_t::render(tree_t * t) {
 	region _composited_area = damaged - _direct_render;
 
 	/** pass 1 render all composited area from bottom to top **/
-	for (auto & dmg : _composited_area) {
-		for (auto &i : _graph_scene) {
-			i->render(cr, dmg);
-		}
-		if (_show_damaged) {
+	for (auto const & i : _graph_scene) {
+		region composite_dmg = i->get_visible_region() & _composited_area;
+		i->render(cr, composite_dmg);
+	}
+
+	if (_show_damaged) {
+		for(auto const & dmg: _composited_area)
 			_draw_crossed_box(cr, dmg, 1.0, 0.0, 1.0);
-		}
 	}
 
 	/** pass 2 from top to bottom, render opaque area **/
 	for (auto i = _graph_scene.rbegin(); i != _graph_scene.rend(); ++i) {
-		region x = (*i)->get_opaque_region() & _direct_render;
-		for (auto & dmg : x) {
-			(*i)->render(cr, dmg);
-			if (_show_opac)
+		region opaque_dmg = (*i)->get_opaque_region() & _direct_render;
+		(*i)->render(cr, opaque_dmg);
+		if (_show_opac) {
+			for (auto & dmg : opaque_dmg) {
 				_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
+			}
 		}
-		_direct_render -= x;
+		_direct_render -= opaque_dmg;
 	}
 
 	_damaged.clear();
