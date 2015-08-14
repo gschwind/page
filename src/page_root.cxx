@@ -144,16 +144,16 @@ void page_root_t::activate(shared_ptr<tree_t> t) {
 	}
 }
 
-void page_root_t::set_allocation(rect const & r) {
-	throw exception_t("page_t::set_allocation should be called");
-}
-
-rect page_root_t::allocation() const {
-	return _root_position;
-}
-
-void page_root_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
-	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
-}
+//void page_root_t::set_allocation(rect const & r) {
+//	throw exception_t("page_t::set_allocation should be called");
+//}
+//
+//rect page_root_t::allocation() const {
+//	return _root_position;
+//}
+//
+//void page_root_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
+//	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
+//}
 
 }

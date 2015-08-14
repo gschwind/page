@@ -312,4 +312,14 @@ void viewport_t::create_default_subtree() {
 	}
 }
 
+void viewport_t::get_min_allocation(int & width, int & height) {
+	width = 0;
+	height = 0;
+
+	if(_subtree != nullptr) {
+		_subtree->get_min_allocation(width, height);
+	}
+
+}
+
 }

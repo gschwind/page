@@ -707,22 +707,22 @@ void client_managed_t::destroy_back_buffer() {
 
 void client_managed_t::create_back_buffer() {
 
-	_top_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-			_base_position.w,
-			_ctx->theme()->floating.margin.top
-					+ _ctx->theme()->floating.title_height);
-	_bottom_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-			_base_position.w, _ctx->theme()->floating.margin.bottom);
-	_left_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-			_ctx->theme()->floating.margin.left,
-			_base_position.h - _ctx->theme()->floating.margin.top
-					- _ctx->theme()->floating.margin.bottom);
-	_right_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-			_ctx->theme()->floating.margin.right,
-			_base_position.h - _ctx->theme()->floating.margin.top
-					- _ctx->theme()->floating.margin.bottom);
-
-	_is_resized = true;
+	if(_base_position.w > 0 and _base_position.h > 0) {
+		_top_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
+				_base_position.w,
+				_ctx->theme()->floating.margin.top
+						+ _ctx->theme()->floating.title_height);
+		_bottom_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
+				_base_position.w, _ctx->theme()->floating.margin.bottom);
+		_left_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
+				_ctx->theme()->floating.margin.left,
+				_base_position.h - _ctx->theme()->floating.margin.top
+						- _ctx->theme()->floating.margin.bottom);
+		_right_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
+				_ctx->theme()->floating.margin.right,
+				_base_position.h - _ctx->theme()->floating.margin.top
+						- _ctx->theme()->floating.margin.bottom);
+	}
 }
 
 void client_managed_t::update_floating_areas() {

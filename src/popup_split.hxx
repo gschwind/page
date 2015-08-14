@@ -115,47 +115,12 @@ public:
 		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
 	}
 
-
-	void _compute_layout(rect & rect0, rect & rect1) {
-		if(_s_base.lock()->type() == HORIZONTAL_SPLIT) {
-
-			int ii = floor((_position.h - _ctx->theme()->notebook.margin.top) * _current_split + 0.5);
-
-			rect0.x = 0;
-			rect0.w = _position.w;
-			rect1.x = 0;
-			rect1.w = _position.w;
-
-			rect0.y = _ctx->theme()->notebook.margin.top;
-			rect0.h = ii - 3;
-
-			rect1.y = _position.h - (_position.h - _ctx->theme()->notebook.margin.top - ii - 3);
-			rect1.h = _position.h - rect1.y + 1;
-
-		} else {
-
-			int ii = floor(_position.w * _current_split + 0.5);
-
-			rect0.y = _ctx->theme()->notebook.margin.top;
-			rect0.h = _position.h - _ctx->theme()->notebook.margin.top;
-			rect1.y = _ctx->theme()->notebook.margin.top;
-			rect1.h = _position.h - _ctx->theme()->notebook.margin.top;
-
-			rect0.x = 0;
-			rect0.w = ii - 3;
-
-			rect1.x = _position.w - (_position.w - ii - 3);
-			rect1.w = _position.w - rect1.x + 1;
-
-		}
-	}
-
 	void update_layout() {
 
 		rect rect0;
 		rect rect1;
 
-		_compute_layout(rect0, rect1);
+		_s_base.lock()->compute_children_root_allocation(_current_split, rect0, rect1);
 
 		xcb_rectangle_t rects[8];
 
@@ -218,10 +183,12 @@ public:
 		if(_s_base.expired())
 			return;
 
+		auto s = _s_base.lock();
+
 		theme_split_t ts;
-		ts.split = _s_base.lock()->ratio();
-		ts.type = _s_base.lock()->type();
-		ts.allocation = _s_base.lock()->allocation();
+		ts.split = s->ratio();
+		ts.type = s->type();
+		ts.allocation = s->allocation();
 
 		region r = area & get_visible_region();
 		for (auto const & a : area) {
@@ -237,7 +204,7 @@ public:
 		rect rect0;
 		rect rect1;
 
-		_compute_layout(rect0, rect1);
+		_s_base.lock()->compute_children_root_allocation(_current_split, rect0, rect1);
 
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);

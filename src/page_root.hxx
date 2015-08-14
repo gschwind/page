@@ -16,7 +16,7 @@
 
 namespace page {
 
-class page_root_t : public page_component_t {
+class page_root_t : public tree_t {
 	friend class page_t;
 
 
@@ -82,9 +82,9 @@ public:
 	 * page_component_t virtual API
 	 **/
 
-	virtual void set_allocation(rect const & area);
-	virtual rect allocation() const;
-	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
+//	virtual void set_allocation(rect const & area);
+//	virtual rect allocation() const;
+//	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 
 };

@@ -31,12 +31,12 @@ enum workspace_switch_direction_e {
 	WORKSPACE_SWITCH_RIGHT
 };
 
-struct workspace_t: public page_component_t {
+struct workspace_t: public tree_t {
 
 private:
 	page_context_t * _ctx;
 
-	rect _allocation;
+	//rect _allocation;
 	rect _workarea;
 
 	unsigned const _id;
@@ -130,9 +130,9 @@ public:
 	 * page_component_t virtual API
 	 **/
 
-	virtual void set_allocation(rect const & area);
-	virtual rect allocation() const;
-	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
+//	virtual void set_allocation(rect const & area);
+//	virtual rect allocation() const;
+//	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
 
 };
 

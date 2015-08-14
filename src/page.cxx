@@ -2361,7 +2361,7 @@ void page_t::update_viewport_layout() {
 	}
 
 	for(auto d: _root->_desktop_list) {
-		d->set_allocation(_root->_root_position);
+		//d->set_allocation(_root->_root_position);
 		/** get old layout to recycle old viewport, and keep unchanged outputs **/
 		vector<shared_ptr<viewport_t>> old_layout = d->get_viewport_map();
 		/** store the newer layout, to be able to cleanup obsolete viewports **/

@@ -20,7 +20,7 @@ time64_t const workspace_t::_switch_duration{0.5};
 
 workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
 	_ctx{ctx},
-	_allocation{},
+	//_allocation{},
 	_default_pop{},
 	_workarea{},
 	_primary_viewport{},
@@ -87,13 +87,13 @@ void workspace_t::update_layout(time64_t const time) {
 		double ratio = (static_cast<double>(time - _switch_start_time) / static_cast<double const>(_switch_duration));
 		ratio = ratio*1.05 - 0.025;
 		ratio = min(1.0, max(0.0, ratio));
-		int new_x = _allocation.x;
+		int new_x = _ctx->left_most_border();
 		if(_switch_direction == WORKSPACE_SWITCH_LEFT) {
 			new_x += ratio*_switch_screenshot->witdh();
 		} else {
 			new_x -= ratio*_switch_screenshot->witdh();
 		}
-		_switch_renderable->move(new_x, _allocation.y);
+		_switch_renderable->move(new_x, _ctx->top_most_border());
 	} else if (_switch_renderable != nullptr) {
 		_switch_screenshot = nullptr;
 		_switch_renderable = nullptr;
@@ -101,9 +101,9 @@ void workspace_t::update_layout(time64_t const time) {
 
 }
 
-rect workspace_t::allocation() const {
-	return _allocation;
-}
+//rect workspace_t::allocation() const {
+//	return _allocation;
+//}
 
 auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> {
 	return _viewport_outputs;
@@ -181,9 +181,9 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 	}
 }
 
-void workspace_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
-	throw std::runtime_error("desktop_t::replace implemented yet!");
-}
+//void workspace_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
+//	throw std::runtime_error("desktop_t::replace implemented yet!");
+//}
 
 void workspace_t::remove(shared_ptr<tree_t> src) {
 
@@ -199,9 +199,9 @@ void workspace_t::remove(shared_ptr<tree_t> src) {
 	_fullscreen_layer.remove(src);
 }
 
-void workspace_t::set_allocation(rect const & area) {
-	_allocation = area;
-}
+//void workspace_t::set_allocation(rect const & area) {
+//	_allocation = area;
+//}
 
 void workspace_t::set_workarea(rect const & r) {
 	_workarea = r;
@@ -232,7 +232,7 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_direction = direction;
 	_switch_start_time.update_to_current_time();
 	_switch_screenshot = _ctx->cmp()->create_screenshot();
-	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _allocation.x, _allocation.y);
+	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _ctx->left_most_border(), _ctx->top_most_border());
 	_switch_renderable->show();
 	_switch_renderable->set_parent(shared_from_this());
 

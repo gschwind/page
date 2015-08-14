@@ -5,6 +5,8 @@
  *      Author: gschwind
  */
 
+#include <iostream>
+
 #include "grab_handlers.hxx"
 #include "page_context.hxx"
 
@@ -15,7 +17,7 @@ using namespace std;
 grab_split_t::grab_split_t(page_context_t * ctx, shared_ptr<split_t> s) : _ctx{ctx}, _split{s} {
 	_slider_area = s->to_root_position(s->get_split_bar_area());
 	_split_ratio = s->ratio();
-	_split_root_allocation = s->to_root_position(s->allocation());
+	_split_root_allocation = s->root_location();
 	_ps = make_shared<popup_split_t>(ctx, s);
 	_ctx->overlay_add(_ps);
 	_ps->show();
@@ -51,11 +53,7 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if (_split_ratio < 0.05)
 		_split_ratio = 0.05;
 
-	/* Render slider with quite complex render method to avoid flickering */
-	rect old_area = _slider_area;
-	_split.lock()->compute_split_location(_split_ratio,
-			_slider_area.x, _slider_area.y);
-	_slider_area = _split.lock()->to_root_position(_slider_area);
+	_split_ratio = _split.lock()->compute_split_constaint(_split_ratio);
 
 	_ps->set_position(_split_ratio);
 }
@@ -67,6 +65,24 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	}
 
 	if (e->detail == XCB_BUTTON_INDEX_1) {
+
+		if (_split.lock()->type() == VERTICAL_SPLIT) {
+			_split_ratio = (e->root_x
+					- _split_root_allocation.x)
+					/ (double) (_split_root_allocation.w);
+		} else {
+			_split_ratio = (e->root_y
+					- _split_root_allocation.y)
+					/ (double) (_split_root_allocation.h);
+		}
+
+		if (_split_ratio > 0.95)
+			_split_ratio = 0.95;
+		if (_split_ratio < 0.05)
+			_split_ratio = 0.05;
+
+		_split_ratio = _split.lock()->compute_split_constaint(_split_ratio);
+
 		_split.lock()->queue_redraw();
 		_split.lock()->set_split(_split_ratio);
 		_ctx->grab_stop();
@@ -158,7 +174,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 			pn0->move_resize(new_target->_area.tab);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
-				pn0->move_resize(new_target->_area.popup_right);
+			pn0->move_resize(new_target->_area.popup_right);
 			break;
 		case NOTEBOOK_AREA_TOP:
 			pn0->move_resize(new_target->_area.popup_top);
@@ -170,7 +186,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 			pn0->move_resize(new_target->_area.popup_left);
 			break;
 		case NOTEBOOK_AREA_CENTER:
-				pn0->move_resize(new_target->_area.popup_center);
+			pn0->move_resize(new_target->_area.popup_center);
 			break;
 		}
 	}

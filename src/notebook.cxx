@@ -1020,4 +1020,20 @@ shared_ptr<notebook_t> notebook_t::shared_from_this() {
 	return dynamic_pointer_cast<notebook_t>(tree_t::shared_from_this());
 }
 
+void notebook_t::get_min_allocation(int & width, int & height) {
+	height = _ctx->theme()->notebook.tab_height
+			+ _ctx->theme()->notebook.margin.top
+			+ _ctx->theme()->notebook.margin.bottom + 10;
+	width = _ctx->theme()->notebook.margin.left
+			+ _ctx->theme()->notebook.margin.right + 100
+			+ _ctx->theme()->notebook.close_width
+			+ _ctx->theme()->notebook.selected_close_width
+			+ _ctx->theme()->notebook.selected_unbind_width
+			+ _ctx->theme()->notebook.vsplit_width
+			+ _ctx->theme()->notebook.hsplit_width
+			+ _ctx->theme()->notebook.mark_width
+			+ _ctx->theme()->notebook.menu_button_width
+			+ _ctx->theme()->notebook.iconic_tab_width * 4;
+}
+
 }
