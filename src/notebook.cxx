@@ -377,7 +377,7 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 		cairo_destroy(xcr);
 
 		cairo_save(cr);
-		cairo_set_source_surface(cr, pix->get_cairo_surface(), _theme_client_tabs_area.x, _theme_client_tabs_area.y);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(), _theme_client_tabs_area.x - _theme_client_tabs_offset, _theme_client_tabs_area.y);
 		cairo_clip(cr, _theme_client_tabs_area);
 		cairo_paint(cr);
 
@@ -564,16 +564,15 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 			theme_notebook.has_selected_client = false;
 		}
 
-		offset += selected_box_width;
-		int xxx_offset = 0;
+		offset = 0;
 		_theme_client_tabs.clear();
 		for (auto & i : _clients) {
 			_theme_client_tabs.push_back(theme_tab_t { });
 			auto & tab = _theme_client_tabs.back();
 			tab.position = rect {
-				(int) floor(xxx_offset), 0,
-				(int) (floor(xxx_offset + _ctx->theme()->notebook.iconic_tab_width)
-									- floor(xxx_offset)),
+				(int) floor(offset), 0,
+				(int) (floor(offset + _ctx->theme()->notebook.iconic_tab_width)
+									- floor(offset)),
 				(int) _ctx->theme()->notebook.tab_height };
 
 			if (i.client->is_focused()) {
@@ -586,7 +585,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 			tab.title = i.client->title();
 			tab.icon = i.client->icon();
 			tab.is_iconic = i.client->is_iconic();
-			xxx_offset += _ctx->theme()->notebook.iconic_tab_width;
+			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 	} else {
 		theme_notebook.has_selected_client = false;
@@ -831,6 +830,20 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 					return true;
 				}
 			}
+		}
+	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_4) {
+		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
+			_theme_client_tabs_offset += 15;
+			_update_notebook_areas();
+			queue_redraw();
+			return true;
+		}
+	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_5) {
+		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
+			_theme_client_tabs_offset -= 15;
+			_update_notebook_areas();
+			queue_redraw();
+			return true;
 		}
 	}
 
