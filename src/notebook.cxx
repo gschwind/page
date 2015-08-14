@@ -629,6 +629,27 @@ void notebook_t::_start_fading() {
 	cairo_save(cr);
 	cairo_translate(cr, -_allocation.x, -_allocation.y);
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
+
+	if(_theme_client_tabs.size() > 0) {
+		pixmap_t * pix = new pixmap_t(_ctx->dpy(), PIXMAP_RGBA, _theme_client_tabs.back().position.x + 100, _ctx->theme()->notebook.tab_height);
+		cairo_t * xcr = cairo_create(pix->get_cairo_surface());
+
+		cairo_set_operator(xcr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_rgba(xcr, 0.0, 0.0, 0.0, 0.0);
+		cairo_paint(xcr);
+
+		_ctx->theme()->render_iconic_notebook(xcr, _theme_client_tabs);
+		cairo_destroy(xcr);
+
+		cairo_save(cr);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(), _theme_client_tabs_area.x - _theme_client_tabs_offset, _theme_client_tabs_area.y);
+		cairo_clip(cr, _theme_client_tabs_area);
+		cairo_paint(cr);
+
+		cairo_restore(cr);
+		delete pix;
+	}
+
 	cairo_restore(cr);
 
 	/* paste the current window */
