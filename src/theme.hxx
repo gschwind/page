@@ -88,6 +88,8 @@ public:
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const = 0;
 	virtual void render_empty(cairo_t * cr, rect const & area) const = 0;
 
+	virtual void render_iconic_notebook(cairo_t * cr, vector<theme_tab_t> const & tabs) const = 0;
+
 	virtual void render_thumbnail(cairo_t * cr, rect position, theme_thumbnail_t const & t) const = 0;
 	virtual void render_thumbnail_title(cairo_t * cr, rect position, std::string const & title) const = 0;
 

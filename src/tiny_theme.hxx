@@ -21,6 +21,7 @@
 
 
 #include "theme.hxx"
+#include "simple2_theme.hxx"
 #include "color.hxx"
 #include "config_handler.hxx"
 #include "renderable.hxx"
@@ -28,7 +29,7 @@
 
 namespace page {
 
-class tiny_theme_t : public theme_t {
+class tiny_theme_t : public simple2_theme_t {
 public:
 
 	display_t * _cnx;

@@ -428,15 +428,15 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 
 	}
 
-	for (auto const & i : n->clients_tab) {
-
-		render_notebook_normal(cr, i,
-				notebook_normal_font,
-				notebook_normal_text_color,
-				notebook_normal_outline_color,
-				notebook_normal_border_color,
-				i.tab_color);
-	}
+//	for (auto const & i : n->clients_tab) {
+//
+//		render_notebook_normal(cr, i,
+//				notebook_normal_font,
+//				notebook_normal_text_color,
+//				notebook_normal_outline_color,
+//				notebook_normal_border_color,
+//				i.tab_color);
+//	}
 
 	{
 		CHECK_CAIRO(cairo_save(cr));
@@ -501,7 +501,7 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 
 		char buf[32];
-		snprintf(buf, 32, "%lu", n->clients_tab.size());
+		snprintf(buf, 32, "%d", n->client_count);
 
 #ifdef WITH_PANGO
 
@@ -1957,6 +1957,17 @@ color_t const & simple2_theme_t::get_normal_color() const {
 
 color_t const & simple2_theme_t::get_mouse_over_color() const {
 	return notebook_mouse_over_background_color;
+}
+
+void simple2_theme_t::render_iconic_notebook(cairo_t * cr, vector<theme_tab_t> const & tabs) const {
+	for (auto const & i : tabs) {
+		render_notebook_normal(cr, i,
+				notebook_normal_font,
+				notebook_normal_text_color,
+				notebook_normal_outline_color,
+				notebook_normal_border_color,
+				i.tab_color);
+	}
 }
 
 

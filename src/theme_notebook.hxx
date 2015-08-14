@@ -29,7 +29,7 @@ struct theme_notebook_t {
 	rect allocation;
 	rect client_position;
 	theme_tab_t selected_client;
-	std::vector<theme_tab_t> clients_tab;
+	int client_count;
 	bool is_default;
 	bool has_selected_client;
 	bool can_vsplit;
@@ -40,12 +40,12 @@ struct theme_notebook_t {
 		allocation{},
 		client_position{},
 		selected_client{},
-		clients_tab{},
 		is_default{},
 		has_selected_client{},
 		can_vsplit{},
 		can_hsplit{},
-		button_mouse_over{NOTEBOOK_BUTTON_NONE}
+		button_mouse_over{NOTEBOOK_BUTTON_NONE},
+		client_count{0}
 	{
 
 	}
@@ -55,10 +55,11 @@ struct theme_notebook_t {
 		allocation{x.allocation},
 		client_position{x.client_position},
 		selected_client{x.selected_client},
-		clients_tab{x.clients_tab},
 		is_default{x.is_default},
 		has_selected_client{x.has_selected_client},
-		button_mouse_over{x.button_mouse_over}
+		button_mouse_over{x.button_mouse_over},
+		can_hsplit{false},
+		can_vsplit{false}
 	{
 
 	}

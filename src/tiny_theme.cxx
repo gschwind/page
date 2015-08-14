@@ -82,7 +82,9 @@ rect tiny_theme_t::compute_notebook_menu_position(
 }
 
 
-tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) {
+tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
+	simple2_theme_t{cnx, conf}
+		{
 
 	notebook.margin.top = 4;
 	notebook.margin.bottom = 4;
@@ -421,15 +423,15 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 
 	}
 
-	for (auto const & i : n->clients_tab) {
-
-		render_notebook_normal(cr, i,
-				notebook_normal_font,
-				notebook_normal_text_color,
-				notebook_normal_outline_color,
-				notebook_normal_border_color,
-				i.tab_color);
-	}
+//	for (auto const & i : n->clients_tab) {
+//
+//		render_notebook_normal(cr, i,
+//				notebook_normal_font,
+//				notebook_normal_text_color,
+//				notebook_normal_outline_color,
+//				notebook_normal_border_color,
+//				i.tab_color);
+//	}
 
 	{
 		CHECK_CAIRO(cairo_save(cr));
@@ -488,7 +490,7 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 		rect btext = compute_notebook_menu_position(n->allocation);
 
 		char buf[32];
-		snprintf(buf, 32, "%lu", n->clients_tab.size());
+		snprintf(buf, 32, "%d", n->client_count);
 
 #ifdef WITH_PANGO
 

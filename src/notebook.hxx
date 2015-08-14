@@ -51,7 +51,12 @@ class notebook_t : public page_component_t {
 	shared_ptr<renderable_notebook_fading_t> fading_notebook;
 	vector<shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
 
+
 	theme_notebook_t _theme_notebook;
+
+	int _theme_client_tabs_offset;
+	mutable vector<theme_tab_t> _theme_client_tabs;
+	mutable rect _theme_client_tabs_area;
 
 	bool _is_default;
 	bool _keep_selected;

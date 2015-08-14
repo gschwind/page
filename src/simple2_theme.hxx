@@ -157,6 +157,7 @@ public:
 	void create_background_img();
 
 	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const;
+	virtual void render_iconic_notebook(cairo_t * cr, vector<theme_tab_t> const & tabs) const;
 	virtual void render_split(cairo_t * cr, theme_split_t const * s) const;
 	virtual void render_empty(cairo_t * cr, rect const & area) const;
 

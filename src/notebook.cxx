@@ -23,7 +23,10 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_selected{nullptr},
 		_keep_selected{ctx->conf()._auto_refocus},
 		_exposay{false},
-		_mouse_over{nullptr, nullptr}
+		_mouse_over{nullptr, nullptr},
+		_can_hsplit{true},
+		_can_vsplit{true},
+		_theme_client_tabs_offset{0}
 {
 
 }
@@ -361,6 +364,27 @@ string notebook_t::get_node_name() const {
 
 void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
+
+	if(_theme_client_tabs.size() > 0) {
+		pixmap_t * pix = new pixmap_t(_ctx->dpy(), PIXMAP_RGBA, _theme_client_tabs.back().position.x + 100, _ctx->theme()->notebook.tab_height);
+		cairo_t * xcr = cairo_create(pix->get_cairo_surface());
+
+		cairo_set_operator(xcr, CAIRO_OPERATOR_SOURCE);
+		cairo_set_source_rgba(xcr, 0.0, 0.0, 0.0, 0.0);
+		cairo_paint(xcr);
+
+		_ctx->theme()->render_iconic_notebook(xcr, _theme_client_tabs);
+		cairo_destroy(xcr);
+
+		cairo_save(cr);
+		cairo_set_source_surface(cr, pix->get_cairo_surface(), _theme_client_tabs_area.x, _theme_client_tabs_area.y);
+		cairo_clip(cr, _theme_client_tabs_area);
+		cairo_paint(cr);
+
+		cairo_restore(cr);
+		delete pix;
+	}
+
 }
 
 void notebook_t::update_layout(time64_t const time) {
@@ -472,8 +496,10 @@ void notebook_t::_update_notebook_areas() {
 		}
 
 		auto c = _clients.begin();
-		for (auto & tab: _theme_notebook.clients_tab) {
-			_client_buttons.push_back(make_tuple(tab.position, weak_ptr<client_managed_t>{c->client}, &tab));
+		for (auto & tab: _theme_client_tabs) {
+			rect pos = tab.position;
+			pos.x += _theme_client_tabs_area.x - _theme_client_tabs_offset;
+			_client_buttons.push_back(make_tuple(pos, weak_ptr<client_managed_t>{c->client}, &tab));
 			++c;
 		}
 
@@ -481,20 +507,38 @@ void notebook_t::_update_notebook_areas() {
 }
 
 void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const {
-	theme_notebook.clients_tab.clear();
 	theme_notebook.root_x = get_window_position().x;
 	theme_notebook.root_y = get_window_position().y;
 	theme_notebook.can_hsplit = _can_hsplit;
 	theme_notebook.can_vsplit = _can_vsplit;
+	theme_notebook.client_count = _children.size();
 
 	if (_clients.size() != 0) {
-		double selected_box_width = (_allocation.w
-				- _ctx->theme()->notebook.close_width
-				- _ctx->theme()->notebook.hsplit_width
-				- _ctx->theme()->notebook.vsplit_width
-				- _ctx->theme()->notebook.mark_width
-				- _ctx->theme()->notebook.menu_button_width)
-				- _clients.size() * _ctx->theme()->notebook.iconic_tab_width;
+		double selected_box_width = ((int)_allocation.w
+				- (int)_ctx->theme()->notebook.close_width
+				- (int)_ctx->theme()->notebook.hsplit_width
+				- (int)_ctx->theme()->notebook.vsplit_width
+				- (int)_ctx->theme()->notebook.mark_width
+				- (int)_ctx->theme()->notebook.menu_button_width)
+				- (int)_clients.size() * (int)_ctx->theme()->notebook.iconic_tab_width;
+
+		if(selected_box_width < 200) {
+			selected_box_width = 200;
+		}
+
+		_theme_client_tabs_area.x = _allocation.x
+				+ _ctx->theme()->notebook.menu_button_width
+				+ selected_box_width;
+		_theme_client_tabs_area.y = _allocation.y;
+		_theme_client_tabs_area.w = ((int)_allocation.w
+				- (int)_ctx->theme()->notebook.close_width
+				- (int)_ctx->theme()->notebook.hsplit_width
+				- (int)_ctx->theme()->notebook.vsplit_width
+				- (int)_ctx->theme()->notebook.mark_width
+				- (int)_ctx->theme()->notebook.menu_button_width
+				- (int)selected_box_width);
+		_theme_client_tabs_area.h = _ctx->theme()->notebook.tab_height;
+
 		double offset = _allocation.x + _ctx->theme()->notebook.menu_button_width;
 
 		if (_selected != nullptr) {
@@ -502,8 +546,8 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 			theme_notebook.selected_client = theme_tab_t{};
 			theme_notebook.selected_client.position = rect{
 					(int)floor(offset),
-							_allocation.y, (int)floor(
-					(int)(offset + selected_box_width) - floor(offset)),
+					_allocation.y,
+					(int)floor((int)(offset + selected_box_width) - floor(offset)),
 					(int)_ctx->theme()->notebook.tab_height };
 
 			if(_selected->is_focused()) {
@@ -521,19 +565,20 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 		}
 
 		offset += selected_box_width;
+		int xxx_offset = 0;
+		_theme_client_tabs.clear();
 		for (auto & i : _clients) {
-			theme_notebook.clients_tab.push_back(theme_tab_t{});
-			auto & tab = theme_notebook.clients_tab.back();
-			tab.position = rect{
-				(int)floor(offset),
-				_allocation.y,
-				(int)(floor(offset + _ctx->theme()->notebook.iconic_tab_width) - floor(offset)),
-				(int)_ctx->theme()->notebook.tab_height
-			};
+			_theme_client_tabs.push_back(theme_tab_t { });
+			auto & tab = _theme_client_tabs.back();
+			tab.position = rect {
+				(int) floor(xxx_offset), 0,
+				(int) (floor(xxx_offset + _ctx->theme()->notebook.iconic_tab_width)
+									- floor(xxx_offset)),
+				(int) _ctx->theme()->notebook.tab_height };
 
-			if(i.client->is_focused()) {
+			if (i.client->is_focused()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
-			} else if(_selected == i.client) {
+			} else if (_selected == i.client) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
 			} else {
 				tab.tab_color = _ctx->theme()->get_normal_color();
@@ -541,7 +586,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 			tab.title = i.client->title();
 			tab.icon = i.client->icon();
 			tab.is_iconic = i.client->is_iconic();
-			offset += _ctx->theme()->notebook.iconic_tab_width;
+			xxx_offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 	} else {
 		theme_notebook.has_selected_client = false;
@@ -929,12 +974,12 @@ void notebook_t::_mouse_over_set() {
 		rect tab_pos = to_root_position(std::get<2>(*_mouse_over.tab)->position);
 
 		rect pos;
-		pos.x = tab_pos.x + tab_pos.w - 256;
+		pos.x = tab_pos.x + tab_pos.w - 256 + _theme_client_tabs_area.x - _theme_client_tabs_offset;
 		pos.y = tab_pos.y + tab_pos.h;
 		pos.w = 256;
 		pos.h = 256;
 
-		if(std::get<2>(*_mouse_over.tab) != &_theme_notebook.selected_client) {
+		if(std::get<1>(*_mouse_over.tab).lock() != _selected) {
 			tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
 			tooltips->set_parent(shared_from_this());
 			tooltips->show();
