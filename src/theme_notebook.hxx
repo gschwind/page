@@ -32,7 +32,8 @@ struct theme_notebook_t {
 	std::vector<theme_tab_t> clients_tab;
 	bool is_default;
 	bool has_selected_client;
-
+	bool can_vsplit;
+	bool can_hsplit;
 
 	theme_notebook_t() :
 		root_x{}, root_y{},
@@ -42,6 +43,8 @@ struct theme_notebook_t {
 		clients_tab{},
 		is_default{},
 		has_selected_client{},
+		can_vsplit{},
+		can_hsplit{},
 		button_mouse_over{NOTEBOOK_BUTTON_NONE}
 	{
 

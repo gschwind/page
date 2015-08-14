@@ -575,6 +575,12 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		CHECK_CAIRO(cairo_set_source_surface(cr, vsplit_button_s, b.x, b.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, vsplit_button_s, b.x, b.y));
+
+		if(not n->can_vsplit) {
+			::cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+			CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+			cairo_fill(cr);
+		}
 	}
 
 	{
@@ -589,6 +595,12 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		CHECK_CAIRO(cairo_set_source_surface(cr, hsplit_button_s, b.x, b.y));
 		CHECK_CAIRO(cairo_mask_surface(cr, hsplit_button_s, b.x, b.y));
+
+		if(not n->can_hsplit) {
+			::cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+			CHECK_CAIRO(cairo_rectangle(cr, b.x, b.y, b.w, b.h));
+			cairo_fill(cr);
+		}
 	}
 
 	{

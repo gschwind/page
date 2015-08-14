@@ -201,7 +201,7 @@ public:
 	virtual void set_allocation(rect const & area);
 	virtual rect allocation() const;
 	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by);
-	virtual void get_min_allocation(int & width, int & height);
+	virtual void get_min_allocation(int & width, int & height) const;
 
 	/**
 	 * notebook_t interface

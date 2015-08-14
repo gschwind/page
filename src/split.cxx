@@ -283,7 +283,7 @@ void split_t::show() {
 		_pack0->show();
 }
 
-void split_t::get_min_allocation(int & width, int & height) {
+void split_t::get_min_allocation(int & width, int & height) const {
 	int pack0_height = 10, pack0_width = 10;
 	int pack1_height = 10, pack1_width = 10;
 

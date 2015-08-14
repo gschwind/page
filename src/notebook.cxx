@@ -458,6 +458,22 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) const
 	theme_notebook.root_x = get_window_position().x;
 	theme_notebook.root_y = get_window_position().y;
 
+	int min_width;
+	int min_height;
+	get_min_allocation(min_width, min_height);
+
+	if(_allocation.w < min_width * 2 + _ctx->theme()->split.margin.left  + _ctx->theme()->split.margin.right  + _ctx->theme()->split.width) {
+		theme_notebook.can_vsplit = false;
+	} else {
+		theme_notebook.can_vsplit = true;
+	}
+
+	if(_allocation.h < min_height * 2 + _ctx->theme()->split.margin.top  + _ctx->theme()->split.margin.bottom  + _ctx->theme()->split.width) {
+		theme_notebook.can_hsplit = false;
+	} else {
+		theme_notebook.can_hsplit = true;
+	}
+
 	if (_clients.size() != 0) {
 		double selected_box_width = (_allocation.w
 				- _ctx->theme()->notebook.close_width
@@ -684,10 +700,12 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			_ctx->notebook_close(shared_from_this());
 			return true;
 		} else if (_area.button_hsplit.is_inside(x, y)) {
-			_ctx->split_bottom(shared_from_this(), nullptr);
+			if(_theme_notebook.can_hsplit)
+				_ctx->split_bottom(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_vsplit.is_inside(x, y)) {
-			_ctx->split_right(shared_from_this(), nullptr);
+			if(_theme_notebook.can_vsplit)
+				_ctx->split_right(shared_from_this(), nullptr);
 			return true;
 		} else if (_area.button_select.is_inside(x, y)) {
 			_ctx->get_current_workspace()->set_default_pop(shared_from_this());
@@ -1020,7 +1038,7 @@ shared_ptr<notebook_t> notebook_t::shared_from_this() {
 	return dynamic_pointer_cast<notebook_t>(tree_t::shared_from_this());
 }
 
-void notebook_t::get_min_allocation(int & width, int & height) {
+void notebook_t::get_min_allocation(int & width, int & height) const {
 	height = _ctx->theme()->notebook.tab_height
 			+ _ctx->theme()->notebook.margin.top
 			+ _ctx->theme()->notebook.margin.bottom + 10;

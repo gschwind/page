@@ -312,7 +312,7 @@ void viewport_t::create_default_subtree() {
 	}
 }
 
-void viewport_t::get_min_allocation(int & width, int & height) {
+void viewport_t::get_min_allocation(int & width, int & height) const {
 	width = 0;
 	height = 0;
 
