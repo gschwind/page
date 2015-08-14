@@ -915,7 +915,7 @@ void simple2_theme_t::render_notebook_normal(
 	rect tab_area = data.position;
 	tab_area.x += 2;
 	tab_area.w -= 4;
-	tab_area.y += 3;
+	tab_area.y += 2;
 	tab_area.h -= 3;
 
 	CHECK_CAIRO(cairo_save(cr));
