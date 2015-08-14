@@ -367,7 +367,6 @@ void notebook_t::update_layout(time64_t const time) {
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
 		fading_notebook.reset();
-		_update_layout();
 	}
 
 	if (fading_notebook != nullptr) {
