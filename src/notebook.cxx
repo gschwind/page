@@ -286,6 +286,7 @@ void notebook_t::_update_layout() {
 	}
 
 
+
 	_mouse_over_reset();
 	_update_theme_notebook(_theme_notebook);
 	_update_notebook_areas();
@@ -466,6 +467,17 @@ void notebook_t::_update_notebook_areas() {
 	_area.button_exposay = _compute_notebook_menu_position();
 
 	if(_clients.size() > 0) {
+
+		if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w) {
+			_theme_client_tabs_offset = 0;
+		}
+
+		if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_offset) {
+			_theme_client_tabs_offset = _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_area.w;
+		}
+
+		if(_theme_client_tabs_offset < 0)
+			_theme_client_tabs_offset = 0;
 
 		if(_selected != nullptr) {
 			rect & b = _theme_notebook.selected_client.position;
@@ -833,14 +845,36 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		}
 	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_4) {
 		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
+
+			if(_theme_client_tabs_area.w == _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_offset) {
+				return true;
+			}
+
+			if(_theme_client_tabs.size() < 1)
+				return true;
+
+			if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
+				return true;
+
 			_theme_client_tabs_offset += 15;
+
 			_update_notebook_areas();
 			queue_redraw();
 			return true;
 		}
 	} else if (e->child == XCB_NONE and e->detail == XCB_BUTTON_INDEX_5) {
 		if(_theme_client_tabs_area.is_inside(e->event_x, e->event_y)) {
+			if(_theme_client_tabs_offset == 0)
+				return true;
+
+			if(_theme_client_tabs.size() < 1)
+				return true;
+
+			if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
+				return true;
+
 			_theme_client_tabs_offset -= 15;
+
 			_update_notebook_areas();
 			queue_redraw();
 			return true;
