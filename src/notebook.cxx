@@ -525,6 +525,7 @@ void notebook_t::_update_notebook_areas() {
 		for (auto & tab: _theme_client_tabs) {
 			rect pos = tab.position;
 			pos.x += _theme_client_tabs_area.x - _theme_client_tabs_offset;
+			pos.y += _theme_client_tabs_area.y;
 			_client_buttons.push_back(make_tuple(pos, weak_ptr<client_managed_t>{c->client}, &tab));
 			++c;
 		}
@@ -1072,10 +1073,10 @@ void notebook_t::_mouse_over_set() {
 	if (_mouse_over.tab != nullptr) {
 		std::get<2>(*_mouse_over.tab)->tab_color = _ctx->theme()->get_mouse_over_color();
 
-		rect tab_pos = to_root_position(std::get<2>(*_mouse_over.tab)->position);
+		rect tab_pos = to_root_position(std::get<0>(*_mouse_over.tab));
 
 		rect pos;
-		pos.x = tab_pos.x + tab_pos.w - 256 + _theme_client_tabs_area.x - _theme_client_tabs_offset;
+		pos.x = tab_pos.x + tab_pos.w - 256;
 		pos.y = tab_pos.y + tab_pos.h;
 		pos.w = 256;
 		pos.h = 256;
