@@ -181,6 +181,8 @@ class notebook_t : public page_component_t {
 	void _scroll_left(int x);
 	void _scroll_right(int x);
 
+	void _set_theme_tab_offset(int x);
+
 	shared_ptr<notebook_t> shared_from_this();
 
 

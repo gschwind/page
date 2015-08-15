@@ -368,8 +368,8 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 
 	if(_theme_client_tabs.size() > 0) {
-		pixmap_t * pix = new pixmap_t(_ctx->dpy(), PIXMAP_RGBA, _theme_client_tabs.back().position.x + 100, _ctx->theme()->notebook.tab_height);
-		cairo_t * xcr = cairo_create(pix->get_cairo_surface());
+		cairo_surface_t * pix = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, _theme_client_tabs.back().position.x + 100, _ctx->theme()->notebook.tab_height);
+		cairo_t * xcr = cairo_create(pix);
 
 		cairo_set_operator(xcr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_source_rgba(xcr, 0.0, 0.0, 0.0, 0.0);
@@ -379,12 +379,12 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 		cairo_destroy(xcr);
 
 		cairo_save(cr);
-		cairo_set_source_surface(cr, pix->get_cairo_surface(), _theme_client_tabs_area.x - _theme_client_tabs_offset, _theme_client_tabs_area.y);
+		cairo_set_source_surface(cr, pix, _theme_client_tabs_area.x - _theme_client_tabs_offset, _theme_client_tabs_area.y);
 		cairo_clip(cr, _theme_client_tabs_area);
 		cairo_paint(cr);
 
 		cairo_restore(cr);
-		delete pix;
+		cairo_surface_destroy(pix);
 	}
 
 }
@@ -1257,6 +1257,22 @@ void  notebook_t::_scroll_right(int x) {
 
 	_update_notebook_areas();
 	queue_redraw();
+}
+
+void notebook_t::_set_theme_tab_offset(int x) {
+	if(_theme_client_tabs.size() < 1) {
+		_theme_client_tabs_offset = 0;
+		return;
+	}
+	if(x < 0) {
+		_theme_client_tabs_offset = 0;
+		return;
+	}
+	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - x) {
+		_theme_client_tabs_offset = _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_area.w;
+		return;
+	}
+	_theme_client_tabs_offset = x;
 }
 
 }
