@@ -1319,8 +1319,9 @@ void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 }
 
 void page_t::render() {
+	_root->broadcast_update_layout(time64_t::now());
+	_root->broadcast_trigger_redraw();
 	if (_compositor != nullptr) {
-		_root->broadcast_update_layout(time64_t::now());
 		_compositor->render(_root.get());
 		_root->broadcast_render_finished();
 		xcb_flush(_dpy->xcb());
@@ -3558,14 +3559,10 @@ void page_t::process_pending_events() {
 
 	_csmgr->apply_updates();
 
-	/* redraw page component that need a redraw */
-	_root->broadcast_trigger_redraw();
-
 	_dpy->ungrab();
 	xcb_flush(_dpy->xcb());
 
 	render();
-
 
 }
 

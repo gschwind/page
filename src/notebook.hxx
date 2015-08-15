@@ -65,6 +65,7 @@ class notebook_t : public page_component_t {
 	bool _can_hsplit;
 	bool _can_vsplit;
 	bool _has_scroll_arrow;
+	bool _layout_is_durty;
 
 	struct {
 		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab;
@@ -224,7 +225,7 @@ public:
 	 * notebook_t interface
 	 **/
 	void set_default(bool x);
-	void render_legacy(cairo_t * cr) const;
+	void render_legacy(cairo_t * cr);
 	void start_exposay();
 	void update_client_position(shared_ptr<client_managed_t> c);
 	void iconify_client(shared_ptr<client_managed_t> x);

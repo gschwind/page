@@ -27,7 +27,8 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_can_hsplit{true},
 		_can_vsplit{true},
 		_theme_client_tabs_offset{0},
-		_has_scroll_arrow{false}
+		_has_scroll_arrow{false},
+		_layout_is_durty{true}
 {
 
 }
@@ -74,7 +75,7 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 		x->hide();
 	}
 
-	_update_layout();
+	_layout_is_durty = true;
 	return true;
 }
 
@@ -131,7 +132,9 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 			}
 		}
 	}
-	_update_layout();
+
+	_layout_is_durty = true;
+
 }
 
 void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
@@ -153,7 +156,7 @@ void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 		_selected->show();
 	}
 
-	_update_layout();
+	_layout_is_durty = true;
 }
 
 void notebook_t::update_client_position(shared_ptr<client_managed_t> c) {
@@ -177,13 +180,13 @@ void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 		_selected->hide();
 	}
 
-	_update_layout();
+	_layout_is_durty = true;
 
 }
 
 void notebook_t::set_allocation(rect const & area) {
 	_allocation = area;
-	_update_layout();
+	_layout_is_durty = true;
 }
 
 void notebook_t::_update_layout() {
@@ -286,8 +289,6 @@ void notebook_t::_update_layout() {
 		update_client_position(c.client);
 	}
 
-
-
 	_mouse_over_reset();
 	_update_theme_notebook(_theme_notebook);
 	_update_notebook_areas();
@@ -364,7 +365,7 @@ string notebook_t::get_node_name() const {
 	return oss.str();
 }
 
-void notebook_t::render_legacy(cairo_t * cr) const {
+void notebook_t::render_legacy(cairo_t * cr) {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 
 	if(_theme_client_tabs.size() > 0) {
@@ -393,13 +394,18 @@ void notebook_t::update_layout(time64_t const time) {
 
 	tree_t::update_layout(time);
 	if(not _transition.empty()) {
-		_update_notebook_areas();
-		queue_redraw();
+		_layout_is_durty = true;
+	}
+
+	if(_layout_is_durty) {
+		_layout_is_durty = false;
+		_update_layout();
 	}
 
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
 		fading_notebook.reset();
+		_ctx->add_global_damage(to_root_position(_allocation));
 	}
 
 	if (fading_notebook != nullptr) {
@@ -533,6 +539,8 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 	theme_notebook.can_vsplit = _can_vsplit;
 	theme_notebook.client_count = _children.size();
 
+	_theme_client_tabs.clear();
+
 	if (_clients.size() != 0) {
 		double selected_box_width = ((int)_allocation.w
 				- (int)_ctx->theme()->notebook.close_width
@@ -585,7 +593,6 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 		}
 
 		offset = 0;
-		_theme_client_tabs.clear();
 		for (auto & i : _clients) {
 			_theme_client_tabs.push_back(theme_tab_t { });
 			auto & tab = _theme_client_tabs.back();
@@ -733,7 +740,7 @@ void notebook_t::start_exposay() {
 	}
 
 	_exposay = true;
-	_update_layout();
+	_layout_is_durty = true;
 }
 
 void notebook_t::_update_exposay() {
@@ -814,7 +821,7 @@ void notebook_t::_stop_exposay() {
 	_mouse_over.exposay = nullptr;
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
-	_update_layout();
+	_layout_is_durty = true;
 }
 
 bool notebook_t::button_press(xcb_button_press_event_t const * e) {
@@ -1113,12 +1120,10 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 }
 
 void notebook_t::_client_activate(shared_ptr<client_managed_t> c) {
-	_update_layout();
 	queue_redraw();
 }
 
 void notebook_t::_client_deactivate(shared_ptr<client_managed_t> c) {
-	_update_layout();
 	queue_redraw();
 }
 
