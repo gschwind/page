@@ -26,7 +26,8 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_mouse_over{nullptr, nullptr},
 		_can_hsplit{true},
 		_can_vsplit{true},
-		_theme_client_tabs_offset{0}
+		_theme_client_tabs_offset{0},
+		_has_scroll_arrow{false}
 {
 
 }
@@ -389,6 +390,13 @@ void notebook_t::render_legacy(cairo_t * cr) const {
 }
 
 void notebook_t::update_layout(time64_t const time) {
+
+	tree_t::update_layout(time);
+	if(not _transition.empty()) {
+		_update_notebook_areas();
+		queue_redraw();
+	}
+
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
 		fading_notebook.reset();
@@ -1209,7 +1217,17 @@ void  notebook_t::_scroll_left(int x) {
 	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
 		return;
 
-	_theme_client_tabs_offset += x;
+	int target_offset = _theme_client_tabs_offset + x;
+
+	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - target_offset) {
+		target_offset = _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_area.w;
+	}
+
+	if(_theme_client_tabs_offset < 0)
+		target_offset = 0;
+
+	auto transition = std::make_shared<transition_linear_t<notebook_t, int>>(this, &notebook_t::_theme_client_tabs_offset, target_offset, time64_t{0.2});
+	add_transition(transition);
 
 	_update_notebook_areas();
 	queue_redraw();
@@ -1225,7 +1243,17 @@ void  notebook_t::_scroll_right(int x) {
 	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w)
 		return;
 
-	_theme_client_tabs_offset -= x;
+	int target_offset = _theme_client_tabs_offset - x;
+
+	if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - target_offset) {
+		target_offset = _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_area.w;
+	}
+
+	if(_theme_client_tabs_offset < 0)
+		target_offset = 0;
+
+	auto transition = std::make_shared<transition_linear_t<notebook_t, int>>(this, &notebook_t::_theme_client_tabs_offset, target_offset, time64_t{0.2});
+	add_transition(transition);
 
 	_update_notebook_areas();
 	queue_redraw();

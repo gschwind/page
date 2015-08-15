@@ -12,10 +12,12 @@
 
 #include <memory>
 #include <iostream>
+#include <map>
 
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "time.hxx"
+#include "transition.hxx"
 
 namespace page {
 
@@ -79,6 +81,8 @@ protected:
 	weak_ptr<tree_t> _parent;
 	bool _is_visible;
 
+	map<void *, shared_ptr<transition_t>> _transition;
+
 private:
 	tree_t(tree_t const &);
 	tree_t & operator=(tree_t const &);
@@ -112,6 +116,8 @@ public:
 	void broadcast_expose(xcb_expose_event_t const * ev);
 	void broadcast_update_layout(time64_t const time);
 	void broadcast_render_finished();
+
+	void add_transition(shared_ptr<transition_t> t);
 
 	rect to_root_position(rect const & r) const;
 

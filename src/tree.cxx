@@ -83,7 +83,17 @@ auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void {
  * return the list of renderable object to draw this tree ordered and recursively
  **/
 auto tree_t::update_layout(time64_t const time) -> void {
-	/* by default do not update anything */
+
+	auto x = _transition.begin();
+	while(x != _transition.end()) {
+		x->second->update(time);
+		if(time > x->second->end()) {
+			x = _transition.erase(x);
+		} else {
+			++x;
+		}
+	}
+
 }
 
 /**
@@ -283,6 +293,9 @@ void tree_t::broadcast_render_finished() {
 	_broadcast_root_first(&tree_t::render_finished);
 }
 
+void tree_t::add_transition(shared_ptr<transition_t> t) {
+	_transition[t->target()] = t;
+}
 
 rect tree_t::to_root_position(rect const & r) const {
 	return rect { r.x + get_window_position().x, r.y + get_window_position().y,
