@@ -506,15 +506,16 @@ void client_managed_t::grab_button_focused_unsafe() {
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
-	/** for base, just grab some modified buttons **/
+	/** grab alt-button1 move **/
+	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
+
+	/** grab alt-button3 resize **/
 	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
 
-	/** for base, just grab some modified buttons **/
-	xcb_grab_button(cnx()->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-				XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_CONTROL);
 }
 
 /**
@@ -953,15 +954,14 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 	}
 
 	if (is(MANAGED_FLOATING)
+			and e->detail == XCB_BUTTON_INDEX_1
+			and (e->state & XCB_MOD_MASK_1)) {
+		_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
+		return true;
+	} else if (is(MANAGED_FLOATING)
 			and e->detail == XCB_BUTTON_INDEX_3
-			and (e->state & (XCB_MOD_MASK_1 | XCB_MOD_MASK_CONTROL))) {
-
-		if ((e->state & XCB_MOD_MASK_CONTROL)) {
-			_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
-		} else {
-			_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
-		}
-
+			and (e->state & XCB_MOD_MASK_1)) {
+		_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT});
 		return true;
 	} else if (is(MANAGED_FLOATING)
 			and e->detail == XCB_BUTTON_INDEX_1
@@ -1002,8 +1002,8 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 		return true;
 
 	} else if (is(MANAGED_FULLSCREEN)
-			and e->detail == (XCB_BUTTON_INDEX_3)
-			and (e->state & (XCB_MOD_MASK_1))) {
+			and e->detail == (XCB_BUTTON_INDEX_1)
+			and (e->state & XCB_MOD_MASK_1)) {
 		/** start moving fullscreen window **/
 		_ctx->grab_start(new grab_fullscreen_client_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y});
 		return true;
