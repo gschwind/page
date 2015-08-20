@@ -10,11 +10,8 @@
 
 #include "config.hxx"
 
-#ifdef WITH_PANGO
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
-#endif
-
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 #include <cairo/cairo-xcb.h>

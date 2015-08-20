@@ -1288,7 +1288,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 					}
 
 					if (_grab_handler != nullptr) {
-						xcb_grab_pointer(_dpy->xcb(), FALSE, _dpy->root(),
+						xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
 								XCB_EVENT_MASK_BUTTON_PRESS
 										| XCB_EVENT_MASK_BUTTON_RELEASE
 										| XCB_EVENT_MASK_BUTTON_MOTION,
@@ -3415,7 +3415,6 @@ void page_t::process_button_release(xcb_generic_event_t const * _e) {
 }
 
 void page_t::start_compositor() {
-#ifdef WITH_COMPOSITOR
 	if (_dpy->has_composite) {
 		try {
 			register_cm();
@@ -3426,18 +3425,15 @@ void page_t::start_compositor() {
 		_compositor = new compositor_t{_dpy};
 		_csmgr->enable();
 	}
-#endif
 }
 
 void page_t::stop_compositor() {
-#ifdef WITH_COMPOSITOR
 	if (_dpy->has_composite) {
 		_dpy->unregister_cm();
 		_csmgr->disable();
 		delete _compositor;
 		_compositor = nullptr;
 	}
-#endif
 }
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {

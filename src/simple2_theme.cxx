@@ -527,8 +527,6 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		char buf[32];
 		snprintf(buf, 32, "%d", n->client_count);
 
-#ifdef WITH_PANGO
-
 		/* draw title */
 		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_outline_color));
 
@@ -558,8 +556,6 @@ void simple2_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) 
 		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_selected_text_color));
 		CHECK_CAIRO(cairo_fill(cr));
-
-#endif
 
 		cairo_restore(cr);
 
@@ -819,7 +815,6 @@ void simple2_theme_t::render_notebook_selected(
 		}
 	}
 
-#ifdef WITH_PANGO
 	/** draw application title **/
 	rect btext = tab_area;
 	btext.h -= 0;
@@ -859,8 +854,6 @@ void simple2_theme_t::render_notebook_selected(
 	}
 
 	cairo_restore(cr);
-
-#endif
 
 	/** draw close button **/
 
@@ -983,8 +976,6 @@ void simple2_theme_t::render_notebook_normal(
 
 		CHECK_CAIRO(cairo_save(cr));
 
-#ifdef WITH_PANGO
-
 		/* draw title */
 		CHECK_CAIRO(cairo_set_source_rgba(cr, outline_color));
 
@@ -1013,8 +1004,6 @@ void simple2_theme_t::render_notebook_normal(
 		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, text_color));
 		CHECK_CAIRO(cairo_fill(cr));
-
-#endif
 
 		CHECK_CAIRO(cairo_restore(cr));
 
@@ -1162,7 +1151,6 @@ void simple2_theme_t::render_thumbnail(cairo_t * cr, rect position, theme_thumbn
 
 
 void simple2_theme_t::render_thumbnail_title(cairo_t * cr, rect btext, std::string const & title) const {
-#ifdef WITH_PANGO
 
 	CHECK_CAIRO(cairo_save(cr));
 
@@ -1197,8 +1185,6 @@ void simple2_theme_t::render_thumbnail_title(cairo_t * cr, rect btext, std::stri
 	CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_text_color));
 	CHECK_CAIRO(cairo_fill(cr));
 	CHECK_CAIRO(cairo_restore(cr));
-
-#endif
 
 }
 
@@ -1327,7 +1313,6 @@ void simple2_theme_t::render_floating_base(
 			}
 		}
 
-	#ifdef WITH_PANGO
 		/** draw application title **/
 		rect btext = tab_area;
 		btext.h -= 0;
@@ -1366,8 +1351,6 @@ void simple2_theme_t::render_floating_base(
 		}
 
 		cairo_restore(cr);
-
-	#endif
 
 		/** draw close button **/
 
@@ -1505,8 +1488,6 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 		CHECK_CAIRO(cairo_set_source_surface(cr, icon->get_cairo_surface(), x_offset, y_offset));
 		CHECK_CAIRO(cairo_mask_surface(cr, icon->get_cairo_surface(), x_offset, y_offset));
 
-#ifdef WITH_PANGO
-
 		/* draw title */
 		CHECK_CAIRO(cairo_translate(cr, 0.0, y_offset + 68.0));
 
@@ -1533,8 +1514,6 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
 		CHECK_CAIRO(cairo_set_source_rgba(cr, popup_text_color));
 		CHECK_CAIRO(cairo_fill(cr));
-
-#endif
 
 	}
 
@@ -1897,7 +1876,6 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t
 		}
 	}
 
-#ifdef WITH_PANGO
 	/** draw application title **/
 	rect btext = area;
 	btext.h -= 0;
@@ -1933,8 +1911,6 @@ void simple2_theme_t::render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t
 		CHECK_CAIRO(cairo_set_source_rgba(cr, notebook_normal_text_color));
 		CHECK_CAIRO(cairo_fill(cr));
 	}
-
-#endif
 
 	cairo_restore(cr);
 

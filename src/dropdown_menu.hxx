@@ -311,7 +311,7 @@ public:
 			if (_start_position.is_inside(e->event_x, e->event_y) and not active_grab) {
 				active_grab = true;
 				xcb_grab_pointer(_ctx->dpy()->xcb(),
-				FALSE, _ctx->dpy()->root(),
+				false, _ctx->dpy()->root(),
 						DEFAULT_BUTTON_EVENT_MASK
 								| XCB_EVENT_MASK_POINTER_MOTION,
 						XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,

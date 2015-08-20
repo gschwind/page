@@ -596,7 +596,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_mana
 	_ctx->overlay_add(pat);
 
 	xcb_grab_pointer(_ctx->dpy()->xcb(),
-	FALSE, pat->get_xid(),
+	false, pat->get_xid(),
 	XCB_EVENT_MASK_BUTTON_PRESS
 		| XCB_EVENT_MASK_BUTTON_RELEASE
 		| XCB_EVENT_MASK_BUTTON_MOTION

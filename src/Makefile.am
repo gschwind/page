@@ -13,14 +13,7 @@ AM_CXXFLAGS =  \
 	$(XCBCOMP_CFLAGS) \
 	$(CAIRO_CFLAGS) \
 	$(PANGO_CFLAGS) \
-	$(XCOMPOSITE_CFLAGS) \
-	$(XDAMAGE_CFLAGS) \
-	$(XRENDER_CFLAGS) \
-	$(XRANDR_CFLAGS) \
-	$(XEXT_CFLAGS) \
-	$(FT2_CFLAGS) \
 	$(GLIB_CFLAGS) \
-	$(GL_CFLAGS) \
 	-fno-strict-aliasing
 
 page_SOURCES = \
@@ -57,12 +50,6 @@ page_LDADD = \
 	$(XCBCOMP_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
-	$(XCOMPOSITE_LIBS) \
-	$(XDAMAGE_LIBS) \
-	$(XRENDER_LIBS) \
-	$(XRANDR_LIBS) \
-	$(XEXT_LIBS) \
-	$(FT2_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
 

@@ -10,12 +10,9 @@
 #ifndef TINY_THEME_HXX_
 #define TINY_THEME_HXX_
 
-#ifdef WITH_PANGO
 #include <pango/pangocairo.h>
-#endif
 
 #include <memory>
-
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 

@@ -6,22 +6,21 @@ AM_INIT_AUTOMAKE([-Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
 AC_CONFIG_HEADERS([src/config.hxx])
 
-# define custom macro to setup dir from datadir
+dnl define custom macro to setup dir from datadir
 
-# Check for programs
-AC_PROG_CC
+dnl Check for required programs
 AC_PROG_CXX
 AC_PROG_LIBTOOL
 
 # check for C++11
 AX_CXX_COMPILE_STDCXX_11
 
-# Check for libs
+dnl Check for libs
 PKG_CHECK_MODULES(X11, x11 >= 1.3.2)
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)
 
-# Check for libs
+dnl Check for libs
 PKG_CHECK_MODULES(XCB, xcb >= 1.10)
 AC_SUBST(XCB_CFLAGS)
 AC_SUBST(XCB_LIBS)
@@ -58,26 +57,6 @@ PKG_CHECK_MODULES(CAIRO, cairo >= 1.0.0)
 AC_SUBST(CAIRO_CFLAGS)
 AC_SUBST(CAIRO_LIBS)
 
-PKG_CHECK_MODULES(XDAMAGE, xdamage >= 0.26)
-AC_SUBST(XDAMAGE_CFLAGS)
-AC_SUBST(XDAMAGE_LIBS)
-
-PKG_CHECK_MODULES(XRENDER, xrender >= 0.9.6)
-AC_SUBST(XRENDER_CFLAGS)
-AC_SUBST(XRENDER_LIBS)
-
-PKG_CHECK_MODULES(XRANDR, xrandr >= 1.2.0)
-AC_SUBST(XRANDR_CFLAGS)
-AC_SUBST(XRANDR_LIBS)
-
-PKG_CHECK_MODULES(XEXT, xext >= 0.27)
-AC_SUBST(XEXT_CFLAGS)
-AC_SUBST(XEXT_LIBS)
-
-PKG_CHECK_MODULES(FT2, freetype2 >= 2.0.0)
-AC_SUBST(FT2_CFLAGS)
-AC_SUBST(FT2_LIBS)
-
 PKG_CHECK_MODULES(GLIB, glib-2.0 >= 2.0.0)
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
@@ -87,55 +66,55 @@ AC_SUBST(PANGO_CFLAGS)
 AC_SUBST(PANGO_LIBS)
 
 
-# This adds the option of compiling without using the ctemplate library,
-# which has proved troublesome for compilation on some platforms
-AC_ARG_ENABLE(pango,
-  [ --disable-pango   Disable pango code path],
-  [case "${enableval}" in
-     yes | no ) WITH_PANGO="${enableval}" ;;
-     *) AC_MSG_ERROR(bad value ${enableval} for --disable-pango) ;;
-   esac],
-  [WITH_PANGO="yes"]
-)
-
+dnl This adds the option of compiling without using the ctemplate library,
+dnl which has proved troublesome for compilation on some platforms
+dnl AC_ARG_ENABLE(pango,
+dnl   [ --disable-pango   Disable pango code path],
+dnl   [case "${enableval}" in
+dnl      yes | no ) WITH_PANGO="${enableval}" ;;
+dnl      *) AC_MSG_ERROR(bad value ${enableval} for --disable-pango) ;;
+dnl    esac],
+dnl   [WITH_PANGO="yes"]
+dnl )
+dnl 
 dnl Make sure we register this option with Automake, so we know whether to
 dnl descend into ctemplate for more configuration or not
-AM_CONDITIONAL([WITH_PANGO], [test "x$WITH_PANGO" = "xyes"])
-
-# Define CTEMPLATE in config.h if we're going to compile against it
-if test "x$WITH_PANGO" = "xyes"; then
-    AC_DEFINE([WITH_PANGO], [], ["build using pango library"])
-    AC_MSG_NOTICE([pango code path will be enabled])
-else
-    AC_MSG_NOTICE([pango code path will be enabled])
-fi
-
-# This adds the option of compiling without using the ctemplate library,
-# which has proved troublesome for compilation on some platforms
-AC_ARG_ENABLE(compositor,
-  [ --disable-compositor   Disable compositor code path],
-  [case "${enableval}" in
-     yes | no ) WITH_COMPOSITOR="${enableval}" ;;
-     *) AC_MSG_ERROR(bad value ${enableval} for --disable-compositor) ;;
-   esac],
-  [WITH_COMPOSITOR="yes"]
-)
-
+dnl AM_CONDITIONAL([WITH_PANGO], [test "x$WITH_PANGO" = "xyes"])
+dnl 
+dnl # Define CTEMPLATE in config.h if we're going to compile against it
+dnl if test "x$WITH_PANGO" = "xyes"; then
+dnl     AC_DEFINE([WITH_PANGO], [], ["build using pango library"])
+dnl     AC_MSG_NOTICE([pango code path will be enabled])
+dnl else
+dnl     AC_MSG_NOTICE([pango code path will be enabled])
+dnl fi
+dnl 
+dnl # This adds the option of compiling without using the ctemplate library,
+dnl # which has proved troublesome for compilation on some platforms
+dnl AC_ARG_ENABLE(compositor,
+dnl   [ --disable-compositor   Disable compositor code path],
+dnl   [case "${enableval}" in
+dnl      yes | no ) WITH_COMPOSITOR="${enableval}" ;;
+dnl      *) AC_MSG_ERROR(bad value ${enableval} for --disable-compositor) ;;
+dnl    esac],
+dnl   [WITH_COMPOSITOR="yes"]
+dnl )
+dnl 
 dnl Make sure we register this option with Automake, so we know whether to
 dnl descend into compositor for more configuration or not
-AM_CONDITIONAL([WITH_COMPOSITOR], [test "x$WITH_COMPOSITOR" = "xyes"])
-
-if test "x$WITH_COMPOSITOR" = "xyes"; then
-
-	PKG_CHECK_MODULES(XCOMPOSITE, xcomposite >= 0.4.0)
-	AC_SUBST(XCOMPOSITE_CFLAGS)
-	AC_SUBST(XCOMPOSITE_LIBS)
-
-    AC_DEFINE([WITH_COMPOSITOR], [], ["build compositor"])
-    AC_MSG_NOTICE([compositor code path will be enabled])
-else
-    AC_MSG_NOTICE([compositor code path will be disabled])
-fi
+dnl AM_CONDITIONAL([WITH_COMPOSITOR], [test "x$WITH_COMPOSITOR" = "xyes"])
+dnl 
+dnl if test "x$WITH_COMPOSITOR" = "xyes"; then
+dnl 
+dnl 	PKG_CHECK_MODULES(XCOMPOSITE, xcomposite >= 0.4.0)
+dnl 	AC_SUBST(XCOMPOSITE_CFLAGS)
+dnl 	AC_SUBST(XCOMPOSITE_LIBS)
+dnl 
+dnl     AC_DEFINE([WITH_COMPOSITOR], [], ["build compositor"])
+dnl     AC_MSG_NOTICE([compositor code path will be enabled])
+dnl else
+dnl     AC_MSG_NOTICE([compositor code path will be disabled])
+dnl fi
 
 AC_CHECK_LIB(rt, clock_gettime,
     [RT_LIBS="-lrt"

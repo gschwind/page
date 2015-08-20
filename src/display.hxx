@@ -12,31 +12,18 @@
 
 #include "config.hxx"
 
-#include <X11/Xlib.h>
-#include <X11/Xlib-xcb.h>
-
 #include <xcb/xcb.h>
 #include <xcb/damage.h>
 #include <xcb/composite.h>
 #include <xcb/xfixes.h>
 #include <xcb/randr.h>
+#include <xcb/shape.h>
 
-#include <X11/keysymdef.h>
+//#include <X11/keysymdef.h>
 #include <X11/cursorfont.h>
-#include <X11/keysym.h>
-#include <X11/Xatom.h>
+//#include <X11/keysym.h>
+//#include <X11/Xatom.h>
 #include <X11/Xutil.h>
-
-#include <X11/extensions/shape.h>
-#include <X11/extensions/Xdbe.h>
-#include <X11/extensions/Xfixes.h>
-#include <X11/extensions/Xrender.h>
-#include <X11/extensions/Xrandr.h>
-#include <X11/extensions/Xdamage.h>
-
-#ifdef WITH_COMPOSITOR
-#include <X11/extensions/Xcomposite.h>
-#endif
 
 #include <cstring>
 #include <cstdarg>

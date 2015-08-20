@@ -10,9 +10,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xdamage.h>
-#ifdef WITH_COMPOSITOR
 #include <X11/extensions/Xcomposite.h>
-#endif
 
 #include <cassert>
 

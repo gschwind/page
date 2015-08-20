@@ -10,10 +10,7 @@
 #ifndef SIMPLE2_THEME_HXX_
 #define SIMPLE2_THEME_HXX_
 
-#ifdef WITH_PANGO
 #include <pango/pangocairo.h>
-#endif
-
 #include <memory>
 
 #include <cairo/cairo.h>

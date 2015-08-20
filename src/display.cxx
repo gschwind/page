@@ -386,8 +386,7 @@ bool display_t::query_extension(char const * name, int * opcode, int * event, in
 
 
 bool display_t::check_composite_extension() {
-#ifdef WITH_COMPOSITOR
-	if (not query_extension(COMPOSITE_NAME, &composite_opcode, &composite_event, &composite_error)) {
+	if (not query_extension("Composite", &composite_opcode, &composite_event, &composite_error)) {
 		return false;
 	} else {
 		xcb_generic_error_t * err;
@@ -395,20 +394,16 @@ bool display_t::check_composite_extension() {
 		xcb_composite_query_version_reply_t * r = xcb_composite_query_version_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr)
-			throw exception_t("ERROR: fail to get " COMPOSITE_NAME " version");
+			throw exception_t("ERROR: fail to get Composite version");
 
-		printf(COMPOSITE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		printf("Composite Extension version %d.%d found\n", r->major_version, r->minor_version);
 		free(r);
 		return true;
 	}
-#else
-	return false;
-#endif
-
 }
 
 bool display_t::check_damage_extension() {
-	if (not query_extension(DAMAGE_NAME, &damage_opcode, &damage_event, &damage_error)) {
+	if (not query_extension("DAMAGE", &damage_opcode, &damage_event, &damage_error)) {
 		return false;
 	} else {
 		xcb_generic_error_t * err;
@@ -416,16 +411,16 @@ bool display_t::check_damage_extension() {
 		xcb_damage_query_version_reply_t * r = xcb_damage_query_version_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr)
-			throw exception_t("ERROR: fail to get " DAMAGE_NAME " version");
+			throw exception_t("ERROR: fail to get DAMAGE version");
 
-		printf(DAMAGE_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		printf("DAMAGE Extension version %d.%d found\n", r->major_version, r->minor_version);
 		free(r);
 		return true;
 	}
 }
 
 bool display_t::check_xfixes_extension() {
-	if (not query_extension(XFIXES_NAME, &fixes_opcode, &fixes_event, &fixes_error)) {
+	if (not query_extension("XFIXES", &fixes_opcode, &fixes_event, &fixes_error)) {
 		return false;
 	} else {
 		xcb_generic_error_t * err;
@@ -433,9 +428,9 @@ bool display_t::check_xfixes_extension() {
 		xcb_xfixes_query_version_reply_t * r = xcb_xfixes_query_version_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr)
-			throw exception_t("ERROR: fail to get " XFIXES_NAME " version");
+			throw exception_t("ERROR: fail to get XFIXES version");
 
-		printf(XFIXES_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		printf("XFIXES Extension version %d.%d found\n", r->major_version, r->minor_version);
 		free(r);
 		return true;
 	}
@@ -460,7 +455,7 @@ bool display_t::check_shape_extension() {
 }
 
 bool display_t::check_randr_extension() {
-	if (not query_extension(RANDR_NAME, &randr_opcode, &randr_event, &randr_error)) {
+	if (not query_extension("RANDR", &randr_opcode, &randr_event, &randr_error)) {
 		return false;
 	} else {
 		xcb_generic_error_t * err;
@@ -468,9 +463,9 @@ bool display_t::check_randr_extension() {
 		xcb_randr_query_version_reply_t * r = xcb_randr_query_version_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr)
-			throw exception_t("ERROR: fail to get " RANDR_NAME " version");
+			throw exception_t("ERROR: fail to get RANDR version");
 
-		printf(RANDR_NAME " Extension version %d.%d found\n", r->major_version, r->minor_version);
+		printf("RANDR Extension version %d.%d found\n", r->major_version, r->minor_version);
 		free(r);
 		return true;
 	}
@@ -782,7 +777,7 @@ region display_t::read_damaged_region(xcb_damage_damage_t d) {
 
 void display_t::check_x11_extension() {
 	if (not check_xfixes_extension()) {
-		throw std::runtime_error(XFIXES_NAME " extension is not supported");
+		throw std::runtime_error("XFIXES extension is not supported");
 	}
 
 	if (not check_shape_extension()) {
@@ -790,13 +785,13 @@ void display_t::check_x11_extension() {
 	}
 
 	if (not check_randr_extension()) {
-		throw std::runtime_error(RANDR_NAME " extension is not supported");
+		throw std::runtime_error("RANDR extension is not supported");
 	}
 
 	has_composite = check_composite_extension();
 
 	if (not check_damage_extension()) {
-		throw std::runtime_error("Damage extension is not supported");
+		throw std::runtime_error("DAMAGE extension is not supported");
 	}
 
 	for(auto &i: event_type_name) {
