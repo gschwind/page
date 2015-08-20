@@ -124,6 +124,20 @@ AC_SUBST(RT_LIBS)
 
 AC_DEFINE_DIR([DATA_DIR], [datadir], [Data directory (/usr/share)])
 
+safe_CXXFLAGS="${CXXFLAGS}"
+safe_LDFLAGS="${LDFLAGS}"
+CXXFLAGS="${CXXFLAGS} -flto"
+LDFLAGS="${LDFLAGS} -flto"
+AC_TRY_LINK([], [int main () { return 0; }],[
+dnl keep FLAGS
+],[
+CXXFLAGS="${safe_CXXFLAGS}"
+LDFLAGS="${safe_LDFLAGS}"
+])
+
+unset safe_CXXFLAGS
+unset safe_LDFLAGS
+
 AC_CONFIG_FILES([
   page.conf
   page.desktop
