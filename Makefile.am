@@ -9,7 +9,6 @@ applicationsdatadir = $(datadir)/applications
 
 nobase_dist_pagedata_DATA = \
 	data/close_button.png \
-	data/hsplit_button.png \
 	data/pop_button_bk.png \
 	data/pops_button.png \
 	data/view-restore.png \
@@ -24,6 +23,9 @@ nobase_dist_pagedata_DATA = \
 	data/tiny_pops.png \
 	data/pop_selected.png \
 	data/vsplit_button.png \
+	data/hsplit_button.png \
+	data/tiny_vsplit_button.png \
+	data/tiny_hsplit_button.png \
 	data/go-next.png \
 	data/go-previous.png \
 	page.conf
