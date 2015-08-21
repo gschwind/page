@@ -31,6 +31,27 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	notebook.margin.bottom = 1;
 	notebook.margin.left = 1;
 	notebook.margin.right = 1;
+
+	string conf_img_dir = conf.get_string("default", "theme_dir");
+
+	{
+	cairo_surface_destroy(pop_button_s);
+	string filename = conf_img_dir + "/tiny_pop.png";
+	printf("Load: %s\n", filename.c_str());
+	pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
+	if (pop_button_s == nullptr)
+		throw std::runtime_error("file not found!");
+	}
+
+	{
+	cairo_surface_destroy(pops_button_s);
+	string filename = conf_img_dir + "/tiny_pops.png";
+	printf("Load: %s\n", filename.c_str());
+	pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
+	if (pops_button_s == nullptr)
+		throw std::runtime_error("file not found!");
+	}
+
 }
 
 
