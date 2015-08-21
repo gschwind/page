@@ -1021,7 +1021,6 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 			_mouse_over_set();
 			queue_redraw();
 		}
-		return true;
 	} else {
 		if(_theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
 			_mouse_over_reset();

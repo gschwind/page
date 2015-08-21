@@ -22,7 +22,8 @@ using namespace std;
 split_t::split_t(page_context_t * ctx, split_type_e type) :
 		_ctx{ctx},
 		_type{type},
-		_ratio{0.5}
+		_ratio{0.5},
+		_has_mouse_over{false}
 {
 	update_allocation();
 
@@ -338,15 +339,14 @@ bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {
 		if(_has_mouse_over) {
 			_has_mouse_over = false;
 			queue_redraw();
-			return false;
 		}
+		return false;
 	}
 
 	if(_split_bar_area.is_inside(ev->event_x, ev->event_y)) {
 		if(not _has_mouse_over) {
 			_has_mouse_over = true;
 			queue_redraw();
-			return true;
 		}
 	} else {
 		if(_has_mouse_over) {
