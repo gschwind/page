@@ -668,6 +668,8 @@ void display_t::load_cursors() {
 	xc_top_right_corner = _load_cursor(XC_top_right_corner);
 	xc_top_left_corner = _load_cursor(XC_top_left_corner);
 	xc_top_side = _load_cursor(XC_top_side);
+	xc_sb_h_double_arrow = _load_cursor(XC_sb_h_double_arrow);
+	xc_sb_v_double_arrow = _load_cursor(XC_sb_v_double_arrow);
 
 }
 
@@ -682,6 +684,8 @@ void display_t::unload_cursors() {
 	xcb_free_cursor(_xcb, xc_top_right_corner);
 	xcb_free_cursor(_xcb, xc_top_left_corner);
 	xcb_free_cursor(_xcb, xc_top_side);
+	xcb_free_cursor(_xcb, xc_sb_h_double_arrow);
+	xcb_free_cursor(_xcb, xc_sb_v_double_arrow);
 
 	xcb_close_font(_xcb, cursor_font);
 }

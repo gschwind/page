@@ -107,6 +107,8 @@ public:
 	xcb_cursor_t xc_top_right_corner;
 	xcb_cursor_t xc_top_left_corner;
 	xcb_cursor_t xc_top_side;
+	xcb_cursor_t xc_sb_h_double_arrow;
+	xcb_cursor_t xc_sb_v_double_arrow;
 
 	xcb_atom_t wm_sn_atom;
 	xcb_atom_t cm_sn_atom;

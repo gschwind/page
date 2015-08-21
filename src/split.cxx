@@ -23,7 +23,8 @@ split_t::split_t(page_context_t * ctx, split_type_e type) :
 		_ctx{ctx},
 		_type{type},
 		_ratio{0.5},
-		_has_mouse_over{false}
+		_has_mouse_over{false},
+		_wid{XCB_WINDOW_NONE}
 {
 	update_allocation();
 
@@ -136,6 +137,20 @@ void split_t::update_allocation() {
 		_pack0->set_allocation(_bpack0);
 	if(_pack1 != nullptr)
 		_pack1->set_allocation(_bpack1);
+
+	if(_wid == XCB_WINDOW_NONE and get_parent_xid() != XCB_WINDOW_NONE) {
+		uint32_t cursor;
+		if(_type == VERTICAL_SPLIT) {
+			cursor = _ctx->dpy()->xc_sb_h_double_arrow;
+		} else {
+			cursor = _ctx->dpy()->xc_sb_v_double_arrow;
+		}
+		_wid = _ctx->dpy()->create_input_only_window(get_parent_xid(), _split_bar_area, XCB_CW_CURSOR, &cursor);
+		_ctx->dpy()->map(_wid);
+	}
+
+	_ctx->dpy()->move_resize(_wid, _split_bar_area);
+
 }
 
 void split_t::set_pack0(shared_ptr<page_component_t> x) {
@@ -227,7 +242,7 @@ void split_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 
 bool split_t::button_press(xcb_button_press_event_t const * e) {
 	if (e->event == get_parent_xid()
-			and e->child == XCB_NONE
+			and e->child == _wid
 			and e->detail == XCB_BUTTON_INDEX_1
 			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
 		_ctx->grab_start(new grab_split_t { _ctx, shared_from_this() });
@@ -335,7 +350,7 @@ bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {
 		return false;
 	}
 
-	if(ev->child != XCB_WINDOW_NONE) {
+	if(ev->child != _wid) {
 		if(_has_mouse_over) {
 			_has_mouse_over = false;
 			queue_redraw();
