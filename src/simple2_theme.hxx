@@ -118,7 +118,6 @@ public:
 	std::string scale_mode;
 
 	std::shared_ptr<pixmap_t> backgroun_px;
-	std::shared_ptr<pixmap_t> backgroun_blur_px;
 
 	simple2_theme_t(display_t * cnx, config_handler_t & conf);
 

@@ -1724,42 +1724,16 @@ void simple2_theme_t::create_background_img() {
 		warn(cairo_surface_get_reference_count(tmp) == 1);
 		cairo_surface_destroy(tmp);
 
-
-		/** create the blurry version of image_background_s **/
-		cairo_surface_t * image_background_blur_s = cairo_image_surface_create(CAIRO_FORMAT_RGB24, geometry->width, geometry->height);
-
-		cairo_t * cr = cairo_create(image_background_blur_s);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_surface(cr, image_background_s, 0.0, 0.0);
-		cairo_paint(cr);
-		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-		cairo_paint_with_alpha(cr, 0.1);
-		cairo_destroy(cr);
-		cairo_surface_flush(image_background_blur_s);
-
-		blur_image_surface(image_background_blur_s, 20.0);
-
 		/* copy background to pixmap */
 		backgroun_px = make_shared<pixmap_t>(_cnx, PIXMAP_RGB, geometry->width, geometry->height);
 
-		cr = cairo_create(backgroun_px->get_cairo_surface());
+		cairo_t * cr = cairo_create(backgroun_px->get_cairo_surface());
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_source_surface(cr, image_background_s, 0.0, 0.0);
 		cairo_paint(cr);
 		cairo_destroy(cr);
 
 		cairo_surface_destroy(image_background_s);
-
-		/* copy background_blur to pixmap */
-		backgroun_blur_px = make_shared<pixmap_t>(_cnx, PIXMAP_RGB, geometry->width, geometry->height);
-
-		cr = cairo_create(backgroun_blur_px->get_cairo_surface());
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_surface(cr, image_background_blur_s, 0.0, 0.0);
-		cairo_paint(cr);
-		cairo_destroy(cr);
-
-		cairo_surface_destroy(image_background_blur_s);
 
 		free(geometry);
 
