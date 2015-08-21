@@ -29,9 +29,46 @@ namespace page {
 using namespace std;
 
 class tiny_theme_t : public simple2_theme_t {
+
+	rect compute_notebook_bookmark_position(rect const & allocation) const;
+	rect compute_notebook_vsplit_position(rect const & allocation) const;
+	rect compute_notebook_hsplit_position(rect const & allocation) const;
+	rect compute_notebook_close_position(rect const & allocation) const;
+	rect compute_notebook_menu_position(rect const & allocation) const;
+
+	void render_notebook_selected(
+			cairo_t * cr,
+			theme_notebook_t const & n,
+			theme_tab_t const & data,
+			PangoFontDescription const * pango_font,
+			color_t const & text_color,
+			color_t const & outline_color,
+			color_t const & border_color,
+			color_t const & background_color,
+			double border_width
+	) const;
+
+	void render_notebook_normal(
+			cairo_t * cr,
+			theme_tab_t const & data,
+			PangoFontDescription const * pango_font,
+			color_t const & text_color,
+			color_t const & outline_color,
+			color_t const & border_color,
+			color_t const & background_color
+	) const;
+
 public:
 	tiny_theme_t(display_t * cnx, config_handler_t & conf);
 	virtual ~tiny_theme_t();
+
+	virtual void render_notebook(cairo_t * cr, theme_notebook_t const * n) const;
+
+	virtual void render_iconic_notebook(
+			cairo_t * cr,
+			vector<theme_tab_t> const & tabs
+	) const;
+
 };
 
 }

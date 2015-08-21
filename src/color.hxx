@@ -11,6 +11,7 @@
 #define COLOR_HXX_
 
 #include <stdexcept>
+#include <cairo.h>
 
 namespace page {
 
@@ -21,7 +22,10 @@ struct color_t {
 
 	color_t() : r{0.0}, g{0.0}, b{0.0}, a{0.0} { }
 
-	color_t(double r, double g, double b, double a): r{r}, g{g}, b{b}, a{a} { }
+	color_t(double r, double g, double b, double a = 0.0): r{r}, g{g}, b{b}, a{a} { }
+
+	color_t(int r, int g, int b, int a = 0): r{r/255.0}, g{g/255.0}, b{b/255.0}, a{a/255.0} { }
+
 
 	color_t(unsigned color) {
 		set(color);
@@ -49,7 +53,23 @@ struct color_t {
 		b = ((color >> 0) & 0x000000ff) / 255.0;
 	}
 
+	color_t operator*(double f) const {
+		color_t ret{*this};
+		ret.r *= f;
+		ret.g *= f;
+		ret.b *= f;
+		return ret;
+	}
+
 };
+
+inline void cairo_set_source_color_alpha(cairo_t * cr, color_t const & color) {
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
+}
+
+inline void cairo_set_source_color(cairo_t * cr, color_t const & color) {
+	cairo_set_source_rgba(cr, color.r, color.g, color.b, 1.0);
+}
 
 }
 
