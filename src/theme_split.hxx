@@ -21,6 +21,7 @@ struct theme_split_t {
 	rect allocation;
 	split_type_e type;
 	double split;
+	bool has_mouse_over;
 };
 
 }

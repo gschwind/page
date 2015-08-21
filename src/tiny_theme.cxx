@@ -158,11 +158,7 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 		cairo_save(cr);
 		cairo_clip(cr, body_area);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		if(n->has_selected_client) {
-			cairo_set_source_surface(cr, backgroun_px->get_cairo_surface(), -n->root_x, -n->root_y);
-		} else {
-			cairo_set_source_surface(cr, backgroun_px->get_cairo_surface(), -n->root_x, -n->root_y);
-		}
+		cairo_set_source_surface(cr, backgroun_px->get_cairo_surface(), -n->root_x, -n->root_y);
 		cairo_paint(cr);
 		cairo_restore(cr);
 	} else {
@@ -182,11 +178,7 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 		cairo_save(cr);
 		cairo_clip(cr, body_area);
 		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		if(n->has_selected_client) {
-			cairo_set_source_color(cr, default_background_color);
-		} else {
-			cairo_set_source_color(cr, default_background_color);
-		}
+		cairo_set_source_color(cr, default_background_color);
 		cairo_paint(cr);
 		cairo_restore(cr);
 	}
@@ -206,35 +198,6 @@ void tiny_theme_t::render_notebook(cairo_t * cr, theme_notebook_t const * n) con
 		}
 
 	}
-
-//	if(n->has_selected_client) {
-//		cairo_save(cr);
-//		/** bottom shadow **/
-//		rect b { n->allocation };
-//		b.y += notebook.tab_height;
-//		b.h -= notebook.tab_height;
-//		//draw_outer_graddien(cr, b, color_t{0.0, 0.0, 0.0, 0.25}, 5);
-//		/* borders lines */
-//		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-//		cairo_reset_clip(cr);
-//		cairo_rectangle(cr, b.x + 0.5, b.y + 0.5, b.w - 1.0, b.h - 1.0);
-//		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-//		cairo_stroke(cr);
-//		cairo_restore(cr);
-//	} else {
-//		cairo_save(cr);
-//		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-//		cairo_reset_clip(cr);
-//		rect b { n->allocation };
-//		b.y += notebook.tab_height;
-//		b.h -= notebook.tab_height;
-//		cairo_new_path(cr);
-//		cairo_move_to(cr, b.x + 0.5, b.y + 0.5);
-//		cairo_line_to(cr, b.x + b.w - 0.5, b.y + 0.5);
-//		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-//		cairo_stroke(cr);
-//		cairo_restore(cr);
-//	}
 
 	if (n->has_selected_client) {
 		if (not n->selected_client.is_iconic) {

@@ -23,6 +23,9 @@ class split_t : public page_component_t {
 	rect _split_bar_area;
 	split_type_e _type;
 	double _ratio;
+
+	bool _has_mouse_over;
+
 	shared_ptr<page_component_t> _pack0;
 	shared_ptr<page_component_t> _pack1;
 
@@ -85,8 +88,8 @@ public:
 	virtual void activate(shared_ptr<tree_t> t);
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	//virtual bool button_release(xcb_button_release_event_t const * ev);
-	//virtual bool button_motion(xcb_motion_notify_event_t const * ev);
-	//virtual bool leave(xcb_leave_notify_event_t const * ev);
+	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
+	virtual bool leave(xcb_leave_notify_event_t const * ev);
 	//virtual bool enter(xcb_enter_notify_event_t const * ev);
 	//virtual void expose(xcb_expose_event_t const * ev);
 	//virtual void trigger_redraw();

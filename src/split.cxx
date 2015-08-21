@@ -170,6 +170,7 @@ void split_t::render_legacy(cairo_t * cr) const {
 	ts.allocation = compute_split_bar_location();
 	ts.root_x = get_window_position().x;
 	ts.root_y = get_window_position().y;
+	ts.has_mouse_over = _has_mouse_over;
 	_ctx->theme()->render_split(cr, &ts);
 }
 
@@ -323,5 +324,51 @@ void split_t::compute_children_root_allocation(double split, rect & bpack0, rect
 	to_root_position(bpack0);
 	to_root_position(bpack1);
 }
+
+bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {
+	if(ev->event != get_parent_xid()) {
+		if(_has_mouse_over) {
+			_has_mouse_over = false;
+			queue_redraw();
+		}
+		return false;
+	}
+
+	if(ev->child != XCB_WINDOW_NONE) {
+		if(_has_mouse_over) {
+			_has_mouse_over = false;
+			queue_redraw();
+			return false;
+		}
+	}
+
+	if(_split_bar_area.is_inside(ev->event_x, ev->event_y)) {
+		if(not _has_mouse_over) {
+			_has_mouse_over = true;
+			queue_redraw();
+			return true;
+		}
+	} else {
+		if(_has_mouse_over) {
+			_has_mouse_over = false;
+			queue_redraw();
+		}
+	}
+
+	return false;
+
+}
+
+
+bool split_t::leave(xcb_leave_notify_event_t const * ev) {
+	if(ev->event == get_parent_xid()) {
+		if(_has_mouse_over) {
+			_has_mouse_over = false;
+			queue_redraw();
+		}
+	}
+	return false;
+}
+
 
 }

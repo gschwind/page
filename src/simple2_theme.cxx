@@ -1005,6 +1005,14 @@ void simple2_theme_t::render_split(cairo_t * cr,
 	CHECK_CAIRO(cairo_rectangle(cr, sarea.x, sarea.y, sarea.w, sarea.h));
 	CHECK_CAIRO(cairo_fill(cr));
 
+	if(s->has_mouse_over) {
+		cairo_save(cr);
+		cairo_clip(cr, sarea);
+		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+		cairo_paint_with_alpha(cr, 0.2);
+		cairo_restore(cr);
+	}
+
 	rect grip0;
 	rect grip1;
 	rect grip2;
