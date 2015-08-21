@@ -235,11 +235,8 @@ void page_t::run() {
 	/** Initialize theme **/
 
 	if(_theme_engine == "tiny") {
-//		/* TODO */
-//		std::cout << "using tiny theme engine" << std::endl;
-//		_theme = new tiny_theme_t{cnx, conf};
-		cout << "using simple theme engine" << endl;
-		_theme = new simple2_theme_t{_dpy, _conf};
+		cout << "using tiny theme engine" << endl;
+		_theme = new tiny_theme_t{_dpy, _conf};
 	} else {
 		/* The default theme engine */
 		cout << "using simple theme engine" << endl;
