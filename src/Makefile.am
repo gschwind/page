@@ -37,6 +37,7 @@ page_SOURCES = \
 	composite_surface_manager.cxx \
 	popup_alt_tab.cxx \
 	main.cxx \
+	blur_image_surface.cxx \
 	leak_checker.cxx 
 
 page_LDADD = \

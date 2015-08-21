@@ -68,10 +68,6 @@ public:
 	cairo_surface_t * left_scroll_arrow_button_s;
 	cairo_surface_t * right_scroll_arrow_button_s;
 
-	cairo_surface_t * background_s;
-
-	xcb_pixmap_t background_p;
-
 	color_t default_background_color;
 
 	color_t popup_text_color;
@@ -122,6 +118,7 @@ public:
 	std::string scale_mode;
 
 	std::shared_ptr<pixmap_t> backgroun_px;
+	std::shared_ptr<pixmap_t> backgroun_blur_px;
 
 	simple2_theme_t(display_t * cnx, config_handler_t & conf);
 
