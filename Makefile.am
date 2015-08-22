@@ -16,9 +16,11 @@ nobase_dist_pagedata_DATA = \
 	data/window-close-1.png \
 	data/window-close-2.png \
 	data/window-close-3.png \
+	data/window-close-4.png \
 	data/edit-delete.png \
 	data/media-eject.png \
 	data/pop.png \
+	data/pops.png \
 	data/tiny_pop.png \
 	data/tiny_pops.png \
 	data/pop_selected.png \

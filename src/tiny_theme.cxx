@@ -70,6 +70,15 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 		throw std::runtime_error("file not found!");
 	}
 
+	{
+	cairo_surface_destroy(close_button_s);
+	string filename = conf_img_dir + "/close-window-3.png";
+	printf("Load: %s\n", filename.c_str());
+	close_button_s = cairo_image_surface_create_from_png(filename.c_str());
+	if (close_button_s == nullptr)
+		throw std::runtime_error("file not found!");
+	}
+
 }
 
 

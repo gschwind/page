@@ -257,7 +257,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	}
 
 	if (close_button_s == nullptr) {
-		std::string filename = conf_img_dir + "/window-close-3.png";
+		std::string filename = conf_img_dir + "/window-close-4.png";
 		printf("Load: %s\n", filename.c_str());
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == nullptr)
@@ -281,7 +281,7 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	}
 
 	if (pops_button_s == nullptr) {
-		std::string filename = conf_img_dir + "/pop_selected.png";
+		std::string filename = conf_img_dir + "/pops.png";
 		printf("Load: %s\n", filename.c_str());
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
