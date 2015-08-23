@@ -24,6 +24,8 @@
 
 namespace page {
 
+using namespace std;
+
 inline void print_cairo_status(cairo_t * cr, char const * file, int line) {
 	cairo_status_t s = cairo_status(cr);
 	if (s != CAIRO_STATUS_SUCCESS) {
@@ -1447,23 +1449,15 @@ void simple2_theme_t::render_floating_base(
 }
 
 void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsigned int width,
-		unsigned int height, std::string const & title) const {
+		unsigned int height, string const & title) const {
 
-
-//	CHECK_CAIRO(cairo_rectangle(cr, 1, 1, width - 2, height - 2));
-//	CHECK_CAIRO(cairo_clip(cr));
-//	CHECK_CAIRO(cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE));
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
-//	cairo_pattern_t * p = cairo_pattern_create_rgba(1.0, 1.0, 1.0, 0.5);
-//	CHECK_CAIRO(cairo_mask(cr, p));
-//	cairo_pattern_destroy(p);
-//	cairo_reset_clip(cr);
-//	CHECK_CAIRO(cairo_set_source_rgba(cr, popup_background_color));
-	//draw_hatched_i_rect(cr, 40, 1, 1, width - 2, height - 2);
-
-	cairo_set_line_width(cr, 3.0);
-	cairo_set_source_color(cr, popup_background_color);
+	cairo_save(cr);
+	cairo_set_line_width(cr, 6.0);
 	cairo_rectangle_arc_corner(cr, 3, 3, width - 6, height - 6, 10.0, CAIRO_CORNER_ALL);
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_stroke_preserve(cr);
+	cairo_set_line_width(cr, 4.0);
+	cairo_set_source_color(cr, popup_background_color);
 	cairo_stroke(cr);
 
 	if (icon != nullptr) {
@@ -1503,6 +1497,8 @@ void simple2_theme_t::render_popup_notebook0(cairo_t * cr, icon64 * icon, unsign
 		CHECK_CAIRO(cairo_fill(cr));
 
 	}
+
+	cairo_restore(cr);
 
 }
 
