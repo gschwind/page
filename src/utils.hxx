@@ -28,7 +28,6 @@
 
 #include "color.hxx"
 #include "box.hxx"
-#include "key_desc.hxx"
 #include "x11_func_name.hxx"
 #include "exception.hxx"
 
@@ -229,57 +228,6 @@ std::list<std::weak_ptr<T0>> weak(std::list<std::shared_ptr<T0>> const & x) {
 template<typename T0>
 std::vector<std::weak_ptr<T0>> weak(std::vector<std::shared_ptr<T0>> const & x) {
 	return std::vector<std::weak_ptr<T0>>{x.begin(), x.end()};
-}
-
-
-/**
- * Parse std::string like "mod4+f" to modifier mask (mod) and keysym (ks)
- **/
-inline void find_key_from_string(std::string const desc, key_desc_t & k) {
-
-	/* no binding is set */
-	k.ks = XK_VoidSymbol;
-	k.mod = 0;
-
-	if(desc == "null")
-		return;
-
-	/* find all modifier */
-	std::size_t bos = 0;
-	std::size_t eos = desc.find(" ", bos);
-	while(eos != std::string::npos) {
-		std::string modifier = desc.substr(bos, eos-bos);
-
-		/* check for supported modifier */
-		if(modifier == "shift") {
-			k.mod |= ShiftMask;
-		} else if (modifier == "lock") {
-			k.mod |= LockMask;
-		} else if (modifier == "control") {
-			k.mod |= ControlMask;
-		} else if (modifier == "mod1") {
-			k.mod |= Mod1Mask;
-		} else if (modifier == "mod2") {
-			k.mod |= Mod2Mask;
-		} else if (modifier == "mod3") {
-			k.mod |= Mod3Mask;
-		} else if (modifier == "mod4") {
-			k.mod |= Mod4Mask;
-		} else if (modifier == "mod5") {
-			k.mod |= Mod5Mask;
-		} else {
-			throw exception_t("invalid modifier '%s' for key binding", modifier.c_str());
-		}
-
-		bos = eos+1; /* next char of char space */
-		eos = desc.find(" ", bos);
-	}
-
-	std::string key = desc.substr(bos);
-	k.ks = XStringToKeysym(key.c_str());
-	if(k.ks == NoSymbol) {
-		throw std::runtime_error("key binding not found");
-	}
 }
 
 static void draw_outer_graddien(cairo_t * cr, rect r, color_t const & iner_color, double _shadow_width) {

@@ -126,34 +126,33 @@ page_t::page_t(int argc, char ** argv)
 
 	_theme = nullptr;
 
-	find_key_from_string(_conf.get_string("default", "bind_page_quit"), bind_page_quit);
-	find_key_from_string(_conf.get_string("default", "bind_close"), bind_close);
-	find_key_from_string(_conf.get_string("default", "bind_exposay_all"), bind_exposay_all);
-	find_key_from_string(_conf.get_string("default", "bind_toggle_fullscreen"), bind_toggle_fullscreen);
-	find_key_from_string(_conf.get_string("default", "bind_toggle_compositor"), bind_toggle_compositor);
-	find_key_from_string(_conf.get_string("default", "bind_right_desktop"), bind_right_desktop);
-	find_key_from_string(_conf.get_string("default", "bind_left_desktop"), bind_left_desktop);
+	bind_page_quit           = _conf.get_string("default", "bind_page_quit");
+	bind_close               = _conf.get_string("default", "bind_close");
+	bind_exposay_all         = _conf.get_string("default", "bind_exposay_all");
+	bind_toggle_fullscreen   = _conf.get_string("default", "bind_toggle_fullscreen");
+	bind_toggle_compositor   = _conf.get_string("default", "bind_toggle_compositor");
+	bind_right_desktop       = _conf.get_string("default", "bind_right_desktop");
+	bind_left_desktop        = _conf.get_string("default", "bind_left_desktop");
 
-	find_key_from_string(_conf.get_string("default", "bind_bind_window"), bind_bind_window);
-	find_key_from_string(_conf.get_string("default", "bind_fullscreen_window"), bind_fullscreen_window);
-	find_key_from_string(_conf.get_string("default", "bind_float_window"), bind_float_window);
+	bind_bind_window         = _conf.get_string("default", "bind_bind_window");
+	bind_fullscreen_window   = _conf.get_string("default", "bind_fullscreen_window");
+	bind_float_window        = _conf.get_string("default", "bind_float_window");
 
-	find_key_from_string(_conf.get_string("default", "bind_debug_1"), bind_debug_1);
-	find_key_from_string(_conf.get_string("default", "bind_debug_2"), bind_debug_2);
-	find_key_from_string(_conf.get_string("default", "bind_debug_3"), bind_debug_3);
-	find_key_from_string(_conf.get_string("default", "bind_debug_4"), bind_debug_4);
+	bind_debug_1 = _conf.get_string("default", "bind_debug_1");
+	bind_debug_2 = _conf.get_string("default", "bind_debug_2");
+	bind_debug_3 = _conf.get_string("default", "bind_debug_3");
+	bind_debug_4 = _conf.get_string("default", "bind_debug_4");
 
-
-	find_key_from_string(_conf.get_string("default", "bind_cmd_0"), bind_cmd[0].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_1"), bind_cmd[1].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_2"), bind_cmd[2].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_3"), bind_cmd[3].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_4"), bind_cmd[4].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_5"), bind_cmd[5].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_6"), bind_cmd[6].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_7"), bind_cmd[7].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_8"), bind_cmd[8].key);
-	find_key_from_string(_conf.get_string("default", "bind_cmd_9"), bind_cmd[9].key);
+	bind_cmd[0].key = _conf.get_string("default", "bind_cmd_0");
+	bind_cmd[1].key = _conf.get_string("default", "bind_cmd_1");
+	bind_cmd[2].key = _conf.get_string("default", "bind_cmd_2");
+	bind_cmd[3].key = _conf.get_string("default", "bind_cmd_3");
+	bind_cmd[4].key = _conf.get_string("default", "bind_cmd_4");
+	bind_cmd[5].key = _conf.get_string("default", "bind_cmd_5");
+	bind_cmd[6].key = _conf.get_string("default", "bind_cmd_6");
+	bind_cmd[7].key = _conf.get_string("default", "bind_cmd_7");
+	bind_cmd[8].key = _conf.get_string("default", "bind_cmd_8");
+	bind_cmd[9].key = _conf.get_string("default", "bind_cmd_9");
 
 	bind_cmd[0].cmd = _conf.get_string("default", "exec_cmd_0");
 	bind_cmd[1].cmd = _conf.get_string("default", "exec_cmd_1");
