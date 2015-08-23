@@ -30,7 +30,6 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 
 	_create_composite_window();
 	_ctx->dpy()->map(_wid);
-	//_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _position.w, _position.h);
 
 	int nx = 1;
 	int ny = 1;
@@ -104,61 +103,17 @@ popup_alt_tab_t::~popup_alt_tab_t() {
 }
 
 void popup_alt_tab_t::_create_composite_window() {
-
-		//xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
-		//xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
-
 		uint32_t value_mask = 0;
 		uint32_t value[2];
-
-		//value_mask |= XCB_CW_BACK_PIXEL;
-		//value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
-
-		//value_mask |= XCB_CW_BORDER_PIXEL;
-		//value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
-
 		value_mask |= XCB_CW_OVERRIDE_REDIRECT;
 		value[0] = True;
-
 		value_mask |= XCB_CW_EVENT_MASK;
 		value[1] = XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE;
-
-		//value_mask |= XCB_CW_COLORMAP;
-		//value[4] = cmap;
-
 		_wid = xcb_generate_id(_ctx->dpy()->xcb());
 		xcb_create_window(_ctx->dpy()->xcb(), 0, _wid, _ctx->dpy()->root(),
 				_position.x, _position.y, _position.w, _position.h, 0,
 				XCB_WINDOW_CLASS_INPUT_ONLY, _ctx->dpy()->root_visual()->visual_id,
 				value_mask, value);
-
-
-//	xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
-//	xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), _ctx->dpy()->root_visual()->visual_id);
-//
-//	uint32_t value_mask = 0;
-//	uint32_t value[5];
-//
-//	value_mask |= XCB_CW_BACK_PIXEL;
-//	value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
-//
-//	value_mask |= XCB_CW_BORDER_PIXEL;
-//	value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
-//
-//	value_mask |= XCB_CW_OVERRIDE_REDIRECT;
-//	value[2] = True;
-//
-//	value_mask |= XCB_CW_EVENT_MASK;
-//	value[3] = XCB_EVENT_MASK_EXPOSURE;
-//
-//	value_mask |= XCB_CW_COLORMAP;
-//	value[4] = cmap;
-//
-//	_wid = xcb_generate_id(_ctx->dpy()->xcb());
-//	xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(),
-//			_position.x, _position.y, _position.w, _position.h, 0,
-//			XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id,
-//			value_mask, value);
 }
 
 void popup_alt_tab_t::move(int x, int y) {
@@ -228,58 +183,10 @@ void popup_alt_tab_t::update_backbuffer() {
 	_is_durty = false;
 	_damaged = true;
 
-//	rect a{0,0,_position.w,_position.h};
-//	cairo_t * cr = cairo_create(_surf->get_cairo_surface());
-//	//cairo_clip(cr, a);
-//	//cairo_translate(cr, _position.x, _position.y);
-//	cairo_rectangle(cr, 0, 0, _position.w, _position.h);
-//	cairo_set_source_rgba(cr, 0.5, 0.5, 0.5, 1.0);
-//	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-//	cairo_fill(cr);
-//
-//	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0);
-//	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-//
-//	int n = 0;
-//	for (auto i : _client_list) {
-//		int x = n % 4;
-//		int y = n / 4;
-//
-//		if (i->icon != nullptr) {
-//			if (i->icon->get_cairo_surface() != nullptr) {
-//				cairo_set_source_surface(cr,
-//						i->icon->get_cairo_surface(), x * 80 + 8,
-//						y * 80 + 8);
-//				cairo_mask_surface(cr, i->icon->get_cairo_surface(),
-//						x * 80 + 8, y * 80 + 8);
-//
-//			}
-//		}
-//
-//		if (i == *_selected) {
-//			/** draw a beautiful yellow box **/
-//			cairo_set_line_width(cr, 2.0);
-//			::cairo_set_source_rgba(cr, 1.0, 1.0, 0.0, 1.0);
-//			cairo_rectangle(cr, x * 80 + 8, y * 80 + 8, 64, 64);
-//			cairo_stroke(cr);
-//		}
-//
-//		++n;
-//
-//	}
-//	cairo_destroy(cr);
 }
 
 void popup_alt_tab_t::paint_exposed() {
-//	cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid,
-//			_ctx->dpy()->root_visual(), _position.w, _position.h);
-//	cairo_t * cr = cairo_create(surf);
-//	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-//	cairo_set_source_surface(cr, _surf->get_cairo_surface(), 0.0, 0.0);
-//	cairo_rectangle(cr, 0, 0, _position.w, _position.h);
-//	cairo_fill(cr);
-//	cairo_destroy(cr);
-//	cairo_surface_destroy(surf);
+
 }
 
 region popup_alt_tab_t::get_damaged() {
@@ -300,12 +207,11 @@ region popup_alt_tab_t::get_visible_region() {
 
 void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 	cairo_save(cr);
-	::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
 	region r = area & _position;
 	for (auto & r : area) {
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_clip(cr, r);
-		//cairo_set_source_surface(cr, _surf->get_cairo_surface(), _position.x, _position.y);
 		cairo_paint(cr);
 	}
 	cairo_restore(cr);

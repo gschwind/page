@@ -16,7 +16,7 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 
-
+#include "utils.hxx"
 #include "theme.hxx"
 #include "color.hxx"
 #include "config_handler.hxx"
@@ -209,8 +209,6 @@ public:
 
 	void update();
 
-	static void cairo_rounded_tab(cairo_t * cr, double x, double y, double w, double h, double radius);
-	static void cairo_rounded_tab2(cairo_t * cr, double x, double y, double w, double h, double radius);
 	static void cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius);
 
 	virtual shared_ptr<pixmap_t> get_background() const;

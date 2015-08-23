@@ -447,7 +447,7 @@ void tiny_theme_t::render_notebook_selected(
 	cairo_save(cr);
 
 	/** clip tabs **/
-	cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.5);
+	cairo_rectangle_arc_corner(cr, b.x, b.y, b.w, b.h+30.0, 6.5, CAIRO_CORNER_TOP);
 	cairo_clip(cr);
 
 	if(has_background) {
@@ -496,7 +496,7 @@ void tiny_theme_t::render_notebook_selected(
 
 	/** clip tabs **/
 	cairo_reset_clip(cr);
-	cairo_rounded_tab2(cr, b.x, b.y, b.w, b.h+30.0, 6.5);
+	cairo_rectangle_arc_corner(cr, b.x, b.y, b.w, b.h+30.0, 6.5, CAIRO_CORNER_ALL);
 	cairo_clip(cr);
 
 	rect xncclose;
@@ -661,7 +661,7 @@ void tiny_theme_t::render_notebook_normal(
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 
 	/** clip tabs **/
-	cairo_rounded_tab(cr, b.x, b.y, b.w, b.h, 6.5);
+	cairo_rectangle_arc_corner(cr, b.x, b.y, b.w, b.h, 6.5, CAIRO_CORNER_TOP);
 	cairo_clip(cr);
 
 	cairo_set_source_color_alpha(cr, background_color);
@@ -679,7 +679,7 @@ void tiny_theme_t::render_notebook_normal(
 	cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 
 	cairo_set_source_color(cr, data.tab_color*border_factor);
-	cairo_rounded_tab(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h, 5.5);
+	cairo_rectangle_arc_corner(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h, 5.5, CAIRO_CORNER_TOP);
 	cairo_stroke(cr);
 
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);

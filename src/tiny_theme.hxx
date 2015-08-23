@@ -16,7 +16,7 @@
 #include <cairo/cairo.h>
 #include <cairo/cairo-xlib.h>
 
-
+#include "utils.hxx"
 #include "theme.hxx"
 #include "simple2_theme.hxx"
 #include "color.hxx"

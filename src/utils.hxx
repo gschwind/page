@@ -813,6 +813,24 @@ static std::string format(char const * fmt, ...) {
 	return ret;
 }
 
+enum corner_mask_e : uint8_t {
+	CAIRO_CORNER_TOPLEFT   = 0x01U,
+	CAIRO_CORNER_TOPRIGHT  = 0x02U,
+	CAIRO_CORNER_BOTLEFT   = 0x04U,
+	CAIRO_CORNER_BOTRIGHT  = 0x08U,
+	CAIRO_CORNER_ALL       = 0x0fU,
+	CAIRO_CORNER_TOP       = 0x03U,
+	CAIRO_CORNER_BOT       = 0x0cU,
+	CAIRO_CORNER_LEFT      = 0x05U,
+	CAIRO_CORNER_RIGHT     = 0x0aU
+};
+
+/**
+ * Draw rectangle with all corner rounded
+ **/
+void cairo_rectangle_arc_corner(cairo_t * cr, double x, double y, double w, double h, double radius, uint8_t corner_mask);
+void cairo_rectangle_arc_corner(cairo_t * cr, rect const & position, double radius, uint8_t corner_mask);
+
 }
 
 

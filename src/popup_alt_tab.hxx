@@ -54,7 +54,6 @@ public:
 class popup_alt_tab_t : public tree_t {
 	page_context_t * _ctx;
 	xcb_window_t _wid;
-	//shared_ptr<pixmap_t> _surf;
 	rect _position;
 	list<cycle_window_entry_t> _client_list;
 	list<cycle_window_entry_t>::iterator _selected;

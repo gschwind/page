@@ -17,6 +17,7 @@ AM_CXXFLAGS =  \
 	-fno-strict-aliasing
 
 page_SOURCES = \
+	utils.cxx \
 	tree.cxx \
 	client_base.cxx \
 	client_not_managed.cxx \
