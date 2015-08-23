@@ -24,9 +24,11 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 	_damaged{true}
 {
 
-	_position = _ctx->get_current_workspace()->get_any_viewport()->allocation();
-
-
+	{
+		rect _position = _ctx->get_current_workspace()->get_any_viewport()->allocation();
+		_position_extern = rect{_position.x+50, _position.y+50, _position.w-100, _position.h-100};
+		_position_intern = rect{_position.x+80, _position.y+80, _position.w-160, _position.h-160};
+	}
 
 	_create_composite_window();
 	_ctx->dpy()->map(_wid);
@@ -35,7 +37,7 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 	int ny = 1;
 
 	while(true) {
-		int width = _position.w/nx;
+		int width = _position_intern.w/nx;
 
 
 		/* the square root may produce to much line (or column depend on the point of view
@@ -61,13 +63,13 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 		ny = ((client_list.size() - 1) / nx) + 1;
 
 
-		if(ny * width < _position.h)
+		if(ny * width < _position_intern.h)
 			break;
 		nx++;
 	}
 
-	int width = _position.w / nx;
-	int height = _position.h / ny;
+	int width = _position_intern.w / nx;
+	int height = _position_intern.h / ny;
 
 	int i = 0;
 	for(auto const & c: client_list) {
@@ -76,10 +78,10 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 
 		int x_offset = 0;
 		if(y == ny - 1) {
-			x_offset = (_position.w - width * (client_list.size() - y*nx)) / 2.0;
+			x_offset = (_position_intern.w - width * (client_list.size() - y*nx)) / 2.0;
 		}
 
-		rect pos{x*width+20+_position.x+x_offset, y*height+20+_position.y, width-40, height-40};
+		rect pos{x*width+20+_position_intern.x+x_offset, y*height+20+_position_intern.y, width-40, height-40};
 
 		cycle_window_entry_t entry;
 		entry.client = c;
@@ -111,7 +113,7 @@ void popup_alt_tab_t::_create_composite_window() {
 		value[1] = XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE;
 		_wid = xcb_generate_id(_ctx->dpy()->xcb());
 		xcb_create_window(_ctx->dpy()->xcb(), 0, _wid, _ctx->dpy()->root(),
-				_position.x, _position.y, _position.w, _position.h, 0,
+				_position_intern.x, _position_intern.y, _position_intern.w, _position_intern.h, 0,
 				XCB_WINDOW_CLASS_INPUT_ONLY, _ctx->dpy()->root_visual()->visual_id,
 				value_mask, value);
 }
@@ -143,7 +145,7 @@ void popup_alt_tab_t::hide() {
 }
 
 rect const & popup_alt_tab_t::position() {
-	return _position;
+	return _position_extern;
 }
 
 
@@ -191,7 +193,7 @@ void popup_alt_tab_t::paint_exposed() {
 
 region popup_alt_tab_t::get_damaged() {
 	if(_damaged) {
-		return region{_position};
+		return region{_position_extern};
 	} else {
 		return region{};
 	}
@@ -202,18 +204,27 @@ region popup_alt_tab_t::get_opaque_region() {
 }
 
 region popup_alt_tab_t::get_visible_region() {
-	return region{_position};
+	return region{_position_extern};
 }
 
 void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 	cairo_save(cr);
+	cairo_new_path(cr);
+	cairo_rectangle_arc_corner(cr, _position_extern, 30.0, CAIRO_CORNER_ALL);
+	cairo_path_t * path = cairo_copy_path_flat(cr);
+	cairo_new_path(cr);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
-	region r = area & _position;
+	region r = area & _position_extern;
 	for (auto & r : area) {
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_clip(cr, r);
-		cairo_paint(cr);
+		cairo_new_path(cr);
+		cairo_append_path(cr, path);
+		cairo_fill(cr);
 	}
+
+	cairo_path_destroy(path);
 	cairo_restore(cr);
 }
 
