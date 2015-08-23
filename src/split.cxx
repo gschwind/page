@@ -31,7 +31,9 @@ split_t::split_t(page_context_t * ctx, split_type_e type) :
 }
 
 split_t::~split_t() {
-
+	if(_wid != XCB_WINDOW_NONE) {
+		xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+	}
 }
 
 void split_t::set_allocation(rect const & allocation) {

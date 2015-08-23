@@ -291,7 +291,7 @@ public:
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	shared_ptr<notebook_t> get_another_notebook(shared_ptr<tree_t> base, shared_ptr<tree_t> nbk);
 	/* find where the managed window is */
-	shared_ptr<notebook_t> find_parent_notebook_for(shared_ptr<client_managed_t> mw);
+	static shared_ptr<notebook_t> find_parent_notebook_for(shared_ptr<client_managed_t> mw);
 	shared_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
 	static shared_ptr<viewport_t> find_viewport_of(shared_ptr<tree_t> n);
 	static shared_ptr<workspace_t> find_desktop_of(shared_ptr<tree_t> n);

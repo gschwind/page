@@ -1371,7 +1371,6 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 		return;
 	}
 
-
 	auto workspace = find_desktop_of(v);
 
 	detach(mw);
@@ -1399,6 +1398,8 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 	mw->reconfigure();
 	mw->normalize();
 	mw->show();
+
+	/* hide the viewport because he is covered by a fullscreen client */
 	v->hide();
 	_need_restack = true;
 }
