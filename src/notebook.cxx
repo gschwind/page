@@ -1211,7 +1211,7 @@ void notebook_t::get_min_allocation(int & width, int & height) const {
 			+ _ctx->theme()->notebook.iconic_tab_width * 4;
 }
 
-void  notebook_t::_scroll_left(int x) {
+void  notebook_t::_scroll_right(int x) {
 	if(_theme_client_tabs_area.w == _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w - _theme_client_tabs_offset) {
 		return;
 	}
@@ -1238,7 +1238,7 @@ void  notebook_t::_scroll_left(int x) {
 	queue_redraw();
 }
 
-void  notebook_t::_scroll_right(int x) {
+void  notebook_t::_scroll_left(int x) {
 	if(_theme_client_tabs_offset == 0)
 		return;
 
