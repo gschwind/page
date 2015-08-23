@@ -24,11 +24,9 @@ namespace page {
 struct compositor_overlay_t : public tree_t {
 	page_context_t * _ctx;
 
-#ifdef WITH_PANGO
 	PangoFontDescription * _fps_font_desc;
 	PangoFontMap * _fps_font_map;
 	PangoContext * _fps_context;
-#endif
 
 	shared_ptr<pixmap_t> _back_surf;
 	rect _position;
@@ -38,23 +36,17 @@ struct compositor_overlay_t : public tree_t {
 public:
 
 	compositor_overlay_t(page_context_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos}, _has_damage{false} {
-
-#ifdef WITH_PANGO
 		_fps_font_desc = pango_font_description_from_string("Mono 11");
 		_fps_font_map = pango_cairo_font_map_new();
 		_fps_context = pango_font_map_create_context(_fps_font_map);
-#endif
-
 		_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, _position.w, _position.h);
 
 	}
 
 	~compositor_overlay_t() {
-#ifdef WITH_PANGO
 		pango_font_description_free(_fps_font_desc);
 		g_object_unref(_fps_context);
 		g_object_unref(_fps_font_map);
-#endif
 	}
 
 	/**
@@ -179,8 +171,6 @@ public:
 	void pango_printf(cairo_t * cr, double x, double y,
 			char const * fmt, ...) {
 
-	#ifdef WITH_PANGO
-
 		va_list l;
 		va_start(l, fmt);
 
@@ -210,10 +200,7 @@ public:
 		cairo_fill(cr);
 
 		cairo_restore(cr);
-	#endif
-
 	}
-
 };
 
 
