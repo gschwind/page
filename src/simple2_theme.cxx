@@ -917,7 +917,7 @@ void simple2_theme_t::render_notebook_normal(
 	CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
 
 	CHECK_CAIRO(cairo_set_source_rgba(cr, data.tab_color.r*border_factor, data.tab_color.g*border_factor, data.tab_color.b*border_factor, 1.0));
-	CHECK_CAIRO(cairo_rectangle_arc_corner(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h-1.0, 5.5, CAIRO_CORNER_ALL));
+	CHECK_CAIRO(cairo_rectangle_arc_corner(cr, b.x+0.5, b.y+0.5, b.w-1.0, b.h-1.0, 5.5, CAIRO_CORNER_TOP));
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT));
