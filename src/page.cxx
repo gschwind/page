@@ -73,7 +73,7 @@ page_t::page_t(int argc, char ** argv)
 
 	_need_restack = false;
 	_need_update_client_list = false;
-
+	_need_refocus = false;
 
 	configuration._menu_drop_down_shadow = false;
 
@@ -1523,25 +1523,40 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
-	{
-		shared_ptr<client_managed_t> old_focus;
-		if (global_focus_history_front(old_focus)) {
-			old_focus->set_focus_state(false);
+	if(_next_focus.time == XCB_TIME_CURRENT_TIME) {
+		_next_focus.client = new_focus;
+		_next_focus.time = tfocus;
+		_need_refocus = true;
+	}  else {
+		if(_next_focus.time < tfocus) {
+			_next_focus.client = new_focus;
+			_next_focus.time = tfocus;
+			_need_refocus = true;
 		}
-	}
-
-	if(new_focus == nullptr) {
-		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
-		_dpy->set_net_active_window(XCB_NONE);
-	} else {
-		get_current_workspace()->client_focus_history_move_front(new_focus);
-		global_focus_history_move_front(new_focus);
-		_dpy->set_net_active_window(new_focus->orig());
-		new_focus->focus(tfocus);
 	}
 
 	_need_restack = true;
 
+}
+
+void page_t::update_focus() {
+	if(not _net_active_window.expired()) {
+		_net_active_window.lock()->set_focus_state(false);
+	}
+
+	if(_next_focus.client.expired()) {
+		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+		_dpy->set_net_active_window(XCB_WINDOW_NONE);
+	} else {
+		auto new_focus = _next_focus.client.lock();
+		get_current_workspace()->client_focus_history_move_front(new_focus);
+		global_focus_history_move_front(new_focus);
+		_dpy->set_net_active_window(new_focus->orig());
+		new_focus->focus(_next_focus.time);
+		_net_active_window = _next_focus.client;
+		_next_focus.client.reset();
+		_next_focus.time = XCB_CURRENT_TIME;
+	}
 }
 
 void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
@@ -3547,6 +3562,11 @@ void page_t::process_pending_events() {
 			_need_update_client_list = false;
 			update_client_list();
 			update_client_list_stacking();
+		}
+
+		if(_need_refocus) {
+			_need_refocus = false;
+			update_focus();
 		}
 
 		_dpy->sync();
