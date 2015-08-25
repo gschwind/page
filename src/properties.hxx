@@ -14,9 +14,11 @@
 #include <algorithm>
 
 #include "atoms.hxx"
-
+#include "display.hxx"
 
 namespace page {
+
+using namespace std;
 
 struct wm_state_data_t {
 	int state;
@@ -31,18 +33,18 @@ struct property_helper_t {
 };
 
 template<>
-struct property_helper_t<std::string> {
+struct property_helper_t<string> {
 	static const int format = 8;
 
-	static std::string * marshal(void * _tmp, int length) {
+	static string * marshal(void * _tmp, int length) {
 		char * tmp = reinterpret_cast<char*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		std::string * ret = new std::string{&tmp[0], &tmp[length]};
+		string * ret = new string{&tmp[0], &tmp[length]};
 		return ret;
 	}
 
-	static void serialize(std::string * in, char * &data, int& length) {
+	static void serialize(string * in, char * &data, int& length) {
 		data = new char[in->size()+1];
 		length = in->size()+1;
 		char * tmp = reinterpret_cast<char*>(data);
@@ -53,24 +55,24 @@ struct property_helper_t<std::string> {
 };
 
 template<>
-struct property_helper_t<std::vector<std::string>> {
+struct property_helper_t<vector<string>> {
 	static const int format = 8;
-	static std::vector<std::string> * marshal(void * _tmp, int length) {
+	static vector<string> * marshal(void * _tmp, int length) {
 		char * tmp = reinterpret_cast<char*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		auto x = std::find(&tmp[0], &tmp[length], 0);
+		auto x = find(&tmp[0], &tmp[length], 0);
 		if(x != &tmp[length]) {
-			std::vector<std::string> * ret = new std::vector<std::string>;
-			ret->push_back(std::string{tmp, x});
-			auto x1 = std::find(++x, &tmp[length], 0);
-			ret->push_back(std::string{x, x1});
+			vector<string> * ret = new vector<string>;
+			ret->push_back(string{tmp, x});
+			auto x1 = find(++x, &tmp[length], 0);
+			ret->push_back(string{x, x1});
 			return ret;
 		}
 		return nullptr;
 	}
 
-	static void serialize(std::vector<std::string> * in, char * &data, int& length) {
+	static void serialize(vector<string> * in, char * &data, int& length) {
 		int size = 0;
 		for(auto &i: *in) {
 			size += i.size() + 1;
@@ -95,18 +97,18 @@ struct property_helper_t<std::vector<std::string>> {
 
 
 template<>
-struct property_helper_t<std::list<int32_t>> {
+struct property_helper_t<list<int32_t>> {
 	static const int format = 32;
 
-	static std::list<int32_t> * marshal(void * _tmp, int length) {
+	static list<int32_t> * marshal(void * _tmp, int length) {
 		int32_t * tmp = reinterpret_cast<int32_t*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		std::list<int32_t> * ret = new std::list<int32_t>{&tmp[0], &tmp[length]};
+		list<int32_t> * ret = new list<int32_t>{&tmp[0], &tmp[length]};
 		return ret;
 	}
 
-	static void serialize(std::list<int32_t> * in, char * &data, int& length) {
+	static void serialize(list<int32_t> * in, char * &data, int& length) {
 		data = new char[sizeof(int32_t)*in->size()];
 		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
@@ -116,18 +118,18 @@ struct property_helper_t<std::list<int32_t>> {
 };
 
 template<>
-struct property_helper_t<std::list<uint32_t>> {
+struct property_helper_t<list<uint32_t>> {
 	static const int format = 32;
 
-	static std::list<uint32_t> * marshal(void * _tmp, int length) {
+	static list<uint32_t> * marshal(void * _tmp, int length) {
 		uint32_t * tmp = reinterpret_cast<uint32_t*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		std::list<uint32_t> * ret = new std::list<uint32_t>{&tmp[0], &tmp[length]};
+		list<uint32_t> * ret = new list<uint32_t>{&tmp[0], &tmp[length]};
 		return ret;
 	}
 
-	static void serialize(std::list<uint32_t> * in, char * &data, int& length) {
+	static void serialize(list<uint32_t> * in, char * &data, int& length) {
 		data = new char[sizeof(uint32_t)*in->size()];
 		uint32_t * tmp = reinterpret_cast<uint32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
@@ -137,18 +139,18 @@ struct property_helper_t<std::list<uint32_t>> {
 };
 
 template<>
-struct property_helper_t<std::vector<int32_t>> {
+struct property_helper_t<vector<int32_t>> {
 	static const int format = 32;
 
-	static std::vector<int32_t> * marshal(void * _tmp, int length) {
+	static vector<int32_t> * marshal(void * _tmp, int length) {
 		int32_t * tmp = reinterpret_cast<int32_t*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		std::vector<int32_t> * ret = new std::vector<int32_t>{&tmp[0], &tmp[length]};
+		vector<int32_t> * ret = new vector<int32_t>{&tmp[0], &tmp[length]};
 		return ret;
 	}
 
-	static void serialize(std::vector<int32_t> * in, char * &data, int& length) {
+	static void serialize(vector<int32_t> * in, char * &data, int& length) {
 		data = new char[sizeof(int32_t)*in->size()];
 		int32_t * tmp = reinterpret_cast<int32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
@@ -158,18 +160,18 @@ struct property_helper_t<std::vector<int32_t>> {
 };
 
 template<>
-struct property_helper_t<std::vector<uint32_t>> {
+struct property_helper_t<vector<uint32_t>> {
 	static const int format = 32;
 
-	static std::vector<uint32_t> * marshal(void * _tmp, int length) {
+	static vector<uint32_t> * marshal(void * _tmp, int length) {
 		uint32_t * tmp = reinterpret_cast<uint32_t*>(_tmp);
 		if(tmp == nullptr)
 			return nullptr;
-		std::vector<uint32_t> * ret = new std::vector<uint32_t>{&tmp[0], &tmp[length]};
+		vector<uint32_t> * ret = new vector<uint32_t>{&tmp[0], &tmp[length]};
 		return ret;
 	}
 
-	static void serialize(std::vector<uint32_t> * in, char * &data, int& length) {
+	static void serialize(vector<uint32_t> * in, char * &data, int& length) {
 		data = new char[sizeof(uint32_t)*in->size()];
 		uint32_t * tmp = reinterpret_cast<uint32_t*>(data);
 		copy(in->begin(), in->end(), tmp);
@@ -402,13 +404,14 @@ struct property_helper_t<motif_wm_hints_t> {
 template<atom_e name, atom_e type, typename T>
 struct property_t {
 	T * data;
+	xcb_get_property_cookie_t ck;
 
 	property_t(T * data) : data(data) {
-
+		ck.sequence = 0;
 	}
 
 	property_t() : data(nullptr) {
-
+		ck.sequence = 0;
 	}
 
 	~property_t() {
@@ -445,38 +448,69 @@ struct property_t {
 		return *data;
 	}
 
+	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
+		ck = xcb_get_property(xcb, 0, static_cast<xcb_window_t>(w), (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
+	}
+
+	void update(xcb_connection_t * xcb) {
+		if(ck.sequence == 0)
+			return;
+
+		xcb_generic_error_t * err;
+		xcb_get_property_reply_t * r = xcb_get_property_reply(xcb, ck, &err);
+
+		if(err != nullptr or r == nullptr) {
+			if(r != nullptr)
+				free(r);
+			data = nullptr;
+		} else if(r->length == 0 or r->format != property_helper_t<T>::format) {
+			if(r != nullptr)
+				free(r);
+			data = nullptr;
+		} else {
+			int length = xcb_get_property_value_length(r) /  (property_helper_t<T>::format / 8);
+			void * tmp = (xcb_get_property_value(r));
+			T * ret = property_helper_t<T>::marshal(tmp, length);
+			free(r);
+			data = ret;
+		}
+
+		ck.sequence = 0;
+
+	}
+
 };
 
 /* client properties definitions :             EWMH/X11 name               EWMH/X11 type       C++ type */
-using wm_name_t =                   property_t<WM_NAME,                    STRING,             std::string>; // 8
-using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             std::string>; // 8
+using wm_name_t =                   property_t<WM_NAME,                    STRING,             string>; // 8
+using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             string>; // 8
 using wm_normal_hints_t =           property_t<WM_NORMAL_HINTS,            WM_SIZE_HINTS,      XSizeHints>; // 32
 using wm_hints_t =                  property_t<WM_HINTS,                   WM_HINTS,           XWMHints>; // 32
-using wm_class_t =                  property_t<WM_CLASS,                   STRING,             std::vector<std::string>>; // 8
+using wm_class_t =                  property_t<WM_CLASS,                   STRING,             vector<string>>; // 8
 using wm_transient_for_t =          property_t<WM_TRANSIENT_FOR,           WINDOW,             xcb_window_t>; // 32
-using wm_protocols_t =              property_t<WM_PROTOCOLS,               ATOM,               std::list<xcb_atom_t>>; // 32
-using wm_colormap_windows_t =       property_t<WM_COLORMAP_WINDOWS,        WINDOW,             std::vector<xcb_window_t>>; // 32
-using wm_client_machine_t =         property_t<WM_CLIENT_MACHINE,          STRING,             std::string>; // 8
+using wm_protocols_t =              property_t<WM_PROTOCOLS,               ATOM,               list<xcb_atom_t>>; // 32
+using wm_colormap_windows_t =       property_t<WM_COLORMAP_WINDOWS,        WINDOW,             vector<xcb_window_t>>; // 32
+using wm_client_machine_t =         property_t<WM_CLIENT_MACHINE,          STRING,             string>; // 8
 using wm_state_t =                  property_t<WM_STATE,                   WM_STATE,           wm_state_data_t>; // 32
 
-using net_wm_name_t =               property_t<_NET_WM_NAME,               UTF8_STRING,        std::string>; // 8
-using net_wm_visible_name_t =       property_t<_NET_WM_VISIBLE_NAME,       UTF8_STRING,        std::string>; // 8
-using net_wm_icon_name_t =          property_t<_NET_WM_ICON_NAME,          UTF8_STRING,        std::string>; // 8
-using net_wm_visible_icon_name_t =  property_t<_NET_WM_VISIBLE_ICON_NAME,  UTF8_STRING,        std::string>; // 8
+using net_wm_name_t =               property_t<_NET_WM_NAME,               UTF8_STRING,        string>; // 8
+using net_wm_visible_name_t =       property_t<_NET_WM_VISIBLE_NAME,       UTF8_STRING,        string>; // 8
+using net_wm_icon_name_t =          property_t<_NET_WM_ICON_NAME,          UTF8_STRING,        string>; // 8
+using net_wm_visible_icon_name_t =  property_t<_NET_WM_VISIBLE_ICON_NAME,  UTF8_STRING,        string>; // 8
 using net_wm_desktop_t =            property_t<_NET_WM_DESKTOP,            CARDINAL,           unsigned int>; // 32
-using net_wm_window_type_t =        property_t<_NET_WM_WINDOW_TYPE,        ATOM,               std::list<xcb_atom_t>>; // 32
-using net_wm_state_t =              property_t<_NET_WM_STATE,              ATOM,               std::list<xcb_atom_t>>; // 32
-using net_wm_allowed_actions_t =    property_t<_NET_WM_ALLOWED_ACTIONS,    ATOM,               std::list<xcb_atom_t>>; // 32
-using net_wm_strut_t =              property_t<_NET_WM_STRUT,              CARDINAL,           std::vector<int>>; // 32
-using net_wm_strut_partial_t =      property_t<_NET_WM_STRUT_PARTIAL,      CARDINAL,           std::vector<int>>; // 32
-using net_wm_icon_geometry_t =      property_t<_NET_WM_ICON_GEOMETRY,      CARDINAL,           std::vector<int>>; // 32
-using net_wm_icon_t =               property_t<_NET_WM_ICON,               CARDINAL,           std::vector<uint32_t>>; // 32
+using net_wm_window_type_t =        property_t<_NET_WM_WINDOW_TYPE,        ATOM,               list<xcb_atom_t>>; // 32
+using net_wm_state_t =              property_t<_NET_WM_STATE,              ATOM,               list<xcb_atom_t>>; // 32
+using net_wm_allowed_actions_t =    property_t<_NET_WM_ALLOWED_ACTIONS,    ATOM,               list<xcb_atom_t>>; // 32
+using net_wm_strut_t =              property_t<_NET_WM_STRUT,              CARDINAL,           vector<int>>; // 32
+using net_wm_strut_partial_t =      property_t<_NET_WM_STRUT_PARTIAL,      CARDINAL,           vector<int>>; // 32
+using net_wm_icon_geometry_t =      property_t<_NET_WM_ICON_GEOMETRY,      CARDINAL,           vector<int>>; // 32
+using net_wm_icon_t =               property_t<_NET_WM_ICON,               CARDINAL,           vector<uint32_t>>; // 32
 using net_wm_pid_t =                property_t<_NET_WM_PID,                CARDINAL,           unsigned int>; // 32
-//using net_wm_handled_icons_t =    properties_t<_NET_WM_HANDLED_ICONS,    STRING,             std::string>; // 8
+//using net_wm_handled_icons_t =    properties_t<_NET_WM_HANDLED_ICONS,    STRING,             string>; // 8
 using net_wm_user_time_t =          property_t<_NET_WM_USER_TIME,          CARDINAL,           unsigned int>; // 32
 using net_wm_user_time_window_t =   property_t<_NET_WM_USER_TIME_WINDOW,   WINDOW,             xcb_window_t>; // 32
-using net_frame_extents_t =         property_t<_NET_FRAME_EXTENTS,         CARDINAL,           std::vector<int>>; // 32
-using net_wm_opaque_region_t =      property_t<_NET_WM_OPAQUE_REGION,      CARDINAL,           std::vector<int>>; // 32
+using net_frame_extents_t =         property_t<_NET_FRAME_EXTENTS,         CARDINAL,           vector<int>>; // 32
+using net_wm_opaque_region_t =      property_t<_NET_WM_OPAQUE_REGION,      CARDINAL,           vector<int>>; // 32
 using net_wm_bypass_compositor_t =  property_t<_NET_WM_BYPASS_COMPOSITOR,  CARDINAL,           unsigned int>; // 32
 using motif_hints_t =               property_t<_MOTIF_WM_HINTS,            _MOTIF_WM_HINTS,    motif_wm_hints_t>; // 8
 

@@ -291,7 +291,6 @@ public:
 		return _xcb_visual_data[vid];
 	}
 
-
 	bool lock(xcb_window_t w) {
 		grab();
 		fetch_pending_events();
@@ -312,10 +311,6 @@ public:
 	void print_error(xcb_generic_error_t const * err);
 
 	char const * get_event_name(uint8_t response_type);
-
-	char const * get_atom_name(atom_e a) {
-		return _A->name(a);
-	}
 
 	std::string const & get_atom_name(xcb_atom_t a) {
 		return _A->name(a);

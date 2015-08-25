@@ -32,9 +32,11 @@
 
 namespace page {
 
+using namespace std;
+
 class client_properties_t {
 private:
-	display_t *                  _cnx;
+	display_t *                  _dpy;
 	xcb_window_t                 _id;
 
 	xcb_atom_t                   _wm_type;
@@ -87,7 +89,7 @@ private:
 
 	/** short cut **/
 	xcb_atom_t A(atom_e atom) {
-		return _cnx->A(atom);
+		return _dpy->A(atom);
 	}
 
 	xcb_atom_t B(atom_e atom) {
@@ -104,7 +106,7 @@ private:
 public:
 
 	client_properties_t(display_t * cnx, xcb_window_t id) :
-			_cnx{cnx}, _id{id} {
+			_dpy{cnx}, _id{id} {
 
 		_wa = nullptr;
 		_geometry = nullptr;
@@ -161,72 +163,38 @@ public:
 	void read_all_properties() {
 
 		/** Welcome to magic templates ! **/
-		auto xcb_wm_name = display_t::make_property_fetcher_t(_wm_name, _cnx, xid());
-		auto xcb_wm_icon_name = display_t::make_property_fetcher_t(_wm_icon_name, _cnx, xid());
-		auto xcb_wm_normal_hints = display_t::make_property_fetcher_t(_wm_normal_hints, _cnx, xid());
-		auto xcb_wm_hints = display_t::make_property_fetcher_t(_wm_hints, _cnx, xid());
-		auto xcb_wm_class = display_t::make_property_fetcher_t(_wm_class, _cnx, xid());
-		auto xcb_wm_transient_for = display_t::make_property_fetcher_t(_wm_transient_for, _cnx, xid());
-		auto xcb_wm_protocols = display_t::make_property_fetcher_t(_wm_protocols, _cnx, xid());
-		auto xcb_wm_colormap_windows = display_t::make_property_fetcher_t(_wm_colormap_windows, _cnx, xid());
-		auto xcb_wm_client_machine = display_t::make_property_fetcher_t(_wm_client_machine, _cnx, xid());
-		auto xcb_wm_state = display_t::make_property_fetcher_t(_wm_state, _cnx, xid());
+		_wm_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_icon_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_normal_hints.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_hints.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_class.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_transient_for.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_protocols.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_colormap_windows.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_client_machine.fetch(_dpy->xcb(), _dpy->_A, xid());
+		_wm_state.fetch(_dpy->xcb(), _dpy->_A, xid());
 
-		auto xcb_net_wm_name = display_t::make_property_fetcher_t(__net_wm_name, _cnx, xid());
-		auto xcb_net_wm_visible_name = display_t::make_property_fetcher_t(__net_wm_visible_name, _cnx, xid());
-		auto xcb_net_wm_icon_name = display_t::make_property_fetcher_t(__net_wm_icon_name, _cnx, xid());
-		auto xcb_net_wm_visible_icon_name = display_t::make_property_fetcher_t(__net_wm_visible_icon_name, _cnx, xid());
-		auto xcb_net_wm_desktop = display_t::make_property_fetcher_t(__net_wm_desktop, _cnx, xid());
-		auto xcb_net_wm_window_type = display_t::make_property_fetcher_t(__net_wm_window_type, _cnx, xid());
-		auto xcb_net_wm_state = display_t::make_property_fetcher_t(__net_wm_state, _cnx, xid());
-		auto xcb_net_wm_allowed_actions = display_t::make_property_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
-		auto xcb_net_wm_strut = display_t::make_property_fetcher_t(__net_wm_strut, _cnx, xid());
-		auto xcb_net_wm_strut_partial = display_t::make_property_fetcher_t(__net_wm_strut_partial, _cnx, xid());
-		auto xcb_net_wm_icon_geometry = display_t::make_property_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
-		auto xcb_net_wm_icon = display_t::make_property_fetcher_t(__net_wm_icon, _cnx, xid());
-		auto xcb_net_wm_pid = display_t::make_property_fetcher_t(__net_wm_pid, _cnx, xid());
-		//auto xcb_net_wm_handled_icons = make_property_fetcher_t(_wm_state, _cnx, xid());
-		auto xcb_net_wm_user_time = display_t::make_property_fetcher_t(__net_wm_user_time, _cnx, xid());
-		auto xcb_net_wm_user_time_window = display_t::make_property_fetcher_t(__net_wm_user_time_window, _cnx, xid());
-		auto xcb_net_frame_extents = display_t::make_property_fetcher_t(__net_frame_extents, _cnx, xid());
-		auto xcb_net_wm_opaque_region = display_t::make_property_fetcher_t(__net_wm_opaque_region, _cnx, xid());
-		auto xcb_net_wm_bypass_compositor = display_t::make_property_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
-
-		xcb_wm_name.update(_cnx);
-		xcb_wm_icon_name.update(_cnx);
-		xcb_wm_normal_hints.update(_cnx);
-		xcb_wm_hints.update(_cnx);
-		xcb_wm_class.update(_cnx);
-		xcb_wm_transient_for.update(_cnx);
-		xcb_wm_protocols.update(_cnx);
-		xcb_wm_colormap_windows.update(_cnx);
-		xcb_wm_client_machine.update(_cnx);
-		xcb_wm_state.update(_cnx);
-
-		xcb_net_wm_name.update(_cnx);
-		xcb_net_wm_visible_name.update(_cnx);
-		xcb_net_wm_icon_name.update(_cnx);
-		xcb_net_wm_visible_icon_name.update(_cnx);
-		xcb_net_wm_desktop.update(_cnx);
-		xcb_net_wm_window_type.update(_cnx);
-		xcb_net_wm_state.update(_cnx);
-		xcb_net_wm_allowed_actions.update(_cnx);
-		xcb_net_wm_strut.update(_cnx);
-		xcb_net_wm_strut_partial.update(_cnx);
-		xcb_net_wm_icon_geometry.update(_cnx);
-		xcb_net_wm_icon.update(_cnx);
-		xcb_net_wm_pid.update(_cnx);
-		//auto xcb_net_wm_handled_icons = make_property_fetcher_t(_wm_state, _cnx, xid());
-		xcb_net_wm_user_time.update(_cnx);
-		xcb_net_wm_user_time_window.update(_cnx);
-		xcb_net_frame_extents.update(_cnx);
-		xcb_net_wm_opaque_region.update(_cnx);
-		xcb_net_wm_bypass_compositor.update(_cnx);
+		__net_wm_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_visible_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_icon_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_visible_icon_name.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_desktop.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_window_type.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_state.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_allowed_actions.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_strut.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_strut_partial.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_icon_geometry.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_icon.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_pid.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_user_time.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_user_time_window.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_frame_extents.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_opaque_region.fetch(_dpy->xcb(), _dpy->_A, xid());
+		__net_wm_bypass_compositor.fetch(_dpy->xcb(), _dpy->_A, xid());
 
 		update_motif_hints();
-
 		update_shape();
-
 		update_type();
 
 	}
@@ -246,163 +214,163 @@ public:
 			_geometry = nullptr;
 		}
 
-		auto ck0 = xcb_get_window_attributes(_cnx->xcb(), xid());
-		auto ck1 = xcb_get_geometry(_cnx->xcb(), xid());
-		_wa = xcb_get_window_attributes_reply(_cnx->xcb(), ck0, nullptr);
-		_geometry = xcb_get_geometry_reply(_cnx->xcb(), ck1, nullptr);
+		auto ck0 = xcb_get_window_attributes(_dpy->xcb(), xid());
+		auto ck1 = xcb_get_geometry(_dpy->xcb(), xid());
+		_wa = xcb_get_window_attributes_reply(_dpy->xcb(), ck0, nullptr);
+		_geometry = xcb_get_geometry_reply(_dpy->xcb(), ck1, nullptr);
 		return _wa != nullptr and _geometry != nullptr;
 	}
 
 	void update_wm_name() {
-		auto x = display_t::make_property_fetcher_t(_wm_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_icon_name() {
-		auto x = display_t::make_property_fetcher_t(_wm_icon_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_icon_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_normal_hints() {
-		auto x = display_t::make_property_fetcher_t(_wm_normal_hints, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_normal_hints, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_hints() {
-		auto x = display_t::make_property_fetcher_t(_wm_hints, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_hints, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_class() {
-		auto x = display_t::make_property_fetcher_t(_wm_class, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_class, _dpy, xid());
+		x.update(_dpy);
 		update_type();
 	}
 
 	void update_wm_transient_for() {
-		auto x = display_t::make_property_fetcher_t(_wm_transient_for, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_transient_for, _dpy, xid());
+		x.update(_dpy);
 		update_type();
 	}
 
 	void update_wm_protocols() {
-		auto x = display_t::make_property_fetcher_t(_wm_protocols, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_protocols, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_colormap_windows() {
-		auto x = display_t::make_property_fetcher_t(_wm_colormap_windows, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_colormap_windows, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_client_machine() {
-		auto x = display_t::make_property_fetcher_t(_wm_client_machine, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_client_machine, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_wm_state() {
-		auto x = display_t::make_property_fetcher_t(_wm_state, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_wm_state, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	/* EWMH */
 
 	void update_net_wm_name() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_visible_name() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_visible_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_visible_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_icon_name() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_icon_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_icon_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_visible_icon_name() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_visible_icon_name, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_visible_icon_name, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_desktop() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_desktop, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_desktop, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_window_type() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_window_type, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_window_type, _dpy, xid());
+		x.update(_dpy);
 		update_type();
 	}
 
 	void update_net_wm_state() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_state, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_state, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_allowed_actions() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_allowed_actions, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_allowed_actions, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_struct() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_strut, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_strut, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_struct_partial() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_strut_partial, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_strut_partial, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_icon_geometry() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_icon_geometry, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_icon_geometry, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_icon() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_icon, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_icon, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_pid() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_pid, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_pid, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_handled_icons();
 
 	void update_net_wm_user_time() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_user_time, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_user_time, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_user_time_window() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_user_time_window, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_user_time_window, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_frame_extents() {
-		auto x = display_t::make_property_fetcher_t(__net_frame_extents, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_frame_extents, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_opaque_region() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_opaque_region, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_opaque_region, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_net_wm_bypass_compositor() {
-		auto x = display_t::make_property_fetcher_t(__net_wm_bypass_compositor, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(__net_wm_bypass_compositor, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_motif_hints() {
-		auto x = display_t::make_property_fetcher_t(_motif_hints, _cnx, xid());
-		x.update(_cnx);
+		auto x = display_t::make_property_fetcher_t(_motif_hints, _dpy, xid());
+		x.update(_dpy);
 	}
 
 	void update_shape() {
@@ -413,13 +381,13 @@ public:
 		int ordering;
 
 		/** request extent to check if shape has been set **/
-		xcb_shape_query_extents_cookie_t ck0 = xcb_shape_query_extents(_cnx->xcb(), _id);
+		xcb_shape_query_extents_cookie_t ck0 = xcb_shape_query_extents(_dpy->xcb(), _id);
 
 		/** in the same time we make the request for rectangle (even if this request isn't needed) **/
-		xcb_shape_get_rectangles_cookie_t ck1 = xcb_shape_get_rectangles(_cnx->xcb(), _id, XCB_SHAPE_SK_BOUNDING);
+		xcb_shape_get_rectangles_cookie_t ck1 = xcb_shape_get_rectangles(_dpy->xcb(), _id, XCB_SHAPE_SK_BOUNDING);
 
-		xcb_shape_query_extents_reply_t * r0 = xcb_shape_query_extents_reply(_cnx->xcb(), ck0, 0);
-		xcb_shape_get_rectangles_reply_t * r1 = xcb_shape_get_rectangles_reply(_cnx->xcb(), ck1, 0);
+		xcb_shape_query_extents_reply_t * r0 = xcb_shape_query_extents_reply(_dpy->xcb(), ck0, 0);
+		xcb_shape_get_rectangles_reply_t * r1 = xcb_shape_get_rectangles_reply(_dpy->xcb(), ck1, 0);
 
 		if (r0 != nullptr) {
 
@@ -446,7 +414,7 @@ public:
 	}
 
 	void set_net_wm_desktop(unsigned int n) {
-		_cnx->change_property(_id, _NET_WM_DESKTOP, CARDINAL, 32, &n, 1);
+		_dpy->change_property(_id, _NET_WM_DESKTOP, CARDINAL, 32, &n, 1);
 		//safe_delete(__net_wm_desktop);
 		__net_wm_desktop = new unsigned int{n};
 	}
@@ -497,127 +465,127 @@ public:
 	void print_properties() {
 		/* ICCCM */
 		if(_wm_name != nullptr)
-			std::cout << "* WM_NAME = " << *_wm_name << std::endl;
+			cout << "* WM_NAME = " << *_wm_name << endl;
 
 		if(_wm_icon_name != nullptr)
-			std::cout << "* WM_ICON_NAME = " << *_wm_icon_name << std::endl;
+			cout << "* WM_ICON_NAME = " << *_wm_icon_name << endl;
 
 		//if(wm_normal_hints != nullptr)
-		//	std::cout << "WM_NORMAL_HINTS = " << *wm_normal_hints << std::endl;
+		//	cout << "WM_NORMAL_HINTS = " << *wm_normal_hints << endl;
 
 		//if(wm_hints != nullptr)
-		//	std::cout << "WM_HINTS = " << *wm_hints << std::endl;
+		//	cout << "WM_HINTS = " << *wm_hints << endl;
 
 		if(_wm_class != nullptr)
-			std::cout << "* WM_CLASS = " << (*_wm_class)[0] << "," << (*_wm_class)[1] << std::endl;
+			cout << "* WM_CLASS = " << (*_wm_class)[0] << "," << (*_wm_class)[1] << endl;
 
 		if(_wm_transient_for != nullptr)
-			std::cout << "* WM_TRANSIENT_FOR = " << *_wm_transient_for << std::endl;
+			cout << "* WM_TRANSIENT_FOR = " << *_wm_transient_for << endl;
 
 		if(_wm_protocols != nullptr) {
-			std::cout << "* WM_PROTOCOLS = ";
+			cout << "* WM_PROTOCOLS = ";
 			for(auto x: *_wm_protocols) {
-				std::cout << _cnx->get_atom_name(x) << " ";
+				cout << _dpy->get_atom_name(x) << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(_wm_colormap_windows != nullptr)
-			std::cout << "WM_COLORMAP_WINDOWS = " << (*_wm_colormap_windows)[0] << std::endl;
+			cout << "WM_COLORMAP_WINDOWS = " << (*_wm_colormap_windows)[0] << endl;
 
 		if(_wm_client_machine != nullptr)
-			std::cout << "* WM_CLIENT_MACHINE = " << *_wm_client_machine << std::endl;
+			cout << "* WM_CLIENT_MACHINE = " << *_wm_client_machine << endl;
 
 		if(_wm_state != nullptr) {
-			std::cout << "* WM_STATE = " << _wm_state->state << std::endl;
+			cout << "* WM_STATE = " << _wm_state->state << endl;
 		}
 
 
 		/* EWMH */
 		if(__net_wm_name != nullptr)
-			std::cout << "* _NET_WM_NAME = " << *__net_wm_name << std::endl;
+			cout << "* _NET_WM_NAME = " << *__net_wm_name << endl;
 
 		if(__net_wm_visible_name != nullptr)
-			std::cout << "* _NET_WM_VISIBLE_NAME = " << *__net_wm_visible_name << std::endl;
+			cout << "* _NET_WM_VISIBLE_NAME = " << *__net_wm_visible_name << endl;
 
 		if(__net_wm_icon_name != nullptr)
-			std::cout << "* _NET_WM_ICON_NAME = " << *__net_wm_icon_name << std::endl;
+			cout << "* _NET_WM_ICON_NAME = " << *__net_wm_icon_name << endl;
 
 		if(__net_wm_visible_icon_name != nullptr)
-			std::cout << "* _NET_WM_VISIBLE_ICON_NAME = " << *__net_wm_visible_icon_name << std::endl;
+			cout << "* _NET_WM_VISIBLE_ICON_NAME = " << *__net_wm_visible_icon_name << endl;
 
 		if(__net_wm_desktop != nullptr)
-			std::cout << "* _NET_WM_DESKTOP = " << *__net_wm_desktop << std::endl;
+			cout << "* _NET_WM_DESKTOP = " << *__net_wm_desktop << endl;
 
 		if(__net_wm_window_type != nullptr) {
-			std::cout << "* _NET_WM_WINDOW_TYPE = ";
+			cout << "* _NET_WM_WINDOW_TYPE = ";
 			for(auto x: *__net_wm_window_type) {
-				std::cout << _cnx->get_atom_name(x) << " ";
+				cout << _dpy->get_atom_name(x) << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_state != nullptr) {
-			std::cout << "* _NET_WM_STATE = ";
+			cout << "* _NET_WM_STATE = ";
 			for(auto x: *__net_wm_state) {
-				std::cout << _cnx->get_atom_name(x) << " ";
+				cout << _dpy->get_atom_name(x) << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_allowed_actions != nullptr) {
-			std::cout << "* _NET_WM_ALLOWED_ACTIONS = ";
+			cout << "* _NET_WM_ALLOWED_ACTIONS = ";
 			for(auto x: *__net_wm_allowed_actions) {
-				std::cout << _cnx->get_atom_name(x) << " ";
+				cout << _dpy->get_atom_name(x) << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_strut != nullptr) {
-			std::cout << "* _NET_WM_STRUCT = ";
+			cout << "* _NET_WM_STRUCT = ";
 			for(auto x: *__net_wm_strut) {
-				std::cout << x << " ";
+				cout << x << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_strut_partial != nullptr) {
-			std::cout << "* _NET_WM_PARTIAL_STRUCT = ";
+			cout << "* _NET_WM_PARTIAL_STRUCT = ";
 			for(auto x: *__net_wm_strut_partial) {
-				std::cout << x << " ";
+				cout << x << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_icon_geometry != nullptr) {
-			std::cout << "* _NET_WM_ICON_GEOMETRY = ";
+			cout << "* _NET_WM_ICON_GEOMETRY = ";
 			for(auto x: *__net_wm_icon_geometry) {
-				std::cout << x << " ";
+				cout << x << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		if(__net_wm_icon != nullptr)
-			std::cout << "* _NET_WM_ICON = " << "TODO" << std::endl;
+			cout << "* _NET_WM_ICON = " << "TODO" << endl;
 
 		if(__net_wm_pid != nullptr)
-			std::cout << "* _NET_WM_PID = " << *__net_wm_pid << std::endl;
+			cout << "* _NET_WM_PID = " << *__net_wm_pid << endl;
 
 		//if(_net_wm_handled_icons != false)
 		//	;
 
 		if(__net_wm_user_time != nullptr)
-			std::cout << "* _NET_WM_USER_TIME = " << *__net_wm_user_time << std::endl;
+			cout << "* _NET_WM_USER_TIME = " << *__net_wm_user_time << endl;
 
 		if(__net_wm_user_time_window != nullptr)
-			std::cout << "* _NET_WM_USER_TIME_WINDOW = " << *__net_wm_user_time_window << std::endl;
+			cout << "* _NET_WM_USER_TIME_WINDOW = " << *__net_wm_user_time_window << endl;
 
 		if(__net_frame_extents != nullptr) {
-			std::cout << "* _NET_FRAME_EXTENTS = ";
+			cout << "* _NET_FRAME_EXTENTS = ";
 			for(auto x: *__net_frame_extents) {
-				std::cout << x << " ";
+				cout << x << " ";
 			}
-			std::cout << std::endl;
+			cout << endl;
 		}
 
 		//_net_wm_opaque_region = nullptr;
@@ -628,7 +596,7 @@ public:
 	void update_type() {
 		_wm_type = XCB_NONE;
 
-		std::list<xcb_atom_t> net_wm_window_type;
+		list<xcb_atom_t> net_wm_window_type;
 		bool override_redirect = (_wa->override_redirect == True)?true:false;
 
 		if(__net_wm_window_type == nullptr) {
@@ -675,7 +643,7 @@ public:
 		net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 
 		/* TODO: make this ones */
-		static std::set<xcb_atom_t> known_type;
+		static set<xcb_atom_t> known_type;
 		if (known_type.size() == 0) {
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
 			known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
@@ -705,7 +673,7 @@ public:
 
 	xcb_atom_t wm_type() const { return _wm_type; }
 
-	display_t *          cnx() const { return _cnx; }
+	display_t *          cnx() const { return _dpy; }
 	xcb_window_t         id() const { return _id; }
 
 	auto wa() const -> xcb_get_window_attributes_reply_t const * { return _wa; }
@@ -713,40 +681,39 @@ public:
 
 	/* ICCCM */
 
-	std::string const *                     wm_name() const { return _wm_name; }
-	std::string const *                     wm_icon_name() const { return _wm_icon_name; };
-	XSizeHints const *                 wm_normal_hints() const { return _wm_normal_hints; }
-	XWMHints const *                   wm_hints() const { return _wm_hints; }
-	std::vector<std::string> const *             wm_class() const {return _wm_class; }
-	xcb_window_t const *               wm_transient_for() const { return _wm_transient_for; }
-	std::list<xcb_atom_t> const *           wm_protocols() const { return _wm_protocols; }
-	std::vector<xcb_window_t> const *       wm_colormap_windows() const { return _wm_colormap_windows; }
-	std::string const *                     wm_client_machine() const { return _wm_client_machine; }
+	string const *                     wm_name() { _wm_name.update(_dpy->xcb()); return _wm_name; }
+	string const *                     wm_icon_name() { _wm_icon_name.update(_dpy->xcb()); return _wm_icon_name; };
+	XSizeHints const *                 wm_normal_hints() { _wm_normal_hints.update(_dpy->xcb()); return _wm_normal_hints; }
+	XWMHints const *                   wm_hints() { _wm_hints.update(_dpy->xcb()); return _wm_hints; }
+	vector<string> const *             wm_class() { _wm_class.update(_dpy->xcb()); return _wm_class; }
+	xcb_window_t const *               wm_transient_for() { _wm_transient_for.update(_dpy->xcb()); return _wm_transient_for; }
+	list<xcb_atom_t> const *           wm_protocols() { _wm_protocols.update(_dpy->xcb()); return _wm_protocols; }
+	vector<xcb_window_t> const *       wm_colormap_windows() { _wm_colormap_windows.update(_dpy->xcb()); return _wm_colormap_windows; }
+	string const *                     wm_client_machine() { _wm_client_machine.update(_dpy->xcb()); return _wm_client_machine; }
 
 	/* wm_state is writen by WM */
-	wm_state_data_t const *            wm_state() const {return _wm_state; }
+	wm_state_data_t const *            wm_state() {_wm_state.update(_dpy->xcb()); return _wm_state; }
 
 	/* EWMH */
 
-	std::string const *                     net_wm_name() const { return __net_wm_name; }
-	std::string const *                     net_wm_visible_name() const { return __net_wm_visible_name; }
-	std::string const *                     net_wm_icon_name() const { return __net_wm_icon_name; }
-	std::string const *                     net_wm_visible_icon_name() const { return __net_wm_visible_icon_name; }
-	unsigned int const *                    net_wm_desktop() const { return __net_wm_desktop; }
-	std::list<xcb_atom_t> const *           net_wm_window_type() const { return __net_wm_window_type; }
-	std::list<xcb_atom_t> const *           net_wm_state() const { return __net_wm_state; }
-	std::list<xcb_atom_t> const *           net_wm_allowed_actions() const { return __net_wm_allowed_actions; }
-	std::vector<int> const *                net_wm_strut() const { return __net_wm_strut; }
-	std::vector<int> const *                net_wm_strut_partial() const { return __net_wm_strut_partial; }
-	std::vector<int> const *                net_wm_icon_geometry() const { return __net_wm_icon_geometry; }
-	std::vector<uint32_t> const *           net_wm_icon() const { return __net_wm_icon; }
-	unsigned int const *                    net_wm_pid() const { return __net_wm_pid; }
-	//bool                                  net_wm_handled_icons() const { return __net_wm_handled_icons; }
-	uint32_t const *                        net_wm_user_time() const { return __net_wm_user_time; }
-	xcb_window_t const *                    net_wm_user_time_window() const { return __net_wm_user_time_window; }
-	std::vector<int> const *                net_frame_extents() const { return __net_frame_extents; }
-	std::vector<int> const *                net_wm_opaque_region() const { return __net_wm_opaque_region; }
-	unsigned int const *                    net_wm_bypass_compositor() const { return __net_wm_bypass_compositor; }
+	string const *                     net_wm_name() { __net_wm_name.update(_dpy->xcb()); return __net_wm_name; }
+	string const *                     net_wm_visible_name() { __net_wm_visible_name.update(_dpy->xcb()); return __net_wm_visible_name; }
+	string const *                     net_wm_icon_name() { __net_wm_icon_name.update(_dpy->xcb()); return __net_wm_icon_name; }
+	string const *                     net_wm_visible_icon_name() { __net_wm_visible_icon_name.update(_dpy->xcb()); return __net_wm_visible_icon_name; }
+	unsigned int const *               net_wm_desktop() { __net_wm_desktop.update(_dpy->xcb()); return __net_wm_desktop; }
+	list<xcb_atom_t> const *           net_wm_window_type() { __net_wm_window_type.update(_dpy->xcb()); return __net_wm_window_type; }
+	list<xcb_atom_t> const *           net_wm_state() { __net_wm_state.update(_dpy->xcb()); return __net_wm_state; }
+	list<xcb_atom_t> const *           net_wm_allowed_actions() { __net_wm_allowed_actions.update(_dpy->xcb()); return __net_wm_allowed_actions; }
+	vector<int> const *                net_wm_strut() { __net_wm_strut.update(_dpy->xcb()); return __net_wm_strut; }
+	vector<int> const *                net_wm_strut_partial() { __net_wm_strut_partial.update(_dpy->xcb()); return __net_wm_strut_partial; }
+	vector<int> const *                net_wm_icon_geometry() { __net_wm_icon_geometry.update(_dpy->xcb()); return __net_wm_icon_geometry; }
+	vector<uint32_t> const *           net_wm_icon() { __net_wm_icon.update(_dpy->xcb()); return __net_wm_icon; }
+	unsigned int const *               net_wm_pid() { __net_wm_pid.update(_dpy->xcb()); return __net_wm_pid; }
+	uint32_t const *                   net_wm_user_time() { __net_wm_user_time.update(_dpy->xcb()); return __net_wm_user_time; }
+	xcb_window_t const *               net_wm_user_time_window() { __net_wm_user_time_window.update(_dpy->xcb()); return __net_wm_user_time_window; }
+	vector<int> const *                net_frame_extents() { __net_frame_extents.update(_dpy->xcb()); return __net_frame_extents; }
+	vector<int> const *                net_wm_opaque_region() { __net_wm_opaque_region.update(_dpy->xcb()); return __net_wm_opaque_region; }
+	unsigned int const *               net_wm_bypass_compositor() { __net_wm_bypass_compositor.update(_dpy->xcb()); return __net_wm_bypass_compositor; }
 
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const { return _motif_hints; }
@@ -755,47 +722,47 @@ public:
 
 	void net_wm_state_add(atom_e atom) {
 		if(__net_wm_state == nullptr) {
-			__net_wm_state = new std::list<xcb_atom_t>;
+			__net_wm_state = new list<xcb_atom_t>;
 		}
 		/** remove it if already focused **/
 		__net_wm_state->remove(A(atom));
 		/** add it **/
 		__net_wm_state->push_back(A(atom));
-		_cnx->write_property(xid(), __net_wm_state);
+		_dpy->write_property(xid(), __net_wm_state);
 	}
 
 	void net_wm_state_remove(atom_e atom) {
 		if(__net_wm_state == nullptr) {
-			__net_wm_state = new std::list<xcb_atom_t>;
+			__net_wm_state = new list<xcb_atom_t>;
 		}
 
 		__net_wm_state->remove(A(atom));
-		_cnx->write_property(xid(), __net_wm_state);
+		_dpy->write_property(xid(), __net_wm_state);
 	}
 
 	void net_wm_allowed_actions_add(atom_e atom) {
 		if(__net_wm_allowed_actions == nullptr) {
-			__net_wm_allowed_actions = new std::list<xcb_atom_t>;
+			__net_wm_allowed_actions = new list<xcb_atom_t>;
 		}
 
 		__net_wm_allowed_actions->remove(A(atom));
 		__net_wm_allowed_actions->push_back(A(atom));
-		_cnx->write_property(xid(), __net_wm_allowed_actions);
+		_dpy->write_property(xid(), __net_wm_allowed_actions);
 	}
 
-	void net_wm_allowed_actions_set(std::list<atom_e> atom_list) {
-		__net_wm_allowed_actions = new std::list<xcb_atom_t>;
+	void net_wm_allowed_actions_set(list<atom_e> atom_list) {
+		__net_wm_allowed_actions = new list<xcb_atom_t>;
 		for(auto i: atom_list) {
 			__net_wm_allowed_actions->push_back(A(i));
 		}
-		_cnx->write_property(xid(), __net_wm_allowed_actions);
+		_dpy->write_property(xid(), __net_wm_allowed_actions);
 	}
 
 	void set_wm_state(int state) {
 		_wm_state = new wm_state_data_t;
 		_wm_state->state = state;
 		_wm_state->icon = None;
-		_cnx->write_property(xid(), _wm_state);
+		_dpy->write_property(xid(), _wm_state);
 	}
 
 	void process_event(xcb_configure_notify_event_t const * e) {

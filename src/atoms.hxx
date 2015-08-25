@@ -329,16 +329,22 @@ public:
 
 	}
 
-	xcb_atom_t operator() (atom_e id) {
-		return _id_to_xid[id];
+	xcb_atom_t operator() (atom_e id) const {
+		auto ret = _id_to_xid.find(id);
+		if(ret == _id_to_xid.end()) {
+			return XCB_NONE;
+		} else {
+			return ret->second;
+		}
 	}
 
-	xcb_atom_t operator[] (atom_e id) {
-		return _id_to_xid[id];
-	}
-
-	char const * name(atom_e a) {
-		return atom_name[a].name;
+	xcb_atom_t operator[] (atom_e id) const {
+		auto ret = _id_to_xid.find(id);
+		if(ret == _id_to_xid.end()) {
+			return XCB_NONE;
+		} else {
+			return ret->second;
+		}
 	}
 
 	std::string const & name(xcb_atom_t xid) {
