@@ -19,12 +19,9 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type
 		_net_wm_type{type}
 {
 	_is_visible = true;
-	if (cnx()->lock(orig())) {
-		cnx()->select_input(orig(), UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-		xcb_shape_select_input(cnx()->xcb(), orig(), 1);
-		_properties->update_shape();
-		cnx()->unlock();
-	}
+	_properties->select_input(UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+	_properties->select_input_shape(true);
+	_properties->update_shape();
 
 	_base_surface = _ctx->csm()->register_window(orig());
 
@@ -32,7 +29,7 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type
 
 client_not_managed_t::~client_not_managed_t() {
 	_ctx->add_global_damage(get_visible_region());
-	cnx()->select_input(_properties->id(), XCB_EVENT_MASK_NO_EVENT);
+	_properties->select_input(XCB_EVENT_MASK_NO_EVENT);
 }
 
 xcb_atom_t client_not_managed_t::net_wm_type() {

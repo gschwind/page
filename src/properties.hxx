@@ -449,7 +449,13 @@ struct property_t {
 	}
 
 	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
-		ck = xcb_get_property(xcb, 0, static_cast<xcb_window_t>(w), (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
+		ck = xcb_get_property(xcb, 0, w, (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
+	}
+
+	void clear(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
+		delete data;
+		data = nullptr;
+		xcb_delete_property(xcb, w, (*A)(name));
 	}
 
 	void update(xcb_connection_t * xcb) {

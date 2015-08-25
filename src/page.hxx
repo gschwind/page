@@ -179,8 +179,6 @@ private:
 	int _left_most_border;
 	int _top_most_border;
 
-public:
-
 private:
 	/* do no allow copy */
 	page_t(page_t const &);

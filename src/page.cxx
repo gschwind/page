@@ -979,31 +979,29 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 			auto mw = dynamic_pointer_cast<client_managed_t>(c);
 
-			if (mw->lock()) {
+			if ((e->value_mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT)) != 0) {
 
-				if ((e->value_mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT)) != 0) {
+				rect old_size = mw->get_floating_wished_position();
+				/** compute floating size **/
+				rect new_size = mw->get_floating_wished_position();
 
-					rect old_size = mw->get_floating_wished_position();
-					/** compute floating size **/
-					rect new_size = mw->get_floating_wished_position();
+				if (e->value_mask & XCB_CONFIG_WINDOW_X) {
+					new_size.x = e->x;
+				}
 
-					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
-						new_size.x = e->x;
-					}
+				if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
+					new_size.y = e->y;
+				}
 
-					if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
-						new_size.y = e->y;
-					}
+				if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+					new_size.w = e->width;
+				}
 
-					if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-						new_size.w = e->width;
-					}
+				if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+					new_size.h = e->height;
+				}
 
-					if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-						new_size.h = e->height;
-					}
-
-					//printf("new_size = %s\n", new_size.to_std::string().c_str());
+				//printf("new_size = %s\n", new_size.to_std::string().c_str());
 
 //					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
 //							and e.x == 0 and e.y == 0
@@ -1015,21 +1013,18 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 //						new_size.y = (b.h - new_size.h) / 2 + b.y;
 //					}
 
-					dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
+				dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
 
-					new_size.w = final_size.width;
-					new_size.h = final_size.height;
+				new_size.w = final_size.width;
+				new_size.h = final_size.height;
 
-					//printf("new_size = %s\n", new_size.to_string().c_str());
+				//printf("new_size = %s\n", new_size.to_string().c_str());
 
-					if (new_size != old_size) {
-						/** only affect floating windows **/
-						mw->set_floating_wished_position(new_size);
-						mw->reconfigure();
-					}
+				if (new_size != old_size) {
+					/** only affect floating windows **/
+					mw->set_floating_wished_position(new_size);
+					mw->reconfigure();
 				}
-
-				mw->unlock();
 			}
 
 		} else {
@@ -1188,15 +1183,12 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			if (mw->lock()) {
-				mw->activate();
-				if (e->data.data32[1] == XCB_CURRENT_TIME) {
-					printf("Invalid focus request ... but stealing focus\n");
-					set_focus(mw, XCB_CURRENT_TIME);
-				} else {
-					set_focus(mw, e->data.data32[1]);
-				}
-				mw->unlock();
+			mw->activate();
+			if (e->data.data32[1] == XCB_CURRENT_TIME) {
+				printf("Invalid focus request ... but stealing focus\n");
+				set_focus(mw, XCB_CURRENT_TIME);
+			} else {
+				set_focus(mw, e->data.data32[1]);
 			}
 		}
 	} else if (e->type == A(_NET_WM_STATE)) {
@@ -1226,15 +1218,12 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 		/** When window want to become iconic, just bind them **/
 		if (mw != nullptr) {
-			if (mw->lock()) {
-				if (mw->is(MANAGED_FLOATING) and e->data.data32[0] == IconicState) {
-					bind_window(mw, false);
-				} else if (mw->is(
-						MANAGED_NOTEBOOK) and e->data.data32[0] == IconicState) {
-					auto n = dynamic_pointer_cast<notebook_t>(mw->parent().lock());
-					n->iconify_client(mw);
-				}
-				mw->unlock();
+			if (mw->is(MANAGED_FLOATING) and e->data.data32[0] == IconicState) {
+				bind_window(mw, false);
+			} else if (mw->is(
+					MANAGED_NOTEBOOK) and e->data.data32[0] == IconicState) {
+				auto n = dynamic_pointer_cast<notebook_t>(mw->parent().lock());
+				n->iconify_client(mw);
 			}
 		}
 
@@ -1252,52 +1241,48 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		if (mw != nullptr) {
 			if (mw->is(MANAGED_FLOATING) and _grab_handler == nullptr) {
 
-				if (mw->lock()) {
-					int root_x = e->data.data32[0];
-					int root_y = e->data.data32[1];
-					int direction = e->data.data32[2];
-					xcb_button_t button = static_cast<xcb_button_t>(e->data.data32[3]);
-					int source = e->data.data32[4];
+				int root_x = e->data.data32[0];
+				int root_y = e->data.data32[1];
+				int direction = e->data.data32[2];
+				xcb_button_t button = static_cast<xcb_button_t>(e->data.data32[3]);
+				int source = e->data.data32[4];
 
-					if (direction == _NET_WM_MOVERESIZE_MOVE) {
-						grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
+				if (direction == _NET_WM_MOVERESIZE_MOVE) {
+					grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
+				} else {
+
+					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP});
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM});
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_LEFT});
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_RIGHT});
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_LEFT});
+					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT});
+					} else if (direction
+							== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT});
+					} else if (direction
+							== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT});
 					} else {
-
-						if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP});
-						} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM});
-						} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_LEFT});
-						} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_RIGHT});
-						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_LEFT});
-						} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT});
-						} else if (direction
-								== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT});
-						} else if (direction
-								== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
-							grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT});
-						} else {
-							grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
-						}
+						grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
 					}
-
-					if (_grab_handler != nullptr) {
-						xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
-								XCB_EVENT_MASK_BUTTON_PRESS
-										| XCB_EVENT_MASK_BUTTON_RELEASE
-										| XCB_EVENT_MASK_BUTTON_MOTION,
-								XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
-								XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-					}
-
-					mw->unlock();
-
 				}
+
+				if (_grab_handler != nullptr) {
+					xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
+							XCB_EVENT_MASK_BUTTON_PRESS
+									| XCB_EVENT_MASK_BUTTON_RELEASE
+									| XCB_EVENT_MASK_BUTTON_MOTION,
+							XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+							XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
+				}
+
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
@@ -2542,7 +2527,7 @@ void page_t::onmap(xcb_window_t w) {
 	{
 		try {
 			auto props = make_shared<client_properties_t>(_dpy, w);
-			if (props->read_window_attributes()) {
+			if (props->wa() != nullptr and props->geometry() != nullptr) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
 
@@ -3726,7 +3711,6 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 auto page_t::conf() const -> page_configuration_t const & {
 	return configuration;
 }
-
 
 }
 

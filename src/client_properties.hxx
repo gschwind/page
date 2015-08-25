@@ -108,17 +108,15 @@ public:
 
 	client_properties_t(display_t * cnx, xcb_window_t id) :
 			_dpy{cnx}, _id{id} {
-
 		_wa = nullptr;
 		_geometry = nullptr;
-
 		_motif_hints = nullptr;
-
 		_shape = nullptr;
-
 		_need_update_type = true;
 		_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
 
+		read_window_attributes();
+		read_all_properties();
 	}
 
 	~client_properties_t() {
@@ -130,7 +128,6 @@ public:
 	}
 
 	void read_all_properties() {
-
 		/** Welcome to magic templates ! **/
 		_wm_name.fetch(_dpy->xcb(), _dpy->_A, xid());
 		_wm_icon_name.fetch(_dpy->xcb(), _dpy->_A, xid());
@@ -725,6 +722,40 @@ public:
 	}
 
 	rect position() const { return rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
+
+	void set_focus_state(bool is_focused);
+	void select_input(uint32_t mask);
+	void select_input_shape(bool x);
+
+	void grab_button (
+	                 uint8_t           owner_events,
+	                 uint16_t          event_mask,
+	                 uint8_t           pointer_mode,
+	                 uint8_t           keyboard_mode,
+	                 xcb_window_t      confine_to,
+	                 xcb_cursor_t      cursor,
+	                 uint8_t           button,
+	                 uint16_t          modifiers);
+
+	void ungrab_button (uint8_t button, uint16_t modifiers);
+
+	void send_event (
+	                uint8_t           propagate  /**< */,
+	                uint32_t          event_mask  /**< */,
+	                const char       *event  /**< */);
+
+	void set_input_focus(int revert_to, xcb_timestamp_t time);
+
+	void move_resize(rect const & size);
+	void fake_configure(rect const & location, int border_width);
+	void delete_window(xcb_timestamp_t t);
+	void set_border_width(uint32_t width);
+	void xmap();
+	void unmap();
+	void reparentwindow(xcb_window_t parent, int x, int y);
+	void delete_net_wm_state();
+	void delete_wm_state();
+	void add_to_save_set();
 
 };
 

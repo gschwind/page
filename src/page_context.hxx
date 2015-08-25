@@ -26,6 +26,7 @@ class notebook_t;
 class viewport_t;
 class client_base_t;
 class client_managed_t;
+class client_properties_t;
 class workspace_t;
 
 
@@ -90,7 +91,6 @@ public:
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>> = 0;
 	virtual auto keymap() const -> keymap_t const * = 0;
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
-
 };
 
 

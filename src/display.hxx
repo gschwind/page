@@ -317,6 +317,15 @@ public:
 	}
 
 
+	template<typename F>
+	void for_each_event(F func) {
+		fetch_pending_events();
+		for(auto ev: pending_event) {
+			func(ev);
+		}
+	}
+
+
 };
 
 }

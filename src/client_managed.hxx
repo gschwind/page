@@ -83,7 +83,7 @@ class client_managed_t : public client_base_t {
 	xcb_visualid_t _deco_visual;
 	int _deco_depth;
 
-	xcb_window_t _orig;
+	//xcb_window_t _orig;
 	xcb_window_t _base;
 	xcb_window_t _deco;
 
@@ -195,7 +195,6 @@ public:
 	signal_t<shared_ptr<client_managed_t>> on_title_change;
 	signal_t<shared_ptr<client_managed_t>> on_activate;
 	signal_t<shared_ptr<client_managed_t>> on_deactivate;
-
 
 	bool is(managed_window_type_e type);
 	auto title() const -> string const &;
