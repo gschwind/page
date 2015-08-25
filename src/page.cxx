@@ -371,8 +371,11 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 
 	if (has_key(_fullscreen_client_to_viewport, mw.get())) {
 		fullscreen_data_t & data = _fullscreen_client_to_viewport[mw.get()];
-		if(data.workspace.lock()->is_visible())
-			data.viewport.lock()->show();
+		if(not data.workspace.expired() and not data.viewport.expired()) {
+			if(data.workspace.lock()->is_visible()) {
+				data.viewport.lock()->show();
+			}
+		}
 		_fullscreen_client_to_viewport.erase(mw.get());
 	}
 
