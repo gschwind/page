@@ -3526,8 +3526,6 @@ unsigned int page_t::find_current_desktop(shared_ptr<client_base_t> c) {
 }
 
 void page_t::process_pending_events() {
-	/** Here we try to process all pending events then render if needed **/
-	_dpy->grab();
 
 	while (_dpy->has_pending_events()) {
 		while (_dpy->has_pending_events()) {
@@ -3554,15 +3552,12 @@ void page_t::process_pending_events() {
 			update_focus();
 		}
 
-		_dpy->sync();
+		xcb_flush(_dpy->xcb());
 
 	}
 
 	_csmgr->apply_updates();
-
-	_dpy->ungrab();
 	xcb_flush(_dpy->xcb());
-
 	render();
 
 }
