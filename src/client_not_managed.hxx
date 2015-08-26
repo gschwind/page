@@ -52,7 +52,7 @@ private:
 
 public:
 
-	client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_properties_t> c);
+	client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_proxy_t> c);
 	~client_not_managed_t();
 
 	auto net_wm_type() -> xcb_atom_t;

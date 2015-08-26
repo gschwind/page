@@ -26,7 +26,7 @@ class notebook_t;
 class viewport_t;
 class client_base_t;
 class client_managed_t;
-class client_properties_t;
+class client_proxy_t;
 class workspace_t;
 
 

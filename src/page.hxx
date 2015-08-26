@@ -254,7 +254,7 @@ public:
 	void update_net_supported();
 
 	/* setup and create managed window */
-	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_properties_t> wa);
+	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_proxy_t> wa);
 
 	/* unmanage a managed window */
 	void unmanage(shared_ptr<client_managed_t> mw);
@@ -306,11 +306,11 @@ public:
 	void update_viewport_layout();
 	void remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
 	void onmap(xcb_window_t w);
-	void create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
+	void create_managed_window(shared_ptr<client_proxy_t> c, xcb_atom_t type);
 	void manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type);
 	void ackwoledge_configure_request(xcb_configure_request_event_t const * e);
-	void create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
-	void create_dock_window(shared_ptr<client_properties_t> c, xcb_atom_t type);
+	void create_unmanaged_window(shared_ptr<client_proxy_t> c, xcb_atom_t type);
+	void create_dock_window(shared_ptr<client_proxy_t> c, xcb_atom_t type);
 	bool get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time);
 	void update_page_areas();
 	void set_desktop_geometry(long width, long height);

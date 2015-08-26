@@ -25,7 +25,7 @@ client_base_t::client_base_t(client_base_t const & c) :
 
 }
 
-client_base_t::client_base_t(page_context_t * ctx, shared_ptr<client_properties_t> props) :
+client_base_t::client_base_t(page_context_t * ctx, shared_ptr<client_proxy_t> props) :
 	_ctx{ctx},
 	_properties{props},
 	_children{}

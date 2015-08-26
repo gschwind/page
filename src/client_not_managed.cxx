@@ -14,7 +14,7 @@ namespace page {
 
 using namespace std;
 
-client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_properties_t> c) :
+client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_atom_t type, std::shared_ptr<client_proxy_t> c) :
 		client_base_t{ctx, c},
 		_net_wm_type{type}
 {

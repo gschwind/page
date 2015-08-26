@@ -429,7 +429,7 @@ void page_t::scan() {
 	for (unsigned i = 0; i < n_children; ++i) {
 		xcb_window_t w = children[i];
 
-		auto c = make_shared<client_properties_t>(_dpy, w);
+		auto c = make_shared<client_proxy_t>(_dpy, w);
 		if (not c->read_window_attributes()) {
 			continue;
 		}
@@ -2522,7 +2522,7 @@ void page_t::onmap(xcb_window_t w) {
 
 	{
 		try {
-			auto props = make_shared<client_properties_t>(_dpy, w);
+			auto props = make_shared<client_proxy_t>(_dpy, w);
 			if (props->wa() != nullptr and props->geometry() != nullptr) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
@@ -2613,7 +2613,7 @@ void page_t::onmap(xcb_window_t w) {
 }
 
 
-void page_t::create_managed_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
+void page_t::create_managed_window(shared_ptr<client_proxy_t> c, xcb_atom_t type) {
 	try {
 		auto mw = make_shared<client_managed_t>(this, type, c);
 		manage_client(mw, type);
@@ -2768,7 +2768,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	}
 }
 
-void page_t::create_unmanaged_window(shared_ptr<client_properties_t> c, xcb_atom_t type) {
+void page_t::create_unmanaged_window(shared_ptr<client_proxy_t> c, xcb_atom_t type) {
 	try {
 		auto uw = make_shared<client_not_managed_t>(this, type, c);
 		if(not uw->wa()->override_redirect)

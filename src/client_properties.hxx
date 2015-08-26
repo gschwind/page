@@ -34,7 +34,7 @@ namespace page {
 
 using namespace std;
 
-class client_properties_t {
+class client_proxy_t {
 private:
 	display_t *                  _dpy;
 	xcb_window_t                 _id;
@@ -45,10 +45,10 @@ private:
 	xcb_get_window_attributes_reply_t * _wa;
 	xcb_get_geometry_reply_t * _geometry;
 
-	/* ICCCM */
-
+	/**
+	 * ICCCM properties read-only
+	 **/
 	wm_name_t                    _wm_name;
-
 	wm_icon_name_t               _wm_icon_name;
 	wm_normal_hints_t            _wm_normal_hints;
 	wm_hints_t                   _wm_hints;
@@ -58,11 +58,14 @@ private:
 	wm_colormap_windows_t        _wm_colormap_windows;
 	wm_client_machine_t          _wm_client_machine;
 
-	/* wm_state is writen by WM */
+	/**
+	 * ICCCM properties read-write
+	 **/
 	wm_state_t                   _wm_state;
 
-	/* EWMH */
-
+	/**
+	 * EWMH properties
+	 **/
 	net_wm_name_t                __net_wm_name;
 	net_wm_visible_name_t        __net_wm_visible_name;
 	net_wm_icon_name_t           __net_wm_icon_name;
@@ -83,7 +86,9 @@ private:
 	net_wm_opaque_region_t       __net_wm_opaque_region;
 	net_wm_bypass_compositor_t   __net_wm_bypass_compositor;
 
-	/* OTHERs */
+	/**
+	 * OTHERs
+	 **/
 	motif_hints_t                _motif_hints;
 
 	region *                     _shape;
@@ -102,11 +107,11 @@ private:
 	}
 
 private:
-	client_properties_t(client_properties_t const &);
-	client_properties_t & operator=(client_properties_t const &);
+	client_proxy_t(client_proxy_t const &);
+	client_proxy_t & operator=(client_proxy_t const &);
 public:
 
-	client_properties_t(display_t * cnx, xcb_window_t id) :
+	client_proxy_t(display_t * cnx, xcb_window_t id) :
 			_dpy{cnx}, _id{id} {
 		_wa = nullptr;
 		_geometry = nullptr;
@@ -119,7 +124,7 @@ public:
 		read_all_properties();
 	}
 
-	~client_properties_t() {
+	~client_proxy_t() {
 		if(_wa != nullptr)
 			free(_wa);
 		if(_geometry != nullptr)
