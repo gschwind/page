@@ -32,12 +32,18 @@
 
 namespace page {
 
+class display_t;
+
 using namespace std;
 
 class client_proxy_t {
+	friend class display_t;
+
 private:
 	display_t *                  _dpy;
 	xcb_window_t                 _id;
+
+	unsigned                     _ref_count;
 
 	bool                         _need_update_type;
 	xcb_atom_t                   _wm_type;
@@ -101,11 +107,10 @@ private:
 private:
 	client_proxy_t(client_proxy_t const &);
 	client_proxy_t & operator=(client_proxy_t const &);
-public:
-
 	client_proxy_t(display_t * cnx, xcb_window_t id);
-
 	~client_proxy_t();
+
+public:
 
 	void read_all_properties();
 
@@ -254,6 +259,10 @@ public:
 	void delete_net_wm_state();
 	void delete_wm_state();
 	void add_to_save_set();
+
+	void incr_ref();
+	void decr_ref();
+	int  ref_count();
 
 };
 

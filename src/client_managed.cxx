@@ -26,8 +26,8 @@ namespace page {
 
 using namespace std;
 
-client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type, shared_ptr<client_proxy_t> props) :
-				client_base_t{ctx, props},
+client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type) :
+				client_base_t{ctx, w},
 				_managed_type{MANAGED_FLOATING},
 				_net_wm_type{net_wm_type},
 				_floating_wished_position{},

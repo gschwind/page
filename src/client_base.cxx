@@ -25,15 +25,17 @@ client_base_t::client_base_t(client_base_t const & c) :
 
 }
 
-client_base_t::client_base_t(page_context_t * ctx, shared_ptr<client_proxy_t> props) :
+client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
 	_ctx{ctx},
-	_properties{props},
+	_properties{ctx->dpy()->create_client_proxy(w)},
 	_children{}
 {
 
 }
 
-client_base_t::~client_base_t() { }
+client_base_t::~client_base_t() {
+	_ctx->dpy()->destroy_client_proxy(_properties);
+}
 
 void client_base_t::read_all_properties() {
 	_properties->read_all_properties();

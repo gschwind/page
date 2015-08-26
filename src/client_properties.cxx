@@ -142,6 +142,8 @@ client_proxy_t::client_proxy_t(display_t * cnx, xcb_window_t id) :
 	_need_update_type = true;
 	_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
 
+	_ref_count = 1;
+
 	read_window_attributes();
 	read_all_properties();
 }
@@ -747,6 +749,20 @@ void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
 }
 
 rect client_proxy_t::position() const { return rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
+
+
+
+void client_proxy_t::incr_ref() {
+	++_ref_count;
+}
+
+void client_proxy_t::decr_ref() {
+	--_ref_count;
+}
+
+int  client_proxy_t::ref_count() {
+	return _ref_count;
+}
 
 
 }

@@ -429,12 +429,14 @@ void page_t::scan() {
 	for (unsigned i = 0; i < n_children; ++i) {
 		xcb_window_t w = children[i];
 
-		auto c = make_shared<client_proxy_t>(_dpy, w);
+		auto c = _dpy->create_client_proxy(w);
 		if (not c->read_window_attributes()) {
+			_dpy->destroy_client_proxy(c);
 			continue;
 		}
 
 		if(c->wa()->_class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+			_dpy->destroy_client_proxy(c);
 			continue;
 		}
 
@@ -453,6 +455,8 @@ void page_t::scan() {
 				}
 			}
 		}
+
+		_dpy->destroy_client_proxy(c);
 	}
 
 	free(r);
@@ -2522,7 +2526,7 @@ void page_t::onmap(xcb_window_t w) {
 
 	{
 		try {
-			auto props = make_shared<client_proxy_t>(_dpy, w);
+			auto props = _dpy->create_client_proxy(w);
 			if (props->wa() != nullptr and props->geometry() != nullptr) {
 				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 					props->read_all_properties();
@@ -2534,72 +2538,73 @@ void page_t::onmap(xcb_window_t w) {
 
 				if (not props->wa()->override_redirect) {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					}
 				} else {
 					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_managed_window(props, type);
+						create_managed_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-						create_unmanaged_window(props, type);
+						create_unmanaged_window(w, type);
 					}
 				}
-
 			}
 		}
+
+			_dpy->destroy_client_proxy(props);
 
 		} catch (exception_t &e) {
 			std::cout << e.what() << std::endl;
@@ -2613,9 +2618,9 @@ void page_t::onmap(xcb_window_t w) {
 }
 
 
-void page_t::create_managed_window(shared_ptr<client_proxy_t> c, xcb_atom_t type) {
+void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
 	try {
-		auto mw = make_shared<client_managed_t>(this, type, c);
+		auto mw = make_shared<client_managed_t>(this, w, type);
 		manage_client(mw, type);
 
 		if(mw->net_wm_strut() != nullptr or mw->net_wm_strut_partial() != nullptr) {
@@ -2768,9 +2773,9 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	}
 }
 
-void page_t::create_unmanaged_window(shared_ptr<client_proxy_t> c, xcb_atom_t type) {
+void page_t::create_unmanaged_window(xcb_window_t w, xcb_atom_t type) {
 	try {
-		auto uw = make_shared<client_not_managed_t>(this, type, c);
+		auto uw = make_shared<client_not_managed_t>(this, w, type);
 		if(not uw->wa()->override_redirect)
 			this->_dpy->map(uw->orig());
 		uw->show();

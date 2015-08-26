@@ -39,8 +39,11 @@
 #include "motif_hints.hxx"
 
 #include "properties.hxx"
+#include "client_properties.hxx"
 
 namespace page {
+
+class client_proxy_t;
 
 static unsigned long const AllEventMask = 0x01ffffff;
 
@@ -65,6 +68,7 @@ class display_t {
 
 	int _grab_count;
 
+	std::map<xcb_window_t, client_proxy_t *> _client_proxies;
 
 public:
 
@@ -325,6 +329,8 @@ public:
 		}
 	}
 
+	auto create_client_proxy(xcb_window_t w) -> client_proxy_t *;
+	void destroy_client_proxy(client_proxy_t *);
 
 };
 

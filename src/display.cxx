@@ -903,6 +903,26 @@ void display_t::print_error(xcb_generic_error_t const * err) {
 	printf("#%08d ERROR %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
 }
 
+auto display_t::create_client_proxy(xcb_window_t w) -> client_proxy_t * {
+	auto x = _client_proxies.find(w);
+	if(x == _client_proxies.end()) {
+		_client_proxies[w] = new client_proxy_t{this, w};
+	} else {
+		x->second->incr_ref();
+	}
+
+	return _client_proxies[w];
+
+}
+
+void display_t::destroy_client_proxy(client_proxy_t * proxy) {
+	proxy->decr_ref();
+	if(proxy->ref_count() == 0) {
+		_client_proxies.erase(proxy->xid());
+		delete proxy;
+	}
+}
+
 
 }
 
