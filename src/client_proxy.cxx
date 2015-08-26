@@ -5,7 +5,7 @@
  *      Author: gschwind
  */
 
-#include "client_properties.hxx"
+#include <client_proxy.hxx>
 
 namespace page {
 

@@ -15,12 +15,11 @@
 
 #include <xcb/xcb.h>
 
+#include "client_proxy.hxx"
 #include "icon_handler.hxx"
 #include "theme.hxx"
 
 #include "composite_surface_manager.hxx"
-#include "client_properties.hxx"
-
 #include "floating_event.hxx"
 #include "composite_surface.hxx"
 #include "renderable_floating_outer_gradien.hxx"

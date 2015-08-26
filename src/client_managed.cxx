@@ -12,6 +12,7 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
+#include <client_proxy.hxx>
 
 #include "composite_surface_manager.hxx"
 
@@ -20,7 +21,6 @@
 #include "notebook.hxx"
 #include "utils.hxx"
 #include "grab_handlers.hxx"
-#include "client_properties.hxx"
 
 namespace page {
 

@@ -36,10 +36,10 @@
 #include "box.hxx"
 #include "region.hxx"
 #include "atoms.hxx"
+#include "client_proxy.hxx"
 #include "motif_hints.hxx"
 
 #include "properties.hxx"
-#include "client_properties.hxx"
 
 namespace page {
 

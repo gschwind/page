@@ -36,7 +36,7 @@ page_SOURCES = \
 	config_handler.cxx \
 	composite_surface.cxx \
 	composite_surface_manager.cxx \
-	client_properties.cxx \
+	client_proxy.cxx \
 	popup_alt_tab.cxx \
 	main.cxx \
 	blur_image_surface.cxx \

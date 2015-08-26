@@ -15,8 +15,8 @@
 #include <memory>
 
 
-#include "client_properties.hxx"
 #include "client_base.hxx"
+#include "client_proxy.hxx"
 #include "display.hxx"
 
 #include "renderable.hxx"
