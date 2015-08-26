@@ -31,32 +31,17 @@ namespace page {
 using namespace std;
 
 class composite_surface_manager_t {
-	using _data_map_t = map<xcb_window_t, weak_ptr<composite_surface_t>>;
-	using _data_list_t = list<shared_ptr<composite_surface_t>>;
+	using _data_map_t = map<xcb_window_t, composite_surface_t *>;
 	using _map_iter_t = _data_map_t::iterator;
 
 	display_t * _dpy;
-
-
-	/**
-	 * list all available surfaces.
-	 * Note: xid can be reused after being freed, this mean that some
-	 * surface may be in this list but do not have a valid xid anymore.
-	 * The following index store the up-to-date xid to surface.
-	 **/
-	_data_list_t _data;
-
-	/**
-	 * map current valid xid to current composite_surface_t
-	 **/
-	_data_map_t _index;
-
+	_data_map_t _data;
 
 	bool _enabled;
 
 private:
 
-	auto  _create_surface(xcb_window_t w) -> weak_ptr<composite_surface_t>;
+	auto  _create_surface(xcb_window_t w) -> composite_surface_t *;
 
 public:
 
@@ -73,13 +58,13 @@ public:
 
 	void pre_process_event(xcb_generic_event_t const * e);
 
-	/** cleanup unmaped or destroyed window **/
-	void apply_updates();
-
-	auto register_window(xcb_window_t w) -> shared_ptr<composite_surface_view_t>;
 	void make_surface_stats(int & size, int & count);
 	void enable();
 	void disable();
+
+	auto create_view(xcb_window_t w) -> composite_surface_view_t *;
+	void destroy_view(composite_surface_view_t * v);
+
 
 };
 

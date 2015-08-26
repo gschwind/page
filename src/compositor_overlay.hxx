@@ -146,7 +146,7 @@ public:
 		int surf_count;
 		int surf_size;
 
-		_ctx->csm()->make_surface_stats(surf_size, surf_count);
+		_ctx->make_surface_stats(surf_size, surf_count);
 
 		pango_printf(cr, 80*2+20,0,  "fps:       %8.1f", fps);
 		pango_printf(cr, 80*2+20,30, "s. count:  %6d", surf_count);

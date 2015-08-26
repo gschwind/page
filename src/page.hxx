@@ -380,7 +380,6 @@ public:
 
 	virtual auto conf() const -> page_configuration_t const &;
 	virtual auto theme() const -> theme_t const *;
-	virtual auto csm() const -> composite_surface_manager_t *;
 	virtual auto dpy() const -> display_t *;
 	virtual auto cmp() const -> compositor_t *;
 	virtual void overlay_add(shared_ptr<tree_t> x);
@@ -406,6 +405,9 @@ public:
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>>;
 	virtual auto keymap() const -> keymap_t const *;
+	virtual auto create_view(xcb_window_t w) -> composite_surface_view_t *;
+	virtual void destroy_view(composite_surface_view_t * v);
+	virtual void make_surface_stats(int & size, int & count);
 
 };
 

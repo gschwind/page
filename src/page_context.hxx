@@ -64,7 +64,6 @@ public:
 
 	virtual auto conf() const -> page_configuration_t const & = 0;
 	virtual auto theme() const -> theme_t const * = 0;
-	virtual auto csm() const -> composite_surface_manager_t * = 0;
 	virtual auto dpy() const -> display_t * = 0;
 	virtual auto cmp() const -> compositor_t * = 0;
 	virtual void overlay_add(shared_ptr<tree_t> x) = 0;
@@ -91,6 +90,10 @@ public:
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>> = 0;
 	virtual auto keymap() const -> keymap_t const * = 0;
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
+	virtual auto create_view(xcb_window_t w) -> composite_surface_view_t * = 0;
+	virtual void destroy_view(composite_surface_view_t * v) = 0;
+	virtual void make_surface_stats(int & size, int & count) = 0;
+
 };
 
 

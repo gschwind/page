@@ -50,7 +50,8 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_atom_t net_wm_type,
 				_deco{XCB_WINDOW_NONE},
 				_is_focused{false},
 				_is_iconic{true},
-				_demands_attention{false}
+				_demands_attention{false},
+				_client_view{nullptr}
 {
 
 	_update_title();
@@ -217,6 +218,8 @@ client_managed_t::~client_managed_t() {
 
 	_ctx->add_global_damage(get_visible_region());
 
+	_ctx->destroy_view(_client_view);
+
 	on_destroy.signal(this);
 
 	unselect_inputs_unsafe();
@@ -240,6 +243,9 @@ client_managed_t::~client_managed_t() {
 
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
+
+	_properties->delete_net_wm_state();
+	_properties->delete_wm_state();
 
 }
 
@@ -762,10 +768,10 @@ void client_managed_t::update_layout(time64_t const time) {
 		return;
 
 	/** update damage_cache **/
-	region dmg = _base_surface->get_damaged();
+	region dmg = _client_view->get_damaged();
 	dmg.translate(_base_position.x, _base_position.y);
 	_damage_cache += dmg;
-	_base_surface->clear_damaged();
+	_client_view->clear_damaged();
 
 }
 
@@ -825,6 +831,9 @@ void client_managed_t::unmap_unsafe() {
 }
 
 void client_managed_t::hide() {
+	if(not _is_visible)
+		return;
+
 	for(auto x: _children) {
 		x->hide();
 	}
@@ -837,11 +846,15 @@ void client_managed_t::hide() {
 	reconfigure();
 
 	/* we no not need the view anymore */
-	_base_surface = nullptr;
+	_ctx->destroy_view(_client_view);
+	_client_view = nullptr;
 
 }
 
 void client_managed_t::show() {
+	if(_is_visible)
+		return;
+
 	_is_visible = true;
 	reconfigure();
 	map_unsafe();
@@ -849,7 +862,8 @@ void client_managed_t::show() {
 		x->show();
 	}
 
-	_base_surface = create_surface_view();
+	if(_client_view == nullptr)
+		_client_view = create_surface_view();
 }
 
 bool client_managed_t::is_iconic() {
@@ -1090,8 +1104,8 @@ bool client_managed_t::is_focused() const {
 	return _is_focused;
 }
 
-shared_ptr<composite_surface_view_t> client_managed_t::create_surface_view() {
-	return _ctx->csm()->register_window(_base);
+composite_surface_view_t * client_managed_t::create_surface_view() {
+	return _ctx->create_view(_base);
 }
 
 void client_managed_t::set_current_desktop(unsigned int n) {
@@ -1116,7 +1130,7 @@ string const & client_managed_t::title() const {
 }
 
 void client_managed_t::render(cairo_t * cr, region const & area) {
-	auto pix = _base_surface->get_pixmap();
+	auto pix = _client_view->get_pixmap();
 
 	if (pix != nullptr) {
 		cairo_save(cr);

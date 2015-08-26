@@ -41,6 +41,8 @@ private:
 	mutable region _visible_region_cache;
 	mutable region _damage_cache;
 
+	composite_surface_view_t * _client_view;
+
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);
 	client_not_managed_t & operator=(client_not_managed_t const &);

@@ -387,10 +387,6 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 		}
 	}
 
-	/* as recommended by EWMH delete _NET_WM_STATE when window become unmanaged */
-	mw->net_wm_state_delete();
-	mw->wm_state_delete();
-
 	if(not mw->skip_task_bar()) {
 		_need_update_client_list = true;
 	}
@@ -2638,6 +2634,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 		safe_update_transient_for(mw);
 		mw->activate();
+		mw->show();
 
 		if(not mw->skip_task_bar()) {
 			_need_update_client_list = true;
@@ -3532,7 +3529,6 @@ void page_t::process_pending_events() {
 			_csmgr->pre_process_event(_dpy->front_event());
 			process_event(_dpy->front_event());
 			_dpy->pop_event();
-			xcb_flush(_dpy->xcb());
 		}
 
 		if (_need_restack) {
@@ -3556,8 +3552,6 @@ void page_t::process_pending_events() {
 
 	}
 
-	_csmgr->apply_updates();
-	xcb_flush(_dpy->xcb());
 	render();
 
 }
@@ -3568,10 +3562,6 @@ bool page_t::render_timeout() {
 
 theme_t const * page_t::theme() const {
 	return _theme;
-}
-
-composite_surface_manager_t * page_t::csm() const {
-	return _csmgr;
 }
 
 display_t * page_t::dpy() const {
@@ -3705,6 +3695,18 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 
 auto page_t::conf() const -> page_configuration_t const & {
 	return configuration;
+}
+
+auto page_t::create_view(xcb_window_t w) -> composite_surface_view_t * {
+	return _csmgr->create_view(w);
+}
+
+void page_t::destroy_view(composite_surface_view_t * v) {
+	_csmgr->destroy_view(v);
+}
+
+void page_t::make_surface_stats(int & size, int & count) {
+	_csmgr->make_surface_stats(size, count);
 }
 
 }

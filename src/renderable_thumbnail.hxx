@@ -37,7 +37,7 @@ class renderable_thumbnail_t : public tree_t {
 	double _ratio;
 
 	weak_ptr<client_managed_t> _c;
-	shared_ptr<composite_surface_view_t> _client_surface;
+	composite_surface_view_t * _client_view;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
@@ -52,13 +52,15 @@ public:
 		_is_mouse_over{false},
 		_ratio{1.0},
 		_target_position{target_position},
-		_target_anchor{target_anchor}
+		_target_anchor{target_anchor},
+		_client_view{nullptr}
 	{
 
 	}
 
 	virtual ~renderable_thumbnail_t() {
 		_ctx->add_global_damage(get_real_position());
+		_ctx->destroy_view(_client_view);
 	}
 
 	/** @return scale factor */
@@ -174,7 +176,7 @@ public:
 		if(_c.expired() or not _is_visible)
 			return;
 
-		_tt.pix = _client_surface->get_pixmap();
+		_tt.pix = _client_view->get_pixmap();
 
 		if (_tt.pix != nullptr) {
 
@@ -221,28 +223,33 @@ public:
 				_thumbnail_position.x = _target_position.x + _target_position.w - src_width * _ratio;
 				break;
 			}
-
 		}
 
-		if(_client_surface->has_damage()) {
+		if(_client_view->has_damage()) {
 			_damaged_cache += region{get_real_position()};
-			_client_surface->clear_damaged();
+			_client_view->clear_damaged();
 		}
 	}
 
 	void show() {
-		_is_visible = true;
+		if(_is_visible)
+			return;
 
-		if (not _c.expired()) {
-			_client_surface = _c.lock()->create_surface_view();
+		_is_visible = true;
+		if (not _c.expired() and _client_view == nullptr) {
+			_client_view = _c.lock()->create_surface_view();
 		}
 	}
 
 	void hide() {
+		if(not _is_visible)
+			return;
+
 		_is_visible = false;
 		_ctx->add_global_damage(get_real_position());
 
-		_client_surface = nullptr;
+		_ctx->destroy_view(_client_view);
+		_client_view = nullptr;
 		_tt.pix = nullptr;
 		_tt.title = nullptr;
 
