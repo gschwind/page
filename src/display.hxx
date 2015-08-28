@@ -71,7 +71,7 @@ class display_t {
 
 	int _grab_count;
 
-	class map<xcb_window_t, client_proxy_t *> _client_proxies;
+	class map<xcb_window_t, shared_ptr<client_proxy_t>> _client_proxies;
 	//class map<xcb_window_t, composite_surface_t *> _client_surfaces;
 
 public:
@@ -222,38 +222,6 @@ public:
 
 	void disable_input_passthrough(xcb_window_t w);
 
-	template<atom_e name, atom_e type, typename xT >
-	struct properties_fetcher_t {
-
-		property_t<name, type, xT> & p;
-		xcb_get_property_cookie_t ck;
-		properties_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) : p(p) {
-			ck = xcb_get_property(cnx->xcb(), 0, static_cast<xcb_window_t>(w), cnx->A(name), cnx->A(type), 0, std::numeric_limits<uint32_t>::max());
-		}
-
-		void update(display_t * cnx) {
-			xcb_generic_error_t * err;
-			xcb_get_property_reply_t * r = xcb_get_property_reply(cnx->xcb(), ck, &err);
-
-			if(err != nullptr or r == nullptr) {
-				if(r != nullptr)
-					free(r);
-				p = nullptr;
-			} else if(r->length == 0 or r->format != property_helper_t<xT>::format) {
-				if(r != nullptr)
-					free(r);
-				p = nullptr;
-			} else {
-				int length = xcb_get_property_value_length(r) /  (property_helper_t<xT>::format / 8);
-				void * tmp = (xcb_get_property_value(r));
-				xT * ret = property_helper_t<xT>::marshal(tmp, length);
-				free(r);
-				p = ret;
-			}
-		}
-
-	};
-
 	bool query_extension(char const * name, int * opcode, int * event, int * error);
 
 	void select_input(xcb_window_t w, uint32_t mask);
@@ -285,8 +253,9 @@ public:
 		return _A->name(a);
 	}
 
-	auto create_client_proxy(xcb_window_t w) -> client_proxy_t *;
-	void destroy_client_proxy(client_proxy_t *);
+	auto create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t>;
+
+	void filter_events(xcb_generic_event_t const * e);
 
 };
 

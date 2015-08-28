@@ -621,6 +621,7 @@ xcb_generic_event_t * display_t::front_event() {
 		xcb_generic_event_t * e = xcb_poll_for_event(_xcb);
 		if(e != nullptr) {
 			pending_event.push_back(e);
+			filter_events(e);
 			return pending_event.front();
 		}
 	}
@@ -712,6 +713,9 @@ void display_t::allow_input_passthrough(xcb_window_t w) {
 	if(err != nullptr) {
 		throw exception_t("Fail to create region %d %d", err->major_code, err->minor_code);
 	}
+
+	xcb_discard_reply(_xcb, ck.sequence);
+
 	/**
 	 * Shape for the entire of window.
 	 **/
@@ -903,26 +907,27 @@ void display_t::print_error(xcb_generic_error_t const * err) {
 	printf("#%08d ERROR %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
 }
 
-auto display_t::create_client_proxy(xcb_window_t w) -> client_proxy_t * {
+auto display_t::create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t> {
 	auto x = _client_proxies.find(w);
 	if(x == _client_proxies.end()) {
-		_client_proxies[w] = new client_proxy_t{this, w};
+		auto y = make_shared<client_proxy_t>(this, w);
+		if(y->is_valid())
+			_client_proxies[w] = y;
+		return y;
 	} else {
-		x->second->incr_ref();
-	}
-
-	return _client_proxies[w];
-
-}
-
-void display_t::destroy_client_proxy(client_proxy_t * proxy) {
-	proxy->decr_ref();
-	if(proxy->ref_count() == 0) {
-		_client_proxies.erase(proxy->xid());
-		delete proxy;
+		return x->second;
 	}
 }
 
+void display_t::filter_events(xcb_generic_event_t const * e) {
+	if(e->response_type == XCB_DESTROY_NOTIFY) {
+		auto ev = reinterpret_cast<xcb_destroy_notify_event_t const *>(e);
+		auto x = _client_proxies.find(ev->window);
+		if(x != _client_proxies.end()) {
+			_client_proxies.erase(x);
+		}
+	}
+}
 
 }
 

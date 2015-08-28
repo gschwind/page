@@ -45,7 +45,7 @@ protected:
 	page_context_t * _ctx;
 
 	/* handle properties of client */
-	client_proxy_t * _properties;
+	shared_ptr<client_proxy_t> _properties;
 
 	/* sub-clients */
 	list<shared_ptr<tree_t>> _children;

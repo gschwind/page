@@ -34,7 +34,7 @@ client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
 }
 
 client_base_t::~client_base_t() {
-	_ctx->dpy()->destroy_client_proxy(_properties);
+
 }
 
 void client_base_t::read_all_properties() {

@@ -428,12 +428,10 @@ void page_t::scan() {
 
 		auto c = _dpy->create_client_proxy(w);
 		if (not c->read_window_attributes()) {
-			_dpy->destroy_client_proxy(c);
 			continue;
 		}
 
 		if(c->wa()->_class == XCB_WINDOW_CLASS_INPUT_ONLY) {
-			_dpy->destroy_client_proxy(c);
 			continue;
 		}
 
@@ -452,8 +450,6 @@ void page_t::scan() {
 				}
 			}
 		}
-
-		_dpy->destroy_client_proxy(c);
 	}
 
 	free(r);
@@ -2596,8 +2592,6 @@ void page_t::onmap(xcb_window_t w) {
 			}
 		}
 
-			_dpy->destroy_client_proxy(props);
-
 		} catch (exception_t &e) {
 			std::cout << e.what() << std::endl;
 			throw;
@@ -2806,7 +2800,7 @@ bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestam
 		if (*(c->net_wm_user_time_window()) == XCB_WINDOW_NONE)
 			return false;
 
-		auto xc = shared_ptr<client_proxy_t>(_dpy->create_client_proxy(*(c->net_wm_user_time_window())), [this](client_proxy_t * c) { this->_dpy->destroy_client_proxy(c); });
+		auto xc = _dpy->create_client_proxy(*(c->net_wm_user_time_window()));
 
 		if(xc->net_wm_user_time() == nullptr)
 			return false;

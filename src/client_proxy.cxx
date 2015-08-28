@@ -133,15 +133,30 @@ xcb_window_t client_proxy_t::xid() {
 	return static_cast<xcb_window_t>(_id);
 }
 
-client_proxy_t::client_proxy_t(display_t * cnx, xcb_window_t id) :
-		_dpy{cnx}, _id{id} {
+client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
+		_dpy{dpy}, _id{id} {
 	_wa = nullptr;
 	_geometry = nullptr;
 	_shape = nullptr;
 	_need_update_type = true;
 	_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
 
-	_ref_count = 1;
+	/**
+	 * select needed default inputs.
+	 *
+	 * we also check if this success or not, is not will never receive
+	 * the destroy event, thus make display_t aware of this.
+	 **/
+	uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	xcb_void_cookie_t ck = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
+	xcb_generic_error_t * err = xcb_request_check(_dpy->xcb(), ck);
+	if(err != nullptr) {
+		_is_valid = false;
+	} else {
+		_is_valid = true;
+	}
+
+	xcb_discard_reply(_dpy->xcb(), ck.sequence);
 
 	read_window_attributes();
 	read_all_properties();
@@ -596,21 +611,12 @@ void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
 
 rect client_proxy_t::position() const { return rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
 
-
-
-void client_proxy_t::incr_ref() {
-	++_ref_count;
+bool client_proxy_t::is_valid() {
+	return _is_valid;
 }
 
-void client_proxy_t::decr_ref() {
-	--_ref_count;
-}
-
-int  client_proxy_t::ref_count() {
-	return _ref_count;
 }
 
 
-}
 
 

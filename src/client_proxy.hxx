@@ -43,14 +43,13 @@ private:
 	display_t *                  _dpy;
 	xcb_window_t                 _id;
 
-	unsigned                     _ref_count;
-
+	bool _is_valid;
 	bool                         _need_update_type;
 	xcb_atom_t                   _wm_type;
 
 	xcb_get_window_attributes_reply_t * _wa;
 	xcb_get_geometry_reply_t * _geometry;
-
+	region * _shape;
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 	private: cxx_name##_t _##cxx_name; \
@@ -68,8 +67,6 @@ private:
 #undef RO_PROPERTY
 #undef RW_PROPERTY
 
-	region *                     _shape;
-
 	/** short cut **/
 	xcb_atom_t A(atom_e atom);
 	xcb_atom_t B(atom_e atom);
@@ -78,16 +75,17 @@ private:
 private:
 	client_proxy_t(client_proxy_t const &);
 	client_proxy_t & operator=(client_proxy_t const &);
-	client_proxy_t(display_t * cnx, xcb_window_t id);
-	~client_proxy_t();
 
 public:
+	client_proxy_t(display_t * cnx, xcb_window_t id);
+	~client_proxy_t();
 
 	void read_all_properties();
 
 	void delete_all_properties();
 
 	bool read_window_attributes();
+	bool is_valid();
 
 	void update_shape();
 
@@ -155,10 +153,6 @@ public:
 	void delete_net_wm_state();
 	void delete_wm_state();
 	void add_to_save_set();
-
-	void incr_ref();
-	void decr_ref();
-	int  ref_count();
 
 };
 
