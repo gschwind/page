@@ -420,13 +420,11 @@ public:
 	}
 
 	~property_t() {
-		delete data;
+		/* MUST BE RELEASED */
 	}
 
 	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
-		if(ck.sequence != 0) {
-			xcb_discard_reply(xcb, ck.sequence);
-		}
+		release(xcb);
 		ck = xcb_get_property(xcb, 0, w, (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
 	}
 
@@ -457,15 +455,20 @@ public:
 		return data;
 	}
 
-	T * push(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w, T * new_data) {
+	void release(xcb_connection_t * xcb) {
 		delete data;
-		data = new_data;
+		data = nullptr;
 
 		if(ck.sequence != 0) {
 			xcb_discard_reply(xcb, ck.sequence);
 			ck.sequence = 0;
 		}
+	}
 
+	T * push(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w, T * new_data) {
+		release(xcb);
+
+		data = new_data;
 		if(data != nullptr) {
 			char * xdata;
 			int length;

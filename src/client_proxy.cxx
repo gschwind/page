@@ -174,6 +174,18 @@ void client_proxy_t::read_all_properties() {
 }
 
 void client_proxy_t::delete_all_properties() {
+
+#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+	_##cxx_name.release(_dpy->xcb());
+
+#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+	_##cxx_name.release(_dpy->xcb());
+
+#include "client_property_list.hxx"
+
+#undef RO_PROPERTY
+#undef RW_PROPERTY
+
 	safe_delete(_shape);
 }
 
