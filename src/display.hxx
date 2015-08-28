@@ -40,8 +40,11 @@
 #include "motif_hints.hxx"
 
 #include "properties.hxx"
+#include "composite_surface.hxx"
 
 namespace page {
+
+using namespace std;
 
 class client_proxy_t;
 
@@ -62,13 +65,14 @@ class display_t {
 	xcb_visualtype_t * _xcb_default_visual_type;
 	xcb_visualtype_t * _xcb_root_visual_type;
 
-	std::map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
-	std::map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
-	std::list<xcb_generic_event_t *> pending_event;
+	class map<xcb_visualid_t, xcb_visualtype_t*> _xcb_visual_data;
+	class map<xcb_visualid_t, uint32_t> _xcb_visual_depth;
+	list<xcb_generic_event_t *> pending_event;
 
 	int _grab_count;
 
-	std::map<xcb_window_t, client_proxy_t *> _client_proxies;
+	class map<xcb_window_t, client_proxy_t *> _client_proxies;
+	//class map<xcb_window_t, composite_surface_t *> _client_surfaces;
 
 public:
 
@@ -250,31 +254,6 @@ public:
 
 	};
 
-	template<atom_e name, atom_e type, typename xT >
-	void write_property(xcb_window_t w, property_t<name, type, xT> & p) {
-		char * data;
-		int length;
-		property_helper_t<xT>::serialize(p.data, data, length);
-		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(name), A(type), property_helper_t<xT>::format, length, data);
-		delete[] data;
-	}
-
-	template<atom_e name, atom_e type, typename xT>
-	static properties_fetcher_t<name, type, xT> make_property_fetcher_t(property_t<name, type, xT> & p, display_t * cnx, xcb_window_t w) {
-		return properties_fetcher_t<name, type, xT>{p, cnx, w};
-	}
-
-	void sync() {
-		/** force sync */
-		xcb_void_cookie_t ck = xcb_no_operation_checked(_xcb);
-		xcb_generic_error_t * err = xcb_request_check(_xcb, ck);
-		if(err != nullptr) {
-			std::cout << "Fail to sync with the server" << std::endl;
-		}
-
-		xcb_discard_reply(_xcb, ck.sequence);
-	}
-
 	bool query_extension(char const * name, int * opcode, int * event, int * error);
 
 	void select_input(xcb_window_t w, uint32_t mask);
@@ -295,20 +274,6 @@ public:
 		return _xcb_visual_data[vid];
 	}
 
-	bool lock(xcb_window_t w) {
-		grab();
-		fetch_pending_events();
-		if(check_for_destroyed_window(w)) {
-			ungrab();
-			return false;
-		}
-		return true;
-	}
-
-	void unlock() {
-		ungrab();
-	}
-
 	void check_x11_extension();
 
 	xcb_atom_t get_atom(char const * name);
@@ -316,17 +281,8 @@ public:
 
 	char const * get_event_name(uint8_t response_type);
 
-	std::string const & get_atom_name(xcb_atom_t a) {
+	string const & get_atom_name(xcb_atom_t a) {
 		return _A->name(a);
-	}
-
-
-	template<typename F>
-	void for_each_event(F func) {
-		fetch_pending_events();
-		for(auto ev: pending_event) {
-			func(ev);
-		}
 	}
 
 	auto create_client_proxy(xcb_window_t w) -> client_proxy_t *;

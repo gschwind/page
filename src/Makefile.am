@@ -18,6 +18,7 @@ AM_CXXFLAGS =  \
 
 page_SOURCES = \
 	utils.cxx \
+	pixmap.cxx \
 	tree.cxx \
 	client_base.cxx \
 	client_not_managed.cxx \

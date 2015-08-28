@@ -330,10 +330,7 @@ void grab_floating_move_t::button_release(xcb_button_release_event_t const * e) 
 
 		_ctx->dpy()->set_window_cursor(f->base(), XCB_NONE);
 
-		if (_ctx->dpy()->lock(f->orig())) {
-			_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
-			_ctx->dpy()->unlock();
-		}
+		_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
 
 		f->set_floating_wished_position(final_position);
 		f->reconfigure();
@@ -517,10 +514,7 @@ void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e
 
 	if (e->detail == button) {
 		_ctx->dpy()->set_window_cursor(f->base(), XCB_NONE);
-		if (_ctx->dpy()->lock(f->orig())) {
-			_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
-			_ctx->dpy()->unlock();
-		}
+		_ctx->dpy()->set_window_cursor(f->orig(), XCB_NONE);
 		f->set_floating_wished_position(final_position);
 		f->reconfigure();
 		_ctx->set_focus(f, e->time);

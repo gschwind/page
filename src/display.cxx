@@ -731,8 +731,8 @@ void display_t::disable_input_passthrough(xcb_window_t w) {
 }
 
 void display_t::set_net_active_window(xcb_window_t w) {
-	net_active_window_t active{new xcb_window_t{w}};
-	write_property(root(), active);
+	net_active_window_t active;
+	active.push(_xcb, _A, root(), new xcb_window_t{w});
 }
 
 void display_t::select_input(xcb_window_t w, uint32_t mask) {

@@ -402,15 +402,20 @@ struct property_helper_t<motif_wm_hints_t> {
 };
 
 template<atom_e name, atom_e type, typename T>
-struct property_t {
+class property_t {
+
 	T * data;
 	xcb_get_property_cookie_t ck;
 
-	property_t(T * data) : data(data) {
-		ck.sequence = 0;
-	}
+	property_t & operator=(property_t const &);
+	property_t(property_t const &);
 
-	property_t() : data(nullptr) {
+public:
+	using cxx_type = T;
+	enum : int { x11_name = name };
+	enum : int { x11_type = type };
+
+	property_t() : data{nullptr} {
 		ck.sequence = 0;
 	}
 
@@ -418,49 +423,16 @@ struct property_t {
 		delete data;
 	}
 
-	property_t & operator=(T * x) {
-		delete data;
-		data = x;
-		return *this;
-	}
-
-	operator T*() {
-		return data;
-	}
-
-	operator T const *() const {
-		return data;
-	}
-
-	T * operator->() {
-		return data;
-	}
-
-	T const * operator->() const {
-		return data;
-	}
-
-	T & operator*() {
-		return *data;
-	}
-
-	T const & operator*() const {
-		return *data;
-	}
-
 	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
+		if(ck.sequence != 0) {
+			xcb_discard_reply(xcb, ck.sequence);
+		}
 		ck = xcb_get_property(xcb, 0, w, (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
 	}
 
-	void clear(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
-		delete data;
-		data = nullptr;
-		xcb_delete_property(xcb, w, (*A)(name));
-	}
-
-	void update(xcb_connection_t * xcb) {
+	T * update(xcb_connection_t * xcb) {
 		if(ck.sequence == 0)
-			return;
+			return data;
 
 		xcb_generic_error_t * err;
 		xcb_get_property_reply_t * r = xcb_get_property_reply(xcb, ck, &err);
@@ -482,43 +454,43 @@ struct property_t {
 		}
 
 		ck.sequence = 0;
+		return data;
+	}
 
+	T * push(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w, T * new_data) {
+		delete data;
+		data = new_data;
+
+		if(ck.sequence != 0) {
+			xcb_discard_reply(xcb, ck.sequence);
+			ck.sequence = 0;
+		}
+
+		if(data != nullptr) {
+			char * xdata;
+			int length;
+			property_helper_t<T>::serialize(data, xdata, length);
+			xcb_change_property(xcb, XCB_PROP_MODE_REPLACE, w, (*A)(name), (*A)(type), property_helper_t<T>::format, length, xdata);
+			delete[] xdata;
+		} else {
+			xcb_delete_property(xcb, w, (*A)(name));
+		}
+
+		return data;
 	}
 
 };
 
-/* client properties definitions :             EWMH/X11 name               EWMH/X11 type       C++ type */
-using wm_name_t =                   property_t<WM_NAME,                    STRING,             string>; // 8
-using wm_icon_name_t =              property_t<WM_ICON_NAME,               STRING,             string>; // 8
-using wm_normal_hints_t =           property_t<WM_NORMAL_HINTS,            WM_SIZE_HINTS,      XSizeHints>; // 32
-using wm_hints_t =                  property_t<WM_HINTS,                   WM_HINTS,           XWMHints>; // 32
-using wm_class_t =                  property_t<WM_CLASS,                   STRING,             vector<string>>; // 8
-using wm_transient_for_t =          property_t<WM_TRANSIENT_FOR,           WINDOW,             xcb_window_t>; // 32
-using wm_protocols_t =              property_t<WM_PROTOCOLS,               ATOM,               list<xcb_atom_t>>; // 32
-using wm_colormap_windows_t =       property_t<WM_COLORMAP_WINDOWS,        WINDOW,             vector<xcb_window_t>>; // 32
-using wm_client_machine_t =         property_t<WM_CLIENT_MACHINE,          STRING,             string>; // 8
-using wm_state_t =                  property_t<WM_STATE,                   WM_STATE,           wm_state_data_t>; // 32
+#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+using cxx_name##_t = property_t<x11_name, x11_type, cxx_type>;
 
-using net_wm_name_t =               property_t<_NET_WM_NAME,               UTF8_STRING,        string>; // 8
-using net_wm_visible_name_t =       property_t<_NET_WM_VISIBLE_NAME,       UTF8_STRING,        string>; // 8
-using net_wm_icon_name_t =          property_t<_NET_WM_ICON_NAME,          UTF8_STRING,        string>; // 8
-using net_wm_visible_icon_name_t =  property_t<_NET_WM_VISIBLE_ICON_NAME,  UTF8_STRING,        string>; // 8
-using net_wm_desktop_t =            property_t<_NET_WM_DESKTOP,            CARDINAL,           unsigned int>; // 32
-using net_wm_window_type_t =        property_t<_NET_WM_WINDOW_TYPE,        ATOM,               list<xcb_atom_t>>; // 32
-using net_wm_state_t =              property_t<_NET_WM_STATE,              ATOM,               list<xcb_atom_t>>; // 32
-using net_wm_allowed_actions_t =    property_t<_NET_WM_ALLOWED_ACTIONS,    ATOM,               list<xcb_atom_t>>; // 32
-using net_wm_strut_t =              property_t<_NET_WM_STRUT,              CARDINAL,           vector<int>>; // 32
-using net_wm_strut_partial_t =      property_t<_NET_WM_STRUT_PARTIAL,      CARDINAL,           vector<int>>; // 32
-using net_wm_icon_geometry_t =      property_t<_NET_WM_ICON_GEOMETRY,      CARDINAL,           vector<int>>; // 32
-using net_wm_icon_t =               property_t<_NET_WM_ICON,               CARDINAL,           vector<uint32_t>>; // 32
-using net_wm_pid_t =                property_t<_NET_WM_PID,                CARDINAL,           unsigned int>; // 32
-//using net_wm_handled_icons_t =    properties_t<_NET_WM_HANDLED_ICONS,    STRING,             string>; // 8
-using net_wm_user_time_t =          property_t<_NET_WM_USER_TIME,          CARDINAL,           unsigned int>; // 32
-using net_wm_user_time_window_t =   property_t<_NET_WM_USER_TIME_WINDOW,   WINDOW,             xcb_window_t>; // 32
-using net_frame_extents_t =         property_t<_NET_FRAME_EXTENTS,         CARDINAL,           vector<int>>; // 32
-using net_wm_opaque_region_t =      property_t<_NET_WM_OPAQUE_REGION,      CARDINAL,           vector<int>>; // 32
-using net_wm_bypass_compositor_t =  property_t<_NET_WM_BYPASS_COMPOSITOR,  CARDINAL,           unsigned int>; // 32
-using motif_hints_t =               property_t<_MOTIF_WM_HINTS,            _MOTIF_WM_HINTS,    motif_wm_hints_t>; // 8
+#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+using cxx_name##_t = property_t<x11_name, x11_type, cxx_type>;
+
+#include "client_property_list.hxx"
+
+#undef RO_PROPERTY
+#undef RW_PROPERTY
 
 /** root properties **/
 using net_active_window_t =         property_t<_NET_ACTIVE_WINDOW,         WINDOW,             xcb_window_t>; // 32

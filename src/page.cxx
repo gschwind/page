@@ -323,10 +323,7 @@ void page_t::run() {
 	_dpy->unload_cursors();
 
 	for (auto & i : filter_class<client_managed_t>(_root->get_all_children())) {
-		if (_dpy->lock(i->orig())) {
-			_dpy->reparentwindow(i->orig(), _dpy->root(), 0, 0);
-			_dpy->unlock();
-		}
+		_dpy->reparentwindow(i->orig(), _dpy->root(), 0, 0);
 		detach(i);
 	}
 
@@ -926,12 +923,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 		//add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_managed_t)) {
 			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-
-			if (_dpy->lock(mw->orig())) {
-				_dpy->reparentwindow(mw->orig(), _dpy->root(), 0.0, 0.0);
-				_dpy->unlock();
-			}
-
+			_dpy->reparentwindow(mw->orig(), _dpy->root(), 0.0, 0.0);
 			unmanage(mw);
 		}
 		//render();
@@ -2814,18 +2806,15 @@ bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestam
 		if (*(c->net_wm_user_time_window()) == XCB_WINDOW_NONE)
 			return false;
 
-		net_wm_user_time_t xtime;
-		auto x = display_t::make_property_fetcher_t(xtime, _dpy,
-				*(c->net_wm_user_time_window()));
-		x.update(_dpy);
+		auto xc = shared_ptr<client_proxy_t>(_dpy->create_client_proxy(*(c->net_wm_user_time_window())), [this](client_proxy_t * c) { this->_dpy->destroy_client_proxy(c); });
 
-		if(xtime.data == nullptr)
+		if(xc->net_wm_user_time() == nullptr)
 			return false;
 
-		if (*xtime == 0)
+		if (*(xc->net_wm_user_time()) == 0)
 			return false;
 
-		time = *(xtime);
+		time = *(xc->net_wm_user_time());
 		return true;
 
 	}

@@ -45,128 +45,6 @@ bool client_base_t::read_window_attributes() {
 	return _properties->read_window_attributes();
 }
 
-void client_base_t::update_wm_name() {
-	_properties->update_wm_name();
-}
-
-void client_base_t::update_wm_icon_name() {
-	_properties->update_wm_icon_name();
-}
-
-void client_base_t::update_wm_normal_hints() {
-	_properties->update_wm_normal_hints();
-}
-
-void client_base_t::update_wm_hints() {
-	_properties->update_wm_hints();
-}
-
-void client_base_t::update_wm_class() {
-	_properties->update_wm_class();
-}
-
-void client_base_t::update_wm_transient_for() {
-	_properties->update_wm_transient_for();
-}
-
-void client_base_t::update_wm_protocols() {
-	_properties->update_wm_protocols();
-}
-
-void client_base_t::update_wm_colormap_windows() {
-	_properties->update_wm_colormap_windows();
-}
-
-void client_base_t::update_wm_client_machine() {
-	_properties->update_wm_client_machine();
-}
-
-void client_base_t::update_wm_state() {
-	_properties->update_wm_state();
-}
-
-/* EWMH */
-
-void client_base_t::update_net_wm_name() {
-	_properties->update_net_wm_name();
-}
-
-void client_base_t::update_net_wm_visible_name() {
-	_properties->update_net_wm_visible_name();
-}
-
-void client_base_t::update_net_wm_icon_name() {
-	_properties->update_net_wm_icon_name();
-}
-
-void client_base_t::update_net_wm_visible_icon_name() {
-	_properties->update_net_wm_visible_icon_name();
-}
-
-void client_base_t::update_net_wm_desktop() {
-	_properties->update_net_wm_desktop();
-}
-
-void client_base_t::update_net_wm_window_type() {
-	_properties->update_net_wm_window_type();
-}
-
-void client_base_t::update_net_wm_state() {
-	_properties->update_net_wm_state();
-}
-
-void client_base_t::update_net_wm_allowed_actions() {
-	_properties->update_net_wm_allowed_actions();
-}
-
-void client_base_t::update_net_wm_struct() {
-	_properties->update_net_wm_struct();
-}
-
-void client_base_t::update_net_wm_struct_partial() {
-	_properties->update_net_wm_struct_partial();
-}
-
-void client_base_t::update_net_wm_icon_geometry() {
-	_properties->update_net_wm_icon_geometry();
-}
-
-void client_base_t::update_net_wm_icon() {
-	_properties->update_net_wm_icon();
-}
-
-void client_base_t::update_net_wm_pid() {
-	_properties->update_net_wm_pid();
-}
-
-void client_base_t::update_net_wm_handled_icons() {
-
-}
-
-void client_base_t::update_net_wm_user_time() {
-	_properties->update_net_wm_user_time();
-}
-
-void client_base_t::update_net_wm_user_time_window() {
-	_properties->update_net_wm_user_time_window();
-}
-
-void client_base_t::update_net_frame_extents() {
-	_properties->update_net_frame_extents();
-}
-
-void client_base_t::update_net_wm_opaque_region() {
-	_properties->update_net_wm_opaque_region();
-}
-
-void client_base_t::update_net_wm_bypass_compositor() {
-	_properties->update_net_wm_bypass_compositor();
-}
-
-void client_base_t::update_motif_hints() {
-	_properties->update_motif_hints();
-}
-
 void client_base_t::update_shape() {
 	_properties->update_shape();
 }
@@ -231,46 +109,21 @@ auto client_base_t::wa() const -> xcb_get_window_attributes_reply_t const * { re
 /* window geometry */
 auto client_base_t::geometry() const -> xcb_get_geometry_reply_t const * { return _properties->geometry(); }
 
-/* ICCCM (read-only properties for WM) */
-auto client_base_t::wm_name() const -> string const * { return _properties->wm_name(); }
-auto client_base_t::wm_icon_name() const -> string const * { return _properties->wm_icon_name(); };
-auto client_base_t::wm_normal_hints() const -> XSizeHints const * { return _properties->wm_normal_hints(); }
-auto client_base_t::wm_hints() const -> XWMHints const * { return _properties->wm_hints(); }
-auto client_base_t::wm_class() const -> vector<string> const * { return _properties->wm_class(); }
-auto client_base_t::wm_transient_for() const -> xcb_window_t const * { return _properties->wm_transient_for(); }
-auto client_base_t::wm_protocols() const -> list<xcb_atom_t> const * { return _properties->wm_protocols(); }
-auto client_base_t::wm_colormap_windows() const -> vector<xcb_window_t> const * { return _properties->wm_colormap_windows(); }
-auto client_base_t::wm_client_machine() const -> string const * { return _properties->wm_client_machine(); }
 
-/* ICCCM (read-write properties for WM) */
-auto client_base_t::wm_state() const -> wm_state_data_t const * {return _properties->wm_state(); }
+#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+cxx_type const * client_base_t::cxx_name() { return _properties->cxx_name(); } \
+void client_base_t::update_##cxx_name() { _properties->update_##cxx_name(); }
 
-/* EWMH (read-only properties for WM) */
-auto client_base_t::net_wm_name() const -> string const * { return _properties->net_wm_name(); }
-auto client_base_t::net_wm_visible_name() const -> string const * { return _properties->net_wm_visible_name(); }
-auto client_base_t::net_wm_icon_name() const -> string const * { return _properties->net_wm_icon_name(); }
-auto client_base_t::net_wm_visible_icon_name() const -> string const * { return _properties->net_wm_visible_icon_name(); }
-auto client_base_t::net_wm_window_type() const -> list<xcb_atom_t> const * { return _properties->net_wm_window_type(); }
-auto client_base_t::net_wm_allowed_actions() const -> list<xcb_atom_t> const * { return _properties->net_wm_allowed_actions(); }
-auto client_base_t::net_wm_strut() const -> vector<int> const * { return _properties->net_wm_strut(); }
-auto client_base_t::net_wm_strut_partial() const -> vector<int> const * { return _properties->net_wm_strut_partial(); }
-auto client_base_t::net_wm_icon_geometry() const -> vector<int> const * { return _properties->net_wm_icon_geometry(); }
-auto client_base_t::net_wm_icon() const -> vector<uint32_t> const * { return _properties->net_wm_icon(); }
-auto client_base_t::net_wm_pid() const -> unsigned int const * { return _properties->net_wm_pid(); }
-auto client_base_t::net_wm_handled_icons() const -> bool { throw exception_t("No implemented"); }// { return _properties->net_wm_handled_icons(); }
-auto client_base_t::net_wm_user_time() const -> uint32_t const * { return _properties->net_wm_user_time(); }
-auto client_base_t::net_wm_user_time_window() const -> xcb_window_t const * { return _properties->net_wm_user_time_window(); }
-auto client_base_t::net_wm_opaque_region() const -> vector<int> const * { return _properties->net_wm_opaque_region(); }
-auto client_base_t::net_wm_bypass_compositor() const -> unsigned int const * { return _properties->net_wm_bypass_compositor(); }
+#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+cxx_type const * client_base_t::cxx_name() { return _properties->cxx_name(); } \
+void client_base_t::update_##cxx_name() { _properties->update_##cxx_name(); } \
+cxx_type const * client_base_t::cxx_name(cxx_type * x) { return _properties->cxx_name(x); }
 
-/* EWMH (read-write properties for WM) */
-auto client_base_t::net_wm_desktop() const -> unsigned int const * { return _properties->net_wm_desktop(); }
-auto client_base_t::net_wm_state() const -> list<xcb_atom_t> const * { return _properties->net_wm_state(); }
-auto client_base_t::net_frame_extents() const -> vector<int> const * { return _properties->net_frame_extents(); }
+#include "client_property_list.hxx"
 
+#undef RO_PROPERTY
+#undef RW_PROPERTY
 
-/* OTHERs */
-auto client_base_t::motif_hints() const -> motif_wm_hints_t const * { return _properties->motif_hints(); }
 auto client_base_t::shape() const -> region const * { return _properties->shape(); }
 auto client_base_t::position() -> rect { return _properties->position(); }
 
@@ -313,9 +166,9 @@ void client_base_t::on_property_notify(xcb_property_notify_event_t const * e) {
 	} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
 		update_net_wm_allowed_actions();
 	} else if (e->atom == A(_NET_WM_STRUT)) {
-		update_net_wm_struct();
+		update_net_wm_strut();
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-		update_net_wm_struct_partial();
+		update_net_wm_strut_partial();
 	} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
 		update_net_wm_icon_geometry();
 	} else if (e->atom == A(_NET_WM_ICON)) {
