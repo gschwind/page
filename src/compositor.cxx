@@ -14,8 +14,6 @@
 
 #include <cstdlib>
 
-#include "composite_surface_manager.hxx"
-
 #include "utils.hxx"
 #include "compositor.hxx"
 #include "atoms.hxx"

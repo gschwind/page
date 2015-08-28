@@ -15,13 +15,10 @@
 
 #include <xcb/xcb.h>
 
-#include "client_proxy.hxx"
 #include "icon_handler.hxx"
 #include "theme.hxx"
 
-#include "composite_surface_manager.hxx"
 #include "floating_event.hxx"
-#include "composite_surface.hxx"
 #include "renderable_floating_outer_gradien.hxx"
 #include "renderable_pixmap.hxx"
 
@@ -46,7 +43,7 @@ class client_managed_t : public client_base_t {
 	managed_window_type_e _managed_type;
 	xcb_atom_t _net_wm_type;
 
-	composite_surface_view_t * _client_view;
+	client_view_t * _client_view;
 
 	/** hold floating position **/
 	rect _floating_wished_position;
@@ -197,7 +194,7 @@ public:
 
 	bool is(managed_window_type_e type);
 	auto title() const -> string const &;
-	auto create_surface_view() -> composite_surface_view_t *;
+	auto create_surface_view() -> client_view_t *;
 	auto get_wished_position() -> rect const &;
 	void set_floating_wished_position(rect const & pos);
 	rect get_base_position() const;

@@ -13,6 +13,7 @@
 #include <X11/Xlib.h>
 #include <X11/extensions/shape.h>
 #include <xcb/xcb.h>
+#include <xcb/damage.h>
 
 #include <limits>
 #include <utility>
@@ -21,23 +22,49 @@
 #include <iostream>
 #include <set>
 #include <algorithm>
+#include <memory>
 
-
-#include "utils.hxx"
+#include "atoms.hxx"
 #include "region.hxx"
-#include "display.hxx"
 #include "motif_hints.hxx"
-
 #include "properties.hxx"
 
 namespace page {
 
 class display_t;
+class client_proxy_t;
+struct pixmap_t;
+
+class invalid_client_t {
+
+};
 
 using namespace std;
 
+/**
+ * client_view_t is handled by client if they keep a view of the
+ * composite surface.
+ **/
+class client_view_t {
+	friend class display_t;
+	friend class client_proxy_t;
+
+	client_proxy_t * _parent;
+	region _damaged;
+
+public:
+
+	client_view_t(client_proxy_t * parent);
+	auto get_pixmap() -> shared_ptr<pixmap_t>;
+	void clear_damaged();
+	auto get_damaged() -> region const &;
+	bool has_damage();
+
+};
+
 class client_proxy_t {
 	friend class display_t;
+	friend class client_view_t;
 
 private:
 	display_t *                  _dpy;
@@ -47,9 +74,18 @@ private:
 	bool                         _need_update_type;
 	xcb_atom_t                   _wm_type;
 
-	xcb_get_window_attributes_reply_t * _wa;
-	xcb_get_geometry_reply_t * _geometry;
+	xcb_get_window_attributes_reply_t _wa;
+	xcb_get_geometry_reply_t _geometry;
 	region * _shape;
+
+	xcb_visualtype_t * _vis;
+	xcb_damage_damage_t _damage;
+	shared_ptr<pixmap_t> _pixmap;
+
+	list<client_view_t *> _views;
+
+	bool _need_pixmap_update;
+	bool _is_redirected;
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 	private: cxx_name##_t _##cxx_name; \
@@ -76,6 +112,8 @@ private:
 	client_proxy_t(client_proxy_t const &);
 	client_proxy_t & operator=(client_proxy_t const &);
 
+	bool _safe_pixmap_update();
+
 public:
 	client_proxy_t(display_t * cnx, xcb_window_t id);
 	~client_proxy_t();
@@ -91,6 +129,7 @@ public:
 
 	void set_net_wm_desktop(unsigned int n);
 
+
 public:
 
 	void print_window_attributes();
@@ -105,8 +144,8 @@ public:
 	display_t *          cnx() const;
 	xcb_window_t         id() const;
 
-	auto wa() const -> xcb_get_window_attributes_reply_t const *;
-	auto geometry() const -> xcb_get_geometry_reply_t const *;
+	auto wa() const -> xcb_get_window_attributes_reply_t const &;
+	auto geometry() const -> xcb_get_geometry_reply_t const &;
 
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const;
@@ -154,9 +193,29 @@ public:
 	void delete_wm_state();
 	void add_to_save_set();
 
+	void process_event(xcb_damage_notify_event_t const * ev);
+	void process_event(xcb_property_notify_event_t const * ev);
+	void create_damage();
+	void destroy_damage();
+	void enable_redirect();
+	void disable_redirect();
+	void on_map();
+	void add_damaged(region const & r);
+	int depth();
+	void apply_change();
+	void destroy_pixmap();
+	void freeze(bool x);
+
+	auto create_view() -> client_view_t *;
+	void remove_view(client_view_t * v);
+	bool _has_views();
+
+	shared_ptr<pixmap_t> get_pixmap();
+
 };
 
 }
+
 
 
 

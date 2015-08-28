@@ -21,9 +21,7 @@
 #include "region.hxx"
 
 #include "atoms.hxx"
-#include "client_proxy.hxx"
 #include "exception.hxx"
-
 #include "display.hxx"
 
 #include "tree.hxx"

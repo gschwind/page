@@ -35,18 +35,17 @@
 
 #include "box.hxx"
 #include "region.hxx"
+#include "utils.hxx"
 #include "atoms.hxx"
-#include "client_proxy.hxx"
 #include "motif_hints.hxx"
-
 #include "properties.hxx"
-#include "composite_surface.hxx"
 
 namespace page {
 
 using namespace std;
 
 class client_proxy_t;
+class client_view_t;
 
 static unsigned long const AllEventMask = 0x01ffffff;
 
@@ -72,7 +71,8 @@ class display_t {
 	int _grab_count;
 
 	class map<xcb_window_t, shared_ptr<client_proxy_t>> _client_proxies;
-	//class map<xcb_window_t, composite_surface_t *> _client_surfaces;
+
+	bool _enable_composite;
 
 public:
 
@@ -123,6 +123,8 @@ public:
 
 public:
 
+	signal_t<xcb_window_t, bool> on_visibility_change;
+
 	int fd();
 	xcb_window_t root();
 	xcb_connection_t * xcb();
@@ -131,7 +133,7 @@ public:
 
 	xcb_screen_t * xcb_screen();
 
-	/* conveniant macro to get atom XID */
+	/* Convenient macro to get atom XID */
 	xcb_atom_t A(atom_e atom);
 
 	int screen();
@@ -256,6 +258,13 @@ public:
 	auto create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t>;
 
 	void filter_events(xcb_generic_event_t const * e);
+
+	void disable();
+	void enable();
+	void make_surface_stats(int & size, int & count);
+
+	auto create_view(xcb_window_t w) -> client_view_t *;
+	void destroy_view(client_view_t * v);
 
 };
 

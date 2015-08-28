@@ -16,11 +16,9 @@
 
 
 #include "client_base.hxx"
-#include "client_proxy.hxx"
 #include "display.hxx"
 
 #include "renderable.hxx"
-#include "composite_surface_manager.hxx"
 #include "renderable_floating_outer_gradien.hxx"
 #include "renderable_unmanaged_gaussian_shadow.hxx"
 #include "renderable_pixmap.hxx"
@@ -41,7 +39,7 @@ private:
 	mutable region _visible_region_cache;
 	mutable region _damage_cache;
 
-	composite_surface_view_t * _client_view;
+	client_view_t * _client_view;
 
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);

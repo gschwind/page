@@ -8,6 +8,7 @@
  */
 
 #include "display.hxx"
+#include "client_proxy.hxx"
 #include "client_not_managed.hxx"
 
 namespace page {
@@ -22,7 +23,7 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_window_t w,
 	_properties->select_input(UNMANAGED_ORIG_WINDOW_EVENT_MASK);
 	_properties->select_input_shape(true);
 	_properties->update_shape();
-	_client_view = _ctx->create_view(orig());
+	_client_view = _ctx->create_view(w);
 }
 
 client_not_managed_t::~client_not_managed_t() {
@@ -49,9 +50,7 @@ string client_not_managed_t::get_node_name() const {
 		oss << " " << *_properties->net_wm_name();
 	}
 
-	if(_properties->geometry() != nullptr) {
-		oss << " " << _properties->geometry()->width << "x" << _properties->geometry()->height << "+" << _properties->geometry()->x << "+" << _properties->geometry()->y;
-	}
+	oss << " " << _properties->geometry().width << "x" << _properties->geometry().height << "+" << _properties->geometry().x << "+" << _properties->geometry().y;
 
 	return oss.str();
 }
@@ -70,8 +69,8 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	_damage_cache += dmg;
 	_client_view->clear_damaged();
 
-	rect pos(_properties->geometry()->x, _properties->geometry()->y,
-			_properties->geometry()->width, _properties->geometry()->height);
+	rect pos(_properties->geometry().x, _properties->geometry().y,
+			_properties->geometry().width, _properties->geometry().height);
 
 }
 
@@ -91,7 +90,7 @@ void client_not_managed_t::_update_opaque_region() {
 	if (net_wm_opaque_region() != nullptr) {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
 	} else {
-		if (geometry()->depth != 32) {
+		if (_properties->geometry().depth != 32) {
 			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
 		}
 	}

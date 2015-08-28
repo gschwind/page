@@ -123,7 +123,6 @@ public:
 
 	display_t * _dpy;
 	compositor_t * _compositor;
-	composite_surface_manager_t * _csmgr;
 	theme_t * _theme;
 
 	page_configuration_t configuration;
@@ -404,8 +403,8 @@ public:
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>>;
 	virtual auto keymap() const -> keymap_t const *;
-	virtual auto create_view(xcb_window_t w) -> composite_surface_view_t *;
-	virtual void destroy_view(composite_surface_view_t * v);
+	virtual auto create_view(xcb_window_t w) -> client_view_t *;
+	virtual void destroy_view(client_view_t * v);
 	virtual void make_surface_stats(int & size, int & count);
 
 };

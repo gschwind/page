@@ -5,9 +5,12 @@
  *      Author: gschwind
  */
 
-#include <client_proxy.hxx>
+#include "client_proxy.hxx"
+
+#include "pixmap.hxx"
 
 namespace page {
+
 
 void client_proxy_t::select_input(uint32_t mask) {
 	_dpy->select_input(_id, mask|XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY);
@@ -135,39 +138,66 @@ xcb_window_t client_proxy_t::xid() {
 
 client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 		_dpy{dpy}, _id{id} {
-	_wa = nullptr;
-	_geometry = nullptr;
 	_shape = nullptr;
 	_need_update_type = true;
 	_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
 
 	/**
 	 * select needed default inputs.
-	 *
-	 * we also check if this success or not, is not will never receive
-	 * the destroy event, thus make display_t aware of this.
 	 **/
 	uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-	xcb_void_cookie_t ck = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
-	xcb_generic_error_t * err = xcb_request_check(_dpy->xcb(), ck);
-	if(err != nullptr) {
-		_is_valid = false;
-	} else {
-		_is_valid = true;
+
+	/** following request are mandatory to create a client_proxy **/
+	auto ck0 = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
+	auto ck1 = xcb_get_window_attributes(_dpy->xcb(), xid());
+	auto ck2 = xcb_get_geometry(_dpy->xcb(), xid());
+
+	xcb_get_geometry_reply_t * geometry = nullptr;
+	xcb_get_window_attributes_reply_t * wa = nullptr;
+
+	try {
+		xcb_generic_error_t * err;
+		err = xcb_request_check(_dpy->xcb(), ck0);
+		if(err != nullptr)
+			throw invalid_client_t{};
+		wa = xcb_get_window_attributes_reply(_dpy->xcb(), ck1, &err);
+		if(err != nullptr)
+			throw invalid_client_t{};
+		geometry = xcb_get_geometry_reply(_dpy->xcb(), ck2, &err);
+		if(err != nullptr)
+			throw invalid_client_t{};
+
+		_wa = *wa;
+		_geometry = *geometry;
+		_vis = _dpy->get_visual_type(_wa.visual);
+		_need_pixmap_update= true;
+
+		free(wa);
+		free(geometry);
+
+	} catch(invalid_client_t & e) {
+		xcb_discard_reply(_dpy->xcb(), ck0.sequence);
+		if(wa != nullptr)
+			free(wa);
+		else
+			xcb_discard_reply(_dpy->xcb(), ck1.sequence);
+		if(geometry != nullptr)
+			free(geometry);
+		else
+			xcb_discard_reply(_dpy->xcb(), ck2.sequence);
+		throw;
 	}
 
-	xcb_discard_reply(_dpy->xcb(), ck.sequence);
-
-	read_window_attributes();
 	read_all_properties();
+	create_damage();
+
 }
 
 client_proxy_t::~client_proxy_t() {
-	if(_wa != nullptr)
-		free(_wa);
-	if(_geometry != nullptr)
-		free(_geometry);
 	delete_all_properties();
+	if(_is_redirected)
+		xcb_composite_unredirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
+	destroy_damage();
 }
 
 void client_proxy_t::read_all_properties() {
@@ -202,24 +232,6 @@ void client_proxy_t::delete_all_properties() {
 #undef RW_PROPERTY
 
 	safe_delete(_shape);
-}
-
-bool client_proxy_t::read_window_attributes() {
-	if(_wa != nullptr) {
-		free(_wa);
-		_wa = nullptr;
-	}
-
-	if(_geometry != nullptr) {
-		free(_geometry);
-		_geometry = nullptr;
-	}
-
-	auto ck0 = xcb_get_window_attributes(_dpy->xcb(), xid());
-	auto ck1 = xcb_get_geometry(_dpy->xcb(), xid());
-	_wa = xcb_get_window_attributes_reply(_dpy->xcb(), ck0, nullptr);
-	_geometry = xcb_get_geometry_reply(_dpy->xcb(), ck1, nullptr);
-	return _wa != nullptr and _geometry != nullptr;
 }
 
 void client_proxy_t::update_shape() {
@@ -269,42 +281,42 @@ void client_proxy_t::set_net_wm_desktop(unsigned int n) {
 
 void client_proxy_t::print_window_attributes() {
 	printf(">>> window xid: #%u\n", _id);
-	printf("> size: %dx%d+%d+%d\n", _geometry->width, _geometry->height, _geometry->x, _geometry->y);
-	printf("> border_width: %d\n", _geometry->border_width);
-	printf("> depth: %d\n", _geometry->depth);
-	printf("> visual #%u\n", _wa->visual);
-	printf("> root: #%u\n", _geometry->root);
-	if (_wa->_class == CopyFromParent) {
+	printf("> size: %dx%d+%d+%d\n", _geometry.width, _geometry.height, _geometry.x, _geometry.y);
+	printf("> border_width: %d\n", _geometry.border_width);
+	printf("> depth: %d\n", _geometry.depth);
+	printf("> visual #%u\n", _wa.visual);
+	printf("> root: #%u\n", _geometry.root);
+	if (_wa._class == CopyFromParent) {
 		printf("> class: CopyFromParent\n");
-	} else if (_wa->_class == InputOutput) {
+	} else if (_wa._class == InputOutput) {
 		printf("> class: InputOutput\n");
-	} else if (_wa->_class == InputOnly) {
+	} else if (_wa._class == InputOnly) {
 		printf("> class: InputOnly\n");
 	} else {
 		printf("> class: Unknown\n");
 	}
 
-	if (_wa->map_state == IsViewable) {
+	if (_wa.map_state == IsViewable) {
 		printf("> map_state: IsViewable\n");
-	} else if (_wa->map_state == IsUnviewable) {
+	} else if (_wa.map_state == IsUnviewable) {
 		printf("> map_state: IsUnviewable\n");
-	} else if (_wa->map_state == IsUnmapped) {
+	} else if (_wa.map_state == IsUnmapped) {
 		printf("> map_state: IsUnmapped\n");
 	} else {
 		printf("> map_state: Unknown\n");
 	}
 
-	printf("> bit_gravity: %d\n", _wa->bit_gravity);
-	printf("> win_gravity: %d\n", _wa->win_gravity);
-	printf("> backing_store: %dlx\n", _wa->backing_store);
-	printf("> backing_planes: %x\n", _wa->backing_planes);
-	printf("> backing_pixel: %x\n", _wa->backing_pixel);
-	printf("> save_under: %d\n", _wa->save_under);
+	printf("> bit_gravity: %d\n", _wa.bit_gravity);
+	printf("> win_gravity: %d\n", _wa.win_gravity);
+	printf("> backing_store: %dlx\n", _wa.backing_store);
+	printf("> backing_planes: %x\n", _wa.backing_planes);
+	printf("> backing_pixel: %x\n", _wa.backing_pixel);
+	printf("> save_under: %d\n", _wa.save_under);
 	printf("> colormap: <Not Implemented>\n");
-	printf("> all_event_masks: %08x\n", _wa->all_event_masks);
-	printf("> your_event_mask: %08x\n", _wa->your_event_mask);
-	printf("> do_not_propagate_mask: %08x\n", _wa->do_not_propagate_mask);
-	printf("> override_redirect: %d\n", _wa->override_redirect);
+	printf("> all_event_masks: %08x\n", _wa.all_event_masks);
+	printf("> your_event_mask: %08x\n", _wa.your_event_mask);
+	printf("> do_not_propagate_mask: %08x\n", _wa.do_not_propagate_mask);
+	printf("> override_redirect: %d\n", _wa.override_redirect);
 }
 
 
@@ -443,7 +455,7 @@ void client_proxy_t::update_type() {
 	_wm_type = XCB_NONE;
 
 	list<xcb_atom_t> net_wm_window_type;
-	bool override_redirect = (_wa->override_redirect == True)?true:false;
+	bool override_redirect = (_wa.override_redirect == True)?true:false;
 
 	if(this->net_wm_window_type() == nullptr) {
 		/**
@@ -528,8 +540,8 @@ xcb_atom_t client_proxy_t::wm_type() {
 display_t *          client_proxy_t::cnx() const { return _dpy; }
 xcb_window_t         client_proxy_t::id() const { return _id; }
 
-auto client_proxy_t::wa() const -> xcb_get_window_attributes_reply_t const * { return _wa; }
-auto client_proxy_t::geometry() const -> xcb_get_geometry_reply_t const * { return _geometry; }
+auto client_proxy_t::wa() const -> xcb_get_window_attributes_reply_t const & { return _wa; }
+auto client_proxy_t::geometry() const -> xcb_get_geometry_reply_t const & { return _geometry; }
 
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
@@ -598,22 +610,222 @@ void client_proxy_t::set_wm_state(int state) {
 }
 
 void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
-	if(_wa->override_redirect != e->override_redirect) {
-		_wa->override_redirect = e->override_redirect;
+	if(_wa.override_redirect != e->override_redirect) {
+		_wa.override_redirect = e->override_redirect;
 		update_type();
 	}
-	_geometry->width = e->width;
-	_geometry->height = e->height;
-	_geometry->x = e->x;
-	_geometry->y = e->y;
-	_geometry->border_width = e->border_width;
+
+	if (e->width != _geometry.width or e->height != _geometry.height) {
+		_need_pixmap_update = true;
+		_geometry.width = e->width;
+		_geometry.height = e->height;
+	}
+
+	_geometry.x = e->x;
+	_geometry.y = e->y;
+	_geometry.border_width = e->border_width;
 }
 
-rect client_proxy_t::position() const { return rect{_geometry->x, _geometry->y, _geometry->width, _geometry->height}; }
+rect client_proxy_t::position() const { return rect{_geometry.x, _geometry.y, _geometry.width, _geometry.height}; }
 
 bool client_proxy_t::is_valid() {
 	return _is_valid;
 }
+
+client_view_t::client_view_t(client_proxy_t * parent) :
+	_parent{parent}
+{
+	_damaged += region(0, 0, _parent->_geometry.width, _parent->_geometry.height);
+}
+
+auto client_view_t::get_pixmap() -> shared_ptr<pixmap_t> {
+	return _parent->get_pixmap();
+}
+
+void client_view_t::clear_damaged() {
+	_damaged.clear();
+}
+
+auto client_view_t::get_damaged() -> region const & {
+	return _damaged;
+}
+
+bool client_view_t::has_damage() {
+	return not _damaged.empty();
+}
+
+void client_proxy_t::create_damage() {
+	if (_damage == XCB_NONE) {
+		_damage = xcb_generate_id(_dpy->xcb());
+		xcb_damage_create(_dpy->xcb(), _damage, _id, XCB_DAMAGE_REPORT_LEVEL_RAW_RECTANGLES);
+		add_damaged(region(0, 0, _geometry.width, _geometry.height));
+	}
+}
+
+void client_proxy_t::destroy_damage() {
+	if (_damage != XCB_NONE) {
+		xcb_damage_destroy(_dpy->xcb(), _damage);
+		_damage = XCB_NONE;
+	}
+}
+
+void client_proxy_t::enable_redirect() {
+	_is_redirected = true;
+	xcb_composite_redirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
+}
+
+void client_proxy_t::disable_redirect() {
+	_is_redirected = false;
+	xcb_composite_unredirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
+	_pixmap = nullptr;
+}
+
+void client_proxy_t::on_map() {
+	_need_pixmap_update = true;
+}
+
+void client_proxy_t::process_event(xcb_damage_notify_event_t const * ev) {
+	for(auto x: _views) {
+		x->_damaged += ev->area;
+	}
+}
+
+
+void client_proxy_t::add_damaged(region const & r) {
+	for(auto x: _views) {
+		x->_damaged += r;
+	}
+}
+
+int client_proxy_t::depth() {
+	return _geometry.depth;
+}
+
+bool client_proxy_t::_safe_pixmap_update() {
+	xcb_pixmap_t pixmap_id = xcb_generate_id(_dpy->xcb());
+	xcb_void_cookie_t ck = xcb_composite_name_window_pixmap_checked(_dpy->xcb(), _id, pixmap_id);
+	auto err = xcb_request_check(_dpy->xcb(), ck);
+	if(err != nullptr) {
+		cout << "INFO: could not get pixmap : " << xcb_event_get_error_label(err->error_code) << endl;
+		xcb_discard_reply(_dpy->xcb(), ck.sequence);
+		return false;
+	} else {
+		_pixmap = make_shared<pixmap_t>(_dpy, _vis, pixmap_id, _geometry.width, _geometry.height);
+		xcb_discard_reply(_dpy->xcb(), ck.sequence);
+		return true;
+	}
+}
+
+void client_proxy_t::destroy_pixmap() {
+	_pixmap = nullptr;
+}
+
+void client_proxy_t::freeze(bool x) {
+//	_is_freezed = x;
+//	if(_pixmap != nullptr and _is_freezed) {
+//		xcb_pixmap_t pix = xcb_generate_id(_dpy->xcb());
+//		xcb_create_pixmap(_dpy->xcb(), _depth, pix, _dpy->root(), _width, _height);
+//		auto xpix = std::make_shared<pixmap_t>(_dpy, _vis, pix, _width, _height);
+//
+//		cairo_surface_t * s = xpix->get_cairo_surface();
+//		cairo_t * cr = cairo_create(s);
+//		cairo_set_source_surface(cr, _pixmap->get_cairo_surface(), 0, 0);
+//		cairo_paint(cr);
+//		cairo_destroy(cr);
+//
+//		_pixmap = xpix;
+//	}
+}
+
+shared_ptr<pixmap_t> client_proxy_t::get_pixmap() {
+
+	if(_need_pixmap_update) {
+		_need_pixmap_update = false;
+		_safe_pixmap_update();
+	}
+
+	return _pixmap;
+}
+
+auto client_proxy_t::create_view() -> client_view_t * {
+	auto x = new client_view_t{this};
+	_views.push_back(x);
+	return x;
+}
+
+void client_proxy_t::remove_view(client_view_t * v) {
+	_views.remove(v);
+}
+
+bool client_proxy_t::_has_views() {
+	return not _views.empty();
+}
+
+void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
+	if (e->atom == A(WM_NAME)) {
+		update_wm_name();
+	} else if (e->atom == A(WM_ICON_NAME)) {
+		update_wm_icon_name();
+	} else if (e->atom == A(WM_NORMAL_HINTS)) {
+		update_wm_normal_hints();
+	} else if (e->atom == A(WM_HINTS)) {
+		update_wm_hints();
+	} else if (e->atom == A(WM_CLASS)) {
+		update_wm_class();
+	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
+		update_wm_transient_for();
+		_need_update_type = true;
+	} else if (e->atom == A(WM_PROTOCOLS)) {
+		update_wm_protocols();
+	} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
+		update_wm_colormap_windows();
+	} else if (e->atom == A(WM_CLIENT_MACHINE)) {
+		update_wm_client_machine();
+	} else if (e->atom == A(WM_STATE)) {
+		update_wm_state();
+	} else if (e->atom == A(_NET_WM_NAME)) {
+		update_net_wm_name();
+	} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
+		update_net_wm_visible_name();
+	} else if (e->atom == A(_NET_WM_ICON_NAME)) {
+		update_net_wm_icon_name();
+	} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
+		update_net_wm_visible_icon_name();
+	} else if (e->atom == A(_NET_WM_DESKTOP)) {
+		update_net_wm_desktop();
+	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
+		update_net_wm_window_type();
+		_need_update_type = true;
+	} else if (e->atom == A(_NET_WM_STATE)) {
+		update_net_wm_state();
+	} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
+		update_net_wm_allowed_actions();
+	} else if (e->atom == A(_NET_WM_STRUT)) {
+		update_net_wm_strut();
+	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
+		update_net_wm_strut_partial();
+	} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
+		update_net_wm_icon_geometry();
+	} else if (e->atom == A(_NET_WM_ICON)) {
+		update_net_wm_icon();
+	} else if (e->atom == A(_NET_WM_PID)) {
+		update_net_wm_pid();
+	} else if (e->atom == A(_NET_WM_USER_TIME)) {
+		update_net_wm_user_time();
+	} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
+		update_net_wm_user_time_window();
+	} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
+		update_net_frame_extents();
+	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
+		update_net_wm_opaque_region();
+	} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
+		update_net_wm_bypass_compositor();
+	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
+		update_motif_hints();
+		_need_update_type = true;
+	}
+}
+
 
 }
 

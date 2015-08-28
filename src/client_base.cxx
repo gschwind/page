@@ -5,6 +5,8 @@
  *      Author: gschwind
  */
 
+#include "client_proxy.hxx"
+
 #include "client_base.hxx"
 
 namespace page {
@@ -39,10 +41,6 @@ client_base_t::~client_base_t() {
 
 void client_base_t::read_all_properties() {
 	_properties->read_all_properties();
-}
-
-bool client_base_t::read_window_attributes() {
-	return _properties->read_window_attributes();
 }
 
 void client_base_t::update_shape() {
@@ -102,13 +100,6 @@ void client_base_t::process_event(xcb_configure_notify_event_t const * e) {
 }
 
 auto client_base_t::cnx() const -> display_t * { return _properties->cnx(); }
-
-/* window attributes */
-auto client_base_t::wa() const -> xcb_get_window_attributes_reply_t const * { return _properties->wa(); }
-
-/* window geometry */
-auto client_base_t::geometry() const -> xcb_get_geometry_reply_t const * { return _properties->geometry(); }
-
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 cxx_type const * client_base_t::cxx_name() { return _properties->cxx_name(); } \

@@ -14,6 +14,7 @@
 #include "utils.hxx"
 #include "time.hxx"
 #include "exception.hxx"
+#include "client_proxy.hxx"
 
 namespace page {
 
@@ -52,6 +53,8 @@ display_t::display_t() {
 	_fd = xcb_get_file_descriptor(_xcb);
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
+
+	_enable_composite = false;
 
 	update_default_visual();
 
@@ -911,8 +914,7 @@ auto display_t::create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t
 	auto x = _client_proxies.find(w);
 	if(x == _client_proxies.end()) {
 		auto y = make_shared<client_proxy_t>(this, w);
-		if(y->is_valid())
-			_client_proxies[w] = y;
+		_client_proxies[w] = y;
 		return y;
 	} else {
 		return x->second;
@@ -926,8 +928,82 @@ void display_t::filter_events(xcb_generic_event_t const * e) {
 		if(x != _client_proxies.end()) {
 			_client_proxies.erase(x);
 		}
+	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
+		auto ev = reinterpret_cast<xcb_configure_notify_event_t const *>(e);
+		auto x = _client_proxies.find(ev->window);
+		if (x != _client_proxies.end()) {
+			x->second->process_event(ev);
+		}
+	} else if (e->response_type == XCB_MAP_NOTIFY) {
+		auto ev = reinterpret_cast<xcb_map_notify_event_t const *>(e);
+		auto x = _client_proxies.find(ev->window);
+		if (x != _client_proxies.end()) {
+			x->second->on_map();
+		}
+	} else if (e->response_type == damage_event + XCB_DAMAGE_NOTIFY) {
+		auto ev = reinterpret_cast<xcb_damage_notify_event_t const *>(e);
+		auto x = _client_proxies.find(ev->drawable);
+		if (x != _client_proxies.end()) {
+			x->second->process_event(ev);
+		}
+	} else if (e->response_type == XCB_PROPERTY_NOTIFY) {
+		auto ev = reinterpret_cast<xcb_property_notify_event_t const *>(e);
+		auto x = _client_proxies.find(ev->window);
+		if (x != _client_proxies.end()) {
+			x->second->process_event(ev);
+		}
 	}
 }
+
+void display_t::disable() {
+	if (_enable_composite) {
+		_enable_composite = false;
+		for (auto const & x : _client_proxies) {
+			x.second->disable_redirect();
+		}
+	}
+}
+
+
+void display_t::enable() {
+	if (not _enable_composite) {
+		_enable_composite = true;
+		for (auto const & x : _client_proxies) {
+			x.second->enable_redirect();
+		}
+	}
+}
+
+void display_t::make_surface_stats(int & size, int & count) {
+	size = 0;
+	count = 0;
+	for (auto &i : _client_proxies) {
+		if (i.second->_pixmap != nullptr) {
+			count += 1;
+			size += (i.second->depth() / 8) * i.second->_geometry.width * i.second->_geometry.height;
+		}
+	}
+}
+
+auto display_t::create_view(xcb_window_t w) -> client_view_t * {
+	return create_client_proxy(w)->create_view();
+}
+
+void display_t::destroy_view(client_view_t * v) {
+	/* same behavior than delete */
+	if(v == nullptr)
+		return;
+
+	auto p = v->_parent;
+	p->remove_view(v);
+	delete v;
+
+	if(p->_views.empty()) {
+		on_visibility_change.signal(p->_id, false);
+		delete p;
+	}
+}
+
 
 }
 

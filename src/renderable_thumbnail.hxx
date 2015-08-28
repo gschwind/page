@@ -11,6 +11,7 @@
 #include "tree.hxx"
 #include "pixmap.hxx"
 #include "client_managed.hxx"
+#include "client_proxy.hxx"
 
 namespace page {
 
@@ -37,7 +38,7 @@ class renderable_thumbnail_t : public tree_t {
 	double _ratio;
 
 	weak_ptr<client_managed_t> _c;
-	composite_surface_view_t * _client_view;
+	client_view_t * _client_view;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 

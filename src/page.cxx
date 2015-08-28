@@ -93,7 +93,6 @@ page_t::page_t(int argc, char ** argv)
 	_keymap = nullptr;
 	_dpy = nullptr;
 	_compositor = nullptr;
-	_csmgr = nullptr;
 
 	/* load configurations, from lower priority to high one */
 
@@ -220,8 +219,6 @@ void page_t::run() {
 		d->hide();
 	}
 
-	_csmgr = new composite_surface_manager_t{_dpy};
-
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
@@ -313,7 +310,8 @@ void page_t::run() {
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	auto handle = _mainloop.add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
 
-	auto on_visibility_change_func = _csmgr->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
+	/* TODO */
+	auto on_visibility_change_func = _dpy->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
 	_mainloop.run();
 
 	handle = nullptr;
@@ -333,7 +331,6 @@ void page_t::run() {
 	delete _keymap; _keymap = nullptr;
 	delete _theme; _theme = nullptr;
 	delete _compositor; _compositor = nullptr;
-	delete _csmgr; _csmgr = nullptr;
 
 	if(_dpy != nullptr) {
 		/** clean up properties defined by Window Manager **/
@@ -426,29 +423,30 @@ void page_t::scan() {
 	for (unsigned i = 0; i < n_children; ++i) {
 		xcb_window_t w = children[i];
 
-		auto c = _dpy->create_client_proxy(w);
-		if (not c->read_window_attributes()) {
-			continue;
-		}
+		try {
+			auto c = _dpy->create_client_proxy(w);
 
-		if(c->wa()->_class == XCB_WINDOW_CLASS_INPUT_ONLY) {
-			continue;
-		}
+			if(c->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+				continue;
+			}
 
-		c->read_all_properties();
+			c->read_all_properties();
 
-		if (c->wa()->map_state != XCB_MAP_STATE_UNMAPPED) {
-			onmap(w);
-		} else {
-			/**
-			 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
-			 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
-			 **/
-			if (c->wm_state() != nullptr) {
-				if (c->wm_state()->state == IconicState) {
-					onmap(w);
+			if (c->wa().map_state != XCB_MAP_STATE_UNMAPPED) {
+				onmap(w);
+			} else {
+				/**
+				 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
+				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
+				 **/
+				if (c->wm_state() != nullptr) {
+					if (c->wm_state()->state == IconicState) {
+						onmap(w);
+					}
 				}
 			}
+		} catch (invalid_client_t & e) {
+			/* ignore */
 		}
 	}
 
@@ -2512,91 +2510,84 @@ void page_t::onmap(xcb_window_t w) {
 		return;
 	}
 
-	{
-		try {
-			auto props = _dpy->create_client_proxy(w);
-			if (props->wa() != nullptr and props->geometry() != nullptr) {
-				if(props->wa()->_class != XCB_WINDOW_CLASS_INPUT_ONLY) {
-					props->read_all_properties();
+	try {
+		auto props = _dpy->create_client_proxy(w);
+			if(props->wa()._class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 
-				//props->print_window_attributes();
-				//props->print_properties();
+			//props->print_window_attributes();
+			//props->print_properties();
 
-				xcb_atom_t type = props->wm_type();
+			xcb_atom_t type = props->wm_type();
 
-				if (not props->wa()->override_redirect) {
-					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-						create_managed_window(w, type);
-					}
-				} else {
-					if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-						create_managed_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-						create_unmanaged_window(w, type);
-					} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-						create_unmanaged_window(w, type);
-					}
+			if (not props->wa().override_redirect) {
+				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+					create_managed_window(w, type);
+				}
+			} else {
+				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+					create_managed_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+					create_unmanaged_window(w, type);
+				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+					create_unmanaged_window(w, type);
 				}
 			}
 		}
 
-		} catch (exception_t &e) {
-			std::cout << e.what() << std::endl;
-			throw;
-		}
-
+	} catch (invalid_client_t & e) {
+		cout << "found invalid client" << endl;
 	}
 
 	_dpy->ungrab();
@@ -2762,8 +2753,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 void page_t::create_unmanaged_window(xcb_window_t w, xcb_atom_t type) {
 	try {
 		auto uw = make_shared<client_not_managed_t>(this, w, type);
-		if(not uw->wa()->override_redirect)
-			this->_dpy->map(uw->orig());
+		_dpy->map(uw->orig());
 		uw->show();
 		safe_update_transient_for(uw);
 		//uw->activate();
@@ -3408,14 +3398,14 @@ void page_t::start_compositor() {
 			return;
 		}
 		_compositor = new compositor_t{_dpy};
-		_csmgr->enable();
+		_dpy->enable();
 	}
 }
 
 void page_t::stop_compositor() {
 	if (_dpy->has_composite) {
 		_dpy->unregister_cm();
-		_csmgr->disable();
+		_dpy->disable();
 		delete _compositor;
 		_compositor = nullptr;
 	}
@@ -3514,7 +3504,6 @@ void page_t::process_pending_events() {
 
 	while (_dpy->has_pending_events()) {
 		while (_dpy->has_pending_events()) {
-			_csmgr->pre_process_event(_dpy->front_event());
 			process_event(_dpy->front_event());
 			_dpy->pop_event();
 		}
@@ -3685,16 +3674,17 @@ auto page_t::conf() const -> page_configuration_t const & {
 	return configuration;
 }
 
-auto page_t::create_view(xcb_window_t w) -> composite_surface_view_t * {
-	return _csmgr->create_view(w);
+auto page_t::create_view(xcb_window_t w) -> client_view_t * {
+	return _dpy->create_view(w);
 }
 
-void page_t::destroy_view(composite_surface_view_t * v) {
-	_csmgr->destroy_view(v);
+void page_t::destroy_view(client_view_t * v) {
+	_dpy->destroy_view(v);
 }
+
 
 void page_t::make_surface_stats(int & size, int & count) {
-	_csmgr->make_surface_stats(size, count);
+	_dpy->make_surface_stats(size, count);
 }
 
 }

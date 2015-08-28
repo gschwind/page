@@ -12,9 +12,6 @@
 #include <cairo.h>
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
-#include <client_proxy.hxx>
-
-#include "composite_surface_manager.hxx"
 
 #include "renderable_floating_outer_gradien.hxx"
 #include "client_managed.hxx"
@@ -70,13 +67,13 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	_apply_floating_hints_constraint();
 
 
-	_orig_visual = _properties->wa()->visual;
-	_orig_depth = _properties->geometry()->depth;
+	_orig_visual = _properties->wa().visual;
+	_orig_depth = _properties->geometry().depth;
 
 	/** if x == 0 then place window at center of the screen **/
 	if (_floating_wished_position.x == 0 and not is(MANAGED_DOCK)) {
 		_floating_wished_position.x =
-				(_properties->geometry()->width - _floating_wished_position.w) / 2;
+				(_properties->geometry().width - _floating_wished_position.w) / 2;
 	}
 
 	if(_floating_wished_position.x - _ctx->theme()->floating.margin.left < 0) {
@@ -87,7 +84,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	 * if y == 0 then place window at center of the screen
 	 **/
 	if (_floating_wished_position.y == 0 and not is(MANAGED_DOCK)) {
-		_floating_wished_position.y = (_properties->geometry()->height - _floating_wished_position.h) / 2;
+		_floating_wished_position.y = (_properties->geometry().height - _floating_wished_position.h) / 2;
 	}
 
 	if(_floating_wished_position.y - _ctx->theme()->floating.margin.top < 0) {
@@ -732,9 +729,8 @@ string client_managed_t::get_node_name() const {
 	ostringstream oss;
 	oss << s << " " << orig() << " " << title();
 
-	if(_properties->geometry() != nullptr) {
-		oss << " " << _properties->geometry()->width << "x" << _properties->geometry()->height << "+" << _properties->geometry()->x << "+" << _properties->geometry()->y;
-	}
+
+	oss << " " << _properties->geometry().width << "x" << _properties->geometry().height << "+" << _properties->geometry().x << "+" << _properties->geometry().y;
 
 	return oss.str();
 }
@@ -1104,7 +1100,7 @@ bool client_managed_t::is_focused() const {
 	return _is_focused;
 }
 
-composite_surface_view_t * client_managed_t::create_surface_view() {
+client_view_t * client_managed_t::create_surface_view() {
 	return _ctx->create_view(_base);
 }
 
@@ -1170,7 +1166,7 @@ void client_managed_t::_update_opaque_region() {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
 		_opaque_region_cache &= rect{0, 0, _orig_position.w, _orig_position.h};
 	} else {
-		if (geometry()->depth != 32) {
+		if (_properties->geometry().depth != 32) {
 			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
 		}
 	}
