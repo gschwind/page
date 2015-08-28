@@ -38,7 +38,7 @@ class renderable_thumbnail_t : public tree_t {
 	double _ratio;
 
 	weak_ptr<client_managed_t> _c;
-	client_view_t * _client_view;
+	shared_ptr<client_view_t> _client_view;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
@@ -61,7 +61,6 @@ public:
 
 	virtual ~renderable_thumbnail_t() {
 		_ctx->add_global_damage(get_real_position());
-		_ctx->destroy_view(_client_view);
 	}
 
 	/** @return scale factor */
@@ -238,7 +237,7 @@ public:
 
 		_is_visible = true;
 		if (not _c.expired() and _client_view == nullptr) {
-			_client_view = _c.lock()->create_surface_view();
+			_client_view = _c.lock()->create_view();
 		}
 	}
 
@@ -249,7 +248,6 @@ public:
 		_is_visible = false;
 		_ctx->add_global_damage(get_real_position());
 
-		_ctx->destroy_view(_client_view);
 		_client_view = nullptr;
 		_tt.pix = nullptr;
 		_tt.title = nullptr;

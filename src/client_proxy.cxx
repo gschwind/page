@@ -138,9 +138,13 @@ xcb_window_t client_proxy_t::xid() {
 
 client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 		_dpy{dpy}, _id{id} {
+
+	_destroyed = false;
 	_shape = nullptr;
 	_need_update_type = true;
+	_is_redirected = false;
 	_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
+	_damage = XCB_NONE;
 
 	/**
 	 * select needed default inputs.
@@ -194,6 +198,10 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 }
 
 client_proxy_t::~client_proxy_t() {
+	if(not _views.empty()) {
+		cout << "Warning: destroying client_proxy with views" << endl;
+	}
+
 	delete_all_properties();
 	if(_is_redirected)
 		xcb_composite_unredirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
@@ -628,18 +636,14 @@ void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
 
 rect client_proxy_t::position() const { return rect{_geometry.x, _geometry.y, _geometry.width, _geometry.height}; }
 
-bool client_proxy_t::is_valid() {
-	return _is_valid;
-}
-
-client_view_t::client_view_t(client_proxy_t * parent) :
+client_view_t::client_view_t(shared_ptr<client_proxy_t> parent) :
 	_parent{parent}
 {
-	_damaged += region(0, 0, _parent->_geometry.width, _parent->_geometry.height);
+	_damaged += region(0, 0, parent->_geometry.width, parent->_geometry.height);
 }
 
 auto client_view_t::get_pixmap() -> shared_ptr<pixmap_t> {
-	return _parent->get_pixmap();
+	return _parent.lock()->get_pixmap();
 }
 
 void client_view_t::clear_damaged() {
@@ -670,14 +674,19 @@ void client_proxy_t::destroy_damage() {
 }
 
 void client_proxy_t::enable_redirect() {
+	_need_pixmap_update = true;
+	if(_is_redirected)
+		return;
 	_is_redirected = true;
 	xcb_composite_redirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
 }
 
 void client_proxy_t::disable_redirect() {
+	_pixmap = nullptr;
+	if(not _is_redirected)
+		return;
 	_is_redirected = false;
 	xcb_composite_unredirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
-	_pixmap = nullptr;
 }
 
 void client_proxy_t::on_map() {
@@ -689,7 +698,6 @@ void client_proxy_t::process_event(xcb_damage_notify_event_t const * ev) {
 		x->_damaged += ev->area;
 	}
 }
-
 
 void client_proxy_t::add_damaged(region const & r) {
 	for(auto x: _views) {
@@ -707,17 +715,13 @@ bool client_proxy_t::_safe_pixmap_update() {
 	auto err = xcb_request_check(_dpy->xcb(), ck);
 	if(err != nullptr) {
 		cout << "INFO: could not get pixmap : " << xcb_event_get_error_label(err->error_code) << endl;
-		xcb_discard_reply(_dpy->xcb(), ck.sequence);
+		free(err);
 		return false;
 	} else {
 		_pixmap = make_shared<pixmap_t>(_dpy, _vis, pixmap_id, _geometry.width, _geometry.height);
 		xcb_discard_reply(_dpy->xcb(), ck.sequence);
 		return true;
 	}
-}
-
-void client_proxy_t::destroy_pixmap() {
-	_pixmap = nullptr;
 }
 
 void client_proxy_t::freeze(bool x) {
@@ -748,7 +752,8 @@ shared_ptr<pixmap_t> client_proxy_t::get_pixmap() {
 }
 
 auto client_proxy_t::create_view() -> client_view_t * {
-	auto x = new client_view_t{this};
+	_need_pixmap_update = true;
+	auto x = new client_view_t{shared_from_this()};
 	_views.push_back(x);
 	return x;
 }
@@ -824,6 +829,14 @@ void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
 		update_motif_hints();
 		_need_update_type = true;
 	}
+}
+
+bool client_proxy_t::destroyed() {
+	return _destroyed;
+}
+
+bool client_proxy_t::destroyed(bool x) {
+	return _destroyed = x;
 }
 
 

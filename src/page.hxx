@@ -403,8 +403,7 @@ public:
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>>;
 	virtual auto keymap() const -> keymap_t const *;
-	virtual auto create_view(xcb_window_t w) -> client_view_t *;
-	virtual void destroy_view(client_view_t * v);
+	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	virtual void make_surface_stats(int & size, int & count);
 
 };

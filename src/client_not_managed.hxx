@@ -39,7 +39,7 @@ private:
 	mutable region _visible_region_cache;
 	mutable region _damage_cache;
 
-	client_view_t * _client_view;
+	shared_ptr<client_view_t> _client_view;
 
 	/* avoid copy */
 	client_not_managed_t(client_not_managed_t const &);

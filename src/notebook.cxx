@@ -706,9 +706,8 @@ void notebook_t::_start_fading() {
 	if (_selected != nullptr) {
 		update_client_position(_selected);
 		if (not _selected->is_iconic()) {
-			auto client_view = _selected->create_surface_view();
+			auto client_view = _selected->create_view();
 			shared_ptr<pixmap_t> pix = client_view->get_pixmap();
-			_ctx->destroy_view(client_view);
 			if (pix != nullptr) {
 				rect pos = _client_position;
 				rect cl { pos.x, pos.y, pos.w, pos.h };

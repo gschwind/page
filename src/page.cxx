@@ -1097,10 +1097,6 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 
 	/** update the property **/
 	auto c = find_client(e->window);
-	if(c != nullptr) {
-		c->on_property_notify(e);
-	}
-
 	auto mw = dynamic_pointer_cast<client_managed_t>(c);
 	if(mw == nullptr)
 		return;
@@ -3674,14 +3670,9 @@ auto page_t::conf() const -> page_configuration_t const & {
 	return configuration;
 }
 
-auto page_t::create_view(xcb_window_t w) -> client_view_t * {
+auto page_t::create_view(xcb_window_t w) -> shared_ptr<client_view_t> {
 	return _dpy->create_view(w);
 }
-
-void page_t::destroy_view(client_view_t * v) {
-	_dpy->destroy_view(v);
-}
-
 
 void page_t::make_surface_stats(int & size, int & count) {
 	_dpy->make_surface_stats(size, count);

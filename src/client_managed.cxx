@@ -52,7 +52,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 {
 
 	_update_title();
-	rect pos{_properties->position()};
+	rect pos{_client_proxy->position()};
 
 	printf("window default position = %s\n", pos.to_string().c_str());
 
@@ -67,13 +67,13 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	_apply_floating_hints_constraint();
 
 
-	_orig_visual = _properties->wa().visual;
-	_orig_depth = _properties->geometry().depth;
+	_orig_visual = _client_proxy->wa().visual;
+	_orig_depth = _client_proxy->geometry().depth;
 
 	/** if x == 0 then place window at center of the screen **/
 	if (_floating_wished_position.x == 0 and not is(MANAGED_DOCK)) {
 		_floating_wished_position.x =
-				(_properties->geometry().width - _floating_wished_position.w) / 2;
+				(_client_proxy->geometry().width - _floating_wished_position.w) / 2;
 	}
 
 	if(_floating_wished_position.x - _ctx->theme()->floating.margin.left < 0) {
@@ -84,7 +84,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	 * if y == 0 then place window at center of the screen
 	 **/
 	if (_floating_wished_position.y == 0 and not is(MANAGED_DOCK)) {
-		_floating_wished_position.y = (_properties->geometry().height - _floating_wished_position.h) / 2;
+		_floating_wished_position.y = (_client_proxy->geometry().height - _floating_wished_position.h) / 2;
 	}
 
 	if(_floating_wished_position.y - _ctx->theme()->floating.margin.top < 0) {
@@ -199,11 +199,11 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	cursor = cnx()->xc_bottom_righ_corner;
 	_input_bottom_right = cnx()->create_input_only_window(_deco, _area_bottom_right, XCB_CW_CURSOR, &cursor);
 
-	_properties->add_to_save_set();
+	_client_proxy->add_to_save_set();
 	select_inputs_unsafe();
 	grab_button_unfocused_unsafe();
-	_properties->set_border_width(0);
-	_properties->reparentwindow(_base, 0, 0);
+	_client_proxy->set_border_width(0);
+	_client_proxy->reparentwindow(_base, 0, 0);
 
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
@@ -215,7 +215,7 @@ client_managed_t::~client_managed_t() {
 
 	_ctx->add_global_damage(get_visible_region());
 
-	_ctx->destroy_view(_client_view);
+	_client_view = nullptr;
 
 	on_destroy.signal(this);
 
@@ -241,8 +241,8 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
 
-	_properties->delete_net_wm_state();
-	_properties->delete_wm_state();
+	_client_proxy->delete_net_wm_state();
+	_client_proxy->delete_wm_state();
 
 }
 
@@ -313,7 +313,7 @@ void client_managed_t::reconfigure() {
 	}
 	cnx()->move_resize(_deco,
 			rect{0, 0, _base_position.w, _base_position.h});
-	_properties->move_resize(_orig_position);
+	_client_proxy->move_resize(_orig_position);
 
 	cnx()->move_resize(_input_top, _area_top);
 	cnx()->move_resize(_input_bottom, _area_bottom);
@@ -335,25 +335,25 @@ void client_managed_t::reconfigure() {
 void client_managed_t::fake_configure_unsafe() {
 	//printf("fake_reconfigure = %dx%d+%d+%d\n", _wished_position.w,
 	//		_wished_position.h, _wished_position.x, _wished_position.y);
-	_properties->fake_configure(_wished_position, 0);
+	_client_proxy->fake_configure(_wished_position, 0);
 }
 
 void client_managed_t::delete_window(xcb_timestamp_t t) {
 	printf("request close for '%s'\n", title().c_str());
-	_properties->delete_window(t);
+	_client_proxy->delete_window(t);
 }
 
 void client_managed_t::set_managed_type(managed_window_type_e type) {
 	if(_managed_type == MANAGED_DOCK) {
 		std::list<atom_e> net_wm_allowed_actions;
-		_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
+		_client_proxy->net_wm_allowed_actions_set(net_wm_allowed_actions);
 		reconfigure();
 	} else {
 
 		std::list<atom_e> net_wm_allowed_actions;
 		net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
 		net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
-		_properties->net_wm_allowed_actions_set(net_wm_allowed_actions);
+		_client_proxy->net_wm_allowed_actions_set(net_wm_allowed_actions);
 
 		_managed_type = type;
 
@@ -382,31 +382,31 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 
 	if(_demands_attention) {
 		_demands_attention = false;
-		_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	if (_properties->wm_hints() != nullptr) {
-		if (_properties->wm_hints()->input != False) {
-			_properties->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+	if (_client_proxy->wm_hints() != nullptr) {
+		if (_client_proxy->wm_hints()->input != False) {
+			_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
 		}
 	} else {
 		/** no WM_HINTS, guess hints.input == True **/
-		_properties->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+		_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
 	}
 
-	if (_properties->wm_protocols() != nullptr) {
-		if (has_key(*(_properties->wm_protocols()),
+	if (_client_proxy->wm_protocols() != nullptr) {
+		if (has_key(*(_client_proxy->wm_protocols()),
 				static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
 
 			xcb_client_message_event_t ev;
 			ev.response_type = XCB_CLIENT_MESSAGE;
 			ev.format = 32;
 			ev.type = A(WM_PROTOCOLS);
-			ev.window = _properties->id();
+			ev.window = _client_proxy->id();
 			ev.data.data32[0] = A(WM_TAKE_FOCUS);
 			ev.data.data32[1] = t;
 
-			_properties->send_event(0, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
+			_client_proxy->send_event(0, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
 
 		}
 	}
@@ -541,7 +541,7 @@ void client_managed_t::grab_button_unfocused_unsafe() {
 void client_managed_t::ungrab_all_button_unsafe() {
 	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
 	xcb_ungrab_button(cnx()->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
-	_properties->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+	_client_proxy->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 }
 
 /**
@@ -552,8 +552,8 @@ void client_managed_t::ungrab_all_button_unsafe() {
 void client_managed_t::select_inputs_unsafe() {
 	cnx()->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 	cnx()->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
-	_properties->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
-	_properties->select_input_shape(true);
+	_client_proxy->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
+	_client_proxy->select_input_shape(true);
 }
 
 /**
@@ -564,21 +564,21 @@ void client_managed_t::select_inputs_unsafe() {
 void client_managed_t::unselect_inputs_unsafe() {
 	cnx()->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
 	cnx()->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
-	_properties->select_input(XCB_EVENT_MASK_NO_EVENT);
-	_properties->select_input_shape(false);
+	_client_proxy->select_input(XCB_EVENT_MASK_NO_EVENT);
+	_client_proxy->select_input_shape(false);
 }
 
 bool client_managed_t::is_fullscreen() {
-	if (_properties->net_wm_state() != nullptr) {
-		return has_key(*(_properties->net_wm_state()),
+	if (_client_proxy->net_wm_state() != nullptr) {
+		return has_key(*(_client_proxy->net_wm_state()),
 				static_cast<xcb_atom_t>(A(_NET_WM_STATE_FULLSCREEN)));
 	}
 	return false;
 }
 
 bool client_managed_t::skip_task_bar() {
-	if (_properties->net_wm_state() != nullptr) {
-		return has_key(*(_properties->net_wm_state()),
+	if (_client_proxy->net_wm_state() != nullptr) {
+		return has_key(*(_client_proxy->net_wm_state()),
 				static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)));
 	}
 	return false;
@@ -589,8 +589,8 @@ xcb_atom_t client_managed_t::net_wm_type() {
 }
 
 bool client_managed_t::get_wm_normal_hints(XSizeHints * size_hints) {
-	if(_properties->wm_normal_hints() != nullptr) {
-		*size_hints = *(_properties->wm_normal_hints());
+	if(_client_proxy->wm_normal_hints() != nullptr) {
+		*size_hints = *(_client_proxy->wm_normal_hints());
 		return true;
 	} else {
 		return false;
@@ -598,11 +598,11 @@ bool client_managed_t::get_wm_normal_hints(XSizeHints * size_hints) {
 }
 
 void client_managed_t::net_wm_state_add(atom_e atom) {
-	_properties->net_wm_state_add(atom);
+	_client_proxy->net_wm_state_add(atom);
 }
 
 void client_managed_t::net_wm_state_remove(atom_e atom) {
-	_properties->net_wm_state_remove(atom);
+	_client_proxy->net_wm_state_remove(atom);
 }
 
 void client_managed_t::net_wm_state_delete() {
@@ -610,14 +610,14 @@ void client_managed_t::net_wm_state_delete() {
 	 * This one is for removing the window manager tag, thus only check if the window
 	 * still exist. (don't need lock);
 	 **/
-	_properties->delete_net_wm_state();
+	_client_proxy->delete_net_wm_state();
 }
 
 void client_managed_t::normalize() {
 	if(not _is_iconic)
 		return;
 	_is_iconic = false;
-	_properties->set_wm_state(NormalState);
+	_client_proxy->set_wm_state(NormalState);
 	for (auto c : filter_class<client_managed_t>(_children)) {
 		c->normalize();
 	}
@@ -627,7 +627,7 @@ void client_managed_t::iconify() {
 	if(_is_iconic)
 		return;
 	_is_iconic = true;
-	_properties->set_wm_state(IconicState);
+	_client_proxy->set_wm_state(IconicState);
 	for (auto c : filter_class<client_managed_t>(_children)) {
 		c->iconify();
 	}
@@ -640,7 +640,7 @@ void client_managed_t::wm_state_delete() {
 	 * still exist. (don't need lock);
 	 **/
 
-	_properties->delete_wm_state();
+	_client_proxy->delete_wm_state();
 }
 
 void client_managed_t::set_floating_wished_position(rect const & pos) {
@@ -721,7 +721,7 @@ void client_managed_t::update_floating_areas() {
 }
 
 bool client_managed_t::has_window(xcb_window_t w) const {
-	return w == _properties->id() or w == _base or w == _deco;
+	return w == _client_proxy->id() or w == _base or w == _deco;
 }
 
 string client_managed_t::get_node_name() const {
@@ -730,13 +730,13 @@ string client_managed_t::get_node_name() const {
 	oss << s << " " << orig() << " " << title();
 
 
-	oss << " " << _properties->geometry().width << "x" << _properties->geometry().height << "+" << _properties->geometry().x << "+" << _properties->geometry().y;
+	oss << " " << _client_proxy->geometry().width << "x" << _client_proxy->geometry().height << "+" << _client_proxy->geometry().x << "+" << _client_proxy->geometry().y;
 
 	return oss.str();
 }
 
 display_t * client_managed_t::cnx() {
-	return _properties->cnx();
+	return _client_proxy->cnx();
 }
 
 rect const & client_managed_t::base_position() const {
@@ -791,11 +791,11 @@ void client_managed_t::set_focus_state(bool is_focused) {
 }
 
 void client_managed_t::net_wm_allowed_actions_add(atom_e atom) {
-	_properties->net_wm_allowed_actions_add(atom);
+	_client_proxy->net_wm_allowed_actions_add(atom);
 }
 
 void client_managed_t::map_unsafe() {
-	_properties->xmap();
+	_client_proxy->xmap();
 	cnx()->map(_deco);
 	cnx()->map(_base);
 
@@ -813,7 +813,7 @@ void client_managed_t::map_unsafe() {
 void client_managed_t::unmap_unsafe() {
 	cnx()->unmap(_base);
 	cnx()->unmap(_deco);
-	_properties->unmap();
+	_client_proxy->unmap();
 
 	cnx()->unmap(_input_top);
 	cnx()->unmap(_input_left);
@@ -842,7 +842,6 @@ void client_managed_t::hide() {
 	reconfigure();
 
 	/* we no not need the view anymore */
-	_ctx->destroy_view(_client_view);
 	_client_view = nullptr;
 
 }
@@ -859,7 +858,7 @@ void client_managed_t::show() {
 	}
 
 	if(_client_view == nullptr)
-		_client_view = create_surface_view();
+		_client_view = create_view();
 }
 
 bool client_managed_t::is_iconic() {
@@ -867,15 +866,15 @@ bool client_managed_t::is_iconic() {
 }
 
 bool client_managed_t::is_stiky() {
-	if(_properties->net_wm_state() != nullptr) {
-		return has_key(*_properties->net_wm_state(), A(_NET_WM_STATE_STICKY));
+	if(_client_proxy->net_wm_state() != nullptr) {
+		return has_key(*_client_proxy->net_wm_state(), A(_NET_WM_STATE_STICKY));
 	}
 	return false;
 }
 
 bool client_managed_t::is_modal() {
-	if(_properties->net_wm_state() != nullptr) {
-		return has_key(*_properties->net_wm_state(), A(_NET_WM_STATE_MODAL));
+	if(_client_proxy->net_wm_state() != nullptr) {
+		return has_key(*_client_proxy->net_wm_state(), A(_NET_WM_STATE_MODAL));
 	}
 	return false;
 }
@@ -1044,13 +1043,13 @@ void client_managed_t::_update_title() {
 	_is_resized = true;
 
 	string name;
-	if (_properties->net_wm_name() != nullptr) {
-		_title = *(_properties->net_wm_name());
-	} else if (_properties->wm_name() != nullptr) {
-		_title = *(_properties->wm_name());
+	if (_client_proxy->net_wm_name() != nullptr) {
+		_title = *(_client_proxy->net_wm_name());
+	} else if (_client_proxy->wm_name() != nullptr) {
+		_title = *(_client_proxy->wm_name());
 	} else {
 		stringstream s(stringstream::in | stringstream::out);
-		s << "#" << (_properties->id()) << " (noname)";
+		s << "#" << (_client_proxy->id()) << " (noname)";
 		_title = s.str();
 	}
 }
@@ -1061,10 +1060,10 @@ void client_managed_t::update_title() {
 }
 
 bool client_managed_t::prefer_window_border() const {
-	if (_properties->motif_hints() != nullptr) {
-		if(not (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS))
+	if (_client_proxy->motif_hints() != nullptr) {
+		if(not (_client_proxy->motif_hints()->flags & MWM_HINTS_DECORATIONS))
 			return true;
-		if(_properties->motif_hints()->decorations != 0x00)
+		if(_client_proxy->motif_hints()->decorations != 0x00)
 			return true;
 		return false;
 	}
@@ -1088,7 +1087,7 @@ xcb_window_t client_managed_t::deco() const {
 }
 
 xcb_window_t client_managed_t::orig() const {
-	return _properties->id();
+	return _client_proxy->id();
 }
 
 xcb_atom_t client_managed_t::A(atom_e atom) {
@@ -1100,19 +1099,19 @@ bool client_managed_t::is_focused() const {
 	return _is_focused;
 }
 
-client_view_t * client_managed_t::create_surface_view() {
+shared_ptr<client_view_t> client_managed_t::create_view() {
 	return _ctx->create_view(_base);
 }
 
 void client_managed_t::set_current_desktop(unsigned int n) {
-	_properties->set_net_wm_desktop(n);
+	_client_proxy->set_net_wm_desktop(n);
 }
 
 void client_managed_t::set_demands_attention(bool x) {
 	if (x) {
-		_properties->net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
+		_client_proxy->net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
 	} else {
-		_properties->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 	_demands_attention = x;
 }
@@ -1166,7 +1165,7 @@ void client_managed_t::_update_opaque_region() {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
 		_opaque_region_cache &= rect{0, 0, _orig_position.w, _orig_position.h};
 	} else {
-		if (_properties->geometry().depth != 32) {
+		if (_client_proxy->geometry().depth != 32) {
 			_opaque_region_cache = rect{0, 0, _orig_position.w, _orig_position.h};
 		}
 	}
@@ -1180,8 +1179,6 @@ void client_managed_t::_update_opaque_region() {
 }
 
 void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e) {
-	client_base_t::on_property_notify(e);
-
 	if (e->atom == A(_NET_WM_NAME) or e->atom == A(WM_NAME)) {
 		update_title();
 		queue_redraw();
@@ -1196,8 +1193,8 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 
 void client_managed_t::_apply_floating_hints_constraint() {
 
-	if(_properties->wm_normal_hints()!= nullptr) {
-		XSizeHints const * s = _properties->wm_normal_hints();
+	if(_client_proxy->wm_normal_hints()!= nullptr) {
+		XSizeHints const * s = _client_proxy->wm_normal_hints();
 
 		if (s->flags & PBaseSize) {
 			if (_floating_wished_position.w < s->base_width)

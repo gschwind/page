@@ -43,7 +43,7 @@ protected:
 	page_context_t * _ctx;
 
 	/* handle properties of client */
-	shared_ptr<client_proxy_t> _properties;
+	shared_ptr<client_proxy_t> _client_proxy;
 
 	/* sub-clients */
 	list<shared_ptr<tree_t>> _children;
@@ -142,7 +142,6 @@ public:
 	virtual auto orig() const -> xcb_window_t = 0;
 	virtual auto base_position() const -> rect const & = 0;
 	virtual auto orig_position() const -> rect const & = 0;
-	virtual void on_property_notify(xcb_property_notify_event_t const * e);
 
 };
 

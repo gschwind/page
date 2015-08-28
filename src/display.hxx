@@ -263,7 +263,7 @@ public:
 	void enable();
 	void make_surface_stats(int & size, int & count);
 
-	auto create_view(xcb_window_t w) -> client_view_t *;
+	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void destroy_view(client_view_t * v);
 
 };

@@ -7,9 +7,10 @@
  *
  */
 
-#include "display.hxx"
-
 #include <poll.h>
+#include <memory>
+
+#include "display.hxx"
 
 #include "utils.hxx"
 #include "time.hxx"
@@ -613,6 +614,7 @@ void display_t::fetch_pending_events() {
 	xcb_generic_event_t * e = xcb_poll_for_event(_xcb);
 	while (e != nullptr) {
 		pending_event.push_back(e);
+		filter_events(e);
 		e = xcb_poll_for_event(_xcb);
 	}
 }
@@ -926,7 +928,11 @@ void display_t::filter_events(xcb_generic_event_t const * e) {
 		auto ev = reinterpret_cast<xcb_destroy_notify_event_t const *>(e);
 		auto x = _client_proxies.find(ev->window);
 		if(x != _client_proxies.end()) {
-			_client_proxies.erase(x);
+			if(x->second->_views.empty()) {
+				_client_proxies.erase(x);
+			} else {
+				x->second->destroyed(true);
+			}
 		}
 	} else if (e->response_type == XCB_CONFIGURE_NOTIFY) {
 		auto ev = reinterpret_cast<xcb_configure_notify_event_t const *>(e);
@@ -985,22 +991,33 @@ void display_t::make_surface_stats(int & size, int & count) {
 	}
 }
 
-auto display_t::create_view(xcb_window_t w) -> client_view_t * {
-	return create_client_proxy(w)->create_view();
+auto display_t::create_view(xcb_window_t w) -> shared_ptr<client_view_t> {
+	auto p = create_client_proxy(w);
+	if(p->_views.empty()) {
+		if(_enable_composite)
+			p->enable_redirect();
+		on_visibility_change.signal(p->_id, true);
+	}
+	auto x = p->create_view();
+	return shared_ptr<client_view_t>(x, [this](client_view_t * x) -> void { this->destroy_view(x); });
 }
 
 void display_t::destroy_view(client_view_t * v) {
-	/* same behavior than delete */
-	if(v == nullptr)
-		return;
-
-	auto p = v->_parent;
+	auto p = v->_parent.lock();
 	p->remove_view(v);
 	delete v;
 
 	if(p->_views.empty()) {
 		on_visibility_change.signal(p->_id, false);
-		delete p;
+		p->_pixmap = nullptr;
+		if(_enable_composite)
+			p->disable_redirect();
+		if(p->destroyed()) {
+			auto x = _client_proxies.find(p->_id);
+			if(x != _client_proxies.end()) {
+				_client_proxies.erase(x);
+			}
+		}
 	}
 }
 

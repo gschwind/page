@@ -90,8 +90,7 @@ public:
 	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>> = 0;
 	virtual auto keymap() const -> keymap_t const * = 0;
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
-	virtual auto create_view(xcb_window_t w) -> client_view_t * = 0;
-	virtual void destroy_view(client_view_t * v) = 0;
+	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t> = 0;
 	virtual void make_surface_stats(int & size, int & count) = 0;
 
 };

@@ -20,16 +20,15 @@ client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_window_t w,
 		_net_wm_type{type}
 {
 	_is_visible = true;
-	_properties->select_input(UNMANAGED_ORIG_WINDOW_EVENT_MASK);
-	_properties->select_input_shape(true);
-	_properties->update_shape();
+	_client_proxy->select_input(UNMANAGED_ORIG_WINDOW_EVENT_MASK);
+	_client_proxy->select_input_shape(true);
+	_client_proxy->update_shape();
 	_client_view = _ctx->create_view(w);
 }
 
 client_not_managed_t::~client_not_managed_t() {
 	_ctx->add_global_damage(get_visible_region());
-	_properties->select_input(XCB_EVENT_MASK_NO_EVENT);
-	_ctx->destroy_view(_client_view);
+	_client_proxy->select_input(XCB_EVENT_MASK_NO_EVENT);
 }
 
 xcb_atom_t client_not_managed_t::net_wm_type() {
@@ -37,20 +36,20 @@ xcb_atom_t client_not_managed_t::net_wm_type() {
 }
 
 bool client_not_managed_t::has_window(xcb_window_t w) const {
-	return w == _properties->id();
+	return w == _client_proxy->id();
 }
 
 string client_not_managed_t::get_node_name() const {
 	std::string s = _get_node_name<'U'>();
 	std::ostringstream oss;
 	oss << s << " " << orig();
-	oss << " " << cnx()->get_atom_name(_properties->wm_type()) << " ";
+	oss << " " << cnx()->get_atom_name(_client_proxy->wm_type()) << " ";
 
-	if(_properties->net_wm_name() != nullptr) {
-		oss << " " << *_properties->net_wm_name();
+	if(_client_proxy->net_wm_name() != nullptr) {
+		oss << " " << *_client_proxy->net_wm_name();
 	}
 
-	oss << " " << _properties->geometry().width << "x" << _properties->geometry().height << "+" << _properties->geometry().x << "+" << _properties->geometry().y;
+	oss << " " << _client_proxy->geometry().width << "x" << _client_proxy->geometry().height << "+" << _client_proxy->geometry().x << "+" << _client_proxy->geometry().y;
 
 	return oss.str();
 }
@@ -59,7 +58,7 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	if(not _is_visible)
 		return;
 
-	_base_position = _properties->position();
+	_base_position = _client_proxy->position();
 
 	_update_visible_region();
 	_update_opaque_region();
@@ -69,8 +68,8 @@ void client_not_managed_t::update_layout(time64_t const time) {
 	_damage_cache += dmg;
 	_client_view->clear_damaged();
 
-	rect pos(_properties->geometry().x, _properties->geometry().y,
-			_properties->geometry().width, _properties->geometry().height);
+	rect pos(_client_proxy->geometry().x, _client_proxy->geometry().y,
+			_client_proxy->geometry().width, _client_proxy->geometry().height);
 
 }
 
@@ -90,7 +89,7 @@ void client_not_managed_t::_update_opaque_region() {
 	if (net_wm_opaque_region() != nullptr) {
 		_opaque_region_cache = region{*(net_wm_opaque_region())};
 	} else {
-		if (_properties->geometry().depth != 32) {
+		if (_client_proxy->geometry().depth != 32) {
 			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};
 		}
 	}
@@ -111,20 +110,20 @@ region client_not_managed_t::get_damaged() {
 }
 
 xcb_window_t client_not_managed_t::base() const {
-	return _properties->id();
+	return _client_proxy->id();
 }
 
 xcb_window_t client_not_managed_t::orig() const {
-	return _properties->id();
+	return _client_proxy->id();
 }
 
 rect const & client_not_managed_t::base_position() const {
-	_base_position = _properties->position();
+	_base_position = _client_proxy->position();
 	return _base_position;
 }
 
 rect const & client_not_managed_t::orig_position() const {
-	_base_position = _properties->position();
+	_base_position = _client_proxy->position();
 	return _base_position;
 }
 
@@ -163,6 +162,7 @@ void client_not_managed_t::show() {
 	for(auto x: _children) {
 		x->show();
 	}
+
 }
 
 void client_not_managed_t::render_finished() {
@@ -170,12 +170,9 @@ void client_not_managed_t::render_finished() {
 }
 
 void client_not_managed_t::on_property_notify(xcb_property_notify_event_t const * e) {
-	client_base_t::on_property_notify(e);
-
 	if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
 		_update_opaque_region();
 	}
-
 }
 
 }

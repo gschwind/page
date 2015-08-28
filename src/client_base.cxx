@@ -16,12 +16,12 @@ using namespace std;
 
 /** short cut **/
 xcb_atom_t client_base_t::A(atom_e atom) {
-	return _properties->cnx()->A(atom);
+	return _client_proxy->cnx()->A(atom);
 }
 
 client_base_t::client_base_t(client_base_t const & c) :
 	_ctx{c._ctx},
-	_properties{c._properties},
+	_client_proxy{c._client_proxy},
 	_children{c._children}
 {
 
@@ -29,7 +29,7 @@ client_base_t::client_base_t(client_base_t const & c) :
 
 client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
 	_ctx{ctx},
-	_properties{ctx->dpy()->create_client_proxy(w)},
+	_client_proxy{ctx->dpy()->create_client_proxy(w)},
 	_children{}
 {
 
@@ -40,19 +40,19 @@ client_base_t::~client_base_t() {
 }
 
 void client_base_t::read_all_properties() {
-	_properties->read_all_properties();
+	_client_proxy->read_all_properties();
 }
 
 void client_base_t::update_shape() {
-	_properties->update_shape();
+	_client_proxy->update_shape();
 }
 
 
 bool client_base_t::has_motif_border() {
-	if (_properties->motif_hints() != nullptr) {
-		if (_properties->motif_hints()->flags & MWM_HINTS_DECORATIONS) {
-			if (not (_properties->motif_hints()->decorations & MWM_DECOR_BORDER)
-					and not ((_properties->motif_hints()->decorations & MWM_DECOR_ALL))) {
+	if (_client_proxy->motif_hints() != nullptr) {
+		if (_client_proxy->motif_hints()->flags & MWM_HINTS_DECORATIONS) {
+			if (not (_client_proxy->motif_hints()->decorations & MWM_DECOR_BORDER)
+					and not ((_client_proxy->motif_hints()->decorations & MWM_DECOR_ALL))) {
 				return false;
 			}
 		}
@@ -61,7 +61,7 @@ bool client_base_t::has_motif_border() {
 }
 
 void client_base_t::set_net_wm_desktop(unsigned long n) {
-	_properties->set_net_wm_desktop(n);
+	_client_proxy->set_net_wm_desktop(n);
 }
 
 void client_base_t::add_subclient(shared_ptr<client_base_t> s) {
@@ -76,7 +76,7 @@ void client_base_t::add_subclient(shared_ptr<client_base_t> s) {
 }
 
 bool client_base_t::is_window(xcb_window_t w) {
-	return w == _properties->id();
+	return w == _client_proxy->id();
 }
 
 string client_base_t::get_node_name() const {
@@ -84,103 +84,39 @@ string client_base_t::get_node_name() const {
 }
 
 xcb_atom_t client_base_t::wm_type() {
-	return _properties->wm_type();
+	return _client_proxy->wm_type();
 }
 
 void client_base_t::print_window_attributes() {
-	_properties->print_window_attributes();
+	_client_proxy->print_window_attributes();
 }
 
 void client_base_t::print_properties() {
-	_properties->print_properties();
+	_client_proxy->print_properties();
 }
 
 void client_base_t::process_event(xcb_configure_notify_event_t const * e) {
-	_properties->process_event(e);
+	_client_proxy->process_event(e);
 }
 
-auto client_base_t::cnx() const -> display_t * { return _properties->cnx(); }
+auto client_base_t::cnx() const -> display_t * { return _client_proxy->cnx(); }
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_base_t::cxx_name() { return _properties->cxx_name(); } \
-void client_base_t::update_##cxx_name() { _properties->update_##cxx_name(); }
+cxx_type const * client_base_t::cxx_name() { return _client_proxy->cxx_name(); } \
+void client_base_t::update_##cxx_name() { _client_proxy->update_##cxx_name(); }
 
 #define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_base_t::cxx_name() { return _properties->cxx_name(); } \
-void client_base_t::update_##cxx_name() { _properties->update_##cxx_name(); } \
-cxx_type const * client_base_t::cxx_name(cxx_type * x) { return _properties->cxx_name(x); }
+cxx_type const * client_base_t::cxx_name() { return _client_proxy->cxx_name(); } \
+void client_base_t::update_##cxx_name() { _client_proxy->update_##cxx_name(); } \
+cxx_type const * client_base_t::cxx_name(cxx_type * x) { return _client_proxy->cxx_name(x); }
 
 #include "client_property_list.hxx"
 
 #undef RO_PROPERTY
 #undef RW_PROPERTY
 
-auto client_base_t::shape() const -> region const * { return _properties->shape(); }
-auto client_base_t::position() -> rect { return _properties->position(); }
-
-
-void client_base_t::on_property_notify(xcb_property_notify_event_t const * e) {
-	if (e->atom == A(WM_NAME)) {
-		update_wm_name();
-	} else if (e->atom == A(WM_ICON_NAME)) {
-		update_wm_icon_name();
-	} else if (e->atom == A(WM_NORMAL_HINTS)) {
-		update_wm_normal_hints();
-	} else if (e->atom == A(WM_HINTS)) {
-		update_wm_hints();
-	} else if (e->atom == A(WM_CLASS)) {
-		update_wm_class();
-	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-		update_wm_transient_for();
-	} else if (e->atom == A(WM_PROTOCOLS)) {
-		update_wm_protocols();
-	} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
-		update_wm_colormap_windows();
-	} else if (e->atom == A(WM_CLIENT_MACHINE)) {
-		update_wm_client_machine();
-	} else if (e->atom == A(WM_STATE)) {
-		update_wm_state();
-	} else if (e->atom == A(_NET_WM_NAME)) {
-		update_net_wm_name();
-	} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
-		update_net_wm_visible_name();
-	} else if (e->atom == A(_NET_WM_ICON_NAME)) {
-		update_net_wm_icon_name();
-	} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
-		update_net_wm_visible_icon_name();
-	} else if (e->atom == A(_NET_WM_DESKTOP)) {
-		update_net_wm_desktop();
-	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
-		update_net_wm_window_type();
-	} else if (e->atom == A(_NET_WM_STATE)) {
-		update_net_wm_state();
-	} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
-		update_net_wm_allowed_actions();
-	} else if (e->atom == A(_NET_WM_STRUT)) {
-		update_net_wm_strut();
-	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-		update_net_wm_strut_partial();
-	} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
-		update_net_wm_icon_geometry();
-	} else if (e->atom == A(_NET_WM_ICON)) {
-		update_net_wm_icon();
-	} else if (e->atom == A(_NET_WM_PID)) {
-		update_net_wm_pid();
-	} else if (e->atom == A(_NET_WM_USER_TIME)) {
-		update_net_wm_user_time();
-	} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
-		update_net_wm_user_time_window();
-	} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
-		update_net_frame_extents();
-	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
-		update_net_wm_opaque_region();
-	} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
-		update_net_wm_bypass_compositor();
-	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
-		update_motif_hints();
-	}
-}
-
+auto client_base_t::shape() const -> region const * { return _client_proxy->shape(); }
+auto client_base_t::position() -> rect { return _client_proxy->position(); }
 
 void client_base_t::remove(shared_ptr<tree_t> t) {
 	if(t == nullptr)

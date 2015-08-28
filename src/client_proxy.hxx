@@ -49,12 +49,12 @@ class client_view_t {
 	friend class display_t;
 	friend class client_proxy_t;
 
-	client_proxy_t * _parent;
+	weak_ptr<client_proxy_t> _parent;
 	region _damaged;
 
 public:
 
-	client_view_t(client_proxy_t * parent);
+	client_view_t(shared_ptr<client_proxy_t> parent);
 	auto get_pixmap() -> shared_ptr<pixmap_t>;
 	void clear_damaged();
 	auto get_damaged() -> region const &;
@@ -62,7 +62,7 @@ public:
 
 };
 
-class client_proxy_t {
+class client_proxy_t : public enable_shared_from_this<client_proxy_t> {
 	friend class display_t;
 	friend class client_view_t;
 
@@ -70,7 +70,7 @@ private:
 	display_t *                  _dpy;
 	xcb_window_t                 _id;
 
-	bool _is_valid;
+	bool _destroyed;
 	bool                         _need_update_type;
 	xcb_atom_t                   _wm_type;
 
@@ -113,30 +113,22 @@ private:
 	client_proxy_t & operator=(client_proxy_t const &);
 
 	bool _safe_pixmap_update();
+	shared_ptr<pixmap_t> get_pixmap();
 
 public:
 	client_proxy_t(display_t * cnx, xcb_window_t id);
 	~client_proxy_t();
 
 	void read_all_properties();
-
 	void delete_all_properties();
-
 	bool read_window_attributes();
-	bool is_valid();
-
 	void update_shape();
-
 	void set_net_wm_desktop(unsigned int n);
-
 
 public:
 
 	void print_window_attributes();
-
-
 	void print_properties();
-
 	void update_type();
 
 	xcb_atom_t wm_type();
@@ -210,7 +202,8 @@ public:
 	void remove_view(client_view_t * v);
 	bool _has_views();
 
-	shared_ptr<pixmap_t> get_pixmap();
+	bool destroyed();
+	bool destroyed(bool x);
 
 };
 
