@@ -193,7 +193,6 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 	}
 
 	read_all_properties();
-	create_damage();
 
 }
 
@@ -679,6 +678,7 @@ void client_proxy_t::enable_redirect() {
 		return;
 	_is_redirected = true;
 	xcb_composite_redirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
+	create_damage();
 }
 
 void client_proxy_t::disable_redirect() {
@@ -687,6 +687,7 @@ void client_proxy_t::disable_redirect() {
 		return;
 	_is_redirected = false;
 	xcb_composite_unredirect_window(_dpy->xcb(), _id, XCB_COMPOSITE_REDIRECT_MANUAL);
+	destroy_damage();
 }
 
 void client_proxy_t::on_map() {
