@@ -175,11 +175,18 @@ public:
 
 struct grab_alt_tab_t : public grab_handler_t {
 	page_context_t * _ctx;
-	shared_ptr<popup_alt_tab_t> pat;
+	list<client_managed_w> _client_list;
+	list<popup_alt_tab_p> _popup_list;
+
+	map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> _destroy_func_map;
+
+	client_managed_w _selected;
+
+	void _destroy_client(client_managed_t * c);
 
 public:
 
-	grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window, xcb_timestamp_t time);
+	grab_alt_tab_t(page_context_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time);
 
 	virtual ~grab_alt_tab_t();
 	virtual void button_press(xcb_button_press_event_t const * e);

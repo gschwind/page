@@ -116,6 +116,9 @@ public:
 
 };
 
+using viewport_p = shared_ptr<viewport_t>;
+using viewport_w = weak_ptr<viewport_t>;
+
 }
 
 #endif /* VIEWPORT_HXX_ */

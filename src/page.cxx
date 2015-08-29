@@ -762,6 +762,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			start_alt_tab(e->time);
 		}
 	}
+
+	if(_grab_handler != nullptr) {
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+	} else {
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
+	}
+
 }
 
 void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
@@ -2940,9 +2947,9 @@ void page_t::register_cm() {
 inline void grab_key(xcb_connection_t * xcb, xcb_window_t w, key_desc_t & key, keymap_t * _keymap) {
 	int kc = 0;
 	if ((kc = _keymap->find_keysim(key.ks))) {
-		xcb_grab_key(xcb, true, w, key.mod, kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+		xcb_grab_key(xcb, true, w, key.mod, kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
 		if(_keymap->numlock_mod_mask() != 0) {
-			xcb_grab_key(xcb, true, w, key.mod| _keymap->numlock_mod_mask(), kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+			xcb_grab_key(xcb, true, w, key.mod|_keymap->numlock_mod_mask(), kc, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_SYNC);
 		}
 	}
 }
@@ -3641,13 +3648,24 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 
 	if(managed_window.size() > 1) {
 		/* Grab keyboard */
-		/** TODO: check for success or failure **/
-		xcb_grab_keyboard_unchecked(_dpy->xcb(), false, _dpy->root(), time,
+		auto ck = xcb_grab_keyboard(_dpy->xcb(),
+				false, _dpy->root(), time,
 				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
-		/** Continue to play event as usual (Alt+Tab is in Sync mode) **/
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, time);
-		grab_start(new grab_alt_tab_t{this, managed_window, time});
+		xcb_generic_error_t * err;
+		auto reply = xcb_grab_keyboard_reply(_dpy->xcb(), ck, &err);
+
+		if(err != nullptr) {
+			cout << "page_t::start_alt_tab error while trying to grab : " << xcb_event_get_error_label(err->error_code) << endl;
+			xcb_discard_reply(_dpy->xcb(), ck.sequence);
+		} else {
+			if(reply->status == XCB_GRAB_STATUS_SUCCESS) {
+				grab_start(new grab_alt_tab_t{this, managed_window, time});
+			} else {
+				cout << "page_t::start_alt_tab error while trying to grab" << endl;
+			}
+			free(reply);
+		}
 	}
 }
 

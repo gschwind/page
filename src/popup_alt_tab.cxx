@@ -16,22 +16,45 @@ namespace page {
 
 using namespace std;
 
-popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> client_list) :
+popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<client_managed_p> client_list, viewport_p viewport) :
 	_ctx{ctx},
 	_selected{},
 	_is_durty{true},
 	_exposed{true},
-	_damaged{true}
+	_damaged{true},
+	_viewport{viewport}
 {
 
 	{
-		rect _position = _ctx->get_current_workspace()->get_any_viewport()->allocation();
+		rect _position = viewport->allocation();
 		_position_extern = rect{_position.x+50, _position.y+50, _position.w-100, _position.h-100};
 		_position_intern = rect{_position.x+80, _position.y+80, _position.w-160, _position.h-160};
 	}
 
 	_create_composite_window();
 	_ctx->dpy()->map(_wid);
+
+
+	for(auto const & c: client_list) {
+		cycle_window_entry_t entry;
+		entry.client = c;
+		_client_list.push_back(entry);
+	}
+
+	_reconfigure();
+
+	_selected = _client_list.end();
+
+	if(_client_list.size() > 0) {
+		selected(_client_list.front().client);
+	}
+
+}
+
+void popup_alt_tab_t::_reconfigure() {
+
+	/** cleanup client list **/
+	_client_list.remove_if([](cycle_window_entry_t const & xc) -> bool { return xc.client.expired(); });
 
 	int nx = 1;
 	int ny = 1;
@@ -60,7 +83,7 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 		 *
 		 */
 
-		ny = ((client_list.size() - 1) / nx) + 1;
+		ny = ((_client_list.size() - 1) / nx) + 1;
 
 
 		if(ny * width < _position_intern.h)
@@ -72,29 +95,24 @@ popup_alt_tab_t::popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_ma
 	int height = _position_intern.h / ny;
 
 	int i = 0;
-	for(auto const & c: client_list) {
+	for(auto & entry: _client_list) {
+		auto c = entry.client.lock();
+
 		int x = i % nx;
 		int y = i / nx;
 
 		int x_offset = 0;
 		if(y == ny - 1) {
-			x_offset = (_position_intern.w - width * (client_list.size() - y*nx)) / 2.0;
+			x_offset = (_position_intern.w - width * (_client_list.size() - y*nx)) / 2.0;
 		}
 
 		rect pos{x*width+20+_position_intern.x+x_offset, y*height+20+_position_intern.y, width-40, height-40};
 
-		cycle_window_entry_t entry;
-		entry.client = c;
 		entry.title = c->title();
 		entry.icon = make_shared<icon64>(c.get());
 		entry._thumbnail = make_shared<renderable_thumbnail_t>(_ctx, c, pos, ANCHOR_CENTER);
-		entry.destroy_func = c->on_destroy.connect(this, &popup_alt_tab_t::destroy_client);
-		_client_list.push_back(entry);
 		++i;
-
 	}
-
-	_selected = _client_list.begin();
 
 }
 
@@ -148,31 +166,47 @@ rect const & popup_alt_tab_t::position() {
 	return _position_extern;
 }
 
+void popup_alt_tab_t::_clear_selected() {
+	if(_selected != _client_list.end()) {
+		auto & xc = (*_selected);
+		if(not xc.client.expired() and xc._thumbnail != nullptr) {
+			xc._thumbnail->set_mouse_over(false);
+		}
+	}
+	_selected = _client_list.end();
+}
 
+client_managed_w popup_alt_tab_t::selected(client_managed_w wc) {
 
-void popup_alt_tab_t::select_next() {
+	if(_selected == _client_list.end()) {
+		if(wc.expired())
+			return selected();
+	} else {
+		if(wc.lock() == _selected->client.lock())
+			return selected();
+	}
+
 	_is_durty = true;
 	_exposed = true;
 
-	if(_client_list.size() == 0) {
-		_selected = _client_list.end();
-		return;
-	} else if (_client_list.size() == 1) {
-		_selected = _client_list.begin();
-		return;
+	_clear_selected();
+	if(wc.expired())
+		return selected();
+
+	auto c = wc.lock();
+	auto xc = std::find_if(_client_list.begin(), _client_list.end(),
+			[c](cycle_window_entry_t const & x) -> bool { return c == x.client.lock(); });
+
+	if(xc != _client_list.end()) {
+		xc->_thumbnail->set_mouse_over(true);
+		_selected = xc;
 	}
-
-	_selected->_thumbnail->set_mouse_over(false);
-	++_selected;
-	if(_selected == _client_list.end())
-		_selected = _client_list.begin();
-	_selected->_thumbnail->set_mouse_over(true);
-
+	return selected();
 }
 
-weak_ptr<client_managed_t> popup_alt_tab_t::get_selected() {
+client_managed_w popup_alt_tab_t::selected() {
 	if(_selected == _client_list.end()) {
-		return weak_ptr<client_managed_t>{};
+		return client_managed_w{};
 	} else {
 		return _selected->client;
 	}
@@ -229,21 +263,14 @@ void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 }
 
 void popup_alt_tab_t::destroy_client(client_managed_t * c) {
-
-	auto i = _client_list.begin();
-	while(i != _client_list.end()) {
-		if(i->client.expired()) {
-			if(i == _selected)
-				select_next();
-			i = _client_list.erase(i);
-		} else if (i->client.lock().get() == c) {
-			if(i == _selected)
-				select_next();
-			i = _client_list.erase(i);
-		} else {
-			++i;
+	if(_selected != _client_list.end()) {
+		if((*_selected).client.expired()) {
+			_selected = _client_list.end();
 		}
 	}
+
+	_reconfigure();
+
 }
 
 xcb_window_t popup_alt_tab_t::get_xid() const {
@@ -288,19 +315,16 @@ void popup_alt_tab_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 }
 
 void popup_alt_tab_t::_select_from_mouse(int x, int y) {
-	auto i = _client_list.begin();
-	while(i != _client_list.end()) {
-		if(i->_thumbnail->get_visible_region().is_inside(x, y)) {
-			_selected->_thumbnail->set_mouse_over(false);
-			_selected = i;
-			_selected->_thumbnail->set_mouse_over(true);
+	for(auto & i: _client_list) {
+		if(i._thumbnail->get_visible_region().is_inside(x, y)) {
+			selected(i.client);
 			break;
 		}
-		++i;
 	}
 }
 
 void popup_alt_tab_t::grab_button_press(xcb_button_press_event_t const * ev) {
+	_clear_selected();
 	_select_from_mouse(ev->root_x, ev->root_y);
 }
 

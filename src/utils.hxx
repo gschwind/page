@@ -222,7 +222,7 @@ std::list<std::shared_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const
 
 template<typename T0>
 std::list<std::weak_ptr<T0>> weak(std::list<std::shared_ptr<T0>> const & x) {
-	return std::list<std::shared_ptr<T0>>{x.begin(), x.end()};
+	return std::list<std::weak_ptr<T0>>{x.begin(), x.end()};
 }
 
 template<typename T0>

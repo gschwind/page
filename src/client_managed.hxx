@@ -270,8 +270,11 @@ public:
 	virtual auto orig_position() const -> rect const &;
 	virtual void on_property_notify(xcb_property_notify_event_t const * e);
 
-
 };
+
+
+using client_managed_p = shared_ptr<client_managed_t>;
+using client_managed_w = weak_ptr<client_managed_t>;
 
 }
 

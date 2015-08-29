@@ -582,56 +582,97 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 	}
 }
 
-grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
+void grab_alt_tab_t::_destroy_client(client_managed_t * c) {
+	_destroy_func_map.erase(c);
 
-	pat = popup_alt_tab_t::create(_ctx, managed_window);
-	pat->show();
-	pat->select_next();
-	_ctx->overlay_add(pat);
+	_client_list.remove_if([](client_managed_w const & x) -> bool { return x.expired(); });
 
-	xcb_grab_pointer(_ctx->dpy()->xcb(),
-	false, pat->get_xid(),
-	XCB_EVENT_MASK_BUTTON_PRESS
-		| XCB_EVENT_MASK_BUTTON_RELEASE
-		| XCB_EVENT_MASK_BUTTON_MOTION
-		| XCB_EVENT_MASK_POINTER_MOTION,
-			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
-			XCB_NONE,
-			XCB_NONE, time);
+	for(auto & x: _popup_list) {
+		x->destroy_client(c);
+	}
+}
+
+grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
+	_client_list = weak(managed_window);
+
+	auto viewport_list = _ctx->get_current_workspace()->get_viewports();
+
+	for(auto v: viewport_list) {
+		auto pat = popup_alt_tab_t::create(_ctx, managed_window, v);
+		pat->show();
+		if(_client_list.size() > 0)
+			pat->selected(_client_list.front());
+		_ctx->overlay_add(pat);
+		_popup_list.push_back(pat);
+	}
+
+	if(_client_list.size() > 0) {
+		_selected = _client_list.front();
+	}
+
+	auto ck = xcb_grab_pointer(
+		_ctx->dpy()->xcb(),
+		false,
+		_ctx->dpy()->root(),
+		XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION,
+		XCB_GRAB_MODE_ASYNC,
+		XCB_GRAB_MODE_ASYNC,
+		XCB_NONE,
+		XCB_NONE,
+		time);
+
+	xcb_generic_error_t * err;
+	auto reply = xcb_grab_pointer_reply(_ctx->dpy()->xcb(), ck, &err);
+
+	if(err != nullptr) {
+		cout << "grab_alt_tab_t::grab_alt_tab_t error while trying to grab : " << xcb_event_get_error_label(err->error_code) << endl;
+		xcb_discard_reply(_ctx->dpy()->xcb(), ck.sequence);
+	} else {
+		if(reply->status != XCB_GRAB_STATUS_SUCCESS) {
+			cout << "grab_alt_tab_t::grab_alt_tab_t: grab fail" << endl;
+		}
+		free(reply);
+	}
 
 }
 
 grab_alt_tab_t::~grab_alt_tab_t() {
-	if(pat != nullptr)
-		_ctx->detach(pat);
+
+	for(auto x: _popup_list) {
+		_ctx->detach(x);
+	}
 
 	xcb_ungrab_pointer(_ctx->dpy()->xcb(), XCB_CURRENT_TIME);
 }
 
 void grab_alt_tab_t::button_press(xcb_button_press_event_t const * e) {
 
-	pat->grab_button_press(e);
-
 	if (e->detail == XCB_BUTTON_INDEX_1) {
-
-		weak_ptr<client_managed_t> _mw = pat->get_selected();
-		if(_mw.expired()) {
-			xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-			_ctx->grab_stop();
-			return;
+		for(auto & pat: _popup_list) {
+			pat->grab_button_press(e);
+			auto _mw = pat->selected();
+			if(not _mw.expired()) {
+				auto mw = _mw.lock();
+				mw->activate();
+				_ctx->set_focus(mw, e->time);
+				break;
+			}
 		}
 
-		auto mw = _mw.lock();
-
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		mw->activate();
-		_ctx->set_focus(mw, e->time);
 		_ctx->grab_stop();
+
 	}
 }
 
 void grab_alt_tab_t::button_motion(xcb_motion_notify_event_t const * e) {
-	pat->grab_button_motion(e);
+	for(auto & pat: _popup_list) {
+		pat->grab_button_motion(e);
+		auto _mw = pat->selected();
+		if(not _mw.expired()) {
+			_selected = _mw;
+		}
+	}
 }
 
 void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
@@ -648,21 +689,33 @@ void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
 	}
 
 	if (k == XK_Tab and (state == XCB_MOD_MASK_1)) {
-		pat->select_next();
-	}
+		if(_selected.expired()) {
+			if(_client_list.size() > 0) {
+				_selected = _client_list.front();
+				for(auto & pat: _popup_list) {
+					pat->selected(_selected);
+				}
+			}
+		} else {
+			auto c = _selected.lock();
+			_selected.reset();
+			auto xc = std::find_if(_client_list.begin(), _client_list.end(),
+				[c](client_managed_w & x) -> bool { return c == x.lock(); });
 
+			if(xc != _client_list.end())
+				++xc;
+			if(xc != _client_list.end()) {
+				_selected = (*xc);
+			}
+
+			for(auto & pat: _popup_list) {
+				pat->selected(_selected);
+			}
+		}
+	}
 }
 
 void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
-	weak_ptr<client_managed_t> _mw = pat->get_selected();
-	if(_mw.expired()) {
-		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		_ctx->grab_stop();
-		return;
-	}
-
-	auto mw = _mw.lock();
-
 	/* get KeyCode for Unmodified Key */
 	xcb_keysym_t k = _ctx->keymap()->get(e->detail);
 
@@ -675,19 +728,19 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 		state &= ~(_ctx->keymap()->numlock_mod_mask());
 	}
 
-
 	if (XK_Escape == k) {
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		//mw->activate();
-		_ctx->set_focus(mw, e->time);
 		_ctx->grab_stop();
 	}
 
 	/** here we guess Mod1 is bound to Alt **/
 	if (XK_Alt_L == k or XK_Alt_R == k) {
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		mw->activate();
-		_ctx->set_focus(mw, e->time);
+		if(not _selected.expired()) {
+			auto mw = _selected.lock();
+			mw->activate();
+			_ctx->set_focus(mw, e->time);
+		}
 		_ctx->grab_stop();
 	}
 

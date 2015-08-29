@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "renderable.hxx"
+#include "viewport.hxx"
 #include "icon_handler.hxx"
 #include "renderable_thumbnail.hxx"
 
@@ -27,14 +28,10 @@ namespace page {
 using namespace std;
 
 class cycle_window_entry_t {
-	weak_ptr<client_managed_t> client;
-
+	client_managed_w client;
 	string title;
 	shared_ptr<icon64> icon;
 	shared_ptr<renderable_thumbnail_t> _thumbnail;
-
-	decltype(client_managed_t::on_destroy)::signal_func_t destroy_func;
-
 
 public:
 	cycle_window_entry_t() { }
@@ -43,8 +40,7 @@ public:
 		client{x.client},
 		title{x.title},
 		icon{x.icon},
-		_thumbnail{x._thumbnail},
-		destroy_func{x.destroy_func}
+		_thumbnail{x._thumbnail}
 	{ }
 
 	friend class popup_alt_tab_t;
@@ -56,6 +52,7 @@ class popup_alt_tab_t : public tree_t {
 	xcb_window_t _wid;
 	rect _position_extern;
 	rect _position_intern;
+	viewport_w _viewport;
 
 	list<cycle_window_entry_t> _client_list;
 	list<cycle_window_entry_t>::iterator _selected;
@@ -67,15 +64,18 @@ class popup_alt_tab_t : public tree_t {
 	void _create_composite_window();
 	void update_backbuffer();
 	void paint_exposed();
-	void destroy_client(client_managed_t * c);
 
 	void _init();
 
 	void _select_from_mouse(int x, int y);
 
+	void _reconfigure();
+
+	void _clear_selected();
+
 public:
 
-	popup_alt_tab_t(page_context_t * ctx, list<shared_ptr<client_managed_t>> client_list);
+	popup_alt_tab_t(page_context_t * ctx, list<client_managed_p> client_list, viewport_p viewport);
 
 	template<typename ... Args>
 	static shared_ptr<popup_alt_tab_t> create(Args ... args) {
@@ -88,8 +88,11 @@ public:
 
 	void move(int x, int y);
 	rect const & position();
-	void select_next();
-	weak_ptr<client_managed_t> get_selected();
+
+	client_managed_w selected(client_managed_w c);
+	client_managed_w selected();
+
+	void destroy_client(client_managed_t * c);
 
 	void grab_button_press(xcb_button_press_event_t const * ev);
 	void grab_button_motion(xcb_motion_notify_event_t const * ev);
@@ -130,6 +133,9 @@ public:
 	//virtual void queue_redraw();
 
 };
+
+using popup_alt_tab_p = shared_ptr<popup_alt_tab_t>;
+using popup_alt_tab_w = weak_ptr<popup_alt_tab_t>;
 
 }
 
