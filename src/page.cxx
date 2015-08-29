@@ -294,7 +294,8 @@ void page_t::run() {
 	scan();
 
 	/* setup _NET_ACTIVE_WINDOW */
-	set_focus(nullptr, XCB_CURRENT_TIME);
+	_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+	_dpy->set_net_active_window(XCB_WINDOW_NONE);
 
 	update_keymap();
 	update_grabkey();
