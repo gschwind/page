@@ -120,7 +120,7 @@ public:
 		rect rect0;
 		rect rect1;
 
-		_s_base.lock()->compute_children_root_allocation(_current_split, rect0, rect1);
+		_s_base.lock()->compute_children_allocation(_current_split, rect0, rect1);
 
 		xcb_rectangle_t rects[8];
 
@@ -188,7 +188,7 @@ public:
 		theme_split_t ts;
 		ts.split = s->ratio();
 		ts.type = s->type();
-		ts.allocation = s->allocation();
+		ts.allocation = s->to_root_position(s->allocation());
 
 		region r = area & get_visible_region();
 		for (auto const & a : area) {
@@ -204,7 +204,7 @@ public:
 		rect rect0;
 		rect rect1;
 
-		_s_base.lock()->compute_children_root_allocation(_current_split, rect0, rect1);
+		_s_base.lock()->compute_children_allocation(_current_split, rect0, rect1);
 
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);

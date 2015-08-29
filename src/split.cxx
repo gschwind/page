@@ -339,8 +339,8 @@ rect split_t::root_location() {
 
 void split_t::compute_children_root_allocation(double split, rect & bpack0, rect & bpack1) {
 	compute_children_allocation(split, bpack0, bpack1);
-	to_root_position(bpack0);
-	to_root_position(bpack1);
+	bpack0 = to_root_position(bpack0);
+	bpack1 = to_root_position(bpack1);
 }
 
 bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {

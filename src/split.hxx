@@ -40,9 +40,6 @@ class split_t : public page_component_t {
 	split_t(split_t const &);
 	split_t & operator=(split_t const &);
 
-	void compute_children_allocation(double split, rect & bpack0, rect & bpack1);
-
-
 	rect compute_split_bar_location(rect const & bpack0, rect const & bpack1) const;
 	rect compute_split_bar_location() const;
 
@@ -67,6 +64,8 @@ public:
 
 	double compute_split_constaint(double split);
 	rect root_location();
+
+	void compute_children_allocation(double split, rect & bpack0, rect & bpack1);
 	void compute_children_root_allocation(double split, rect & bpack0, rect & bpack1);
 
 
