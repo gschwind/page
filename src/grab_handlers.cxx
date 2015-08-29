@@ -571,7 +571,7 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 	if (button == e->detail) {
 		/** drop the fullscreen window to the new viewport **/
 
-		shared_ptr<viewport_t> new_viewport = _ctx->find_mouse_viewport(e->root_x, e->root_y);
+		auto new_viewport = _ctx->find_mouse_viewport(e->root_x, e->root_y);
 
 		if(new_viewport != nullptr) {
 			_ctx->fullscreen_client_to_viewport(mw.lock(), new_viewport);

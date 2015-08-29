@@ -2155,8 +2155,17 @@ void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, share
 	if (has_key(_fullscreen_client_to_viewport, c.get())) {
 		fullscreen_data_t & data = _fullscreen_client_to_viewport[c.get()];
 		if (v != data.viewport.lock()) {
+			if(not data.viewport.expired()) {
+				data.viewport.lock()->show();
+				data.viewport.lock()->queue_redraw();
+				add_global_damage(data.viewport.lock()->raw_area());
+			}
+			v->hide();
+			add_global_damage(v->raw_area());
 			data.viewport = v;
 			data.workspace = find_desktop_of(v);
+			c->set_notebook_wished_position(v->raw_area());
+			c->reconfigure();
 			update_desktop_visibility();
 		}
 	}
