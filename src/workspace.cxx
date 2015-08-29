@@ -95,6 +95,10 @@ void workspace_t::update_layout(time64_t const time) {
 		}
 		_switch_renderable->move(new_x, _ctx->top_most_border());
 	} else if (_switch_renderable != nullptr) {
+		for(auto x: get_viewports()) {
+			_ctx->add_global_damage(x->raw_area());
+		}
+
 		_switch_screenshot = nullptr;
 		_switch_renderable = nullptr;
 	}
