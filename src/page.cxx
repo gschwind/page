@@ -601,6 +601,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if(_grab_handler != nullptr) {
 		_grab_handler->key_press(e);
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -609,6 +610,9 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			mw->delete_window(e->time);
 		}
+
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_exposay_all) {
@@ -616,6 +620,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		for (auto c : child) {
 			c->start_exposay();
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_toggle_fullscreen) {
@@ -623,6 +629,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			toggle_fullscreen(mw);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_toggle_compositor) {
@@ -631,6 +639,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			stop_compositor();
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_right_desktop) {
@@ -641,6 +651,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			set_focus(nullptr, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_left_desktop) {
@@ -651,6 +663,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			set_focus(nullptr, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_bind_window) {
@@ -662,6 +676,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				bind_window(mw, true);
 			}
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_fullscreen_window) {
@@ -671,6 +687,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				fullscreen(mw);
 			}
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (key == bind_float_window) {
@@ -684,6 +702,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				unbind_window(mw);
 			}
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	if (_compositor != nullptr) {
@@ -700,6 +720,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_root->_fps_overlay = nullptr;
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+			return;
 		}
 
 		if (key == bind_debug_2) {
@@ -708,6 +730,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_damaged(true);
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+			return;
 		}
 
 		if (key == bind_debug_3) {
@@ -716,6 +740,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_opac(true);
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+			return;
 		}
 	}
 
@@ -750,11 +776,15 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			cout << "active window is : " << "NONE" << endl;
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
 	for(int i; i < bind_cmd.size(); ++i) {
 		if (key == bind_cmd[i].key) {
 			run_cmd(bind_cmd[i].cmd);
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+			return;
 		}
 	}
 
@@ -762,13 +792,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (_grab_handler == nullptr) {
 			start_alt_tab(e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
+		return;
 	}
 
-	if(_grab_handler != nullptr) {
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
-	} else {
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
-	}
+	xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
 
 }
 
