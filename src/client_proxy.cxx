@@ -146,24 +146,16 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 	_wm_type = A(_NET_WM_WINDOW_TYPE_NORMAL);
 	_damage = XCB_NONE;
 
-	/**
-	 * select needed default inputs.
-	 **/
-	uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
 	/** following request are mandatory to create a client_proxy **/
-	auto ck0 = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
 	auto ck1 = xcb_get_window_attributes(_dpy->xcb(), xid());
 	auto ck2 = xcb_get_geometry(_dpy->xcb(), xid());
 
 	xcb_get_geometry_reply_t * geometry = nullptr;
 	xcb_get_window_attributes_reply_t * wa = nullptr;
+	xcb_generic_error_t * err;
 
 	try {
-		xcb_generic_error_t * err;
-		err = xcb_request_check(_dpy->xcb(), ck0);
-		if(err != nullptr)
-			throw invalid_client_t{};
 		wa = xcb_get_window_attributes_reply(_dpy->xcb(), ck1, &err);
 		if(err != nullptr)
 			throw invalid_client_t{};
@@ -176,11 +168,21 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 		_vis = _dpy->get_visual_type(_wa.visual);
 		_need_pixmap_update= true;
 
+		/**
+		 * select needed default inputs.
+		 **/
+		uint32_t mask = _wa.your_event_mask|XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+		auto ck0 = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
+		err = xcb_request_check(_dpy->xcb(), ck0);
+		if(err != nullptr)
+			throw invalid_client_t{};
+		xcb_discard_reply(_dpy->xcb(), ck0.sequence);
+
 		free(wa);
 		free(geometry);
 
 	} catch(invalid_client_t & e) {
-		xcb_discard_reply(_dpy->xcb(), ck0.sequence);
+		free(err);
 		if(wa != nullptr)
 			free(wa);
 		else

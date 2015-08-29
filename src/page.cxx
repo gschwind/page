@@ -2485,8 +2485,8 @@ void page_t::onmap(xcb_window_t w) {
 	 * managed this window and the window have not the right default size.
 	 *
 	 **/
-	_dpy->grab();
-	_dpy->fetch_pending_events();
+	//_dpy->grab();
+	//_dpy->fetch_pending_events();
 
 	if(_dpy->check_for_destroyed_window(w)) {
 		printf("do not manage %u because it will be destoyed\n", w);
@@ -2586,7 +2586,7 @@ void page_t::onmap(xcb_window_t w) {
 		cout << "found invalid client" << endl;
 	}
 
-	_dpy->ungrab();
+	//_dpy->ungrab();
 
 }
 
@@ -3334,10 +3334,6 @@ void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
 			_compositor->update_layout();
 		_theme->update();
 	}
-
-	xcb_grab_button(_dpy->xcb(), false, _dpy->root(), DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_NONE, XCB_NONE,
-			XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 	/** put rpage behind all managed windows **/
 	_need_restack = true;
