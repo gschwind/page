@@ -827,9 +827,6 @@ void client_managed_t::unmap_unsafe() {
 }
 
 void client_managed_t::hide() {
-	if(not _is_visible)
-		return;
-
 	for(auto x: _children) {
 		x->hide();
 	}
@@ -847,9 +844,6 @@ void client_managed_t::hide() {
 }
 
 void client_managed_t::show() {
-	if(_is_visible)
-		return;
-
 	_is_visible = true;
 	reconfigure();
 	map_unsafe();

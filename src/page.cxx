@@ -2752,8 +2752,14 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			} else {
 				set_focus(mw, XCB_CURRENT_TIME);
 			}
+			if(mw->is(MANAGED_DOCK)) {
+				update_workarea();
+			}
+
 			mw->reconfigure();
+			_need_restack = true;
 		}
+
 	} catch (exception_t & e) {
 		cout << e.what() << endl;
 	} catch (...) {
