@@ -770,68 +770,30 @@ bool client_proxy_t::_has_views() {
 }
 
 void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
-	if (e->atom == A(WM_NAME)) {
-		update_wm_name();
-	} else if (e->atom == A(WM_ICON_NAME)) {
-		update_wm_icon_name();
-	} else if (e->atom == A(WM_NORMAL_HINTS)) {
-		update_wm_normal_hints();
-	} else if (e->atom == A(WM_HINTS)) {
-		update_wm_hints();
-	} else if (e->atom == A(WM_CLASS)) {
-		update_wm_class();
-	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-		update_wm_transient_for();
+
+
+#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+	if(e->atom == A(x11_name)) { update_##cxx_name(); } else
+
+#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
+	if(e->atom == A(x11_name)) { update_##cxx_name(); } else
+
+#include "client_property_list.hxx"
+
+#undef RO_PROPERTY
+#undef RW_PROPERTY
+	/* DO NOT REMOVE: terminate the if then else */
+	{ }
+
+	/* custom case */
+	if (e->atom == A(WM_TRANSIENT_FOR)) {
 		_need_update_type = true;
-	} else if (e->atom == A(WM_PROTOCOLS)) {
-		update_wm_protocols();
-	} else if (e->atom == A(WM_COLORMAP_WINDOWS)) {
-		update_wm_colormap_windows();
-	} else if (e->atom == A(WM_CLIENT_MACHINE)) {
-		update_wm_client_machine();
-	} else if (e->atom == A(WM_STATE)) {
-		update_wm_state();
-	} else if (e->atom == A(_NET_WM_NAME)) {
-		update_net_wm_name();
-	} else if (e->atom == A(_NET_WM_VISIBLE_NAME)) {
-		update_net_wm_visible_name();
-	} else if (e->atom == A(_NET_WM_ICON_NAME)) {
-		update_net_wm_icon_name();
-	} else if (e->atom == A(_NET_WM_VISIBLE_ICON_NAME)) {
-		update_net_wm_visible_icon_name();
-	} else if (e->atom == A(_NET_WM_DESKTOP)) {
-		update_net_wm_desktop();
 	} else if (e->atom == A(_NET_WM_WINDOW_TYPE)) {
-		update_net_wm_window_type();
 		_need_update_type = true;
-	} else if (e->atom == A(_NET_WM_STATE)) {
-		update_net_wm_state();
-	} else if (e->atom == A(_NET_WM_ALLOWED_ACTIONS)) {
-		update_net_wm_allowed_actions();
-	} else if (e->atom == A(_NET_WM_STRUT)) {
-		update_net_wm_strut();
-	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
-		update_net_wm_strut_partial();
-	} else if (e->atom == A(_NET_WM_ICON_GEOMETRY)) {
-		update_net_wm_icon_geometry();
-	} else if (e->atom == A(_NET_WM_ICON)) {
-		update_net_wm_icon();
-	} else if (e->atom == A(_NET_WM_PID)) {
-		update_net_wm_pid();
-	} else if (e->atom == A(_NET_WM_USER_TIME)) {
-		update_net_wm_user_time();
-	} else if (e->atom == A(_NET_WM_USER_TIME_WINDOW)) {
-		update_net_wm_user_time_window();
-	} else if (e->atom == A(_NET_FRAME_EXTENTS)) {
-		update_net_frame_extents();
-	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
-		update_net_wm_opaque_region();
-	} else if (e->atom == A(_NET_WM_BYPASS_COMPOSITOR)) {
-		update_net_wm_bypass_compositor();
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
-		update_motif_hints();
 		_need_update_type = true;
 	}
+
 }
 
 bool client_proxy_t::destroyed() {

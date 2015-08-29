@@ -3675,7 +3675,7 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 		if(visible) {
 			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 		} else {
-			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+			client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		}
 	}
 }
