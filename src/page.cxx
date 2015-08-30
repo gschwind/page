@@ -1137,6 +1137,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	if(mw == nullptr)
 		return;
 
+	mw->on_property_notify(e);
+
 	if (e->atom == A(_NET_WM_USER_TIME)) {
 		/* ignore */
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
