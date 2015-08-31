@@ -13,7 +13,9 @@ namespace page {
 
 
 void client_proxy_t::select_input(uint32_t mask) {
-	_dpy->select_input(_id, mask|XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY);
+	_wa.your_event_mask |= mask;
+	_wa.your_event_mask |= XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	_dpy->select_input(_id, _wa.your_event_mask);
 }
 
 void client_proxy_t::set_focus_state(bool is_focused) {
@@ -171,8 +173,8 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 		/**
 		 * select needed default inputs.
 		 **/
-		uint32_t mask = _wa.your_event_mask|XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-		auto ck0 = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &mask);
+		_wa.your_event_mask |= XCB_EVENT_MASK_PROPERTY_CHANGE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+		auto ck0 = xcb_change_window_attributes_checked(_dpy->xcb(), id, XCB_CW_EVENT_MASK, &_wa.your_event_mask);
 		err = xcb_request_check(_dpy->xcb(), ck0);
 		if(err != nullptr)
 			throw invalid_client_t{};

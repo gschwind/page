@@ -911,7 +911,7 @@ void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
 	if(e->window == _dpy->root())
 		return;
 
-	/* If reparent occure on managed windows and new parent is an unknown window then unmanage */
+	/* If reparent occur on managed windows and new parent is an unknown window then unmanage */
 	auto mw = find_managed_window_with(e->window);
 	if (mw != nullptr) {
 		if (e->window == mw->orig() and e->parent != mw->base()) {
@@ -2518,6 +2518,13 @@ void page_t::onmap(xcb_window_t w) {
 			return;
 	}
 
+	{
+		auto mw = find_client_with(w);
+		if(mw != nullptr) {
+			return;
+		}
+	}
+
 	/**
 	 * XSync here is mandatory.
 	 *
@@ -2535,23 +2542,23 @@ void page_t::onmap(xcb_window_t w) {
 	//_dpy->grab();
 	//_dpy->fetch_pending_events();
 
-	if(_dpy->check_for_destroyed_window(w)) {
-		printf("do not manage %u because it will be destoyed\n", w);
-		_dpy->ungrab();
-		return;
-	}
-
-	if(_dpy->check_for_unmap_window(w)) {
-		printf("do not manage %u because it will be unmapped\n", w);
-		_dpy->ungrab();
-		return;
-	}
-
-	if(_dpy->check_for_reparent_window(w)) {
-		printf("do not manage %u because it will be reparented\n", w);
-		_dpy->ungrab();
-		return;
-	}
+//	if(_dpy->check_for_destroyed_window(w)) {
+//		printf("do not manage %u because it will be destoyed\n", w);
+//		_dpy->ungrab();
+//		return;
+//	}
+//
+//	if(_dpy->check_for_unmap_window(w)) {
+//		printf("do not manage %u because it will be unmapped\n", w);
+//		_dpy->ungrab();
+//		return;
+//	}
+//
+//	if(_dpy->check_for_reparent_window(w)) {
+//		printf("do not manage %u because it will be reparented\n", w);
+//		_dpy->ungrab();
+//		return;
+//	}
 
 	try {
 		auto props = _dpy->create_client_proxy(w);
