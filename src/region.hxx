@@ -134,107 +134,23 @@ class region_t : public std::vector<i_rect_t<T>> {
 
 		if (not intersection.is_null()) {
 			/* top box */
-			{
-				T left = intersection.x;
-				T right = intersection.x + intersection.w;
-				T top = box0.y;
-				T bottom = intersection.y;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
+			if (intersection.y != box0.y) {
+				result.push_back(_box_t(box0.x, box0.y, box0.w, intersection.y - box0.y));
 			}
 
 			/* bottom box */
-			{
-				T left = intersection.x;
-				T right = intersection.x + intersection.w;
-				T top = intersection.y + intersection.h;
-				T bottom = box0.y + box0.h;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
+			if (intersection.y + intersection.h != box0.y + box0.h) {
+				result.push_back(_box_t(box0.x, intersection.y + intersection.h, box0.w, (box0.y + box0.h) - (intersection.y + intersection.h)));
 			}
 
 			/* left box */
-			{
-				T left = box0.x;
-				T right = intersection.x;
-				T top = intersection.y;
-				T bottom = intersection.y + intersection.h;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
+			if (intersection.x != box0.x) {
+				result.push_back(_box_t(box0.x, intersection.y, intersection.x - box0.x, intersection.h));
 			}
 
 			/* right box */
-			{
-				T left = intersection.x + intersection.w;
-				T right = box0.x + box0.w;
-				T top = intersection.y;
-				T bottom = intersection.y + intersection.h;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
-			}
-
-			/* top left box */
-			{
-				T left = box0.x;
-				T right = intersection.x;
-				T top = box0.y;
-				T bottom = intersection.y;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
-			}
-
-			/* top right box */
-			{
-				T left = intersection.x + intersection.w;
-				T right = box0.x + box0.w;
-				T top = box0.y;
-				T bottom = intersection.y;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
-			}
-
-			/* bottom left box */
-			{
-				T left = box0.x;
-				T right = intersection.x;
-				T top = intersection.y + intersection.h;
-				T bottom = box0.y + box0.h;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
-			}
-
-			/* bottom right box */
-			{
-				T left = intersection.x + intersection.w;
-				T right = box0.x + box0.w;
-				T top = intersection.y + intersection.h;
-				T bottom = box0.y + box0.h;
-
-				if (right - left > 0 and bottom - top > 0) {
-					result.push_back(
-							_box_t(left, top, right - left, bottom - top));
-				}
+			if(intersection.x + intersection.w != box0.x + box0.w) {
+				result.push_back(_box_t(intersection.x + intersection.w, intersection.y, (box0.x+box0.w)-(intersection.x+intersection.w), intersection.h));
 			}
 
 		} else {
