@@ -166,7 +166,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 	notebook_area_e new_zone;
 	_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
 
-	if(new_target != target_notebook.lock() or new_zone != zone) {
+	if((new_target != target_notebook.lock() or new_zone != zone) and new_zone != NOTEBOOK_AREA_NONE) {
 		target_notebook = new_target;
 		zone = new_zone;
 		switch(zone) {
@@ -203,9 +203,16 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 	if (e->detail == _button) {
 
 		shared_ptr<notebook_t> new_target;
-		_find_target_notebook(e->root_x, e->root_y, new_target, zone);
+		notebook_area_e new_zone;
+		_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
 
-		if(new_target == nullptr or zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
+		/* if the mouse is no where, keep old location */
+		if((new_target == nullptr or new_zone == NOTEBOOK_AREA_NONE) and not target_notebook.expired()) {
+			new_zone = zone;
+			new_target = target_notebook.lock();
+		}
+
+		if(new_target == nullptr or new_zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
 			if(c->is(MANAGED_FLOATING)) {
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, nullptr, true);
