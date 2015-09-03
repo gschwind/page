@@ -2511,11 +2511,13 @@ void page_t::onmap(xcb_window_t w) {
 	if(w == _dpy->root())
 		return;
 
+	/* check if this window is a page window */
 	for(auto const & x: _root->get_all_children()) {
 		if(x->get_xid() == w)
 			return;
 	}
 
+	/* check if the window is already managed */
 	{
 		auto mw = find_client_with(w);
 		if(mw != nullptr) {
@@ -2523,300 +2525,242 @@ void page_t::onmap(xcb_window_t w) {
 		}
 	}
 
-	/**
-	 * XSync here is mandatory.
-	 *
-	 * Because:
-	 *
-	 * client create window, then resize it, then map it.
-	 *
-	 * resize generate ConfigureRequest, page, reply to it with
-	 * ackwoledge_configure_request since the window is not mapped, then
-	 * Page receive MapRequest, but if we do not XSync,
-	 * ackwoledge_configure_request will resize the window AFTER the moment we
-	 * managed this window and the window have not the right default size.
-	 *
-	 **/
-	//_dpy->grab();
-	//_dpy->fetch_pending_events();
-
-//	if(_dpy->check_for_destroyed_window(w)) {
-//		printf("do not manage %u because it will be destoyed\n", w);
-//		_dpy->ungrab();
-//		return;
-//	}
-//
-//	if(_dpy->check_for_unmap_window(w)) {
-//		printf("do not manage %u because it will be unmapped\n", w);
-//		_dpy->ungrab();
-//		return;
-//	}
-//
-//	if(_dpy->check_for_reparent_window(w)) {
-//		printf("do not manage %u because it will be reparented\n", w);
-//		_dpy->ungrab();
-//		return;
-//	}
-
 	try {
 		auto props = _dpy->create_client_proxy(w);
-			if(props->wa()._class != XCB_WINDOW_CLASS_INPUT_ONLY) {
 
-			//props->print_window_attributes();
-			//props->print_properties();
+		/* abuse try - catch */
+		if(props->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+			throw invalid_client_t{};
+		}
 
-			xcb_atom_t type = props->wm_type();
+		//props->print_window_attributes();
+		//props->print_properties();
 
-			if (not props->wa().override_redirect) {
-				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-					create_managed_window(w, type);
-				}
-			} else {
-				if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-					create_managed_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-					create_unmanaged_window(w, type);
-				} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-					create_unmanaged_window(w, type);
-				}
+		xcb_atom_t type = props->wm_type();
+
+		if (not props->wa().override_redirect) {
+			if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+				create_managed_window(w, type);
+			}
+		} else {
+			if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+				create_managed_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+				create_unmanaged_window(w, type);
+			} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+				create_unmanaged_window(w, type);
 			}
 		}
 
 	} catch (invalid_client_t & e) {
-		cout << "found invalid client" << endl;
+		/* ignore invalid client */
 	}
-
-	//_dpy->ungrab();
-
 }
 
 
 void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
-	try {
-		auto mw = make_shared<client_managed_t>(this, w, type);
-		manage_client(mw, type);
+	auto mw = make_shared<client_managed_t>(this, w, type);
+	manage_client(mw, type);
 
-		if(mw->net_wm_strut() != nullptr or mw->net_wm_strut_partial() != nullptr) {
-			update_workarea();
-		}
-
-	} catch (...) {
-		printf("Error while creating managed window\n");
-		throw;
+	if (mw->net_wm_strut() != nullptr
+			or mw->net_wm_strut_partial() != nullptr) {
+		update_workarea();
 	}
 }
 
 void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
+	safe_update_transient_for(mw);
+	mw->activate();
+	mw->show();
 
-	try {
+	if(not mw->skip_task_bar()) {
+		_need_update_client_list = true;
+		_need_restack = true;
+	}
 
-		safe_update_transient_for(mw);
-		mw->activate();
-		mw->show();
-
-		if(not mw->skip_task_bar()) {
-			_need_update_client_list = true;
-			_need_restack = true;
-		}
-
-		/* find the desktop for this window */
-		{
-			unsigned int const * desktop = mw->net_wm_desktop();
-			if(desktop != nullptr) {
-				if(*desktop >= _root->_desktop_list.size()) {
-					mw->set_current_desktop(ALL_DESKTOP);
-					mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-				}
-			} else {
-				if(mw->wm_transient_for() != nullptr) {
-					auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
-					if(parent != nullptr) {
-						mw->set_current_desktop(find_current_desktop(parent));
+	/* find the desktop for this window */
+	{
+		unsigned int const * desktop = mw->net_wm_desktop();
+		if(desktop != nullptr) {
+			if(*desktop >= _root->_desktop_list.size()) {
+				mw->set_current_desktop(ALL_DESKTOP);
+				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+			}
+		} else {
+			if(mw->wm_transient_for() != nullptr) {
+				auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
+				if(parent != nullptr) {
+					mw->set_current_desktop(find_current_desktop(parent));
+				} else {
+					if(mw->is_stiky()) {
+						mw->set_current_desktop(ALL_DESKTOP);
 					} else {
-						if(mw->is_stiky()) {
-							mw->set_current_desktop(ALL_DESKTOP);
-						} else {
-							mw->set_current_desktop(_root->_current_desktop);
-						}
+						mw->set_current_desktop(_root->_current_desktop);
 					}
 				}
 			}
 		}
+	}
 
-		if(find_current_desktop(mw) == ALL_DESKTOP) {
-			mw->show();
-		} else if(not _root->_desktop_list[find_current_desktop(mw)]->is_visible()) {
-			mw->show();
-		} else {
-			mw->hide();
-		}
+	if(find_current_desktop(mw) == ALL_DESKTOP) {
+		mw->show();
+	} else if(not _root->_desktop_list[find_current_desktop(mw)]->is_visible()) {
+		mw->show();
+	} else {
+		mw->hide();
+	}
 
-		/* HACK OLD FASHION FULLSCREEN */
-		if (mw->wm_normal_hints() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-			XSizeHints const * size_hints = mw->wm_normal_hints();
-			if ((size_hints->flags & PMaxSize)
-					and (size_hints->flags & PMinSize)) {
-				if (size_hints->min_width == _root->_root_position.w
-						and size_hints->min_height == _root->_root_position.h
-						and size_hints->max_width == _root->_root_position.w
-						and size_hints->max_height == _root->_root_position.h) {
-					mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
-				}
+	/* HACK OLD FASHION FULLSCREEN */
+	if (mw->wm_normal_hints() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+		XSizeHints const * size_hints = mw->wm_normal_hints();
+		if ((size_hints->flags & PMaxSize)
+				and (size_hints->flags & PMinSize)) {
+			if (size_hints->min_width == _root->_root_position.w
+					and size_hints->min_height == _root->_root_position.h
+					and size_hints->max_width == _root->_root_position.w
+					and size_hints->max_height == _root->_root_position.h) {
+				mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 			}
+		}
+	}
+
+	/**
+	 * Here client that default to fullscreen
+	 **/
+	if (mw->is_fullscreen()) {
+		mw->normalize();
+		fullscreen(mw);
+		update_desktop_visibility();
+		mw->show();
+		mw->activate();
+		xcb_timestamp_t time = 0;
+		if (get_safe_net_wm_user_time(mw, time)) {
+			set_focus(mw, time);
+		} else {
+			set_focus(mw, XCB_CURRENT_TIME);
 		}
 
 		/**
-		 * Here client that default to fullscreen
+		 * Here client that default to notebook
 		 **/
-		if (mw->is_fullscreen()) {
-			mw->normalize();
-			fullscreen(mw);
-			update_desktop_visibility();
-			mw->show();
-			mw->activate();
-			xcb_timestamp_t time = 0;
-			if (get_safe_net_wm_user_time(mw, time)) {
-				set_focus(mw, time);
-			} else {
-				set_focus(mw, XCB_CURRENT_TIME);
+	} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL))
+			//or type == A(_NET_WM_WINDOW_TYPE_DOCK))
+			and get_transient_for(mw) == nullptr
+			//and mw->has_motif_border()
+			and not mw->is_modal())
+			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+
+		/** select if the client want to appear mapped or iconic **/
+		bool activate = true;
+
+		/**
+		 * first try if previous vm has put this window in IconicState, then
+		 * Check if the client have a preferred initial state.
+		 **/
+		if (mw->wm_state() != nullptr) {
+			if (mw->wm_state()->state == IconicState) {
+				activate = false;
 			}
-
-			/**
-			 * Here client that default to notebook
-			 **/
-		} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL))
-				//or type == A(_NET_WM_WINDOW_TYPE_DOCK))
-				and get_transient_for(mw) == nullptr
-				//and mw->has_motif_border()
-				and not mw->is_modal())
-				or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-
-			/** select if the client want to appear mapped or iconic **/
-			bool activate = true;
-
-			/**
-			 * first try if previous vm has put this window in IconicState, then
-			 * Check if the client have a preferred initial state.
-			 **/
-			if (mw->wm_state() != nullptr) {
-				if (mw->wm_state()->state == IconicState) {
-					activate = false;
-				}
-			} else {
-				if (mw->wm_hints() != nullptr) {
-					if (mw->wm_hints()->initial_state == IconicState) {
-						activate = false;
-					}
-				}
-			}
-
-			if(mw->net_wm_state() != nullptr) {
-				if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
-					activate = false;
-				}
-			}
-
-			if(not mw->is(MANAGED_DOCK)) {
-				bind_window(mw, activate);
-			} else {
-				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-			}
-			mw->reconfigure();
-
-			/**
-			 * Here client that default to floating
-			 **/
 		} else {
-			mw->normalize();
-			mw->show();
-			mw->activate();
-			xcb_timestamp_t time = 0;
-			if (get_safe_net_wm_user_time(mw, time)) {
-				set_focus(mw, time);
-			} else {
-				set_focus(mw, XCB_CURRENT_TIME);
+			if (mw->wm_hints() != nullptr) {
+				if (mw->wm_hints()->initial_state == IconicState) {
+					activate = false;
+				}
 			}
-			if(mw->is(MANAGED_DOCK)) {
-				update_workarea();
-			}
-
-			mw->reconfigure();
-			_need_restack = true;
 		}
 
-	} catch (exception_t & e) {
-		cout << e.what() << endl;
-	} catch (...) {
-		printf("Unknown exception while creating managed window\n");
-		throw;
+		if(mw->net_wm_state() != nullptr) {
+			if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
+				activate = false;
+			}
+		}
+
+		if(not mw->is(MANAGED_DOCK)) {
+			bind_window(mw, activate);
+		} else {
+			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+		}
+		mw->reconfigure();
+
+		/**
+		 * Here client that default to floating
+		 **/
+	} else {
+		mw->normalize();
+		mw->show();
+		mw->activate();
+		xcb_timestamp_t time = 0;
+		if (get_safe_net_wm_user_time(mw, time)) {
+			set_focus(mw, time);
+		} else {
+			set_focus(mw, XCB_CURRENT_TIME);
+		}
+		if(mw->is(MANAGED_DOCK)) {
+			update_workarea();
+		}
+
+		mw->reconfigure();
+		_need_restack = true;
 	}
 }
 
 void page_t::create_unmanaged_window(xcb_window_t w, xcb_atom_t type) {
-	try {
-		auto uw = make_shared<client_not_managed_t>(this, w, type);
-		_dpy->map(uw->orig());
-		uw->show();
-		safe_update_transient_for(uw);
-		//uw->activate();
-	} catch (exception_t & e) {
-		cout << e.what() << endl;
-	} catch (...) {
-		printf("Error while creating managed window\n");
-		throw;
-	}
+	auto uw = make_shared<client_not_managed_t>(this, w, type);
+	_dpy->map(uw->orig());
+	uw->show();
+	safe_update_transient_for(uw);
 }
 
 shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
@@ -2843,18 +2787,17 @@ bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestam
 			return false;
 		if (*(c->net_wm_user_time_window()) == XCB_WINDOW_NONE)
 			return false;
-
-		auto xc = _dpy->create_client_proxy(*(c->net_wm_user_time_window()));
-
-		if(xc->net_wm_user_time() == nullptr)
+		try {
+			auto xc = _dpy->create_client_proxy(*(c->net_wm_user_time_window()));
+			if(xc->net_wm_user_time() == nullptr)
+				return false;
+			if (*(xc->net_wm_user_time()) == 0)
+				return false;
+			time = *(xc->net_wm_user_time());
+			return true;
+		} catch (invalid_client_t & e) {
 			return false;
-
-		if (*(xc->net_wm_user_time()) == 0)
-			return false;
-
-		time = *(xc->net_wm_user_time());
-		return true;
-
+		}
 	}
 }
 
