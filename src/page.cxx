@@ -2998,7 +2998,6 @@ void page_t::update_grabkey() {
 		}
 	}
 
-
 }
 
 void page_t::update_keymap() {
@@ -3050,7 +3049,7 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 		_root->_current_desktop = desktop;
 		move_back(_root->_desktop_stack, _root->_desktop_list[_root->_current_desktop]);
 
-		/** move stiky to current desktop **/
+		/** move sticky to current desktop **/
 		for(auto s : stiky_list) {
 			detach(s);
 			insert_in_tree_using_transient_for(s);
@@ -3061,11 +3060,11 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 	}
 }
 
-void page_t::update_fullscreen_clients_position() {
-	for(auto i: _fullscreen_client_to_viewport) {
-		i.second.client.lock()->set_notebook_wished_position(i.second.viewport.lock()->raw_area());
-	}
-}
+//void page_t::update_fullscreen_clients_position() {
+//	for(auto i: _fullscreen_client_to_viewport) {
+//		i.second.client.lock()->set_notebook_wished_position(i.second.viewport.lock()->raw_area());
+//	}
+//}
 
 void page_t::update_desktop_visibility() {
 	/** hide only desktop that must be hidden first **/
@@ -3336,7 +3335,6 @@ void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
 		_theme->update();
 	}
 
-	/** put rpage behind all managed windows **/
 	_need_restack = true;
 
 }
