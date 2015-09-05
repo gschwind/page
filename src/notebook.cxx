@@ -40,6 +40,7 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	assert(not _has_client(x));
 	assert(x != nullptr);
 
+	/* do not stop exposay if new window is added */
 	if(_exposay)
 		prefer_activate = false;
 
@@ -58,15 +59,21 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	if(prefer_activate) {
 		_stop_exposay();
 		_start_fading();
+
+		/* remove current selected */
 		if (_selected != nullptr and _selected != x) {
 			_selected->iconify();
 			_selected->hide();
 		}
 
+		/* select the new one */
 		_selected = x;
-		_selected->normalize();
 		if(_is_visible) {
+			_selected->normalize();
 			_selected->show();
+		} else {
+			_selected->iconify();
+			_selected->hide();
 		}
 
 	} else {
@@ -1149,17 +1156,21 @@ void notebook_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 }
 
 void notebook_t::hide() {
-	for(auto i: children()) {
-		i->hide();
-	}
 	_is_visible = false;
+
+	if(_selected != nullptr) {
+		_selected->iconify();
+		_selected->hide();
+	}
 }
 
 void notebook_t::show() {
 	_is_visible = true;
 
-	if(_selected != nullptr)
+	if(_selected != nullptr) {
+		_selected->normalize();
 		_selected->show();
+	}
 }
 
 bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
