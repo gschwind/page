@@ -21,7 +21,6 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_ctx{ctx},
 		_is_default{false},
 		_selected{nullptr},
-		_keep_selected{ctx->conf()._auto_refocus},
 		_exposay{false},
 		_mouse_over{nullptr, nullptr},
 		_can_hsplit{true},
@@ -122,7 +121,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	x->clear_parent();
 	_clients.remove_if([x](_client_context_t const & y) { return x == y.client; });
 
-	if(_keep_selected and not _children.empty() and _selected == nullptr) {
+	if(_ctx->conf()._auto_refocus and not _children.empty() and _selected == nullptr) {
 		_selected = dynamic_pointer_cast<client_managed_t>(_children.back());
 
 		if (_selected != nullptr) {
@@ -1170,11 +1169,6 @@ bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
 	}
 	return false;
 }
-
-void notebook_t::_set_keep_selected(bool x) {
-	_keep_selected = x;
-}
-
 
 void notebook_t::render(cairo_t * cr, region const & area) {
 

@@ -58,7 +58,6 @@ class notebook_t : public page_component_t {
 	rect _theme_client_tabs_area;
 
 	bool _is_default;
-	bool _keep_selected;
 	bool _exposay;
 
 	bool _can_hsplit;
@@ -173,7 +172,6 @@ class notebook_t : public page_component_t {
 	bool is_default() const;
 
 	bool _has_client(shared_ptr<client_managed_t> c) const;
-	void _set_keep_selected(bool x);
 	void _update_exposay();
 	void _stop_exposay();
 	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
