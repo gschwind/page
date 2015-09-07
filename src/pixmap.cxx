@@ -36,6 +36,11 @@ pixmap_t(display_t * dpy, pixmap_format_e format, unsigned width, unsigned heigh
 		xcb_create_pixmap(_dpy->xcb(), 32, _pixmap_id, _dpy->root(), width, height);
 		_surf = cairo_xcb_surface_create(_dpy->xcb(), _pixmap_id, _dpy->default_visual_rgba(), _w, _h);
 	}
+
+	if(cairo_surface_status(_surf) != CAIRO_STATUS_SUCCESS) {
+		throw exception_t{"unable to create cairo_surface in %s", __PRETTY_FUNCTION__};
+	}
+
 }
 
 pixmap_t::~pixmap_t() {

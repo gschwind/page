@@ -48,7 +48,7 @@ class notebook_t : public page_component_t {
 
 	shared_ptr<renderable_thumbnail_t> tooltips;
 	shared_ptr<renderable_notebook_fading_t> fading_notebook;
-	vector<shared_ptr<renderable_thumbnail_t>> _exposay_thumbnail;
+	vector<renderable_thumbnail_p> _exposay_thumbnail;
 
 
 	theme_notebook_t _theme_notebook;
@@ -232,6 +232,9 @@ public:
 	friend grab_bind_client_t;
 
 };
+
+using notebook_p = shared_ptr<notebook_t>;
+using notebook_w = weak_ptr<notebook_t>;
 
 }
 

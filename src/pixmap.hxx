@@ -32,6 +32,8 @@ class pixmap_t {
 	cairo_surface_t * _surf;
 	unsigned _w, _h;
 
+	pixmap_t(pixmap_t const & x);
+	pixmap_t & operator=(pixmap_t const & x);
 public:
 
 	pixmap_t(display_t * dpy, xcb_visualtype_t * v, xcb_pixmap_t p, unsigned w, unsigned h);

@@ -77,7 +77,8 @@ public:
 		_ctx{ctx},
 		_s_base{split},
 		_current_split{split->ratio()},
-		_position{split->to_root_position(split->allocation())}
+		_position{split->to_root_position(split->allocation())},
+		_exposed{true}
 	{
 
 		/** if visual is 32 bits, this values are mandatory **/

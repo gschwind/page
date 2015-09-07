@@ -692,12 +692,23 @@ public:
 	}
 
 	void signal(F ... args) {
-		auto i = _callback_list.begin();
-		while(i != _callback_list.end()) {
-			if((*i).expired()) {
-				i = _callback_list.erase(i);
-			} else {
-				(*((*i++).lock()))(args...);
+		/** cleanup the content of callback list **/
+		_callback_list.remove_if([](std::weak_ptr<_func_t> & wfunc) -> bool { return wfunc.expired(); });
+
+		/**
+		 * Copy the list of callback to avoid issue
+		 * if 'disconnect' is called during the signal.
+		 **/
+		auto callbacks = _callback_list;
+
+		for(auto wfunc: callbacks) {
+			if(not wfunc.expired()) {
+				/**
+				 * Hold the function to avoid destroy
+				 * during the signal handling.
+				 **/
+				auto func = wfunc.lock();
+				(*func)(args...);
 			}
 		}
 	}

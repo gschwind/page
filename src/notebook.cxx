@@ -36,15 +36,12 @@ notebook_t::~notebook_t() {
 
 }
 
-bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate) {
+bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	assert(not _has_client(x));
 	assert(x != nullptr);
 
-	/* do not stop exposay if new window is added */
-	if(_exposay)
-		prefer_activate = false;
-
 	x->set_parent(shared_from_this());
+	x->set_managed_type(MANAGED_NOTEBOOK);
 	_children.push_back(x);
 
 	_clients.emplace_front();
@@ -56,12 +53,11 @@ bool notebook_t::add_client(shared_ptr<client_managed_t> x, bool prefer_activate
 	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
 	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
 
-	if(prefer_activate) {
-		_stop_exposay();
+	if(prefer_activate and not _exposay) {
 		_start_fading();
 
 		/* remove current selected */
-		if (_selected != nullptr and _selected != x) {
+		if (_selected != nullptr) {
 			_selected->iconify();
 			_selected->hide();
 		}
@@ -100,7 +96,7 @@ void notebook_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 
 void notebook_t::remove(shared_ptr<tree_t> src) {
 	auto mw = dynamic_pointer_cast<client_managed_t>(src);
-	if (_has_client(mw) and mw != nullptr) {
+	if (_has_client(mw)) {
 		_remove_client(mw);
 	}
 }
@@ -112,14 +108,12 @@ void notebook_t::_activate_client(shared_ptr<client_managed_t> x) {
 }
 
 void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
-	assert(_has_client(x));
-
-	if(x == nullptr)
-		return;
 
 	/** update selection **/
 	if (_selected == x) {
 		_start_fading();
+		_selected->iconify();
+		_selected->hide();
 		_selected = nullptr;
 	}
 
@@ -128,14 +122,15 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	x->clear_parent();
 	_clients.remove_if([x](_client_context_t const & y) { return x == y.client; });
 
-	if(_ctx->conf()._auto_refocus and not _children.empty() and _selected == nullptr) {
+	if(_ctx->conf()._auto_refocus
+			and not _children.empty()
+			and _selected == nullptr
+			and not _exposay) {
 		_selected = dynamic_pointer_cast<client_managed_t>(_children.back());
 
-		if (_selected != nullptr) {
+		if (_selected != nullptr and _is_visible) {
 			_selected->normalize();
-			if(_is_visible) {
-				_selected->show();
-			}
+			_selected->show();
 		}
 	}
 
@@ -157,8 +152,8 @@ void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 	}
 	/** set selected **/
 	_selected = c;
-	_selected->normalize();
 	if(_is_visible) {
+		_selected->normalize();
 		_selected->show();
 	}
 
@@ -173,21 +168,12 @@ void notebook_t::update_client_position(shared_ptr<client_managed_t> c) {
 }
 
 void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
-	assert(_has_client(x));
-
-	/** already iconified **/
-	if(_selected != x)
-		return;
-
-	_start_fading();
-
-	if (_selected != nullptr) {
+	if(_selected == x) {
+		_start_fading();
 		_selected->iconify();
 		_selected->hide();
+		_layout_is_durty = true;
 	}
-
-	_layout_is_durty = true;
-
 }
 
 void notebook_t::set_allocation(rect const & area) {
@@ -752,16 +738,25 @@ void notebook_t::start_exposay() {
 }
 
 void notebook_t::_update_exposay() {
-	if(_ctx->cmp() == nullptr)
-		return;
-
 	_exposay_buttons.clear();
-	_exposay_thumbnail.clear();
 	_exposay_mouse_over = nullptr;
+
+	/**
+	 * copy _exposay to avoid race,
+	 * clearing _expoxay_thumbnail, may call visibility change
+	 * signal. the handle to this signal need
+	 * _exposay_thumbnail, which is in invalid state.
+	 **/
+	 auto exposay_thumbnail = _exposay_thumbnail;
+	 _exposay_thumbnail.clear();
+	 exposay_thumbnail.clear();
 
 	_theme_notebook.button_mouse_over = NOTEBOOK_BUTTON_NONE;
 	_mouse_over.tab = nullptr;
 	_mouse_over.exposay = nullptr;
+
+	if(_ctx->cmp() == nullptr)
+		return;
 
 	if(not _exposay)
 		return;
@@ -812,15 +807,13 @@ void notebook_t::_update_exposay() {
 			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x + (n*m - _clients.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, weak_ptr<client_managed_t>{it->client}, i));
+		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->client}, i));
 		pdst = to_root_position(pdst);
 		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->client, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
 	}
-
-
 
 }
 

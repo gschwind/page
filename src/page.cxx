@@ -63,6 +63,8 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
+	_next_focus.time = XCB_CURRENT_TIME;
+	_next_focus.client = weak_ptr<client_managed_t>{};
 	_grab_handler = nullptr;
 
 	identity_window = XCB_NONE;
@@ -1484,13 +1486,14 @@ void page_t::process_event(xcb_generic_event_t const * e) {
 	}
 }
 
-void page_t::insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_ptr<notebook_t> n,
+void page_t::insert_window_in_notebook(
+		client_managed_p x,
+		notebook_p n,
 		bool prefer_activate) {
 	assert(x != nullptr);
 	if (n == nullptr)
 		n = get_current_workspace()->default_pop();
 	assert(n != nullptr);
-	x->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client(x, prefer_activate);
 	_need_restack = true;
 	_need_update_client_list = true;
@@ -3374,7 +3377,6 @@ void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if(_grab_handler != nullptr) {
 		_grab_handler->button_release(e);
-		return;
 	} else {
 		_root->broadcast_button_release(e);
 	}

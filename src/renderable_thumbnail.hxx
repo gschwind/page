@@ -37,13 +37,15 @@ class renderable_thumbnail_t : public tree_t {
 	rect _thumbnail_position;
 	double _ratio;
 
-	weak_ptr<client_managed_t> _c;
+	client_managed_w _c;
 	shared_ptr<client_view_t> _client_view;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
 	region _damaged_cache;
 
+	renderable_thumbnail_t(renderable_thumbnail_t const &);
+	renderable_thumbnail_t & operator=(renderable_thumbnail_t const &);
 public:
 
 	renderable_thumbnail_t(page_context_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
@@ -257,6 +259,8 @@ public:
 
 };
 
+using renderable_thumbnail_p = shared_ptr<renderable_thumbnail_t>;
+using renderable_thumbnail_w = weak_ptr<renderable_thumbnail_t>;
 
 }
 
