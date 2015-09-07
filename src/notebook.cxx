@@ -739,17 +739,8 @@ void notebook_t::start_exposay() {
 
 void notebook_t::_update_exposay() {
 	_exposay_buttons.clear();
+	_exposay_thumbnail.clear();
 	_exposay_mouse_over = nullptr;
-
-	/**
-	 * copy _exposay to avoid race,
-	 * clearing _expoxay_thumbnail, may call visibility change
-	 * signal. the handle to this signal need
-	 * _exposay_thumbnail, which is in invalid state.
-	 **/
-	 auto exposay_thumbnail = _exposay_thumbnail;
-	 _exposay_thumbnail.clear();
-	 exposay_thumbnail.clear();
 
 	_theme_notebook.button_mouse_over = NOTEBOOK_BUTTON_NONE;
 	_mouse_over.tab = nullptr;

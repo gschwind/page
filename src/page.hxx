@@ -173,6 +173,8 @@ private:
 	xcb_timestamp_t _last_focus_time;
 	xcb_timestamp_t _last_button_press;
 
+	/** store all client in mapping order, older first **/
+	list<weak_ptr<client_managed_t>> _net_client_list;
 	list<weak_ptr<client_managed_t>> _global_focus_history;
 
 	int _left_most_border;
@@ -371,6 +373,8 @@ public:
 	void on_visibility_change_handler(xcb_window_t xid, bool visible);
 
 	void update_focus();
+
+	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 
 	/**
 	 * page_context_t virtual API

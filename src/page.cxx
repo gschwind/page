@@ -529,26 +529,12 @@ void page_t::update_net_supported() {
 }
 
 void page_t::update_client_list() {
-
-	auto managed = filter_class<client_managed_t>(_root->get_all_children());
-
-	/** sort managed client in focus order **/
-	if(not global_focus_history_is_empty()) {
-		auto k = managed.begin();
-		for(auto & c: global_client_focus_history()) {
-			auto pos = std::find(k, managed.end(), c.lock());
-			if(pos != managed.end()) {
-				std::swap(*k, *pos);
-				++k;
-			}
-		}
-	}
-
+	_net_client_list.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
 
 	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	vector<xcb_window_t> xid_client_list;
-	for(auto i = managed.rbegin(); i != managed.rend(); ++i) {
-		xid_client_list.push_back((*i)->orig());
+	for(auto i : _net_client_list) {
+		xid_client_list.push_back(i.lock()->orig());
 	}
 
 	_dpy->change_property(_dpy->root(), _NET_CLIENT_LIST, WINDOW, 32,
@@ -2615,6 +2601,7 @@ void page_t::onmap(xcb_window_t w) {
 
 void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
 	auto mw = make_shared<client_managed_t>(this, w, type);
+	_net_client_list.push_back(mw);
 	manage_client(mw, type);
 
 	if (mw->net_wm_strut() != nullptr
@@ -2869,8 +2856,18 @@ void page_t::set_desktop_geometry(long width, long height) {
 			CARDINAL, 32, desktop_geometry, 2);
 }
 
+shared_ptr<client_managed_t> page_t::find_client_managed_with(xcb_window_t w) {
+	_net_client_list.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	for(auto & i: _net_client_list) {
+		if(i.lock()->has_window(w)) {
+			return i.lock();
+		}
+	}
+	return nullptr;
+}
+
 shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(_root->get_all_children())) {
+	for(auto & i: filter_class<client_base_t>(_root->get_all_children())) {
 		if(i->has_window(w)) {
 			return i;
 		}
@@ -3596,7 +3593,6 @@ xcb_atom_t page_t::A(atom_e atom) {
 }
 
 list<weak_ptr<client_managed_t>> page_t::global_client_focus_history() {
-	_global_focus_history.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
 	return _global_focus_history;
 }
 
@@ -3664,7 +3660,7 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 }
 
 void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
-	auto client = dynamic_pointer_cast<client_managed_t>(find_client_with(xid));
+	auto client = find_client_managed_with(xid);
 	if(client != nullptr) {
 		if(visible) {
 			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
