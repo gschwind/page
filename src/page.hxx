@@ -405,7 +405,7 @@ public:
 	virtual int  left_most_border();
 	virtual int  top_most_border();
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
-	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>>;
+	virtual auto net_client_list() -> list<shared_ptr<client_managed_t>>;
 	virtual auto keymap() const -> keymap_t const *;
 	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	virtual void make_surface_stats(int & size, int & count);

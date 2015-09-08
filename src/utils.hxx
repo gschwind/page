@@ -230,6 +230,19 @@ std::vector<std::weak_ptr<T0>> weak(std::vector<std::shared_ptr<T0>> const & x) 
 	return std::vector<std::weak_ptr<T0>>{x.begin(), x.end()};
 }
 
+template <typename T>
+bool is_expired(weak_ptr<T> & x) {
+	return x.expired();
+}
+
+template<typename T0>
+std::list<std::shared_ptr<T0>> lock(std::list<std::weak_ptr<T0>> & x) {
+	x.remove_if(is_expired<T0>);
+	std::list<std::shared_ptr<T0>> ret;
+	for(auto i: x) ret.push_back(i.lock());
+	return ret;
+}
+
 static void draw_outer_graddien(cairo_t * cr, rect r, color_t const & iner_color, double _shadow_width) {
 
 	cairo_save(cr);
@@ -715,10 +728,6 @@ public:
 
 };
 
-
-template<typename T>
-bool is_expired(weak_ptr<T> x) { return x.expired(); }
-
 template<typename T>
 void move_front(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {
 	auto pos = std::find_if(l.begin(), l.end(), [v](weak_ptr<T> & l) { return l.lock() == v; });
@@ -789,6 +798,11 @@ enum corner_mask_e : uint8_t {
  **/
 void cairo_rectangle_arc_corner(cairo_t * cr, double x, double y, double w, double h, double radius, uint8_t corner_mask);
 void cairo_rectangle_arc_corner(cairo_t * cr, rect const & position, double radius, uint8_t corner_mask);
+
+
+
+
+
 
 }
 

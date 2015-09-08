@@ -321,7 +321,7 @@ void page_t::run() {
 
 	_dpy->unload_cursors();
 
-	for (auto & i : filter_class<client_managed_t>(_root->get_all_children())) {
+	for (auto & i : net_client_list()) {
 		_dpy->reparentwindow(i->orig(), _dpy->root(), 0, 0);
 		detach(i);
 	}
@@ -545,7 +545,7 @@ void page_t::update_client_list() {
 void page_t::update_client_list_stacking() {
 
 	/** set _NET_CLIENT_LIST_STACKING : bottom to top staking **/
-	auto managed = filter_class<client_managed_t>(_root->get_all_children());
+	auto managed = net_client_list();
 	vector<xcb_window_t> client_list_stack;
 	for(auto c: managed) {
 		client_list_stack.push_back(c->orig());
@@ -733,7 +733,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if (key == bind_debug_4) {
 		_root->print_tree(0);
-		for (auto i : clients_list()) {
+		for (auto i : net_client_list()) {
 			switch (i->get_type()) {
 			case MANAGED_NOTEBOOK:
 				cout << "[" << i->orig() << "] notebook : " << i->title()
@@ -2427,7 +2427,7 @@ void page_t::update_viewport_layout() {
 
 		if(new_layout.size() > 0) {
 			/** update position of floating managed clients to avoid offscreen floating window**/
-			for(auto x: filter_class<client_managed_t>(_root->get_all_children())) {
+			for(auto x: net_client_list()) {
 				if(x->is(MANAGED_FLOATING)) {
 					auto r = x->position();
 					r.x = new_layout[0]->allocation().x + _theme->floating.margin.left;
@@ -3580,10 +3580,6 @@ int page_t::top_most_border() {
 	return _top_most_border;
 }
 
-vector<shared_ptr<client_managed_t>> page_t::clients_list() {
-	return filter_class<client_managed_t>(_root->get_all_children());
-}
-
 keymap_t const * page_t::keymap() const {
 	return _keymap;
 }
@@ -3618,7 +3614,7 @@ bool page_t::global_focus_history_is_empty() {
 }
 
 void page_t::start_alt_tab(xcb_timestamp_t time) {
-	auto _x = clients_list();
+	auto _x = net_client_list();
 	list<shared_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
 
 	auto focus_history = global_client_focus_history();
@@ -3680,6 +3676,10 @@ auto page_t::create_view(xcb_window_t w) -> shared_ptr<client_view_t> {
 
 void page_t::make_surface_stats(int & size, int & count) {
 	_dpy->make_surface_stats(size, count);
+}
+
+auto page_t::net_client_list() -> list<client_managed_p> {
+	return lock(_net_client_list);
 }
 
 }

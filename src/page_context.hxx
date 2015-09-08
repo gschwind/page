@@ -87,7 +87,7 @@ public:
 	virtual int  left_most_border() = 0;
 	virtual int  top_most_border() = 0;
 	virtual auto global_client_focus_history() -> list<weak_ptr<client_managed_t>> = 0;
-	virtual auto clients_list() -> vector<shared_ptr<client_managed_t>> = 0;
+	virtual auto net_client_list() -> list<shared_ptr<client_managed_t>> = 0;
 	virtual auto keymap() const -> keymap_t const * = 0;
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
 	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t> = 0;
