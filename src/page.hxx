@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <array>
 
 #include "config.hxx"
 
