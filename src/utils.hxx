@@ -42,6 +42,33 @@ using namespace std;
 		} \
 	} while(false)
 
+/* clients limites for Xorg */
+static int const LIMITCLIENTS = 256;
+
+//constexpr unsigned int ilog2(unsigned int val)
+//{
+//    int bits;
+//
+//    if (val <= 0)
+//    	return 0;
+//    for (bits = 0; val != 0; bits++)
+//    	val >>= 1;
+//    return bits - 1;
+//}
+
+constexpr unsigned ilog2_a(int val) {
+	return val<=0? 0 : ilog2_a(val>>1) + 1;
+}
+
+constexpr unsigned int ilog2(int val) {
+	return ilog2_a(val) - 1;
+}
+
+/** deduced from Xorg server **/
+inline unsigned int client_id(unsigned int resource_id) {
+	return ((((resource_id) & (((1 << ilog2(LIMITCLIENTS)) - 1) << (29 - ilog2(LIMITCLIENTS)))) >> (29 - ilog2(LIMITCLIENTS))));
+}
+
 /**
  * TRICK to compile time checking.
  **/

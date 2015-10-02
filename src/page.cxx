@@ -9,7 +9,6 @@
 
 /* According to POSIX.1-2001 */
 #include <sys/select.h>
-
 #include <poll.h>
 
 #include <cairo.h>
@@ -3202,6 +3201,15 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	if (e->event == _dpy->root() and e->detail == XCB_NOTIFY_DETAIL_NONE) {
 		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+		return;
+	}
+
+	shared_ptr<client_managed_t> focused;
+	if (get_current_workspace()->client_focus_history_front(focused)) {
+		/* client are only alowed to focus their own windows */
+		if(e->detail == XCB_NOTIFY_DETAIL_NONE and client_id(focused->orig()) != client_id(e->event)) {
+			focused->focus(XCB_CURRENT_TIME);
+		}
 	}
 
 }
@@ -3272,11 +3280,6 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 		if (e->event == identity_window or e->event == _dpy->root()) {
 			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
 					XCB_CURRENT_TIME);
-		}
-	} else {
-		/* only inferior focus is allowed */
-		if(e->detail != XCB_NOTIFY_DETAIL_INFERIOR and e->event == focused->orig()) {
-			focused->focus(XCB_CURRENT_TIME);
 		}
 	}
 
