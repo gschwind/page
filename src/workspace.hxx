@@ -44,10 +44,11 @@ private:
 	/* list of viewports in creation order, to make a sane reconfiguration */
 	vector<shared_ptr<viewport_t>> _viewport_outputs;
 
-	/* floating, dock and viewport belong this layer */
-	list<shared_ptr<tree_t>> _floating_layer;
 
-	/* fullscreen windows are here */
+	list<shared_ptr<tree_t>> _viewport_layer;
+
+	/* floating, dock belong this layer */
+	list<shared_ptr<tree_t>> _floating_layer;
 	list<shared_ptr<tree_t>> _fullscreen_layer;
 
 

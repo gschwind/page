@@ -50,28 +50,16 @@ void workspace_t::activate(shared_ptr<tree_t> t) {
 	assert(has_key(children(), t));
 	activate();
 
-	/** view port can be above dock but not above floating **/
-	if(typeid(viewport_t) == typeid(*t.get())) {
-		list<shared_ptr<tree_t>> docks;
+	if(has_key(_viewport_layer, t)) {
+		move_back(_viewport_layer, t);
+	}
 
-		auto d = std::find_if(_floating_layer.begin(), _floating_layer.end(), is_dock);
-		while(d != _floating_layer.end()) {
-			docks.splice(docks.end(), _floating_layer, d);
-			d = std::find_if(_floating_layer.begin(), _floating_layer.end(), is_dock);
-		}
+	if(has_key(_floating_layer, t)) {
+		move_back(_floating_layer, t);
+	}
 
-		_floating_layer.splice(_floating_layer.begin(), docks, docks.begin(), docks.end());
-
-	} else {
-
-		if(has_key(_floating_layer, t)) {
-			move_back(_floating_layer, t);
-		}
-
-		if(has_key(_fullscreen_layer, t)) {
-			move_back(_fullscreen_layer, t);
-		}
-
+	if(has_key(_fullscreen_layer, t)) {
+		move_back(_fullscreen_layer, t);
 	}
 }
 
@@ -115,8 +103,8 @@ auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> {
 
 auto workspace_t::set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void {
 	_viewport_outputs = new_layout;
-	_floating_layer.remove_if([](shared_ptr<tree_t> const & t) -> bool { return typeid(viewport_t) == typeid(*t.get()); });
-	_floating_layer.insert(_floating_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
+	_viewport_layer.clear();
+	_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
 
 	if(_viewport_outputs.size() > 0) {
 		_primary_viewport = _viewport_outputs[0];
@@ -131,7 +119,7 @@ auto workspace_t::get_any_viewport() const -> shared_ptr<viewport_t> {
 }
 
 auto workspace_t::get_viewports() const -> vector<shared_ptr<viewport_t>> {
-	auto tmp = filter_class<viewport_t>(_floating_layer);
+	auto tmp = filter_class<viewport_t>(_viewport_layer);
 	return vector<shared_ptr<viewport_t>>{tmp.begin(), tmp.end()};
 }
 
@@ -151,6 +139,7 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 }
 
 void workspace_t::append_children(vector<shared_ptr<tree_t>> & out) const {
+	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
 	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
 	out.insert(out.end(), _fullscreen_layer.begin(), _fullscreen_layer.end());
 	if(_switch_renderable != nullptr) {
