@@ -3525,6 +3525,7 @@ void page_t::process_pending_events() {
 
 bool page_t::render_timeout() {
 	process_pending_events();
+	return true;
 }
 
 theme_t const * page_t::theme() const {

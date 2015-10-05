@@ -49,6 +49,7 @@ protected:
 			if(not x.expired())
 				(x.lock().get()->*f)(args...);
 		}
+		return true;
 	}
 
 	template<typename ... T>
