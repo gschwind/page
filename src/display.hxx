@@ -161,7 +161,7 @@ public:
 	void raise_window(xcb_window_t w);
 
 	template<typename T>
-	int change_property(xcb_window_t w, atom_e property, atom_e type, int format, T data, int nelements) {
+	void change_property(xcb_window_t w, atom_e property, atom_e type, int format, T data, int nelements) {
 		xcb_change_property(_xcb, XCB_PROP_MODE_REPLACE, w, A(property), A(type), format, nelements, reinterpret_cast<unsigned char const *>(data));
 	}
 
