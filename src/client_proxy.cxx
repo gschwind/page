@@ -1,7 +1,7 @@
 /*
  * client_properties.cxx
  *
- *  Created on: 25 août 2015
+ *  Created on: 25 ao��t 2015
  *      Author: gschwind
  */
 
@@ -183,7 +183,7 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 		free(wa);
 		free(geometry);
 
-	} catch(invalid_client_t & e) {
+	} catch(invalid_client_t const & e) {
 		free(err);
 		if(wa != nullptr)
 			free(wa);

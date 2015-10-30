@@ -813,7 +813,8 @@ void client_managed_t::map_unsafe() {
 void client_managed_t::unmap_unsafe() {
 	cnx()->unmap(_base);
 	cnx()->unmap(_deco);
-	_client_proxy->unmap();
+
+	//_client_proxy->unmap();
 
 	cnx()->unmap(_input_top);
 	cnx()->unmap(_input_left);

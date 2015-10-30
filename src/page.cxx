@@ -920,6 +920,12 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 		//add_compositor_damaged(c->get_visible_region());
 		if(typeid(*c) == typeid(client_not_managed_t)) {
 			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
+		} else if (typeid(*c) == typeid(client_managed_t)) {
+			auto mw = dynamic_pointer_cast<client_managed_t>(c);
+			if(c->base() == e->event) {
+				_dpy->reparentwindow(mw->orig(), _dpy->root(), 0.0, 0.0);
+				unmanage(mw);
+			}
 		}
 	}
 }
@@ -2592,7 +2598,7 @@ void page_t::onmap(xcb_window_t w) {
 			}
 		}
 
-	} catch (invalid_client_t & e) {
+	} catch (invalid_client_t const & e) {
 		/* ignore invalid client */
 	}
 }
