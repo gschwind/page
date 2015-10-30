@@ -356,10 +356,10 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	if(mw == nullptr)
 		return;
 
-	detach(mw);
-
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab();
+
+	detach(mw);
 
 	printf("unmanaging : '%s'\n", mw->title().c_str());
 
@@ -3194,12 +3194,17 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 //
 //	std::cout << std::endl;
 
+	/**
+	 * Since we can detect the client_id the focus rules is based on current
+	 * focussed client. i.e. as soon as the a client has the focus, he is
+	 * allowed to give the focus to any window he own.
+	 **/
 
-	/* ignore all focus event related to the pointer */
-	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
+	/* ignore all focus event that is not the final focussed window */
+	if(e->detail != XCB_NOTIFY_DETAIL_NONE)
 		return;
 
-	if (e->event == _dpy->root() and e->detail == XCB_NOTIFY_DETAIL_NONE) {
+	if (e->event == _dpy->root()) {
 		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
 		return;
 	}
@@ -3207,8 +3212,17 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	shared_ptr<client_managed_t> focused;
 	if (get_current_workspace()->client_focus_history_front(focused)) {
 		/* client are only alowed to focus their own windows */
-		if(e->detail == XCB_NOTIFY_DETAIL_NONE and client_id(focused->orig()) != client_id(e->event)) {
+		if(client_id(focused->orig()) != client_id(e->event)) {
 			focused->focus(XCB_CURRENT_TIME);
+		}
+	} else {
+		/**
+		 * if no client should be focussed and the event does not belong
+		 * identity window, refocus identity window.
+		 **/
+		if(e->event != identity_window) {
+			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
+					XCB_CURRENT_TIME);
 		}
 	}
 
@@ -3275,11 +3289,19 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
 		return;
 
-	shared_ptr<client_managed_t> focused;
-	if (not get_current_workspace()->client_focus_history_front(focused)) {
-		if (e->event == identity_window or e->event == _dpy->root()) {
-			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
-					XCB_CURRENT_TIME);
+	/**
+	 * if the root window loose the focus, give the focus back to the
+	 * proper window.
+	 **/
+	if(e->event == _dpy->root()) {
+		shared_ptr<client_managed_t> focused;
+		if (get_current_workspace()->client_focus_history_front(focused)) {
+			focused->focus(XCB_CURRENT_TIME);
+		} else {
+			if (e->event == identity_window or e->event == _dpy->root()) {
+				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
+						XCB_CURRENT_TIME);
+			}
 		}
 	}
 
