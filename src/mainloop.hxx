@@ -142,8 +142,9 @@ class mainloop_t {
 
 	void run_poll_callback() {
 		for(auto & pfd: poll_list) {
-			if(pfd.revents != 0) {
+			if(pfd.revents&pfd.events) {
 				poll_callback[pfd.fd].call(pfd);
+				pfd.revents = 0;
 			}
 		}
 	}
