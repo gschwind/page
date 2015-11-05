@@ -2139,11 +2139,11 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 
 		if (mw != nullptr) {
 			int workspace = find_current_desktop(c);
-			if (workspace == ALL_DESKTOP) {
-				get_current_workspace()->attach(dynamic_pointer_cast<client_managed_t>(c));
-				c->show();
+			if(workspace >= 0 and workspace < get_workspace_count()) {
+				get_workspace(workspace)->attach(mw);
 			} else {
-				get_workspace(workspace)->attach(dynamic_pointer_cast<client_managed_t>(c));
+				get_current_workspace()->attach(mw);
+				c->show();
 			}
 		} else {
 			_root->root_subclients.push_back(c);
