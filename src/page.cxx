@@ -1515,22 +1515,14 @@ void page_t::update_workarea() {
 void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t tfocus) {
 	if(tfocus == XCB_CURRENT_TIME and new_focus != nullptr)
 		std::cout << "Warning: Invalid focus time (0)" << std::endl;
-	if(tfocus <= _last_focus_time and tfocus != XCB_CURRENT_TIME)
-		return;
 	if(tfocus != XCB_CURRENT_TIME)
 		_last_focus_time = tfocus;
 
-	if(_next_focus.time == XCB_TIME_CURRENT_TIME) {
-		_next_focus.client = new_focus;
-		_next_focus.time = tfocus;
-		_need_refocus = true;
-	}  else {
-		if(_next_focus.time < tfocus) {
-			_next_focus.client = new_focus;
-			_next_focus.time = tfocus;
-			_need_refocus = true;
-		}
-	}
+	get_current_workspace()->client_focus_history_move_front(new_focus);
+	global_focus_history_move_front(new_focus);
+	_next_focus.client = new_focus;
+	_next_focus.time = tfocus;
+	_need_refocus = true;
 
 	_need_restack = true;
 
@@ -1546,8 +1538,6 @@ void page_t::update_focus() {
 		_dpy->set_net_active_window(XCB_WINDOW_NONE);
 	} else {
 		auto new_focus = _next_focus.client.lock();
-		get_current_workspace()->client_focus_history_move_front(new_focus);
-		global_focus_history_move_front(new_focus);
 		_dpy->set_net_active_window(new_focus->orig());
 		new_focus->focus(_next_focus.time);
 		_net_active_window = _next_focus.client;
