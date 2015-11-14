@@ -77,7 +77,12 @@ void workspace_t::update_layout(time64_t const time) {
 
 }
 
+void workspace_t::activate() {
+	_ctx->switch_to_desktop(id());
+}
+
 void workspace_t::activate(shared_ptr<tree_t> t) {
+	activate();
 	/* do no reorder layers */
 }
 
@@ -178,6 +183,11 @@ int workspace_t::id() {
 void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	if(_ctx->cmp() == nullptr)
 		return;
+
+	if(_switch_renderable != nullptr) {
+		remove(_switch_renderable);
+		_switch_renderable = nullptr;
+	}
 
 	_switch_direction = direction;
 	_switch_start_time.update_to_current_time();

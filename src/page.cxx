@@ -3044,8 +3044,12 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 
 		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
 
+		_root->_desktop_list[_root->_current_desktop]->hide();
 		_root->_current_desktop = desktop;
-		_root->_desktop_list[_root->_current_desktop]->activate();
+
+		_root->_desktop_stack->remove(_root->_desktop_list[_root->_current_desktop]);
+		_root->_desktop_stack->push_back(_root->_desktop_list[_root->_current_desktop]);
+		_root->_desktop_list[_root->_current_desktop]->show();
 
 		/** move sticky to current desktop **/
 		for(auto s : stiky_list) {
@@ -3577,7 +3581,6 @@ void page_t::grab_stop() {
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
 	_root->_overlays->push_back(x);
-	x->set_parent(_root.get());
 }
 
 void page_t::add_global_damage(region const & r) {
