@@ -19,20 +19,18 @@ xcb_atom_t client_base_t::A(atom_e atom) {
 	return _client_proxy->cnx()->A(atom);
 }
 
-client_base_t::client_base_t(client_base_t const & c) :
-	tree_t{},
-	_ctx{c._ctx},
-	_client_proxy{c._client_proxy},
-	_children{c._children}
-{
-
-}
+//client_base_t::client_base_t(client_base_t const & c) :
+//	tree_t{},
+//	_ctx{c._ctx},
+//	_client_proxy{c._client_proxy}
+//{
+//
+//}
 
 client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
 	tree_t{},
 	_ctx{ctx},
-	_client_proxy{ctx->dpy()->create_client_proxy(w)},
-	_children{}
+	_client_proxy{ctx->dpy()->create_client_proxy(w)}
 {
 
 }

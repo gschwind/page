@@ -28,13 +28,14 @@ workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
 	_switch_renderable{nullptr},
 	_switch_direction{WORKSPACE_SWITCH_LEFT}
 {
+	_viewport_layer = make_shared<tree_t>();
+	_floating_layer = make_shared<tree_t>();
+	_fullscreen_layer = make_shared<tree_t>();
 
-}
+	push_back(_viewport_layer);
+	push_back(_floating_layer);
+	push_back(_fullscreen_layer);
 
-void workspace_t::activate() {
-	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
-	}
 }
 
 static bool is_dock(shared_ptr<tree_t> const & x) {
@@ -43,24 +44,6 @@ static bool is_dock(shared_ptr<tree_t> const & x) {
 		return c->is(MANAGED_DOCK);
 	}
 	return false;
-}
-
-void workspace_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(children(), t));
-	activate();
-
-	if(has_key(_viewport_layer, t)) {
-		move_back(_viewport_layer, t);
-	}
-
-	if(has_key(_floating_layer, t)) {
-		move_back(_floating_layer, t);
-	}
-
-	if(has_key(_fullscreen_layer, t)) {
-		move_back(_fullscreen_layer, t);
-	}
 }
 
 string workspace_t::get_node_name() const {
@@ -87,10 +70,15 @@ void workspace_t::update_layout(time64_t const time) {
 			_ctx->add_global_damage(x->raw_area());
 		}
 
+		remove(_switch_renderable);
 		_switch_screenshot = nullptr;
 		_switch_renderable = nullptr;
 	}
 
+}
+
+void workspace_t::activate(shared_ptr<tree_t> t) {
+	/* do no reorder layers */
 }
 
 //rect workspace_t::allocation() const {
@@ -103,8 +91,11 @@ auto workspace_t::get_viewport_map() const -> vector<shared_ptr<viewport_t>> {
 
 auto workspace_t::set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void {
 	_viewport_outputs = new_layout;
-	_viewport_layer.clear();
-	_viewport_layer.insert(_viewport_layer.end(), _viewport_outputs.begin(), _viewport_outputs.end());
+	_viewport_layer->clear();
+	for(auto x: _viewport_outputs) {
+		_viewport_layer->push_back(x);
+		x->show();
+	}
 
 	if(_viewport_outputs.size() > 0) {
 		_primary_viewport = _viewport_outputs[0];
@@ -119,8 +110,7 @@ auto workspace_t::get_any_viewport() const -> shared_ptr<viewport_t> {
 }
 
 auto workspace_t::get_viewports() const -> vector<shared_ptr<viewport_t>> {
-	auto tmp = filter_class<viewport_t>(_viewport_layer);
-	return vector<shared_ptr<viewport_t>>{tmp.begin(), tmp.end()};
+	return filter_class<viewport_t>(_viewport_layer->children());
 }
 
 void workspace_t::set_default_pop(shared_ptr<notebook_t> n) {
@@ -138,15 +128,6 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 	return _default_pop.lock();
 }
 
-void workspace_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	out.insert(out.end(), _viewport_layer.begin(), _viewport_layer.end());
-	out.insert(out.end(), _floating_layer.begin(), _floating_layer.end());
-	out.insert(out.end(), _fullscreen_layer.begin(), _fullscreen_layer.end());
-	if(_switch_renderable != nullptr) {
-		out.push_back(_switch_renderable);
-	}
-}
-
 void workspace_t::update_default_pop() {
 	_default_pop.reset();
 	for(auto i: filter_class<notebook_t>(get_all_children())) {
@@ -159,12 +140,10 @@ void workspace_t::update_default_pop() {
 void workspace_t::attach(shared_ptr<client_managed_t> c) {
 	assert(c != nullptr);
 
-	c->set_parent(this);
-
 	if(c->is(MANAGED_FULLSCREEN)) {
-		_fullscreen_layer.push_back(c);
+		_fullscreen_layer->push_back(c);
 	} else {
-		_floating_layer.push_back(c);
+		_floating_layer->push_back(c);
 	}
 
 	if(_is_visible) {
@@ -173,32 +152,6 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 		c->hide();
 	}
 }
-
-//void workspace_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
-//	throw std::runtime_error("desktop_t::replace implemented yet!");
-//}
-
-void workspace_t::remove(shared_ptr<tree_t> src) {
-	assert(has_key(children(), src));
-
-	if(has_key(_viewport_outputs, dynamic_pointer_cast<viewport_t>(src))) {
-		throw exception_t("%s:%d invalid call of viewport::remove", __FILE__, __LINE__);
-	}
-
-	/**
-	 * use reinterpret_cast because we try to remove src pointer
-	 * and we don't care is type
-	 **/
-	_floating_layer.remove(src);
-	_fullscreen_layer.remove(src);
-
-	src->clear_parent();
-
-}
-
-//void workspace_t::set_allocation(rect const & area) {
-//	_allocation = area;
-//}
 
 void workspace_t::set_workarea(rect const & r) {
 	_workarea = r;
@@ -230,9 +183,8 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_start_time.update_to_current_time();
 	_switch_screenshot = _ctx->cmp()->create_screenshot();
 	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _ctx->left_most_border(), _ctx->top_most_border());
+	push_back(_switch_renderable);
 	_switch_renderable->show();
-	_switch_renderable->set_parent(this);
-
 }
 
 auto workspace_t::get_visible_region() -> region {

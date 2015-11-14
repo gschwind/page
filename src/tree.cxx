@@ -73,21 +73,46 @@ void tree_t::show() {
  * Return the name of this tree node
  **/
 auto tree_t::get_node_name() const -> string {
-	return string { "ANONYMOUS NODE" };
+	return string { "RAW" };
 }
 
 /**
  * Remove i from _direct_ child of this node *not recusively*
  **/
 void tree_t::remove(shared_ptr<tree_t> t) {
-	/* because by default we have no child, by default remove do nothing */
+	assert(has_key(_children, t));
+	_children.remove(t);
+	t->clear_parent();
 }
 
+void tree_t::clear()
+{
+	for(auto x: _children)
+		x->clear_parent();
+	_children.clear();
+}
+
+void tree_t::push_back(shared_ptr<tree_t> t)
+{
+	assert(t->parent() == nullptr);
+	_children.push_back(t);
+	t->set_parent(this);
+}
+
+void tree_t::push_front(shared_ptr<tree_t> t)
+{
+	assert(t->parent() == nullptr);
+	_children.push_front(t);
+	t->set_parent(this);
+}
+
+
 /**
- * Return direct children of this node (net recursive)
+ * Return direct children of this node (not recursive)
  **/
-auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void {
-	/* by default we have no child */
+auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void
+{
+	out.insert(out.end(), _children.begin(), _children.end());
 }
 
 /**
@@ -158,7 +183,9 @@ void tree_t::activate() {
 }
 
 void tree_t::activate(shared_ptr<tree_t> t) {
-	/* must move_back t in the right layer */
+	assert(has_key(_children, t));
+	activate();
+	move_back(_children, t);
 }
 
 bool tree_t::button_press(xcb_button_press_event_t const * ev) {
@@ -313,5 +340,19 @@ rect tree_t::to_root_position(rect const & r) const {
 			r.w, r.h };
 }
 
+auto tree_t::get_opaque_region() -> region
+{
+	return region{};
+}
+
+auto tree_t::get_visible_region() -> region
+{
+	return region{};
+}
+
+auto tree_t::get_damaged() -> region
+{
+	return region{};
+}
 
 }

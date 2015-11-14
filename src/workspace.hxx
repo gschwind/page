@@ -44,13 +44,9 @@ private:
 	/* list of viewports in creation order, to make a sane reconfiguration */
 	vector<shared_ptr<viewport_t>> _viewport_outputs;
 
-
-	list<shared_ptr<tree_t>> _viewport_layer;
-
-	/* floating, dock belong this layer */
-	list<shared_ptr<tree_t>> _floating_layer;
-	list<shared_ptr<tree_t>> _fullscreen_layer;
-
+	shared_ptr<tree_t> _viewport_layer;
+	shared_ptr<tree_t> _floating_layer;
+	shared_ptr<tree_t> _fullscreen_layer;
 
 	weak_ptr<viewport_t> _primary_viewport;
 	weak_ptr<notebook_t> _default_pop;
@@ -101,9 +97,9 @@ public:
 	virtual void hide();
 	virtual void show();
 	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> t);
+	//virtual void remove(shared_ptr<tree_t> t);
 
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
+	//virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 
@@ -111,7 +107,7 @@ public:
 	virtual auto get_visible_region() -> region;
 	virtual auto get_damaged() -> region;
 
-	virtual void activate();
+	//virtual void activate();
 	virtual void activate(shared_ptr<tree_t> t);
 	//virtual bool button_press(xcb_button_press_event_t const * ev);
 	//virtual bool button_release(xcb_button_release_event_t const * ev);

@@ -85,6 +85,7 @@ protected:
 	 **/
 	tree_t * _parent;
 
+	list<shared_ptr<tree_t>> _children;
 
 	bool _is_visible;
 
@@ -139,16 +140,20 @@ public:
 	virtual void show();
 	virtual auto get_node_name() const -> string;
 	virtual void remove(shared_ptr<tree_t> t);
+	virtual void clear();
+
+	virtual void push_back(shared_ptr<tree_t> t);
+	virtual void push_front(shared_ptr<tree_t> t);
 
 	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
-	virtual void render(cairo_t * cr, region const & area) = 0;
+	virtual void render(cairo_t * cr, region const & area);
 	virtual void trigger_redraw();
 	virtual void render_finished();
 
-	virtual auto get_opaque_region() -> region = 0;
-	virtual auto get_visible_region() -> region = 0;
-	virtual auto get_damaged() -> region = 0;
+	virtual auto get_opaque_region() -> region;
+	virtual auto get_visible_region() -> region;
+	virtual auto get_damaged() -> region;
 
 	virtual void activate();
 	virtual void activate(shared_ptr<tree_t> t);

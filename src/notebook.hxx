@@ -41,9 +41,6 @@ class notebook_t : public page_component_t {
 
 	rect _allocation;
 
-	/* child stack order the first one is the lowest one */
-	list<shared_ptr<tree_t>> _children;
-
 	time64_t _swap_start;
 
 	shared_ptr<renderable_thumbnail_t> tooltips;

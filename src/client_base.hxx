@@ -45,9 +45,6 @@ protected:
 	/* handle properties of client */
 	shared_ptr<client_proxy_t> _client_proxy;
 
-	/* sub-clients */
-	list<shared_ptr<tree_t>> _children;
-
 	/** short cut **/
 	auto A(atom_e atom) -> xcb_atom_t;
 
