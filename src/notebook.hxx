@@ -81,8 +81,7 @@ class notebook_t : public page_component_t {
 		shared_ptr<client_managed_t> client;
 		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
 		decltype(client_managed_t::on_destroy)::signal_func_t       destoy_func;
-		decltype(client_managed_t::on_activate)::signal_func_t      activate_func;
-		decltype(client_managed_t::on_deactivate)::signal_func_t    deactivate_func;
+		decltype(client_managed_t::on_focus_change)::signal_func_t  focus_change_func;
 	};
 
 	// list to maintain the client order
@@ -149,8 +148,7 @@ class notebook_t : public page_component_t {
 
 	void _client_title_change(shared_ptr<client_managed_t> c);
 	void _client_destroy(client_managed_t * c);
-	void _client_activate(shared_ptr<client_managed_t> c);
-	void _client_deactivate(shared_ptr<client_managed_t> c);
+	void _client_focus_change(shared_ptr<client_managed_t> c);
 
 	void _update_allocation(rect & allocation);
 

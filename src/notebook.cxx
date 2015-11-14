@@ -571,7 +571,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 					(int)floor((int)(offset + selected_box_width) - floor(offset)),
 					(int)_ctx->theme()->notebook.tab_height };
 
-			if(_selected->is_focused()) {
+			if(_selected->has_focus()) {
 				theme_notebook.selected_client.tab_color = _ctx->theme()->get_focused_color();
 			} else {
 				theme_notebook.selected_client.tab_color = _ctx->theme()->get_selected_color();
@@ -595,7 +595,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 									- floor(offset)),
 				(int) _ctx->theme()->notebook.tab_height };
 
-			if (i.second.client->is_focused()) {
+			if (i.second.client->has_focus()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
 			} else if (_selected == i.second.client) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
@@ -1044,7 +1044,7 @@ bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
 
 void notebook_t::_mouse_over_reset() {
 	if (_mouse_over.tab != nullptr) {
-		if (std::get<1>(*_mouse_over.tab).lock()->is_focused()) {
+		if (std::get<1>(*_mouse_over.tab).lock()->has_focus()) {
 			std::get<2>(*_mouse_over.tab)->tab_color =
 					_ctx->theme()->get_focused_color();
 		} else if (_selected == std::get<1>(*_mouse_over.tab).lock()) {
@@ -1098,6 +1098,7 @@ void notebook_t::_mouse_over_set() {
 }
 
 void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
+	_layout_is_durty = true;
 	for(auto & x: _client_buttons) {
 		if(c == std::get<1>(x).lock()) {
 			std::get<2>(x)->title = c->title();
@@ -1120,11 +1121,8 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 	throw exception_t("not expected call of %d", __PRETTY_FUNCTION__);
 }
 
-void notebook_t::_client_activate(shared_ptr<client_managed_t> c) {
-	queue_redraw();
-}
-
-void notebook_t::_client_deactivate(shared_ptr<client_managed_t> c) {
+void notebook_t::_client_focus_change(shared_ptr<client_managed_t> c) {
+	_layout_is_durty = true;
 	queue_redraw();
 }
 
@@ -1283,15 +1281,13 @@ void notebook_t::_set_theme_tab_offset(int x) {
 void notebook_t::_bind_client_signals(_client_context_t & c) {
 	c.title_change_func = c.client->on_title_change.connect(this, &notebook_t::_client_title_change);
 	c.destoy_func = c.client->on_destroy.connect(this, &notebook_t::_client_destroy);
-	c.activate_func = c.client->on_activate.connect(this, &notebook_t::_client_activate);
-	c.deactivate_func = c.client->on_deactivate.connect(this, &notebook_t::_client_deactivate);
+	c.focus_change_func = c.client->on_focus_change.connect(this, &notebook_t::_client_focus_change);
 }
 
 void notebook_t::_unbind_client_signals(_client_context_t & c) {
 	c.client->on_title_change.remove(c.title_change_func);
 	c.client->on_destroy.remove(c.destoy_func);
-	c.client->on_activate.remove(c.activate_func);
-	c.client->on_deactivate.remove(c.deactivate_func);
+	c.client->on_focus_change.remove(c.focus_change_func);
 }
 
 }

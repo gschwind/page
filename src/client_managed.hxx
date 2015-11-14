@@ -117,7 +117,7 @@ class client_managed_t : public client_base_t {
 
 	floating_area_t _floating_area;
 
-	bool _is_focused;
+	bool _has_focus;
 	bool _is_iconic;
 	bool _demands_attention;
 	bool _is_resized;
@@ -189,8 +189,7 @@ public:
 
 	signal_t<client_managed_t *> on_destroy;
 	signal_t<shared_ptr<client_managed_t>> on_title_change;
-	signal_t<shared_ptr<client_managed_t>> on_activate;
-	signal_t<shared_ptr<client_managed_t>> on_deactivate;
+	signal_t<shared_ptr<client_managed_t>> on_focus_change;
 
 	bool is(managed_window_type_e type);
 	auto title() const -> string const &;
@@ -201,7 +200,7 @@ public:
 	void reconfigure();
 	void normalize();
 	void iconify();
-	bool is_focused() const;
+	bool has_focus() const;
 	bool is_iconic();
 	void delete_window(xcb_timestamp_t);
 	auto icon() const -> shared_ptr<icon16>;

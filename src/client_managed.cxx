@@ -45,7 +45,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 				//_orig(props->id()),
 				_base{XCB_WINDOW_NONE},
 				_deco{XCB_WINDOW_NONE},
-				_is_focused{false},
+				_has_focus{false},
 				_is_iconic{true},
 				_demands_attention{false},
 				_client_view{nullptr}
@@ -207,6 +207,9 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 
 	_surf = cairo_xcb_surface_create(cnx()->xcb(), _deco, cnx()->find_visual(_deco_visual), b.w, b.h);
 
+	net_wm_state_add(_NET_WM_STATE_FOCUSED);
+	grab_button_focused_unsafe();
+
 	update_icon();
 
 }
@@ -362,8 +365,8 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 }
 
 void client_managed_t::focus(xcb_timestamp_t t) {
-	set_focus_state(true);
 	icccm_focus_unsafe(t);
+	set_focus_state(true);
 }
 
 rect client_managed_t::get_base_position() const {
@@ -777,16 +780,19 @@ void client_managed_t::render_finished() {
 
 
 void client_managed_t::set_focus_state(bool is_focused) {
-	_is_focused = is_focused;
-	if (_is_focused) {
+	if(_has_focus == is_focused)
+		return;
+
+	_has_focus = is_focused;
+	if (_has_focus) {
 		net_wm_state_add(_NET_WM_STATE_FOCUSED);
 		grab_button_focused_unsafe();
-		on_activate.signal(shared_from_this());
 	} else {
 		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 		grab_button_unfocused_unsafe();
-		on_deactivate.signal(shared_from_this());
 	}
+
+	on_focus_change.signal(shared_from_this());
 	queue_redraw();
 }
 
@@ -1008,7 +1014,7 @@ void client_managed_t::_update_backbuffers() {
 			fw.cairo_left = nullptr;
 		}
 
-		fw.focuced = is_focused();
+		fw.focuced = has_focus();
 		fw.position = base_position();
 		fw.icon = icon();
 		fw.title = title();
@@ -1090,8 +1096,8 @@ xcb_atom_t client_managed_t::A(atom_e atom) {
 }
 
 
-bool client_managed_t::is_focused() const {
-	return _is_focused;
+bool client_managed_t::has_focus() const {
+	return _has_focus;
 }
 
 shared_ptr<client_view_t> client_managed_t::create_view() {
