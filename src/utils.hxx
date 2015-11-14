@@ -681,11 +681,11 @@ static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 template<typename ... F>
 class signal_t {
 	using _func_t = std::function<void(F ...)>;
-	std::list<std::weak_ptr<_func_t> > _callback_list;
+	std::list<_func_t> _callback_list;
 
 public:
 
-	using signal_func_t = std::shared_ptr<_func_t>;
+	using signal_func_t = typename std::list<_func_t>::iterator;
 
 	~signal_t() {
 
@@ -699,57 +699,31 @@ public:
 	 **/
 	template<typename T0>
 	signal_func_t connect(T0 * ths, void(T0::*func)(F ...)) {
-		auto ret = std::make_shared<_func_t>([ths, func](F ... args) -> void { (ths->*func)(args...); });
-		_callback_list.push_back(ret);
-		return ret;
-	}
-
-	signal_func_t connect(signal_func_t func) {
-		_callback_list.push_back(func);
-		return func;
+		auto ret = [ths, func](F ... args) -> void { (ths->*func)(args...); };
+		_callback_list.push_front(ret);
+		return _callback_list.begin();
 	}
 
 	template<typename G>
 	signal_func_t connect(G func) {
-		auto ret = std::make_shared<_func_t>(func);
-		_callback_list.push_back(ret);
-		return ret;
+		_callback_list.push_front(func);
+		return _callback_list.begin();
 	}
 
-	void disconnect(signal_func_t f) {
-		auto i = _callback_list.begin();
-		while(i != _callback_list.end()) {
-			if((*i).expired()) {
-				i = _callback_list.erase(i);
-			} else {
-				if(f == (*i).lock()) {
-					i = _callback_list.erase(i);
-				} else {
-					++i;
-				}
-			}
-		}
+	void remove(signal_func_t f) {
+		_callback_list.erase(f);
 	}
 
 	void signal(F ... args) {
-		/** cleanup the content of callback list **/
-		_callback_list.remove_if([](std::weak_ptr<_func_t> & wfunc) -> bool { return wfunc.expired(); });
 
 		/**
 		 * Copy the list of callback to avoid issue
-		 * if 'disconnect' is called during the signal.
+		 * if 'remove' is called during the signal.
 		 **/
 		auto callbacks = _callback_list;
 
-		for(auto wfunc: callbacks) {
-			if(not wfunc.expired()) {
-				/**
-				 * Hold the function to avoid destroy
-				 * during the signal handling.
-				 **/
-				auto func = wfunc.lock();
-				(*func)(args...);
-			}
+		for(auto func: callbacks) {
+			(func)(args...);
 		}
 	}
 

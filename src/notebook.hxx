@@ -86,7 +86,7 @@ class notebook_t : public page_component_t {
 	};
 
 	// list to maintain the client order
-	list<_client_context_t> _clients;
+	map<client_managed_t *, _client_context_t> _clients;
 
 	shared_ptr<client_managed_t> _selected;
 
@@ -178,6 +178,9 @@ class notebook_t : public page_component_t {
 	void _scroll_right(int x);
 
 	void _set_theme_tab_offset(int x);
+
+	void _bind_client_signals(_client_context_t & c);
+	void _unbind_client_signals(_client_context_t & c);
 
 	shared_ptr<notebook_t> shared_from_this();
 

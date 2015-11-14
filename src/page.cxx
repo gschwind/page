@@ -310,7 +310,7 @@ void page_t::run() {
 	_mainloop.run();
 
 	handle = nullptr;
-	on_visibility_change_func = nullptr;
+	_dpy->on_visibility_change.remove(on_visibility_change_func);
 	_mainloop.remove_poll(_dpy->fd());
 
 	_dpy->unload_cursors();

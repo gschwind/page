@@ -33,7 +33,10 @@ notebook_t::notebook_t(page_context_t * ctx) :
 }
 
 notebook_t::~notebook_t() {
-
+	for(auto c: _clients) {
+		_unbind_client_signals(c.second);
+	}
+	_clients.clear();
 }
 
 bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
@@ -44,14 +47,9 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	_children.push_back(x);
 
-	_clients.emplace_front();
-	auto & a = _clients.front();
-
+	auto & a = _clients[x.get()];
 	a.client = x;
-	a.title_change_func = x->on_title_change.connect(this, &notebook_t::_client_title_change);
-	a.destoy_func = x->on_destroy.connect(this, &notebook_t::_client_destroy);
-	a.activate_func = x->on_activate.connect(this, &notebook_t::_client_activate);
-	a.deactivate_func = x->on_deactivate.connect(this, &notebook_t::_client_deactivate);
+	_bind_client_signals(a);
 
 	if(prefer_activate and not _exposay) {
 		_start_fading();
@@ -120,7 +118,9 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	// cleanup
 	_children.remove(x);
 	x->clear_parent();
-	_clients.remove_if([x](_client_context_t const & y) { return x == y.client; });
+
+	_unbind_client_signals(_clients[x.get()]);
+	_clients.erase(x.get());
 
 	if(_ctx->conf()._auto_refocus
 			and not _children.empty()
@@ -278,7 +278,7 @@ void notebook_t::_update_layout() {
 
 	for(auto & c: _clients) {
 		/* resize all client properly */
-		update_client_position(c.client);
+		update_client_position(c.second.client);
 	}
 
 	_mouse_over_reset();
@@ -518,7 +518,7 @@ void notebook_t::_update_notebook_areas() {
 			rect pos = tab.position;
 			pos.x += _theme_client_tabs_area.x - _theme_client_tabs_offset;
 			pos.y += _theme_client_tabs_area.y;
-			_client_buttons.push_back(make_tuple(pos, weak_ptr<client_managed_t>{c->client}, &tab));
+			_client_buttons.push_back(make_tuple(pos, weak_ptr<client_managed_t>{c->second.client}, &tab));
 			++c;
 		}
 
@@ -595,16 +595,16 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 									- floor(offset)),
 				(int) _ctx->theme()->notebook.tab_height };
 
-			if (i.client->is_focused()) {
+			if (i.second.client->is_focused()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
-			} else if (_selected == i.client) {
+			} else if (_selected == i.second.client) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
 			} else {
 				tab.tab_color = _ctx->theme()->get_normal_color();
 			}
-			tab.title = i.client->title();
-			tab.icon = i.client->icon();
-			tab.is_iconic = i.client->is_iconic();
+			tab.title = i.second.client->title();
+			tab.icon = i.second.client->icon();
+			tab.is_iconic = i.second.client->is_iconic();
 			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 
@@ -798,9 +798,9 @@ void notebook_t::_update_exposay() {
 			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x + (n*m - _clients.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->client}, i));
+		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->second.client}, i));
 		pdst = to_root_position(pdst);
-		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->client, pdst, ANCHOR_CENTER);
+		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->second.client, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
@@ -1169,7 +1169,7 @@ void notebook_t::show() {
 
 bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
 	for(auto &i: _clients) {
-		if(i.client == c)
+		if(i.second.client == c)
 			return true;
 	}
 	return false;
@@ -1278,6 +1278,20 @@ void notebook_t::_set_theme_tab_offset(int x) {
 		return;
 	}
 	_theme_client_tabs_offset = x;
+}
+
+void notebook_t::_bind_client_signals(_client_context_t & c) {
+	c.title_change_func = c.client->on_title_change.connect(this, &notebook_t::_client_title_change);
+	c.destoy_func = c.client->on_destroy.connect(this, &notebook_t::_client_destroy);
+	c.activate_func = c.client->on_activate.connect(this, &notebook_t::_client_activate);
+	c.deactivate_func = c.client->on_deactivate.connect(this, &notebook_t::_client_deactivate);
+}
+
+void notebook_t::_unbind_client_signals(_client_context_t & c) {
+	c.client->on_title_change.remove(c.title_change_func);
+	c.client->on_destroy.remove(c.destoy_func);
+	c.client->on_activate.remove(c.activate_func);
+	c.client->on_deactivate.remove(c.deactivate_func);
 }
 
 }
