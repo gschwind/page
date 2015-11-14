@@ -26,6 +26,7 @@
 #include "client_managed.hxx"
 #include "renderable_thumbnail.hxx"
 #include "renderable_unmanaged_gaussian_shadow.hxx"
+#include "dropdown_menu.hxx"
 
 namespace page {
 
@@ -133,7 +134,7 @@ class notebook_t : public page_component_t {
 	void _update_theme_notebook(theme_notebook_t & theme_notebook);
 	void _update_layout();
 
-	void _process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
+	void _process_notebook_client_menu(dropdown_menu_t<int> * ths, shared_ptr<client_managed_t> c, int selected);
 
 	void _mouse_over_reset();
 	void _mouse_over_set();

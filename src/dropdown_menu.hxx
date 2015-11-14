@@ -210,20 +210,22 @@ private:
 	int _selected;
 	shared_ptr<dropdown_menu_overlay_t> pop;
 	rect _start_position;
-
 	bool active_grab;
 	xcb_button_t _button;
+	xcb_timestamp_t _time;
 
-	std::function<void(TDATA)> _callback;
+	std::function<void(dropdown_menu_t *, TDATA)> _callback;
 
 public:
+
 
 	template<typename F>
 	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position, F f) :
 	_ctx{ctx},
 	_start_position{start_position},
 	_button{button},
-	_callback{f}
+	_callback{f},
+	_time{XCB_CURRENT_TIME}
 
 	{
 
@@ -252,6 +254,10 @@ public:
 
 	TDATA const & get_selected() {
 		return _items[_selected]->data();
+	}
+
+	xcb_timestamp_t time() {
+		return _time;
 	}
 
 	void update_backbuffer() {
@@ -325,7 +331,8 @@ public:
 
 				if (pop->_position.is_inside(e->root_x, e->root_y)) {
 					update_cursor_position(e->root_x, e->root_y);
-					_callback(get_selected());
+					_time = e->time;
+					_callback(this, get_selected());
 				}
 
 				_ctx->grab_stop();

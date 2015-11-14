@@ -928,7 +928,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 }
 
 void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y) {
-	auto callback = [this, c] (int selected) -> void { this->_process_notebook_client_menu(c, selected); };
+	auto callback = [this, c] (dropdown_menu_t<int> * ths, int selected) -> void { this->_process_notebook_client_menu(ths, c, selected); };
 	std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
@@ -940,7 +940,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 
 }
 
-void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected) {
+void notebook_t::_process_notebook_client_menu(dropdown_menu_t<int> * ths, shared_ptr<client_managed_t> c, int selected) {
 	printf("Change desktop %d for %u\n", selected, c->orig());
 
 	if(selected == _ctx->get_workspace_count()) {
@@ -949,11 +949,13 @@ void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, i
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
 		c->activate();
+		_ctx->set_focus(c, ths->time());
 	} else if (selected != _ctx->get_current_workspace()->id()) {
 		_ctx->detach(c);
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
 		c->activate();
+		_ctx->set_focus(c, ths->time());
 	}
 }
 
