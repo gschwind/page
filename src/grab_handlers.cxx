@@ -227,7 +227,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 		switch(zone) {
 		case NOTEBOOK_AREA_TAB:
 		case NOTEBOOK_AREA_CENTER:
-			if(new_target != c->parent().lock()) {
+			if(new_target != c->parent()->shared_from_this()) {
 				new_target->queue_redraw();
 				c->queue_redraw();
 				ctx->detach(c);
@@ -247,7 +247,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			ctx->split_right(new_target, c);
 			break;
 		default:
-			auto parent = dynamic_pointer_cast<notebook_t>(c->parent().lock());
+			auto parent = dynamic_pointer_cast<notebook_t>(c->parent()->shared_from_this());
 			if (parent != nullptr) {
 				c->queue_redraw();
 

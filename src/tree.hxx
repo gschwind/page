@@ -76,10 +76,16 @@ protected:
 
 	template<char const c>
 	string _get_node_name() const {
-		return format("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), (uintptr_t)_parent.lock().get(), (uintptr_t) this);
+		return format("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), _parent, (uintptr_t) this);
 	}
 
-	weak_ptr<tree_t> _parent;
+	/**
+	 * Parent must exist or beeing NULL, when a node is destroyed, he must
+	 * clear children _parent.
+	 **/
+	tree_t * _parent;
+
+
 	bool _is_visible;
 
 	map<void *, shared_ptr<transition_t>> _transition;
@@ -89,11 +95,13 @@ private:
 	tree_t & operator=(tree_t const &);
 
 public:
+	void set_parent(tree_t * parent);
+	void clear_parent();
+
+public:
 	tree_t();
 
-	auto parent() const -> weak_ptr<tree_t>;
-	void set_parent(shared_ptr<tree_t> parent);
-	void clear_parent();
+	auto parent() const -> shared_ptr<tree_t>;
 
 	bool is_visible() const;
 

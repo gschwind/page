@@ -152,7 +152,7 @@ void popup_alt_tab_t::show() {
 void popup_alt_tab_t::_init() {
 	int n = 0;
 	for (auto & c : _client_list) {
-		c._thumbnail->set_parent(shared_from_this());
+		c._thumbnail->set_parent(this);
 		c._thumbnail->show();
 	}
 }

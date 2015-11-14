@@ -20,6 +20,7 @@ xcb_atom_t client_base_t::A(atom_e atom) {
 }
 
 client_base_t::client_base_t(client_base_t const & c) :
+	tree_t{},
 	_ctx{c._ctx},
 	_client_proxy{c._client_proxy},
 	_children{c._children}
@@ -28,6 +29,7 @@ client_base_t::client_base_t(client_base_t const & c) :
 }
 
 client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
+	tree_t{},
 	_ctx{ctx},
 	_client_proxy{ctx->dpy()->create_client_proxy(w)},
 	_children{}
@@ -67,7 +69,7 @@ void client_base_t::set_net_wm_desktop(unsigned long n) {
 void client_base_t::add_subclient(shared_ptr<client_base_t> s) {
 	assert(s != nullptr);
 	_children.push_back(s);
-	s->set_parent(shared_from_this());
+	s->set_parent(this);
 	if(_is_visible) {
 		s->show();
 	} else {
@@ -125,6 +127,7 @@ void client_base_t::remove(shared_ptr<tree_t> t) {
 	if(c == nullptr)
 		return;
 	_children.remove(c);
+	c->clear_parent();
 }
 
 void client_base_t::append_children(vector<shared_ptr<tree_t>> & out) const {

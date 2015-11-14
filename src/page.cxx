@@ -214,7 +214,7 @@ void page_t::run() {
 		auto d = make_shared<workspace_t>(this, k);
 
 		/** /!\ shared_from_this CANNOT be call in constructor **/
-		d->set_parent(_root);
+		d->set_parent(_root.get());
 		_root->_desktop_list.push_back(d);
 		_root->_desktop_stack.push_front(d);
 		d->hide();
@@ -700,7 +700,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				int x_pos = v->allocation().x + (v->allocation().w - 400)/2;
 
 				_root->_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
-				_root->_fps_overlay->set_parent(_root);
+				_root->_fps_overlay->set_parent(_root.get());
 				_root->_fps_overlay->show();
 			} else {
 				_root->_fps_overlay = nullptr;
@@ -1233,7 +1233,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 				bind_window(mw, false);
 			} else if (mw->is(
 					MANAGED_NOTEBOOK) and e->data.data32[0] == IconicState) {
-				auto n = dynamic_pointer_cast<notebook_t>(mw->parent().lock());
+				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
 				n->iconify_client(mw);
 			}
 		}
@@ -1547,7 +1547,7 @@ void page_t::update_focus() {
 }
 
 void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
-	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
+	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
 	parent->replace(nbk, split);
@@ -1561,7 +1561,7 @@ void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t>
 }
 
 void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
-	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
+	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
 	parent->replace(nbk, split);
@@ -1575,7 +1575,7 @@ void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t
 }
 
 void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
-	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
+	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
@@ -1589,7 +1589,7 @@ void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> 
 }
 
 void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
-	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent().lock());
+	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(this);
 	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
@@ -1608,7 +1608,9 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	 * notebook, plus this notebook.
 	 **/
 
-	auto splt = dynamic_pointer_cast<split_t>(nbk->parent().lock());
+	assert(nbk->parent() != nullptr);
+
+	auto splt = dynamic_pointer_cast<split_t>(nbk->parent()->shared_from_this());
 
 	/* if parent is viewport then we cannot close current notebook */
 	if(splt == nullptr)
@@ -1619,8 +1621,11 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	/* find the sibling branch of note that we want close */
 	auto dst = dynamic_pointer_cast<page_component_t>((nbk == splt->get_pack0()) ? splt->get_pack1() : splt->get_pack0());
 
+	assert(dst != nullptr);
+
 	/* remove this split from tree  and replace it by sibling branch */
-	dynamic_pointer_cast<page_component_t>(splt->parent().lock())->replace(splt, dst);
+	detach(dst);
+	dynamic_pointer_cast<page_component_t>(splt->parent()->shared_from_this())->replace(splt, dst);
 
 	/**
 	 * if notebook that we want destroy was the default_pop, select
@@ -1634,6 +1639,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	/* move all client from destroyed notebook to new default pop */
 	auto clients = filter_class<client_managed_t>(nbk->children());
 	for(auto i : clients) {
+		nbk->remove(i);
 		insert_window_in_notebook(i, nullptr, false);
 	}
 
@@ -1948,7 +1954,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE: {
-				auto n = dynamic_pointer_cast<notebook_t>(mw->parent().lock());
+				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
 				if (n != nullptr)
 					mw->activate();
 			}
@@ -2137,7 +2143,7 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 			}
 		} else {
 			_root->root_subclients.push_back(c);
-			c->set_parent(_root);
+			c->set_parent(_root.get());
 		}
 	}
 }
@@ -2159,8 +2165,12 @@ void page_t::detach(shared_ptr<tree_t> t) {
 
 	/** detach a tree_t will cause it to be restacked, at less **/
 	add_global_damage(t->get_visible_region());
-	if(not t->parent().expired()) {
-		t->parent().lock()->remove(t);
+	if(t->parent() != nullptr) {
+		t->parent()->remove(t);
+		if(t->parent() != nullptr) {
+			printf("XXX %s\n", typeid(*t->parent()).name());
+			assert(false);
+		}
 	}
 }
 
@@ -2240,15 +2250,20 @@ shared_ptr<notebook_t> page_t::get_another_notebook(shared_ptr<tree_t> base, sha
 }
 
 shared_ptr<notebook_t> page_t::find_parent_notebook_for(shared_ptr<client_managed_t> mw) {
-	return dynamic_pointer_cast<notebook_t>(mw->parent().lock());
+	return dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
 }
 
 shared_ptr<workspace_t> page_t::find_desktop_of(shared_ptr<tree_t> n) {
 	shared_ptr<tree_t> x = n;
 	while (x != nullptr) {
-		if (typeid(*(x.get())) == typeid(workspace_t))
-			return dynamic_pointer_cast<workspace_t>(x);
-		x = (x->parent().lock());
+		auto ret = dynamic_pointer_cast<workspace_t>(x);
+		if (ret != nullptr)
+			return ret;
+
+		if (x->parent() != nullptr)
+			x = (x->parent()->shared_from_this());
+		else
+			return nullptr;
 	}
 	return nullptr;
 }
@@ -2387,8 +2402,6 @@ void page_t::update_viewport_layout() {
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
 				vp = make_shared<viewport_t>(this, viewport_allocation[i]);
-				vp->create_default_subtree();
-				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
@@ -2403,8 +2416,6 @@ void page_t::update_viewport_layout() {
 				vp->set_raw_area(area);
 			} else {
 				vp = make_shared<viewport_t>(this, area);
-				vp->create_default_subtree();
-				vp->set_parent(d);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
@@ -2822,20 +2833,20 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		detach(uw);
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			_root->tooltips.push_back(uw);
-			uw->set_parent(_root);
+			uw->set_parent(_root.get());
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
 			_root->notifications.push_back(uw);
-			uw->set_parent(_root);
+			uw->set_parent(_root.get());
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			insert_in_tree_using_transient_for(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
 			_root->above.push_back(uw);
-			uw->set_parent(_root);
+			uw->set_parent(_root.get());
 		} else if (uw->net_wm_state() != nullptr
 				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
 			_root->below.push_back(uw);
-			uw->set_parent(_root);
+			uw->set_parent(_root.get());
 		} else {
 			insert_in_tree_using_transient_for(uw);
 		}
@@ -2880,7 +2891,7 @@ shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
 }
 
 void page_t::remove_client(shared_ptr<client_base_t> c) {
-	auto parent = c->parent().lock();
+	auto parent = c->parent()->shared_from_this();
 	detach(c);
 	for(auto i: c->children()) {
 		auto c = dynamic_pointer_cast<client_base_t>(i);
@@ -3009,7 +3020,7 @@ void page_t::print_state() const {
 
 	cout << "clients list:" << endl;
 	for(auto c: filter_class<client_base_t>(_root->get_all_children())) {
-		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent().lock().get() << endl;
+		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
 	}
 	cout << "end" << endl;;
 
@@ -3496,7 +3507,7 @@ shared_ptr<viewport_t> page_t::find_viewport_of(shared_ptr<tree_t> t) {
 		auto ret = dynamic_pointer_cast<viewport_t>(t);
 		if(ret != nullptr)
 			return ret;
-		t = t->parent().lock();
+		t = t->parent()->shared_from_this();
 	}
 
 	return nullptr;
@@ -3574,7 +3585,7 @@ void page_t::grab_stop() {
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
 	_root->_overlays.push_back(x);
-	x->set_parent(_root);
+	x->set_parent(_root.get());
 }
 
 void page_t::add_global_damage(region const & r) {

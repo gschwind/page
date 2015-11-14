@@ -876,8 +876,8 @@ bool client_managed_t::is_modal() {
 
 void client_managed_t::activate() {
 
-	if(not _parent.expired()) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 
 	if(is_iconic()) {

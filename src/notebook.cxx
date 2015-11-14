@@ -40,7 +40,7 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	assert(not _has_client(x));
 	assert(x != nullptr);
 
-	x->set_parent(shared_from_this());
+	x->set_parent(this);
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	_children.push_back(x);
 
@@ -332,8 +332,8 @@ void notebook_t::set_default(bool x) {
 }
 
 void notebook_t::activate() {
-	if(_parent.lock() != nullptr) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 }
 
@@ -720,7 +720,7 @@ void notebook_t::_start_fading() {
 	rect pos = to_root_position(_allocation);
 	fading_notebook = make_shared<renderable_notebook_fading_t>(_ctx, pix, pos.x, pos.y);
 	fading_notebook->show();
-	fading_notebook->set_parent(shared_from_this());
+	fading_notebook->set_parent(this);
 
 }
 
@@ -943,7 +943,6 @@ void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, i
 	printf("Change desktop %d for %u\n", selected, c->orig());
 	if (selected != _ctx->get_current_workspace()->id()) {
 		_ctx->detach(c);
-		c->set_parent(nullptr);
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
 	}
@@ -1073,7 +1072,7 @@ void notebook_t::_mouse_over_set() {
 
 		if(std::get<1>(*_mouse_over.tab).lock() != _selected) {
 			tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
-			tooltips->set_parent(shared_from_this());
+			tooltips->set_parent(this);
 			tooltips->show();
 			tooltips->set_mouse_over(true);
 		}

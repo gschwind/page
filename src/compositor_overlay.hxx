@@ -88,7 +88,7 @@ public:
 	void update_layout(time64_t const t) {
 		_has_damage = false;
 
-		auto child = _parent.lock()->get_all_children();
+		auto child = _parent->get_all_children();
 		for(auto & c: child) {
 			if(not c->is_visible())
 				continue;

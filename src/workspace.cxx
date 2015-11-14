@@ -32,8 +32,8 @@ workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
 }
 
 void workspace_t::activate() {
-	if(not _parent.expired()) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 }
 
@@ -159,7 +159,7 @@ void workspace_t::update_default_pop() {
 void workspace_t::attach(shared_ptr<client_managed_t> c) {
 	assert(c != nullptr);
 
-	c->set_parent(shared_from_this());
+	c->set_parent(this);
 
 	if(c->is(MANAGED_FULLSCREEN)) {
 		_fullscreen_layer.push_back(c);
@@ -179,6 +179,7 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 //}
 
 void workspace_t::remove(shared_ptr<tree_t> src) {
+	assert(has_key(children(), src));
 
 	if(has_key(_viewport_outputs, dynamic_pointer_cast<viewport_t>(src))) {
 		throw exception_t("%s:%d invalid call of viewport::remove", __FILE__, __LINE__);
@@ -190,6 +191,9 @@ void workspace_t::remove(shared_ptr<tree_t> src) {
 	 **/
 	_floating_layer.remove(src);
 	_fullscreen_layer.remove(src);
+
+	src->clear_parent();
+
 }
 
 //void workspace_t::set_allocation(rect const & area) {
@@ -227,7 +231,7 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_screenshot = _ctx->cmp()->create_screenshot();
 	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx, _switch_screenshot, _ctx->left_most_border(), _ctx->top_most_border());
 	_switch_renderable->show();
-	_switch_renderable->set_parent(shared_from_this());
+	_switch_renderable->set_parent(this);
 
 }
 

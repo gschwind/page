@@ -16,28 +16,39 @@
 namespace page {
 
 tree_t::tree_t() :
-		_parent { }, _is_visible { false } {
+	_parent{nullptr},
+	_is_visible{false}
+{
+
 }
 
 tree_t::~tree_t() {
+	for(auto t: children())
+		t->clear_parent();
 }
 
 /**
  * Return parent within tree
  **/
-auto tree_t::parent() const -> weak_ptr<tree_t> {
-	return _parent;
+auto tree_t::parent() const -> shared_ptr<tree_t> {
+	if(_parent) {
+		return _parent->shared_from_this();
+	} else {
+		return shared_ptr<tree_t>{};
+	}
 }
 
 /**
  * Change parent of this node to parent.
  **/
-void tree_t::set_parent(shared_ptr<tree_t> parent) {
+void tree_t::set_parent(tree_t * parent) {
+	assert(parent != nullptr);
+	assert(_parent == nullptr);
 	_parent = parent;
 }
 
 void tree_t::clear_parent() {
-	_parent.reset();
+	_parent = nullptr;
 }
 
 bool tree_t::is_visible() const {
@@ -141,8 +152,8 @@ void tree_t::render_finished() {
 
 void tree_t::activate() {
 	/** raise ourself **/
-	if(not _parent.expired()) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 }
 
@@ -179,22 +190,22 @@ xcb_window_t tree_t::get_xid() const {
 }
 
 xcb_window_t tree_t::get_parent_xid() const {
-	if (not _parent.expired())
-		return _parent.lock()->get_parent_xid();
+	if (_parent != nullptr)
+		return _parent->get_parent_xid();
 	else
 		return XCB_WINDOW_NONE;
 }
 
 rect tree_t::get_window_position() const {
-	if (not _parent.expired())
-		return _parent.lock()->get_window_position();
+	if (_parent != nullptr)
+		return _parent->get_window_position();
 	else
 		return rect { };
 }
 
 void tree_t::queue_redraw() {
-	if (not _parent.expired())
-		_parent.lock()->queue_redraw();
+	if (_parent != nullptr)
+		_parent->queue_redraw();
 }
 
 /**

@@ -45,11 +45,9 @@ void split_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_componen
 	if (_pack0 == src) {
 		printf("replace %p by %p\n", src.get(), by.get());
 		set_pack0(by);
-		src->clear_parent();
 	} else if (_pack1 == src) {
 		printf("replace %p by %p\n", src.get(), by.get());
 		set_pack1(by);
-		src->clear_parent();
 	} else {
 		throw std::runtime_error("split: bad child replacement!");
 	}
@@ -162,7 +160,7 @@ void split_t::set_pack0(shared_ptr<page_component_t> x) {
 	}
 	_pack0 = x;
 	if (_pack0 != nullptr) {
-		_pack0->set_parent(shared_from_this());
+		_pack0->set_parent(this);
 		_children.push_back(_pack0);
 		update_allocation();
 	}
@@ -175,7 +173,7 @@ void split_t::set_pack1(shared_ptr<page_component_t> x) {
 	}
 	_pack1 = x;
 	if (_pack1 != nullptr) {
-		_pack1->set_parent(shared_from_this());
+		_pack1->set_parent(this);
 		_children.push_back(_pack1);
 		update_allocation();
 	}
@@ -193,8 +191,8 @@ void split_t::render_legacy(cairo_t * cr) const {
 }
 
 void split_t::activate() {
-	if(_parent.lock() != nullptr) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 }
 

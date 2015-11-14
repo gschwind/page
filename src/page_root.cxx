@@ -30,12 +30,15 @@ string page_root_t::get_node_name() const {
 }
 
 void page_root_t::remove(shared_ptr<tree_t> t) {
+	assert(has_key(children(), t));
 	root_subclients.remove(dynamic_pointer_cast<client_base_t>(t));
 	tooltips.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	notifications.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	above.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	below.remove(dynamic_pointer_cast<client_not_managed_t>(t));
 	_overlays.remove(t);
+
+	t->clear_parent();
 }
 
 void page_root_t::append_children(vector<shared_ptr<tree_t>> & out) const {

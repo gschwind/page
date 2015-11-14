@@ -28,6 +28,11 @@ viewport_t::viewport_t(page_context_t * ctx, rect const & area) :
 {
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
+
+	_subtree = make_shared<notebook_t>(_ctx);
+	_subtree->set_parent(this);
+	_subtree->set_allocation(_page_area);
+
 }
 
 viewport_t::~viewport_t() {
@@ -42,7 +47,7 @@ void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 	if (_subtree == src) {
 		_subtree->clear_parent();
 		_subtree = by;
-		_subtree->set_parent(shared_from_this());
+		_subtree->set_parent(this);
 		_subtree->set_allocation(_page_area);
 	} else {
 		throw std::runtime_error("viewport: bad child replacement!");
@@ -73,8 +78,8 @@ rect const & viewport_t::raw_area() const {
 }
 
 void viewport_t::activate() {
-	if(not _parent.expired()) {
-		_parent.lock()->activate(shared_from_this());
+	if(_parent != nullptr) {
+		_parent->activate(shared_from_this());
 	}
 
 	queue_redraw();
@@ -302,14 +307,6 @@ void viewport_t::render(cairo_t * cr, region const & area) {
 		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _effective_area.x, _effective_area.y);
 	}
 	cairo_restore(cr);
-}
-
-void viewport_t::create_default_subtree() {
-	if (_subtree == nullptr) {
-		_subtree = make_shared<notebook_t>(_ctx);
-		_subtree->set_parent(shared_from_this());
-		_subtree->set_allocation(_page_area);
-	}
 }
 
 void viewport_t::get_min_allocation(int & width, int & height) const {

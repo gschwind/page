@@ -69,8 +69,6 @@ public:
 
 	auto raw_area() const -> rect const &;
 	void set_raw_area(rect const & area);
-	void create_default_subtree();
-
 
 	/**
 	 * tree_t virtual API
