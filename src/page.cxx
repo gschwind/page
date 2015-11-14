@@ -210,8 +210,9 @@ void page_t::run() {
 
 	_root = make_shared<page_root_t>(this);
 
-	for(unsigned k = 0; k < 4; ++k) {
-		auto d = make_shared<workspace_t>(this, k);
+	{
+		/** create the first desktop **/
+		auto d = make_shared<workspace_t>(this, 0);
 		_root->_desktop_list.push_back(d);
 		_root->_desktop_stack->push_front(d);
 		d->hide();
