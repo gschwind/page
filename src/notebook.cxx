@@ -932,19 +932,28 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 	std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
-		os << "Desktop #" << k;
+		os << "Worspace #" << k;
 		v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
 	}
+	v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(_ctx->get_workspace_count(), nullptr, "To new workspace"));
 	_ctx->grab_start(new dropdown_menu_t<int>{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}, callback});
 
 }
 
 void notebook_t::_process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected) {
 	printf("Change desktop %d for %u\n", selected, c->orig());
-	if (selected != _ctx->get_current_workspace()->id()) {
+
+	if(selected == _ctx->get_workspace_count()) {
+		selected = _ctx->create_workspace();
 		_ctx->detach(c);
 		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 		c->set_current_desktop(selected);
+		c->activate();
+	} else if (selected != _ctx->get_current_workspace()->id()) {
+		_ctx->detach(c);
+		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
+		c->set_current_desktop(selected);
+		c->activate();
 	}
 }
 

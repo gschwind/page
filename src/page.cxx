@@ -3082,7 +3082,9 @@ void page_t::update_desktop_visibility() {
 
 	for(auto & i: _fullscreen_client_to_viewport) {
 		if(not i.second.workspace.lock()->is_visible()) {
-			i.second.viewport.lock()->hide();
+			if(not i.second.viewport.expired()) {
+				i.second.viewport.lock()->hide();
+			}
 		}
 	}
 }
@@ -3600,6 +3602,23 @@ shared_ptr<workspace_t> const & page_t::get_workspace(int id) const {
 
 int page_t::get_workspace_count() const {
 	return _root->_desktop_list.size();
+}
+
+int page_t::create_workspace() {
+	auto d = make_shared<workspace_t>(this, _root->_desktop_list.size());
+	_root->_desktop_list.push_back(d);
+	_root->_desktop_stack->push_front(d);
+	d->hide();
+
+	/* update number of desktop */
+	uint32_t number_of_desktop = _root->_desktop_list.size();
+	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
+			CARDINAL, 32, &number_of_desktop, 1);
+
+	update_viewport_layout();
+	update_current_desktop();
+	update_desktop_visibility();
+	return d->id();
 }
 
 int page_t::left_most_border() {

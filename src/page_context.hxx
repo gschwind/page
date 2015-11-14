@@ -72,6 +72,7 @@ public:
 	virtual auto get_current_workspace() const -> shared_ptr<workspace_t> const & = 0;
 	virtual auto get_workspace(int id) const -> shared_ptr<workspace_t> const & = 0;
 	virtual int  get_workspace_count() const = 0;
+	virtual int  create_workspace() = 0;
 	virtual void grab_start(grab_handler_t * handler) = 0;
 	virtual void grab_stop() = 0;
 	virtual void detach(shared_ptr<tree_t> t) = 0;
