@@ -212,11 +212,8 @@ void page_t::run() {
 
 	for(unsigned k = 0; k < 4; ++k) {
 		auto d = make_shared<workspace_t>(this, k);
-
-		/** /!\ shared_from_this CANNOT be call in constructor **/
-		d->set_parent(_root.get());
 		_root->_desktop_list.push_back(d);
-		_root->_desktop_stack.push_front(d);
+		_root->_desktop_stack->push_front(d);
 		d->hide();
 	}
 
@@ -2142,8 +2139,7 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 				c->show();
 			}
 		} else {
-			_root->root_subclients.push_back(c);
-			c->set_parent(_root.get());
+			_root->root_subclients->push_back(c);
 		}
 	}
 }
@@ -2832,21 +2828,17 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
 		detach(uw);
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-			_root->tooltips.push_back(uw);
-			uw->set_parent(_root.get());
+			_root->tooltips->push_back(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-			_root->notifications.push_back(uw);
-			uw->set_parent(_root.get());
+			_root->notifications->push_back(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			insert_in_tree_using_transient_for(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key<xcb_atom_t>(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
-			_root->above.push_back(uw);
-			uw->set_parent(_root.get());
+			_root->above->push_back(uw);
 		} else if (uw->net_wm_state() != nullptr
 				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
-			_root->below.push_back(uw);
-			uw->set_parent(_root.get());
+			_root->below->push_back(uw);
 		} else {
 			insert_in_tree_using_transient_for(uw);
 		}
@@ -3053,7 +3045,7 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
 
 		_root->_current_desktop = desktop;
-		move_back(_root->_desktop_stack, _root->_desktop_list[_root->_current_desktop]);
+		_root->_desktop_list[_root->_current_desktop]->activate();
 
 		/** move sticky to current desktop **/
 		for(auto s : stiky_list) {
@@ -3584,7 +3576,7 @@ void page_t::grab_stop() {
 }
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
-	_root->_overlays.push_back(x);
+	_root->_overlays->push_back(x);
 	x->set_parent(_root.get());
 }
 

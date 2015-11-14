@@ -24,22 +24,20 @@ class page_root_t : public tree_t {
 
 	rect _root_position;
 
-	list<shared_ptr<client_not_managed_t>> below;
-	list<shared_ptr<client_base_t>> root_subclients;
-	list<shared_ptr<client_not_managed_t>> tooltips;
-	list<shared_ptr<client_not_managed_t>> notifications;
-	list<shared_ptr<client_not_managed_t>> above;
-
-	shared_ptr<compositor_overlay_t> _fps_overlay;
-
 	unsigned int _current_desktop;
 	vector<shared_ptr<workspace_t>> _desktop_list;
 
+	shared_ptr<tree_t> below;
+	shared_ptr<tree_t> root_subclients;
+	shared_ptr<tree_t> tooltips;
+	shared_ptr<tree_t> notifications;
+	shared_ptr<tree_t> above;
+
+	shared_ptr<compositor_overlay_t> _fps_overlay;
 	/** store the order of last shown desktop **/
-	list<shared_ptr<workspace_t>> _desktop_stack;
+	shared_ptr<tree_t> _desktop_stack;
 
-	list<shared_ptr<tree_t>> _overlays;
-
+	shared_ptr<tree_t> _overlays;
 
 public:
 
@@ -53,9 +51,9 @@ public:
 	//virtual void hide();
 	//virtual void show();
 	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> t);
+	//virtual void remove(shared_ptr<tree_t> t);
 
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
+	//virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	//virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 

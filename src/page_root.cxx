@@ -19,6 +19,31 @@ page_root_t::page_root_t(page_context_t * ctx) :
 		_current_desktop{0}
 {
 
+	below = make_shared<tree_t>();
+	root_subclients = make_shared<tree_t>();
+	tooltips = make_shared<tree_t>();
+	notifications = make_shared<tree_t>();
+	above = make_shared<tree_t>();
+
+	_desktop_stack = make_shared<tree_t>();
+	_overlays = make_shared<tree_t>();
+
+	push_back(_desktop_stack);
+	push_back(below);
+	push_back(root_subclients);
+	push_back(tooltips);
+	push_back(notifications);
+	push_back(above);
+	push_back(_overlays);
+
+	below->show();
+	root_subclients->show();
+	tooltips->show();
+	notifications->show();
+	above->show();
+	_desktop_stack->show();
+	_overlays->show();
+
 }
 
 page_root_t::~page_root_t() {
@@ -27,56 +52,6 @@ page_root_t::~page_root_t() {
 
 string page_root_t::get_node_name() const {
 	return _get_node_name<'P'>();
-}
-
-void page_root_t::remove(shared_ptr<tree_t> t) {
-	assert(has_key(children(), t));
-	root_subclients.remove(dynamic_pointer_cast<client_base_t>(t));
-	tooltips.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	notifications.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	above.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	below.remove(dynamic_pointer_cast<client_not_managed_t>(t));
-	_overlays.remove(t);
-
-	t->clear_parent();
-}
-
-void page_root_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-
-	out.insert(out.end(), _desktop_stack.begin(), _desktop_stack.end());
-
-//	for (auto i: _desktop_stack) {
-//		out.push_back(i);
-//	}
-
-	for(auto x: below) {
-		out.push_back(x);
-	}
-
-	for(auto x: root_subclients) {
-		out.push_back(x);
-	}
-
-	for(auto x: tooltips) {
-		out.push_back(x);
-	}
-
-	for(auto x: notifications) {
-		out.push_back(x);
-	}
-
-	for(auto x: above) {
-		out.push_back(x);
-	}
-
-	for(auto x: _overlays) {
-		out.push_back(x);
-	}
-
-	if(_fps_overlay != nullptr) {
-		out.push_back(_fps_overlay);
-	}
-
 }
 
 void page_root_t::render(cairo_t * cr, region const & area) {
@@ -109,54 +84,13 @@ auto page_root_t::get_damaged() -> region {
 	return region{};
 }
 
-
 void page_root_t::activate() {
 	/* has no parent */
 }
 
-void page_root_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(children(), t));
-
-	auto w = dynamic_pointer_cast<workspace_t>(t);
-	if(w != nullptr) {
-		_ctx->switch_to_desktop(w->id());
-	}
-
-	/* do nothing, not needed at this level */
-	auto x = dynamic_pointer_cast<client_base_t>(t);
-	if(has_key(root_subclients, x)) {
-		move_back(root_subclients, x);
-	}
-
-	auto y = dynamic_pointer_cast<client_not_managed_t>(t);
-	if(has_key(tooltips, y)) {
-		move_back(tooltips, y);
-	}
-
-	if(has_key(notifications, y)) {
-		move_back(notifications, y);
-	}
-
-	if(has_key(above, y)) {
-		move_back(above, y);
-	}
-
-	if(has_key(below, y)) {
-		move_back(below, y);
-	}
+void page_root_t::activate(shared_ptr<tree_t> t)
+{
+	/* do not reorder layers */
 }
-
-//void page_root_t::set_allocation(rect const & r) {
-//	throw exception_t("page_t::set_allocation should be called");
-//}
-//
-//rect page_root_t::allocation() const {
-//	return _root_position;
-//}
-//
-//void page_root_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
-//	throw exception_t("not implemented: %s", __PRETTY_FUNCTION__);
-//}
 
 }
