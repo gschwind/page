@@ -104,11 +104,6 @@ class page_t : public page_context_t {
 
 	shared_ptr<page_root_t> _root;
 
-	struct {
-		weak_ptr<client_managed_t> client;
-		xcb_timestamp_t time;
-	} _next_focus;
-
 	weak_ptr<client_managed_t> _net_active_window;
 
 public:
@@ -130,7 +125,6 @@ public:
 
 	bool _need_restack;
 	bool _need_update_client_list;
-	bool _need_refocus;
 
 	config_handler_t _conf;
 
@@ -372,8 +366,6 @@ public:
 	bool global_focus_history_is_empty();
 
 	void on_visibility_change_handler(xcb_window_t xid, bool visible);
-
-	void update_focus();
 
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 

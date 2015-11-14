@@ -62,8 +62,6 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
-	_next_focus.time = XCB_CURRENT_TIME;
-	_next_focus.client = weak_ptr<client_managed_t>{};
 	_grab_handler = nullptr;
 
 	identity_window = XCB_NONE;
@@ -74,7 +72,6 @@ page_t::page_t(int argc, char ** argv)
 
 	_need_restack = false;
 	_need_update_client_list = false;
-	_need_refocus = false;
 
 	configuration._menu_drop_down_shadow = false;
 
@@ -393,14 +390,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	global_focus_history_remove(mw);
 
 	shared_ptr<client_managed_t> new_focus;
-	if (get_current_workspace()->client_focus_history_front(new_focus)) {
-		if (not configuration._auto_refocus) {
-			set_focus(nullptr, XCB_CURRENT_TIME);
-		} else {
-			new_focus->activate();
-			set_focus(new_focus, XCB_CURRENT_TIME);
-		}
-	}
+	set_focus(nullptr, XCB_CURRENT_TIME);
 
 }
 
@@ -1194,7 +1184,6 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		if (mw != nullptr) {
 			mw->activate();
 			if (e->data.data32[1] == XCB_CURRENT_TIME) {
-				printf("Invalid focus request ... but stealing focus\n");
 				set_focus(mw, XCB_CURRENT_TIME);
 			} else {
 				set_focus(mw, e->data.data32[1]);
@@ -1511,37 +1500,57 @@ void page_t::update_workarea() {
 }
 
 void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t tfocus) {
-	if(tfocus == XCB_CURRENT_TIME and new_focus != nullptr)
-		std::cout << "Warning: Invalid focus time (0)" << std::endl;
-	if(tfocus != XCB_CURRENT_TIME)
-		_last_focus_time = tfocus;
+	/* if we want to defocus something */
+	if(new_focus == nullptr) {
+		if(not _net_active_window.expired()) {
+			_net_active_window.lock()->set_focus_state(false);
+		}
 
-	get_current_workspace()->client_focus_history_move_front(new_focus);
-	global_focus_history_move_front(new_focus);
-	_next_focus.client = new_focus;
-	_next_focus.time = tfocus;
-	_need_refocus = true;
+		if(conf()._auto_refocus) {
+			if (get_current_workspace()->client_focus_history_front(new_focus)) {
+				new_focus->activate();
+				get_current_workspace()->client_focus_history_move_front(new_focus);
+				global_focus_history_move_front(new_focus);
+				_dpy->set_net_active_window(new_focus->orig());
+				new_focus->activate();
+				new_focus->focus(tfocus);
+				_net_active_window = new_focus;
+			} else {
+				_net_active_window.reset();
+				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, tfocus);
+				_dpy->set_net_active_window(XCB_WINDOW_NONE);
+			}
+		} else {
+			_net_active_window.reset();
+			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, tfocus);
+			_dpy->set_net_active_window(XCB_WINDOW_NONE);
+		}
+	} else {
+
+		if(tfocus == XCB_CURRENT_TIME) {
+			xcb_timestamp_t time = 0;
+			if (get_safe_net_wm_user_time(new_focus, time)) {
+				tfocus = time;
+			}
+		}
+
+		if(tfocus == XCB_CURRENT_TIME)
+			std::cout << "Warning: Invalid focus time (0)" << std::endl;
+
+		if(not _net_active_window.expired()) {
+			_net_active_window.lock()->set_focus_state(false);
+		}
+
+		get_current_workspace()->client_focus_history_move_front(new_focus);
+		global_focus_history_move_front(new_focus);
+		_dpy->set_net_active_window(new_focus->orig());
+		new_focus->activate();
+		new_focus->focus(tfocus);
+		_net_active_window = new_focus;
+	}
 
 	_need_restack = true;
 
-}
-
-void page_t::update_focus() {
-	if(not _net_active_window.expired()) {
-		_net_active_window.lock()->set_focus_state(false);
-	}
-
-	if(_next_focus.client.expired()) {
-		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
-		_dpy->set_net_active_window(XCB_WINDOW_NONE);
-	} else {
-		auto new_focus = _next_focus.client.lock();
-		_dpy->set_net_active_window(new_focus->orig());
-		new_focus->focus(_next_focus.time);
-		_net_active_window = _next_focus.client;
-		_next_focus.client.reset();
-		_next_focus.time = XCB_CURRENT_TIME;
-	}
 }
 
 void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
@@ -2195,10 +2204,10 @@ void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 	detach(mw);
 	insert_window_in_notebook(mw, nullptr, activate);
 	if(activate) {
-		set_focus(mw, XCB_CURRENT_TIME);
-	} else {
 		mw->activate();
+		set_focus(mw, XCB_CURRENT_TIME);
 	}
+
 	_need_update_client_list = true;
 	_need_restack = true;
 }
@@ -2678,12 +2687,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		update_desktop_visibility();
 		mw->show();
 		mw->activate();
-		xcb_timestamp_t time = 0;
-		if (get_safe_net_wm_user_time(mw, time)) {
-			set_focus(mw, time);
-		} else {
-			set_focus(mw, XCB_CURRENT_TIME);
-		}
+		set_focus(mw, XCB_CURRENT_TIME);
 
 		/**
 		 * Here client that default to notebook
@@ -2734,12 +2738,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		mw->normalize();
 		mw->show();
 		mw->activate();
-		xcb_timestamp_t time = 0;
-		if (get_safe_net_wm_user_time(mw, time)) {
-			set_focus(mw, time);
-		} else {
-			set_focus(mw, XCB_CURRENT_TIME);
-		}
+		set_focus(mw, XCB_CURRENT_TIME);
 		if(mw->is(MANAGED_DOCK)) {
 			update_workarea();
 		}
@@ -3539,11 +3538,6 @@ void page_t::process_pending_events() {
 			_need_update_client_list = false;
 			update_client_list();
 			update_client_list_stacking();
-		}
-
-		if(_need_refocus) {
-			_need_refocus = false;
-			update_focus();
 		}
 
 		xcb_flush(_dpy->xcb());
