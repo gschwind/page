@@ -122,7 +122,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	_unbind_client_signals(_clients[x.get()]);
 	_clients.erase(x.get());
 
-	if(_ctx->conf()._auto_refocus
+	if(not _ctx->conf()._enable_shade_windows
 			and not _children.empty()
 			and _selected == nullptr
 			and not _exposay) {
