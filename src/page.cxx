@@ -1962,8 +1962,10 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE: {
 				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
-				if (n != nullptr)
+				if (n != nullptr) {
 					mw->activate();
+					set_focus(mw, XCB_CURRENT_TIME);
+				}
 			}
 
 				break;
@@ -2013,6 +2015,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->activate();
+				set_focus(mw, XCB_CURRENT_TIME);
 				break;
 			case _NET_WM_STATE_ADD:
 				/** I ignore it **/
@@ -2712,17 +2715,18 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			}
 		} else {
 			if (mw->wm_hints() != nullptr) {
-				if (mw->wm_hints()->initial_state == IconicState) {
+				if ((mw->wm_hints()->flags & StateHint)
+						and (mw->wm_hints()->initial_state == IconicState)) {
 					activate = false;
 				}
 			}
 		}
 
-		if(mw->net_wm_state() != nullptr) {
-			if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
-				activate = false;
-			}
-		}
+//		if(mw->net_wm_state() != nullptr) {
+//			if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
+//				activate = false;
+//			}
+//		}
 
 		if(not mw->is(MANAGED_DOCK)) {
 			bind_window(mw, activate);
