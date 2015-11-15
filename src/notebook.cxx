@@ -1122,7 +1122,6 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 }
 
 void notebook_t::_client_focus_change(shared_ptr<client_managed_t> c) {
-	_layout_is_durty = true;
 	queue_redraw();
 }
 
@@ -1288,6 +1287,12 @@ void notebook_t::_unbind_client_signals(_client_context_t & c) {
 	c.client->on_title_change.remove(c.title_change_func);
 	c.client->on_destroy.remove(c.destoy_func);
 	c.client->on_focus_change.remove(c.focus_change_func);
+}
+
+void notebook_t::queue_redraw()
+{
+	_layout_is_durty = true;
+	tree_t::queue_redraw();
 }
 
 }

@@ -208,6 +208,7 @@ public:
 	virtual region get_opaque_region();
 	virtual region get_visible_region();
 	virtual region get_damaged();
+	virtual void queue_redraw();
 
 	/**
 	 * page_component_t interface

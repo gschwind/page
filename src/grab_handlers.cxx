@@ -232,19 +232,29 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				c->queue_redraw();
 				ctx->detach(c);
 				ctx->insert_window_in_notebook(c, new_target, true);
+				c->activate();
+				ctx->set_focus(c, e->time);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
 			ctx->split_top(new_target, c);
+			c->activate();
+			ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_LEFT:
 			ctx->split_left(new_target, c);
+			c->activate();
+			ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
 			ctx->split_bottom(new_target, c);
+			c->activate();
+			ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
 			ctx->split_right(new_target, c);
+			c->activate();
+			ctx->set_focus(c, e->time);
 			break;
 		default:
 			auto parent = dynamic_pointer_cast<notebook_t>(c->parent()->shared_from_this());
