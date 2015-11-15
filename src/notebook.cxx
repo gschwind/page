@@ -22,12 +22,13 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_is_default{false},
 		_selected{nullptr},
 		_exposay{false},
-		_mouse_over{nullptr, nullptr},
+		_mouse_over{-1, -1, nullptr, nullptr},
 		_can_hsplit{true},
 		_can_vsplit{true},
 		_theme_client_tabs_offset{0},
 		_has_scroll_arrow{false},
-		_layout_is_durty{true}
+		_layout_is_durty{true},
+		_has_mouse_change{true}
 {
 
 }
@@ -179,6 +180,9 @@ void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 void notebook_t::set_allocation(rect const & area) {
 	_allocation = area;
 	_layout_is_durty = true;
+	_has_mouse_change = true;
+	_mouse_over.event_x = -1;
+	_mouse_over.event_y = -1;
 }
 
 void notebook_t::_update_layout() {
@@ -198,7 +202,6 @@ void notebook_t::_update_layout() {
 	} else {
 		_can_hsplit = true;
 	}
-
 
 	_client_area.x = _allocation.x + _ctx->theme()->notebook.margin.left;
 	_client_area.y = _allocation.y + _ctx->theme()->notebook.margin.top + _ctx->theme()->notebook.tab_height;
@@ -285,9 +288,8 @@ void notebook_t::_update_layout() {
 	_update_theme_notebook(_theme_notebook);
 	_update_notebook_areas();
 
-	_update_exposay();
-
 	queue_redraw();
+
 }
 
 rect notebook_t::_compute_client_size(shared_ptr<client_managed_t> c) {
@@ -361,7 +363,9 @@ void notebook_t::render_legacy(cairo_t * cr) {
 	_ctx->theme()->render_notebook(cr, &_theme_notebook);
 
 	if(_theme_client_tabs.size() > 0) {
-		cairo_surface_t * pix = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, _theme_client_tabs.back().position.x + 100, _ctx->theme()->notebook.tab_height);
+		cairo_surface_t * pix = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+				_theme_client_tabs.back().position.x + 100,
+				_ctx->theme()->notebook.tab_height);
 		cairo_t * xcr = cairo_create(pix);
 
 		cairo_set_operator(xcr, CAIRO_OPERATOR_SOURCE);
@@ -372,7 +376,9 @@ void notebook_t::render_legacy(cairo_t * cr) {
 		cairo_destroy(xcr);
 
 		cairo_save(cr);
-		cairo_set_source_surface(cr, pix, _theme_client_tabs_area.x - _theme_client_tabs_offset, _theme_client_tabs_area.y);
+		cairo_set_source_surface(cr, pix,
+				_theme_client_tabs_area.x - _theme_client_tabs_offset,
+				_theme_client_tabs_area.y);
 		cairo_clip(cr, _theme_client_tabs_area);
 		cairo_paint(cr);
 
@@ -383,7 +389,6 @@ void notebook_t::render_legacy(cairo_t * cr) {
 }
 
 void notebook_t::update_layout(time64_t const time) {
-
 	tree_t::update_layout(time);
 	if(not _transition.empty()) {
 		_layout_is_durty = true;
@@ -391,7 +396,13 @@ void notebook_t::update_layout(time64_t const time) {
 
 	if(_layout_is_durty) {
 		_layout_is_durty = false;
+		_has_mouse_change = true;
 		_update_layout();
+	}
+
+	if(_has_mouse_change) {
+		_has_mouse_change = false;
+		_update_mouse_over();
 	}
 
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
@@ -734,7 +745,7 @@ void notebook_t::start_exposay() {
 	}
 
 	_exposay = true;
-	_layout_is_durty = true;
+	queue_redraw();
 }
 
 void notebook_t::_update_exposay() {
@@ -813,7 +824,7 @@ void notebook_t::_stop_exposay() {
 	_mouse_over.exposay = nullptr;
 	_exposay_buttons.clear();
 	_exposay_thumbnail.clear();
-	_layout_is_durty = true;
+	queue_redraw();
 }
 
 bool notebook_t::button_press(xcb_button_press_event_t const * e) {
@@ -959,16 +970,13 @@ void notebook_t::_process_notebook_client_menu(dropdown_menu_t<int> * ths, share
 	}
 }
 
-bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
+void notebook_t::_update_mouse_over() {
 
-	if (e->event != get_parent_xid()) {
-		return false;
-	}
+	int x = _mouse_over.event_x;
+	int y = _mouse_over.event_y;
 
-	int x = e->event_x;
-	int y = e->event_y;
+	if (_allocation.is_inside(x, y)) {
 
-	if (e->child == XCB_NONE and _allocation.is_inside(x, y)) {
 		notebook_button_e new_button_mouse_over = NOTEBOOK_BUTTON_NONE;
 		tuple<rect, weak_ptr<client_managed_t>, theme_tab_t *> * tab = nullptr;
 		tuple<rect, weak_ptr<client_managed_t>, int> * exposay = nullptr;
@@ -1029,15 +1037,36 @@ bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 		}
 	}
 
+}
+
+bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
+
+	if (e->event != get_parent_xid()) {
+		_has_mouse_change = true;
+		_mouse_over.event_x = -1;
+		_mouse_over.event_y = -1;
+		return false;
+	}
+
+	if (e->child == XCB_NONE) {
+		_has_mouse_change = true;
+		_mouse_over.event_x = e->event_x;
+		_mouse_over.event_y = e->event_y;
+	} else {
+		_has_mouse_change = true;
+		_mouse_over.event_x = -1;
+		_mouse_over.event_y = -1;
+	}
+
 	return false;
+
 }
 
 bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
 	if(ev->event == get_parent_xid()) {
-		if(_theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
-			_mouse_over_reset();
-			queue_redraw();
-		}
+		_has_mouse_change = true;
+		_mouse_over.event_x = -1;
+		_mouse_over.event_y = -1;
 	}
 	return false;
 }
@@ -1098,7 +1127,6 @@ void notebook_t::_mouse_over_set() {
 }
 
 void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
-	_layout_is_durty = true;
 	for(auto & x: _client_buttons) {
 		if(c == std::get<1>(x).lock()) {
 			std::get<2>(x)->title = c->title();
@@ -1114,7 +1142,7 @@ void notebook_t::_client_title_change(shared_ptr<client_managed_t> c) {
 	if(c == _selected) {
 		_theme_notebook.selected_client.title = c->title();
 	}
-	queue_redraw();
+	_layout_is_durty = true;
 }
 
 void notebook_t::_client_destroy(client_managed_t * c) {
@@ -1122,7 +1150,7 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 }
 
 void notebook_t::_client_focus_change(shared_ptr<client_managed_t> c) {
-	queue_redraw();
+	_layout_is_durty = true;
 }
 
 rect notebook_t::allocation() const {
@@ -1232,7 +1260,7 @@ void  notebook_t::_scroll_right(int x) {
 	add_transition(transition);
 
 	_update_notebook_areas();
-	queue_redraw();
+	_layout_is_durty = true;
 }
 
 void  notebook_t::_scroll_left(int x) {
@@ -1258,7 +1286,7 @@ void  notebook_t::_scroll_left(int x) {
 	add_transition(transition);
 
 	_update_notebook_areas();
-	queue_redraw();
+	_layout_is_durty = true;
 }
 
 void notebook_t::_set_theme_tab_offset(int x) {
@@ -1291,7 +1319,6 @@ void notebook_t::_unbind_client_signals(_client_context_t & c) {
 
 void notebook_t::queue_redraw()
 {
-	_layout_is_durty = true;
 	tree_t::queue_redraw();
 }
 

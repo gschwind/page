@@ -358,7 +358,6 @@ public:
 	unsigned int find_current_desktop(shared_ptr<client_base_t> c);
 
 	void process_pending_events();
-	bool render_timeout();
 
 	bool global_focus_history_front(shared_ptr<client_managed_t> & out);
 	void global_focus_history_remove(shared_ptr<client_managed_t> in);
