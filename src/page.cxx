@@ -1646,7 +1646,11 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 
 	/* move all client from destroyed notebook to new default pop */
 	auto clients = filter_class<client_managed_t>(nbk->children());
+	bool notebook_has_focus = false;
 	for(auto i : clients) {
+		if(i->has_focus())
+			notebook_has_focus = true;
+		i->set_focus_state(false);
 		nbk->remove(i);
 		insert_window_in_notebook(i, nullptr, false);
 	}
@@ -1659,6 +1663,10 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 		if (i.second.revert_notebook.lock() == nbk) {
 			i.second.revert_notebook = _root->_desktop_list[_root->_current_desktop]->default_pop();
 		}
+	}
+
+	if(notebook_has_focus) {
+		set_focus(nullptr, XCB_CURRENT_TIME);
 	}
 
 }
