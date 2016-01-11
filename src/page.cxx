@@ -3535,6 +3535,12 @@ unsigned int page_t::find_current_desktop(shared_ptr<client_base_t> c) {
 
 void page_t::process_pending_events() {
 
+	/* on connection error, terminate */
+	if(xcb_connection_has_error(_dpy->xcb()) != 0) {
+		_mainloop.stop();
+		return;
+	}
+
 	while (_dpy->has_pending_events()) {
 		while (_dpy->has_pending_events()) {
 			process_event(_dpy->front_event());
