@@ -617,11 +617,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_right_desktop) {
-		switch_to_desktop((_root->_current_desktop + 1) % _root->_desktop_list.size());
+		unsigned new_desktop = ((_root->_current_desktop + _root->_desktop_list.size()) + 1) % _root->_desktop_list.size();
 		shared_ptr<client_managed_t> mw;
-		if (get_current_workspace()->client_focus_history_front(mw)) {
+		if (get_workspace(new_desktop)->client_focus_history_front(mw)) {
+			mw->activate();
 			set_focus(mw, e->time);
 		} else {
+			switch_to_desktop(new_desktop);
 			set_focus(nullptr, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
@@ -629,11 +631,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_left_desktop) {
-		switch_to_desktop((_root->_current_desktop - 1) % _root->_desktop_list.size());
+		unsigned new_desktop = ((_root->_current_desktop + _root->_desktop_list.size()) - 1) % _root->_desktop_list.size();
 		shared_ptr<client_managed_t> mw;
-		if (get_current_workspace()->client_focus_history_front(mw)) {
+		if (get_workspace(new_desktop)->client_focus_history_front(mw)) {
+			mw->activate();
 			set_focus(mw, e->time);
 		} else {
+			switch_to_desktop(new_desktop);
 			set_focus(nullptr, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
@@ -2184,6 +2188,20 @@ void page_t::detach(shared_ptr<tree_t> t) {
 	/** detach a tree_t will cause it to be restacked, at less **/
 	add_global_damage(t->get_visible_region());
 	if(t->parent() != nullptr) {
+
+		/**
+		 * Keeping a client in the focus history of wrong workspace
+		 * trouble the workspace switching, because when a switch occur,
+		 * page look within the workspace focus history to choose the
+		 * proper client to re-focus and may re-focus that is not belong the
+		 * new workspace.
+		 **/
+		if(typeid(*t.get()) == typeid(client_managed_t)) {
+			auto x = dynamic_pointer_cast<client_managed_t>(t);
+			auto workspace = find_desktop_of(x);
+			workspace->client_focus_history_remove(x);
+		}
+
 		t->parent()->remove(t);
 		if(t->parent() != nullptr) {
 			printf("XXX %s\n", typeid(*t->parent()).name());
@@ -3039,6 +3057,7 @@ void page_t::update_current_desktop() const {
 }
 
 void page_t::switch_to_desktop(unsigned int desktop) {
+	assert(desktop < _root->_desktop_list.size());
 	if (desktop != _root->_current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
 
@@ -3057,9 +3076,11 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 
 		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
 
+		/* hide the current desktop */
 		_root->_desktop_list[_root->_current_desktop]->hide();
 		_root->_current_desktop = desktop;
 
+		/* put the new desktop ontop of others and show it */
 		_root->_desktop_stack->remove(_root->_desktop_list[_root->_current_desktop]);
 		_root->_desktop_stack->push_back(_root->_desktop_list[_root->_current_desktop]);
 		_root->_desktop_list[_root->_current_desktop]->show();
