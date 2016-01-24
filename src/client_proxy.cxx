@@ -700,7 +700,7 @@ void client_proxy_t::on_map() {
 
 void client_proxy_t::process_event(xcb_damage_notify_event_t const * ev) {
 	for(auto x: _views) {
-		x->_damaged += ev->area;
+		x->_damaged += region_t{ev->area};
 	}
 }
 

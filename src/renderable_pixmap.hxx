@@ -50,7 +50,7 @@ public:
 				cairo_set_source_surface(cr, _surf->get_cairo_surface(),
 						_location.x, _location.y);
 				region r = region{_location} & area;
-				for (auto &i : r) {
+				for (auto &i : r.rects()) {
 					cairo_clip(cr, i);
 					cairo_mask_surface(cr, _surf->get_cairo_surface(), _location.x, _location.y);
 				}

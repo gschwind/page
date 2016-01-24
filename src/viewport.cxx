@@ -302,7 +302,7 @@ void viewport_t::render(cairo_t * cr, region const & area) {
 	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(),
 			_effective_area.x, _effective_area.y);
 	region r = region{_effective_area} & area;
-	for (auto &i : r) {
+	for (auto &i : r.rects()) {
 		cairo_clip(cr, i);
 		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _effective_area.x, _effective_area.y);
 	}

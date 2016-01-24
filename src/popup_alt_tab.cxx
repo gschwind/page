@@ -251,7 +251,7 @@ void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
 	region r = area & _position_extern;
-	for (auto & r : area) {
+	for (auto & r : area.rects()) {
 		cairo_clip(cr, r);
 		cairo_new_path(cr);
 		cairo_append_path(cr, path);

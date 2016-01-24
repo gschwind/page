@@ -45,7 +45,7 @@ public:
 		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_rgba(cr, color.r, color.g, color.b, color.a);
 		region r = visible_region & area;
-		for (auto &i : r) {
+		for (auto &i : r.rects()) {
 			cairo_clip(cr, i);
 			cairo_fill(cr);
 		}

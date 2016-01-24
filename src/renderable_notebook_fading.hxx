@@ -59,7 +59,7 @@ public:
 				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - _ratio);
 
 		region r = region{_location} & area;
-		for (auto & c : area) {
+		for (auto & c : area.rects()) {
 			cairo_reset_clip(cr);
 			cairo_clip(cr, c);
 			cairo_set_source_surface(cr, _surface->get_cairo_surface(),

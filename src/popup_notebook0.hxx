@@ -153,7 +153,7 @@ public:
 	}
 
 	virtual void render(cairo_t * cr, region const & area) {
-		for (auto &a : area) {
+		for (auto &a : area.rects()) {
 			cairo_save(cr);
 			cairo_clip(cr, a);
 			cairo_translate(cr, _position.x, _position.y);

@@ -174,7 +174,7 @@ void compositor_t::render(tree_t * t) {
 	}
 
 	if (_show_damaged) {
-		for(auto const & dmg: _composited_area)
+		for(auto const & dmg: _composited_area.rects())
 			_draw_crossed_box(cr, dmg, 1.0, 0.0, 1.0);
 	}
 
@@ -183,7 +183,7 @@ void compositor_t::render(tree_t * t) {
 		region opaque_dmg = (*i)->get_opaque_region() & _direct_render;
 		(*i)->render(cr, opaque_dmg);
 		if (_show_opac) {
-			for (auto & dmg : opaque_dmg) {
+			for (auto & dmg : opaque_dmg.rects()) {
 				_draw_crossed_box(cr, dmg, 0.0, 1.0, 0.0);
 			}
 		}

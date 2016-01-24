@@ -2417,7 +2417,7 @@ void page_t::update_viewport_layout() {
 		/* the location of crts */
 		region location{crtc.second->x, crtc.second->y, crtc.second->width, crtc.second->height};
 		location -= already_allocated;
-		for(auto & b: location) {
+		for(auto & b: location.rects()) {
 			viewport_allocation.push_back(b);
 		}
 		already_allocated += location;

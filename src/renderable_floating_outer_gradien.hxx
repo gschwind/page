@@ -42,7 +42,7 @@ public:
 	 **/
 	virtual void render(cairo_t * cr, region const & area) {
 
-		for (auto & cl : area) {
+		for (auto & cl : area.rects()) {
 
 			cairo_save(cr);
 

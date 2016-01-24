@@ -192,7 +192,7 @@ public:
 		ts.allocation = s->to_root_position(s->allocation());
 
 		region r = area & get_visible_region();
-		for (auto const & a : area) {
+		for (auto const & a : area.rects()) {
 			cairo_save(cr);
 			cairo_clip(cr, a);
 			_ctx->theme()->render_popup_split(cr, &ts, _current_split);

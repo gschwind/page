@@ -160,7 +160,7 @@ public:
 
 		region r = _position;
 		r &= area;
-		for (auto &a : r) {
+		for (auto &a : r.rects()) {
 			cairo_clip(cr, a);
 			cairo_set_source_surface(cr, _back_surf->get_cairo_surface(), _position.x, _position.y);
 			cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _position.x, _position.y);

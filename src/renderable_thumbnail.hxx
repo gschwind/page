@@ -83,7 +83,7 @@ public:
 
 		{
 			region r = area & _thumbnail_position;
-			for (auto &i : r) {
+			for (auto &i : r.rects()) {
 				cairo_save(cr);
 				cairo_reset_clip(cr);
 				cairo_clip(cr, i);
@@ -106,7 +106,7 @@ public:
 
 		cairo_save(cr);
 		region r =  area & get_real_position();
-		for (auto &i : r) {
+		for (auto &i : r.rects()) {
 			cairo_reset_clip(cr);
 			cairo_clip(cr, i);
 			cairo_set_source_surface(cr, _tt.title->get_cairo_surface(), _thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);

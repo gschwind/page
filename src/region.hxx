@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "box.hxx"
 
@@ -22,335 +23,667 @@ namespace page {
 
 using namespace std;
 
-template<typename T>
-class region_t : public std::vector<i_rect_t<T>> {
-	/** short cut for the superior class **/
-	using super = std::vector<i_rect_t<T> >;
-	using _box_t = i_rect_t<T>;
+/**
+ * region are immuable, any operation create a new
+ */
+class region_t {
 
-	/** this function reduce the number of boxes if possible **/
-	static region_t & clean_up(region_t & lst) {
-		merge_area_macro(lst);
-		return lst;
+	/**
+	 * Data is immuable formed list of int.
+	 *
+	 * the first int is the size of data in bytes used for creating
+	 * new region, from 2 existing region.
+	 *
+	 * following directly is the list of bands, each band start with the
+	 * number of wall in this band and the Y coordinate of the start (inclusive)
+	 * of the band followed by the list of wall. note odd walls are inclusive,
+	 * even walls are exclusive.
+	 *
+	 * the last band is terminated by a -1 as size with the last Y coordinate.
+	 *
+	 * band are always sorted by ascending Y
+	 *
+	 *
+	 * pseudo layout:
+	 *
+	 * struct region_header_t {
+	 *   int band_count;
+	 *   int wall_count;
+	 *   int first_band_offset; (relative to _data in integer)
+	 * };
+	 *
+	 * struct band_layout_t {
+	 *   int next_band_offset; (relative to _data in integer)
+	 *   int band_wall_count;
+	 *   int band_position_start; (inclusive)
+	 *   int bans_position_end; (exclusive)
+	 *   int walls[N];
+	 * };
+	 *
+	 *
+	 *
+	 **/
+	int * _data;
+
+	int _data_int_count() const {
+		return
+		 /* the header */
+		  3
+		/* band sizes, each band have 2 int overhead */
+		+ 4 * _band_count()
+		/* the walls size */
+		+ _wall_count();
 	}
 
-	/** merge 2 i_rects when it is possible **/
-	static void merge_area_macro(region_t & lst) {
-		if(lst.size() < 2)
-			return;
-		/* store the current end of the list */
-		auto xend = lst.end();
-		bool end = false;
-		while (not end) {
-			end = true;
-			for (auto i = lst.begin(); i != xend; ++i) {
 
-				for (auto j = i + 1; j != xend; ++j) {
+	static bool _operator_union(bool a, bool b) {
+		return a or b;
+	}
 
-					/** left/right **/
-					if (i->x + i->w == j->x and i->y == j->y and i->h == j->h) {
-						*i = _box_t{i->x, i->y, j->w + i->w, i->h};
-						--xend;
-						*j = *xend;
-						--j;
-						end = false;
-						continue;
-					}
+	static bool _operator_substract(bool a, bool b) {
+		return a and not b;
+	}
 
-					/** right/left **/
-					if (i->x == j->x + j->w and i->y == j->y and i->h == j->h) {
-						*i = _box_t{j->x, j->y, j->w + i->w, j->h};
-						--xend;
-						*j = *xend;
-						--j;
-						end = false;
-						continue;
-					}
+	static bool _operator_intersec(bool a, bool b) {
+		return a and b;
+	}
 
-					/** top/bottom **/
-					if (i->y == j->y + j->h and i->x == j->x and i->w == j->w) {
-						*i = _box_t{j->x, j->y, j->w, j->h + i->h};
-						--xend;
-						*j = *xend;
-						--j;
-						end = false;
-						continue;
-					}
+	inline int & _band_count() {
+		return _data[0];
+	}
 
-					/** bottom/top **/
-					if (i->y + i->h == j->y and i->x == j->x and i->w == j->w) {
-						*i = _box_t{i->x, i->y, i->w, j->h + i->h};
-						--xend;
-						*j = *xend;
-						--j;
-						end = false;
-						continue;
+	inline int & _wall_count() {
+		return _data[1];
+	}
+
+	inline int & _first_band_offset() {
+		return _data[2];
+	}
+
+	inline int * _first_band() {
+		if(_first_band_offset() <= 0)
+			return nullptr;
+		else
+			return &_data[_first_band_offset()];
+	}
+
+	inline int const & _band_count() const {
+		return _data[0];
+	}
+
+	inline int const & _wall_count() const {
+		return _data[1];
+	}
+
+	inline int const & _first_band_offset() const {
+		return _data[2];
+	}
+
+	inline int const * _first_band() const {
+		if(_first_band_offset() <= 0)
+			return nullptr;
+		else
+			return &_data[_first_band_offset()];
+	}
+
+	inline int * _next_band(int * band) {
+		if(_band_next_offset(band) <= 0)
+			return nullptr;
+		else
+			return &_data[_band_next_offset(band)];
+	}
+
+	inline int const * _next_band(int const * band) const {
+		if(_band_next_offset(band) <= 0)
+			return nullptr;
+		else
+			return &_data[_band_next_offset(band)];
+	}
+
+	inline int _rects_count() const {
+		return _wall_count() / 2;
+	}
+
+	inline static int & _band_next_offset(int * band) {
+		return band[0];
+	}
+
+	/* return the number of wall in this band (always even) */
+	inline static int & _band_wall_count(int * band) {
+		return band[1];
+	}
+
+	/* return the Y start offset of the band, including */
+	inline static int & _band_position_start(int * band) {
+		return band[2];
+	}
+
+	/* return the Y end offset of the band, excluding */
+	inline static int & _band_position_end(int * band) {
+		return band[3];
+	}
+
+	/* get the n th. wall within the band */
+	inline static int & _band_get_wall(int * band, int n) {
+		return band[4+n];
+	}
+
+	inline static int _band_next_offset(int const * band) {
+		return band[0];
+	}
+
+	/* return the number of wall in this band (always even) */
+	inline static int const & _band_wall_count(int const * band) {
+		return band[1];
+	}
+
+	/* return the Y start offset of the band, including */
+	inline static int const & _band_position_start(int const * band) {
+		return band[2];
+	}
+
+	/* return the Y end offset of the band, excluding */
+	inline static int const & _band_position_end(int const * band) {
+		return band[3];
+	}
+
+	/* get the n th. wall within the band */
+	inline static int const & _band_get_wall(int const * band, int n) {
+		return band[4+n];
+	}
+
+	static bool _equals_band(int const * prev_band, int const * next_band) {
+		if(prev_band == nullptr and next_band == nullptr)
+			return true;
+
+		if(prev_band == nullptr or next_band == nullptr)
+			return false;
+
+		if(_band_wall_count(prev_band) != _band_wall_count(next_band))
+			return false;
+
+		for(unsigned k = 0; k < _band_wall_count(prev_band); ++k) {
+			if(_band_get_wall(prev_band, k) != _band_get_wall(next_band, k))
+				return false;
+		}
+
+		return true;
+	}
+
+
+	template<typename F>
+	static void _merge_band(F f, int const * band_a, int const * band_b, int * band_r) {
+		/* a fake empty band */
+		static int const fake_band[] = {0, 0, 0, 0};
+
+		if(band_a == nullptr)
+			band_a = &fake_band[0];
+
+		if(band_b == nullptr)
+			band_b = &fake_band[0];
+
+		int wall_a = 0;
+		int wall_b = 0;
+
+		bool inside_a = false;
+		bool inside_b = false;
+		bool inside_r = false;
+
+		_band_wall_count(band_r) = 0;
+
+		while(wall_a < _band_wall_count(band_a)
+				or wall_b < _band_wall_count(band_b)) {
+
+			int next_wall_a = wall_a;
+			int next_wall_b = wall_b;
+
+			if(wall_a < _band_wall_count(band_a)
+					and wall_b < _band_wall_count(band_b)) {
+
+				if(_band_get_wall(band_a, wall_a) <= _band_get_wall(band_b, wall_b)) {
+					inside_a = not inside_a;
+					_band_get_wall(band_r, _band_wall_count(band_r))
+						= _band_get_wall(band_a, wall_a);
+					++next_wall_a;
+				}
+
+				if (_band_get_wall(band_b, wall_b) <= _band_get_wall(band_a, wall_a)) {
+					inside_b = not inside_b;
+					_band_get_wall(band_r, _band_wall_count(band_r))
+						= _band_get_wall(band_b, wall_b);
+					++next_wall_b;
+				}
+
+			} else if (wall_a < _band_wall_count(band_a)) {
+				inside_a = not inside_a;
+				_band_get_wall(band_r, _band_wall_count(band_r))
+					= _band_get_wall(band_a, wall_a);
+				++next_wall_a;
+			} else {
+				inside_b = not inside_b;
+				_band_get_wall(band_r, _band_wall_count(band_r))
+					= _band_get_wall(band_b, wall_b);
+				++next_wall_b;
+			}
+
+			if(inside_r xor f(inside_a, inside_b)) {
+				inside_r = not inside_r;
+				/* keep the last written wall */
+				//cout << "wall = " << _band_get_wall(band_r, _band_wall_count(band_r)) << endl;
+				++_band_wall_count(band_r);
+			}
+
+			wall_a = next_wall_a;
+			wall_b = next_wall_b;
+
+		}
+
+	}
+
+	/**
+	 * handler compressed region, i.e. region have empty bands that
+	 * aren't stored, this handler fill gaps with empty bands
+	 **/
+	struct _band_uncompress_handler_t {
+		region_t const & r;
+
+		/**
+		 * current band or nullptr for empty band.
+		 **/
+		int const * cur;
+
+		/**
+		 * next non-empty band
+		 **/
+		int const * nxt;
+
+		/**
+		 * the start of the current band, whether it is empty or not.
+		 **/
+		int start;
+
+		/**
+		 * the end of the current band, whether it is empty or not.
+		 **/
+		int end;
+
+		/**
+		 * initialise to the first band
+		 **/
+		_band_uncompress_handler_t(region_t const & r) : r{r} {
+			int const * first_band = r._first_band();
+
+			if(first_band == nullptr) {
+				cur = nullptr;
+				nxt = nullptr;
+				start = std::numeric_limits<int>::min();
+				end = std::numeric_limits<int>::max();
+				return;
+			}
+
+			if(_band_position_start(first_band) == std::numeric_limits<int>::min()) {
+				cur = first_band;
+				start = _band_position_start(cur);
+				end = _band_position_end(cur);
+				nxt = r._next_band(cur);
+			} else {
+
+				cur = nullptr;
+				nxt = first_band;
+				start = std::numeric_limits<int>::min();
+
+				if(nxt != nullptr)
+					end = _band_position_start(nxt);
+				else
+					end = std::numeric_limits<int>::max();
+
+			}
+		}
+
+		/**
+		 * advance to je next band.
+		 **/
+		void next() {
+			if(nxt == nullptr and cur == nullptr)
+				return;
+
+			/* advance band_a */
+			if(cur == nullptr) {
+				/** an empty band is followed by an existing band **/
+
+				cur = nxt;
+				nxt = r._next_band(cur);
+				start = _band_position_start(cur);
+				end = _band_position_end(cur);
+			} else {
+				/* no more bands */
+				if(nxt == nullptr) {
+					cur = nullptr;
+					start = end;
+					end = std::numeric_limits<int>::max();
+				} else {
+					if(_band_position_start(nxt) == end) {
+						cur = nxt;
+						nxt = r._next_band(cur);
+						start = _band_position_start(cur);
+						end = _band_position_end(cur);
+					} else {
+						cur = nullptr;
+						start = end;
+						end = _band_position_start(nxt);
 					}
 				}
 			}
 		}
 
-		lst.resize(xend - lst.begin());
+	};
 
-//		for(auto const & i: lst) {
-//			for(auto const & j: lst) {
-//				if(&i == &j) {
-//					continue;
-//				}
-//				if(i.has_intersection(j)) {
-//					cout << "WARNING : box overlaps" << endl;
-//				}
-//			}
-//		}
 
-	}
 
-//	/** remove empty boxes **/
-//	static void remove_empty(region_t & list) {
-//		auto i = list.begin();
-//		auto j = list.begin();
-//		while (j != list.end()) {
-//			if(not j->is_null()) {
-//				*i = *j;
-//				++i;
-//			}
-//			++j;
-//		}
-//
-//		/* reduce the list size */
-//		list.resize(distance(list.begin(), i));
-//	}
 
-	bool is_null() {
-		return this->empty();
-	}
+	template<typename F>
+	static region_t _merge(F f, region_t const & a, region_t const & b) {
+		static int buffer_size = 0;
+		static int * buffer = nullptr;
 
-	/* box0 - box1 */
-	static region_t substract_box(_box_t const & box0,
-			_box_t const & box1) {
-		region_t result;
+		region_t r;
 
-		_box_t intersection = box0 & box1;
+		/**
+		 * Calculate the size of the biguest region that is possible to
+		 * generate, knowing some parameters of a and b. I didn't thought
+		 * carefully at the question but I try to use a large margin.
+		 **/
+		int maxsize = 3 + 4*4*(a._band_count()+b._band_count())
+				+ 4*(a._band_count()+b._band_count())*(a._wall_count()+b._wall_count());
 
-		if (not intersection.is_null()) {
-			/* top box */
-			if (intersection.y != box0.y) {
-				result.push_back(_box_t(box0.x, box0.y, box0.w, intersection.y - box0.y));
+		if(r._data != nullptr)
+			std::free(r._data);
+
+		/** TODO: remove unsafe 8192 upper bound **/
+		r._data = reinterpret_cast<int*>(std::malloc(sizeof(int)*maxsize));
+
+		int band_r = 0;
+		int wall_r_count = 0;
+
+
+		/** uncompress empty band **/
+		_band_uncompress_handler_t band_a{a};
+
+		/** uncompress empty band **/
+		_band_uncompress_handler_t band_b{b};
+
+
+		/** keep this ref to remove last band if needed **/
+		r._first_band_offset() = 3;
+		int * current_band_r_ref = &r._first_band_offset();
+		int * current_band_r = r._first_band();
+		int * prev_band = nullptr;
+
+		while(band_a.end != std::numeric_limits<int>::max()
+				or band_b.end != std::numeric_limits<int>::max()) {
+
+			//cout << "banda = " << band_a.start << " " << band_a.end << endl;
+			//cout << "bandb = " << band_b.start << " " << band_b.end << endl;
+
+			/* by definition they must overlap i.e. start <= end */
+			int start = std::max(band_a.start, band_b.start);
+			int end = std::min(band_a.end, band_b.end);
+			_band_position_start(current_band_r) = start;
+			_band_position_end(current_band_r) = end;
+			_band_next_offset(current_band_r) = 0;
+
+			_merge_band(f, band_a.cur, band_b.cur, current_band_r);
+
+			if(band_a.end == band_b.end) {
+				band_a.next();
+				band_b.next();
+			} else if(band_a.end < band_b.end) {
+				/* advance band_a */
+				band_a.next();
+			} else {
+				/* advance band_b */
+				band_b.next();
 			}
 
-			/* bottom box */
-			if (intersection.y + intersection.h != box0.y + box0.h) {
-				result.push_back(_box_t(box0.x, intersection.y + intersection.h, box0.w, (box0.y + box0.h) - (intersection.y + intersection.h)));
+			if(prev_band == nullptr) {
+				if (_band_wall_count(current_band_r) > 0) {
+					/** keep the current band **/
+					prev_band = current_band_r;
+					wall_r_count += _band_wall_count(current_band_r);
+					_band_next_offset(current_band_r) = *current_band_r_ref + 4
+							+ _band_wall_count(current_band_r);
+					current_band_r_ref = &_band_next_offset(current_band_r);
+					current_band_r = &r._data[*current_band_r_ref];
+					_band_next_offset(current_band_r) = 0;
+					++band_r;
+				}
+			} else {
+				/* validate the fact the the current band is not the same of the previous one */
+				if(_equals_band(prev_band, current_band_r)
+						and _band_position_end(prev_band) == _band_position_start(current_band_r)) {
+					/** if band are the same, merge current band with the previous one **/
+					_band_position_end(prev_band) = _band_position_end(current_band_r);
+				} else if (_band_wall_count(current_band_r) <= 0) {
+					/** ignore empty band **/
+				} else {
+					/** keep the current band **/
+					prev_band = current_band_r;
+					wall_r_count += _band_wall_count(current_band_r);
+					_band_next_offset(current_band_r) =
+							*current_band_r_ref + 4 + _band_wall_count(current_band_r);
+					current_band_r_ref = &_band_next_offset(current_band_r);
+					current_band_r = &r._data[*current_band_r_ref];
+					_band_next_offset(current_band_r) = 0;
+					++band_r;
+				}
 			}
-
-			/* left box */
-			if (intersection.x != box0.x) {
-				result.push_back(_box_t(box0.x, intersection.y, intersection.x - box0.x, intersection.h));
-			}
-
-			/* right box */
-			if(intersection.x + intersection.w != box0.x + box0.w) {
-				result.push_back(_box_t(intersection.x + intersection.w, intersection.y, (box0.x+box0.w)-(intersection.x+intersection.w), intersection.h));
-			}
-
-		} else {
-			result.push_back(box0);
 		}
 
-		return clean_up(result);
+		/* remove last band */
+		*current_band_r_ref = 0;
 
+		r._band_count() = band_r;
+		r._wall_count() = wall_r_count;
+
+		//cout << "xxx " << r.dump_data() << endl;
+		r._data = reinterpret_cast<int*>(std::realloc(r._data,
+				sizeof(int)*r._data_int_count()));
+
+		return r;
 	}
+
+
+
+
 
 public:
 
-	/** create an empty region **/
-	region_t() : super() {
-		//printf("capacity = %lu\n", this->capacity());
+	region_t() : _data{nullptr} {
+		clear();
 	}
 
-	region_t(region_t const & r) : super(r) {
-		//printf("capacity = %lu\n", this->capacity());
+	region_t(int x, int y, int w, int h) : region_t(i_rect_t<int>(x,y,w,h)){
+
 	}
 
-	region_t(region_t const && r) : super(r) { }
+	region_t(i_rect_t<int> const & b) : _data{nullptr} {
+		if (not b.is_null()) {
+			/**
+			 * a box is a single band thus size is:
+			 *  size header;
+			 *  the first band with 2 wall;
+			 *  the terminating band.
+			 **/
+			_data = reinterpret_cast<int*>(std::malloc(sizeof(int)*(3 + 4 + 2)));
 
-	template<typename U>
-	region_t(std::vector<U> const & v) {
-		for (int i = 0; i + 3 < v.size(); i += 4) {
-			super::push_back(_box_t ( v[i + 0], v[i + 1], v[i + 2], v[i + 3] ));
+			/* the size header */
+			_band_count() = 1; /* band count */
+			_wall_count() = 2; /* wall count */
+			_first_band_offset() = 3;
+
+			int * first_band = _first_band();
+
+			_band_next_offset(first_band) = 0;
+			_band_wall_count(first_band) = 2;
+			_band_position_start(first_band) = b.y;
+			_band_position_end(first_band) = b.y+b.h;
+			_band_get_wall(first_band, 0) = b.x;
+			_band_get_wall(first_band, 1) = b.x+b.w;
+
+		} else {
+			clear();
+		}
+	}
+	region_t(xcb_rectangle_t const * r) : region_t(r->x, r->y, r->width, r->height) {
+
+	}
+
+	region_t(vector<int> const & l) : _data{nullptr} {
+		clear();
+		for(int k = 0; k < l.size(); k += 4) {
+			(*this) += region_t(l[k], l[k+1], l[k+2], l[k+3]);
 		}
 	}
 
-	region_t(_box_t const & b) {
-		if (!b.is_null())
-			this->push_back(b);
+	region_t(region_t const & b) {
+		_data = reinterpret_cast<int*>(std::malloc(sizeof(int)*b._data_int_count()));
+		std::copy(b._data, &b._data[b._data_int_count()], _data);
 	}
 
-	region_t(T x, T y, T w, T h) {
-		_box_t b(x, y, w, h);
-		if (!b.is_null())
-			this->push_back(b);
+	region_t(region_t && b) : _data{nullptr} {
+		std::swap(_data, b._data);
 	}
 
 	~region_t() {
-		//printf("capacity = %lu\n", this->capacity());
-	}
-
-	region_t & operator =(_box_t const & b) {
-		this->clear();
-		if (!b.is_null())
-			this->push_back(b);
-		return *this;
-	}
-
-	region_t & operator =(region_t const & r) {
-		/** call the superior class assign operator **/
-		super::operator =(r);
-		return *this;
-	}
-
-	region_t & operator =(region_t const && r) {
-		/** call the superior class assign operator **/
-		super::operator =(r);
-		return *this;
-	}
-
-	region_t & operator -=(_box_t const & box1) {
-		region_t tmp;
-		for (auto & i : *this) {
-			region_t x = substract_box(i, box1);
-			tmp.insert(tmp.end(), x.begin(), x.end());
+		if(_data != nullptr) {
+			std::free(_data);
 		}
-		return (*this = tmp);
 	}
 
-	region_t operator -(_box_t const & b) {
-		region_t r = *this;
-		return (r -= b);
-	}
-
-	region_t & operator -=(region_t const & b) {
-
-		if(this == &b) {
-			this->clear();
-			return *this;
+	region_t const & operator =(region_t const & b) {
+		if(this != &b) {
+			if(_data != nullptr)
+				std::free(_data);
+			_data = reinterpret_cast<int*>(std::malloc(sizeof(int)*b._data_int_count()));
+			std::copy(b._data, &b._data[b._data_int_count()], _data);
 		}
-
-		for (auto & i : b) {
-			*this -= i;
-		}
-
 		return *this;
+	}
+
+	region_t operator +(region_t const & b) const {
+		return _merge(&_operator_union, *this, b);
 	}
 
 	region_t operator -(region_t const & b) const {
-		region_t result = *this;
-		return (result -= b);
+		return _merge(&_operator_substract, *this, b);
 	}
 
-	region_t & operator +=(_box_t const & b) {
-		if (!b.is_null()) {
-			*this -= b;
-			this->push_back(b);
-			clean_up(*this);
-		}
+	region_t operator &(region_t const & b) const {
+		return _merge(&_operator_intersec, *this, b);
+	}
+
+	region_t const & operator +=(region_t const & b) {
+		(*this) = (*this) + b;
 		return *this;
 	}
 
-	region_t & operator +=(region_t const & r) {
-		/** sum same regions give same region **/
-		if(this == &r)
-			return *this;
-
-		for(auto & i : r) {
-			*this += i;
-		}
-
+	region_t const & operator -=(region_t const & b) {
+		(*this) = (*this) - b;
 		return *this;
 	}
 
-	region_t operator +(_box_t const & b) const {
-		region_t result = *this;
-		return result += b;
+	region_t const & operator &=(region_t const & b) {
+		(*this) = (*this) & b;
+		return *this;
 	}
 
-	region_t operator +(region_t const & r) const {
-		region_t result = *this;
-		return result += r;
-	}
-
-	region_t operator &(_box_t const & b) const {
-		region_t result;
-		for(auto & i : *this) {
-			_box_t x = b & i;
-			/**
-			 * since this is a region, no over lap is possible, just add the
-			 * intersection if not null. (do not use operator+= for optimal
-			 * result)
-			 **/
-			if(!x.is_null()) {
-				result.push_back(x);
+	vector<i_rect_t<int>> rects() const {
+		vector<i_rect_t<int>> ret(_rects_count());
+		int nr = 0;
+		int const * band = _first_band();
+		while(band != nullptr) {
+			for(int k = 0; k < _band_wall_count(band); k += 2) {
+				ret[nr] = i_rect_t<int>{
+					_band_get_wall(band, k),
+					_band_position_start(band),
+					_band_get_wall(band, k + 1)-_band_get_wall(band, k),
+					_band_position_end(band)-_band_position_start(band)
+				};
+				++nr;
 			}
+			band = _next_band(band);
 		}
-		return clean_up(result);
+		return ret;
 	}
 
-	region_t operator &(region_t const & r) const {
-		region_t result;
-		for(auto const & i : *this) {
-			region_t clipped = r & i;
-			result.insert(result.end(), clipped.begin(), clipped.end());
+	void translate(int x, int y) {
+		int * band = _first_band();
+		while(band != nullptr) {
+			_band_position_start(band) += y;
+			_band_position_end(band) += y;
+			for(int k = 0; k < _band_wall_count(band); ++k) {
+				_band_get_wall(band, k) += x;
+			}
+			band = _next_band(band);
 		}
-		return clean_up(result);
-	}
-
-	region_t & operator &=(_box_t const & b) {
-		*this = *this & b;
-		return *this;
-	}
-
-	region_t & operator &=(region_t const & r) {
-		if(this != &r)
-			*this = *this & r;
-		return *this;
 	}
 
 
-	/** make std::string **/
-	std::string to_string() const {
+	void clear() {
+
+		if(_data != nullptr)
+			std::free(_data);
+
+		_data = reinterpret_cast<int*>(std::malloc(sizeof(int) * 3));
+
+		/* the size header */
+		_band_count() = 0;
+		_wall_count() = 0;
+		_first_band_offset() = 0;
+
+	}
+
+	bool empty() const {
+		return _band_count() == 0;
+	}
+
+	int area() {
+		int ret = 0;
+		for(auto & r : rects()) {
+			ret += r.h*r.w;
+		}
+		return ret;
+	}
+
+	std::string to_string() {
+		if(empty())
+			return std::string{"[]"};
+
 		std::ostringstream os;
-		auto i = this->begin();
-		if(i == this->end())
-			return os.str();
-		os << i->to_string();
-		++i;
-		while(i != this->end()) {
-			os << "," << i->to_string();
-			++i;
+
+		for(auto & r : rects()) {
+			os << "[" << r.x << "," << r.y << "," << r.w << "," << r.h << "]";
 		}
 
 		return os.str();
 	}
 
-	void translate(T x, T y) {
-		for(auto & i : *this) {
-			i.x += x;
-			i.y += y;
-		}
+
+	std::string dump_data() {
+		std::ostringstream os;
+
+		if(0 < _data_int_count())
+			os << _data[0];
+
+		for(int i = 1; i < _data_int_count(); ++i)
+			os << " " << _data[i];
+
+		return os.str();
 	}
 
-
-	T area() {
-		T ret{T()};
-		for(auto &i: *this) {
-			ret += i.w * i.h;
-		}
-		return ret;
-	}
-
-	bool is_inside(T x, T y) const {
-		for(auto & b: *this) {
-			if(b.is_inside(x, y))
+	bool is_inside(int x, int y) {
+		for(auto & r : rects()) {
+			if(r.is_inside(x, y))
 				return true;
 		}
 		return false;
@@ -358,7 +691,8 @@ public:
 
 };
 
-typedef region_t<int> region;
+
+typedef region_t region;
 
 }
 

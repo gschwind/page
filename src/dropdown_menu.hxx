@@ -147,7 +147,7 @@ struct dropdown_menu_overlay_t : public tree_t {
 	void expose(region const & r) {
 		cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _wid, _ctx->dpy()->root_visual(), _position.w, _position.h);
 		cairo_t * cr = cairo_create(surf);
-		for(auto a: r) {
+		for(auto a: r.rects()) {
 			cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 			cairo_set_source_surface(cr, _surf, 0.0, 0.0);
 			cairo_rectangle(cr, a.x, a.y, a.w, a.h);

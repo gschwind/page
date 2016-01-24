@@ -1,4 +1,4 @@
-bin_PROGRAMS = page 
+bin_PROGRAMS = page page_region_test
 
 AM_CXXFLAGS =  \
 	-std=c++11 \
@@ -55,4 +55,19 @@ page_LDADD = \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
 
+page_region_test_SOURCES = \
+	page_region_test.cxx 
 
+page_region_test_LDADD = \
+	$(X11_LIBS) \
+	$(XCB_LIBS) \
+	$(X11XCB_LIBS) \
+	$(XCBUTIL_LIBS) \
+	$(XCBFIXES_LIBS) \
+	$(XCBDMG_LIBS) \
+	$(XCBRR_LIBS) \
+	$(XCBCOMP_LIBS) \
+	$(CAIRO_LIBS) \
+	$(PANGO_LIBS) \
+	$(GLIB_LIBS) \
+	$(RT_LIBS) 

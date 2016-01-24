@@ -136,7 +136,7 @@ void client_not_managed_t::render(cairo_t * cr, region const & area) {
 		cairo_set_source_surface(cr, pix->get_cairo_surface(),
 				_base_position.x, _base_position.y);
 		region r = region{_base_position} & area;
-		for (auto &i : r) {
+		for (auto &i : r.rects()) {
 			cairo_clip(cr, i);
 			cairo_mask_surface(cr, pix->get_cairo_surface(),
 					_base_position.x, _base_position.y);
