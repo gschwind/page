@@ -2198,8 +2198,8 @@ void page_t::detach(shared_ptr<tree_t> t) {
 		 **/
 		if(typeid(*t.get()) == typeid(client_managed_t)) {
 			auto x = dynamic_pointer_cast<client_managed_t>(t);
-			auto workspace = find_desktop_of(x);
-			workspace->client_focus_history_remove(x);
+			for(auto w: _root->_desktop_list)
+				w->client_focus_history_remove(x);
 		}
 
 		t->parent()->remove(t);
