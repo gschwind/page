@@ -682,9 +682,22 @@ public:
 	}
 
 	bool is_inside(int x, int y) {
-		for(auto & r : rects()) {
-			if(r.is_inside(x, y))
-				return true;
+		int const * band = _first_band();
+		while (band != nullptr) {
+
+			if (y >= _band_position_start(band)
+					and y < _band_position_end(band)) {
+
+				for (int k = 0; k < _band_wall_count(band); k += 2) {
+					if (x >= _band_get_wall(band, k)
+							and x < _band_get_wall(band, k + 1))
+						return true;
+				}
+
+				return false;
+
+			}
+			band = _next_band(band);
 		}
 		return false;
 	}
