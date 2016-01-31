@@ -39,7 +39,23 @@ page_SOURCES = \
 	popup_alt_tab.cxx \
 	main.cxx \
 	blur_image_surface.cxx \
-	leak_checker.cxx 
+	leak_checker.cxx \
+	tree.hxx \
+	blur_image_surface.hxx \
+	notebook.hxx \
+	compositor.hxx \
+	client_proxy.hxx \
+	config_handler.hxx \
+	workspace.hxx \
+	split.hxx \
+	viewport.hxx \
+	grab_handlers.hxx \
+	client_managed.hxx \
+	client_not_managed.hxx \
+	client_base.hxx \
+	display.hxx \
+	page.hxx \
+	utils.hxx
 
 page_LDADD = \
 	$(X11_LIBS) \
@@ -71,3 +87,4 @@ page_region_test_LDADD = \
 	$(PANGO_LIBS) \
 	$(GLIB_LIBS) \
 	$(RT_LIBS) 
+
