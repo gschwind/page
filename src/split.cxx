@@ -66,19 +66,27 @@ void split_t::set_split(double split) {
 
 void split_t::compute_children_allocation(double split, rect & bpack0, rect & bpack1) {
 
-	int pack0_height = 10, pack0_width = 10;
-	int pack1_height = 10, pack1_width = 10;
+	int pack0_height = 20, pack0_width = 20;
+	int pack1_height = 20, pack1_width = 20;
 
 	if(_pack0 != nullptr)
 		_pack0->get_min_allocation(pack0_width, pack0_height);
 	if(_pack1 != nullptr)
 		_pack1->get_min_allocation(pack1_width, pack1_height);
 
+	//cout << "pack0 = " << pack0_width << "," << pack0_height << endl;
+	//cout << "pack1 = " << pack1_width << "," << pack1_height << endl;
+
 	if (_type == VERTICAL_SPLIT) {
 
-		int w = allocation().w - 2 * _ctx->theme()->split.margin.left - 2 * _ctx->theme()->split.margin.right - _ctx->theme()->split.width;
+		int w = allocation().w
+				- 2 * _ctx->theme()->split.margin.left
+				- 2 * _ctx->theme()->split.margin.right
+				- _ctx->theme()->split.width;
+
 		int w0 = floor(w * split + 0.5);
 		int w1 = w - w0;
+
 
 		if(w0 < pack0_width) {
 			w1 -= pack0_width - w0;
@@ -99,6 +107,13 @@ void split_t::compute_children_allocation(double split, rect & bpack0, rect & bp
 		bpack1.y = allocation().y + _ctx->theme()->split.margin.top;
 		bpack1.w = w1;
 		bpack1.h = allocation().h - _ctx->theme()->split.margin.top - _ctx->theme()->split.margin.bottom;
+
+		if(_parent != nullptr) {
+			assert(bpack0.w >= pack0_width);
+			assert(bpack0.h >= pack0_height);
+			assert(bpack1.w >= pack1_width);
+			assert(bpack1.h >= pack1_height);
+		}
 
 	} else {
 
@@ -126,12 +141,23 @@ void split_t::compute_children_allocation(double split, rect & bpack0, rect & bp
 		bpack1.w = allocation().w - _ctx->theme()->split.margin.left - _ctx->theme()->split.margin.right;
 		bpack1.h = h1;
 
+		if(_parent != nullptr) {
+			assert(bpack0.w >= pack0_width);
+			assert(bpack0.h >= pack0_height);
+			assert(bpack1.w >= pack1_width);
+			assert(bpack1.h >= pack1_height);
+		}
+
 	}
+
 
 }
 
 void split_t::update_allocation() {
+	//cout << "allocation = " << _allocation.to_string() << endl;
 	compute_children_allocation(_ratio, _bpack0, _bpack1);
+	//cout << "allocation pack0 = " << _bpack0.to_string() << endl;
+	//cout << "allocation pack1 = " << _bpack1.to_string() << endl;
 	_split_bar_area = compute_split_bar_location();
 	if(_pack0 != nullptr)
 		_pack0->set_allocation(_bpack0);
@@ -301,8 +327,8 @@ void split_t::show() {
 }
 
 void split_t::get_min_allocation(int & width, int & height) const {
-	int pack0_height = 10, pack0_width = 10;
-	int pack1_height = 10, pack1_width = 10;
+	int pack0_height = 20, pack0_width = 20;
+	int pack1_height = 20, pack1_width = 20;
 
 	if(_pack0 != nullptr)
 		_pack0->get_min_allocation(pack0_width, pack0_height);
@@ -323,6 +349,9 @@ double split_t::compute_split_constaint(double split) {
 	rect bpack1;
 	compute_children_allocation(split, bpack0, bpack1);
 	rect tmp = compute_split_bar_location(bpack0, bpack1);
+
+	//cout << "constraint allocation pack0 = " << bpack0.to_string() << endl;
+	//cout << "constraint allocation pack1 = " << bpack1.to_string() << endl;
 
 	if(_type == VERTICAL_SPLIT) {
 		return ((tmp.x + (tmp.w/2)) - allocation().x)/(double)allocation().w;

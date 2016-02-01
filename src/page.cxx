@@ -309,6 +309,8 @@ void page_t::run() {
 	auto on_visibility_change_func = _dpy->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
 	_mainloop.run();
 
+	cout << "Page END" << endl;
+
 	handle = nullptr;
 	_dpy->on_visibility_change.remove(on_visibility_change_func);
 	_mainloop.remove_poll(_dpy->fd());

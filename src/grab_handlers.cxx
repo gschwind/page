@@ -48,11 +48,6 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 				/ (double) (_split_root_allocation.h);
 	}
 
-	if (_split_ratio > 0.95)
-		_split_ratio = 0.95;
-	if (_split_ratio < 0.05)
-		_split_ratio = 0.05;
-
 	_split_ratio = _split.lock()->compute_split_constaint(_split_ratio);
 
 	_ps->set_position(_split_ratio);

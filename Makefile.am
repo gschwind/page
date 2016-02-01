@@ -36,3 +36,4 @@ nobase_dist_pagedata_DATA = \
 nobase_dist_applicationsdata_DATA = \
 	page.desktop
 
+

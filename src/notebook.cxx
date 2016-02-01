@@ -179,6 +179,11 @@ void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 }
 
 void notebook_t::set_allocation(rect const & area) {
+	int width, height;
+	get_min_allocation(width, height);
+	assert(area.w >= width);
+	assert(area.h >= height);
+
 	_allocation = area;
 	_layout_is_durty = true;
 	_has_mouse_change = true;
@@ -1224,7 +1229,7 @@ shared_ptr<notebook_t> notebook_t::shared_from_this() {
 void notebook_t::get_min_allocation(int & width, int & height) const {
 	height = _ctx->theme()->notebook.tab_height
 			+ _ctx->theme()->notebook.margin.top
-			+ _ctx->theme()->notebook.margin.bottom + 10;
+			+ _ctx->theme()->notebook.margin.bottom + 20;
 	width = _ctx->theme()->notebook.margin.left
 			+ _ctx->theme()->notebook.margin.right + 100
 			+ _ctx->theme()->notebook.close_width

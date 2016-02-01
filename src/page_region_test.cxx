@@ -15,6 +15,7 @@
 #include <xcb/xcb.h>
 #include <cairo/cairo.h>
 #include <cairo/cairo-xcb.h>
+
 #include "region.hxx"
 #include "time.hxx"
 
@@ -107,6 +108,7 @@ void paint_test_0(cairo_surface_t * dsurf, time64_t time) {
 	cairo_set_source_surface(cr, surf, 0, 0);
 	cairo_paint(cr);
 	cairo_destroy(cr);
+	cairo_surface_destroy(surf);
 
 }
 
@@ -135,6 +137,9 @@ int main() {
 	xcb_create_window(cnx, screen->root_depth, wid, root, 0, 0, 500, 500, 0,
 			XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value);
 
+	/** hard coded 9 (i.e. Escape) **/
+	xcb_grab_key(cnx, 1, wid, XCB_MOD_MASK_ANY, 9, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
 	xcb_map_window(cnx, wid);
 
 	auto wsurf = cairo_xcb_surface_create(cnx, wid,
@@ -156,6 +161,8 @@ int main() {
 				run = false;
 			} else if (ev->response_type == XCB_UNMAP_NOTIFY) {
 				run = false;
+			} else if (ev->response_type == XCB_KEY_PRESS) {
+				run = false;
 			}
 
 
@@ -164,6 +171,9 @@ int main() {
 
 	}
 
+	cairo_surface_destroy(wsurf);
+
+	cairo_debug_reset_static_data();
 	xcb_disconnect(cnx);
 
 	return 0;
