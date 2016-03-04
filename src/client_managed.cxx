@@ -786,10 +786,8 @@ void client_managed_t::set_focus_state(bool is_focused) {
 	_has_focus = is_focused;
 	if (_has_focus) {
 		net_wm_state_add(_NET_WM_STATE_FOCUSED);
-		grab_button_focused_unsafe();
 	} else {
 		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-		grab_button_unfocused_unsafe();
 	}
 
 	on_focus_change.signal(shared_from_this());

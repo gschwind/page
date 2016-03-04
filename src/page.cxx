@@ -2366,6 +2366,13 @@ void page_t::update_windows_stack() {
 
 }
 
+/**
+ * This function will update viewport layout on xrandr events.
+ *
+ * It cut the visible outputs area in rectangle, where viewport will cover. The
+ * rule is that the first output get the area first, the last one is cut in
+ * sub-rectangle that do not overlap previous allocated area.
+ **/
 void page_t::update_viewport_layout() {
 	_left_most_border = std::numeric_limits<int>::max();
 	_top_most_border = std::numeric_limits<int>::max();
@@ -2398,7 +2405,7 @@ void page_t::update_viewport_layout() {
 			crtc_info[crtc_list[k]] = r;
 		}
 
-		/** keep left more screen to move iconnified window there **/
+		// keep left more screen to move iconnified window there
 		if(r->x < _left_most_border) {
 			_left_most_border = r->x;
 		}
@@ -2409,7 +2416,8 @@ void page_t::update_viewport_layout() {
 
 	}
 
-	/* compute all viewport  that does not overlap and cover the full area of crts */
+	// compute all viewport  that does not overlap and cover the full area of
+	// crts
 	region already_allocated;
 	vector<rect> viewport_allocation;
 	for(auto crtc: crtc_info) {
@@ -2417,7 +2425,8 @@ void page_t::update_viewport_layout() {
 			continue;
 
 		/* the location of crts */
-		region location{crtc.second->x, crtc.second->y, crtc.second->width, crtc.second->height};
+		region location{crtc.second->x, crtc.second->y, crtc.second->width,
+			crtc.second->height};
 		location -= already_allocated;
 		for(auto & b: location.rects()) {
 			viewport_allocation.push_back(b);
@@ -2433,7 +2442,9 @@ void page_t::update_viewport_layout() {
 		vector<shared_ptr<viewport_t>> new_layout;
 		/** for each not overlaped rectangle **/
 		for(unsigned i = 0; i < viewport_allocation.size(); ++i) {
-			printf("%d: found viewport (%d,%d,%d,%d)\n", d->id(), viewport_allocation[i].x, viewport_allocation[i].y, viewport_allocation[i].w, viewport_allocation[i].h);
+			printf("%d: found viewport (%d,%d,%d,%d)\n", d->id(),
+					viewport_allocation[i].x, viewport_allocation[i].y,
+					viewport_allocation[i].w, viewport_allocation[i].h);
 			shared_ptr<viewport_t> vp;
 			if(i < old_layout.size()) {
 				vp = old_layout[i];
@@ -2470,12 +2481,15 @@ void page_t::update_viewport_layout() {
 		}
 
 		if(new_layout.size() > 0) {
-			/** update position of floating managed clients to avoid offscreen floating window**/
+			// update position of floating managed clients to avoid offscreen
+			// floating window
 			for(auto x: net_client_list()) {
 				if(x->is(MANAGED_FLOATING)) {
 					auto r = x->position();
-					r.x = new_layout[0]->allocation().x + _theme->floating.margin.left;
-					r.y = new_layout[0]->allocation().y + _theme->floating.margin.top;
+					r.x = new_layout[0]->allocation().x
+							+ _theme->floating.margin.left;
+					r.y = new_layout[0]->allocation().y
+							+ _theme->floating.margin.top;
 					x->set_floating_wished_position(r);
 					x->reconfigure();
 				}
@@ -3252,9 +3266,13 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	shared_ptr<client_managed_t> focused;
 	if (get_current_workspace()->client_focus_history_front(focused)) {
-		/* client are only alowed to focus their own windows */
+		// client are only allowed to focus their own windows
+		// NOTE: client_id() is based on Xorg client XID allocation and may be
+		//   invalid for other X11 server implementation.
 		if(client_id(focused->orig()) != client_id(e->event)) {
 			focused->focus(XCB_CURRENT_TIME);
+		} else {
+			focused->grab_button_focused_unsafe();
 		}
 	} else {
 		/**
@@ -3344,6 +3362,9 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 						XCB_CURRENT_TIME);
 			}
 		}
+	} else {
+		auto c = find_client_managed_with(e->event);
+		c->grab_button_unfocused_unsafe();
 	}
 
 }

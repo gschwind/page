@@ -150,8 +150,6 @@ class client_managed_t : public client_base_t {
 
 	void map_unsafe();
 	void unmap_unsafe();
-	void grab_button_focused_unsafe();
-	void grab_button_unfocused_unsafe();
 	void ungrab_all_button_unsafe();
 	void select_inputs_unsafe();
 	void unselect_inputs_unsafe();
@@ -223,6 +221,8 @@ public:
 	void focus(xcb_timestamp_t t);
 	auto get_type() -> managed_window_type_e;
 	void set_managed_type(managed_window_type_e type);
+	void grab_button_focused_unsafe();
+	void grab_button_unfocused_unsafe();
 
 	/**
 	 * tree_t virtual API

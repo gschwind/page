@@ -341,7 +341,7 @@ class region_t {
 		}
 
 		/**
-		 * advance to je next band.
+		 * advance to the next band.
 		 **/
 		void next() {
 			if(nxt == nullptr and cur == nullptr)
@@ -399,7 +399,6 @@ class region_t {
 		if(r._data != nullptr)
 			std::free(r._data);
 
-		/** TODO: remove unsafe 8192 upper bound **/
 		r._data = reinterpret_cast<int*>(std::malloc(sizeof(int)*maxsize));
 
 		int band_r = 0;
