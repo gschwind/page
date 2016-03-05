@@ -708,7 +708,9 @@ public:
 	 **/
 	template<typename T0>
 	signal_func_t connect(T0 * ths, void(T0::*func)(F ...)) {
-		auto ret = make_shared<_func_t>([ths, func](F ... args) -> void { (ths->*func)(args...); });
+		auto ret = make_shared<_func_t>([ths, func](F ... args) -> void {
+			(ths->*func)(args...);
+		});
 		_callback_list.push_front(weak_ptr<_func_t>{ret});
 		return std::static_pointer_cast<void>(ret);
 	}
@@ -725,7 +727,6 @@ public:
 	}
 
 	void signal(F ... args) {
-
 		/**
 		 * Copy the list of callback to avoid issue
 		 * if 'remove' is called during the signal.

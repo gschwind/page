@@ -1160,7 +1160,6 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 
 void notebook_t::_client_focus_change(shared_ptr<client_managed_t> c) {
 	_layout_is_durty = true;
-	queue_redraw();
 }
 
 rect notebook_t::allocation() const {
@@ -1323,18 +1322,16 @@ void notebook_t::_set_theme_tab_offset(int x) {
 	_theme_client_tabs_offset = x;
 }
 
-
 notebook_t::_client_context_t::_client_context_t(notebook_t * nbk,
 		client_managed_p client) : client{client} {
-	title_change_func = client->on_title_change.connect(nbk, &notebook_t::_client_title_change);
+	title_change_func = client->on_title_change.connect(nbk,
+			&notebook_t::_client_title_change);
 	destoy_func = client->on_destroy.connect(nbk, &notebook_t::_client_destroy);
-	focus_change_func = client->on_focus_change.connect(nbk, &notebook_t::_client_focus_change);
+	focus_change_func = client->on_focus_change.connect(nbk,
+			&notebook_t::_client_focus_change);
 }
 
 notebook_t::_client_context_t::~_client_context_t() {
-	client->on_title_change.remove(title_change_func);
-	client->on_destroy.remove(destoy_func);
-	client->on_focus_change.remove(focus_change_func);
 	client = nullptr;
 }
 
@@ -1342,8 +1339,7 @@ bool notebook_t::_client_context_t::operator==(client_managed_p client) const {
 	return this->client == client;
 }
 
-void notebook_t::queue_redraw()
-{
+void notebook_t::queue_redraw() {
 	tree_t::queue_redraw();
 }
 

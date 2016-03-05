@@ -1308,13 +1308,16 @@ void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
 }
 
 void page_t::render() {
+	// ask to update everything to draw the time64_t::now() frame
 	_root->broadcast_update_layout(time64_t::now());
+	// ask to flush all pending drawing
 	_root->broadcast_trigger_redraw();
+	// render on screen if we need too.
 	if (_compositor != nullptr) {
 		_compositor->render(_root.get());
-		_root->broadcast_render_finished();
-		xcb_flush(_dpy->xcb());
 	}
+	xcb_flush(_dpy->xcb());
+	_root->broadcast_render_finished();
 }
 
 void page_t::fullscreen(shared_ptr<client_managed_t> mw) {
