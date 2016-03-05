@@ -262,6 +262,9 @@ bool is_expired(weak_ptr<T> & x) {
 	return x.expired();
 }
 
+/**
+ * /!\ also remove expired !
+ **/
 template<typename T0>
 std::list<std::shared_ptr<T0>> lock(std::list<std::weak_ptr<T0>> & x) {
 	x.remove_if(is_expired<T0>);
@@ -681,14 +684,20 @@ static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 template<typename ... F>
 class signal_t {
 	using _func_t = std::function<void(F ...)>;
-	std::list<_func_t> _callback_list;
+	std::list<weak_ptr<_func_t>> _callback_list;
 
 public:
-
-	using signal_func_t = typename std::list<_func_t>::iterator;
+	using signal_func_t = shared_ptr<void>;
 
 	~signal_t() {
 
+	}
+
+	// default connect
+	signal_func_t connect(void(*func)(F ...)) {
+		auto ret = make_shared<_func_t>(func);
+		_callback_list.push_front(weak_ptr<_func_t>{ret});
+		return std::static_pointer_cast<void>(ret);
 	}
 
 	/**
@@ -699,19 +708,20 @@ public:
 	 **/
 	template<typename T0>
 	signal_func_t connect(T0 * ths, void(T0::*func)(F ...)) {
-		auto ret = [ths, func](F ... args) -> void { (ths->*func)(args...); };
-		_callback_list.push_front(ret);
-		return _callback_list.begin();
+		auto ret = make_shared<_func_t>([ths, func](F ... args) -> void { (ths->*func)(args...); });
+		_callback_list.push_front(weak_ptr<_func_t>{ret});
+		return std::static_pointer_cast<void>(ret);
 	}
 
-	template<typename G>
-	signal_func_t connect(G func) {
-		_callback_list.push_front(func);
-		return _callback_list.begin();
-	}
-
-	void remove(signal_func_t f) {
-		_callback_list.erase(f);
+	void remove(signal_func_t s) {
+		auto _s = std::static_pointer_cast<_func_t>(s);
+		_callback_list.remove_if([_s] (weak_ptr<_func_t> & x) -> bool {
+			if(x.expired())
+				return true;
+			if(x.lock() == _s)
+				return true;
+			return false;
+		});
 	}
 
 	void signal(F ... args) {
@@ -720,10 +730,10 @@ public:
 		 * Copy the list of callback to avoid issue
 		 * if 'remove' is called during the signal.
 		 **/
-		auto callbacks = _callback_list;
+		auto callbacks = lock(_callback_list);
 
 		for(auto func: callbacks) {
-			(func)(args...);
+			(*func)(args...);
 		}
 	}
 
