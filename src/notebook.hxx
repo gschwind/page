@@ -81,14 +81,25 @@ class notebook_t : public page_component_t {
 	};
 
 	struct _client_context_t {
-		shared_ptr<client_managed_t> client;
+		client_managed_p client;
 		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
 		decltype(client_managed_t::on_destroy)::signal_func_t       destoy_func;
 		decltype(client_managed_t::on_focus_change)::signal_func_t  focus_change_func;
+
+		_client_context_t() = delete;
+		_client_context_t(_client_context_t const & x) = default;
+		_client_context_t(notebook_t * nbk, client_managed_p client);
+		~_client_context_t();
+
+		bool operator==(client_managed_p client) const;
+
 	};
 
+	using _client_context_p = shared_ptr<_client_context_t>;
+	using _client_context_w = weak_ptr<_client_context_t>;
+
 	// list to maintain the client order
-	map<client_managed_t *, _client_context_t> _clients;
+	list<_client_context_t> _clients_tab_order;
 
 	shared_ptr<client_managed_t> _selected;
 
@@ -171,7 +182,9 @@ class notebook_t : public page_component_t {
 	auto selected() const -> shared_ptr<client_managed_t>;
 	bool is_default() const;
 
-	bool _has_client(shared_ptr<client_managed_t> c) const;
+	bool _has_client(shared_ptr<client_managed_t> c);
+	list<_client_context_t>::iterator _find_client_context(client_managed_p client);
+
 	void _update_exposay();
 	void _stop_exposay();
 	void _start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y);
@@ -180,9 +193,6 @@ class notebook_t : public page_component_t {
 	void _scroll_right(int x);
 
 	void _set_theme_tab_offset(int x);
-
-	void _bind_client_signals(_client_context_t & c);
-	void _unbind_client_signals(_client_context_t & c);
 
 	shared_ptr<notebook_t> shared_from_this();
 

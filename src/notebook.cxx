@@ -34,10 +34,7 @@ notebook_t::notebook_t(page_context_t * ctx) :
 }
 
 notebook_t::~notebook_t() {
-	for(auto c: _clients) {
-		_unbind_client_signals(c.second);
-	}
-	_clients.clear();
+	_clients_tab_order.clear();
 }
 
 bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
@@ -48,9 +45,8 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	_children.push_back(x);
 
-	auto & a = _clients[x.get()];
-	a.client = x;
-	_bind_client_signals(a);
+	_client_context_t client_context{this, x};
+	_clients_tab_order.push_front(client_context);
 
 	if(prefer_activate and not _exposay) {
 		_start_fading();
@@ -107,6 +103,9 @@ void notebook_t::_activate_client(shared_ptr<client_managed_t> x) {
 }
 
 void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
+	auto x_client_context = _find_client_context(x);
+	if(x_client_context == _clients_tab_order.end())
+		return;
 
 	/** update selection **/
 	if (_selected == x) {
@@ -120,8 +119,8 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	_children.remove(x);
 	x->clear_parent();
 
-	_unbind_client_signals(_clients[x.get()]);
-	_clients.erase(x.get());
+	_clients_tab_order.erase(x_client_context);
+
 	_mouse_over_reset();
 
 	if(not _ctx->conf()._enable_shade_windows
@@ -285,9 +284,9 @@ void notebook_t::_update_layout() {
 		_client_area.h = 1;
 	}
 
-	for(auto & c: _clients) {
+	for(auto const & c: _clients_tab_order) {
 		/* resize all client properly */
-		update_client_position(c.second.client);
+		update_client_position(c.client);
 	}
 
 	_mouse_over_reset();
@@ -489,7 +488,7 @@ void notebook_t::_update_notebook_areas() {
 	_area.button_select = _compute_notebook_bookmark_position();
 	_area.button_exposay = _compute_notebook_menu_position();
 
-	if(_clients.size() > 0) {
+	if(_clients_tab_order.size() > 0) {
 
 		if(_theme_client_tabs_area.w > _theme_client_tabs.back().position.x + _theme_client_tabs.back().position.w) {
 			_theme_client_tabs_offset = 0;
@@ -530,12 +529,13 @@ void notebook_t::_update_notebook_areas() {
 			_area.undck_client = rect{};
 		}
 
-		auto c = _clients.begin();
+		auto c = _clients_tab_order.begin();
 		for (auto & tab: _theme_client_tabs) {
 			rect pos = tab.position;
 			pos.x += _theme_client_tabs_area.x - _theme_client_tabs_offset;
 			pos.y += _theme_client_tabs_area.y;
-			_client_buttons.push_back(make_tuple(pos, weak_ptr<client_managed_t>{c->second.client}, &tab));
+			_client_buttons.push_back(make_tuple(pos,
+					client_managed_w{c->client}, &tab));
 			++c;
 		}
 
@@ -551,14 +551,14 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 
 	_theme_client_tabs.clear();
 
-	if (_clients.size() != 0) {
+	if (_clients_tab_order.size() != 0) {
 		double selected_box_width = ((int)_allocation.w
 				- (int)_ctx->theme()->notebook.close_width
 				- (int)_ctx->theme()->notebook.hsplit_width
 				- (int)_ctx->theme()->notebook.vsplit_width
 				- (int)_ctx->theme()->notebook.mark_width
 				- (int)_ctx->theme()->notebook.menu_button_width)
-				- (int)_clients.size() * (int)_ctx->theme()->notebook.iconic_tab_width;
+				- (int)_clients_tab_order.size() * (int)_ctx->theme()->notebook.iconic_tab_width;
 
 		if(selected_box_width < 200) {
 			selected_box_width = 200;
@@ -603,7 +603,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 		}
 
 		offset = 0;
-		for (auto & i : _clients) {
+		for (auto const & i : _clients_tab_order) {
 			_theme_client_tabs.push_back(theme_tab_t { });
 			auto & tab = _theme_client_tabs.back();
 			tab.position = rect {
@@ -612,16 +612,16 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 									- floor(offset)),
 				(int) _ctx->theme()->notebook.tab_height };
 
-			if (i.second.client->has_focus()) {
+			if (i.client->has_focus()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
-			} else if (_selected == i.second.client) {
+			} else if (_selected == i.client) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
 			} else {
 				tab.tab_color = _ctx->theme()->get_normal_color();
 			}
-			tab.title = i.second.client->title();
-			tab.icon = i.second.client->icon();
-			tab.is_iconic = i.second.client->is_iconic();
+			tab.title = i.client->title();
+			tab.icon = i.client->icon();
+			tab.is_iconic = i.client->is_iconic();
 			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 
@@ -769,10 +769,10 @@ void notebook_t::_update_exposay() {
 	if(not _exposay)
 		return;
 
-	if(_clients.size() <= 0)
+	if(_clients_tab_order.size() <= 0)
 		return;
 
-	unsigned clients_counts = _clients.size();
+	unsigned clients_counts = _clients_tab_order.size();
 
 	/*
 	 * n is the number of column and m is the number of line of exposay.
@@ -806,18 +806,19 @@ void notebook_t::_update_exposay() {
 	unsigned xoffset = (_client_area.w-width*n)/2.0 + _client_area.x;
 	unsigned yoffset = (_client_area.h-heigth*m)/2.0 + _client_area.y;
 
-	auto it = _clients.begin();
-	for(int i = 0; i < _clients.size(); ++i) {
+	auto it = _clients_tab_order.begin();
+	for(int i = 0; i < _clients_tab_order.size(); ++i) {
 		unsigned y = i / n;
 		unsigned x = i % n;
 
 		if(y == m-1)
-			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x + (n*m - _clients.size())*width/2.0;
+			xoffset = (_client_area.w-width*n)/2.0 + _client_area.x
+				+ (n*m - _clients_tab_order.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->second.client}, i));
+		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->client}, i));
 		pdst = to_root_position(pdst);
-		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->second.client, pdst, ANCHOR_CENTER);
+		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->client, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
@@ -1198,12 +1199,20 @@ void notebook_t::show() {
 	}
 }
 
-bool notebook_t::_has_client(shared_ptr<client_managed_t> c) const {
-	for(auto &i: _clients) {
-		if(i.second.client == c)
-			return true;
+bool notebook_t::_has_client(shared_ptr<client_managed_t> c) {
+	return _find_client_context(c) != _clients_tab_order.end();
+}
+
+list<notebook_t::_client_context_t>::iterator
+notebook_t::_find_client_context(client_managed_p client) {
+	auto itr = _clients_tab_order.begin();
+	auto end = _clients_tab_order.end();
+	while(itr != end) {
+		if(*itr == client)
+			return itr;
+		++itr;
 	}
-	return false;
+	return end;
 }
 
 void notebook_t::render(cairo_t * cr, region const & area) {
@@ -1311,16 +1320,23 @@ void notebook_t::_set_theme_tab_offset(int x) {
 	_theme_client_tabs_offset = x;
 }
 
-void notebook_t::_bind_client_signals(_client_context_t & c) {
-	c.title_change_func = c.client->on_title_change.connect(this, &notebook_t::_client_title_change);
-	c.destoy_func = c.client->on_destroy.connect(this, &notebook_t::_client_destroy);
-	c.focus_change_func = c.client->on_focus_change.connect(this, &notebook_t::_client_focus_change);
+
+notebook_t::_client_context_t::_client_context_t(notebook_t * nbk,
+		client_managed_p client) : client{client} {
+	title_change_func = client->on_title_change.connect(nbk, &notebook_t::_client_title_change);
+	destoy_func = client->on_destroy.connect(nbk, &notebook_t::_client_destroy);
+	focus_change_func = client->on_focus_change.connect(nbk, &notebook_t::_client_focus_change);
 }
 
-void notebook_t::_unbind_client_signals(_client_context_t & c) {
-	c.client->on_title_change.remove(c.title_change_func);
-	c.client->on_destroy.remove(c.destoy_func);
-	c.client->on_focus_change.remove(c.focus_change_func);
+notebook_t::_client_context_t::~_client_context_t() {
+	client->on_title_change.remove(title_change_func);
+	client->on_destroy.remove(destoy_func);
+	client->on_focus_change.remove(focus_change_func);
+	client = nullptr;
+}
+
+bool notebook_t::_client_context_t::operator==(client_managed_p client) const {
+	return this->client == client;
 }
 
 void notebook_t::queue_redraw()

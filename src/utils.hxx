@@ -812,9 +812,6 @@ void cairo_rectangle_arc_corner(cairo_t * cr, rect const & position, double radi
 
 
 
-
-
-
 }
 
 
