@@ -366,7 +366,6 @@ void client_managed_t::set_managed_type(managed_window_type_e type) {
 
 void client_managed_t::focus(xcb_timestamp_t t) {
 	icccm_focus_unsafe(t);
-	set_focus_state(true);
 }
 
 rect client_managed_t::get_base_position() const {
@@ -780,9 +779,6 @@ void client_managed_t::render_finished() {
 
 
 void client_managed_t::set_focus_state(bool is_focused) {
-	if(_has_focus == is_focused)
-		return;
-
 	_has_focus = is_focused;
 	if (_has_focus) {
 		net_wm_state_add(_NET_WM_STATE_FOCUSED);

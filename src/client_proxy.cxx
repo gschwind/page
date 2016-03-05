@@ -577,7 +577,8 @@ void client_proxy_t::net_wm_state_add(atom_e atom) {
 	auto new_net_wm_state = new list<xcb_atom_t>;
 
 	if(net_wm_state() != nullptr) {
-		new_net_wm_state->insert(new_net_wm_state->end(), net_wm_state()->begin(), net_wm_state()->end());
+		new_net_wm_state->insert(new_net_wm_state->end(),
+				net_wm_state()->begin(), net_wm_state()->end());
 	}
 
 	new_net_wm_state->remove(A(atom));

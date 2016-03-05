@@ -589,9 +589,11 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 					(int)_ctx->theme()->notebook.tab_height };
 
 			if(_selected->has_focus()) {
-				theme_notebook.selected_client.tab_color = _ctx->theme()->get_focused_color();
+				theme_notebook.selected_client.tab_color =
+						_ctx->theme()->get_focused_color();
 			} else {
-				theme_notebook.selected_client.tab_color = _ctx->theme()->get_selected_color();
+				theme_notebook.selected_client.tab_color =
+						_ctx->theme()->get_selected_color();
 			}
 
 			theme_notebook.selected_client.title = _selected->title();
@@ -1158,6 +1160,7 @@ void notebook_t::_client_destroy(client_managed_t * c) {
 
 void notebook_t::_client_focus_change(shared_ptr<client_managed_t> c) {
 	_layout_is_durty = true;
+	queue_redraw();
 }
 
 rect notebook_t::allocation() const {

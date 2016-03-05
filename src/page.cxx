@@ -1509,10 +1509,6 @@ void page_t::update_workarea() {
 void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t tfocus) {
 	/* if we want to defocus something */
 	if(new_focus == nullptr) {
-		if(not _net_active_window.expired()) {
-			_net_active_window.lock()->set_focus_state(false);
-		}
-
 		if(conf()._auto_refocus) {
 			if (get_current_workspace()->client_focus_history_front(new_focus)) {
 				new_focus->activate();
@@ -1543,10 +1539,6 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 
 		if(tfocus == XCB_CURRENT_TIME)
 			std::cout << "Warning: Invalid focus time (0)" << std::endl;
-
-		if(not _net_active_window.expired()) {
-			_net_active_window.lock()->set_focus_state(false);
-		}
 
 		get_current_workspace()->client_focus_history_move_front(new_focus);
 		global_focus_history_move_front(new_focus);
@@ -1656,7 +1648,6 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	for(auto i : clients) {
 		if(i->has_focus())
 			notebook_has_focus = true;
-		i->set_focus_state(false);
 		nbk->remove(i);
 		insert_window_in_notebook(i, nullptr, false);
 	}
@@ -3199,55 +3190,55 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-//	std::cout << "Focus IN 0x" << format("08x", e->event) << " ";
-//
-//	switch(e->mode) {
-//	case XCB_NOTIFY_MODE_GRAB:
-//		std::cout << "MODE_GRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_NORMAL:
-//		std::cout << "MODE_NORMAL";
-//		break;
-//	case XCB_NOTIFY_MODE_UNGRAB:
-//		std::cout << "MODE_UNGRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_WHILE_GRABBED:
-//		std::cout << "MODE_WHILE_GRABBED";
-//		break;
-//	default:
-//		std::cout << "MODE_UNKNOWN";
-//	}
-//
-//	std::cout << " ";
-//
-//	switch(e->detail) {
-//	case XCB_NOTIFY_DETAIL_ANCESTOR:
-//		std::cout << "DETAIL_ANCESTOR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_INFERIOR:
-//		std::cout << "DETAIL_INFERIOR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONE:
-//		std::cout << "DETAIL_NONE";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONLINEAR:
-//		std::cout << "DETAIL_NONLINEAR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-//		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
-//		break;
-//	case XCB_NOTIFY_DETAIL_POINTER:
-//		std::cout << "DETAIL_POINTER";
-//		break;
-//	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
-//		std::cout << "DETAIL_POINTER_ROOT";
-//		break;
-//	case XCB_NOTIFY_DETAIL_VIRTUAL:
-//		std::cout << "DETAIL_ANCESTOR";
-//		break;
-//	}
-//
-//	std::cout << std::endl;
+	std::cout << "Focus IN 0x" << format("08x", e->event) << " ";
+
+	switch(e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		std::cout << "MODE_GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		std::cout << "MODE_NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		std::cout << "MODE_UNGRAB";
+		break;
+	case XCB_NOTIFY_MODE_WHILE_GRABBED:
+		std::cout << "MODE_WHILE_GRABBED";
+		break;
+	default:
+		std::cout << "MODE_UNKNOWN";
+	}
+
+	std::cout << " ";
+
+	switch(e->detail) {
+	case XCB_NOTIFY_DETAIL_ANCESTOR:
+		std::cout << "DETAIL_ANCESTOR";
+		break;
+	case XCB_NOTIFY_DETAIL_INFERIOR:
+		std::cout << "DETAIL_INFERIOR";
+		break;
+	case XCB_NOTIFY_DETAIL_NONE:
+		std::cout << "DETAIL_NONE";
+		break;
+	case XCB_NOTIFY_DETAIL_NONLINEAR:
+		std::cout << "DETAIL_NONLINEAR";
+		break;
+	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
+		break;
+	case XCB_NOTIFY_DETAIL_POINTER:
+		std::cout << "DETAIL_POINTER";
+		break;
+	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
+		std::cout << "DETAIL_POINTER_ROOT";
+		break;
+	case XCB_NOTIFY_DETAIL_VIRTUAL:
+		std::cout << "DETAIL_ANCESTOR";
+		break;
+	}
+
+	std::cout << std::endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -3256,8 +3247,8 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	 **/
 
 	/* ignore all focus event that is not the final focussed window */
-	if(e->detail != XCB_NOTIFY_DETAIL_NONE)
-		return;
+//	if(e->detail != XCB_NOTIFY_DETAIL_NONE)
+//		return;
 
 	if (e->event == _dpy->root()) {
 		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
@@ -3271,8 +3262,6 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		//   invalid for other X11 server implementation.
 		if(client_id(focused->orig()) != client_id(e->event)) {
 			focused->focus(XCB_CURRENT_TIME);
-		} else {
-			focused->grab_button_focused_unsafe();
 		}
 	} else {
 		/**
@@ -3285,67 +3274,89 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		}
 	}
 
+	{
+		auto c = find_client_managed_with(e->event);
+		if(c != nullptr) {
+			switch(e->detail) {
+			case XCB_NOTIFY_DETAIL_INFERIOR:
+			case XCB_NOTIFY_DETAIL_ANCESTOR:
+			case XCB_NOTIFY_DETAIL_VIRTUAL:
+			case XCB_NOTIFY_DETAIL_NONLINEAR:
+			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+				c->grab_button_focused_unsafe();
+				c->set_focus_state(true);
+				cout << "FOCUS IN " << c->title() << endl;
+			default:
+				break;
+			}
+		}
+	}
+
 }
 
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
 
-//	std::cout << "Focus OUT 0x" << format("08x", e->event) << " ";
-//
-//	switch(e->mode) {
-//	case XCB_NOTIFY_MODE_GRAB:
-//		std::cout << "MODE_GRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_NORMAL:
-//		std::cout << "MODE_NORMAL";
-//		break;
-//	case XCB_NOTIFY_MODE_UNGRAB:
-//		std::cout << "MODE_UNGRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_WHILE_GRABBED:
-//		std::cout << "MODE_WHILE_GRABBED";
-//		break;
-//	default:
-//		std::cout << "MODE_UNKNOWN";
-//	}
-//
-//	std::cout << " ";
-//
-//	switch(e->detail) {
-//	case XCB_NOTIFY_DETAIL_ANCESTOR:
-//		std::cout << "DETAIL_ANCESTOR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_INFERIOR:
-//		std::cout << "DETAIL_INFERIOR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONE:
-//		std::cout << "DETAIL_NONE";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONLINEAR:
-//		std::cout << "DETAIL_NONLINEAR";
-//		break;
-//	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-//		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
-//		break;
-//	case XCB_NOTIFY_DETAIL_POINTER:
-//		std::cout << "DETAIL_POINTER";
-//		break;
-//	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
-//		std::cout << "DETAIL_POINTER_ROOT";
-//		break;
-//	case XCB_NOTIFY_DETAIL_VIRTUAL:
-//		std::cout << "DETAIL_ANCESTOR";
-//		break;
-//	}
-//
-//	std::cout << std::endl;
+	std::cout << "Focus OUT 0x" << format("08x", e->event) << " ";
+
+	switch(e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		std::cout << "MODE_GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		std::cout << "MODE_NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		std::cout << "MODE_UNGRAB";
+		break;
+	case XCB_NOTIFY_MODE_WHILE_GRABBED:
+		std::cout << "MODE_WHILE_GRABBED";
+		break;
+	default:
+		std::cout << "MODE_UNKNOWN";
+	}
+
+	std::cout << " ";
+
+	switch(e->detail) {
+	case XCB_NOTIFY_DETAIL_ANCESTOR:
+		std::cout << "DETAIL_ANCESTOR";
+		break;
+	case XCB_NOTIFY_DETAIL_INFERIOR:
+		std::cout << "DETAIL_INFERIOR";
+		break;
+	case XCB_NOTIFY_DETAIL_NONE:
+		std::cout << "DETAIL_NONE";
+		break;
+	case XCB_NOTIFY_DETAIL_NONLINEAR:
+		std::cout << "DETAIL_NONLINEAR";
+		break;
+	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+		std::cout << "DETAIL_NONLINEAR_VIRTUAL";
+		break;
+	case XCB_NOTIFY_DETAIL_POINTER:
+		std::cout << "DETAIL_POINTER";
+		break;
+	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
+		std::cout << "DETAIL_POINTER_ROOT";
+		break;
+	case XCB_NOTIFY_DETAIL_VIRTUAL:
+		std::cout << "DETAIL_VIRTUAL";
+		break;
+	default:
+		std::cout << "DETAIL_UNKNOWN";
+		break;
+	}
+
+	std::cout << std::endl;
+
+	/* ignore all focus due to grabs */
+	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
+		return;
 
 	/* ignore all focus event related to the pointer */
 	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
-		return;
-	/* ignore all focus due to grabs */
-	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
 		return;
 
 	/**
@@ -3364,9 +3375,25 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 		}
 	} else {
 		auto c = find_client_managed_with(e->event);
-		c->grab_button_unfocused_unsafe();
+		if(c != nullptr) {
+			switch(e->detail) {
+			case XCB_NOTIFY_DETAIL_ANCESTOR:
+			case XCB_NOTIFY_DETAIL_NONLINEAR:
+			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
+				c->grab_button_unfocused_unsafe();
+				c->set_focus_state(false);
+				cout << "FOCUS OUT " << c->title() << endl;
+				break;
+			case XCB_NOTIFY_DETAIL_INFERIOR:
+				c->grab_button_focused_unsafe();
+				c->set_focus_state(true);
+				cout << "FOCUS IN " << c->title() << endl;
+				break;
+			default:
+				break;
+			}
+		}
 	}
-
 }
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
