@@ -680,6 +680,7 @@ std::list<T> make_list(std::vector<T> const & v) {
 
 static unsigned int const ALL_DESKTOP = static_cast<unsigned int>(-1);
 
+using signal_handler_t = shared_ptr<void>;
 
 template<typename ... F>
 class signal_t {
@@ -687,14 +688,11 @@ class signal_t {
 	std::list<weak_ptr<_func_t>> _callback_list;
 
 public:
-	using signal_func_t = shared_ptr<void>;
 
-	~signal_t() {
-
-	}
+	~signal_t() { }
 
 	// default connect
-	signal_func_t connect(void(*func)(F ...)) {
+	signal_handler_t connect(void(*func)(F ...)) {
 		auto ret = make_shared<_func_t>(func);
 		_callback_list.push_front(weak_ptr<_func_t>{ret});
 		return std::static_pointer_cast<void>(ret);
@@ -707,7 +705,7 @@ public:
 	 * disconnect signal or turn the shared_ptr to nullptr to remove the handler from the signal queue.
 	 **/
 	template<typename T0>
-	signal_func_t connect(T0 * ths, void(T0::*func)(F ...)) {
+	signal_handler_t connect(T0 * ths, void(T0::*func)(F ...)) {
 		auto ret = make_shared<_func_t>([ths, func](F ... args) -> void {
 			(ths->*func)(args...);
 		});
@@ -715,7 +713,7 @@ public:
 		return std::static_pointer_cast<void>(ret);
 	}
 
-	void remove(signal_func_t s) {
+	void remove(signal_handler_t s) {
 		auto _s = std::static_pointer_cast<_func_t>(s);
 		_callback_list.remove_if([_s] (weak_ptr<_func_t> & x) -> bool {
 			if(x.expired())
@@ -739,6 +737,8 @@ public:
 	}
 
 };
+
+
 
 template<typename T>
 void move_front(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {

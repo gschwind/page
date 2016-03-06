@@ -178,7 +178,7 @@ struct grab_alt_tab_t : public grab_handler_t {
 	list<client_managed_w> _client_list;
 	list<popup_alt_tab_p> _popup_list;
 
-	map<client_managed_t *, decltype(client_managed_t::on_destroy)::signal_func_t> _destroy_func_map;
+	map<client_managed_t *, signal_handler_t> _destroy_func_map;
 
 	client_managed_w _selected;
 

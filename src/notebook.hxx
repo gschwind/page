@@ -82,9 +82,9 @@ class notebook_t : public page_component_t {
 
 	struct _client_context_t {
 		client_managed_p client;
-		decltype(client_managed_t::on_title_change)::signal_func_t  title_change_func;
-		decltype(client_managed_t::on_destroy)::signal_func_t       destoy_func;
-		decltype(client_managed_t::on_focus_change)::signal_func_t  focus_change_func;
+		signal_handler_t  title_change_func;
+		signal_handler_t  destoy_func;
+		signal_handler_t  focus_change_func;
 
 		_client_context_t() = delete;
 		_client_context_t(_client_context_t const & x) = default;
