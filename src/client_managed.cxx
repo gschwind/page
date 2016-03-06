@@ -670,21 +670,47 @@ void client_managed_t::destroy_back_buffer() {
 
 void client_managed_t::create_back_buffer() {
 
-	if(_base_position.w > 0 and _base_position.h > 0) {
-		_top_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_base_position.w,
-				_ctx->theme()->floating.margin.top
-						+ _ctx->theme()->floating.title_height);
-		_bottom_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_base_position.w, _ctx->theme()->floating.margin.bottom);
-		_left_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_ctx->theme()->floating.margin.left,
-				_base_position.h - _ctx->theme()->floating.margin.top
-						- _ctx->theme()->floating.margin.bottom);
-		_right_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_ctx->theme()->floating.margin.right,
-				_base_position.h - _ctx->theme()->floating.margin.top
-						- _ctx->theme()->floating.margin.bottom);
+	if (not is(MANAGED_FLOATING) or not prefer_window_border()) {
+		destroy_back_buffer();
+		return;
+	}
+
+	{
+		int w = _base_position.w;
+		int h = _ctx->theme()->floating.margin.top
+				+ _ctx->theme()->floating.title_height;
+		if(w > 0 and h > 0) {
+			_top_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, w, h);
+		}
+	}
+
+	{
+		int w = _base_position.w;
+		int h = _ctx->theme()->floating.margin.bottom;
+		if(w > 0 and h > 0) {
+			_bottom_buffer =
+					make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, w, h);
+		}
+	}
+
+	{
+		int w = _ctx->theme()->floating.margin.left;
+		int h = _base_position.h - _ctx->theme()->floating.margin.top
+				- _ctx->theme()->floating.margin.bottom;
+		if(w > 0 and h > 0) {
+			_left_buffer =
+					make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, w, h);
+		}
+	}
+
+	{
+		int w = _ctx->theme()->floating.margin.right;
+		int h = _base_position.h - _ctx->theme()->floating.margin.top
+				- _ctx->theme()->floating.margin.bottom;
+		if(w > 0 and h > 0) {
+			_right_buffer =
+					make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, w, h);
+		}
 	}
 }
 
@@ -731,8 +757,9 @@ string client_managed_t::get_node_name() const {
 	ostringstream oss;
 	oss << s << " " << orig() << " " << title();
 
-
-	oss << " " << _client_proxy->geometry().width << "x" << _client_proxy->geometry().height << "+" << _client_proxy->geometry().x << "+" << _client_proxy->geometry().y;
+	oss << " " << _client_proxy->geometry().width << "x" <<
+			_client_proxy->geometry().height << "+" <<
+			_client_proxy->geometry().x << "+" << _client_proxy->geometry().y;
 
 	return oss.str();
 }
@@ -967,58 +994,42 @@ void client_managed_t::queue_redraw() {
 }
 
 void client_managed_t::_update_backbuffers() {
-	if (is(MANAGED_FLOATING) and prefer_window_border()) {
+	if(not is(MANAGED_FLOATING) or not prefer_window_border())
+		return;
 
-		_top_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_base_position.w,
-				_ctx->theme()->floating.margin.top
-						+ _ctx->theme()->floating.title_height);
-		_bottom_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_base_position.w, _ctx->theme()->floating.margin.bottom);
-		_left_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_ctx->theme()->floating.margin.left,
-				_base_position.h - _ctx->theme()->floating.margin.top
-						- _ctx->theme()->floating.margin.bottom);
-		_right_buffer = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA,
-				_ctx->theme()->floating.margin.right,
-				_base_position.h - _ctx->theme()->floating.margin.top
-						- _ctx->theme()->floating.margin.bottom);
+	theme_managed_window_t fw;
 
-		theme_managed_window_t fw;
-
-		if (_bottom_buffer != nullptr) {
-			fw.cairo_bottom = cairo_create(_bottom_buffer->get_cairo_surface());
-		} else {
-			fw.cairo_bottom = nullptr;
-		}
-
-		if (_top_buffer != nullptr) {
-			fw.cairo_top = cairo_create(_top_buffer->get_cairo_surface());
-		} else {
-			fw.cairo_top = nullptr;
-		}
-
-		if (_right_buffer != nullptr) {
-			fw.cairo_right = cairo_create(_right_buffer->get_cairo_surface());
-		} else {
-			fw.cairo_right = nullptr;
-		}
-
-		if (_left_buffer != nullptr) {
-			fw.cairo_left = cairo_create(_left_buffer->get_cairo_surface());
-		} else {
-			fw.cairo_left = nullptr;
-		}
-
-		fw.focuced = has_focus();
-		fw.position = base_position();
-		fw.icon = icon();
-		fw.title = title();
-		fw.demand_attention = _demands_attention;
-
-		_ctx->theme()->render_floating(&fw);
-
+	if (_bottom_buffer != nullptr) {
+		fw.cairo_bottom = cairo_create(_bottom_buffer->get_cairo_surface());
+	} else {
+		fw.cairo_bottom = nullptr;
 	}
+
+	if (_top_buffer != nullptr) {
+		fw.cairo_top = cairo_create(_top_buffer->get_cairo_surface());
+	} else {
+		fw.cairo_top = nullptr;
+	}
+
+	if (_right_buffer != nullptr) {
+		fw.cairo_right = cairo_create(_right_buffer->get_cairo_surface());
+	} else {
+		fw.cairo_right = nullptr;
+	}
+
+	if (_left_buffer != nullptr) {
+		fw.cairo_left = cairo_create(_left_buffer->get_cairo_surface());
+	} else {
+		fw.cairo_left = nullptr;
+	}
+
+	fw.focuced = has_focus();
+	fw.position = base_position();
+	fw.icon = icon();
+	fw.title = title();
+	fw.demand_attention = _demands_attention;
+
+	_ctx->theme()->render_floating(&fw);
 }
 
 void client_managed_t::trigger_redraw() {

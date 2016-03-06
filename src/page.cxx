@@ -190,7 +190,7 @@ page_t::page_t(int argc, char ** argv)
 
 page_t::~page_t() {
 	// cleanup cairo, for valgrind happiness.
-	cairo_debug_reset_static_data();
+	//cairo_debug_reset_static_data();
 }
 
 void page_t::run() {
@@ -2158,7 +2158,6 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 				get_workspace(workspace)->attach(mw);
 			} else {
 				get_current_workspace()->attach(mw);
-				c->show();
 			}
 		} else {
 			_root->root_subclients->push_back(c);

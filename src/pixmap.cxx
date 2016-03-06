@@ -38,7 +38,8 @@ pixmap_t(display_t * dpy, pixmap_format_e format, unsigned width, unsigned heigh
 	}
 
 	if(cairo_surface_status(_surf) != CAIRO_STATUS_SUCCESS) {
-		throw exception_t{"unable to create cairo_surface in %s", __PRETTY_FUNCTION__};
+		throw exception_t{"Unable to create cairo_surface in %s (format=%s,width=%u,height=%u)",
+			__PRETTY_FUNCTION__, format==PIXMAP_RGB?"RGB":"RGBA", width, height};
 	}
 
 }
