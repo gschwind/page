@@ -122,6 +122,7 @@ class client_managed_t : public client_base_t {
 	bool _demands_attention;
 	bool _is_resized;
 	bool _is_exposed;
+	bool _has_change;
 
 	mutable region _opaque_region_cache;
 	mutable region _visible_region_cache;

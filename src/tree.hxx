@@ -76,7 +76,7 @@ protected:
 
 	template<char const c>
 	string _get_node_name() const {
-		return format("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), _parent, (uintptr_t) this);
+		return xformat("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), _parent, (uintptr_t) this);
 	}
 
 	/**

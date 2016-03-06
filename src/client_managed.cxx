@@ -779,6 +779,8 @@ void client_managed_t::render_finished() {
 
 
 void client_managed_t::set_focus_state(bool is_focused) {
+	_has_change = true;
+
 	_has_focus = is_focused;
 	if (_has_focus) {
 		net_wm_state_add(_NET_WM_STATE_FOCUSED);
@@ -1023,7 +1025,13 @@ void client_managed_t::trigger_redraw() {
 
 	if(_is_resized) {
 		_is_resized = false;
+		_has_change = true;
 		create_back_buffer();
+	}
+
+	if(_has_change) {
+		_has_change = false;
+		_is_exposed = true;
 		_update_backbuffers();
 	}
 
@@ -1035,7 +1043,7 @@ void client_managed_t::trigger_redraw() {
 }
 
 void client_managed_t::_update_title() {
-	_is_resized = true;
+	_has_change = true;
 
 	string name;
 	if (_client_proxy->net_wm_name() != nullptr) {
