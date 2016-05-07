@@ -3192,7 +3192,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
+	cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -3246,21 +3246,21 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
-
-	/* ignore all focus due to grabs */
-	if(e->mode != XCB_NOTIFY_MODE_NORMAL)
-		return;
-
-	/* ignore all focus event related to the pointer */
-	if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
-		return;
+	cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * if the root window loose the focus, give the focus back to the
 	 * proper window.
 	 **/
 	if(e->event == _dpy->root()) {
+		/* ignore all focus due to grabs */
+		if(e->mode != XCB_NOTIFY_MODE_NORMAL)
+			return;
+
+		/* ignore all focus event related to the pointer */
+		if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
+			return;
+
 		shared_ptr<client_managed_t> focused;
 		if (get_current_workspace()->client_focus_history_front(focused)) {
 			focused->focus(XCB_CURRENT_TIME);
