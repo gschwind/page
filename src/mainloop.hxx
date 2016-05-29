@@ -86,8 +86,6 @@ class mainloop_t {
 	list<weak_ptr<timeout_t>> timeout_list;
 	map<int, poll_callback_t> poll_callback;
 
-	time64_t curtime;
-
 	bool running;
 
 	void _cleanup_timeout() {
@@ -119,25 +117,30 @@ class mainloop_t {
 
 	}
 
-	void run_timeout() {
-		curtime.update_to_current_time();
-		auto i = timeout_list.begin();
-		while(i != timeout_list.end()) {
-			if((*i).expired()) {
-				i = timeout_list.erase(i);
-			} else {
-				auto x = (*i).lock();
-				if (x->get_bound() > curtime)
-					break;
+	int64_t run_timeout() {
+		int64_t wait = 1000000000L;
 
-				i = timeout_list.erase(i);
-				if (x->_call()) {
-					x->_renew(time64_t::now());
-					_insert_sorted(x);
-				}
-				++i;
+		while (not timeout_list.empty()) {
+			if (timeout_list.front().expired()) {
+				timeout_list.pop_front();
+			} else {
+				break;
 			}
 		}
+
+		if (not timeout_list.empty()) {
+			auto next = timeout_list.front().lock();
+			wait = next->get_bound() - time64_t::now();
+			if (wait <= 1000000L) {
+				timeout_list.pop_front();
+				if (next->_call()) {
+					next->_renew(time64_t::now());
+					_insert_sorted(next);
+				}
+			}
+		}
+
+		return wait;
 	}
 
 	void run_poll_callback() {
@@ -162,39 +165,26 @@ public:
 
 	void run() {
 
-		run_timeout();
-
 		running = true;
 		while (running) {
 
-			time64_t wait = 1000000000L;
-
-			while(not timeout_list.empty()) {
-				if(timeout_list.front().expired()) {
-					timeout_list.pop_front();
-				} else {
-					break;
-				}
-			}
-
-			if(not timeout_list.empty()) {
-				auto const & next = timeout_list.front();
-				wait = next.lock()->get_bound() - curtime;
-			}
+			int64_t wait = run_timeout();
+			while(wait <= 1000000L)
+			    wait = run_timeout();
 
 			if(poll_list.size() > 0) {
-				poll(&poll_list[0], poll_list.size(), wait.milliseconds());
+				poll(&poll_list[0], poll_list.size(), wait/1000000L);
 			} else {
-				usleep(wait.microseconds());
+				usleep(wait/1000L);
 			}
 			run_poll_callback();
-			run_timeout();
 
 		}
 	}
 
 	template<typename T>
 	shared_ptr<timeout_t> add_timeout(time64_t timeout, T func) {
+	    assert(static_cast<int64_t>(timeout) > 5000L);
 		auto x = make_shared<timeout_t>(time64_t::now(), timeout, func);
 		_insert_sorted(x);
 		return x;
