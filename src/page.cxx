@@ -3510,28 +3510,9 @@ void page_t::process_pending_events() {
 	}
 
 	while (_dpy->has_pending_events()) {
-		while (_dpy->has_pending_events()) {
-			process_event(_dpy->front_event());
-			_dpy->pop_event();
-		}
-
-		if (_need_restack) {
-			_need_restack = false;
-			update_windows_stack();
-			_need_update_client_list = true;
-		}
-
-		if(_need_update_client_list) {
-			_need_update_client_list = false;
-			update_client_list();
-			update_client_list_stacking();
-		}
-
-		xcb_flush(_dpy->xcb());
-
+		process_event(_dpy->front_event());
+		_dpy->pop_event();
 	}
-
-	render();
 
 }
 
@@ -3692,6 +3673,19 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 
 void page_t::on_block_mainloop_handler() {
 
+	if (_need_restack) {
+		_need_restack = false;
+		update_windows_stack();
+		_need_update_client_list = true;
+	}
+
+	if(_need_update_client_list) {
+		_need_update_client_list = false;
+		update_client_list();
+		update_client_list_stacking();
+	}
+
+	render();
 }
 
 auto page_t::conf() const -> page_configuration_t const & {
