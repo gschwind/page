@@ -19,6 +19,7 @@
 #include <iostream>
 
 #include "time.hxx"
+#include "utils.hxx"
 
 namespace page {
 
@@ -161,6 +162,8 @@ class mainloop_t {
 
 public:
 
+	signal_t<> on_block;
+
 	mainloop_t() : running{false} { }
 
 	void run() {
@@ -172,6 +175,7 @@ public:
 			while(wait <= 1000000L)
 			    wait = run_timeout();
 
+			on_block.signal();
 			if(poll_list.size() > 0) {
 				poll(&poll_list[0], poll_list.size(), wait/1000000L);
 			} else {

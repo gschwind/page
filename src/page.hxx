@@ -365,6 +365,7 @@ public:
 	bool global_focus_history_is_empty();
 
 	void on_visibility_change_handler(xcb_window_t xid, bool visible);
+	void on_block_mainloop_handler();
 
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 

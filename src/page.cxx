@@ -307,6 +307,10 @@ void page_t::run() {
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
 	auto handle = _mainloop.add_timeout(1000000000L/60L, [this]() -> bool { this->process_pending_events(); return true; });
 	auto on_visibility_change_func = _dpy->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
+
+	/* dummy on block function */
+	auto mainloop_on_block_slot = _mainloop.on_block.connect(this, &page_t::on_block_mainloop_handler);
+
 	_mainloop.run();
 
 	cout << "Page END" << endl;
@@ -3686,6 +3690,10 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 			client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		}
 	}
+}
+
+void page_t::on_block_mainloop_handler() {
+
 }
 
 auto page_t::conf() const -> page_configuration_t const & {
