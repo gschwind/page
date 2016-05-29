@@ -16,6 +16,7 @@
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "pixmap.hxx"
+#include "mainloop.hxx"
 
 namespace page {
 
@@ -30,6 +31,8 @@ class renderable_notebook_fading_t : public tree_t {
 	region _damaged;
 	region _opaque_region;
 
+	shared_ptr<timeout_t> force_render;
+
 public:
 
 	renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
@@ -40,6 +43,9 @@ public:
 		_location = rect(x, y, surface->witdh(), surface->height());
 		_opaque_region = region(0, 0, surface->witdh(), surface->height());
 		_damaged = _location;
+
+		/* while fading notebook exist, force_render */
+		force_render = ctx->mainloop()->add_timeout(1000000000L/120L, []() -> bool { return true; });
 
 	}
 

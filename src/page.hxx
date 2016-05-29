@@ -403,6 +403,7 @@ public:
 	virtual auto keymap() const -> keymap_t const *;
 	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	virtual void make_surface_stats(int & size, int & count);
+	virtual auto mainloop() -> mainloop_t *;
 
 };
 

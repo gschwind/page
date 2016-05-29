@@ -28,6 +28,7 @@ class client_managed_t;
 class client_proxy_t;
 class client_view_t;
 class workspace_t;
+class mainloop_t;
 
 
 struct grab_handler_t {
@@ -93,6 +94,7 @@ public:
 	virtual void switch_to_desktop(unsigned int desktop) = 0;
 	virtual auto create_view(xcb_window_t w) -> shared_ptr<client_view_t> = 0;
 	virtual void make_surface_stats(int & size, int & count) = 0;
+	virtual auto mainloop() -> mainloop_t * = 0;
 
 };
 

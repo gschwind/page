@@ -3704,5 +3704,9 @@ auto page_t::net_client_list() -> list<client_managed_p> {
 	return lock(_net_client_list);
 }
 
+auto page_t::mainloop() -> mainloop_t * {
+	return &_mainloop;
+}
+
 }
 
