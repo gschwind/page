@@ -119,7 +119,7 @@ class mainloop_t {
 	}
 
 	int64_t run_timeout() {
-		int64_t wait = 1000000000L;
+		int64_t wait = 10000000000L;
 
 		while (not timeout_list.empty()) {
 			if (timeout_list.front().expired()) {
