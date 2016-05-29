@@ -46,6 +46,7 @@ struct page_configuration_t {
 	bool _auto_refocus;
 	bool _mouse_focus;
 	bool _enable_shade_windows;
+	int64_t _fade_in_time;
 };
 
 /**

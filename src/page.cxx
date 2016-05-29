@@ -186,6 +186,8 @@ page_t::page_t(int argc, char ** argv)
 		configuration._menu_drop_down_shadow = false;
 	}
 
+	configuration._fade_in_time = _conf.get_long("compositor", "fade_in_time");
+
 }
 
 page_t::~page_t() {

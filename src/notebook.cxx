@@ -28,7 +28,8 @@ notebook_t::notebook_t(page_context_t * ctx) :
 		_theme_client_tabs_offset{0},
 		_has_scroll_arrow{false},
 		_layout_is_durty{true},
-		_has_mouse_change{true}
+		_has_mouse_change{true},
+		animation_duration{ctx->conf()._fade_in_time}
 {
 
 }

@@ -36,7 +36,7 @@ class client_managed_t;
 class grab_bind_client_t;
 
 class notebook_t : public page_component_t {
-	time64_t const animation_duration{0, 500000000};
+	time64_t const animation_duration;
 
 	page_context_t * _ctx;
 
