@@ -54,6 +54,7 @@ page_SOURCES = \
 	client_not_managed.hxx \
 	client_base.hxx \
 	display.hxx \
+	mainloop.hxx \
 	page.hxx \
 	utils.hxx
 
