@@ -811,7 +811,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	_root->broadcast_button_press(e);
+    if(e->root_x == 0 and e->root_y == 0) {
+        start_alt_tab(e->time);
+    } else {
+        _root->broadcast_button_press(e);
+    }
 
 	/**
 	 * if no change happened to process mode
@@ -3371,11 +3375,7 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 		_grab_handler->button_motion(e);
 		return;
 	} else {
-		if(e->root_x == 0 and e->root_y == 0) {
-			start_alt_tab(e->time);
-		} else {
-			_root->broadcast_button_motion(e);
-		}
+		_root->broadcast_button_motion(e);
 	}
 }
 
