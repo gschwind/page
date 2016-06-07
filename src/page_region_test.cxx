@@ -21,6 +21,9 @@
 
 using namespace page;
 
+const int WIDTH = 800;
+const int HEIGHT = 800;
+
 xcb_visualtype_t * get_visual_type(xcb_screen_t * _screen, xcb_visualid_t id) {
 	/* you init the connection and screen_nbr */
 	if (_screen != nullptr) {
@@ -67,6 +70,8 @@ static void _draw_crossed_box(cairo_t * cr, i_rect_t<int> const & box, double r,
 void paint_test_0(cairo_surface_t * dsurf, time64_t time) {
 	region_t a;
 	region_t b;
+	region_t c;
+	region_t d;
 
 	//cout << "yyya " <<  a.dump_data() << endl;
 	//cout << "yyyb " <<  b.dump_data() << endl;
@@ -84,21 +89,36 @@ void paint_test_0(cairo_surface_t * dsurf, time64_t time) {
 	b.translate(sin((double)time / 1000000000.0)*100.0+100.0,
 			    cos((double)time / 1000000000.0)*100.0+100.0);
 
+	c = a;
+	d = b;
+
+	c.translate(300.0, 0.0);
+	d.translate(300.0, 0.0);
+
 	//cout << "xxxa " << a.to_string() << endl;
 	//cout << "xxxb " << b.to_string() << endl;
 
-	auto surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 300, 300);
+	auto surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, WIDTH, HEIGHT);
 	auto cr = cairo_create(surf);
 
 	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
 	cairo_paint(cr);
 
-	auto c = a - b;
-	for(auto r: c.rects()) {
+	auto e = a - b;
+	for(auto r: e.rects()) {
 		_draw_crossed_box(cr, r, 0.0, 1.0, 0.0);
 	}
 
 	for(auto r: b.rects()) {
+		_draw_crossed_box(cr, r, 1.0, 0.0, 0.0);
+	}
+
+	auto f = c + d;
+	for(auto r: f.rects()) {
+		_draw_crossed_box(cr, r, 0.0, 1.0, 0.0);
+	}
+
+	for(auto r: d.rects()) {
 		_draw_crossed_box(cr, r, 1.0, 0.0, 0.0);
 	}
 
@@ -134,7 +154,7 @@ int main() {
 	value_mask |= XCB_CW_EVENT_MASK;
 	value[2] = XCB_EVENT_MASK_EXPOSURE|XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
-	xcb_create_window(cnx, screen->root_depth, wid, root, 0, 0, 500, 500, 0,
+	xcb_create_window(cnx, screen->root_depth, wid, root, 0, 0, WIDTH, HEIGHT, 0,
 			XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value);
 
 	/** hard coded 9 (i.e. Escape) **/
@@ -143,7 +163,7 @@ int main() {
 	xcb_map_window(cnx, wid);
 
 	auto wsurf = cairo_xcb_surface_create(cnx, wid,
-			get_visual_type(screen, screen->root_visual), 500, 500);
+			get_visual_type(screen, screen->root_visual), WIDTH, HEIGHT);
 
 
 	bool run = true;
