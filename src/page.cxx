@@ -851,7 +851,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	/** damage corresponding area **/
 	if(e->event == _dpy->root()) {
-		//add_compositor_damaged(_root->_root_position);
+		add_global_damage(_root->_root_position);
 	}
 
 }
@@ -889,6 +889,9 @@ void page_t::process_map_notify_event(xcb_generic_event_t const * _e) {
 	if (e->event != _dpy->root())
 		return;
 	onmap(e->window);
+
+	add_global_damage(_root->_root_position);
+
 }
 
 void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
@@ -2561,8 +2564,10 @@ void page_t::onmap(xcb_window_t w) {
 
 	/* check if this window is a page window */
 	for(auto const & x: _root->get_all_children()) {
-		if(x->get_xid() == w)
+		if(x->get_xid() == w) {
+			add_global_damage(x->get_visible_region());
 			return;
+		}
 	}
 
 	/* check if the window is already managed */
