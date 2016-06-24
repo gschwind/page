@@ -3516,11 +3516,6 @@ void page_t::process_pending_events() {
 		return;
 	}
 
-	while (_dpy->has_pending_events()) {
-		process_event(_dpy->front_event());
-		_dpy->pop_event();
-	}
-
 }
 
 theme_t const * page_t::theme() const {
@@ -3680,18 +3675,33 @@ void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
 
 void page_t::on_block_mainloop_handler() {
 
-	if (_need_restack) {
-		_need_restack = false;
-		update_windows_stack();
-		_need_update_client_list = true;
-	}
+	while (_dpy->has_pending_events()) {
+		while (_dpy->has_pending_events()) {
+			process_event(_dpy->front_event());
+			_dpy->pop_event();
+		}
 
-	if(_need_update_client_list) {
-		_need_update_client_list = false;
-		update_client_list();
-		update_client_list_stacking();
-	}
+		if (_need_restack) {
+			_need_restack = false;
+			update_windows_stack();
+			_need_update_client_list = true;
+		}
 
+		if(_need_update_client_list) {
+			_need_update_client_list = false;
+			update_client_list();
+			update_client_list_stacking();
+		}
+
+		xcb_flush(_dpy->xcb());
+
+		/* Force sync */
+		auto ck = xcb_no_operation_checked(_dpy->xcb());
+		xcb_request_check(_dpy->xcb(), ck);
+		xcb_discard_reply(_dpy->xcb(), ck.sequence);
+
+	}
+	
 	render();
 }
 
