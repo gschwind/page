@@ -307,16 +307,15 @@ void page_t::run() {
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
-	auto on_visibility_change_func = _dpy->on_visibility_change.connect(this, &page_t::on_visibility_change_handler);
 
-	/* dummy on block function */
-	auto mainloop_on_block_slot = _mainloop.on_block.connect(this, &page_t::on_block_mainloop_handler);
+	connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
+	connect(_mainloop.on_block, this, &page_t::on_block_mainloop_handler);
 
 	_mainloop.run();
 
 	cout << "Page END" << endl;
 
-	_dpy->on_visibility_change.remove(on_visibility_change_func);
+	disconnect(_dpy->on_visibility_change);
 	_mainloop.remove_poll(_dpy->fd());
 
 	_dpy->unload_cursors();

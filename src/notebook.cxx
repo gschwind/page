@@ -49,6 +49,10 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	_client_context_t client_context{this, x};
 	_clients_tab_order.push_front(client_context);
 
+	connect(x->on_destroy, this, &notebook_t::_client_destroy);
+	connect(x->on_focus_change, this, &notebook_t::_client_focus_change);
+	connect(x->on_title_change, this, &notebook_t::_client_title_change);
+
 	if(prefer_activate and not _exposay) {
 		_start_fading();
 
@@ -117,6 +121,10 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	}
 
 	// cleanup
+
+	disconnect(x->on_title_change);
+	disconnect(x->on_focus_change);
+	disconnect(x->on_destroy);
 	_children.remove(x);
 	x->clear_parent();
 
@@ -1325,11 +1333,11 @@ void notebook_t::_set_theme_tab_offset(int x) {
 
 notebook_t::_client_context_t::_client_context_t(notebook_t * nbk,
 		client_managed_p client) : client{client} {
-	title_change_func = client->on_title_change.connect(nbk,
-			&notebook_t::_client_title_change);
-	destoy_func = client->on_destroy.connect(nbk, &notebook_t::_client_destroy);
-	focus_change_func = client->on_focus_change.connect(nbk,
-			&notebook_t::_client_focus_change);
+//	title_change_func = client->on_title_change.connect(nbk,
+//			&notebook_t::_client_title_change);
+//	destoy_func = client->on_destroy.connect(nbk, &notebook_t::_client_destroy);
+//	focus_change_func = client->on_focus_change.connect(nbk,
+//			&notebook_t::_client_focus_change);
 }
 
 notebook_t::_client_context_t::~_client_context_t() {

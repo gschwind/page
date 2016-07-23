@@ -739,7 +739,25 @@ public:
 
 };
 
+class connectable_t {
+	map<void *, signal_handler_t> _signal_handlers;
 
+public:
+
+	connectable_t() { }
+	virtual ~connectable_t() { }
+
+	template<typename T, typename ... Args>
+	void connect(signal_t<Args...> &sig, T * x, void (T::* func)(Args...)) {
+		_signal_handlers[&sig] = sig.connect(x, func);
+	}
+
+	template<typename ... Args>
+	void disconnect(signal_t<Args...> &sig) {
+		_signal_handlers.erase(&sig);
+	}
+
+};
 
 template<typename T>
 void move_front(std::list<weak_ptr<T>> & l, shared_ptr<T> const & v) {

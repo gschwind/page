@@ -28,7 +28,7 @@ using namespace std;
  * client_managed and unmanaged, etc...
  * It define the stack order of each component drawn within page.
  **/
-class tree_t : public enable_shared_from_this<tree_t> {
+class tree_t : public connectable_t, public enable_shared_from_this<tree_t> {
 
 protected:
 	template<typename ... T>
