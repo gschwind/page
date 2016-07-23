@@ -97,6 +97,9 @@ public:
 	virtual void make_surface_stats(int & size, int & count) = 0;
 	virtual auto mainloop() -> mainloop_t * = 0;
 
+	virtual void schedule_repaint() = 0;
+	virtual void damage_all() = 0;
+
 };
 
 

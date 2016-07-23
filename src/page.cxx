@@ -63,6 +63,8 @@ page_t::page_t(int argc, char ** argv)
 {
 
 	_grab_handler = nullptr;
+	_need_repaint = true;
+	_scheduled_repaint = false;
 
 	identity_window = XCB_NONE;
 
@@ -209,6 +211,9 @@ void page_t::run() {
 
 	_root = make_shared<page_root_t>(this);
 
+	_scheduled_repaint = true;
+	_scheduled_repaint_timeout = _mainloop.add_timeout(0L, [this]() -> void { this->render(); });
+
 	{
 		/** create the first desktop **/
 		auto d = make_shared<workspace_t>(this, 0);
@@ -306,10 +311,14 @@ void page_t::run() {
 	get_current_workspace()->show();
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
-	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR, [this](struct pollfd const & x) -> void { this->process_pending_events(); });
+	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR,
+		[this](struct pollfd const & x) -> void {
+			this->process_pending_events();
+		});
 
 	connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
 	connect(_mainloop.on_block, this, &page_t::on_block_mainloop_handler);
+
 
 	_mainloop.run();
 
@@ -1314,10 +1323,16 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
-
+	schedule_repaint();
 }
 
 void page_t::render() {
+	if(not _need_repaint)
+		return;
+
+	_need_repaint = false;
+	_scheduled_repaint = false;
+
 	// ask to update everything to draw the time64_t::now() frame
 	_root->broadcast_update_layout(time64_t::now());
 	// ask to flush all pending drawing
@@ -3548,6 +3563,7 @@ void page_t::add_global_damage(region const & r) {
 	if(_compositor != nullptr) {
 		_compositor->add_damaged(r);
 	}
+	schedule_repaint();
 }
 
 shared_ptr<workspace_t> const & page_t::get_current_workspace() const {
@@ -3700,8 +3716,9 @@ void page_t::on_block_mainloop_handler() {
 		xcb_discard_reply(_dpy->xcb(), ck.sequence);
 
 	}
-	
+
 	render();
+
 }
 
 auto page_t::conf() const -> page_configuration_t const & {
@@ -3722,6 +3739,25 @@ auto page_t::net_client_list() -> list<client_managed_p> {
 
 auto page_t::mainloop() -> mainloop_t * {
 	return &_mainloop;
+}
+
+void page_t::schedule_repaint() {
+	_need_repaint = true;
+
+	if(not _scheduled_repaint) {
+		_scheduled_repaint = true;
+		if((time64_t::now() - _scheduled_repaint_timeout->get_bound()) < time64_t{1000000000L/120L}) {
+			_scheduled_repaint_timeout = _mainloop.add_timebound(_scheduled_repaint_timeout->get_bound() + time64_t{1000000000L/120L},
+					[this]() -> void { this->render(); });
+		} else {
+			_scheduled_repaint_timeout = _mainloop.add_timeout(0L, [this]() -> void { this->render(); });
+		}
+	}
+}
+
+void page_t::damage_all() {
+	add_global_damage(_root->_root_position);
+	schedule_repaint();
 }
 
 }

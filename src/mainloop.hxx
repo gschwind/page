@@ -44,27 +44,19 @@ class timeout_t {
 	friend mainloop_t;
 
 	time64_t _timebound;
-	time64_t _delta;
-	function<bool(void)> _callback;
+	function<void(void)> _callback;
 
 
-	bool _call() const { return _callback(); }
-
-	void _renew(time64_t cur) {
-		_timebound = cur + _delta;
-	}
+	void _call() const { _callback(); }
 
 public:
 
 	/* create new timeout from function */
 	template<typename F>
-	timeout_t(time64_t cur, time64_t delta, F f) : _delta{delta}, _timebound{cur+delta}, _callback{f} { }
-
-	/* copy/update timeout with curent time */
-	timeout_t(timeout_t const & x, time64_t cur) : _delta{x._delta}, _timebound{cur+x._delta}, _callback{x._callback} { }
+	timeout_t(time64_t timebound, F f) : _timebound{timebound}, _callback{f} { }
 
 	/* copy timeout with curent time */
-	timeout_t(timeout_t const & x) : _delta{x._delta}, _timebound{x._timebound}, _callback{x._callback} { }
+	timeout_t(timeout_t const & x) : _timebound{x._timebound}, _callback{x._callback} { }
 
 	bool operator>(timeout_t const & x) const {
 		return _timebound > x._timebound;
@@ -113,35 +105,25 @@ class mainloop_t {
 				}
 			}
 		}
-
 		timeout_list.insert(i, x);
-
 	}
 
 	int64_t run_timeout() {
-		int64_t wait = 10000000000L;
-
 		while (not timeout_list.empty()) {
 			if (timeout_list.front().expired()) {
 				timeout_list.pop_front();
 			} else {
-				break;
-			}
-		}
-
-		if (not timeout_list.empty()) {
-			auto next = timeout_list.front().lock();
-			wait = next->get_bound() - time64_t::now();
-			if (wait <= 1000000L) {
-				timeout_list.pop_front();
-				if (next->_call()) {
-					next->_renew(time64_t::now());
-					_insert_sorted(next);
+				auto next = timeout_list.front().lock();
+				int64_t wait = next->get_bound() - time64_t::now();
+				if (wait <= 1000000L) {
+					timeout_list.pop_front();
+					next->_call();
+				} else {
+					return wait;
 				}
 			}
 		}
-
-		return wait;
+		return 10000000000L;
 	}
 
 	void run_poll_callback() {
@@ -167,14 +149,9 @@ public:
 	mainloop_t() : running{false} { }
 
 	void run() {
-
 		running = true;
 		while (running) {
-
 			int64_t wait = run_timeout();
-			while(wait <= 1000000L)
-			    wait = run_timeout();
-
 			on_block.signal();
 			if(poll_list.size() > 0) {
 				poll(&poll_list[0], poll_list.size(), wait/1000000L);
@@ -182,14 +159,19 @@ public:
 				usleep(wait/1000L);
 			}
 			run_poll_callback();
-
 		}
 	}
 
 	template<typename T>
 	shared_ptr<timeout_t> add_timeout(time64_t timeout, T func) {
-	    assert(static_cast<int64_t>(timeout) > 5000L);
-		auto x = make_shared<timeout_t>(time64_t::now(), timeout, func);
+		auto x = make_shared<timeout_t>(time64_t::now() + timeout, func);
+		_insert_sorted(x);
+		return x;
+	}
+
+	template<typename T>
+	shared_ptr<timeout_t> add_timebound(time64_t timebound, T func) {
+		auto x = make_shared<timeout_t>(timebound, func);
 		_insert_sorted(x);
 		return x;
 	}

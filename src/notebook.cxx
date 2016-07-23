@@ -421,12 +421,14 @@ void notebook_t::update_layout(time64_t const time) {
 		/** animation is terminated **/
 		fading_notebook.reset();
 		_ctx->add_global_damage(to_root_position(_allocation));
+		_ctx->damage_all();
 	}
 
 	if (fading_notebook != nullptr) {
 		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
 		ratio = ratio*1.05 - 0.025;
 		fading_notebook->set_ratio(ratio);
+		_ctx->schedule_repaint();
 	}
 }
 
