@@ -80,26 +80,8 @@ class notebook_t : public page_component_t {
 		SELECT_RIGHT
 	};
 
-	struct _client_context_t {
-		client_managed_p client;
-//		signal_handler_t  title_change_func;
-//		signal_handler_t  destoy_func;
-//		signal_handler_t  focus_change_func;
-
-		_client_context_t() = delete;
-		_client_context_t(_client_context_t const & x) = default;
-		_client_context_t(notebook_t * nbk, client_managed_p client);
-		~_client_context_t();
-
-		bool operator==(client_managed_p client) const;
-
-	};
-
-	using _client_context_p = shared_ptr<_client_context_t>;
-	using _client_context_w = weak_ptr<_client_context_t>;
-
 	// list to maintain the client order
-	list<_client_context_t> _clients_tab_order;
+	list<client_managed_p> _clients_tab_order;
 
 	shared_ptr<client_managed_t> _selected;
 
@@ -183,7 +165,6 @@ class notebook_t : public page_component_t {
 	bool is_default() const;
 
 	bool _has_client(shared_ptr<client_managed_t> c);
-	list<_client_context_t>::iterator _find_client_context(client_managed_p client);
 
 	void _update_exposay();
 	void _stop_exposay();

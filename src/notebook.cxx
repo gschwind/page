@@ -46,8 +46,7 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 	x->set_managed_type(MANAGED_NOTEBOOK);
 	_children.push_back(x);
 
-	_client_context_t client_context{this, x};
-	_clients_tab_order.push_front(client_context);
+	_clients_tab_order.push_front(x);
 
 	connect(x->on_destroy, this, &notebook_t::_client_destroy);
 	connect(x->on_focus_change, this, &notebook_t::_client_focus_change);
@@ -108,8 +107,7 @@ void notebook_t::_activate_client(shared_ptr<client_managed_t> x) {
 }
 
 void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
-	auto x_client_context = _find_client_context(x);
-	if(x_client_context == _clients_tab_order.end())
+	if(not _has_client(x))
 		return;
 
 	/** update selection **/
@@ -128,7 +126,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	_children.remove(x);
 	x->clear_parent();
 
-	_clients_tab_order.erase(x_client_context);
+	_clients_tab_order.remove(x);
 
 	_mouse_over_reset();
 
@@ -295,7 +293,7 @@ void notebook_t::_update_layout() {
 
 	for(auto const & c: _clients_tab_order) {
 		/* resize all client properly */
-		update_client_position(c.client);
+		update_client_position(c);
 	}
 
 	_mouse_over_reset();
@@ -544,7 +542,7 @@ void notebook_t::_update_notebook_areas() {
 			pos.x += _theme_client_tabs_area.x - _theme_client_tabs_offset;
 			pos.y += _theme_client_tabs_area.y;
 			_client_buttons.push_back(make_tuple(pos,
-					client_managed_w{c->client}, &tab));
+					client_managed_w{*c}, &tab));
 			++c;
 		}
 
@@ -623,16 +621,16 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 									- floor(offset)),
 				(int) _ctx->theme()->notebook.tab_height };
 
-			if (i.client->has_focus()) {
+			if (i->has_focus()) {
 				tab.tab_color = _ctx->theme()->get_focused_color();
-			} else if (_selected == i.client) {
+			} else if (_selected == i) {
 				tab.tab_color = _ctx->theme()->get_selected_color();
 			} else {
 				tab.tab_color = _ctx->theme()->get_normal_color();
 			}
-			tab.title = i.client->title();
-			tab.icon = i.client->icon();
-			tab.is_iconic = i.client->is_iconic();
+			tab.title = i->title();
+			tab.icon = i->icon();
+			tab.is_iconic = i->is_iconic();
 			offset += _ctx->theme()->notebook.iconic_tab_width;
 		}
 
@@ -827,9 +825,9 @@ void notebook_t::_update_exposay() {
 				+ (n*m - _clients_tab_order.size())*width/2.0;
 
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
-		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{it->client}, i));
+		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{*it}, i));
 		pdst = to_root_position(pdst);
-		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, it->client, pdst, ANCHOR_CENTER);
+		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, *it, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
@@ -1211,19 +1209,7 @@ void notebook_t::show() {
 }
 
 bool notebook_t::_has_client(shared_ptr<client_managed_t> c) {
-	return _find_client_context(c) != _clients_tab_order.end();
-}
-
-list<notebook_t::_client_context_t>::iterator
-notebook_t::_find_client_context(client_managed_p client) {
-	auto itr = _clients_tab_order.begin();
-	auto end = _clients_tab_order.end();
-	while(itr != end) {
-		if(*itr == client)
-			return itr;
-		++itr;
-	}
-	return end;
+	return has_key(_clients_tab_order, c);
 }
 
 void notebook_t::render(cairo_t * cr, region const & area) {
@@ -1329,23 +1315,6 @@ void notebook_t::_set_theme_tab_offset(int x) {
 		return;
 	}
 	_theme_client_tabs_offset = x;
-}
-
-notebook_t::_client_context_t::_client_context_t(notebook_t * nbk,
-		client_managed_p client) : client{client} {
-//	title_change_func = client->on_title_change.connect(nbk,
-//			&notebook_t::_client_title_change);
-//	destoy_func = client->on_destroy.connect(nbk, &notebook_t::_client_destroy);
-//	focus_change_func = client->on_focus_change.connect(nbk,
-//			&notebook_t::_client_focus_change);
-}
-
-notebook_t::_client_context_t::~_client_context_t() {
-	client = nullptr;
-}
-
-bool notebook_t::_client_context_t::operator==(client_managed_p client) const {
-	return this->client == client;
 }
 
 void notebook_t::queue_redraw() {
