@@ -426,9 +426,14 @@ void notebook_t::update_layout(time64_t const time) {
 
 	if (fading_notebook != nullptr) {
 		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
-		ratio = ratio*1.05 - 0.025;
 		fading_notebook->set_ratio(ratio);
-		_ctx->schedule_repaint();
+		/** schedule repaint when alpha change is enough, avoiding render flood **/
+
+		_fading_timeout = _ctx->mainloop()->add_timebound(
+				time + time64_t(animation_duration/255L),
+				[this]() -> void {
+					this->_ctx->schedule_repaint();
+				});
 	}
 }
 
@@ -680,15 +685,7 @@ void notebook_t::_update_theme_notebook(theme_notebook_t & theme_notebook) {
 
 }
 
-void notebook_t::_start_fading() {
-
-	if(_ctx->cmp() == nullptr)
-		return;
-
-	if(fading_notebook != nullptr)
-		return;
-
-	_swap_start.update_to_current_time();
+shared_ptr<pixmap_t> notebook_t::_render_to_pixmap() {
 
 	/**
 	 * Create image of notebook as it was just before fading start
@@ -745,10 +742,40 @@ void notebook_t::_start_fading() {
 
 	cairo_destroy(cr);
 	cairo_surface_flush(surf);
-	rect pos = to_root_position(_allocation);
-	fading_notebook = make_shared<renderable_notebook_fading_t>(_ctx, pix, pos.x, pos.y);
-	fading_notebook->show();
-	fading_notebook->set_parent(this);
+
+	return pix;
+}
+
+void notebook_t::_start_fading() {
+
+	if(_ctx->cmp() == nullptr)
+		return;
+
+	if(fading_notebook == nullptr) {
+		_swap_start.update_to_current_time();
+		auto pix = _render_to_pixmap();
+		rect pos = to_root_position(_allocation);
+		fading_notebook = make_shared<renderable_notebook_fading_t>(_ctx, pix, pos.x, pos.y);
+		fading_notebook->show();
+		fading_notebook->set_parent(this);
+	} else {
+		_swap_start.update_to_current_time();
+
+		auto pix = _render_to_pixmap();
+		auto surf = pix->get_cairo_surface();
+		auto cr = cairo_create(surf);
+		auto surf_src = fading_notebook->surface()->get_cairo_surface();
+
+		cairo_pattern_t * p0 =
+				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - fading_notebook->ratio());
+		cairo_set_source_surface(cr, surf_src, 0.0, 0.0);
+		cairo_mask(cr, p0);
+		cairo_pattern_destroy(p0);
+		cairo_destroy(cr);
+
+		rect pos = to_root_position(_allocation);
+		fading_notebook->update_pixmap(pix, pos.x, pos.y);
+	}
 
 }
 

@@ -104,6 +104,19 @@ public:
 		_damaged += _location;
 	}
 
+	void update_pixmap(shared_ptr<pixmap_t> surface, int x, int y) {
+		_location = rect(x, y, surface->witdh(), surface->height());
+		_surface = surface;
+	}
+
+	double ratio() {
+		return _ratio;
+	}
+
+	shared_ptr<pixmap_t> surface() {
+		return _surface;
+	}
+
 };
 
 

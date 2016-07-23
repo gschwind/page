@@ -1342,6 +1342,12 @@ void page_t::render() {
 		_compositor->render(_root.get());
 	}
 	xcb_flush(_dpy->xcb());
+
+	/* Force sync */
+	auto ck = xcb_no_operation_checked(_dpy->xcb());
+	xcb_request_check(_dpy->xcb(), ck);
+	xcb_discard_reply(_dpy->xcb(), ck.sequence);
+
 	_root->broadcast_render_finished();
 }
 

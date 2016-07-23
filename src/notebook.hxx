@@ -55,6 +55,8 @@ class notebook_t : public page_component_t {
 	vector<theme_tab_t> _theme_client_tabs;
 	rect _theme_client_tabs_area;
 
+	shared_ptr<timeout_t> _fading_timeout;
+
 	bool _is_default;
 	bool _exposay;
 
@@ -177,6 +179,7 @@ class notebook_t : public page_component_t {
 
 	shared_ptr<notebook_t> shared_from_this();
 
+	shared_ptr<pixmap_t> _render_to_pixmap();
 
 public:
 
