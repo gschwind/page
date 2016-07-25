@@ -148,9 +148,10 @@ public:
 
 		_ctx->make_surface_stats(surf_size, surf_count);
 
-		pango_printf(cr, 80*2+20,0,  "fps:       %8.1f", fps);
-		pango_printf(cr, 80*2+20,30, "s. count:  %6d", surf_count);
-		pango_printf(cr, 80*2+20,50, "s. memory: %6d KB", surf_size/1024);
+		pango_printf(cr, 80*2+20,0,  "version: %s", VERSION);
+		pango_printf(cr, 80*2+20,30,  "fps:       %8.1f", fps);
+		pango_printf(cr, 80*2+20,50, "s. count:  %6d", surf_count);
+		pango_printf(cr, 80*2+20,80, "s. memory: %6d KB", surf_size/1024);
 
 		cairo_destroy(cr);
 	}
