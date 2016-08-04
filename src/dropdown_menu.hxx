@@ -194,6 +194,12 @@ struct dropdown_menu_overlay_t : public tree_t {
 		}
 	}
 
+	virtual void expose(xcb_expose_event_t const * ev) override {
+		if(ev->window != _wid)
+			return;
+		expose(region(ev->x, ev->y, ev->width, ev->height));
+	}
+
 };
 
 template<typename TDATA>
