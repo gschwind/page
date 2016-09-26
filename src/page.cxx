@@ -2592,8 +2592,17 @@ void page_t::onmap(xcb_window_t w) {
 
 	/* check if the window is already managed */
 	{
-		auto mw = find_client_with(w);
-		if(mw != nullptr) {
+		auto c = find_client_with(w);
+		if(c != nullptr) {
+			auto mw = dynamic_pointer_cast<client_managed_t>(c);
+			if(not mw)
+				return;
+
+			mw->reconfigure();
+			if(mw == _net_active_window.lock()) {
+				mw->focus(XCB_CURRENT_TIME);
+				mw->grab_button_focused_unsafe();
+			}
 			return;
 		}
 	}
