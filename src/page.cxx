@@ -3234,7 +3234,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	cout << focus_in_to_string(e) << endl;
+	//cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -3288,7 +3288,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	cout << focus_in_to_string(e) << endl;
+	//cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * if the root window loose the focus, give the focus back to the

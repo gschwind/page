@@ -54,7 +54,7 @@ client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_ato
 	_update_title();
 	rect pos{_client_proxy->position()};
 
-	printf("window default position = %s\n", pos.to_string().c_str());
+	//printf("window default position = %s\n", pos.to_string().c_str());
 
 	if(net_wm_type == A(_NET_WM_WINDOW_TYPE_DOCK))
 		_managed_type = MANAGED_DOCK;
