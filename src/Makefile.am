@@ -5,13 +5,6 @@ AM_CXXFLAGS =  \
 	-rdynamic \
 	$(X11_CFLAGS) \
 	$(XCB_CFLAGS) \
-	$(X11XCB_CFLAGS) \
-	$(XCBUTIL_CFLAGS) \
-	$(XCBFIXES_CFLAGS) \
-	$(XCBDMG_CFLAGS) \
-	$(XCBSHP_CFLAGS) \
-	$(XCBRR_CFLAGS) \
-	$(XCBCOMP_CFLAGS) \
 	$(CAIRO_CFLAGS) \
 	$(PANGO_CFLAGS) \
 	$(GLIB_CFLAGS) \
@@ -62,13 +55,6 @@ page_SOURCES = \
 page_LDADD = \
 	$(X11_LIBS) \
 	$(XCB_LIBS) \
-	$(X11XCB_LIBS) \
-	$(XCBUTIL_LIBS) \
-	$(XCBFIXES_LIBS) \
-	$(XCBDMG_LIBS) \
-	$(XCBSHP_LIBS) \
-	$(XCBRR_LIBS) \
-	$(XCBCOMP_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
 	$(GLIB_LIBS) \
@@ -80,12 +66,6 @@ page_region_test_SOURCES = \
 page_region_test_LDADD = \
 	$(X11_LIBS) \
 	$(XCB_LIBS) \
-	$(X11XCB_LIBS) \
-	$(XCBUTIL_LIBS) \
-	$(XCBFIXES_LIBS) \
-	$(XCBDMG_LIBS) \
-	$(XCBRR_LIBS) \
-	$(XCBCOMP_LIBS) \
 	$(CAIRO_LIBS) \
 	$(PANGO_LIBS) \
 	$(GLIB_LIBS) \
