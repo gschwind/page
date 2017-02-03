@@ -11,8 +11,8 @@
 #ifndef DROPDOWN_MENU_HXX_
 #define DROPDOWN_MENU_HXX_
 
-#include <cairo/cairo.h>
-#include <cairo/cairo-xcb.h>
+#include <cairo.h>
+#include <cairo-xcb.h>
 
 #include <string>
 #include <memory>

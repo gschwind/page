@@ -11,7 +11,7 @@
 #ifndef RENDERABLE_HXX_
 #define RENDERABLE_HXX_
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include <list>
 

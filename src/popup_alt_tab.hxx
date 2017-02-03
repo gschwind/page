@@ -11,7 +11,7 @@
 #ifndef POPUP_ALT_TAB_HXX_
 #define POPUP_ALT_TAB_HXX_
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include <memory>
 

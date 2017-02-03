@@ -11,7 +11,7 @@
 #define COLOR_HXX_
 
 #include <stdexcept>
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 namespace page {
 

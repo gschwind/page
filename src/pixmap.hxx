@@ -8,8 +8,8 @@
 #ifndef PIXMAP_HXX_
 #define PIXMAP_HXX_
 
-#include <cairo/cairo.h>
-#include <cairo/cairo-xcb.h>
+#include <cairo.h>
+#include <cairo-xcb.h>
 
 namespace page {
 

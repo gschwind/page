@@ -10,7 +10,7 @@
 #ifndef THEME_MANAGED_WINDOW_HXX_
 #define THEME_MANAGED_WINDOW_HXX_
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 #include "icon_handler.hxx"
 
 namespace page {

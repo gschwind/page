@@ -8,7 +8,7 @@
 #ifndef ICON_HANDLER_HXX_
 #define ICON_HANDLER_HXX_
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include <limits>
 

@@ -7,7 +7,7 @@
  *
  */
 
-#include <cairo/cairo-xcb.h>
+#include <cairo-xcb.h>
 
 #include "config.hxx"
 #include "renderable_solid.hxx"

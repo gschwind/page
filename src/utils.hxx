@@ -16,7 +16,7 @@
 
 #include <xcb/xcb_util.h>
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include <algorithm>
 #include <list>

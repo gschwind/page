@@ -12,7 +12,7 @@
 
 #include <typeinfo>
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include "color.hxx"
 

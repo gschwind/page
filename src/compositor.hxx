@@ -14,9 +14,9 @@
 
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
-#include <cairo/cairo.h>
-#include <cairo/cairo-xlib.h>
-#include <cairo/cairo-xcb.h>
+#include <cairo.h>
+#include <cairo-xlib.h>
+#include <cairo-xcb.h>
 
 #include <memory>
 #include <vector>

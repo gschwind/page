@@ -13,8 +13,8 @@
 #include <pango/pangocairo.h>
 #include <memory>
 
-#include <cairo/cairo.h>
-#include <cairo/cairo-xlib.h>
+#include <cairo.h>
+#include <cairo-xlib.h>
 
 #include "utils.hxx"
 #include "theme.hxx"

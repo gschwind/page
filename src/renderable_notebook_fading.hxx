@@ -8,7 +8,7 @@
 #ifndef RENDERABLE_NOTEBOOK_FADING_HXX_
 #define RENDERABLE_NOTEBOOK_FADING_HXX_
 
-#include <cairo/cairo.h>
+#include <cairo.h>
 
 #include <memory>
 
