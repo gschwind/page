@@ -19,6 +19,7 @@
 #include "box.hxx"
 #include "color.hxx"
 #include "pixmap.hxx"
+#include "utils.hxx"
 
 #include "blur_image_surface.hxx"
 
@@ -1892,6 +1893,65 @@ void simple2_theme_t::cairo_rounded_tab3(cairo_t * cr, double x, double y, doubl
 	CHECK_CAIRO(cairo_arc(cr, x + radius, y + radius, radius, 2.0 * M_PI_2, 3.0 * M_PI_2));
 	CHECK_CAIRO(cairo_line_to(cr, x + w - radius, y));
 	CHECK_CAIRO(cairo_arc(cr, x + w - radius, y + radius, radius, 3.0 * M_PI_2, 4.0 * M_PI_2));
+
+}
+
+shared_ptr<pixmap_t> simple2_theme_t::workspace_switch_popup(string const & workspace_name) const {
+
+	std::shared_ptr<pixmap_t> popup;
+	popup = make_shared<pixmap_t>(_cnx, PIXMAP_RGBA, 600, 100);
+
+	cairo_t * cr = cairo_create(popup->get_cairo_surface());
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0);
+	cairo_paint(cr);
+
+	cairo_new_path(cr);
+	cairo_rectangle_arc_corner(cr, rect(2, 2, 596, 96), 30.0, CAIRO_CORNER_ALL);
+	cairo_path_t * path = cairo_copy_path_flat(cr);
+	cairo_new_path(cr);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.5);
+
+	cairo_new_path(cr);
+	cairo_append_path(cr, path);
+	cairo_fill(cr);
+
+	cairo_path_destroy(path);
+
+	cairo_translate(cr, 0, 35);
+
+	{
+
+		{
+			PangoLayout * pango_layout = pango_layout_new(pango_context);
+			pango_layout_set_font_description(pango_layout, pango_popup_font);
+			pango_cairo_update_layout(cr, pango_layout);
+			pango_layout_set_text(pango_layout, workspace_name.c_str(), -1);
+			pango_layout_set_wrap(pango_layout, PANGO_WRAP_CHAR);
+			pango_layout_set_ellipsize(pango_layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_width(pango_layout, 596 * PANGO_SCALE);
+			pango_layout_set_alignment(pango_layout, PANGO_ALIGN_CENTER);
+			pango_cairo_layout_path(cr, pango_layout);
+			g_object_unref(pango_layout);
+		}
+		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+		CHECK_CAIRO(cairo_set_line_width(cr, 12.0));
+		CHECK_CAIRO(cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND));
+		CHECK_CAIRO(cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL));
+		CHECK_CAIRO(cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.0));
+
+		CHECK_CAIRO(cairo_stroke_preserve(cr));
+
+		CHECK_CAIRO(cairo_set_line_width(cr, 1.0));
+		CHECK_CAIRO(cairo_set_source_color_alpha(cr, notebook_normal_text_color));
+		CHECK_CAIRO(cairo_fill(cr));
+	}
+
+	cairo_destroy(cr);
+
+	return popup;
 
 }
 

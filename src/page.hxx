@@ -345,6 +345,7 @@ public:
 	void print_state() const;
 	void update_current_desktop() const;
 	void switch_to_desktop(unsigned int desktop);
+	void start_switch_to_desktop_animation(unsigned int desktop);
 	void update_fullscreen_clients_position();
 	void update_desktop_visibility();
 	void process_error(xcb_generic_event_t const * e);

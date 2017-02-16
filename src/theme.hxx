@@ -110,6 +110,8 @@ public:
 	virtual void render_menuentry(cairo_t * cr, theme_dropdown_menu_entry_t const & item, rect const & area, bool selected) const = 0;
 	virtual void update() = 0;
 
+	virtual std::shared_ptr<pixmap_t> workspace_switch_popup(string const & worspace_name) const = 0;
+
 	virtual std::shared_ptr<pixmap_t> get_background() const = 0;
 
 	virtual color_t const & get_focused_color() const = 0;

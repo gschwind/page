@@ -17,6 +17,9 @@ namespace page {
 using namespace std;
 
 class renderable_pixmap_t : public tree_t {
+
+protected:
+
 	page_context_t * _ctx;
 
 	rect _location;

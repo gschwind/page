@@ -32,6 +32,7 @@
 #include "utils.hxx"
 
 #include "renderable.hxx"
+#include "renderable_fadeout_pixmap.hxx"
 #include "key_desc.hxx"
 #include "time.hxx"
 #include "atoms.hxx"
@@ -3101,18 +3102,7 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 	if (desktop != _root->_current_desktop and desktop != ALL_DESKTOP) {
 		std::cout << "switch to desktop #" << desktop << std::endl;
 
-		if(desktop<_root->_current_desktop) {
-			if((_root->_current_desktop-desktop) <= (_root->_desktop_list.size()/2))
-				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
-			else
-				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
-
-		} else {
-			if((desktop-_root->_current_desktop) <= (_root->_desktop_list.size()/2))
-				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_RIGHT);
-			else
-				_root->_desktop_list[desktop]->start_switch(WORKSPACE_SWITCH_LEFT);
-		}
+		start_switch_to_desktop_animation(desktop);
 
 		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
 
@@ -3134,6 +3124,22 @@ void page_t::switch_to_desktop(unsigned int desktop) {
 		update_current_desktop();
 		update_desktop_visibility();
 	}
+}
+
+
+void page_t::start_switch_to_desktop_animation(unsigned int desktop) {
+	auto new_desktop = _root->_desktop_list[desktop];
+
+	for(auto const & v : new_desktop->get_viewports()) {
+		auto pix = theme()->workspace_switch_popup(new_desktop->name());
+		auto loc = v->allocation();
+		auto rnd = make_shared<renderable_fadeout_pixmap_t>(this, pix, loc.x + (loc.w-pix->witdh())/2.0, loc.y + (loc.h-pix->height())/2.0);
+		overlay_add(rnd);
+		rnd->show();
+	}
+
+	schedule_repaint();
+
 }
 
 //void page_t::update_fullscreen_clients_position() {

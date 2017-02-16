@@ -211,6 +211,8 @@ public:
 
 	static void cairo_rounded_tab3(cairo_t * cr, double x, double y, double w, double h, double radius);
 
+	virtual shared_ptr<pixmap_t> workspace_switch_popup(string const & worspace_name) const;
+
 	virtual shared_ptr<pixmap_t> get_background() const;
 
 	virtual color_t const & get_focused_color() const;
