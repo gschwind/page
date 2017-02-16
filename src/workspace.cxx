@@ -136,12 +136,22 @@ shared_ptr<notebook_t> workspace_t::default_pop() {
 }
 
 void workspace_t::update_default_pop() {
-	_default_pop.reset();
-	for(auto i: filter_class<notebook_t>(get_all_children())) {
-		i->set_default(true);
-		_default_pop = i;
-		return;
+	auto notebooks = filter_class<notebook_t>(get_all_children());
+	assert(notebooks.size() > 0); // workspace must have at less one notebook.
+
+	if(_default_pop.expired()) {
+		set_default_pop(notebooks[0]);
 	}
+
+	/* check if the current default_pop is valid, if yes do nothing */
+	for(auto const & x: notebooks) {
+		if(_default_pop.lock() == x)
+			return;
+	}
+
+	/* else */
+	set_default_pop(notebooks[0]);
+
 }
 
 void workspace_t::attach(shared_ptr<client_managed_t> c) {
