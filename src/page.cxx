@@ -232,14 +232,7 @@ void page_t::run() {
 		int n = 1;
 		if(nd != nullptr and *nd != 0)
 			n = *nd;
-		for(int i = 0; i < n; ++i) {
-			auto d = make_shared<workspace_t>(this, i);
-			_root->_desktop_list.push_back(d);
-			_root->_desktop_stack->push_front(d);
-			d->hide();
-		}
-
-		update_desktop_names();
+		update_number_of_desktop(n);
 		number_of_desktop.release(_dpy->xcb());
 	}
 
@@ -1333,6 +1326,8 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 				set_focus(nullptr, e->data.data32[1]);
 			}
 		}
+	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
+		update_number_of_desktop(e->data.data32[0]);
 	}
 }
 
@@ -3528,6 +3523,17 @@ void page_t::update_desktop_names() {
 		}
 	}
 	desktop_names.release(_dpy->xcb());
+}
+
+void page_t::update_number_of_desktop(int n) {
+	/* only add ne desktop, ignore request for reducing desktop numbers */
+	for(int i = _root->_desktop_list.size(); i < n; ++i) {
+		auto d = make_shared<workspace_t>(this, i);
+		_root->_desktop_list.push_back(d);
+		_root->_desktop_stack->push_front(d);
+		d->hide();
+	}
+	update_desktop_names();
 }
 
 vector<shared_ptr<client_managed_t>> page_t::get_sticky_client_managed(shared_ptr<tree_t> base) {

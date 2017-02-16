@@ -352,6 +352,7 @@ public:
 	void stop_compositor();
 	void run_cmd(string const & cmd_with_args);
 	void update_desktop_names();
+	void update_number_of_desktop(int n);
 
 	void start_alt_tab(xcb_timestamp_t time);
 
