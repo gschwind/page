@@ -214,14 +214,6 @@ void page_t::run() {
 	_scheduled_repaint = true;
 	_scheduled_repaint_timeout = _mainloop.add_timeout(0L, [this]() -> void { this->render(); });
 
-	{
-		/** create the first desktop **/
-		auto d = make_shared<workspace_t>(this, 0);
-		_root->_desktop_list.push_back(d);
-		_root->_desktop_stack->push_front(d);
-		d->hide();
-	}
-
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
@@ -230,6 +222,26 @@ void page_t::run() {
 			WINDOW, 32, &identity_window, 1);
 
 	_bind_all_default_event();
+
+
+	{
+		/** check for number of desktop and create them **/
+		net_number_of_desktops_t number_of_desktop;
+		number_of_desktop.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
+		auto nd = number_of_desktop.update(_dpy->xcb());
+		int n = 1;
+		if(nd != nullptr and *nd != 0)
+			n = *nd;
+		for(int i = 0; i < n; ++i) {
+			auto d = make_shared<workspace_t>(this, i);
+			_root->_desktop_list.push_back(d);
+			_root->_desktop_stack->push_front(d);
+			d->hide();
+		}
+
+		update_desktop_names();
+		number_of_desktop.release(_dpy->xcb());
+	}
 
 	/** Initialize theme **/
 
