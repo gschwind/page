@@ -21,11 +21,12 @@ pixmap_t(display_t * dpy, xcb_visualtype_t * v, xcb_pixmap_t p, unsigned w, unsi
 	}
 	_w = w;
 	_h = h;
+	_format = PIXMAP_RGBA;
 }
 
 pixmap_t::
 pixmap_t(display_t * dpy, pixmap_format_e format, unsigned width, unsigned height) :
-	_dpy{dpy}, _w{width}, _h{height}
+	_dpy{dpy}, _w{width}, _h{height}, _format{format}
 {
 	if (format == PIXMAP_RGB) {
 		_pixmap_id = xcb_generate_id(_dpy->xcb());
@@ -59,6 +60,10 @@ unsigned pixmap_t::witdh() const {
 
 unsigned pixmap_t::height() const {
 	return _h;
+}
+
+pixmap_format_e pixmap_t::format() const {
+	return _format;
 }
 
 }

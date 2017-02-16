@@ -31,6 +31,7 @@ class pixmap_t {
 	xcb_pixmap_t _pixmap_id;
 	cairo_surface_t * _surf;
 	unsigned _w, _h;
+	pixmap_format_e _format;
 
 	pixmap_t(pixmap_t const & x);
 	pixmap_t & operator=(pixmap_t const & x);
@@ -43,6 +44,7 @@ public:
 	cairo_surface_t * get_cairo_surface() const;
 	unsigned witdh() const;
 	unsigned height() const;
+	pixmap_format_e format() const;
 
 };
 

@@ -31,7 +31,9 @@ public:
 		_surf{s}
 	{
 		_location = rect(x, y, s->witdh(), s->height());
-		_opaque_region = region(0, 0, s->witdh(), s->height());
+		if(s->format() == PIXMAP_RGB) {
+			_opaque_region = region(0, 0, s->witdh(), s->height());
+		}
 		_damaged = _location;
 	}
 
