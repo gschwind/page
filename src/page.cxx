@@ -262,11 +262,6 @@ void page_t::run() {
 
 	update_net_supported();
 
-	/* update number of desktop */
-	uint32_t number_of_desktop = _root->_desktop_list.size();
-	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
-			CARDINAL, 32, &number_of_desktop, 1);
-
 
 	update_current_desktop();
 
@@ -3534,6 +3529,12 @@ void page_t::update_number_of_desktop(int n) {
 		d->hide();
 	}
 	update_desktop_names();
+
+	/* update number of desktop */
+	uint32_t number_of_desktop = _root->_desktop_list.size();
+	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
+			CARDINAL, 32, &number_of_desktop, 1);
+
 }
 
 vector<shared_ptr<client_managed_t>> page_t::get_sticky_client_managed(shared_ptr<tree_t> base) {
