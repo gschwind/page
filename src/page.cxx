@@ -273,21 +273,6 @@ void page_t::run() {
 	}
 
 	{
-		std::vector<char> names_list;
-		for (unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
-			std::ostringstream os;
-			os << "Desktop #" << k;
-			std::string s { os.str() };
-			names_list.insert(names_list.end(), s.begin(), s.end());
-			/* end of string */
-			names_list.push_back(0);
-		}
-		_dpy->change_property(_dpy->root(), _NET_DESKTOP_NAMES, UTF8_STRING, 8,
-				&names_list[0], names_list.size());
-
-	}
-
-	{
 		wm_icon_size_t icon_size{16,16,16,16,16,16};
 		_dpy->change_property(_dpy->root(), WM_ICON_SIZE, CARDINAL, 32,
 				&icon_size, 6);
@@ -3529,6 +3514,18 @@ void page_t::update_number_of_desktop(int n) {
 		d->hide();
 	}
 	update_desktop_names();
+
+	{ // update the _NET_DESKTOP_NAMES property.
+		vector<char> names_list;
+		for (unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
+			std::string s { get_workspace(k)->name() };
+			names_list.insert(names_list.end(), s.begin(), s.end());
+			/* end of string */
+			names_list.push_back(0);
+		}
+		_dpy->change_property(_dpy->root(), _NET_DESKTOP_NAMES, UTF8_STRING, 8,
+				&names_list[0], names_list.size());
+	}
 
 	/* update number of desktop */
 	uint32_t number_of_desktop = _root->_desktop_list.size();
