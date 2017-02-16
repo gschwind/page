@@ -988,7 +988,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 	std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
-		os << "Worspace #" << k;
+		os << "Send to " << _ctx->get_workspace(k)->name();
 		v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
 	}
 	v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(_ctx->get_workspace_count(), nullptr, "To new workspace"));
