@@ -3522,9 +3522,10 @@ void page_t::update_desktop_names() {
 	net_desktop_names_t desktop_names;
 	desktop_names.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
 	auto names = desktop_names.update(_dpy->xcb());
-
-	for(int k = 0; k < _root->_desktop_list.size() and k < names->size(); ++k) {
-		_root->_desktop_list[k]->set_name((*names)[k]);
+	if(names != nullptr) {
+		for(int k = 0; k < _root->_desktop_list.size() and k < names->size(); ++k) {
+			_root->_desktop_list[k]->set_name((*names)[k]);
+		}
 	}
 	desktop_names.release(_dpy->xcb());
 }
