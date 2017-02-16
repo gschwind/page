@@ -1191,6 +1191,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		/* this set by page in most case */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		mw->reconfigure();
+	} else if (e->atom == A(_NET_DESKTOP_NAMES)) {
+		update_desktop_names();
 	}
 
 }
@@ -3502,6 +3504,17 @@ void page_t::run_cmd(std::string const & cmd_with_args)
     g_free(cmd);
 
     return;
+}
+
+void page_t::update_desktop_names() {
+	net_desktop_names_t desktop_names;
+	desktop_names.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
+	auto names = desktop_names.update(_dpy->xcb());
+
+	for(int k = 0; k < _root->_desktop_list.size() and k < names->size(); ++k) {
+		_root->_desktop_list[k]->set_name((*names)[k]);
+	}
+	desktop_names.release(_dpy->xcb());
 }
 
 vector<shared_ptr<client_managed_t>> page_t::get_sticky_client_managed(shared_ptr<tree_t> base) {

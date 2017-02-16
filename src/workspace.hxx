@@ -40,6 +40,7 @@ private:
 	rect _workarea;
 
 	unsigned const _id;
+	string _name;
 
 	/* list of viewports in creation order, to make a sane reconfiguration */
 	vector<shared_ptr<viewport_t>> _viewport_outputs;
@@ -84,6 +85,9 @@ public:
 	void set_primary_viewport(shared_ptr<viewport_t> v);
 	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
 	void attach(shared_ptr<client_managed_t> c);
+
+	void set_name(string const & s);
+	auto name() -> string const &;
 
 	bool client_focus_history_front(shared_ptr<client_managed_t> & out);
 	void client_focus_history_remove(shared_ptr<client_managed_t> in);

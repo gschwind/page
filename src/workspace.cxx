@@ -158,6 +158,14 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 	}
 }
 
+void workspace_t::set_name(string const & s) {
+	_name = s;
+}
+
+auto workspace_t::name() -> string const & {
+	return _name;
+}
+
 void workspace_t::set_workarea(rect const & r) {
 	_workarea = r;
 }

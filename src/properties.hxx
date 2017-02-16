@@ -497,6 +497,7 @@ using cxx_name##_t = property_t<x11_name, x11_type, cxx_type>;
 
 /** root properties **/
 using net_active_window_t =         property_t<_NET_ACTIVE_WINDOW,         WINDOW,             xcb_window_t>; // 32
+using net_desktop_names_t = 		property_t<_NET_DESKTOP_NAMES,         UTF8_STRING,        vector<string>>;
 
 }
 
