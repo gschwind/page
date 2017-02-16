@@ -88,6 +88,7 @@ public:
 
 	void set_name(string const & s);
 	auto name() -> string const &;
+	void set_to_default_name();
 
 	bool client_focus_history_front(shared_ptr<client_managed_t> & out);
 	void client_focus_history_remove(shared_ptr<client_managed_t> in);

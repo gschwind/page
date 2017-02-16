@@ -36,6 +36,8 @@ workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
 	push_back(_floating_layer);
 	push_back(_fullscreen_layer);
 
+	set_to_default_name();
+
 }
 
 static bool is_dock(shared_ptr<tree_t> const & x) {
@@ -164,6 +166,12 @@ void workspace_t::set_name(string const & s) {
 
 auto workspace_t::name() -> string const & {
 	return _name;
+}
+
+void workspace_t::set_to_default_name() {
+	std::ostringstream os;
+	os << "Workspace #" << _id;
+	_name = os.str();
 }
 
 void workspace_t::set_workarea(rect const & r) {
