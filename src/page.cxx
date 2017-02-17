@@ -263,9 +263,6 @@ void page_t::run() {
 
 	update_net_supported();
 
-
-	update_current_desktop();
-
 	{
 		/* page does not have showing desktop mode */
 		uint32_t showing_desktop = 0;
@@ -294,7 +291,8 @@ void page_t::run() {
 
 	_dpy->ungrab();
 
-	get_current_workspace()->show();
+	/** switch back to the first desktop by default */
+	switch_to_desktop(0);
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR,
