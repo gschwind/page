@@ -354,6 +354,7 @@ public:
 	void run_cmd(string const & cmd_with_args);
 	void update_desktop_names();
 	void update_number_of_desktop(int n);
+	void move_client_to_desktop(shared_ptr<client_managed_t> mw, unsigned workspace);
 
 	void start_alt_tab(xcb_timestamp_t time);
 

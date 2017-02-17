@@ -1308,6 +1308,8 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		}
 	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
 		update_number_of_desktop(e->data.data32[0]);
+	} else if (e->type == A(_NET_WM_DESKTOP)) {
+		move_client_to_desktop(mw, e->data.data32[0]);
 	}
 }
 
@@ -3536,6 +3538,24 @@ void page_t::update_number_of_desktop(int n) {
 	uint32_t number_of_desktop = _root->_desktop_list.size();
 	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_desktop, 1);
+
+}
+
+void page_t::move_client_to_desktop(shared_ptr<client_managed_t> mw, unsigned workspace)
+{
+	printf("move to %u\n", workspace);
+	if(workspace == ALL_DESKTOP) {
+		mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+		mw->set_net_wm_desktop(workspace);
+		return;
+	}
+
+	if(find_current_desktop(mw) == workspace)
+		return;
+
+	detach(mw);
+	mw->set_net_wm_desktop(workspace);
+	manage_client(mw, mw->wm_type());
 
 }
 
