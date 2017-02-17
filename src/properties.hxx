@@ -66,6 +66,8 @@ struct property_helper_t<vector<string>> {
 			vector<string> * ret = new vector<string>;
 			ret->push_back(string{tmp, x});
 			auto x1 = find(++x, &tmp[length], 0);
+			if(x1 == x and x == &tmp[length])
+				return ret;
 			ret->push_back(string{x, x1});
 			return ret;
 		}
@@ -90,7 +92,7 @@ struct property_helper_t<vector<string>> {
 			offset = copy(i.begin(), i.end(), offset);
 			*(offset++) = 0;
 		}
-		*offset = 0;
+		*offset = 0; // ??
 	}
 
 };
