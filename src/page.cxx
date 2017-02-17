@@ -466,6 +466,7 @@ void page_t::update_net_supported() {
 	supported_list.push_back(A(_NET_DESKTOP_GEOMETRY));
 	supported_list.push_back(A(_NET_DESKTOP_VIEWPORT));
 	supported_list.push_back(A(_NET_CURRENT_DESKTOP));
+	supported_list.push_back(A(_NET_WM_DESKTOP));
 	supported_list.push_back(A(_NET_ACTIVE_WINDOW));
 	supported_list.push_back(A(_NET_WM_STATE_FULLSCREEN));
 	supported_list.push_back(A(_NET_WM_STATE_FOCUSED));
@@ -1172,7 +1173,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	} else if (e->atom == A(WM_STATE)) {
 		/** this is set by page ... don't read it **/
 	} else if (e->atom == A(_NET_WM_DESKTOP)) {
-		/* this set by page in most case */
+		/* this must be set by the WM, moving a client to a desktop is requested by client message */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		mw->reconfigure();
 	} else if (e->atom == A(_NET_DESKTOP_NAMES)) {
@@ -2703,26 +2704,27 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 	/* find the desktop for this window */
 	{
+		/* the default desktop */
+		unsigned final_desktop = _root->_current_desktop;
 		unsigned int const * desktop = mw->net_wm_desktop();
 		if(desktop != nullptr) {
 			if(*desktop >= _root->_desktop_list.size()) {
-				mw->set_current_desktop(ALL_DESKTOP);
+				final_desktop = ALL_DESKTOP;
 				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 			}
 		} else {
 			if(mw->wm_transient_for() != nullptr) {
 				auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
 				if(parent != nullptr) {
-					mw->set_current_desktop(find_current_desktop(parent));
+					final_desktop = find_current_desktop(parent);
 				} else {
 					if(mw->is_stiky()) {
-						mw->set_current_desktop(ALL_DESKTOP);
-					} else {
-						mw->set_current_desktop(_root->_current_desktop);
+						final_desktop = ALL_DESKTOP;
 					}
 				}
 			}
 		}
+		mw->set_current_desktop(final_desktop);
 	}
 
 	if(find_current_desktop(mw) == ALL_DESKTOP) {
