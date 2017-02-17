@@ -2708,31 +2708,30 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		unsigned final_desktop = _root->_current_desktop;
 		unsigned int const * desktop = mw->net_wm_desktop();
 		if(desktop != nullptr) {
-			if(*desktop >= _root->_desktop_list.size()) {
-				final_desktop = ALL_DESKTOP;
-				mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-			}
-		} else {
-			if(mw->wm_transient_for() != nullptr) {
-				auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
-				if(parent != nullptr) {
-					final_desktop = find_current_desktop(parent);
-				} else {
-					if(mw->is_stiky()) {
-						final_desktop = ALL_DESKTOP;
-					}
-				}
+			final_desktop = *desktop;
+		} else if (mw->is_stiky()) {
+			final_desktop = ALL_DESKTOP;
+		} else if(mw->wm_transient_for() != nullptr) {
+			auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
+			if(parent != nullptr) {
+				final_desktop = find_current_desktop(parent);
 			}
 		}
-		mw->set_current_desktop(final_desktop);
-	}
-
-	if(find_current_desktop(mw) == ALL_DESKTOP) {
-		mw->show();
-	} else if(not _root->_desktop_list[find_current_desktop(mw)]->is_visible()) {
-		mw->show();
-	} else {
-		mw->hide();
+		/* sanity check */
+		if(final_desktop == ALL_DESKTOP) {
+			mw->set_net_wm_desktop(final_desktop);
+			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+			mw->show();
+		} else {
+			if(final_desktop >= _root->_desktop_list.size())
+				final_desktop = _root->_current_desktop;
+			mw->set_net_wm_desktop(final_desktop);
+			if(_root->_current_desktop == final_desktop) {
+				mw->show();
+			} else {
+				mw->hide();
+			}
+		}
 	}
 
 	/* HACK OLD FASHION FULLSCREEN */
