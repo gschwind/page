@@ -994,7 +994,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 				if (k != this->_ctx->get_current_workspace()->id()) {
 					_ctx->detach(c);
 					_ctx->get_workspace(k)->default_pop()->add_client(c, false);
-					c->set_current_desktop(k);
+					c->set_current_workspace(k);
 					c->activate();
 					_ctx->set_focus(c, time);
 				}
@@ -1007,7 +1007,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 			int selected = _ctx->create_workspace();
 			_ctx->detach(c);
 			_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
-			c->set_current_desktop(selected);
+			c->set_current_workspace(selected);
 			c->activate();
 			_ctx->set_focus(c, time);
 		};

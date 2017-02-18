@@ -1118,7 +1118,7 @@ shared_ptr<client_view_t> client_managed_t::create_view() {
 	return _ctx->create_view(_base);
 }
 
-void client_managed_t::set_current_desktop(unsigned int n) {
+void client_managed_t::set_current_workspace(unsigned int n) {
 	_client_proxy->set_net_wm_desktop(n);
 }
 

@@ -24,7 +24,7 @@ namespace page {
 using namespace std;
 
 /**
- * tree_t is the base of the hierarchy of desktop, viewports,
+ * tree_t is the base of the hierarchy of workspace, viewports,
  * client_managed and unmanaged, etc...
  * It define the stack order of each component drawn within page.
  **/

@@ -24,8 +24,8 @@ class page_root_t : public tree_t {
 
 	rect _root_position;
 
-	unsigned int _current_desktop;
-	vector<shared_ptr<workspace_t>> _desktop_list;
+	unsigned int _current_workspace;
+	vector<shared_ptr<workspace_t>> _workspace_list;
 
 	shared_ptr<tree_t> below;
 	shared_ptr<tree_t> root_subclients;
@@ -34,8 +34,8 @@ class page_root_t : public tree_t {
 	shared_ptr<tree_t> above;
 
 	shared_ptr<compositor_overlay_t> _fps_overlay;
-	/** store the order of last shown desktop **/
-	shared_ptr<tree_t> _desktop_stack;
+	/** store the order of last shown workspace **/
+	shared_ptr<tree_t> _workspace_stack;
 
 	shared_ptr<tree_t> _overlays;
 

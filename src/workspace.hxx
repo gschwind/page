@@ -1,5 +1,5 @@
 /*
- * desktop.hxx
+ * workspace.hxx
  *
  * copyright (2014) Benoit Gschwind
  *

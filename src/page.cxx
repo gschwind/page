@@ -131,8 +131,8 @@ page_t::page_t(int argc, char ** argv)
 	bind_exposay_all         = _conf.get_string("default", "bind_exposay_all");
 	bind_toggle_fullscreen   = _conf.get_string("default", "bind_toggle_fullscreen");
 	bind_toggle_compositor   = _conf.get_string("default", "bind_toggle_compositor");
-	bind_right_desktop       = _conf.get_string("default", "bind_right_desktop");
-	bind_left_desktop        = _conf.get_string("default", "bind_left_desktop");
+	bind_right_workspace     = _conf.get_string("default", "bind_right_desktop");
+	bind_left_workspace      = _conf.get_string("default", "bind_left_desktop");
 
 	bind_bind_window         = _conf.get_string("default", "bind_bind_window");
 	bind_fullscreen_window   = _conf.get_string("default", "bind_fullscreen_window");
@@ -208,7 +208,7 @@ void page_t::run() {
 	create_identity_window();
 	register_wm();
 
-	/** initialize the empty desktop **/
+	/** initialize the empty workspace **/
 
 	_root = make_shared<page_root_t>(this);
 
@@ -226,15 +226,15 @@ void page_t::run() {
 
 
 	{
-		/** check for number of desktop and create them **/
-		net_number_of_desktops_t number_of_desktop;
-		number_of_desktop.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
-		auto nd = number_of_desktop.update(_dpy->xcb());
+		/** check for number of workspace and create them **/
+		net_number_of_desktops_t number_of_workspace;
+		number_of_workspace.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
+		auto nd = number_of_workspace.update(_dpy->xcb());
 		int n = 1;
 		if(nd != nullptr and *nd != 0)
 			n = *nd;
-		update_number_of_desktop(n);
-		number_of_desktop.release(_dpy->xcb());
+		update_number_of_workspace(n);
+		number_of_workspace.release(_dpy->xcb());
 	}
 
 	/** Initialize theme **/
@@ -264,10 +264,10 @@ void page_t::run() {
 	update_net_supported();
 
 	{
-		/* page does not have showing desktop mode */
-		uint32_t showing_desktop = 0;
+		/* page does not have showing workspace mode */
+		uint32_t showing_workspace = 0;
 		_dpy->change_property(_dpy->root(), _NET_SHOWING_DESKTOP, CARDINAL, 32,
-				&showing_desktop, 1);
+				&showing_workspace, 1);
 	}
 
 	{
@@ -291,8 +291,8 @@ void page_t::run() {
 
 	_dpy->ungrab();
 
-	/** switch back to the first desktop by default */
-	switch_to_desktop(0);
+	/** switch back to the first workspace by default */
+	switch_to_workspace(0);
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR,
@@ -381,7 +381,7 @@ void page_t::unmanage(shared_ptr<client_managed_t> mw) {
 	update_workarea();
 
 	/** if the window is destroyed, this not work, see fix on destroy **/
-	for(auto x: _root->_desktop_list) {
+	for(auto x: _root->_workspace_list) {
 		x->client_focus_history_remove(mw);
 	}
 
@@ -440,7 +440,7 @@ void page_t::scan() {
 
 
 	update_workarea();
-	for(auto x: _root->_desktop_list) {
+	for(auto x: _root->_workspace_list) {
 		reconfigure_docks(x);
 	}
 
@@ -615,28 +615,28 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	if (key == bind_right_desktop) {
-		unsigned new_desktop = ((_root->_current_desktop + _root->_desktop_list.size()) + 1) % _root->_desktop_list.size();
+	if (key == bind_right_workspace) {
+		unsigned new_workspace = ((_root->_current_workspace + _root->_workspace_list.size()) + 1) % _root->_workspace_list.size();
 		shared_ptr<client_managed_t> mw;
-		if (get_workspace(new_desktop)->client_focus_history_front(mw)) {
+		if (get_workspace(new_workspace)->client_focus_history_front(mw)) {
 			mw->activate();
 			set_focus(mw, e->time);
 		} else {
-			switch_to_desktop(new_desktop);
+			switch_to_workspace(new_workspace);
 			set_focus(nullptr, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
-	if (key == bind_left_desktop) {
-		unsigned new_desktop = ((_root->_current_desktop + _root->_desktop_list.size()) - 1) % _root->_desktop_list.size();
+	if (key == bind_left_workspace) {
+		unsigned new_workspace = ((_root->_current_workspace + _root->_workspace_list.size()) - 1) % _root->_workspace_list.size();
 		shared_ptr<client_managed_t> mw;
-		if (get_workspace(new_desktop)->client_focus_history_front(mw)) {
+		if (get_workspace(new_workspace)->client_focus_history_front(mw)) {
 			mw->activate();
 			set_focus(mw, e->time);
 		} else {
-			switch_to_desktop(new_desktop);
+			switch_to_workspace(new_workspace);
 			set_focus(nullptr, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
@@ -1173,11 +1173,11 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	} else if (e->atom == A(WM_STATE)) {
 		/** this is set by page ... don't read it **/
 	} else if (e->atom == A(_NET_WM_DESKTOP)) {
-		/* this must be set by the WM, moving a client to a desktop is requested by client message */
+		/* this must be set by the WM, moving a client to a workspace is requested by client message */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		mw->reconfigure();
 	} else if (e->atom == A(_NET_DESKTOP_NAMES)) {
-		update_desktop_names();
+		update_workspace_names();
 	}
 
 }
@@ -1297,8 +1297,8 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
-		if(e->data.data32[0] >= 0 and e->data.data32[0] < _root->_desktop_list.size() and e->data.data32[0] != _root->_current_desktop) {
-			switch_to_desktop(e->data.data32[0]);
+		if(e->data.data32[0] >= 0 and e->data.data32[0] < _root->_workspace_list.size() and e->data.data32[0] != _root->_current_workspace) {
+			switch_to_workspace(e->data.data32[0]);
 			shared_ptr<client_managed_t> mw;
 			if (get_current_workspace()->client_focus_history_front(mw)) {
 				set_focus(mw, e->data.data32[1]);
@@ -1307,9 +1307,9 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			}
 		}
 	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
-		update_number_of_desktop(e->data.data32[0]);
+		update_number_of_workspace(e->data.data32[0]);
 	} else if (e->type == A(_NET_WM_DESKTOP)) {
-		move_client_to_desktop(mw, e->data.data32[0]);
+		move_client_to_workspace(mw, e->data.data32[0]);
 	}
 }
 
@@ -1388,7 +1388,7 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 		return;
 	}
 
-	auto workspace = find_desktop_of(v);
+	auto workspace = find_workspace_of(v);
 
 	detach(mw);
 
@@ -1511,19 +1511,19 @@ void page_t::insert_window_in_notebook(
 
 /* update viewport and childs allocation */
 void page_t::update_workarea() {
-	for (auto d : _root->_desktop_list) {
+	for (auto d : _root->_workspace_list) {
 		for (auto v : d->get_viewports()) {
 			compute_viewport_allocation(d, v);
 		}
 		d->set_workarea(d->primary_viewport()->allocation());
 	}
 
-	std::vector<uint32_t> workarea_data(_root->_desktop_list.size()*4);
-	for(unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
-		workarea_data[k*4+0] = _root->_desktop_list[k]->workarea().x;
-		workarea_data[k*4+1] = _root->_desktop_list[k]->workarea().y;
-		workarea_data[k*4+2] = _root->_desktop_list[k]->workarea().w;
-		workarea_data[k*4+3] = _root->_desktop_list[k]->workarea().h;
+	std::vector<uint32_t> workarea_data(_root->_workspace_list.size()*4);
+	for(unsigned k = 0; k < _root->_workspace_list.size(); ++k) {
+		workarea_data[k*4+0] = _root->_workspace_list[k]->workarea().x;
+		workarea_data[k*4+1] = _root->_workspace_list[k]->workarea().y;
+		workarea_data[k*4+2] = _root->_workspace_list[k]->workarea().w;
+		workarea_data[k*4+3] = _root->_workspace_list[k]->workarea().h;
 	}
 
 	_dpy->change_property(_dpy->root(), _NET_WORKAREA, CARDINAL, 32,
@@ -1683,7 +1683,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	 **/
 	for (auto & i : _fullscreen_client_to_viewport) {
 		if (i.second.revert_notebook.lock() == nbk) {
-			i.second.revert_notebook = _root->_desktop_list[_root->_current_desktop]->default_pop();
+			i.second.revert_notebook = _root->_workspace_list[_root->_current_workspace]->default_pop();
 		}
 	}
 
@@ -1694,7 +1694,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 }
 
 /*
- * Compute the usable desktop area and dock allocation.
+ * Compute the usable workspace area and dock allocation.
  */
 void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v) {
 
@@ -1981,11 +1981,11 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				break;
 			case _NET_WM_STATE_ADD:
 				fullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				toggle_fullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			}
 			update_workarea();
@@ -2034,11 +2034,11 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				break;
 			case _NET_WM_STATE_ADD:
 				fullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				toggle_fullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			}
 			update_workarea();
@@ -2082,11 +2082,11 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 				break;
 			case _NET_WM_STATE_ADD:
 				//fullscreen(mw);
-				//update_desktop_visibility();
+				//update_workspace_visibility();
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				//toggle_fullscreen(mw);
-				//update_desktop_visibility();
+				//update_workspace_visibility();
 				break;
 			}
 			update_workarea();
@@ -2126,13 +2126,13 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				unfullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			case _NET_WM_STATE_ADD:
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				toggle_fullscreen(mw);
-				update_desktop_visibility();
+				update_workspace_visibility();
 				break;
 			}
 			update_workarea();
@@ -2175,7 +2175,7 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 		auto mw = dynamic_pointer_cast<client_managed_t>(c);
 
 		if (mw != nullptr) {
-			int workspace = find_current_desktop(c);
+			int workspace = find_current_workspace(c);
 			if(workspace >= 0 and workspace < get_workspace_count()) {
 				get_workspace(workspace)->attach(mw);
 			} else {
@@ -2215,7 +2215,7 @@ void page_t::detach(shared_ptr<tree_t> t) {
 		 **/
 		if(typeid(*t.get()) == typeid(client_managed_t)) {
 			auto x = dynamic_pointer_cast<client_managed_t>(t);
-			for(auto w: _root->_desktop_list)
+			for(auto w: _root->_workspace_list)
 				w->client_focus_history_remove(x);
 		}
 
@@ -2239,10 +2239,10 @@ void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, share
 			v->hide();
 			add_global_damage(v->raw_area());
 			data.viewport = v;
-			data.workspace = find_desktop_of(v);
+			data.workspace = find_workspace_of(v);
 			c->set_notebook_wished_position(v->raw_area());
 			c->reconfigure();
-			update_desktop_visibility();
+			update_workspace_visibility();
 		}
 	}
 }
@@ -2306,7 +2306,7 @@ shared_ptr<notebook_t> page_t::find_parent_notebook_for(shared_ptr<client_manage
 	return dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
 }
 
-shared_ptr<workspace_t> page_t::find_desktop_of(shared_ptr<tree_t> n) {
+shared_ptr<workspace_t> page_t::find_workspace_of(shared_ptr<tree_t> n) {
 	shared_ptr<tree_t> x = n;
 	while (x != nullptr) {
 		auto ret = dynamic_pointer_cast<workspace_t>(x);
@@ -2404,7 +2404,7 @@ void page_t::update_viewport_layout() {
 	}
 
 	_root->_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
-	set_desktop_geometry(_root->_root_position.w, _root->_root_position.h);
+	set_workspace_geometry(_root->_root_position.w, _root->_root_position.h);
 
 	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
@@ -2449,7 +2449,7 @@ void page_t::update_viewport_layout() {
 		already_allocated += location;
 	}
 
-	for(auto d: _root->_desktop_list) {
+	for(auto d: _root->_workspace_list) {
 		//d->set_allocation(_root->_root_position);
 		/** get old layout to recycle old viewport, and keep unchanged outputs **/
 		vector<shared_ptr<viewport_t>> old_layout = d->get_viewport_map();
@@ -2526,19 +2526,19 @@ void page_t::update_viewport_layout() {
 		free(randr_resources);
 	}
 
-	update_desktop_visibility();
+	update_workspace_visibility();
 
 	/* set viewport */
-	std::vector<uint32_t> viewport(_root->_desktop_list.size()*2);
-	std::fill_n(viewport.begin(), _root->_desktop_list.size()*2, 0);
+	std::vector<uint32_t> viewport(_root->_workspace_list.size()*2);
+	std::fill_n(viewport.begin(), _root->_workspace_list.size()*2, 0);
 	_dpy->change_property(_dpy->root(), _NET_DESKTOP_VIEWPORT,
-			CARDINAL, 32, &viewport[0], _root->_desktop_list.size()*2);
+			CARDINAL, 32, &viewport[0], _root->_workspace_list.size()*2);
 
-	/* define desktop geometry */
-	set_desktop_geometry(_root->_root_position.w, _root->_root_position.h);
+	/* define workspace geometry */
+	set_workspace_geometry(_root->_root_position.w, _root->_root_position.h);
 
 	update_workarea();
-	reconfigure_docks(_root->_desktop_list[_root->_current_desktop]);
+	reconfigure_docks(_root->_workspace_list[_root->_current_workspace]);
 
 }
 
@@ -2704,31 +2704,31 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		_need_restack = true;
 	}
 
-	/* find the desktop for this window */
+	/* find the workspace for this window */
 	{
-		/* the default desktop */
-		unsigned final_desktop = _root->_current_desktop;
-		unsigned int const * desktop = mw->net_wm_desktop();
-		if(desktop != nullptr) {
-			final_desktop = *desktop;
+		/* the default workspace */
+		unsigned final_workspace = _root->_current_workspace;
+		unsigned int const * workspace = mw->net_wm_desktop();
+		if(workspace != nullptr) {
+			final_workspace = *workspace;
 		} else if (mw->is_stiky()) {
-			final_desktop = ALL_DESKTOP;
+			final_workspace = ALL_DESKTOP;
 		} else if(mw->wm_transient_for() != nullptr) {
 			auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
 			if(parent != nullptr) {
-				final_desktop = find_current_desktop(parent);
+				final_workspace = find_current_workspace(parent);
 			}
 		}
 		/* sanity check */
-		if(final_desktop == ALL_DESKTOP) {
-			mw->set_net_wm_desktop(final_desktop);
+		if(final_workspace == ALL_DESKTOP) {
+			mw->set_net_wm_desktop(final_workspace);
 			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 			mw->show();
 		} else {
-			if(final_desktop >= _root->_desktop_list.size())
-				final_desktop = _root->_current_desktop;
-			mw->set_net_wm_desktop(final_desktop);
-			if(_root->_current_desktop == final_desktop) {
+			if(final_workspace >= _root->_workspace_list.size())
+				final_workspace = _root->_current_workspace;
+			mw->set_net_wm_desktop(final_workspace);
+			if(_root->_current_workspace == final_workspace) {
 				mw->show();
 			} else {
 				mw->hide();
@@ -2756,7 +2756,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	if (mw->is_fullscreen()) {
 		mw->normalize();
 		fullscreen(mw);
-		update_desktop_visibility();
+		update_workspace_visibility();
 		mw->show();
 		mw->activate();
 		set_focus(mw, XCB_CURRENT_TIME);
@@ -2918,13 +2918,13 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 	}
 }
 
-void page_t::set_desktop_geometry(long width, long height) {
-	/* define desktop geometry */
-	uint32_t desktop_geometry[2];
-	desktop_geometry[0] = width;
-	desktop_geometry[1] = height;
+void page_t::set_workspace_geometry(long width, long height) {
+	/* define workspace geometry */
+	uint32_t workspace_geometry[2];
+	workspace_geometry[0] = width;
+	workspace_geometry[1] = height;
 	_dpy->change_property(_dpy->root(), _NET_DESKTOP_GEOMETRY,
-			CARDINAL, 32, desktop_geometry, 2);
+			CARDINAL, 32, workspace_geometry, 2);
 }
 
 shared_ptr<client_managed_t> page_t::find_client_managed_with(xcb_window_t w) {
@@ -3052,8 +3052,8 @@ void page_t::update_grabkey() {
 	grab_key(_dpy->xcb(), _dpy->root(), bind_exposay_all, _keymap);
 	grab_key(_dpy->xcb(), _dpy->root(), bind_toggle_fullscreen, _keymap);
 	grab_key(_dpy->xcb(), _dpy->root(), bind_toggle_compositor, _keymap);
-	grab_key(_dpy->xcb(), _dpy->root(), bind_right_desktop, _keymap);
-	grab_key(_dpy->xcb(), _dpy->root(), bind_left_desktop, _keymap);
+	grab_key(_dpy->xcb(), _dpy->root(), bind_right_workspace, _keymap);
+	grab_key(_dpy->xcb(), _dpy->root(), bind_left_workspace, _keymap);
 	grab_key(_dpy->xcb(), _dpy->root(), bind_bind_window, _keymap);
 	grab_key(_dpy->xcb(), _dpy->root(), bind_fullscreen_window, _keymap);
 	grab_key(_dpy->xcb(), _dpy->root(), bind_float_window, _keymap);
@@ -3081,7 +3081,7 @@ void page_t::update_keymap() {
 /** debug function that try to print the state of page in stdout **/
 void page_t::print_state() const {
 	_root->print_tree(0);
-	cout << "_current_desktop = " << _root->_current_desktop << endl;
+	cout << "_current_workspace = " << _root->_current_workspace << endl;
 
 	cout << "clients list:" << endl;
 	for(auto c: filter_class<client_base_t>(_root->get_all_children())) {
@@ -3091,48 +3091,48 @@ void page_t::print_state() const {
 
 }
 
-void page_t::update_current_desktop() const {
-	/* set current desktop */
-	uint32_t current_desktop = _root->_current_desktop;
+void page_t::update_current_workspace() const {
+	/* set current workspace */
+	uint32_t current_workspace = _root->_current_workspace;
 	_dpy->change_property(_dpy->root(), _NET_CURRENT_DESKTOP, CARDINAL,
-			32, &current_desktop, 1);
+			32, &current_workspace, 1);
 }
 
-void page_t::switch_to_desktop(unsigned int desktop) {
-	assert(desktop < _root->_desktop_list.size());
-	if (desktop != _root->_current_desktop and desktop != ALL_DESKTOP) {
-		std::cout << "switch to desktop #" << desktop << std::endl;
+void page_t::switch_to_workspace(unsigned int workspace) {
+	assert(workspace < _root->_workspace_list.size());
+	if (workspace != _root->_current_workspace and workspace != ALL_DESKTOP) {
+		std::cout << "switch to workspace #" << workspace << std::endl;
 
-		start_switch_to_desktop_animation(desktop);
+		start_switch_to_workspace_animation(workspace);
 
-		auto stiky_list = get_sticky_client_managed(_root->_desktop_list[_root->_current_desktop]);
+		auto stiky_list = get_sticky_client_managed(_root->_workspace_list[_root->_current_workspace]);
 
-		/* hide the current desktop */
-		_root->_desktop_list[_root->_current_desktop]->hide();
-		_root->_current_desktop = desktop;
+		/* hide the current workspace */
+		_root->_workspace_list[_root->_current_workspace]->hide();
+		_root->_current_workspace = workspace;
 
-		/* put the new desktop ontop of others and show it */
-		_root->_desktop_stack->remove(_root->_desktop_list[_root->_current_desktop]);
-		_root->_desktop_stack->push_back(_root->_desktop_list[_root->_current_desktop]);
-		_root->_desktop_list[_root->_current_desktop]->show();
+		/* put the new workspace ontop of others and show it */
+		_root->_workspace_stack->remove(_root->_workspace_list[_root->_current_workspace]);
+		_root->_workspace_stack->push_back(_root->_workspace_list[_root->_current_workspace]);
+		_root->_workspace_list[_root->_current_workspace]->show();
 
-		/** move sticky to current desktop **/
+		/** move sticky to current workspace **/
 		for(auto s : stiky_list) {
 			detach(s);
 			insert_in_tree_using_transient_for(s);
 		}
 		update_viewport_layout();
-		update_current_desktop();
-		update_desktop_visibility();
+		update_current_workspace();
+		update_workspace_visibility();
 	}
 }
 
 
-void page_t::start_switch_to_desktop_animation(unsigned int desktop) {
-	auto new_desktop = _root->_desktop_list[desktop];
+void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
+	auto new_workspace = _root->_workspace_list[workspace];
 
-	for(auto const & v : new_desktop->get_viewports()) {
-		auto pix = theme()->workspace_switch_popup(new_desktop->name());
+	for(auto const & v : new_workspace->get_viewports()) {
+		auto pix = theme()->workspace_switch_popup(new_workspace->name());
 		auto loc = v->allocation();
 		auto rnd = make_shared<renderable_fadeout_pixmap_t>(this, pix, loc.x + (loc.w-pix->witdh())/2.0, loc.y + (loc.h-pix->height())/2.0);
 		overlay_add(rnd);
@@ -3149,16 +3149,16 @@ void page_t::start_switch_to_desktop_animation(unsigned int desktop) {
 //	}
 //}
 
-void page_t::update_desktop_visibility() {
-	/** hide only desktop that must be hidden first **/
-	for(unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
-		if(k != _root->_current_desktop) {
-			_root->_desktop_list[k]->hide();
+void page_t::update_workspace_visibility() {
+	/** hide only workspace that must be hidden first **/
+	for(unsigned k = 0; k < _root->_workspace_list.size(); ++k) {
+		if(k != _root->_current_workspace) {
+			_root->_workspace_list[k]->hide();
 		}
 	}
 
-	/** and show the desktop that have to be show **/
-	_root->_desktop_list[_root->_current_desktop]->show();
+	/** and show the workspace that have to be show **/
+	_root->_workspace_list[_root->_current_workspace]->show();
 
 	for(auto & i: _fullscreen_client_to_viewport) {
 		if(not i.second.workspace.lock()->is_visible()) {
@@ -3500,31 +3500,31 @@ void page_t::run_cmd(std::string const & cmd_with_args)
     return;
 }
 
-void page_t::update_desktop_names() {
-	net_desktop_names_t desktop_names;
-	desktop_names.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
-	auto names = desktop_names.update(_dpy->xcb());
+void page_t::update_workspace_names() {
+	net_desktop_names_t workspace_names;
+	workspace_names.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
+	auto names = workspace_names.update(_dpy->xcb());
 	if(names != nullptr) {
-		for(int k = 0; k < _root->_desktop_list.size() and k < names->size(); ++k) {
-			_root->_desktop_list[k]->set_name((*names)[k]);
+		for(int k = 0; k < _root->_workspace_list.size() and k < names->size(); ++k) {
+			_root->_workspace_list[k]->set_name((*names)[k]);
 		}
 	}
-	desktop_names.release(_dpy->xcb());
+	workspace_names.release(_dpy->xcb());
 }
 
-void page_t::update_number_of_desktop(int n) {
-	/* only add ne desktop, ignore request for reducing desktop numbers */
-	for(int i = _root->_desktop_list.size(); i < n; ++i) {
+void page_t::update_number_of_workspace(int n) {
+	/* only add ne workspace, ignore request for reducing workspace numbers */
+	for(int i = _root->_workspace_list.size(); i < n; ++i) {
 		auto d = make_shared<workspace_t>(this, i);
-		_root->_desktop_list.push_back(d);
-		_root->_desktop_stack->push_front(d);
+		_root->_workspace_list.push_back(d);
+		_root->_workspace_stack->push_front(d);
 		d->hide();
 	}
-	update_desktop_names();
+	update_workspace_names();
 
 	{ // update the _NET_DESKTOP_NAMES property.
 		vector<char> names_list;
-		for (unsigned k = 0; k < _root->_desktop_list.size(); ++k) {
+		for (unsigned k = 0; k < _root->_workspace_list.size(); ++k) {
 			std::string s { get_workspace(k)->name() };
 			names_list.insert(names_list.end(), s.begin(), s.end());
 			/* end of string */
@@ -3534,14 +3534,14 @@ void page_t::update_number_of_desktop(int n) {
 				&names_list[0], names_list.size());
 	}
 
-	/* update number of desktop */
-	uint32_t number_of_desktop = _root->_desktop_list.size();
+	/* update number of workspace */
+	uint32_t number_of_workspace = _root->_workspace_list.size();
 	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
-			CARDINAL, 32, &number_of_desktop, 1);
+			CARDINAL, 32, &number_of_workspace, 1);
 
 }
 
-void page_t::move_client_to_desktop(shared_ptr<client_managed_t> mw, unsigned workspace)
+void page_t::move_client_to_workspace(shared_ptr<client_managed_t> mw, unsigned workspace)
 {
 	printf("move to %u\n", workspace);
 	if(workspace == ALL_DESKTOP) {
@@ -3550,7 +3550,7 @@ void page_t::move_client_to_desktop(shared_ptr<client_managed_t> mw, unsigned wo
 		return;
 	}
 
-	if(find_current_desktop(mw) == workspace)
+	if(find_current_workspace(mw) == workspace)
 		return;
 
 	detach(mw);
@@ -3583,13 +3583,13 @@ shared_ptr<viewport_t> page_t::find_viewport_of(shared_ptr<tree_t> t) {
 	return nullptr;
 }
 
-unsigned int page_t::find_current_desktop(shared_ptr<client_base_t> c) {
+unsigned int page_t::find_current_workspace(shared_ptr<client_base_t> c) {
 	if(c->net_wm_desktop() != nullptr)
 		return *(c->net_wm_desktop());
-	auto d = find_desktop_of(c);
+	auto d = find_workspace_of(c);
 	if(d != nullptr)
 		return d->id();
-	return _root->_current_desktop;
+	return _root->_current_workspace;
 }
 
 void page_t::process_pending_events() {
@@ -3637,31 +3637,31 @@ void page_t::add_global_damage(region const & r) {
 }
 
 shared_ptr<workspace_t> const & page_t::get_current_workspace() const {
-	return _root->_desktop_list[_root->_current_desktop];
+	return _root->_workspace_list[_root->_current_workspace];
 }
 
 shared_ptr<workspace_t> const & page_t::get_workspace(int id) const {
-	return _root->_desktop_list[id];
+	return _root->_workspace_list[id];
 }
 
 int page_t::get_workspace_count() const {
-	return _root->_desktop_list.size();
+	return _root->_workspace_list.size();
 }
 
 int page_t::create_workspace() {
-	auto d = make_shared<workspace_t>(this, _root->_desktop_list.size());
-	_root->_desktop_list.push_back(d);
-	_root->_desktop_stack->push_front(d);
+	auto d = make_shared<workspace_t>(this, _root->_workspace_list.size());
+	_root->_workspace_list.push_back(d);
+	_root->_workspace_stack->push_front(d);
 	d->hide();
 
-	/* update number of desktop */
-	uint32_t number_of_desktop = _root->_desktop_list.size();
+	/* update number of workspace */
+	uint32_t number_of_workspace = _root->_workspace_list.size();
 	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
-			CARDINAL, 32, &number_of_desktop, 1);
+			CARDINAL, 32, &number_of_workspace, 1);
 
 	update_viewport_layout();
-	update_current_desktop();
-	update_desktop_visibility();
+	update_current_workspace();
+	update_workspace_visibility();
 	return d->id();
 }
 

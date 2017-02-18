@@ -130,7 +130,7 @@ void compositor_t::render(tree_t * t) {
 	damaged += _damaged;
 
 	/** clip damage area to visible screen **/
-	damaged &= _desktop_region;
+	damaged &= _workspace_region;
 
 	/** no damage at all => no repair to do, return **/
 	if(damaged.empty())
@@ -142,7 +142,7 @@ void compositor_t::render(tree_t * t) {
 		_fps_history.pop_back();
 	}
 
-	_damaged_area.push_front(damaged.area()/_desktop_region_area);
+	_damaged_area.push_front(damaged.area()/_workspace_region_area);
 	if(_damaged_area.size() > _FPS_WINDOWS) {
 		_damaged_area.pop_back();
 	}
@@ -160,7 +160,7 @@ void compositor_t::render(tree_t * t) {
 
 	_direct_render &= damaged;
 
-	_direct_render_area.push_front(_direct_render.area() / _desktop_region_area);
+	_direct_render_area.push_front(_direct_render.area() / _workspace_region_area);
 	if(_direct_render_area.size() > _FPS_WINDOWS) {
 		_direct_render_area.pop_back();
 	}
@@ -242,16 +242,16 @@ void compositor_t::update_layout() {
 		}
 	}
 
-	_desktop_region.clear();
+	_workspace_region.clear();
 
 	for(auto i: crtc_info) {
 		rect area{i.second->x, i.second->y, i.second->width, i.second->height};
-		_desktop_region += area;
+		_workspace_region += area;
 	}
 
-	_desktop_region_area = _desktop_region.area();
+	_workspace_region_area = _workspace_region.area();
 
-	printf("layout = %s\n", _desktop_region.to_string().c_str());
+	printf("layout = %s\n", _workspace_region.to_string().c_str());
 
 	_damaged += rect{geometry->x, geometry->y, geometry->width, geometry->height};
 

@@ -58,8 +58,8 @@ private:
 	deque<double> _direct_render_area;
 
 	region _damaged;
-	region _desktop_region;
-	double _desktop_region_area;
+	region _workspace_region;
+	double _workspace_region_area;
 
 private:
 
@@ -117,13 +117,13 @@ public:
 
 	void set_show_damaged(bool b) {
 		if(_show_damaged != b)
-			_damaged += _desktop_region;
+			_damaged += _workspace_region;
 		_show_damaged = b;
 	}
 
 	void set_show_opac(bool b) {
 		if(_show_opac != b)
-			_damaged += _desktop_region;
+			_damaged += _workspace_region;
 		_show_opac = b;
 	}
 

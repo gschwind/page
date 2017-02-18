@@ -80,7 +80,7 @@ enum process_mode_e {
 	PROCESS_FLOATING_MOVE_BY_CLIENT,	// when moving a floating window started by client himself
 	PROCESS_FLOATING_RESIZE_BY_CLIENT,	// when resizing a floating window started by client himself
 	PROCESS_NOTEBOOK_MENU,				// when notebook menu is shown
-	PROCESS_NOTEBOOK_CLIENT_MENU,		// when switch desktop menu is shown
+	PROCESS_NOTEBOOK_CLIENT_MENU,		// when switch workspace menu is shown
 	PROCESS_ALT_TAB						// when alt-tab running
 };
 
@@ -149,8 +149,8 @@ public:
 
 	key_desc_t bind_exposay_all;
 
-	key_desc_t bind_right_desktop;
-	key_desc_t bind_left_desktop;
+	key_desc_t bind_right_workspace;
+	key_desc_t bind_left_workspace;
 
 	key_desc_t bind_bind_window;
 	key_desc_t bind_fullscreen_window;
@@ -302,7 +302,7 @@ public:
 	static shared_ptr<notebook_t> find_parent_notebook_for(shared_ptr<client_managed_t> mw);
 	shared_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
 	static shared_ptr<viewport_t> find_viewport_of(shared_ptr<tree_t> n);
-	static shared_ptr<workspace_t> find_desktop_of(shared_ptr<tree_t> n);
+	static shared_ptr<workspace_t> find_workspace_of(shared_ptr<tree_t> n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
 	void update_windows_stack();
 	void update_viewport_layout();
@@ -314,7 +314,7 @@ public:
 	void create_unmanaged_window(xcb_window_t w, xcb_atom_t type);
 	bool get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time);
 	void update_page_areas();
-	void set_desktop_geometry(long width, long height);
+	void set_workspace_geometry(long width, long height);
 	shared_ptr<client_base_t> find_client_with(xcb_window_t w);
 	shared_ptr<client_base_t> find_client(xcb_window_t w);
 	void remove_client(shared_ptr<client_base_t> c);
@@ -345,18 +345,18 @@ public:
 
 	/** debug function that try to print the state of page in stdout **/
 	void print_state() const;
-	void update_current_desktop() const;
-	void switch_to_desktop(unsigned int desktop);
-	void start_switch_to_desktop_animation(unsigned int desktop);
+	void update_current_workspace() const;
+	void switch_to_workspace(unsigned int workspace);
+	void start_switch_to_workspace_animation(unsigned int workspace);
 	void update_fullscreen_clients_position();
-	void update_desktop_visibility();
+	void update_workspace_visibility();
 	void process_error(xcb_generic_event_t const * e);
 	void start_compositor();
 	void stop_compositor();
 	void run_cmd(string const & cmd_with_args);
-	void update_desktop_names();
-	void update_number_of_desktop(int n);
-	void move_client_to_desktop(shared_ptr<client_managed_t> mw, unsigned workspace);
+	void update_workspace_names();
+	void update_number_of_workspace(int n);
+	void move_client_to_workspace(shared_ptr<client_managed_t> mw, unsigned workspace);
 
 	void start_alt_tab(xcb_timestamp_t time);
 
@@ -365,7 +365,7 @@ public:
 
 	void mark_durty(shared_ptr<tree_t> t);
 
-	unsigned int find_current_desktop(shared_ptr<client_base_t> c);
+	unsigned int find_current_workspace(shared_ptr<client_base_t> c);
 
 	void process_pending_events();
 

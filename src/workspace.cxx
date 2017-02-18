@@ -1,5 +1,5 @@
 /*
- * desktop.cxx
+ * workspace.cxx
  *
  * copyright (2010-2014) Benoit Gschwind
  *
@@ -82,7 +82,7 @@ void workspace_t::update_layout(time64_t const time) {
 }
 
 void workspace_t::activate() {
-	_ctx->switch_to_desktop(id());
+	_ctx->switch_to_workspace(id());
 }
 
 void workspace_t::activate(shared_ptr<tree_t> t) {

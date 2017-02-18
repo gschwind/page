@@ -204,7 +204,7 @@ public:
 	void delete_window(xcb_timestamp_t);
 	auto icon() const -> shared_ptr<icon16>;
 	void set_notebook_wished_position(rect const & pos);
-	void set_current_desktop(unsigned int n);
+	void set_current_workspace(unsigned int n);
 	bool is_stiky();
 	bool is_modal();
 	void net_wm_state_add(atom_e atom);

@@ -17,7 +17,7 @@ using namespace std;
 
 page_root_t::page_root_t(page_t * ctx) :
 		_ctx{ctx},
-		_current_desktop{0}
+		_current_workspace{0}
 {
 
 	below = make_shared<tree_t>();
@@ -26,10 +26,10 @@ page_root_t::page_root_t(page_t * ctx) :
 	notifications = make_shared<tree_t>();
 	above = make_shared<tree_t>();
 
-	_desktop_stack = make_shared<tree_t>();
+	_workspace_stack = make_shared<tree_t>();
 	_overlays = make_shared<tree_t>();
 
-	push_back(_desktop_stack);
+	push_back(_workspace_stack);
 	push_back(below);
 	push_back(root_subclients);
 	push_back(tooltips);
@@ -42,7 +42,7 @@ page_root_t::page_root_t(page_t * ctx) :
 	tooltips->show();
 	notifications->show();
 	above->show();
-	_desktop_stack->show();
+	_workspace_stack->show();
 	_overlays->show();
 
 }
