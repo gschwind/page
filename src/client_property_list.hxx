@@ -21,7 +21,6 @@ RO_PROPERTY(net_wm_name,               _NET_WM_NAME,               UTF8_STRING, 
 RO_PROPERTY(net_wm_visible_name,       _NET_WM_VISIBLE_NAME,       UTF8_STRING,        string) // 8
 RO_PROPERTY(net_wm_icon_name,          _NET_WM_ICON_NAME,          UTF8_STRING,        string) // 8
 RO_PROPERTY(net_wm_visible_icon_name,  _NET_WM_VISIBLE_ICON_NAME,  UTF8_STRING,        string) // 8
-RO_PROPERTY(net_wm_desktop,            _NET_WM_DESKTOP,            CARDINAL,           unsigned int) // 32
 RO_PROPERTY(net_wm_window_type,        _NET_WM_WINDOW_TYPE,        ATOM,               list<xcb_atom_t>) // 32
 RO_PROPERTY(net_wm_state,              _NET_WM_STATE,              ATOM,               list<xcb_atom_t>) // 32
 RO_PROPERTY(net_wm_allowed_actions,    _NET_WM_ALLOWED_ACTIONS,    ATOM,               list<xcb_atom_t>) // 32
@@ -37,4 +36,5 @@ RO_PROPERTY(net_wm_opaque_region,      _NET_WM_OPAQUE_REGION,      CARDINAL,    
 RO_PROPERTY(net_wm_bypass_compositor,  _NET_WM_BYPASS_COMPOSITOR,  CARDINAL,           unsigned int) // 32
 RO_PROPERTY(motif_hints,               _MOTIF_WM_HINTS,            _MOTIF_WM_HINTS,    motif_wm_hints_t) // 8
 
+RW_PROPERTY(net_wm_desktop,            _NET_WM_DESKTOP,            CARDINAL,           unsigned int) // 32
 RW_PROPERTY(wm_state,                  WM_STATE,                   WM_STATE,           wm_state_data_t) // 32
