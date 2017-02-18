@@ -18,20 +18,20 @@ AX_CXX_COMPILE_STDCXX_11
 dnl Check for libs
 
 PKG_CHECK_MODULES(X11, [
-	x11 >= 1.6.4
-	x11-xcb >= 1.6.4
+	x11 >= 1.6.3
+	x11-xcb >= 1.6.3
 ])
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)
 
 PKG_CHECK_MODULES(XCB, [
-	xcb >= 1.12
+	xcb >= 1.11
 	xcb-util >= 0.4.0
-	xcb-xfixes >= 1.12
-	xcb-damage >= 1.12
-	xcb-randr >= 1.12
-	xcb-shape >= 1.12
-	xcb-composite >= 1.12
+	xcb-xfixes >= 1.11
+	xcb-damage >= 1.11
+	xcb-randr >= 1.11
+	xcb-shape >= 1.11
+	xcb-composite >= 1.11
 ])
 AC_SUBST(XCB_CFLAGS)
 AC_SUBST(XCB_LIBS)
