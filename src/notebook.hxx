@@ -132,8 +132,6 @@ class notebook_t : public page_component_t {
 	void _update_layout();
 	void _update_mouse_over();
 
-	void _process_notebook_client_menu(dropdown_menu_t * ths, shared_ptr<client_managed_t> c, int selected);
-
 	void _mouse_over_reset();
 	void _mouse_over_set();
 

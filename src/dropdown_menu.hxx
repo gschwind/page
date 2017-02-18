@@ -29,17 +29,20 @@ namespace page {
 using namespace std;
 
 class dropdown_menu_entry_t {
+	friend class dropdown_menu_t;
 
 	theme_dropdown_menu_entry_t _theme_data;
+	function<void(xcb_timestamp_t time)> _on_click;
 
 	dropdown_menu_entry_t(dropdown_menu_entry_t const &);
 	dropdown_menu_entry_t & operator=(dropdown_menu_entry_t const &);
 
 public:
-	dropdown_menu_entry_t(shared_ptr<icon16> icon, string const & label)
+	dropdown_menu_entry_t(shared_ptr<icon16> icon, string const & label, function<void(xcb_timestamp_t time)> on_click) :
+		_theme_data{icon, label},
+		_on_click{on_click}
 	{
-		_theme_data.icon = icon;
-		_theme_data.label = label;
+
 	}
 
 	~dropdown_menu_entry_t() {
@@ -206,15 +209,12 @@ protected:
 	xcb_button_t _button;
 	xcb_timestamp_t _time;
 
-	function<void(dropdown_menu_t *, int)> _callback;
-
 public:
 
-	dropdown_menu_t(page_context_t * ctx, vector<shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position, function<void(dropdown_menu_t *, int)> f) :
+	dropdown_menu_t(page_context_t * ctx, vector<shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position) :
 	_ctx{ctx},
 	_start_position{start_position},
 	_button{button},
-	_callback{f},
 	_time{XCB_CURRENT_TIME}
 	{
 
@@ -321,7 +321,7 @@ public:
 				if (pop->_position.is_inside(e->root_x, e->root_y)) {
 					update_cursor_position(e->root_x, e->root_y);
 					_time = e->time;
-					_callback(this, selected());
+					_items[_selected]->_on_click(e->time);
 				}
 
 				_ctx->grab_stop();

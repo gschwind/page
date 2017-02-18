@@ -984,35 +984,37 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 }
 
 void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y) {
-	auto callback = [this, c] (dropdown_menu_t * ths, int selected) -> void { this->_process_notebook_client_menu(ths, c, selected); };
 	std::vector<std::shared_ptr<dropdown_menu_t::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
 		os << "Send to " << _ctx->get_workspace(k)->name();
-		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, os.str()));
+		auto func =
+			[this, c, k] (xcb_timestamp_t time) {
+				if (k != this->_ctx->get_current_workspace()->id()) {
+					_ctx->detach(c);
+					_ctx->get_workspace(k)->default_pop()->add_client(c, false);
+					c->set_current_desktop(k);
+					c->activate();
+					_ctx->set_focus(c, time);
+				}
+			};
+		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, os.str(), func));
 	}
-	v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace"));
-	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}, callback});
 
-}
-
-void notebook_t::_process_notebook_client_menu(dropdown_menu_t * ths, shared_ptr<client_managed_t> c, int selected) {
-	printf("Change desktop %d for %u\n", selected, c->orig());
-
-	if(selected == _ctx->get_workspace_count()) {
-		selected = _ctx->create_workspace();
-		_ctx->detach(c);
-		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
-		c->set_current_desktop(selected);
-		c->activate();
-		_ctx->set_focus(c, ths->time());
-	} else if (selected != _ctx->get_current_workspace()->id()) {
-		_ctx->detach(c);
-		_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
-		c->set_current_desktop(selected);
-		c->activate();
-		_ctx->set_focus(c, ths->time());
+	{
+		auto func = [this, c] (xcb_timestamp_t time) {
+			int selected = _ctx->create_workspace();
+			_ctx->detach(c);
+			_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
+			c->set_current_desktop(selected);
+			c->activate();
+			_ctx->set_focus(c, time);
+		};
+		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
 	}
+
+	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}});
+
 }
 
 void notebook_t::_update_mouse_over() {
