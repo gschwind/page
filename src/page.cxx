@@ -600,6 +600,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		shared_ptr<client_managed_t> mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			toggle_fullscreen(mw);
+			set_focus(mw, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
@@ -648,8 +649,10 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			if (mw->is(MANAGED_FULLSCREEN)) {
 				unfullscreen(mw);
+				set_focus(mw, e->time);
 			} else if (mw->is(MANAGED_FLOATING)) {
 				bind_window(mw, true);
+				set_focus(mw, e->time);
 			}
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
@@ -661,6 +664,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			if (not mw->is(MANAGED_FULLSCREEN)) {
 				fullscreen(mw);
+				set_focus(mw, e->time);
 			}
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
@@ -672,10 +676,12 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			if (mw->is(MANAGED_FULLSCREEN)) {
 				unfullscreen(mw);
+				set_focus(mw, e->time);
 			}
 
 			if (mw->is(MANAGED_NOTEBOOK)) {
 				unbind_window(mw);
+				set_focus(mw, e->time);
 			}
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
