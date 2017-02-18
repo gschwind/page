@@ -11,6 +11,8 @@ AM_CXXFLAGS =  \
 	-fno-strict-aliasing
 
 page_SOURCES = \
+	dropdown_menu.hxx \
+	dropdown_menu.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \

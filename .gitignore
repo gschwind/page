@@ -59,3 +59,4 @@ src/tree.o
 src/utils.o
 src/viewport.o
 src/workspace.o
+src/dropdown_menu.o
