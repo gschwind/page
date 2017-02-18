@@ -13,6 +13,8 @@ AM_CXXFLAGS =  \
 page_SOURCES = \
 	dropdown_menu.hxx \
 	dropdown_menu.cxx \
+	compositor_overlay.hxx \
+	compositor_overlay.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \

@@ -60,3 +60,4 @@ src/utils.o
 src/viewport.o
 src/workspace.o
 src/dropdown_menu.o
+src/compositor_overlay.o

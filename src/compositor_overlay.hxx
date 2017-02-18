@@ -16,7 +16,9 @@
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
 
-#include "pixmap.hxx"
+#include "page_context.hxx"
+#include "region.hxx"
+#include "tree.hxx"
 
 namespace page {
 
@@ -35,173 +37,21 @@ struct compositor_overlay_t : public tree_t {
 
 public:
 
-	compositor_overlay_t(page_context_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos}, _has_damage{false} {
-		_fps_font_desc = pango_font_description_from_string("Mono 11");
-		_fps_font_map = pango_cairo_font_map_new();
-		_fps_context = pango_font_map_create_context(_fps_font_map);
-		_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, _position.w, _position.h);
+	compositor_overlay_t(page_context_t * ctx, rect const & pos);
+	~compositor_overlay_t();
 
-	}
+	virtual region get_opaque_region();
+	virtual region get_visible_region();
+	virtual region get_damaged();
 
-	~compositor_overlay_t() {
-		pango_font_description_free(_fps_font_desc);
-		g_object_unref(_fps_context);
-		g_object_unref(_fps_font_map);
-	}
-
-	/**
-	 * Derived class must return opaque region for this object,
-	 * If unknown it's safe to leave this empty.
-	 **/
-	virtual region get_opaque_region() {
-		return region{};
-	}
-
-	/**
-	 * Derived class must return visible region,
-	 * If unknow the whole screen can be returned, but draw will be called each time.
-	 **/
-	virtual region get_visible_region() {
-		return region{_position};
-	}
-
-	/**
-	 * return currently damaged area (absolute)
-	 **/
-	virtual region get_damaged()  {
-		if(_has_damage)
-			return region{_position};
-		else
-			return region{};
-	}
-
-
-
-	void show() {
-		_is_visible = true;
-	}
-
-	void hide() {
-		_is_visible = false;
-	}
-
-	void update_layout(time64_t const t) {
-		_has_damage = false;
-
-		auto child = _parent->get_all_children();
-		for(auto & c: child) {
-			if(not c->is_visible())
-				continue;
-			if(not c->get_damaged().empty()) {
-				_has_damage = true;
-				break;
-			}
-		}
-
-		if(_has_damage)
-			_update_back_buffer();
-	}
-
-	void _update_back_buffer() {
-
-		cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
-
-		double fps = _ctx->cmp()->get_fps();
-		deque<double> const & _damaged_area = _ctx->cmp()->get_damaged_area_history();
-		deque<double> const & _direct_render_area = _ctx->cmp()->get_direct_area_history();
-		std::size_t _FPS_WINDOWS = _direct_render_area.size();
-
-		cairo_identity_matrix(cr);
-
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-		cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.7);
-		cairo_paint(cr);
-
-		cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-		cairo_set_source_rgb(cr, 1.0, 0.0, 0.0);
-
-		cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
-		cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
-		cairo_new_path(cr);
-
-		{
-			int j = 0;
-			auto i = _damaged_area.begin();
-			cairo_move_to(cr, 0 * 5.0, 95.0 - std::min((*(i++))*90.0, 90.0));
-			while(i != _damaged_area.end())
-				cairo_line_to(cr, (j++) * 2.0, 95.0 - std::min((*(i++))*90.0, 90.0));
-		}
-		cairo_stroke(cr);
-
-		cairo_set_source_rgb(cr, 0.0, 0.0, 1.0);
-		{
-			int j = 0;
-			auto i = _direct_render_area.begin();
-			cairo_move_to(cr, 0 * 5.0, 95.0 - std::min((*(i++))*90.0, 90.0));
-			while(i != _direct_render_area.end())
-				cairo_line_to(cr, (j++) * 2.0, 95.0 - std::min((*(i++))*90.0, 90.0));
-		}
-		cairo_stroke(cr);
-
-		int surf_count;
-		int surf_size;
-
-		_ctx->make_surface_stats(surf_size, surf_count);
-
-		pango_printf(cr, 80*2+20,0,  "version: %s", VERSION);
-		pango_printf(cr, 80*2+20,30,  "fps:       %8.1f", fps);
-		pango_printf(cr, 80*2+20,50, "s. count:  %6d", surf_count);
-		pango_printf(cr, 80*2+20,80, "s. memory: %6d KB", surf_size/1024);
-
-		cairo_destroy(cr);
-	}
-
-	virtual void render(cairo_t * cr, region const & area) {
-		cairo_save(cr);
-
-		region r = _position;
-		r &= area;
-		for (auto &a : r.rects()) {
-			cairo_clip(cr, a);
-			cairo_set_source_surface(cr, _back_surf->get_cairo_surface(), _position.x, _position.y);
-			cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _position.x, _position.y);
-		}
-		cairo_restore(cr);
-	}
-
+	void show();
+	void hide();
+	void update_layout(time64_t const t);
+	void _update_back_buffer();
+	virtual void render(cairo_t * cr, region const & area) override;
 	void pango_printf(cairo_t * cr, double x, double y,
-			char const * fmt, ...) {
+			char const * fmt, ...);
 
-		va_list l;
-		va_start(l, fmt);
-
-		cairo_save(cr);
-		cairo_move_to(cr, x, y);
-		cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-
-		static char buffer[4096];
-		vsnprintf(buffer, 4096, fmt, l);
-
-		PangoLayout * pango_layout = pango_layout_new(_fps_context);
-		pango_layout_set_font_description(pango_layout, _fps_font_desc);
-		pango_cairo_update_layout(cr, pango_layout);
-		pango_layout_set_text(pango_layout, buffer, -1);
-		pango_cairo_layout_path(cr, pango_layout);
-		g_object_unref(pango_layout);
-
-		cairo_set_line_width(cr, 5.0);
-		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-		cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
-		cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-
-		cairo_stroke_preserve(cr);
-
-		cairo_set_line_width(cr, 1.0);
-		cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-		cairo_fill(cr);
-
-		cairo_restore(cr);
-	}
 };
 
 
