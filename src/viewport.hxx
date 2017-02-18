@@ -16,9 +16,9 @@
 #include "renderable.hxx"
 #include "split.hxx"
 #include "theme.hxx"
-#include "page_context.hxx"
 #include "page_component.hxx"
 #include "notebook.hxx"
+#include "page-types.hxx"
 
 namespace page {
 
@@ -32,7 +32,7 @@ class viewport_t: public page_component_t {
 			|XCB_EVENT_MASK_BUTTON_MOTION
 			|XCB_EVENT_MASK_POINTER_MOTION;
 
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	region _damaged;
 
@@ -68,7 +68,7 @@ class viewport_t: public page_component_t {
 
 public:
 
-	viewport_t(page_context_t * ctx, rect const & area);
+	viewport_t(page_t * ctx, rect const & area);
 	virtual ~viewport_t();
 
 	auto raw_area() const -> rect const &;

@@ -14,7 +14,7 @@
 #include "theme.hxx"
 #include "renderable.hxx"
 #include "icon_handler.hxx"
-#include "page_context.hxx"
+#include "page-types.hxx"
 
 namespace page {
 
@@ -22,7 +22,7 @@ using namespace std;
 
 struct popup_notebook0_t : public tree_t {
 	static int const border_width = 6;
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 protected:
 	rect _position;
@@ -32,7 +32,7 @@ protected:
 	xcb_window_t _wid;
 
 public:
-	popup_notebook0_t(page_context_t * ctx);
+	popup_notebook0_t(page_t * ctx);
 
 	void _create_window();
 	void move_resize(rect const & area);

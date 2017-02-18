@@ -30,7 +30,7 @@ enum notebook_area_e {
 };
 
 class grab_split_t : public grab_handler_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	weak_ptr<split_t> _split;
 	rect _slider_area;
 	rect _split_root_allocation;
@@ -38,7 +38,7 @@ class grab_split_t : public grab_handler_t {
 	shared_ptr<popup_split_t> _ps;
 
 public:
-	grab_split_t(page_context_t * ctx, shared_ptr<split_t> s);
+	grab_split_t(page_t * ctx, shared_ptr<split_t> s);
 
 	virtual ~grab_split_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -50,7 +50,7 @@ public:
 };
 
 class grab_bind_client_t : public grab_handler_t {
-	page_context_t * ctx;
+	page_t * ctx;
 	weak_ptr<client_managed_t> c;
 
 	rect start_position;
@@ -63,7 +63,7 @@ class grab_bind_client_t : public grab_handler_t {
 
 public:
 
-	grab_bind_client_t(page_context_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos);
+	grab_bind_client_t(page_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos);
 
 	virtual ~grab_bind_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -105,7 +105,7 @@ enum resize_mode_e {
 
 
 struct grab_floating_move_t : public grab_handler_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	int x_root;
 	int y_root;
 	rect original_position;
@@ -116,7 +116,7 @@ struct grab_floating_move_t : public grab_handler_t {
 
 	shared_ptr<popup_notebook0_t> pfm;
 
-	grab_floating_move_t(page_context_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y);
+	grab_floating_move_t(page_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y);
 
 	virtual ~grab_floating_move_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -127,7 +127,7 @@ struct grab_floating_move_t : public grab_handler_t {
 };
 
 struct grab_floating_resize_t : public grab_handler_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	weak_ptr<client_managed_t> f;
 
 	resize_mode_e mode;
@@ -143,7 +143,7 @@ struct grab_floating_resize_t : public grab_handler_t {
 
 public:
 
-	grab_floating_resize_t(page_context_t * _ctx, shared_ptr<client_managed_t> f, xcb_button_t button, int x, int y, resize_mode_e mode);
+	grab_floating_resize_t(page_t * _ctx, shared_ptr<client_managed_t> f, xcb_button_t button, int x, int y, resize_mode_e mode);
 
 	virtual ~grab_floating_resize_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -155,7 +155,7 @@ public:
 };
 
 struct grab_fullscreen_client_t : public grab_handler_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	weak_ptr<client_managed_t> mw;
 	weak_ptr<viewport_t> v;
 	shared_ptr<popup_notebook0_t> pn0;
@@ -163,7 +163,7 @@ struct grab_fullscreen_client_t : public grab_handler_t {
 
 public:
 
-	grab_fullscreen_client_t(page_context_t * ctx, shared_ptr<client_managed_t> mw, xcb_button_t button, int x, int y);
+	grab_fullscreen_client_t(page_t * ctx, shared_ptr<client_managed_t> mw, xcb_button_t button, int x, int y);
 
 	virtual ~grab_fullscreen_client_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
@@ -174,7 +174,7 @@ public:
 };
 
 struct grab_alt_tab_t : public grab_handler_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	list<client_managed_w> _client_list;
 	list<popup_alt_tab_p> _popup_list;
 
@@ -186,7 +186,7 @@ struct grab_alt_tab_t : public grab_handler_t {
 
 public:
 
-	grab_alt_tab_t(page_context_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time);
+	grab_alt_tab_t(page_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time);
 
 	virtual ~grab_alt_tab_t();
 	virtual void button_press(xcb_button_press_event_t const * e);

@@ -22,7 +22,7 @@
 
 namespace page {
 
-renderable_notebook_fading_t::renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
+renderable_notebook_fading_t::renderable_notebook_fading_t(page_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
 	_surface{surface},
 	_ratio{1.0},
 	_ctx{ctx}

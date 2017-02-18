@@ -8,7 +8,7 @@
 #ifndef RENDERABLE_PIXMAP_HXX_
 #define RENDERABLE_PIXMAP_HXX_
 
-#include "page_context.hxx"
+#include "page-types.hxx"
 #include "tree.hxx"
 #include "pixmap.hxx"
 
@@ -20,7 +20,7 @@ class renderable_pixmap_t : public tree_t {
 
 protected:
 
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	rect _location;
 	shared_ptr<pixmap_t> _surf;
@@ -29,7 +29,7 @@ protected:
 
 public:
 
-	renderable_pixmap_t(page_context_t * ctx, shared_ptr<pixmap_t> s, int x, int y);
+	renderable_pixmap_t(page_t * ctx, shared_ptr<pixmap_t> s, int x, int y);
 	virtual ~renderable_pixmap_t();
 	virtual void render(cairo_t * cr, region const & area);
 	virtual region get_opaque_region();

@@ -22,7 +22,7 @@
 
 namespace page {
 
-renderable_pixmap_t::renderable_pixmap_t(page_context_t * ctx, shared_ptr<pixmap_t> s, int x, int y) :
+renderable_pixmap_t::renderable_pixmap_t(page_t * ctx, shared_ptr<pixmap_t> s, int x, int y) :
 	_ctx{ctx},
 	_surf{s}
 {

@@ -12,7 +12,7 @@
 #include "pixmap.hxx"
 #include "client_managed.hxx"
 #include "client_proxy.hxx"
-#include "page_context.hxx"
+#include "page-types.hxx"
 
 namespace page {
 
@@ -30,7 +30,7 @@ enum thumnail_anchor_e {
 
 
 class renderable_thumbnail_t : public tree_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	int _title_width;
 
 	thumnail_anchor_e _target_anchor;
@@ -49,7 +49,7 @@ class renderable_thumbnail_t : public tree_t {
 	renderable_thumbnail_t & operator=(renderable_thumbnail_t const &);
 public:
 
-	renderable_thumbnail_t(page_context_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor);
+	renderable_thumbnail_t(page_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor);
 	virtual ~renderable_thumbnail_t();
 
 	/** @return scale factor */

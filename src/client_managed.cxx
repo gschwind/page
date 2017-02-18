@@ -13,6 +13,7 @@
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
 
+#include "page.hxx"
 #include "renderable_floating_outer_gradien.hxx"
 #include "client_managed.hxx"
 #include "notebook.hxx"
@@ -23,7 +24,7 @@ namespace page {
 
 using namespace std;
 
-client_managed_t::client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type) :
+client_managed_t::client_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type) :
 				client_base_t{ctx, w},
 				_managed_type{MANAGED_FLOATING},
 				_net_wm_type{net_wm_type},

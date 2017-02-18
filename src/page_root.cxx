@@ -6,15 +6,16 @@
  */
 
 #include <assert.h>
-#include "page_root.hxx"
 
+#include "page.hxx"
+#include "page_root.hxx"
 #include "workspace.hxx"
 
 namespace page {
 
 using namespace std;
 
-page_root_t::page_root_t(page_context_t * ctx) :
+page_root_t::page_root_t(page_t * ctx) :
 		_ctx{ctx},
 		_current_desktop{0}
 {

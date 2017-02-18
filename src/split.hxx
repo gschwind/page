@@ -11,13 +11,13 @@
 #define SPLIT_HXX_
 
 #include "theme.hxx"
-#include "page_context.hxx"
 #include "page_component.hxx"
+#include "page-types.hxx"
 
 namespace page {
 
 class split_t : public page_component_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	rect _allocation;
 	rect _split_bar_area;
@@ -47,7 +47,7 @@ class split_t : public page_component_t {
 	shared_ptr<split_t> shared_from_this();
 
 public:
-	split_t(page_context_t * ctx, split_type_e type);
+	split_t(page_t * ctx, split_type_e type);
 	~split_t();
 
 	/* access to stuff */

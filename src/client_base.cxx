@@ -9,6 +9,8 @@
 
 #include "client_base.hxx"
 
+#include "page.hxx"
+
 namespace page {
 
 using namespace std;
@@ -27,7 +29,7 @@ xcb_atom_t client_base_t::A(atom_e atom) {
 //
 //}
 
-client_base_t::client_base_t(page_context_t * ctx, xcb_window_t w) :
+client_base_t::client_base_t(page_t * ctx, xcb_window_t w) :
 	tree_t{},
 	_ctx{ctx},
 	_client_proxy{ctx->dpy()->create_client_proxy(w)}

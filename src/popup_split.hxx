@@ -11,8 +11,8 @@
 #ifndef POPUP_SPLIT_HXX_
 #define POPUP_SPLIT_HXX_
 
+#include "page-types.hxx"
 #include "split.hxx"
-#include "page_context.hxx"
 
 namespace page {
 
@@ -21,7 +21,7 @@ struct popup_split_t : public tree_t {
 
 	tree_t * _parent;
 
-	page_context_t * _ctx;
+	page_t * _ctx;
 	double _current_split;
 
 	weak_ptr<split_t> _s_base;
@@ -43,7 +43,7 @@ public:
 	virtual region get_visible_region();
 	virtual region get_damaged();
 
-	popup_split_t(page_context_t * ctx, shared_ptr<split_t> split);
+	popup_split_t(page_t * ctx, shared_ptr<split_t> split);
 	~popup_split_t();
 
 	void update_layout();

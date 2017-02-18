@@ -16,7 +16,7 @@
 #include <cairo-xlib.h>
 #include <cairo-xcb.h>
 
-#include "page_context.hxx"
+#include "page-types.hxx"
 #include "region.hxx"
 #include "tree.hxx"
 
@@ -24,7 +24,7 @@ namespace page {
 
 
 struct compositor_overlay_t : public tree_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	PangoFontDescription * _fps_font_desc;
 	PangoFontMap * _fps_font_map;
@@ -37,7 +37,7 @@ struct compositor_overlay_t : public tree_t {
 
 public:
 
-	compositor_overlay_t(page_context_t * ctx, rect const & pos);
+	compositor_overlay_t(page_t * ctx, rect const & pos);
 	~compositor_overlay_t();
 
 	virtual region get_opaque_region();

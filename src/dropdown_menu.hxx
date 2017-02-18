@@ -49,14 +49,14 @@ public:
 };
 
 struct dropdown_menu_overlay_t : public tree_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 	xcb_pixmap_t _pix;
 	cairo_surface_t * _surf;
 	rect _position;
 	xcb_window_t _wid;
 	bool _is_durty;
 
-	dropdown_menu_overlay_t(page_context_t * ctx, rect position);
+	dropdown_menu_overlay_t(page_t * ctx, rect position);
 	~dropdown_menu_overlay_t();
 	void map();
 	rect const & position();
@@ -83,7 +83,7 @@ public:
 	using item_t = dropdown_menu_entry_t;
 
 protected:
-	page_context_t * _ctx;
+	page_t * _ctx;
 	vector<shared_ptr<item_t>> _items;
 	int _selected;
 	shared_ptr<dropdown_menu_overlay_t> pop;
@@ -94,7 +94,7 @@ protected:
 
 public:
 
-	dropdown_menu_t(page_context_t * ctx, vector<shared_ptr<item_t>> items,
+	dropdown_menu_t(page_t * ctx, vector<shared_ptr<item_t>> items,
 			xcb_button_t button, int x, int y, int width, rect start_position);
 	~dropdown_menu_t();
 

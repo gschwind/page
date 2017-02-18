@@ -5,16 +5,17 @@
  *      Author: gschwind
  */
 
+#include <page-types.hxx>
 #include <iostream>
 
+#include "page.hxx"
 #include "grab_handlers.hxx"
-#include "page_context.hxx"
 
 namespace page {
 
 using namespace std;
 
-grab_split_t::grab_split_t(page_context_t * ctx, shared_ptr<split_t> s) : _ctx{ctx}, _split{s} {
+grab_split_t::grab_split_t(page_t * ctx, shared_ptr<split_t> s) : _ctx{ctx}, _split{s} {
 	_slider_area = s->to_root_position(s->get_split_bar_area());
 	_split_ratio = s->ratio();
 	_split_root_allocation = s->root_location();
@@ -84,7 +85,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	}
 }
 
-grab_bind_client_t::grab_bind_client_t(page_context_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos) :
+grab_bind_client_t::grab_bind_client_t(page_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos) :
 		ctx{ctx},
 		c{c},
 		start_position{pos},
@@ -275,7 +276,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 }
 
 
-grab_floating_move_t::grab_floating_move_t(page_context_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y) :
+grab_floating_move_t::grab_floating_move_t(page_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y) :
 		_ctx{ctx},
 		f{f},
 		original_position{f->get_wished_position()},
@@ -377,7 +378,7 @@ xcb_cursor_t grab_floating_resize_t::_get_cursor() {
 	return XCB_WINDOW_NONE;
 }
 
-grab_floating_resize_t::grab_floating_resize_t(page_context_t * ctx, shared_ptr<client_managed_t> f, xcb_button_t button, int x, int y, resize_mode_e mode) :
+grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, shared_ptr<client_managed_t> f, xcb_button_t button, int x, int y, resize_mode_e mode) :
 		_ctx{ctx},
 		f{f},
 		mode{mode},
@@ -528,7 +529,7 @@ void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e
 	}
 }
 
-grab_fullscreen_client_t::grab_fullscreen_client_t(page_context_t * ctx, shared_ptr<client_managed_t> mw, xcb_button_t button, int x, int y) :
+grab_fullscreen_client_t::grab_fullscreen_client_t(page_t * ctx, shared_ptr<client_managed_t> mw, xcb_button_t button, int x, int y) :
  _ctx{ctx},
  mw{mw},
  pn0{nullptr},
@@ -598,7 +599,7 @@ void grab_alt_tab_t::_destroy_client(client_managed_t * c) {
 	}
 }
 
-grab_alt_tab_t::grab_alt_tab_t(page_context_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
+grab_alt_tab_t::grab_alt_tab_t(page_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
 	_client_list = weak(managed_window);
 
 	auto viewport_list = _ctx->get_current_workspace()->get_viewports();

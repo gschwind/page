@@ -9,6 +9,8 @@
 
 #include "dropdown_menu.hxx"
 
+#include "page.hxx"
+
 namespace page {
 
 using namespace std;
@@ -43,7 +45,7 @@ theme_dropdown_menu_entry_t const & dropdown_menu_entry_t::get_theme_item()
 
 
 
-dropdown_menu_overlay_t::dropdown_menu_overlay_t(page_context_t * ctx, rect position) :
+dropdown_menu_overlay_t::dropdown_menu_overlay_t(page_t * ctx, rect position) :
 	_ctx{ctx},
 	_position{position}
 {
@@ -180,7 +182,7 @@ void dropdown_menu_overlay_t::expose(xcb_expose_event_t const * ev)
 
 
 
-dropdown_menu_t::dropdown_menu_t(page_context_t * ctx,
+dropdown_menu_t::dropdown_menu_t(page_t * ctx,
 		vector<shared_ptr<item_t>> items, xcb_button_t button, int x, int y,
 		int width, rect start_position) :
 	_ctx{ctx},

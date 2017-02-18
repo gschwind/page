@@ -52,6 +52,8 @@
 #include "mainloop.hxx"
 #include "page_root.hxx"
 
+#include "page.hxx"
+
 namespace page {
 
 using namespace std;
@@ -87,7 +89,7 @@ struct key_bind_cmd_t {
 	string cmd;
 };
 
-class page_t : public connectable_t, public page_context_t {
+class page_t : public connectable_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION|XCB_EVENT_MASK_POINTER_MOTION;
 	static uint32_t const ROOT_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE;
 	static time64_t const default_wait;
@@ -378,7 +380,7 @@ public:
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 
 	/**
-	 * page_context_t virtual API
+	 * page_t virtual API
 	 **/
 
 	virtual auto conf() const -> page_configuration_t const &;

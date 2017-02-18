@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <typeinfo>
+
+#include "page.hxx"
 #include "viewport.hxx"
 #include "workspace.hxx"
 
@@ -18,7 +20,7 @@ using namespace std;
 
 time64_t const workspace_t::_switch_duration{0.5};
 
-workspace_t::workspace_t(page_context_t * ctx, unsigned id) :
+workspace_t::workspace_t(page_t * ctx, unsigned id) :
 	_ctx{ctx},
 	//_allocation{},
 	_default_pop{},

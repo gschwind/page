@@ -7,6 +7,7 @@
  *
  */
 
+#include "page.hxx"
 #include "workspace.hxx"
 #include "notebook.hxx"
 #include "dropdown_menu.hxx"
@@ -17,7 +18,7 @@ namespace page {
 
 using namespace std;
 
-notebook_t::notebook_t(page_context_t * ctx) :
+notebook_t::notebook_t(page_t * ctx) :
 		_ctx{ctx},
 		_is_default{false},
 		_selected{nullptr},

@@ -66,7 +66,7 @@ region popup_split_t::get_damaged()  {
 }
 
 
-popup_split_t::popup_split_t(page_context_t * ctx, shared_ptr<split_t> split) :
+popup_split_t::popup_split_t(page_t * ctx, shared_ptr<split_t> split) :
 	_ctx{ctx},
 	_s_base{split},
 	_current_split{split->ratio()},

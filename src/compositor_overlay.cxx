@@ -25,7 +25,7 @@
 
 namespace page {
 
-compositor_overlay_t::compositor_overlay_t(page_context_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos}, _has_damage{false} {
+compositor_overlay_t::compositor_overlay_t(page_t * ctx, rect const & pos) : _ctx{ctx}, _position{pos}, _has_damage{false} {
 	_fps_font_desc = pango_font_description_from_string("Mono 11");
 	_fps_font_map = pango_cairo_font_map_new();
 	_fps_context = pango_font_map_create_context(_fps_font_map);

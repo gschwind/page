@@ -9,6 +9,8 @@
 
 #include <algorithm>
 #include <typeinfo>
+
+#include "page.hxx"
 #include "notebook.hxx"
 #include "viewport.hxx"
 
@@ -16,7 +18,7 @@ namespace page {
 
 using namespace std;
 
-viewport_t::viewport_t(page_context_t * ctx, rect const & area) :
+viewport_t::viewport_t(page_t * ctx, rect const & area) :
 		_ctx{ctx},
 		_raw_aera{area},
 		_effective_area{area},

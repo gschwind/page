@@ -183,7 +183,7 @@ class client_managed_t : public client_base_t {
 
 public:
 
-	client_managed_t(page_context_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type);
+	client_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type);
 	virtual ~client_managed_t();
 
 	signal_t<client_managed_t *> on_destroy;

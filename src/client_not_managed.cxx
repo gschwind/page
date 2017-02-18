@@ -7,6 +7,7 @@
  *
  */
 
+#include "page.hxx"
 #include "display.hxx"
 #include "client_proxy.hxx"
 #include "client_not_managed.hxx"
@@ -15,7 +16,7 @@ namespace page {
 
 using namespace std;
 
-client_not_managed_t::client_not_managed_t(page_context_t * ctx, xcb_window_t w, xcb_atom_t type) :
+client_not_managed_t::client_not_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t type) :
 		client_base_t{ctx, w},
 		_net_wm_type{type}
 {

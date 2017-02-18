@@ -23,9 +23,8 @@
 #include "atoms.hxx"
 #include "exception.hxx"
 #include "display.hxx"
-
+#include "page-types.hxx"
 #include "tree.hxx"
-#include "page_context.hxx"
 
 namespace page {
 
@@ -40,7 +39,7 @@ using card32 = long;
  **/
 class client_base_t : public tree_t {
 protected:
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	/* handle properties of client */
 	shared_ptr<client_proxy_t> _client_proxy;
@@ -51,7 +50,7 @@ protected:
 public:
 
 	client_base_t(client_base_t const & c);
-	client_base_t(page_context_t * ctx, xcb_window_t w);
+	client_base_t(page_t * ctx, xcb_window_t w);
 
 	virtual ~client_base_t();
 

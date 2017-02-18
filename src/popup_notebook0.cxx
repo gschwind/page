@@ -24,7 +24,7 @@
 
 namespace page {
 
-popup_notebook0_t::popup_notebook0_t(page_context_t * ctx) :
+popup_notebook0_t::popup_notebook0_t(page_t * ctx) :
 		_position{-1, -1, 1, 1} , _ctx{ctx} {
 
 	_is_visible = false;

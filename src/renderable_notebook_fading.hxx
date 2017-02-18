@@ -17,14 +17,14 @@
 #include "renderable.hxx"
 #include "pixmap.hxx"
 #include "mainloop.hxx"
-#include "page_context.hxx"
+#include "page-types.hxx"
 
 namespace page {
 
 using namespace std;
 
 class renderable_notebook_fading_t : public tree_t {
-	page_context_t * _ctx;
+	page_t * _ctx;
 
 	double _ratio;
 	rect _location;
@@ -34,7 +34,7 @@ class renderable_notebook_fading_t : public tree_t {
 
 public:
 
-	renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y);
+	renderable_notebook_fading_t(page_t * ctx, shared_ptr<pixmap_t> surface, int x, int y);
 	virtual ~renderable_notebook_fading_t();
 	virtual void render(cairo_t * cr, region const & area);
 	void set_ratio(double x);

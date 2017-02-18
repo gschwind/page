@@ -50,7 +50,7 @@ private:
 
 public:
 
-	client_not_managed_t(page_context_t * ctx, xcb_window_t w, xcb_atom_t type);
+	client_not_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t type);
 	~client_not_managed_t();
 
 	auto net_wm_type() -> xcb_atom_t;

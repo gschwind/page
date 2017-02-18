@@ -24,7 +24,7 @@
 
 namespace page {
 
-renderable_thumbnail_t::renderable_thumbnail_t(page_context_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
+renderable_thumbnail_t::renderable_thumbnail_t(page_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
 	_ctx{ctx},
 	_c{c},
 	_title_width{0},
