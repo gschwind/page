@@ -17,6 +17,7 @@
 #include "renderable.hxx"
 #include "pixmap.hxx"
 #include "mainloop.hxx"
+#include "page_context.hxx"
 
 namespace page {
 
@@ -33,89 +34,19 @@ class renderable_notebook_fading_t : public tree_t {
 
 public:
 
-	renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
-		_surface{surface},
-		_ratio{1.0},
-		_ctx{ctx}
-	{
-		_location = rect(x, y, surface->witdh(), surface->height());
-		_opaque_region = region(0, 0, surface->witdh(), surface->height());
-		_damaged = _location;
-	}
-
-	virtual ~renderable_notebook_fading_t() {
-
-	}
-
-	/**
-	 * draw the area of a renderable to the destination surface
-	 * @param cr the destination surface context
-	 * @param area the area to redraw
-	 **/
-	virtual void render(cairo_t * cr, region const & area) {
-
-		cairo_save(cr);
-		cairo_pattern_t * p0 =
-				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - _ratio);
-
-		region r = region{_location} & area;
-		for (auto & c : area.rects()) {
-			cairo_reset_clip(cr);
-			cairo_clip(cr, c);
-			cairo_set_source_surface(cr, _surface->get_cairo_surface(),
-					_location.x, _location.y);
-			cairo_mask(cr, p0);
-		}
-
-		cairo_pattern_destroy(p0);
-		cairo_restore(cr);
-
-	}
-
-	void set_ratio(double x) {
-		_damaged += _location;
-		_ratio = min(max(0.0, x), 1.0);
-	}
-
-	virtual region get_opaque_region() {
-		return region{};
-	}
-
-	virtual region get_visible_region() {
-		return region{_location};
-	}
-
-	virtual region get_damaged() {
-		return _damaged;
-	}
-
-	virtual void render_finished() {
-		_damaged.clear();
-	}
-
-	void set_opaque_region(region const & r) {
-		_opaque_region = r;
-	}
-
-	void move(int x, int y) {
-		_damaged += _location;
-		_location.x = x;
-		_location.y = y;
-		_damaged += _location;
-	}
-
-	void update_pixmap(shared_ptr<pixmap_t> surface, int x, int y) {
-		_location = rect(x, y, surface->witdh(), surface->height());
-		_surface = surface;
-	}
-
-	double ratio() {
-		return _ratio;
-	}
-
-	shared_ptr<pixmap_t> surface() {
-		return _surface;
-	}
+	renderable_notebook_fading_t(page_context_t * ctx, shared_ptr<pixmap_t> surface, int x, int y);
+	virtual ~renderable_notebook_fading_t();
+	virtual void render(cairo_t * cr, region const & area);
+	void set_ratio(double x);
+	virtual region get_opaque_region();
+	virtual region get_visible_region();
+	virtual region get_damaged();
+	virtual void render_finished();
+	void set_opaque_region(region const & r);
+	void move(int x, int y);
+	void update_pixmap(shared_ptr<pixmap_t> surface, int x, int y);
+	double ratio();
+	shared_ptr<pixmap_t> surface();
 
 };
 
