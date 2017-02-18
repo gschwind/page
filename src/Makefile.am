@@ -23,6 +23,8 @@ page_SOURCES = \
 	renderable_thumbnail.cxx \
 	renderable_fadeout_pixmap.hxx \
 	renderable_fadeout_pixmap.cxx \
+	renderable_floating_outer_gradien.hxx \
+	renderable_floating_outer_gradien.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
