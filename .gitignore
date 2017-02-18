@@ -64,3 +64,4 @@ src/compositor_overlay.o
 src/popup_notebook0.o
 src/popup_split.o
 src/renderable_thumbnail.o
+src/renderable_fadeout_pixmap.o

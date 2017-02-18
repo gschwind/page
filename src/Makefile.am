@@ -21,6 +21,8 @@ page_SOURCES = \
 	popup_split.cxx \
 	renderable_thumbnail.hxx \
 	renderable_thumbnail.cxx \
+	renderable_fadeout_pixmap.hxx \
+	renderable_fadeout_pixmap.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
