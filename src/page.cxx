@@ -2500,17 +2500,31 @@ void page_t::update_viewport_layout() {
 		}
 
 		if(new_layout.size() > 0) {
+			region new_layout_region;
+			for(auto x: new_layout) {
+				new_layout_region += x->allocation();
+			}
+
 			// update position of floating managed clients to avoid offscreen
 			// floating window
 			for(auto x: net_client_list()) {
 				if(x->is(MANAGED_FLOATING)) {
-					auto r = x->position();
-					r.x = new_layout[0]->allocation().x
-							+ _theme->floating.margin.left;
-					r.y = new_layout[0]->allocation().y
-							+ _theme->floating.margin.top;
-					x->set_floating_wished_position(r);
-					x->reconfigure();
+					auto r = x->orig_position();
+
+					/**
+					 * if the current window do not overlap any desktop move to
+					 * the center of an existing monitor
+					 **/
+					if((new_layout_region & r).empty()) {
+						r.x = new_layout[0]->allocation().x
+								+ (new_layout[0]->allocation().w - r.w)/2.0
+								+ _theme->floating.margin.left;
+						r.y = new_layout[0]->allocation().y
+								+ (new_layout[0]->allocation().h - r.h)/2.0
+								+ _theme->floating.margin.top;
+						x->set_floating_wished_position(r);
+						x->reconfigure();
+					}
 				}
 			}
 		}
