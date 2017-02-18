@@ -15,6 +15,8 @@ page_SOURCES = \
 	dropdown_menu.cxx \
 	compositor_overlay.hxx \
 	compositor_overlay.cxx \
+	popup_notebook0.hxx \
+	popup_notebook0.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
