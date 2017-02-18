@@ -27,6 +27,8 @@ page_SOURCES = \
 	renderable_floating_outer_gradien.cxx \
 	renderable_notebook_fading.hxx \
 	renderable_notebook_fading.cxx \
+	renderable_pixmap.hxx \
+	renderable_pixmap.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \

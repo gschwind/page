@@ -29,69 +29,15 @@ protected:
 
 public:
 
-	renderable_pixmap_t(page_context_t * ctx, shared_ptr<pixmap_t> s, int x, int y) :
-		_ctx{ctx},
-		_surf{s}
-	{
-		_location = rect(x, y, s->witdh(), s->height());
-		if(s->format() == PIXMAP_RGB) {
-			_opaque_region = region(0, 0, s->witdh(), s->height());
-		}
-		_damaged = _location;
-	}
-
-	virtual ~renderable_pixmap_t() { }
-
-	/**
-	 * draw the area of a renderable to the destination surface
-	 * @param cr the destination surface context
-	 * @param area the area to redraw
-	 **/
-	virtual void render(cairo_t * cr, region const & area) {
-		cairo_save(cr);
-		if (_surf != nullptr) {
-			if (_surf->get_cairo_surface() != nullptr) {
-				cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-				cairo_set_source_surface(cr, _surf->get_cairo_surface(),
-						_location.x, _location.y);
-				region r = region{_location} & area;
-				for (auto &i : r.rects()) {
-					cairo_clip(cr, i);
-					cairo_mask_surface(cr, _surf->get_cairo_surface(), _location.x, _location.y);
-				}
-			}
-		}
-		cairo_restore(cr);
-	}
-
-	virtual region get_opaque_region() {
-		region ret = _opaque_region;
-		ret.translate(_location.x, _location.y);
-		return ret;
-	}
-
-	virtual region get_visible_region() {
-		return region{_location};
-	}
-
-	virtual region get_damaged() {
-		return _damaged;
-	}
-
-	virtual void render_finished() {
-		_damaged.clear();
-	}
-
-	void set_opaque_region(region const & r) {
-		_opaque_region = r;
-	}
-
-	void move(int x, int y) {
-		_damaged += _location;
-		_location.x = x;
-		_location.y = y;
-		_damaged += _location;
-	}
+	renderable_pixmap_t(page_context_t * ctx, shared_ptr<pixmap_t> s, int x, int y);
+	virtual ~renderable_pixmap_t();
+	virtual void render(cairo_t * cr, region const & area);
+	virtual region get_opaque_region();
+	virtual region get_visible_region();
+	virtual region get_damaged();
+	virtual void render_finished();
+	void set_opaque_region(region const & r);
+	void move(int x, int y);
 
 };
 

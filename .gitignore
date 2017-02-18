@@ -67,3 +67,4 @@ src/renderable_thumbnail.o
 src/renderable_fadeout_pixmap.o
 src/renderable_floating_outer_gradien.o
 src/renderable_notebook_fading.o
+src/renderable_pixmap.o
