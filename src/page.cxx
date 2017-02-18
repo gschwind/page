@@ -1501,8 +1501,6 @@ void page_t::insert_window_in_notebook(
 		notebook_p n,
 		bool prefer_activate) {
 	assert(x != nullptr);
-	if (n == nullptr)
-		n = get_current_workspace()->default_pop();
 	assert(n != nullptr);
 	n->add_client(x, prefer_activate);
 	_need_restack = true;
@@ -1674,7 +1672,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 		if(i->has_focus())
 			notebook_has_focus = true;
 		nbk->remove(i);
-		insert_window_in_notebook(i, nullptr, false);
+		insert_window_in_notebook(i, get_current_workspace()->default_pop(), false);
 	}
 
 	/**
@@ -2249,7 +2247,13 @@ void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, share
 
 void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 	detach(mw);
-	insert_window_in_notebook(mw, nullptr, activate);
+	auto workspace = mw->ensure_workspace();
+	if(workspace == ALL_DESKTOP) {
+		insert_window_in_notebook(mw, get_current_workspace()->default_pop(), activate);
+	} else {
+		insert_window_in_notebook(mw, get_workspace(workspace)->default_pop(), activate);
+	}
+
 	if(activate) {
 		mw->activate();
 		set_focus(mw, XCB_CURRENT_TIME);
