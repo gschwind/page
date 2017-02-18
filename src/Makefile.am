@@ -1,7 +1,6 @@
 bin_PROGRAMS = page page_region_test
 
 AM_CXXFLAGS =  \
-	-std=c++11 \
 	-rdynamic \
 	$(X11_CFLAGS) \
 	$(XCB_CFLAGS) \

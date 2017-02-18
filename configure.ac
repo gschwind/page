@@ -13,7 +13,7 @@ AC_PROG_CXX
 AC_PROG_LIBTOOL
 
 # check for C++11
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
 
 dnl Check for libs
 
