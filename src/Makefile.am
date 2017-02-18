@@ -19,6 +19,8 @@ page_SOURCES = \
 	popup_notebook0.cxx \
 	popup_split.hxx \
 	popup_split.cxx \
+	renderable_thumbnail.hxx \
+	renderable_thumbnail.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
