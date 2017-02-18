@@ -31,56 +31,18 @@ public:
 	exception_t(char const * fmt, ...) : str(nullptr) {
 		va_list l;
 		va_start(l, fmt);
-		int n = vsnprintf(nullptr, 0, fmt, l);
-		va_end(l);
-		str = new char[n+1];
-		va_start(l, fmt);
-		vsnprintf(str, n+1, fmt, l);
+		if(vasprintf(&str, fmt, l) < 0)
+			str = nullptr;
 		va_end(l);
 	}
 
-	~exception_t() noexcept { delete[] str; }
+	~exception_t() noexcept { free(str); }
 
 	char const * what() const noexcept {
-		return str;
+		return str?str:"nested memory error: could not allocate error message";
 	}
 
 };
-
-
-
-///** not define **/
-//template <typename T>
-//class exception_t<T>;
-//
-//template <>
-//class exception_t<char const *> : public exception {
-//	char const * data;
-//public:
-//	exception_t(char const * data) : data(data) { }
-//
-//	char const * what() {
-//		static char error_buffer[4096];
-//		snprintf(error_buffer, 4096, fmt, key);
-//		return error_buffer;
-//	}
-//
-//};
-
-//
-//class configuration_error_t : public exception {
-//	char const * fmt;
-//	char const * key;
-//public:
-//	configuration_error_t(char const * fmt, char const * key) : fmt(fmt), key(key) { }
-//
-//	char const * what() {
-//		static char error_buffer[4096];
-//		snprintf(error_buffer, 4096, fmt, key);
-//		return error_buffer;
-//	}
-//
-//};
 
 }
 
