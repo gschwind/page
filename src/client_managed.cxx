@@ -535,6 +535,44 @@ void client_managed_t::grab_button_unfocused_unsafe() {
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 }
 
+/**
+ * find the workspace for the window, if undefined or invalid, atribute a new
+ * one.
+ **/
+unsigned client_managed_t::ensure_workspace() {
+
+	/* check current status */
+	auto workspace = net_wm_desktop();
+	auto transient_for = wm_transient_for();
+	unsigned final_workspace;
+	if (workspace != nullptr) {
+		final_workspace = *workspace;
+	} else if (is_stiky()) {
+		final_workspace = ALL_DESKTOP;
+	} else if (transient_for != nullptr) {
+		auto parent = dynamic_pointer_cast<client_managed_t>(
+				_ctx->find_client_with(*transient_for));
+		if (parent != nullptr) {
+			final_workspace = _ctx->find_current_workspace(parent);
+		}
+	} else {
+		final_workspace = _ctx->get_current_workspace()->id();
+	}
+
+	if(final_workspace != ALL_DESKTOP
+			and final_workspace >= _ctx->get_workspace_count()) {
+		final_workspace = _ctx->get_current_workspace()->id();
+	}
+
+	if (workspace == nullptr) {
+		set_net_wm_desktop(final_workspace);
+	} else if (*workspace != final_workspace) {
+		set_net_wm_desktop(final_workspace);
+	}
+
+	return final_workspace;
+
+}
 
 /**
  * Remove all passive grab on windows

@@ -224,6 +224,7 @@ public:
 	void set_managed_type(managed_window_type_e type);
 	void grab_button_focused_unsafe();
 	void grab_button_unfocused_unsafe();
+	unsigned ensure_workspace();
 
 	/**
 	 * tree_t virtual API

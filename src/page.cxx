@@ -2706,28 +2706,13 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 	/* find the workspace for this window */
 	{
-		/* the default workspace */
-		unsigned final_workspace = _root->_current_workspace;
-		unsigned int const * workspace = mw->net_wm_desktop();
-		if(workspace != nullptr) {
-			final_workspace = *workspace;
-		} else if (mw->is_stiky()) {
-			final_workspace = ALL_DESKTOP;
-		} else if(mw->wm_transient_for() != nullptr) {
-			auto parent = dynamic_pointer_cast<client_managed_t>(find_client_with(*(mw->wm_transient_for())));
-			if(parent != nullptr) {
-				final_workspace = find_current_workspace(parent);
-			}
-		}
-		/* sanity check */
+		auto final_workspace = mw->ensure_workspace();
 		if(final_workspace == ALL_DESKTOP) {
-			mw->set_net_wm_desktop(final_workspace);
+			printf("final workspace = %u\n", final_workspace);
 			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 			mw->show();
 		} else {
-			if(final_workspace >= _root->_workspace_list.size())
-				final_workspace = _root->_current_workspace;
-			mw->set_net_wm_desktop(final_workspace);
+			printf("final workspace = %u\n", final_workspace);
 			if(_root->_current_workspace == final_workspace) {
 				mw->show();
 			} else {
