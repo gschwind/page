@@ -29,6 +29,8 @@ page_SOURCES = \
 	renderable_notebook_fading.cxx \
 	renderable_pixmap.hxx \
 	renderable_pixmap.cxx \
+	renderable_solid.hxx \
+	renderable_solid.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
