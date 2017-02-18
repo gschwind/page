@@ -17,6 +17,8 @@ page_SOURCES = \
 	compositor_overlay.cxx \
 	popup_notebook0.hxx \
 	popup_notebook0.cxx \
+	popup_split.hxx \
+	popup_split.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
