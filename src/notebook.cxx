@@ -984,19 +984,19 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 }
 
 void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y) {
-	auto callback = [this, c] (dropdown_menu_t<int> * ths, int selected) -> void { this->_process_notebook_client_menu(ths, c, selected); };
-	std::vector<std::shared_ptr<dropdown_menu_t<int>::item_t>> v;
+	auto callback = [this, c] (dropdown_menu_t * ths, int selected) -> void { this->_process_notebook_client_menu(ths, c, selected); };
+	std::vector<std::shared_ptr<dropdown_menu_t::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
 		os << "Send to " << _ctx->get_workspace(k)->name();
-		v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(k, nullptr, os.str()));
+		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, os.str()));
 	}
-	v.push_back(std::make_shared<dropdown_menu_t<int>::item_t>(_ctx->get_workspace_count(), nullptr, "To new workspace"));
-	_ctx->grab_start(new dropdown_menu_t<int>{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}, callback});
+	v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace"));
+	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}, callback});
 
 }
 
-void notebook_t::_process_notebook_client_menu(dropdown_menu_t<int> * ths, shared_ptr<client_managed_t> c, int selected) {
+void notebook_t::_process_notebook_client_menu(dropdown_menu_t * ths, shared_ptr<client_managed_t> c, int selected) {
 	printf("Change desktop %d for %u\n", selected, c->orig());
 
 	if(selected == _ctx->get_workspace_count()) {

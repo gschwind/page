@@ -18,7 +18,6 @@
 #include <memory>
 #include <vector>
 
-
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "box.hxx"
@@ -27,24 +26,17 @@
 
 namespace page {
 
-template<typename TDATA>
-class dropdown_menu_entry_t;
+using namespace std;
 
-
-
-template<typename TDATA>
 class dropdown_menu_entry_t {
 
 	theme_dropdown_menu_entry_t _theme_data;
-
-	TDATA const _data;
 
 	dropdown_menu_entry_t(dropdown_menu_entry_t const &);
 	dropdown_menu_entry_t & operator=(dropdown_menu_entry_t const &);
 
 public:
-	dropdown_menu_entry_t(TDATA data, std::shared_ptr<icon16> icon, std::string label) :
-		_data(data)
+	dropdown_menu_entry_t(shared_ptr<icon16> icon, string const & label)
 	{
 		_theme_data.icon = icon;
 		_theme_data.label = label;
@@ -52,10 +44,6 @@ public:
 
 	~dropdown_menu_entry_t() {
 
-	}
-
-	TDATA const & data() const {
-		return _data;
 	}
 
 	std::shared_ptr<icon16> icon() const {
@@ -202,17 +190,15 @@ struct dropdown_menu_overlay_t : public tree_t {
 
 };
 
-template<typename TDATA>
 class dropdown_menu_t : public grab_handler_t {
 	static uint32_t const DEFAULT_BUTTON_EVENT_MASK = XCB_EVENT_MASK_BUTTON_PRESS|XCB_EVENT_MASK_BUTTON_RELEASE|XCB_EVENT_MASK_BUTTON_MOTION;
 
-
 public:
-	using item_t = dropdown_menu_entry_t<TDATA>;
+	using item_t = dropdown_menu_entry_t;
 
-private:
+protected:
 	page_context_t * _ctx;
-	std::vector<std::shared_ptr<item_t>> _items;
+	vector<shared_ptr<item_t>> _items;
 	int _selected;
 	shared_ptr<dropdown_menu_overlay_t> pop;
 	rect _start_position;
@@ -220,19 +206,16 @@ private:
 	xcb_button_t _button;
 	xcb_timestamp_t _time;
 
-	std::function<void(dropdown_menu_t *, TDATA)> _callback;
+	function<void(dropdown_menu_t *, int)> _callback;
 
 public:
 
-
-	template<typename F>
-	dropdown_menu_t(page_context_t * ctx, std::vector<std::shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position, F f) :
+	dropdown_menu_t(page_context_t * ctx, vector<shared_ptr<item_t>> items, xcb_button_t button, int x, int y, int width, rect start_position, function<void(dropdown_menu_t *, int)> f) :
 	_ctx{ctx},
 	_start_position{start_position},
 	_button{button},
 	_callback{f},
 	_time{XCB_CURRENT_TIME}
-
 	{
 
 		active_grab = false;
@@ -258,8 +241,8 @@ public:
 		_ctx->detach(pop);
 	}
 
-	TDATA const & get_selected() {
-		return _items[_selected]->data();
+	int selected() {
+		return _selected;
 	}
 
 	xcb_timestamp_t time() {
@@ -338,7 +321,7 @@ public:
 				if (pop->_position.is_inside(e->root_x, e->root_y)) {
 					update_cursor_position(e->root_x, e->root_y);
 					_time = e->time;
-					_callback(this, get_selected());
+					_callback(this, selected());
 				}
 
 				_ctx->grab_stop();
