@@ -103,6 +103,17 @@ void client_base_t::process_event(xcb_configure_notify_event_t const * e) {
 
 auto client_base_t::cnx() const -> display_t * { return _client_proxy->cnx(); }
 
+auto client_base_t::transient_for() -> shared_ptr<client_base_t>
+{
+	shared_ptr<client_base_t> transient_for = nullptr;
+	if (wm_transient_for() != nullptr) {
+		transient_for = _ctx->find_client_with(*(wm_transient_for()));
+		if (transient_for == nullptr)
+			printf("Warning transient for an unknown client\n");
+	}
+	return transient_for;
+}
+
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 cxx_type const * client_base_t::cxx_name() { return _client_proxy->cxx_name(); } \
 void client_base_t::update_##cxx_name() { _client_proxy->update_##cxx_name(); }

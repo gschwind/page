@@ -74,6 +74,8 @@ public:
 	auto wa() const -> xcb_get_window_attributes_reply_t const * ;
 	auto geometry() const -> xcb_get_geometry_reply_t const *;
 
+	auto transient_for() -> shared_ptr<client_base_t>;
+
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 	public:  cxx_type const * cxx_name(); \
 	public:  void update_##cxx_name();
