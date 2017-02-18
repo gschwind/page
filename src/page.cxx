@@ -3149,6 +3149,7 @@ void page_t::update_workspace_visibility() {
 	/** and show the workspace that have to be show **/
 	_root->_workspace_list[_root->_current_workspace]->show();
 
+	/** hide viewport with fullscreen window above **/
 	for(auto & i: _fullscreen_client_to_viewport) {
 		if(not i.second.workspace.lock()->is_visible()) {
 			if(not i.second.viewport.expired()) {
