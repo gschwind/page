@@ -988,7 +988,11 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 	std::vector<std::shared_ptr<dropdown_menu_t::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
-		os << "Send to " << _ctx->get_workspace(k)->name();
+		if(k == _ctx->get_current_workspace()->id()) {
+			os << "[[[ " << _ctx->get_workspace(k)->name() << " ]]]";
+		} else {
+			os << "Send to " << _ctx->get_workspace(k)->name();
+		}
 		auto func =
 			[this, c, k] (xcb_timestamp_t time) {
 				if (k != this->_ctx->get_current_workspace()->id()) {
