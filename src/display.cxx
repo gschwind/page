@@ -51,6 +51,11 @@ int display_t::screen() {
 
 display_t::display_t() {
 	_xcb = xcb_connect(nullptr, &_default_screen);
+	if(xcb_connection_has_error(_xcb)) {
+		xcb_disconnect(_xcb);
+		throw exception_t{"connection to X server failed, maybe the DISPLAY environment variable isn't set properly\nTry export DISPLAY=:0"};
+	}
+
 	_fd = xcb_get_file_descriptor(_xcb);
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
