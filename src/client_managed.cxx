@@ -441,14 +441,14 @@ void client_managed_t::compute_floating_areas() {
 
 	_floating_area.title_button = rect(x0, y0, w0, _ctx->theme()->floating.title_height);
 
-	_floating_area.grip_top = rect(x0, 0, w0, _ctx->theme()->floating.margin.top);
-	_floating_area.grip_bottom = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
-	_floating_area.grip_left = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
-	_floating_area.grip_right = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
-	_floating_area.grip_top_left = rect(0, 0, _ctx->theme()->floating.margin.left, _ctx->theme()->floating.margin.top);
-	_floating_area.grip_top_right = rect(x1, 0, _ctx->theme()->floating.margin.right, _ctx->theme()->floating.margin.top);
-	_floating_area.grip_bottom_left = rect(0, y1, _ctx->theme()->floating.margin.left, _ctx->theme()->floating.margin.bottom);
-	_floating_area.grip_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right, _ctx->theme()->floating.margin.bottom);
+	_floating_area.grip_top = _area_top;
+	_floating_area.grip_bottom = _area_bottom;
+	_floating_area.grip_left = _area_left;
+	_floating_area.grip_right = _area_right;
+	_floating_area.grip_top_left = _area_top_left;
+	_floating_area.grip_top_right = _area_top_right;
+	_floating_area.grip_bottom_left = _area_bottom_left;
+	_floating_area.grip_bottom_right = _area_bottom_right;
 
 }
 
