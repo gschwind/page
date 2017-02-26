@@ -572,7 +572,8 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if(_grab_handler != nullptr) {
-		_grab_handler->key_press(e);
+		auto grab = _grab_handler;// hold grab handdler in case of the handler stop the grab.
+		grab->key_press(e);
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
@@ -787,7 +788,8 @@ void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_key_release_event_t const *>(_e);
 
 	if(_grab_handler != nullptr) {
-		_grab_handler->key_release(e);
+		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
+		grab->key_release(e);
 		return;
 	}
 
@@ -809,7 +811,8 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 
 	if(_grab_handler != nullptr) {
-		_grab_handler->button_press(e);
+		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
+		grab->button_press(e);
 		return;
 	}
 
@@ -3411,7 +3414,8 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
 	if(_grab_handler != nullptr) {
-		_grab_handler->button_motion(e);
+		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
+		grab->button_motion(e);
 		return;
 	} else {
 		_root->broadcast_button_motion(e);
@@ -3421,7 +3425,8 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
 	if(_grab_handler != nullptr) {
-		_grab_handler->button_release(e);
+		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
+		grab->button_release(e);
 	} else {
 		_root->broadcast_button_release(e);
 	}
