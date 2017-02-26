@@ -35,7 +35,7 @@ void grab_split_t::button_press(xcb_button_press_event_t const *) {
 
 void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if(_split.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -56,7 +56,7 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 	if(_split.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -81,7 +81,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 
 		_split.lock()->queue_redraw();
 		_split.lock()->set_split(_split_ratio);
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 	}
 }
 
@@ -190,7 +190,7 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 	if(c.expired()) {
-		ctx->grab_stop();
+		ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -216,7 +216,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				c->activate();
 				ctx->set_focus(c, e->time);
 			}
-			ctx->grab_stop();
+			ctx->grab_stop(e->time);
 			return;
 		}
 
@@ -270,7 +270,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			}
 		}
 
-		ctx->grab_stop();
+		ctx->grab_stop(e->time);
 
 	}
 }
@@ -308,7 +308,7 @@ void grab_floating_move_t::button_press(xcb_button_press_event_t const * e) {
 
 void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if(f.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -327,7 +327,7 @@ void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_floating_move_t::button_release(xcb_button_release_event_t const * e) {
 	if(f.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -343,7 +343,7 @@ void grab_floating_move_t::button_release(xcb_button_release_event_t const * e) 
 		f->reconfigure();
 
 		_ctx->set_focus(f, e->time);
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 	}
 }
 
@@ -411,7 +411,7 @@ void grab_floating_resize_t::button_press(xcb_button_press_event_t const * e) {
 
 void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if(f.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -513,7 +513,7 @@ void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) 
 
 void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e) {
 	if(f.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -525,7 +525,7 @@ void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e
 		f->set_floating_wished_position(final_position);
 		f->reconfigure();
 		_ctx->set_focus(f, e->time);
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 	}
 }
 
@@ -554,7 +554,7 @@ void grab_fullscreen_client_t::button_press(xcb_button_press_event_t const * e) 
 
 void grab_fullscreen_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 	if(mw.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -571,7 +571,7 @@ void grab_fullscreen_client_t::button_motion(xcb_motion_notify_event_t const * e
 
 void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const * e) {
 	if(mw.expired()) {
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
@@ -584,7 +584,7 @@ void grab_fullscreen_client_t::button_release(xcb_button_release_event_t const *
 			_ctx->fullscreen_client_to_viewport(mw.lock(), new_viewport);
 		}
 
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 
 	}
 }
@@ -667,7 +667,7 @@ void grab_alt_tab_t::button_press(xcb_button_press_event_t const * e) {
 		}
 
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 
 	}
 }
@@ -737,7 +737,7 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 
 	if (XK_Escape == k) {
 		xcb_ungrab_keyboard(_ctx->dpy()->xcb(), e->time);
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 	}
 
 	/** here we guess Mod1 is bound to Alt **/
@@ -748,7 +748,7 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 			mw->activate();
 			_ctx->set_focus(mw, e->time);
 		}
-		_ctx->grab_stop();
+		_ctx->grab_stop(e->time);
 	}
 
 }

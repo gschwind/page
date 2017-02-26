@@ -190,7 +190,7 @@ void viewport_t::create_window() {
 	 **/
 	xcb_grab_button(_ctx->dpy()->xcb(), false, _win,
 			DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC,
+			XCB_GRAB_MODE_SYNC, // synchronous pointer grab will freeze the cursor until action is made.
 			XCB_GRAB_MODE_ASYNC,
 			XCB_NONE,
 			XCB_NONE,

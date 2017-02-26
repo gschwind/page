@@ -919,7 +919,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
 					auto c = std::get<1>(i).lock();
-					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
+					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))}, e->time);
 					_mouse_over_reset();
 					return true;
 				}
@@ -928,7 +928,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y) and not std::get<1>(i).expired()) {
 					auto c = std::get<1>(i).lock();
-					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))});
+					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))}, e->time);
 					return true;
 				}
 			}
@@ -956,14 +956,14 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 		} else {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y);
+					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y, e->time);
 					return true;
 				}
 			}
 
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
-					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y);
+					_start_client_menu(std::get<1>(i).lock(), e->detail, e->root_x, e->root_y, e->time);
 					return true;
 				}
 			}
@@ -984,7 +984,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 
 }
 
-void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y) {
+void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t button, uint16_t x, uint16_t y, xcb_timestamp_t time) {
 	std::vector<std::shared_ptr<dropdown_menu_t::item_t>> v;
 	for(unsigned k = 0; k < _ctx->get_workspace_count(); ++k) {
 		std::ostringstream os;
@@ -994,31 +994,31 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 			os << "Send to " << _ctx->get_workspace(k)->name();
 		}
 		auto func =
-			[this, c, k] (xcb_timestamp_t time) {
+			[this, c, k] (xcb_timestamp_t t) {
 				if (k != this->_ctx->get_current_workspace()->id()) {
 					_ctx->detach(c);
 					_ctx->get_workspace(k)->default_pop()->add_client(c, false);
 					c->set_current_workspace(k);
 					c->activate();
-					_ctx->set_focus(c, time);
+					_ctx->set_focus(c, t);
 				}
 			};
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, os.str(), func));
 	}
 
 	{
-		auto func = [this, c] (xcb_timestamp_t time) {
+		auto func = [this, c] (xcb_timestamp_t t) {
 			int selected = _ctx->create_workspace();
 			_ctx->detach(c);
 			_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 			c->set_current_workspace(selected);
 			c->activate();
-			_ctx->set_focus(c, time);
+			_ctx->set_focus(c, t);
 		};
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
 	}
 
-	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y, 300, rect{x-10, y-10, 20, 20}});
+	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y+4, 300, rect{x-10, y-10, 20, 20}}, time);
 
 }
 

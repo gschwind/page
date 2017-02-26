@@ -272,7 +272,7 @@ bool split_t::button_press(xcb_button_press_event_t const * e) {
 			and e->child == _wid
 			and e->detail == XCB_BUTTON_INDEX_1
 			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
-		_ctx->grab_start(new grab_split_t { _ctx, shared_from_this() });
+		_ctx->grab_start(new grab_split_t { _ctx, shared_from_this() }, e->time);
 		return true;
 	} else {
 		return false;

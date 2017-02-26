@@ -88,9 +88,9 @@ protected:
 	int _selected;
 	shared_ptr<dropdown_menu_overlay_t> pop;
 	rect _start_position;
-	bool active_grab;
 	xcb_button_t _button;
 	xcb_timestamp_t _time;
+	bool has_been_released;
 
 public:
 

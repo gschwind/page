@@ -810,7 +810,6 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
 	if(_grab_handler != nullptr) {
 		_grab_handler->button_press(e);
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
 		return;
 	}
 
@@ -831,9 +830,6 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 			mw->activate();
 			set_focus(mw, e->time);
 		}
-	} else {
-		/* Do not replay events, grab them and process them until Release Button */
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
 	}
 
 }
@@ -1265,29 +1261,29 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 				int source = e->data.data32[4];
 
 				if (direction == _NET_WM_MOVERESIZE_MOVE) {
-					grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
+					grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y}, XCB_TIME_CURRENT_TIME);
 				} else {
 
 					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP}, XCB_TIME_CURRENT_TIME);
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM}, XCB_TIME_CURRENT_TIME);
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_LEFT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_LEFT}, XCB_TIME_CURRENT_TIME);
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_RIGHT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_RIGHT}, XCB_TIME_CURRENT_TIME);
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_LEFT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_LEFT}, XCB_TIME_CURRENT_TIME);
 					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT}, XCB_TIME_CURRENT_TIME);
 					} else if (direction
 							== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT}, XCB_TIME_CURRENT_TIME);
 					} else if (direction
 							== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
-						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT});
+						grab_start(new grab_floating_resize_t{this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT}, XCB_TIME_CURRENT_TIME);
 					} else {
-						grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y});
+						grab_start(new grab_floating_move_t{this, mw, button, root_x, root_y}, XCB_TIME_CURRENT_TIME);
 					}
 				}
 
@@ -3626,15 +3622,20 @@ compositor_t * page_t::cmp() const {
 	return _compositor;
 }
 
-void page_t::grab_start(grab_handler_t * handler) {
+void page_t::grab_start(grab_handler_t * handler, xcb_timestamp_t time) {
 	assert(_grab_handler == nullptr);
 	_grab_handler = handler;
+	xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
+			DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
+			XCB_NONE, XCB_NONE, time);
 }
 
-void page_t::grab_stop() {
+void page_t::grab_stop(xcb_timestamp_t time) {
 	assert(_grab_handler != nullptr);
 	delete _grab_handler;
 	_grab_handler = nullptr;
+	xcb_ungrab_pointer(_dpy->xcb(), time);
 }
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
@@ -3750,7 +3751,7 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 			xcb_discard_reply(_dpy->xcb(), ck.sequence);
 		} else {
 			if(reply->status == XCB_GRAB_STATUS_SUCCESS) {
-				grab_start(new grab_alt_tab_t{this, managed_window, time});
+				grab_start(new grab_alt_tab_t{this, managed_window, time}, time);
 			} else {
 				cout << "page_t::start_alt_tab error while trying to grab" << endl;
 			}

@@ -191,10 +191,9 @@ dropdown_menu_t::dropdown_menu_t(page_t * ctx,
 	_time{XCB_CURRENT_TIME}
 {
 
-	active_grab = false;
-
 	_selected = -1;
 	_items = items;
+	has_been_released = false;
 
 	rect _position;
 	_position.x = x;
@@ -284,30 +283,18 @@ void dropdown_menu_t::button_motion(xcb_motion_notify_event_t const * e)
 
 void dropdown_menu_t::button_release(xcb_button_release_event_t const * e)
 {
-	if (e->detail == XCB_BUTTON_INDEX_3
-			or e->detail == XCB_BUTTON_INDEX_1) {
-		if (_start_position.is_inside(e->event_x, e->event_y) and not active_grab) {
-			active_grab = true;
-			xcb_grab_pointer(_ctx->dpy()->xcb(),
-			false, _ctx->dpy()->root(),
-					DEFAULT_BUTTON_EVENT_MASK
-							| XCB_EVENT_MASK_POINTER_MOTION,
-					XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
-					XCB_NONE,
-					XCB_NONE, e->time);
+	if (e->detail == XCB_BUTTON_INDEX_3 or e->detail == XCB_BUTTON_INDEX_1) {
+		if(not pop->_position.is_inside(e->root_x, e->root_y)) {
+			if(has_been_released) {
+				_ctx->grab_stop(e->time);
+			} else {
+				has_been_released = true;
+			}
 		} else {
-			if (active_grab) {
-				xcb_ungrab_pointer(_ctx->dpy()->xcb(), e->time);
-				active_grab = false;
-			}
-
-			if (pop->_position.is_inside(e->root_x, e->root_y)) {
-				update_cursor_position(e->root_x, e->root_y);
-				_time = e->time;
-				_items[_selected]->_on_click(e->time);
-			}
-
-			_ctx->grab_stop();
+			update_cursor_position(e->root_x, e->root_y);
+			_time = e->time;
+			_items[_selected]->_on_click(e->time);
+			_ctx->grab_stop(e->time);
 		}
 	}
 }
