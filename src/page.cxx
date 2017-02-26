@@ -3629,13 +3629,22 @@ void page_t::grab_start(grab_handler_t * handler, xcb_timestamp_t time) {
 			DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 			XCB_NONE, XCB_NONE, time);
+	xcb_grab_keyboard(_dpy->xcb(), false, _dpy->root(),
+			time, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 }
 
 void page_t::grab_stop(xcb_timestamp_t time) {
 	assert(_grab_handler != nullptr);
 	delete _grab_handler;
 	_grab_handler = nullptr;
+	xcb_ungrab_keyboard(_dpy->xcb(), time);
 	xcb_ungrab_pointer(_dpy->xcb(), time);
+
+	/* apply regular keyboard focus */
+	shared_ptr<client_managed_t> focused;
+	if (get_current_workspace()->client_focus_history_front(focused)) {
+		focused->focus(time);
+	}
 }
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
