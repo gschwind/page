@@ -199,6 +199,8 @@ client_managed_t::client_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t net_
 	_input_bottom_left = cnx()->create_input_only_window(_deco, _area_bottom_left, XCB_CW_CURSOR, &cursor);
 	cursor = cnx()->xc_bottom_righ_corner;
 	_input_bottom_right = cnx()->create_input_only_window(_deco, _area_bottom_right, XCB_CW_CURSOR, &cursor);
+	cursor = cnx()->xc_left_ptr;
+	_input_center = cnx()->create_input_only_window(_deco, _area_center, XCB_CW_CURSOR, &cursor);
 
 	_client_proxy->add_to_save_set();
 	select_inputs_unsafe();
@@ -241,6 +243,7 @@ client_managed_t::~client_managed_t() {
 	xcb_destroy_window(cnx()->xcb(), _input_top_right);
 	xcb_destroy_window(cnx()->xcb(), _input_bottom_left);
 	xcb_destroy_window(cnx()->xcb(), _input_bottom_right);
+	xcb_destroy_window(cnx()->xcb(), _input_center);
 
 	xcb_destroy_window(cnx()->xcb(), _deco);
 	xcb_destroy_window(cnx()->xcb(), _base);
@@ -328,6 +331,8 @@ void client_managed_t::reconfigure() {
 	cnx()->move_resize(_input_top_right, _area_top_right);
 	cnx()->move_resize(_input_bottom_left, _area_bottom_left);
 	cnx()->move_resize(_input_bottom_right, _area_bottom_right);
+
+	cnx()->move_resize(_input_center, _area_center);
 
 	fake_configure_unsafe();
 
@@ -783,6 +788,8 @@ void client_managed_t::update_floating_areas() {
 	_area_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right,
 			_ctx->theme()->floating.margin.bottom);
 
+	_area_center = rect(x0, y0, w0, h0);
+
 	compute_floating_areas();
 
 }
@@ -876,6 +883,8 @@ void client_managed_t::map_unsafe() {
 	cnx()->map(_input_top_right);
 	cnx()->map(_input_bottom_left);
 	cnx()->map(_input_bottom_right);
+
+	cnx()->map(_input_center);
 }
 
 void client_managed_t::unmap_unsafe() {
@@ -893,6 +902,8 @@ void client_managed_t::unmap_unsafe() {
 	cnx()->unmap(_input_top_right);
 	cnx()->unmap(_input_bottom_left);
 	cnx()->unmap(_input_bottom_right);
+
+	cnx()->unmap(_input_center);
 }
 
 void client_managed_t::hide() {

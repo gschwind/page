@@ -91,6 +91,7 @@ class client_managed_t : public client_base_t {
 	xcb_window_t _input_top_right;
 	xcb_window_t _input_bottom_left;
 	xcb_window_t _input_bottom_right;
+	xcb_window_t _input_center;
 
 	rect _area_top;
 	rect _area_left;
@@ -100,6 +101,7 @@ class client_managed_t : public client_base_t {
 	rect _area_top_right;
 	rect _area_bottom_left;
 	rect _area_bottom_right;
+	rect _area_center;
 
 	struct floating_area_t {
 		rect close_button;
