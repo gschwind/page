@@ -915,7 +915,7 @@ void display_t::print_error(xcb_generic_error_t const * err) {
 		}
 	}
 
-	printf("#%08d ERROR %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
+	printf("#%08d INFO %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
 }
 
 auto display_t::create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t> {
