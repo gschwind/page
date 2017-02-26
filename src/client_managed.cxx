@@ -763,32 +763,43 @@ void client_managed_t::update_floating_areas() {
 	tm.position = _base_position;
 	tm.title = _title;
 
-	int x0 = _ctx->theme()->floating.margin.left;
-	int x1 = _base_position.w - _ctx->theme()->floating.margin.right;
+	margin_t ajusted = _ctx->theme()->floating.margin;
 
-	int y0 = _ctx->theme()->floating.margin.bottom;
-	int y1 = _base_position.h - _ctx->theme()->floating.margin.bottom;
+	ajusted.top += 15;
+	ajusted.bottom += 15;
+	ajusted.left += 15;
+	ajusted.right += 15;
 
-	int w0 = _base_position.w - _ctx->theme()->floating.margin.left
-			- _ctx->theme()->floating.margin.right;
-	int h0 = _base_position.h - _ctx->theme()->floating.margin.bottom
-			- _ctx->theme()->floating.margin.bottom;
+	if(_base_position.w < (ajusted.left + ajusted.right)) {
+		ajusted.left = ajusted.right = _base_position.w/2;
+	}
 
-	_area_top = rect(x0, 0, w0, _ctx->theme()->floating.margin.bottom);
-	_area_bottom = rect(x0, y1, w0, _ctx->theme()->floating.margin.bottom);
-	_area_left = rect(0, y0, _ctx->theme()->floating.margin.left, h0);
-	_area_right = rect(x1, y0, _ctx->theme()->floating.margin.right, h0);
+	if(_base_position.h < (ajusted.top + ajusted.bottom)) {
+		ajusted.top = ajusted.bottom = _base_position.h/2;
+	}
 
-	_area_top_left = rect(0, 0, _ctx->theme()->floating.margin.left,
-			_ctx->theme()->floating.margin.bottom);
-	_area_top_right = rect(x1, 0, _ctx->theme()->floating.margin.right,
-			_ctx->theme()->floating.margin.bottom);
-	_area_bottom_left = rect(0, y1, _ctx->theme()->floating.margin.left,
-			_ctx->theme()->floating.margin.bottom);
-	_area_bottom_right = rect(x1, y1, _ctx->theme()->floating.margin.right,
-			_ctx->theme()->floating.margin.bottom);
+	int x0 = ajusted.left;
+	int x1 = _base_position.w - ajusted.right;
 
-	_area_center = rect(x0, y0, w0, h0);
+	int y0 = ajusted.bottom;
+	int y1 = _base_position.h - ajusted.bottom;
+
+	int w0 = _base_position.w - ajusted.left - ajusted.right;
+	int h0 = _base_position.h - ajusted.bottom - ajusted.bottom;
+
+	_area_top = rect(x0, 0, w0, ajusted.bottom);
+	_area_bottom = rect(x0, y1, w0, ajusted.bottom);
+	_area_left = rect(0, y0, ajusted.left, h0);
+	_area_right = rect(x1, y0, ajusted.right, h0);
+
+	_area_top_left = rect(0, 0, ajusted.left, ajusted.bottom);
+	_area_top_right = rect(x1, 0, ajusted.right, ajusted.bottom);
+	_area_bottom_left = rect(0, y1, ajusted.left, ajusted.bottom);
+	_area_bottom_right = rect(x1, y1, ajusted.right, ajusted.bottom);
+
+	auto & m = _ctx->theme()->floating.margin;
+	_area_center = rect(m.left, m.top, _base_position.w - m.left - m.right,
+			_base_position.h - m.bottom - m.bottom);
 
 	compute_floating_areas();
 
