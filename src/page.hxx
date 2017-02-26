@@ -111,7 +111,7 @@ class page_t : public connectable_t {
 public:
 
 private:
-	grab_handler_t * _grab_handler;
+	shared_ptr<grab_handler_t> _grab_handler;
 
 public:
 
@@ -394,7 +394,7 @@ public:
 	auto get_workspace(int id) const -> shared_ptr<workspace_t> const &;
 	int  get_workspace_count() const;
 	int  create_workspace();
-	void grab_start(grab_handler_t * handler, xcb_timestamp_t time);
+	void grab_start(shared_ptr<grab_handler_t> handler, xcb_timestamp_t time);
 	void grab_stop(xcb_timestamp_t time);
 	void detach(shared_ptr<tree_t> t);
 	void insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_ptr<notebook_t> n, bool prefer_activate);

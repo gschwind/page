@@ -919,7 +919,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			for(auto & i: _client_buttons) {
 				if(std::get<0>(i).is_inside(x, y)) {
 					auto c = std::get<1>(i).lock();
-					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))}, e->time);
+					_ctx->grab_start(make_shared<grab_bind_client_t>(_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))), e->time);
 					_mouse_over_reset();
 					return true;
 				}
@@ -928,7 +928,7 @@ bool notebook_t::button_press(xcb_button_press_event_t const * e) {
 			for(auto & i: _exposay_buttons) {
 				if(std::get<0>(i).is_inside(x, y) and not std::get<1>(i).expired()) {
 					auto c = std::get<1>(i).lock();
-					_ctx->grab_start(new grab_bind_client_t{_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))}, e->time);
+					_ctx->grab_start(make_shared<grab_bind_client_t>(_ctx, c, XCB_BUTTON_INDEX_1, to_root_position(std::get<0>(i))), e->time);
 					return true;
 				}
 			}
@@ -1018,7 +1018,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
 	}
 
-	_ctx->grab_start(new dropdown_menu_t{_ctx, v, button, x, y+4, 300, rect{x-10, y-10, 20, 20}}, time);
+	_ctx->grab_start(make_shared<dropdown_menu_t>(_ctx, v, button, x, y+4, 300, rect{x-10, y-10, 20, 20}), time);
 
 }
 

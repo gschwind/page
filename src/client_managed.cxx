@@ -986,12 +986,12 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 	if (is(MANAGED_FLOATING)
 			and e->detail == XCB_BUTTON_INDEX_1
 			and (e->state & XCB_MOD_MASK_1)) {
-		_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y}, e->time);
+		_ctx->grab_start(make_shared<grab_floating_move_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y), e->time);
 		return true;
 	} else if (is(MANAGED_FLOATING)
 			and e->detail == XCB_BUTTON_INDEX_3
 			and (e->state & XCB_MOD_MASK_1)) {
-		_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT}, e->time);
+		_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT), e->time);
 		return true;
 	} else if (is(MANAGED_FLOATING)
 			and e->detail == XCB_BUTTON_INDEX_1
@@ -1004,28 +1004,28 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 			rect absolute_position = _floating_area.bind_button;
 			absolute_position.x += base_position().x;
 			absolute_position.y += base_position().y;
-			_ctx->grab_start(new grab_bind_client_t{_ctx, shared_from_this(), e->detail, absolute_position}, e->time);
+			_ctx->grab_start(make_shared<grab_bind_client_t>(_ctx, shared_from_this(), e->detail, absolute_position), e->time);
 		} else if (_floating_area.title_button.is_inside(e->event_x, e->event_y)) {
-			_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y}, e->time);
+			_ctx->grab_start(make_shared<grab_floating_move_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y), e->time);
 		} else {
 			if (_floating_area.grip_top.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP), e->time);
 			} else if (_floating_area.grip_bottom.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM), e->time);
 			} else if (_floating_area.grip_left.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_LEFT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_LEFT), e->time);
 			} else if (_floating_area.grip_right.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_RIGHT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_RIGHT), e->time);
 			} else if (_floating_area.grip_top_left.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_LEFT), e->time);
 			} else if (_floating_area.grip_top_right.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_TOP_RIGHT), e->time);
 			} else if (_floating_area.grip_bottom_left.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_LEFT), e->time);
 			} else if (_floating_area.grip_bottom_right.is_inside(e->event_x, e->event_y)) {
-				_ctx->grab_start(new grab_floating_resize_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT), e->time);
 			} else {
-				_ctx->grab_start(new grab_floating_move_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y}, e->time);
+				_ctx->grab_start(make_shared<grab_floating_move_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y), e->time);
 			}
 		}
 
@@ -1035,11 +1035,11 @@ bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 			and e->detail == (XCB_BUTTON_INDEX_1)
 			and (e->state & XCB_MOD_MASK_1)) {
 		/** start moving fullscreen window **/
-		_ctx->grab_start(new grab_fullscreen_client_t{_ctx, shared_from_this(), e->detail, e->root_x, e->root_y}, e->time);
+		_ctx->grab_start(make_shared<grab_fullscreen_client_t>(_ctx, shared_from_this(), e->detail, e->root_x, e->root_y), e->time);
 		return true;
 	} else if (is(MANAGED_NOTEBOOK) and e->detail == (XCB_BUTTON_INDEX_3)
 			and (e->state & (XCB_MOD_MASK_1))) {
-		_ctx->grab_start(new grab_bind_client_t{_ctx, shared_from_this(), e->detail, rect{e->root_x-10, e->root_y-10, 20, 20}}, e->time);
+		_ctx->grab_start(make_shared<grab_bind_client_t>(_ctx, shared_from_this(), e->detail, rect{e->root_x-10, e->root_y-10, 20, 20}), e->time);
 		return true;
 	}
 
