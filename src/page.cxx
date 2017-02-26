@@ -1315,7 +1315,9 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
 		update_number_of_workspace(e->data.data32[0]);
 	} else if (e->type == A(_NET_WM_DESKTOP)) {
-		move_client_to_workspace(mw, e->data.data32[0]);
+		if (mw != nullptr) {
+			move_client_to_workspace(mw, e->data.data32[0]);
+		}
 	}
 }
 
