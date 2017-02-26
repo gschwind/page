@@ -574,7 +574,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if(_grab_handler != nullptr) {
 		auto grab = _grab_handler;// hold grab handdler in case of the handler stop the grab.
 		grab->key_press(e);
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -583,8 +582,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (get_current_workspace()->client_focus_history_front(mw)) {
 			mw->delete_window(e->time);
 		}
-
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -593,7 +590,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		for (auto c : child) {
 			c->start_exposay();
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -603,7 +599,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			toggle_fullscreen(mw);
 			set_focus(mw, e->time);
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -613,7 +608,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			stop_compositor();
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -627,7 +621,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			switch_to_workspace(new_workspace);
 			set_focus(nullptr, e->time);
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -641,7 +634,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			switch_to_workspace(new_workspace);
 			set_focus(nullptr, e->time);
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -656,7 +648,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				set_focus(mw, e->time);
 			}
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -668,7 +659,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				set_focus(mw, e->time);
 			}
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -685,7 +675,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				set_focus(mw, e->time);
 			}
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -704,7 +693,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				_root->remove(_root->_fps_overlay);
 				_root->_fps_overlay = nullptr;
 			}
-			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 
@@ -714,7 +702,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_damaged(true);
 			}
-			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 
@@ -724,7 +711,6 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_opac(true);
 			}
-			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 	}
@@ -760,14 +746,12 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			cout << "active window is : " << "NONE" << endl;
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	for(int i; i < bind_cmd.size(); ++i) {
 		if (key == bind_cmd[i].key) {
 			run_cmd(bind_cmd[i].cmd);
-			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 	}
@@ -776,11 +760,11 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if (_grab_handler == nullptr) {
 			start_alt_tab(e->time);
 		}
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
-	xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
+	if(not _grab_handler)
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_KEYBOARD, e->time);
 
 }
 
@@ -1289,16 +1273,6 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 						grab_start(make_shared<grab_floating_move_t>(this, mw, button, root_x, root_y), XCB_TIME_CURRENT_TIME);
 					}
 				}
-
-				if (_grab_handler != nullptr) {
-					xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
-							XCB_EVENT_MASK_BUTTON_PRESS
-									| XCB_EVENT_MASK_BUTTON_RELEASE
-									| XCB_EVENT_MASK_BUTTON_MOTION,
-							XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
-							XCB_NONE, XCB_NONE, XCB_CURRENT_TIME);
-				}
-
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
@@ -3749,24 +3723,7 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 
 	if(managed_window.size() > 1) {
 		/* Grab keyboard */
-		auto ck = xcb_grab_keyboard(_dpy->xcb(),
-				false, _dpy->root(), time,
-				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
-
-		xcb_generic_error_t * err;
-		auto reply = xcb_grab_keyboard_reply(_dpy->xcb(), ck, &err);
-
-		if(err != nullptr) {
-			cout << "page_t::start_alt_tab error while trying to grab : " << xcb_event_get_error_label(err->error_code) << endl;
-			xcb_discard_reply(_dpy->xcb(), ck.sequence);
-		} else {
-			if(reply->status == XCB_GRAB_STATUS_SUCCESS) {
-				grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
-			} else {
-				cout << "page_t::start_alt_tab error while trying to grab" << endl;
-			}
-			free(reply);
-		}
+		grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
 	}
 }
 
