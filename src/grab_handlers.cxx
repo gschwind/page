@@ -15,7 +15,52 @@ namespace page {
 
 using namespace std;
 
-grab_split_t::grab_split_t(page_t * ctx, shared_ptr<split_t> s) : _ctx{ctx}, _split{s} {
+grab_default_t::grab_default_t(page_t * c) :
+	_ctx{c}
+{
+
+}
+
+grab_default_t::~grab_default_t()
+{
+
+}
+
+void grab_default_t::button_press(xcb_button_press_event_t const * e)
+{
+
+}
+
+void grab_default_t::button_motion(xcb_motion_notify_event_t const * e)
+{
+
+}
+
+void grab_default_t::button_release(xcb_button_release_event_t const * e)
+{
+
+}
+
+void grab_default_t::key_press(xcb_key_press_event_t const * ev)
+{
+
+}
+
+void grab_default_t::key_release(xcb_key_release_event_t const * e)
+{
+	/* get KeyCode for Unmodified Key */
+	xcb_keysym_t k = _ctx->keymap()->get(e->detail);
+
+	if (k == 0)
+		return;
+
+	if (XK_Escape == k) {
+		_ctx->grab_stop(e->time);
+	}
+
+}
+
+grab_split_t::grab_split_t(page_t * ctx, shared_ptr<split_t> s) : grab_default_t{ctx}, _split{s} {
 	_slider_area = s->to_root_position(s->get_split_bar_area());
 	_split_ratio = s->ratio();
 	_split_root_allocation = s->root_location();
@@ -86,7 +131,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 }
 
 grab_bind_client_t::grab_bind_client_t(page_t * ctx, shared_ptr<client_managed_t> c, xcb_button_t button, rect const & pos) :
-		ctx{ctx},
+		grab_default_t{ctx},
 		c{c},
 		start_position{pos},
 		target_notebook{},
@@ -100,7 +145,7 @@ grab_bind_client_t::grab_bind_client_t(page_t * ctx, shared_ptr<client_managed_t
 
 grab_bind_client_t::~grab_bind_client_t() {
 	if(pn0 != nullptr)
-		ctx->detach(pn0);
+		_ctx->detach(pn0);
 }
 
 void grab_bind_client_t::_find_target_notebook(int x, int y,
@@ -111,7 +156,7 @@ void grab_bind_client_t::_find_target_notebook(int x, int y,
 
 	/* place the popup */
 	auto ln = filter_class<notebook_t>(
-			ctx->get_current_workspace()->get_all_children());
+			_ctx->get_current_workspace()->get_all_children());
 	for (auto i : ln) {
 		if (i->_area.tab.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TAB;
@@ -150,8 +195,8 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	/* do not start drag&drop for small move */
 	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
-		pn0 = make_shared<popup_notebook0_t>(ctx);
-		ctx->overlay_add(pn0);
+		pn0 = make_shared<popup_notebook0_t>(_ctx);
+		_ctx->overlay_add(pn0);
 		pn0->show();
 	}
 
@@ -190,14 +235,13 @@ void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 	if(c.expired()) {
-		ctx->grab_stop(e->time);
+		_ctx->grab_stop(e->time);
 		return;
 	}
 
 	auto c = this->c.lock();
 
 	if (e->detail == _button) {
-
 		shared_ptr<notebook_t> new_target;
 		notebook_area_e new_zone;
 		_find_target_notebook(e->root_x, e->root_y, new_target, new_zone);
@@ -210,13 +254,13 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 
 		if(new_target == nullptr or new_zone == NOTEBOOK_AREA_NONE or start_position.is_inside(e->root_x, e->root_y)) {
 			if(c->is(MANAGED_FLOATING)) {
-				ctx->detach(c);
-				ctx->bind_window(c, true);
+				_ctx->detach(c);
+				_ctx->bind_window(c, true);
 			} else {
 				c->activate();
-				ctx->set_focus(c, e->time);
+				_ctx->set_focus(c, e->time);
 			}
-			ctx->grab_stop(e->time);
+			_ctx->grab_stop(e->time);
 			return;
 		}
 
@@ -226,58 +270,58 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 			if(new_target != c->parent()->shared_from_this()) {
 				new_target->queue_redraw();
 				c->queue_redraw();
-				ctx->detach(c);
-				ctx->insert_window_in_notebook(c, new_target, true);
+				_ctx->detach(c);
+				_ctx->insert_window_in_notebook(c, new_target, true);
 				c->activate();
-				ctx->set_focus(c, e->time);
+				_ctx->set_focus(c, e->time);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
-			ctx->split_top(new_target, c);
+			_ctx->split_top(new_target, c);
 			c->activate();
-			ctx->set_focus(c, e->time);
+			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_LEFT:
-			ctx->split_left(new_target, c);
+			_ctx->split_left(new_target, c);
 			c->activate();
-			ctx->set_focus(c, e->time);
+			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
-			ctx->split_bottom(new_target, c);
+			_ctx->split_bottom(new_target, c);
 			c->activate();
-			ctx->set_focus(c, e->time);
+			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
-			ctx->split_right(new_target, c);
+			_ctx->split_right(new_target, c);
 			c->activate();
-			ctx->set_focus(c, e->time);
+			_ctx->set_focus(c, e->time);
 			break;
 		default:
 			if(c->parent() != nullptr and c->is(MANAGED_NOTEBOOK)) {
-				if(ctx->conf()._enable_shade_windows) {
+				if(_ctx->conf()._enable_shade_windows) {
 					if(c->is_visible()) {
-						ctx->set_focus(nullptr, e->time);
+						_ctx->set_focus(nullptr, e->time);
 						dynamic_pointer_cast<notebook_t>(c->parent())->iconify_client(c);
 					} else {
 						cout << "activate = " << c << endl;
 						c->activate();
-						ctx->set_focus(c, e->time);
+						_ctx->set_focus(c, e->time);
 					}
 				} else {
 					c->activate();
-					ctx->set_focus(c, e->time);
+					_ctx->set_focus(c, e->time);
 				}
 			}
 		}
 
-		ctx->grab_stop(e->time);
+		_ctx->grab_stop(e->time);
 
 	}
 }
 
 
 grab_floating_move_t::grab_floating_move_t(page_t * ctx, shared_ptr<client_managed_t> f, unsigned int button, int x, int y) :
-		_ctx{ctx},
+		grab_default_t{ctx},
 		f{f},
 		original_position{f->get_wished_position()},
 		final_position{f->get_wished_position()},
@@ -379,7 +423,7 @@ xcb_cursor_t grab_floating_resize_t::_get_cursor() {
 }
 
 grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, shared_ptr<client_managed_t> f, xcb_button_t button, int x, int y, resize_mode_e mode) :
-		_ctx{ctx},
+		grab_default_t{ctx},
 		f{f},
 		mode{mode},
 		x_root{x},
@@ -530,7 +574,7 @@ void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e
 }
 
 grab_fullscreen_client_t::grab_fullscreen_client_t(page_t * ctx, shared_ptr<client_managed_t> mw, xcb_button_t button, int x, int y) :
- _ctx{ctx},
+ grab_default_t{ctx},
  mw{mw},
  pn0{nullptr},
  button{button}
@@ -599,7 +643,7 @@ void grab_alt_tab_t::_destroy_client(client_managed_t * c) {
 	}
 }
 
-grab_alt_tab_t::grab_alt_tab_t(page_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time) : _ctx{ctx} {
+grab_alt_tab_t::grab_alt_tab_t(page_t * ctx, list<client_managed_p> managed_window, xcb_timestamp_t time) : grab_default_t{ctx} {
 	_client_list = weak(managed_window);
 
 	auto viewport_list = _ctx->get_current_workspace()->get_viewports();

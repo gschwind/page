@@ -29,8 +29,20 @@ enum notebook_area_e {
 	NOTEBOOK_AREA_CENTER
 };
 
-class grab_split_t : public grab_handler_t {
+struct grab_default_t : public grab_handler_t {
 	page_t * _ctx;
+
+	grab_default_t(page_t * c);
+
+	virtual ~grab_default_t();
+	virtual void button_press(xcb_button_press_event_t const * e) override;
+	virtual void button_motion(xcb_motion_notify_event_t const * e) override;
+	virtual void button_release(xcb_button_release_event_t const * e) override;
+	virtual void key_press(xcb_key_press_event_t const * ev) override;
+	virtual void key_release(xcb_key_release_event_t const * ev) override;
+};
+
+class grab_split_t : public grab_default_t {
 	weak_ptr<split_t> _split;
 	rect _slider_area;
 	rect _split_root_allocation;
@@ -44,13 +56,12 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-	virtual void key_press(xcb_key_press_event_t const * ev) { }
-	virtual void key_release(xcb_key_release_event_t const * ev) { }
+	using grab_handler_t::key_press;
+	using grab_handler_t::key_release;
 
 };
 
-class grab_bind_client_t : public grab_handler_t {
-	page_t * ctx;
+class grab_bind_client_t : public grab_default_t {
 	weak_ptr<client_managed_t> c;
 
 	rect start_position;
@@ -69,17 +80,17 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-	virtual void key_press(xcb_key_press_event_t const * ev) { }
-	virtual void key_release(xcb_key_release_event_t const * ev) { }
+	using grab_handler_t::key_press;
+	using grab_handler_t::key_release;
 };
 
-struct mode_data_notebook_client_menu_t  : public grab_handler_t {
+struct mode_data_notebook_client_menu_t  : public grab_default_t {
 	weak_ptr<notebook_t> from;
 	weak_ptr<client_managed_t> client;
 	bool active_grab;
 	rect b;
 
-	mode_data_notebook_client_menu_t() {
+	mode_data_notebook_client_menu_t(page_t * ctx) : grab_default_t{ctx} {
 		reset();
 	}
 
@@ -104,8 +115,7 @@ enum resize_mode_e {
 };
 
 
-struct grab_floating_move_t : public grab_handler_t {
-	page_t * _ctx;
+struct grab_floating_move_t : public grab_default_t {
 	int x_root;
 	int y_root;
 	rect original_position;
@@ -122,12 +132,11 @@ struct grab_floating_move_t : public grab_handler_t {
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-	virtual void key_press(xcb_key_press_event_t const * ev) { }
-	virtual void key_release(xcb_key_release_event_t const * ev) { }
+	using grab_handler_t::key_press;
+	using grab_handler_t::key_release;
 };
 
-struct grab_floating_resize_t : public grab_handler_t {
-	page_t * _ctx;
+struct grab_floating_resize_t : public grab_default_t {
 	weak_ptr<client_managed_t> f;
 
 	resize_mode_e mode;
@@ -149,13 +158,12 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-	virtual void key_press(xcb_key_press_event_t const * ev) { }
-	virtual void key_release(xcb_key_release_event_t const * ev) { }
+	using grab_handler_t::key_press;
+	using grab_handler_t::key_release;
 
 };
 
-struct grab_fullscreen_client_t : public grab_handler_t {
-	page_t * _ctx;
+struct grab_fullscreen_client_t : public grab_default_t {
 	weak_ptr<client_managed_t> mw;
 	weak_ptr<viewport_t> v;
 	shared_ptr<popup_notebook0_t> pn0;
@@ -169,12 +177,11 @@ public:
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
 	virtual void button_release(xcb_button_release_event_t const * e);
-	virtual void key_press(xcb_key_press_event_t const * ev) { }
-	virtual void key_release(xcb_key_release_event_t const * ev) { }
+	using grab_handler_t::key_press;
+	using grab_handler_t::key_release;
 };
 
-struct grab_alt_tab_t : public grab_handler_t {
-	page_t * _ctx;
+struct grab_alt_tab_t : public grab_default_t {
 	list<client_managed_w> _client_list;
 	list<popup_alt_tab_p> _popup_list;
 
@@ -191,9 +198,9 @@ public:
 	virtual ~grab_alt_tab_t();
 	virtual void button_press(xcb_button_press_event_t const * e);
 	virtual void button_motion(xcb_motion_notify_event_t const * e);
-	virtual void button_release(xcb_button_release_event_t const * e) { }
-	virtual void key_press(xcb_key_press_event_t const * ev);
-	virtual void key_release(xcb_key_release_event_t const * ev);
+	using grab_handler_t::button_release;
+	virtual void key_press(xcb_key_press_event_t const * ev) override;
+	virtual void key_release(xcb_key_release_event_t const * ev) override;
 };
 
 }
