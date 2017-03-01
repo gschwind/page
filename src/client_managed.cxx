@@ -393,18 +393,8 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	if (_client_proxy->wm_hints() != nullptr) {
-		if (_client_proxy->wm_hints()->input != False) {
-			_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
-		}
-	} else {
-		/** no WM_HINTS, guess hints.input == True **/
-		_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
-	}
-
 	if (_client_proxy->wm_protocols() != nullptr) {
-		if (has_key(*(_client_proxy->wm_protocols()),
-				static_cast<xcb_atom_t>(A(WM_TAKE_FOCUS)))) {
+		if (has_key(*(_client_proxy->wm_protocols()), A(WM_TAKE_FOCUS))) {
 
 			xcb_client_message_event_t ev;
 			ev.response_type = XCB_CLIENT_MESSAGE;
@@ -416,8 +406,21 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 
 			_client_proxy->send_event(0, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
 
+			return;
+
 		}
 	}
+
+	if (_client_proxy->wm_hints() != nullptr) {
+		if (_client_proxy->wm_hints()->input != False) {
+			_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+		}
+	} else {
+		/** no WM_HINTS, guess hints.input == True **/
+		_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+	}
+
+
 
 }
 
