@@ -613,27 +613,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if (key == bind_right_workspace) {
 		unsigned new_workspace = ((_root->_current_workspace + _root->_workspace_list.size()) + 1) % _root->_workspace_list.size();
-		shared_ptr<client_managed_t> mw;
-		if (get_workspace(new_workspace)->client_focus_history_front(mw)) {
-			mw->activate();
-			set_focus(mw, e->time);
-		} else {
-			switch_to_workspace(new_workspace, e->time);
-			set_focus(nullptr, e->time);
-		}
+		switch_to_workspace(new_workspace, e->time);
 		return;
 	}
 
 	if (key == bind_left_workspace) {
 		unsigned new_workspace = ((_root->_current_workspace + _root->_workspace_list.size()) - 1) % _root->_workspace_list.size();
-		shared_ptr<client_managed_t> mw;
-		if (get_workspace(new_workspace)->client_focus_history_front(mw)) {
-			mw->activate();
-			set_focus(mw, e->time);
-		} else {
-			switch_to_workspace(new_workspace, e->time);
-			set_focus(nullptr, e->time);
-		}
+		switch_to_workspace(new_workspace, e->time);
 		return;
 	}
 
@@ -1278,12 +1264,6 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
 		if(e->data.data32[0] >= 0 and e->data.data32[0] < _root->_workspace_list.size() and e->data.data32[0] != _root->_current_workspace) {
 			switch_to_workspace(e->data.data32[0], e->data.data32[1]);
-			shared_ptr<client_managed_t> mw;
-			if (get_current_workspace()->client_focus_history_front(mw)) {
-				set_focus(mw, e->data.data32[1]);
-			} else {
-				set_focus(nullptr, e->data.data32[1]);
-			}
 		}
 	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
 		update_number_of_workspace(e->data.data32[0]);
@@ -3105,6 +3085,14 @@ void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 		update_viewport_layout();
 		update_current_workspace();
 		update_workspace_visibility();
+
+		shared_ptr<client_managed_t> focus;
+		if(get_current_workspace()->client_focus_history_front(focus)) {
+			set_focus(focus, time);
+		} else {
+			set_focus(nullptr, time);
+		}
+
 	}
 }
 
