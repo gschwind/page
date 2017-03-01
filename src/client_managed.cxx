@@ -1130,6 +1130,13 @@ void client_managed_t::_update_title() {
 		s << "#" << (_client_proxy->id()) << " (noname)";
 		_title = s.str();
 	}
+
+	if(true) {
+		stringstream s(stringstream::in | stringstream::out);
+		s << "(" << (_client_proxy->id()) << ") " << _title;
+		_title = s.str();
+	}
+
 }
 
 void client_managed_t::update_title() {
