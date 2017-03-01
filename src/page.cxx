@@ -292,7 +292,7 @@ void page_t::run() {
 	_dpy->ungrab();
 
 	/** switch back to the first workspace by default */
-	switch_to_workspace(0);
+	switch_to_workspace(0, XCB_CURRENT_TIME);
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR,
@@ -618,7 +618,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			mw->activate();
 			set_focus(mw, e->time);
 		} else {
-			switch_to_workspace(new_workspace);
+			switch_to_workspace(new_workspace, e->time);
 			set_focus(nullptr, e->time);
 		}
 		return;
@@ -631,7 +631,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			mw->activate();
 			set_focus(mw, e->time);
 		} else {
-			switch_to_workspace(new_workspace);
+			switch_to_workspace(new_workspace, e->time);
 			set_focus(nullptr, e->time);
 		}
 		return;
@@ -1277,7 +1277,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
 		if(e->data.data32[0] >= 0 and e->data.data32[0] < _root->_workspace_list.size() and e->data.data32[0] != _root->_current_workspace) {
-			switch_to_workspace(e->data.data32[0]);
+			switch_to_workspace(e->data.data32[0], e->data.data32[1]);
 			shared_ptr<client_managed_t> mw;
 			if (get_current_workspace()->client_focus_history_front(mw)) {
 				set_focus(mw, e->data.data32[1]);
@@ -3079,7 +3079,7 @@ void page_t::update_current_workspace() const {
 			32, &current_workspace, 1);
 }
 
-void page_t::switch_to_workspace(unsigned int workspace) {
+void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 	assert(workspace < _root->_workspace_list.size());
 	if (workspace != _root->_current_workspace and workspace != ALL_DESKTOP) {
 		std::cout << "switch to workspace #" << workspace << std::endl;
