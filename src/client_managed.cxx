@@ -670,6 +670,9 @@ void client_managed_t::normalize() {
 	for (auto c : filter_class<client_managed_t>(_children)) {
 		c->normalize();
 	}
+
+	show();
+
 }
 
 void client_managed_t::iconify() {

@@ -66,7 +66,6 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 		_selected = x;
 		if(_is_visible) {
 			_selected->normalize();
-			_selected->show();
 		} else {
 			_selected->iconify();
 			_selected->hide();
@@ -139,7 +138,6 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 
 		if (_selected != nullptr and _is_visible) {
 			_selected->normalize();
-			_selected->show();
 		}
 	}
 
@@ -163,7 +161,6 @@ void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 	_selected = c;
 	if(_is_visible) {
 		_selected->normalize();
-		_selected->show();
 	}
 
 	_layout_is_durty = true;
@@ -1220,7 +1217,6 @@ void notebook_t::show() {
 
 	if(_selected != nullptr) {
 		_selected->normalize();
-		_selected->show();
 	}
 }
 

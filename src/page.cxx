@@ -1375,7 +1375,6 @@ void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> 
 	mw->set_notebook_wished_position(v->raw_area());
 	mw->reconfigure();
 	mw->normalize();
-	mw->show();
 
 	/* hide the viewport because he is covered by a fullscreen client */
 	v->hide();
@@ -1860,7 +1859,6 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.h = ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
 				j->normalize();
-				j->show();
 				continue;
 			}
 
@@ -1872,7 +1870,6 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
 				j->set_floating_wished_position(pos);
 				j->normalize();
-				j->show();
 				continue;
 			}
 
@@ -1884,7 +1881,6 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.h = ps[PS_TOP];
 				j->set_floating_wished_position(pos);
 				j->normalize();
-				j->show();
 				continue;
 			}
 
@@ -1896,7 +1892,6 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				pos.h = ps[PS_BOTTOM];
 				j->set_floating_wished_position(pos);
 				j->normalize();
-				j->show();
 				continue;
 			}
 		}
@@ -2233,7 +2228,6 @@ void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
 	insert_in_tree_using_transient_for(mw);
 	mw->queue_redraw();
 	mw->normalize();
-	mw->show();
 	mw->activate();
 	_need_update_client_list = true;
 	_need_restack = true;
@@ -2718,7 +2712,6 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		mw->normalize();
 		fullscreen(mw);
 		update_workspace_visibility();
-		mw->show();
 		mw->activate();
 		set_focus(mw, XCB_CURRENT_TIME);
 
@@ -2770,7 +2763,6 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		 **/
 	} else {
 		mw->normalize();
-		mw->show();
 		mw->activate();
 		set_focus(mw, XCB_CURRENT_TIME);
 		if(mw->is(MANAGED_DOCK)) {
