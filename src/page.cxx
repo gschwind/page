@@ -800,8 +800,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		auto mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			mw->raise();
-			set_focus(mw, e->time);
+			activate(mw, e->time);
 		}
 	}
 
@@ -1170,12 +1169,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			mw->raise();
-			if (e->data.data32[1] == XCB_CURRENT_TIME) {
-				set_focus(mw, XCB_CURRENT_TIME);
-			} else {
-				set_focus(mw, e->data.data32[1]);
-			}
+			activate(mw, e->data.data32[1]);
 		}
 	} else if (e->type == A(_NET_WM_STATE)) {
 
@@ -2211,8 +2205,7 @@ void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 	}
 
 	if(activate) {
-		mw->raise();
-		set_focus(mw, XCB_CURRENT_TIME);
+		this->activate(mw, XCB_CURRENT_TIME);
 	}
 
 	_need_update_client_list = true;
@@ -3788,6 +3781,19 @@ void page_t::schedule_repaint() {
 void page_t::damage_all() {
 	add_global_damage(_root->_root_position);
 	schedule_repaint();
+}
+
+void page_t::activate(client_managed_p c, xcb_timestamp_t time)
+{
+	if(c->is(MANAGED_NOTEBOOK)) {
+		auto nbk = dynamic_pointer_cast<notebook_t>(c->parent());
+		nbk->_set_selected(c);
+	}
+
+	c->raise();
+	_need_restack = true;
+	set_focus(c, time);
+
 }
 
 }

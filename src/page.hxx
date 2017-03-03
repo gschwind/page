@@ -416,6 +416,9 @@ public:
 	auto mainloop() -> mainloop_t *;
 	void schedule_repaint();
 	void damage_all();
+
+	void activate(client_managed_p c, xcb_timestamp_t time);
+
 };
 
 

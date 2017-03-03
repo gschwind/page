@@ -122,9 +122,6 @@ class notebook_t : public page_component_t {
 	vector<tuple<rect, weak_ptr<client_managed_t>, int>> _exposay_buttons;
 	shared_ptr<renderable_unmanaged_gaussian_shadow_t<16>> _exposay_mouse_over;
 
-	void _set_selected(shared_ptr<client_managed_t> c);
-
-
 	void _start_fading();
 
 	void _update_notebook_areas();
@@ -183,6 +180,8 @@ public:
 
 	notebook_t(page_t * ctx);
 	virtual ~notebook_t();
+
+	void _set_selected(shared_ptr<client_managed_t> c);
 
 	/**
 	 * tree_t interface

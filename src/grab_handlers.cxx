@@ -257,8 +257,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				_ctx->detach(c);
 				_ctx->bind_window(c, true);
 			} else {
-				c->raise();
-				_ctx->set_focus(c, e->time);
+				_ctx->activate(c, e->time);
 			}
 			_ctx->grab_stop(e->time);
 			return;
@@ -272,29 +271,24 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				c->queue_redraw();
 				_ctx->detach(c);
 				_ctx->insert_window_in_notebook(c, new_target, true);
-				c->raise();
-				_ctx->set_focus(c, e->time);
+				_ctx->activate(c, e->time);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
 			_ctx->split_top(new_target, c);
-			c->raise();
-			_ctx->set_focus(c, e->time);
+			_ctx->activate(c, e->time);
 			break;
 		case NOTEBOOK_AREA_LEFT:
 			_ctx->split_left(new_target, c);
-			c->raise();
-			_ctx->set_focus(c, e->time);
+			_ctx->activate(c, e->time);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
 			_ctx->split_bottom(new_target, c);
-			c->raise();
-			_ctx->set_focus(c, e->time);
+			_ctx->activate(c, e->time);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
 			_ctx->split_right(new_target, c);
-			c->raise();
-			_ctx->set_focus(c, e->time);
+			_ctx->activate(c, e->time);
 			break;
 		default:
 			if(c->parent() != nullptr and c->is(MANAGED_NOTEBOOK)) {
@@ -304,12 +298,10 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 						dynamic_pointer_cast<notebook_t>(c->parent())->iconify_client(c);
 					} else {
 						cout << "activate = " << c << endl;
-						c->raise();
-						_ctx->set_focus(c, e->time);
+						_ctx->activate(c, e->time);
 					}
 				} else {
-					c->raise();
-					_ctx->set_focus(c, e->time);
+					_ctx->activate(c, e->time);
 				}
 			}
 		}
@@ -677,8 +669,7 @@ void grab_alt_tab_t::button_press(xcb_button_press_event_t const * e) {
 			auto _mw = pat->selected();
 			if(not _mw.expired()) {
 				auto mw = _mw.lock();
-				mw->raise();
-				_ctx->set_focus(mw, e->time);
+				_ctx->activate(mw, e->time);
 				break;
 			}
 		}
@@ -759,8 +750,7 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 	if (XK_Alt_L == k or XK_Alt_R == k) {
 		if(not _selected.expired()) {
 			auto mw = _selected.lock();
-			mw->raise();
-			_ctx->set_focus(mw, e->time);
+			_ctx->activate(mw, e->time);
 		}
 		_ctx->grab_stop(e->time);
 	}
