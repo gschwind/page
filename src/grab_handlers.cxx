@@ -257,7 +257,7 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				_ctx->detach(c);
 				_ctx->bind_window(c, true);
 			} else {
-				c->activate();
+				c->raise();
 				_ctx->set_focus(c, e->time);
 			}
 			_ctx->grab_stop(e->time);
@@ -272,28 +272,28 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 				c->queue_redraw();
 				_ctx->detach(c);
 				_ctx->insert_window_in_notebook(c, new_target, true);
-				c->activate();
+				c->raise();
 				_ctx->set_focus(c, e->time);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
 			_ctx->split_top(new_target, c);
-			c->activate();
+			c->raise();
 			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_LEFT:
 			_ctx->split_left(new_target, c);
-			c->activate();
+			c->raise();
 			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_BOTTOM:
 			_ctx->split_bottom(new_target, c);
-			c->activate();
+			c->raise();
 			_ctx->set_focus(c, e->time);
 			break;
 		case NOTEBOOK_AREA_RIGHT:
 			_ctx->split_right(new_target, c);
-			c->activate();
+			c->raise();
 			_ctx->set_focus(c, e->time);
 			break;
 		default:
@@ -304,11 +304,11 @@ void grab_bind_client_t::button_release(xcb_button_release_event_t const * e) {
 						dynamic_pointer_cast<notebook_t>(c->parent())->iconify_client(c);
 					} else {
 						cout << "activate = " << c << endl;
-						c->activate();
+						c->raise();
 						_ctx->set_focus(c, e->time);
 					}
 				} else {
-					c->activate();
+					c->raise();
 					_ctx->set_focus(c, e->time);
 				}
 			}
@@ -332,7 +332,7 @@ grab_floating_move_t::grab_floating_move_t(page_t * ctx, shared_ptr<client_manag
 		pfm{}
 {
 
-	f->activate();
+	f->raise();
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
@@ -434,7 +434,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, shared_ptr<client_m
 
 {
 
-	f->activate();
+	f->raise();
 	pfm = make_shared<popup_notebook0_t>(_ctx);
 	pfm->move_resize(f->base_position());
 	_ctx->overlay_add(pfm);
@@ -677,7 +677,7 @@ void grab_alt_tab_t::button_press(xcb_button_press_event_t const * e) {
 			auto _mw = pat->selected();
 			if(not _mw.expired()) {
 				auto mw = _mw.lock();
-				mw->activate();
+				mw->raise();
 				_ctx->set_focus(mw, e->time);
 				break;
 			}
@@ -759,7 +759,7 @@ void grab_alt_tab_t::key_release(xcb_key_release_event_t const * e) {
 	if (XK_Alt_L == k or XK_Alt_R == k) {
 		if(not _selected.expired()) {
 			auto mw = _selected.lock();
-			mw->activate();
+			mw->raise();
 			_ctx->set_focus(mw, e->time);
 		}
 		_ctx->grab_stop(e->time);

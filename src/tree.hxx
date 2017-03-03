@@ -131,7 +131,7 @@ public:
 
 	rect to_root_position(rect const & r) const;
 
-	void activate(shared_ptr<tree_t> t = nullptr);
+	void raise(shared_ptr<tree_t> t = nullptr);
 
 	/**
 	 * tree_t virtual API

@@ -175,10 +175,10 @@ void tree_t::render_finished() {
  * make the component active.
  **/
 
-void tree_t::activate(shared_ptr<tree_t> t) {
+void tree_t::raise(shared_ptr<tree_t> t) {
 
 	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
+		_parent->raise(shared_from_this());
 	}
 
 	if(t != nullptr) {

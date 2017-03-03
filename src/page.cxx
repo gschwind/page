@@ -800,7 +800,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
 		auto mw = find_managed_window_with(e->event);
 		if (mw != nullptr) {
-			mw->activate();
+			mw->raise();
 			set_focus(mw, e->time);
 		}
 	}
@@ -931,7 +931,7 @@ void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 	auto c = find_client_with(e->window);
 	if (c != nullptr) {
 		if (e->place == XCB_PLACE_ON_TOP) {
-			c->activate();
+			c->raise();
 		} else if (e->place == XCB_PLACE_ON_BOTTOM) {
 			_dpy->lower_window(e->window);
 		}
@@ -1170,7 +1170,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		if (mw != nullptr) {
-			mw->activate();
+			mw->raise();
 			if (e->data.data32[1] == XCB_CURRENT_TIME) {
 				set_focus(mw, XCB_CURRENT_TIME);
 			} else {
@@ -1494,11 +1494,11 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 	if(new_focus == nullptr) {
 		if(conf()._auto_refocus) {
 			if (get_current_workspace()->client_focus_history_front(new_focus)) {
-				new_focus->activate();
+				new_focus->raise();
 				get_current_workspace()->client_focus_history_move_front(new_focus);
 				global_focus_history_move_front(new_focus);
 				_dpy->set_net_active_window(new_focus->orig());
-				new_focus->activate();
+				new_focus->raise();
 				new_focus->focus(tfocus);
 				_net_active_window = new_focus;
 			} else {
@@ -1526,7 +1526,7 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 		get_current_workspace()->client_focus_history_move_front(new_focus);
 		global_focus_history_move_front(new_focus);
 		_dpy->set_net_active_window(new_focus->orig());
-		new_focus->activate();
+		new_focus->raise();
 		new_focus->focus(tfocus);
 		_net_active_window = new_focus;
 	}
@@ -1948,7 +1948,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			case _NET_WM_STATE_REMOVE: {
 				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
 				if (n != nullptr) {
-					mw->activate();
+					mw->raise();
 					set_focus(mw, XCB_CURRENT_TIME);
 				}
 			}
@@ -1999,7 +1999,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->activate();
+				mw->raise();
 				set_focus(mw, XCB_CURRENT_TIME);
 				break;
 			case _NET_WM_STATE_ADD:
@@ -2047,7 +2047,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				mw->activate();
+				mw->raise();
 				break;
 			case _NET_WM_STATE_ADD:
 				/** I ignore it **/
@@ -2211,7 +2211,7 @@ void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
 	}
 
 	if(activate) {
-		mw->activate();
+		mw->raise();
 		set_focus(mw, XCB_CURRENT_TIME);
 	}
 
@@ -2228,7 +2228,7 @@ void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
 	insert_in_tree_using_transient_for(mw);
 	mw->queue_redraw();
 	mw->normalize();
-	mw->activate();
+	mw->raise();
 	_need_update_client_list = true;
 	_need_restack = true;
 }
@@ -2666,7 +2666,7 @@ void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
 
 void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	safe_update_transient_for(mw);
-	mw->activate();
+	mw->raise();
 	mw->show();
 
 	if(not mw->skip_task_bar()) {
@@ -2712,7 +2712,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		mw->normalize();
 		fullscreen(mw);
 		update_workspace_visibility();
-		mw->activate();
+		mw->raise();
 		set_focus(mw, XCB_CURRENT_TIME);
 
 		/**
@@ -2763,7 +2763,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		 **/
 	} else {
 		mw->normalize();
-		mw->activate();
+		mw->raise();
 		set_focus(mw, XCB_CURRENT_TIME);
 		if(mw->is(MANAGED_DOCK)) {
 			update_workarea();

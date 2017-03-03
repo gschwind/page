@@ -970,7 +970,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 					_ctx->detach(c);
 					_ctx->get_workspace(k)->default_pop()->add_client(c, false);
 					c->set_current_workspace(k);
-					c->activate();
+					c->raise();
 					_ctx->set_focus(c, t);
 				}
 			};
@@ -983,7 +983,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 			_ctx->detach(c);
 			_ctx->get_workspace(selected)->default_pop()->add_client(c, false);
 			c->set_current_workspace(selected);
-			c->activate();
+			c->raise();
 			_ctx->set_focus(c, t);
 		};
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
