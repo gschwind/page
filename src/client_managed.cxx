@@ -679,10 +679,13 @@ void client_managed_t::iconify() {
 	if(_is_iconic)
 		return;
 	_is_iconic = true;
+
 	_client_proxy->set_wm_state(IconicState);
 	for (auto c : filter_class<client_managed_t>(_children)) {
 		c->iconify();
 	}
+
+	hide();
 
 }
 
