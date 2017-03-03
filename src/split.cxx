@@ -182,26 +182,22 @@ void split_t::update_allocation() {
 
 void split_t::set_pack0(shared_ptr<page_component_t> x) {
 	if(_pack0 != nullptr) {
-		_children.remove(_pack0);
-		_pack0->clear_parent();
+		remove(_pack0);
 	}
 	_pack0 = x;
 	if (_pack0 != nullptr) {
-		_pack0->set_parent(this);
-		_children.push_back(_pack0);
+		push_back(_pack0);
 		update_allocation();
 	}
 }
 
 void split_t::set_pack1(shared_ptr<page_component_t> x) {
 	if(_pack1 != nullptr) {
-		_children.remove(_pack1);
-		_pack1->clear_parent();
+		remove(_pack1);
 	}
 	_pack1 = x;
 	if (_pack1 != nullptr) {
-		_pack1->set_parent(this);
-		_children.push_back(_pack1);
+		push_back(_pack1);
 		update_allocation();
 	}
 }

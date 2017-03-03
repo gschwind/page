@@ -32,7 +32,7 @@ viewport_t::viewport_t(page_t * ctx, rect const & area) :
 	create_window();
 
 	_subtree = make_shared<notebook_t>(_ctx);
-	_subtree->set_parent(this);
+	push_back(_subtree);
 	_subtree->set_allocation(_page_area);
 
 }
@@ -46,10 +46,12 @@ viewport_t::~viewport_t() {
 void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
 	//printf("replace %p by %p\n", src, by);
 
+	assert(has_key(_children, src));
+
 	if (_subtree == src) {
-		_subtree->clear_parent();
+		remove(_subtree);
 		_subtree = by;
-		_subtree->set_parent(this);
+		push_back(_subtree);
 		_subtree->set_allocation(_page_area);
 	} else {
 		throw std::runtime_error("viewport: bad child replacement!");
@@ -57,10 +59,9 @@ void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 }
 
 void viewport_t::remove(shared_ptr<tree_t> src) {
-	if(src == _subtree) {
-		_subtree->clear_parent();
-		_subtree.reset();
-	}
+	assert(has_key(_children, src));
+	tree_t::remove(_subtree);
+	_subtree.reset();
 }
 
 void viewport_t::set_allocation(rect const & area) {
