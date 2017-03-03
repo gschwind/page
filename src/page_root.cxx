@@ -85,13 +85,4 @@ auto page_root_t::get_damaged() -> region {
 	return region{};
 }
 
-void page_root_t::activate() {
-	/* has no parent */
-}
-
-void page_root_t::activate(shared_ptr<tree_t> t)
-{
-	/* do not reorder layers */
-}
-
 }

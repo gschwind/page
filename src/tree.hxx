@@ -131,6 +131,9 @@ public:
 
 	rect to_root_position(rect const & r) const;
 
+	void activate();
+	void activate(shared_ptr<tree_t> t);
+
 	/**
 	 * tree_t virtual API
 	 **/
@@ -154,9 +157,6 @@ public:
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
 	virtual auto get_damaged() -> region;
-
-	virtual void activate();
-	virtual void activate(shared_ptr<tree_t> t);
 
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_release(xcb_button_release_event_t const * ev);

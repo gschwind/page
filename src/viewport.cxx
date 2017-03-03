@@ -79,21 +79,6 @@ rect const & viewport_t::raw_area() const {
 	return _raw_aera;
 }
 
-void viewport_t::activate() {
-	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
-	}
-
-	queue_redraw();
-}
-
-
-void viewport_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(t == _subtree);
-	activate();
-}
-
 string viewport_t::get_node_name() const {
 	return _get_node_name<'V'>();
 }

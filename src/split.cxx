@@ -217,19 +217,6 @@ void split_t::render_legacy(cairo_t * cr) const {
 	_ctx->theme()->render_split(cr, &ts);
 }
 
-void split_t::activate() {
-	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
-	}
-}
-
-void split_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(_children, t));
-	activate();
-	move_back(_children, t);
-}
-
 void split_t::remove(shared_ptr<tree_t> t) {
 	if (_pack0 == t) {
 		set_pack0(nullptr);

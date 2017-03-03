@@ -346,26 +346,6 @@ void notebook_t::set_default(bool x) {
 	queue_redraw();
 }
 
-void notebook_t::activate() {
-	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
-	}
-}
-
-void notebook_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(_children, t));
-
-	activate();
-	move_back(_children, t);
-
-	auto mw = dynamic_pointer_cast<client_managed_t>(t);
-	if (mw != nullptr) {
-		_set_selected(mw);
-	}
-
-}
-
 string notebook_t::get_node_name() const {
 	ostringstream oss;
 	oss << _get_node_name<'N'>() << " selected = " << _selected;

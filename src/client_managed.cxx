@@ -967,19 +967,6 @@ bool client_managed_t::is_modal() {
 	return false;
 }
 
-void client_managed_t::activate() {
-
-	if(_parent != nullptr) {
-		_parent->activate(shared_from_this());
-	}
-
-	if(is_iconic()) {
-		normalize();
-		queue_redraw();
-	}
-
-}
-
 bool client_managed_t::button_press(xcb_button_press_event_t const * e) {
 
 	if (not has_window(e->event)) {

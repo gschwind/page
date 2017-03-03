@@ -145,13 +145,6 @@ void client_base_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
 
-void client_base_t::activate(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
-	assert(has_key(_children, t));
-	tree_t::activate();
-	move_back(_children, t);
-}
-
 /* find the bigger window that is smaller than w and h */
 dimention_t<unsigned> client_base_t::compute_size_with_constrain(unsigned w, unsigned h) {
 

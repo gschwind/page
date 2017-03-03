@@ -81,15 +81,6 @@ void workspace_t::update_layout(time64_t const time) {
 
 }
 
-void workspace_t::activate() {
-	_ctx->switch_to_workspace(id(), XCB_CURRENT_TIME);
-}
-
-void workspace_t::activate(shared_ptr<tree_t> t) {
-	activate();
-	/* do no reorder layers */
-}
-
 //rect workspace_t::allocation() const {
 //	return _allocation;
 //}

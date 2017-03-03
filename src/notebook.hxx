@@ -194,9 +194,6 @@ public:
 	virtual void show();
 	virtual void update_layout(time64_t const time);
 
-	virtual void activate();
-	virtual void activate(shared_ptr<tree_t> t);
-
 	virtual bool button_press(xcb_button_press_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
