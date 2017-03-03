@@ -77,6 +77,12 @@ inline unsigned int client_id(unsigned int resource_id) {
 // will cause a compile-time error unless E evaulates to
 // a nonzero integral value.
 
+// identity is used to avoid template type deduction.
+template<typename T>
+struct identity {
+	using type = T;
+};
+
 template <bool t>
 struct ctassert {
   enum { N = 1 - 2 * int(!t) };
@@ -97,28 +103,15 @@ struct dimention_t {
 
 };
 
-
-template<typename T, typename _>
-bool has_key(std::map<T, _> const & x, T const & key) {
-	auto i = x.find(key);
-	return i != x.end();
-}
-
-template<typename T>
-bool has_key(std::set<T> const & x, T const & key) {
-	auto i = x.find(key);
-	return i != x.end();
-}
-
-template<typename T>
-bool has_key(std::list<T> const & x, T const & key) {
+template<template<typename, typename...> class C, typename T, typename ... R>
+bool has_key(C<T, R...> const & x, typename identity<T>::type const & key) {
 	auto i = std::find(x.begin(), x.end(), key);
 	return i != x.end();
 }
 
-template<typename T>
-bool has_key(std::vector<T> const & x, T const & key) {
-	typename std::vector<T>::const_iterator i = find(x.begin(), x.end(), key);
+template<typename T, typename ... R>
+bool has_key(std::map<T, R...> const & x, typename identity<T>::type const & key) {
+	auto i = x.find(key);
 	return i != x.end();
 }
 
