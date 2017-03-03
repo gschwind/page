@@ -58,19 +58,19 @@ bool notebook_t::add_client(client_managed_p x, bool prefer_activate) {
 
 		/* remove current selected */
 		if (_selected != nullptr) {
-			_selected->iconify();
+			_selected->hide();
 		}
 
 		/* select the new one */
 		_selected = x;
 		if(_is_visible) {
-			_selected->normalize();
+			_selected->show();
 		} else {
-			_selected->iconify();
+			_selected->hide();
 		}
 
 	} else {
-		x->iconify();
+		x->show();
 	}
 
 	_layout_is_durty = true;
@@ -110,7 +110,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 	/** update selection **/
 	if (_selected == x) {
 		_start_fading();
-		_selected->iconify();
+		_selected->hide();
 		_selected = nullptr;
 	}
 
@@ -133,7 +133,7 @@ void notebook_t::_remove_client(shared_ptr<client_managed_t> x) {
 		_selected = dynamic_pointer_cast<client_managed_t>(_children.back());
 
 		if (_selected != nullptr and _is_visible) {
-			_selected->normalize();
+			_selected->show();
 		}
 	}
 
@@ -150,12 +150,12 @@ void notebook_t::_set_selected(shared_ptr<client_managed_t> c) {
 	_start_fading();
 
 	if(_selected != nullptr and c != _selected) {
-		_selected->iconify();
+		_selected->hide();
 	}
 	/** set selected **/
 	_selected = c;
 	if(_is_visible) {
-		_selected->normalize();
+		_selected->show();
 	}
 
 	_layout_is_durty = true;
@@ -171,7 +171,7 @@ void notebook_t::update_client_position(shared_ptr<client_managed_t> c) {
 void notebook_t::iconify_client(shared_ptr<client_managed_t> x) {
 	if(_selected == x) {
 		_start_fading();
-		_selected->iconify();
+		_selected->hide();
 		_layout_is_durty = true;
 	}
 }
@@ -1199,7 +1199,7 @@ void notebook_t::hide() {
 	_is_visible = false;
 
 	if(_selected != nullptr) {
-		_selected->iconify();
+		_selected->hide();
 	}
 }
 
@@ -1207,7 +1207,7 @@ void notebook_t::show() {
 	_is_visible = true;
 
 	if(_selected != nullptr) {
-		_selected->normalize();
+		_selected->show();
 	}
 }
 

@@ -662,33 +662,6 @@ void client_managed_t::net_wm_state_delete() {
 	_client_proxy->delete_net_wm_state();
 }
 
-void client_managed_t::normalize() {
-	if(not _is_iconic)
-		return;
-	_is_iconic = false;
-	_client_proxy->set_wm_state(NormalState);
-	for (auto c : filter_class<client_managed_t>(_children)) {
-		c->normalize();
-	}
-
-	show();
-
-}
-
-void client_managed_t::iconify() {
-	if(_is_iconic)
-		return;
-	_is_iconic = true;
-
-	_client_proxy->set_wm_state(IconicState);
-	for (auto c : filter_class<client_managed_t>(_children)) {
-		c->iconify();
-	}
-
-	hide();
-
-}
-
 void client_managed_t::wm_state_delete() {
 	/**
 	 * This one is for removing the window manager tag, thus only check if the window
@@ -927,6 +900,12 @@ void client_managed_t::unmap_unsafe() {
 }
 
 void client_managed_t::hide() {
+	if(_is_iconic)
+		return;
+	_is_iconic = true;
+
+	_client_proxy->set_wm_state(IconicState);
+
 	for(auto x: _children) {
 		x->hide();
 	}
@@ -944,9 +923,16 @@ void client_managed_t::hide() {
 }
 
 void client_managed_t::show() {
+	if(not _is_iconic)
+		return;
 	_is_visible = true;
 	reconfigure();
 	map_unsafe();
+
+
+	_is_iconic = false;
+	_client_proxy->set_wm_state(NormalState);
+
 	for(auto x: _children) {
 		x->show();
 	}

@@ -199,8 +199,6 @@ public:
 	void set_floating_wished_position(rect const & pos);
 	rect get_base_position() const;
 	void reconfigure();
-	void normalize();
-	void iconify();
 	bool has_focus() const;
 	bool is_iconic();
 	void delete_window(xcb_timestamp_t);
