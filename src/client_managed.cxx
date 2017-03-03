@@ -47,7 +47,6 @@ client_managed_t::client_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t net_
 				_base{XCB_WINDOW_NONE},
 				_deco{XCB_WINDOW_NONE},
 				_has_focus{false},
-				_is_iconic{true},
 				_demands_attention{false},
 				_client_view{nullptr}
 {
@@ -312,7 +311,7 @@ void client_managed_t::reconfigure() {
 	destroy_back_buffer();
 	update_floating_areas();
 
-	if(_is_iconic or not _is_visible) {
+	if(not _is_visible) {
 		/* if iconic move outside visible area */
 		cnx()->move_resize(_base, rect{_ctx->left_most_border()-1-_base_position.w, _ctx->top_most_border(), _base_position.w, _base_position.h});
 	} else {
@@ -900,10 +899,7 @@ void client_managed_t::unmap_unsafe() {
 }
 
 void client_managed_t::hide() {
-	if(_is_iconic)
-		return;
-	_is_iconic = true;
-
+	_is_visible = false;
 	_client_proxy->set_wm_state(IconicState);
 
 	for(auto x: _children) {
@@ -912,7 +908,6 @@ void client_managed_t::hide() {
 
 	_ctx->add_global_damage(get_visible_region());
 
-	_is_visible = false;
 	// do not unmap, just put it outside the screen.
 	//unmap();
 	reconfigure();
@@ -923,14 +918,10 @@ void client_managed_t::hide() {
 }
 
 void client_managed_t::show() {
-	if(not _is_iconic)
-		return;
 	_is_visible = true;
 	reconfigure();
 	map_unsafe();
 
-
-	_is_iconic = false;
 	_client_proxy->set_wm_state(NormalState);
 
 	for(auto x: _children) {
@@ -942,7 +933,7 @@ void client_managed_t::show() {
 }
 
 bool client_managed_t::is_iconic() {
-	return _is_iconic;
+	return not _is_visible;
 }
 
 bool client_managed_t::is_stiky() {

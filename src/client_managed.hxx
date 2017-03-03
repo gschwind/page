@@ -120,7 +120,6 @@ class client_managed_t : public client_base_t {
 	floating_area_t _floating_area;
 
 	bool _has_focus;
-	bool _is_iconic;
 	bool _demands_attention;
 	bool _is_resized;
 	bool _is_exposed;
