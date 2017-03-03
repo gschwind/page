@@ -175,17 +175,17 @@ void tree_t::render_finished() {
  * make the component active.
  **/
 
-void tree_t::activate() {
-	/** raise ourself **/
+void tree_t::activate(shared_ptr<tree_t> t) {
+
 	if(_parent != nullptr) {
 		_parent->activate(shared_from_this());
 	}
-}
 
-void tree_t::activate(shared_ptr<tree_t> t) {
-	assert(has_key(_children, t));
-	activate();
-	move_back(_children, t);
+	if(t != nullptr) {
+		assert(has_key(_children, t));
+		move_back(_children, t);
+	}
+
 }
 
 bool tree_t::button_press(xcb_button_press_event_t const * ev) {
