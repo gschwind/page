@@ -28,7 +28,6 @@ page_root_t::page_root_t(page_t * ctx) :
 	above = make_shared<tree_t>();
 
 	_workspace_stack = make_shared<tree_t>();
-	_overlays = make_shared<tree_t>();
 
 	push_back(_workspace_stack);
 	push_back(below);
@@ -36,7 +35,6 @@ page_root_t::page_root_t(page_t * ctx) :
 	push_back(tooltips);
 	push_back(notifications);
 	push_back(above);
-	push_back(_overlays);
 
 	below->show();
 	root_subclients->show();
@@ -44,7 +42,6 @@ page_root_t::page_root_t(page_t * ctx) :
 	notifications->show();
 	above->show();
 	_workspace_stack->show();
-	_overlays->show();
 
 }
 

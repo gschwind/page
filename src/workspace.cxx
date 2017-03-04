@@ -35,10 +35,12 @@ workspace_t::workspace_t(page_t * ctx, unsigned id) :
 	_viewport_layer = make_shared<tree_t>();
 	_floating_layer = make_shared<tree_t>();
 	_fullscreen_layer = make_shared<tree_t>();
+	_overlays = make_shared<tree_t>();
 
 	push_back(_viewport_layer);
 	push_back(_floating_layer);
 	push_back(_fullscreen_layer);
+	push_back(_overlays);
 
 	set_to_default_name();
 
@@ -163,6 +165,11 @@ void workspace_t::attach(shared_ptr<client_managed_t> c) {
 	} else {
 		c->hide();
 	}
+}
+
+void workspace_t::add_overlay(shared_ptr<tree_t> t)
+{
+	_overlays->push_back(t);
 }
 
 void workspace_t::set_name(string const & s) {

@@ -3579,7 +3579,7 @@ void page_t::grab_stop(xcb_timestamp_t time) {
 }
 
 void page_t::overlay_add(shared_ptr<tree_t> x) {
-	_root->_overlays->push_back(x);
+	get_current_workspace()->add_overlay(x);
 }
 
 void page_t::add_global_damage(region const & r) {

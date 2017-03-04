@@ -37,8 +37,6 @@ class page_root_t : public tree_t {
 	/** store the order of last shown workspace **/
 	shared_ptr<tree_t> _workspace_stack;
 
-	shared_ptr<tree_t> _overlays;
-
 public:
 
 	page_root_t(page_t * ctx);

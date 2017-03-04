@@ -48,6 +48,7 @@ private:
 	shared_ptr<tree_t> _viewport_layer;
 	shared_ptr<tree_t> _floating_layer;
 	shared_ptr<tree_t> _fullscreen_layer;
+	shared_ptr<tree_t> _overlays;
 
 	weak_ptr<viewport_t> _primary_viewport;
 	weak_ptr<notebook_t> _default_pop;
@@ -85,6 +86,8 @@ public:
 	void set_primary_viewport(shared_ptr<viewport_t> v);
 	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
 	void attach(shared_ptr<client_managed_t> c);
+
+	void add_overlay(shared_ptr<tree_t> c);
 
 	void set_name(string const & s);
 	auto name() -> string const &;
