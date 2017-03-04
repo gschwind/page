@@ -50,6 +50,8 @@ private:
 	shared_ptr<tree_t> _fullscreen_layer;
 	shared_ptr<tree_t> _overlays;
 
+	shared_ptr<tree_t> _unknown_layer;
+
 	weak_ptr<viewport_t> _primary_viewport;
 	weak_ptr<notebook_t> _default_pop;
 
@@ -88,6 +90,7 @@ public:
 	void attach(shared_ptr<client_managed_t> c);
 
 	void add_overlay(shared_ptr<tree_t> c);
+	void add_unknown(shared_ptr<tree_t> c);
 
 	void set_name(string const & s);
 	auto name() -> string const &;

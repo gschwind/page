@@ -2113,7 +2113,7 @@ void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
 				get_current_workspace()->attach(mw);
 			}
 		} else {
-			_root->root_subclients->push_back(c);
+			get_current_workspace()->add_unknown(c);
 		}
 	}
 }
