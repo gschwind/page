@@ -32,8 +32,6 @@ class split_t : public page_component_t {
 	rect _bpack0;
 	rect _bpack1;
 
-	list<shared_ptr<tree_t>> _children;
-
 	/** window used for cursor **/
 	xcb_window_t _wid;
 
