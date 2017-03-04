@@ -666,18 +666,18 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 
 	if (_compositor != nullptr) {
 		if (key == bind_debug_1) {
-			if (_root->_fps_overlay == nullptr) {
+			if (_fps_overlay == nullptr) {
 
 				auto v = get_current_workspace()->get_any_viewport();
 				int y_pos = v->allocation().y + v->allocation().h - 100;
 				int x_pos = v->allocation().x + (v->allocation().w - 400)/2;
 
-				_root->_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
-				_root->push_back(_root->_fps_overlay);
-				_root->_fps_overlay->show();
+				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
+				get_current_workspace()->add_overlay(_fps_overlay);
+				_fps_overlay->show();
 			} else {
-				_root->remove(_root->_fps_overlay);
-				_root->_fps_overlay = nullptr;
+				detach(_fps_overlay);
+				_fps_overlay = nullptr;
 			}
 			return;
 		}

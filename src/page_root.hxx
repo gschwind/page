@@ -27,7 +27,6 @@ class page_root_t : public tree_t {
 	unsigned int _current_workspace;
 	vector<shared_ptr<workspace_t>> _workspace_list;
 
-	shared_ptr<compositor_overlay_t> _fps_overlay;
 	/** store the order of last shown workspace **/
 	shared_ptr<tree_t> _workspace_stack;
 
