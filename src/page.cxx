@@ -1938,24 +1938,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 			}
 			update_workarea();
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE: {
-				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
-				if (n != nullptr) {
-					mw->raise();
-					set_focus(mw, XCB_CURRENT_TIME);
-				}
-			}
-
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->hide();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				/** IWMH say ignore it ? **/
-			default:
-				break;
-			}
+			/* Ignore as specified by ICCCM/EWMH: client cannot change this state */
 		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
