@@ -21,7 +21,6 @@ page_root_t::page_root_t(page_t * ctx) :
 {
 	_stack_is_locked = true;
 
-	below = make_shared<tree_t>();
 	root_subclients = make_shared<tree_t>();
 	tooltips = make_shared<tree_t>();
 	notifications = make_shared<tree_t>();
@@ -30,13 +29,11 @@ page_root_t::page_root_t(page_t * ctx) :
 	_workspace_stack = make_shared<tree_t>();
 
 	push_back(_workspace_stack);
-	push_back(below);
 	push_back(root_subclients);
 	push_back(tooltips);
 	push_back(notifications);
 	push_back(above);
 
-	below->show();
 	root_subclients->show();
 	tooltips->show();
 	notifications->show();

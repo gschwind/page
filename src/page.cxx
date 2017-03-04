@@ -2838,9 +2838,6 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		} else if (uw->net_wm_state() != nullptr
 				and has_key(*(uw->net_wm_state()), A(_NET_WM_STATE_ABOVE))) {
 			_root->above->push_back(uw);
-		} else if (uw->net_wm_state() != nullptr
-				and has_key(*(uw->net_wm_state()), static_cast<xcb_atom_t>(A(_NET_WM_STATE_BELOW)))) {
-			_root->below->push_back(uw);
 		} else {
 			insert_in_tree_using_transient_for(uw);
 		}
