@@ -32,9 +32,10 @@ enum workspace_switch_direction_e {
 };
 
 struct workspace_t: public tree_t {
+	page_t * _ctx;
 
 private:
-	page_t * _ctx;
+
 
 	//rect _allocation;
 	rect _workarea;
