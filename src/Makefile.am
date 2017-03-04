@@ -41,7 +41,6 @@ page_SOURCES = \
 	split.cxx \
 	viewport.cxx \
 	workspace.cxx \
-	page_root.cxx \
 	page.cxx \
 	display.cxx \
 	compositor.cxx \

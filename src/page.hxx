@@ -50,7 +50,6 @@
 #include "page_event.hxx"
 
 #include "mainloop.hxx"
-#include "page_root.hxx"
 
 #include "page.hxx"
 
@@ -104,7 +103,6 @@ class page_t : public connectable_t {
 
 	mainloop_t _mainloop;
 
-	shared_ptr<page_root_t> _root;
 	shared_ptr<compositor_overlay_t> _fps_overlay;
 
 	rect _root_position;
@@ -296,6 +294,10 @@ public:
 
 	shared_ptr<client_base_t> get_transient_for(shared_ptr<client_base_t> c);
 	void logical_raise(shared_ptr<client_base_t> c);
+
+	/* TODO: replacec it,
+	 * temporarly gather all tree_t */
+	vector<shared_ptr<tree_t>> get_all_children() const;
 
 	/* attach floating window in a notebook */
 	void bind_window(shared_ptr<client_managed_t> mw, bool activate);

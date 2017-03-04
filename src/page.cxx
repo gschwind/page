@@ -211,8 +211,6 @@ void page_t::run() {
 
 	/** initialize the empty workspace **/
 
-	_root = make_shared<page_root_t>(this);
-
 	_scheduled_repaint = true;
 	_scheduled_repaint_timeout = _mainloop.add_timeout(0L, [this]() -> void { this->render(); });
 
@@ -319,8 +317,7 @@ void page_t::run() {
 		detach(i);
 	}
 
-	/** destroy the tree **/
-	_root = nullptr;
+	_workspace_list.clear();
 
 	delete _keymap; _keymap = nullptr;
 	delete _theme; _theme = nullptr;
@@ -703,7 +700,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_debug_4) {
-		_root->print_tree(0);
+		get_current_workspace()->print_tree(0);
 		for (auto i : net_client_list()) {
 			switch (i->get_type()) {
 			case MANAGED_NOTEBOOK:
@@ -2131,6 +2128,16 @@ shared_ptr<client_base_t> page_t::get_transient_for(
 	return transient_for;
 }
 
+vector<shared_ptr<tree_t>> page_t::get_all_children() const
+{
+	vector<shared_ptr<tree_t>> ret;
+	for(auto const & x: _workspace_list) {
+		auto tmp = x->get_all_children();
+		ret.insert(ret.end(), tmp.begin(), tmp.end());
+	}
+	return ret;
+}
+
 void page_t::detach(shared_ptr<tree_t> t) {
 	assert(t != nullptr);
 
@@ -2521,7 +2528,7 @@ void page_t::onmap(xcb_window_t w) {
 		return;
 
 	/* check if this window is a page window */
-	for(auto const & x: _root->get_all_children()) {
+	for(auto const & x: get_all_children()) {
 		if(x->get_xid() == w) {
 			add_global_damage(x->get_visible_region());
 			return;
@@ -2862,7 +2869,7 @@ shared_ptr<client_managed_t> page_t::find_client_managed_with(xcb_window_t w) {
 }
 
 shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
-	for(auto & i: filter_class<client_base_t>(_root->get_all_children())) {
+	for(auto & i: filter_class<client_base_t>(get_all_children())) {
 		if(i->has_window(w)) {
 			return i;
 		}
@@ -2871,7 +2878,7 @@ shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
 }
 
 shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(_root->get_all_children())) {
+	for(auto i: filter_class<client_base_t>(get_all_children())) {
 		if(i->orig() == w) {
 			return i;
 		}
@@ -3004,11 +3011,11 @@ void page_t::update_keymap() {
 
 /** debug function that try to print the state of page in stdout **/
 void page_t::print_state() const {
-	_root->print_tree(0);
+	get_current_workspace()->print_tree(0);
 	cout << "_current_workspace = " << _current_workspace << endl;
 
 	cout << "clients list:" << endl;
-	for(auto c: filter_class<client_base_t>(_root->get_all_children())) {
+	for(auto c: filter_class<client_base_t>(get_all_children())) {
 		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
 	}
 	cout << "end" << endl;;
@@ -3036,8 +3043,6 @@ void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 		_current_workspace = workspace;
 
 		/* put the new workspace ontop of others and show it */
-		_root->_workspace_stack->remove(_workspace_list[_current_workspace]);
-		_root->_workspace_stack->push_back(_workspace_list[_current_workspace]);
 		_workspace_list[_current_workspace]->show();
 
 		/** move sticky to current workspace **/
@@ -3452,7 +3457,6 @@ void page_t::update_number_of_workspace(int n) {
 	for(int i = _workspace_list.size(); i < n; ++i) {
 		auto d = make_shared<workspace_t>(this, i);
 		_workspace_list.push_back(d);
-		_root->_workspace_stack->push_front(d);
 		d->hide();
 	}
 	update_workspace_names();
@@ -3599,7 +3603,6 @@ int page_t::get_workspace_count() const {
 int page_t::create_workspace() {
 	auto d = make_shared<workspace_t>(this, _workspace_list.size());
 	_workspace_list.push_back(d);
-	_root->_workspace_stack->push_front(d);
 	d->hide();
 
 	/* update number of workspace */
