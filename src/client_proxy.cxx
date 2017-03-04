@@ -112,11 +112,11 @@ void client_proxy_t::xmap() {
 }
 
 void client_proxy_t::delete_net_wm_state() {
-	_net_wm_state.push(_dpy->xcb(), _dpy->_A, _id, nullptr);
+	del<p_net_wm_state>();
 }
 
 void client_proxy_t::delete_wm_state() {
-	_wm_state.push(_dpy->xcb(), _dpy->_A, _id, nullptr);
+	del<p_wm_state>();
 }
 
 void client_proxy_t::add_to_save_set() {
@@ -139,6 +139,7 @@ xcb_window_t client_proxy_t::xid() {
 }
 
 client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
+		wm_properties_t{dpy->xcb(), dpy->_A, id},
 		_dpy{dpy}, _id{id} {
 
 	_destroyed = false;
@@ -213,16 +214,7 @@ client_proxy_t::~client_proxy_t() {
 
 void client_proxy_t::read_all_properties() {
 
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	_##cxx_name.fetch(_dpy->xcb(), _dpy->_A, xid());
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	_##cxx_name.fetch(_dpy->xcb(), _dpy->_A, xid());
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
+	fetch_all();
 
 	update_shape();
 	update_type();
@@ -231,16 +223,8 @@ void client_proxy_t::read_all_properties() {
 
 void client_proxy_t::delete_all_properties() {
 
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	_##cxx_name.release(_dpy->xcb());
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	_##cxx_name.release(_dpy->xcb());
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
+	// BAD idea.
+	//del_all();
 
 	safe_delete(_shape);
 }
@@ -287,7 +271,7 @@ void client_proxy_t::update_shape() {
 
 void client_proxy_t::set_net_wm_desktop(unsigned int n) {
 	auto new_net_wm_desktop = new unsigned int{n};
-	_net_wm_desktop.push(_dpy->xcb(), _dpy->_A, _id, new_net_wm_desktop);
+	set<p_net_wm_desktop>(new_net_wm_desktop);
 }
 
 void client_proxy_t::print_window_attributes() {
@@ -333,11 +317,11 @@ void client_proxy_t::print_window_attributes() {
 
 void client_proxy_t::print_properties() {
 	/* ICCCM */
-	if(wm_name() != nullptr)
-		cout << "* WM_NAME = " << *wm_name() << endl;
+	if(get<p_wm_name>() != nullptr)
+		cout << "* WM_NAME = " << *get<p_wm_name>() << endl;
 
-	if(wm_icon_name() != nullptr)
-		cout << "* WM_ICON_NAME = " << *wm_icon_name() << endl;
+	if(get<p_wm_icon_name>() != nullptr)
+		cout << "* WM_ICON_NAME = " << *get<p_wm_icon_name>() << endl;
 
 	//if(wm_normal_hints != nullptr)
 	//	cout << "WM_NORMAL_HINTS = " << *wm_normal_hints << endl;
@@ -345,113 +329,113 @@ void client_proxy_t::print_properties() {
 	//if(wm_hints != nullptr)
 	//	cout << "WM_HINTS = " << *wm_hints << endl;
 
-	if(wm_class() != nullptr)
-		cout << "* WM_CLASS = " << (*wm_class())[0] << "," << (*wm_class())[1] << endl;
+	if(get<p_wm_class>() != nullptr)
+		cout << "* WM_CLASS = " << (*get<p_wm_class>())[0] << "," << (*get<p_wm_class>())[1] << endl;
 
-	if(wm_transient_for() != nullptr)
-		cout << "* WM_TRANSIENT_FOR = " << *wm_transient_for() << endl;
+	if(get<p_wm_transient_for>() != nullptr)
+		cout << "* WM_TRANSIENT_FOR = " << *get<p_wm_transient_for>() << endl;
 
-	if(wm_protocols() != nullptr) {
+	if(get<p_wm_protocols>() != nullptr) {
 		cout << "* WM_PROTOCOLS = ";
-		for(auto x: *wm_protocols()) {
+		for(auto x: *get<p_wm_protocols>()) {
 			cout << _dpy->get_atom_name(x) << " ";
 		}
 		cout << endl;
 	}
 
-	if(wm_colormap_windows() != nullptr)
-		cout << "WM_COLORMAP_WINDOWS = " << (*wm_colormap_windows())[0] << endl;
+	if(get<p_wm_colormap_windows>() != nullptr)
+		cout << "WM_COLORMAP_WINDOWS = " << (*get<p_wm_colormap_windows>())[0] << endl;
 
-	if(wm_client_machine() != nullptr)
-		cout << "* WM_CLIENT_MACHINE = " << *wm_client_machine() << endl;
+	if(get<p_wm_client_machine>() != nullptr)
+		cout << "* WM_CLIENT_MACHINE = " << *get<p_wm_client_machine>() << endl;
 
-	if(wm_state() != nullptr) {
-		cout << "* WM_STATE = " << wm_state()->state << endl;
+	if(get<p_wm_state>() != nullptr) {
+		cout << "* WM_STATE = " << get<p_wm_state>()->state << endl;
 	}
 
 
 	/* EWMH */
-	if(net_wm_name() != nullptr)
-		cout << "* _NET_WM_NAME = " << *net_wm_name() << endl;
+	if(get<p_net_wm_name>() != nullptr)
+		cout << "* _NET_WM_NAME = " << *get<p_net_wm_name>() << endl;
 
-	if(net_wm_visible_name() != nullptr)
-		cout << "* _NET_WM_VISIBLE_NAME = " << *net_wm_visible_name() << endl;
+	if(get<p_net_wm_visible_name>() != nullptr)
+		cout << "* _NET_WM_VISIBLE_NAME = " << *get<p_net_wm_visible_name>() << endl;
 
-	if(net_wm_icon_name() != nullptr)
-		cout << "* _NET_WM_ICON_NAME = " << *net_wm_icon_name() << endl;
+	if(get<p_net_wm_icon_name>() != nullptr)
+		cout << "* _NET_WM_ICON_NAME = " << *get<p_net_wm_icon_name>() << endl;
 
-	if(net_wm_visible_icon_name() != nullptr)
-		cout << "* _NET_WM_VISIBLE_ICON_NAME = " << *net_wm_visible_icon_name() << endl;
+	if(get<p_net_wm_visible_icon_name>() != nullptr)
+		cout << "* _NET_WM_VISIBLE_ICON_NAME = " << *get<p_net_wm_visible_icon_name>() << endl;
 
-	if(net_wm_desktop() != nullptr)
-		cout << "* _NET_WM_DESKTOP = " << *net_wm_desktop() << endl;
+	if(get<p_net_wm_desktop>() != nullptr)
+		cout << "* _NET_WM_DESKTOP = " << *get<p_net_wm_desktop>() << endl;
 
-	if(net_wm_window_type() != nullptr) {
+	if(get<p_net_wm_window_type>() != nullptr) {
 		cout << "* _NET_WM_WINDOW_TYPE = ";
-		for(auto x: *net_wm_window_type()) {
+		for(auto x: *get<p_net_wm_window_type>()) {
 			cout << _dpy->get_atom_name(x) << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_state() != nullptr) {
+	if(get<p_net_wm_state>() != nullptr) {
 		cout << "* _NET_WM_STATE = ";
-		for(auto x: *net_wm_state()) {
+		for(auto x: *get<p_net_wm_state>()) {
 			cout << _dpy->get_atom_name(x) << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_allowed_actions() != nullptr) {
+	if(get<p_net_wm_allowed_actions>() != nullptr) {
 		cout << "* _NET_WM_ALLOWED_ACTIONS = ";
-		for(auto x: *net_wm_allowed_actions()) {
+		for(auto x: *get<p_net_wm_allowed_actions>()) {
 			cout << _dpy->get_atom_name(x) << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_strut() != nullptr) {
+	if(get<p_net_wm_strut>() != nullptr) {
 		cout << "* _NET_WM_STRUCT = ";
-		for(auto x: *net_wm_strut()) {
+		for(auto x: *get<p_net_wm_strut>()) {
 			cout << x << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_strut_partial() != nullptr) {
+	if(get<p_net_wm_strut_partial>() != nullptr) {
 		cout << "* _NET_WM_PARTIAL_STRUCT = ";
-		for(auto x: *net_wm_strut_partial()) {
+		for(auto x: *get<p_net_wm_strut_partial>()) {
 			cout << x << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_icon_geometry() != nullptr) {
+	if(get<p_net_wm_icon_geometry>() != nullptr) {
 		cout << "* _NET_WM_ICON_GEOMETRY = ";
-		for(auto x: *net_wm_icon_geometry()) {
+		for(auto x: *get<p_net_wm_icon_geometry>()) {
 			cout << x << " ";
 		}
 		cout << endl;
 	}
 
-	if(net_wm_icon() != nullptr)
+	if(get<p_net_wm_icon>() != nullptr)
 		cout << "* _NET_WM_ICON = " << "TODO" << endl;
 
-	if(net_wm_pid() != nullptr)
-		cout << "* _NET_WM_PID = " << *net_wm_pid() << endl;
+	if(get<p_net_wm_pid>() != nullptr)
+		cout << "* _NET_WM_PID = " << *get<p_net_wm_pid>() << endl;
 
 	//if(_net_wm_handled_icons != false)
 	//	;
 
-	if(net_wm_user_time() != nullptr)
-		cout << "* _NET_WM_USER_TIME = " << *net_wm_user_time() << endl;
+	if(get<p_net_wm_user_time>() != nullptr)
+		cout << "* _NET_WM_USER_TIME = " << *get<p_net_wm_user_time>() << endl;
 
-	if(net_wm_user_time_window() != nullptr)
-		cout << "* _NET_WM_USER_TIME_WINDOW = " << *net_wm_user_time_window() << endl;
+	if(get<p_net_wm_user_time_window>() != nullptr)
+		cout << "* _NET_WM_USER_TIME_WINDOW = " << *get<p_net_wm_user_time_window>() << endl;
 
-	if(net_frame_extents() != nullptr) {
+	if(get<p_net_frame_extents>() != nullptr) {
 		cout << "* _NET_FRAME_EXTENTS = ";
-		for(auto x: *net_frame_extents()) {
+		for(auto x: *get<p_net_frame_extents>()) {
 			cout << x << " ";
 		}
 		cout << endl;
@@ -468,14 +452,14 @@ void client_proxy_t::update_type() {
 	list<xcb_atom_t> net_wm_window_type;
 	bool override_redirect = (_wa.override_redirect == True)?true:false;
 
-	if(this->net_wm_window_type() == nullptr) {
+	if(this->get<p_net_wm_window_type>() == nullptr) {
 		/**
 		 * Fallback from ICCCM.
 		 **/
 
 		if(!override_redirect) {
 			/* Managed windows */
-			if(wm_transient_for() == nullptr) {
+			if(get<p_wm_transient_for>() == nullptr) {
 				/**
 				 * Extended ICCCM:
 				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
@@ -505,14 +489,14 @@ void client_proxy_t::update_type() {
 			net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 		}
 	} else {
-		net_wm_window_type = *(this->net_wm_window_type());
+		net_wm_window_type = *(get<p_net_wm_window_type>());
 	}
 
 	/* always fall back to normal */
 	net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 
 	/* TODO: make this ones */
-	static set<xcb_atom_t> known_type;
+	static std::set<xcb_atom_t> known_type;
 	if (known_type.size() == 0) {
 		known_type.insert(A(_NET_WM_WINDOW_TYPE_DESKTOP));
 		known_type.insert(A(_NET_WM_WINDOW_TYPE_DOCK));
@@ -555,58 +539,43 @@ auto client_proxy_t::wa() const -> xcb_get_window_attributes_reply_t const & { r
 auto client_proxy_t::geometry() const -> xcb_get_geometry_reply_t const & { return _geometry; }
 
 
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_proxy_t::cxx_name() { return _##cxx_name.update(_dpy->xcb()); } \
-void client_proxy_t::update_##cxx_name() { _##cxx_name.fetch(_dpy->xcb(), _dpy->_A, xid()); }
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_proxy_t::cxx_name() { return _##cxx_name.update(_dpy->xcb()); } \
-void client_proxy_t::update_##cxx_name() { _##cxx_name.fetch(_dpy->xcb(), _dpy->_A, xid()); } \
-cxx_type const * client_proxy_t::cxx_name(cxx_type * x) { return _##cxx_name.push(_dpy->xcb(), _dpy->_A, _id, x); }
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
-
-
 /* OTHERs */
 region const *                     client_proxy_t::shape() const { return _shape; }
 
 void client_proxy_t::net_wm_state_add(atom_e atom) {
 	auto new_net_wm_state = new list<xcb_atom_t>;
 
-	if(net_wm_state() != nullptr) {
+	if(get<p_net_wm_state>() != nullptr) {
 		new_net_wm_state->insert(new_net_wm_state->end(),
-				net_wm_state()->begin(), net_wm_state()->end());
+				get<p_net_wm_state>()->begin(), get<p_net_wm_state>()->end());
 	}
 
 	new_net_wm_state->remove(A(atom));
 	new_net_wm_state->push_back(A(atom));
-	_net_wm_state.push(_dpy->xcb(), _dpy->_A, _id, new_net_wm_state);
+	set<p_net_wm_state>(new_net_wm_state);
 }
 
 void client_proxy_t::net_wm_state_remove(atom_e atom) {
 	auto new_net_wm_state = new list<xcb_atom_t>;
 
-	if(net_wm_state() != nullptr) {
-		new_net_wm_state->insert(new_net_wm_state->end(), net_wm_state()->begin(), net_wm_state()->end());
+	if(get<p_net_wm_state>() != nullptr) {
+		new_net_wm_state->insert(new_net_wm_state->end(), get<p_net_wm_state>()->begin(), get<p_net_wm_state>()->end());
 	}
 
 	new_net_wm_state->remove(A(atom));
-	_net_wm_state.push(_dpy->xcb(), _dpy->_A, _id, new_net_wm_state);
+	set<p_net_wm_state>(new_net_wm_state);
 }
 
 void client_proxy_t::net_wm_allowed_actions_add(atom_e atom) {
 	auto new_net_wm_allowed_actions = new list<xcb_atom_t>;
 
-	if(net_wm_allowed_actions() != nullptr) {
+	if(get<p_net_wm_allowed_actions>() != nullptr) {
 		new_net_wm_allowed_actions->insert(new_net_wm_allowed_actions->end(), new_net_wm_allowed_actions->begin(), new_net_wm_allowed_actions->end());
 	}
 
 	new_net_wm_allowed_actions->remove(A(atom));
 	new_net_wm_allowed_actions->push_back(A(atom));
-	_net_wm_allowed_actions.push(_dpy->xcb(), _dpy->_A, _id, new_net_wm_allowed_actions);
+	set<p_net_wm_allowed_actions>(new_net_wm_allowed_actions);
 }
 
 void client_proxy_t::net_wm_allowed_actions_set(list<atom_e> atom_list) {
@@ -614,11 +583,11 @@ void client_proxy_t::net_wm_allowed_actions_set(list<atom_e> atom_list) {
 	for(auto i: atom_list) {
 		new_net_wm_allowed_actions->push_back(A(i));
 	}
-	_net_wm_allowed_actions.push(_dpy->xcb(), _dpy->_A, _id, new_net_wm_allowed_actions);
+	set<p_net_wm_allowed_actions>(new_net_wm_allowed_actions);
 }
 
 void client_proxy_t::set_wm_state(int state) {
-	_wm_state.push(_dpy->xcb(), _dpy->_A, _id, new wm_state_data_t{state, None});
+	set<p_wm_state>(new wm_state_data_t{state, None});
 }
 
 void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
@@ -774,19 +743,7 @@ bool client_proxy_t::_has_views() {
 
 void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
 
-
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	if(e->atom == A(x11_name)) { update_##cxx_name(); } else
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	if(e->atom == A(x11_name)) { update_##cxx_name(); } else
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
-	/* DO NOT REMOVE: terminate the if then else */
-	{ }
+	update_all(e->atom);
 
 	/* custom case */
 	if (e->atom == A(WM_TRANSIENT_FOR)) {

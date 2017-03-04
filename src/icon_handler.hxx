@@ -12,6 +12,7 @@
 
 #include <limits>
 
+#include "properties_template.hxx"
 #include "client_base.hxx"
 
 namespace page {
@@ -33,7 +34,7 @@ public:
 	icon_handler_t(client_base_t * c) {
 		icon_surf = nullptr;
 
-		vector<uint32_t> const * net_wm_icon = c->net_wm_icon();
+		vector<uint32_t> const * net_wm_icon = c->get<p_net_wm_icon>();
 		/* if window have icon properties */
 		if (net_wm_icon != nullptr) {
 

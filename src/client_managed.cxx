@@ -392,8 +392,8 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	if (_client_proxy->wm_protocols() != nullptr) {
-		if (has_key(*(_client_proxy->wm_protocols()), A(WM_TAKE_FOCUS))) {
+	if (_client_proxy->get<p_wm_protocols>() != nullptr) {
+		if (has_key(*(_client_proxy->get<p_wm_protocols>()), A(WM_TAKE_FOCUS))) {
 
 			xcb_client_message_event_t ev;
 			ev.response_type = XCB_CLIENT_MESSAGE;
@@ -410,8 +410,8 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		}
 	}
 
-	if (_client_proxy->wm_hints() != nullptr) {
-		if (_client_proxy->wm_hints()->input != False) {
+	if (_client_proxy->get<p_wm_hints>() != nullptr) {
+		if (_client_proxy->get<p_wm_hints>()->input != False) {
 			_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
 		}
 	} else {
@@ -549,8 +549,8 @@ void client_managed_t::grab_button_unfocused_unsafe() {
 unsigned client_managed_t::ensure_workspace() {
 
 	/* check current status */
-	auto workspace = net_wm_desktop();
-	auto transient_for = wm_transient_for();
+	auto workspace = get<p_net_wm_desktop>();
+	auto transient_for = get<p_wm_transient_for>();
 	unsigned final_workspace;
 	if (workspace != nullptr) {
 		final_workspace = *workspace;
@@ -617,16 +617,16 @@ void client_managed_t::unselect_inputs_unsafe() {
 }
 
 bool client_managed_t::is_fullscreen() {
-	if (_client_proxy->net_wm_state() != nullptr) {
-		return has_key(*(_client_proxy->net_wm_state()),
+	if (_client_proxy->get<p_net_wm_state>() != nullptr) {
+		return has_key(*(_client_proxy->get<p_net_wm_state>()),
 				static_cast<xcb_atom_t>(A(_NET_WM_STATE_FULLSCREEN)));
 	}
 	return false;
 }
 
 bool client_managed_t::skip_task_bar() {
-	if (_client_proxy->net_wm_state() != nullptr) {
-		return has_key(*(_client_proxy->net_wm_state()),
+	if (_client_proxy->get<p_net_wm_state>() != nullptr) {
+		return has_key(*(_client_proxy->get<p_net_wm_state>()),
 				static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)));
 	}
 	return false;
@@ -637,8 +637,8 @@ xcb_atom_t client_managed_t::net_wm_type() {
 }
 
 bool client_managed_t::get_wm_normal_hints(XSizeHints * size_hints) {
-	if(_client_proxy->wm_normal_hints() != nullptr) {
-		*size_hints = *(_client_proxy->wm_normal_hints());
+	if(_client_proxy->get<p_wm_normal_hints>() != nullptr) {
+		*size_hints = *(_client_proxy->get<p_wm_normal_hints>());
 		return true;
 	} else {
 		return false;
@@ -937,15 +937,15 @@ bool client_managed_t::is_iconic() {
 }
 
 bool client_managed_t::is_stiky() {
-	if(_client_proxy->net_wm_state() != nullptr) {
-		return has_key(*_client_proxy->net_wm_state(), A(_NET_WM_STATE_STICKY));
+	if(_client_proxy->get<p_net_wm_state>() != nullptr) {
+		return has_key(*_client_proxy->get<p_net_wm_state>(), A(_NET_WM_STATE_STICKY));
 	}
 	return false;
 }
 
 bool client_managed_t::is_modal() {
-	if(_client_proxy->net_wm_state() != nullptr) {
-		return has_key(*_client_proxy->net_wm_state(), A(_NET_WM_STATE_MODAL));
+	if(_client_proxy->get<p_net_wm_state>() != nullptr) {
+		return has_key(*_client_proxy->get<p_net_wm_state>(), A(_NET_WM_STATE_MODAL));
 	}
 	return false;
 }
@@ -1091,10 +1091,10 @@ void client_managed_t::_update_title() {
 	_has_change = true;
 
 	string name;
-	if (_client_proxy->net_wm_name() != nullptr) {
-		_title = *(_client_proxy->net_wm_name());
-	} else if (_client_proxy->wm_name() != nullptr) {
-		_title = *(_client_proxy->wm_name());
+	if (_client_proxy->get<p_net_wm_name>() != nullptr) {
+		_title = *(_client_proxy->get<p_net_wm_name>());
+	} else if (_client_proxy->get<p_wm_name>() != nullptr) {
+		_title = *(_client_proxy->get<p_wm_name>());
 	} else {
 		stringstream s(stringstream::in | stringstream::out);
 		s << "#" << (_client_proxy->id()) << " (noname)";
@@ -1115,10 +1115,10 @@ void client_managed_t::update_title() {
 }
 
 bool client_managed_t::prefer_window_border() const {
-	if (_client_proxy->motif_hints() != nullptr) {
-		if(not (_client_proxy->motif_hints()->flags & MWM_HINTS_DECORATIONS))
+	if (_client_proxy->get<p_motif_hints>() != nullptr) {
+		if(not (_client_proxy->get<p_motif_hints>()->flags & MWM_HINTS_DECORATIONS))
 			return true;
-		if(_client_proxy->motif_hints()->decorations != 0x00)
+		if(_client_proxy->get<p_motif_hints>()->decorations != 0x00)
 			return true;
 		return false;
 	}
@@ -1216,8 +1216,8 @@ void client_managed_t::_update_opaque_region() {
 	/** update opaque region cache **/
 	_opaque_region_cache.clear();
 
-	if (net_wm_opaque_region() != nullptr) {
-		_opaque_region_cache = region{*(net_wm_opaque_region())};
+	if (get<p_net_wm_opaque_region>() != nullptr) {
+		_opaque_region_cache = region{*(get<p_net_wm_opaque_region>())};
 		_opaque_region_cache &= rect{0, 0, _orig_position.w, _orig_position.h};
 	} else {
 		if (_client_proxy->geometry().depth != 32) {
@@ -1248,8 +1248,8 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 
 void client_managed_t::_apply_floating_hints_constraint() {
 
-	if(_client_proxy->wm_normal_hints()!= nullptr) {
-		XSizeHints const * s = _client_proxy->wm_normal_hints();
+	if(_client_proxy->get<p_wm_normal_hints>()!= nullptr) {
+		XSizeHints const * s = _client_proxy->get<p_wm_normal_hints>();
 
 		if (s->flags & PBaseSize) {
 			if (_floating_wished_position.w < s->base_width)

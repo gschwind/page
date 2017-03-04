@@ -25,6 +25,8 @@
 #include "display.hxx"
 #include "page-types.hxx"
 #include "tree.hxx"
+#include "properties_template.hxx"
+#include "client_proxy.hxx"
 
 namespace page {
 
@@ -76,19 +78,11 @@ struct client_base_t : public tree_t {
 
 	void set_root(workspace_t * root);
 
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	public:  cxx_type const * cxx_name(); \
-	public:  void update_##cxx_name();
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	public:  cxx_type const * cxx_name(); \
-	public:  void update_##cxx_name(); \
-	public:  cxx_type const * cxx_name(cxx_type * x);
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
+	template<int const ID>
+	auto get() -> typename ptype<ID>::type::cxx_type *
+	{
+		return _client_proxy->get<ID>();
+	}
 
 	auto shape() const -> region const *;
 	auto position() -> rect;

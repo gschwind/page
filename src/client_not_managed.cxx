@@ -46,8 +46,8 @@ string client_not_managed_t::get_node_name() const {
 	oss << s << " " << orig();
 	oss << " " << cnx()->get_atom_name(_client_proxy->wm_type()) << " ";
 
-	if(_client_proxy->net_wm_name() != nullptr) {
-		oss << " " << *_client_proxy->net_wm_name();
+	if(_client_proxy->get<p_net_wm_name>() != nullptr) {
+		oss << " " << *_client_proxy->get<p_net_wm_name>();
 	}
 
 	oss << " " << _client_proxy->geometry().width << "x" << _client_proxy->geometry().height << "+" << _client_proxy->geometry().x << "+" << _client_proxy->geometry().y;
@@ -87,8 +87,8 @@ void client_not_managed_t::_update_opaque_region() {
 	/** update opaque region cache **/
 	_opaque_region_cache.clear();
 
-	if (net_wm_opaque_region() != nullptr) {
-		_opaque_region_cache = region{*(net_wm_opaque_region())};
+	if (get<p_net_wm_opaque_region>() != nullptr) {
+		_opaque_region_cache = region{*(get<p_net_wm_opaque_region>())};
 	} else {
 		if (_client_proxy->geometry().depth != 32) {
 			_opaque_region_cache = rect{0, 0, _base_position.w, _base_position.h};

@@ -423,8 +423,8 @@ void page_t::scan() {
 				 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
 				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 				 **/
-				if (c->wm_state() != nullptr) {
-					if (c->wm_state()->state == IconicState) {
+				if (c->get<p_wm_state>() != nullptr) {
+					if (c->get<p_wm_state>()->state == IconicState) {
 						onmap(w);
 					}
 				}
@@ -1677,19 +1677,19 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 		int32_t ps[PS_LAST];
 		bool has_strut{false};
 
-		if(j->net_wm_strut_partial() != nullptr) {
-			if(j->net_wm_strut_partial()->size() == 12) {
-				std::copy(j->net_wm_strut_partial()->begin(), j->net_wm_strut_partial()->end(), &ps[0]);
+		if(j->get<p_net_wm_strut_partial>() != nullptr) {
+			if(j->get<p_net_wm_strut_partial>()->size() == 12) {
+				std::copy(j->get<p_net_wm_strut_partial>()->begin(), j->get<p_net_wm_strut_partial>()->end(), &ps[0]);
 				has_strut = true;
 			}
 		}
 
-		if (j->net_wm_strut() != nullptr and not has_strut) {
-			if(j->net_wm_strut()->size() == 4) {
+		if (j->get<p_net_wm_strut>() != nullptr and not has_strut) {
+			if(j->get<p_net_wm_strut>()->size() == 4) {
 
 				/** if strut is found, fake strut_partial **/
 
-				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
+				std::copy(j->get<p_net_wm_strut>()->begin(), j->get<p_net_wm_strut>()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
 					ps[PS_TOP_START_X] = _root_position.x;
@@ -1803,19 +1803,19 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 		int32_t ps[12] = { 0 };
 		bool has_strut{false};
 
-		if(j->net_wm_strut_partial() != nullptr) {
-			if(j->net_wm_strut_partial()->size() == 12) {
-				std::copy(j->net_wm_strut_partial()->begin(), j->net_wm_strut_partial()->end(), &ps[0]);
+		if(j->get<p_net_wm_strut_partial>() != nullptr) {
+			if(j->get<p_net_wm_strut_partial>()->size() == 12) {
+				std::copy(j->get<p_net_wm_strut_partial>()->begin(), j->get<p_net_wm_strut_partial>()->end(), &ps[0]);
 				has_strut = true;
 			}
 		}
 
-		if (j->net_wm_strut() != nullptr and not has_strut) {
-			if(j->net_wm_strut()->size() == 4) {
+		if (j->get<p_net_wm_strut>() != nullptr and not has_strut) {
+			if(j->get<p_net_wm_strut>()->size() == 4) {
 
 				/** if strut is found, fake strut_partial **/
 
-				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
+				std::copy(j->get<p_net_wm_strut>()->begin(), j->get<p_net_wm_strut>()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
 					ps[PS_TOP_START_X] = _root_position.x;
@@ -2120,8 +2120,8 @@ shared_ptr<client_base_t> page_t::get_transient_for(
 		shared_ptr<client_base_t> c) {
 	assert(c != nullptr);
 	shared_ptr<client_base_t> transient_for = nullptr;
-	if (c->wm_transient_for() != nullptr) {
-		transient_for = find_client_with(*(c->wm_transient_for()));
+	if (c->get<p_wm_transient_for>() != nullptr) {
+		transient_for = find_client_with(*(c->get<p_wm_transient_for>()));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}
@@ -2642,8 +2642,8 @@ void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
 	_net_client_list.push_back(mw);
 	manage_client(mw, type);
 
-	if (mw->net_wm_strut() != nullptr
-			or mw->net_wm_strut_partial() != nullptr) {
+	if (mw->get<p_net_wm_strut>() != nullptr
+			or mw->get<p_net_wm_strut_partial>() != nullptr) {
 		update_workarea();
 	}
 }
@@ -2676,8 +2676,8 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	}
 
 	/* HACK OLD FASHION FULLSCREEN */
-	if (mw->wm_normal_hints() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-		XSizeHints const * size_hints = mw->wm_normal_hints();
+	if (mw->get<p_wm_normal_hints>() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+		XSizeHints const * size_hints = mw->get<p_wm_normal_hints>();
 		if ((size_hints->flags & PMaxSize)
 				and (size_hints->flags & PMinSize)) {
 			if (size_hints->min_width == _root_position.w
@@ -2716,14 +2716,14 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		 * first try if previous vm has put this window in IconicState, then
 		 * Check if the client have a preferred initial state.
 		 **/
-		if (mw->wm_state() != nullptr) {
-			if (mw->wm_state()->state == IconicState) {
+		if (mw->get<p_wm_state>() != nullptr) {
+			if (mw->get<p_wm_state>()->state == IconicState) {
 				activate = false;
 			}
 		} else {
-			if (mw->wm_hints() != nullptr) {
-				if ((mw->wm_hints()->flags & StateHint)
-						and (mw->wm_hints()->initial_state == IconicState)) {
+			if (mw->get<p_wm_hints>() != nullptr) {
+				if ((mw->get<p_wm_hints>()->flags & StateHint)
+						and (mw->get<p_wm_hints>()->initial_state == IconicState)) {
 					activate = false;
 				}
 			}
@@ -2781,21 +2781,21 @@ shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
  * @input c: a window client handler.
  **/
 bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time) {
-	if (c->net_wm_user_time() != nullptr) {
-		time = *(c->net_wm_user_time());
+	if (c->get<p_net_wm_user_time>() != nullptr) {
+		time = *(c->get<p_net_wm_user_time>());
 		return true;
 	} else {
-		if (c->net_wm_user_time_window() == nullptr)
+		if (c->get<p_net_wm_user_time_window>() == nullptr)
 			return false;
-		if (*(c->net_wm_user_time_window()) == XCB_WINDOW_NONE)
+		if (*(c->get<p_net_wm_user_time_window>()) == XCB_WINDOW_NONE)
 			return false;
 		try {
-			auto xc = _dpy->create_client_proxy(*(c->net_wm_user_time_window()));
-			if(xc->net_wm_user_time() == nullptr)
+			auto xc = _dpy->create_client_proxy(*(c->get<p_net_wm_user_time_window>()));
+			if(xc->get<p_net_wm_user_time>() == nullptr)
 				return false;
-			if (*(xc->net_wm_user_time()) == 0)
+			if (*(xc->get<p_net_wm_user_time>()) == 0)
 				return false;
-			time = *(xc->net_wm_user_time());
+			time = *(xc->get<p_net_wm_user_time>());
 			return true;
 		} catch (invalid_client_t & e) {
 			return false;
@@ -3523,8 +3523,8 @@ shared_ptr<viewport_t> page_t::find_viewport_of(shared_ptr<tree_t> t) {
 }
 
 unsigned int page_t::find_current_workspace(shared_ptr<client_base_t> c) {
-	if(c->net_wm_desktop() != nullptr)
-		return *(c->net_wm_desktop());
+	if(c->get<p_net_wm_desktop>() != nullptr)
+		return *(c->get<p_net_wm_desktop>());
 	auto d = find_workspace_of(c);
 	if(d != nullptr)
 		return d->id();

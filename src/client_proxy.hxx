@@ -28,6 +28,7 @@
 #include "region.hxx"
 #include "motif_hints.hxx"
 #include "properties.hxx"
+#include "properties_template.hxx"
 
 namespace page {
 
@@ -62,7 +63,7 @@ public:
 
 };
 
-class client_proxy_t : public enable_shared_from_this<client_proxy_t> {
+class client_proxy_t : public enable_shared_from_this<client_proxy_t>, public wm_properties_t {
 	friend class display_t;
 	friend class client_view_t;
 
@@ -86,22 +87,6 @@ private:
 
 	bool _need_pixmap_update;
 	bool _is_redirected;
-
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	private: cxx_name##_t _##cxx_name; \
-	public:  cxx_type const * cxx_name(); \
-	public:  void update_##cxx_name();
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-	private: cxx_name##_t _##cxx_name; \
-	public:  cxx_type const * cxx_name(); \
-	public:  void update_##cxx_name(); \
-	public:  cxx_type const * cxx_name(cxx_type * x);
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
 
 	/** short cut **/
 	xcb_atom_t A(atom_e atom);

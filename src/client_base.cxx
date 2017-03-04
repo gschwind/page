@@ -51,10 +51,10 @@ void client_base_t::update_shape() {
 
 
 bool client_base_t::has_motif_border() {
-	if (_client_proxy->motif_hints() != nullptr) {
-		if (_client_proxy->motif_hints()->flags & MWM_HINTS_DECORATIONS) {
-			if (not (_client_proxy->motif_hints()->decorations & MWM_DECOR_BORDER)
-					and not ((_client_proxy->motif_hints()->decorations & MWM_DECOR_ALL))) {
+	if (_client_proxy->get<p_motif_hints>() != nullptr) {
+		if (_client_proxy->get<p_motif_hints>()->flags & MWM_HINTS_DECORATIONS) {
+			if (not (_client_proxy->get<p_motif_hints>()->decorations & MWM_DECOR_BORDER)
+					and not ((_client_proxy->get<p_motif_hints>()->decorations & MWM_DECOR_ALL))) {
 				return false;
 			}
 		}
@@ -105,8 +105,8 @@ auto client_base_t::cnx() const -> display_t * { return _client_proxy->cnx(); }
 auto client_base_t::transient_for() -> shared_ptr<client_base_t>
 {
 	shared_ptr<client_base_t> transient_for = nullptr;
-	if (wm_transient_for() != nullptr) {
-		transient_for = _ctx->find_client_with(*(wm_transient_for()));
+	if (get<p_wm_transient_for>() != nullptr) {
+		transient_for = _ctx->find_client_with(*(get<p_wm_transient_for>()));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}
@@ -117,20 +117,6 @@ void client_base_t::set_root(workspace_t * root)
 {
 	_root = root;
 }
-
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_base_t::cxx_name() { return _client_proxy->cxx_name(); } \
-void client_base_t::update_##cxx_name() { _client_proxy->update_##cxx_name(); }
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-cxx_type const * client_base_t::cxx_name() { return _client_proxy->cxx_name(); } \
-void client_base_t::update_##cxx_name() { _client_proxy->update_##cxx_name(); } \
-cxx_type const * client_base_t::cxx_name(cxx_type * x) { return _client_proxy->cxx_name(x); }
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
 
 auto client_base_t::shape() const -> region const * { return _client_proxy->shape(); }
 auto client_base_t::position() -> rect { return _client_proxy->position(); }
@@ -153,10 +139,10 @@ void client_base_t::append_children(vector<shared_ptr<tree_t>> & out) const {
 dimention_t<unsigned> client_base_t::compute_size_with_constrain(unsigned w, unsigned h) {
 
 	/* has no constrain */
-	if (wm_normal_hints() == nullptr)
+	if (get<p_wm_normal_hints>() == nullptr)
 		return dimention_t<unsigned> { w, h };
 
-	XSizeHints const * sh = wm_normal_hints();
+	XSizeHints const * sh = get<p_wm_normal_hints>();
 
 	if (sh->flags & PMaxSize) {
 		if ((int) w > sh->max_width)

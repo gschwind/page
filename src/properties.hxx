@@ -486,17 +486,6 @@ public:
 
 };
 
-#define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-using cxx_name##_t = property_t<x11_name, x11_type, cxx_type>;
-
-#define RW_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
-using cxx_name##_t = property_t<x11_name, x11_type, cxx_type>;
-
-#include "client_property_list.hxx"
-
-#undef RO_PROPERTY
-#undef RW_PROPERTY
-
 /** root properties **/
 using net_active_window_t =         property_t<_NET_ACTIVE_WINDOW,         WINDOW,             xcb_window_t>; // 32
 using net_desktop_names_t = 		property_t<_NET_DESKTOP_NAMES,         UTF8_STRING,        vector<string>>;
