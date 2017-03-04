@@ -106,6 +106,7 @@ class page_t : public connectable_t {
 
 	shared_ptr<page_root_t> _root;
 	shared_ptr<compositor_overlay_t> _fps_overlay;
+	vector<shared_ptr<workspace_t>> _workspace_list;
 
 	weak_ptr<client_managed_t> _net_active_window;
 

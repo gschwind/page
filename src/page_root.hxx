@@ -25,7 +25,6 @@ class page_root_t : public tree_t {
 	rect _root_position;
 
 	unsigned int _current_workspace;
-	vector<shared_ptr<workspace_t>> _workspace_list;
 
 	/** store the order of last shown workspace **/
 	shared_ptr<tree_t> _workspace_stack;
