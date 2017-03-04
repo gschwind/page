@@ -49,6 +49,7 @@ private:
 	shared_ptr<tree_t> _floating_layer;
 	shared_ptr<tree_t> _fullscreen_layer;
 	shared_ptr<tree_t> _tooltips_layer;
+	shared_ptr<tree_t> _notification_layer;
 	shared_ptr<tree_t> _overlays;
 
 	shared_ptr<tree_t> _unknown_layer;
@@ -93,6 +94,7 @@ public:
 	void add_overlay(shared_ptr<tree_t> c);
 	void add_unknown(shared_ptr<tree_t> c);
 	void add_tooltips(shared_ptr<tree_t> c);
+	void add_notification(shared_ptr<tree_t> c);
 
 	void set_name(string const & s);
 	auto name() -> string const &;

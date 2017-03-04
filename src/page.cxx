@@ -2832,7 +2832,7 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			get_current_workspace()->add_tooltips(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-			_root->notifications->push_back(uw);
+			get_current_workspace()->add_notification(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
 			insert_in_tree_using_transient_for(uw);
 		} else {

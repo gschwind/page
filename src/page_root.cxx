@@ -21,14 +21,10 @@ page_root_t::page_root_t(page_t * ctx) :
 {
 	_stack_is_locked = true;
 
-	notifications = make_shared<tree_t>();
-
 	_workspace_stack = make_shared<tree_t>();
 
 	push_back(_workspace_stack);
-	push_back(notifications);
 
-	notifications->show();
 	_workspace_stack->show();
 
 }
