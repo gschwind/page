@@ -183,25 +183,23 @@ void split_t::update_allocation() {
 }
 
 void split_t::set_pack0(shared_ptr<page_component_t> x) {
+	assert(x != nullptr);
 	if(_pack0 != nullptr) {
 		remove(_pack0);
 	}
 	_pack0 = x;
-	if (_pack0 != nullptr) {
-		push_back(_pack0);
-		update_allocation();
-	}
+	push_back(_pack0);
+	update_allocation();
 }
 
 void split_t::set_pack1(shared_ptr<page_component_t> x) {
+	assert(x != nullptr);
 	if(_pack1 != nullptr) {
 		remove(_pack1);
 	}
 	_pack1 = x;
-	if (_pack1 != nullptr) {
-		push_back(_pack1);
-		update_allocation();
-	}
+	push_back(_pack1);
+	update_allocation();
 }
 
 void split_t::render_legacy(cairo_t * cr) const {
@@ -216,10 +214,11 @@ void split_t::render_legacy(cairo_t * cr) const {
 }
 
 void split_t::remove(shared_ptr<tree_t> t) {
+	tree_t::remove(t);
 	if (_pack0 == t) {
-		set_pack0(nullptr);
+		_pack0 = nullptr;
 	} else if (_pack1 == t) {
-		set_pack1(nullptr);
+		_pack1 = nullptr;
 	}
 }
 
