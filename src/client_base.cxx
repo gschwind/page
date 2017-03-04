@@ -68,8 +68,7 @@ void client_base_t::set_net_wm_desktop(unsigned long n) {
 
 void client_base_t::add_subclient(shared_ptr<client_base_t> s) {
 	assert(s != nullptr);
-	_children.push_back(s);
-	s->set_parent(this);
+	push_back(s);
 	if(_is_visible) {
 		s->show();
 	} else {
