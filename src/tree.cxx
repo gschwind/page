@@ -17,7 +17,8 @@ namespace page {
 
 tree_t::tree_t() :
 	_parent{nullptr},
-	_is_visible{false}
+	_is_visible{false},
+	_stack_is_locked{false}
 {
 
 }
@@ -181,7 +182,7 @@ void tree_t::raise(shared_ptr<tree_t> t) {
 		_parent->raise(shared_from_this());
 	}
 
-	if(t != nullptr) {
+	if(t != nullptr and not _stack_is_locked) {
 		assert(has_key(_children, t));
 		move_back(_children, t);
 	}

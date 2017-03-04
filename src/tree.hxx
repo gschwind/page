@@ -88,6 +88,7 @@ protected:
 	list<shared_ptr<tree_t>> _children;
 
 	bool _is_visible;
+	bool _stack_is_locked; // define wether childdren can be raised.
 
 	map<void *, shared_ptr<transition_t>> _transition;
 
