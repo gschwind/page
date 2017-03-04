@@ -30,7 +30,6 @@ class page_root_t : public tree_t {
 	shared_ptr<tree_t> root_subclients;
 	shared_ptr<tree_t> tooltips;
 	shared_ptr<tree_t> notifications;
-	shared_ptr<tree_t> above;
 
 	shared_ptr<compositor_overlay_t> _fps_overlay;
 	/** store the order of last shown workspace **/
