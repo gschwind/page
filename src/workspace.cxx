@@ -35,12 +35,14 @@ workspace_t::workspace_t(page_t * ctx, unsigned id) :
 	_viewport_layer = make_shared<tree_t>();
 	_floating_layer = make_shared<tree_t>();
 	_fullscreen_layer = make_shared<tree_t>();
+	_tooltips_layer = make_shared<tree_t>();
 	_overlays = make_shared<tree_t>();
 	_unknown_layer = make_shared<tree_t>();
 
 	push_back(_viewport_layer);
 	push_back(_floating_layer);
 	push_back(_fullscreen_layer);
+	push_back(_tooltips_layer);
 	push_back(_overlays);
 	push_back(_unknown_layer);
 
@@ -177,6 +179,11 @@ void workspace_t::add_overlay(shared_ptr<tree_t> t)
 void workspace_t::add_unknown(shared_ptr<tree_t> c)
 {
 	_unknown_layer->push_back(c);
+}
+
+void workspace_t::add_tooltips(shared_ptr<tree_t> t)
+{
+	_tooltips_layer->push_back(t);
 }
 
 void workspace_t::set_name(string const & s) {

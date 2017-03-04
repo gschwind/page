@@ -2830,7 +2830,7 @@ void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
 		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
 		detach(uw);
 		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-			_root->tooltips->push_back(uw);
+			get_current_workspace()->add_tooltips(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
 			_root->notifications->push_back(uw);
 		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
