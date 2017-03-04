@@ -789,7 +789,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
     if(e->root_x == 0 and e->root_y == 0) {
         start_alt_tab(e->time);
     } else {
-        _root->broadcast_button_press(e);
+        get_current_workspace()->broadcast_button_press(e);
     }
 
 	/**
@@ -1280,12 +1280,12 @@ void page_t::render() {
 	_scheduled_repaint = false;
 
 	// ask to update everything to draw the time64_t::now() frame
-	_root->broadcast_update_layout(time64_t::now());
+	get_current_workspace()->broadcast_update_layout(time64_t::now());
 	// ask to flush all pending drawing
-	_root->broadcast_trigger_redraw();
+	get_current_workspace()->broadcast_trigger_redraw();
 	// render on screen if we need too.
 	if (_compositor != nullptr) {
-		_compositor->render(_root.get());
+		_compositor->render(get_current_workspace().get());
 	}
 	xcb_flush(_dpy->xcb());
 
@@ -1294,7 +1294,7 @@ void page_t::render() {
 	xcb_request_check(_dpy->xcb(), ck);
 	xcb_discard_reply(_dpy->xcb(), ck.sequence);
 
-	_root->broadcast_render_finished();
+	get_current_workspace()->broadcast_render_finished();
 }
 
 void page_t::fullscreen(shared_ptr<client_managed_t> mw) {
@@ -1635,7 +1635,7 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	 **/
 	for (auto & i : _fullscreen_client_to_viewport) {
 		if (i.second.revert_notebook.lock() == nbk) {
-			i.second.revert_notebook = _root->_workspace_list[_root->_current_workspace]->default_pop();
+			i.second.revert_notebook = get_current_workspace()->default_pop();
 		}
 	}
 
@@ -2218,7 +2218,7 @@ shared_ptr<notebook_t> page_t::get_another_notebook(shared_ptr<tree_t> base, sha
 	vector<shared_ptr<notebook_t>> l;
 
 	if (base == nullptr) {
-		l = filter_class<notebook_t>(_root->get_all_children());
+		l = filter_class<notebook_t>(get_current_workspace()->get_all_children());
 	} else {
 		l = filter_class<notebook_t>(base->get_all_children());;
 	}
@@ -2255,7 +2255,7 @@ shared_ptr<workspace_t> page_t::find_workspace_of(shared_ptr<tree_t> n) {
 
 void page_t::update_windows_stack() {
 
-	auto tree = _root->get_all_children();
+	auto tree = get_current_workspace()->get_all_children();
 
 	{
 		/**
@@ -2484,7 +2484,7 @@ void page_t::update_viewport_layout() {
 	set_workspace_geometry(_root->_root_position.w, _root->_root_position.h);
 
 	update_workarea();
-	reconfigure_docks(_root->_workspace_list[_root->_current_workspace]);
+	reconfigure_docks(get_current_workspace());
 
 }
 
@@ -3263,7 +3263,7 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
-	_root->broadcast_enter(e);
+	get_current_workspace()->broadcast_enter(e);
 
 	if(not configuration._mouse_focus)
 		return;
@@ -3276,7 +3276,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
-	_root->broadcast_leave(e);
+	get_current_workspace()->broadcast_leave(e);
 }
 
 void page_t::process_randr_notify_event(xcb_generic_event_t const * e) {
@@ -3342,7 +3342,7 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 		grab->button_motion(e);
 		return;
 	} else {
-		_root->broadcast_button_motion(e);
+		get_current_workspace()->broadcast_button_motion(e);
 	}
 }
 
@@ -3352,7 +3352,7 @@ void page_t::process_button_release(xcb_generic_event_t const * _e) {
 		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
 		grab->button_release(e);
 	} else {
-		_root->broadcast_button_release(e);
+		get_current_workspace()->broadcast_button_release(e);
 	}
 }
 
@@ -3380,7 +3380,7 @@ void page_t::stop_compositor() {
 
 void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_expose_event_t const *>(_e);
-	_root->broadcast_expose(e);
+	get_current_workspace()->broadcast_expose(e);
 }
 
 void page_t::process_error(xcb_generic_event_t const * _e) {
