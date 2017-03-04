@@ -29,7 +29,7 @@ protected:
 
 public:
 
-	renderable_pixmap_t(page_t * ctx, shared_ptr<pixmap_t> s, int x, int y);
+	renderable_pixmap_t(tree_t * ctx, shared_ptr<pixmap_t> s, int x, int y);
 	virtual ~renderable_pixmap_t();
 	virtual void render(cairo_t * cr, region const & area);
 	virtual region get_opaque_region();

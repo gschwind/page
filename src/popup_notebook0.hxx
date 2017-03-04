@@ -32,7 +32,7 @@ protected:
 	xcb_window_t _wid;
 
 public:
-	popup_notebook0_t(page_t * ctx);
+	popup_notebook0_t(tree_t * ctx);
 
 	void _create_window();
 	void move_resize(rect const & area);

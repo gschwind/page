@@ -178,7 +178,7 @@ class notebook_t : public page_component_t {
 
 public:
 
-	notebook_t(page_t * ctx);
+	notebook_t(tree_t * ref);
 	virtual ~notebook_t();
 
 	void _set_selected(shared_ptr<client_managed_t> c);

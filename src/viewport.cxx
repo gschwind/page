@@ -19,7 +19,8 @@ namespace page {
 
 using namespace std;
 
-viewport_t::viewport_t(rect const & area) :
+viewport_t::viewport_t(tree_t * ref, rect const & area) :
+		page_component_t{ref},
 		_raw_aera{area},
 		_effective_area{area},
 		_is_durty{true},
@@ -31,7 +32,7 @@ viewport_t::viewport_t(rect const & area) :
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
 
-	_subtree = make_shared<notebook_t>(_root->_ctx);
+	_subtree = make_shared<notebook_t>(this);
 	push_back(_subtree);
 	_subtree->set_allocation(_page_area);
 

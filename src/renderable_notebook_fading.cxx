@@ -19,13 +19,15 @@
  */
 
 #include "renderable_notebook_fading.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
-renderable_notebook_fading_t::renderable_notebook_fading_t(page_t * ctx, shared_ptr<pixmap_t> surface, int x, int y) :
+renderable_notebook_fading_t::renderable_notebook_fading_t(tree_t * ref, shared_ptr<pixmap_t> surface, int x, int y) :
+	tree_t{ref->_root},
 	_surface{surface},
 	_ratio{1.0},
-	_ctx{ctx}
+	_ctx{ref->_root->_ctx}
 {
 	_location = rect(x, y, surface->witdh(), surface->height());
 	_opaque_region = region(0, 0, surface->witdh(), surface->height());

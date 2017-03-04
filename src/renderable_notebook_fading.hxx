@@ -34,7 +34,7 @@ class renderable_notebook_fading_t : public tree_t {
 
 public:
 
-	renderable_notebook_fading_t(page_t * ctx, shared_ptr<pixmap_t> surface, int x, int y);
+	renderable_notebook_fading_t(tree_t * ctx, shared_ptr<pixmap_t> surface, int x, int y);
 	virtual ~renderable_notebook_fading_t();
 	virtual void render(cairo_t * cr, region const & area);
 	void set_ratio(double x);

@@ -20,10 +20,13 @@
 
 #include "renderable_pixmap.hxx"
 
+#include "workspace.hxx"
+
 namespace page {
 
-renderable_pixmap_t::renderable_pixmap_t(page_t * ctx, shared_ptr<pixmap_t> s, int x, int y) :
-	_ctx{ctx},
+renderable_pixmap_t::renderable_pixmap_t(tree_t * ref, shared_ptr<pixmap_t> s, int x, int y) :
+	tree_t{ref->_root},
+	_ctx{ref->_root->_ctx},
 	_surf{s}
 {
 	_location = rect(x, y, s->witdh(), s->height());

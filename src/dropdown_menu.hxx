@@ -53,7 +53,7 @@ struct dropdown_menu_overlay_t : public tree_t {
 	xcb_window_t _wid;
 	bool _is_durty;
 
-	dropdown_menu_overlay_t(page_t * ctx, rect position);
+	dropdown_menu_overlay_t(tree_t * root, rect position);
 	~dropdown_menu_overlay_t();
 	void map();
 	rect const & position();
@@ -91,7 +91,7 @@ protected:
 
 public:
 
-	dropdown_menu_t(page_t * ctx, vector<shared_ptr<item_t>> items,
+	dropdown_menu_t(tree_t * ref, vector<shared_ptr<item_t>> items,
 			xcb_button_t button, int x, int y, int width, rect start_position);
 	~dropdown_menu_t();
 

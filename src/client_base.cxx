@@ -30,7 +30,7 @@ xcb_atom_t client_base_t::A(atom_e atom) {
 //}
 
 client_base_t::client_base_t(page_t * ctx, xcb_window_t w) :
-	tree_t{},
+	tree_t{nullptr},
 	_ctx{ctx},
 	_client_proxy{ctx->dpy()->create_client_proxy(w)}
 {
@@ -111,6 +111,11 @@ auto client_base_t::transient_for() -> shared_ptr<client_base_t>
 			printf("Warning transient for an unknown client\n");
 	}
 	return transient_for;
+}
+
+void client_base_t::set_root(workspace_t * root)
+{
+	_root = root;
 }
 
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \

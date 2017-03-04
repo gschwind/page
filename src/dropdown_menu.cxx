@@ -10,6 +10,8 @@
 #include "dropdown_menu.hxx"
 
 #include "page.hxx"
+#include "tree.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
@@ -45,8 +47,9 @@ theme_dropdown_menu_entry_t const & dropdown_menu_entry_t::get_theme_item()
 
 
 
-dropdown_menu_overlay_t::dropdown_menu_overlay_t(page_t * ctx, rect position) :
-	_ctx{ctx},
+dropdown_menu_overlay_t::dropdown_menu_overlay_t(tree_t * ref, rect position) :
+	tree_t{ref->_root},
+	_ctx{ref->_root->_ctx},
 	_position{position}
 {
 	_is_durty = true;
@@ -182,10 +185,10 @@ void dropdown_menu_overlay_t::expose(xcb_expose_event_t const * ev)
 
 
 
-dropdown_menu_t::dropdown_menu_t(page_t * ctx,
+dropdown_menu_t::dropdown_menu_t(tree_t * ref,
 		vector<shared_ptr<item_t>> items, xcb_button_t button, int x, int y,
 		int width, rect start_position) :
-	_ctx{ctx},
+	_ctx{ref->_root->_ctx},
 	_start_position{start_position},
 	_button{button},
 	_time{XCB_CURRENT_TIME}
@@ -201,7 +204,7 @@ dropdown_menu_t::dropdown_menu_t(page_t * ctx,
 	_position.w = width;
 	_position.h = 24*_items.size();
 
-	pop = make_shared<dropdown_menu_overlay_t>(ctx, _position);
+	pop = make_shared<dropdown_menu_overlay_t>(ref, _position);
 	update_backbuffer();
 	pop->map();
 

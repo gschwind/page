@@ -19,11 +19,13 @@
  */
 
 #include "renderable_floating_outer_gradien.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
-renderable_floating_outer_gradien_t::renderable_floating_outer_gradien_t(rect r, double shadow_width,
+renderable_floating_outer_gradien_t::renderable_floating_outer_gradien_t(tree_t * ref, rect r, double shadow_width,
 		double radius) :
+		tree_t{ref->_root},
 		_r(r), _shadow_width(shadow_width), _radius(radius) {
 
 }

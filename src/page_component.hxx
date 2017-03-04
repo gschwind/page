@@ -18,7 +18,7 @@ namespace page {
 class page_component_t : public tree_t {
 public:
 
-	page_component_t() { }
+	page_component_t(tree_t * ref) : tree_t{ref->_root} { }
 	virtual ~page_component_t() { }
 	virtual void set_allocation(rect const & area) = 0;
 	virtual rect allocation() const = 0;

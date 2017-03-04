@@ -21,12 +21,13 @@
 #include "renderable_fadeout_pixmap.hxx"
 
 #include "page.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
-renderable_fadeout_pixmap_t::renderable_fadeout_pixmap_t(page_t * ctx,
+renderable_fadeout_pixmap_t::renderable_fadeout_pixmap_t(tree_t * ref,
 		shared_ptr<pixmap_t> s, int x, int y) :
-	renderable_pixmap_t(ctx, s, x, y),
+	renderable_pixmap_t(ref, s, x, y),
 	_alpha{0.0}
 {
 	_start_time = time64_t::now();

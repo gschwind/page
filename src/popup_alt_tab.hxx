@@ -75,7 +75,7 @@ class popup_alt_tab_t : public tree_t {
 
 public:
 
-	popup_alt_tab_t(page_t * ctx, list<client_managed_p> client_list, viewport_p viewport);
+	popup_alt_tab_t(tree_t * ref, list<client_managed_p> client_list, viewport_p viewport);
 
 	template<typename ... Args>
 	static shared_ptr<popup_alt_tab_t> create(Args ... args) {

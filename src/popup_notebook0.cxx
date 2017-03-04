@@ -21,12 +21,15 @@
 #include "popup_notebook0.hxx"
 
 #include "page.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
-popup_notebook0_t::popup_notebook0_t(page_t * ctx) :
-		_position{-1, -1, 1, 1} , _ctx{ctx} {
-
+popup_notebook0_t::popup_notebook0_t(tree_t * ref) :
+	tree_t{ref->_root},
+	_position{-1, -1, 1, 1} ,
+	_ctx{ref->_root->_ctx}
+{
 	_is_visible = false;
 	_exposed = false;
 

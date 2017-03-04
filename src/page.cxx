@@ -670,7 +670,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				int y_pos = v->allocation().y + v->allocation().h - 100;
 				int x_pos = v->allocation().x + (v->allocation().w - 400)/2;
 
-				_fps_overlay = make_shared<compositor_overlay_t>(this, rect{x_pos, y_pos, 400, 100});
+				_fps_overlay = make_shared<compositor_overlay_t>(get_current_workspace().get(), rect{x_pos, y_pos, 400, 100});
 				get_current_workspace()->add_overlay(_fps_overlay);
 				_fps_overlay->show();
 			} else {
@@ -1529,8 +1529,8 @@ void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t t
 
 void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
-	auto n = make_shared<notebook_t>(this);
-	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
+	auto n = make_shared<notebook_t>(nbk.get());
+	auto split = make_shared<split_t>(nbk.get(), VERTICAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -1543,8 +1543,8 @@ void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t>
 
 void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
-	auto n = make_shared<notebook_t>(this);
-	auto split = make_shared<split_t>(this, VERTICAL_SPLIT);
+	auto n = make_shared<notebook_t>(nbk.get());
+	auto split = make_shared<split_t>(nbk.get(), VERTICAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -1557,8 +1557,8 @@ void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t
 
 void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
-	auto n = make_shared<notebook_t>(this);
-	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
+	auto n = make_shared<notebook_t>(nbk.get());
+	auto split = make_shared<split_t>(nbk.get(), HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
@@ -1571,8 +1571,8 @@ void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> 
 
 void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
-	auto n = make_shared<notebook_t>(this);
-	auto split = make_shared<split_t>(this, HORIZONTAL_SPLIT);
+	auto n = make_shared<notebook_t>(nbk.get());
+	auto split = make_shared<split_t>(nbk.get(), HORIZONTAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
@@ -2405,7 +2405,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = make_shared<viewport_t>(viewport_allocation[i]);
+				vp = make_shared<viewport_t>(d.get(), viewport_allocation[i]);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
@@ -2419,7 +2419,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = make_shared<viewport_t>(area);
+				vp = make_shared<viewport_t>(d.get(), area);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
@@ -3071,7 +3071,7 @@ void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
 	for(auto const & v : new_workspace->get_viewports()) {
 		auto pix = theme()->workspace_switch_popup(new_workspace->name());
 		auto loc = v->allocation();
-		auto rnd = make_shared<renderable_fadeout_pixmap_t>(this, pix, loc.x + (loc.w-pix->witdh())/2.0, loc.y + (loc.h-pix->height())/2.0);
+		auto rnd = make_shared<renderable_fadeout_pixmap_t>(new_workspace.get(), pix, loc.x + (loc.w-pix->witdh())/2.0, loc.y + (loc.h-pix->height())/2.0);
 		new_workspace->add_overlay(rnd);
 		rnd->show();
 	}

@@ -64,7 +64,7 @@ grab_split_t::grab_split_t(page_t * ctx, shared_ptr<split_t> s) : grab_default_t
 	_slider_area = s->to_root_position(s->get_split_bar_area());
 	_split_ratio = s->ratio();
 	_split_root_allocation = s->root_location();
-	_ps = make_shared<popup_split_t>(ctx, s);
+	_ps = make_shared<popup_split_t>(s.get(), s);
 	_ctx->overlay_add(_ps);
 	_ps->show();
 }
@@ -139,8 +139,7 @@ grab_bind_client_t::grab_bind_client_t(page_t * ctx, shared_ptr<client_managed_t
 		pn0{},
 		_button{button}
 {
-
-
+	pn0 = make_shared<popup_notebook0_t>(c.get());
 }
 
 grab_bind_client_t::~grab_bind_client_t() {
@@ -191,11 +190,13 @@ void grab_bind_client_t::button_press(xcb_button_press_event_t const * e) {
 }
 
 void grab_bind_client_t::button_motion(xcb_motion_notify_event_t const * e) {
-
+	if(c.expired()) {
+		_ctx->grab_stop(e->time);
+		return;
+	}
 
 	/* do not start drag&drop for small move */
-	if (not start_position.is_inside(e->root_x, e->root_y) and pn0 == nullptr) {
-		pn0 = make_shared<popup_notebook0_t>(_ctx);
+	if (not start_position.is_inside(e->root_x, e->root_y) and pn0->parent() == nullptr) {
 		_ctx->overlay_add(pn0);
 		pn0->show();
 	}
@@ -325,7 +326,7 @@ grab_floating_move_t::grab_floating_move_t(page_t * ctx, shared_ptr<client_manag
 {
 
 	f->raise();
-	pfm = make_shared<popup_notebook0_t>(_ctx);
+	pfm = make_shared<popup_notebook0_t>(f.get());
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
 	pfm->show();
@@ -427,7 +428,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, shared_ptr<client_m
 {
 
 	f->raise();
-	pfm = make_shared<popup_notebook0_t>(_ctx);
+	pfm = make_shared<popup_notebook0_t>(f.get());
 	pfm->move_resize(f->base_position());
 	_ctx->overlay_add(pfm);
 	pfm->show();
@@ -572,7 +573,7 @@ grab_fullscreen_client_t::grab_fullscreen_client_t(page_t * ctx, shared_ptr<clie
  button{button}
 {
 	v = _ctx->find_mouse_viewport(x, y);
-	pn0 = make_shared<popup_notebook0_t>(ctx);
+	pn0 = make_shared<popup_notebook0_t>(mw.get());
 	pn0->move_resize(mw->base_position());
 	_ctx->overlay_add(pn0);
 	pn0->show();
@@ -641,7 +642,7 @@ grab_alt_tab_t::grab_alt_tab_t(page_t * ctx, list<client_managed_p> managed_wind
 	auto viewport_list = _ctx->get_current_workspace()->get_viewports();
 
 	for(auto v: viewport_list) {
-		auto pat = popup_alt_tab_t::create(_ctx, managed_window, v);
+		auto pat = popup_alt_tab_t::create(v.get(), managed_window, v);
 		pat->show();
 		if(_client_list.size() > 0)
 			pat->selected(_client_list.front());

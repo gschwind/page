@@ -15,13 +15,15 @@
 #include "page.hxx"
 #include "split.hxx"
 #include "grab_handlers.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
 using namespace std;
 
-split_t::split_t(page_t * ctx, split_type_e type) :
-		_ctx{ctx},
+split_t::split_t(tree_t * ref, split_type_e type) :
+		page_component_t{ref},
+		_ctx{ref->_root->_ctx},
 		_type{type},
 		_ratio{0.5},
 		_has_mouse_over{false},

@@ -27,7 +27,7 @@ class renderable_floating_outer_gradien_t : public tree_t {
 
 public:
 
-	renderable_floating_outer_gradien_t(rect r, double shadow_width,
+	renderable_floating_outer_gradien_t(tree_t * ref, rect r, double shadow_width,
 			double radius);
 
 	virtual ~renderable_floating_outer_gradien_t();

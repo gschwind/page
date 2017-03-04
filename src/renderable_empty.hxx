@@ -21,7 +21,7 @@ class renderable_empty_t : public tree_t {
 	region damaged;
 public:
 
-	renderable_empty_t(region damaged) : damaged(damaged) { }
+	renderable_empty_t(tree_t * ref, region damaged) : tree_t{ref->_root}, damaged(damaged) { }
 
 	virtual ~renderable_empty_t() { }
 

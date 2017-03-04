@@ -22,7 +22,8 @@
 
 namespace page {
 
-renderable_solid_t::renderable_solid_t(color_t color, rect loc, region damaged) :
+renderable_solid_t::renderable_solid_t(tree_t * ref, color_t color, rect loc, region damaged) :
+	tree_t{ref->_root},
 	damaged{damaged},
 	color{color},
 	location{loc}

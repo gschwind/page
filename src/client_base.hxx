@@ -76,6 +76,8 @@ public:
 
 	auto transient_for() -> shared_ptr<client_base_t>;
 
+	void set_root(workspace_t * root);
+
 #define RO_PROPERTY(cxx_name, x11_name, x11_type, cxx_type) \
 	public:  cxx_type const * cxx_name(); \
 	public:  void update_##cxx_name();

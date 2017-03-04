@@ -15,8 +15,8 @@
 
 namespace page {
 
-tree_t::tree_t() :
-	_root{nullptr},
+tree_t::tree_t(workspace_t * root) :
+	_root{root},
 	_parent{nullptr},
 	_is_visible{false},
 	_stack_is_locked{false}
@@ -38,11 +38,6 @@ auto tree_t::parent() const -> shared_ptr<tree_t> {
 	} else {
 		return shared_ptr<tree_t>{};
 	}
-}
-
-void tree_t::set_root(workspace_t * root)
-{
-	_root = root;
 }
 
 /**
@@ -103,16 +98,20 @@ void tree_t::push_back(shared_ptr<tree_t> t)
 {
 	assert(t->parent() == nullptr);
 	_children.push_back(t);
-	t->set_root(this->_root);
 	t->set_parent(this);
+
+	// TODO: remove this HACK.
+	t->_root = _root;
 }
 
 void tree_t::push_front(shared_ptr<tree_t> t)
 {
 	assert(t->parent() == nullptr);
 	_children.push_front(t);
-	t->set_root(this->_root);
 	t->set_parent(this);
+
+	// TODO: remove this HACK.
+	t->_root = _root;
 }
 
 

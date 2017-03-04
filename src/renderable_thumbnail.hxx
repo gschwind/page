@@ -49,7 +49,7 @@ class renderable_thumbnail_t : public tree_t {
 	renderable_thumbnail_t & operator=(renderable_thumbnail_t const &);
 public:
 
-	renderable_thumbnail_t(page_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor);
+	renderable_thumbnail_t(tree_t * ref, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor);
 	virtual ~renderable_thumbnail_t();
 
 	/** @return scale factor */

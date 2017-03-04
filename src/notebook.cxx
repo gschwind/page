@@ -7,9 +7,10 @@
  *
  */
 
+#include "notebook.hxx"
+
 #include "page.hxx"
 #include "workspace.hxx"
-#include "notebook.hxx"
 #include "dropdown_menu.hxx"
 #include "grab_handlers.hxx"
 #include "renderable_unmanaged_gaussian_shadow.hxx"
@@ -18,8 +19,9 @@ namespace page {
 
 using namespace std;
 
-notebook_t::notebook_t(page_t * ctx) :
-		_ctx{ctx},
+notebook_t::notebook_t(tree_t * ref) :
+		page_component_t{ref},
+		_ctx{ref->_root->_ctx},
 		_is_default{false},
 		_selected{nullptr},
 		_exposay{false},
@@ -30,7 +32,7 @@ notebook_t::notebook_t(page_t * ctx) :
 		_has_scroll_arrow{false},
 		_layout_is_durty{true},
 		_has_mouse_change{true},
-		animation_duration{ctx->conf()._fade_in_time}
+		animation_duration{ref->_root->_ctx->conf()._fade_in_time}
 {
 
 }
@@ -727,7 +729,7 @@ void notebook_t::_start_fading() {
 		_swap_start.update_to_current_time();
 		auto pix = _render_to_pixmap();
 		rect pos = to_root_position(_allocation);
-		fading_notebook = make_shared<renderable_notebook_fading_t>(_ctx, pix, pos.x, pos.y);
+		fading_notebook = make_shared<renderable_notebook_fading_t>(this, pix, pos.x, pos.y);
 		fading_notebook->show();
 		fading_notebook->set_parent(this);
 	} else {
@@ -828,7 +830,7 @@ void notebook_t::_update_exposay() {
 		rect pdst(x*width+1.0+xoffset+8, y*heigth+1.0+yoffset+8, width-2.0-16, heigth-2.0-16);
 		_exposay_buttons.push_back(make_tuple(pdst, client_managed_w{*it}, i));
 		pdst = to_root_position(pdst);
-		auto thumbnail = make_shared<renderable_thumbnail_t>(_ctx, *it, pdst, ANCHOR_CENTER);
+		auto thumbnail = make_shared<renderable_thumbnail_t>(this, *it, pdst, ANCHOR_CENTER);
 		_exposay_thumbnail.push_back(thumbnail);
 		thumbnail->show();
 		++it;
@@ -987,7 +989,7 @@ void notebook_t::_start_client_menu(shared_ptr<client_managed_t> c, xcb_button_t
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
 	}
 
-	_ctx->grab_start(make_shared<dropdown_menu_t>(_ctx, v, button, x, y+4, 300, rect{x-10, y-10, 20, 20}), time);
+	_ctx->grab_start(make_shared<dropdown_menu_t>(this, v, button, x, y+4, 300, rect{x-10, y-10, 20, 20}), time);
 
 }
 
@@ -1132,7 +1134,7 @@ void notebook_t::_mouse_over_set() {
 		pos.h = 256;
 
 		if(std::get<1>(*_mouse_over.tab).lock() != _selected) {
-			tooltips = make_shared<renderable_thumbnail_t>(_ctx, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
+			tooltips = make_shared<renderable_thumbnail_t>(this, std::get<1>(*_mouse_over.tab).lock(), pos, ANCHOR_TOP_RIGHT);
 			tooltips->set_parent(this);
 			tooltips->show();
 			tooltips->set_mouse_over(true);
@@ -1140,7 +1142,7 @@ void notebook_t::_mouse_over_set() {
 	}
 
 	if(_mouse_over.exposay != nullptr) {
-		_exposay_mouse_over = make_shared<renderable_unmanaged_gaussian_shadow_t<16>>(_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), color_t{1.0, 0.0, 0.0, 1.0});
+		_exposay_mouse_over = make_shared<renderable_unmanaged_gaussian_shadow_t<16>>(this, _exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->get_real_position(), color_t{1.0, 0.0, 0.0, 1.0});
 		_exposay_thumbnail[std::get<2>(*_mouse_over.exposay)]->set_mouse_over(true);
 	} else {
 		_exposay_mouse_over = nullptr;

@@ -41,7 +41,7 @@ public:
 	virtual region get_visible_region();
 	virtual region get_damaged();
 
-	popup_split_t(page_t * ctx, shared_ptr<split_t> split);
+	popup_split_t(tree_t * ctx, shared_ptr<split_t> split);
 	~popup_split_t();
 
 	void update_layout();

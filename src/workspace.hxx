@@ -76,7 +76,6 @@ public:
 	workspace_t(page_t * ctx, unsigned id);
 	~workspace_t() { }
 
-
 	auto get_any_viewport() const -> shared_ptr<viewport_t>;
 	void set_default_pop(shared_ptr<notebook_t> n);
 	auto default_pop() -> shared_ptr<notebook_t>;

@@ -62,8 +62,9 @@ region popup_split_t::get_damaged()  {
 }
 
 
-popup_split_t::popup_split_t(page_t * ctx, shared_ptr<split_t> split) :
-	_ctx{ctx},
+popup_split_t::popup_split_t(tree_t * ref, shared_ptr<split_t> split) :
+	tree_t{ref->_root},
+	_ctx{ref->_root->_ctx},
 	_s_base{split},
 	_current_split{split->ratio()},
 	_position{split->to_root_position(split->allocation())},

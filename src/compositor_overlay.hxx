@@ -37,7 +37,7 @@ struct compositor_overlay_t : public tree_t {
 
 public:
 
-	compositor_overlay_t(page_t * ctx, rect const & pos);
+	compositor_overlay_t(tree_t * ref, rect const & pos);
 	~compositor_overlay_t();
 
 	virtual region get_opaque_region();

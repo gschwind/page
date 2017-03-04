@@ -17,8 +17,9 @@ namespace page {
 
 using namespace std;
 
-popup_alt_tab_t::popup_alt_tab_t(page_t * ctx, list<client_managed_p> client_list, viewport_p viewport) :
-	_ctx{ctx},
+popup_alt_tab_t::popup_alt_tab_t(tree_t * ref, list<client_managed_p> client_list, viewport_p viewport) :
+	tree_t{ref->_root},
+	_ctx{ref->_root->_ctx},
 	_selected{},
 	_is_durty{true},
 	_exposed{true},
@@ -111,7 +112,7 @@ void popup_alt_tab_t::_reconfigure() {
 
 		entry.title = c->title();
 		entry.icon = make_shared<icon64>(c.get());
-		entry._thumbnail = make_shared<renderable_thumbnail_t>(_ctx, c, pos, ANCHOR_CENTER);
+		entry._thumbnail = make_shared<renderable_thumbnail_t>(this, c, pos, ANCHOR_CENTER);
 		++i;
 	}
 

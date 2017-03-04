@@ -25,7 +25,7 @@ class renderable_fadeout_pixmap_t : public renderable_pixmap_t {
 	double _alpha;
 
 public:
-	renderable_fadeout_pixmap_t(page_t * ctx, shared_ptr<pixmap_t> s,
+	renderable_fadeout_pixmap_t(tree_t * ref, shared_ptr<pixmap_t> s,
 			int x, int y);
 	virtual ~renderable_fadeout_pixmap_t();
 	virtual void render(cairo_t * cr, region const & area);

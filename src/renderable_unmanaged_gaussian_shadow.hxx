@@ -43,8 +43,8 @@ class renderable_unmanaged_gaussian_shadow_t : public tree_t {
 
 public:
 
-	renderable_unmanaged_gaussian_shadow_t(rect r, color_t c) :
-			_r(r), _color{c} {
+	renderable_unmanaged_gaussian_shadow_t(tree_t * ref, rect r, color_t c) :
+		tree_t{ref->_root}, _r(r), _color{c} {
 
 		if(surf[0] == nullptr) {
 

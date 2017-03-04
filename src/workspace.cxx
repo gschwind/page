@@ -21,6 +21,7 @@ using namespace std;
 time64_t const workspace_t::_switch_duration{0.5};
 
 workspace_t::workspace_t(page_t * ctx, unsigned id) :
+	tree_t{this},
 	_ctx{ctx},
 	//_allocation{},
 	_default_pop{},
@@ -30,17 +31,16 @@ workspace_t::workspace_t(page_t * ctx, unsigned id) :
 	_switch_renderable{nullptr},
 	_switch_direction{WORKSPACE_SWITCH_LEFT}
 {
-	set_root(this);
 
 	_stack_is_locked = true;
 
-	_viewport_layer = make_shared<tree_t>();
-	_floating_layer = make_shared<tree_t>();
-	_fullscreen_layer = make_shared<tree_t>();
-	_tooltips_layer = make_shared<tree_t>();
-	_notification_layer = make_shared<tree_t>();
-	_overlays = make_shared<tree_t>();
-	_unknown_layer = make_shared<tree_t>();
+	_viewport_layer = make_shared<tree_t>(this);
+	_floating_layer = make_shared<tree_t>(this);
+	_fullscreen_layer = make_shared<tree_t>(this);
+	_tooltips_layer = make_shared<tree_t>(this);
+	_notification_layer = make_shared<tree_t>(this);
+	_overlays = make_shared<tree_t>(this);
+	_unknown_layer = make_shared<tree_t>(this);
 
 	push_back(_viewport_layer);
 	push_back(_floating_layer);
@@ -244,7 +244,7 @@ void workspace_t::start_switch(workspace_switch_direction_e direction) {
 	_switch_start_time.update_to_current_time();
 	//_switch_screenshot = _ctx->cmp()->create_screenshot();
 	_switch_screenshot = _ctx->theme()->workspace_switch_popup(_name);
-	_switch_renderable = make_shared<renderable_pixmap_t>(_ctx,
+	_switch_renderable = make_shared<renderable_pixmap_t>(this,
 			_switch_screenshot,
 			(_ctx->left_most_border() - _switch_screenshot->witdh()) / 2.0,
 			_ctx->top_most_border());

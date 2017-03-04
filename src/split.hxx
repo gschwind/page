@@ -45,7 +45,7 @@ class split_t : public page_component_t {
 	shared_ptr<split_t> shared_from_this();
 
 public:
-	split_t(page_t * ctx, split_type_e type);
+	split_t(tree_t * ref, split_type_e type);
 	~split_t();
 
 	/* access to stuff */

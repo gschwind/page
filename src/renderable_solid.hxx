@@ -24,7 +24,7 @@ class renderable_solid_t : public tree_t {
 
 public:
 
-	renderable_solid_t(color_t color, rect loc, region damaged);
+	renderable_solid_t(tree_t * ref, color_t color, rect loc, region damaged);
 	virtual ~renderable_solid_t();
 	virtual void render(cairo_t * cr, region const & area);
 	virtual region get_opaque_region();

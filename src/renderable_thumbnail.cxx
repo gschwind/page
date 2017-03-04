@@ -21,11 +21,13 @@
 #include "renderable_thumbnail.hxx"
 
 #include "page.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
-renderable_thumbnail_t::renderable_thumbnail_t(page_t * ctx, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
-	_ctx{ctx},
+renderable_thumbnail_t::renderable_thumbnail_t(tree_t * ref, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
+	tree_t{ref->_root},
+	_ctx{ref->_root->_ctx},
 	_c{c},
 	_title_width{0},
 	_is_mouse_over{false},
