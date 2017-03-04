@@ -3072,7 +3072,7 @@ void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
 		auto pix = theme()->workspace_switch_popup(new_workspace->name());
 		auto loc = v->allocation();
 		auto rnd = make_shared<renderable_fadeout_pixmap_t>(this, pix, loc.x + (loc.w-pix->witdh())/2.0, loc.y + (loc.h-pix->height())/2.0);
-		overlay_add(rnd);
+		new_workspace->add_overlay(rnd);
 		rnd->show();
 	}
 
