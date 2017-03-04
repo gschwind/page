@@ -19,6 +19,7 @@ page_root_t::page_root_t(page_t * ctx) :
 		_ctx{ctx},
 		_current_workspace{0}
 {
+	_stack_is_locked = true;
 
 	below = make_shared<tree_t>();
 	root_subclients = make_shared<tree_t>();
