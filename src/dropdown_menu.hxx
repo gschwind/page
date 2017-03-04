@@ -18,11 +18,8 @@
 #include <memory>
 #include <vector>
 
-#include "utils.hxx"
-#include "renderable.hxx"
-#include "box.hxx"
 #include "region.hxx"
-#include "icon_handler.hxx"
+#include "page-types.hxx"
 #include "theme.hxx"
 
 namespace page {

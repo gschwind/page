@@ -30,6 +30,8 @@ workspace_t::workspace_t(page_t * ctx, unsigned id) :
 	_switch_renderable{nullptr},
 	_switch_direction{WORKSPACE_SWITCH_LEFT}
 {
+	set_root(this);
+
 	_stack_is_locked = true;
 
 	_viewport_layer = make_shared<tree_t>();

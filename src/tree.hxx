@@ -14,6 +14,7 @@
 #include <iostream>
 #include <map>
 
+#include "page-types.hxx"
 #include "utils.hxx"
 #include "renderable.hxx"
 #include "time.hxx"
@@ -79,6 +80,7 @@ protected:
 		return xformat("%c(%ld) #%016lx #%016lx", c, shared_from_this().use_count(), _parent, (uintptr_t) this);
 	}
 
+	workspace_t * _root;
 	/**
 	 * Parent must exist or beeing NULL, when a node is destroyed, he must
 	 * clear children _parent.
@@ -97,6 +99,7 @@ private:
 	tree_t & operator=(tree_t const &);
 
 public:
+	void set_root(workspace_t * root);
 	void set_parent(tree_t * parent);
 	void clear_parent();
 

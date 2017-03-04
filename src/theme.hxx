@@ -17,7 +17,6 @@
 #include "color.hxx"
 
 #include "leak_checker.hxx"
-#include "icon_handler.hxx"
 
 #include "theme_split.hxx"
 #include "theme_managed_window.hxx"

@@ -9,12 +9,7 @@
 #define SRC_PAGE_TYPES_HXX_
 
 #include <typeinfo>
-
-#include "tree.hxx"
-#include "display.hxx"
-#include "compositor.hxx"
-#include "theme_split.hxx"
-#include "keymap.hxx"
+#include <xcb/xcb.h>
 
 namespace page {
 
@@ -30,6 +25,8 @@ class client_proxy_t;
 class client_view_t;
 class workspace_t;
 class mainloop_t;
+
+class pixmap_t;
 
 
 struct grab_handler_t {

@@ -10,6 +10,8 @@
 #ifndef THEME_SPLIT_HXX_
 #define THEME_SPLIT_HXX_
 
+#include "box.hxx"
+
 namespace page {
 
 enum split_type_e {
