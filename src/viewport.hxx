@@ -32,8 +32,6 @@ class viewport_t: public page_component_t {
 			|XCB_EVENT_MASK_BUTTON_MOTION
 			|XCB_EVENT_MASK_POINTER_MOTION;
 
-	page_t * _ctx;
-
 	region _damaged;
 
 	xcb_window_t _win;
@@ -68,7 +66,7 @@ class viewport_t: public page_component_t {
 
 public:
 
-	viewport_t(page_t * ctx, rect const & area);
+	viewport_t(rect const & area);
 	virtual ~viewport_t();
 
 	auto raw_area() const -> rect const &;

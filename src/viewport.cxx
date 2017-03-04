@@ -13,13 +13,13 @@
 #include "page.hxx"
 #include "notebook.hxx"
 #include "viewport.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
 using namespace std;
 
-viewport_t::viewport_t(page_t * ctx, rect const & area) :
-		_ctx{ctx},
+viewport_t::viewport_t(rect const & area) :
 		_raw_aera{area},
 		_effective_area{area},
 		_is_durty{true},
@@ -31,7 +31,7 @@ viewport_t::viewport_t(page_t * ctx, rect const & area) :
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
 
-	_subtree = make_shared<notebook_t>(_ctx);
+	_subtree = make_shared<notebook_t>(_root->_ctx);
 	push_back(_subtree);
 	_subtree->set_allocation(_page_area);
 
@@ -39,7 +39,7 @@ viewport_t::viewport_t(page_t * ctx, rect const & area) :
 
 viewport_t::~viewport_t() {
 	destroy_renderable();
-	xcb_destroy_window(_ctx->dpy()->xcb(), _win);
+	xcb_destroy_window(_root->_ctx->dpy()->xcb(), _win);
 	_win = XCB_NONE;
 }
 
@@ -112,13 +112,13 @@ void viewport_t::hide() {
 	}
 
 	_is_visible = false;
-	_ctx->dpy()->unmap(_win);
+	_root->_ctx->dpy()->unmap(_win);
 	destroy_renderable();
 }
 
 void viewport_t::show() {
 	_is_visible = true;
-	_ctx->dpy()->map(_win);
+	_root->_ctx->dpy()->map(_win);
 	update_renderable();
 	if(_subtree != nullptr) {
 		_subtree->show();
@@ -130,30 +130,30 @@ void viewport_t::destroy_renderable() {
 }
 
 void viewport_t::update_renderable() {
-	if(_ctx->cmp() != nullptr) {
-		_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _page_area.w, _page_area.h);
+	if(_root->_ctx->cmp() != nullptr) {
+		_back_surf = make_shared<pixmap_t>(_root->_ctx->dpy(), PIXMAP_RGB, _page_area.w, _page_area.h);
 	}
-	_ctx->dpy()->move_resize(_win, _effective_area);
+	_root->_ctx->dpy()->move_resize(_win, _effective_area);
 }
 
 void viewport_t::create_window() {
-	_win = xcb_generate_id(_ctx->dpy()->xcb());
+	_win = xcb_generate_id(_root->_ctx->dpy()->xcb());
 
-	xcb_visualid_t visual = _ctx->dpy()->root_visual()->visual_id;
-	int depth = _ctx->dpy()->root_depth();
+	xcb_visualid_t visual = _root->_ctx->dpy()->root_visual()->visual_id;
+	int depth = _root->_ctx->dpy()->root_depth();
 
 	/** if visual is 32 bits, this values are mandatory **/
-	xcb_colormap_t cmap = xcb_generate_id(_ctx->dpy()->xcb());
-	xcb_create_colormap(_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _ctx->dpy()->root(), visual);
+	xcb_colormap_t cmap = xcb_generate_id(_root->_ctx->dpy()->xcb());
+	xcb_create_colormap(_root->_ctx->dpy()->xcb(), XCB_COLORMAP_ALLOC_NONE, cmap, _root->_ctx->dpy()->root(), visual);
 
 	uint32_t value_mask = 0;
 	uint32_t value[5];
 
 	value_mask |= XCB_CW_BACK_PIXEL;
-	value[0] = _ctx->dpy()->xcb_screen()->black_pixel;
+	value[0] = _root->_ctx->dpy()->xcb_screen()->black_pixel;
 
 	value_mask |= XCB_CW_BORDER_PIXEL;
-	value[1] = _ctx->dpy()->xcb_screen()->black_pixel;
+	value[1] = _root->_ctx->dpy()->xcb_screen()->black_pixel;
 
 	value_mask |= XCB_CW_OVERRIDE_REDIRECT;
 	value[2] = True;
@@ -164,17 +164,17 @@ void viewport_t::create_window() {
 	value_mask |= XCB_CW_COLORMAP;
 	value[4] = cmap;
 
-	_win = xcb_generate_id(_ctx->dpy()->xcb());
-	xcb_create_window(_ctx->dpy()->xcb(), depth, _win, _ctx->dpy()->root(), _effective_area.x, _effective_area.y, _effective_area.w, _effective_area.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, value_mask, value);
+	_win = xcb_generate_id(_root->_ctx->dpy()->xcb());
+	xcb_create_window(_root->_ctx->dpy()->xcb(), depth, _win, _root->_ctx->dpy()->root(), _effective_area.x, _effective_area.y, _effective_area.w, _effective_area.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, value_mask, value);
 
-	_ctx->dpy()->set_window_cursor(_win, _ctx->dpy()->xc_left_ptr);
+	_root->_ctx->dpy()->set_window_cursor(_win, _root->_ctx->dpy()->xc_left_ptr);
 
 	/**
 	 * This grab will freeze input for all client, all mouse button, until
 	 * we choose what to do with them with XAllowEvents. we can choose to keep
 	 * grabbing events or release event and allow further processing by other clients.
 	 **/
-	xcb_grab_button(_ctx->dpy()->xcb(), false, _win,
+	xcb_grab_button(_root->_ctx->dpy()->xcb(), false, _win,
 			DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, // synchronous pointer grab will freeze the cursor until action is made.
 			XCB_GRAB_MODE_ASYNC,
@@ -220,7 +220,7 @@ void viewport_t::trigger_redraw() {
 	tree_t::trigger_redraw();
 	_redraw_back_buffer();
 
-	if(_exposed and _ctx->cmp() == nullptr) {
+	if(_exposed and _root->_ctx->cmp() == nullptr) {
 		_exposed = false;
 		paint_expose();
 	}
@@ -248,7 +248,7 @@ void viewport_t::paint_expose() {
 	if(not _is_visible)
 		return;
 
-	cairo_surface_t * surf = cairo_xcb_surface_create(_ctx->dpy()->xcb(), _win, _ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
+	cairo_surface_t * surf = cairo_xcb_surface_create(_root->_ctx->dpy()->xcb(), _win, _root->_ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
 	cairo_t * cr = cairo_create(surf);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(), 0.0, 0.0);

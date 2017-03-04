@@ -2405,7 +2405,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[i];
 				vp->set_raw_area(viewport_allocation[i]);
 			} else {
-				vp = make_shared<viewport_t>(this, viewport_allocation[i]);
+				vp = make_shared<viewport_t>(viewport_allocation[i]);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
@@ -2419,7 +2419,7 @@ void page_t::update_viewport_layout() {
 				vp = old_layout[0];
 				vp->set_raw_area(area);
 			} else {
-				vp = make_shared<viewport_t>(this, area);
+				vp = make_shared<viewport_t>(area);
 			}
 			compute_viewport_allocation(d, vp);
 			new_layout.push_back(vp);
