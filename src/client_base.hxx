@@ -37,8 +37,8 @@ using card32 = long;
  * client_base_t handle all foreign windows, it's the base of
  * client_managed_t and client_not_managed_t.
  **/
-class client_base_t : public tree_t {
-protected:
+struct client_base_t : public tree_t {
+
 	page_t * _ctx;
 
 	/* handle properties of client */
@@ -47,9 +47,7 @@ protected:
 	/** short cut **/
 	auto A(atom_e atom) -> xcb_atom_t;
 
-public:
-
-	client_base_t(client_base_t const & c);
+	client_base_t(client_base_t const & c) = delete;
 	client_base_t(page_t * ctx, xcb_window_t w);
 
 	virtual ~client_base_t();

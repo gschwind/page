@@ -33,7 +33,7 @@ enum managed_window_type_e {
 	MANAGED_DOCK
 };
 
-class client_managed_t : public client_base_t {
+struct client_managed_t : public client_base_t {
 
 	static long const MANAGED_BASE_WINDOW_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 	static long const MANAGED_DECO_WINDOW_EVENT_MASK = XCB_EVENT_MASK_EXPOSURE;
@@ -130,8 +130,8 @@ class client_managed_t : public client_base_t {
 	mutable region _damage_cache;
 
 	/* private to avoid copy */
-	client_managed_t(client_managed_t const &);
-	client_managed_t & operator=(client_managed_t const &);
+	client_managed_t(client_managed_t const &) = delete;
+	client_managed_t & operator=(client_managed_t const &) = delete;
 
 	void init_managed_type(managed_window_type_e type);
 
@@ -181,8 +181,6 @@ class client_managed_t : public client_base_t {
 
 	void _update_backbuffers();
 	void _paint_exposed();
-
-public:
 
 	client_managed_t(page_t * ctx, xcb_window_t w, xcb_atom_t net_wm_type);
 	virtual ~client_managed_t();
