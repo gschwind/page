@@ -26,12 +26,8 @@
 namespace page {
 
 void popup_split_t::show() {
-	_is_visible = true;
+	tree_t::show();
 	_damaged = true;
-}
-
-void popup_split_t::hide() {
-	_is_visible = false;
 }
 
 rect const & popup_split_t::position() {

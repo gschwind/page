@@ -33,9 +33,7 @@ struct popup_split_t : public tree_t {
 	xcb_window_t _wid;
 
 public:
-	void show();
-
-	void hide();
+	void show() override;
 
 	rect const & position();
 
