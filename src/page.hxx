@@ -107,6 +107,8 @@ class page_t : public connectable_t {
 	shared_ptr<page_root_t> _root;
 	shared_ptr<compositor_overlay_t> _fps_overlay;
 
+	rect _root_position;
+
 	unsigned int _current_workspace;
 	vector<shared_ptr<workspace_t>> _workspace_list;
 

@@ -22,8 +22,6 @@ class page_root_t : public tree_t {
 
 	page_t * _ctx;
 
-	rect _root_position;
-
 	/** store the order of last shown workspace **/
 	shared_ptr<tree_t> _workspace_stack;
 

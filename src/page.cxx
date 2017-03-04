@@ -819,7 +819,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	/** damage corresponding area **/
 	if(e->event == _dpy->root()) {
-		add_global_damage(_root->_root_position);
+		add_global_damage(_root_position);
 	}
 
 }
@@ -858,7 +858,7 @@ void page_t::process_map_notify_event(xcb_generic_event_t const * _e) {
 		return;
 	onmap(e->window);
 
-	add_global_damage(_root->_root_position);
+	add_global_damage(_root_position);
 
 }
 
@@ -1670,10 +1670,10 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 
 	rect const raw_area = v->raw_area();
 
-	int margin_left = _root->_root_position.x + raw_area.x;
-	int margin_top = _root->_root_position.y + raw_area.y;
-	int margin_right = _root->_root_position.w - raw_area.x - raw_area.w;
-	int margin_bottom = _root->_root_position.h - raw_area.y - raw_area.h;
+	int margin_left = _root_position.x + raw_area.x;
+	int margin_top = _root_position.y + raw_area.y;
+	int margin_right = _root_position.w - raw_area.x - raw_area.w;
+	int margin_bottom = _root_position.h - raw_area.y - raw_area.h;
 
 	auto children = filter_class<client_base_t>(d->get_all_children());
 	for(auto j: children) {
@@ -1695,23 +1695,23 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
-					ps[PS_TOP_START_X] = _root->_root_position.x;
-					ps[PS_TOP_END_X] = _root->_root_position.x + _root->_root_position.w;
+					ps[PS_TOP_START_X] = _root_position.x;
+					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
 				}
 
 				if(ps[PS_BOTTOM] > 0) {
-					ps[PS_BOTTOM_START_X] = _root->_root_position.x;
-					ps[PS_BOTTOM_END_X] = _root->_root_position.x + _root->_root_position.w;
+					ps[PS_BOTTOM_START_X] = _root_position.x;
+					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
 				}
 
 				if(ps[PS_LEFT] > 0) {
-					ps[PS_LEFT_START_Y] = _root->_root_position.y;
-					ps[PS_LEFT_END_Y] = _root->_root_position.y + _root->_root_position.h;
+					ps[PS_LEFT_START_Y] = _root_position.y;
+					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
 				}
 
 				if(ps[PS_RIGHT] > 0) {
-					ps[PS_RIGHT_START_Y] = _root->_root_position.y;
-					ps[PS_RIGHT_END_Y] = _root->_root_position.y + _root->_root_position.h;
+					ps[PS_RIGHT_START_Y] = _root_position.y;
+					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
 				}
 
 				has_strut = true;
@@ -1732,7 +1732,7 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 
 			if (ps[PS_RIGHT] > 0) {
 				/* check if raw area intersect current viewport */
-				rect b(_root->_root_position.w - ps[PS_RIGHT],
+				rect b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
 				rect x = raw_area & b;
@@ -1754,7 +1754,7 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 			if (ps[PS_BOTTOM] > 0) {
 				/* check if raw area intersect current viewport */
 				rect b(ps[PS_BOTTOM_START_X],
-						_root->_root_position.h - ps[PS_BOTTOM],
+						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
 						ps[PS_BOTTOM]);
 				rect x = raw_area & b;
@@ -1768,9 +1768,9 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 	rect final_size;
 
 	final_size.x = margin_left;
-	final_size.w = _root->_root_position.w - margin_right - margin_left;
+	final_size.w = _root_position.w - margin_right - margin_left;
 	final_size.y = margin_top;
-	final_size.h = _root->_root_position.h - margin_bottom - margin_top;
+	final_size.h = _root_position.h - margin_bottom - margin_top;
 
 	v->set_allocation(final_size);
 
@@ -1821,23 +1821,23 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 				std::copy(j->net_wm_strut()->begin(), j->net_wm_strut()->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
-					ps[PS_TOP_START_X] = _root->_root_position.x;
-					ps[PS_TOP_END_X] = _root->_root_position.x + _root->_root_position.w;
+					ps[PS_TOP_START_X] = _root_position.x;
+					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
 				}
 
 				if(ps[PS_BOTTOM] > 0) {
-					ps[PS_BOTTOM_START_X] = _root->_root_position.x;
-					ps[PS_BOTTOM_END_X] = _root->_root_position.x + _root->_root_position.w;
+					ps[PS_BOTTOM_START_X] = _root_position.x;
+					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
 				}
 
 				if(ps[PS_LEFT] > 0) {
-					ps[PS_LEFT_START_Y] = _root->_root_position.y;
-					ps[PS_LEFT_END_Y] = _root->_root_position.y + _root->_root_position.h;
+					ps[PS_LEFT_START_Y] = _root_position.y;
+					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
 				}
 
 				if(ps[PS_RIGHT] > 0) {
-					ps[PS_RIGHT_START_Y] = _root->_root_position.y;
-					ps[PS_RIGHT_END_Y] = _root->_root_position.y + _root->_root_position.h;
+					ps[PS_RIGHT_START_Y] = _root_position.y;
+					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
 				}
 
 				has_strut = true;
@@ -1859,7 +1859,7 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 
 			if (ps[PS_RIGHT] > 0) {
 				rect pos;
-				pos.x = _root->_root_position.w - ps[PS_RIGHT];
+				pos.x = _root_position.w - ps[PS_RIGHT];
 				pos.y = ps[PS_RIGHT_START_Y];
 				pos.w = ps[PS_RIGHT];
 				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
@@ -1882,7 +1882,7 @@ void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
 			if (ps[PS_BOTTOM] > 0) {
 				rect pos;
 				pos.x = ps[PS_BOTTOM_START_X];
-				pos.y = _root->_root_position.h - ps[PS_BOTTOM];
+				pos.y = _root_position.h - ps[PS_BOTTOM];
 				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
 				pos.h = ps[PS_BOTTOM];
 				j->set_floating_wished_position(pos);
@@ -2336,8 +2336,8 @@ void page_t::update_viewport_layout() {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
 
-	_root->_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
-	set_workspace_geometry(_root->_root_position.w, _root->_root_position.h);
+	_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
+	set_workspace_geometry(_root_position.w, _root_position.h);
 
 	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
 
@@ -2383,7 +2383,7 @@ void page_t::update_viewport_layout() {
 	}
 
 	for(auto d: _workspace_list) {
-		//d->set_allocation(_root->_root_position);
+		//d->set_allocation(_root_position);
 		/** get old layout to recycle old viewport, and keep unchanged outputs **/
 		vector<shared_ptr<viewport_t>> old_layout = d->get_viewport_map();
 		/** store the newer layout, to be able to cleanup obsolete viewports **/
@@ -2406,7 +2406,7 @@ void page_t::update_viewport_layout() {
 
 		/** if no layout is found fallback to on screen **/
 		if(new_layout.size() < 1) {
-			rect area{_root->_root_position};
+			rect area{_root_position};
 			shared_ptr<viewport_t> vp;
 			if(0 < old_layout.size()) {
 				vp = old_layout[0];
@@ -2482,7 +2482,7 @@ void page_t::update_viewport_layout() {
 			CARDINAL, 32, &viewport[0], _workspace_list.size()*2);
 
 	/* define workspace geometry */
-	set_workspace_geometry(_root->_root_position.w, _root->_root_position.h);
+	set_workspace_geometry(_root_position.w, _root_position.h);
 
 	update_workarea();
 	reconfigure_docks(get_current_workspace());
@@ -2673,10 +2673,10 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		XSizeHints const * size_hints = mw->wm_normal_hints();
 		if ((size_hints->flags & PMaxSize)
 				and (size_hints->flags & PMinSize)) {
-			if (size_hints->min_width == _root->_root_position.w
-					and size_hints->min_height == _root->_root_position.h
-					and size_hints->max_width == _root->_root_position.w
-					and size_hints->max_height == _root->_root_position.h) {
+			if (size_hints->min_width == _root_position.w
+					and size_hints->min_height == _root_position.h
+					and size_hints->max_width == _root_position.w
+					and size_hints->max_height == _root_position.h) {
 				mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 			}
 		}
@@ -3757,7 +3757,7 @@ void page_t::schedule_repaint() {
 }
 
 void page_t::damage_all() {
-	add_global_damage(_root->_root_position);
+	add_global_damage(_root_position);
 	schedule_repaint();
 }
 
