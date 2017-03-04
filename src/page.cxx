@@ -63,6 +63,7 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 page_t::page_t(int argc, char ** argv)
 {
 
+	_current_workspace = 0;
 	_grab_handler = nullptr;
 	_need_repaint = true;
 	_scheduled_repaint = false;
@@ -612,13 +613,13 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_right_workspace) {
-		unsigned new_workspace = ((_root->_current_workspace + _workspace_list.size()) + 1) % _workspace_list.size();
+		unsigned new_workspace = ((_current_workspace + _workspace_list.size()) + 1) % _workspace_list.size();
 		switch_to_workspace(new_workspace, e->time);
 		return;
 	}
 
 	if (key == bind_left_workspace) {
-		unsigned new_workspace = ((_root->_current_workspace + _workspace_list.size()) - 1) % _workspace_list.size();
+		unsigned new_workspace = ((_current_workspace + _workspace_list.size()) - 1) % _workspace_list.size();
 		switch_to_workspace(new_workspace, e->time);
 		return;
 	}
@@ -1256,7 +1257,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 			}
 		}
 	} else if (e->type == A(_NET_CURRENT_DESKTOP)) {
-		if(e->data.data32[0] >= 0 and e->data.data32[0] < _workspace_list.size() and e->data.data32[0] != _root->_current_workspace) {
+		if(e->data.data32[0] >= 0 and e->data.data32[0] < _workspace_list.size() and e->data.data32[0] != _current_workspace) {
 			switch_to_workspace(e->data.data32[0], e->data.data32[1]);
 		}
 	} else if (e->type == A(_NET_NUMBER_OF_DESKTOPS)) {
@@ -2659,7 +2660,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 			mw->show();
 		} else {
 			printf("final workspace = %u\n", final_workspace);
-			if(_root->_current_workspace == final_workspace) {
+			if(_current_workspace == final_workspace) {
 				mw->show();
 			} else {
 				mw->hide();
@@ -3004,7 +3005,7 @@ void page_t::update_keymap() {
 /** debug function that try to print the state of page in stdout **/
 void page_t::print_state() const {
 	_root->print_tree(0);
-	cout << "_current_workspace = " << _root->_current_workspace << endl;
+	cout << "_current_workspace = " << _current_workspace << endl;
 
 	cout << "clients list:" << endl;
 	for(auto c: filter_class<client_base_t>(_root->get_all_children())) {
@@ -3016,28 +3017,28 @@ void page_t::print_state() const {
 
 void page_t::update_current_workspace() const {
 	/* set current workspace */
-	uint32_t current_workspace = _root->_current_workspace;
+	uint32_t current_workspace = _current_workspace;
 	_dpy->change_property(_dpy->root(), _NET_CURRENT_DESKTOP, CARDINAL,
 			32, &current_workspace, 1);
 }
 
 void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 	assert(workspace < _workspace_list.size());
-	if (workspace != _root->_current_workspace and workspace != ALL_DESKTOP) {
+	if (workspace != _current_workspace and workspace != ALL_DESKTOP) {
 		std::cout << "switch to workspace #" << workspace << std::endl;
 
 		start_switch_to_workspace_animation(workspace);
 
-		auto stiky_list = get_sticky_client_managed(_workspace_list[_root->_current_workspace]);
+		auto stiky_list = get_sticky_client_managed(_workspace_list[_current_workspace]);
 
 		/* hide the current workspace */
-		_workspace_list[_root->_current_workspace]->hide();
-		_root->_current_workspace = workspace;
+		_workspace_list[_current_workspace]->hide();
+		_current_workspace = workspace;
 
 		/* put the new workspace ontop of others and show it */
-		_root->_workspace_stack->remove(_workspace_list[_root->_current_workspace]);
-		_root->_workspace_stack->push_back(_workspace_list[_root->_current_workspace]);
-		_workspace_list[_root->_current_workspace]->show();
+		_root->_workspace_stack->remove(_workspace_list[_current_workspace]);
+		_root->_workspace_stack->push_back(_workspace_list[_current_workspace]);
+		_workspace_list[_current_workspace]->show();
 
 		/** move sticky to current workspace **/
 		for(auto s : stiky_list) {
@@ -3083,13 +3084,13 @@ void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
 void page_t::update_workspace_visibility() {
 	/** hide only workspace that must be hidden first **/
 	for(unsigned k = 0; k < _workspace_list.size(); ++k) {
-		if(k != _root->_current_workspace) {
+		if(k != _current_workspace) {
 			_workspace_list[k]->hide();
 		}
 	}
 
 	/** and show the workspace that have to be show **/
-	_workspace_list[_root->_current_workspace]->show();
+	_workspace_list[_current_workspace]->show();
 
 	/** hide viewport with fullscreen window above **/
 	for(auto & i: _fullscreen_client_to_viewport) {
@@ -3523,7 +3524,7 @@ unsigned int page_t::find_current_workspace(shared_ptr<client_base_t> c) {
 	auto d = find_workspace_of(c);
 	if(d != nullptr)
 		return d->id();
-	return _root->_current_workspace;
+	return _current_workspace;
 }
 
 void page_t::process_pending_events() {
@@ -3584,7 +3585,7 @@ void page_t::add_global_damage(region const & r) {
 }
 
 shared_ptr<workspace_t> const & page_t::get_current_workspace() const {
-	return _workspace_list[_root->_current_workspace];
+	return _workspace_list[_current_workspace];
 }
 
 shared_ptr<workspace_t> const & page_t::get_workspace(int id) const {

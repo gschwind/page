@@ -16,8 +16,7 @@ namespace page {
 using namespace std;
 
 page_root_t::page_root_t(page_t * ctx) :
-		_ctx{ctx},
-		_current_workspace{0}
+		_ctx{ctx}
 {
 	_stack_is_locked = true;
 
