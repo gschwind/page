@@ -15,6 +15,7 @@
 #include "renderable.hxx"
 #include "icon_handler.hxx"
 #include "page-types.hxx"
+#include "tree.hxx"
 
 namespace page {
 
@@ -32,7 +33,7 @@ protected:
 	xcb_window_t _wid;
 
 public:
-	popup_notebook0_t(tree_t * ctx);
+	popup_notebook0_t(tree_t * ref);
 
 	void _create_window();
 	void move_resize(rect const & area);
@@ -46,8 +47,7 @@ public:
 	void hide();
 	virtual void render(cairo_t * cr, region const & area);
 	void _paint_exposed();
-	xcb_window_t get_xid() const;
-	xcb_window_t get_parent_xid() const;
+	xcb_window_t get_toplevel_xid() const;
 	void expose(xcb_expose_event_t const * ev);
 	void trigger_redraw();
 	void render_finished();

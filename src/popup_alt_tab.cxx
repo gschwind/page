@@ -12,12 +12,13 @@
 #include "page.hxx"
 #include "client_managed.hxx"
 #include "workspace.hxx"
+#include "view.hxx"
 
 namespace page {
 
 using namespace std;
 
-popup_alt_tab_t::popup_alt_tab_t(tree_t * ref, list<client_managed_p> client_list, viewport_p viewport) :
+popup_alt_tab_t::popup_alt_tab_t(tree_t * ref, list<view_p> client_list, viewport_p viewport) :
 	tree_t{ref->_root},
 	_ctx{ref->_root->_ctx},
 	_selected{},
@@ -35,7 +36,6 @@ popup_alt_tab_t::popup_alt_tab_t(tree_t * ref, list<client_managed_p> client_lis
 
 	_create_composite_window();
 	_ctx->dpy()->map(_wid);
-
 
 	for(auto const & c: client_list) {
 		cycle_window_entry_t entry;
@@ -61,7 +61,7 @@ void popup_alt_tab_t::_reconfigure() {
 	int nx = 1;
 	int ny = 1;
 
-	while(true) {
+	for(;;) {
 		int width = _position_intern.w/nx;
 
 
@@ -110,8 +110,8 @@ void popup_alt_tab_t::_reconfigure() {
 
 		rect pos{x*width+20+_position_intern.x+x_offset, y*height+20+_position_intern.y, width-40, height-40};
 
-		entry.title = c->title();
-		entry.icon = make_shared<icon64>(c.get());
+		entry.title = c->_client->title();
+		entry.icon = make_shared<icon64>(c->_client.get());
 		entry._thumbnail = make_shared<renderable_thumbnail_t>(this, c, pos, ANCHOR_CENTER);
 		++i;
 	}
@@ -120,6 +120,7 @@ void popup_alt_tab_t::_reconfigure() {
 
 popup_alt_tab_t::~popup_alt_tab_t() {
 	xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+	_root->_ctx->_page_windows.erase(_wid);
 	_client_list.clear();
 	_selected = _client_list.end();
 }
@@ -132,36 +133,30 @@ void popup_alt_tab_t::_create_composite_window() {
 		value_mask |= XCB_CW_EVENT_MASK;
 		value[1] = XCB_EVENT_MASK_BUTTON_MOTION | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE;
 		_wid = xcb_generate_id(_ctx->dpy()->xcb());
+		_root->_ctx->_page_windows.insert(_wid);
 		xcb_create_window(_ctx->dpy()->xcb(), 0, _wid, _ctx->dpy()->root(),
 				_position_intern.x, _position_intern.y, _position_intern.w, _position_intern.h, 0,
 				XCB_WINDOW_CLASS_INPUT_ONLY, _ctx->dpy()->root_visual()->visual_id,
 				value_mask, value);
 }
 
-void popup_alt_tab_t::move(int x, int y) {
-//	_ctx->add_global_damage(_position);
-//	_position.x = x;
-//	_position.y = y;
-//	_ctx->dpy()->move_resize(_wid, _position);
-//	_ctx->add_global_damage(_position);
-}
-
 void popup_alt_tab_t::show() {
-	_is_visible = true;
+	tree_t::show();
 	_ctx->dpy()->map(_wid);
 }
 
 void popup_alt_tab_t::_init() {
+	tree_t::clear();
 	int n = 0;
 	for (auto & c : _client_list) {
-		c._thumbnail->set_parent(this);
-		c._thumbnail->show();
+		push_back(c._thumbnail);
 	}
+	show();
 }
 
 void popup_alt_tab_t::hide() {
-	_is_visible = false;
 	_ctx->dpy()->unmap(_wid);
+	tree_t::hide();
 }
 
 rect const & popup_alt_tab_t::position() {
@@ -178,7 +173,7 @@ void popup_alt_tab_t::_clear_selected() {
 	_selected = _client_list.end();
 }
 
-client_managed_w popup_alt_tab_t::selected(client_managed_w wc) {
+view_w popup_alt_tab_t::selected(view_w wc) {
 
 	if(_selected == _client_list.end()) {
 		if(wc.expired())
@@ -206,9 +201,9 @@ client_managed_w popup_alt_tab_t::selected(client_managed_w wc) {
 	return selected();
 }
 
-client_managed_w popup_alt_tab_t::selected() {
+view_w popup_alt_tab_t::selected() {
 	if(_selected == _client_list.end()) {
-		return client_managed_w{};
+		return view_w{};
 	} else {
 		return _selected->client;
 	}
@@ -247,7 +242,7 @@ void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 	cairo_save(cr);
 	cairo_new_path(cr);
 	cairo_rectangle_arc_corner(cr, _position_extern, 30.0, CAIRO_CORNER_ALL);
-	cairo_path_t * path = cairo_copy_path_flat(cr);
+	auto path = cairo_copy_path_flat(cr);
 	cairo_new_path(cr);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -259,8 +254,6 @@ void popup_alt_tab_t::render(cairo_t * cr, region const & area) {
 		cairo_append_path(cr, path);
 		cairo_fill(cr);
 	}
-
-	cairo_path_destroy(path);
 	cairo_restore(cr);
 }
 
@@ -275,14 +268,8 @@ void popup_alt_tab_t::destroy_client(client_managed_t * c) {
 
 }
 
-xcb_window_t popup_alt_tab_t::get_xid() const {
+xcb_window_t popup_alt_tab_t::get_toplevel_xid() const {
 	return _wid;
-	return XCB_WINDOW_NONE;
-}
-
-xcb_window_t popup_alt_tab_t::get_parent_xid () const {
-	return _wid;
-	return XCB_WINDOW_NONE;
 }
 
 string popup_alt_tab_t::get_node_name() const {
@@ -308,12 +295,6 @@ void popup_alt_tab_t::update_layout(time64_t const time) {
 void popup_alt_tab_t::expose(xcb_expose_event_t const * ev) {
 	//if(ev->window == _wid)
 	//	_exposed = true;
-}
-
-void popup_alt_tab_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	for(auto & e: _client_list) {
-		out.push_back(e._thumbnail);
-	}
 }
 
 void popup_alt_tab_t::_select_from_mouse(int x, int y) {

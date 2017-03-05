@@ -31,16 +31,17 @@ viewport_t::viewport_t(tree_t * ref, rect const & area) :
 {
 	_page_area = rect{0, 0, _effective_area.w, _effective_area.h};
 	create_window();
-
-	_subtree = make_shared<notebook_t>(this);
+	auto n = make_shared<notebook_t>(this);
+	_subtree = static_pointer_cast<page_component_t>(n);
 	push_back(_subtree);
 	_subtree->set_allocation(_page_area);
-
 }
 
 viewport_t::~viewport_t() {
 	destroy_renderable();
 	xcb_destroy_window(_root->_ctx->dpy()->xcb(), _win);
+	_root->_ctx->_page_windows.erase(_win);
+
 	_win = XCB_NONE;
 }
 
@@ -54,6 +55,12 @@ void viewport_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_compo
 		_subtree = by;
 		push_back(_subtree);
 		_subtree->set_allocation(_page_area);
+
+		if(_is_visible)
+			_subtree->show();
+		else
+			_subtree->hide();
+
 	} else {
 		throw std::runtime_error("viewport: bad child replacement!");
 	}
@@ -93,6 +100,41 @@ void viewport_t::render_finished() {
 	_damaged.clear();
 }
 
+void viewport_t::reconfigure()
+{
+	if(not _root->is_enable())
+		return;
+
+	auto _ctx = _root->_ctx;
+	auto _dpy = _root->_ctx->dpy();
+
+	if (_is_visible) {
+		_dpy->map(_win);
+		update_renderable();
+	} else {
+		_dpy->unmap(_win);
+		destroy_renderable();
+	}
+
+}
+
+void viewport_t::on_workspace_enable()
+{
+	auto _ctx = _root->_ctx;
+	auto _dpy = _root->_ctx->dpy();
+	reconfigure();
+}
+
+void viewport_t::on_workspace_disable()
+{
+	auto _ctx = _root->_ctx;
+	auto _dpy = _root->_ctx->dpy();
+
+	_dpy->unmap(_win);
+	destroy_renderable();
+
+}
+
 rect viewport_t::allocation() const {
 	return _effective_area;
 }
@@ -101,29 +143,14 @@ rect const & viewport_t::page_area() const {
 	return _page_area;
 }
 
-void viewport_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	if(_subtree != nullptr) {
-		out.push_back(_subtree);
-	}
-}
-
 void viewport_t::hide() {
-	if(_subtree != nullptr) {
-		_subtree->hide();
-	}
-
-	_is_visible = false;
-	_root->_ctx->dpy()->unmap(_win);
-	destroy_renderable();
+	tree_t::hide();
+	reconfigure();
 }
 
 void viewport_t::show() {
-	_is_visible = true;
-	_root->_ctx->dpy()->map(_win);
-	update_renderable();
-	if(_subtree != nullptr) {
-		_subtree->show();
-	}
+	tree_t::show();
+	reconfigure();
 }
 
 void viewport_t::destroy_renderable() {
@@ -131,7 +158,7 @@ void viewport_t::destroy_renderable() {
 }
 
 void viewport_t::update_renderable() {
-	if(_root->_ctx->cmp() != nullptr) {
+	if(_root->_ctx->cmp() != nullptr and _back_surf == nullptr) {
 		_back_surf = make_shared<pixmap_t>(_root->_ctx->dpy(), PIXMAP_RGB, _page_area.w, _page_area.h);
 	}
 	_root->_ctx->dpy()->move_resize(_win, _effective_area);
@@ -167,6 +194,7 @@ void viewport_t::create_window() {
 
 	_win = xcb_generate_id(_root->_ctx->dpy()->xcb());
 	xcb_create_window(_root->_ctx->dpy()->xcb(), depth, _win, _root->_ctx->dpy()->root(), _effective_area.x, _effective_area.y, _effective_area.w, _effective_area.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, visual, value_mask, value);
+	_root->_ctx->_page_windows.insert(_win);
 
 	_root->_ctx->dpy()->set_window_cursor(_win, _root->_ctx->dpy()->xc_left_ptr);
 
@@ -196,12 +224,12 @@ void viewport_t::_redraw_back_buffer() {
 	cairo_t * cr = cairo_create(_back_surf->get_cairo_surface());
 	cairo_identity_matrix(cr);
 
-	auto splits = filter_class<split_t>(get_all_children());
+	auto splits = gather_children_root_first<split_t>();
 	for (auto x : splits) {
 		x->render_legacy(cr);
 	}
 
-	auto notebooks = filter_class<notebook_t>(get_all_children());
+	auto notebooks = gather_children_root_first<notebook_t>();
 	for (auto x : notebooks) {
 		x->render_legacy(cr);
 	}
@@ -230,6 +258,7 @@ void viewport_t::trigger_redraw() {
 
 /* mark renderable_page for redraw */
 void viewport_t::queue_redraw() {
+	_root->_ctx->schedule_repaint();
 	_is_durty = true;
 }
 
@@ -237,11 +266,7 @@ region viewport_t::get_damaged() {
 	return _damaged;
 }
 
-xcb_window_t viewport_t::get_parent_xid() const {
-	return _win;
-}
-
-xcb_window_t viewport_t::get_xid() const {
+xcb_window_t viewport_t::get_toplevel_xid() const {
 	return _win;
 }
 
@@ -287,13 +312,13 @@ void viewport_t::render(cairo_t * cr, region const & area) {
 		return;
 
 	cairo_save(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_surface(cr, _back_surf->get_cairo_surface(),
 			_effective_area.x, _effective_area.y);
 	region r = region{_effective_area} & area;
 	for (auto &i : r.rects()) {
 		cairo_clip(cr, i);
-		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _effective_area.x, _effective_area.y);
+		cairo_paint(cr);
 	}
 	cairo_restore(cr);
 }

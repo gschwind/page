@@ -28,6 +28,7 @@ tree_t::tree_t(workspace_t * root) :
 tree_t::~tree_t() {
 	for(auto t: children())
 		t->clear_parent();
+	_children.clear();
 }
 
 /**
@@ -63,6 +64,9 @@ bool tree_t::is_visible() const {
  **/
 void tree_t::hide() {
 	_is_visible = false;
+	for(auto x: _children) {
+		x->hide();
+	}
 }
 
 /**
@@ -70,6 +74,9 @@ void tree_t::hide() {
  **/
 void tree_t::show() {
 	_is_visible = true;
+	for(auto x: _children) {
+		x->show();
+	}
 }
 
 /**
@@ -95,7 +102,14 @@ void tree_t::clear()
 	_children.clear();
 }
 
-void tree_t::push_back(shared_ptr<tree_t> t)
+void tree_t::detach_myself()
+{
+	if(_parent != nullptr) {
+		_parent->remove(shared_from_this());
+	}
+}
+
+void tree_t::push_back(tree_p t)
 {
 	assert(t->parent() == nullptr);
 	_children.push_back(t);
@@ -105,7 +119,7 @@ void tree_t::push_back(shared_ptr<tree_t> t)
 	t->_root = _root;
 }
 
-void tree_t::push_front(shared_ptr<tree_t> t)
+void tree_t::push_front(tree_p t)
 {
 	assert(t->parent() == nullptr);
 	_children.push_front(t);
@@ -119,7 +133,7 @@ void tree_t::push_front(shared_ptr<tree_t> t)
 /**
  * Return direct children of this node (not recursive)
  **/
-auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void
+auto tree_t::gather_children(vector<tree_p> & out) const -> void
 {
 	out.insert(out.end(), _children.begin(), _children.end());
 }
@@ -127,8 +141,8 @@ auto tree_t::append_children(vector<shared_ptr<tree_t>> & out) const -> void
 /**
  * return the list of renderable object to draw this tree ordered and recursively
  **/
-auto tree_t::update_layout(time64_t const time) -> void {
-
+auto tree_t::update_layout(time64_t const time) -> void
+{
 	auto x = _transition.begin();
 	while(x != _transition.end()) {
 		x->second->update(time);
@@ -138,7 +152,6 @@ auto tree_t::update_layout(time64_t const time) -> void {
 			++x;
 		}
 	}
-
 }
 
 /**
@@ -151,6 +164,21 @@ void tree_t::render(cairo_t * cr, region const & area) {
 }
 
 void tree_t::render_finished() {
+
+}
+
+void tree_t::reconfigure()
+{
+
+}
+
+void tree_t::on_workspace_enable()
+{
+
+}
+
+void tree_t::on_workspace_disable()
+{
 
 }
 
@@ -197,13 +225,18 @@ void tree_t::raise(shared_ptr<tree_t> t) {
 
 }
 
-shared_ptr<workspace_t> tree_t::workspace() const
+auto tree_t::workspace() const -> shared_ptr<workspace_t>
 {
 	if(_root) {
 		return dynamic_pointer_cast<workspace_t>(_root->shared_from_this());
 	} else {
 		return nullptr;
 	}
+}
+
+auto tree_t::lookup_view_for(client_managed_p c) const -> view_p
+{
+	_root->workspace_t::lookup_view_for(c);
 }
 
 bool tree_t::button_press(xcb_button_press_event_t const * ev) {
@@ -230,15 +263,8 @@ void tree_t::trigger_redraw() {
 /**
  * return the root top level xid or XCB_WINDOW_NONE if not applicable.
  **/
-xcb_window_t tree_t::get_xid() const {
+xcb_window_t tree_t::get_toplevel_xid() const {
 	return XCB_WINDOW_NONE;
-}
-
-xcb_window_t tree_t::get_parent_xid() const {
-	if (_parent != nullptr)
-		return _parent->get_parent_xid();
-	else
-		return XCB_WINDOW_NONE;
 }
 
 rect tree_t::get_window_position() const {
@@ -268,47 +294,47 @@ void tree_t::print_tree(int level) const {
 /**
  * Short cut to children(std::vector<tree_t *> & out)
  **/
-vector<shared_ptr<tree_t>> tree_t::children() const {
-	vector<shared_ptr<tree_t>> ret;
-	append_children(ret);
-	return ret;
+auto tree_t::children() const -> vector<tree_p>
+{
+	return vector<tree_p>{_children.begin(), _children.end()};
 }
 
 /**
  * get all children recursively
  **/
-void tree_t::get_all_children_deep_first(
-		vector<shared_ptr<tree_t>> & out) const {
-	auto child = children();
-	std::reverse(child.begin(), child.end());
-	for (auto x : children()) {
+void tree_t::get_all_children_deep_first(vector<tree_p> & out) const
+{
+	for (auto const & x : reversed(_children)) {
 		x->get_all_children_deep_first(out);
 		out.push_back(x);
 	}
 }
 
-void tree_t::get_all_children_root_first(
-		vector<shared_ptr<tree_t>> & out) const {
-	for (auto x : children()) {
+void tree_t::get_all_children_root_first(vector<tree_p> & out) const
+{
+	for (auto const & x : _children) {
 		out.push_back(x);
 		x->get_all_children_root_first(out);
 	}
 }
 
-vector<shared_ptr<tree_t>> tree_t::get_all_children() const {
-	vector<shared_ptr<tree_t>> ret;
+auto tree_t::get_all_children() const  -> vector<tree_p>
+{
+	vector<tree_p> ret;
 	get_all_children_root_first(ret);
 	return ret;
 }
 
-vector<shared_ptr<tree_t>> tree_t::get_all_children_deep_first() const {
-	vector<shared_ptr<tree_t>> ret;
+auto tree_t::get_all_children_deep_first() const  -> vector<tree_p>
+{
+	vector<tree_p> ret;
 	get_all_children_deep_first(ret);
 	return ret;
 }
 
-vector<shared_ptr<tree_t>> tree_t::get_all_children_root_first() const {
-	vector<shared_ptr<tree_t>> ret;
+auto tree_t::get_all_children_root_first() const  -> vector<tree_p>
+{
+	vector<tree_p> ret;
 	get_all_children_root_first(ret);
 	return ret;
 }
@@ -349,6 +375,14 @@ void tree_t::broadcast_render_finished() {
 	_broadcast_root_first(&tree_t::render_finished);
 }
 
+void tree_t::broadcast_on_workspace_enable() {
+	_broadcast_root_first(&tree_t::on_workspace_enable);
+}
+
+void tree_t::broadcast_on_workspace_disable() {
+	_broadcast_root_first(&tree_t::on_workspace_disable);
+}
+
 void tree_t::add_transition(shared_ptr<transition_t> t) {
 	_transition[t->target()] = t;
 }
@@ -358,17 +392,17 @@ rect tree_t::to_root_position(rect const & r) const {
 			r.w, r.h };
 }
 
-auto tree_t::get_opaque_region() -> region
+__attribute__((deprecated)) auto tree_t::get_opaque_region() -> region
 {
 	return region{};
 }
 
-auto tree_t::get_visible_region() -> region
+__attribute__((deprecated)) auto tree_t::get_visible_region() -> region
 {
 	return region{};
 }
 
-auto tree_t::get_damaged() -> region
+__attribute__((deprecated)) auto tree_t::get_damaged() -> region
 {
 	return region{};
 }

@@ -139,9 +139,10 @@ xcb_window_t client_proxy_t::xid() {
 }
 
 client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
-		wm_properties_t{dpy->xcb(), dpy->_A, id},
-		_dpy{dpy}, _id{id} {
-
+	wm_properties_t{dpy->xcb(), dpy->_A, id},
+	_dpy{dpy},
+	_id{id}
+{
 	_destroyed = false;
 	_shape = nullptr;
 	_need_update_type = true;
@@ -201,7 +202,8 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 
 }
 
-client_proxy_t::~client_proxy_t() {
+client_proxy_t::~client_proxy_t()
+{
 	if(not _views.empty()) {
 		cout << "Warning: destroying client_proxy with views" << endl;
 	}
@@ -556,10 +558,12 @@ void client_proxy_t::net_wm_state_add(atom_e atom) {
 }
 
 void client_proxy_t::net_wm_state_remove(atom_e atom) {
+	auto net_wm_state = get<p_net_wm_state>();
 	auto new_net_wm_state = new list<xcb_atom_t>;
 
-	if(get<p_net_wm_state>() != nullptr) {
-		new_net_wm_state->insert(new_net_wm_state->end(), get<p_net_wm_state>()->begin(), get<p_net_wm_state>()->end());
+	if(net_wm_state != nullptr) {
+		new_net_wm_state->insert(new_net_wm_state->end(),
+				net_wm_state->begin(), net_wm_state->end());
 	}
 
 	new_net_wm_state->remove(A(atom));
@@ -590,7 +594,8 @@ void client_proxy_t::set_wm_state(int state) {
 	set<p_wm_state>(new wm_state_data_t{state, None});
 }
 
-void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
+void client_proxy_t::process_event(xcb_configure_notify_event_t const * e)
+{
 	if(_wa.override_redirect != e->override_redirect) {
 		_wa.override_redirect = e->override_redirect;
 		update_type();
@@ -607,16 +612,19 @@ void client_proxy_t::process_event(xcb_configure_notify_event_t const * e) {
 	_geometry.border_width = e->border_width;
 }
 
-rect client_proxy_t::position() const { return rect{_geometry.x, _geometry.y, _geometry.width, _geometry.height}; }
+rect client_proxy_t::position() const
+{
+	return rect{_geometry.x, _geometry.y, _geometry.width, _geometry.height};
+}
 
-client_view_t::client_view_t(shared_ptr<client_proxy_t> parent) :
+client_view_t::client_view_t(client_proxy_t * parent) :
 	_parent{parent}
 {
 	_damaged += region(0, 0, parent->_geometry.width, parent->_geometry.height);
 }
 
 auto client_view_t::get_pixmap() -> shared_ptr<pixmap_t> {
-	return _parent.lock()->get_pixmap();
+	return _parent->get_pixmap();
 }
 
 void client_view_t::clear_damaged() {
@@ -726,21 +734,6 @@ shared_ptr<pixmap_t> client_proxy_t::get_pixmap() {
 	return _pixmap;
 }
 
-auto client_proxy_t::create_view() -> client_view_t * {
-	_need_pixmap_update = true;
-	auto x = new client_view_t{shared_from_this()};
-	_views.push_back(x);
-	return x;
-}
-
-void client_proxy_t::remove_view(client_view_t * v) {
-	_views.remove(v);
-}
-
-bool client_proxy_t::_has_views() {
-	return not _views.empty();
-}
-
 void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
 
 	update_all(e->atom);
@@ -763,7 +756,6 @@ bool client_proxy_t::destroyed() {
 bool client_proxy_t::destroyed(bool x) {
 	return _destroyed = x;
 }
-
 
 }
 

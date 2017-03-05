@@ -11,6 +11,7 @@
 #define THEME_HXX_
 
 #include <typeinfo>
+#include <vector>
 
 #include <cairo.h>
 

@@ -98,12 +98,14 @@ popup_split_t::popup_split_t(tree_t * ref, shared_ptr<split_t> split) :
 
 	update_layout();
 
+	_root->_ctx->_page_windows.insert(_wid);
 	_ctx->dpy()->map(_wid);
 
 }
 
 popup_split_t::~popup_split_t() {
 	xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+	_root->_ctx->_page_windows.erase(_wid);
 }
 
 void popup_split_t::update_layout() {
@@ -246,11 +248,7 @@ void popup_split_t::_paint_exposed() {
 	cairo_surface_destroy(surf);
 }
 
-xcb_window_t popup_split_t::get_xid() const {
-	return _wid;
-}
-
-xcb_window_t popup_split_t::get_parent_xid() const {
+xcb_window_t popup_split_t::get_toplevel_xid() const {
 	return _wid;
 }
 

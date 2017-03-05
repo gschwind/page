@@ -38,18 +38,18 @@ class renderable_thumbnail_t : public tree_t {
 	rect _thumbnail_position;
 	double _ratio;
 
-	client_managed_w _c;
-	shared_ptr<client_view_t> _client_view;
+	view_w _c;
+	client_view_p _client_view;
 	theme_thumbnail_t _tt;
 	bool _is_mouse_over;
 
 	region _damaged_cache;
 
-	renderable_thumbnail_t(renderable_thumbnail_t const &);
-	renderable_thumbnail_t & operator=(renderable_thumbnail_t const &);
+	renderable_thumbnail_t(renderable_thumbnail_t const &) = delete;
+	renderable_thumbnail_t & operator=(renderable_thumbnail_t const &) = delete;
 public:
 
-	renderable_thumbnail_t(tree_t * ref, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor);
+	renderable_thumbnail_t(tree_t * ref, view_p c, rect const & target_position, thumnail_anchor_e target_anchor);
 	virtual ~renderable_thumbnail_t();
 
 	/** @return scale factor */
@@ -76,8 +76,8 @@ public:
 	void render_finished();
 
 	virtual void update_layout(time64_t const time) override;
-	void show();
-	void hide();
+	virtual void show() override;
+	virtual void hide() override;
 
 };
 

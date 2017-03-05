@@ -18,7 +18,6 @@
 #include "utils.hxx"
 #include "viewport.hxx"
 #include "client_managed.hxx"
-#include "client_not_managed.hxx"
 #include "page-types.hxx"
 #include "renderable_pixmap.hxx"
 
@@ -36,7 +35,6 @@ struct workspace_t: public tree_t {
 
 private:
 
-
 	//rect _allocation;
 	rect _workarea;
 
@@ -44,22 +42,20 @@ private:
 	string _name;
 
 	/* list of viewports in creation order, to make a sane reconfiguration */
-	vector<shared_ptr<viewport_t>> _viewport_outputs;
+	vector<viewport_p> _viewport_outputs;
 
-	shared_ptr<tree_t> _viewport_layer;
-	shared_ptr<tree_t> _floating_layer;
-	shared_ptr<tree_t> _fullscreen_layer;
-	shared_ptr<tree_t> _tooltips_layer;
-	shared_ptr<tree_t> _notification_layer;
-	shared_ptr<tree_t> _overlays;
+	tree_p _viewport_layer;
+	tree_p _floating_layer;
+	tree_p _dock_layer;
+	tree_p _fullscreen_layer;
+	tree_p _tooltips_layer;
+	tree_p _notification_layer;
+	tree_p _overlays_layer;
 
-	shared_ptr<tree_t> _unknown_layer;
+	tree_p _unknown_layer;
 
-	weak_ptr<viewport_t> _primary_viewport;
-	weak_ptr<notebook_t> _default_pop;
-
-	workspace_t(workspace_t const & v);
-	workspace_t & operator= (workspace_t const &);
+	viewport_w _primary_viewport;
+	notebook_w _default_pop;
 
 	static time64_t const _switch_duration;
 
@@ -69,28 +65,57 @@ private:
 
 	workspace_switch_direction_e _switch_direction;
 
-	list<weak_ptr<client_managed_t>> _client_focus_history;
+	list<view_w> _client_focus_history;
+
+	bool _is_enable;
+
+	void _fix_view_floating_position();
 
 public:
+	view_w _net_active_window;
+
+	xcb_atom_t A(atom_e atom);
 
 	workspace_t(page_t * ctx, unsigned id);
-	~workspace_t() { }
+	workspace_t(workspace_t const & v) = delete;
+	workspace_t & operator= (workspace_t const &) = delete;
+
+	virtual ~workspace_t();
+
+	auto shared_from_this() -> workspace_p;
 
 	auto get_any_viewport() const -> shared_ptr<viewport_t>;
-	void set_default_pop(shared_ptr<notebook_t> n);
-	auto default_pop() -> shared_ptr<notebook_t>;
+	void set_default_pop(notebook_p n);
 	int  id();
 	auto primary_viewport() const -> shared_ptr<viewport_t>;
 	void start_switch(workspace_switch_direction_e direction);
 	void set_workarea(rect const & r);
 	auto workarea() -> rect const &;
 	auto get_viewports() const -> vector<shared_ptr<viewport_t>> ;
-	void update_default_pop();
+	auto ensure_default_notebook() -> notebook_p;
 	auto get_viewport_map() const -> vector<shared_ptr<viewport_t>>;
 	void set_primary_viewport(shared_ptr<viewport_t> v);
-	auto set_layout(vector<shared_ptr<viewport_t>> const & new_layout) -> void;
-	void attach(shared_ptr<client_managed_t> c);
+	void update_viewports_layout(vector<rect> const & layout);
+	void remove_viewport(viewport_p v);
+	void attach(shared_ptr<client_managed_t> c) __attribute__((deprecated));
 
+	void enable(xcb_timestamp_t time);
+	void disable();
+	bool is_enable();
+
+	void insert_as_popup(client_managed_p c, xcb_timestamp_t time);
+	void insert_as_dock(client_managed_p c, xcb_timestamp_t time);
+	void insert_as_floating(client_managed_p c, xcb_timestamp_t time);
+	void insert_as_fullscreen(client_managed_p c, xcb_timestamp_t time);
+	void insert_as_notebook(client_managed_p c, xcb_timestamp_t time);
+
+	void insert_as_fullscreen(shared_ptr<client_managed_t> c, viewport_p v);
+
+	void unfullscreen(view_fullscreen_p view, xcb_timestamp_t time);
+
+	void add_dock(shared_ptr<tree_t> c);
+	void add_floating(shared_ptr<tree_t> c);
+	void add_fullscreen(shared_ptr<tree_t> c);
 	void add_overlay(shared_ptr<tree_t> c);
 	void add_unknown(shared_ptr<tree_t> c);
 	void add_tooltips(shared_ptr<tree_t> c);
@@ -100,23 +125,30 @@ public:
 	auto name() -> string const &;
 	void set_to_default_name();
 
-	bool client_focus_history_front(shared_ptr<client_managed_t> & out);
-	void client_focus_history_remove(shared_ptr<client_managed_t> in);
-	void client_focus_history_move_front(shared_ptr<client_managed_t> in);
+	auto client_focus_history() -> list<view_w>;
+	bool client_focus_history_front(view_p & out);
+	void client_focus_history_remove(view_p in);
+	void client_focus_history_move_front(view_p in);
 	bool client_focus_history_is_empty();
+
+	auto lookup_view_for(client_managed_p c) const -> view_p;
+	void set_focus(view_p new_focus, xcb_timestamp_t tfocus);
+	void unmanage(client_managed_p mw);
 
 	/**
 	 * tree_t virtual API
 	 **/
 
-	virtual void hide();
-	virtual void show();
+	using tree_t::hide;
+	using tree_t::show;
 	virtual auto get_node_name() const -> string;
 	//virtual void remove(shared_ptr<tree_t> t);
 
-	//virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
+	using tree_t::reconfigure;
+	using tree_t::on_workspace_enable;
+	using tree_t::on_workspace_disable;
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
@@ -130,11 +162,9 @@ public:
 	//virtual void expose(xcb_expose_event_t const * ev);
 	//virtual void trigger_redraw();
 
-	//virtual auto get_xid() const -> xcb_window_t;
-	//virtual auto get_parent_xid() const -> xcb_window_t;
+	//virtual auto get_toplevel_xid() const -> xcb_window_t;
 	//virtual rect get_window_position() const;
 	//virtual void queue_redraw();
-
 
 	/**
 	 * page_component_t virtual API

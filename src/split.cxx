@@ -29,7 +29,6 @@ split_t::split_t(tree_t * ref, split_type_e type) :
 		_has_mouse_over{false},
 		_wid{XCB_WINDOW_NONE}
 {
-	update_allocation();
 
 }
 
@@ -167,14 +166,14 @@ void split_t::update_allocation() {
 	if(_pack1 != nullptr)
 		_pack1->set_allocation(_bpack1);
 
-	if(_wid == XCB_WINDOW_NONE and get_parent_xid() != XCB_WINDOW_NONE) {
+	if(_wid == XCB_WINDOW_NONE and get_component_xid() != XCB_WINDOW_NONE) {
 		uint32_t cursor;
 		if(_type == VERTICAL_SPLIT) {
 			cursor = _ctx->dpy()->xc_sb_h_double_arrow;
 		} else {
 			cursor = _ctx->dpy()->xc_sb_v_double_arrow;
 		}
-		_wid = _ctx->dpy()->create_input_only_window(get_parent_xid(), _split_bar_area, XCB_CW_CURSOR, &cursor);
+		_wid = _ctx->dpy()->create_input_only_window(get_component_xid(), _split_bar_area, XCB_CW_CURSOR, &cursor);
 		_ctx->dpy()->map(_wid);
 	}
 
@@ -190,6 +189,10 @@ void split_t::set_pack0(shared_ptr<page_component_t> x) {
 	_pack0 = x;
 	push_back(_pack0);
 	update_allocation();
+	if(_is_visible)
+		_pack0->show();
+	else
+		_pack0->hide();
 }
 
 void split_t::set_pack1(shared_ptr<page_component_t> x) {
@@ -200,6 +203,10 @@ void split_t::set_pack1(shared_ptr<page_component_t> x) {
 	_pack1 = x;
 	push_back(_pack1);
 	update_allocation();
+	if(_is_visible)
+		_pack1->show();
+	else
+		_pack1->hide();
 }
 
 void split_t::render_legacy(cairo_t * cr) const {
@@ -246,13 +253,8 @@ rect split_t::compute_split_bar_location() const {
 	return compute_split_bar_location(_bpack0, _bpack1);
 }
 
-
-void split_t::append_children(vector<shared_ptr<tree_t>> & out) const {
-	out.insert(out.end(), _children.begin(), _children.end());
-}
-
 bool split_t::button_press(xcb_button_press_event_t const * e) {
-	if (e->event == get_parent_xid()
+	if (e->event == get_component_xid()
 			and e->child == _wid
 			and e->detail == XCB_BUTTON_INDEX_1
 			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
@@ -293,22 +295,6 @@ auto split_t::get_damaged() -> region {
 
 void split_t::render(cairo_t * cr, region const & area) {
 
-}
-
-void split_t::hide() {
-	if(_pack0 != nullptr)
-		_pack0->hide();
-	if(_pack1 != nullptr)
-		_pack1->hide();
-	_is_visible = false;
-}
-
-void split_t::show() {
-	_is_visible = true;
-	if(_pack1 != nullptr)
-		_pack1->show();
-	if(_pack0 != nullptr)
-		_pack0->show();
 }
 
 void split_t::get_min_allocation(int & width, int & height) const {
@@ -356,7 +342,7 @@ void split_t::compute_children_root_allocation(double split, rect & bpack0, rect
 }
 
 bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {
-	if(ev->event != get_parent_xid()) {
+	if(ev->event != get_component_xid()) {
 		if(_has_mouse_over) {
 			_has_mouse_over = false;
 			queue_redraw();
@@ -390,7 +376,7 @@ bool split_t::button_motion(xcb_motion_notify_event_t const * ev) {
 
 
 bool split_t::leave(xcb_leave_notify_event_t const * ev) {
-	if(ev->event == get_parent_xid()) {
+	if(ev->event == get_component_xid()) {
 		if(_has_mouse_over) {
 			_has_mouse_over = false;
 			queue_redraw();

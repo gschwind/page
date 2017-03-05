@@ -30,9 +30,7 @@
 
 #include "theme.hxx"
 
-#include "client_base.hxx"
 #include "client_managed.hxx"
-#include "client_not_managed.hxx"
 
 #include "popup_alt_tab.hxx"
 #include "popup_notebook0.hxx"
@@ -105,14 +103,17 @@ class page_t : public connectable_t {
 
 	shared_ptr<compositor_overlay_t> _fps_overlay;
 
-	rect _root_position;
-
 	unsigned int _current_workspace;
 	vector<shared_ptr<workspace_t>> _workspace_list;
 
 	weak_ptr<client_managed_t> _net_active_window;
 
+
 public:
+	rect _root_position;
+
+	/** used to ignore map/unmap events **/
+	set<xcb_window_t> _page_windows;
 
 private:
 	shared_ptr<grab_handler_t> _grab_handler;
@@ -133,13 +134,6 @@ public:
 	bool _need_update_client_list;
 
 	config_handler_t _conf;
-
-
-	/**
-	 * Store data to allow proper revert fullscreen window to
-	 * their original positions
-	 **/
-	map<client_managed_t *, fullscreen_data_t> _fullscreen_client_to_viewport;
 
 	list<xcb_atom_t> supported_list;
 
@@ -179,8 +173,8 @@ private:
 	xcb_timestamp_t _last_button_press;
 
 	/** store all client in mapping order, older first **/
-	list<weak_ptr<client_managed_t>> _net_client_list;
-	list<weak_ptr<client_managed_t>> _global_focus_history;
+	list<client_managed_w> _net_client_list;
+	list<view_w> _global_focus_history;
 
 	int _left_most_border;
 	int _top_most_border;
@@ -263,36 +257,55 @@ public:
 	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_proxy_t> wa);
 
 	/* unmanage a managed window */
-	void unmanage(shared_ptr<client_managed_t> mw);
+	void unmanage(client_managed_p mw);
 
 	/* update viewport and childs allocation */
 	void update_workarea();
 
-	/* turn a managed window into fullscreen */
-	void fullscreen(shared_ptr<client_managed_t> c);
-	void fullscreen(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v);
+	void switch_view_to_fullscreen(view_p v, xcb_timestamp_t time);
+	void switch_view_to_floating(view_p v, xcb_timestamp_t time);
+	void switch_view_to_notebook(view_p mw, xcb_timestamp_t time);
+
+	void switch_notebook_to_floating(view_notebook_p v, xcb_timestamp_t time);
+	void switch_notebook_to_fullscreen(view_notebook_p v, xcb_timestamp_t time);
+
+	void switch_floating_to_fullscreen(view_floating_p v, xcb_timestamp_t time);
+	void switch_floating_to_notebook(view_floating_p v, xcb_timestamp_t time);
+
+	void switch_fullscreen_to_floating(view_fullscreen_p v, xcb_timestamp_t time);
+	void switch_fullscreen_to_notebook(view_fullscreen_p v, xcb_timestamp_t time);
 
 	/* switch a fullscreened and managed window into floating or notebook window */
-	void unfullscreen(shared_ptr<client_managed_t> c);
+	void switch_fullscreen_to_prefered_view_mode(view_p c, xcb_timestamp_t time);
+	void switch_fullscreen_to_prefered_view_mode(view_fullscreen_p c, xcb_timestamp_t time);
+
+	void _insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t time);
+
 
 	/* toggle fullscreen */
-	void toggle_fullscreen(shared_ptr<client_managed_t> c);
+	void toggle_fullscreen(view_p c, xcb_timestamp_t time);
+
+	void move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time);
+
 
 	/* split a notebook into two notebook */
 	void split(shared_ptr<notebook_t> nbk, split_type_e type);
 
 	/* compute the allocation of viewport taking in account DOCKs */
-	void compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
+	void compute_viewport_allocation(workspace_p d, viewport_p v);
 
-	void cleanup_not_managed_client(shared_ptr<client_not_managed_t> c);
+	void cleanup_not_managed_client(client_managed_p c);
 
 	void process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties);
 
-	void insert_in_tree_using_transient_for(shared_ptr<client_base_t> c);
 
-	void safe_update_transient_for(shared_ptr<client_base_t> c);
+	void insert_as_popup(client_managed_p c, xcb_timestamp_t time = XCB_CURRENT_TIME);
+	void insert_as_dock(client_managed_p c, xcb_timestamp_t time = XCB_CURRENT_TIME);
+	void insert_as_floating(client_managed_p c, xcb_timestamp_t time = XCB_CURRENT_TIME);
+	void insert_as_fullscreen(client_managed_p c, xcb_timestamp_t time = XCB_CURRENT_TIME);
+	void insert_as_notebook(client_managed_p c, xcb_timestamp_t time = XCB_CURRENT_TIME);
 
-	shared_ptr<client_base_t> get_transient_for(shared_ptr<client_base_t> c);
+	client_managed_p get_transient_for(client_managed_p c);
 	void logical_raise(shared_ptr<client_base_t> c);
 
 	/* TODO: replacec it,
@@ -300,14 +313,13 @@ public:
 	vector<shared_ptr<tree_t>> get_all_children() const;
 
 	/* attach floating window in a notebook */
-	void bind_window(shared_ptr<client_managed_t> mw, bool activate);
+
 	void grab_pointer();
 	/* if grab is linked to a given window remove this grab */
 	void cleanup_grab();
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	shared_ptr<notebook_t> get_another_notebook(shared_ptr<tree_t> base, shared_ptr<tree_t> nbk);
 	/* find where the managed window is */
-	static shared_ptr<notebook_t> find_parent_notebook_for(shared_ptr<client_managed_t> mw);
 	shared_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
 	static shared_ptr<viewport_t> find_viewport_of(shared_ptr<tree_t> n);
 	static shared_ptr<workspace_t> find_workspace_of(shared_ptr<tree_t> n);
@@ -316,16 +328,14 @@ public:
 	void update_viewport_layout();
 	void remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v);
 	void onmap(xcb_window_t w);
-	void create_managed_window(xcb_window_t w, xcb_atom_t type);
+	void create_managed_window(client_proxy_p proxy);
 	void manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type);
 	void ackwoledge_configure_request(xcb_configure_request_event_t const * e);
-	void create_unmanaged_window(xcb_window_t w, xcb_atom_t type);
-	bool get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time);
+	void create_unmanaged_window(client_proxy_p proxy);
+	bool get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time);
 	void update_page_areas();
 	void set_workspace_geometry(long width, long height);
-	shared_ptr<client_base_t> find_client_with(xcb_window_t w);
-	shared_ptr<client_base_t> find_client(xcb_window_t w);
-	void remove_client(shared_ptr<client_base_t> c);
+	auto find_client_with(xcb_window_t w) const -> client_managed_p;
 
 	void raise_child(shared_ptr<tree_t> t);
 	void process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
@@ -357,7 +367,7 @@ public:
 	void switch_to_workspace(unsigned int workspace, xcb_timestamp_t time);
 	void start_switch_to_workspace_animation(unsigned int workspace);
 	void update_fullscreen_clients_position();
-	void update_workspace_visibility();
+	void update_workspace_visibility(xcb_timestamp_t time);
 	void process_error(xcb_generic_event_t const * e);
 	void start_compositor();
 	void stop_compositor();
@@ -368,7 +378,6 @@ public:
 
 	void start_alt_tab(xcb_timestamp_t time);
 
-	vector<shared_ptr<client_managed_t>> get_sticky_client_managed(shared_ptr<tree_t> base);
 	void reconfigure_docks(shared_ptr<workspace_t> const & d);
 
 	void mark_durty(shared_ptr<tree_t> t);
@@ -377,12 +386,12 @@ public:
 
 	void process_pending_events();
 
-	bool global_focus_history_front(shared_ptr<client_managed_t> & out);
-	void global_focus_history_remove(shared_ptr<client_managed_t> in);
-	void global_focus_history_move_front(shared_ptr<client_managed_t> in);
+	bool global_focus_history_front(view_p & out);
+	void global_focus_history_remove(view_p in);
+	void global_focus_history_move_front(view_p in);
 	bool global_focus_history_is_empty();
 
-	void on_visibility_change_handler(xcb_window_t xid, bool visible);
+	void on_visibility_change_handler(client_proxy_t * proxy, bool visible);
 	void on_block_mainloop_handler();
 
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
@@ -404,20 +413,18 @@ public:
 	int  create_workspace();
 	void grab_start(shared_ptr<grab_handler_t> handler, xcb_timestamp_t time);
 	void grab_stop(xcb_timestamp_t time);
-	void detach(shared_ptr<tree_t> t);
 	void insert_window_in_notebook(shared_ptr<client_managed_t> x, shared_ptr<notebook_t> n, bool prefer_activate);
-	void fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v);
-	void unbind_window(shared_ptr<client_managed_t> mw);
-	void split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
-	void split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
-	void split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
-	void split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c);
-	void set_focus(shared_ptr<client_managed_t> w, xcb_timestamp_t tfocus);
-	void notebook_close(shared_ptr<notebook_t> nbk);
+	void move_fullscreen_to_viewport(view_fullscreen_p c, viewport_p v);
+	void split_left(notebook_p nbk, view_p c, xcb_timestamp_t time);
+	void split_right(notebook_p nbk, view_p c, xcb_timestamp_t time);
+	void split_top(notebook_p nbk, view_p c, xcb_timestamp_t time);
+	void split_bottom(notebook_p nbk, view_p c, xcb_timestamp_t time);
+	void apply_focus(xcb_timestamp_t tfocus);
+	void notebook_close(shared_ptr<notebook_t> nbk, xcb_timestamp_t time);
 	int  left_most_border();
 	int  top_most_border();
-	auto global_client_focus_history() -> list<weak_ptr<client_managed_t>>;
-	auto net_client_list() -> list<shared_ptr<client_managed_t>>;
+	auto global_client_focus_history() -> list<view_w>;
+	auto net_client_list() -> vector<client_managed_p>;
 	auto keymap() const -> keymap_t const *;
 	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void make_surface_stats(int & size, int & count);
@@ -425,7 +432,7 @@ public:
 	void schedule_repaint();
 	void damage_all();
 
-	void activate(client_managed_p c, xcb_timestamp_t time);
+	void activate(view_p c, xcb_timestamp_t time);
 
 };
 

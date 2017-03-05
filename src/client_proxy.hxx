@@ -50,12 +50,12 @@ class client_view_t {
 	friend class display_t;
 	friend class client_proxy_t;
 
-	weak_ptr<client_proxy_t> _parent;
+	client_proxy_t * _parent;
 	region _damaged;
 
 public:
 
-	client_view_t(shared_ptr<client_proxy_t> parent);
+	client_view_t(client_proxy_t * parent);
 	auto get_pixmap() -> shared_ptr<pixmap_t>;
 	void clear_damaged();
 	auto get_damaged() -> region const &;
@@ -94,8 +94,8 @@ private:
 	xcb_window_t xid();
 
 private:
-	client_proxy_t(client_proxy_t const &);
-	client_proxy_t & operator=(client_proxy_t const &);
+	client_proxy_t(client_proxy_t const &) = delete;
+	client_proxy_t & operator=(client_proxy_t const &) = delete;
 
 	bool _safe_pixmap_update();
 	shared_ptr<pixmap_t> get_pixmap();
@@ -182,10 +182,6 @@ public:
 	void apply_change();
 	void destroy_pixmap();
 	void freeze(bool x);
-
-	auto create_view() -> client_view_t *;
-	void remove_view(client_view_t * v);
-	bool _has_views();
 
 	bool destroyed();
 	bool destroyed(bool x);

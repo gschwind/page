@@ -30,12 +30,29 @@ page_SOURCES = \
 	renderable_pixmap.cxx \
 	renderable_solid.hxx \
 	renderable_solid.cxx \
+	view.hxx \
+	view.cxx \
+	view_rebased.hxx \
+	view_rebased.cxx \
+	view_notebook.hxx \
+	view_notebook.cxx \
+	view_fullscreen.hxx \
+	view_fullscreen.cxx \
+	view_dock.hxx \
+	view_dock.cxx \
+	view_floating.hxx \
+	view_floating.cxx \
+	view_popup.hxx \
+	view_popup.cxx \
+	page_component.hxx \
+	page_component.cxx \
+	client_managed.hxx \
+	client_managed.cxx \
+	icon_handler.hxx \
+	icon_handler.cxx \
 	utils.cxx \
 	pixmap.cxx \
 	tree.cxx \
-	client_base.cxx \
-	client_not_managed.cxx \
-	client_managed.cxx \
 	grab_handlers.cxx \
 	notebook.cxx \
 	split.cxx \

@@ -155,15 +155,6 @@ public:
 		return region{};
 	}
 
-	virtual void set_parent(tree_t * t) {
-		_parent = t;
-	}
-
-	virtual tree_t * parent() {
-		return _parent;
-	}
-
-
 };
 
 }

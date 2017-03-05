@@ -31,14 +31,13 @@
 
 #include "utils.hxx"
 
+#include "page-types.hxx"
 #include "renderable.hxx"
 #include "renderable_fadeout_pixmap.hxx"
 #include "key_desc.hxx"
 #include "time.hxx"
 #include "atoms.hxx"
-#include "client_base.hxx"
 #include "client_managed.hxx"
-#include "client_not_managed.hxx"
 #include "grab_handlers.hxx"
 
 #include "simple2_theme.hxx"
@@ -48,6 +47,12 @@
 #include "workspace.hxx"
 #include "split.hxx"
 #include "page.hxx"
+#include "view.hxx"
+#include "view_fullscreen.hxx"
+#include "view_notebook.hxx"
+#include "view_floating.hxx"
+#include "view_dock.hxx"
+#include "view_popup.hxx"
 
 #include "popup_alt_tab.hxx"
 
@@ -223,7 +228,6 @@ void page_t::run() {
 
 	_bind_all_default_event();
 
-
 	{
 		/** check for number of workspace and create them **/
 		net_number_of_desktops_t number_of_workspace;
@@ -292,6 +296,8 @@ void page_t::run() {
 
 	/** switch back to the first workspace by default */
 	switch_to_workspace(0, XCB_CURRENT_TIME);
+	update_windows_stack();
+	xcb_flush(_dpy->xcb());
 
 	/* process messages as soon as we get messages, or every 1/60 of seconds */
 	_mainloop.add_poll(_dpy->fd(), POLLIN|POLLPRI|POLLERR,
@@ -313,8 +319,8 @@ void page_t::run() {
 	_dpy->unload_cursors();
 
 	for (auto & i : net_client_list()) {
-		_dpy->reparentwindow(i->orig(), _dpy->root(), 0, 0);
-		detach(i);
+		_dpy->reparentwindow(i->_client_proxy->id(), _dpy->root(), 0, 0);
+		//detach(i);
 	}
 
 	_workspace_list.clear();
@@ -343,51 +349,19 @@ void page_t::run() {
 
 }
 
-void page_t::unmanage(shared_ptr<client_managed_t> mw) {
-	if(mw == nullptr)
-		return;
+void page_t::unmanage(client_managed_p mw)
+{
+	assert(mw != nullptr);
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab();
 
-	detach(mw);
-
-	printf("unmanaging : '%s'\n", mw->title().c_str());
-
-	if (has_key(_fullscreen_client_to_viewport, mw.get())) {
-		fullscreen_data_t & data = _fullscreen_client_to_viewport[mw.get()];
-		if(not data.workspace.expired() and not data.viewport.expired()) {
-			if(data.workspace.lock()->is_visible()) {
-				data.viewport.lock()->show();
-			}
-		}
-		_fullscreen_client_to_viewport.erase(mw.get());
+	for (auto & d : _workspace_list) {
+		d->unmanage(mw);
 	}
 
-	/* if managed window have active clients */
-	for(auto i: mw->children()) {
-		auto c = dynamic_pointer_cast<client_base_t>(i);
-		if(c != nullptr) {
-			insert_in_tree_using_transient_for(c);
-		}
-	}
-
-	if(not mw->skip_task_bar()) {
-		_need_update_client_list = true;
-	}
-
+	_need_update_client_list = true;
 	update_workarea();
-
-	/** if the window is destroyed, this not work, see fix on destroy **/
-	for(auto x: _workspace_list) {
-		x->client_focus_history_remove(mw);
-	}
-
-	global_focus_history_remove(mw);
-
-	shared_ptr<client_managed_t> new_focus;
-	set_focus(nullptr, XCB_CURRENT_TIME);
-
 }
 
 void page_t::scan() {
@@ -407,30 +381,27 @@ void page_t::scan() {
 	for (unsigned i = 0; i < n_children; ++i) {
 		xcb_window_t w = children[i];
 
-		try {
-			auto c = _dpy->create_client_proxy(w);
+		auto c = _dpy->ensure_client_proxy(w);
+		if (not c)
+			continue;
 
-			if(c->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY) {
-				continue;
-			}
+		if (c->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY)
+			continue;
 
-			c->read_all_properties();
+		c->read_all_properties();
 
-			if (c->wa().map_state != XCB_MAP_STATE_UNMAPPED) {
-				onmap(w);
-			} else {
-				/**
-				 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
-				 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
-				 **/
-				if (c->get<p_wm_state>() != nullptr) {
-					if (c->get<p_wm_state>()->state == IconicState) {
-						onmap(w);
-					}
+		if (c->wa().map_state != XCB_MAP_STATE_UNMAPPED) {
+			onmap(w);
+		} else {
+			/**
+			 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
+			 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
+			 **/
+			if (c->get<p_wm_state>() != nullptr) {
+				if (c->get<p_wm_state>()->state == IconicState) {
+					onmap(w);
 				}
 			}
-		} catch (invalid_client_t & e) {
-			/* ignore */
 		}
 	}
 
@@ -438,9 +409,6 @@ void page_t::scan() {
 
 
 	update_workarea();
-	for(auto x: _workspace_list) {
-		reconfigure_docks(x);
-	}
 
 	_need_update_client_list = true;
 	_need_restack = true;
@@ -513,12 +481,12 @@ void page_t::update_net_supported() {
 }
 
 void page_t::update_client_list() {
-	_net_client_list.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	_net_client_list.remove_if([](client_managed_w const & w) { return w.expired(); });
 
 	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	vector<xcb_window_t> xid_client_list;
 	for(auto i : _net_client_list) {
-		xid_client_list.push_back(i.lock()->orig());
+		xid_client_list.push_back(i.lock()->_client_proxy->id());
 	}
 
 	_dpy->change_property(_dpy->root(), _NET_CLIENT_LIST, WINDOW, 32,
@@ -532,7 +500,7 @@ void page_t::update_client_list_stacking() {
 	auto managed = net_client_list();
 	vector<xcb_window_t> client_list_stack;
 	for(auto c: managed) {
-		client_list_stack.push_back(c->orig());
+		client_list_stack.push_back(c->_client_proxy->id());
 	}
 
 	_dpy->change_property(_dpy->root(), _NET_CLIENT_LIST_STACKING,
@@ -576,27 +544,28 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	}
 
 	if (key == bind_close) {
-		shared_ptr<client_managed_t> mw;
+		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			mw->delete_window(e->time);
+			mw->_client->delete_window(e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
-	if (key == bind_exposay_all) {
-		auto child = filter_class<notebook_t>(get_current_workspace()->get_all_children());
-		for (auto c : child) {
-			c->start_exposay();
-		}
-		return;
-	}
+//	if (key == bind_exposay_all) {
+//		auto child = filter_class<notebook_t>(get_current_workspace()->get_all_children());
+//		for (auto c : child) {
+//			c->start_exposay();
+//		}
+//		return;
+//	}
 
 	if (key == bind_toggle_fullscreen) {
-		shared_ptr<client_managed_t> mw;
+		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			toggle_fullscreen(mw);
-			set_focus(mw, e->time);
+			toggle_fullscreen(mw, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -606,59 +575,48 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		} else {
 			stop_compositor();
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	if (key == bind_right_workspace) {
 		unsigned new_workspace = ((_current_workspace + _workspace_list.size()) + 1) % _workspace_list.size();
 		switch_to_workspace(new_workspace, e->time);
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	if (key == bind_left_workspace) {
 		unsigned new_workspace = ((_current_workspace + _workspace_list.size()) - 1) % _workspace_list.size();
 		switch_to_workspace(new_workspace, e->time);
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	if (key == bind_bind_window) {
-		shared_ptr<client_managed_t> mw;
+		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			if (mw->is(MANAGED_FULLSCREEN)) {
-				unfullscreen(mw);
-				set_focus(mw, e->time);
-			} else if (mw->is(MANAGED_FLOATING)) {
-				bind_window(mw, true);
-				set_focus(mw, e->time);
-			}
+			switch_view_to_notebook(mw, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	if (key == bind_fullscreen_window) {
-		shared_ptr<client_managed_t> mw;
+		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			if (not mw->is(MANAGED_FULLSCREEN)) {
-				fullscreen(mw);
-				set_focus(mw, e->time);
-			}
+			switch_view_to_fullscreen(mw, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	if (key == bind_float_window) {
-		shared_ptr<client_managed_t> mw;
+		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			if (mw->is(MANAGED_FULLSCREEN)) {
-				unfullscreen(mw);
-				set_focus(mw, e->time);
-			}
-
-			if (mw->is(MANAGED_NOTEBOOK)) {
-				unbind_window(mw);
-				set_focus(mw, e->time);
-			}
+			switch_view_to_floating(mw, e->time);
 		}
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
@@ -674,9 +632,10 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 				get_current_workspace()->add_overlay(_fps_overlay);
 				_fps_overlay->show();
 			} else {
-				detach(_fps_overlay);
+				_fps_overlay->detach_myself();
 				_fps_overlay = nullptr;
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 
@@ -686,6 +645,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_damaged(true);
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 
@@ -695,6 +655,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 			} else {
 				_compositor->set_show_opac(true);
 			}
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 	}
@@ -704,19 +665,19 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		for (auto i : net_client_list()) {
 			switch (i->get_type()) {
 			case MANAGED_NOTEBOOK:
-				cout << "[" << i->orig() << "] notebook : " << i->title()
+				cout << "[" << i->_client_proxy->id() << "] notebook : " << i->title()
 						<< endl;
 				break;
 			case MANAGED_FLOATING:
-				cout << "[" << i->orig() << "] floating : " << i->title()
+				cout << "[" << i->_client_proxy->id() << "] floating : " << i->title()
 						<< endl;
 				break;
 			case MANAGED_FULLSCREEN:
-				cout << "[" << i->orig() << "] fullscreen : " << i->title()
+				cout << "[" << i->_client_proxy->id() << "] fullscreen : " << i->title()
 						<< endl;
 				break;
 			case MANAGED_DOCK:
-				cout << "[" << i->orig() << "] dock : " << i->title() << endl;
+				cout << "[" << i->_client_proxy->id() << "] dock : " << i->title() << endl;
 				break;
 			}
 		}
@@ -724,18 +685,21 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 		if(not global_focus_history_is_empty()) {
 			cout << "active window is : ";
 			for(auto & focus: global_client_focus_history()) {
-				cout << focus.lock()->orig() << ",";
+				cout << focus.lock()->_client->_client_proxy->id() << ",";
 			}
 			cout << endl;
 		} else {
 			cout << "active window is : " << "NONE" << endl;
 		}
+
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
 	}
 
 	for(int i; i < bind_cmd.size(); ++i) {
 		if (key == bind_cmd[i].key) {
 			run_cmd(bind_cmd[i].cmd);
+			xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 			return;
 		}
 	}
@@ -796,10 +760,11 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	 **/
 	if (_grab_handler == nullptr) {
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
-		auto mw = find_managed_window_with(e->event);
-		if (mw != nullptr) {
-			activate(mw, e->time);
-		}
+		/* TODO */
+//		auto mw = find_managed_window_with(e->event);
+//		if (mw != nullptr) {
+//			activate(mw, e->time);
+//		}
 	}
 
 }
@@ -809,7 +774,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	//printf("configure (%d) %dx%d+%d+%d\n", e->window, e->width, e->height, e->x, e->y);
 
-	shared_ptr<client_base_t> c = find_client(e->window);
+	auto c = find_client_with(e->window);
 	if(c != nullptr) {
 		c->process_event(e);
 	}
@@ -830,17 +795,15 @@ void page_t::process_create_notify_event(xcb_generic_event_t const * e) {
 
 void page_t::process_destroy_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_destroy_notify_event_t const *>(_e);
-	auto c = find_client(e->window);
-	if (c != nullptr) {
-		if(typeid(*c.get()) == typeid(client_managed_t)) {
-			cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
-			cout << "Sent Event: " << "false" << endl;
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			unmanage(mw);
-		} else if(typeid(*c) == typeid(client_not_managed_t)) {
-			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
-		}
+	//printf("destroy window = %d\n", e->window);
 
+	if(has_key(_page_windows, e->window))
+		return;
+
+	auto c = find_client_with(e->window);
+	if (c != nullptr) {
+		cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
+		unmanage(c);
 	}
 }
 
@@ -853,7 +816,10 @@ void page_t::process_map_notify_event(xcb_generic_event_t const * _e) {
 	/* if map event does not occur within root, ignore it */
 	if (e->event != _dpy->root())
 		return;
-	onmap(e->window);
+
+	//printf("map notify window #%u\n", e->window);
+	if(e->override_redirect)
+		onmap(e->window);
 
 	add_global_damage(_root_position);
 
@@ -870,34 +836,24 @@ void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
 	/* If reparent occur on managed windows and new parent is an unknown window then unmanage */
 	auto mw = find_managed_window_with(e->window);
 	if (mw != nullptr) {
-		if (e->window == mw->orig() and e->parent != mw->base()) {
+		if (e->window == mw->_client_proxy->id() and not has_key(_page_windows, e->parent) and e->parent != _dpy->root()) {
 			/* unmanage the window */
 			unmanage(mw);
 		}
-	}
-
-	/* if a unmanaged window leave the root window for any reason, this client is forgoten */
-	auto uw = dynamic_pointer_cast<client_not_managed_t>(find_client_with(e->window));
-	if(uw != nullptr and e->parent != _dpy->root()) {
-		cleanup_not_managed_client(uw);
 	}
 
 }
 
 void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
-	auto c = find_client(e->window);
+	auto c = find_client_with(e->window);
 	if (c != nullptr) {
-		//add_compositor_damaged(c->get_visible_region());
-		if(typeid(*c) == typeid(client_not_managed_t)) {
-			cleanup_not_managed_client(dynamic_pointer_cast<client_not_managed_t>(c));
-		} else if (typeid(*c) == typeid(client_managed_t)) {
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			if(c->base() == e->event) {
-				_dpy->reparentwindow(mw->orig(), _dpy->root(), 0.0, 0.0);
-				unmanage(mw);
-			}
-		}
+		//printf("unmap serial = %u, window = %d, event = %d\n", e->sequence, e->window, e->event);
+
+		// client do not use fake unmap for popup, and popup never be reparented.
+		if(c->is(MANAGED_POPUP) or (e->event != _dpy->root() and e->event != e->window))
+			unmanage(c);
+
 	}
 }
 
@@ -908,17 +864,12 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	 * (i.e. he want that we unmanage it.
 	 **/
 
-	/* if client is managed */
-	auto c = find_client(e->window);
+	//printf("fake unmap window = %d\n", e->window);
 
+	/* if client is managed */
+	auto c = find_client_with(e->window);
 	if (c != nullptr) {
-		//add_compositor_damaged(c->get_visible_region());
-		if(typeid(*c) == typeid(client_managed_t)) {
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			_dpy->reparentwindow(mw->orig(), _dpy->root(), 0.0, 0.0);
-			unmanage(mw);
-		}
-		//render();
+		unmanage(c);
 	}
 }
 
@@ -928,7 +879,8 @@ void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 	auto c = find_client_with(e->window);
 	if (c != nullptr) {
 		if (e->place == XCB_PLACE_ON_TOP) {
-			c->raise();
+			// TODO
+			//c->raise();
 		} else if (e->place == XCB_PLACE_ON_BOTTOM) {
 			_dpy->lower_window(e->window);
 		}
@@ -953,7 +905,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 //		printf("has border: %d\n", e.border_width);
 
 
-	auto c = find_client(e->window);
+	auto c = find_client_with(e->window);
 
 	if (c != nullptr) {
 
@@ -1005,9 +957,13 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 				//printf("new_size = %s\n", new_size.to_string().c_str());
 
 				if (new_size != old_size) {
-					/** only affect floating windows **/
-					mw->set_floating_wished_position(new_size);
-					mw->reconfigure();
+					/* TODO : for all views */
+					auto v = dynamic_pointer_cast<view_floating_t>(get_current_workspace()->lookup_view_for(mw));
+					if(v) {
+						/** only affect floating windows **/
+						mw->set_floating_wished_position(new_size);
+						v->reconfigure();
+					}
 				}
 			}
 
@@ -1079,6 +1035,8 @@ void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * 
 
 void page_t::process_map_request_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_map_request_event_t const *>(_e);
+	//printf("map request window #%u\n", e->window);
+
 	if (e->parent != _dpy->root()) {
 		xcb_map_window(_dpy->xcb(), e->window);
 		return;
@@ -1094,12 +1052,11 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		return;
 
 	/** update the property **/
-	auto c = find_client(e->window);
-	auto mw = dynamic_pointer_cast<client_managed_t>(c);
-	if(mw == nullptr)
+	auto c = find_client_with(e->window);
+	if(c == nullptr)
 		return;
 
-	mw->on_property_notify(e);
+	c->on_property_notify(e);
 
 	if (e->atom == A(_NET_WM_USER_TIME)) {
 		/* ignore */
@@ -1119,24 +1076,26 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		//	manage_notebook(x);
 		//}
 	} else if (e->atom == A(WM_NORMAL_HINTS)) {
-		if (mw->is(MANAGED_NOTEBOOK)) {
-			find_parent_notebook_for(mw)->update_client_position(mw);
-		}
-
-		/* apply normal hint to floating window */
-		rect new_size = mw->get_wished_position();
-
-		dimention_t<unsigned> final_size = mw->compute_size_with_constrain(
-				new_size.w, new_size.h);
-		new_size.w = final_size.width;
-		new_size.h = final_size.height;
-		mw->set_floating_wished_position(new_size);
-		mw->reconfigure();
+		/* ignore WM_NORMAL_HINTS updates */
+//		if (mw->is(MANAGED_NOTEBOOK)) {
+//			find_parent_notebook_for(mw)->update_client_position(mw);
+//		}
+//
+//		/* apply normal hint to floating window */
+//		rect new_size = mw->get_wished_position();
+//
+//		dimention_t<unsigned> final_size = mw->compute_size_with_constrain(
+//				new_size.w, new_size.h);
+//		new_size.w = final_size.width;
+//		new_size.h = final_size.height;
+//		mw->set_floating_wished_position(new_size);
+//		mw->reconfigure();
 	} else if (e->atom == A(WM_PROTOCOLS)) {
 		/* do nothing */
 	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
-		safe_update_transient_for(mw);
-		_need_restack = true;
+		/* only use transient for on map, ignore other cases */
+		//safe_update_transient_for(mw);
+		//_need_restack = true;
 	} else if (e->atom == A(WM_HINTS)) {
 		/* do nothing */
 	} else if (e->atom == A(_NET_WM_STATE)) {
@@ -1147,7 +1106,8 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 	} else if (e->atom == A(_NET_WM_DESKTOP)) {
 		/* this must be set by the WM, moving a client to a workspace is requested by client message */
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
-		mw->reconfigure();
+		/* ignore _MOTIF_WM_HINTS updates */
+		//mw->reconfigure();
 	} else if (e->atom == A(_NET_DESKTOP_NAMES)) {
 		update_workspace_names();
 	}
@@ -1166,8 +1126,11 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	auto mw = find_managed_window_with(e->window);
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
+		auto view = get_current_workspace()->lookup_view_for(mw);
 		if (mw != nullptr) {
-			activate(mw, e->data.data32[1]);
+			auto view = get_current_workspace()->lookup_view_for(mw);
+			if(view)
+				activate(view, e->data.data32[1]);
 		}
 	} else if (e->type == A(_NET_WM_STATE)) {
 
@@ -1196,12 +1159,15 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 
 		/** When window want to become iconic, just bind them **/
 		if (mw != nullptr) {
+
 			if (mw->is(MANAGED_FLOATING) and e->data.data32[0] == IconicState) {
-				bind_window(mw, false);
+				/* ignore */
+				//bind_window(mw, false);
 			} else if (mw->is(
 					MANAGED_NOTEBOOK) and e->data.data32[0] == IconicState) {
-				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
-				n->iconify_client(mw);
+//				auto n = dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
+//				auto x = dynamic_pointer_cast<view_notebook_t>(n->lookup_view_for(mw));
+//				n->iconify_client(x);
 			}
 		}
 
@@ -1216,40 +1182,42 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	} else if (e->type == A(_NET_REQUEST_FRAME_EXTENTS)) {
 
 	} else if (e->type == A(_NET_WM_MOVERESIZE)) {
-		if (mw != nullptr) {
-			if (mw->is(MANAGED_FLOATING) and _grab_handler == nullptr) {
+		printf("moveresize XxX\n");
+		if (mw != nullptr and _grab_handler == nullptr) {
+			int root_x = e->data.data32[0];
+			int root_y = e->data.data32[1];
+			int direction = e->data.data32[2];
+			xcb_button_t button = static_cast<xcb_button_t>(e->data.data32[3]);
+			int source = e->data.data32[4];
 
-				int root_x = e->data.data32[0];
-				int root_y = e->data.data32[1];
-				int direction = e->data.data32[2];
-				xcb_button_t button = static_cast<xcb_button_t>(e->data.data32[3]);
-				int source = e->data.data32[4];
+			auto view = dynamic_pointer_cast<view_floating_t>(get_current_workspace()->lookup_view_for(mw));
+			if(not view)
+				return;
 
-				if (direction == _NET_WM_MOVERESIZE_MOVE) {
-					grab_start(make_shared<grab_floating_move_t>(this, mw, button, root_x, root_y), XCB_TIME_CURRENT_TIME);
+			if (direction == _NET_WM_MOVERESIZE_MOVE) {
+				grab_start(make_shared<grab_floating_move_t>(this, view, button, root_x, root_y), XCB_TIME_CURRENT_TIME);
+			} else {
+
+				if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_TOP), XCB_TIME_CURRENT_TIME);
+				} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_BOTTOM), XCB_TIME_CURRENT_TIME);
+				} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_LEFT), XCB_TIME_CURRENT_TIME);
+				} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_RIGHT), XCB_TIME_CURRENT_TIME);
+				} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_TOP_LEFT), XCB_TIME_CURRENT_TIME);
+				} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_TOP_RIGHT), XCB_TIME_CURRENT_TIME);
+				} else if (direction
+						== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_BOTTOM_LEFT), XCB_TIME_CURRENT_TIME);
+				} else if (direction
+						== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
+					grab_start(make_shared<grab_floating_resize_t>(this, view, button, root_x, root_y, RESIZE_BOTTOM_RIGHT), XCB_TIME_CURRENT_TIME);
 				} else {
-
-					if (direction == _NET_WM_MOVERESIZE_SIZE_TOP) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_TOP), XCB_TIME_CURRENT_TIME);
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_BOTTOM) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_BOTTOM), XCB_TIME_CURRENT_TIME);
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_LEFT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_LEFT), XCB_TIME_CURRENT_TIME);
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_RIGHT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_RIGHT), XCB_TIME_CURRENT_TIME);
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPLEFT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_TOP_LEFT), XCB_TIME_CURRENT_TIME);
-					} else if (direction == _NET_WM_MOVERESIZE_SIZE_TOPRIGHT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_TOP_RIGHT), XCB_TIME_CURRENT_TIME);
-					} else if (direction
-							== _NET_WM_MOVERESIZE_SIZE_BOTTOMLEFT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_BOTTOM_LEFT), XCB_TIME_CURRENT_TIME);
-					} else if (direction
-							== _NET_WM_MOVERESIZE_SIZE_BOTTOMRIGHT) {
-						grab_start(make_shared<grab_floating_resize_t>(this, mw, button, root_x, root_y, RESIZE_BOTTOM_RIGHT), XCB_TIME_CURRENT_TIME);
-					} else {
-						grab_start(make_shared<grab_floating_move_t>(this, mw, button, root_x, root_y), XCB_TIME_CURRENT_TIME);
-					}
+					grab_start(make_shared<grab_floating_move_t>(this, view, button, root_x, root_y), XCB_TIME_CURRENT_TIME);
 				}
 			}
 		}
@@ -1295,145 +1263,209 @@ void page_t::render() {
 	get_current_workspace()->broadcast_render_finished();
 }
 
-void page_t::fullscreen(shared_ptr<client_managed_t> mw) {
+void page_t::insert_as_fullscreen(client_managed_p c, xcb_timestamp_t time) {
+	printf("call %s\n", __PRETTY_FUNCTION__);
 
-	if(mw->is(MANAGED_FULLSCREEN))
-		return;
-
-	shared_ptr<viewport_t> v;
-	if(mw->is(MANAGED_NOTEBOOK)) {
-		v = find_viewport_of(mw);
-	} else if (mw->is(MANAGED_FLOATING)) {
-		v = get_current_workspace()->get_any_viewport();
+	auto wid = c->ensure_workspace();
+	workspace_p workspace;
+	if(wid == ALL_DESKTOP) {
+		workspace = get_current_workspace();
 	} else {
-		cout << "WARNING: a dock trying to become fullscreen" << endl;
-		return;
+		workspace = get_workspace(wid);
 	}
 
-	fullscreen(mw, v);
+	workspace->insert_as_fullscreen(c, time);
 }
 
-void page_t::fullscreen(shared_ptr<client_managed_t> mw, shared_ptr<viewport_t> v) {
-	assert(v != nullptr);
+void page_t::insert_as_notebook(client_managed_p c, xcb_timestamp_t time)
+{
+	printf("call %s\n", __PRETTY_FUNCTION__);
+	c->set_managed_type(MANAGED_NOTEBOOK);
 
-	if(mw->is(MANAGED_FULLSCREEN))
-		return;
-
-	/* WARNING: Call order is important, change it with caution */
-
-	fullscreen_data_t data;
-
-	if(mw->is(MANAGED_NOTEBOOK)) {
-		/**
-		 * if the current window is managed in notebook:
-		 *
-		 * 1. search for the current notebook,
-		 * 2. search the viewport for this notebook, and use it as default
-		 *    fullscreen host or use the first available viewport.
-		 **/
-		data.revert_type = MANAGED_NOTEBOOK;
-		data.revert_notebook = find_parent_notebook_for(mw);
-	} else if (mw->is(MANAGED_FLOATING)) {
-		data.revert_type = MANAGED_FLOATING;
-		data.revert_notebook.reset();
+	auto wid = c->ensure_workspace();
+	workspace_p workspace;
+	if(wid == ALL_DESKTOP) {
+		workspace = get_current_workspace();
 	} else {
-		cout << "WARNING: a dock trying to become fullscreen" << endl;
-		return;
+		workspace = get_workspace(wid);
 	}
 
-	auto workspace = find_workspace_of(v);
-
-	detach(mw);
-
-	// unfullscreen client that already use this screen
-	for (auto &x : _fullscreen_client_to_viewport) {
-		if (x.second.viewport.lock() == v) {
-			unfullscreen(x.second.client.lock());
-			break;
-		}
-	}
-
-	data.client = mw;
-	data.workspace = workspace;
-	data.viewport = v;
-
-	_fullscreen_client_to_viewport[mw.get()] = data;
-
-	mw->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
-	mw->set_managed_type(MANAGED_FULLSCREEN);
-	workspace->attach(mw);
-
-	/* it's a trick */
-	mw->set_notebook_wished_position(v->raw_area());
-	mw->reconfigure();
-	mw->show();
-
-	/* hide the viewport because he is covered by a fullscreen client */
-	v->hide();
+	workspace->insert_as_notebook(c, time);
 	_need_restack = true;
 }
 
-void page_t::unfullscreen(shared_ptr<client_managed_t> mw) {
-	/* WARNING: Call order is important, change it with caution */
-
-	/** just in case **/
-	mw->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
-
-	if(!has_key(_fullscreen_client_to_viewport, mw.get()))
+void page_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
+{
+	auto vx = dynamic_pointer_cast<view_floating_t>(v);
+	if(vx) {
+		switch_floating_to_fullscreen(vx, time);
 		return;
-
-	detach(mw);
-
-	fullscreen_data_t data = _fullscreen_client_to_viewport[mw.get()];
-	_fullscreen_client_to_viewport.erase(mw.get());
-
-	shared_ptr<workspace_t> d;
-
-	if(data.workspace.expired()) {
-		d = get_current_workspace();
-	} else {
-		d = data.workspace.lock();
 	}
 
-	shared_ptr<viewport_t> v;
-
-	if(data.viewport.expired()) {
-		v = d->get_any_viewport();
-	} else {
-		v = data.viewport.lock();
+	auto vn = dynamic_pointer_cast<view_notebook_t>(v);
+	if(vn) {
+		switch_notebook_to_fullscreen(vn, time);
+		return;
 	}
-
-	if (data.revert_type == MANAGED_NOTEBOOK) {
-		shared_ptr<notebook_t> n;
-		if(data.revert_notebook.expired()) {
-			n = d->default_pop();
-		} else {
-			n = data.revert_notebook.lock();
-		}
-		mw->set_managed_type(MANAGED_NOTEBOOK);
-		n->add_client(mw, true);
-		mw->reconfigure();
-	} else {
-		mw->set_managed_type(MANAGED_FLOATING);
-		insert_in_tree_using_transient_for(mw);
-		mw->reconfigure();
-	}
-
-	if(d->is_visible() and not v->is_visible()) {
-		v->show();
-	}
-
-	update_workarea();
-
-	_need_restack = true;
-
 }
 
-void page_t::toggle_fullscreen(shared_ptr<client_managed_t> c) {
-	if(c->is(MANAGED_FULLSCREEN))
-		unfullscreen(c);
+void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
+{
+	auto v = find_viewport_of(vn);
+	auto nbk = vn->parent_notebook();
+	assert(nbk != nullptr);
+	vn->detach();
+	auto vf = make_shared<view_fullscreen_t>(vn->_client, v);
+	vf->revert_type = MANAGED_NOTEBOOK;
+	vf->revert_notebook = nbk;
+	if(v->_root->is_enable())
+		vf->on_workspace_enable();
 	else
-		fullscreen(c);
+		vf->on_workspace_disable();
+	_insert_view_fullscreen(vf, time);
+}
+
+void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t time)
+{
+	auto workspace = vx->workspace();
+	auto viewport = workspace->get_any_viewport();
+	vx->detach();
+	auto vf = make_shared<view_fullscreen_t>(vx->_client, viewport);
+	if(workspace->is_enable())
+		vf->on_workspace_enable();
+	else
+		vf->on_workspace_disable();
+	vf->revert_type = MANAGED_FLOATING;
+	_insert_view_fullscreen(vf, time);
+}
+
+void page_t::switch_floating_to_notebook(view_floating_p vf, xcb_timestamp_t time)
+{
+	auto workspace = vf->workspace();
+	vf->detach();
+	workspace->insert_as_notebook(vf->_client, time);
+}
+
+void page_t::switch_view_to_floating(view_p v, xcb_timestamp_t time)
+{
+	auto vn = dynamic_pointer_cast<view_notebook_t>(v);
+	if(vn) {
+		switch_notebook_to_floating(vn, time);
+		return;
+	}
+
+	auto vf = dynamic_pointer_cast<view_fullscreen_t>(v);
+	if(vf) {
+		switch_fullscreen_to_floating(vf, time);
+		return;
+	}
+}
+
+void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
+{
+	v->detach();
+	n->add_client(v->_client, time);
+}
+
+void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
+{
+	auto workspace = view->workspace();
+	view->detach();
+
+	if(workspace->is_visible() and not view->viewport.expired()) {
+		view->viewport.lock()->show();
+	}
+
+	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
+	workspace->insert_as_floating(view->_client, time);
+	_need_restack = true;
+}
+
+void page_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp_t time)
+{
+	auto workspace = view->workspace();
+	view->detach();
+
+	if(workspace->is_visible() and not view->viewport.expired()) {
+		view->viewport.lock()->show();
+	}
+
+	auto n = workspace->ensure_default_notebook();
+	if(not view->revert_notebook.expired()) {
+		n = view->revert_notebook.lock();
+	}
+
+	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
+	view->_client->set_managed_type(MANAGED_NOTEBOOK);
+	n->add_client(view->_client, time);
+
+	_need_restack = true;
+}
+
+void page_t::_insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t time)
+{
+	auto viewport = vf->viewport.lock();
+	auto workspace = viewport->workspace();
+
+	// unfullscreen client that already use this viewport
+	for (auto &x : workspace->gather_children_root_first<view_fullscreen_t>()) {
+		if(x->viewport.lock() == viewport)
+			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
+	}
+
+	vf->_client->set_managed_type(MANAGED_FULLSCREEN);
+	workspace->add_fullscreen(vf);
+	vf->show();
+
+	/* hide the viewport because he is covered by the fullscreen client */
+	viewport->hide();
+
+	workspace->set_focus(vf, time);
+	_need_restack = true;
+}
+
+void page_t::switch_fullscreen_to_prefered_view_mode(view_p c, xcb_timestamp_t time)
+{
+	auto vf = dynamic_pointer_cast<view_fullscreen_t>(c);
+	if(vf)
+		switch_fullscreen_to_prefered_view_mode(vf, time);
+}
+
+void page_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view, xcb_timestamp_t time) {
+	/* WARNING: Call order is important, change it with caution */
+	auto workspace = view->workspace();
+	view->detach();
+
+	if(not view->viewport.expired()) {
+		view->viewport.lock()->show();
+		add_global_damage(view->viewport.lock()->raw_area());
+		view->viewport.lock()->queue_redraw();
+	}
+
+	if (view->revert_type == MANAGED_NOTEBOOK) {
+		auto n = workspace->ensure_default_notebook();
+		if(not view->revert_notebook.expired()) {
+			n = view->revert_notebook.lock();
+		}
+		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
+		view->_client->set_managed_type(MANAGED_NOTEBOOK);
+		n->add_client(view->_client, time);
+	} else {
+		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
+		workspace->insert_as_floating(view->_client, time);
+	}
+
+	_need_restack = true;
+
+}
+
+void page_t::toggle_fullscreen(view_p c, xcb_timestamp_t time) {
+	auto vf = dynamic_pointer_cast<view_fullscreen_t>(c);
+	if(vf) {
+		switch_fullscreen_to_prefered_view_mode(vf, time);
+	} else {
+		switch_view_to_fullscreen(c, time);
+	}
 }
 
 
@@ -1465,7 +1497,8 @@ void page_t::update_workarea() {
 		for (auto v : d->get_viewports()) {
 			compute_viewport_allocation(d, v);
 		}
-		d->set_workarea(d->primary_viewport()->allocation());
+		//d->set_workarea(d->primary_viewport()->allocation());
+		d->set_workarea(_root_position);
 	}
 
 	std::vector<uint32_t> workarea_data(_workspace_list.size()*4);
@@ -1481,67 +1514,41 @@ void page_t::update_workarea() {
 
 }
 
-void page_t::set_focus(shared_ptr<client_managed_t> new_focus, xcb_timestamp_t tfocus) {
-	/* if we want to defocus something */
-	if(new_focus == nullptr) {
-		if(conf()._auto_refocus) {
-			if (get_current_workspace()->client_focus_history_front(new_focus)) {
-				new_focus->raise();
-				get_current_workspace()->client_focus_history_move_front(new_focus);
-				global_focus_history_move_front(new_focus);
-				_dpy->set_net_active_window(new_focus->orig());
-				new_focus->raise();
-				new_focus->focus(tfocus);
-				_net_active_window = new_focus;
-			} else {
-				_net_active_window.reset();
-				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, tfocus);
-				_dpy->set_net_active_window(XCB_WINDOW_NONE);
-			}
-		} else {
-			_net_active_window.reset();
-			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, tfocus);
-			_dpy->set_net_active_window(XCB_WINDOW_NONE);
-		}
+void page_t::apply_focus(xcb_timestamp_t time) {
+	if(time == XCB_CURRENT_TIME) {
+		//printf("invalid focus time\n");
+		return;
+	}
+
+	auto w = get_current_workspace();
+	if(w->_net_active_window.expired()) {
+		//printf("apply focus NONE at %d\n", time);
+		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, time);
+		_dpy->set_net_active_window(XCB_WINDOW_NONE);
 	} else {
-
-		if(tfocus == XCB_CURRENT_TIME) {
-			xcb_timestamp_t time = 0;
-			if (get_safe_net_wm_user_time(new_focus, time)) {
-				tfocus = time;
-			}
-		}
-
-		if(tfocus == XCB_CURRENT_TIME)
-			std::cout << "Warning: Invalid focus time (0)" << std::endl;
-
-		get_current_workspace()->client_focus_history_move_front(new_focus);
-		global_focus_history_move_front(new_focus);
-		_dpy->set_net_active_window(new_focus->orig());
-		new_focus->raise();
-		new_focus->focus(tfocus);
-		_net_active_window = new_focus;
+		auto focus = w->_net_active_window.lock();
+		//printf("apply focus %d at %d\n", focus->_client->_client_proxy->id(), time);
+		_dpy->set_net_active_window(focus->_client->_client_proxy->id());
+		focus->focus(time);
+		xcb_flush(_dpy->xcb());
 	}
-
-	_need_restack = true;
-
 }
 
-void page_t::split_left(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
+void page_t::split_left(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(nbk.get());
 	auto split = make_shared<split_t>(nbk.get(), VERTICAL_SPLIT);
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
-	if (c != nullptr) {
-		detach(c);
-		insert_window_in_notebook(c, n, true);
-	}
 	split->show();
+	if (c != nullptr) {
+		c->detach();
+		n->add_client(c->_client, time);
+	}
 }
 
-void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
+void page_t::split_right(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(nbk.get());
 	auto split = make_shared<split_t>(nbk.get(), VERTICAL_SPLIT);
@@ -1549,13 +1556,13 @@ void page_t::split_right(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	if (c != nullptr) {
-		detach(c);
-		insert_window_in_notebook(c, n, true);
+		c->detach();
+		n->add_client(c->_client, time);
 	}
 	split->show();
 }
 
-void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
+void page_t::split_top(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(nbk.get());
 	auto split = make_shared<split_t>(nbk.get(), HORIZONTAL_SPLIT);
@@ -1563,13 +1570,13 @@ void page_t::split_top(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> 
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	if (c != nullptr) {
-		detach(c);
-		insert_window_in_notebook(c, n, true);
+		c->detach();
+		n->add_client(c->_client, time);
 	}
 	split->show();
 }
 
-void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_t> c) {
+void page_t::split_bottom(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	auto parent = dynamic_pointer_cast<page_component_t>(nbk->parent()->shared_from_this());
 	auto n = make_shared<notebook_t>(nbk.get());
 	auto split = make_shared<split_t>(nbk.get(), HORIZONTAL_SPLIT);
@@ -1577,13 +1584,13 @@ void page_t::split_bottom(shared_ptr<notebook_t> nbk, shared_ptr<client_managed_
 	split->set_pack0(nbk);
 	split->set_pack1(n);
 	if (c != nullptr) {
-		detach(c);
-		insert_window_in_notebook(c, n, true);
+		c->detach();
+		n->add_client(c->_client, time);
 	}
 	split->show();
 }
 
-void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
+void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
 	/**
 	 * Closing notebook mean destroying the split base of this
 	 * notebook, plus this notebook.
@@ -1605,48 +1612,35 @@ void page_t::notebook_close(shared_ptr<notebook_t> nbk) {
 	assert(dst != nullptr);
 
 	/* remove this split from tree  and replace it by sibling branch */
-	detach(dst);
+	dst->detach_myself();
 	dynamic_pointer_cast<page_component_t>(splt->parent()->shared_from_this())->replace(splt, dst);
 
 	/**
 	 * if notebook that we want destroy was the default_pop, select
 	 * a new one.
 	 **/
-	if (get_current_workspace()->default_pop() == nbk) {
-		get_current_workspace()->update_default_pop();
+	if (get_current_workspace()->ensure_default_notebook() == nbk) {
+		get_current_workspace()->ensure_default_notebook();
 		/* damage the new default pop to show the notebook mark properly */
 	}
 
 	/* move all client from destroyed notebook to new default pop */
-	auto clients = filter_class<client_managed_t>(nbk->children());
+	auto clients = nbk->gather_children_root_first<view_notebook_t>();
 	bool notebook_has_focus = false;
 	for(auto i : clients) {
 		if(i->has_focus())
 			notebook_has_focus = true;
-		nbk->remove(i);
-		insert_window_in_notebook(i, get_current_workspace()->default_pop(), false);
+		move_view_to_notebook(i, get_current_workspace()->ensure_default_notebook(), XCB_CURRENT_TIME);
 	}
 
-	/**
-	 * if a fullscreen client want revert to this notebook,
-	 * change it to default_window_pop
-	 **/
-	for (auto & i : _fullscreen_client_to_viewport) {
-		if (i.second.revert_notebook.lock() == nbk) {
-			i.second.revert_notebook = get_current_workspace()->default_pop();
-		}
-	}
-
-	if(notebook_has_focus) {
-		set_focus(nullptr, XCB_CURRENT_TIME);
-	}
+	get_current_workspace()->set_focus(nullptr, time);
 
 }
 
 /*
  * Compute the usable workspace area and dock allocation.
  */
-void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v) {
+void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 
 	/* Partial struct content definition */
 	enum : uint32_t {
@@ -1672,8 +1666,9 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 	int margin_right = _root_position.w - raw_area.x - raw_area.w;
 	int margin_bottom = _root_position.h - raw_area.y - raw_area.h;
 
-	auto children = filter_class<client_base_t>(d->get_all_children());
-	for(auto j: children) {
+	auto children = d->gather_children_root_first<view_t>();
+	for(auto y: children) {
+		auto j = y->_client;
 		int32_t ps[PS_LAST];
 		bool has_strut{false};
 
@@ -1773,312 +1768,61 @@ void page_t::compute_viewport_allocation(shared_ptr<workspace_t> d, shared_ptr<v
 
 }
 
-/*
- * Reconfigure docks.
- */
-void page_t::reconfigure_docks(shared_ptr<workspace_t> const & d) {
-
-	/* Partial struct content definition */
-	enum {
-		PS_LEFT = 0,
-		PS_RIGHT = 1,
-		PS_TOP = 2,
-		PS_BOTTOM = 3,
-		PS_LEFT_START_Y = 4,
-		PS_LEFT_END_Y = 5,
-		PS_RIGHT_START_Y = 6,
-		PS_RIGHT_END_Y = 7,
-		PS_TOP_START_X = 8,
-		PS_TOP_END_X = 9,
-		PS_BOTTOM_START_X = 10,
-		PS_BOTTOM_END_X = 11,
-	};
-
-	auto children = filter_class<client_managed_t>(d->get_all_children());
-	for(auto j: children) {
-
-		if(not j->is(MANAGED_DOCK))
-			continue;
-
-		int32_t ps[12] = { 0 };
-		bool has_strut{false};
-
-		if(j->get<p_net_wm_strut_partial>() != nullptr) {
-			if(j->get<p_net_wm_strut_partial>()->size() == 12) {
-				std::copy(j->get<p_net_wm_strut_partial>()->begin(), j->get<p_net_wm_strut_partial>()->end(), &ps[0]);
-				has_strut = true;
-			}
-		}
-
-		if (j->get<p_net_wm_strut>() != nullptr and not has_strut) {
-			if(j->get<p_net_wm_strut>()->size() == 4) {
-
-				/** if strut is found, fake strut_partial **/
-
-				std::copy(j->get<p_net_wm_strut>()->begin(), j->get<p_net_wm_strut>()->end(), &ps[0]);
-
-				if(ps[PS_TOP] > 0) {
-					ps[PS_TOP_START_X] = _root_position.x;
-					ps[PS_TOP_END_X] = _root_position.x + _root_position.w;
-				}
-
-				if(ps[PS_BOTTOM] > 0) {
-					ps[PS_BOTTOM_START_X] = _root_position.x;
-					ps[PS_BOTTOM_END_X] = _root_position.x + _root_position.w;
-				}
-
-				if(ps[PS_LEFT] > 0) {
-					ps[PS_LEFT_START_Y] = _root_position.y;
-					ps[PS_LEFT_END_Y] = _root_position.y + _root_position.h;
-				}
-
-				if(ps[PS_RIGHT] > 0) {
-					ps[PS_RIGHT_START_Y] = _root_position.y;
-					ps[PS_RIGHT_END_Y] = _root_position.y + _root_position.h;
-				}
-
-				has_strut = true;
-			}
-		}
-
-		if (has_strut) {
-
-			if (ps[PS_LEFT] > 0) {
-				rect pos;
-				pos.x = 0;
-				pos.y = ps[PS_LEFT_START_Y];
-				pos.w = ps[PS_LEFT];
-				pos.h = ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1;
-				j->set_floating_wished_position(pos);
-				j->show();
-				continue;
-			}
-
-			if (ps[PS_RIGHT] > 0) {
-				rect pos;
-				pos.x = _root_position.w - ps[PS_RIGHT];
-				pos.y = ps[PS_RIGHT_START_Y];
-				pos.w = ps[PS_RIGHT];
-				pos.h = ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1;
-				j->set_floating_wished_position(pos);
-				j->show();
-				continue;
-			}
-
-			if (ps[PS_TOP] > 0) {
-				rect pos;
-				pos.x = ps[PS_TOP_START_X];
-				pos.y = 0;
-				pos.w = ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1;
-				pos.h = ps[PS_TOP];
-				j->set_floating_wished_position(pos);
-				j->show();
-				continue;
-			}
-
-			if (ps[PS_BOTTOM] > 0) {
-				rect pos;
-				pos.x = ps[PS_BOTTOM_START_X];
-				pos.y = _root_position.h - ps[PS_BOTTOM];
-				pos.w = ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1;
-				pos.h = ps[PS_BOTTOM];
-				j->set_floating_wished_position(pos);
-				j->show();
-				continue;
-			}
-		}
-	}
-}
-
 void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_atom_t state_properties) {
 	if(state_properties == XCB_ATOM_NONE)
 		return;
 
 	/* debug print */
-//	if(true) {
-//		char const * action;
-//		switch (type) {
-//		case _NET_WM_STATE_REMOVE:
-//			action = "remove";
-//			break;
-//		case _NET_WM_STATE_ADD:
-//			action = "add";
-//			break;
-//		case _NET_WM_STATE_TOGGLE:
-//			action = "toggle";
-//			break;
-//		default:
-//			action = "invalid";
-//			break;
-//		}
-//		std::cout << "_NET_WM_STATE: " << action << " "
-//				<< cnx->get_atom_name(state_properties) << std::endl;
-//	}
+	if(false) {
+		char const * action;
+		switch (type) {
+		case _NET_WM_STATE_REMOVE:
+			action = "remove";
+			break;
+		case _NET_WM_STATE_ADD:
+			action = "add";
+			break;
+		case _NET_WM_STATE_TOGGLE:
+			action = "toggle";
+			break;
+		default:
+			action = "invalid";
+			break;
+		}
+		std::cout << "_NET_WM_STATE: " << action << " "
+				<< _dpy->get_atom_name(state_properties) << std::endl;
+	}
 
 	auto mw = find_managed_window_with(c);
 	if(mw == nullptr)
 		return;
 
-	if (mw->is(MANAGED_NOTEBOOK)) {
+	xcb_timestamp_t time;
+	if(not get_safe_net_wm_user_time(mw, time)) {
+		time = XCB_CURRENT_TIME;
+	}
+
+	for(auto workspace: _workspace_list) {
+		auto view = workspace->lookup_view_for(mw);
 
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
+				switch_fullscreen_to_prefered_view_mode(view, time);
 				break;
 			case _NET_WM_STATE_ADD:
-				fullscreen(mw);
-				update_workspace_visibility();
+				switch_view_to_fullscreen(view, time);
 				break;
 			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_workspace_visibility();
+				toggle_fullscreen(view, time);
 				break;
 			}
-			update_workarea();
 		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
 			/* Ignore as specified by ICCCM/EWMH: client cannot change this state */
 		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
 				mw->set_demands_attention(false);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				mw->queue_redraw();
-				break;
-			default:
-				break;
-			}
-		}
-	} else if (mw->is(MANAGED_FLOATING)) {
-
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				fullscreen(mw);
-				update_workspace_visibility();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_workspace_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->raise();
-				set_focus(mw, XCB_CURRENT_TIME);
-				break;
-			case _NET_WM_STATE_ADD:
-				/** I ignore it **/
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				/** IWMH say ignore it ? **/
-			default:
-				break;
-			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				mw->queue_redraw();
-				break;
-			default:
-				break;
-			}
-		}
-	} else if (mw->is(MANAGED_DOCK)) {
-
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				//fullscreen(mw);
-				//update_workspace_visibility();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				//toggle_fullscreen(mw);
-				//update_workspace_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->raise();
-				break;
-			case _NET_WM_STATE_ADD:
-				/** I ignore it **/
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				/** IWMH say ignore it ? **/
-			default:
-				break;
-			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_ADD:
-				mw->set_demands_attention(true);
-				mw->queue_redraw();
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				mw->set_demands_attention(not mw->demands_attention());
-				mw->queue_redraw();
-				break;
-			default:
-				break;
-			}
-		}
-	} else if (mw->is(MANAGED_FULLSCREEN)) {
-		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				unfullscreen(mw);
-				update_workspace_visibility();
-				break;
-			case _NET_WM_STATE_ADD:
-				break;
-			case _NET_WM_STATE_TOGGLE:
-				toggle_fullscreen(mw);
-				update_workspace_visibility();
-				break;
-			}
-			update_workarea();
-		} else if (state_properties == A(_NET_WM_STATE_HIDDEN)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				break;
-			case _NET_WM_STATE_ADD:
-				break;
-			case _NET_WM_STATE_TOGGLE:
-			default:
-				break;
-			}
-		} else if (state_properties == A(_NET_WM_STATE_DEMANDS_ATTENTION)) {
-			switch (type) {
-			case _NET_WM_STATE_REMOVE:
-				mw->set_demands_attention(false);
 				break;
 			case _NET_WM_STATE_ADD:
 				mw->set_demands_attention(true);
@@ -2093,33 +1837,9 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 	}
 }
 
-void page_t::insert_in_tree_using_transient_for(shared_ptr<client_base_t> c) {
-	/* ensure the removal */
-	detach(c);
-
-	auto transient_for = get_transient_for(c);
-	if(transient_for != nullptr) {
-		transient_for->add_subclient(c);
-	} else {
-		auto mw = dynamic_pointer_cast<client_managed_t>(c);
-
-		if (mw != nullptr) {
-			int workspace = find_current_workspace(c);
-			if(workspace >= 0 and workspace < get_workspace_count()) {
-				get_workspace(workspace)->attach(mw);
-			} else {
-				get_current_workspace()->attach(mw);
-			}
-		} else {
-			get_current_workspace()->add_unknown(c);
-		}
-	}
-}
-
-shared_ptr<client_base_t> page_t::get_transient_for(
-		shared_ptr<client_base_t> c) {
+client_managed_p page_t::get_transient_for(client_managed_p c) {
 	assert(c != nullptr);
-	shared_ptr<client_base_t> transient_for = nullptr;
+	client_managed_p transient_for = nullptr;
 	if (c->get<p_wm_transient_for>() != nullptr) {
 		transient_for = find_client_with(*(c->get<p_wm_transient_for>()));
 		if (transient_for == nullptr)
@@ -2138,82 +1858,42 @@ vector<shared_ptr<tree_t>> page_t::get_all_children() const
 	return ret;
 }
 
-void page_t::detach(shared_ptr<tree_t> t) {
-	assert(t != nullptr);
+void page_t::move_fullscreen_to_viewport(view_fullscreen_p fv, viewport_p v) {
 
-	/** detach a tree_t will cause it to be restacked, at less **/
-	add_global_damage(t->get_visible_region());
-	if(t->parent() != nullptr) {
-
-		/**
-		 * Keeping a client in the focus history of wrong workspace
-		 * trouble the workspace switching, because when a switch occur,
-		 * page look within the workspace focus history to choose the
-		 * proper client to re-focus and may re-focus that is not belong the
-		 * new workspace.
-		 **/
-		if(typeid(*t.get()) == typeid(client_managed_t)) {
-			auto x = dynamic_pointer_cast<client_managed_t>(t);
-			for(auto w: _workspace_list)
-				w->client_focus_history_remove(x);
-		}
-
-		t->parent()->remove(t);
-		if(t->parent() != nullptr) {
-			printf("XXX %s\n", typeid(*t->parent()).name());
-			assert(false);
-		}
+	if (not fv->viewport.expired()) {
+		fv->viewport.lock()->show();
 	}
+
+	fv->_client->_absolute_position = v->raw_area();
+	fv->viewport = v;
+	fv->show();
+	v->hide();
+
 }
 
-void page_t::fullscreen_client_to_viewport(shared_ptr<client_managed_t> c, shared_ptr<viewport_t> v) {
-	if (has_key(_fullscreen_client_to_viewport, c.get())) {
-		fullscreen_data_t & data = _fullscreen_client_to_viewport[c.get()];
-		if (v != data.viewport.lock()) {
-			if(not data.viewport.expired()) {
-				data.viewport.lock()->show();
-				data.viewport.lock()->queue_redraw();
-				add_global_damage(data.viewport.lock()->raw_area());
-			}
-			v->hide();
-			add_global_damage(v->raw_area());
-			data.viewport = v;
-			data.workspace = find_workspace_of(v);
-			c->set_notebook_wished_position(v->raw_area());
-			c->reconfigure();
-			update_workspace_visibility();
-		}
-	}
-}
+void page_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time) {
 
-void page_t::bind_window(shared_ptr<client_managed_t> mw, bool activate) {
-	detach(mw);
-	auto workspace = mw->ensure_workspace();
-	if(workspace == ALL_DESKTOP) {
-		insert_window_in_notebook(mw, get_current_workspace()->default_pop(), activate);
-	} else {
-		insert_window_in_notebook(mw, get_workspace(workspace)->default_pop(), activate);
+	auto vx = dynamic_pointer_cast<view_floating_t>(v);
+	if(vx) {
+		switch_floating_to_notebook(vx, time);
+		return;
 	}
 
-	if(activate) {
-		this->activate(mw, XCB_CURRENT_TIME);
+	auto vf = dynamic_pointer_cast<view_fullscreen_t>(v);
+	if(vf) {
+		switch_fullscreen_to_notebook(vf, time);
+		return;
 	}
 
 	_need_update_client_list = true;
 	_need_restack = true;
 }
 
-void page_t::unbind_window(shared_ptr<client_managed_t> mw) {
-	detach(mw);
-	/* update database */
-	if(mw->is(MANAGED_DOCK))
-		return;
-	mw->set_managed_type(MANAGED_FLOATING);
-	insert_in_tree_using_transient_for(mw);
-	mw->queue_redraw();
-	mw->show();
-	mw->raise();
-	_need_update_client_list = true;
+void page_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_t time) {
+	auto client = vn->_client;
+	auto workspace = vn->workspace();
+	vn->detach();
+	workspace->insert_as_floating(client, time);
 	_need_restack = true;
 }
 
@@ -2226,9 +1906,9 @@ shared_ptr<notebook_t> page_t::get_another_notebook(shared_ptr<tree_t> base, sha
 	vector<shared_ptr<notebook_t>> l;
 
 	if (base == nullptr) {
-		l = filter_class<notebook_t>(get_current_workspace()->get_all_children());
+		l = get_current_workspace()->gather_children_root_first<notebook_t>();
 	} else {
-		l = filter_class<notebook_t>(base->get_all_children());;
+		l = base->gather_children_root_first<notebook_t>();
 	}
 
 	if (!l.empty()) {
@@ -2242,23 +1922,8 @@ shared_ptr<notebook_t> page_t::get_another_notebook(shared_ptr<tree_t> base, sha
 
 }
 
-shared_ptr<notebook_t> page_t::find_parent_notebook_for(shared_ptr<client_managed_t> mw) {
-	return dynamic_pointer_cast<notebook_t>(mw->parent()->shared_from_this());
-}
-
 shared_ptr<workspace_t> page_t::find_workspace_of(shared_ptr<tree_t> n) {
-	shared_ptr<tree_t> x = n;
-	while (x != nullptr) {
-		auto ret = dynamic_pointer_cast<workspace_t>(x);
-		if (ret != nullptr)
-			return ret;
-
-		if (x->parent() != nullptr)
-			x = (x->parent()->shared_from_this());
-		else
-			return nullptr;
-	}
-	return nullptr;
+	return n->workspace();
 }
 
 void page_t::update_windows_stack() {
@@ -2273,7 +1938,8 @@ void page_t::update_windows_stack() {
 		 **/
 		int k = 0;
 		for (int i = 0; i < tree.size(); ++i) {
-			if(tree[i]->get_xid() != XCB_WINDOW_NONE) {
+			if(tree[i]->get_toplevel_xid() != XCB_WINDOW_NONE
+					and typeid(view_popup_t) != typeid(*tree[i].get())) {
 				tree[k++] = tree[i];
 			}
 		}
@@ -2287,7 +1953,7 @@ void page_t::update_windows_stack() {
 		stack.push_back(_compositor->get_composite_overlay());
 
 	for (auto i : tree) {
-		stack.push_back(i->get_xid());
+		stack.push_back(i->get_toplevel_xid());
 	}
 
 	unsigned k = 0;
@@ -2371,100 +2037,30 @@ void page_t::update_viewport_layout() {
 
 	}
 
-	// compute all viewport  that does not overlap and cover the full area of
+	// compute all viewport that does not overlap and cover the full area of
 	// crts
+	vector<rect> viewport_allocation; // the list of viewport locations.
 	region already_allocated;
-	vector<rect> viewport_allocation;
-	for(auto crtc: crtc_info) {
-		if(crtc.second->num_outputs <= 0)
+	for (auto crtc: crtc_info) {
+		if (crtc.second->num_outputs <= 0)
 			continue;
 
 		/* the location of crts */
 		region location{crtc.second->x, crtc.second->y, crtc.second->width,
 			crtc.second->height};
 		location -= already_allocated;
-		for(auto & b: location.rects()) {
+		for (auto & b: location.rects()) {
 			viewport_allocation.push_back(b);
 		}
 		already_allocated += location;
 	}
 
+	if (viewport_allocation.size() < 1) {
+		viewport_allocation.push_back(_root_position);
+	}
+
 	for(auto d: _workspace_list) {
-		//d->set_allocation(_root_position);
-		/** get old layout to recycle old viewport, and keep unchanged outputs **/
-		vector<shared_ptr<viewport_t>> old_layout = d->get_viewport_map();
-		/** store the newer layout, to be able to cleanup obsolete viewports **/
-		vector<shared_ptr<viewport_t>> new_layout;
-		/** for each not overlaped rectangle **/
-		for(unsigned i = 0; i < viewport_allocation.size(); ++i) {
-			printf("%d: found viewport (%d,%d,%d,%d)\n", d->id(),
-					viewport_allocation[i].x, viewport_allocation[i].y,
-					viewport_allocation[i].w, viewport_allocation[i].h);
-			shared_ptr<viewport_t> vp;
-			if(i < old_layout.size()) {
-				vp = old_layout[i];
-				vp->set_raw_area(viewport_allocation[i]);
-			} else {
-				vp = make_shared<viewport_t>(d.get(), viewport_allocation[i]);
-			}
-			compute_viewport_allocation(d, vp);
-			new_layout.push_back(vp);
-		}
-
-		/** if no layout is found fallback to on screen **/
-		if(new_layout.size() < 1) {
-			rect area{_root_position};
-			shared_ptr<viewport_t> vp;
-			if(0 < old_layout.size()) {
-				vp = old_layout[0];
-				vp->set_raw_area(area);
-			} else {
-				vp = make_shared<viewport_t>(d.get(), area);
-			}
-			compute_viewport_allocation(d, vp);
-			new_layout.push_back(vp);
-		}
-
-		d->set_layout(new_layout);
-		d->update_default_pop();
-
-		/** clean up obsolete layout **/
-		for (unsigned i = new_layout.size(); i < old_layout.size(); ++i) {
-			/** destroy this viewport **/
-			remove_viewport(d, old_layout[i]);
-			old_layout[i] = nullptr;
-		}
-
-		if(new_layout.size() > 0) {
-			region new_layout_region;
-			for(auto x: new_layout) {
-				new_layout_region += x->allocation();
-			}
-
-			// update position of floating managed clients to avoid offscreen
-			// floating window
-			for(auto x: net_client_list()) {
-				if(x->is(MANAGED_FLOATING)) {
-					auto r = x->orig_position();
-
-					/**
-					 * if the current window do not overlap any desktop move to
-					 * the center of an existing monitor
-					 **/
-					if((new_layout_region & r).empty()) {
-						r.x = new_layout[0]->allocation().x
-								+ (new_layout[0]->allocation().w - r.w)/2.0
-								+ _theme->floating.margin.left;
-						r.y = new_layout[0]->allocation().y
-								+ (new_layout[0]->allocation().h - r.h)/2.0
-								+ _theme->floating.margin.top;
-						x->set_floating_wished_position(r);
-						x->reconfigure();
-					}
-				}
-			}
-		}
-
+		d->update_viewports_layout(viewport_allocation);
 	}
 
 	for(auto i: crtc_info) {
@@ -2480,7 +2076,7 @@ void page_t::update_viewport_layout() {
 		free(randr_resources);
 	}
 
-	update_workspace_visibility();
+	update_workspace_visibility(XCB_CURRENT_TIME);
 
 	/* set viewport */
 	std::vector<uint32_t> viewport(_workspace_list.size()*2);
@@ -2492,25 +2088,26 @@ void page_t::update_viewport_layout() {
 	set_workspace_geometry(_root_position.w, _root_position.h);
 
 	update_workarea();
-	reconfigure_docks(get_current_workspace());
 
 }
 
 void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v) {
 
 	/* remove fullscreened clients if needed */
-	for (auto &x : _fullscreen_client_to_viewport) {
-		if (x.second.viewport.lock() == v) {
-			unfullscreen(x.second.client.lock());
+	for (auto &x : v->_root->gather_children_root_first<view_fullscreen_t>()) {
+		if (x->viewport.lock() == v) {
+			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 			break;
 		}
 	}
 
 	/* Transfer clients to a valid notebook */
-	for (auto nbk : filter_class<notebook_t>(v->get_all_children())) {
-		for (auto c : filter_class<client_managed_t>(nbk->children())) {
-			d->default_pop()->add_client(c, false);
-		}
+	for (auto x : v->gather_children_root_first<view_notebook_t>()) {
+		d->ensure_default_notebook()->add_client(x->_client, XCB_CURRENT_TIME);
+	}
+
+	for (auto x : v->gather_children_root_first<view_floating_t>()) {
+		d->insert_as_floating(x->_client, XCB_CURRENT_TIME);
 	}
 
 }
@@ -2528,119 +2125,103 @@ void page_t::onmap(xcb_window_t w) {
 		return;
 
 	/* check if this window is a page window */
-	for(auto const & x: get_all_children()) {
-		if(x->get_xid() == w) {
-			add_global_damage(x->get_visible_region());
-			return;
-		}
-	}
+	if(has_key(_page_windows, w))
+		return;
 
 	/* check if the window is already managed */
-	{
-		auto c = find_client_with(w);
-		if(c != nullptr) {
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-			if(not mw)
-				return;
-
-			mw->reconfigure();
-			if(mw == _net_active_window.lock()) {
-				mw->focus(XCB_CURRENT_TIME);
-				mw->grab_button_focused_unsafe();
-			}
+	for(auto & x: lock(_net_client_list)) {
+		if(x->is_window(w)) {
 			return;
 		}
 	}
 
-	try {
-		auto props = _dpy->create_client_proxy(w);
-
-		/* abuse try - catch */
-		if(props->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY) {
-			throw invalid_client_t{};
-		}
-
-		//props->print_window_attributes();
-		//props->print_properties();
-
-		xcb_atom_t type = props->wm_type();
-
-		if (not props->wa().override_redirect) {
-			if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				create_managed_window(w, type);
-			}
-		} else {
-			if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-				create_managed_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				create_unmanaged_window(w, type);
-			} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-				create_unmanaged_window(w, type);
-			}
-		}
-
-	} catch (invalid_client_t const & e) {
-		/* ignore invalid client */
+	auto props = _dpy->ensure_client_proxy(w);
+	if(not props) { // the window is already destroyed.
+		return;
 	}
+
+	if(props->wa()._class == XCB_WINDOW_CLASS_INPUT_ONLY) {
+		return;
+	}
+
+	//props->print_window_attributes();
+	//props->print_properties();
+
+	xcb_atom_t type = props->wm_type();
+
+	if (not props->wa().override_redirect) {
+		if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			create_managed_window(props);
+		}
+	} else {
+		if (type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+			create_managed_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLBAR)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_MENU)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_UTILITY)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_SPLASH)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DIALOG)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DROPDOWN_MENU)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_POPUP_MENU)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_COMBO)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_DND)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
+			create_unmanaged_window(props);
+		} else if (type == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+			create_unmanaged_window(props);
+		}
+	}
+
 }
 
 
-void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
-	auto mw = make_shared<client_managed_t>(this, w, type);
+void page_t::create_managed_window(client_proxy_p proxy) {
+	auto mw = make_shared<client_managed_t>(this, proxy);
 	_net_client_list.push_back(mw);
-	manage_client(mw, type);
+	manage_client(mw, proxy->wm_type());
 
 	if (mw->get<p_net_wm_strut>() != nullptr
 			or mw->get<p_net_wm_strut_partial>() != nullptr) {
@@ -2649,9 +2230,9 @@ void page_t::create_managed_window(xcb_window_t w, xcb_atom_t type) {
 }
 
 void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
-	safe_update_transient_for(mw);
-	mw->raise();
-	mw->show();
+//	safe_update_transient_for(mw);
+//	mw->raise();
+//	mw->show();
 
 	if(not mw->skip_task_bar()) {
 		_need_update_client_list = true;
@@ -2664,13 +2245,13 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		if(final_workspace == ALL_DESKTOP) {
 			printf("final workspace = %u\n", final_workspace);
 			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-			mw->show();
+			//mw->show();
 		} else {
 			printf("final workspace = %u\n", final_workspace);
 			if(_current_workspace == final_workspace) {
-				mw->show();
+				//mw->show();
 			} else {
-				mw->hide();
+				//mw->hide();
 			}
 		}
 	}
@@ -2689,80 +2270,25 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		}
 	}
 
-	/**
-	 * Here client that default to fullscreen
-	 **/
-	if (mw->is_fullscreen()) {
-		mw->show();
-		fullscreen(mw);
-		update_workspace_visibility();
-		mw->raise();
-		set_focus(mw, XCB_CURRENT_TIME);
 
-		/**
-		 * Here client that default to notebook
-		 **/
+	if (mw->has_wm_state_fullscreen()) {
+		insert_as_fullscreen(mw);
 	} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL))
-			//or type == A(_NET_WM_WINDOW_TYPE_DOCK))
 			and get_transient_for(mw) == nullptr
-			//and mw->has_motif_border()
-			and not mw->is_modal())
+			and not mw->has_wm_state_modal())
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
-
-		/** select if the client want to appear mapped or iconic **/
-		bool activate = true;
-
-		/**
-		 * first try if previous vm has put this window in IconicState, then
-		 * Check if the client have a preferred initial state.
-		 **/
-		if (mw->get<p_wm_state>() != nullptr) {
-			if (mw->get<p_wm_state>()->state == IconicState) {
-				activate = false;
-			}
-		} else {
-			if (mw->get<p_wm_hints>() != nullptr) {
-				if ((mw->get<p_wm_hints>()->flags & StateHint)
-						and (mw->get<p_wm_hints>()->initial_state == IconicState)) {
-					activate = false;
-				}
-			}
-		}
-
-//		if(mw->net_wm_state() != nullptr) {
-//			if(has_key(*mw->net_wm_state(), A(_NET_WM_STATE_HIDDEN))) {
-//				activate = false;
-//			}
-//		}
-
-		if(not mw->is(MANAGED_DOCK)) {
-			bind_window(mw, activate);
-		} else {
-			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-		}
-		mw->reconfigure();
-
-		/**
-		 * Here client that default to floating
-		 **/
+		insert_as_notebook(mw);
+	} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
+		insert_as_dock(mw);
 	} else {
-		mw->show();
-		mw->raise();
-		set_focus(mw, XCB_CURRENT_TIME);
-		if(mw->is(MANAGED_DOCK)) {
-			update_workarea();
-		}
-
-		mw->reconfigure();
-		_need_restack = true;
+		insert_as_floating(mw);
 	}
 }
 
-void page_t::create_unmanaged_window(xcb_window_t w, xcb_atom_t type) {
-	auto uw = make_shared<client_not_managed_t>(this, w, type);
-	_dpy->map(uw->orig());
-	uw->show();
-	safe_update_transient_for(uw);
+void page_t::create_unmanaged_window(client_proxy_p proxy) {
+	auto mw = make_shared<client_managed_t>(this, proxy);
+	_net_client_list.push_back(mw);
+	insert_as_popup(mw);
 }
 
 shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
@@ -2780,7 +2306,7 @@ shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
  * @output time: if time is found time is set to the found value.
  * @input c: a window client handler.
  **/
-bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestamp_t & time) {
+bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time) {
 	if (c->get<p_net_wm_user_time>() != nullptr) {
 		time = *(c->get<p_net_wm_user_time>());
 		return true;
@@ -2790,7 +2316,9 @@ bool page_t::get_safe_net_wm_user_time(shared_ptr<client_base_t> c, xcb_timestam
 		if (*(c->get<p_net_wm_user_time_window>()) == XCB_WINDOW_NONE)
 			return false;
 		try {
-			auto xc = _dpy->create_client_proxy(*(c->get<p_net_wm_user_time_window>()));
+			auto xc = _dpy->ensure_client_proxy(*(c->get<p_net_wm_user_time_window>()));
+			if (not xc)
+				return false;
 			if(xc->get<p_net_wm_user_time>() == nullptr)
 				return false;
 			if (*(xc->get<p_net_wm_user_time>()) == 0)
@@ -2812,41 +2340,57 @@ shared_ptr<client_managed_t> page_t::find_managed_window_with(xcb_window_t w) {
 	}
 }
 
-/**
- * This will remove a client from tree and destroy related data. This
- * function do not send any X11 request.
- **/
-void page_t::cleanup_not_managed_client(shared_ptr<client_not_managed_t> c) {
-	remove_client(c);
+void page_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
+{
+	//printf("call %s\n", __PRETTY_FUNCTION__);
+	c->set_managed_type(MANAGED_POPUP);
+
+	auto wid = c->ensure_workspace();
+	workspace_p workspace;
+	if(wid == ALL_DESKTOP) {
+		workspace = get_current_workspace();
+	} else {
+		workspace = get_workspace(wid);
+	}
+
+	workspace->insert_as_popup(c, time);
+
 }
 
-void page_t::safe_update_transient_for(shared_ptr<client_base_t> c) {
-	if (typeid(*c.get()) == typeid(client_managed_t)) {
-		auto mw = dynamic_pointer_cast<client_managed_t>(c);
-		if (mw->is(MANAGED_FLOATING)) {
-			detach(mw);
-			insert_in_tree_using_transient_for(mw);
-		} else if (mw->is(MANAGED_NOTEBOOK)) {
-			/* DO NOTHING */
-		} else if (mw->is(MANAGED_FULLSCREEN)) {
-			/* DO NOTHING */
-		} else if (mw->is(MANAGED_DOCK)) {
-			detach(mw);
-			insert_in_tree_using_transient_for(mw);
-		}
-	} else if (typeid(*c.get()) == typeid(client_not_managed_t)) {
-		auto uw = dynamic_pointer_cast<client_not_managed_t>(c);
-		detach(uw);
-		if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-			get_current_workspace()->add_tooltips(uw);
-		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-			get_current_workspace()->add_notification(uw);
-		} else if (uw->wm_type() == A(_NET_WM_WINDOW_TYPE_DOCK)) {
-			insert_in_tree_using_transient_for(uw);
-		} else {
-			insert_in_tree_using_transient_for(uw);
-		}
+void page_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time) {
+	printf("call %s\n", __PRETTY_FUNCTION__);
+	c->set_managed_type(MANAGED_DOCK);
+
+	auto wid = c->ensure_workspace();
+	vector<workspace_p> workspace_list;
+	if(wid == ALL_DESKTOP) {
+		workspace_list = _workspace_list;
+	} else {
+		workspace_list.push_back(get_workspace(wid));
 	}
+
+	for (auto & workspace: workspace_list) {
+		workspace->insert_as_dock(c, time);
+	}
+
+	update_workarea();
+	_need_restack = true;
+}
+
+void page_t::insert_as_floating(client_managed_p c, xcb_timestamp_t time) {
+	printf("call %s\n", __PRETTY_FUNCTION__);
+	c->set_managed_type(MANAGED_FLOATING);
+
+	auto wid = c->ensure_workspace();
+	workspace_p workspace;
+	if(wid == ALL_DESKTOP) {
+		workspace = get_current_workspace();
+	} else {
+		workspace = get_workspace(wid);
+	}
+
+	workspace->insert_as_floating(c, time);
+	_need_restack = true;
 }
 
 void page_t::set_workspace_geometry(long width, long height) {
@@ -2859,42 +2403,22 @@ void page_t::set_workspace_geometry(long width, long height) {
 }
 
 shared_ptr<client_managed_t> page_t::find_client_managed_with(xcb_window_t w) {
-	_net_client_list.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	_net_client_list.remove_if([](client_managed_w const & w) { return w.expired(); });
 	for(auto & i: _net_client_list) {
-		if(i.lock()->has_window(w)) {
+		if(i.lock()->is_window(w)) {
 			return i.lock();
 		}
 	}
 	return nullptr;
 }
 
-shared_ptr<client_base_t> page_t::find_client_with(xcb_window_t w) {
-	for(auto & i: filter_class<client_base_t>(get_all_children())) {
-		if(i->has_window(w)) {
+auto page_t::find_client_with(xcb_window_t w) const -> client_managed_p {
+	for(auto & i: lock(_net_client_list)) {
+		if(i->is_window(w)) {
 			return i;
 		}
 	}
 	return nullptr;
-}
-
-shared_ptr<client_base_t> page_t::find_client(xcb_window_t w) {
-	for(auto i: filter_class<client_base_t>(get_all_children())) {
-		if(i->orig() == w) {
-			return i;
-		}
-	}
-	return nullptr;
-}
-
-void page_t::remove_client(shared_ptr<client_base_t> c) {
-	auto parent = c->parent()->shared_from_this();
-	detach(c);
-	for(auto i: c->children()) {
-		auto c = dynamic_pointer_cast<client_base_t>(i);
-		if(c != nullptr) {
-			insert_in_tree_using_transient_for(c);
-		}
-	}
 }
 
 void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component_t> by) {
@@ -2915,6 +2439,7 @@ void page_t::create_identity_window() {
 
 	/* Warning: This window must be focusable, thus it MUST be an INPUT_OUTPUT window */
 	identity_window = xcb_generate_id(_dpy->xcb());
+	_page_windows.insert(identity_window);
 	xcb_void_cookie_t ck = xcb_create_window(_dpy->xcb(), XCB_COPY_FROM_PARENT, identity_window,
 			_dpy->root(), -100, -100, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT,
 			XCB_COPY_FROM_PARENT, attrs_mask, attrs);
@@ -3014,11 +2539,11 @@ void page_t::print_state() const {
 	get_current_workspace()->print_tree(0);
 	cout << "_current_workspace = " << _current_workspace << endl;
 
-	cout << "clients list:" << endl;
-	for(auto c: filter_class<client_base_t>(get_all_children())) {
-		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
-	}
-	cout << "end" << endl;;
+//	cout << "clients list:" << endl;
+//	for(auto c: filter_class<client_base_t>(get_all_children())) {
+//		cout << "client " << c->get_node_name() << " id = " << c->orig() << " ptr = " << c << " parent = " << c->parent() << endl;
+//	}
+//	cout << "end" << endl;
 
 }
 
@@ -3032,35 +2557,12 @@ void page_t::update_current_workspace() const {
 void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 	assert(workspace < _workspace_list.size());
 	if (workspace != _current_workspace and workspace != ALL_DESKTOP) {
-		std::cout << "switch to workspace #" << workspace << std::endl;
-
+		//std::cout << "switch to workspace #" << workspace << std::endl;
 		start_switch_to_workspace_animation(workspace);
-
-		auto stiky_list = get_sticky_client_managed(_workspace_list[_current_workspace]);
-
-		/* hide the current workspace */
-		_workspace_list[_current_workspace]->hide();
 		_current_workspace = workspace;
-
-		/* put the new workspace ontop of others and show it */
-		_workspace_list[_current_workspace]->show();
-
-		/** move sticky to current workspace **/
-		for(auto s : stiky_list) {
-			detach(s);
-			insert_in_tree_using_transient_for(s);
-		}
 		update_viewport_layout();
 		update_current_workspace();
-		update_workspace_visibility();
-
-		shared_ptr<client_managed_t> focus;
-		if(get_current_workspace()->client_focus_history_front(focus)) {
-			set_focus(focus, time);
-		} else {
-			set_focus(nullptr, time);
-		}
-
+		update_workspace_visibility(time);
 	}
 }
 
@@ -3080,31 +2582,17 @@ void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
 
 }
 
-//void page_t::update_fullscreen_clients_position() {
-//	for(auto i: _fullscreen_client_to_viewport) {
-//		i.second.client.lock()->set_notebook_wished_position(i.second.viewport.lock()->raw_area());
-//	}
-//}
-
-void page_t::update_workspace_visibility() {
+void page_t::update_workspace_visibility(xcb_timestamp_t time) {
 	/** hide only workspace that must be hidden first **/
 	for(unsigned k = 0; k < _workspace_list.size(); ++k) {
 		if(k != _current_workspace) {
-			_workspace_list[k]->hide();
+			_workspace_list[k]->disable();
 		}
 	}
 
 	/** and show the workspace that have to be show **/
-	_workspace_list[_current_workspace]->show();
-
-	/** hide viewport with fullscreen window above **/
-	for(auto & i: _fullscreen_client_to_viewport) {
-		if(not i.second.workspace.lock()->is_visible()) {
-			if(not i.second.viewport.expired()) {
-				i.second.viewport.lock()->hide();
-			}
-		}
-	}
+	_workspace_list[_current_workspace]->enable(time);
+	_need_restack = true;
 }
 
 void page_t::_event_handler_bind(int type, callback_event_t f) {
@@ -3181,12 +2669,12 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
-	shared_ptr<client_managed_t> focused;
+	view_p focused;
 	if (get_current_workspace()->client_focus_history_front(focused)) {
 		// client are only allowed to focus their own windows
 		// NOTE: client_id() is based on Xorg client XID allocation and may be
 		//   invalid for other X11 server implementation.
-		if(client_id(focused->orig()) != client_id(e->event)) {
+		if(client_id(focused->_client->_client_proxy->id()) != client_id(e->event)) {
 			focused->focus(XCB_CURRENT_TIME);
 		}
 	} else {
@@ -3202,15 +2690,15 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	{
 		auto c = find_client_managed_with(e->event);
-		if(c != nullptr) {
+		if(c) {
 			switch(e->detail) {
 			case XCB_NOTIFY_DETAIL_INFERIOR:
 			case XCB_NOTIFY_DETAIL_ANCESTOR:
 			case XCB_NOTIFY_DETAIL_VIRTUAL:
 			case XCB_NOTIFY_DETAIL_NONLINEAR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-				c->grab_button_focused_unsafe();
 				c->set_focus_state(true);
+				break;
 			default:
 				break;
 			}
@@ -3237,7 +2725,7 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 		if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
 			return;
 
-		shared_ptr<client_managed_t> focused;
+		view_p focused;
 		if (get_current_workspace()->client_focus_history_front(focused)) {
 			focused->focus(XCB_CURRENT_TIME);
 		} else {
@@ -3248,16 +2736,14 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 		}
 	} else {
 		auto c = find_client_managed_with(e->event);
-		if(c != nullptr) {
+		if(c) {
 			switch(e->detail) {
 			case XCB_NOTIFY_DETAIL_ANCESTOR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-				c->grab_button_unfocused_unsafe();
 				c->set_focus_state(false);
 				break;
 			case XCB_NOTIFY_DETAIL_INFERIOR:
-				c->grab_button_focused_unsafe();
 				c->set_focus_state(true);
 				break;
 			default:
@@ -3274,10 +2760,11 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	if(not configuration._mouse_focus)
 		return;
 
-	auto mw = find_managed_window_with(e->event);
-	if(mw != nullptr) {
-		set_focus(mw, e->time);
-	}
+	/* TODO */
+//	auto mw = find_managed_window_with(e->event);
+//	if(mw != nullptr) {
+//		set_focus(mw, e->time);
+//	}
 }
 
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
@@ -3328,21 +2815,23 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 	auto se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
 	if (se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
 		xcb_window_t w = se->affected_window;
-		shared_ptr<client_base_t> c = find_client(w);
+		auto c = find_client_with(w);
 		if (c != nullptr) {
 			c->update_shape();
 		}
 
-		auto mw = dynamic_pointer_cast<client_managed_t>(c);
-		if(mw != nullptr) {
-			mw->reconfigure();
-		}
+		/* TODO */
+//		auto mw = dynamic_pointer_cast<client_managed_t>(c);
+//		if(mw != nullptr) {
+//			mw->reconfigure();
+//		}
 
 	}
 }
 
 void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_motion_notify_event_t const *>(_e);
+	//printf("motion #%x %d %d\n", e->event, e->event_x, e->event_y);
 	if(_grab_handler != nullptr) {
 		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
 		grab->button_motion(e);
@@ -3391,7 +2880,7 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_error(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_generic_error_t const *>(_e);
-	_dpy->print_error(e);
+	//_dpy->print_error(e);
 }
 
 
@@ -3457,7 +2946,8 @@ void page_t::update_number_of_workspace(int n) {
 	for(int i = _workspace_list.size(); i < n; ++i) {
 		auto d = make_shared<workspace_t>(this, i);
 		_workspace_list.push_back(d);
-		d->hide();
+		d->disable();
+		d->show();
 	}
 	update_workspace_names();
 
@@ -3482,33 +2972,22 @@ void page_t::update_number_of_workspace(int n) {
 
 void page_t::move_client_to_workspace(shared_ptr<client_managed_t> mw, unsigned workspace)
 {
-	printf("move to %u\n", workspace);
-	if(workspace == ALL_DESKTOP) {
-		mw->net_wm_state_add(_NET_WM_STATE_STICKY);
-		mw->set_net_wm_desktop(workspace);
-		return;
-	}
+	/* TODO */
 
-	if(find_current_workspace(mw) == workspace)
-		return;
+//	printf("move to %u\n", workspace);
+//	if(workspace == ALL_DESKTOP) {
+//		mw->net_wm_state_add(_NET_WM_STATE_STICKY);
+//		mw->set_net_wm_desktop(workspace);
+//		return;
+//	}
+//
+//	if(find_current_workspace(mw) == workspace)
+//		return;
+//
+//	detach(mw);
+//	mw->set_net_wm_desktop(workspace);
+//	manage_client(mw, mw->wm_type());
 
-	detach(mw);
-	mw->set_net_wm_desktop(workspace);
-	manage_client(mw, mw->wm_type());
-
-}
-
-vector<shared_ptr<client_managed_t>> page_t::get_sticky_client_managed(shared_ptr<tree_t> base) {
-	vector<shared_ptr<client_managed_t>> ret;
-	for(auto c: base->get_all_children()) {
-		auto mw = dynamic_pointer_cast<client_managed_t>(c);
-		if(mw != nullptr) {
-			if(mw->is_stiky() and (not mw->is(MANAGED_NOTEBOOK)) and (not mw->is(MANAGED_FULLSCREEN)))
-				ret.push_back(mw);
-		}
-	}
-
-	return ret;
 }
 
 shared_ptr<viewport_t> page_t::find_viewport_of(shared_ptr<tree_t> t) {
@@ -3520,15 +2999,6 @@ shared_ptr<viewport_t> page_t::find_viewport_of(shared_ptr<tree_t> t) {
 	}
 
 	return nullptr;
-}
-
-unsigned int page_t::find_current_workspace(shared_ptr<client_base_t> c) {
-	if(c->get<p_net_wm_desktop>() != nullptr)
-		return *(c->get<p_net_wm_desktop>());
-	auto d = find_workspace_of(c);
-	if(d != nullptr)
-		return d->id();
-	return _current_workspace;
 }
 
 void page_t::process_pending_events() {
@@ -3571,7 +3041,7 @@ void page_t::grab_stop(xcb_timestamp_t time) {
 	xcb_ungrab_pointer(_dpy->xcb(), time);
 
 	/* apply regular keyboard focus */
-	shared_ptr<client_managed_t> focused;
+	view_p focused;
 	if (get_current_workspace()->client_focus_history_front(focused)) {
 		focused->focus(time);
 	}
@@ -3603,16 +3073,36 @@ int page_t::get_workspace_count() const {
 int page_t::create_workspace() {
 	auto d = make_shared<workspace_t>(this, _workspace_list.size());
 	_workspace_list.push_back(d);
-	d->hide();
+	d->disable();
+	d->show();
 
+	update_viewport_layout();
+
+	if(d != get_current_workspace()) {
+		for (auto &x: get_current_workspace()->gather_children_root_first<view_t>()) {
+			auto w = x->_client->ensure_workspace();
+			if (w == ALL_DESKTOP) {
+				/** TODO: insert desktop **/
+				auto const & type = typeid(*(x.get()));
+				if (type == typeid(view_notebook_t)) {
+					d->insert_as_notebook(x->_client, XCB_CURRENT_TIME);
+				} else if (type == typeid(view_floating_t)) {
+					d->insert_as_floating(x->_client, XCB_CURRENT_TIME);
+				} else if (type == typeid(view_dock_t)) {
+					d->insert_as_dock(x->_client, XCB_CURRENT_TIME);
+				} else if (type == typeid(view_fullscreen_t)) {
+					d->insert_as_fullscreen(x->_client, XCB_CURRENT_TIME);
+				}
+			}
+		}
+	}
+
+	update_workarea();
 	/* update number of workspace */
 	uint32_t number_of_workspace = _workspace_list.size();
 	_dpy->change_property(_dpy->root(), _NET_NUMBER_OF_DESKTOPS,
 			CARDINAL, 32, &number_of_workspace, 1);
-
-	update_viewport_layout();
 	update_current_workspace();
-	update_workspace_visibility();
 	return d->id();
 }
 
@@ -3631,11 +3121,11 @@ xcb_atom_t page_t::A(atom_e atom) {
 	return _dpy->A(atom);
 }
 
-list<weak_ptr<client_managed_t>> page_t::global_client_focus_history() {
+list<view_w> page_t::global_client_focus_history() {
 	return _global_focus_history;
 }
 
-bool page_t::global_focus_history_front(shared_ptr<client_managed_t> & out) {
+bool page_t::global_focus_history_front(view_p & out) {
 	if(not global_focus_history_is_empty()) {
 		out = _global_focus_history.front().lock();
 		return true;
@@ -3643,53 +3133,63 @@ bool page_t::global_focus_history_front(shared_ptr<client_managed_t> & out) {
 	return false;
 }
 
-void page_t::global_focus_history_remove(shared_ptr<client_managed_t> in) {
-	_global_focus_history.remove_if([in](weak_ptr<tree_t> const & w) { return w.expired() or w.lock() == in; });
+void page_t::global_focus_history_remove(view_p in) {
+	_global_focus_history.remove_if([in](view_w const & w) { return w.expired() or w.lock() == in; });
 }
 
-void page_t::global_focus_history_move_front(shared_ptr<client_managed_t> in) {
+void page_t::global_focus_history_move_front(view_p in) {
 	move_front(_global_focus_history, in);
 }
 
 bool page_t::global_focus_history_is_empty() {
-	_global_focus_history.remove_if([](weak_ptr<tree_t> const & w) { return w.expired(); });
+	_global_focus_history.remove_if([](view_w const & w) { return w.expired(); });
 	return _global_focus_history.empty();
 }
 
 void page_t::start_alt_tab(xcb_timestamp_t time) {
-	auto _x = net_client_list();
-	list<shared_ptr<client_managed_t>> managed_window{_x.begin(), _x.end()};
+	auto _x = get_current_workspace()->gather_children_root_first<view_rebased_t>();
+	list<view_p> managed_window{_x.begin(), _x.end()};
 
-	auto focus_history = global_client_focus_history();
+	auto focus_history = get_current_workspace()->client_focus_history();
 	/* reorder client to follow focused order */
-	for (auto i = focus_history.rbegin();
-			i != focus_history.rend();
-			++i) {
-		if (not i->expired()) {
-			auto x = std::find_if(managed_window.begin(), managed_window.end(), [i](shared_ptr<client_managed_t> const & x) -> bool { return x == i->lock(); });
-			if(x != managed_window.end()) {
-				managed_window.splice(managed_window.begin(), managed_window, x);
-			}
+	for (auto i = focus_history.rbegin(); i != focus_history.rend(); ++i) {
+		if(i->expired())
+			continue;
+		auto x = std::find(managed_window.begin(), managed_window.end(), i->lock());
+		if(x != managed_window.end()) {
+			managed_window.splice(managed_window.begin(), managed_window, x);
 		}
 	}
-
-	managed_window.remove_if([](shared_ptr<client_managed_t> const & c) { return c->skip_task_bar() or c->is(MANAGED_DOCK); });
 
 	if(managed_window.size() > 1) {
 		/* Grab keyboard */
 		grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
+	} else {
+		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, time);
 	}
 }
 
-void page_t::on_visibility_change_handler(xcb_window_t xid, bool visible) {
-	auto client = find_client_managed_with(xid);
-	if(client != nullptr) {
-		if(visible) {
-			client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-		} else {
-			client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
+void page_t::on_visibility_change_handler(client_proxy_t * proxy, bool visible)
+{
+
+	/* find the view with toplevel window equals to proxy window */
+	view_p x;
+	for(auto & v: get_current_workspace()->gather_children_root_first<view_t>()) {
+		if(v->get_toplevel_xid() == proxy->id()) {
+			x = v;
+			break;
 		}
 	}
+
+	if(x != nullptr) {
+		//printf("change visibility of %s\n", x->_client->title().c_str());
+		if (visible) {
+			x->_client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+		} else {
+			x->_client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
+		}
+	}
+
 }
 
 void page_t::on_block_mainloop_handler() {
@@ -3737,7 +3237,7 @@ void page_t::make_surface_stats(int & size, int & count) {
 	_dpy->make_surface_stats(size, count);
 }
 
-auto page_t::net_client_list() -> list<client_managed_p> {
+auto page_t::net_client_list() -> vector<client_managed_p> {
 	return lock(_net_client_list);
 }
 
@@ -3764,16 +3264,11 @@ void page_t::damage_all() {
 	schedule_repaint();
 }
 
-void page_t::activate(client_managed_p c, xcb_timestamp_t time)
+void page_t::activate(view_p c, xcb_timestamp_t time)
 {
-	if(c->is(MANAGED_NOTEBOOK)) {
-		auto nbk = dynamic_pointer_cast<notebook_t>(c->parent());
-		nbk->_set_selected(c);
-	}
-
-	c->raise();
+	printf("call %s\n", __PRETTY_FUNCTION__);
+	c->xxactivate(time);
 	_need_restack = true;
-	set_focus(c, time);
 
 }
 

@@ -21,6 +21,7 @@
 #include "region.hxx"
 #include "page-types.hxx"
 #include "theme.hxx"
+#include "tree.hxx"
 
 namespace page {
 

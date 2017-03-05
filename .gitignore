@@ -69,3 +69,12 @@ src/renderable_floating_outer_gradien.o
 src/renderable_notebook_fading.o
 src/renderable_pixmap.o
 src/renderable_solid.o
+src/view.o
+src/view_dock.o
+src/view_floating.o
+src/view_fullscreen.o
+src/view_notebook.o
+src/page_component.o
+src/icon_handler.o
+src/view_popup.o
+src/view_rebased.o

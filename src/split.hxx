@@ -71,12 +71,11 @@ public:
 	 * tree_t virtual API
 	 **/
 
-	virtual void hide();
-	virtual void show();
+	using tree_t::hide;
+	using tree_t::show;
 	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> t);
+	virtual void remove(tree_p t) override;
 
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 
@@ -93,7 +92,6 @@ public:
 	//virtual void trigger_redraw();
 
 	//virtual auto get_xid() const -> xcb_window_t;
-	//virtual auto get_parent_xid() const -> xcb_window_t;
 	//virtual rect get_window_position() const;
 	//virtual void queue_redraw();
 

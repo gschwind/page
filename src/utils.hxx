@@ -172,23 +172,8 @@ reverse_range<T> reverse_iterate (T& x)
   return reverse_range<T> (x);
 }
 
-template<typename T0, typename T1>
-std::list<std::shared_ptr<T0>> filter_class_lock(std::list<std::weak_ptr<T1>> const & x) {
-	std::list<std::shared_ptr<T0>> ret;
-	for (auto i : x) {
-		if(i.expired())
-			continue;
-
-		auto n = dynamic_pointer_cast<T0>(i.lock());
-		if (n != nullptr) {
-			ret.push_back(n);
-		}
-	}
-	return ret;
-}
-
-template<typename T0, typename T1>
-std::vector<std::shared_ptr<T0>> filter_class_lock(std::vector<std::weak_ptr<T1>> const & x) {
+template<typename T0, typename T1, template<typename, typename...> class C, typename ... F>
+std::vector<std::shared_ptr<T0>> filter_class_lock(C<std::weak_ptr<T1>, F...> const & x) {
 	std::vector<std::shared_ptr<T0>> ret;
 	for (auto i : x) {
 		if(i.expired())
@@ -202,24 +187,9 @@ std::vector<std::shared_ptr<T0>> filter_class_lock(std::vector<std::weak_ptr<T1>
 	return ret;
 }
 
-template<typename T0, typename T1>
-std::list<std::weak_ptr<T0>> filter_class(std::list<std::weak_ptr<T1>> const & x) {
-	std::list<std::weak_ptr<T0>> ret;
-	for (auto i : x) {
-		if(i.expired())
-			continue;
-
-		auto n = dynamic_pointer_cast<T0>(i.lock());
-		if (n != nullptr) {
-			ret.push_back(n);
-		}
-	}
-	return ret;
-}
-
-template<typename T0, typename T1>
-std::vector<std::shared_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> const & x) {
-	std::vector<std::shared_ptr<T0>> ret;
+template<class T0, class T1, template<typename, typename...> class C, template<typename> class D, typename ... F>
+__attribute__((deprecated)) C<D<T0>> filter_class(C<D<T1>, F...> const & x) {
+	C<D<T0>> ret;
 	for (auto i : x) {
 		auto n = dynamic_pointer_cast<T0>(i);
 		if (n != nullptr) {
@@ -229,43 +199,29 @@ std::vector<std::shared_ptr<T0>> filter_class(std::vector<std::shared_ptr<T1>> c
 	return ret;
 }
 
-template<typename T0, typename T1>
-std::list<std::shared_ptr<T0>> filter_class(std::list<std::shared_ptr<T1>> const & x) {
-	std::list<std::shared_ptr<T0>> ret;
-	for (auto i : x) {
-		auto n = dynamic_pointer_cast<T0>(i);
-		if (n != nullptr) {
-			ret.push_back(n);
-		}
-	}
-	return ret;
-}
-
-template<typename T0>
-std::list<std::weak_ptr<T0>> weak(std::list<std::shared_ptr<T0>> const & x) {
-	return std::list<std::weak_ptr<T0>>{x.begin(), x.end()};
-}
-
-template<typename T0>
-std::vector<std::weak_ptr<T0>> weak(std::vector<std::shared_ptr<T0>> const & x) {
-	return std::vector<std::weak_ptr<T0>>{x.begin(), x.end()};
-}
-
-template <typename T>
-bool is_expired(weak_ptr<T> & x) {
-	return x.expired();
+template<typename T0, template<typename, typename...> class C, typename ... R>
+C<std::weak_ptr<T0>> weak(C<std::shared_ptr<T0>, R...> const & x) {
+	return C<std::weak_ptr<T0>>{x.begin(), x.end()};
 }
 
 /**
  * /!\ also remove expired !
  **/
-template<typename T0>
-std::list<std::shared_ptr<T0>> lock(std::list<std::weak_ptr<T0>> & x) {
-	x.remove_if(is_expired<T0>);
-	std::list<std::shared_ptr<T0>> ret;
+template<template<typename, typename...> class C, class T, typename ... R>
+std::vector<std::shared_ptr<T>> lock(C<std::weak_ptr<T>, R...> & x) {
+	x.remove_if([] (std::weak_ptr<T> & x) -> bool { return x.expired(); });
+	std::vector<std::shared_ptr<T>> ret;
 	for(auto i: x) ret.push_back(i.lock());
 	return ret;
 }
+
+template<template<typename, typename...> class C, class T, typename ... R>
+std::vector<std::shared_ptr<T>> lock(C<std::weak_ptr<T>, R...> const & x) {
+	std::vector<std::shared_ptr<T>> ret;
+	for(auto i: x) if(not i.expired()) ret.push_back(i.lock());
+	return ret;
+}
+
 
 static void draw_outer_graddien(cairo_t * cr, rect r, color_t const & iner_color, double _shadow_width) {
 
@@ -741,7 +697,7 @@ public:
 	virtual ~connectable_t() { }
 
 	template<typename T, typename ... Args>
-	void connect(signal_t<Args...> &sig, T * x, void (T::* func)(Args...)) {
+	void connect(signal_t<Args...> &sig, T * x, void (T::* func)(typename identity<Args>::type...)) {
 		_signal_handlers[&sig] = sig.connect(x, func);
 	}
 
@@ -892,6 +848,26 @@ std::string focus_in_to_string(xcb_focus_in_event_t const * e) {
 	return oss.str();
 }
 
+template<typename C>
+struct xreversed {
+	C & list;
+	xreversed(C & list) : list{list} { }
+
+	typename C::const_reverse_iterator begin() const {
+		return list.crbegin();
+	}
+
+	typename C::const_reverse_iterator end() const {
+		return list.crend();
+	}
+
+};
+
+template<typename C>
+xreversed<C> reversed(C & list)
+{
+	return xreversed<C>{list};
+}
 
 }
 

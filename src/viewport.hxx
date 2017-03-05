@@ -51,8 +51,8 @@ class viewport_t: public page_component_t {
 
 	shared_ptr<page_component_t> _subtree;
 
-	viewport_t(viewport_t const & v);
-	viewport_t & operator= (viewport_t const &);
+	viewport_t(viewport_t const & v) = delete;
+	viewport_t & operator= (viewport_t const &) = delete;
 
 	auto get_nearest_notebook() -> shared_ptr<notebook_t>;
 	void set_effective_area(rect const & area);
@@ -76,15 +76,17 @@ public:
 	 * tree_t virtual API
 	 **/
 
-	virtual void hide();
-	virtual void show();
-	virtual auto get_node_name() const -> string;
-	virtual void remove(shared_ptr<tree_t> t);
+	virtual void hide() override;
+	virtual void show() override;
+	virtual auto get_node_name() const -> string override;
+	virtual void remove(tree_p t) override;
 
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 	virtual void render_finished();
+	virtual void reconfigure() override;
+	virtual void on_workspace_enable() override;
+	virtual void on_workspace_disable() override;
 
 	virtual auto get_opaque_region() -> region;
 	virtual auto get_visible_region() -> region;
@@ -98,8 +100,7 @@ public:
 	virtual void expose(xcb_expose_event_t const * ev);
 	virtual void trigger_redraw();
 
-	virtual auto get_xid() const -> xcb_window_t;
-	virtual auto get_parent_xid() const -> xcb_window_t;
+	virtual auto get_toplevel_xid() const -> xcb_window_t;
 	virtual rect get_window_position() const;
 	virtual void queue_redraw();
 

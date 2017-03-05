@@ -60,7 +60,7 @@ display_t::display_t() {
 	_grab_count = 0;
 	_A = std::shared_ptr<atom_handler_t>(new atom_handler_t(_xcb));
 
-	_enable_composite = false;
+	_is_compositor_enabled = false;
 
 	update_default_visual();
 
@@ -119,7 +119,8 @@ void display_t::unmap(xcb_window_t w) {
 }
 
 void display_t::reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y) {
-	xcb_reparent_window(_xcb, w, parent, x, y);
+	auto ck = xcb_reparent_window(_xcb, w, parent, x, y);
+	//printf("reparent serial = %u\n", (uint16_t)ck.sequence);
 }
 
 void display_t::map(xcb_window_t w) {
@@ -918,12 +919,16 @@ void display_t::print_error(xcb_generic_error_t const * err) {
 	printf("#%08d INFO %s: %s (%u,%u,%u)\n", static_cast<int>(err->sequence), fail_request, type_name, static_cast<unsigned>(err->major_code), static_cast<unsigned>(err->minor_code), static_cast<unsigned>(err->error_code));
 }
 
-auto display_t::create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t> {
+auto display_t::ensure_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t> {
 	auto x = _client_proxies.find(w);
 	if(x == _client_proxies.end()) {
-		auto y = make_shared<client_proxy_t>(this, w);
-		_client_proxies[w] = y;
-		return y;
+		try {
+			auto y = make_shared<client_proxy_t>(this, w);
+			_client_proxies[w] = y;
+			return y;
+		} catch (...) {
+			return nullptr;
+		}
 	} else {
 		return x->second;
 	}
@@ -968,8 +973,8 @@ void display_t::filter_events(xcb_generic_event_t const * e) {
 }
 
 void display_t::disable() {
-	if (_enable_composite) {
-		_enable_composite = false;
+	if (_is_compositor_enabled) {
+		_is_compositor_enabled = false;
 		for (auto const & x : _client_proxies) {
 			x.second->disable_redirect();
 		}
@@ -978,8 +983,8 @@ void display_t::disable() {
 
 
 void display_t::enable() {
-	if (not _enable_composite) {
-		_enable_composite = true;
+	if (not _is_compositor_enabled) {
+		_is_compositor_enabled = true;
 		for (auto const & x : _client_proxies) {
 			x.second->enable_redirect();
 		}
@@ -997,26 +1002,31 @@ void display_t::make_surface_stats(int & size, int & count) {
 	}
 }
 
-auto display_t::create_view(xcb_window_t w) -> shared_ptr<client_view_t> {
-	auto p = create_client_proxy(w);
-	if(p->_views.empty()) {
-		if(_enable_composite)
+auto display_t::create_view(xcb_window_t w) -> client_view_p
+{
+	auto p = ensure_client_proxy(w);
+	if (not p)
+		return nullptr;
+	if (p->_views.empty()) {
+		if (_is_compositor_enabled)
 			p->enable_redirect();
-		on_visibility_change.signal(p->_id, true);
+		on_visibility_change.signal(p.get(), true);
 	}
-	auto x = p->create_view();
-	return shared_ptr<client_view_t>(x, [this](client_view_t * x) -> void { this->destroy_view(x); });
+	p->_need_pixmap_update = true;
+	auto v = new client_view_t{p.get()};
+	p->_views.push_back(v);
+	return shared_ptr<client_view_t>(v, [this](client_view_t * v) { this->destroy_view(v); });
 }
 
 void display_t::destroy_view(client_view_t * v) {
-	auto p = v->_parent.lock();
-	p->remove_view(v);
+	auto p = v->_parent;
+	p->_views.remove(v);
 	delete v;
 
 	if(p->_views.empty()) {
-		on_visibility_change.signal(p->_id, false);
+		on_visibility_change.signal(p, false);
 		p->_pixmap = nullptr;
-		if(_enable_composite)
+		if(_is_compositor_enabled)
 			p->disable_redirect();
 		if(p->destroyed()) {
 			auto x = _client_proxies.find(p->_id);

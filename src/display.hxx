@@ -33,6 +33,7 @@
 #include <memory>
 #include <iostream>
 
+#include "page-types.hxx"
 #include "box.hxx"
 #include "region.hxx"
 #include "utils.hxx"
@@ -72,7 +73,7 @@ class display_t {
 
 	class map<xcb_window_t, shared_ptr<client_proxy_t>> _client_proxies;
 
-	bool _enable_composite;
+	bool _is_compositor_enabled;
 
 public:
 
@@ -123,7 +124,7 @@ public:
 
 public:
 
-	signal_t<xcb_window_t, bool> on_visibility_change;
+	signal_t<client_proxy_t *, bool> on_visibility_change;
 
 	int fd();
 	xcb_window_t root();
@@ -255,7 +256,7 @@ public:
 		return _A->name(a);
 	}
 
-	auto create_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t>;
+	auto ensure_client_proxy(xcb_window_t w) -> shared_ptr<client_proxy_t>;
 
 	void filter_events(xcb_generic_event_t const * e);
 

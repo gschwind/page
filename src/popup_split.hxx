@@ -48,8 +48,7 @@ public:
 	void set_position(double pos);
 	virtual void render(cairo_t * cr, region const & area);
 	void _paint_exposed();
-	xcb_window_t get_xid() const;
-	xcb_window_t get_parent_xid() const;
+	xcb_window_t get_toplevel_xid() const;
 	void expose(xcb_expose_event_t const * ev);
 	void trigger_redraw();
 	void render_finished();

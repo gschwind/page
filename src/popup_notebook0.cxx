@@ -28,7 +28,7 @@ namespace page {
 popup_notebook0_t::popup_notebook0_t(tree_t * ref) :
 	tree_t{ref->_root},
 	_position{-1, -1, 1, 1} ,
-	_ctx{ref->_root->_ctx}
+	_ctx{_root->_ctx}
 {
 	_is_visible = false;
 	_exposed = false;
@@ -62,7 +62,7 @@ void popup_notebook0_t::_create_window() {
 
 	_wid = xcb_generate_id(_ctx->dpy()->xcb());
 	xcb_create_window(_ctx->dpy()->xcb(), _ctx->dpy()->root_depth(), _wid, _ctx->dpy()->root(), _position.x, _position.y, _position.w, _position.h, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _ctx->dpy()->root_visual()->visual_id, value_mask, value);
-
+	_root->_ctx->_page_windows.insert(_wid);
 }
 
 void popup_notebook0_t::move_resize(rect const & area) {
@@ -135,6 +135,7 @@ region popup_notebook0_t::get_damaged()  {
 
 popup_notebook0_t::~popup_notebook0_t() {
 	xcb_destroy_window(_ctx->dpy()->xcb(), _wid);
+	_root->_ctx->_page_windows.erase(_wid);
 }
 
 void popup_notebook0_t::show() {
@@ -192,11 +193,7 @@ void popup_notebook0_t::_paint_exposed() {
 
 }
 
-xcb_window_t popup_notebook0_t::get_xid() const {
-	return _wid;
-}
-
-xcb_window_t popup_notebook0_t::get_parent_xid() const {
+xcb_window_t popup_notebook0_t::get_toplevel_xid() const {
 	return _wid;
 }
 

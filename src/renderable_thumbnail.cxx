@@ -22,10 +22,11 @@
 
 #include "page.hxx"
 #include "workspace.hxx"
+#include "view.hxx"
 
 namespace page {
 
-renderable_thumbnail_t::renderable_thumbnail_t(tree_t * ref, shared_ptr<client_managed_t> c, rect const & target_position, thumnail_anchor_e target_anchor) :
+renderable_thumbnail_t::renderable_thumbnail_t(tree_t * ref, view_p c, rect const & target_position, thumnail_anchor_e target_anchor) :
 	tree_t{ref->_root},
 	_ctx{ref->_root->_ctx},
 	_c{c},
@@ -87,7 +88,8 @@ void renderable_thumbnail_t::render(cairo_t * cr, region const & area) {
 	for (auto &i : r.rects()) {
 		cairo_reset_clip(cr);
 		cairo_clip(cr, i);
-		cairo_set_source_surface(cr, _tt.title->get_cairo_surface(), _thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);
+		cairo_set_source_surface(cr, _tt.title->get_cairo_surface(),
+				_thumbnail_position.x, _thumbnail_position.y+_thumbnail_position.h);
 		cairo_paint(cr);
 
 		if (_is_mouse_over) {
@@ -137,7 +139,7 @@ void renderable_thumbnail_t::renderable_thumbnail_t::set_mouse_over(bool x) {
 void renderable_thumbnail_t::update_title() {
 	_tt.title = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGB, _thumbnail_position.w, 20);
 	cairo_t * cr = cairo_create(_tt.title->get_cairo_surface());
-	_ctx->theme()->render_thumbnail_title(cr, rect{0 + 3, 0, _thumbnail_position.w - 6, 20}, _c.lock()->title());
+	_ctx->theme()->render_thumbnail_title(cr, rect{0 + 3, 0, _thumbnail_position.w - 6, 20}, _c.lock()->_client->title());
 	cairo_destroy(cr);
 }
 
@@ -212,26 +214,18 @@ void renderable_thumbnail_t::update_layout(time64_t const time) {
 }
 
 void renderable_thumbnail_t::show() {
-	if(_is_visible)
-		return;
-
-	_is_visible = true;
+	tree_t::show();
 	if (not _c.expired() and _client_view == nullptr) {
-		_client_view = _c.lock()->create_view();
+		_client_view = _c.lock()->create_surface();
 	}
 }
 
 void renderable_thumbnail_t::hide() {
-	if(not _is_visible)
-		return;
-
-	_is_visible = false;
+	tree_t::hide();
 	_ctx->add_global_damage(get_real_position());
-
 	_client_view = nullptr;
 	_tt.pix = nullptr;
 	_tt.title = nullptr;
-
 }
 
 }

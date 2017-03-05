@@ -28,7 +28,7 @@ namespace page {
 using namespace std;
 
 class cycle_window_entry_t {
-	client_managed_w client;
+	view_w client;
 	string title;
 	shared_ptr<icon64> icon;
 	shared_ptr<renderable_thumbnail_t> _thumbnail;
@@ -75,7 +75,7 @@ class popup_alt_tab_t : public tree_t {
 
 public:
 
-	popup_alt_tab_t(tree_t * ref, list<client_managed_p> client_list, viewport_p viewport);
+	popup_alt_tab_t(tree_t * ref, list<view_p> client_list, viewport_p viewport);
 
 	template<typename ... Args>
 	static shared_ptr<popup_alt_tab_t> create(Args ... args) {
@@ -86,11 +86,10 @@ public:
 
 	virtual ~popup_alt_tab_t();
 
-	void move(int x, int y);
 	rect const & position();
 
-	client_managed_w selected(client_managed_w c);
-	client_managed_w selected();
+	view_w selected(view_w c);
+	view_w selected();
 
 	void destroy_client(client_managed_t * c);
 
@@ -101,12 +100,11 @@ public:
 	 * tree_t virtual API
 	 **/
 
-	virtual void hide();
-	virtual void show();
+	virtual void hide() override;
+	virtual void show() override;
 	virtual auto get_node_name() const -> string;
 	// virtual void remove(shared_ptr<tree_t> t);
 
-	virtual void append_children(vector<shared_ptr<tree_t>> & out) const;
 	virtual void update_layout(time64_t const time);
 	virtual void render(cairo_t * cr, region const & area);
 	virtual void trigger_redraw();
@@ -123,8 +121,7 @@ public:
 	//virtual bool enter(xcb_enter_notify_event_t const * ev);
 	virtual void expose(xcb_expose_event_t const * ev);
 
-	virtual auto get_xid() const -> xcb_window_t;
-	virtual auto get_parent_xid() const -> xcb_window_t;
+	virtual auto get_toplevel_xid() const -> xcb_window_t;
 	//virtual rect get_window_position() const;
 	//virtual void queue_redraw();
 

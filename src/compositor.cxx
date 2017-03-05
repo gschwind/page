@@ -115,7 +115,7 @@ void compositor_t::render(tree_t * t) {
 
 	/** remove invisible elements **/
 	{
-		auto end = std::remove_if(_graph_scene.begin(), _graph_scene.end(), [](shared_ptr<tree_t> const & x) { return not x->is_visible(); });
+		auto end = std::remove_if(_graph_scene.begin(), _graph_scene.end(), [](tree_p const & x) { return not x->is_visible(); });
 		_graph_scene.resize(std::distance(_graph_scene.begin(), end));
 	}
 

@@ -25,6 +25,8 @@ public:
 	virtual void replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) = 0;
 	virtual void get_min_allocation(int & width, int & height) const = 0;
 
+	xcb_window_t get_component_xid();
+
 };
 
 }

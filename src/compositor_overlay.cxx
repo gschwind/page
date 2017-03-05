@@ -22,6 +22,7 @@
 
 #include "page.hxx"
 #include "pixmap.hxx"
+#include "view.hxx"
 
 namespace page {
 
@@ -82,7 +83,7 @@ void compositor_overlay_t::hide() {
 void compositor_overlay_t::update_layout(time64_t const t) {
 	_has_damage = false;
 
-	auto child = _parent->get_all_children();
+	auto child = _ctx->get_current_workspace()->gather_children_root_first<view_t>();
 	for(auto & c: child) {
 		if(not c->is_visible())
 			continue;

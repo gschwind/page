@@ -214,7 +214,8 @@ dropdown_menu_t::dropdown_menu_t(tree_t * ref,
 
 dropdown_menu_t::~dropdown_menu_t()
 {
-	_ctx->detach(pop);
+	_ctx->add_global_damage(pop->get_visible_region());
+	pop->detach_myself();
 }
 
 int dropdown_menu_t::selected()
