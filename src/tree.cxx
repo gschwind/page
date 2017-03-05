@@ -12,6 +12,7 @@
 #include <cassert>
 
 #include "utils.hxx"
+#include "workspace.hxx"
 
 namespace page {
 
@@ -194,6 +195,15 @@ void tree_t::raise(shared_ptr<tree_t> t) {
 		move_back(_children, t);
 	}
 
+}
+
+shared_ptr<workspace_t> tree_t::workspace() const
+{
+	if(_root) {
+		return dynamic_pointer_cast<workspace_t>(_root->shared_from_this());
+	} else {
+		return nullptr;
+	}
 }
 
 bool tree_t::button_press(xcb_button_press_event_t const * ev) {

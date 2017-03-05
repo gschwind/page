@@ -136,6 +136,7 @@ public:
 	rect to_root_position(rect const & r) const;
 
 	void raise(shared_ptr<tree_t> t = nullptr);
+	shared_ptr<workspace_t> workspace() const;
 
 	/**
 	 * tree_t virtual API
