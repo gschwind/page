@@ -59,6 +59,7 @@ class notebook_t : public page_component_t {
 	vector<theme_tab_t> _theme_client_tabs;
 	rect _theme_client_tabs_area;
 
+
 	shared_ptr<timeout_t> _fading_timeout;
 
 	bool _is_default;
@@ -67,6 +68,7 @@ class notebook_t : public page_component_t {
 	bool _can_hsplit;
 	bool _can_vsplit;
 	bool _has_scroll_arrow;
+	bool _has_pending_fading_timeout;
 
 	struct {
 		tuple<rect, view_notebook_w, theme_tab_t *> * tab;
@@ -167,6 +169,7 @@ class notebook_t : public page_component_t {
 
 	void _set_theme_tab_offset(int x);
 	void _set_selected(view_notebook_p c);
+	void _schedule_fading_repaint();
 	void activate(view_notebook_p c, xcb_timestamp_t time);
 
 	auto shared_from_this() -> notebook_p;
@@ -193,7 +196,7 @@ public:
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);
 	virtual void render(cairo_t * cr, region const & area);
-
+	virtual void render_finished();
 	using tree_t::reconfigure;
 	virtual void on_workspace_enable() override;
 	virtual void on_workspace_disable() override;

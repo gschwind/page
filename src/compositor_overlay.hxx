@@ -10,6 +10,8 @@
 
 #include "config.hxx"
 
+#include <deque>
+
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
 #include <cairo.h>
@@ -22,6 +24,7 @@
 
 namespace page {
 
+using namespace std;
 
 struct compositor_overlay_t : public tree_t {
 	page_t * _ctx;
@@ -34,6 +37,11 @@ struct compositor_overlay_t : public tree_t {
 	rect _position;
 
 	bool _has_damage;
+
+	time64_t frame_start;
+	time64_t frame_end;
+	deque<int64_t> render_times;
+	int64_t render_max;
 
 public:
 
@@ -49,6 +57,7 @@ public:
 	void update_layout(time64_t const t);
 	void _update_back_buffer();
 	virtual void render(cairo_t * cr, region const & area) override;
+	virtual void render_finished() override;
 	void pango_printf(cairo_t * cr, double x, double y,
 			char const * fmt, ...);
 

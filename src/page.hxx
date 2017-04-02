@@ -163,7 +163,6 @@ public:
 
 	array<key_bind_cmd_t, 10> bind_cmd;
 
-	bool _need_repaint;
 	bool _scheduled_repaint;
 	shared_ptr<timeout_t> _scheduled_repaint_timeout;
 

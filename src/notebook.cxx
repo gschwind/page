@@ -31,7 +31,8 @@ notebook_t::notebook_t(tree_t * ref) :
 	_can_vsplit{true},
 	_theme_client_tabs_offset{0},
 	_has_scroll_arrow{false},
-	animation_duration{ref->_root->_ctx->conf()._fade_in_time}
+	animation_duration{ref->_root->_ctx->conf()._fade_in_time},
+	_has_pending_fading_timeout{false}
 {
 	//printf("call %s (%p)\n", __PRETTY_FUNCTION__, this);
 
@@ -151,6 +152,26 @@ void notebook_t::_set_selected(view_notebook_p c) {
 	if(_is_visible) {
 		_selected->show();
 	}
+}
+
+void notebook_t::_schedule_fading_repaint()
+{
+	if(_has_pending_fading_timeout)
+		return;
+	_has_pending_fading_timeout = true;
+
+	time64_t delta(animation_duration/255L);
+	if(delta < time64_t{1000000000L/120L}) {
+		delta = 1000000000L/120L;
+	}
+
+	/** schedule repaint when alpha change is enough, avoiding render flood **/
+	_fading_timeout = _ctx->mainloop()->add_timeout(delta,
+			[this]() -> void {
+				this->_ctx->schedule_repaint();
+				this->_has_pending_fading_timeout = false;
+			});
+
 }
 
 void notebook_t::activate(view_notebook_p vn, xcb_timestamp_t time)
@@ -389,12 +410,6 @@ void notebook_t::update_layout(time64_t const time) {
 	if (fading_notebook != nullptr) {
 		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
 		fading_notebook->set_ratio(ratio);
-		/** schedule repaint when alpha change is enough, avoiding render flood **/
-		_fading_timeout = _ctx->mainloop()->add_timebound(
-				time + time64_t(animation_duration/255L),
-				[this]() -> void {
-					this->_ctx->schedule_repaint();
-				});
 	}
 }
 
@@ -713,23 +728,25 @@ void notebook_t::_start_fading() {
 		fading_notebook = make_shared<renderable_notebook_fading_t>(this, pix, pos.x, pos.y);
 		_fading_notebook_layer->push_back(fading_notebook);
 		fading_notebook->show();
+		_schedule_fading_repaint();
 	} else {
-		_swap_start.update_to_current_time();
-
-		auto pix = _render_to_pixmap();
-		auto surf = pix->get_cairo_surface();
-		auto cr = cairo_create(surf);
-		auto surf_src = fading_notebook->surface()->get_cairo_surface();
-
-		cairo_pattern_t * p0 =
-				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - fading_notebook->ratio());
-		cairo_set_source_surface(cr, surf_src, 0.0, 0.0);
-		cairo_mask(cr, p0);
-		cairo_pattern_destroy(p0);
-		cairo_destroy(cr);
-
-		rect pos = to_root_position(_allocation);
-		fading_notebook->update_pixmap(pix, pos.x, pos.y);
+//		_swap_start.update_to_current_time();
+//
+//		auto pix = _render_to_pixmap();
+//		auto surf = pix->get_cairo_surface();
+//		auto cr = cairo_create(surf);
+//		auto surf_src = fading_notebook->surface()->get_cairo_surface();
+//
+//		cairo_pattern_t * p0 =
+//				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - fading_notebook->ratio());
+//		cairo_set_source_surface(cr, surf_src, 0.0, 0.0);
+//		cairo_mask(cr, p0);
+//		cairo_pattern_destroy(p0);
+//		cairo_destroy(cr);
+//
+//		rect pos = to_root_position(_allocation);
+//		fading_notebook->update_pixmap(pix, pos.x, pos.y);
+//		_ctx->schedule_repaint();
 	}
 
 }
@@ -1185,6 +1202,13 @@ bool notebook_t::_has_client(client_managed_p c) {
 
 void notebook_t::render(cairo_t * cr, region const & area) {
 
+}
+
+void notebook_t::render_finished()
+{
+	if(fading_notebook != nullptr) {
+		_schedule_fading_repaint();
+	}
 }
 
 void notebook_t::on_workspace_enable()

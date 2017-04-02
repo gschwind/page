@@ -30,11 +30,15 @@ compositor_overlay_t::compositor_overlay_t(tree_t * ref, rect const & pos) :
 	tree_t{ref->_root},
 	_ctx{ref->_root->_ctx},
 	_position{pos},
-	_has_damage{false} {
+	_has_damage{false},
+	render_max{100000000}
+{
 	_fps_font_desc = pango_font_description_from_string("Mono 11");
 	_fps_font_map = pango_cairo_font_map_new();
 	_fps_context = pango_font_map_create_context(_fps_font_map);
 	_back_surf = make_shared<pixmap_t>(_ctx->dpy(), PIXMAP_RGBA, _position.w, _position.h);
+
+	render_times.push_back(0);
 
 }
 
@@ -82,6 +86,8 @@ void compositor_overlay_t::hide() {
 
 void compositor_overlay_t::update_layout(time64_t const t) {
 	_has_damage = false;
+
+	frame_start = t;
 
 	auto child = _ctx->get_current_workspace()->gather_children_root_first<view_t>();
 	for(auto & c: child) {
@@ -138,6 +144,23 @@ void compositor_overlay_t::_update_back_buffer() {
 	}
 	cairo_stroke(cr);
 
+	cairo_set_source_rgb(cr, 1.0, 1.0, 0.0);
+	{
+		render_max = 1000L;
+		for (auto v: render_times) {
+			if (render_max < v)
+				render_max = v;
+		}
+
+		int j = 0;
+		auto i = render_times.begin();
+		cairo_move_to(cr, 0 * 5.0, 95.0 - std::min(static_cast<double>(*(i++))*90.0/render_max, 90.0));
+		while(i != render_times.end())
+			cairo_line_to(cr, (j++) * 2.0, 95.0 - std::min(static_cast<double>(*(i++))*90.0/render_max, 90.0));
+	}
+	cairo_stroke(cr);
+
+
 	int surf_count;
 	int surf_size;
 
@@ -147,6 +170,8 @@ void compositor_overlay_t::_update_back_buffer() {
 	pango_printf(cr, 80*2+20,30,  "fps:       %8.1f", fps);
 	pango_printf(cr, 80*2+20,50, "s. count:  %6d", surf_count);
 	pango_printf(cr, 80*2+20,80, "s. memory: %6d KB", surf_size/1024);
+
+	pango_printf(cr, 0, 0, "render: %d", render_max);
 
 	cairo_destroy(cr);
 }
@@ -162,6 +187,16 @@ void compositor_overlay_t::render(cairo_t * cr, region const & area) {
 		cairo_mask_surface(cr, _back_surf->get_cairo_surface(), _position.x, _position.y);
 	}
 	cairo_restore(cr);
+}
+
+void compositor_overlay_t::render_finished()
+{
+	frame_end = time64_t::now();
+
+	if(render_times.size() > 80)
+		render_times.pop_back();
+	render_times.push_front((frame_end - frame_start).microseconds());
+
 }
 
 void compositor_overlay_t::pango_printf(cairo_t * cr, double x, double y,

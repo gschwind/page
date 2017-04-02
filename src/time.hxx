@@ -129,6 +129,10 @@ public:
 		return nsec / 1000L;
 	}
 
+	int64_t nanoseconds() {
+		return nsec;
+	}
+
 
 };
 
