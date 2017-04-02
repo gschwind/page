@@ -3156,12 +3156,9 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 		}
 	}
 
-	if(managed_window.size() > 1) {
-		/* Grab keyboard */
-		grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
-	} else {
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, time);
-	}
+	/* Grab keyboard */
+	grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
+
 }
 
 void page_t::on_visibility_change_handler(client_proxy_t * proxy, bool visible)
