@@ -53,6 +53,8 @@ public:
 	virtual auto create_surface() -> client_view_p override;
 	using view_t::xxactivate;
 	using view_t::detach;
+	virtual void acquire_client() override;
+	virtual void release_client() override;
 
 	/**
 	 * tree_t virtual API

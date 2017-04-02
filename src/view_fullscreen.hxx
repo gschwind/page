@@ -44,6 +44,8 @@ struct view_fullscreen_t : public view_rebased_t {
 	using view_rebased_t::create_surface;
 	using view_t::xxactivate;
 	using view_t::detach;
+	using view_rebased_t::acquire_client;
+	using view_rebased_t::release_client;
 
 	/**
 	 * tree_t virtual API

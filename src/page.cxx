@@ -352,6 +352,7 @@ void page_t::run() {
 void page_t::unmanage(client_managed_p mw)
 {
 	assert(mw != nullptr);
+	_net_client_list.remove(mw);
 
 	/* if window is in move/resize/notebook move, do cleanup */
 	cleanup_grab();
@@ -486,7 +487,7 @@ void page_t::update_client_list() {
 	/** set _NET_CLIENT_LIST : client list from oldest to newer client **/
 	vector<xcb_window_t> xid_client_list;
 	for(auto i : _net_client_list) {
-		xid_client_list.push_back(i.lock()->_client_proxy->id());
+		xid_client_list.push_back(i->_client_proxy->id());
 	}
 
 	_dpy->change_property(_dpy->root(), _NET_CLIENT_LIST, WINDOW, 32,
@@ -851,7 +852,7 @@ void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 		//printf("unmap serial = %u, window = %d, event = %d\n", e->sequence, e->window, e->event);
 
 		// client do not use fake unmap for popup, and popup never be reparented.
-		if(c->is(MANAGED_POPUP) or (e->event != _dpy->root() and e->event != e->window))
+		if(c->is(MANAGED_POPUP))
 			unmanage(c);
 
 	}
@@ -1319,9 +1320,7 @@ void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t t
 	vf->revert_type = MANAGED_NOTEBOOK;
 	vf->revert_notebook = nbk;
 	if(v->_root->is_enable())
-		vf->on_workspace_enable();
-	else
-		vf->on_workspace_disable();
+		vf->acquire_client();
 	_insert_view_fullscreen(vf, time);
 }
 
@@ -1332,9 +1331,7 @@ void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t t
 	vx->detach();
 	auto vf = make_shared<view_fullscreen_t>(vx->_client, viewport);
 	if(workspace->is_enable())
-		vf->on_workspace_enable();
-	else
-		vf->on_workspace_disable();
+		vf->acquire_client();
 	vf->revert_type = MANAGED_FLOATING;
 	_insert_view_fullscreen(vf, time);
 }
@@ -2129,11 +2126,8 @@ void page_t::onmap(xcb_window_t w) {
 		return;
 
 	/* check if the window is already managed */
-	for(auto & x: lock(_net_client_list)) {
-		if(x->is_window(w)) {
-			return;
-		}
-	}
+	if(find_client_managed_with(w) != nullptr)
+		return;
 
 	auto props = _dpy->ensure_client_proxy(w);
 	if(not props) { // the window is already destroyed.
@@ -2402,18 +2396,19 @@ void page_t::set_workspace_geometry(long width, long height) {
 			CARDINAL, 32, workspace_geometry, 2);
 }
 
-shared_ptr<client_managed_t> page_t::find_client_managed_with(xcb_window_t w) {
-	_net_client_list.remove_if([](client_managed_w const & w) { return w.expired(); });
-	for(auto & i: _net_client_list) {
-		if(i.lock()->is_window(w)) {
-			return i.lock();
-		}
-	}
+auto page_t::find_client_managed_with(xcb_window_t w) -> client_managed_p
+{
+	auto i = std::find_if(_net_client_list.begin(), _net_client_list.end(),
+			[w](client_managed_p const & p) -> bool {
+				return p->is_window(w);
+			});
+	if (i != _net_client_list.end())
+		return *i;
 	return nullptr;
 }
 
 auto page_t::find_client_with(xcb_window_t w) const -> client_managed_p {
-	for(auto & i: lock(_net_client_list)) {
+	for(auto & i: _net_client_list) {
 		if(i->is_window(w)) {
 			return i;
 		}
@@ -3237,8 +3232,9 @@ void page_t::make_surface_stats(int & size, int & count) {
 	_dpy->make_surface_stats(size, count);
 }
 
-auto page_t::net_client_list() -> vector<client_managed_p> {
-	return lock(_net_client_list);
+auto page_t::net_client_list() -> list<client_managed_p> const &
+{
+	return _net_client_list;
 }
 
 auto page_t::mainloop() -> mainloop_t * {

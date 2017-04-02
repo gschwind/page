@@ -290,9 +290,7 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 
 	auto fv = make_shared<view_popup_t>(this, c);
 	if(is_enable())
-		fv->on_workspace_enable();
-	else
-		fv->on_workspace_disable();
+		fv->acquire_client();
 
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
 	if(transient_for != nullptr) {
@@ -319,6 +317,7 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	}
 
 	fv->raise();
+	fv->show();
 
 }
 
@@ -334,9 +333,7 @@ void workspace_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time)
 
 	auto fv = make_shared<view_dock_t>(this, c);
 	if(is_enable())
-		fv->on_workspace_enable();
-	else
-		fv->on_workspace_disable();
+		fv->acquire_client();
 
 	add_dock(fv);
 
@@ -362,9 +359,7 @@ void workspace_t::insert_as_floating(client_managed_p c, xcb_timestamp_t time)
 
 	auto fv = make_shared<view_floating_t>(this, c);
 	if(is_enable())
-		fv->on_workspace_enable();
-	else
-		fv->on_workspace_disable();
+		fv->acquire_client();
 
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
 	if(transient_for != nullptr) {
@@ -394,7 +389,6 @@ void workspace_t::insert_as_fullscreen(client_managed_p mw, xcb_timestamp_t time
 void workspace_t::insert_as_notebook(client_managed_p mw, xcb_timestamp_t time)
 {
 	//printf("call %s\n", __PRETTY_FUNCTION__);
-	mw->set_managed_type(MANAGED_NOTEBOOK);
 
 	/** select if the client want to appear mapped or iconic **/
 	bool activate = true;
@@ -436,9 +430,7 @@ void workspace_t::insert_as_fullscreen(shared_ptr<client_managed_t> mw, shared_p
 
 	auto fv = make_shared<view_fullscreen_t>(mw, v);
 	if(is_enable())
-		fv->on_workspace_enable();
-	else
-		fv->on_workspace_disable();
+		fv->acquire_client();
 
 	/* default: revert to default pop */
 	fv->revert_type = MANAGED_NOTEBOOK;
@@ -642,7 +634,7 @@ void workspace_t::unmanage(client_managed_p mw)
 		return;
 
 	/* if managed window have active clients */
-	//printf("unmanaging : %d '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
+	printf("unmanaging : %d '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
 
 	for (auto c : v->get_transients()) {
 		c->detach();
@@ -651,8 +643,6 @@ void workspace_t::unmanage(client_managed_p mw)
 
 	client_focus_history_remove(v);
 	v->detach();
-	if(_is_enable)
-		v->on_workspace_disable();
 }
 
 }

@@ -33,7 +33,8 @@ client_managed_t::client_managed_t(page_t * ctx, client_proxy_p proxy) :
 	_absolute_position{},
 	_icon(nullptr),
 	_has_focus{false},
-	_demands_attention{false}
+	_demands_attention{false},
+	_current_owner_view{nullptr}
 {
 
 	_update_title();
@@ -339,6 +340,21 @@ bool client_managed_t::prefer_window_border() const {
 		return false;
 	}
 	return true;
+}
+
+auto client_managed_t::current_owner_view() const -> view_t *
+{
+	return _current_owner_view;
+}
+
+void client_managed_t::acquire(view_t * v)
+{
+	_current_owner_view = v;
+}
+void client_managed_t::release(view_t * v)
+{
+	assert(_current_owner_view == v);
+	_current_owner_view = nullptr;
 }
 
 shared_ptr<icon16> client_managed_t::icon() const {

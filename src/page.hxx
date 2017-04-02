@@ -173,7 +173,7 @@ private:
 	xcb_timestamp_t _last_button_press;
 
 	/** store all client in mapping order, older first **/
-	list<client_managed_w> _net_client_list;
+	list<client_managed_p> _net_client_list;
 	list<view_w> _global_focus_history;
 
 	int _left_most_border;
@@ -424,7 +424,7 @@ public:
 	int  left_most_border();
 	int  top_most_border();
 	auto global_client_focus_history() -> list<view_w>;
-	auto net_client_list() -> vector<client_managed_p>;
+	auto net_client_list() -> list<client_managed_p> const &;
 	auto keymap() const -> keymap_t const *;
 	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void make_surface_stats(int & size, int & count);

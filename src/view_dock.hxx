@@ -41,6 +41,8 @@ struct view_dock_t : public view_t {
 	using view_t::create_surface;
 	using view_t::xxactivate;
 	using view_t::detach;
+	using view_t::acquire_client;
+	using view_t::release_client;
 
 	/**
 	 * tree_t virtual API

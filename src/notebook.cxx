@@ -65,9 +65,7 @@ bool notebook_t::add_client(client_managed_p c, xcb_timestamp_t time) {
 	c->set_managed_type(MANAGED_NOTEBOOK);
 	_notebook_view_layer->push_back(vn);
 	if(_root->is_enable())
-		vn->on_workspace_enable();
-	else
-		vn->on_workspace_disable();
+		vn->acquire_client();
 
 	_clients_tab_order.push_front(vn);
 

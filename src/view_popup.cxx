@@ -30,6 +30,7 @@ view_popup_t::view_popup_t(tree_t * ref, client_managed_p client) :
 {
 	_is_visible = true;
 	connect(_client->on_configure_notify, this, &view_popup_t::_on_configure_notify);
+	_client->set_managed_type(MANAGED_POPUP);
 	_client->_absolute_position = _client->_client_proxy->position();
 	if(_client_view == nullptr)
 		_client_view = _root->_ctx->create_view(_client->_client_proxy->id());
@@ -75,16 +76,6 @@ void view_popup_t::reconfigure()
 	_update_opaque_region();
 	_update_visible_region();
 	_damage_cache += get_visible_region();
-
-}
-
-void view_popup_t::on_workspace_enable()
-{
-	reconfigure();
-}
-
-void view_popup_t::on_workspace_disable()
-{
 
 }
 

@@ -31,10 +31,12 @@ view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	_colormap{XCB_NONE}
 {
 	_create_base_windows();
+	_root->_ctx->_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 }
 
 view_rebased_t::~view_rebased_t()
 {
+	release_client();
 	xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base);
 	xcb_free_colormap(_root->_ctx->_dpy->xcb(), _colormap);
 	_root->_ctx->_page_windows.erase(_base);
@@ -148,6 +150,27 @@ auto view_rebased_t::create_surface() -> client_view_p
 	return _root->_ctx->create_view(_base);
 }
 
+void view_rebased_t::acquire_client()
+{
+	auto _dpy = _root->_ctx->dpy();
+	_client->acquire(this);
+	_dpy->reparentwindow(_client->_client_proxy->id(), _base,
+			_orig_position.x, _orig_position.y);
+}
+
+void view_rebased_t::release_client()
+{
+	if (_client->current_owner_view() != static_cast<view_t*>(this))
+		return;
+
+	auto _ctx = _root->_ctx;
+	auto _dpy = _ctx->dpy();
+	_client->release(this);
+	_dpy->reparentwindow(_client->_client_proxy->id(),_dpy->root(),
+			_ctx->left_most_border() - 1 - _orig_position.w,
+			_ctx->top_most_border());
+}
+
 void view_rebased_t::update_layout(time64_t const time)
 {
 	if (not _is_visible)
@@ -181,27 +204,20 @@ void view_rebased_t::render(cairo_t * cr, region const & area)
 
 void view_rebased_t::on_workspace_enable()
 {
-
 	auto _ctx = _root->_ctx;
 	auto _dpy = _root->_ctx->dpy();
-
-	_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
-	_dpy->reparentwindow(_client->_client_proxy->id(), _base, _orig_position.x, _orig_position.y);
+	acquire_client();
 	_dpy->map(_base);
 	reconfigure();
 	_grab_button_unfocused_unsafe();
-
 }
 
 void view_rebased_t::on_workspace_disable()
 {
 	auto _ctx = _root->_ctx;
 	auto _dpy = _root->_ctx->dpy();
-
-	_ctx->_dpy->reparentwindow(_client->_client_proxy->id(), _ctx->_dpy->root(),
-			_client->_absolute_position.x, _client->_absolute_position.y);
+	release_client();
 	_dpy->unmap(_base);
-
 }
 
 auto view_rebased_t::get_toplevel_xid() const -> xcb_window_t

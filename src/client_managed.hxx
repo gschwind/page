@@ -68,6 +68,9 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	// icon cache
 	shared_ptr<icon16> _icon;
 
+	// track the current view that own the window.
+	view_t * _current_owner_view;
+
 	bool _has_focus;
 	bool _demands_attention;
 
@@ -105,6 +108,11 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 
 	void update_title();
 	bool prefer_window_border() const;
+
+	auto current_owner_view() const -> view_t *;
+	// this two functions is to ensure correct ownership.
+	void acquire(view_t * v);
+	void release(view_t * v);
 
 	client_managed_t(page_t * ctx, client_proxy_p proxy);
 	~client_managed_t();

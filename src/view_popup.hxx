@@ -38,6 +38,8 @@ struct view_popup_t : public view_t {
 	using view_t::create_surface;
 	using view_t::xxactivate;
 	using view_t::detach;
+	using view_t::acquire_client;
+	using view_t::release_client;
 
 	/**
 	 * tree_t virtual API
@@ -51,8 +53,8 @@ struct view_popup_t : public view_t {
 	//virtual void update_layout(time64_t const time);
 	//virtual void render(cairo_t * cr, region const & area);
 	virtual void reconfigure() override;
-	virtual void on_workspace_enable() override;
-	virtual void on_workspace_disable() override;
+	using view_t::on_workspace_enable;
+	using view_t::on_workspace_disable;
 
 	//virtual auto get_opaque_region() -> region;
 	//virtual auto get_visible_region() -> region;

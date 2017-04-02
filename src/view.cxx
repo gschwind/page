@@ -54,6 +54,7 @@ view_t::view_t(tree_t * ref, client_managed_p client) :
 
 view_t::~view_t()
 {
+	release_client();
 	_popup.reset();
 	_transiant.reset();
 }
@@ -134,6 +135,8 @@ void view_t::move_all_window()
 			_root->_ctx->add_global_damage(get_visible_region());
 		}
 
+	} else {
+		_client_view = nullptr;
 	}
 }
 
@@ -235,6 +238,17 @@ void view_t::detach()
 	_parent->remove(shared_from_this());
 }
 
+void view_t::acquire_client()
+{
+	_client->acquire(this);
+}
+
+void view_t::release_client()
+{
+	if(_client->current_owner_view() == this)
+		_client->release(this);
+}
+
 void view_t::reconfigure()
 {
 	//printf("call %s\n", __PRETTY_FUNCTION__);
@@ -252,20 +266,13 @@ void view_t::reconfigure()
 
 void view_t::on_workspace_enable()
 {
-
-	auto _ctx = _root->_ctx;
-	auto _dpy = _root->_ctx->dpy();
-
-	// we have the ownership of the client.
-	_dpy->reparentwindow(_client->_client_proxy->id(), _dpy->root(),
-			_client->_absolute_position.x, _client->_absolute_position.y);
+	acquire_client();
 	reconfigure();
-
 }
 
 void view_t::on_workspace_disable()
 {
-
+	release_client();
 }
 
 void view_t::hide()
