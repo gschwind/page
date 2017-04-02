@@ -78,6 +78,8 @@ view_floating_t::view_floating_t(tree_t * ref, client_managed_p client) :
 			_client->_floating_wished_position.w,
 			_client->_floating_wished_position.h);
 
+	_grab_button_unfocused_unsafe();
+
 }
 
 view_floating_t::~view_floating_t()
