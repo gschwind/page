@@ -240,12 +240,13 @@ void view_t::detach()
 
 void view_t::acquire_client()
 {
-	_client->acquire(this);
+	if (_client->current_owner_view() != static_cast<view_t*>(this))
+		_client->acquire(this);
 }
 
 void view_t::release_client()
 {
-	if(_client->current_owner_view() == this)
+	if (_client->current_owner_view() == this)
 		_client->release(this);
 }
 

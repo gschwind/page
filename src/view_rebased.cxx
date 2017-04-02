@@ -152,6 +152,8 @@ auto view_rebased_t::create_surface() -> client_view_p
 
 void view_rebased_t::acquire_client()
 {
+	if(_client->current_owner_view() == static_cast<view_t*>(this))
+		return;
 	auto _dpy = _root->_ctx->dpy();
 	_client->acquire(this);
 	_dpy->reparentwindow(_client->_client_proxy->id(), _base,
