@@ -313,6 +313,7 @@ void popup_alt_tab_t::grab_button_press(xcb_button_press_event_t const * ev) {
 
 void popup_alt_tab_t::grab_button_motion(xcb_motion_notify_event_t const * ev) {
 	_select_from_mouse(ev->root_x, ev->root_y);
+	_ctx->schedule_repaint();
 }
 
 

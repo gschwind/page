@@ -102,6 +102,8 @@ void grab_split_t::button_motion(xcb_motion_notify_event_t const * e) {
 	_split_ratio = _split.lock()->compute_split_constaint(_split_ratio);
 
 	_ps->set_position(_split_ratio);
+	_ctx->schedule_repaint();
+
 }
 
 void grab_split_t::button_release(xcb_button_release_event_t const * e) {
@@ -502,6 +504,7 @@ void grab_floating_move_t::button_motion(xcb_motion_notify_event_t const * e) {
 	new_popup_position.x += e->root_x - x_root;
 	new_popup_position.y += e->root_y - y_root;
 	pfm->move_resize(new_popup_position);
+	_ctx->schedule_repaint();
 
 }
 
@@ -747,6 +750,7 @@ void grab_fullscreen_client_t::button_motion(xcb_motion_notify_event_t const * e
 	if(new_viewport != v.lock()) {
 		if(new_viewport != nullptr) {
 			pn0->move_resize(new_viewport->raw_area());
+			_ctx->schedule_repaint();
 		}
 		v = new_viewport;
 	}

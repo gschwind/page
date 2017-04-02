@@ -97,6 +97,9 @@ void popup_notebook0_t::move_resize(rect const & area) {
 
 	_ctx->dpy()->move_resize(_wid, area);
 	_damaged += _position;
+
+	_ctx->schedule_repaint();
+
 }
 
 void popup_notebook0_t::move(int x, int y) {
