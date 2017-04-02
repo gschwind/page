@@ -26,12 +26,11 @@ notebook_t::notebook_t(tree_t * ref) :
 	_is_default{false},
 	_selected{nullptr},
 	_exposay{false},
-	_mouse_over{-1, -1, nullptr, nullptr},
+	_mouse_over{nullptr, nullptr},
 	_can_hsplit{true},
 	_can_vsplit{true},
 	_theme_client_tabs_offset{0},
 	_has_scroll_arrow{false},
-	_has_mouse_change{true},
 	animation_duration{ref->_root->_ctx->conf()._fade_in_time}
 {
 	//printf("call %s (%p)\n", __PRETTY_FUNCTION__, this);
@@ -187,9 +186,6 @@ void notebook_t::set_allocation(rect const & area) {
 	assert(area.h >= height);
 
 	_allocation = area;
-	_has_mouse_change = true;
-	_mouse_over.event_x = -1;
-	_mouse_over.event_y = -1;
 	_update_all_layout();
 	queue_redraw();
 }
@@ -382,14 +378,6 @@ void notebook_t::render_legacy(cairo_t * cr) {
 
 void notebook_t::update_layout(time64_t const time) {
 	tree_t::update_layout(time);
-	if (not _transition.empty()) {
-		_update_all_layout();
-	}
-
-	if (_has_mouse_change) {
-		_has_mouse_change = false;
-		_update_mouse_over();
-	}
 
 	if (fading_notebook != nullptr and time >= (_swap_start + animation_duration)) {
 		/** animation is terminated **/
@@ -988,10 +976,7 @@ void notebook_t::_start_client_menu(view_notebook_p c, xcb_button_t button, uint
 
 }
 
-void notebook_t::_update_mouse_over() {
-
-	int x = _mouse_over.event_x;
-	int y = _mouse_over.event_y;
+void notebook_t::_update_mouse_over(int x, int y) {
 
 	if (_allocation.is_inside(x, y)) {
 
@@ -1049,7 +1034,9 @@ void notebook_t::_update_mouse_over() {
 			queue_redraw();
 		}
 	} else {
-		if(_theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE or _mouse_over.tab != nullptr or _mouse_over.exposay != nullptr) {
+		if(_theme_notebook.button_mouse_over != NOTEBOOK_BUTTON_NONE
+				or _mouse_over.tab != nullptr
+				or _mouse_over.exposay != nullptr) {
 			_mouse_over_reset();
 			queue_redraw();
 		}
@@ -1060,34 +1047,22 @@ void notebook_t::_update_mouse_over() {
 bool notebook_t::button_motion(xcb_motion_notify_event_t const * e) {
 
 	if (e->event != get_component_xid()) {
-		_has_mouse_change = true;
-		_mouse_over.event_x = -1;
-		_mouse_over.event_y = -1;
-		queue_redraw();
+		_update_mouse_over(-1, -1);
 		return false;
 	}
 
 	if (e->child == XCB_NONE) {
-		_has_mouse_change = true;
-		_mouse_over.event_x = e->event_x;
-		_mouse_over.event_y = e->event_y;
-		queue_redraw();
-	} else {
-		_has_mouse_change = true;
-		_mouse_over.event_x = -1;
-		_mouse_over.event_y = -1;
-		queue_redraw();
+		_update_mouse_over(e->event_x, e->event_y);
+		if(_allocation.is_inside(e->event_x, e->event_y))
+			return true;
 	}
 
 	return false;
-
 }
 
 bool notebook_t::leave(xcb_leave_notify_event_t const * ev) {
 	if(ev->event == get_component_xid()) {
-		_has_mouse_change = true;
-		_mouse_over.event_x = -1;
-		_mouse_over.event_y = -1;
+		_update_mouse_over(-1, -1);
 	}
 	return false;
 }

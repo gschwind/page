@@ -67,11 +67,8 @@ class notebook_t : public page_component_t {
 	bool _can_hsplit;
 	bool _can_vsplit;
 	bool _has_scroll_arrow;
-	bool _has_mouse_change;
 
 	struct {
-		int event_x;
-		int event_y;
 		tuple<rect, view_notebook_w, theme_tab_t *> * tab;
 		tuple<rect, view_notebook_w, int> * exposay;
 	} _mouse_over;
@@ -130,7 +127,7 @@ class notebook_t : public page_component_t {
 	void _update_notebook_buttons_area();
 	void _update_theme_notebook(theme_notebook_t & theme_notebook);
 	void _update_all_layout();
-	void _update_mouse_over();
+	void _update_mouse_over(int x, int y);
 
 	void _mouse_over_reset();
 	void _mouse_over_set();
