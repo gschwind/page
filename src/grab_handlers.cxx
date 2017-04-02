@@ -874,6 +874,9 @@ void grab_alt_tab_t::key_press(xcb_key_press_event_t const * e) {
 			for(auto & pat: _popup_list) {
 				pat->selected(_selected);
 			}
+
+			_ctx->schedule_repaint();
+
 		}
 	}
 }
