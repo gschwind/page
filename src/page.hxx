@@ -163,8 +163,6 @@ public:
 
 	array<key_bind_cmd_t, 10> bind_cmd;
 
-	bool _damage_repaint;
-	bool _scheduled_repaint;
 	shared_ptr<timeout_t> _scheduled_repaint_timeout;
 
 private:
@@ -428,7 +426,7 @@ public:
 	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void make_surface_stats(int & size, int & count);
 	auto mainloop() -> mainloop_t *;
-	void schedule_repaint();
+	void schedule_repaint(int64_t timeout = 1000000000L/120L);
 	void damage_all();
 
 	void activate(view_p c, xcb_timestamp_t time);

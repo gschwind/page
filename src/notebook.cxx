@@ -390,6 +390,7 @@ void notebook_t::update_layout(time64_t const time) {
 	if (fading_notebook != nullptr) {
 		double ratio = (static_cast<double>(time - _swap_start) / static_cast<double const>(animation_duration));
 		fading_notebook->set_ratio(ratio);
+		_ctx->schedule_repaint();
 	}
 }
 
@@ -1186,9 +1187,7 @@ void notebook_t::render(cairo_t * cr, region const & area) {
 
 void notebook_t::render_finished()
 {
-	if(fading_notebook != nullptr) {
-		_ctx->schedule_repaint();
-	}
+
 }
 
 void notebook_t::on_workspace_enable()

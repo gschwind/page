@@ -70,8 +70,6 @@ page_t::page_t(int argc, char ** argv)
 
 	_current_workspace = 0;
 	_grab_handler = nullptr;
-	_scheduled_repaint = false;
-	_damage_repaint = false;
 
 	identity_window = XCB_NONE;
 
@@ -1232,16 +1230,11 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
-	if (not _damage_repaint) {
-		_damage_repaint = true;
-		_scheduled_repaint_timeout = _mainloop.add_timeout(0L,
-				[this]() -> void { this->render(); });
-	}
+	schedule_repaint(0L);
 }
 
 void page_t::render() {
-	_scheduled_repaint = false;
-	_damage_repaint = false;
+	_scheduled_repaint_timeout = nullptr;
 	//printf("call %s\n", __PRETTY_FUNCTION__);
 
 	// ask to update everything to draw the time64_t::now() frame
@@ -3227,11 +3220,16 @@ auto page_t::mainloop() -> mainloop_t * {
 	return &_mainloop;
 }
 
-void page_t::schedule_repaint()
+void page_t::schedule_repaint(int64_t timeout)
 {
-	if (not _scheduled_repaint) {
-		_scheduled_repaint = true;
-		_scheduled_repaint_timeout = _mainloop.add_timeout(1000000000L/120L,
+	auto timebound = time64_t::now() + time64_t{timeout};
+	if (_scheduled_repaint_timeout) {
+		if (timebound < _scheduled_repaint_timeout->get_bound()) {
+			_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
+					[this]() -> void { this->render(); });
+		}
+	} else {
+		_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
 				[this]() -> void { this->render(); });
 	}
 }

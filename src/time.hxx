@@ -28,7 +28,7 @@ public:
 	}
 
 	/* create new time in current time */
-	time64_t() : nsec(0) { }
+	time64_t() : nsec{0L} { }
 	time64_t(time64_t const & t) : nsec(t.nsec) { }
 
 	time64_t(double sec) : nsec{static_cast<int64_t>(sec * 1000000000.0)} { }
