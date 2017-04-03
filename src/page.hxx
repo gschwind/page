@@ -163,6 +163,7 @@ public:
 
 	array<key_bind_cmd_t, 10> bind_cmd;
 
+	bool _damage_repaint;
 	bool _scheduled_repaint;
 	shared_ptr<timeout_t> _scheduled_repaint_timeout;
 
@@ -391,7 +392,6 @@ public:
 	bool global_focus_history_is_empty();
 
 	void on_visibility_change_handler(client_proxy_t * proxy, bool visible);
-	void on_block_mainloop_handler();
 
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 

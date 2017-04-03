@@ -169,7 +169,6 @@ class notebook_t : public page_component_t {
 
 	void _set_theme_tab_offset(int x);
 	void _set_selected(view_notebook_p c);
-	void _schedule_fading_repaint();
 	void activate(view_notebook_p c, xcb_timestamp_t time);
 
 	auto shared_from_this() -> notebook_p;

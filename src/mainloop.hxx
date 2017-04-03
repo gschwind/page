@@ -118,12 +118,13 @@ class mainloop_t {
 				if (wait <= 1000000L) {
 					timeout_list.pop_front();
 					next->_call();
+					return 0L;
 				} else {
 					return wait;
 				}
 			}
 		}
-		return 10000000000L;
+		return 1000000000L;
 	}
 
 	void run_poll_callback() {
@@ -143,20 +144,17 @@ class mainloop_t {
 	}
 
 public:
-
-	signal_t<> on_block;
-
 	mainloop_t() : running{false} { }
 
 	void run() {
 		running = true;
 		while (running) {
 			int64_t wait = run_timeout();
-			on_block.signal();
 			if(poll_list.size() > 0) {
 				poll(&poll_list[0], poll_list.size(), wait/1000000L);
 			} else {
-				usleep(wait/1000L);
+				if(wait > 1000L)
+					usleep(wait/1000L);
 			}
 			run_poll_callback();
 		}

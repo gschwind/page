@@ -154,26 +154,6 @@ void notebook_t::_set_selected(view_notebook_p c) {
 	}
 }
 
-void notebook_t::_schedule_fading_repaint()
-{
-	if(_has_pending_fading_timeout)
-		return;
-	_has_pending_fading_timeout = true;
-
-	time64_t delta(animation_duration/255L);
-	if(delta < time64_t{1000000000L/120L}) {
-		delta = 1000000000L/120L;
-	}
-
-	/** schedule repaint when alpha change is enough, avoiding render flood **/
-	_fading_timeout = _ctx->mainloop()->add_timeout(delta,
-			[this]() -> void {
-				this->_ctx->schedule_repaint();
-				this->_has_pending_fading_timeout = false;
-			});
-
-}
-
 void notebook_t::activate(view_notebook_p vn, xcb_timestamp_t time)
 {
 	assert(has_key(_clients_tab_order, vn));
@@ -404,7 +384,7 @@ void notebook_t::update_layout(time64_t const time) {
 		/** animation is terminated **/
 		_fading_notebook_layer->remove(fading_notebook);
 		fading_notebook.reset();
-		_ctx->damage_all();
+		_ctx->add_global_damage(to_root_position(_allocation));
 	}
 
 	if (fading_notebook != nullptr) {
@@ -728,7 +708,7 @@ void notebook_t::_start_fading() {
 		fading_notebook = make_shared<renderable_notebook_fading_t>(this, pix, pos.x, pos.y);
 		_fading_notebook_layer->push_back(fading_notebook);
 		fading_notebook->show();
-		_schedule_fading_repaint();
+		_ctx->schedule_repaint();
 	} else {
 //		_swap_start.update_to_current_time();
 //
@@ -1207,7 +1187,7 @@ void notebook_t::render(cairo_t * cr, region const & area) {
 void notebook_t::render_finished()
 {
 	if(fading_notebook != nullptr) {
-		_schedule_fading_repaint();
+		_ctx->schedule_repaint();
 	}
 }
 

@@ -64,7 +64,7 @@ void renderable_notebook_fading_t::render(cairo_t * cr, region const & area) {
 }
 
 void renderable_notebook_fading_t::set_ratio(double x) {
-	_damaged += _location;
+	_damaged += region{_location};
 	_ratio = min(max(0.0, x), 1.0);
 }
 

@@ -71,6 +71,7 @@ page_t::page_t(int argc, char ** argv)
 	_current_workspace = 0;
 	_grab_handler = nullptr;
 	_scheduled_repaint = false;
+	_damage_repaint = false;
 
 	identity_window = XCB_NONE;
 
@@ -215,9 +216,6 @@ void page_t::run() {
 
 	/** initialize the empty workspace **/
 
-	_scheduled_repaint = true;
-	_scheduled_repaint_timeout = _mainloop.add_timeout(0L, [this]() -> void { this->render(); });
-
 	/* start the compositor once the window manager is fully started */
 	start_compositor();
 
@@ -305,8 +303,6 @@ void page_t::run() {
 		});
 
 	connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
-	connect(_mainloop.on_block, this, &page_t::on_block_mainloop_handler);
-
 
 	_mainloop.run();
 
@@ -760,6 +756,7 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	 **/
 	if (_grab_handler == nullptr) {
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
+		xcb_flush(_dpy->xcb());
 		/* TODO */
 //		auto mw = find_managed_window_with(e->event);
 //		if (mw != nullptr) {
@@ -1235,11 +1232,17 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 }
 
 void page_t::process_damage_notify_event(xcb_generic_event_t const * e) {
-	schedule_repaint();
+	if (not _damage_repaint) {
+		_damage_repaint = true;
+		_scheduled_repaint_timeout = _mainloop.add_timeout(0L,
+				[this]() -> void { this->render(); });
+	}
 }
 
 void page_t::render() {
 	_scheduled_repaint = false;
+	_damage_repaint = false;
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 
 	// ask to update everything to draw the time64_t::now() frame
 	get_current_workspace()->broadcast_update_layout(time64_t::now());
@@ -2550,9 +2553,14 @@ void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 		//std::cout << "switch to workspace #" << workspace << std::endl;
 		start_switch_to_workspace_animation(workspace);
 		_current_workspace = workspace;
-		update_viewport_layout();
 		update_current_workspace();
 		update_workspace_visibility(time);
+
+		/* Force sync */
+		auto ck = xcb_no_operation_checked(_dpy->xcb());
+		xcb_flush(_dpy->xcb());
+		xcb_request_check(_dpy->xcb(), ck);
+		xcb_discard_reply(_dpy->xcb(), ck.sequence);
 	}
 }
 
@@ -2999,6 +3007,25 @@ void page_t::process_pending_events() {
 		return;
 	}
 
+	while (_dpy->has_pending_events()) {
+		process_event(_dpy->front_event());
+		_dpy->pop_event();
+	}
+
+	if (_need_restack) {
+		_need_restack = false;
+		update_windows_stack();
+		_need_update_client_list = true;
+	}
+
+	if(_need_update_client_list) {
+		_need_update_client_list = false;
+		update_client_list();
+		update_client_list_stacking();
+	}
+
+	xcb_flush(_dpy->xcb());
+
 }
 
 theme_t const * page_t::theme() const {
@@ -3179,37 +3206,6 @@ void page_t::on_visibility_change_handler(client_proxy_t * proxy, bool visible)
 
 }
 
-void page_t::on_block_mainloop_handler() {
-
-	while (_dpy->has_pending_events()) {
-		while (_dpy->has_pending_events()) {
-			process_event(_dpy->front_event());
-			_dpy->pop_event();
-		}
-
-		if (_need_restack) {
-			_need_restack = false;
-			update_windows_stack();
-			_need_update_client_list = true;
-		}
-
-		if(_need_update_client_list) {
-			_need_update_client_list = false;
-			update_client_list();
-			update_client_list_stacking();
-		}
-
-		xcb_flush(_dpy->xcb());
-
-//		/* Force sync */
-//		auto ck = xcb_no_operation_checked(_dpy->xcb());
-//		xcb_request_check(_dpy->xcb(), ck);
-//		xcb_discard_reply(_dpy->xcb(), ck.sequence);
-
-	}
-
-}
-
 auto page_t::conf() const -> page_configuration_t const & {
 	return configuration;
 }
@@ -3235,8 +3231,8 @@ void page_t::schedule_repaint()
 {
 	if (not _scheduled_repaint) {
 		_scheduled_repaint = true;
-		_scheduled_repaint_timeout = _mainloop.add_timeout(0L,
-				[this]() -> void {this->render();});
+		_scheduled_repaint_timeout = _mainloop.add_timeout(1000000000L/120L,
+				[this]() -> void { this->render(); });
 	}
 }
 
