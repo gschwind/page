@@ -21,6 +21,14 @@
 #include "time.hxx"
 #include "transition.hxx"
 
+enum button_action_e {
+	BUTTON_ACTION_CONTINUE,
+	BUTTON_ACTION_REPLAY,
+	BUTTON_ACTION_GRAB_SYNC,
+	BUTTON_ACTION_GRAB_ASYNC,
+	BUTTON_ACTION_HAS_ACTIVE_GRAB
+};
+
 namespace page {
 
 using namespace std;
@@ -45,13 +53,13 @@ protected:
 	}
 
 	template<typename ... T>
-	bool _broadcast_root_first(void (tree_t::* f)(T ... args), T ... args) {
+	void _broadcast_root_first(void (tree_t::* f)(T ... args), T ... args) {
 		(this->*f)(args...);
 		for(auto x: weak(get_all_children_root_first())) {
 			if(not x.expired())
 				(x.lock().get()->*f)(args...);
 		}
-		return true;
+		(this->*f)(args...);
 	}
 
 	template<typename ... T>
@@ -74,6 +82,20 @@ protected:
 				(x.lock().get()->*f)(args...);
 		}
 		(this->*f)(args...);
+	}
+
+	auto _broadcast_deep_first(button_action_e (tree_t::* f)(xcb_button_press_event_t const * ev), xcb_button_press_event_t const * ev) -> button_action_e {
+		for(auto x: weak(get_all_children_deep_first())) {
+			if(not x.expired()) {
+				auto ret = (x.lock().get()->*f)(ev);
+				if(ret != BUTTON_ACTION_CONTINUE)
+					return ret;
+			}
+		}
+		auto ret = (this->*f)(ev);
+		if(ret != BUTTON_ACTION_CONTINUE)
+			return ret;
+		return BUTTON_ACTION_CONTINUE;
 	}
 
 	template<char const c>
@@ -141,7 +163,7 @@ public:
 
 	void broadcast_trigger_redraw();
 
-	bool broadcast_button_press(xcb_button_press_event_t const * ev);
+	auto broadcast_button_press(xcb_button_press_event_t const * ev) -> button_action_e;
 	bool broadcast_button_release(xcb_button_release_event_t const * ev);
 	bool broadcast_button_motion(xcb_motion_notify_event_t const * ev);
 	bool broadcast_leave(xcb_leave_notify_event_t const * ev);
@@ -188,7 +210,7 @@ public:
 	virtual auto get_visible_region() -> region;
 	virtual auto get_damaged() -> region;
 
-	virtual bool button_press(xcb_button_press_event_t const * ev);
+	virtual auto button_press(xcb_button_press_event_t const * ev) -> button_action_e;
 	virtual bool button_release(xcb_button_release_event_t const * ev);
 	virtual bool button_motion(xcb_motion_notify_event_t const * ev);
 	virtual bool leave(xcb_leave_notify_event_t const * ev);

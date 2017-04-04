@@ -239,25 +239,37 @@ auto tree_t::lookup_view_for(client_managed_p c) const -> view_p
 	_root->workspace_t::lookup_view_for(c);
 }
 
-bool tree_t::button_press(xcb_button_press_event_t const * ev) {
-	return false;
-}
-bool tree_t::button_release(xcb_button_release_event_t const * ev) {
-	return false;
-}
-bool tree_t::button_motion(xcb_motion_notify_event_t const * ev) {
-	return false;
-}
-bool tree_t::leave(xcb_leave_notify_event_t const * ev) {
-	return false;
-}
-bool tree_t::enter(xcb_enter_notify_event_t const * ev) {
-	return false;
-}
-void tree_t::expose(xcb_expose_event_t const * ev) {
+auto tree_t::button_press(xcb_button_press_event_t const * ev) -> button_action_e
+{
+	return BUTTON_ACTION_CONTINUE;
 }
 
-void tree_t::trigger_redraw() {
+bool tree_t::button_release(xcb_button_release_event_t const * ev)
+{
+	return false;
+}
+
+bool tree_t::button_motion(xcb_motion_notify_event_t const * ev)
+{
+	return false;
+}
+
+bool tree_t::leave(xcb_leave_notify_event_t const * ev)
+{
+	return false;
+}
+
+bool tree_t::enter(xcb_enter_notify_event_t const * ev)
+{
+	return false;
+}
+
+void tree_t::expose(xcb_expose_event_t const * ev)
+{
+}
+
+void tree_t::trigger_redraw()
+{
 }
 
 /**
@@ -343,7 +355,7 @@ void tree_t::broadcast_trigger_redraw() {
 	_broadcast_deep_first(&tree_t::trigger_redraw);
 }
 
-bool tree_t::broadcast_button_press(xcb_button_press_event_t const * ev) {
+auto tree_t::broadcast_button_press(xcb_button_press_event_t const * ev) -> button_action_e {
 	return _broadcast_deep_first(&tree_t::button_press, ev);
 }
 

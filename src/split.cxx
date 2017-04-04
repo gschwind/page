@@ -253,15 +253,16 @@ rect split_t::compute_split_bar_location() const {
 	return compute_split_bar_location(_bpack0, _bpack1);
 }
 
-bool split_t::button_press(xcb_button_press_event_t const * e) {
+auto split_t::button_press(xcb_button_press_event_t const * e)  -> button_action_e
+{
 	if (e->event == get_component_xid()
 			and e->child == _wid
 			and e->detail == XCB_BUTTON_INDEX_1
 			and _split_bar_area.is_inside(e->event_x, e->event_y)) {
 		_ctx->grab_start(make_shared<grab_split_t>(_ctx, shared_from_this()), e->time);
-		return true;
+		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else {
-		return false;
+		return BUTTON_ACTION_CONTINUE;
 	}
 }
 

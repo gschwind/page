@@ -165,16 +165,16 @@ void view_t::_grab_button_focused_unsafe() {
 
 	/** First ungrab all **/
 	_ungrab_all_button_unsafe();
-	/** for decoration, grab all **/
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+//	/** for decoration, grab all **/
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 }
 
 /**
@@ -188,17 +188,17 @@ void view_t::_grab_button_unfocused_unsafe() {
 	/** First ungrab all **/
 	_ungrab_all_button_unsafe();
 
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-
-	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
+//
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
+//
+//	_client->_client_proxy->grab_button(false, DEFAULT_BUTTON_EVENT_MASK,
+//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+//			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 }
 

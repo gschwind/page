@@ -744,23 +744,41 @@ void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 
     if(e->root_x == 0 and e->root_y == 0) {
         start_alt_tab(e->time);
+        xcb_flush(_dpy->xcb());
     } else {
-        get_current_workspace()->broadcast_button_press(e);
+        auto status = get_current_workspace()->broadcast_button_press(e);
+        switch(status) {
+        case BUTTON_ACTION_GRAB_ASYNC:
+    		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_POINTER, e->time);
+    		break;
+        case BUTTON_ACTION_GRAB_SYNC:
+    		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_SYNC_POINTER, e->time);
+    		break;
+        case BUTTON_ACTION_HAS_ACTIVE_GRAB:
+        	/* do nothing */
+        	break;
+        case BUTTON_ACTION_CONTINUE:
+        default:
+        	xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
+        	break;
+        }
+        xcb_flush(_dpy->xcb());
     }
 
-	/**
-	 * if no change happened to process mode
-	 * We allow events (remove the grab), and focus those window.
-	 **/
-	if (_grab_handler == nullptr) {
-		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
-		xcb_flush(_dpy->xcb());
-		/* TODO */
-//		auto mw = find_managed_window_with(e->event);
-//		if (mw != nullptr) {
-//			activate(mw, e->time);
-//		}
-	}
+
+//	/**
+//	 * if no change happened to process mode
+//	 * We allow events (remove the grab), and focus those window.
+//	 **/
+//	if (_grab_handler == nullptr) {
+//		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_REPLAY_POINTER, e->time);
+//		xcb_flush(_dpy->xcb());
+//		/* TODO */
+////		auto mw = find_managed_window_with(e->event);
+////		if (mw != nullptr) {
+////			activate(mw, e->time);
+////		}
+//	}
 
 }
 
@@ -2339,6 +2357,7 @@ void page_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	}
 
 	workspace->insert_as_popup(c, time);
+	schedule_repaint(0L);
 
 }
 

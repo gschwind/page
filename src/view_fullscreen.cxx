@@ -75,21 +75,26 @@ void view_fullscreen_t::reconfigure()
 	_damage_cache += get_visible_region();
 }
 
-bool view_fullscreen_t::button_press(xcb_button_press_event_t const * e) {
+auto view_fullscreen_t::button_press(xcb_button_press_event_t const * e) -> button_action_e
+{
 
 	if (e->event != _base and e->event != _client->_client_proxy->id()) {
-		return false;
+		return BUTTON_ACTION_CONTINUE;
 	}
 
 	if (e->detail == (XCB_BUTTON_INDEX_1) and (e->state & XCB_MOD_MASK_1)) {
 		/** start moving fullscreen window **/
-		_root->_ctx->grab_start(make_shared<grab_fullscreen_client_t>(_root->_ctx, shared_from_this(), e->detail, e->root_x, e->root_y), e->time);
-		return true;
+		_root->_ctx->grab_start(
+				make_shared<grab_fullscreen_client_t>(_root->_ctx,
+						shared_from_this(), e->detail, e->root_x, e->root_y),
+				e->time);
+		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else {
 		_root->set_focus(shared_from_this(), e->time);
-		return true;
+		return BUTTON_ACTION_REPLAY;
 	}
-	return true;
+
+	return BUTTON_ACTION_CONTINUE;
 }
 
 } /* namespace page */

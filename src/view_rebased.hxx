@@ -26,7 +26,7 @@
 namespace page {
 
 struct view_rebased_t : public view_t {
-	static long const MANAGED_BASE_WINDOW_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+	static long const MANAGED_BASE_WINDOW_EVENT_MASK = XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE;
 
 	xcb_visualid_t _deco_visual;
 	uint8_t _deco_depth;
@@ -45,6 +45,10 @@ public:
 	void _create_base_windows();
 	void _reconfigure_windows();
 	void _update_visible_region();
+	void _grab_button_focused_unsafe();
+	void _grab_button_unfocused_unsafe();
+	void _ungrab_all_button_unsafe();
+	void _on_focus_change(client_managed_t * c);
 
 	/**
 	 * view_t API

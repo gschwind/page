@@ -164,14 +164,15 @@ void view_dock_t::reconfigure()
 	view_t::reconfigure();
 }
 
-bool view_dock_t::button_press(xcb_button_press_event_t const * e) {
+auto view_dock_t::button_press(xcb_button_press_event_t const * e)  -> button_action_e
+{
 
 	if (e->event != _client->_client_proxy->id()) {
-		return false;
+		return BUTTON_ACTION_CONTINUE;
 	}
 
 	_root->set_focus(shared_from_this(), e->time);
-	return true;
+	return BUTTON_ACTION_REPLAY;
 
 }
 

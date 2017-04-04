@@ -703,21 +703,21 @@ void view_floating_t::reconfigure() {
 	_damage_cache += get_visible_region();
 }
 
-bool view_floating_t::button_press(xcb_button_press_event_t const * e) {
-
+auto view_floating_t::button_press(xcb_button_press_event_t const * e) -> button_action_e
+{
 	if (not (e->event == _deco or e->event == _base)) {
-		return false;
+		return BUTTON_ACTION_CONTINUE;
 	}
 
 	auto _ctx = _root->_ctx;
 
 	if (e->detail == XCB_BUTTON_INDEX_1 and (e->state & XCB_MOD_MASK_1)) {
 		_ctx->grab_start(make_shared<grab_floating_move_t>(_ctx, dynamic_pointer_cast<view_floating_t>(shared_from_this()), e->detail, e->root_x, e->root_y), e->time);
-		return true;
+		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else if (e->detail == XCB_BUTTON_INDEX_3
 			and (e->state & XCB_MOD_MASK_1)) {
 		_ctx->grab_start(make_shared<grab_floating_resize_t>(_ctx, dynamic_pointer_cast<view_floating_t>(shared_from_this()), e->detail, e->root_x, e->root_y, RESIZE_BOTTOM_RIGHT), e->time);
-		return true;
+		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else if (e->detail == XCB_BUTTON_INDEX_1
 			and e->child != _client->_client_proxy->id()
 			and e->event == _deco) {
@@ -753,13 +753,14 @@ bool view_floating_t::button_press(xcb_button_press_event_t const * e) {
 			}
 		}
 
-		return true;
+		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 
 	} else {
 		_root->set_focus(dynamic_pointer_cast<view_t>(shared_from_this()), e->time);
+		return BUTTON_ACTION_REPLAY;
 	}
 
-	return false;
+	return BUTTON_ACTION_CONTINUE;
 }
 
 void view_floating_t::expose(xcb_expose_event_t const * ev) {
