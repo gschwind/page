@@ -227,6 +227,8 @@ public:
 
 	void process_randr_notify_event(xcb_generic_event_t const * e);
 	void process_shape_notify_event(xcb_generic_event_t const * e);
+	void process_counter_notify_event(xcb_generic_event_t const * e);
+	void process_alarm_notify_event(xcb_generic_event_t const * e);
 
 	/* SubstructureRedirectMask */
 	void process_circulate_request_event(xcb_generic_event_t const * e);

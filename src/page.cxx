@@ -2654,6 +2654,8 @@ void page_t::_bind_all_default_event() {
 	_event_handler_bind(_dpy->damage_event + XCB_DAMAGE_NOTIFY, &page_t::process_damage_notify_event);
 	_event_handler_bind(_dpy->randr_event + XCB_RANDR_NOTIFY, &page_t::process_randr_notify_event);
 	_event_handler_bind(_dpy->shape_event + XCB_SHAPE_NOTIFY, &page_t::process_shape_notify_event);
+	_event_handler_bind(_dpy->sync_event + XCB_SYNC_COUNTER_NOTIFY, &page_t::process_counter_notify_event);
+	_event_handler_bind(_dpy->sync_event + XCB_SYNC_ALARM_NOTIFY, &page_t::process_alarm_notify_event);
 
 }
 
@@ -2845,6 +2847,16 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 //		}
 
 	}
+}
+
+void page_t::process_counter_notify_event(xcb_generic_event_t const * _e)
+{
+	auto e = reinterpret_cast<xcb_sync_counter_notify_event_t const *>(_e);
+}
+
+void page_t::process_alarm_notify_event(xcb_generic_event_t const * e)
+{
+	auto e = reinterpret_cast<xcb_sync_alarm_notify_event_t const *>(_e);
 }
 
 void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
