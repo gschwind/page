@@ -18,6 +18,7 @@
 #include <xcb/xfixes.h>
 #include <xcb/randr.h>
 #include <xcb/shape.h>
+#include <xcb/sync.h>
 
 //#include <X11/keysymdef.h>
 #include <X11/cursorfont.h>
@@ -97,6 +98,8 @@ public:
 	int randr_opcode, randr_event, randr_error;
 
 	int dbe_opcode, dbe_event, dbe_error;
+
+	int sync_opcode, sync_event, sync_error;
 
 	/* overlay composite */
 	xcb_window_t composite_overlay;
@@ -178,6 +181,7 @@ public:
 	bool check_xfixes_extension();
 	bool check_glx_extension();
 	bool check_dbe_extension();
+	bool check_sync_extension();
 
 
 	static void create_surf(char const * f, int l);

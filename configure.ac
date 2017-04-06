@@ -32,6 +32,7 @@ PKG_CHECK_MODULES(XCB, [
 	xcb-randr >= 1.11
 	xcb-shape >= 1.11
 	xcb-composite >= 1.11
+	xcb-sync >= 1.11
 ])
 AC_SUBST(XCB_CFLAGS)
 AC_SUBST(XCB_LIBS)

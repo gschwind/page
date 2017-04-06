@@ -481,6 +481,24 @@ bool display_t::check_randr_extension() {
 	}
 }
 
+bool display_t::check_sync_extension() {
+	if (not query_extension("SYNC", &sync_opcode, &sync_event, &sync_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		xcb_randr_query_version_cookie_t ck = xcb_randr_query_version(_xcb, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
+		xcb_randr_query_version_reply_t * r = xcb_randr_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get SYNC version");
+
+		printf("SYNC Extension version %d.%d found\n", r->major_version, r->minor_version);
+		free(r);
+		return true;
+	}
+}
+
+
 xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 {
   xcb_screen_iterator_t iter = xcb_setup_roots_iterator(xcb_get_setup(c));
@@ -806,6 +824,10 @@ void display_t::check_x11_extension() {
 
 	if (not check_randr_extension()) {
 		throw std::runtime_error("RANDR extension is not supported");
+	}
+
+	if (not check_sync_extension()) {
+		throw std::runtime_error("SYNC extension is not supported");
 	}
 
 	has_composite = check_composite_extension();
