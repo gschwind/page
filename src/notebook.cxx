@@ -169,7 +169,6 @@ void notebook_t::update_client_position(view_notebook_p c) {
 	_client_position = _compute_client_size(c->_client);
 	c->_client->_absolute_position = to_root_position(_client_position);
 	//printf("update position to %d,%d\n", c->_client->_absolute_position.w, c->_client->_absolute_position.h);
-	c->reconfigure();
 }
 
 void notebook_t::iconify_client(view_notebook_p x) {
@@ -287,9 +286,9 @@ void notebook_t::_update_all_layout() {
 		_client_area.h = 1;
 	}
 
-	for(auto const & c: _clients_tab_order) {
-		/* resize all client properly */
-		update_client_position(c);
+	if (_selected) {
+		update_client_position(_selected);
+		_selected->reconfigure();
 	}
 
 	_mouse_over_reset();
@@ -672,7 +671,6 @@ shared_ptr<pixmap_t> notebook_t::_render_to_pixmap() {
 
 	/* paste the current window */
 	if (_selected != nullptr) {
-		update_client_position(_selected);
 		if (not _selected->is_iconic()) {
 			auto client_view = _selected->create_surface();
 			shared_ptr<pixmap_t> pix = client_view->get_pixmap();
