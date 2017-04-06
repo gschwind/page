@@ -12,6 +12,7 @@
 #include <xcb/xcb.h>
 
 #include <algorithm>
+#include <cassert>
 
 #include "atoms.hxx"
 #include "display.hxx"
@@ -422,7 +423,8 @@ public:
 	}
 
 	~property_t() {
-		/* MUST BE RELEASED */
+		assert(data == nullptr);
+		assert(ck.sequence == 0);
 	}
 
 	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {

@@ -223,11 +223,8 @@ void client_proxy_t::read_all_properties() {
 
 }
 
-void client_proxy_t::delete_all_properties() {
-
-	// BAD idea.
-	//del_all();
-
+void client_proxy_t::delete_all_properties()
+{
 	safe_delete(_shape);
 }
 

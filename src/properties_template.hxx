@@ -131,6 +131,11 @@ public:
 
 	}
 
+	~properties_hander_t()
+	{
+		release_all();
+	}
+
 	template<int const ID>
 	auto get() -> typename ptype<ID>::type::cxx_type * {
 		return static_cast<property_element_t<ID> * >(this)->props.update(xcb);
@@ -159,6 +164,10 @@ public:
 		hidden_for_all_id<properties_hander_t<LIST...>, LIST...>::del(this);
 	}
 
+	void release_all() {
+		hidden_for_all_id<properties_hander_t<LIST...>, LIST...>::release(this);
+	}
+
 	void update_all(xcb_atom_t atom) {
 		hidden_for_all_id<properties_hander_t<LIST...>, LIST...>::update(this, atom);
 	}
@@ -183,6 +192,10 @@ struct hidden_for_all_id<T, ID, XLIST...> {
 		}
 		hidden_for_all_id<T, XLIST...>::update(ths, atom);
 	}
+	static void release(T * ths) {
+		static_cast<property_element_t<ID> * >(ths)->props.release(ths->xcb);
+		hidden_for_all_id<T, XLIST...>::release(ths);
+	}
 };
 
 template<class T, int const ID>
@@ -198,6 +211,9 @@ struct hidden_for_all_id<T, ID> {
 			static_cast<property_element_t<ID> * >(ths)->props.fetch(ths->xcb, ths->A, ths->w);
 			return;
 		}
+	}
+	static void release(T * ths) {
+		static_cast<property_element_t<ID> * >(ths)->props.release(ths->xcb);
 	}
 };
 
