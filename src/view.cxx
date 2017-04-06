@@ -73,8 +73,9 @@ void view_t::_update_opaque_region() {
 	/** update opaque region cache **/
 	_opaque_region_cache.clear();
 
-	if (_client->get<p_net_wm_opaque_region>() != nullptr) {
-		_opaque_region_cache = region{*(_client->get<p_net_wm_opaque_region>())};
+	auto opaque_region = _client->get<p_net_wm_opaque_region>();
+	if (opaque_region != nullptr) {
+		_opaque_region_cache = region{*(opaque_region)};
 		_opaque_region_cache &= rect{0, 0, _client->_absolute_position.w, _client->_absolute_position.h};
 	} else {
 		if (_client->_client_proxy->geometry().depth != 32) {

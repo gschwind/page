@@ -171,7 +171,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h);
 
 	template<int const ID>
-	auto get() -> typename ptype<ID>::type::cxx_type *
+	auto get() -> shared_ptr<typename ptype<ID>::type::cxx_type>
 	{
 		return _client_proxy->get<ID>();
 	}

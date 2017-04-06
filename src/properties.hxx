@@ -24,6 +24,7 @@ using namespace std;
 struct wm_state_data_t {
 	int state;
 	xcb_window_t icon;
+	wm_state_data_t(int state, xcb_window_t icon) : state{state}, icon{icon} { }
 };
 
 template<typename T>
@@ -351,10 +352,8 @@ struct property_helper_t<wm_state_data_t> {
 		int32_t * tmp = reinterpret_cast<int32_t *>(_tmp);
 		if (tmp != nullptr) {
 			if (length == 2) {
-				wm_state_data_t * data = new wm_state_data_t;
+				wm_state_data_t * data = new wm_state_data_t(tmp[0], tmp[1]);
 				if (data != nullptr) {
-					data->state = tmp[0];
-					data->icon = tmp[1];
 					return data;
 				}
 			}
@@ -406,10 +405,6 @@ struct property_helper_t<motif_wm_hints_t> {
 
 template<atom_e name, atom_e type, typename T>
 class property_t {
-
-	T * data;
-	xcb_get_property_cookie_t ck;
-
 	property_t & operator=(property_t const &);
 	property_t(property_t const &);
 
@@ -418,65 +413,51 @@ public:
 	enum : int { x11_name = name };
 	enum : int { x11_type = type };
 
-	property_t() : data{nullptr} {
-		ck.sequence = 0;
+	property_t() {
+
 	}
 
 	~property_t() {
-		assert(data == nullptr);
-		assert(ck.sequence == 0);
+
 	}
 
 	void fetch(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
-		release(xcb);
-		ck = xcb_get_property(xcb, 0, w, (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
+
 	}
 
-	T * update(xcb_connection_t * xcb) {
-		if(ck.sequence == 0)
-			return data;
-
+	shared_ptr<T> read(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w) {
 		xcb_generic_error_t * err;
-		xcb_get_property_reply_t * r = xcb_get_property_reply(xcb, ck, &err);
+		auto ck = xcb_get_property(xcb, 0, w, (*A)(name), (*A)(type), 0, numeric_limits<uint32_t>::max());
+		auto r = xcb_get_property_reply(xcb, ck, &err);
 
 		if(err != nullptr or r == nullptr) {
 			if(r != nullptr)
 				free(r);
-			data = nullptr;
+			return nullptr;
 		} else if(r->length == 0 or r->format != property_helper_t<T>::format) {
 			if(r != nullptr)
 				free(r);
-			data = nullptr;
+			return nullptr;
 		} else {
 			int length = xcb_get_property_value_length(r) /  (property_helper_t<T>::format / 8);
 			void * tmp = (xcb_get_property_value(r));
 			T * ret = property_helper_t<T>::marshal(tmp, length);
 			free(r);
-			data = ret;
+			return shared_ptr<T>(ret);
 		}
-
-		ck.sequence = 0;
-		return data;
+		return nullptr;
 	}
 
 	void release(xcb_connection_t * xcb) {
-		delete data;
-		data = nullptr;
 
-		if(ck.sequence != 0) {
-			xcb_discard_reply(xcb, ck.sequence);
-			ck.sequence = 0;
-		}
 	}
 
-	T * push(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w, T * new_data) {
+	shared_ptr<T> push(xcb_connection_t * xcb, shared_ptr<atom_handler_t> const & A, xcb_window_t w, shared_ptr<T> data) {
 		release(xcb);
-
-		data = new_data;
 		if(data != nullptr) {
 			char * xdata;
 			int length;
-			property_helper_t<T>::serialize(data, xdata, length);
+			property_helper_t<T>::serialize(data.get(), xdata, length);
 			xcb_change_property(xcb, XCB_PROP_MODE_REPLACE, w, (*A)(name), (*A)(type), property_helper_t<T>::format, length, xdata);
 			delete[] xdata;
 		} else {

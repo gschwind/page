@@ -747,7 +747,7 @@ void display_t::disable_input_passthrough(xcb_window_t w) {
 
 void display_t::set_net_active_window(xcb_window_t w) {
 	net_active_window_t active;
-	active.push(_xcb, _A, root(), new xcb_window_t{w});
+	active.push(_xcb, _A, root(), make_shared<xcb_window_t>(w));
 	active.release(_xcb);
 }
 

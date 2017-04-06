@@ -70,19 +70,21 @@ void view_dock_t::update_dock_position()
 	int32_t ps[12] = { 0 };
 	bool has_strut{false};
 
-	if(j->get<p_net_wm_strut_partial>() != nullptr) {
-		if(j->get<p_net_wm_strut_partial>()->size() == 12) {
-			std::copy(j->get<p_net_wm_strut_partial>()->begin(), j->get<p_net_wm_strut_partial>()->end(), &ps[0]);
+	auto strut_partial = j->get<p_net_wm_strut_partial>();
+	if(strut_partial != nullptr) {
+		if(strut_partial->size() == 12) {
+			std::copy(strut_partial->begin(), strut_partial->end(), &ps[0]);
 			has_strut = true;
 		}
 	}
 
-	if (j->get<p_net_wm_strut>() != nullptr and not has_strut) {
-		if(j->get<p_net_wm_strut>()->size() == 4) {
+	auto strut = j->get<p_net_wm_strut>();
+	if (strut != nullptr and not has_strut) {
+		if(strut->size() == 4) {
 
 			/** if strut is found, fake strut_partial **/
 
-			std::copy(j->get<p_net_wm_strut>()->begin(), j->get<p_net_wm_strut>()->end(), &ps[0]);
+			std::copy(strut->begin(), strut->end(), &ps[0]);
 
 			if(ps[PS_TOP] > 0) {
 				ps[PS_TOP_START_X] = _root_position.x;

@@ -137,12 +137,12 @@ public:
 	}
 
 	template<int const ID>
-	auto get() -> typename ptype<ID>::type::cxx_type * {
-		return static_cast<property_element_t<ID> * >(this)->props.update(xcb);
+	auto get() -> shared_ptr<typename  ptype<ID>::type::cxx_type> {
+		return static_cast<property_element_t<ID> * >(this)->props.read(xcb, A, w);
 	}
 
 	template<int const ID>
-	void set(typename ptype<ID>::type::cxx_type * d) {
+	void set(shared_ptr<typename ptype<ID>::type::cxx_type> d) {
 		static_cast<property_element_t<ID> * >(this)->props.push(xcb, A, w, d);
 	}
 

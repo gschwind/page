@@ -226,8 +226,7 @@ void page_t::run() {
 	{
 		/** check for number of workspace and create them **/
 		net_number_of_desktops_t number_of_workspace;
-		number_of_workspace.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
-		auto nd = number_of_workspace.update(_dpy->xcb());
+		auto nd = number_of_workspace.read(_dpy->xcb(), _dpy->_A, _dpy->root());
 		int n = 1;
 		if(nd != nullptr and *nd != 0)
 			n = *nd;
@@ -391,8 +390,9 @@ void page_t::scan() {
 			 * if the window is not mapped, check if previous windows manager has set WM_STATE to iconic
 			 * if this is the case, that mean that is a managed window, otherwise it is a WithDrwn window
 			 **/
-			if (c->get<p_wm_state>() != nullptr) {
-				if (c->get<p_wm_state>()->state == IconicState) {
+			auto wm_state = c->get<p_wm_state>();
+			if (wm_state != nullptr) {
+				if (wm_state->state == IconicState) {
 					onmap(w);
 				}
 			}
@@ -1678,19 +1678,21 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 		int32_t ps[PS_LAST];
 		bool has_strut{false};
 
-		if(j->get<p_net_wm_strut_partial>() != nullptr) {
-			if(j->get<p_net_wm_strut_partial>()->size() == 12) {
-				std::copy(j->get<p_net_wm_strut_partial>()->begin(), j->get<p_net_wm_strut_partial>()->end(), &ps[0]);
+		auto net_wm_strut_partial = j->get<p_net_wm_strut_partial>();
+		if(net_wm_strut_partial != nullptr) {
+			if(net_wm_strut_partial->size() == 12) {
+				std::copy(net_wm_strut_partial->begin(), net_wm_strut_partial->end(), &ps[0]);
 				has_strut = true;
 			}
 		}
 
-		if (j->get<p_net_wm_strut>() != nullptr and not has_strut) {
-			if(j->get<p_net_wm_strut>()->size() == 4) {
+		auto net_wm_strut = j->get<p_net_wm_strut>();
+		if (net_wm_strut != nullptr and not has_strut) {
+			if(net_wm_strut->size() == 4) {
 
 				/** if strut is found, fake strut_partial **/
 
-				std::copy(j->get<p_net_wm_strut>()->begin(), j->get<p_net_wm_strut>()->end(), &ps[0]);
+				std::copy(net_wm_strut->begin(), net_wm_strut->end(), &ps[0]);
 
 				if(ps[PS_TOP] > 0) {
 					ps[PS_TOP_START_X] = _root_position.x;
@@ -1846,8 +1848,9 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 client_managed_p page_t::get_transient_for(client_managed_p c) {
 	assert(c != nullptr);
 	client_managed_p transient_for = nullptr;
-	if (c->get<p_wm_transient_for>() != nullptr) {
-		transient_for = find_client_with(*(c->get<p_wm_transient_for>()));
+	auto wm_transient_for = c->get<p_wm_transient_for>();
+	if (wm_transient_for != nullptr) {
+		transient_for = find_client_with(*(wm_transient_for));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}
@@ -2260,8 +2263,9 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	}
 
 	/* HACK OLD FASHION FULLSCREEN */
-	if (mw->get<p_wm_normal_hints>() != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
-		XSizeHints const * size_hints = mw->get<p_wm_normal_hints>();
+	auto wm_normal_hints = mw->get<p_wm_normal_hints>();
+	if (wm_normal_hints != nullptr and mw->wm_type() == A(_NET_WM_WINDOW_TYPE_NORMAL)) {
+		auto size_hints = wm_normal_hints;
 		if ((size_hints->flags & PMaxSize)
 				and (size_hints->flags & PMinSize)) {
 			if (size_hints->min_width == _root_position.w
@@ -2309,24 +2313,28 @@ shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
  * @output time: if time is found time is set to the found value.
  * @input c: a window client handler.
  **/
-bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time) {
-	if (c->get<p_net_wm_user_time>() != nullptr) {
-		time = *(c->get<p_net_wm_user_time>());
+bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time)
+{
+	auto net_wm_user_time = c->get<p_net_wm_user_time>();
+	if (net_wm_user_time != nullptr) {
+		time = *(net_wm_user_time);
 		return true;
 	} else {
-		if (c->get<p_net_wm_user_time_window>() == nullptr)
+		auto net_wm_user_time_window = c->get<p_net_wm_user_time_window>();
+		if (net_wm_user_time_window == nullptr)
 			return false;
-		if (*(c->get<p_net_wm_user_time_window>()) == XCB_WINDOW_NONE)
+		if (*(net_wm_user_time_window) == XCB_WINDOW_NONE)
 			return false;
 		try {
-			auto xc = _dpy->ensure_client_proxy(*(c->get<p_net_wm_user_time_window>()));
+			auto xc = _dpy->ensure_client_proxy(*(net_wm_user_time_window));
 			if (not xc)
 				return false;
-			if(xc->get<p_net_wm_user_time>() == nullptr)
+			net_wm_user_time = xc->get<p_net_wm_user_time>();
+			if(net_wm_user_time == nullptr)
 				return false;
-			if (*(xc->get<p_net_wm_user_time>()) == 0)
+			if (*(net_wm_user_time) == 0)
 				return false;
-			time = *(xc->get<p_net_wm_user_time>());
+			time = *(net_wm_user_time);
 			return true;
 		} catch (invalid_client_t & e) {
 			return false;
@@ -2941,8 +2949,7 @@ void page_t::run_cmd(std::string const & cmd_with_args)
 
 void page_t::update_workspace_names() {
 	net_desktop_names_t workspace_names;
-	workspace_names.fetch(_dpy->xcb(), _dpy->_A, _dpy->root());
-	auto names = workspace_names.update(_dpy->xcb());
+	auto names = workspace_names.read(_dpy->xcb(), _dpy->_A, _dpy->root());
 	if(names != nullptr) {
 		for(int k = 0; k < _workspace_list.size() and k < names->size(); ++k) {
 			_workspace_list[k]->set_name((*names)[k]);

@@ -240,7 +240,7 @@ void client_managed_t::wm_state_delete()
 
 bool client_managed_t::has_wm_state_fullscreen()
 {
-	auto const * wm_state = _client_proxy->get<p_net_wm_state>();
+	auto wm_state = _client_proxy->get<p_net_wm_state>();
 	if (wm_state != nullptr) {
 		return has_key(*wm_state, A(_NET_WM_STATE_FULLSCREEN));
 	}
@@ -249,7 +249,7 @@ bool client_managed_t::has_wm_state_fullscreen()
 
 bool client_managed_t::has_wm_state_stiky()
 {
-	auto const * wm_state = _client_proxy->get<p_net_wm_state>();
+	auto wm_state = _client_proxy->get<p_net_wm_state>();
 	if (wm_state != nullptr) {
 		return has_key(*wm_state, A(_NET_WM_STATE_STICKY));
 	}
@@ -258,7 +258,7 @@ bool client_managed_t::has_wm_state_stiky()
 
 bool client_managed_t::has_wm_state_modal()
 {
-	auto const * wm_state = _client_proxy->get<p_net_wm_state>();
+	auto wm_state = _client_proxy->get<p_net_wm_state>();
 	if (wm_state != nullptr) {
 		return has_key(*wm_state, A(_NET_WM_STATE_MODAL));
 	}
@@ -407,7 +407,7 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 void client_managed_t::_apply_floating_hints_constraint() {
 
 	if(_client_proxy->get<p_wm_normal_hints>()!= nullptr) {
-		XSizeHints const * s = _client_proxy->get<p_wm_normal_hints>();
+		auto s = _client_proxy->get<p_wm_normal_hints>();
 
 		if (s->flags & PBaseSize) {
 			if (_floating_wished_position.w < s->base_width)
@@ -500,7 +500,7 @@ dimention_t<unsigned> client_managed_t::compute_size_with_constrain(unsigned w, 
 	if (get<p_wm_normal_hints>() == nullptr)
 		return dimention_t<unsigned> { w, h };
 
-	XSizeHints const * sh = get<p_wm_normal_hints>();
+	auto sh = get<p_wm_normal_hints>();
 
 	if (sh->flags & PMaxSize) {
 		if ((int) w > sh->max_width)

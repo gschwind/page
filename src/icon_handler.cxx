@@ -33,7 +33,7 @@ icon_handler_t<WIDTH, HEIGHT>::icon_handler_t(client_managed_t * c)
 {
 	icon_surf = nullptr;
 
-	vector<uint32_t> const * net_wm_icon = c->get<p_net_wm_icon>();
+	auto net_wm_icon = c->get<p_net_wm_icon>();
 	/* if window have icon properties */
 	if (net_wm_icon != nullptr) {
 
