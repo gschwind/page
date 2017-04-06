@@ -3054,21 +3054,48 @@ compositor_t * page_t::cmp() const {
 
 void page_t::grab_start(shared_ptr<grab_handler_t> handler, xcb_timestamp_t time) {
 	assert(_grab_handler == nullptr);
-	_grab_handler = handler;
-	xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
+	auto ck0 = xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
 			DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 			XCB_NONE, XCB_NONE, time);
-	xcb_grab_keyboard(_dpy->xcb(), false, _dpy->root(),
+	xcb_generic_error_t * e;
+
+	auto ck1 = xcb_grab_keyboard(_dpy->xcb(), false, _dpy->root(),
 			time, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
+
+	auto r0 = xcb_grab_pointer_reply(_dpy->xcb(), ck0, &e);
+	if(not r0->status == XCB_GRAB_STATUS_SUCCESS)
+		printf("grab pointer failed %d", r0->status);
+
+	if (r0 != nullptr and r0->status == XCB_GRAB_STATUS_SUCCESS) {
+		auto r1 = xcb_grab_keyboard_reply(_dpy->xcb(), ck1, &e);
+		if(not r1->status == XCB_GRAB_STATUS_SUCCESS)
+			printf("grab pointer failed %d", r1->status);
+
+		if(r1 and r1->status == XCB_GRAB_STATUS_SUCCESS) {
+			_grab_handler = handler;
+		} else {
+			xcb_ungrab_pointer(_dpy->xcb(), time);
+		}
+
+		if(r1)
+			free(r1);
+
+	}
+
+	if(r0) {
+		free(r0);
+	}
+
 }
 
 void page_t::grab_stop(xcb_timestamp_t time) {
 	assert(_grab_handler != nullptr);
+	assert(time != XCB_CURRENT_TIME);
 	_grab_handler = nullptr;
 	xcb_ungrab_keyboard(_dpy->xcb(), time);
 	xcb_ungrab_pointer(_dpy->xcb(), time);
-
+	xcb_flush(_dpy->xcb());
 	/* apply regular keyboard focus */
 	view_p focused;
 	if (get_current_workspace()->client_focus_history_front(focused)) {

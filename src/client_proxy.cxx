@@ -214,13 +214,11 @@ client_proxy_t::~client_proxy_t()
 	destroy_damage();
 }
 
-void client_proxy_t::read_all_properties() {
-
+void client_proxy_t::read_all_properties()
+{
 	fetch_all();
-
 	update_shape();
 	update_type();
-
 }
 
 void client_proxy_t::delete_all_properties()
