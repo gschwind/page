@@ -568,7 +568,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, view_floating_p f, 
 		mode{mode},
 		x_root{x},
 		y_root{y},
-		original_position{f->_client->get_wished_position()},
+		original_position{f->_client->_absolute_position},
 		final_position{f->_client->get_wished_position()},
 		button{button}
 
@@ -576,9 +576,23 @@ grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, view_floating_p f, 
 
 	f->raise();
 	pfm = make_shared<popup_notebook0_t>(f.get());
-	pfm->move_resize(f->_base_position);
+
+	rect popup_new_position = original_position;
+	if (f->_client->has_motif_border()) {
+		popup_new_position.x -= _ctx->theme()->floating.margin.left;
+		popup_new_position.y -= _ctx->theme()->floating.margin.top;
+		popup_new_position.y -= _ctx->theme()->floating.title_height;
+		popup_new_position.w += _ctx->theme()->floating.margin.left
+				+ _ctx->theme()->floating.margin.right;
+		popup_new_position.h += _ctx->theme()->floating.margin.top
+				+ _ctx->theme()->floating.margin.bottom;
+		popup_new_position.h += _ctx->theme()->floating.title_height;
+	}
+
+	pfm->move_resize(popup_new_position);
 	_ctx->overlay_add(pfm);
 	pfm->show();
+
 
 	_ctx->dpy()->set_window_cursor(f->_base, _get_cursor());
 
@@ -687,10 +701,12 @@ void grab_floating_resize_t::button_motion(xcb_motion_notify_event_t const * e) 
 	if (f.lock()->_client->has_motif_border()) {
 		popup_new_position.x -= _ctx->theme()->floating.margin.left;
 		popup_new_position.y -= _ctx->theme()->floating.margin.top;
+		popup_new_position.y -= _ctx->theme()->floating.title_height;
 		popup_new_position.w += _ctx->theme()->floating.margin.left
 				+ _ctx->theme()->floating.margin.right;
 		popup_new_position.h += _ctx->theme()->floating.margin.top
 				+ _ctx->theme()->floating.margin.bottom;
+		popup_new_position.h += _ctx->theme()->floating.title_height;
 	}
 
 	pfm->move_resize(popup_new_position);
