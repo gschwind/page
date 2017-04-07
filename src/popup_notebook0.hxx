@@ -30,6 +30,8 @@ protected:
 	bool _exposed;
 	region _damaged;
 
+	region _visible_cache;
+
 	xcb_window_t _wid;
 
 public:

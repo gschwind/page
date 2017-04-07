@@ -66,7 +66,16 @@ void popup_notebook0_t::_create_window() {
 }
 
 void popup_notebook0_t::move_resize(rect const & area) {
-	_damaged += _position;
+
+	if(area == _position)
+		return;
+
+	if(area.w == _position.w and area.h == _position.h) {
+		move(area.x, area.y);
+		return;
+	}
+
+	_damaged += get_visible_region();
 	_position = area;
 
 	xcb_rectangle_t rects[4];
@@ -96,17 +105,24 @@ void popup_notebook0_t::move_resize(rect const & area) {
 	xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 4, rects);
 
 	_ctx->dpy()->move_resize(_wid, area);
-	_damaged += _position;
+	_damaged += get_visible_region();
+
+	rect inner(_position.x+10, _position.y+10, _position.w-20, _position.h-20);
+	_visible_cache = _position;
+
+	if (inner.w > 0 and inner.h > 0)
+		_visible_cache -= inner;
 
 	_ctx->schedule_repaint();
 
 }
 
 void popup_notebook0_t::move(int x, int y) {
-	_damaged += _position;
+	_damaged += get_visible_region();
+	_visible_cache.translate(x - _position.x, y - _position.y);
 	_position.x = x;
 	_position.y = y;
-	_damaged += _position;
+	_damaged += get_visible_region();
 }
 
 rect const & popup_notebook0_t::position() {
@@ -126,7 +142,7 @@ region popup_notebook0_t::get_opaque_region() {
  * If unknow the whole screen can be returned, but draw will be called each time.
  **/
 region popup_notebook0_t::get_visible_region() {
-	return region{_position};
+	return _visible_cache;
 }
 
 /**
