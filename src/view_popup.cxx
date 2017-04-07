@@ -29,11 +29,14 @@ view_popup_t::view_popup_t(tree_t * ref, client_managed_p client) :
 	view_t{ref, client}
 {
 	_is_visible = true;
+
+	disconnect(_client->on_focus_change); // do not change the focus state of popup
 	connect(_client->on_configure_notify, this, &view_popup_t::_on_configure_notify);
 	_client->set_managed_type(MANAGED_POPUP);
 	_client->_absolute_position = _client->_client_proxy->position();
 	if(_client_view == nullptr)
 		_client_view = _root->_ctx->create_view(_client->_client_proxy->id());
+	_ungrab_all_button_unsafe();
 }
 
 view_popup_t::~view_popup_t()
