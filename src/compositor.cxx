@@ -200,7 +200,11 @@ void compositor_t::render(tree_t * t) {
 	cairo_surface_t * front_buffer = get_front_surface();
 	cr = cairo_create(front_buffer);
 	cairo_set_source_surface(cr, _back_buffer, 0, 0);
-	cairo_paint(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	for (auto & dmg: damaged.rects()) {
+		cairo_clip(cr, dmg);
+		cairo_paint(cr);
+	}
 	cairo_destroy(cr);
 	cairo_surface_flush(front_buffer);
 	cairo_surface_destroy(front_buffer);
