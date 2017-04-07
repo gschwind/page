@@ -160,6 +160,7 @@ void viewport_t::destroy_renderable() {
 void viewport_t::update_renderable() {
 	if(_root->_ctx->cmp() != nullptr and _back_surf == nullptr) {
 		_back_surf = make_shared<pixmap_t>(_root->_ctx->dpy(), PIXMAP_RGB, _page_area.w, _page_area.h);
+		_is_durty = true;
 	}
 	_root->_ctx->dpy()->move_resize(_win, _effective_area);
 }
