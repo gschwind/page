@@ -70,7 +70,7 @@ void view_dock_t::update_dock_position()
 	int32_t ps[12] = { 0 };
 	bool has_strut{false};
 
-	auto strut_partial = j->get<p_net_wm_strut_partial>();
+	auto strut_partial = j->_net_wm_strut_partial;
 	if(strut_partial != nullptr) {
 		if(strut_partial->size() == 12) {
 			std::copy(strut_partial->begin(), strut_partial->end(), &ps[0]);
@@ -78,7 +78,7 @@ void view_dock_t::update_dock_position()
 		}
 	}
 
-	auto strut = j->get<p_net_wm_strut>();
+	auto strut = j->_net_wm_strut;
 	if (strut != nullptr and not has_strut) {
 		if(strut->size() == 4) {
 

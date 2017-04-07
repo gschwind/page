@@ -1723,7 +1723,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 		int32_t ps[PS_LAST];
 		bool has_strut{false};
 
-		auto net_wm_strut_partial = j->get<p_net_wm_strut_partial>();
+		auto net_wm_strut_partial = j->_net_wm_strut_partial;
 		if(net_wm_strut_partial != nullptr) {
 			if(net_wm_strut_partial->size() == 12) {
 				std::copy(net_wm_strut_partial->begin(), net_wm_strut_partial->end(), &ps[0]);
@@ -1731,7 +1731,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 			}
 		}
 
-		auto net_wm_strut = j->get<p_net_wm_strut>();
+		auto net_wm_strut = j->_net_wm_strut;
 		if (net_wm_strut != nullptr and not has_strut) {
 			if(net_wm_strut->size() == 4) {
 
@@ -2272,11 +2272,12 @@ void page_t::onmap(xcb_window_t w) {
 
 void page_t::create_managed_window(client_proxy_p proxy) {
 	auto mw = make_shared<client_managed_t>(this, proxy);
+	mw->read_all_properties();
 	_net_client_list.push_back(mw);
 	manage_client(mw, proxy->wm_type());
 
-	if (mw->get<p_net_wm_strut>() != nullptr
-			or mw->get<p_net_wm_strut_partial>() != nullptr) {
+	if (mw->_net_wm_strut != nullptr
+			or mw->_net_wm_strut_partial != nullptr) {
 		update_workarea();
 	}
 }
@@ -2340,6 +2341,7 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 
 void page_t::create_unmanaged_window(client_proxy_p proxy) {
 	auto mw = make_shared<client_managed_t>(this, proxy);
+	mw->read_all_properties();
 	_net_client_list.push_back(mw);
 	insert_as_popup(mw);
 }

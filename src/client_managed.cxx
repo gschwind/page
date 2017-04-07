@@ -398,8 +398,10 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 	} else if (e->atom == A(_NET_WM_OPAQUE_REGION)) {
 		on_opaque_region_change.signal(this);
 	} else if (e->atom == A(_NET_WM_STRUT_PARTIAL)) {
+		_net_wm_strut_partial = _client_proxy->get<p_net_wm_strut_partial>();
 		on_strut_change.signal(this);
 	} else if (e->atom == A(_NET_WM_STRUT)) {
+		_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 		on_strut_change.signal(this);
 	}
 }
@@ -432,7 +434,8 @@ void client_managed_t::_apply_floating_hints_constraint() {
 }
 
 void client_managed_t::read_all_properties() {
-	_client_proxy->read_all_properties();
+	_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
+	_net_wm_strut_partial = _client_proxy->get<p_net_wm_strut_partial>();
 }
 
 void client_managed_t::update_shape() {

@@ -74,6 +74,9 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	bool _has_focus;
 	bool _demands_attention;
 
+	shared_ptr<vector<int>> _net_wm_strut;
+	shared_ptr<vector<int>> _net_wm_strut_partial;
+
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &) = delete;
 	client_managed_t & operator=(client_managed_t const &) = delete;
