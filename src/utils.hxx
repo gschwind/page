@@ -10,12 +10,11 @@
 #ifndef UTILS_HXX_
 #define UTILS_HXX_
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/shape.h>
-
+#include <X11/keysym.h>
+#include <xcb/sync.h>
 #include <xcb/xcb_util.h>
 
+#include <cstring>
 #include <cairo.h>
 
 #include <algorithm>
@@ -868,6 +867,19 @@ xreversed<C> reversed(C & list)
 {
 	return xreversed<C>{list};
 }
+
+struct fixed_xcb_sync_systemcounter_t {
+	xcb_sync_counter_t counter;
+	xcb_sync_int64_t resolution;
+	uint16_t name_len;
+}__attribute__((packed));
+// the name just follow the _packed_ header.
+
+uint64_t xcb_sync_system_counter_int64_swap(xcb_sync_int64_t const * v);
+
+int xcb_sync_system_counter_sizeof_item(fixed_xcb_sync_systemcounter_t const * item);
+
+char * xcb_sync_system_counter_dup_name(fixed_xcb_sync_systemcounter_t const * entry);
 
 }
 

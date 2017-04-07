@@ -271,6 +271,9 @@ public:
 	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void destroy_view(client_view_t * v);
 
+	auto create_alarm_interval(uint32_t counter, uint64_t interval) -> uint32_t;
+	void alarm_enable(uint32_t alarm, uint32_t enable);
+
 };
 
 }

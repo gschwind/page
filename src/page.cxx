@@ -70,6 +70,7 @@ page_t::page_t(int argc, char ** argv)
 
 	_current_workspace = 0;
 	_grab_handler = nullptr;
+	_schedule_repaint = false;
 
 	identity_window = XCB_NONE;
 
@@ -208,6 +209,39 @@ void page_t::run() {
 
 	/* check for required page extension */
 	_dpy->check_x11_extension();
+
+	{ // check for sync system counters
+		xcb_generic_error_t * e;
+		auto ck = xcb_sync_list_system_counters(_dpy->xcb());
+		auto r = xcb_sync_list_system_counters_reply(_dpy->xcb(), ck, &e);
+		printf("counter length %u\n", r->counters_len);
+		if(r != nullptr) {
+			// the first item is correctly computed by libxcb but I can extract it
+			// without xcb_sync_list_system_counters_counters_iterator, thus
+			// extract it manually.
+			fixed_xcb_sync_systemcounter_t * item =
+					(fixed_xcb_sync_systemcounter_t*) (r + 1);
+			for (int i = 0; i < r->counters_len; ++i) {
+				char * name = xcb_sync_system_counter_dup_name(item);
+				printf("COUNTER_NAME %d = %s, id = %u, resolution = %lu\n", i, name,
+						item->counter, xcb_sync_system_counter_int64_swap(&item->resolution));
+
+				if(strcmp("SERVERTIME", name) == 0) {
+					printf("found SERVERTIME\n");
+					/* about 30 fps */
+					frame_alarm = _dpy->create_alarm_interval(item->counter, 32);
+				}
+
+				free(name);
+				/* next item */
+				item = (struct fixed_xcb_sync_systemcounter_t*) (((char*) item)
+						+ xcb_sync_system_counter_sizeof_item(item));
+			}
+			free(r);
+		}
+	}
+
+
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
 	register_wm();
@@ -2032,6 +2066,7 @@ void page_t::update_viewport_layout() {
 	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
 		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0);
 		if(r != nullptr) {
+			printf("XXXX = %d\n", crtc_list[k]);
 			crtc_info[crtc_list[k]] = r;
 		}
 
@@ -2852,11 +2887,20 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 void page_t::process_counter_notify_event(xcb_generic_event_t const * _e)
 {
 	auto e = reinterpret_cast<xcb_sync_counter_notify_event_t const *>(_e);
+	printf("counter notify id = %u, value = %lu, timestamp = %u\n", e->counter,
+			xcb_sync_system_counter_int64_swap(&e->counter_value), e->timestamp);
 }
 
-void page_t::process_alarm_notify_event(xcb_generic_event_t const * e)
+void page_t::process_alarm_notify_event(xcb_generic_event_t const * _e)
 {
 	auto e = reinterpret_cast<xcb_sync_alarm_notify_event_t const *>(_e);
+	//printf("alarm notify id = %u, value = %lu, timestamp = %u\n", e->alarm,
+	//		xcb_sync_system_counter_int64_swap(&e->counter_value), e->timestamp);
+//	if(_schedule_repaint) {
+//		_schedule_repaint = false;
+//		render();
+//	}
+
 }
 
 void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
@@ -3038,6 +3082,8 @@ void page_t::process_pending_events() {
 		return;
 	}
 
+	bool has_schedule_repaint = _schedule_repaint;
+
 	while (_dpy->has_pending_events()) {
 		process_event(_dpy->front_event());
 		_dpy->pop_event();
@@ -3053,6 +3099,20 @@ void page_t::process_pending_events() {
 		_need_update_client_list = false;
 		update_client_list();
 		update_client_list_stacking();
+	}
+
+	if(_schedule_repaint) {
+		_schedule_repaint = false;
+		render();
+		if (not _schedule_repaint) {
+			if(has_schedule_repaint) {
+				_dpy->alarm_enable(frame_alarm, 0);
+			}
+		} else {
+			if(not has_schedule_repaint) {
+				_dpy->alarm_enable(frame_alarm, 1);
+			}
+		}
 	}
 
 	xcb_flush(_dpy->xcb());
@@ -3287,16 +3347,18 @@ auto page_t::mainloop() -> mainloop_t * {
 
 void page_t::schedule_repaint(int64_t timeout)
 {
-	auto timebound = time64_t::now() + time64_t{timeout};
-	if (_scheduled_repaint_timeout) {
-		if (timebound < _scheduled_repaint_timeout->get_bound()) {
-			_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
-					[this]() -> void { this->render(); });
-		}
-	} else {
-		_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
-				[this]() -> void { this->render(); });
-	}
+	_schedule_repaint = true;
+
+//	auto timebound = time64_t::now() + time64_t{timeout};
+//	if (_scheduled_repaint_timeout) {
+//		if (timebound < _scheduled_repaint_timeout->get_bound()) {
+//			_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
+//					[this]() -> void { this->render(); });
+//		}
+//	} else {
+//		_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
+//				[this]() -> void { this->render(); });
+//	}
 }
 
 void page_t::damage_all() {

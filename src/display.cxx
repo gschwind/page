@@ -486,8 +486,8 @@ bool display_t::check_sync_extension() {
 		return false;
 	} else {
 		xcb_generic_error_t * err;
-		xcb_randr_query_version_cookie_t ck = xcb_randr_query_version(_xcb, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
-		xcb_randr_query_version_reply_t * r = xcb_randr_query_version_reply(_xcb, ck, &err);
+		auto ck = xcb_sync_initialize(_xcb, XCB_SYNC_MAJOR_VERSION, XCB_SYNC_MINOR_VERSION);
+		auto * r = xcb_sync_initialize_reply(_xcb, ck, &err);
 
 		if(r == nullptr or err != nullptr)
 			throw exception_t("ERROR: fail to get SYNC version");
@@ -1057,6 +1057,38 @@ void display_t::destroy_view(client_view_t * v) {
 			}
 		}
 	}
+}
+
+auto display_t::create_alarm_interval(uint32_t counter, uint64_t interval) -> uint32_t
+{
+	auto id = xcb_generate_id(_xcb);
+	uint32_t mask = 0;
+	uint32_t value[8];
+	mask |= XCB_SYNC_CA_COUNTER;
+	value[0] = counter;
+	mask |= XCB_SYNC_CA_VALUE_TYPE;
+	value[1] = XCB_SYNC_VALUETYPE_RELATIVE;
+	mask |= XCB_SYNC_CA_VALUE;
+	value[2] = static_cast<uint32_t>(interval>>32);
+	value[3] = static_cast<uint32_t>(0xFFFFFFFF&interval);
+	mask |= XCB_SYNC_CA_TEST_TYPE;
+	value[4] = XCB_SYNC_TESTTYPE_POSITIVE_COMPARISON;
+	mask |= XCB_SYNC_CA_DELTA;
+	value[5] = static_cast<uint32_t>(interval>>32);;
+	value[6] = static_cast<uint32_t>(0xFFFFFFFF&interval);;
+	mask |= XCB_SYNC_CA_EVENTS;
+	value[7] = 0;
+	xcb_sync_create_alarm(_xcb, id, mask, value);
+	return id;
+}
+
+void display_t::alarm_enable(uint32_t alarm, uint32_t enable)
+{
+	uint32_t mask = 0;
+	uint32_t value[1];
+	mask |= XCB_SYNC_CA_EVENTS;
+	value[0] = enable;
+	xcb_sync_change_alarm(_xcb, alarm, mask, value);
 }
 
 

@@ -60,5 +60,30 @@ void cairo_rectangle_arc_corner(cairo_t * cr, rect const & position, double radi
 	cairo_rectangle_arc_corner(cr, position.x, position.y, position.w, position.h, radius, corner_mask);
 }
 
+uint64_t xcb_sync_system_counter_int64_swap(xcb_sync_int64_t const * v)
+{
+	return ((uint64_t) v->hi << 32) + (uint64_t) v->lo;
+}
+
+int xcb_sync_system_counter_sizeof_item(
+		fixed_xcb_sync_systemcounter_t const * item)
+{
+	unsigned length = item->name_len;
+	/* padding apply to packed struct fixed_xcb_sync_systemcounter_t + length */
+	return (((sizeof(struct fixed_xcb_sync_systemcounter_t) + length) >> 2) << 2)
+			+ 4;
+}
+
+char * xcb_sync_system_counter_dup_name(
+		fixed_xcb_sync_systemcounter_t const * entry)
+{
+	char * name = (char*) (entry + 1);
+	int length = entry->name_len;
+	char * ret = (char*) malloc(sizeof(char) * (length + 1));
+	memcpy(ret, name, length);
+	ret[length] = 0;
+	return ret;
+}
+
 }
 

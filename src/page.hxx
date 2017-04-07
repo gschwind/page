@@ -164,6 +164,8 @@ public:
 	array<key_bind_cmd_t, 10> bind_cmd;
 
 	shared_ptr<timeout_t> _scheduled_repaint_timeout;
+	bool _schedule_repaint;
+	uint32_t frame_alarm;
 
 private:
 

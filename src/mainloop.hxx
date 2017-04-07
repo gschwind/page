@@ -124,7 +124,7 @@ class mainloop_t {
 				}
 			}
 		}
-		return 1000000000L;
+		return 10000000000L;
 	}
 
 	void run_poll_callback() {
