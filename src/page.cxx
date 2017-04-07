@@ -1893,7 +1893,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 client_managed_p page_t::get_transient_for(client_managed_p c) {
 	assert(c != nullptr);
 	client_managed_p transient_for = nullptr;
-	auto wm_transient_for = c->get<p_wm_transient_for>();
+	auto wm_transient_for = c->_client_proxy->wm_transiant_for();
 	if (wm_transient_for != nullptr) {
 		transient_for = find_client_with(*(wm_transient_for));
 		if (transient_for == nullptr)

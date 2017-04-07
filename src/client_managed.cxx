@@ -155,7 +155,7 @@ unsigned client_managed_t::ensure_workspace() {
 
 	/* check current status */
 	auto workspace = get<p_net_wm_desktop>();
-	auto transient_for = get<p_wm_transient_for>();
+	auto transient_for = _client_proxy->wm_transiant_for();
 	unsigned final_workspace;
 	if (workspace != nullptr) {
 		final_workspace = *workspace;
@@ -485,8 +485,8 @@ auto client_managed_t::cnx() const -> display_t * { return _client_proxy->cnx();
 auto client_managed_t::transient_for() -> client_managed_p
 {
 	client_managed_p transient_for = nullptr;
-	if (_client_proxy->get<p_wm_transient_for>() != nullptr) {
-		transient_for = _ctx->find_client_with(*(_client_proxy->get<p_wm_transient_for>()));
+	if (_client_proxy->wm_transiant_for() != nullptr) {
+		transient_for = _ctx->find_client_with(*(_client_proxy->wm_transiant_for()));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}

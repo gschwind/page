@@ -88,6 +88,8 @@ private:
 	bool _need_pixmap_update;
 	bool _is_redirected;
 
+	shared_ptr<xcb_window_t> _wm_transiant_for;
+
 	/** short cut **/
 	xcb_atom_t A(atom_e atom);
 	xcb_atom_t B(atom_e atom);
@@ -185,6 +187,8 @@ public:
 
 	bool destroyed();
 	bool destroyed(bool x);
+
+	auto wm_transiant_for() -> shared_ptr<xcb_window_t>;
 
 };
 

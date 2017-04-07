@@ -216,6 +216,8 @@ client_proxy_t::~client_proxy_t()
 
 void client_proxy_t::read_all_properties()
 {
+	_wm_transiant_for = get<p_wm_transient_for>();
+
 	fetch_all();
 	update_shape();
 	update_type();
@@ -456,7 +458,7 @@ void client_proxy_t::update_type() {
 
 		if(!override_redirect) {
 			/* Managed windows */
-			if(get<p_wm_transient_for>() == nullptr) {
+			if(_wm_transiant_for == nullptr) {
 				/**
 				 * Extended ICCCM:
 				 * _NET_WM_WINDOW_TYPE_NORMAL [...] Managed windows with neither
@@ -742,6 +744,8 @@ void client_proxy_t::process_event(xcb_property_notify_event_t const * e) {
 		_need_update_type = true;
 	} else if (e->atom == A(_MOTIF_WM_HINTS)) {
 		_need_update_type = true;
+	} else if (e->atom == A(WM_TRANSIENT_FOR)) {
+		_wm_transiant_for = get<p_wm_transient_for>();
 	}
 
 }
@@ -752,6 +756,11 @@ bool client_proxy_t::destroyed() {
 
 bool client_proxy_t::destroyed(bool x) {
 	return _destroyed = x;
+}
+
+auto client_proxy_t::wm_transiant_for() -> shared_ptr<xcb_window_t>
+{
+	return _wm_transiant_for;
 }
 
 }
