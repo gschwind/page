@@ -881,6 +881,13 @@ int xcb_sync_system_counter_sizeof_item(fixed_xcb_sync_systemcounter_t const * i
 
 char * xcb_sync_system_counter_dup_name(fixed_xcb_sync_systemcounter_t const * entry);
 
+inline xcb_sync_int64_t make_xcb_sync_int64(uint64_t value) {
+	return xcb_sync_int64_t{
+		static_cast<int32_t>(value>>32),
+		static_cast<uint32_t>(0xFFFFFFFF&value)
+	};
+}
+
 }
 
 

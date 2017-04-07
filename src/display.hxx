@@ -271,8 +271,16 @@ public:
 	auto create_view(xcb_window_t w) -> shared_ptr<client_view_t>;
 	void destroy_view(client_view_t * v);
 
+	auto create_alarm(uint32_t counter,  uint64_t value, uint64_t delta) -> uint32_t;
 	auto create_alarm_interval(uint32_t counter, uint64_t interval) -> uint32_t;
+	auto create_alarm_delay(uint32_t counter, uint64_t delay) -> uint32_t;
+	void change_alarm_delay(uint32_t counter, uint64_t delay);
 	void alarm_enable(uint32_t alarm, uint32_t enable);
+
+	auto create_sync_counter(uint64_t value) -> uint32_t;
+	void change_sync_counter(uint32_t counter, uint64_t amount);
+
+	void force_sync();
 
 };
 

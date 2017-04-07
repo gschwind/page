@@ -215,7 +215,7 @@ void page_t::run() {
 		auto ck = xcb_sync_list_system_counters(_dpy->xcb());
 		auto r = xcb_sync_list_system_counters_reply(_dpy->xcb(), ck, &e);
 		printf("counter length %u\n", r->counters_len);
-		if(r != nullptr) {
+		if (r != nullptr) {
 			// the first item is correctly computed by libxcb but I can extract it
 			// without xcb_sync_list_system_counters_counters_iterator, thus
 			// extract it manually.
@@ -229,7 +229,7 @@ void page_t::run() {
 				if(strcmp("SERVERTIME", name) == 0) {
 					printf("found SERVERTIME\n");
 					/* about 30 fps */
-					frame_alarm = _dpy->create_alarm_interval(item->counter, 32);
+					frame_alarm = _dpy->create_alarm_delay(item->counter, 32);
 				}
 
 				free(name);
@@ -239,6 +239,20 @@ void page_t::run() {
 			}
 			free(r);
 		}
+
+	}
+
+	{
+		xcb_generic_error_t * e;
+		auto ck = xcb_sync_get_priority(_dpy->xcb(), frame_alarm);
+		auto r = xcb_sync_get_priority_reply(_dpy->xcb(), ck, &e);
+		if (r != nullptr) {
+			printf("priority is %d\n", r->priority);
+		}
+		free(r);
+
+		xcb_sync_set_priority(_dpy->xcb(), frame_alarm, 16);
+
 	}
 
 
@@ -1294,15 +1308,12 @@ void page_t::render() {
 	// ask to flush all pending drawing
 	get_current_workspace()->broadcast_trigger_redraw();
 	// render on screen if we need too.
+	xcb_flush(_dpy->xcb());
+
 	if (_compositor != nullptr) {
 		_compositor->render(get_current_workspace().get());
 	}
 	xcb_flush(_dpy->xcb());
-
-	/* Force sync */
-	auto ck = xcb_no_operation_checked(_dpy->xcb());
-	xcb_request_check(_dpy->xcb(), ck);
-	xcb_discard_reply(_dpy->xcb(), ck.sequence);
 
 	get_current_workspace()->broadcast_render_finished();
 }
@@ -2610,12 +2621,6 @@ void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 		_current_workspace = workspace;
 		update_current_workspace();
 		update_workspace_visibility(time);
-
-		/* Force sync */
-		auto ck = xcb_no_operation_checked(_dpy->xcb());
-		xcb_flush(_dpy->xcb());
-		xcb_request_check(_dpy->xcb(), ck);
-		xcb_discard_reply(_dpy->xcb(), ck.sequence);
 	}
 }
 
@@ -2896,10 +2901,10 @@ void page_t::process_alarm_notify_event(xcb_generic_event_t const * _e)
 	auto e = reinterpret_cast<xcb_sync_alarm_notify_event_t const *>(_e);
 	//printf("alarm notify id = %u, value = %lu, timestamp = %u\n", e->alarm,
 	//		xcb_sync_system_counter_int64_swap(&e->counter_value), e->timestamp);
-//	if(_schedule_repaint) {
-//		_schedule_repaint = false;
-//		render();
-//	}
+	if(_schedule_repaint) {
+		_schedule_repaint = false;
+		render();
+	}
 
 }
 
@@ -3101,18 +3106,9 @@ void page_t::process_pending_events() {
 		update_client_list_stacking();
 	}
 
-	if(_schedule_repaint) {
+	if (_schedule_repaint) {
 		_schedule_repaint = false;
 		render();
-		if (not _schedule_repaint) {
-			if(has_schedule_repaint) {
-				_dpy->alarm_enable(frame_alarm, 0);
-			}
-		} else {
-			if(not has_schedule_repaint) {
-				_dpy->alarm_enable(frame_alarm, 1);
-			}
-		}
 	}
 
 	xcb_flush(_dpy->xcb());
@@ -3347,18 +3343,11 @@ auto page_t::mainloop() -> mainloop_t * {
 
 void page_t::schedule_repaint(int64_t timeout)
 {
-	_schedule_repaint = true;
-
-//	auto timebound = time64_t::now() + time64_t{timeout};
-//	if (_scheduled_repaint_timeout) {
-//		if (timebound < _scheduled_repaint_timeout->get_bound()) {
-//			_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
-//					[this]() -> void { this->render(); });
-//		}
-//	} else {
-//		_scheduled_repaint_timeout = _mainloop.add_timebound(timebound,
-//				[this]() -> void { this->render(); });
-//	}
+	if (not _schedule_repaint) {
+		_schedule_repaint = true;
+		/* about 30 fps max for schedule repaint */
+		_dpy->change_alarm_delay(frame_alarm, 32);
+	}
 }
 
 void page_t::damage_all() {

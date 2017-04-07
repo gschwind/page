@@ -1059,6 +1059,65 @@ void display_t::destroy_view(client_view_t * v) {
 	}
 }
 
+
+auto display_t::create_alarm(uint32_t counter,  uint64_t v, uint64_t delta) -> uint32_t
+{
+	auto id = xcb_generate_id(_xcb);
+	uint32_t mask = 0;
+	uint32_t value[8];
+	mask |= XCB_SYNC_CA_COUNTER;
+	value[0] = counter;
+	mask |= XCB_SYNC_CA_VALUE_TYPE;
+	value[1] = XCB_SYNC_VALUETYPE_ABSOLUTE;
+	mask |= XCB_SYNC_CA_VALUE;
+	value[2] = static_cast<uint32_t>(v>>32);
+	value[3] = static_cast<uint32_t>(0xFFFFFFFF&v);
+	mask |= XCB_SYNC_CA_TEST_TYPE;
+	value[4] = XCB_SYNC_TESTTYPE_POSITIVE_COMPARISON;
+	mask |= XCB_SYNC_CA_DELTA;
+	value[5] = static_cast<uint32_t>(delta>>32);;
+	value[6] = static_cast<uint32_t>(0xFFFFFFFF&delta);;
+	mask |= XCB_SYNC_CA_EVENTS;
+	value[7] = 1;
+	xcb_sync_create_alarm(_xcb, id, mask, value);
+	return id;
+}
+
+auto display_t::create_alarm_delay(uint32_t counter, uint64_t delay) -> uint32_t
+{
+	auto id = xcb_generate_id(_xcb);
+	uint32_t mask = 0;
+	uint32_t value[8];
+	mask |= XCB_SYNC_CA_COUNTER;
+	value[0] = counter;
+	mask |= XCB_SYNC_CA_VALUE_TYPE;
+	value[1] = XCB_SYNC_VALUETYPE_RELATIVE;
+	mask |= XCB_SYNC_CA_VALUE;
+	value[2] = static_cast<uint32_t>(delay>>32);
+	value[3] = static_cast<uint32_t>(0xFFFFFFFF&delay);
+	mask |= XCB_SYNC_CA_TEST_TYPE;
+	value[4] = XCB_SYNC_TESTTYPE_POSITIVE_COMPARISON;
+	mask |= XCB_SYNC_CA_DELTA;
+	value[5] = 0;;
+	value[6] = 0;
+	mask |= XCB_SYNC_CA_EVENTS;
+	value[7] = 1;
+	xcb_sync_create_alarm(_xcb, id, mask, value);
+	return id;
+}
+
+void display_t::change_alarm_delay(uint32_t alarm, uint64_t delay)
+{
+	uint32_t mask = 0;
+	uint32_t value[3];
+	mask |= XCB_SYNC_CA_VALUE_TYPE;
+	value[0] = XCB_SYNC_VALUETYPE_RELATIVE;
+	mask |= XCB_SYNC_CA_VALUE;
+	value[1] = static_cast<uint32_t>(delay>>32);
+	value[2] = static_cast<uint32_t>(0xFFFFFFFF&delay);
+	xcb_sync_change_alarm(_xcb, alarm, mask, value);
+}
+
 auto display_t::create_alarm_interval(uint32_t counter, uint64_t interval) -> uint32_t
 {
 	auto id = xcb_generate_id(_xcb);
@@ -1089,6 +1148,27 @@ void display_t::alarm_enable(uint32_t alarm, uint32_t enable)
 	mask |= XCB_SYNC_CA_EVENTS;
 	value[0] = enable;
 	xcb_sync_change_alarm(_xcb, alarm, mask, value);
+}
+
+auto display_t::create_sync_counter(uint64_t value) -> uint32_t
+{
+	auto id = xcb_generate_id(_xcb);
+	xcb_sync_create_counter(_xcb, id, make_xcb_sync_int64(value));
+	return id;
+}
+
+void display_t::change_sync_counter(uint32_t counter, uint64_t amount)
+{
+	xcb_sync_change_counter(_xcb, counter, make_xcb_sync_int64(amount));
+}
+
+void display_t::force_sync()
+{
+	xcb_generic_error_t * e;
+	auto ck = xcb_get_input_focus(_xcb);
+	auto r = xcb_get_input_focus_reply(_xcb, ck, &e);
+	if(r)
+		free(r);
 }
 
 
