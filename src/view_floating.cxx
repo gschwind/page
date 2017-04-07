@@ -724,6 +724,7 @@ auto view_floating_t::button_press(xcb_button_press_event_t const * e) -> button
 
 		if (_floating_area.close_button.is_inside(e->event_x, e->event_y)) {
 			_client->delete_window(e->time);
+			return BUTTON_ACTION_GRAB_ASYNC;
 		} else if (_floating_area.bind_button.is_inside(e->event_x, e->event_y)) {
 			rect absolute_position = _floating_area.bind_button;
 			absolute_position.x += _base_position.x;
