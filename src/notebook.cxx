@@ -708,24 +708,26 @@ void notebook_t::_start_fading() {
 		_fading_notebook_layer->push_back(fading_notebook);
 		fading_notebook->show();
 		_ctx->schedule_repaint();
+		xcb_flush(_ctx->_dpy->xcb());
 	} else {
-//		_swap_start.update_to_current_time();
-//
-//		auto pix = _render_to_pixmap();
-//		auto surf = pix->get_cairo_surface();
-//		auto cr = cairo_create(surf);
-//		auto surf_src = fading_notebook->surface()->get_cairo_surface();
-//
-//		cairo_pattern_t * p0 =
-//				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - fading_notebook->ratio());
-//		cairo_set_source_surface(cr, surf_src, 0.0, 0.0);
-//		cairo_mask(cr, p0);
-//		cairo_pattern_destroy(p0);
-//		cairo_destroy(cr);
-//
-//		rect pos = to_root_position(_allocation);
-//		fading_notebook->update_pixmap(pix, pos.x, pos.y);
-//		_ctx->schedule_repaint();
+		_swap_start.update_to_current_time();
+
+		auto pix = _render_to_pixmap();
+		auto surf = pix->get_cairo_surface();
+		auto cr = cairo_create(surf);
+		auto surf_src = fading_notebook->surface()->get_cairo_surface();
+
+		cairo_pattern_t * p0 =
+				cairo_pattern_create_rgba(1.0, 1.0, 1.0, 1.0 - fading_notebook->ratio());
+		cairo_set_source_surface(cr, surf_src, 0.0, 0.0);
+		cairo_mask(cr, p0);
+		cairo_pattern_destroy(p0);
+		cairo_destroy(cr);
+
+		rect pos = to_root_position(_allocation);
+		fading_notebook->update_pixmap(pix, pos.x, pos.y);
+		_ctx->schedule_repaint();
+		xcb_flush(_ctx->_dpy->xcb());
 	}
 
 }
