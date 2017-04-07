@@ -225,11 +225,13 @@ auto workspace_t::ensure_default_notebook() -> notebook_p {
 
 	if(_default_pop.expired()) {
 		_default_pop = notebooks[0];
+		notebooks[0]->set_default(true);
 		return notebooks[0];
 	}
 
 	if(not has_key(notebooks, _default_pop.lock())) {
 		_default_pop = notebooks[0];
+		notebooks[0]->set_default(true);
 		return notebooks[0];
 	}
 
