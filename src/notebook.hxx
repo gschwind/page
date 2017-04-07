@@ -167,6 +167,8 @@ class notebook_t : public page_component_t {
 	void _scroll_left(int x);
 	void _scroll_right(int x);
 
+	void _close_view_notebook(view_notebook_p w, xcb_timestamp_t time);
+
 	void _set_theme_tab_offset(int x);
 	void _set_selected(view_notebook_p c);
 	void activate(view_notebook_p c, xcb_timestamp_t time);

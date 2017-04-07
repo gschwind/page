@@ -132,7 +132,7 @@ void notebook_t::remove_view_notebook(view_notebook_p vn) {
 	}
 
 	_notebook_view_layer->remove(vn);
-	_update_all_layout();
+	_ctx->add_global_damage(to_root_position(_allocation));
 }
 
 void notebook_t::_set_selected(view_notebook_p c) {
@@ -159,9 +159,8 @@ void notebook_t::activate(view_notebook_p vn, xcb_timestamp_t time)
 	assert(has_key(_clients_tab_order, vn));
 	_set_selected(vn);
 	vn->raise();
-	_ctx->add_global_damage(to_root_position(_allocation));
-	_update_all_layout();
 	_root->set_focus(vn, time);
+	_ctx->add_global_damage(to_root_position(_allocation));
 }
 
 void notebook_t::update_client_position(view_notebook_p c) {
@@ -855,7 +854,7 @@ auto notebook_t::button_press(xcb_button_press_event_t const * e) -> button_acti
 			return BUTTON_ACTION_GRAB_ASYNC;
 		} else if (_area.close_client.is_inside(x, y)) {
 			if(_selected != nullptr)
-				_selected->delete_window(e->time);
+				_close_view_notebook(_selected, e->time);
 			return BUTTON_ACTION_GRAB_ASYNC;
 		} else if (_area.undck_client.is_inside(x, y)) {
 			if (_selected != nullptr)
@@ -1292,6 +1291,24 @@ void  notebook_t::_scroll_left(int x) {
 
 	_update_notebook_buttons_area();
 	queue_redraw();
+}
+
+void notebook_t::_close_view_notebook(view_notebook_p vn, xcb_timestamp_t time)
+{
+
+	if(_selected != vn)
+		return;
+
+	move_back<view_notebook_p>(_clients_tab_order, vn);
+	if(not (_ctx->conf()._enable_shade_windows)
+		and (_clients_tab_order.size() > 1)
+		and (not _exposay)) {
+		activate(_clients_tab_order.front(), time);
+	}
+
+	/* Note: do not actually close a view_notebook, but prepare the close by activating another notebook if avalaible */
+	vn->delete_window(time);
+
 }
 
 void notebook_t::_set_theme_tab_offset(int x) {
