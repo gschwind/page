@@ -132,7 +132,7 @@ void notebook_t::remove_view_notebook(view_notebook_p vn) {
 	}
 
 	_notebook_view_layer->remove(vn);
-	_ctx->add_global_damage(to_root_position(_allocation));
+	_update_all_layout();
 }
 
 void notebook_t::_set_selected(view_notebook_p c) {
@@ -296,7 +296,6 @@ void notebook_t::_update_all_layout() {
 
 	_ctx->add_global_damage(to_root_position(_allocation));
 	queue_redraw();
-
 }
 
 rect notebook_t::_compute_client_size(shared_ptr<client_managed_t> c) {

@@ -140,6 +140,7 @@ void grab_split_t::button_release(xcb_button_release_event_t const * e) {
 grab_bind_view_notebook_t::grab_bind_view_notebook_t(page_t * ctx,
 		view_notebook_p x, xcb_button_t button, rect const & pos) :
 		grab_default_t{ctx},
+		workspace{x->workspace()},
 		c{x},
 		start_position{pos},
 		target_notebook{},
@@ -164,7 +165,7 @@ void grab_bind_view_notebook_t::_find_target_notebook(int x, int y,
 	zone = NOTEBOOK_AREA_NONE;
 
 	/* place the popup */
-	auto ln = _ctx->get_current_workspace()->gather_children_root_first<notebook_t>();
+	auto ln = workspace->gather_children_root_first<notebook_t>();
 	for (auto i : ln) {
 		if (i->_area.tab.is_inside(x, y)) {
 			zone = NOTEBOOK_AREA_TAB;
@@ -273,7 +274,7 @@ void grab_bind_view_notebook_t::button_release(xcb_button_release_event_t const 
 		case NOTEBOOK_AREA_TAB:
 		case NOTEBOOK_AREA_CENTER:
 			if(new_target != c->parent_notebook()) {
-				_ctx->move_view_to_notebook(c, new_target, e->time);
+				_ctx->move_notebook_to_notebook(c, new_target, e->time);
 			}
 			break;
 		case NOTEBOOK_AREA_TOP:
@@ -431,7 +432,7 @@ void grab_bind_view_floating_t::button_release(xcb_button_release_event_t const 
 		switch(zone) {
 		case NOTEBOOK_AREA_TAB:
 		case NOTEBOOK_AREA_CENTER:
-			_ctx->move_view_to_notebook(c, new_target, e->time);
+			_ctx->move_floating_to_notebook(c, new_target, e->time);
 			break;
 		case NOTEBOOK_AREA_TOP:
 			_ctx->split_top(new_target, c, e->time);

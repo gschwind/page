@@ -1414,8 +1414,29 @@ void page_t::switch_view_to_floating(view_p v, xcb_timestamp_t time)
 
 void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
 {
-	v->detach();
-	n->add_client(v->_client, time);
+	auto vn = dynamic_pointer_cast<view_notebook_t>(v);
+	if(vn) {
+		move_notebook_to_notebook(vn, n, time);
+		return;
+	}
+
+	auto vf = dynamic_pointer_cast<view_floating_t>(v);
+	if(vf) {
+		move_floating_to_notebook(vf, n, time);
+		return;
+	}
+}
+
+void page_t::move_notebook_to_notebook(view_notebook_p vn, notebook_p n, xcb_timestamp_t time)
+{
+	vn->parent_notebook()->remove_view_notebook(vn);
+	n->add_client(vn->_client, time);
+}
+
+void page_t::move_floating_to_notebook(view_floating_p vf, notebook_p n, xcb_timestamp_t time)
+{
+	vf->detach_myself();
+	n->add_client(vf->_client, time);
 }
 
 void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
@@ -1593,10 +1614,8 @@ void page_t::split_left(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	split->set_pack0(n);
 	split->set_pack1(nbk);
 	split->show();
-	if (c != nullptr) {
-		c->detach();
-		n->add_client(c->_client, time);
-	}
+	if (c != nullptr)
+		move_view_to_notebook(c, n, time);
 }
 
 void page_t::split_right(notebook_p nbk, view_p c, xcb_timestamp_t time) {
@@ -1606,11 +1625,9 @@ void page_t::split_right(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
-	if (c != nullptr) {
-		c->detach();
-		n->add_client(c->_client, time);
-	}
 	split->show();
+	if (c != nullptr)
+		move_view_to_notebook(c, n, time);
 }
 
 void page_t::split_top(notebook_p nbk, view_p c, xcb_timestamp_t time) {
@@ -1620,11 +1637,9 @@ void page_t::split_top(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	parent->replace(nbk, split);
 	split->set_pack0(n);
 	split->set_pack1(nbk);
-	if (c != nullptr) {
-		c->detach();
-		n->add_client(c->_client, time);
-	}
 	split->show();
+	if (c != nullptr)
+		move_view_to_notebook(c, n, time);
 }
 
 void page_t::split_bottom(notebook_p nbk, view_p c, xcb_timestamp_t time) {
@@ -1634,11 +1649,9 @@ void page_t::split_bottom(notebook_p nbk, view_p c, xcb_timestamp_t time) {
 	parent->replace(nbk, split);
 	split->set_pack0(nbk);
 	split->set_pack1(n);
-	if (c != nullptr) {
-		c->detach();
-		n->add_client(c->_client, time);
-	}
 	split->show();
+	if (c != nullptr)
+		move_view_to_notebook(c, n, time);
 }
 
 void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
@@ -1648,6 +1661,8 @@ void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
 	 **/
 
 	assert(nbk->parent() != nullptr);
+
+	auto workspace = nbk->workspace();
 
 	auto splt = dynamic_pointer_cast<split_t>(nbk->parent()->shared_from_this());
 
@@ -1666,25 +1681,14 @@ void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
 	dst->detach_myself();
 	dynamic_pointer_cast<page_component_t>(splt->parent()->shared_from_this())->replace(splt, dst);
 
-	/**
-	 * if notebook that we want destroy was the default_pop, select
-	 * a new one.
-	 **/
-	if (get_current_workspace()->ensure_default_notebook() == nbk) {
-		get_current_workspace()->ensure_default_notebook();
-		/* damage the new default pop to show the notebook mark properly */
-	}
-
 	/* move all client from destroyed notebook to new default pop */
 	auto clients = nbk->gather_children_root_first<view_notebook_t>();
-	bool notebook_has_focus = false;
+	auto default_notebook = workspace->ensure_default_notebook();
 	for(auto i : clients) {
-		if(i->has_focus())
-			notebook_has_focus = true;
-		move_view_to_notebook(i, get_current_workspace()->ensure_default_notebook(), XCB_CURRENT_TIME);
+		default_notebook->add_client(i->_client, XCB_CURRENT_TIME);
 	}
 
-	get_current_workspace()->set_focus(nullptr, time);
+	workspace->set_focus(nullptr, time);
 
 }
 

@@ -62,6 +62,7 @@ public:
 };
 
 class grab_bind_view_notebook_t : public grab_default_t {
+	workspace_p workspace;
 	view_notebook_w c;
 
 	rect start_position;

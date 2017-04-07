@@ -288,7 +288,8 @@ public:
 	void toggle_fullscreen(view_p c, xcb_timestamp_t time);
 
 	void move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time);
-
+	void move_notebook_to_notebook(view_notebook_p v, notebook_p n, xcb_timestamp_t time);
+	void move_floating_to_notebook(view_floating_p v, notebook_p n, xcb_timestamp_t time);
 
 	/* split a notebook into two notebook */
 	void split(shared_ptr<notebook_t> nbk, split_type_e type);
