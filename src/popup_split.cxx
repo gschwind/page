@@ -27,7 +27,7 @@ namespace page {
 
 void popup_split_t::show() {
 	tree_t::show();
-	_damaged = true;
+	_damaged += get_visible_region();
 }
 
 rect const & popup_split_t::position() {
@@ -47,20 +47,15 @@ region popup_split_t::get_opaque_region() {
  * If unknow the whole screen can be returned, but draw will be called each time.
  **/
 region popup_split_t::get_visible_region() {
-	return region{_position};
+	return _visible_region;
 }
 
 /**
  * return currently damaged area (absolute)
  **/
 region popup_split_t::get_damaged()  {
-	if(_damaged) {
-		return region{_position};
-	} else {
-		return region{};
-	}
+	return _damaged;
 }
-
 
 popup_split_t::popup_split_t(tree_t * ref, shared_ptr<split_t> split) :
 	tree_t{ref->_root},
@@ -115,7 +110,7 @@ void popup_split_t::update_layout() {
 
 	_s_base.lock()->compute_children_allocation(_current_split, rect0, rect1);
 
-	xcb_rectangle_t rects[8];
+	array<xcb_rectangle_t, 8> rects;
 
 	rects[0].x = rect0.x;
 	rects[0].y = rect0.y;
@@ -158,16 +153,31 @@ void popup_split_t::update_layout() {
 	rects[7].height = rect1.h;
 
 	/** making clip and bounding region matching make window without border **/
-	xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 8, rects);
-	xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 8, rects);
+	xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_BOUNDING, 0, _wid, 0, 0, 8, rects.begin());
+	xcb_shape_rectangles(_ctx->dpy()->xcb(), XCB_SHAPE_SO_SET, XCB_SHAPE_SK_CLIP, 0, _wid, 0, 0, 8, rects.begin());
 
 	_ctx->dpy()->move_resize(_wid, _position);
 
-	_damaged = true;
+	_visible_region.clear();
+	_visible_region += _position;
+
+	rect inner0(rect0.x+20, rect0.y+20, rect0.w-40, rect0.h-40);
+	rect inner1(rect1.x+20, rect1.y+20, rect1.w-40, rect1.h-40);
+
+	if (inner0.w > 0 and inner0.h > 0)
+		_visible_region -= inner0;
+	if (inner1.w > 0 and inner1.h > 0)
+		_visible_region -= inner1;
+
+	_damaged += get_visible_region();
 
 }
 
 void popup_split_t::set_position(double pos) {
+	// avoid too mutch updates
+	if(std::fabs(_current_split - pos) < 10e-4)
+		return;
+	_damaged += get_visible_region();
 	_current_split = pos;
 	update_layout();
 }
@@ -265,7 +275,7 @@ void popup_split_t::trigger_redraw() {
 }
 
 void popup_split_t::render_finished() {
-	_damaged = false;
+	_damaged.clear();
 }
 
 }
