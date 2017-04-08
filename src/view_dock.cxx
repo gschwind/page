@@ -160,6 +160,12 @@ void view_dock_t::on_update_struct_change(client_managed_t * c)
 	reconfigure();
 }
 
+void view_dock_t::remove_this_view()
+{
+	view_t::remove_this_view();
+	_root->_ctx->add_global_damage(_client->_absolute_position);
+}
+
 void view_dock_t::reconfigure()
 {
 	update_dock_position();

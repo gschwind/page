@@ -654,6 +654,12 @@ void view_floating_t::_on_focus_change(client_managed_t * c)
 	}
 }
 
+void view_floating_t::remove_this_view()
+{
+	view_t::remove_this_view();
+	_root->_ctx->add_global_damage(_base_position);
+}
+
 void view_floating_t::reconfigure() {
 	//printf("call %s\n", __PRETTY_FUNCTION__);
 

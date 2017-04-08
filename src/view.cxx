@@ -233,7 +233,7 @@ void view_t::xxactivate(xcb_timestamp_t time)
 	_root->set_focus(shared_from_this(), time);
 }
 
-void view_t::detach()
+void view_t::remove_this_view()
 {
 	assert(_parent != nullptr);
 	_parent->remove(shared_from_this());

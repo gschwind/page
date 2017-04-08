@@ -114,7 +114,7 @@ struct view_floating_t : public view_rebased_t {
 
 	using view_rebased_t::create_surface;
 	using view_t::xxactivate;
-	using view_t::detach;
+	virtual void remove_this_view() override;
 	using view_rebased_t::acquire_client;
 	using view_rebased_t::release_client;
 

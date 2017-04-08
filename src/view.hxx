@@ -72,7 +72,7 @@ struct view_t : public tree_t {
 
 	virtual auto create_surface() -> client_view_p;
 	virtual void xxactivate(xcb_timestamp_t time);
-	virtual void detach();
+	virtual void remove_this_view();
 	virtual void acquire_client();
 	virtual void release_client();
 

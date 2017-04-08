@@ -28,7 +28,7 @@ namespace page {
 
 struct view_fullscreen_t : public view_rebased_t {
 
-	viewport_w viewport;
+	viewport_w _viewport;
 	managed_window_type_e revert_type;
 	notebook_w revert_notebook;
 
@@ -43,7 +43,7 @@ struct view_fullscreen_t : public view_rebased_t {
 
 	using view_rebased_t::create_surface;
 	using view_t::xxactivate;
-	using view_t::detach;
+	virtual void remove_this_view() override;
 	using view_rebased_t::acquire_client;
 	using view_rebased_t::release_client;
 

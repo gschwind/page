@@ -180,7 +180,7 @@ void workspace_t::remove_viewport(viewport_p v)
 {
 	/* remove fullscreened clients if needed */
 	for (auto &x : gather_children_root_first<view_fullscreen_t>()) {
-		if (x->viewport.lock() == v) {
+		if (x->_viewport.lock() == v) {
 			_ctx->switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 			break;
 		}
@@ -453,10 +453,10 @@ void workspace_t::insert_as_fullscreen(shared_ptr<client_managed_t> mw, shared_p
 
 void workspace_t::unfullscreen(view_fullscreen_p view, xcb_timestamp_t time) {
 	/* WARNING: Call order is important, change it with caution */
-	view->detach();
+	view->remove_this_view();
 
-	if(not view->viewport.expired()) {
-		view->viewport.lock()->show();
+	if(not view->_viewport.expired()) {
+		view->_viewport.lock()->show();
 	}
 
 	if (view->revert_type == MANAGED_NOTEBOOK) {
@@ -639,12 +639,12 @@ void workspace_t::unmanage(client_managed_p mw)
 	printf("unmanaging : %d '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
 
 	for (auto c : v->get_transients()) {
-		c->detach();
+		c->remove_this_view();
 		_ctx->insert_as_floating(c->_client);
 	}
 
 	client_focus_history_remove(v);
-	v->detach();
+	v->remove_this_view();
 }
 
 }

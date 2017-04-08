@@ -1366,10 +1366,12 @@ void page_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
 
 void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
 {
+	printf("call %s\n", __PRETTY_FUNCTION__);
+	auto workspace = vn->workspace();
 	auto v = find_viewport_of(vn);
 	auto nbk = vn->parent_notebook();
 	assert(nbk != nullptr);
-	vn->detach();
+	nbk->remove_view_notebook(vn);
 	auto vf = make_shared<view_fullscreen_t>(vn->_client, v);
 	vf->revert_type = MANAGED_NOTEBOOK;
 	vf->revert_notebook = nbk;
@@ -1380,9 +1382,10 @@ void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t t
 
 void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t time)
 {
+	printf("call %s\n", __PRETTY_FUNCTION__);
 	auto workspace = vx->workspace();
 	auto viewport = workspace->get_any_viewport();
-	vx->detach();
+	vx->remove_this_view();
 	auto vf = make_shared<view_fullscreen_t>(vx->_client, viewport);
 	if(workspace->is_enable())
 		vf->acquire_client();
@@ -1393,7 +1396,7 @@ void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t t
 void page_t::switch_floating_to_notebook(view_floating_p vf, xcb_timestamp_t time)
 {
 	auto workspace = vf->workspace();
-	vf->detach();
+	vf->remove_this_view();
 	workspace->insert_as_notebook(vf->_client, time);
 }
 
@@ -1429,7 +1432,7 @@ void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
 
 void page_t::move_notebook_to_notebook(view_notebook_p vn, notebook_p n, xcb_timestamp_t time)
 {
-	vn->parent_notebook()->remove_view_notebook(vn);
+	vn->remove_this_view();
 	n->add_client(vn->_client, time);
 }
 
@@ -1442,10 +1445,10 @@ void page_t::move_floating_to_notebook(view_floating_p vf, notebook_p n, xcb_tim
 void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
 {
 	auto workspace = view->workspace();
-	view->detach();
+	view->remove_this_view();
 
-	if(workspace->is_visible() and not view->viewport.expired()) {
-		view->viewport.lock()->show();
+	if(workspace->is_visible() and not view->_viewport.expired()) {
+		view->_viewport.lock()->show();
 	}
 
 	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
@@ -1456,10 +1459,10 @@ void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp
 void page_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp_t time)
 {
 	auto workspace = view->workspace();
-	view->detach();
+	view->remove_this_view();
 
-	if(workspace->is_visible() and not view->viewport.expired()) {
-		view->viewport.lock()->show();
+	if(workspace->is_visible() and not view->_viewport.expired()) {
+		view->_viewport.lock()->show();
 	}
 
 	auto n = workspace->ensure_default_notebook();
@@ -1476,12 +1479,12 @@ void page_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp
 
 void page_t::_insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t time)
 {
-	auto viewport = vf->viewport.lock();
+	auto viewport = vf->_viewport.lock();
 	auto workspace = viewport->workspace();
 
 	// unfullscreen client that already use this viewport
 	for (auto &x : workspace->gather_children_root_first<view_fullscreen_t>()) {
-		if(x->viewport.lock() == viewport)
+		if(x->_viewport.lock() == viewport)
 			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 	}
 
@@ -1506,13 +1509,7 @@ void page_t::switch_fullscreen_to_prefered_view_mode(view_p c, xcb_timestamp_t t
 void page_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view, xcb_timestamp_t time) {
 	/* WARNING: Call order is important, change it with caution */
 	auto workspace = view->workspace();
-	view->detach();
-
-	if(not view->viewport.expired()) {
-		view->viewport.lock()->show();
-		add_global_damage(view->viewport.lock()->raw_area());
-		view->viewport.lock()->queue_redraw();
-	}
+	view->remove_this_view();
 
 	if (view->revert_type == MANAGED_NOTEBOOK) {
 		auto n = workspace->ensure_default_notebook();
@@ -1526,9 +1523,7 @@ void page_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view, xcb
 		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 		workspace->insert_as_floating(view->_client, time);
 	}
-
 	_need_restack = true;
-
 }
 
 void page_t::toggle_fullscreen(view_p c, xcb_timestamp_t time) {
@@ -1563,7 +1558,7 @@ void page_t::insert_window_in_notebook(
 	_need_update_client_list = true;
 }
 
-/* update viewport and childs allocation */
+/* update _viewport and childs allocation */
 void page_t::update_workarea() {
 	for (auto d : _workspace_list) {
 		for (auto v : d->get_viewports()) {
@@ -1666,7 +1661,7 @@ void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
 
 	auto splt = dynamic_pointer_cast<split_t>(nbk->parent()->shared_from_this());
 
-	/* if parent is viewport then we cannot close current notebook */
+	/* if parent is _viewport then we cannot close current notebook */
 	if(splt == nullptr)
 		return;
 
@@ -1770,7 +1765,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 		if (has_strut) {
 
 			if (ps[PS_LEFT] > 0) {
-				/* check if raw area intersect current viewport */
+				/* check if raw area intersect current _viewport */
 				rect b(0, ps[PS_LEFT_START_Y], ps[PS_LEFT],
 						ps[PS_LEFT_END_Y] - ps[PS_LEFT_START_Y] + 1);
 				rect x = raw_area & b;
@@ -1780,7 +1775,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 			}
 
 			if (ps[PS_RIGHT] > 0) {
-				/* check if raw area intersect current viewport */
+				/* check if raw area intersect current _viewport */
 				rect b(_root_position.w - ps[PS_RIGHT],
 						ps[PS_RIGHT_START_Y], ps[PS_RIGHT],
 						ps[PS_RIGHT_END_Y] - ps[PS_RIGHT_START_Y] + 1);
@@ -1791,7 +1786,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 			}
 
 			if (ps[PS_TOP] > 0) {
-				/* check if raw area intersect current viewport */
+				/* check if raw area intersect current _viewport */
 				rect b(ps[PS_TOP_START_X], 0,
 						ps[PS_TOP_END_X] - ps[PS_TOP_START_X] + 1, ps[PS_TOP]);
 				rect x = raw_area & b;
@@ -1801,7 +1796,7 @@ void page_t::compute_viewport_allocation(workspace_p d, viewport_p v) {
 			}
 
 			if (ps[PS_BOTTOM] > 0) {
-				/* check if raw area intersect current viewport */
+				/* check if raw area intersect current _viewport */
 				rect b(ps[PS_BOTTOM_START_X],
 						_root_position.h - ps[PS_BOTTOM],
 						ps[PS_BOTTOM_END_X] - ps[PS_BOTTOM_START_X] + 1,
@@ -1830,7 +1825,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		return;
 
 	/* debug print */
-	if(false) {
+	if(true) {
 		char const * action;
 		switch (type) {
 		case _NET_WM_STATE_REMOVE:
@@ -1918,12 +1913,12 @@ vector<shared_ptr<tree_t>> page_t::get_all_children() const
 
 void page_t::move_fullscreen_to_viewport(view_fullscreen_p fv, viewport_p v) {
 
-	if (not fv->viewport.expired()) {
-		fv->viewport.lock()->show();
+	if (not fv->_viewport.expired()) {
+		fv->_viewport.lock()->show();
 	}
 
 	fv->_client->_absolute_position = v->raw_area();
-	fv->viewport = v;
+	fv->_viewport = v;
 	fv->show();
 	v->hide();
 
@@ -1950,7 +1945,7 @@ void page_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time) {
 void page_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_t time) {
 	auto client = vn->_client;
 	auto workspace = vn->workspace();
-	vn->detach();
+	vn->remove_this_view();
 	workspace->insert_as_floating(client, time);
 	_need_restack = true;
 }
@@ -2046,9 +2041,9 @@ void page_t::update_windows_stack() {
 }
 
 /**
- * This function will update viewport layout on xrandr events.
+ * This function will update _viewport layout on xrandr events.
  *
- * It cut the visible outputs area in rectangle, where viewport will cover. The
+ * It cut the visible outputs area in rectangle, where _viewport will cover. The
  * rule is that the first output get the area first, the last one is cut in
  * sub-rectangle that do not overlap previous allocated area.
  **/
@@ -2098,7 +2093,7 @@ void page_t::update_viewport_layout() {
 
 	// compute all viewport that does not overlap and cover the full area of
 	// crts
-	vector<rect> viewport_allocation; // the list of viewport locations.
+	vector<rect> viewport_allocation; // the list of _viewport locations.
 	region already_allocated;
 	for (auto crtc: crtc_info) {
 		if (crtc.second->num_outputs <= 0)
@@ -2137,7 +2132,7 @@ void page_t::update_viewport_layout() {
 
 	update_workspace_visibility(XCB_CURRENT_TIME);
 
-	/* set viewport */
+	/* set _viewport */
 	std::vector<uint32_t> viewport(_workspace_list.size()*2);
 	std::fill_n(viewport.begin(), _workspace_list.size()*2, 0);
 	_dpy->change_property(_dpy->root(), _NET_DESKTOP_VIEWPORT,
@@ -2154,7 +2149,7 @@ void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v
 
 	/* remove fullscreened clients if needed */
 	for (auto &x : v->_root->gather_children_root_first<view_fullscreen_t>()) {
-		if (x->viewport.lock() == v) {
+		if (x->_viewport.lock() == v) {
 			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 			break;
 		}
@@ -3318,8 +3313,10 @@ void page_t::on_visibility_change_handler(client_proxy_t * proxy, bool visible)
 	if(x != nullptr) {
 		//printf("change visibility of %s\n", x->_client->title().c_str());
 		if (visible) {
+			printf("remove state _NET_WM_STATE_HIDDEN `%s'\n", x->_client->title().c_str());
 			x->_client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 		} else {
+			printf("add state _NET_WM_STATE_HIDDEN `%s'\n", x->_client->title().c_str());
 			x->_client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
 		}
 	}

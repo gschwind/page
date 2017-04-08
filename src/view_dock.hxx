@@ -40,7 +40,7 @@ struct view_dock_t : public view_t {
 	 **/
 	using view_t::create_surface;
 	using view_t::xxactivate;
-	using view_t::detach;
+	virtual void remove_this_view() override;
 	using view_t::acquire_client;
 	using view_t::release_client;
 

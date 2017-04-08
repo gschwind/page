@@ -31,7 +31,7 @@ namespace page {
 view_fullscreen_t::view_fullscreen_t(client_managed_p client, viewport_p viewport) :
 		view_rebased_t{viewport.get(), client},
 		revert_type{MANAGED_FLOATING},
-		viewport{viewport}
+		_viewport{viewport}
 {
 	//printf("create %s\n", __PRETTY_FUNCTION__);
 	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
@@ -48,6 +48,16 @@ auto view_fullscreen_t::shared_from_this() -> view_fullscreen_p
 	return static_pointer_cast<view_fullscreen_t>(tree_t::shared_from_this());
 }
 
+void view_fullscreen_t::remove_this_view()
+{
+	view_t::remove_this_view();
+	if (not _viewport.expired()) {
+		auto viewport = _viewport.lock();
+		viewport->show();
+		_root->_ctx->schedule_repaint();
+	}
+}
+
 void view_fullscreen_t::reconfigure()
 {
 	auto _ctx = _root->_ctx;
@@ -55,8 +65,8 @@ void view_fullscreen_t::reconfigure()
 
 	_damage_cache += get_visible_region();
 
-	if(not viewport.expired())
-		_client->_absolute_position = viewport.lock()->raw_area();
+	if(not _viewport.expired())
+		_client->_absolute_position = _viewport.lock()->raw_area();
 
 	_base_position.x = _client->_absolute_position.x;
 	_base_position.y = _client->_absolute_position.y;

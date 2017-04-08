@@ -82,7 +82,7 @@ void view_notebook_t::xxactivate(xcb_timestamp_t time)
 	nbk->activate(shared_from_this(), time);
 }
 
-void view_notebook_t::detach()
+void view_notebook_t::remove_this_view()
 {
 	auto nbk = parent_notebook();
 	nbk->remove_view_notebook(shared_from_this());

@@ -50,6 +50,12 @@ void view_popup_t::_on_configure_notify(client_managed_t * c)
 	reconfigure();
 }
 
+void view_popup_t::remove_this_view()
+{
+	view_t::remove_this_view();
+	_root->_ctx->add_global_damage(_client->_absolute_position);
+}
+
 void view_popup_t::reconfigure()
 {
 	//printf("call %s\n", __PRETTY_FUNCTION__);

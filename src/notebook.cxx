@@ -953,7 +953,7 @@ void notebook_t::_start_client_menu(view_notebook_p c, xcb_button_t button, uint
 			[this, c, k] (xcb_timestamp_t t) {
 				if (k != this->_ctx->get_current_workspace()->id()) {
 					c->_client->set_current_workspace(k);
-					c->detach();
+					c->remove_this_view();
 					_ctx->get_workspace(k)->insert_as_notebook(c->_client, t);
 				}
 			};
@@ -964,7 +964,7 @@ void notebook_t::_start_client_menu(view_notebook_p c, xcb_button_t button, uint
 		auto func = [this, c] (xcb_timestamp_t t) {
 			int selected = _ctx->create_workspace();
 			c->_client->set_current_workspace(selected);
-			c->detach();
+			c->remove_this_view();
 			_ctx->get_workspace(selected)->insert_as_notebook(c->_client, t);
 		};
 		v.push_back(std::make_shared<dropdown_menu_t::item_t>(nullptr, "To new workspace", func));
