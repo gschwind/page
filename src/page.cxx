@@ -401,6 +401,9 @@ void page_t::unmanage(client_managed_p mw)
 		d->unmanage(mw);
 	}
 
+	mw->_client_proxy->remove_from_save_set();
+	mw->_client_proxy->set_wm_state(WithdrawnState);
+	mw->_client_proxy->unmap();
 	_need_update_client_list = true;
 	update_workarea();
 }

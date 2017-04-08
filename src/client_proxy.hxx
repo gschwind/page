@@ -171,6 +171,7 @@ public:
 	void delete_net_wm_state();
 	void delete_wm_state();
 	void add_to_save_set();
+	void remove_from_save_set();
 
 	void process_event(xcb_damage_notify_event_t const * ev);
 	void process_event(xcb_property_notify_event_t const * ev);

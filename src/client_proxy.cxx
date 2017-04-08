@@ -123,7 +123,10 @@ void client_proxy_t::add_to_save_set() {
 	xcb_change_save_set(_dpy->xcb(), XCB_SET_MODE_INSERT, _id);
 }
 
-
+void client_proxy_t::remove_from_save_set()
+{
+	xcb_change_save_set(_dpy->xcb(), XCB_SET_MODE_DELETE, _id);
+}
 
 /** short cut **/
 xcb_atom_t client_proxy_t::A(atom_e atom) {

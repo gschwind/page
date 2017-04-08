@@ -60,13 +60,9 @@ client_managed_t::client_managed_t(page_t * ctx, client_proxy_p proxy) :
 
 }
 
-client_managed_t::~client_managed_t() {
-
+client_managed_t::~client_managed_t()
+{
 	on_destroy.signal(this);
-
-	_client_proxy->delete_net_wm_state();
-	_client_proxy->delete_wm_state();
-
 }
 
 void client_managed_t::fake_configure_unsafe(rect const & location) {
