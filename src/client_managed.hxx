@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <set>
 
 #include <xcb/xcb.h>
 
@@ -77,6 +78,8 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	shared_ptr<vector<int>> _net_wm_strut;
 	shared_ptr<vector<int>> _net_wm_strut_partial;
 
+	shared_ptr<list<xcb_atom_t>> _net_wm_state;
+
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &) = delete;
 	client_managed_t & operator=(client_managed_t const &) = delete;
@@ -139,7 +142,6 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 
 	void net_wm_state_add(atom_e atom);
 	void net_wm_state_remove(atom_e atom);
-	void net_wm_state_delete();
 	void wm_state_delete();
 	bool has_wm_state_fullscreen();
 	bool has_wm_state_stiky();

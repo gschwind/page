@@ -211,21 +211,20 @@ bool client_managed_t::get_wm_normal_hints(XSizeHints * size_hints) {
 
 void client_managed_t::net_wm_state_add(atom_e atom)
 {
-	_client_proxy->net_wm_state_add(atom);
+	auto a = A(atom);
+	if(has_key(*_net_wm_state, a))
+		return;
+	_net_wm_state->push_back(a);
+	_client_proxy->set<p_net_wm_state>(_net_wm_state);
 }
 
 void client_managed_t::net_wm_state_remove(atom_e atom)
 {
-	_client_proxy->net_wm_state_remove(atom);
-}
-
-void client_managed_t::net_wm_state_delete()
-{
-	/**
-	 * This one is for removing the window manager tag, thus only check if the window
-	 * still exist. (don't need lock);
-	 **/
-	_client_proxy->delete_net_wm_state();
+	auto a = A(atom);
+	if(not has_key(*_net_wm_state, a))
+		return;
+	_net_wm_state->remove(a);
+	_client_proxy->set<p_net_wm_state>(_net_wm_state);
 }
 
 void client_managed_t::wm_state_delete()
@@ -436,6 +435,20 @@ void client_managed_t::_apply_floating_hints_constraint() {
 void client_managed_t::read_all_properties() {
 	_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 	_net_wm_strut_partial = _client_proxy->get<p_net_wm_strut_partial>();
+	_net_wm_state = _client_proxy->get<p_net_wm_state>();
+	if(_net_wm_state == nullptr) {
+		_net_wm_state = make_shared<list<xcb_atom_t>>();
+		_client_proxy->set<p_net_wm_state>(_net_wm_state);
+	} else {
+		/* _net_wm_state = unique(_net_wm_state) */
+		set<xcb_atom_t> sa;
+		for(auto x: *_net_wm_state)
+			sa.insert(x);
+		_net_wm_state = make_shared<list<xcb_atom_t>>();
+		for(auto x: sa)
+			_net_wm_state->push_back(x);
+		_client_proxy->set<p_net_wm_state>(_net_wm_state);
+	}
 }
 
 void client_managed_t::update_shape() {
