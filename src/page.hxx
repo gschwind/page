@@ -394,8 +394,6 @@ public:
 	void global_focus_history_move_front(view_p in);
 	bool global_focus_history_is_empty();
 
-	void on_visibility_change_handler(client_proxy_t * proxy, bool visible);
-
 	auto find_client_managed_with(xcb_window_t w) -> shared_ptr<client_managed_t>;
 
 	/**

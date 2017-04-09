@@ -1032,7 +1032,6 @@ auto display_t::create_view(xcb_window_t w) -> client_view_p
 	if (p->_views.empty()) {
 		if (_is_compositor_enabled)
 			p->enable_redirect();
-		on_visibility_change.signal(p.get(), true);
 	}
 	p->_need_pixmap_update = true;
 	auto v = make_shared<client_view_t>(p.get());
@@ -1046,7 +1045,6 @@ void display_t::destroy_view(client_view_t * v) {
 	p->_views.remove(v);
 
 	if(p->_views.empty()) {
-		on_visibility_change.signal(p, false);
 		p->_pixmap = nullptr;
 		if(_is_compositor_enabled)
 			p->disable_redirect();

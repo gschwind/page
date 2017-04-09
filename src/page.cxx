@@ -347,13 +347,10 @@ void page_t::run() {
 			this->process_pending_events();
 		});
 
-	//connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
-
 	_mainloop.run();
 
 	cout << "Page END" << endl;
 
-	disconnect(_dpy->on_visibility_change);
 	_mainloop.remove_poll(_dpy->fd());
 
 	_dpy->unload_cursors();
@@ -3295,31 +3292,6 @@ void page_t::start_alt_tab(xcb_timestamp_t time) {
 
 	/* Grab keyboard */
 	grab_start(make_shared<grab_alt_tab_t>(this, managed_window, time), time);
-
-}
-
-void page_t::on_visibility_change_handler(client_proxy_t * proxy, bool visible)
-{
-
-	/* find the view with toplevel window equals to proxy window */
-	view_p x;
-	for(auto & v: get_current_workspace()->gather_children_root_first<view_t>()) {
-		if(v->get_toplevel_xid() == proxy->id()) {
-			x = v;
-			break;
-		}
-	}
-
-	if(x != nullptr) {
-		//printf("change visibility of %s\n", x->_client->title().c_str());
-		if (visible) {
-			printf("remove state _NET_WM_STATE_HIDDEN `%s'\n", x->_client->title().c_str());
-			x->_client->net_wm_state_remove(_NET_WM_STATE_HIDDEN);
-		} else {
-			printf("add state _NET_WM_STATE_HIDDEN `%s'\n", x->_client->title().c_str());
-			x->_client->net_wm_state_add(_NET_WM_STATE_HIDDEN);
-		}
-	}
 
 }
 

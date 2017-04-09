@@ -124,8 +124,6 @@ public:
 
 public:
 
-	signal_t<client_proxy_t *, bool> on_visibility_change;
-
 	int fd();
 	xcb_window_t root();
 	xcb_connection_t * xcb();
