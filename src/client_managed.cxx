@@ -405,7 +405,6 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 auto client_managed_t::create_surface(xcb_window_t base) -> client_view_p
 {
 	if (_views_count == 0) {
-		printf("remove state _NET_WM_STATE_HIDDEN `%s'\n", title().c_str());
 		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
 	}
 	++_views_count;
@@ -417,7 +416,6 @@ auto client_managed_t::create_surface(xcb_window_t base) -> client_view_p
 void client_managed_t::destroy_view(client_view_t * c)
 {
 	if (--_views_count == 0) {
-		printf("add state _NET_WM_STATE_HIDDEN `%s'\n", title().c_str());
 		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 	}
 }
