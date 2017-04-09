@@ -427,7 +427,7 @@ void workspace_t::insert_as_fullscreen(shared_ptr<client_managed_t> mw, shared_p
 
 void workspace_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	auto vx = dynamic_pointer_cast<view_floating_t>(v);
 	if(vx) {
 		switch_floating_to_fullscreen(vx, time);
@@ -443,7 +443,7 @@ void workspace_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
 
 void workspace_t::switch_view_to_floating(view_p v, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	auto vn = dynamic_pointer_cast<view_notebook_t>(v);
 	if(vn) {
 		switch_notebook_to_floating(vn, time);
@@ -459,7 +459,7 @@ void workspace_t::switch_view_to_floating(view_p v, xcb_timestamp_t time)
 
 void workspace_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	auto vx = dynamic_pointer_cast<view_floating_t>(v);
 	if(vx) {
 		switch_floating_to_notebook(vx, time);
@@ -475,7 +475,7 @@ void workspace_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time)
 
 void workspace_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	vn->remove_this_view();
 	auto vf = make_shared<view_floating_t>(vn.get());
 	_insert_view_floating(vf, time);
@@ -483,7 +483,7 @@ void workspace_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_
 
 void workspace_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	auto v = _find_viewport_of(vn);
 	auto nbk = vn->parent_notebook();
 	assert(nbk != nullptr);
@@ -498,7 +498,7 @@ void workspace_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestam
 
 void workspace_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	auto viewport = get_any_viewport();
 	vx->remove_this_view();
 	auto vf = make_shared<view_fullscreen_t>(vx.get(), viewport);
