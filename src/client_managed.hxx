@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <map>
 
 #include <xcb/xcb.h>
 
@@ -37,7 +38,7 @@ enum managed_window_type_e {
 	MANAGED_POPUP
 };
 
-struct client_managed_t : public enable_shared_from_this<client_managed_t> {
+struct client_managed_t : public enable_shared_from_this<client_managed_t>, public connectable_t {
 	static long const MANAGED_ORIG_WINDOW_EVENT_MASK = XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE | XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_ENTER_WINDOW;
 	static long const UNMANAGED_ORIG_WINDOW_EVENT_MASK = XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE;
 
@@ -157,14 +158,14 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	void focus(xcb_timestamp_t t);
 	auto get_type() -> managed_window_type_e;
 	void set_managed_type(managed_window_type_e type);
-	unsigned ensure_workspace();
+	auto ensure_workspace() -> unsigned;
 
 	void read_all_properties();
 	void update_shape();
 	bool has_motif_border();
 	void set_net_wm_desktop(unsigned long n);
 	bool is_window(xcb_window_t w);
-	xcb_atom_t wm_type();
+	auto wm_type() -> xcb_atom_t;
 	void print_window_attributes();
 	void print_properties();
 
@@ -173,7 +174,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t> {
 	auto transient_for() -> client_managed_p;
 	auto shape() const -> region const *;
 	auto position() -> rect;
-	dimention_t<unsigned> compute_size_with_constrain(unsigned w, unsigned h);
+	auto compute_size_with_constrain(unsigned w, unsigned h) -> dimention_t<unsigned>;
 
 	template<int const ID>
 	auto get() -> shared_ptr<typename ptype<ID>::type::cxx_type>

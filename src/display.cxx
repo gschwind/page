@@ -1035,15 +1035,15 @@ auto display_t::create_view(xcb_window_t w) -> client_view_p
 		on_visibility_change.signal(p.get(), true);
 	}
 	p->_need_pixmap_update = true;
-	auto v = new client_view_t{p.get()};
-	p->_views.push_back(v);
-	return shared_ptr<client_view_t>(v, [this](client_view_t * v) { this->destroy_view(v); });
+	auto v = make_shared<client_view_t>(p.get());
+	p->_views.push_back(v.get());
+	connect(v->on_destroy, this, &display_t::destroy_view);
+	return v;
 }
 
 void display_t::destroy_view(client_view_t * v) {
 	auto p = v->_parent;
 	p->_views.remove(v);
-	delete v;
 
 	if(p->_views.empty()) {
 		on_visibility_change.signal(p, false);

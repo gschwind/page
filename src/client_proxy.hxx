@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "utils.hxx"
 #include "atoms.hxx"
 #include "region.hxx"
 #include "motif_hints.hxx"
@@ -55,7 +56,11 @@ class client_view_t {
 
 public:
 
+	signal_t<client_view_t *> on_destroy;
+
 	client_view_t(client_proxy_t * parent);
+	~client_view_t();
+
 	auto get_pixmap() -> shared_ptr<pixmap_t>;
 	void clear_damaged();
 	auto get_damaged() -> region const &;
@@ -63,7 +68,11 @@ public:
 
 };
 
-class client_proxy_t : public enable_shared_from_this<client_proxy_t>, public wm_properties_t {
+class client_proxy_t :
+		public enable_shared_from_this<client_proxy_t>,
+		public wm_properties_t,
+		public connectable_t
+{
 	friend class display_t;
 	friend class client_view_t;
 

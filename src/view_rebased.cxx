@@ -107,6 +107,7 @@ void view_rebased_t::_reconfigure_windows()
 	auto _dpy = _ctx->_dpy;
 
 	if (not _root->is_enable()) {
+		_client_view = nullptr;
 		_dpy->unmap(_base);
 		return;
 	}
@@ -227,6 +228,8 @@ void view_rebased_t::acquire_client()
 
 void view_rebased_t::release_client()
 {
+	_client_view = nullptr;
+
 	if (_client->current_owner_view() != static_cast<view_t*>(this))
 		return;
 

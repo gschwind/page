@@ -20,10 +20,7 @@
 #include <xcb/shape.h>
 #include <xcb/sync.h>
 
-//#include <X11/keysymdef.h>
 #include <X11/cursorfont.h>
-//#include <X11/keysym.h>
-//#include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
 #include <cstring>
@@ -54,7 +51,7 @@ static unsigned long const AllEventMask = 0x01ffffff;
 /**
  * Structure to handle X connection context.
  **/
-class display_t {
+class display_t : private connectable_t {
 
 	int _fd;
 	int _default_screen;

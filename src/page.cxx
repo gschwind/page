@@ -67,7 +67,7 @@ time64_t const page_t::default_wait{1000000000L / 120L};
 
 page_t::page_t(int argc, char ** argv)
 {
-
+	frame_alarm = 0;
 	_current_workspace = 0;
 	_grab_handler = nullptr;
 	_schedule_repaint = false;
@@ -2285,9 +2285,6 @@ void page_t::create_managed_window(client_proxy_p proxy) {
 }
 
 void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
-//	safe_update_transient_for(mw);
-//	mw->raise();
-//	mw->show();
 
 	if(not mw->skip_task_bar()) {
 		_need_update_client_list = true;

@@ -625,6 +625,11 @@ client_view_t::client_view_t(client_proxy_t * parent) :
 	_damaged += region(0, 0, parent->_geometry.width, parent->_geometry.height);
 }
 
+client_view_t::~client_view_t()
+{
+	on_destroy.signal(this);
+}
+
 auto client_view_t::get_pixmap() -> shared_ptr<pixmap_t> {
 	return _parent->get_pixmap();
 }
