@@ -31,7 +31,7 @@ namespace page {
 struct view_notebook_t : public view_rebased_t {
 
 	view_notebook_t(tree_t * ref, client_managed_p client);
-	view_notebook_t(view_rebased_t * vf);
+	view_notebook_t(view_rebased_t * src);
 	virtual ~view_notebook_t();
 
 	void _create_base_windows();

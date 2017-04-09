@@ -113,6 +113,23 @@ public:
 
 	void unfullscreen(view_fullscreen_p view, xcb_timestamp_t time);
 
+	void switch_view_to_fullscreen(view_p v, xcb_timestamp_t time);
+	void switch_view_to_floating(view_p v, xcb_timestamp_t time);
+	void switch_view_to_notebook(view_p mw, xcb_timestamp_t time);
+
+	void switch_notebook_to_floating(view_notebook_p v, xcb_timestamp_t time);
+	void switch_notebook_to_fullscreen(view_notebook_p v, xcb_timestamp_t time);
+
+	void switch_floating_to_fullscreen(view_floating_p v, xcb_timestamp_t time);
+	void switch_floating_to_notebook(view_floating_p v, xcb_timestamp_t time);
+
+	void switch_fullscreen_to_floating(view_fullscreen_p v, xcb_timestamp_t time);
+	void switch_fullscreen_to_notebook(view_fullscreen_p v, xcb_timestamp_t time);
+
+	/* switch a fullscreened and managed window into floating or notebook window */
+	void switch_fullscreen_to_prefered_view_mode(view_p c, xcb_timestamp_t time);
+	void switch_fullscreen_to_prefered_view_mode(view_fullscreen_p c, xcb_timestamp_t time);
+
 	void add_dock(shared_ptr<tree_t> c);
 	void add_floating(shared_ptr<tree_t> c);
 	void add_fullscreen(shared_ptr<tree_t> c);
@@ -134,6 +151,9 @@ public:
 	auto lookup_view_for(client_managed_p c) const -> view_p;
 	void set_focus(view_p new_focus, xcb_timestamp_t tfocus);
 	void unmanage(client_managed_p mw);
+
+	auto _find_viewport_of(tree_p t) -> viewport_p;
+	void _insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t time);
 
 	/**
 	 * tree_t virtual API
