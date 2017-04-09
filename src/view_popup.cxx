@@ -35,7 +35,7 @@ view_popup_t::view_popup_t(tree_t * ref, client_managed_p client) :
 	_client->set_managed_type(MANAGED_POPUP);
 	_client->_absolute_position = _client->_client_proxy->position();
 	if(_client_view == nullptr)
-		_client_view = _root->_ctx->create_view(_client->_client_proxy->id());
+		_client_view = create_surface();
 	_ungrab_all_button_unsafe();
 }
 
@@ -75,7 +75,7 @@ void view_popup_t::reconfigure()
 	if(_is_visible) {
 		//_client->map_unsafe();
 		if(_client_view == nullptr)
-			_client_view = _root->_ctx->create_view(_client->_client_proxy->id());
+			_client_view = create_surface();
 	} else {
 		//_client->unmap_unsafe();
 		_client_view = nullptr;

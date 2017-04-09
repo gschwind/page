@@ -18,14 +18,6 @@ void client_proxy_t::select_input(uint32_t mask) {
 	_dpy->select_input(_id, _wa.your_event_mask);
 }
 
-void client_proxy_t::set_focus_state(bool is_focused) {
-	if (is_focused) {
-		net_wm_state_add(_NET_WM_STATE_FOCUSED);
-	} else {
-		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-	}
-}
-
 void client_proxy_t::select_input_shape(bool x) {
 	xcb_shape_select_input(cnx()->xcb(), _id, x?1:0);
 }
@@ -544,33 +536,6 @@ auto client_proxy_t::geometry() const -> xcb_get_geometry_reply_t const & { retu
 /* OTHERs */
 region const *                     client_proxy_t::shape() const { return _shape; }
 
-void client_proxy_t::net_wm_state_add(atom_e atom) {
-	auto new_net_wm_state = make_shared<list<xcb_atom_t>>();
-
-	auto net_wm_state = get<p_net_wm_state>();
-	if(net_wm_state != nullptr) {
-		new_net_wm_state->insert(new_net_wm_state->end(),
-				net_wm_state->begin(), net_wm_state->end());
-	}
-
-	new_net_wm_state->remove(A(atom));
-	new_net_wm_state->push_back(A(atom));
-	set<p_net_wm_state>(new_net_wm_state);
-}
-
-void client_proxy_t::net_wm_state_remove(atom_e atom) {
-	auto net_wm_state = get<p_net_wm_state>();
-	auto new_net_wm_state = make_shared<list<xcb_atom_t>>();
-
-	if(net_wm_state != nullptr) {
-		new_net_wm_state->insert(new_net_wm_state->end(),
-				net_wm_state->begin(), net_wm_state->end());
-	}
-
-	new_net_wm_state->remove(A(atom));
-	set<p_net_wm_state>(new_net_wm_state);
-}
-
 void client_proxy_t::net_wm_allowed_actions_add(atom_e atom) {
 	auto new_net_wm_allowed_actions = make_shared<list<xcb_atom_t>>();
 
@@ -769,6 +734,11 @@ bool client_proxy_t::destroyed(bool x) {
 auto client_proxy_t::wm_transiant_for() -> shared_ptr<xcb_window_t>
 {
 	return _wm_transiant_for;
+}
+
+auto client_proxy_t::create_view(xcb_window_t base) -> client_view_p
+{
+	return _dpy->create_view(base);
 }
 
 }

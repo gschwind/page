@@ -123,7 +123,7 @@ void view_t::move_all_window()
 			}
 			_client->_client_proxy->set_wm_state(NormalState);
 			if(_client_view == nullptr)
-				_client_view = _root->_ctx->create_view(_client->_client_proxy->id());
+				_client_view = create_surface();
 		} else {
 			_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			_client->_client_proxy->set_wm_state(IconicState);
@@ -214,7 +214,7 @@ void view_t::_ungrab_all_button_unsafe() {
 
 auto view_t::create_surface() -> client_view_p
 {
-	return _root->_ctx->create_view(get_toplevel_xid());
+	return _client->create_surface(get_toplevel_xid());
 }
 
 void view_t::_on_focus_change(client_managed_t * c)

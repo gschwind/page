@@ -140,14 +140,11 @@ public:
 
 	region const *                     shape() const;
 
-	void net_wm_state_add(atom_e atom);
-	void net_wm_state_remove(atom_e atom);
 	void net_wm_allowed_actions_add(atom_e atom);
 	void net_wm_allowed_actions_set(list<atom_e> atom_list);
 	void set_wm_state(int state);
 	void process_event(xcb_configure_notify_event_t const * e);
 	rect position() const;
-	void set_focus_state(bool is_focused);
 	void select_input(uint32_t mask);
 	void select_input_shape(bool x);
 
@@ -199,6 +196,8 @@ public:
 	bool destroyed(bool x);
 
 	auto wm_transiant_for() -> shared_ptr<xcb_window_t>;
+
+	auto create_view(xcb_window_t base) -> client_view_p;
 
 };
 

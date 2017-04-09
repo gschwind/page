@@ -347,7 +347,7 @@ void page_t::run() {
 			this->process_pending_events();
 		});
 
-	connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
+	//connect(_dpy->on_visibility_change, this, &page_t::on_visibility_change_handler);
 
 	_mainloop.run();
 

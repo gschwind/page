@@ -34,7 +34,8 @@ client_managed_t::client_managed_t(page_t * ctx, client_proxy_p proxy) :
 	_icon(nullptr),
 	_has_focus{false},
 	_demands_attention{false},
-	_current_owner_view{nullptr}
+	_current_owner_view{nullptr},
+	_views_count{0}
 {
 
 	_update_title();
@@ -110,7 +111,7 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 
 	if(_demands_attention) {
 		_demands_attention = false;
-		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
 	if (_client_proxy->get<p_wm_protocols>() != nullptr) {
@@ -370,9 +371,9 @@ void client_managed_t::set_current_workspace(unsigned int n) {
 
 void client_managed_t::set_demands_attention(bool x) {
 	if (x) {
-		_client_proxy->net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
+		net_wm_state_add(_NET_WM_STATE_DEMANDS_ATTENTION);
 	} else {
-		_client_proxy->net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
+		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 	_demands_attention = x;
 }
@@ -398,6 +399,26 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 	} else if (e->atom == A(_NET_WM_STRUT)) {
 		_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 		on_strut_change.signal(this);
+	}
+}
+
+auto client_managed_t::create_surface(xcb_window_t base) -> client_view_p
+{
+	if (_views_count == 0) {
+		printf("remove state _NET_WM_STATE_HIDDEN `%s'\n", title().c_str());
+		net_wm_state_remove(_NET_WM_STATE_HIDDEN);
+	}
+	++_views_count;
+	auto view = _client_proxy->create_view(base);
+	connect(view->on_destroy, this, &client_managed_t::destroy_view);
+	return view;
+}
+
+void client_managed_t::destroy_view(client_view_t * c)
+{
+	if (--_views_count == 0) {
+		printf("add state _NET_WM_STATE_HIDDEN `%s'\n", title().c_str());
+		net_wm_state_add(_NET_WM_STATE_HIDDEN);
 	}
 }
 

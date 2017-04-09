@@ -81,6 +81,8 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 
 	shared_ptr<list<xcb_atom_t>> _net_wm_state;
 
+	int _views_count;
+
 	/* private to avoid copy */
 	client_managed_t(client_managed_t const &) = delete;
 	client_managed_t & operator=(client_managed_t const &) = delete;
@@ -183,6 +185,9 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 	}
 
 	void on_property_notify(xcb_property_notify_event_t const * e);
+
+	auto create_surface(xcb_window_t base) -> client_view_p;
+	void destroy_view(client_view_t * c);
 
 };
 

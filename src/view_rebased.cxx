@@ -125,7 +125,7 @@ void view_rebased_t::_reconfigure_windows()
 		else
 			_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 		if(_client_view == nullptr)
-			_client_view = _root->_ctx->create_view(_base);
+			_client_view = create_surface();
 	} else {
 		_client->_client_proxy->set_wm_state(IconicState);
 		_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
@@ -213,7 +213,7 @@ void view_rebased_t::_on_focus_change(client_managed_t * c)
 
 auto view_rebased_t::create_surface() -> client_view_p
 {
-	return _root->_ctx->create_view(_base);
+	return _client->create_surface(_base);
 }
 
 void view_rebased_t::acquire_client()
