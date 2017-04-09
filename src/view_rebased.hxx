@@ -39,6 +39,7 @@ struct view_rebased_t : public view_t {
 
 public:
 	view_rebased_t(tree_t * ref, client_managed_p client);
+	view_rebased_t(view_rebased_t * src);
 	virtual ~view_rebased_t();
 
 	auto shared_from_this() -> view_rebased_p;

@@ -1372,7 +1372,7 @@ void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t t
 	auto nbk = vn->parent_notebook();
 	assert(nbk != nullptr);
 	nbk->remove_view_notebook(vn);
-	auto vf = make_shared<view_fullscreen_t>(vn->_client, v);
+	auto vf = make_shared<view_fullscreen_t>(vn.get(), v);
 	vf->revert_type = MANAGED_NOTEBOOK;
 	vf->revert_notebook = nbk;
 	if(v->_root->is_enable())
@@ -1386,7 +1386,7 @@ void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t t
 	auto workspace = vx->workspace();
 	auto viewport = workspace->get_any_viewport();
 	vx->remove_this_view();
-	auto vf = make_shared<view_fullscreen_t>(vx->_client, viewport);
+	auto vf = make_shared<view_fullscreen_t>(vx.get(), viewport);
 	if(workspace->is_enable())
 		vf->acquire_client();
 	vf->revert_type = MANAGED_FLOATING;
@@ -1433,13 +1433,13 @@ void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
 void page_t::move_notebook_to_notebook(view_notebook_p vn, notebook_p n, xcb_timestamp_t time)
 {
 	vn->remove_this_view();
-	n->add_client(vn->_client, time);
+	n->add_client_from_view(vn, time);
 }
 
 void page_t::move_floating_to_notebook(view_floating_p vf, notebook_p n, xcb_timestamp_t time)
 {
 	vf->detach_myself();
-	n->add_client(vf->_client, time);
+	n->add_client_from_view(vf, time);
 }
 
 void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
@@ -1472,7 +1472,7 @@ void page_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp
 
 	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 	view->_client->set_managed_type(MANAGED_NOTEBOOK);
-	n->add_client(view->_client, time);
+	n->add_client_from_view(view, time);
 
 	_need_restack = true;
 }
@@ -1518,7 +1518,7 @@ void page_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view, xcb
 		}
 		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 		view->_client->set_managed_type(MANAGED_NOTEBOOK);
-		n->add_client(view->_client, time);
+		n->add_client_from_view(view, time);
 	} else {
 		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 		workspace->insert_as_floating(view->_client, time);
@@ -1680,7 +1680,7 @@ void page_t::notebook_close(notebook_p nbk, xcb_timestamp_t time) {
 	auto clients = nbk->gather_children_root_first<view_notebook_t>();
 	auto default_notebook = workspace->ensure_default_notebook();
 	for(auto i : clients) {
-		default_notebook->add_client(i->_client, XCB_CURRENT_TIME);
+		default_notebook->add_client_from_view(i, XCB_CURRENT_TIME);
 	}
 
 	workspace->set_focus(nullptr, time);
@@ -2157,7 +2157,7 @@ void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v
 
 	/* Transfer clients to a valid notebook */
 	for (auto x : v->gather_children_root_first<view_notebook_t>()) {
-		d->ensure_default_notebook()->add_client(x->_client, XCB_CURRENT_TIME);
+		d->ensure_default_notebook()->add_client_from_view(x, XCB_CURRENT_TIME);
 	}
 
 	for (auto x : v->gather_children_root_first<view_floating_t>()) {
@@ -2621,7 +2621,6 @@ void page_t::switch_to_workspace(unsigned int workspace, xcb_timestamp_t time) {
 		update_workspace_visibility(time);
 	}
 }
-
 
 void page_t::start_switch_to_workspace_animation(unsigned int workspace) {
 	auto new_workspace = _workspace_list[workspace];

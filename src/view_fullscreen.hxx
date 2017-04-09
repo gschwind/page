@@ -33,6 +33,7 @@ struct view_fullscreen_t : public view_rebased_t {
 	notebook_w revert_notebook;
 
 	view_fullscreen_t(client_managed_p client, viewport_p viewport);
+	view_fullscreen_t(view_rebased_t * src, viewport_p viewport);
 	virtual ~view_fullscreen_t();
 
 	auto shared_from_this() -> view_fullscreen_p;

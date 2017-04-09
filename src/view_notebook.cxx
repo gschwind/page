@@ -35,6 +35,12 @@ view_notebook_t::view_notebook_t(tree_t * ref, client_managed_p client) :
 	_grab_button_unfocused_unsafe();
 }
 
+view_notebook_t::view_notebook_t(view_rebased_t * src) :
+	view_rebased_t{src}
+{
+	_grab_button_unfocused_unsafe();
+}
+
 view_notebook_t::~view_notebook_t()
 {
 

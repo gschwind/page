@@ -80,10 +80,12 @@ struct view_floating_t : public view_rebased_t {
 	bool _has_change;
 
 	view_floating_t(tree_t * ref, client_managed_p client);
+	view_floating_t(view_rebased_t * src);
 	virtual ~view_floating_t();
 
 	auto shared_from_this() -> view_floating_p;
 
+	void _init();
 	void _paint_exposed();
 	void _create_back_buffer();
 	void _destroy_back_buffer();

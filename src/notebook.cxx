@@ -60,39 +60,17 @@ notebook_t::~notebook_t() {
 bool notebook_t::add_client(client_managed_p c, xcb_timestamp_t time) {
 	assert(not _has_client(c));
 	assert(c != nullptr);
-
 	auto vn = make_shared<view_notebook_t>(this, c);
-	c->set_managed_type(MANAGED_NOTEBOOK);
-	_notebook_view_layer->push_back(vn);
-	if(_root->is_enable())
-		vn->acquire_client();
-
-	_clients_tab_order.push_front(vn);
-
-	connect(vn->_client->on_destroy, this, &notebook_t::_client_destroy);
-	connect(vn->_client->on_focus_change, this, &notebook_t::_client_focus_change);
-	connect(vn->_client->on_title_change, this, &notebook_t::_client_title_change);
-
-	update_client_position(vn);
-
-	_start_fading();
-
-	/* remove current selected */
-	if (_selected != nullptr) {
-		_selected->hide();
-	}
-
-	/* select the new one */
-	_selected = vn;
-	if(_is_visible) {
-		_selected->show();
-		_root->set_focus(_selected, time);
-	} else {
-		_selected->hide();
-	}
-
-	_update_all_layout();
+	_add_client_view(vn, time);
 	return true;
+}
+
+void notebook_t::add_client_from_view(view_rebased_p vr, xcb_timestamp_t time)
+{
+	assert(not _has_client(vr->_client));
+	assert(vr != nullptr);
+	auto vn = make_shared<view_notebook_t>(vr.get());
+	_add_client_view(vn, time);
 }
 
 void notebook_t::replace(shared_ptr<page_component_t> src, shared_ptr<page_component_t> by) {
@@ -152,6 +130,40 @@ void notebook_t::_set_selected(view_notebook_p c) {
 	if(_is_visible) {
 		_selected->show();
 	}
+}
+
+void notebook_t::_add_client_view(view_notebook_p vn, xcb_timestamp_t time)
+{
+	vn->_client->set_managed_type(MANAGED_NOTEBOOK);
+	_notebook_view_layer->push_back(vn);
+	if(_root->is_enable())
+		vn->acquire_client();
+
+	_clients_tab_order.push_front(vn);
+
+	connect(vn->_client->on_destroy, this, &notebook_t::_client_destroy);
+	connect(vn->_client->on_focus_change, this, &notebook_t::_client_focus_change);
+	connect(vn->_client->on_title_change, this, &notebook_t::_client_title_change);
+
+	update_client_position(vn);
+
+	_start_fading();
+
+	/* remove current selected */
+	if (_selected != nullptr) {
+		_selected->hide();
+	}
+
+	/* select the new one */
+	_selected = vn;
+	if(_is_visible) {
+		_selected->show();
+		_root->set_focus(_selected, time);
+	} else {
+		_selected->hide();
+	}
+
+	_update_all_layout();
 }
 
 void notebook_t::activate(view_notebook_p vn, xcb_timestamp_t time)

@@ -188,7 +188,7 @@ void workspace_t::remove_viewport(viewport_p v)
 
 	/* Transfer clients to a valid notebook */
 	for (auto x : v->gather_children_root_first<view_notebook_t>()) {
-		ensure_default_notebook()->add_client(x->_client, XCB_CURRENT_TIME);
+		ensure_default_notebook()->add_client_from_view(x, XCB_CURRENT_TIME);
 	}
 
 	for (auto x : v->gather_children_root_first<view_floating_t>()) {
@@ -465,7 +465,7 @@ void workspace_t::unfullscreen(view_fullscreen_p view, xcb_timestamp_t time) {
 			n = view->revert_notebook.lock();
 		}
 		view->_client->set_managed_type(MANAGED_NOTEBOOK);
-		n->add_client(view->_client, time);
+		n->add_client_from_view(view, time);
 	} else {
 		insert_as_floating(view->_client, time);
 	}

@@ -38,6 +38,15 @@ view_fullscreen_t::view_fullscreen_t(client_managed_p client, viewport_p viewpor
 	_client->set_managed_type(MANAGED_FULLSCREEN);
 }
 
+view_fullscreen_t::view_fullscreen_t(view_rebased_t * src, viewport_p viewport) :
+	view_rebased_t{src},
+	revert_type{MANAGED_FLOATING},
+	_viewport{viewport}
+{
+	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+	_client->set_managed_type(MANAGED_FULLSCREEN);
+}
+
 view_fullscreen_t::~view_fullscreen_t()
 {
 

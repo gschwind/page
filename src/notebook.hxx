@@ -171,6 +171,8 @@ class notebook_t : public page_component_t {
 
 	void _set_theme_tab_offset(int x);
 	void _set_selected(view_notebook_p c);
+	void _add_client_view(view_notebook_p vn, xcb_timestamp_t time);
+
 	void activate(view_notebook_p c, xcb_timestamp_t time);
 
 	auto shared_from_this() -> notebook_p;
@@ -224,6 +226,7 @@ public:
 	void update_client_position(view_notebook_p c);
 	void iconify_client(view_notebook_p x);
 	bool add_client(client_managed_p c, xcb_timestamp_t time);
+	void add_client_from_view(view_rebased_p c, xcb_timestamp_t time);
 
 	/* TODO : remove it */
 	friend struct grab_bind_view_notebook_t;

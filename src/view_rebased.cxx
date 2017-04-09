@@ -35,12 +35,28 @@ view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	_root->_ctx->_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 }
 
+view_rebased_t::view_rebased_t(view_rebased_t * src) :
+	view_t{src->_root, src->_client},
+	_base{src->_base},
+	_colormap{src->_colormap},
+	_deco_depth{src->_deco_depth},
+	_deco_visual{src->_deco_visual},
+	_base_position{src->_base_position},
+	_orig_position{src->_orig_position}
+{
+	assert(src != this);
+	src->_base = XCB_WINDOW_NONE;
+	src->_colormap = XCB_NONE;
+}
+
 view_rebased_t::~view_rebased_t()
 {
-	release_client();
-	xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base);
-	xcb_free_colormap(_root->_ctx->_dpy->xcb(), _colormap);
-	_root->_ctx->_page_windows.erase(_base);
+	if (_base != XCB_WINDOW_NONE) {
+		release_client();
+		xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base);
+		xcb_free_colormap(_root->_ctx->_dpy->xcb(), _colormap);
+		_root->_ctx->_page_windows.erase(_base);
+	}
 }
 
 auto view_rebased_t::shared_from_this() -> view_rebased_p
@@ -108,7 +124,8 @@ void view_rebased_t::_reconfigure_windows()
 
 	if (not _root->is_enable()) {
 		_client_view = nullptr;
-		_dpy->unmap(_base);
+		if (_client->current_owner_view() == static_cast<view_t*>(this))
+			_dpy->unmap(_base);
 		return;
 	}
 
@@ -287,7 +304,8 @@ void view_rebased_t::on_workspace_disable()
 	auto _ctx = _root->_ctx;
 	auto _dpy = _root->_ctx->dpy();
 	release_client();
-	_dpy->unmap(_base);
+	if (_client->current_owner_view() == static_cast<view_t*>(this))
+		_dpy->unmap(_base);
 }
 
 auto view_rebased_t::get_toplevel_xid() const -> xcb_window_t

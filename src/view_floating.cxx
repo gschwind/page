@@ -37,49 +37,22 @@ view_floating_t::view_floating_t(tree_t * ref, client_managed_p client) :
 		_is_exposed{true},
 		_has_change{true}
 {
-	//printf("create %s\n", __PRETTY_FUNCTION__);
+	_init();
+}
 
-	connect(_client->on_opaque_region_change, this, &view_floating_t::_on_opaque_region_change);
-	connect(_client->on_title_change, this, &view_floating_t::_on_client_title_change);
-	connect(_client->on_focus_change, this, &view_floating_t::_on_focus_change);
-
-	auto _ctx = _root->_ctx;
-
-	/** if x == 0 then place window at center of the screen **/
-	if (_client->_floating_wished_position.x == 0) {
-		_client->_floating_wished_position.x =
-				(_client->_client_proxy->geometry().width - _client->_floating_wished_position.w) / 2;
-	}
-
-	if(_client->_floating_wished_position.x - _ctx->theme()->floating.margin.left < 0) {
-		_client->_floating_wished_position.x = _ctx->theme()->floating.margin.left;
-	}
-
-	/**
-	 * if y == 0 then place window at center of the screen
-	 **/
-	if (_client->_floating_wished_position.y == 0) {
-		_client->_floating_wished_position.y = (_client->_client_proxy->geometry().height - _client->_floating_wished_position.h) / 2;
-	}
-
-	if(_client->_floating_wished_position.y - _ctx->theme()->floating.margin.top < 0) {
-		_client->_floating_wished_position.y = _ctx->theme()->floating.margin.top;
-	}
-
-
-	_update_floating_areas();
-	_create_deco_windows();
-	_create_inputs_windows();
-
-	auto _dpy = _root->_ctx->_dpy;
-	auto _xcb = _root->_ctx->_dpy->xcb();
-	_surf = cairo_xcb_surface_create(_dpy->xcb(), _deco,
-			_dpy->find_visual(_deco_visual),
-			_client->_floating_wished_position.w,
-			_client->_floating_wished_position.h);
-
-	_grab_button_unfocused_unsafe();
-
+view_floating_t::view_floating_t(view_rebased_t * src) :
+	view_rebased_t{src},
+	_deco{XCB_WINDOW_NONE},
+	_surf{nullptr},
+	_top_buffer{nullptr},
+	_bottom_buffer{nullptr},
+	_left_buffer{nullptr},
+	_right_buffer{nullptr},
+	_is_resized{true},
+	_is_exposed{true},
+	_has_change{true}
+{
+	_init();
 }
 
 view_floating_t::~view_floating_t()
@@ -124,6 +97,52 @@ view_floating_t::~view_floating_t()
 auto view_floating_t::shared_from_this() -> view_floating_p
 {
 	return static_pointer_cast<view_floating_t>(tree_t::shared_from_this());
+}
+
+void view_floating_t::_init()
+{
+	//printf("create %s\n", __PRETTY_FUNCTION__);
+
+	connect(_client->on_opaque_region_change, this, &view_floating_t::_on_opaque_region_change);
+	connect(_client->on_title_change, this, &view_floating_t::_on_client_title_change);
+	connect(_client->on_focus_change, this, &view_floating_t::_on_focus_change);
+
+	auto _ctx = _root->_ctx;
+
+	/** if x == 0 then place window at center of the screen **/
+	if (_client->_floating_wished_position.x == 0) {
+		_client->_floating_wished_position.x =
+				(_client->_client_proxy->geometry().width - _client->_floating_wished_position.w) / 2;
+	}
+
+	if(_client->_floating_wished_position.x - _ctx->theme()->floating.margin.left < 0) {
+		_client->_floating_wished_position.x = _ctx->theme()->floating.margin.left;
+	}
+
+	/**
+	 * if y == 0 then place window at center of the screen
+	 **/
+	if (_client->_floating_wished_position.y == 0) {
+		_client->_floating_wished_position.y = (_client->_client_proxy->geometry().height - _client->_floating_wished_position.h) / 2;
+	}
+
+	if(_client->_floating_wished_position.y - _ctx->theme()->floating.margin.top < 0) {
+		_client->_floating_wished_position.y = _ctx->theme()->floating.margin.top;
+	}
+
+
+	_update_floating_areas();
+	_create_deco_windows();
+	_create_inputs_windows();
+
+	auto _dpy = _root->_ctx->_dpy;
+	auto _xcb = _root->_ctx->_dpy->xcb();
+	_surf = cairo_xcb_surface_create(_dpy->xcb(), _deco,
+			_dpy->find_visual(_deco_visual),
+			_client->_floating_wished_position.w,
+			_client->_floating_wished_position.h);
+
+	_grab_button_unfocused_unsafe();
 }
 
 void view_floating_t::_paint_exposed() {
