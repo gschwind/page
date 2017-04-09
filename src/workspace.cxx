@@ -511,7 +511,7 @@ void workspace_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestam
 void workspace_t::switch_floating_to_notebook(view_floating_p vf, xcb_timestamp_t time)
 {
 	vf->remove_this_view();
-	insert_as_notebook(vf->_client, time);
+	ensure_default_notebook()->add_client_from_view(vf, time);
 }
 
 void workspace_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
