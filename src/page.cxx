@@ -638,7 +638,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (key == bind_bind_window) {
 		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			switch_view_to_notebook(mw, e->time);
+			get_current_workspace()->switch_view_to_notebook(mw, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
@@ -647,7 +647,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (key == bind_fullscreen_window) {
 		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			switch_view_to_fullscreen(mw, e->time);
+			get_current_workspace()->switch_view_to_fullscreen(mw, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
@@ -656,7 +656,7 @@ void page_t::process_key_press_event(xcb_generic_event_t const * _e) {
 	if (key == bind_float_window) {
 		view_p mw;
 		if (get_current_workspace()->client_focus_history_front(mw)) {
-			switch_view_to_floating(mw, e->time);
+			get_current_workspace()->switch_view_to_floating(mw, e->time);
 		}
 		xcb_allow_events(_dpy->xcb(), XCB_ALLOW_ASYNC_KEYBOARD, e->time);
 		return;
@@ -1349,36 +1349,6 @@ void page_t::insert_as_notebook(client_managed_p c, xcb_timestamp_t time)
 	_need_restack = true;
 }
 
-void page_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	v->workspace()->switch_view_to_fullscreen(v, time);
-}
-
-void page_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	vn->workspace()->switch_notebook_to_fullscreen(vn, time);
-}
-
-void page_t::switch_floating_to_fullscreen(view_floating_p vx, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	vx->workspace()->switch_floating_to_fullscreen(vx, time);
-}
-
-void page_t::switch_floating_to_notebook(view_floating_p vf, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	vf->workspace()->switch_floating_to_notebook(vf, time);
-}
-
-void page_t::switch_view_to_floating(view_p v, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	v->workspace()->switch_view_to_floating(v, time);
-}
-
 void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
 {
 	auto vn = dynamic_pointer_cast<view_notebook_t>(v);
@@ -1408,40 +1378,14 @@ void page_t::move_floating_to_notebook(view_floating_p vf, notebook_p n, xcb_tim
 	n->add_client_from_view(vf, time);
 }
 
-void page_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	view->workspace()->switch_fullscreen_to_floating(view, time);
-	_need_restack = true;
-}
-
-void page_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	view->workspace()->switch_fullscreen_to_notebook(view, time);
-	_need_restack = true;
-}
-
-void page_t::switch_fullscreen_to_prefered_view_mode(view_p c, xcb_timestamp_t time)
-{
-	printf("call %s\n", __PRETTY_FUNCTION__);
-	c->workspace()->switch_fullscreen_to_prefered_view_mode(c, time);
-}
-
-void page_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view, xcb_timestamp_t time) {
-	view->workspace()->switch_fullscreen_to_prefered_view_mode(view, time);
-	_need_restack = true;
-}
-
 void page_t::toggle_fullscreen(view_p c, xcb_timestamp_t time) {
 	auto vf = dynamic_pointer_cast<view_fullscreen_t>(c);
 	if(vf) {
-		switch_fullscreen_to_prefered_view_mode(vf, time);
+		vf->workspace()->switch_fullscreen_to_prefered_view_mode(vf, time);
 	} else {
-		switch_view_to_fullscreen(c, time);
+		c->workspace()->switch_view_to_fullscreen(c, time);
 	}
 }
-
 
 void page_t::process_event(xcb_generic_event_t const * e) {
 	auto x = _event_handlers.find(e->response_type);
@@ -1763,14 +1707,16 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 
 	for(auto workspace: _workspace_list) {
 		auto view = workspace->lookup_view_for(mw);
+		if(view == nullptr)
+			continue;
 
 		if (state_properties == A(_NET_WM_STATE_FULLSCREEN)) {
 			switch (type) {
 			case _NET_WM_STATE_REMOVE:
-				switch_fullscreen_to_prefered_view_mode(view, time);
+				view->workspace()->switch_fullscreen_to_prefered_view_mode(view, time);
 				break;
 			case _NET_WM_STATE_ADD:
-				switch_view_to_fullscreen(view, time);
+				view->workspace()->switch_view_to_fullscreen(view, time);
 				break;
 			case _NET_WM_STATE_TOGGLE:
 				toggle_fullscreen(view, time);
@@ -1829,17 +1775,6 @@ void page_t::move_fullscreen_to_viewport(view_fullscreen_p fv, viewport_p v) {
 	fv->show();
 	v->hide();
 
-}
-
-void page_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time) {
-	v->workspace()->switch_view_to_notebook(v, time);
-	_need_update_client_list = true;
-	_need_restack = true;
-}
-
-void page_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_t time) {
-	vn->workspace()->switch_notebook_to_floating(vn, time);
-	_need_restack = true;
 }
 
 void page_t::cleanup_grab() {
@@ -2042,7 +1977,7 @@ void page_t::remove_viewport(shared_ptr<workspace_t> d, shared_ptr<viewport_t> v
 	/* remove fullscreened clients if needed */
 	for (auto &x : v->_root->gather_children_root_first<view_fullscreen_t>()) {
 		if (x->_viewport.lock() == v) {
-			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
+			x->workspace()->switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 			break;
 		}
 	}

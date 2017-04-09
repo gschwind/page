@@ -181,7 +181,7 @@ void workspace_t::remove_viewport(viewport_p v)
 	/* remove fullscreened clients if needed */
 	for (auto &x : gather_children_root_first<view_fullscreen_t>()) {
 		if (x->_viewport.lock() == v) {
-			_ctx->switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
+			switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 			break;
 		}
 	}
@@ -530,6 +530,7 @@ void workspace_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_
 	auto workspace = vn->workspace();
 	vn->remove_this_view();
 	insert_as_floating(client, time);
+	_ctx->_need_restack = true;
 }
 
 void workspace_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
@@ -575,6 +576,7 @@ void workspace_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_time
 
 	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 	insert_as_floating(view->_client, time);
+	_ctx->_need_restack = true;
 }
 
 void workspace_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp_t time)
@@ -593,6 +595,7 @@ void workspace_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_time
 	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 	view->_client->set_managed_type(MANAGED_NOTEBOOK);
 	n->add_client_from_view(view, time);
+	_ctx->_need_restack = true;
 }
 
 /* switch a fullscreened and managed window into floating or notebook window */
@@ -619,6 +622,8 @@ void workspace_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view
 		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
 		insert_as_floating(view->_client, time);
 	}
+
+	_ctx->_need_restack = true;
 }
 
 

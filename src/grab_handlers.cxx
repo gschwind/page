@@ -424,7 +424,7 @@ void grab_bind_view_floating_t::button_release(xcb_button_release_event_t const 
 		}
 
 		if(start_position.is_inside(e->root_x, e->root_y)) {
-			_ctx->switch_floating_to_notebook(c, e->time);
+			c->workspace()->switch_floating_to_notebook(c, e->time);
 			_ctx->grab_stop(e->time);
 			return;
 		}

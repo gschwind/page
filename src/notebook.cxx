@@ -869,7 +869,7 @@ auto notebook_t::button_press(xcb_button_press_event_t const * e) -> button_acti
 			return BUTTON_ACTION_GRAB_ASYNC;
 		} else if (_area.undck_client.is_inside(x, y)) {
 			if (_selected != nullptr)
-				_ctx->switch_notebook_to_floating(_selected, e->time);
+				_root->switch_notebook_to_floating(_selected, e->time);
 			return BUTTON_ACTION_GRAB_ASYNC;
 		} else if (_area.left_scroll_arrow.is_inside(x, y)) {
 			_scroll_left(30);
