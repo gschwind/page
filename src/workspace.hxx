@@ -154,6 +154,7 @@ public:
 
 	auto _find_viewport_of(tree_p t) -> viewport_p;
 	void _insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t time);
+	void _insert_view_floating(view_floating_p view, xcb_timestamp_t time);
 
 	/**
 	 * tree_t virtual API

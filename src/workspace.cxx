@@ -351,34 +351,8 @@ void workspace_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time)
 
 void workspace_t::insert_as_floating(client_managed_p c, xcb_timestamp_t time)
 {
-	//printf("call %s\n", __PRETTY_FUNCTION__);
-	c->set_managed_type(MANAGED_FLOATING);
-
-	auto wid = c->ensure_workspace();
-	if(wid != ALL_DESKTOP) {
-		c->set_net_wm_desktop(_id);
-	}
-
 	auto fv = make_shared<view_floating_t>(this, c);
-	if(is_enable())
-		fv->acquire_client();
-
-	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
-	if(transient_for != nullptr) {
-		auto v = lookup_view_for(c);
-		if(v) {
-			v->add_transient(fv);
-		} else {
-			add_floating(fv);
-		}
-	} else {
-		add_floating(fv);
-	}
-
-	fv->raise();
-	fv->show();
-	set_focus(fv, time);
-	_ctx->_need_restack = true;
+	_insert_view_floating(fv, time);
 }
 
 void workspace_t::insert_as_fullscreen(client_managed_p mw, xcb_timestamp_t time)
@@ -440,7 +414,7 @@ void workspace_t::insert_as_fullscreen(shared_ptr<client_managed_t> mw, shared_p
 
 	// unfullscreen client that already use this screen
 	for (auto & x : gather_children_root_first<view_fullscreen_t>()) {
-		unfullscreen(x, XCB_CURRENT_TIME);
+		switch_fullscreen_to_prefered_view_mode(x, XCB_CURRENT_TIME);
 	}
 
 	add_fullscreen(fv);
@@ -449,30 +423,6 @@ void workspace_t::insert_as_fullscreen(shared_ptr<client_managed_t> mw, shared_p
 	/* hide the viewport because he is covered by the fullscreen client */
 	v->hide();
 	_ctx->_need_restack = true;
-}
-
-void workspace_t::unfullscreen(view_fullscreen_p view, xcb_timestamp_t time) {
-	/* WARNING: Call order is important, change it with caution */
-	view->remove_this_view();
-
-	if(not view->_viewport.expired()) {
-		view->_viewport.lock()->show();
-	}
-
-	if (view->revert_type == MANAGED_NOTEBOOK) {
-		auto n = ensure_default_notebook();
-		if(not view->revert_notebook.expired()) {
-			n = view->revert_notebook.lock();
-		}
-		view->_client->set_managed_type(MANAGED_NOTEBOOK);
-		n->add_client_from_view(view, time);
-	} else {
-		insert_as_floating(view->_client, time);
-	}
-
-	_ctx->update_workarea();
-	_ctx->_need_restack = true;
-
 }
 
 void workspace_t::switch_view_to_fullscreen(view_p v, xcb_timestamp_t time)
@@ -526,11 +476,9 @@ void workspace_t::switch_view_to_notebook(view_p v, xcb_timestamp_t time)
 void workspace_t::switch_notebook_to_floating(view_notebook_p vn, xcb_timestamp_t time)
 {
 	printf("call %s\n", __PRETTY_FUNCTION__);
-	auto client = vn->_client;
-	auto workspace = vn->workspace();
 	vn->remove_this_view();
-	insert_as_floating(client, time);
-	_ctx->_need_restack = true;
+	auto vf = make_shared<view_floating_t>(vn.get());
+	_insert_view_floating(vf, time);
 }
 
 void workspace_t::switch_notebook_to_fullscreen(view_notebook_p vn, xcb_timestamp_t time)
@@ -575,8 +523,8 @@ void workspace_t::switch_fullscreen_to_floating(view_fullscreen_p view, xcb_time
 	}
 
 	view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
-	insert_as_floating(view->_client, time);
-	_ctx->_need_restack = true;
+	auto fv = make_shared<view_floating_t>(view.get());
+	_insert_view_floating(fv, time);
 }
 
 void workspace_t::switch_fullscreen_to_notebook(view_fullscreen_p view, xcb_timestamp_t time)
@@ -620,7 +568,8 @@ void workspace_t::switch_fullscreen_to_prefered_view_mode(view_fullscreen_p view
 		n->add_client_from_view(view, time);
 	} else {
 		view->_client->net_wm_state_remove(_NET_WM_STATE_FULLSCREEN);
-		insert_as_floating(view->_client, time);
+		auto vf = make_shared<view_floating_t>(view.get());
+		_insert_view_floating(vf, time);
 	}
 
 	_ctx->_need_restack = true;
@@ -829,6 +778,37 @@ void workspace_t::_insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t 
 	viewport->hide();
 
 	workspace->set_focus(vf, time);
+}
+
+void workspace_t::_insert_view_floating(view_floating_p fv, xcb_timestamp_t time)
+{
+	auto c = fv->_client;
+	c->set_managed_type(MANAGED_FLOATING);
+
+	auto wid = c->ensure_workspace();
+	if(wid != ALL_DESKTOP) {
+		c->set_net_wm_desktop(_id);
+	}
+
+	if(is_enable())
+		fv->acquire_client();
+
+	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
+	if(transient_for != nullptr) {
+		auto v = lookup_view_for(c);
+		if(v) {
+			v->add_transient(fv);
+		} else {
+			add_floating(fv);
+		}
+	} else {
+		add_floating(fv);
+	}
+
+	fv->raise();
+	fv->show();
+	set_focus(fv, time);
+	_ctx->_need_restack = true;
 }
 
 }
