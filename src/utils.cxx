@@ -85,5 +85,15 @@ char * xcb_sync_system_counter_dup_name(
 	return ret;
 }
 
+bool exists(char const * name)
+{
+	struct stat buf;
+	int status = stat(name, &buf);
+	if(status != 0)
+		return false;
+	return true;
+}
+
+
 }
 

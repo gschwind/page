@@ -247,6 +247,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (hsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/hsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (hsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -255,6 +257,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (vsplit_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/vsplit_button.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (vsplit_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -263,6 +267,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (close_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-4.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -271,6 +277,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (close_button1_s == nullptr) {
 		std::string filename = conf_img_dir + "/window-close-2.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		close_button1_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (close_button1_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -279,6 +287,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pop_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pop.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -287,6 +297,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (pops_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/pops.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (pop_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -295,6 +307,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (unbind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/media-eject.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		unbind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (unbind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -303,6 +317,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (bind_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/view-restore.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		bind_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (bind_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -311,6 +327,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (left_scroll_arrow_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/go-previous.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		left_scroll_arrow_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (left_scroll_arrow_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -319,6 +337,8 @@ simple2_theme_t::simple2_theme_t(display_t * cnx, config_handler_t & conf) {
 	if (right_scroll_arrow_button_s == nullptr) {
 		std::string filename = conf_img_dir + "/go-next.png";
 		printf("Load: %s\n", filename.c_str());
+		if(not exists(filename.c_str()))
+			throw std::runtime_error("file not found!");
 		right_scroll_arrow_button_s = cairo_image_surface_create_from_png(filename.c_str());
 		if (right_scroll_arrow_button_s == nullptr)
 			throw std::runtime_error("file not found!");
@@ -1551,6 +1571,8 @@ void simple2_theme_t::update() {
 void simple2_theme_t::create_background_img() {
 
 	if (has_background) {
+		if(not exists(background_file.c_str()))
+			throw std::runtime_error("background file not found!");
 
 		cairo_surface_t * tmp = cairo_image_surface_create_from_png(
 				background_file.c_str());

@@ -38,6 +38,8 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	cairo_surface_destroy(pop_button_s);
 	string filename = conf_img_dir + "/tiny_pop.png";
 	printf("Load: %s\n", filename.c_str());
+	if(not exists(filename.c_str()))
+		throw std::runtime_error("file not found!");
 	pop_button_s = cairo_image_surface_create_from_png(filename.c_str());
 	if (pop_button_s == nullptr)
 		throw std::runtime_error("file not found!");
@@ -47,6 +49,8 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	cairo_surface_destroy(pops_button_s);
 	string filename = conf_img_dir + "/tiny_pops.png";
 	printf("Load: %s\n", filename.c_str());
+	if(not exists(filename.c_str()))
+		throw std::runtime_error("file not found!");
 	pops_button_s = cairo_image_surface_create_from_png(filename.c_str());
 	if (pops_button_s == nullptr)
 		throw std::runtime_error("file not found!");
@@ -56,6 +60,8 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	cairo_surface_destroy(vsplit_button_s);
 	string filename = conf_img_dir + "/tiny_vsplit_button.png";
 	printf("Load: %s\n", filename.c_str());
+	if(not exists(filename.c_str()))
+		throw std::runtime_error("file not found!");
 	vsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 	if (vsplit_button_s == nullptr)
 		throw std::runtime_error("file not found!");
@@ -65,6 +71,8 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	cairo_surface_destroy(hsplit_button_s);
 	string filename = conf_img_dir + "/tiny_hsplit_button.png";
 	printf("Load: %s\n", filename.c_str());
+	if(not exists(filename.c_str()))
+		throw std::runtime_error("file not found!");
 	hsplit_button_s = cairo_image_surface_create_from_png(filename.c_str());
 	if (hsplit_button_s == nullptr)
 		throw std::runtime_error("file not found!");
@@ -74,6 +82,8 @@ tiny_theme_t::tiny_theme_t(display_t * cnx, config_handler_t & conf) :
 	cairo_surface_destroy(close_button_s);
 	string filename = conf_img_dir + "/window-close-3.png";
 	printf("Load: %s\n", filename.c_str());
+	if(not exists(filename.c_str()))
+		throw std::runtime_error("file not found!");
 	close_button_s = cairo_image_surface_create_from_png(filename.c_str());
 	if (close_button_s == nullptr)
 		throw std::runtime_error("file not found!");

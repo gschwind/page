@@ -10,6 +10,10 @@
 #ifndef UTILS_HXX_
 #define UTILS_HXX_
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <X11/keysym.h>
 #include <xcb/sync.h>
 #include <xcb/xcb_util.h>
@@ -887,6 +891,8 @@ inline xcb_sync_int64_t make_xcb_sync_int64(uint64_t value) {
 		static_cast<uint32_t>(0xFFFFFFFF&value)
 	};
 }
+
+bool exists(char const * name);
 
 }
 
