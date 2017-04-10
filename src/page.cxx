@@ -255,6 +255,16 @@ void page_t::run() {
 
 	}
 
+	/** Initialize theme **/
+
+	if(_theme_engine == "tiny") {
+		cout << "using tiny theme engine" << endl;
+		_theme = new tiny_theme_t{_dpy, _conf};
+	} else {
+		/* The default theme engine */
+		cout << "using simple theme engine" << endl;
+		_theme = new simple2_theme_t{_dpy, _conf};
+	}
 
 	/* Before doing anything, trying to register wm and cm */
 	create_identity_window();
@@ -280,17 +290,6 @@ void page_t::run() {
 			n = *nd;
 		update_number_of_workspace(n);
 		number_of_workspace.release(_dpy->xcb());
-	}
-
-	/** Initialize theme **/
-
-	if(_theme_engine == "tiny") {
-		cout << "using tiny theme engine" << endl;
-		_theme = new tiny_theme_t{_dpy, _conf};
-	} else {
-		/* The default theme engine */
-		cout << "using simple theme engine" << endl;
-		_theme = new simple2_theme_t{_dpy, _conf};
 	}
 
 	/* start listen root event before anything, each event will be stored to be processed later */
