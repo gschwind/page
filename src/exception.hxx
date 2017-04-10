@@ -27,13 +27,20 @@ namespace page {
 
 class exception_t : public std::exception {
 	char * str;
-public:
-	exception_t(char const * fmt, ...) : str(nullptr) {
+
+	void _init(char const * fmt, ...) {
 		va_list l;
 		va_start(l, fmt);
 		if(vasprintf(&str, fmt, l) < 0)
 			str = nullptr;
 		va_end(l);
+	}
+
+
+public:
+	template<typename ... Args>
+	exception_t(char const * fmt, Args... args) : str(nullptr) {
+		_init(fmt, args...);
 	}
 
 	~exception_t() noexcept { free(str); }
@@ -42,6 +49,15 @@ public:
 		return str?str:"nested memory error: could not allocate error message";
 	}
 
+};
+
+struct wrong_config_file_t : public exception_t {
+	template<typename ... Args>
+	wrong_config_file_t(char const * fmt, Args... args)
+		: exception_t(fmt, args...)
+	{
+
+	}
 };
 
 }

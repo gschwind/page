@@ -21,8 +21,10 @@ int main(int argc, char * * argv) {
 		auto m = make_shared<page::page_t>(argc, argv);
 		m->run();
 		m = nullptr;
+	} catch (page::wrong_config_file_t & e) {
+		fprintf(stderr, "Error: the page config file may be wrong ($HOME/.page.conf)\n");
+		fprintf(stderr, "Error: %s\n", e.what());
 	} catch (page::exception & e) {
-		fprintf(stdout, "%s\n", e.what());
 		fprintf(stderr, "%s\n", e.what());
 	}
 	return 0;
