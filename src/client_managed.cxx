@@ -114,13 +114,12 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	auto wm_hints = _client_proxy->get<p_wm_hints>();
 	auto wm_protocols = _client_proxy->get<p_wm_protocols>();
 
 	/* assume true by default */
 	bool has_input_focus = true;
-	if (wm_hints != nullptr) {
-		if (wm_hints->input == False) {
+	if (_wm_hints != nullptr) {
+		if (_wm_hints->input == False) {
 			has_input_focus = false;
 		}
 	}
@@ -407,6 +406,9 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 	} else if (e->atom == A(_NET_WM_STRUT)) {
 		_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 		on_strut_change.signal(this);
+	} else if (e->atom == A(WM_HINTS)) {
+		_wm_hints = _client_proxy->get<p_wm_hints>();
+		/* TODO: has_input_focus */
 	}
 }
 
@@ -458,6 +460,7 @@ void client_managed_t::_apply_floating_hints_constraint() {
 void client_managed_t::read_all_properties() {
 	_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 	_net_wm_strut_partial = _client_proxy->get<p_net_wm_strut_partial>();
+	_wm_hints = _client_proxy->get<p_wm_hints>();
 	_net_wm_state = _client_proxy->get<p_net_wm_state>();
 	if(_net_wm_state == nullptr) {
 		_net_wm_state = make_shared<list<xcb_atom_t>>();

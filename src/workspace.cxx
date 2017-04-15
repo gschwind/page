@@ -378,9 +378,9 @@ void workspace_t::insert_as_notebook(client_managed_p mw, xcb_timestamp_t time)
 			activate = false;
 		}
 	} else {
-		if (mw->get<p_wm_hints>() != nullptr) {
-			if ((mw->get<p_wm_hints>()->flags & StateHint)
-					and (mw->get<p_wm_hints>()->initial_state == IconicState)) {
+		if (mw->_wm_hints != nullptr) {
+			if ((mw->_wm_hints->flags & StateHint)
+					and (mw->_wm_hints->initial_state == IconicState)) {
 				activate = false;
 			}
 		}
