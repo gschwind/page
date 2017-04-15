@@ -75,6 +75,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 
 	bool _has_focus;
 	bool _demands_attention;
+	bool _has_input_focus;
 
 	shared_ptr<vector<int>> _net_wm_strut;
 	shared_ptr<vector<int>> _net_wm_strut_partial;
