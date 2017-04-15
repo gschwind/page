@@ -114,8 +114,6 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	auto wm_protocols = _client_proxy->get<p_wm_protocols>();
-
 	/* assume true by default */
 	bool has_input_focus = true;
 	if (_wm_hints != nullptr) {
@@ -126,8 +124,8 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 
 	/* assume false as default */
 	bool has_take_focus = false;
-	if (wm_protocols != nullptr) {
-		if (has_key(*(wm_protocols), A(WM_TAKE_FOCUS))) {
+	if (_wm_protocols != nullptr) {
+		if (has_key(*(_wm_protocols), A(WM_TAKE_FOCUS))) {
 			has_take_focus = true;
 		}
 	}
@@ -409,6 +407,9 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 	} else if (e->atom == A(WM_HINTS)) {
 		_wm_hints = _client_proxy->get<p_wm_hints>();
 		/* TODO: has_input_focus */
+	} else if (e->atom == A(WM_PROTOCOLS)) {
+		_wm_protocols = _client_proxy->get<p_wm_protocols>();
+		/* TODO: has_take_focus */
 	}
 }
 
@@ -461,6 +462,7 @@ void client_managed_t::read_all_properties() {
 	_net_wm_strut = _client_proxy->get<p_net_wm_strut>();
 	_net_wm_strut_partial = _client_proxy->get<p_net_wm_strut_partial>();
 	_wm_hints = _client_proxy->get<p_wm_hints>();
+	_wm_protocols = _client_proxy->get<p_wm_protocols>();
 	_net_wm_state = _client_proxy->get<p_net_wm_state>();
 	if(_net_wm_state == nullptr) {
 		_net_wm_state = make_shared<list<xcb_atom_t>>();

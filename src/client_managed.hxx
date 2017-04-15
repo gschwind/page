@@ -79,6 +79,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 	shared_ptr<vector<int>> _net_wm_strut;
 	shared_ptr<vector<int>> _net_wm_strut_partial;
 	shared_ptr<XWMHints> _wm_hints;
+	shared_ptr<list<xcb_atom_t>> _wm_protocols;
 
 	shared_ptr<list<xcb_atom_t>> _net_wm_state;
 
