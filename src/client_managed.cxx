@@ -114,19 +114,11 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	/* assume false as default */
-	bool has_take_focus = false;
-	if (_wm_protocols != nullptr) {
-		if (has_key(*(_wm_protocols), A(WM_TAKE_FOCUS))) {
-			has_take_focus = true;
-		}
-	}
-
 	if (_has_input_focus) {
 		_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
 	}
 
-	if (has_take_focus) {
+	if (_has_take_focus) {
 		xcb_client_message_event_t ev;
 		ev.response_type = XCB_CLIENT_MESSAGE;
 		ev.format = 32;
@@ -407,7 +399,13 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 		}
 	} else if (e->atom == A(WM_PROTOCOLS)) {
 		_wm_protocols = _client_proxy->get<p_wm_protocols>();
-		/* TODO: has_take_focus */
+		/* assume false as default */
+		_has_take_focus = false;
+		if (_wm_protocols != nullptr) {
+			if (has_key(*(_wm_protocols), A(WM_TAKE_FOCUS))) {
+				_has_take_focus = true;
+			}
+		}
 	}
 }
 
@@ -470,6 +468,15 @@ void client_managed_t::read_all_properties() {
 	}
 
 	_wm_protocols = _client_proxy->get<p_wm_protocols>();
+
+	/* assume false as default */
+	_has_take_focus = false;
+	if (_wm_protocols != nullptr) {
+		if (has_key(*(_wm_protocols), A(WM_TAKE_FOCUS))) {
+			_has_take_focus = true;
+		}
+	}
+
 	_net_wm_state = _client_proxy->get<p_net_wm_state>();
 	if(_net_wm_state == nullptr) {
 		_net_wm_state = make_shared<list<xcb_atom_t>>();
