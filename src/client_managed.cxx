@@ -114,31 +114,39 @@ void client_managed_t::icccm_focus_unsafe(xcb_timestamp_t t) {
 		net_wm_state_remove(_NET_WM_STATE_DEMANDS_ATTENTION);
 	}
 
-	if (_client_proxy->get<p_wm_protocols>() != nullptr) {
-		if (has_key(*(_client_proxy->get<p_wm_protocols>()), A(WM_TAKE_FOCUS))) {
+	auto wm_hints = _client_proxy->get<p_wm_hints>();
+	auto wm_protocols = _client_proxy->get<p_wm_protocols>();
 
-			xcb_client_message_event_t ev;
-			ev.response_type = XCB_CLIENT_MESSAGE;
-			ev.format = 32;
-			ev.type = A(WM_PROTOCOLS);
-			ev.window = _client_proxy->id();
-			ev.data.data32[0] = A(WM_TAKE_FOCUS);
-			ev.data.data32[1] = t;
-
-			_client_proxy->send_event(0, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
-
-			return;
-
+	/* assume true by default */
+	bool has_input_focus = true;
+	if (wm_hints != nullptr) {
+		if (wm_hints->input == False) {
+			has_input_focus = false;
 		}
 	}
 
-	if (_client_proxy->get<p_wm_hints>() != nullptr) {
-		if (_client_proxy->get<p_wm_hints>()->input != False) {
-			_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+	/* assume false as default */
+	bool has_take_focus = false;
+	if (wm_protocols != nullptr) {
+		if (has_key(*(wm_protocols), A(WM_TAKE_FOCUS))) {
+			has_take_focus = true;
 		}
-	} else {
-		/** no WM_HINTS, guess hints.input == True **/
+	}
+
+	if (has_input_focus) {
 		_client_proxy->set_input_focus(XCB_INPUT_FOCUS_NONE, t);
+	}
+
+	if (has_take_focus) {
+		xcb_client_message_event_t ev;
+		ev.response_type = XCB_CLIENT_MESSAGE;
+		ev.format = 32;
+		ev.type = A(WM_PROTOCOLS);
+		ev.window = _client_proxy->id();
+		ev.data.data32[0] = A(WM_TAKE_FOCUS);
+		ev.data.data32[1] = t;
+
+		_client_proxy->send_event(0, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<char*>(&ev));
 	}
 
 }
