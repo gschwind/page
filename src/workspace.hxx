@@ -10,8 +10,6 @@
 #ifndef DESKTOP_HXX_
 #define DESKTOP_HXX_
 
-#include <X11/extensions/Xrandr.h>
-
 #include <map>
 #include <vector>
 
