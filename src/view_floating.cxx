@@ -619,6 +619,10 @@ void view_floating_t::_on_opaque_region_change(client_managed_t * c)
 void view_floating_t::_on_focus_change(client_managed_t * c)
 {
 	_has_change = true;
+	region r = _base_position;
+	r -= _client->_absolute_position;
+	_damage_cache += r;
+	_root->_ctx->schedule_repaint();
 }
 
 void view_floating_t::remove_this_view()
