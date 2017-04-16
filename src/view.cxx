@@ -48,7 +48,7 @@ view_t::view_t(tree_t * ref, client_managed_p client) :
 	push_back(_transiant);
 
 	_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-	_grab_button_unfocused_unsafe();
+	//_grab_button_unfocused_unsafe();
 
 }
 
@@ -219,11 +219,12 @@ auto view_t::create_surface() -> client_view_p
 
 void view_t::_on_focus_change(client_managed_t * c)
 {
-	if(_is_visible) {
-		if(_client->_has_focus)
-			_grab_button_focused_unsafe();
-		else
-			_grab_button_unfocused_unsafe();
+	if (_is_visible) {
+		if (_client->_has_focus) {
+			//_grab_button_focused_unsafe();
+		} else {
+			//_grab_button_unfocused_unsafe();
+		}
 	}
 }
 

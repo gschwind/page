@@ -36,7 +36,6 @@ view_popup_t::view_popup_t(tree_t * ref, client_managed_p client) :
 	_client->_absolute_position = _client->_client_proxy->position();
 	if(_client_view == nullptr)
 		_client_view = create_surface();
-	_ungrab_all_button_unsafe();
 }
 
 view_popup_t::~view_popup_t()

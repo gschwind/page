@@ -142,7 +142,7 @@ void view_floating_t::_init()
 			_client->_floating_wished_position.w,
 			_client->_floating_wished_position.h);
 
-	_grab_button_unfocused_unsafe();
+	_grab_button_unsafe();
 }
 
 void view_floating_t::_paint_exposed() {
@@ -548,73 +548,26 @@ void view_floating_t::_unmap_windows_unsafe()
 }
 
 /**
- * set usual passive button grab for a focused client.
- *
- * unsafe: need to lock the _orig window to use it.
- **/
-void view_floating_t::_grab_button_focused_unsafe() {
-	auto _dpy = _root->_ctx->_dpy;
-
-	/** First ungrab all **/
-	_ungrab_all_button_unsafe();
-	/** for decoration, grab all **/
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
-
-	/** grab alt-button1 move **/
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
-
-	/** grab alt-button3 resize **/
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
-
-}
-
-/**
  * set usual passive button grab for a not focused client.
  *
  * unsafe: need to lock the _orig window to use it.
  **/
-void view_floating_t::_grab_button_unfocused_unsafe() {
+void view_floating_t::_grab_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
 
-	/** First ungrab all **/
-	_ungrab_all_button_unsafe();
-
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+	view_rebased_t::_grab_button_unsafe();
 
 	/** for decoration, grab all **/
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _deco, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _deco, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-
-	xcb_grab_button(_dpy->xcb(), false, _deco, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _deco, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+
 }
 
 /**
@@ -666,11 +619,6 @@ void view_floating_t::_on_opaque_region_change(client_managed_t * c)
 void view_floating_t::_on_focus_change(client_managed_t * c)
 {
 	_has_change = true;
-	if(_client->_has_focus) {
-		_grab_button_focused_unsafe();
-	} else {
-		_grab_button_unfocused_unsafe();
-	}
 }
 
 void view_floating_t::remove_this_view()

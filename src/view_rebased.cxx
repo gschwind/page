@@ -30,9 +30,10 @@ view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	_base{XCB_WINDOW_NONE},
 	_colormap{XCB_NONE}
 {
-	connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
+	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
 	_create_base_windows();
 	_root->_ctx->_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	_grab_button_unsafe();
 }
 
 view_rebased_t::view_rebased_t(view_rebased_t * src) :
@@ -164,52 +165,63 @@ void view_rebased_t::_update_visible_region() {
 	_visible_region_cache = region{_base_position};
 }
 
-void view_rebased_t::_grab_button_focused_unsafe() {
-	auto _dpy = _root->_ctx->_dpy;
-
-	/** First ungrab all **/
-	_ungrab_all_button_unsafe();
-
-//	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+//void view_rebased_t::_grab_button_focused_unsafe() {
+//	auto _dpy = _root->_ctx->_dpy;
+//
+//	/** First ungrab all **/
+//	_ungrab_all_button_unsafe();
+//
+//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 //			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 //			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 //
-//	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 //			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 //			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 //
-//	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 //			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 //			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+//
 //	/** grab alt-button1 move **/
-//	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 //			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 //			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
 //
 //	/** grab alt-button3 resize **/
-//	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 //			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 //			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
+//
+//}
 
-}
-
-void view_rebased_t::_grab_button_unfocused_unsafe() {
+void view_rebased_t::_grab_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
 
 	/** First ungrab all **/
 	_ungrab_all_button_unsafe();
 
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-	xcb_grab_button(_dpy->xcb(), false, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
+
+	/** grab alt-button1 move **/
+	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
+
+	/** grab alt-button3 resize **/
+	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
 
 }
 
@@ -217,15 +229,6 @@ void view_rebased_t::_ungrab_all_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
 	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
 	_client->_client_proxy->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
-}
-
-void view_rebased_t::_on_focus_change(client_managed_t * c)
-{
-	if(_client->_has_focus) {
-		_grab_button_focused_unsafe();
-	} else {
-		_grab_button_unfocused_unsafe();
-	}
 }
 
 auto view_rebased_t::create_surface() -> client_view_p
@@ -296,7 +299,7 @@ void view_rebased_t::on_workspace_enable()
 	acquire_client();
 	_dpy->map(_base);
 	reconfigure();
-	_grab_button_unfocused_unsafe();
+	_grab_button_unsafe();
 }
 
 void view_rebased_t::on_workspace_disable()

@@ -100,8 +100,7 @@ struct view_floating_t : public view_rebased_t {
 	void _create_deco_windows();
 	void _map_windows_unsafe();
 	void _unmap_windows_unsafe();
-	void _grab_button_focused_unsafe();
-	void _grab_button_unfocused_unsafe();
+	void _grab_button_unsafe();
 	void _ungrab_all_button_unsafe();
 	void _select_inputs_unsafe();
 	void _unselect_inputs_unsafe();

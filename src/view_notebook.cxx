@@ -31,14 +31,13 @@ namespace page {
 view_notebook_t::view_notebook_t(tree_t * ref, client_managed_p client) :
 	view_rebased_t{ref, client}
 {
-	//printf("create %s\n", __PRETTY_FUNCTION__);
-	_grab_button_unfocused_unsafe();
+
 }
 
 view_notebook_t::view_notebook_t(view_rebased_t * src) :
 	view_rebased_t{src}
 {
-	_grab_button_unfocused_unsafe();
+
 }
 
 view_notebook_t::~view_notebook_t()
