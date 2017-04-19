@@ -119,7 +119,7 @@ void view_notebook_t::reconfigure()
 
 auto view_notebook_t::button_press(xcb_button_press_event_t const * e) -> button_action_e {
 
-	if (e->event != _base and e->event != _client->_client_proxy->id()) {
+	if (e->event != _base->id() and e->event != _client->_client_proxy->id()) {
 		return BUTTON_ACTION_CONTINUE;
 	}
 

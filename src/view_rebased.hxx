@@ -35,7 +35,7 @@ struct view_rebased_t : public view_t {
 	xcb_visualid_t _deco_visual;
 	uint8_t _deco_depth;
 
-	xcb_window_t _base;
+	client_proxy_p _base;
 	xcb_colormap_t _colormap;
 
 	rect _base_position;

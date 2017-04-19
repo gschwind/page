@@ -502,7 +502,7 @@ void view_floating_t::_create_deco_windows()
 	value[3] = _colormap;
 
 	_deco = xcb_generate_id(_dpy->xcb());
-	xcb_create_window(_dpy->xcb(), _deco_depth, _deco, _base, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
+	xcb_create_window(_dpy->xcb(), _deco_depth, _deco, _base->id(), 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
 	_root->_ctx->_page_windows.insert(_deco);
 
 }
@@ -524,7 +524,7 @@ void view_floating_t::_map_windows_unsafe()
 	_dpy->map(_input_center);
 
 	_dpy->map(_deco);
-	_dpy->map(_base);
+	_base->xmap();
 }
 
 void view_floating_t::_unmap_windows_unsafe()
@@ -543,7 +543,7 @@ void view_floating_t::_unmap_windows_unsafe()
 
 	_dpy->unmap(_input_center);
 
-	_dpy->unmap(_base);
+	_base->unmap();
 	_dpy->unmap(_deco);
 }
 
@@ -577,7 +577,7 @@ void view_floating_t::_grab_button_unsafe() {
  **/
 void view_floating_t::_ungrab_all_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
+	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base->id(), XCB_MOD_MASK_ANY);
 	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _deco, XCB_MOD_MASK_ANY);
 	_client->_client_proxy->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 }
@@ -589,7 +589,7 @@ void view_floating_t::_ungrab_all_button_unsafe() {
  **/
 void view_floating_t::_select_inputs_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	_base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
 	_dpy->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 }
 
@@ -600,7 +600,7 @@ void view_floating_t::_select_inputs_unsafe() {
  **/
 void view_floating_t::_unselect_inputs_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	_dpy->select_input(_base, XCB_EVENT_MASK_NO_EVENT);
+	_base->select_input(XCB_EVENT_MASK_NO_EVENT);
 	_dpy->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
 	_client->_client_proxy->select_input(XCB_EVENT_MASK_NO_EVENT);
 	_client->_client_proxy->select_input_shape(false);
@@ -682,7 +682,7 @@ void view_floating_t::reconfigure() {
 
 auto view_floating_t::button_press(xcb_button_press_event_t const * e) -> button_action_e
 {
-	if (not (e->event == _deco or e->event == _base)) {
+	if (not (e->event == _deco or e->event == _base->id())) {
 		return BUTTON_ACTION_CONTINUE;
 	}
 

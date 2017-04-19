@@ -474,7 +474,7 @@ grab_floating_move_t::grab_floating_move_t(page_t * ctx, view_floating_p f, unsi
 	pfm->move_resize(popup_original_position);
 	_ctx->overlay_add(pfm);
 	pfm->show();
-	_ctx->dpy()->set_window_cursor(f->_base, _ctx->dpy()->xc_fleur);
+	_ctx->dpy()->set_window_cursor(f->_base->id(), _ctx->dpy()->xc_fleur);
 	_ctx->dpy()->set_window_cursor(f->_client->_client_proxy->id(), _ctx->dpy()->xc_fleur);
 }
 
@@ -519,7 +519,7 @@ void grab_floating_move_t::button_release(xcb_button_release_event_t const * e) 
 
 	if (e->detail == XCB_BUTTON_INDEX_1 or e->detail == XCB_BUTTON_INDEX_3 or e->detail == button) {
 
-		_ctx->dpy()->set_window_cursor(f->_base, XCB_NONE);
+		_ctx->dpy()->set_window_cursor(f->_base->id(), XCB_NONE);
 
 		_ctx->dpy()->set_window_cursor(f->_client->_client_proxy->id(), XCB_NONE);
 
@@ -594,7 +594,7 @@ grab_floating_resize_t::grab_floating_resize_t(page_t * ctx, view_floating_p f, 
 	pfm->show();
 
 
-	_ctx->dpy()->set_window_cursor(f->_base, _get_cursor());
+	_ctx->dpy()->set_window_cursor(f->_base->id(), _get_cursor());
 
 }
 
@@ -722,7 +722,7 @@ void grab_floating_resize_t::button_release(xcb_button_release_event_t const * e
 	auto f = this->f.lock();
 
 	if (e->detail == button) {
-		_ctx->dpy()->set_window_cursor(f->_base, XCB_NONE);
+		_ctx->dpy()->set_window_cursor(f->_base->id(), XCB_NONE);
 		_ctx->dpy()->set_window_cursor(f->_client->_client_proxy->id(), XCB_NONE);
 		f->_client->set_floating_wished_position(final_position);
 		f->reconfigure();

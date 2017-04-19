@@ -27,13 +27,12 @@ namespace page {
 
 view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	view_t{ref, client},
-	_base{XCB_WINDOW_NONE},
 	_colormap{XCB_NONE}
 {
 	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
 	_client->_client_proxy->set_border_width(0);
 	_create_base_windows();
-	_root->_ctx->_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
+	_base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
 	_grab_button_unsafe();
 	xcb_flush(_root->_ctx->_dpy->xcb());
 }
@@ -48,17 +47,17 @@ view_rebased_t::view_rebased_t(view_rebased_t * src) :
 	_orig_position{src->_orig_position}
 {
 	assert(src != this);
-	src->_base = XCB_WINDOW_NONE;
+	src->_base = nullptr;
 	src->_colormap = XCB_NONE;
 }
 
 view_rebased_t::~view_rebased_t()
 {
-	if (_base != XCB_WINDOW_NONE) {
+	if (_base != nullptr) {
 		release_client();
-		xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base);
+		xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base->id());
 		xcb_free_colormap(_root->_ctx->_dpy->xcb(), _colormap);
-		_root->_ctx->_page_windows.erase(_base);
+		_root->_ctx->_page_windows.erase(_base->id());
 	}
 }
 
@@ -113,11 +112,12 @@ void view_rebased_t::_create_base_windows()
 	value_mask |= XCB_CW_COLORMAP;
 	value[3] = _colormap;
 
-	_base = xcb_generate_id(_dpy->xcb());
-	_root->_ctx->_page_windows.insert(_base);
-	xcb_create_window(_dpy->xcb(), _deco_depth, _base, _dpy->root(), -10, -10,
+	xcb_window_t base = xcb_generate_id(_dpy->xcb());
+	_root->_ctx->_page_windows.insert(base);
+	xcb_create_window(_dpy->xcb(), _deco_depth, base, _dpy->root(), -10, -10,
 			1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask,
 			value);
+	_base = _dpy->ensure_client_proxy(base);
 }
 
 void view_rebased_t::_reconfigure_windows()
@@ -128,16 +128,16 @@ void view_rebased_t::_reconfigure_windows()
 	if (not _root->is_enable()) {
 		_client_view = nullptr;
 		if (_client->current_owner_view() == static_cast<view_t*>(this))
-			_dpy->unmap(_base);
+			_base->unmap();
 		return;
 	}
 
 	_client->_client_proxy->move_resize(_orig_position);
 
 	if (_is_visible) {
-		_dpy->move_resize(_base, _base_position);
+		_base->move_resize(_base_position);
 		_client->_client_proxy->xmap();
-		_dpy->map(_base);
+		_base->xmap();
 		_client->fake_configure_unsafe(_client->_absolute_position);
 		_client->_client_proxy->set_wm_state(NormalState);
 		if(_client->_has_focus)
@@ -155,7 +155,7 @@ void view_rebased_t::_reconfigure_windows()
 			_base_position.w,
 			_base_position.h };
 		/* if iconic move outside visible area */
-		_dpy->move_resize(_base, hidden_position);
+		_base->move_resize(hidden_position);
 		_client_view = nullptr;
 		_root->_ctx->add_global_damage(get_visible_region());
 	}
@@ -203,25 +203,25 @@ void view_rebased_t::_grab_button_unsafe() {
 	/** First ungrab all **/
 	_ungrab_all_button_unsafe();
 
-	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
 
-	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
 
 	/** grab alt-button1 move **/
-	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
 
 	/** grab alt-button3 resize **/
-	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
+	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
 
@@ -229,13 +229,13 @@ void view_rebased_t::_grab_button_unsafe() {
 
 void view_rebased_t::_ungrab_all_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base, XCB_MOD_MASK_ANY);
+	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base->id(), XCB_MOD_MASK_ANY);
 	_client->_client_proxy->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 }
 
 auto view_rebased_t::create_surface() -> client_view_p
 {
-	return _client->create_surface(_base);
+	return _client->create_surface(_base->id());
 }
 
 void view_rebased_t::acquire_client()
@@ -244,7 +244,7 @@ void view_rebased_t::acquire_client()
 		return;
 	auto _dpy = _root->_ctx->dpy();
 	_client->acquire(this);
-	_dpy->reparentwindow(_client->_client_proxy->id(), _base,
+	_dpy->reparentwindow(_client->_client_proxy->id(), _base->id(),
 			_orig_position.x, _orig_position.y);
 }
 
@@ -299,7 +299,7 @@ void view_rebased_t::on_workspace_enable()
 	auto _ctx = _root->_ctx;
 	auto _dpy = _root->_ctx->dpy();
 	acquire_client();
-	_dpy->map(_base);
+	_base->xmap();
 	reconfigure();
 	_grab_button_unsafe();
 }
@@ -310,12 +310,12 @@ void view_rebased_t::on_workspace_disable()
 	auto _dpy = _root->_ctx->dpy();
 	release_client();
 	if (_client->current_owner_view() == static_cast<view_t*>(this))
-		_dpy->unmap(_base);
+		_base->unmap();
 }
 
 auto view_rebased_t::get_toplevel_xid() const -> xcb_window_t
 {
-	return _base;
+	return _base->id();
 }
 
 } /* namespace page */
