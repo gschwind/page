@@ -31,9 +31,11 @@ view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	_colormap{XCB_NONE}
 {
 	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
+	_client->_client_proxy->set_border_width(0);
 	_create_base_windows();
 	_root->_ctx->_dpy->select_input(_base, MANAGED_BASE_WINDOW_EVENT_MASK);
 	_grab_button_unsafe();
+	xcb_flush(_root->_ctx->_dpy->xcb());
 }
 
 view_rebased_t::view_rebased_t(view_rebased_t * src) :
