@@ -2185,28 +2185,44 @@ shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
  **/
 bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time)
 {
+	printf("call %s for %x\n", __PRETTY_FUNCTION__, c->_client_proxy->id());
 	auto net_wm_user_time = c->get<p_net_wm_user_time>();
 	if (net_wm_user_time != nullptr) {
 		time = *(net_wm_user_time);
+		printf("found net_wm_user_time = %d\n", time);
 		return true;
 	} else {
+		printf("net_wm_user_time not found, looking for net_wm_user_time_window\n");
 		auto net_wm_user_time_window = c->get<p_net_wm_user_time_window>();
-		if (net_wm_user_time_window == nullptr)
+		if (net_wm_user_time_window == nullptr) {
+			printf("net_wm_user_time_window not found\n");
 			return false;
-		if (*(net_wm_user_time_window) == XCB_WINDOW_NONE)
+		}
+		if (*(net_wm_user_time_window) == XCB_WINDOW_NONE) {
+			printf("net_wm_user_time_window is NONE\n");
 			return false;
+		}
+		printf("found net_wm_user_time_window = %x\n", *(net_wm_user_time_window));
 		try {
 			auto xc = _dpy->ensure_client_proxy(*(net_wm_user_time_window));
-			if (not xc)
+			if (not xc) {
+				printf("net_wm_user_time_window does not exists\n");
 				return false;
+			}
 			net_wm_user_time = xc->get<p_net_wm_user_time>();
-			if(net_wm_user_time == nullptr)
+			if(net_wm_user_time == nullptr) {
+				printf("net_wm_user_time_window does not have net_wm_user_time\n");
 				return false;
-			if (*(net_wm_user_time) == 0)
+			}
+			if (*(net_wm_user_time) == XCB_CURRENT_TIME) {
+				printf("net_wm_user_time_window's net_wm_user_time is invalid\n");
 				return false;
+			}
 			time = *(net_wm_user_time);
+			printf("found net_wm_user_time = %d\n", time);
 			return true;
 		} catch (invalid_client_t & e) {
+			printf("invalid net_wm_user_time_window\n");
 			return false;
 		}
 	}
