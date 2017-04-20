@@ -115,27 +115,19 @@ void view_floating_t::_init()
 			_client->_client_proxy->geometry().width,
 			_client->_client_proxy->geometry().height);
 
-	/** if x == 0 then place window at center of the screen **/
+	// if x == 0 then place window at center of the screen
 	if (_client->_floating_wished_position.x == 0) {
 		_client->_floating_wished_position.x =
-				(_client->_client_proxy->geometry().width - _client->_floating_wished_position.w) / 2;
+				(_root->primary_viewport()->raw_area().w
+						- _client->_floating_wished_position.w) / 2;
 	}
 
-	if(_client->_floating_wished_position.x - _ctx->theme()->floating.margin.left < 0) {
-		_client->_floating_wished_position.x = _ctx->theme()->floating.margin.left;
-	}
-
-	/**
-	 * if y == 0 then place window at center of the screen
-	 **/
+	// if y == 0 then place window at center of the screen
 	if (_client->_floating_wished_position.y == 0) {
-		_client->_floating_wished_position.y = (_client->_client_proxy->geometry().height - _client->_floating_wished_position.h) / 2;
+		_client->_floating_wished_position.y =
+				(_root->primary_viewport()->raw_area().h
+						- _client->_floating_wished_position.h) / 2;
 	}
-
-	if(_client->_floating_wished_position.y - _ctx->theme()->floating.margin.top < 0) {
-		_client->_floating_wished_position.y = _ctx->theme()->floating.margin.top;
-	}
-
 
 	_update_floating_areas();
 	_create_deco_windows();
