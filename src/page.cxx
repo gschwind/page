@@ -1291,6 +1291,17 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		if (mw != nullptr) {
 			move_client_to_workspace(mw, e->data.data32[0]);
 		}
+	} else if (e->type == A(_NET_STARTUP_INFO_BEGIN)) {
+		char buf[21];
+		buf[20] = 0;
+		std::copy(&e->data.data8[0], &e->data.data8[20], buf);
+		printf("received _NET_STARTUP_INFO_BEGIN (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
+
+	} else if (e->type == A(_NET_STARTUP_INFO)) {
+		char buf[21];
+		buf[20] = 0;
+		std::copy(&e->data.data8[0], &e->data.data8[20], buf);
+		printf("received _NET_STARTUP_INFO (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
 	}
 }
 
