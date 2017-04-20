@@ -2146,12 +2146,17 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 		}
 	}
 
+	bool _has_net_wm_state_above = false;
+	if(mw->_net_wm_state) {
+		_has_net_wm_state_above = has_key(*mw->_net_wm_state, A(_NET_WM_STATE_ABOVE));
+	}
 
 	if (mw->has_wm_state_fullscreen()) {
 		insert_as_fullscreen(mw);
 	} else if (((type == A(_NET_WM_WINDOW_TYPE_NORMAL))
 			and get_transient_for(mw) == nullptr
-			and not mw->has_wm_state_modal())
+			and not mw->has_wm_state_modal()
+			and not _has_net_wm_state_above)
 			or type == A(_NET_WM_WINDOW_TYPE_DESKTOP)) {
 		insert_as_notebook(mw);
 	} else if (type == A(_NET_WM_WINDOW_TYPE_DOCK)) {
