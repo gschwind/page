@@ -2571,7 +2571,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
+	cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -2584,8 +2584,20 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		return;
 	}
 
+
 	view_p focused;
-	if (get_current_workspace()->client_focus_history_front(focused)) {
+	if (e->mode == XCB_NOTIFY_MODE_GRAB) {
+		// Allow focus stilling when the client grab the keyboard
+		auto mw = find_client_with(e->event);
+		if (mw) {
+			auto v = get_current_workspace()->lookup_view_for(mw);
+			if (v) {
+				get_current_workspace()->set_focus(v, XCB_CURRENT_TIME);
+				_dpy->set_input_focus(mw->_client_proxy->id(), XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+				xcb_flush(_dpy->xcb());
+			}
+		}
+	} else if (get_current_workspace()->client_focus_history_front(focused)) {
 		// client are only allowed to focus their own windows
 		// NOTE: client_id() is based on Xorg client XID allocation and may be
 		//   invalid for other X11 server implementation.
@@ -2625,7 +2637,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
+	cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * if the root window loose the focus, give the focus back to the
@@ -2995,12 +3007,12 @@ void page_t::grab_start(shared_ptr<grab_handler_t> handler, xcb_timestamp_t time
 
 	auto r0 = xcb_grab_pointer_reply(_dpy->xcb(), ck0, &e);
 	if(not r0->status == XCB_GRAB_STATUS_SUCCESS)
-		printf("grab pointer failed %d", r0->status);
+		printf("grab pointer failed with status %d", r0->status);
 
 	if (r0 != nullptr and r0->status == XCB_GRAB_STATUS_SUCCESS) {
 		auto r1 = xcb_grab_keyboard_reply(_dpy->xcb(), ck1, &e);
 		if(not r1->status == XCB_GRAB_STATUS_SUCCESS)
-			printf("grab pointer failed %d", r1->status);
+			printf("grab keyboard failed with status %d\n", r1->status);
 
 		if(r1 and r1->status == XCB_GRAB_STATUS_SUCCESS) {
 			_grab_handler = handler;
