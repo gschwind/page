@@ -109,6 +109,12 @@ void view_floating_t::_init()
 
 	auto _ctx = _root->_ctx;
 
+	_client->_floating_wished_position = rect(
+			_client->_client_proxy->geometry().x,
+			_client->_client_proxy->geometry().y,
+			_client->_client_proxy->geometry().width,
+			_client->_client_proxy->geometry().height);
+
 	/** if x == 0 then place window at center of the screen **/
 	if (_client->_floating_wished_position.x == 0) {
 		_client->_floating_wished_position.x =
@@ -143,6 +149,8 @@ void view_floating_t::_init()
 			_client->_floating_wished_position.h);
 
 	_grab_button_unsafe();
+	xcb_flush(_root->_ctx->_dpy->xcb());
+
 }
 
 void view_floating_t::_paint_exposed() {
