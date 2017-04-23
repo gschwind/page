@@ -1800,20 +1800,20 @@ void simple2_theme_t::render_popup_split(cairo_t * cr, theme_split_t const * s,
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 6.0));
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0));
-	CHECK_CAIRO(cairo_rectangle(cr, rect0.x, rect0.y, rect0.w, rect0.h));
+	cairo_rectangle_arc_corner(cr, rect0.x, rect0.y, rect0.w, rect0.h, 10.0, CAIRO_CORNER_ALL);
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(::cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0));
-	CHECK_CAIRO(cairo_rectangle(cr, rect1.x, rect1.y, rect1.w, rect1.h));
+	cairo_rectangle_arc_corner(cr, rect1.x, rect1.y, rect1.w, rect1.h, 10.0, CAIRO_CORNER_ALL);
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(cairo_set_line_width(cr, 4.0));
 	CHECK_CAIRO(cairo_set_source_color(cr, popup_background_color));
-	CHECK_CAIRO(cairo_rectangle(cr, rect0.x, rect0.y, rect0.w, rect0.h));
+	cairo_rectangle_arc_corner(cr, rect0.x, rect0.y, rect0.w, rect0.h, 10.0, CAIRO_CORNER_ALL);
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	CHECK_CAIRO(cairo_set_source_color(cr, popup_background_color));
-	CHECK_CAIRO(cairo_rectangle(cr, rect1.x, rect1.y, rect1.w, rect1.h));
+	cairo_rectangle_arc_corner(cr, rect1.x, rect1.y, rect1.w, rect1.h, 10.0, CAIRO_CORNER_ALL);
 	CHECK_CAIRO(cairo_stroke(cr));
 
 	cairo_restore(cr);
