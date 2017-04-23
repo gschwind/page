@@ -127,7 +127,8 @@ auto view_notebook_t::button_press(xcb_button_press_event_t const * e) -> button
 		_root->_ctx->grab_start(make_shared<grab_bind_view_notebook_t>(_root->_ctx, shared_from_this(), e->detail, rect{e->root_x-10, e->root_y-10, 20, 20}), e->time);
 		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else {
-		_root->set_focus(shared_from_this(), e->time);
+		if(_root->_ctx->_current_grabbing_window == XCB_WINDOW_NONE)
+			_root->set_focus(shared_from_this(), e->time);
 		return BUTTON_ACTION_REPLAY;
 	}
 

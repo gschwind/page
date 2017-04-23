@@ -71,6 +71,7 @@ page_t::page_t(int argc, char ** argv)
 	_current_workspace = 0;
 	_grab_handler = nullptr;
 	_schedule_repaint = false;
+	_current_grabbing_window = XCB_WINDOW_NONE;
 
 	identity_window = XCB_NONE;
 
@@ -2587,6 +2588,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	view_p focused;
 	if (e->mode == XCB_NOTIFY_MODE_GRAB) {
+		_current_grabbing_window = e->event;
 		// Allow focus stilling when the client grab the keyboard
 		auto mw = find_client_with(e->event);
 		if (mw) {
@@ -2639,11 +2641,25 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 
 	cout << focus_in_to_string(e) << endl;
 
+	if (e->mode == XCB_NOTIFY_MODE_UNGRAB and _current_grabbing_window == e->event) {
+		_current_grabbing_window = XCB_WINDOW_NONE;
+
+		view_p focused;
+		if (get_current_workspace()->client_focus_history_front(focused)) {
+			focused->focus(XCB_CURRENT_TIME);
+		} else {
+			if (e->event == identity_window or e->event == _dpy->root()) {
+				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
+						XCB_CURRENT_TIME);
+			}
+		}
+	}
+
 	/**
 	 * if the root window loose the focus, give the focus back to the
 	 * proper window.
 	 **/
-	if(e->event == _dpy->root()) {
+	if (e->event == _dpy->root()) {
 		/* ignore all focus due to grabs */
 		if(e->mode != XCB_NOTIFY_MODE_NORMAL)
 			return;

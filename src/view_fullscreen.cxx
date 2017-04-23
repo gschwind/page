@@ -109,7 +109,8 @@ auto view_fullscreen_t::button_press(xcb_button_press_event_t const * e) -> butt
 				e->time);
 		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 	} else {
-		_root->set_focus(shared_from_this(), e->time);
+		if(_root->_ctx->_current_grabbing_window == XCB_WINDOW_NONE)
+			_root->set_focus(shared_from_this(), e->time);
 		return BUTTON_ACTION_REPLAY;
 	}
 

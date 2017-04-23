@@ -119,7 +119,7 @@ private:
 	shared_ptr<grab_handler_t> _grab_handler;
 
 public:
-
+	xcb_window_t _current_grabbing_window;
 
 	/** window that handle page identity for others clients */
 	xcb_window_t identity_window;
