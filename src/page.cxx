@@ -1822,15 +1822,9 @@ void page_t::update_windows_stack() {
 	auto tree = get_current_workspace()->get_all_children();
 
 	{
-		/**
-		 * only re-stack managed clients or unmanaged clients with transient_for
-		 * or unmanaged window with net_wm_window_type.
-		 * Other client are expected to re-stack them self (it's a guess).
-		 **/
 		int k = 0;
 		for (int i = 0; i < tree.size(); ++i) {
-			if(tree[i]->get_toplevel_xid() != XCB_WINDOW_NONE
-					and typeid(view_popup_t) != typeid(*tree[i].get())) {
+			if(tree[i]->get_toplevel_xid() != XCB_WINDOW_NONE) {
 				tree[k++] = tree[i];
 			}
 		}

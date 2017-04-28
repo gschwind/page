@@ -318,6 +318,7 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 		}
 	}
 
+	_ctx->_need_restack = true;
 	fv->raise();
 	fv->show();
 
