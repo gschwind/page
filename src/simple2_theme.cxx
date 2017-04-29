@@ -1258,7 +1258,7 @@ void simple2_theme_t::render_floating_base(
 		CHECK_CAIRO(cairo_stroke(cr));
 
 		rect xncclose;
-		xncclose.x = b.x + b.w - floating.close_width;
+		xncclose.x = b.x + b.w - floating.close_width - floating.margin.right;
 		xncclose.y = b.y;
 		xncclose.w = floating.close_width - 10;
 		xncclose.h = floating.title_height - 4;
@@ -1350,10 +1350,13 @@ void simple2_theme_t::render_floating_base(
 		/** draw close button **/
 
 		rect ncclose;
-		ncclose.x = tab_area.x + tab_area.w - (floating.close_width-10)/2 - 18;
+		ncclose.x = tab_area.x + tab_area.w - floating.close_width
+				  - floating.margin.right
+				  + (floating.close_width
+						  - cairo_image_surface_get_width(close_button1_s))/2 - 5;
 		ncclose.y = tab_area.y;
-		ncclose.w = floating.close_width;
-		ncclose.h = floating.title_height - 4;
+		ncclose.w = cairo_image_surface_get_width(close_button1_s);
+		ncclose.h = cairo_image_surface_get_height(close_button1_s);
 
 		CHECK_CAIRO(::cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 1.0));
 		//CHECK_CAIRO(cairo_rectangle(cr, ncclose.x, ncclose.y, ncclose.w, ncclose.h));
@@ -1362,7 +1365,8 @@ void simple2_theme_t::render_floating_base(
 
 		/** draw unbind button **/
 		rect ncub;
-		ncub.x = tab_area.x + tab_area.w - floating.bind_width - floating.close_width;
+		ncub.x = tab_area.x + tab_area.w - floating.bind_width
+			   - floating.close_width - floating.margin.right;
 		ncub.y = tab_area.y;
 		ncub.w = floating.bind_width;
 		ncub.h = floating.title_height;

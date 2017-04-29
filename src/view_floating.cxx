@@ -350,7 +350,8 @@ rect view_floating_t::_compute_floating_close_position(rect const & allocation) 
 	auto _ctx = _root->_ctx;
 
 	rect position;
-	position.x = allocation.w - _ctx->theme()->floating.close_width;
+	position.x = allocation.w - _ctx->theme()->floating.close_width
+			- _ctx->theme()->floating.margin.right;
 	position.y = 0.0;
 	position.w = _ctx->theme()->floating.close_width;
 	position.h = _ctx->theme()->floating.title_height;
@@ -362,7 +363,9 @@ rect view_floating_t::_compute_floating_bind_position(rect const & allocation) c
 	auto _ctx = _root->_ctx;
 
 	rect position;
-	position.x = allocation.w - _ctx->theme()->floating.bind_width - _ctx->theme()->floating.close_width;
+	position.x = allocation.w - _ctx->theme()->floating.bind_width
+			- _ctx->theme()->floating.close_width
+			- _ctx->theme()->floating.margin.right;
 	position.y = 0.0;
 	position.w = _ctx->theme()->floating.bind_width;
 	position.h = _ctx->theme()->floating.title_height;
