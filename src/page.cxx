@@ -2254,14 +2254,15 @@ void page_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	c->set_managed_type(MANAGED_POPUP);
 
 	auto wid = c->ensure_workspace();
-	workspace_p workspace;
 	if(wid == ALL_DESKTOP) {
-		workspace = get_current_workspace();
+		for (auto &w: _workspace_list) {
+			w->insert_as_popup(c, time);
+		}
 	} else {
-		workspace = get_workspace(wid);
+		workspace_p workspace = get_workspace(wid);
+		workspace->insert_as_popup(c, time);
 	}
 
-	workspace->insert_as_popup(c, time);
 	schedule_repaint(0L);
 
 }
