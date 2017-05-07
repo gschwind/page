@@ -2695,6 +2695,35 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
 	get_current_workspace()->broadcast_enter(e);
 
+	char const * xx = nullptr;
+	switch (e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		xx = "GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		xx = "NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		xx = "UNGRAB";
+		break;
+	default:
+		break;
+	}
+
+	printf("Enter 0x%x %s\n", e->event, xx);
+
+	if (e->mode == XCB_NOTIFY_MODE_UNGRAB) {
+		// Allow focus stilling when the client grab the keyboard
+		auto mw = find_client_with(e->event);
+		if (mw) {
+			auto v = get_current_workspace()->lookup_view_for(mw);
+			if (v) {
+				get_current_workspace()->set_focus(v, e->time);
+				xcb_flush(_dpy->xcb());
+			}
+		}
+	}
+
 	if(not configuration._mouse_focus)
 		return;
 
@@ -2707,6 +2736,24 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
+
+	char const * xx = nullptr;
+	switch (e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		xx = "GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		xx = "NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		xx = "UNGRAB";
+		break;
+	default:
+		break;
+	}
+
+	printf("Leave 0x%x %s\n", e->event, xx);
+
 	get_current_workspace()->broadcast_leave(e);
 }
 
@@ -2837,7 +2884,7 @@ void page_t::process_expose_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_error(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_generic_error_t const *>(_e);
-	//_dpy->print_error(e);
+	_dpy->print_error(e);
 }
 
 

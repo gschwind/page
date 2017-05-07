@@ -255,9 +255,6 @@ public:
 	/* update _NET_SUPPORTED */
 	void update_net_supported();
 
-	/* setup and create managed window */
-	client_managed_t * manage(xcb_atom_t net_wm_type, std::shared_ptr<client_proxy_t> wa);
-
 	/* unmanage a managed window */
 	void unmanage(client_managed_p mw);
 
