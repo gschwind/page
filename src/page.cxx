@@ -215,7 +215,7 @@ void page_t::run() {
 		xcb_generic_error_t * e;
 		auto ck = xcb_sync_list_system_counters(_dpy->xcb());
 		auto r = xcb_sync_list_system_counters_reply(_dpy->xcb(), ck, &e);
-		printf("counter length %u\n", r->counters_len);
+		//printf("counter length %u\n", r->counters_len);
 		if (r != nullptr) {
 			// the first item is correctly computed by libxcb but I can extract it
 			// without xcb_sync_list_system_counters_counters_iterator, thus
@@ -224,8 +224,8 @@ void page_t::run() {
 					(fixed_xcb_sync_systemcounter_t*) (r + 1);
 			for (int i = 0; i < r->counters_len; ++i) {
 				char * name = xcb_sync_system_counter_dup_name(item);
-				printf("COUNTER_NAME %d = %s, id = %u, resolution = %lu\n", i, name,
-						item->counter, xcb_sync_system_counter_int64_swap(&item->resolution));
+				//printf("COUNTER_NAME %d = %s, id = %u, resolution = %lu\n", i, name,
+				//		item->counter, xcb_sync_system_counter_int64_swap(&item->resolution));
 
 				if(strcmp("SERVERTIME", name) == 0) {
 					printf("found SERVERTIME\n");
@@ -248,7 +248,7 @@ void page_t::run() {
 		auto ck = xcb_sync_get_priority(_dpy->xcb(), frame_alarm);
 		auto r = xcb_sync_get_priority_reply(_dpy->xcb(), ck, &e);
 		if (r != nullptr) {
-			printf("priority is %d\n", r->priority);
+			//printf("priority is %d\n", r->priority);
 		}
 		free(r);
 
@@ -457,7 +457,7 @@ void page_t::scan() {
 
 	_dpy->ungrab();
 
-	print_state();
+	//print_state();
 
 }
 
@@ -1243,7 +1243,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	} else if (e->type == A(_NET_REQUEST_FRAME_EXTENTS)) {
 
 	} else if (e->type == A(_NET_WM_MOVERESIZE)) {
-		printf("moveresize XxX\n");
+		//printf("moveresize XxX\n");
 		if (mw != nullptr and _grab_handler == nullptr) {
 			int root_x = e->data.data32[0];
 			int root_y = e->data.data32[1];
@@ -1296,13 +1296,13 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 		char buf[21];
 		buf[20] = 0;
 		std::copy(&e->data.data8[0], &e->data.data8[20], buf);
-		printf("received _NET_STARTUP_INFO_BEGIN (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
+		//printf("received _NET_STARTUP_INFO_BEGIN (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
 
 	} else if (e->type == A(_NET_STARTUP_INFO)) {
 		char buf[21];
 		buf[20] = 0;
 		std::copy(&e->data.data8[0], &e->data.data8[20], buf);
-		printf("received _NET_STARTUP_INFO (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
+		//printf("received _NET_STARTUP_INFO (window=%d, format=%d) data=`%s'\n", e->window, e->format, buf);
 	}
 }
 
@@ -1330,7 +1330,7 @@ void page_t::render() {
 }
 
 void page_t::insert_as_fullscreen(client_managed_p c, xcb_timestamp_t time) {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 
 	auto wid = c->ensure_workspace();
 	workspace_p workspace;
@@ -1345,7 +1345,7 @@ void page_t::insert_as_fullscreen(client_managed_p c, xcb_timestamp_t time) {
 
 void page_t::insert_as_notebook(client_managed_p c, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	c->set_managed_type(MANAGED_NOTEBOOK);
 
 	auto wid = c->ensure_workspace();
@@ -1377,14 +1377,14 @@ void page_t::move_view_to_notebook(view_p v, notebook_p n, xcb_timestamp_t time)
 
 void page_t::move_notebook_to_notebook(view_notebook_p vn, notebook_p n, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	vn->remove_this_view();
 	n->add_client_from_view(vn, time);
 }
 
 void page_t::move_floating_to_notebook(view_floating_p vf, notebook_p n, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	vf->detach_myself();
 	n->add_client_from_view(vf, time);
 }
@@ -1687,25 +1687,25 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 		return;
 
 	/* debug print */
-	if(true) {
-		char const * action;
-		switch (type) {
-		case _NET_WM_STATE_REMOVE:
-			action = "remove";
-			break;
-		case _NET_WM_STATE_ADD:
-			action = "add";
-			break;
-		case _NET_WM_STATE_TOGGLE:
-			action = "toggle";
-			break;
-		default:
-			action = "invalid";
-			break;
-		}
-		std::cout << "_NET_WM_STATE: " << action << " "
-				<< _dpy->get_atom_name(state_properties) << std::endl;
-	}
+//	if(true) {
+//		char const * action;
+//		switch (type) {
+//		case _NET_WM_STATE_REMOVE:
+//			action = "remove";
+//			break;
+//		case _NET_WM_STATE_ADD:
+//			action = "add";
+//			break;
+//		case _NET_WM_STATE_TOGGLE:
+//			action = "toggle";
+//			break;
+//		default:
+//			action = "invalid";
+//			break;
+//		}
+//		std::cout << "_NET_WM_STATE: " << action << " "
+//				<< _dpy->get_atom_name(state_properties) << std::endl;
+//	}
 
 	auto mw = find_managed_window_with(c);
 	if(mw == nullptr)
@@ -1908,7 +1908,6 @@ void page_t::update_viewport_layout() {
 	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
 		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0);
 		if(r != nullptr) {
-			printf("XXXX = %d\n", crtc_list[k]);
 			crtc_info[crtc_list[k]] = r;
 		}
 
@@ -2124,11 +2123,11 @@ void page_t::manage_client(shared_ptr<client_managed_t> mw, xcb_atom_t type) {
 	{
 		auto final_workspace = mw->ensure_workspace();
 		if(final_workspace == ALL_DESKTOP) {
-			printf("final workspace = %u\n", final_workspace);
+			//printf("final workspace = %u\n", final_workspace);
 			mw->net_wm_state_add(_NET_WM_STATE_STICKY);
 			//mw->show();
 		} else {
-			printf("final workspace = %u\n", final_workspace);
+			//printf("final workspace = %u\n", final_workspace);
 			if(_current_workspace == final_workspace) {
 				//mw->show();
 			} else {
@@ -2196,44 +2195,44 @@ shared_ptr<viewport_t> page_t::find_mouse_viewport(int x, int y) const {
  **/
 bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time)
 {
-	printf("call %s for %x\n", __PRETTY_FUNCTION__, c->_client_proxy->id());
+	//printf("call %s for %x\n", __PRETTY_FUNCTION__, c->_client_proxy->id());
 	auto net_wm_user_time = c->get<p_net_wm_user_time>();
 	if (net_wm_user_time != nullptr) {
 		time = *(net_wm_user_time);
-		printf("found net_wm_user_time = %d\n", time);
+		//printf("found net_wm_user_time = %d\n", time);
 		return true;
 	} else {
-		printf("net_wm_user_time not found, looking for net_wm_user_time_window\n");
+		//printf("net_wm_user_time not found, looking for net_wm_user_time_window\n");
 		auto net_wm_user_time_window = c->get<p_net_wm_user_time_window>();
 		if (net_wm_user_time_window == nullptr) {
-			printf("net_wm_user_time_window not found\n");
+			//printf("net_wm_user_time_window not found\n");
 			return false;
 		}
 		if (*(net_wm_user_time_window) == XCB_WINDOW_NONE) {
-			printf("net_wm_user_time_window is NONE\n");
+			//printf("net_wm_user_time_window is NONE\n");
 			return false;
 		}
-		printf("found net_wm_user_time_window = %x\n", *(net_wm_user_time_window));
+		//printf("found net_wm_user_time_window = %x\n", *(net_wm_user_time_window));
 		try {
 			auto xc = _dpy->ensure_client_proxy(*(net_wm_user_time_window));
 			if (not xc) {
-				printf("net_wm_user_time_window does not exists\n");
+				//printf("net_wm_user_time_window does not exists\n");
 				return false;
 			}
 			net_wm_user_time = xc->get<p_net_wm_user_time>();
 			if(net_wm_user_time == nullptr) {
-				printf("net_wm_user_time_window does not have net_wm_user_time\n");
+				//printf("net_wm_user_time_window does not have net_wm_user_time\n");
 				return false;
 			}
 			if (*(net_wm_user_time) == XCB_CURRENT_TIME) {
-				printf("net_wm_user_time_window's net_wm_user_time is invalid\n");
+				//printf("net_wm_user_time_window's net_wm_user_time is invalid\n");
 				return false;
 			}
 			time = *(net_wm_user_time);
-			printf("found net_wm_user_time = %d\n", time);
+			//printf("found net_wm_user_time = %d\n", time);
 			return true;
 		} catch (invalid_client_t & e) {
-			printf("invalid net_wm_user_time_window\n");
+			//printf("invalid net_wm_user_time_window\n");
 			return false;
 		}
 	}
@@ -2268,7 +2267,7 @@ void page_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 }
 
 void page_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time) {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	c->set_managed_type(MANAGED_DOCK);
 
 	auto wid = c->ensure_workspace();
@@ -2288,7 +2287,7 @@ void page_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time) {
 }
 
 void page_t::insert_as_floating(client_managed_p c, xcb_timestamp_t time) {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	c->set_managed_type(MANAGED_FLOATING);
 
 	auto wid = c->ensure_workspace();
@@ -2567,7 +2566,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	cout << focus_in_to_string(e) << endl;
+	//cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -2635,7 +2634,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	cout << focus_in_to_string(e) << endl;
+	//cout << focus_in_to_string(e) << endl;
 
 	if (e->mode == XCB_NOTIFY_MODE_UNGRAB and _current_grabbing_window == e->event) {
 		_current_grabbing_window = XCB_WINDOW_NONE;
@@ -2696,22 +2695,22 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
 	get_current_workspace()->broadcast_enter(e);
 
-	char const * xx = nullptr;
-	switch (e->mode) {
-	case XCB_NOTIFY_MODE_GRAB:
-		xx = "GRAB";
-		break;
-	case XCB_NOTIFY_MODE_NORMAL:
-		xx = "NORMAL";
-		break;
-	case XCB_NOTIFY_MODE_UNGRAB:
-		xx = "UNGRAB";
-		break;
-	default:
-		break;
-	}
-
-	printf("Enter 0x%x %s\n", e->event, xx);
+//	char const * xx = nullptr;
+//	switch (e->mode) {
+//	case XCB_NOTIFY_MODE_GRAB:
+//		xx = "GRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_NORMAL:
+//		xx = "NORMAL";
+//		break;
+//	case XCB_NOTIFY_MODE_UNGRAB:
+//		xx = "UNGRAB";
+//		break;
+//	default:
+//		break;
+//	}
+//
+//	printf("Enter 0x%x %s\n", e->event, xx);
 
 	if (e->mode == XCB_NOTIFY_MODE_UNGRAB) {
 		// Allow focus stilling when the client grab the keyboard
@@ -2738,22 +2737,22 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
 
-	char const * xx = nullptr;
-	switch (e->mode) {
-	case XCB_NOTIFY_MODE_GRAB:
-		xx = "GRAB";
-		break;
-	case XCB_NOTIFY_MODE_NORMAL:
-		xx = "NORMAL";
-		break;
-	case XCB_NOTIFY_MODE_UNGRAB:
-		xx = "UNGRAB";
-		break;
-	default:
-		break;
-	}
-
-	printf("Leave 0x%x %s\n", e->event, xx);
+//	char const * xx = nullptr;
+//	switch (e->mode) {
+//	case XCB_NOTIFY_MODE_GRAB:
+//		xx = "GRAB";
+//		break;
+//	case XCB_NOTIFY_MODE_NORMAL:
+//		xx = "NORMAL";
+//		break;
+//	case XCB_NOTIFY_MODE_UNGRAB:
+//		xx = "UNGRAB";
+//		break;
+//	default:
+//		break;
+//	}
+//
+//	printf("Leave 0x%x %s\n", e->event, xx);
 
 	get_current_workspace()->broadcast_leave(e);
 }
@@ -3260,7 +3259,7 @@ void page_t::damage_all() {
 
 void page_t::activate(view_p c, xcb_timestamp_t time)
 {
-	printf("call %s\n", __PRETTY_FUNCTION__);
+	//printf("call %s\n", __PRETTY_FUNCTION__);
 	c->xxactivate(time);
 	_need_restack = true;
 
