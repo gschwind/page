@@ -64,6 +64,8 @@
 namespace page {
 
 time64_t const page_t::default_wait{1000000000L / 120L};
+bool mainloop_t::got_sigterm = false;
+
 
 page_t::page_t(int argc, char ** argv)
 {

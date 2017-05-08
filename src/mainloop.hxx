@@ -18,6 +18,8 @@
 #include <functional>
 #include <iostream>
 
+#include <signal.h>
+
 #include "time.hxx"
 #include "utils.hxx"
 
@@ -74,12 +76,19 @@ public:
 
 
 class mainloop_t {
+	static bool got_sigterm;
 
 	vector<struct pollfd> poll_list;
 	list<weak_ptr<timeout_t>> timeout_list;
 	map<int, poll_callback_t> poll_callback;
 
 	bool running;
+
+	static void handle_sigterm(int sig) {
+		if (sig == SIGTERM) {
+			got_sigterm = true;
+		}
+	}
 
 	void _cleanup_timeout() {
 		auto i = timeout_list.begin();
@@ -147,8 +156,11 @@ public:
 	mainloop_t() : running{false} { }
 
 	void run() {
+
+		sighandler_t old_sigterm = signal(SIGTERM, &handle_sigterm);
+
 		running = true;
-		while (running) {
+		while (running and not got_sigterm) {
 			int64_t wait = run_timeout();
 			if(poll_list.size() > 0) {
 				poll(&poll_list[0], poll_list.size(), wait/1000000L);
@@ -156,8 +168,14 @@ public:
 				if(wait > 1000L)
 					usleep(wait/1000L);
 			}
+
 			run_poll_callback();
 		}
+
+		running = false;
+		got_sigterm = false;
+		signal(SIGTERM, old_sigterm);
+
 	}
 
 	template<typename T>
@@ -191,7 +209,6 @@ public:
 
 
 };
-
 
 }
 
