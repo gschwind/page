@@ -1017,12 +1017,14 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 				//printf("new_size = %s\n", new_size.to_string().c_str());
 
 				if (new_size != old_size) {
-					/* TODO : for all views */
-					auto v = dynamic_pointer_cast<view_floating_t>(get_current_workspace()->lookup_view_for(mw));
+					auto view = get_current_workspace()->lookup_view_for(mw);
+					auto v = dynamic_pointer_cast<view_floating_t>(view);
 					if(v) {
 						/** only affect floating windows **/
 						mw->set_floating_wished_position(new_size);
 						v->reconfigure();
+					} else {
+						view->reconfigure();
 					}
 				}
 			}
