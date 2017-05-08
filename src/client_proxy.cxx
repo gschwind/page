@@ -531,7 +531,8 @@ xcb_window_t         client_proxy_t::id() const { return _id; }
 
 auto client_proxy_t::wa() const -> xcb_get_window_attributes_reply_t const & { return _wa; }
 auto client_proxy_t::geometry() const -> xcb_get_geometry_reply_t const & { return _geometry; }
-
+auto client_proxy_t::visualid() const -> xcb_visualid_t { return _wa.visual; }
+auto client_proxy_t::visual_depth() const -> uint8_t { return _geometry.depth; }
 
 /* OTHERs */
 region const *                     client_proxy_t::shape() const { return _shape; }

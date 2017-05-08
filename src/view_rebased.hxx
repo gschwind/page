@@ -32,14 +32,24 @@ struct view_rebased_t : public view_t {
 			| XCB_EVENT_MASK_BUTTON_PRESS
 			| XCB_EVENT_MASK_BUTTON_RELEASE;
 
-	xcb_visualid_t _deco_visual;
-	uint8_t _deco_depth;
-
-	client_proxy_p _base;
-	xcb_colormap_t _colormap;
-
 	rect _base_position;
 	rect _orig_position;
+
+	struct _base_frame_t {
+		page_t * _ctx;
+		client_proxy_p _window;
+		xcb_colormap_t _colormap;
+		xcb_visualid_t _visual;
+		uint8_t        _depth;
+
+		auto id() const -> xcb_window_t;
+
+		~_base_frame_t();
+		_base_frame_t(page_t * ctx, xcb_visualid_t visual, uint8_t depth);
+
+	};
+
+	std::unique_ptr<_base_frame_t> _base;
 
 public:
 	view_rebased_t(tree_t * ref, client_managed_p client);

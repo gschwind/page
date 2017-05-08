@@ -136,7 +136,7 @@ void view_floating_t::_init()
 	auto _dpy = _root->_ctx->_dpy;
 	auto _xcb = _root->_ctx->_dpy->xcb();
 	_surf = cairo_xcb_surface_create(_dpy->xcb(), _deco,
-			_dpy->find_visual(_deco_visual),
+			_dpy->find_visual(_base->_visual),
 			_client->_floating_wished_position.w,
 			_client->_floating_wished_position.h);
 
@@ -502,10 +502,10 @@ void view_floating_t::_create_deco_windows()
 	value[2] = True;
 
 	value_mask |= XCB_CW_COLORMAP;
-	value[3] = _colormap;
+	value[3] = _base->_colormap;
 
 	_deco = xcb_generate_id(_dpy->xcb());
-	xcb_create_window(_dpy->xcb(), _deco_depth, _deco, _base->id(), 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask, value);
+	xcb_create_window(_dpy->xcb(), _base->_depth, _deco, _base->id(), 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _base->_visual, value_mask, value);
 	_root->_ctx->_page_windows.insert(_deco);
 
 }
@@ -527,7 +527,7 @@ void view_floating_t::_map_windows_unsafe()
 	_dpy->map(_input_center);
 
 	_dpy->map(_deco);
-	_base->xmap();
+	_base->_window->xmap();
 }
 
 void view_floating_t::_unmap_windows_unsafe()
@@ -546,7 +546,7 @@ void view_floating_t::_unmap_windows_unsafe()
 
 	_dpy->unmap(_input_center);
 
-	_base->unmap();
+	_base->_window->unmap();
 	_dpy->unmap(_deco);
 }
 
@@ -592,7 +592,7 @@ void view_floating_t::_ungrab_all_button_unsafe() {
  **/
 void view_floating_t::_select_inputs_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	_base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	_base->_window->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
 	_dpy->select_input(_deco, MANAGED_DECO_WINDOW_EVENT_MASK);
 }
 
@@ -603,7 +603,7 @@ void view_floating_t::_select_inputs_unsafe() {
  **/
 void view_floating_t::_unselect_inputs_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	_base->select_input(XCB_EVENT_MASK_NO_EVENT);
+	_base->_window->select_input(XCB_EVENT_MASK_NO_EVENT);
 	_dpy->select_input(_deco, XCB_EVENT_MASK_NO_EVENT);
 	_client->_client_proxy->select_input(XCB_EVENT_MASK_NO_EVENT);
 	_client->_client_proxy->select_input_shape(false);

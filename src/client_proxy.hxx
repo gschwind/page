@@ -134,6 +134,8 @@ public:
 
 	auto wa() const -> xcb_get_window_attributes_reply_t const &;
 	auto geometry() const -> xcb_get_geometry_reply_t const &;
+	auto visualid() const -> xcb_visualid_t;
+	auto visual_depth() const -> uint8_t;
 
 	/* OTHERs */
 	motif_wm_hints_t const *           motif_hints() const;

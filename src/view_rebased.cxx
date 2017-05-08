@@ -25,54 +25,21 @@
 
 namespace page {
 
-view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
-	view_t{ref, client},
-	_colormap{XCB_NONE}
+auto view_rebased_t::_base_frame_t::id() const -> xcb_window_t { return _window->id(); }
+
+view_rebased_t::_base_frame_t::~_base_frame_t()
 {
-	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
-	_client->_client_proxy->set_border_width(0);
-	_create_base_windows();
-	_base->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
-	_grab_button_unsafe();
-	xcb_flush(_root->_ctx->_dpy->xcb());
+	xcb_destroy_window(_ctx->_dpy->xcb(), _window->id());
+	xcb_free_colormap(_ctx->_dpy->xcb(), _colormap);
+	_ctx->_page_windows.erase(_window->id());
 }
 
-view_rebased_t::view_rebased_t(view_rebased_t * src) :
-	view_t{src->_root, src->_client},
-	_base{src->_base},
-	_colormap{src->_colormap},
-	_deco_depth{src->_deco_depth},
-	_deco_visual{src->_deco_visual},
-	_base_position{src->_base_position},
-	_orig_position{src->_orig_position}
+
+view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual, uint8_t depth) :
+	_ctx{ctx}
 {
-	// Take the ownership of base window
-	src->_base = nullptr;
-	src->_colormap = XCB_NONE;
-}
 
-view_rebased_t::~view_rebased_t()
-{
-	if (_base != nullptr) {
-		release_client();
-		xcb_destroy_window(_root->_ctx->_dpy->xcb(), _base->id());
-		xcb_free_colormap(_root->_ctx->_dpy->xcb(), _colormap);
-		_root->_ctx->_page_windows.erase(_base->id());
-	}
-}
-
-auto view_rebased_t::shared_from_this() -> view_rebased_p
-{
-	return static_pointer_cast<view_rebased_t>(tree_t::shared_from_this());
-}
-
-void view_rebased_t::_create_base_windows()
-{
-	auto _dpy = _root->_ctx->_dpy;
-
-	auto _orig_visual = _client->_client_proxy->wa().visual;
-	auto _orig_depth = _client->_client_proxy->geometry().depth;
-
+	auto _dpy = _ctx->_dpy;
 	/**
 	 * Create the base window, window that will content managed window
 	 **/
@@ -85,17 +52,17 @@ void view_rebased_t::_create_base_windows()
 	 * have alpha channel, use the window visual, otherwise always prefer
 	 * root visual.
 	 **/
-	if (_orig_depth == 32 and root_depth != 32) {
-		_deco_visual = _orig_visual;
-		_deco_depth = _orig_depth;
+	if (depth == 32 and root_depth != 32) {
+		_visual = visual;
+		_depth = depth;
 	} else {
-		_deco_visual = _dpy->default_visual_rgba()->visual_id;
-		_deco_depth = 32;
+		_visual = _dpy->default_visual_rgba()->visual_id;
+		_depth = 32;
 	}
 
 	/** if visual is 32 bits, this values are mandatory **/
 	_colormap = xcb_generate_id(_dpy->xcb());
-	xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, _colormap, _dpy->root(), _deco_visual);
+	xcb_create_colormap(_dpy->xcb(), XCB_COLORMAP_ALLOC_NONE, _colormap, _dpy->root(), _visual);
 
 	uint32_t value_mask = 0;
 	uint32_t value[4];
@@ -113,11 +80,42 @@ void view_rebased_t::_create_base_windows()
 	value[3] = _colormap;
 
 	xcb_window_t base = xcb_generate_id(_dpy->xcb());
-	_root->_ctx->_page_windows.insert(base);
-	xcb_create_window(_dpy->xcb(), _deco_depth, base, _dpy->root(), -10, -10,
-			1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _deco_visual, value_mask,
+	_ctx->_page_windows.insert(base);
+	xcb_create_window(_dpy->xcb(), _depth, base, _dpy->root(), -10, -10,
+			1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _visual, value_mask,
 			value);
-	_base = _dpy->ensure_client_proxy(base);
+	_window = _dpy->ensure_client_proxy(base);
+}
+
+
+view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
+	view_t{ref, client}
+{
+	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
+	_client->_client_proxy->set_border_width(0);
+	_base = std::unique_ptr<_base_frame_t>{new _base_frame_t(_root->_ctx, _client->_client_proxy->visualid(), _client->_client_proxy->visual_depth())};
+	_base->_window->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
+	_grab_button_unsafe();
+	xcb_flush(_root->_ctx->_dpy->xcb());
+}
+
+view_rebased_t::view_rebased_t(view_rebased_t * src) :
+	view_t{src->_root, src->_client},
+	_base{std::move(src->_base)}, // Take the ownership
+	_base_position{src->_base_position},
+	_orig_position{src->_orig_position}
+{
+
+}
+
+view_rebased_t::~view_rebased_t()
+{
+	release_client();
+}
+
+auto view_rebased_t::shared_from_this() -> view_rebased_p
+{
+	return static_pointer_cast<view_rebased_t>(tree_t::shared_from_this());
 }
 
 void view_rebased_t::_reconfigure_windows()
@@ -128,16 +126,16 @@ void view_rebased_t::_reconfigure_windows()
 	if (not _root->is_enable()) {
 		_client_view = nullptr;
 		if (_client->current_owner_view() == static_cast<view_t*>(this))
-			_base->unmap();
+			_base->_window->unmap();
 		return;
 	}
 
 	_client->_client_proxy->move_resize(_orig_position);
 
 	if (_is_visible) {
-		_base->move_resize(_base_position);
+		_base->_window->move_resize(_base_position);
 		_client->_client_proxy->xmap();
-		_base->xmap();
+		_base->_window->xmap();
 		_client->fake_configure_unsafe(_client->_absolute_position);
 		_client->_client_proxy->set_wm_state(NormalState);
 		if(_client->_has_focus)
@@ -155,7 +153,7 @@ void view_rebased_t::_reconfigure_windows()
 			_base_position.w,
 			_base_position.h };
 		/* if iconic move outside visible area */
-		_base->move_resize(hidden_position);
+		_base->_window->move_resize(hidden_position);
 		_client_view = nullptr;
 		_root->_ctx->add_global_damage(get_visible_region());
 	}
@@ -299,7 +297,7 @@ void view_rebased_t::on_workspace_enable()
 	auto _ctx = _root->_ctx;
 	auto _dpy = _root->_ctx->dpy();
 	acquire_client();
-	_base->xmap();
+	_base->_window->xmap();
 	reconfigure();
 	_grab_button_unsafe();
 }
@@ -310,7 +308,7 @@ void view_rebased_t::on_workspace_disable()
 	auto _dpy = _root->_ctx->dpy();
 	release_client();
 	if (_client->current_owner_view() == static_cast<view_t*>(this))
-		_base->unmap();
+		_base->_window->unmap();
 }
 
 auto view_rebased_t::get_toplevel_xid() const -> xcb_window_t
