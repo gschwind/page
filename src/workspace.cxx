@@ -779,6 +779,7 @@ void workspace_t::_insert_view_fullscreen(view_fullscreen_p vf, xcb_timestamp_t 
 	viewport->hide();
 
 	workspace->set_focus(vf, time);
+	_ctx->_need_restack = true;
 }
 
 void workspace_t::_insert_view_floating(view_floating_p fv, xcb_timestamp_t time)
