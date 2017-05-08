@@ -554,11 +554,11 @@ auto client_managed_t::position() -> rect { return _client_proxy->position(); }
 /* find the bigger window that is smaller than w and h */
 dimention_t<unsigned> client_managed_t::compute_size_with_constrain(unsigned w, unsigned h) {
 
-	/* has no constrain */
-	if (get<p_wm_normal_hints>() == nullptr)
-		return dimention_t<unsigned> { w, h };
-
 	auto sh = get<p_wm_normal_hints>();
+
+	/* has no constrain */
+	if (sh == nullptr)
+		return dimention_t<unsigned> { w, h };
 
 	if (sh->flags & PMaxSize) {
 		if ((int) w > sh->max_width)
