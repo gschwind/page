@@ -34,8 +34,19 @@ view_fullscreen_t::view_fullscreen_t(client_managed_p client, viewport_p viewpor
 		_viewport{viewport}
 {
 	//printf("create %s\n", __PRETTY_FUNCTION__);
-	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
 	_client->set_managed_type(MANAGED_FULLSCREEN);
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_MOVE,
+		_NET_WM_ACTION_MINIMIZE,
+		_NET_WM_ACTION_SHADE,
+		_NET_WM_ACTION_STICK,
+		_NET_WM_ACTION_FULLSCREEN,
+		_NET_WM_ACTION_CHANGE_DESKTOP,
+		_NET_WM_ACTION_CLOSE
+	});
+
+	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+
 }
 
 view_fullscreen_t::view_fullscreen_t(view_rebased_t * src, viewport_p viewport) :
@@ -43,8 +54,21 @@ view_fullscreen_t::view_fullscreen_t(view_rebased_t * src, viewport_p viewport) 
 	revert_type{MANAGED_FLOATING},
 	_viewport{viewport}
 {
-	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+
 	_client->set_managed_type(MANAGED_FULLSCREEN);
+
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_MOVE,
+		_NET_WM_ACTION_MINIMIZE,
+		_NET_WM_ACTION_SHADE,
+		_NET_WM_ACTION_STICK,
+		_NET_WM_ACTION_FULLSCREEN,
+		_NET_WM_ACTION_CHANGE_DESKTOP,
+		_NET_WM_ACTION_CLOSE
+	});
+
+	_client->net_wm_state_add(_NET_WM_STATE_FULLSCREEN);
+
 }
 
 view_fullscreen_t::~view_fullscreen_t()

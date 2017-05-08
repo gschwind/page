@@ -490,7 +490,6 @@ void page_t::update_net_supported() {
 	supported_list.push_back(A(_NET_WM_ACTION_BELOW));
 	supported_list.push_back(A(_NET_WM_ACTION_CHANGE_DESKTOP));
 	supported_list.push_back(A(_NET_WM_ACTION_CLOSE));
-	supported_list.push_back(A(_NET_WM_ACTION_FULLSCREEN));
 	supported_list.push_back(A(_NET_WM_ACTION_MAXIMIZE_HORZ));
 	supported_list.push_back(A(_NET_WM_ACTION_MAXIMIZE_VERT));
 	supported_list.push_back(A(_NET_WM_ACTION_MINIMIZE));

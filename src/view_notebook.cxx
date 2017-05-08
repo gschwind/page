@@ -31,13 +31,31 @@ namespace page {
 view_notebook_t::view_notebook_t(tree_t * ref, client_managed_p client) :
 	view_rebased_t{ref, client}
 {
-
+	_client->set_managed_type(MANAGED_NOTEBOOK);
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_MOVE,
+		_NET_WM_ACTION_MINIMIZE,
+		_NET_WM_ACTION_SHADE,
+		_NET_WM_ACTION_STICK,
+		_NET_WM_ACTION_FULLSCREEN,
+		_NET_WM_ACTION_CHANGE_DESKTOP,
+		_NET_WM_ACTION_CLOSE
+	});
 }
 
 view_notebook_t::view_notebook_t(view_rebased_t * src) :
 	view_rebased_t{src}
 {
-
+	_client->set_managed_type(MANAGED_NOTEBOOK);
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_MOVE,
+		_NET_WM_ACTION_MINIMIZE,
+		_NET_WM_ACTION_SHADE,
+		_NET_WM_ACTION_STICK,
+		_NET_WM_ACTION_FULLSCREEN,
+		_NET_WM_ACTION_CHANGE_DESKTOP,
+		_NET_WM_ACTION_CLOSE
+	});
 }
 
 view_notebook_t::~view_notebook_t()

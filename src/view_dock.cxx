@@ -31,6 +31,12 @@ view_dock_t::view_dock_t(tree_t * ref, client_managed_p client) :
 	//printf("create %s\n", __PRETTY_FUNCTION__);
 	connect(_client->on_strut_change, this, &view_dock_t::on_update_struct_change);
 	_grab_button_unfocused_unsafe();
+
+	_client->set_managed_type(MANAGED_DOCK);
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_CLOSE
+	});
+
 }
 
 view_dock_t::~view_dock_t()

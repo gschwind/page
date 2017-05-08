@@ -78,21 +78,7 @@ void client_managed_t::delete_window(xcb_timestamp_t t) {
 }
 
 void client_managed_t::set_managed_type(managed_window_type_e type) {
-	if(_managed_type == MANAGED_DOCK) {
-		std::list<atom_e> net_wm_allowed_actions;
-		_client_proxy->net_wm_allowed_actions_set(net_wm_allowed_actions);
-		//reconfigure();
-	} else {
-
-		std::list<atom_e> net_wm_allowed_actions;
-		net_wm_allowed_actions.push_back(_NET_WM_ACTION_CLOSE);
-		net_wm_allowed_actions.push_back(_NET_WM_ACTION_FULLSCREEN);
-		_client_proxy->net_wm_allowed_actions_set(net_wm_allowed_actions);
-
-		_managed_type = type;
-
-		//reconfigure();
-	}
+	_managed_type = type;
 }
 
 void client_managed_t::focus(xcb_timestamp_t t) {

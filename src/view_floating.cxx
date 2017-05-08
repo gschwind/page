@@ -102,6 +102,16 @@ auto view_floating_t::shared_from_this() -> view_floating_p
 void view_floating_t::_init()
 {
 	//printf("create %s\n", __PRETTY_FUNCTION__);
+	_client->set_managed_type(MANAGED_FLOATING);
+	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
+		_NET_WM_ACTION_MOVE,
+		_NET_WM_ACTION_RESIZE,
+		_NET_WM_ACTION_SHADE,
+		_NET_WM_ACTION_STICK,
+		_NET_WM_ACTION_FULLSCREEN,
+		_NET_WM_ACTION_CHANGE_DESKTOP,
+		_NET_WM_ACTION_CLOSE
+	});
 
 	connect(_client->on_opaque_region_change, this, &view_floating_t::_on_opaque_region_change);
 	connect(_client->on_title_change, this, &view_floating_t::_on_client_title_change);
