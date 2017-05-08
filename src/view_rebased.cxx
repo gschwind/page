@@ -46,7 +46,7 @@ view_rebased_t::view_rebased_t(view_rebased_t * src) :
 	_base_position{src->_base_position},
 	_orig_position{src->_orig_position}
 {
-	assert(src != this);
+	// Take the ownership of base window
 	src->_base = nullptr;
 	src->_colormap = XCB_NONE;
 }
