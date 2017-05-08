@@ -2599,7 +2599,8 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		// NOTE: client_id() is based on Xorg client XID allocation and may be
 		//   invalid for other X11 server implementation.
 		if(client_id(focused->_client->_client_proxy->id()) != client_id(e->event)) {
-			focused->focus(XCB_CURRENT_TIME);
+			printf("WARNING: A Client steal the focus\n");
+			//focused->focus(XCB_CURRENT_TIME);
 		}
 	} else {
 		/**
