@@ -102,7 +102,23 @@ void notebook_t::remove_view_notebook(view_notebook_p vn) {
 			and not _clients_tab_order.empty()
 			and _selected == nullptr
 			and not _exposay) {
-		_selected = _clients_tab_order.front();
+
+		// find the most rescent focussed tabs
+		_root->client_focus_history_remove(vn);
+		view_notebook_p xvn = nullptr;
+		auto focus_history = filter_class<view_notebook_t>(lock(_root->client_focus_history()));
+		for(auto &x: focus_history) {
+			if(x->parent_notebook().get() == this) {
+				xvn = x;
+				break;
+			}
+		}
+
+		if(xvn) {
+			_selected = xvn;
+		} else {
+			_selected = _clients_tab_order.front();
+		}
 
 		if (_selected != nullptr and _is_visible) {
 			_selected->show();
