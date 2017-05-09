@@ -191,7 +191,7 @@ std::vector<std::shared_ptr<T0>> filter_class_lock(C<std::weak_ptr<T1>, F...> co
 }
 
 template<class T0, class T1, template<typename, typename...> class C, template<typename> class D, typename ... F>
-__attribute__((deprecated)) C<D<T0>> filter_class(C<D<T1>, F...> const & x) {
+C<D<T0>> filter_class(C<D<T1>, F...> const & x) {
 	C<D<T0>> ret;
 	for (auto i : x) {
 		auto n = dynamic_pointer_cast<T0>(i);

@@ -445,8 +445,8 @@ void client_proxy_t::update_type() {
 
 	list<xcb_atom_t> net_wm_window_type;
 	bool override_redirect = (_wa.override_redirect == True)?true:false;
-
-	if(this->get<p_net_wm_window_type>() == nullptr) {
+	auto px_net_wm_window_type = this->get<p_net_wm_window_type>();
+	if(px_net_wm_window_type == nullptr) {
 		/**
 		 * Fallback from ICCCM.
 		 **/
@@ -483,7 +483,7 @@ void client_proxy_t::update_type() {
 			net_wm_window_type.push_back(A(_NET_WM_WINDOW_TYPE_NORMAL));
 		}
 	} else {
-		net_wm_window_type = *(get<p_net_wm_window_type>());
+		net_wm_window_type = *(px_net_wm_window_type);
 	}
 
 	/* always fall back to normal */

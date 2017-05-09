@@ -137,7 +137,7 @@ public:
 	}
 
 	template<int const ID>
-	auto get() -> shared_ptr<typename  ptype<ID>::type::cxx_type> {
+	 auto get() -> shared_ptr<typename  ptype<ID>::type::cxx_type> {
 		return static_cast<property_element_t<ID> * >(this)->props.read(xcb, A, w);
 	}
 

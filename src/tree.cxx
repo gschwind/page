@@ -236,7 +236,7 @@ auto tree_t::workspace() const -> shared_ptr<workspace_t>
 
 auto tree_t::lookup_view_for(client_managed_p c) const -> view_p
 {
-	_root->workspace_t::lookup_view_for(c);
+	return _root->workspace_t::lookup_view_for(c);
 }
 
 auto tree_t::button_press(xcb_button_press_event_t const * ev) -> button_action_e

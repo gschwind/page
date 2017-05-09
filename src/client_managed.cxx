@@ -161,8 +161,9 @@ unsigned client_managed_t::ensure_workspace() {
 }
 
 bool client_managed_t::skip_task_bar() {
-	if (_client_proxy->get<p_net_wm_state>() != nullptr) {
-		return has_key(*(_client_proxy->get<p_net_wm_state>()),
+	auto net_wm_state = _client_proxy->get<p_net_wm_state>();
+	if (net_wm_state != nullptr) {
+		return has_key(*(net_wm_state),
 				static_cast<xcb_atom_t>(A(_NET_WM_STATE_SKIP_TASKBAR)));
 	}
 	return false;
@@ -170,15 +171,6 @@ bool client_managed_t::skip_task_bar() {
 
 xcb_atom_t client_managed_t::net_wm_type() {
 	return _net_wm_type;
-}
-
-bool client_managed_t::get_wm_normal_hints(XSizeHints * size_hints) {
-	if(_client_proxy->get<p_wm_normal_hints>() != nullptr) {
-		*size_hints = *(_client_proxy->get<p_wm_normal_hints>());
-		return true;
-	} else {
-		return false;
-	}
 }
 
 void client_managed_t::net_wm_state_add(atom_e atom)
@@ -305,10 +297,11 @@ void client_managed_t::update_title() {
 }
 
 bool client_managed_t::prefer_window_border() const {
-	if (_client_proxy->get<p_motif_hints>() != nullptr) {
-		if(not (_client_proxy->get<p_motif_hints>()->flags & MWM_HINTS_DECORATIONS))
+	auto motif_hints = _client_proxy->get<p_motif_hints>();
+	if (motif_hints != nullptr) {
+		if(not (motif_hints->flags & MWM_HINTS_DECORATIONS))
 			return true;
-		if(_client_proxy->get<p_motif_hints>()->decorations != 0x00)
+		if(motif_hints->decorations != 0x00)
 			return true;
 		return false;
 	}
@@ -486,10 +479,11 @@ void client_managed_t::update_shape() {
 
 
 bool client_managed_t::has_motif_border() {
-	if (_client_proxy->get<p_motif_hints>() != nullptr) {
-		if (_client_proxy->get<p_motif_hints>()->flags & MWM_HINTS_DECORATIONS) {
-			if (not (_client_proxy->get<p_motif_hints>()->decorations & MWM_DECOR_BORDER)
-					and not ((_client_proxy->get<p_motif_hints>()->decorations & MWM_DECOR_ALL))) {
+	auto motif_hints = _client_proxy->get<p_motif_hints>();
+	if (motif_hints != nullptr) {
+		if (motif_hints->flags & MWM_HINTS_DECORATIONS) {
+			if (not (motif_hints->decorations & MWM_DECOR_BORDER)
+					and not ((motif_hints->decorations & MWM_DECOR_ALL))) {
 				return false;
 			}
 		}
