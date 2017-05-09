@@ -416,9 +416,8 @@ void client_managed_t::destroy_view(client_view_t * c)
 }
 
 void client_managed_t::_apply_floating_hints_constraint() {
-
-	if(_client_proxy->get<p_wm_normal_hints>()!= nullptr) {
-		auto s = _client_proxy->get<p_wm_normal_hints>();
+	auto s = _client_proxy->get<p_wm_normal_hints>();
+	if (s != nullptr) {
 
 		if (s->flags & PBaseSize) {
 			if (_floating_wished_position.w < s->base_width)
