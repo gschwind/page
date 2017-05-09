@@ -737,6 +737,11 @@ void workspace_t::unmanage(client_managed_p mw)
 	if (v == nullptr)
 		return;
 
+	bool has_focus = false;
+	if (_net_active_window.lock() == v) {
+		has_focus = true;
+	}
+
 	/* if managed window have active clients */
 	printf("unmanaging : %d '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
 
@@ -747,6 +752,15 @@ void workspace_t::unmanage(client_managed_p mw)
 
 	client_focus_history_remove(v);
 	v->remove_this_view();
+
+	if (_ctx->configuration._auto_refocus and has_focus) {
+		view_p focus;
+		if (client_focus_history_front(focus)) {
+			set_focus(focus, XCB_CURRENT_TIME);
+			focus->xxactivate(XCB_CURRENT_TIME);
+		}
+	}
+
 }
 
 auto workspace_t::_find_viewport_of(tree_p t) -> viewport_p {
