@@ -280,10 +280,12 @@ void client_managed_t::unmap_unsafe() {
 
 void client_managed_t::_update_title() {
 	string name;
-	if (_client_proxy->get<p_net_wm_name>() != nullptr) {
-		_title = *(_client_proxy->get<p_net_wm_name>());
-	} else if (_client_proxy->get<p_wm_name>() != nullptr) {
-		_title = *(_client_proxy->get<p_wm_name>());
+	auto net_wm_name = _client_proxy->get<p_net_wm_name>();
+	auto wm_name = _client_proxy->get<p_wm_name>();
+	if (net_wm_name != nullptr) {
+		_title = *net_wm_name;
+	} else if (wm_name != nullptr) {
+		_title = *wm_name;
 	} else {
 		stringstream s(stringstream::in | stringstream::out);
 		s << "#" << (_client_proxy->id()) << " (noname)";
