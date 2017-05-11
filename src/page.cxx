@@ -2617,16 +2617,28 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	{
 		auto c = find_client_managed_with(e->event);
-		if(c) {
+		if (c != nullptr) {
+
+			if(c->_current_owner_view == nullptr)
+				return;
+			if (typeid(*c->_current_owner_view) == typeid(view_popup_t))
+				return;
+
+			// this switch is not needed, keeped for doc.
 			switch(e->detail) {
 			case XCB_NOTIFY_DETAIL_INFERIOR:
 			case XCB_NOTIFY_DETAIL_ANCESTOR:
 			case XCB_NOTIFY_DETAIL_VIRTUAL:
 			case XCB_NOTIFY_DETAIL_NONLINEAR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-				c->set_focus_state(true);
-				break;
 			default:
+				if (not _actual_focussed_client.expired()) {
+					if(c == _actual_focussed_client.lock())
+						return;
+					_actual_focussed_client.lock()->set_focus_state(false);
+				}
+				_actual_focussed_client = c;
+				c->set_focus_state(true);
 				break;
 			}
 		}
@@ -2682,7 +2694,8 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 			case XCB_NOTIFY_DETAIL_ANCESTOR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR:
 			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-				c->set_focus_state(false);
+				// Handled by focus in
+				//c->set_focus_state(false);
 				break;
 			case XCB_NOTIFY_DETAIL_INFERIOR:
 				// should alreay have the focus
