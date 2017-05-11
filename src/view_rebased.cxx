@@ -91,7 +91,7 @@ view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual
 view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	view_t{ref, client}
 {
-	//connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
+	connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
 	_client->_client_proxy->set_border_width(0);
 	_base = std::unique_ptr<_base_frame_t>{new _base_frame_t(_root->_ctx, _client->_client_proxy->visualid(), _client->_client_proxy->visual_depth())};
 	_base->_window->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
@@ -105,7 +105,7 @@ view_rebased_t::view_rebased_t(view_rebased_t * src) :
 	_base_position{src->_base_position},
 	_orig_position{src->_orig_position}
 {
-
+	connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
 }
 
 view_rebased_t::~view_rebased_t()
@@ -165,35 +165,24 @@ void view_rebased_t::_update_visible_region() {
 	_visible_region_cache = region{_base_position};
 }
 
-//void view_rebased_t::_grab_button_focused_unsafe() {
-//	auto _dpy = _root->_ctx->_dpy;
-//
-//	/** First ungrab all **/
-//	_ungrab_all_button_unsafe();
-//
-//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
-//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-//			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-//
-//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
-//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-//			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-//
-//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
-//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-//			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
-//
-//	/** grab alt-button1 move **/
-//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
-//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-//			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
-//
-//	/** grab alt-button3 resize **/
-//	xcb_grab_button(_dpy->xcb(), true, _base, DEFAULT_BUTTON_EVENT_MASK,
-//			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-//			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
-//
-//}
+void view_rebased_t::_ungrab_button_unsafe()
+{
+	auto _dpy = _root->_ctx->_dpy;
+
+	/** First ungrab all **/
+	_ungrab_all_button_unsafe();
+
+	/** grab alt-button1 move **/
+	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
+
+	/** grab alt-button3 resize **/
+	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
+			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
+
+}
 
 void view_rebased_t::_grab_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
@@ -201,34 +190,36 @@ void view_rebased_t::_grab_button_unsafe() {
 	/** First ungrab all **/
 	_ungrab_all_button_unsafe();
 
-	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
+	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
 
-	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_2, XCB_MOD_MASK_ANY);
-
-	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_ANY);
-
 	/** grab alt-button1 move **/
-	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
+	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
 
 	/** grab alt-button3 resize **/
-	xcb_grab_button(_dpy->xcb(), true, _base->id(), DEFAULT_BUTTON_EVENT_MASK,
+	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
 			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
+
 
 }
 
 void view_rebased_t::_ungrab_all_button_unsafe() {
 	auto _dpy = _root->_ctx->_dpy;
-	xcb_ungrab_button(_dpy->xcb(), XCB_BUTTON_INDEX_ANY, _base->id(), XCB_MOD_MASK_ANY);
+	_base->_window->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 	_client->_client_proxy->ungrab_button(XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
+}
+
+void view_rebased_t::_on_focus_change(client_managed_t * c)
+{
+	if (_client->_has_focus) {
+		_ungrab_button_unsafe();
+	} else {
+		_grab_button_unsafe();
+	}
 }
 
 auto view_rebased_t::create_surface() -> client_view_p

@@ -636,6 +636,8 @@ void view_floating_t::_on_focus_change(client_managed_t * c)
 	r -= _client->_absolute_position;
 	_damage_cache += r;
 	_root->_ctx->schedule_repaint();
+
+	view_rebased_t::_on_focus_change(c);
 }
 
 void view_floating_t::remove_this_view()

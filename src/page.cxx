@@ -2685,7 +2685,8 @@ void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 				c->set_focus_state(false);
 				break;
 			case XCB_NOTIFY_DETAIL_INFERIOR:
-				c->set_focus_state(true);
+				// should alreay have the focus
+				//c->set_focus_state(true);
 				break;
 			default:
 				break;

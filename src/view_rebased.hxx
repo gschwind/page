@@ -62,9 +62,10 @@ public:
 	void _create_base_windows();
 	void _reconfigure_windows();
 	void _update_visible_region();
+	void _ungrab_button_unsafe();
 	void _grab_button_unsafe();
 	void _ungrab_all_button_unsafe();
-
+	void _on_focus_change(client_managed_t * c);
 	/**
 	 * view_t API
 	 **/

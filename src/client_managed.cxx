@@ -55,7 +55,7 @@ client_managed_t::client_managed_t(page_t * ctx, client_proxy_p proxy) :
 		_client_proxy->add_to_save_set();
 	//_client_proxy->set_border_width(0);
 	_client_proxy->select_input(MANAGED_ORIG_WINDOW_EVENT_MASK);
-	//_client_proxy->select_input_shape(true);
+	_client_proxy->select_input_shape(true);
 
 	update_icon();
 

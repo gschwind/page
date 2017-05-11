@@ -37,7 +37,6 @@ view_t::view_t(tree_t * ref, client_managed_p client) :
 	//printf("create %s\n", __PRETTY_FUNCTION__);
 
 	connect(_client->on_opaque_region_change, this, &view_t::on_opaque_region_change);
-	connect(_client->on_focus_change, this, &view_t::_on_focus_change);
 
 	_stack_is_locked = true;
 
