@@ -1169,6 +1169,11 @@ void display_t::force_sync()
 		free(r);
 }
 
+void display_t::flush()
+{
+	xcb_flush(_xcb);
+}
+
 
 }
 

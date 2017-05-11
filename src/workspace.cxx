@@ -322,6 +322,9 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	fv->raise();
 	fv->show();
 
+	_ctx->add_global_damage(fv->get_visible_region());
+	_ctx->schedule_repaint(0L);
+
 }
 
 void workspace_t::insert_as_dock(client_managed_p c, xcb_timestamp_t time)

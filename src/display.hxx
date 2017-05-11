@@ -276,6 +276,7 @@ public:
 	void change_sync_counter(uint32_t counter, uint64_t amount);
 
 	void force_sync();
+	void flush();
 
 };
 

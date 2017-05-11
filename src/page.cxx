@@ -1041,6 +1041,8 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 		ackwoledge_configure_request(e);
 	}
 
+	_dpy->flush();
+
 }
 
 void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * e) {
@@ -2099,6 +2101,9 @@ void page_t::onmap(xcb_window_t w) {
 			create_unmanaged_window(props);
 		}
 	}
+
+	schedule_repaint();
+	_dpy->flush();
 
 }
 
