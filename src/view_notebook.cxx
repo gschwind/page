@@ -111,6 +111,12 @@ void view_notebook_t::remove_this_view()
 	nbk->remove_view_notebook(shared_from_this());
 }
 
+void view_notebook_t::set_focus_state(bool is_focused)
+{
+	view_rebased_t::set_focus_state(is_focused);
+	parent_notebook()->_client_focus_change(_client.get());
+}
+
 void view_notebook_t::reconfigure()
 {
 	auto _ctx = _root->_ctx;

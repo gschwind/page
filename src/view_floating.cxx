@@ -115,7 +115,6 @@ void view_floating_t::_init()
 
 	connect(_client->on_opaque_region_change, this, &view_floating_t::_on_opaque_region_change);
 	connect(_client->on_title_change, this, &view_floating_t::_on_client_title_change);
-	connect(_client->on_focus_change, this, &view_floating_t::_on_focus_change);
 
 	auto _ctx = _root->_ctx;
 
@@ -644,6 +643,17 @@ void view_floating_t::remove_this_view()
 {
 	view_t::remove_this_view();
 	_root->_ctx->add_global_damage(_base_position);
+}
+
+void view_floating_t::set_focus_state(bool is_focused)
+{
+	view_rebased_t::set_focus_state(is_focused);
+
+	_has_change = true;
+	region r = _base_position;
+	r -= _client->_absolute_position;
+	_damage_cache += r;
+	_root->_ctx->schedule_repaint();
 }
 
 void view_floating_t::reconfigure() {

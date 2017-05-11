@@ -91,7 +91,6 @@ view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual
 view_rebased_t::view_rebased_t(tree_t * ref, client_managed_p client) :
 	view_t{ref, client}
 {
-	connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
 	_client->_client_proxy->set_border_width(0);
 	_base = std::unique_ptr<_base_frame_t>{new _base_frame_t(_root->_ctx, _client->_client_proxy->visualid(), _client->_client_proxy->visual_depth())};
 	_base->_window->select_input(MANAGED_BASE_WINDOW_EVENT_MASK);
@@ -105,7 +104,7 @@ view_rebased_t::view_rebased_t(view_rebased_t * src) :
 	_base_position{src->_base_position},
 	_orig_position{src->_orig_position}
 {
-	connect(_client->on_focus_change, this, &view_rebased_t::_on_focus_change);
+
 }
 
 view_rebased_t::~view_rebased_t()
@@ -252,6 +251,16 @@ void view_rebased_t::release_client()
 	_dpy->reparentwindow(_client->_client_proxy->id(),_dpy->root(),
 			_ctx->left_most_border() - 1 - _orig_position.w,
 			_ctx->top_most_border());
+}
+
+void view_rebased_t::set_focus_state(bool is_focused)
+{
+	view_t::set_focus_state(is_focused);
+	if (_client->_has_focus) {
+		_ungrab_button_unsafe();
+	} else {
+		_grab_button_unsafe();
+	}
 }
 
 void view_rebased_t::update_layout(time64_t const time)

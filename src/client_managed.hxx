@@ -139,7 +139,6 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 
 	signal_t<client_managed_t *> on_destroy;
 	signal_t<client_managed_t *> on_title_change;
-	signal_t<client_managed_t *> on_focus_change;
 	signal_t<client_managed_t *> on_configure_notify;
 	signal_t<client_managed_t *> on_strut_change;
 	signal_t<client_managed_t *> on_opaque_region_change;
@@ -165,7 +164,6 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 	auto get_floating_wished_position() -> rect const & ;
 	bool lock();
 	void unlock();
-	void set_focus_state(bool is_focused);
 	void set_demands_attention(bool x);
 	bool demands_attention();
 	void focus(xcb_timestamp_t t);

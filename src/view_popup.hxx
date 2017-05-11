@@ -40,6 +40,7 @@ struct view_popup_t : public view_t {
 	virtual void remove_this_view() override;
 	using view_t::acquire_client;
 	using view_t::release_client;
+	void set_focus_state(bool is_focused) override;
 
 	/**
 	 * tree_t virtual API

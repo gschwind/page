@@ -75,6 +75,7 @@ public:
 	using view_t::remove_this_view;
 	virtual void acquire_client() override;
 	virtual void release_client() override;
+	virtual void set_focus_state(bool is_focused) override;
 
 	/**
 	 * tree_t virtual API

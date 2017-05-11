@@ -55,6 +55,8 @@ struct view_notebook_t : public view_rebased_t {
 	virtual void remove_this_view() override;
 	using view_rebased_t::acquire_client;
 	using view_rebased_t::release_client;
+	virtual void set_focus_state(bool is_focused) override;
+
 
 	/**
 	 * tree_t virtual API

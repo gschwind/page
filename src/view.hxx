@@ -75,6 +75,7 @@ struct view_t : public tree_t {
 	virtual void remove_this_view();
 	virtual void acquire_client();
 	virtual void release_client();
+	virtual void set_focus_state(bool is_focused);
 
 	/**
 	 * tree_t API

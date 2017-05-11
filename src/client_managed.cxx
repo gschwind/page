@@ -244,16 +244,6 @@ display_t * client_managed_t::cnx() {
 	return _client_proxy->cnx();
 }
 
-void client_managed_t::set_focus_state(bool is_focused) {
-	_has_focus = is_focused;
-	if (_has_focus) {
-		net_wm_state_add(_NET_WM_STATE_FOCUSED);
-	} else {
-		net_wm_state_remove(_NET_WM_STATE_FOCUSED);
-	}
-	on_focus_change.signal(this);
-}
-
 void client_managed_t::net_wm_allowed_actions_add(atom_e atom) {
 	_client_proxy->net_wm_allowed_actions_add(atom);
 }

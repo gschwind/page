@@ -2617,11 +2617,12 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 	{
 		auto c = find_client_managed_with(e->event);
-		if (c != nullptr) {
+		if(c == nullptr)
+			return;
+		if (c->_current_owner_view != nullptr) {
+			auto v = c->_current_owner_view->shared_from_this();
 
-			if(c->_current_owner_view == nullptr)
-				return;
-			if (typeid(*c->_current_owner_view) == typeid(view_popup_t))
+			if (typeid(*v) == typeid(view_popup_t))
 				return;
 
 			// this switch is not needed, keeped for doc.
@@ -2633,12 +2634,12 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
 			default:
 				if (not _actual_focussed_client.expired()) {
-					if(c == _actual_focussed_client.lock())
+					if(v == _actual_focussed_client.lock())
 						return;
 					_actual_focussed_client.lock()->set_focus_state(false);
 				}
-				_actual_focussed_client = c;
-				c->set_focus_state(true);
+				_actual_focussed_client = v;
+				v->set_focus_state(true);
 				break;
 			}
 		}

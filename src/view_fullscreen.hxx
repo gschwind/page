@@ -47,6 +47,7 @@ struct view_fullscreen_t : public view_rebased_t {
 	virtual void remove_this_view() override;
 	using view_rebased_t::acquire_client;
 	using view_rebased_t::release_client;
+	using view_rebased_t::set_focus_state;
 
 	/**
 	 * tree_t virtual API

@@ -30,7 +30,6 @@ view_popup_t::view_popup_t(tree_t * ref, client_managed_p client) :
 {
 	_is_visible = true;
 
-	disconnect(_client->on_focus_change); // do not change the focus state of popup
 	connect(_client->on_configure_notify, this, &view_popup_t::_on_configure_notify);
 	_client->set_managed_type(MANAGED_POPUP);
 	_client->_absolute_position = _client->_client_proxy->position();
@@ -53,6 +52,11 @@ void view_popup_t::remove_this_view()
 {
 	view_t::remove_this_view();
 	_root->_ctx->add_global_damage(_client->_absolute_position);
+}
+
+void view_popup_t::set_focus_state(bool is_focused)
+{
+	_client->_has_focus = true;
 }
 
 void view_popup_t::reconfigure()

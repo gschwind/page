@@ -118,6 +118,7 @@ struct view_floating_t : public view_rebased_t {
 	virtual void remove_this_view() override;
 	using view_rebased_t::acquire_client;
 	using view_rebased_t::release_client;
+	void set_focus_state(bool is_focused) override;
 
 	/**
 	 * tree_t virtual API

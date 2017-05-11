@@ -91,7 +91,6 @@ void notebook_t::remove_view_notebook(view_notebook_p vn) {
 	// cleanup
 
 	disconnect(vn->_client->on_title_change);
-	disconnect(vn->_client->on_focus_change);
 	disconnect(vn->_client->on_destroy);
 
 	_clients_tab_order.remove(vn);
@@ -158,7 +157,6 @@ void notebook_t::_add_client_view(view_notebook_p vn, xcb_timestamp_t time)
 	_clients_tab_order.push_front(vn);
 
 	connect(vn->_client->on_destroy, this, &notebook_t::_client_destroy);
-	connect(vn->_client->on_focus_change, this, &notebook_t::_client_focus_change);
 	connect(vn->_client->on_title_change, this, &notebook_t::_client_title_change);
 
 	update_client_position(vn);

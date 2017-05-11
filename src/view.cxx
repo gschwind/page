@@ -251,6 +251,16 @@ void view_t::release_client()
 		_client->release(this);
 }
 
+void view_t::set_focus_state(bool is_focused)
+{
+	_client->_has_focus = is_focused;
+	if (_client->_has_focus) {
+		_client->net_wm_state_add(_NET_WM_STATE_FOCUSED);
+	} else {
+		_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
+	}
+}
+
 void view_t::reconfigure()
 {
 	//printf("call %s\n", __PRETTY_FUNCTION__);

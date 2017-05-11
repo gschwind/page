@@ -108,7 +108,7 @@ class page_t : public connectable_t {
 
 	weak_ptr<client_managed_t> _net_active_window;
 
-	client_managed_w _actual_focussed_client;
+	view_w _actual_focussed_client;
 
 public:
 	rect _root_position;
