@@ -216,8 +216,10 @@ void view_rebased_t::_ungrab_all_button_unsafe() {
 void view_rebased_t::_on_focus_change(client_managed_t * c)
 {
 	if (_client->_has_focus) {
+		_client->net_wm_state_add(_NET_WM_STATE_FOCUSED);
 		_ungrab_button_unsafe();
 	} else {
+		_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 		_grab_button_unsafe();
 	}
 }
