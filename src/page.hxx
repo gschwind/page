@@ -237,6 +237,7 @@ public:
 	void process_circulate_request_event(xcb_generic_event_t const * e);
 	void process_configure_request_event(xcb_generic_event_t const * e);
 	void process_map_request_event(xcb_generic_event_t const * e);
+	void process_fake_configure_request_event(xcb_generic_event_t const * e);
 
 	/* PropertyChangeMask */
 	void process_property_notify_event(xcb_generic_event_t const * e);

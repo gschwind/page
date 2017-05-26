@@ -1045,6 +1045,27 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 }
 
+void page_t::process_fake_configure_request_event(xcb_generic_event_t const * _e) {
+	auto e = reinterpret_cast<xcb_configure_request_event_t const *>(_e);
+
+	printf("Fake ConfigureRequest\n");
+	if (e->value_mask & CWX)
+		printf("has x: %d\n", e->x);
+	if (e->value_mask & CWY)
+		printf("has y: %d\n", e->y);
+	if (e->value_mask & CWWidth)
+		printf("has width: %d\n", e->width);
+	if (e->value_mask & CWHeight)
+		printf("has height: %d\n", e->height);
+	if (e->value_mask & CWSibling)
+		printf("has sibling: %u\n", e->sibling);
+	if (e->value_mask & CWStackMode)
+		printf("has stack mode: %d\n", e->stack_mode);
+	if (e->value_mask & CWBorderWidth)
+		printf("has border: %d\n", e->border_width);
+
+}
+
 void page_t::ackwoledge_configure_request(xcb_configure_request_event_t const * e) {
 	//printf("ackwoledge_configure_request ");
 
@@ -2547,6 +2568,7 @@ void page_t::_bind_all_default_event() {
 
 	_event_handler_bind(XCB_UNMAP_NOTIFY|0x80, &page_t::process_fake_unmap_notify_event);
 	_event_handler_bind(XCB_CLIENT_MESSAGE|0x80, &page_t::process_fake_client_message_event);
+	_event_handler_bind(XCB_CONFIGURE_REQUEST|0x80, &page_t::process_fake_configure_request_event);
 
 	/** Extension **/
 	_event_handler_bind(_dpy->damage_event + XCB_DAMAGE_NOTIFY, &page_t::process_damage_notify_event);
