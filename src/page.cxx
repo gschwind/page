@@ -2574,7 +2574,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
+	cout << focus_in_to_string(e) << endl;
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -2655,7 +2655,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	//cout << focus_in_to_string(e) << endl;
+	cout << focus_in_to_string(e) << endl;
 
 	if (e->mode == XCB_NOTIFY_MODE_UNGRAB and _current_grabbing_window == e->event) {
 		_current_grabbing_window = XCB_WINDOW_NONE;
@@ -2718,22 +2718,22 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_enter_notify_event_t const *>(_e);
 	get_current_workspace()->broadcast_enter(e);
 
-//	char const * xx = nullptr;
-//	switch (e->mode) {
-//	case XCB_NOTIFY_MODE_GRAB:
-//		xx = "GRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_NORMAL:
-//		xx = "NORMAL";
-//		break;
-//	case XCB_NOTIFY_MODE_UNGRAB:
-//		xx = "UNGRAB";
-//		break;
-//	default:
-//		break;
-//	}
-//
-//	printf("Enter 0x%x %s\n", e->event, xx);
+	char const * xx = nullptr;
+	switch (e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		xx = "GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		xx = "NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		xx = "UNGRAB";
+		break;
+	default:
+		break;
+	}
+
+	printf("Enter 0x%x %s\n", e->event, xx);
 
 	if (e->mode == XCB_NOTIFY_MODE_UNGRAB) {
 		// Allow focus stilling when the client grab the keyboard
@@ -2760,22 +2760,22 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_leave_notify_event_t const *>(_e);
 
-//	char const * xx = nullptr;
-//	switch (e->mode) {
-//	case XCB_NOTIFY_MODE_GRAB:
-//		xx = "GRAB";
-//		break;
-//	case XCB_NOTIFY_MODE_NORMAL:
-//		xx = "NORMAL";
-//		break;
-//	case XCB_NOTIFY_MODE_UNGRAB:
-//		xx = "UNGRAB";
-//		break;
-//	default:
-//		break;
-//	}
-//
-//	printf("Leave 0x%x %s\n", e->event, xx);
+	char const * xx = nullptr;
+	switch (e->mode) {
+	case XCB_NOTIFY_MODE_GRAB:
+		xx = "GRAB";
+		break;
+	case XCB_NOTIFY_MODE_NORMAL:
+		xx = "NORMAL";
+		break;
+	case XCB_NOTIFY_MODE_UNGRAB:
+		xx = "UNGRAB";
+		break;
+	default:
+		break;
+	}
+
+	printf("Leave 0x%x %s\n", e->event, xx);
 
 	get_current_workspace()->broadcast_leave(e);
 }
