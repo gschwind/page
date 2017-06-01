@@ -1196,6 +1196,45 @@ void display_t::flush()
 	xcb_flush(_xcb);
 }
 
+auto display_t::lookup_client_id(uint32_t xid) -> pair<uint32_t, uint32_t> const &
+{
+	static pair<uint32_t, uint32_t> const fail = { 0, 0xffffffffu };
+
+	for(auto & x: _client_id_spec_cache) {
+		if((xid & x.second) == x.first) {
+			return x;
+		}
+	}
+
+	xcb_res_client_id_spec_t spec = {
+			xid,
+			XCB_RES_CLIENT_ID_MASK_CLIENT_XID
+	};
+	auto ck = xcb_res_query_client_ids(_xcb, 1, &spec);
+	auto r = xcb_res_query_client_ids_reply(_xcb, ck, nullptr);
+
+	if (r == nullptr) {
+		return fail;
+	}
+
+	auto cnums = xcb_res_query_client_ids_ids_length(r);
+	auto cit = xcb_res_query_client_ids_ids_iterator(r);
+	while (cnums > 0) {
+		_client_id_spec_cache.insert(pair<uint32_t, uint32_t>{cit.data->spec.client, cit.data->spec.mask});
+		xcb_res_client_id_value_next(&cit);
+		cnums--;
+	}
+
+	for(auto & x: _client_id_spec_cache) {
+		if((xid & x.second) == x.first) {
+			return x;
+		}
+	}
+
+	return fail;
+
+}
+
 
 }
 

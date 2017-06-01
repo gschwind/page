@@ -74,6 +74,8 @@ class display_t : private connectable_t {
 
 	bool _is_compositor_enabled;
 
+	set<pair<uint32_t, uint32_t>> _client_id_spec_cache;
+
 public:
 
 	char const * event_type_name[128];
@@ -280,6 +282,8 @@ public:
 
 	void force_sync();
 	void flush();
+
+	auto lookup_client_id(uint32_t xid) -> pair<uint32_t, uint32_t> const &;
 
 };
 

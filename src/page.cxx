@@ -2627,7 +2627,9 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 		// client are only allowed to focus their own windows
 		// NOTE: client_id() is based on Xorg client XID allocation and may be
 		//   invalid for other X11 server implementation.
-		if(client_id(focused->_client->_client_proxy->id()) != client_id(e->event)) {
+
+		auto event_clientid = _dpy->lookup_client_id(e->event);
+		if ((focused->_client->_client_proxy->id() & event_clientid.second) != event_clientid.first) {
 			printf("WARNING: A Client steal the focus\n");
 			//focused->focus(XCB_CURRENT_TIME);
 		}
