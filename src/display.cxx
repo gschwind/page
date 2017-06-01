@@ -499,6 +499,23 @@ bool display_t::check_sync_extension() {
 	}
 }
 
+bool display_t::check_res_extension() {
+	if (not query_extension("X-Resource", &res_opcode, &res_event, &res_error)) {
+		return false;
+	} else {
+		xcb_generic_error_t * err;
+		auto ck = xcb_res_query_version(_xcb, XCB_RES_MAJOR_VERSION, XCB_RES_MINOR_VERSION);
+		auto * r = xcb_res_query_version_reply(_xcb, ck, &err);
+
+		if(r == nullptr or err != nullptr)
+			throw exception_t("ERROR: fail to get X-Resource version");
+
+		printf("X-Resource Extension version %d.%d found\n", r->server_major, r->server_minor);
+		free(r);
+		return true;
+	}
+}
+
 
 xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 {
@@ -829,6 +846,10 @@ void display_t::check_x11_extension() {
 
 	if (not check_sync_extension()) {
 		throw std::runtime_error("SYNC extension is not supported");
+	}
+
+	if (not check_res_extension()) {
+		throw std::runtime_error("X-Resource extension is not supported");
 	}
 
 	has_composite = check_composite_extension();
