@@ -113,8 +113,6 @@ void view_t::move_all_window()
 
 		if(_is_visible) {
 			_client->map_unsafe();
-			_client->_client_proxy->move_resize(_client->_absolute_position);
-			_client->fake_configure_unsafe(_client->_absolute_position);
 			if (_client->_has_focus) {
 				_client->net_wm_state_add(_NET_WM_STATE_FOCUSED);
 			} else {
@@ -123,6 +121,8 @@ void view_t::move_all_window()
 			_client->_client_proxy->set_wm_state(NormalState);
 			if(_client_view == nullptr)
 				_client_view = create_surface();
+			_client->_client_proxy->move_resize(_client->_absolute_position);
+			_client->fake_configure_unsafe(_client->_absolute_position);
 		} else {
 			_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 			_client->_client_proxy->set_wm_state(IconicState);
@@ -130,9 +130,10 @@ void view_t::move_all_window()
 				_client->_absolute_position.w,
 					_ctx->top_most_border(), _client->_absolute_position.w,
 					_client->_absolute_position.h };
-			_client->_client_proxy->move_resize(hidden_position);
 			_client_view = nullptr;
 			_root->_ctx->add_global_damage(get_visible_region());
+			_client->_client_proxy->move_resize(hidden_position);
+			_client->fake_configure_unsafe(_client->_absolute_position);
 		}
 
 	} else {

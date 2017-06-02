@@ -129,13 +129,7 @@ void view_rebased_t::_reconfigure_windows()
 		return;
 	}
 
-	_client->_client_proxy->move_resize(_orig_position);
-
 	if (_is_visible) {
-		_base->_window->move_resize(_base_position);
-		_client->_client_proxy->xmap();
-		_base->_window->xmap();
-		_client->fake_configure_unsafe(_client->_absolute_position);
 		_client->_client_proxy->set_wm_state(NormalState);
 		if(_client->_has_focus)
 			_client->net_wm_state_add(_NET_WM_STATE_FOCUSED);
@@ -143,6 +137,11 @@ void view_rebased_t::_reconfigure_windows()
 			_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
 		if(_client_view == nullptr)
 			_client_view = create_surface();
+		_base->_window->move_resize(_base_position);
+		_client->_client_proxy->xmap();
+		_base->_window->xmap();
+		_client->_client_proxy->move_resize(_orig_position);
+		_client->fake_configure_unsafe(_client->_absolute_position);
 	} else {
 		_client->_client_proxy->set_wm_state(IconicState);
 		_client->net_wm_state_remove(_NET_WM_STATE_FOCUSED);
@@ -155,6 +154,8 @@ void view_rebased_t::_reconfigure_windows()
 		_base->_window->move_resize(hidden_position);
 		_client_view = nullptr;
 		_root->_ctx->add_global_damage(get_visible_region());
+		_client->_client_proxy->move_resize(_orig_position);
+		_client->fake_configure_unsafe(_client->_absolute_position);
 	}
 
 }
