@@ -191,18 +191,7 @@ void view_rebased_t::_grab_button_unsafe() {
 
 	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_ANY);
-
-	/** grab alt-button1 move **/
-	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_1, XCB_MOD_MASK_1/*ALT*/);
-
-	/** grab alt-button3 resize **/
-	_base->_window->grab_button(true, DEFAULT_BUTTON_EVENT_MASK,
-			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, XCB_WINDOW_NONE,
-			XCB_NONE, XCB_BUTTON_INDEX_3, XCB_MOD_MASK_1/*ALT*/);
-
+			XCB_NONE, XCB_BUTTON_INDEX_ANY, XCB_MOD_MASK_ANY);
 
 }
 
