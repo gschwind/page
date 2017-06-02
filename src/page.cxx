@@ -952,22 +952,21 @@ void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_configure_request_event_t const *>(_e);
 
-	printf("Configure request on 0x%x\n", e->window);
+	log(LOG_CONFIGURE_REQUEST, "Configure request on 0x%x\n", e->window);
 	if (e->value_mask & CWX)
-		printf("has x: %d\n", e->x);
+		log(LOG_CONFIGURE_REQUEST, "has x: %d\n", e->x);
 	if (e->value_mask & CWY)
-		printf("has y: %d\n", e->y);
+		log(LOG_CONFIGURE_REQUEST, "has y: %d\n", e->y);
 	if (e->value_mask & CWWidth)
-		printf("has width: %d\n", e->width);
+		log(LOG_CONFIGURE_REQUEST, "has width: %d\n", e->width);
 	if (e->value_mask & CWHeight)
-		printf("has height: %d\n", e->height);
+		log(LOG_CONFIGURE_REQUEST, "has height: %d\n", e->height);
 	if (e->value_mask & CWSibling)
-		printf("has sibling: %lu\n", e->sibling);
+		log(LOG_CONFIGURE_REQUEST, "has sibling: 0x%x\n", e->sibling);
 	if (e->value_mask & CWStackMode)
-		printf("has stack mode: %d\n", e->stack_mode);
+		log(LOG_CONFIGURE_REQUEST, "has stack mode: %d\n", e->stack_mode);
 	if (e->value_mask & CWBorderWidth)
-		printf("has border: %d\n", e->border_width);
-
+		log(LOG_CONFIGURE_REQUEST, "has border: %d\n", e->border_width);
 
 	auto c = lookup_client_managed_with_orig_window(e->window);
 

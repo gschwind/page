@@ -50,7 +50,8 @@ extern uint32_t g_log_flags;
 
 enum log_module_e : uint32_t {
 	LOG_NONE = 0,
-	LOG_ALL = 0xffffffffu
+	LOG_ALL = 0xffffffffu,
+	LOG_CONFIGURE_REQUEST = 1u << 0
 };
 
 void log(log_module_e module, char const * fmt, ...);
