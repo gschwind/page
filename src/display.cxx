@@ -119,7 +119,7 @@ void display_t::unmap(xcb_window_t w) {
 }
 
 void display_t::reparentwindow(xcb_window_t w, xcb_window_t parent, int x, int y) {
-	printf("ReparentWindow w = 0x%x parent = 0x%x x = %d y = %d\n", w, parent, x, y);
+	log(LOG_PROTOCOL, "ReparentWindow w = 0x%x parent = 0x%x x = %d y = %d\n", w, parent, x, y);
 	auto ck = xcb_reparent_window(_xcb, w, parent, x, y);
 	//printf("reparent serial = %u\n", (uint16_t)ck.sequence);
 }
