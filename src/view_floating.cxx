@@ -759,8 +759,7 @@ auto view_floating_t::button_press(xcb_button_press_event_t const * e) -> button
 		return BUTTON_ACTION_HAS_ACTIVE_GRAB;
 
 	} else {
-		if(_root->_ctx->_current_grabbing_window == XCB_WINDOW_NONE)
-			_root->set_focus(dynamic_pointer_cast<view_t>(shared_from_this()), e->time);
+		_root->set_focus(dynamic_pointer_cast<view_t>(shared_from_this()), e->time);
 		return BUTTON_ACTION_REPLAY;
 	}
 

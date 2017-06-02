@@ -46,7 +46,7 @@ void client_proxy_t::send_event (
 }
 
 void client_proxy_t::set_input_focus(int revert_to, xcb_timestamp_t time) {
-	xcb_set_input_focus(_dpy->xcb(), revert_to, _id, time);
+	_dpy->set_input_focus(_id, revert_to, time);
 }
 
 void client_proxy_t::move_resize(rect const & size) {

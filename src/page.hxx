@@ -110,6 +110,8 @@ class page_t : public connectable_t {
 
 	view_w _actual_focussed_client;
 
+	pair<uint32_t, uint32_t> _current_focuced_client;
+
 public:
 	rect _root_position;
 
@@ -120,7 +122,6 @@ private:
 	shared_ptr<grab_handler_t> _grab_handler;
 
 public:
-	xcb_window_t _current_grabbing_window;
 
 	/** window that handle page identity for others clients */
 	xcb_window_t identity_window;

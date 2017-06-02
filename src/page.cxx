@@ -73,7 +73,6 @@ page_t::page_t(int argc, char ** argv)
 	_current_workspace = 0;
 	_grab_handler = nullptr;
 	_schedule_repaint = false;
-	_current_grabbing_window = XCB_WINDOW_NONE;
 
 	identity_window = XCB_NONE;
 
@@ -327,7 +326,7 @@ void page_t::run() {
 	scan();
 
 	/* setup _NET_ACTIVE_WINDOW */
-	_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+	_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 	_dpy->set_net_active_window(XCB_WINDOW_NONE);
 
 	update_keymap();
@@ -773,16 +772,17 @@ void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
 /* Button event make page to grab pointer */
 void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
-//	std::cout << "Button Event Press "
-//			<< " event=" << e->event
-//			<< " child=" << e->child
-//			<< " root=" << e->root
-//			<< " button=" << static_cast<int>(e->detail)
-//			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
-//			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
-//			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
-//			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
-//			<< std::endl;
+	std::cout << "Button Event Press "
+			<< " event=0x" << format("x", e->event)
+			<< " child=0x" << format("x", e->child)
+			<< " root=0x" << format("x", e->root)
+			<< " button=" << static_cast<int>(e->detail)
+			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
+			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
+			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
+			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
+			<< " time=" << e->time
+			<< std::endl;
 
 
 	if(_grab_handler != nullptr) {
@@ -951,20 +951,22 @@ void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_configure_request_event_t const *>(_e);
-//	if (e.value_mask & CWX)
-//		printf("has x: %d\n", e.x);
-//	if (e.value_mask & CWY)
-//		printf("has y: %d\n", e.y);
-//	if (e.value_mask & CWWidth)
-//		printf("has width: %d\n", e.width);
-//	if (e.value_mask & CWHeight)
-//		printf("has height: %d\n", e.height);
-//	if (e.value_mask & CWSibling)
-//		printf("has sibling: %lu\n", e.above);
-//	if (e.value_mask & CWStackMode)
-//		printf("has stack mode: %d\n", e.detail);
-//	if (e.value_mask & CWBorderWidth)
-//		printf("has border: %d\n", e.border_width);
+
+	printf("Configure request on 0x%x\n", e->window);
+	if (e->value_mask & CWX)
+		printf("has x: %d\n", e->x);
+	if (e->value_mask & CWY)
+		printf("has y: %d\n", e->y);
+	if (e->value_mask & CWWidth)
+		printf("has width: %d\n", e->width);
+	if (e->value_mask & CWHeight)
+		printf("has height: %d\n", e->height);
+	if (e->value_mask & CWSibling)
+		printf("has sibling: %lu\n", e->sibling);
+	if (e->value_mask & CWStackMode)
+		printf("has stack mode: %d\n", e->stack_mode);
+	if (e->value_mask & CWBorderWidth)
+		printf("has border: %d\n", e->border_width);
 
 
 	auto c = lookup_client_managed_with_orig_window(e->window);
@@ -1018,7 +1020,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 				//printf("new_size = %s\n", new_size.to_string().c_str());
 
-				if (new_size != old_size) {
+				//if (new_size != old_size) {
 					auto view = get_current_workspace()->lookup_view_for(mw);
 					auto v = dynamic_pointer_cast<view_floating_t>(view);
 					if(v) {
@@ -1028,7 +1030,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 					} else {
 						view->reconfigure();
 					}
-				}
+				//}
 			}
 
 		} else {
@@ -1477,12 +1479,12 @@ void page_t::apply_focus(xcb_timestamp_t time) {
 
 	auto w = get_current_workspace();
 	if(w->_net_active_window.expired()) {
-		//printf("apply focus NONE at %d\n", time);
-		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, time);
+		printf("apply focus NONE at %d\n", time);
+		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, time);
 		_dpy->set_net_active_window(XCB_WINDOW_NONE);
 	} else {
 		auto focus = w->_net_active_window.lock();
-		//printf("apply focus %d at %d\n", focus->_client->_client_proxy->id(), time);
+		printf("apply focus %d at %d\n", focus->_client->_client_proxy->id(), time);
 		_dpy->set_net_active_window(focus->_client->_client_proxy->id());
 		focus->focus(time);
 		xcb_flush(_dpy->xcb());
@@ -2610,44 +2612,41 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	 **/
 
 	if (e->event == _dpy->root() and e->detail == XCB_NOTIFY_DETAIL_NONE) {
-		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+
+		view_p focused;
+		if (get_current_workspace()->client_focus_history_front(focused)) {
+			_dpy->set_input_focus(focused->_client->_client_proxy->id(),
+					XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
+		} else {
+			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT,
+					XCB_CURRENT_TIME);
+		}
+
 		return;
 	}
 
-
-	view_p focused;
+	/**
+	 * Some client start a grab without taking the focus. Page will
+	 * automatically give them the focus, inconditionnally.
+	 **/
 	if (e->mode == XCB_NOTIFY_MODE_GRAB) {
-		_current_grabbing_window = e->event;
 		// Allow focus stilling when the client grab the keyboard
 		auto mw = lookup_client_managed_with_orig_window(e->event);
 		if (mw) {
 			auto v = get_current_workspace()->lookup_view_for(mw);
 			if (v) {
 				get_current_workspace()->set_focus(v, XCB_CURRENT_TIME);
-				_dpy->set_input_focus(mw->_client_proxy->id(), XCB_INPUT_FOCUS_NONE, XCB_CURRENT_TIME);
+				_dpy->set_input_focus(mw->_client_proxy->id(), XCB_INPUT_FOCUS_PARENT, XCB_CURRENT_TIME);
 				xcb_flush(_dpy->xcb());
 			}
-		}
-	} else if (get_current_workspace()->client_focus_history_front(focused)) {
-		// client are only allowed to focus their own windows
-		// NOTE: client_id() is based on Xorg client XID allocation and may be
-		//   invalid for other X11 server implementation.
-		if (_dpy->belong_same_client(focused->_client->_client_proxy->id(), e->event)) {
-			printf("WARNING: A Client steal the focus\n");
-			//focused->focus(XCB_CURRENT_TIME);
-		}
-	} else {
-		/**
-		 * if no client should be focussed and the event does not belong
-		 * identity window, refocus identity window.
-		 **/
-		if(e->event != identity_window) {
-			_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
-					XCB_CURRENT_TIME);
 		}
 	}
 
 	{
+		/**
+		 * This code follow the focus to ensure that GUI show the correct
+		 * actual focussed window.
+		 **/
 		auto c = find_client_managed_with(e->event);
 		if(c == nullptr)
 			return;
@@ -2681,64 +2680,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
-
 	cout << focus_in_to_string(e) << endl;
-
-	if (e->mode == XCB_NOTIFY_MODE_UNGRAB and _current_grabbing_window == e->event) {
-		_current_grabbing_window = XCB_WINDOW_NONE;
-
-		view_p focused;
-		if (get_current_workspace()->client_focus_history_front(focused)) {
-			focused->focus(XCB_CURRENT_TIME);
-		} else {
-			if (e->event == identity_window or e->event == _dpy->root()) {
-				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
-						XCB_CURRENT_TIME);
-			}
-		}
-	}
-
-	/**
-	 * if the root window loose the focus, give the focus back to the
-	 * proper window.
-	 **/
-	if (e->event == _dpy->root()) {
-		/* ignore all focus due to grabs */
-		if(e->mode != XCB_NOTIFY_MODE_NORMAL)
-			return;
-
-		/* ignore all focus event related to the pointer */
-		if(e->detail == XCB_NOTIFY_DETAIL_POINTER)
-			return;
-
-		view_p focused;
-		if (get_current_workspace()->client_focus_history_front(focused)) {
-			focused->focus(XCB_CURRENT_TIME);
-		} else {
-			if (e->event == identity_window or e->event == _dpy->root()) {
-				_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_NONE,
-						XCB_CURRENT_TIME);
-			}
-		}
-	} else {
-		auto c = find_client_managed_with(e->event);
-		if(c) {
-			switch(e->detail) {
-			case XCB_NOTIFY_DETAIL_ANCESTOR:
-			case XCB_NOTIFY_DETAIL_NONLINEAR:
-			case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-				// Handled by focus in
-				//c->set_focus_state(false);
-				break;
-			case XCB_NOTIFY_DETAIL_INFERIOR:
-				// should alreay have the focus
-				//c->set_focus_state(true);
-				break;
-			default:
-				break;
-			}
-		}
-	}
 }
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
@@ -2760,19 +2702,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 		break;
 	}
 
-	printf("Enter 0x%x %s\n", e->event, xx);
-
-	if (e->mode == XCB_NOTIFY_MODE_UNGRAB) {
-		// Allow focus stilling when the client grab the keyboard
-		auto mw = lookup_client_managed_with_orig_window(e->event);
-		if (mw) {
-			auto v = get_current_workspace()->lookup_view_for(mw);
-			if (v) {
-				get_current_workspace()->set_focus(v, e->time);
-				xcb_flush(_dpy->xcb());
-			}
-		}
-	}
+	printf("Enter window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
 
 	if(not configuration._mouse_focus)
 		return;
@@ -2802,7 +2732,7 @@ void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 		break;
 	}
 
-	printf("Leave 0x%x %s\n", e->event, xx);
+	printf("Leave window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
 
 	get_current_workspace()->broadcast_leave(e);
 }
@@ -2897,6 +2827,19 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 
 void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
+
+	std::cout << "Button Event Release "
+			<< " event=0x" << format("x", e->event)
+			<< " child=0x" << format("x", e->child)
+			<< " root=0x" << format("x", e->root)
+			<< " button=" << static_cast<int>(e->detail)
+			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
+			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
+			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
+			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
+			<< " time=" << e->time
+			<< std::endl;
+
 	if(_grab_handler != nullptr) {
 		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
 		grab->button_release(e);

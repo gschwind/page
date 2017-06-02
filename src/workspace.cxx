@@ -298,7 +298,11 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	if(transient_for != nullptr) {
 		auto v = lookup_view_for(c);
 		if(v) {
-			v->add_popup(fv);
+			if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
+				add_tooltips(fv);
+			} else {
+				v->add_popup(fv);
+			}
 		} else {
 			if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 				add_tooltips(fv);
@@ -746,7 +750,7 @@ void workspace_t::unmanage(client_managed_p mw)
 	}
 
 	/* if managed window have active clients */
-	printf("unmanaging : %d '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
+	printf("unmanaging : 0x%x '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
 
 	for (auto c : v->get_transients()) {
 		c->remove_this_view();
@@ -756,11 +760,13 @@ void workspace_t::unmanage(client_managed_p mw)
 	client_focus_history_remove(v);
 	v->remove_this_view();
 
-	if (_ctx->configuration._auto_refocus and has_focus) {
-		view_p focus;
-		if (client_focus_history_front(focus)) {
-			set_focus(focus, XCB_CURRENT_TIME);
-			focus->xxactivate(XCB_CURRENT_TIME);
+	if (dynamic_pointer_cast<view_rebased_t>(v) != nullptr) {
+		if (_ctx->configuration._auto_refocus and has_focus) {
+			view_p focus;
+			if (client_focus_history_front(focus)) {
+				set_focus(focus, XCB_CURRENT_TIME);
+				focus->xxactivate(XCB_CURRENT_TIME);
+			}
 		}
 	}
 
