@@ -816,7 +816,7 @@ void workspace_t::_insert_view_floating(view_floating_p fv, xcb_timestamp_t time
 
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
 	if(transient_for != nullptr) {
-		auto v = lookup_view_for(c);
+		auto v = lookup_view_for(transient_for);
 		if(v) {
 			v->add_transient(fv);
 		} else {
