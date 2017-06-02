@@ -512,7 +512,7 @@ auto client_managed_t::transient_for() -> client_managed_p
 {
 	client_managed_p transient_for = nullptr;
 	if (_client_proxy->wm_transiant_for() != nullptr) {
-		transient_for = _ctx->find_client_with(*(_client_proxy->wm_transiant_for()));
+		transient_for = _ctx->lookup_client_managed_with_orig_window(*(_client_proxy->wm_transiant_for()));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}

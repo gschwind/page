@@ -836,7 +836,7 @@ void page_t::process_configure_notify_event(xcb_generic_event_t const * _e) {
 
 	//printf("configure (%d) %dx%d+%d+%d\n", e->window, e->width, e->height, e->x, e->y);
 
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if(c != nullptr) {
 		c->process_event(e);
 	}
@@ -862,7 +862,7 @@ void page_t::process_destroy_notify_event(xcb_generic_event_t const * _e) {
 	if(has_key(_page_windows, e->window))
 		return;
 
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if (c != nullptr) {
 		cout << "WARNING: client destroyed a window without sending synthetic unmap" << endl;
 		unmanage(c);
@@ -896,7 +896,7 @@ void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
 		return;
 
 	/* If reparent occur on managed windows and new parent is an unknown window then unmanage */
-	auto mw = find_client_with(e->window);
+	auto mw = lookup_client_managed_with_orig_window(e->window);
 	if (mw != nullptr) {
 		if (e->window == mw->_client_proxy->id() and not has_key(_page_windows, e->parent) and e->parent != _dpy->root()) {
 			/* unmanage the window */
@@ -908,7 +908,7 @@ void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_unmap_notify_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_unmap_notify_event_t const *>(_e);
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if (c != nullptr) {
 		//printf("unmap serial = %u, window = %d, event = %d\n", e->sequence, e->window, e->event);
 
@@ -929,7 +929,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 	//printf("fake unmap window = %d\n", e->window);
 
 	/* if client is managed */
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if (c != nullptr) {
 		unmanage(c);
 	}
@@ -938,7 +938,7 @@ void page_t::process_fake_unmap_notify_event(xcb_generic_event_t const * _e) {
 void page_t::process_circulate_request_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_circulate_request_event_t const *>(_e);
 	/* will happpen ? */
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if (c != nullptr) {
 		if (e->place == XCB_PLACE_ON_TOP) {
 			// TODO
@@ -967,7 +967,7 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 //		printf("has border: %d\n", e.border_width);
 
 
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 
 	if (c != nullptr) {
 
@@ -1139,7 +1139,7 @@ void page_t::process_property_notify_event(xcb_generic_event_t const * _e) {
 		return;
 
 	/** update the property **/
-	auto c = find_client_with(e->window);
+	auto c = lookup_client_managed_with_orig_window(e->window);
 	if(c == nullptr)
 		return;
 
@@ -1210,7 +1210,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	if (w == XCB_NONE)
 		return;
 
-	auto mw = find_client_with(e->window);
+	auto mw = lookup_client_managed_with_orig_window(e->window);
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		auto view = get_current_workspace()->lookup_view_for(mw);
@@ -1733,7 +1733,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 //				<< _dpy->get_atom_name(state_properties) << std::endl;
 //	}
 
-	auto mw = find_client_with(c);
+	auto mw = lookup_client_managed_with_orig_window(c);
 	if(mw == nullptr)
 		return;
 
@@ -1784,7 +1784,7 @@ client_managed_p page_t::get_transient_for(client_managed_p c) {
 	client_managed_p transient_for = nullptr;
 	auto wm_transient_for = c->_client_proxy->wm_transiant_for();
 	if (wm_transient_for != nullptr) {
-		transient_for = find_client_with(*(wm_transient_for));
+		transient_for = lookup_client_managed_with_orig_window(*(wm_transient_for));
 		if (transient_for == nullptr)
 			printf("Warning transient for an unknown client\n");
 	}
@@ -2342,7 +2342,7 @@ auto page_t::find_client_managed_with(xcb_window_t w) -> client_managed_p
 	return nullptr;
 }
 
-auto page_t::find_client_with(xcb_window_t w) const -> client_managed_p {
+auto page_t::lookup_client_managed_with_orig_window(xcb_window_t w) const -> client_managed_p {
 	for(auto & i: _net_client_list) {
 		if(i->is_window(w)) {
 			return i;
@@ -2605,7 +2605,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	if (e->mode == XCB_NOTIFY_MODE_GRAB) {
 		_current_grabbing_window = e->event;
 		// Allow focus stilling when the client grab the keyboard
-		auto mw = find_client_with(e->event);
+		auto mw = lookup_client_managed_with_orig_window(e->event);
 		if (mw) {
 			auto v = get_current_workspace()->lookup_view_for(mw);
 			if (v) {
@@ -2752,7 +2752,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 
 	if (e->mode == XCB_NOTIFY_MODE_UNGRAB) {
 		// Allow focus stilling when the client grab the keyboard
-		auto mw = find_client_with(e->event);
+		auto mw = lookup_client_managed_with_orig_window(e->event);
 		if (mw) {
 			auto v = get_current_workspace()->lookup_view_for(mw);
 			if (v) {
@@ -2838,7 +2838,7 @@ void page_t::process_shape_notify_event(xcb_generic_event_t const * e) {
 	auto se = reinterpret_cast<xcb_shape_notify_event_t const *>(e);
 	if (se->shape_kind == XCB_SHAPE_SK_BOUNDING) {
 		xcb_window_t w = se->affected_window;
-		auto c = find_client_with(w);
+		auto c = lookup_client_managed_with_orig_window(w);
 		if (c != nullptr) {
 			c->update_shape();
 		}

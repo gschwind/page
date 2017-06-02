@@ -318,7 +318,7 @@ public:
 	void update_page_areas();
 	void set_workspace_geometry(long width, long height);
 
-	auto find_client_with(xcb_window_t w) const -> client_managed_p;
+	auto lookup_client_managed_with_orig_window(xcb_window_t w) const -> client_managed_p;
 
 	void raise_child(shared_ptr<tree_t> t);
 	void process_notebook_client_menu(shared_ptr<client_managed_t> c, int selected);
