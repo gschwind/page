@@ -54,7 +54,8 @@ enum log_module_e : uint32_t {
 	LOG_CONFIGURE_REQUEST = 1u << 0,
 	LOG_BUTTONS = 1u << 1,
 	LOG_FOCUS = 1u << 2,
-	LOG_LEAVE_ENTER = 1u << 3
+	LOG_LEAVE_ENTER = 1u << 3,
+	LOG_MANAGE = 1u << 4
 };
 
 void log(log_module_e module, char const * fmt, ...);

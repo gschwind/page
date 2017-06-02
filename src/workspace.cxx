@@ -750,7 +750,7 @@ void workspace_t::unmanage(client_managed_p mw)
 	}
 
 	/* if managed window have active clients */
-	printf("unmanaging : 0x%x '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
+	log(LOG_MANAGE, "unmanaging : 0x%x '%s'\n", mw->_client_proxy->id(), mw->title().c_str());
 
 	for (auto c : v->get_transients()) {
 		c->remove_this_view();
