@@ -108,6 +108,7 @@ struct view_floating_t : public view_rebased_t {
 
 	void _on_opaque_region_change(client_managed_t * c);
 	void _on_focus_change(client_managed_t * c);
+	void _on_configure_request(client_managed_t * c, xcb_configure_request_event_t const * e);
 
 	/**
 	 * view_t API

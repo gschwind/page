@@ -33,6 +33,8 @@ view_fullscreen_t::view_fullscreen_t(client_managed_p client, viewport_p viewpor
 		revert_type{MANAGED_FLOATING},
 		_viewport{viewport}
 {
+	connect(_client->on_configure_request, this, &view_fullscreen_t::_on_configure_request);
+
 	//printf("create %s\n", __PRETTY_FUNCTION__);
 	_client->set_managed_type(MANAGED_FULLSCREEN);
 	_client->_client_proxy->net_wm_allowed_actions_set(std::list<atom_e>{
@@ -54,6 +56,7 @@ view_fullscreen_t::view_fullscreen_t(view_rebased_t * src, viewport_p viewport) 
 	revert_type{MANAGED_FLOATING},
 	_viewport{viewport}
 {
+	connect(_client->on_configure_request, this, &view_fullscreen_t::_on_configure_request);
 
 	_client->set_managed_type(MANAGED_FULLSCREEN);
 
@@ -79,6 +82,12 @@ view_fullscreen_t::~view_fullscreen_t()
 auto view_fullscreen_t::shared_from_this() -> view_fullscreen_p
 {
 	return static_pointer_cast<view_fullscreen_t>(tree_t::shared_from_this());
+}
+
+void view_fullscreen_t::_on_configure_request(client_managed_t * c, xcb_configure_request_event_t const * e)
+{
+	if (_root->is_enable())
+		reconfigure();
 }
 
 void view_fullscreen_t::remove_this_view()

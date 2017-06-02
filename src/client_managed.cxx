@@ -380,6 +380,29 @@ void client_managed_t::on_property_notify(xcb_property_notify_event_t const * e)
 	}
 }
 
+void client_managed_t::singal_configure_request(xcb_configure_request_event_t const * e)
+{
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_X) {
+		_floating_wished_position.x = e->x;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
+		_floating_wished_position.y = e->y;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+		_floating_wished_position.w = e->width;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+		_floating_wished_position.h = e->height;
+	}
+
+	on_configure_request.signal(this, e);
+}
+
+
 auto client_managed_t::create_surface(xcb_window_t base) -> client_view_p
 {
 	if (_views_count == 0) {

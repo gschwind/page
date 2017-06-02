@@ -37,7 +37,7 @@ view_t::view_t(tree_t * ref, client_managed_p client) :
 	//printf("create %s\n", __PRETTY_FUNCTION__);
 
 	connect(_client->on_opaque_region_change, this, &view_t::on_opaque_region_change);
-
+	connect(_client->on_configure_request, this, &view_t::_on_configure_request);
 	_stack_is_locked = true;
 
 	_popup = make_shared<tree_t>(_root);
@@ -144,6 +144,14 @@ void view_t::on_opaque_region_change(client_managed_t * c)
 {
 	_update_opaque_region();
 }
+
+void view_t::_on_configure_request(client_managed_t * c, xcb_configure_request_event_t const * e)
+{
+	_client->_absolute_position = _client->_floating_wished_position;
+	if (_is_visible)
+		reconfigure();
+}
+
 
 auto view_t::get_popups() -> vector<view_p>
 {

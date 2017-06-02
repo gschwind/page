@@ -115,6 +115,7 @@ void view_floating_t::_init()
 
 	connect(_client->on_opaque_region_change, this, &view_floating_t::_on_opaque_region_change);
 	connect(_client->on_title_change, this, &view_floating_t::_on_client_title_change);
+	connect(_client->on_configure_request, this, &view_floating_t::_on_configure_request);
 
 	auto _ctx = _root->_ctx;
 
@@ -637,6 +638,12 @@ void view_floating_t::_on_focus_change(client_managed_t * c)
 	_root->_ctx->schedule_repaint();
 
 	view_rebased_t::_on_focus_change(c);
+}
+
+void view_floating_t::_on_configure_request(client_managed_t * c, xcb_configure_request_event_t const * e)
+{
+	if (_root->is_enable())
+		reconfigure();
 }
 
 void view_floating_t::remove_this_view()

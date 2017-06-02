@@ -970,76 +970,48 @@ void page_t::process_configure_request_event(xcb_generic_event_t const * _e) {
 
 	auto c = lookup_client_managed_with_orig_window(e->window);
 
-	if (c != nullptr) {
-
-		//add_compositor_damaged(c->get_visible_region());
-
-		if(typeid(*c) == typeid(client_managed_t)) {
-
-			auto mw = dynamic_pointer_cast<client_managed_t>(c);
-
-			if ((e->value_mask & (XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y | XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT)) != 0) {
-
-				rect old_size = mw->get_floating_wished_position();
-				/** compute floating size **/
-				rect new_size = mw->get_floating_wished_position();
-
-				if (e->value_mask & XCB_CONFIG_WINDOW_X) {
-					new_size.x = e->x;
-				}
-
-				if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
-					new_size.y = e->y;
-				}
-
-				if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-					new_size.w = e->width;
-				}
-
-				if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-					new_size.h = e->height;
-				}
-
-				//printf("new_size = %s\n", new_size.to_std::string().c_str());
-
-//					if ((e.value_mask & (CWX)) and (e.value_mask & (CWY))
-//							and e.x == 0 and e.y == 0
-//							and !viewport_outputs.empty()) {
-//						viewport_t * v = viewport_outputs.begin()->second;
-//						i_rect b = v->raw_area();
-//						/* place on center */
-//						new_size.x = (b.w - new_size.w) / 2 + b.x;
-//						new_size.y = (b.h - new_size.h) / 2 + b.y;
-//					}
-
-				dimention_t<unsigned> final_size = mw->compute_size_with_constrain(new_size.w, new_size.h);
-
-				new_size.w = final_size.width;
-				new_size.h = final_size.height;
-
-				//printf("new_size = %s\n", new_size.to_string().c_str());
-
-				//if (new_size != old_size) {
-					auto view = get_current_workspace()->lookup_view_for(mw);
-					auto v = dynamic_pointer_cast<view_floating_t>(view);
-					if(v) {
-						/** only affect floating windows **/
-						mw->set_floating_wished_position(new_size);
-						v->reconfigure();
-					} else {
-						view->reconfigure();
-					}
-				//}
-			}
-
-		} else {
-			/** validate configure when window is not managed **/
-			ackwoledge_configure_request(e);
-		}
-
-	} else {
+	if (c == nullptr) {
 		/** validate configure when window is not managed **/
 		ackwoledge_configure_request(e);
+		_dpy->flush();
+		return;
+	} else {
+		c->singal_configure_request(e);
+	}
+
+
+
+	rect new_size = c->get_floating_wished_position();
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_X) {
+		new_size.x = e->x;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
+		new_size.y = e->y;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+		new_size.w = e->width;
+	}
+
+	if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+		new_size.h = e->height;
+	}
+
+	dimention_t<unsigned> final_size = c->compute_size_with_constrain(new_size.w, new_size.h);
+
+	new_size.w = final_size.width;
+	new_size.h = final_size.height;
+
+	auto view = get_current_workspace()->lookup_view_for(c);
+	auto v = dynamic_pointer_cast<view_floating_t>(view);
+	if(v) {
+		/** only affect floating windows **/
+		c->set_floating_wished_position(new_size);
+		v->reconfigure();
+	} else {
+		view->reconfigure();
 	}
 
 	_dpy->flush();

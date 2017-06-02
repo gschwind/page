@@ -143,6 +143,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 	signal_t<client_managed_t *> on_strut_change;
 	signal_t<client_managed_t *> on_opaque_region_change;
 	signal_t<client_managed_t *> on_unmanage;
+	signal_t<client_managed_t *, xcb_configure_request_event_t const *> on_configure_request;
 
 	bool is(managed_window_type_e type);
 	auto title() const -> string const &;
@@ -194,6 +195,7 @@ struct client_managed_t : public enable_shared_from_this<client_managed_t>, publ
 	}
 
 	void on_property_notify(xcb_property_notify_event_t const * e);
+	void singal_configure_request(xcb_configure_request_event_t const * e);
 
 	auto create_surface(xcb_window_t base) -> client_view_p;
 	void destroy_view(client_view_t * c);

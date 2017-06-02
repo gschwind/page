@@ -56,6 +56,7 @@ struct view_t : public tree_t {
 	void move_all_window();
 
 	void on_opaque_region_change(client_managed_t * c);
+	void _on_configure_request(client_managed_t * c, xcb_configure_request_event_t const * e);
 
 	auto get_popups() -> vector<view_p>;
 	auto get_transients() -> vector<view_p>;
