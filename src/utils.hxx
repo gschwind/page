@@ -52,7 +52,8 @@ enum log_module_e : uint32_t {
 	LOG_NONE = 0,
 	LOG_ALL = 0xffffffffu,
 	LOG_CONFIGURE_REQUEST = 1u << 0,
-	LOG_BUTTONS = 1u << 1
+	LOG_BUTTONS = 1u << 1,
+	LOG_FOCUS = 1u << 2
 };
 
 void log(log_module_e module, char const * fmt, ...);
@@ -766,73 +767,71 @@ enum corner_mask_e : uint8_t {
 void cairo_rectangle_arc_corner(cairo_t * cr, double x, double y, double w, double h, double radius, uint8_t corner_mask);
 void cairo_rectangle_arc_corner(cairo_t * cr, rect const & position, double radius, uint8_t corner_mask);
 
-inline
-std::string focus_in_to_string(xcb_focus_in_event_t const * e) {
-	std::ostringstream oss;
+inline void focus_in_to_string(xcb_focus_in_event_t const * e) {
 
-	oss << "Focus ";
+	log(LOG_FOCUS, "Focus ");
 
 	if (e->response_type == XCB_FOCUS_IN) {
-		oss << "in";
+		log(LOG_FOCUS, "in");
 	} else if (e->response_type == XCB_FOCUS_OUT) {
-		oss << "out";
+		log(LOG_FOCUS, "out");
 	} else {
-		oss << "invalid";
-		return oss.str();
+		log(LOG_FOCUS, "invalid\n");
+		return;
 	}
 
-	oss << " 0x" << format("08x", e->event) << " ";
+	log(LOG_FOCUS, " 0x%08x ", e->event);
 
 	switch (e->mode) {
 	case XCB_NOTIFY_MODE_GRAB:
-		oss << "mode=GRAB";
+		log(LOG_FOCUS, "mode=GRAB ");
 		break;
 	case XCB_NOTIFY_MODE_NORMAL:
-		oss << "mode=NORMAL";
+		log(LOG_FOCUS, "mode=NORMAL ");
 		break;
 	case XCB_NOTIFY_MODE_UNGRAB:
-		oss << "mode=UNGRAB";
+		log(LOG_FOCUS, "mode=UNGRAB ");
 		break;
 	case XCB_NOTIFY_MODE_WHILE_GRABBED:
-		oss << "mode=WHILE_GRABBED";
+		log(LOG_FOCUS, "mode=WHILE_GRABBED ");
 		break;
 	default:
-		oss << "mode=UNKNOWN";
+		log(LOG_FOCUS, "mode=UNKNOWN ");
 	}
-
-	oss << " ";
 
 	switch (e->detail) {
 	case XCB_NOTIFY_DETAIL_ANCESTOR:
-		oss << "detail=ANCESTOR";
+		log(LOG_FOCUS, "detail=ANCESTOR");
 		break;
 	case XCB_NOTIFY_DETAIL_INFERIOR:
-		oss << "detail=INFERIOR";
+		log(LOG_FOCUS, "detail=INFERIOR");
 		break;
 	case XCB_NOTIFY_DETAIL_NONE:
-		oss << "detail=NONE";
+		log(LOG_FOCUS, "detail=NONE");
 		break;
 	case XCB_NOTIFY_DETAIL_NONLINEAR:
-		oss << "detail=NONLINEAR";
+		log(LOG_FOCUS, "detail=NONLINEAR");
 		break;
 	case XCB_NOTIFY_DETAIL_NONLINEAR_VIRTUAL:
-		oss << "detail=NONLINEAR_VIRTUAL";
+		log(LOG_FOCUS, "detail=NONLINEAR_VIRTUAL");
 		break;
 	case XCB_NOTIFY_DETAIL_POINTER:
-		oss << "detail=POINTER";
+		log(LOG_FOCUS, "detail=POINTER");
 		break;
 	case XCB_NOTIFY_DETAIL_POINTER_ROOT:
-		oss << "detail=POINTER_ROOT";
+		log(LOG_FOCUS, "detail=POINTER_ROOT");
 		break;
 	case XCB_NOTIFY_DETAIL_VIRTUAL:
-		oss << "detail=VIRTUAL";
+		log(LOG_FOCUS, "detail=VIRTUAL");
 		break;
 	default:
-		oss << "detail=UNKNOWN";
+		log(LOG_FOCUS, "detail=UNKNOWN");
 		break;
 	}
 
-	return oss.str();
+	log(LOG_FOCUS, "\n");
+
+	return;
 }
 
 template<typename C>

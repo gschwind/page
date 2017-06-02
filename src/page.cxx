@@ -1478,12 +1478,12 @@ void page_t::apply_focus(xcb_timestamp_t time) {
 
 	auto w = get_current_workspace();
 	if(w->_net_active_window.expired()) {
-		printf("apply focus NONE at %d\n", time);
+		//printf("apply focus NONE at %d\n", time);
 		_dpy->set_input_focus(identity_window, XCB_INPUT_FOCUS_PARENT, time);
 		_dpy->set_net_active_window(XCB_WINDOW_NONE);
 	} else {
 		auto focus = w->_net_active_window.lock();
-		printf("apply focus %d at %d\n", focus->_client->_client_proxy->id(), time);
+		//printf("apply focus %d at %d\n", focus->_client->_client_proxy->id(), time);
 		_dpy->set_net_active_window(focus->_client->_client_proxy->id());
 		focus->focus(time);
 		xcb_flush(_dpy->xcb());
@@ -2602,7 +2602,7 @@ void page_t::process_selection_clear_event(xcb_generic_event_t const * _e) {
 void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
 
-	cout << focus_in_to_string(e) << endl;
+	focus_in_to_string(e);
 
 	/**
 	 * Since we can detect the client_id the focus rules is based on current
@@ -2679,7 +2679,7 @@ void page_t::process_focus_in_event(xcb_generic_event_t const * _e) {
 
 void page_t::process_focus_out_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_focus_in_event_t const *>(_e);
-	cout << focus_in_to_string(e) << endl;
+	focus_in_to_string(e);
 }
 
 void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
