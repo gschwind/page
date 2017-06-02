@@ -296,13 +296,9 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
 	if(transient_for != nullptr) {
-		auto v = lookup_view_for(c);
+		auto v = lookup_view_for(transient_for);
 		if(v) {
-			if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-				add_tooltips(fv);
-			} else {
-				v->add_popup(fv);
-			}
+			v->add_popup(fv);
 		} else {
 			if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 				add_tooltips(fv);
