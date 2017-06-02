@@ -2351,6 +2351,20 @@ auto page_t::lookup_client_managed_with_orig_window(xcb_window_t w) const -> cli
 	return nullptr;
 }
 
+auto page_t::lookup_client_managed_with_base_window(xcb_window_t w) const -> client_managed_p
+{
+	auto views = get_current_workspace()->gather_children_root_first<view_rebased_t>();
+	for(auto v: views) {
+		if (v->_base != nullptr) {
+			if (v->_base->_window->id() == w) {
+				return v->_client;
+			}
+		}
+	}
+	return nullptr;
+}
+
+
 void replace(shared_ptr<page_component_t> const & src, shared_ptr<page_component_t> by) {
 	throw exception_t{"Unexpectected use of page::replace function\n"};
 }
