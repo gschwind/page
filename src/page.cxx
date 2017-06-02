@@ -772,18 +772,18 @@ void page_t::process_key_release_event(xcb_generic_event_t const * _e) {
 /* Button event make page to grab pointer */
 void page_t::process_button_press_event(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_press_event_t const *>(_e);
-	std::cout << "Button Event Press "
-			<< " event=0x" << format("x", e->event)
-			<< " child=0x" << format("x", e->child)
-			<< " root=0x" << format("x", e->root)
-			<< " button=" << static_cast<int>(e->detail)
-			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
-			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
-			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
-			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
-			<< " time=" << e->time
-			<< std::endl;
-
+	log(LOG_BUTTONS, "Button Event Press ");
+	log(LOG_BUTTONS, " event=0x%x", e->event);
+	log(LOG_BUTTONS, " child=0x%x", e->child);
+	log(LOG_BUTTONS, " root=0x%x", e->root);
+	log(LOG_BUTTONS, " button=", static_cast<int>(e->detail));
+	log(LOG_BUTTONS, " mod1=", (e->state & XCB_MOD_MASK_1 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod2=", (e->state & XCB_MOD_MASK_2 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod3=", (e->state & XCB_MOD_MASK_3 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod4=", (e->state & XCB_MOD_MASK_4 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod5=", (e->state & XCB_MOD_MASK_5 ? "true" : "false"));
+	log(LOG_BUTTONS, " time=", e->time);
+	log(LOG_BUTTONS, "\n");
 
 	if(_grab_handler != nullptr) {
 		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
@@ -2826,18 +2826,18 @@ void page_t::process_motion_notify(xcb_generic_event_t const * _e) {
 
 void page_t::process_button_release(xcb_generic_event_t const * _e) {
 	auto e = reinterpret_cast<xcb_button_release_event_t const *>(_e);
-
-	std::cout << "Button Event Release "
-			<< " event=0x" << format("x", e->event)
-			<< " child=0x" << format("x", e->child)
-			<< " root=0x" << format("x", e->root)
-			<< " button=" << static_cast<int>(e->detail)
-			<< " mod1=" << (e->state & XCB_MOD_MASK_1 ? "true" : "false")
-			<< " mod2=" << (e->state & XCB_MOD_MASK_2 ? "true" : "false")
-			<< " mod3=" << (e->state & XCB_MOD_MASK_3 ? "true" : "false")
-			<< " mod4=" << (e->state & XCB_MOD_MASK_4 ? "true" : "false")
-			<< " time=" << e->time
-			<< std::endl;
+	log(LOG_BUTTONS, "Button Event Release ");
+	log(LOG_BUTTONS, " event=0x%x", e->event);
+	log(LOG_BUTTONS, " child=0x%x", e->child);
+	log(LOG_BUTTONS, " root=0x%x", e->root);
+	log(LOG_BUTTONS, " button=", static_cast<int>(e->detail));
+	log(LOG_BUTTONS, " mod1=", (e->state & XCB_MOD_MASK_1 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod2=", (e->state & XCB_MOD_MASK_2 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod3=", (e->state & XCB_MOD_MASK_3 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod4=", (e->state & XCB_MOD_MASK_4 ? "true" : "false"));
+	log(LOG_BUTTONS, " mod5=", (e->state & XCB_MOD_MASK_5 ? "true" : "false"));
+	log(LOG_BUTTONS, " time=", e->time);
+	log(LOG_BUTTONS, "\n");
 
 	if(_grab_handler != nullptr) {
 		auto grab = _grab_handler; // hold grab handdler in case of the handler stop the grab.
