@@ -1196,13 +1196,12 @@ void display_t::flush()
 	xcb_flush(_xcb);
 }
 
-auto display_t::lookup_client_id(uint32_t xid) -> pair<uint32_t, uint32_t> const &
+auto display_t::lookup_client_id(uint32_t xid) -> uint32_t
 {
-	static pair<uint32_t, uint32_t> const fail = { 0, 0xffffffffu };
 
 	for(auto & x: _client_id_spec_cache) {
 		if((xid & x.second) == x.first) {
-			return x;
+			return x.first;
 		}
 	}
 
@@ -1214,25 +1213,31 @@ auto display_t::lookup_client_id(uint32_t xid) -> pair<uint32_t, uint32_t> const
 	auto r = xcb_res_query_client_ids_reply(_xcb, ck, nullptr);
 
 	if (r == nullptr) {
-		return fail;
+		return 0u;
 	}
 
 	auto cnums = xcb_res_query_client_ids_ids_length(r);
 	auto cit = xcb_res_query_client_ids_ids_iterator(r);
 	while (cnums > 0) {
-		_client_id_spec_cache.insert(pair<uint32_t, uint32_t>{cit.data->spec.client, cit.data->spec.mask});
+		_client_id_spec_cache[cit.data->spec.client] = cit.data->spec.mask;
 		xcb_res_client_id_value_next(&cit);
 		cnums--;
 	}
 
 	for(auto & x: _client_id_spec_cache) {
 		if((xid & x.second) == x.first) {
-			return x;
+			return x.first;
 		}
 	}
 
-	return fail;
+	return 0u;
 
+}
+
+bool display_t::belong_same_client(uint32_t xid0, uint32_t xid1)
+{
+	/* not optimal */
+	return lookup_client_id(xid0) == lookup_client_id(xid1);
 }
 
 

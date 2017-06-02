@@ -74,7 +74,8 @@ class display_t : private connectable_t {
 
 	bool _is_compositor_enabled;
 
-	set<pair<uint32_t, uint32_t>> _client_id_spec_cache;
+	/* map client base id to mask */
+	class map<uint32_t, uint32_t> _client_id_spec_cache;
 
 public:
 
@@ -283,7 +284,8 @@ public:
 	void force_sync();
 	void flush();
 
-	auto lookup_client_id(uint32_t xid) -> pair<uint32_t, uint32_t> const &;
+	auto lookup_client_id(uint32_t xid) -> uint32_t;
+	bool belong_same_client(uint32_t xid0, uint32_t xid1);
 
 };
 
