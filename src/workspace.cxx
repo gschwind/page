@@ -286,28 +286,21 @@ void workspace_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 	c->set_managed_type(MANAGED_POPUP);
 
 	auto wid = c->ensure_workspace();
-	if(wid != ALL_DESKTOP) {
+	if (wid != ALL_DESKTOP) {
 		c->set_net_wm_desktop(_id);
 	}
 
 	auto fv = make_shared<view_popup_t>(this, c);
-	if(is_enable())
+	if (is_enable())
 		fv->acquire_client();
 
+	view_p v;
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
-	if(transient_for != nullptr) {
-		auto v = lookup_view_for(transient_for);
-		if(v) {
-			v->add_popup(fv);
-		} else {
-			if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
-				add_tooltips(fv);
-			} else if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_NOTIFICATION)) {
-				add_notification(fv);
-			} else {
-				add_unknown(fv);
-			}
-		}
+	if (transient_for != nullptr)
+		v = lookup_view_for(transient_for);
+
+	if (v != nullptr) {
+		v->add_popup(fv);
 	} else {
 		if (c->wm_type() == A(_NET_WM_WINDOW_TYPE_TOOLTIP)) {
 			add_tooltips(fv);
@@ -807,21 +800,20 @@ void workspace_t::_insert_view_floating(view_floating_p fv, xcb_timestamp_t time
 	c->set_managed_type(MANAGED_FLOATING);
 
 	auto wid = c->ensure_workspace();
-	if(wid != ALL_DESKTOP) {
+	if (wid != ALL_DESKTOP) {
 		c->set_net_wm_desktop(_id);
 	}
 
-	if(is_enable())
+	if (is_enable())
 		fv->acquire_client();
 
+	view_p v;
 	auto transient_for = dynamic_pointer_cast<client_managed_t>(_ctx->get_transient_for(c));
-	if(transient_for != nullptr) {
-		auto v = lookup_view_for(transient_for);
-		if(v) {
-			v->add_transient(fv);
-		} else {
-			add_floating(fv);
-		}
+	if (transient_for != nullptr)
+		v = lookup_view_for(transient_for);
+
+	if (v != nullptr) {
+		v->add_transient(fv);
 	} else {
 		add_floating(fv);
 	}
