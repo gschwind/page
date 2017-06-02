@@ -39,12 +39,21 @@ namespace page {
 
 using namespace std;
 
+extern uint32_t g_log_flags;
+
 #define warn(test) \
 	do { \
 		if(not (test)) { \
 			printf("WARN %s:%d (%s) fail!\n", __FILE__, __LINE__, #test); \
 		} \
 	} while(false)
+
+enum log_module_e : uint32_t {
+	LOG_NONE = 0,
+	LOG_ALL = 0xffffffffu
+};
+
+void log(log_module_e module, char const * fmt, ...);
 
 /**
  * TRICK to compile time checking.
