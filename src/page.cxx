@@ -896,7 +896,7 @@ void page_t::process_reparent_notify_event(xcb_generic_event_t const * _e) {
 		return;
 
 	/* If reparent occur on managed windows and new parent is an unknown window then unmanage */
-	auto mw = find_managed_window_with(e->window);
+	auto mw = find_client_with(e->window);
 	if (mw != nullptr) {
 		if (e->window == mw->_client_proxy->id() and not has_key(_page_windows, e->parent) and e->parent != _dpy->root()) {
 			/* unmanage the window */
@@ -1210,7 +1210,7 @@ void page_t::process_fake_client_message_event(xcb_generic_event_t const * _e) {
 	if (w == XCB_NONE)
 		return;
 
-	auto mw = find_managed_window_with(e->window);
+	auto mw = find_client_with(e->window);
 
 	if (e->type == A(_NET_ACTIVE_WINDOW)) {
 		auto view = get_current_workspace()->lookup_view_for(mw);
@@ -1733,7 +1733,7 @@ void page_t::process_net_vm_state_client_message(xcb_window_t c, long type, xcb_
 //				<< _dpy->get_atom_name(state_properties) << std::endl;
 //	}
 
-	auto mw = find_managed_window_with(c);
+	auto mw = find_client_with(c);
 	if(mw == nullptr)
 		return;
 
@@ -2264,15 +2264,6 @@ bool page_t::get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & tim
 			//printf("invalid net_wm_user_time_window\n");
 			return false;
 		}
-	}
-}
-
-shared_ptr<client_managed_t> page_t::find_managed_window_with(xcb_window_t w) {
-	auto c = find_client_with(w);
-	if (c != nullptr) {
-		return dynamic_pointer_cast<client_managed_t>(c);
-	} else {
-		return nullptr;
 	}
 }
 

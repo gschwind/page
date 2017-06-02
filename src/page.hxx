@@ -303,8 +303,6 @@ public:
 	void cleanup_grab();
 	/* find a valid notebook, that is in subtree base and that is no nbk */
 	shared_ptr<notebook_t> get_another_notebook(shared_ptr<tree_t> base, shared_ptr<tree_t> nbk);
-	/* find where the managed window is */
-	shared_ptr<client_managed_t> find_managed_window_with(xcb_window_t w);
 	static shared_ptr<viewport_t> find_viewport_of(shared_ptr<tree_t> n);
 	static shared_ptr<workspace_t> find_workspace_of(shared_ptr<tree_t> n);
 	void set_window_cursor(xcb_window_t w, xcb_cursor_t c);
@@ -319,6 +317,7 @@ public:
 	bool get_safe_net_wm_user_time(client_managed_p c, xcb_timestamp_t & time);
 	void update_page_areas();
 	void set_workspace_geometry(long width, long height);
+
 	auto find_client_with(xcb_window_t w) const -> client_managed_p;
 
 	void raise_child(shared_ptr<tree_t> t);
