@@ -2701,7 +2701,7 @@ void page_t::process_enter_window_event(xcb_generic_event_t const * _e) {
 		break;
 	}
 
-	printf("Enter window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
+	log(LOG_LEAVE_ENTER, "Enter window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
 
 	if(not configuration._mouse_focus)
 		return;
@@ -2731,7 +2731,7 @@ void page_t::process_leave_window_event(xcb_generic_event_t const * _e) {
 		break;
 	}
 
-	printf("Leave window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
+	log(LOG_LEAVE_ENTER, "Leave window = 0x%x mode = %s time = %u\n", e->event, xx, e->time);
 
 	get_current_workspace()->broadcast_leave(e);
 }
