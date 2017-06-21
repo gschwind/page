@@ -3018,38 +3018,54 @@ compositor_t * page_t::cmp() const {
 
 void page_t::grab_start(shared_ptr<grab_handler_t> handler, xcb_timestamp_t time) {
 	assert(_grab_handler == nullptr);
+
+	_dpy->grab();
+
 	auto ck0 = xcb_grab_pointer(_dpy->xcb(), false, _dpy->root(),
 			DEFAULT_BUTTON_EVENT_MASK,
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC,
 			XCB_NONE, XCB_NONE, time);
-	xcb_generic_error_t * e;
 
 	auto ck1 = xcb_grab_keyboard(_dpy->xcb(), false, _dpy->root(),
 			time, XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC);
 
+	xcb_generic_error_t * e;
+	bool has_pointer_grab = false;
+	bool has_keyboard_grab = false;
+
 	auto r0 = xcb_grab_pointer_reply(_dpy->xcb(), ck0, &e);
-	if(not r0->status == XCB_GRAB_STATUS_SUCCESS)
-		printf("grab pointer failed with status %d", r0->status);
+	auto r1 = xcb_grab_keyboard_reply(_dpy->xcb(), ck1, &e);
 
-	if (r0 != nullptr and r0->status == XCB_GRAB_STATUS_SUCCESS) {
-		auto r1 = xcb_grab_keyboard_reply(_dpy->xcb(), ck1, &e);
-		if(not r1->status == XCB_GRAB_STATUS_SUCCESS)
-			printf("grab keyboard failed with status %d\n", r1->status);
-
-		if(r1 and r1->status == XCB_GRAB_STATUS_SUCCESS) {
-			_grab_handler = handler;
+	if (r0 != nullptr) {
+		if (r0->status == XCB_GRAB_STATUS_SUCCESS) {
+			has_pointer_grab = true;
 		} else {
-			xcb_ungrab_pointer(_dpy->xcb(), time);
+			printf("grab pointer failed with status %d", r0->status);
 		}
-
-		if(r1)
-			free(r1);
-
-	}
-
-	if(r0) {
 		free(r0);
+	} else {
+		printf("grab pointer failed with error");
 	}
+
+	if (r1 != nullptr) {
+		if (r1->status == XCB_GRAB_STATUS_SUCCESS) {
+			has_keyboard_grab = true;
+		} else {
+			printf("grab keyboard failed with status %d", r0->status);
+		}
+		free(r1);
+	} else {
+		printf("grab keyboard failed with error");
+	}
+
+	if (has_pointer_grab and has_keyboard_grab) {
+		_grab_handler = handler;
+	} else {
+		xcb_ungrab_pointer(_dpy->xcb(), XCB_CURRENT_TIME);
+		xcb_ungrab_keyboard(_dpy->xcb(), XCB_CURRENT_TIME);
+	}
+
+	_dpy->ungrab();
 
 }
 
