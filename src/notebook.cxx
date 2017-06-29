@@ -1324,12 +1324,12 @@ void notebook_t::_close_view_notebook(view_notebook_p vn, xcb_timestamp_t time)
 	if(_selected != vn)
 		return;
 
-	move_back<view_notebook_p>(_clients_tab_order, vn);
-	if(not (_ctx->conf()._enable_shade_windows)
-		and (_clients_tab_order.size() > 1)
-		and (not _exposay)) {
-		activate(_clients_tab_order.front(), time);
-	}
+//	move_back<view_notebook_p>(_clients_tab_order, vn);
+//	if(not (_ctx->conf()._enable_shade_windows)
+//		and (_clients_tab_order.size() > 1)
+//		and (not _exposay)) {
+//		activate(_clients_tab_order.front(), time);
+//	}
 
 	/* Note: do not actually close a view_notebook, but prepare the close by activating another notebook if avalaible */
 	vn->delete_window(time);
