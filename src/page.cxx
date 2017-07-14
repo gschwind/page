@@ -2251,7 +2251,9 @@ void page_t::insert_as_popup(client_managed_p c, xcb_timestamp_t time)
 			w->insert_as_popup(c, time);
 		}
 	} else {
-		workspace_p workspace = get_workspace(wid);
+		// Ignore net_wm_desktop for popup, use current workspace
+		workspace_p workspace = get_current_workspace();
+		c->set_net_wm_desktop(workspace->id());
 		workspace->insert_as_popup(c, time);
 	}
 
