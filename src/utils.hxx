@@ -29,6 +29,7 @@
 #include <memory>
 #include <sstream>
 #include <iostream>
+#include <functional>
 
 #include "color.hxx"
 #include "box.hxx"
