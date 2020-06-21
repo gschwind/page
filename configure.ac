@@ -1,8 +1,8 @@
-
+AC_PREREQ([2.59])
 AC_INIT([page], [1.9.9])
 AC_CONFIG_MACRO_DIR([m4])
 
-AM_INIT_AUTOMAKE([-Wall -Werror])
+AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_SRCDIR([src/main.cxx])
 AC_CONFIG_HEADERS([src/config.hxx])
 
@@ -130,6 +130,7 @@ unset safe_CXXFLAGS
 unset safe_LDFLAGS
 
 AC_CONFIG_FILES([
+  build_package_sources.sh
   page.conf
   page.desktop
   Makefile

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -x
+# extract a temporary git archive
+git archive --format=tar --prefix=page-@PACKAGE_VERSION@/ HEAD | tar -x -f - -C /tmp/
+# bootstrap (copy libtools files)
+cd /tmp/page-@PACKAGE_VERSION@
+./autogen.sh
+autoreconf
+# build the final archive
+cd - 
+mkdir -p release
+tar -czf release/page-@PACKAGE_VERSION@.tar.gz -C /tmp page-@PACKAGE_VERSION@
+rm -r /tmp/page-@PACKAGE_VERSION@
+set +x
