@@ -80,8 +80,6 @@ page_SOURCES = \
 	viewport.hxx \
 	grab_handlers.hxx \
 	client_managed.hxx \
-	client_not_managed.hxx \
-	client_base.hxx \
 	display.hxx \
 	mainloop.hxx \
 	page.hxx \
