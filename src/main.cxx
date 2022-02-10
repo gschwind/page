@@ -7,7 +7,6 @@
  *
  */
 
-#include "execinfo.h"
 #include "stdint.h"
 #include "page.hxx"
 
