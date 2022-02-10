@@ -11,6 +11,7 @@
 #include <X11/Xlib.h>
 #include <xcb/xcb.h>
 
+#include <limits>
 #include <algorithm>
 #include <cassert>
 
