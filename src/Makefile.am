@@ -83,6 +83,35 @@ page_SOURCES = \
 	display.hxx \
 	mainloop.hxx \
 	page.hxx \
+	region.hxx \
+	page-types.hxx \
+	theme.hxx \
+	color.hxx \
+	leak_checker.hxx \
+	theme_split.hxx \
+	theme_managed_window.hxx \
+	theme_tab.hxx \
+	theme_notebook.hxx \
+	x11_func_name.hxx \
+	exception.hxx \
+	renderable.hxx \
+	time.hxx \
+	transition.hxx \
+	atoms.hxx \
+	motif_hints.hxx \
+	properties.hxx \
+	pixmap.hxx \
+	key_desc.hxx \
+	keymap.hxx \
+	floating_event.hxx \
+	properties_template.hxx \
+	popup_alt_tab.hxx \
+	renderable_empty.hxx \
+	renderable_unmanaged_gaussian_shadow.hxx \
+	page_event.hxx \
+	simple2_theme.hxx \
+	tiny_theme.hxx \
+	box.hxx \
 	utils.hxx
 
 page_LDADD = \
