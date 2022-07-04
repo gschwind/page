@@ -1,5 +1,5 @@
-AC_PREREQ([2.59])
-AC_INIT([page], [1.9.9])
+AC_PREREQ([2.71])
+AC_INIT([page],[1.9.9])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
@@ -10,7 +10,7 @@ dnl define custom macro to setup dir from datadir
 
 dnl Check for required programs
 AC_PROG_CXX
-AC_PROG_LIBTOOL
+LT_INIT
 
 # check for C++11
 AX_CXX_COMPILE_STDCXX(11, noext, mandatory)
@@ -119,7 +119,7 @@ safe_CXXFLAGS="${CXXFLAGS}"
 safe_LDFLAGS="${LDFLAGS}"
 CXXFLAGS="${CXXFLAGS} -flto"
 LDFLAGS="${LDFLAGS} -flto"
-AC_TRY_LINK([], [int main () { return 0; }],[
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[]], [[int main () { return 0; }]])],[
 dnl keep FLAGS
 ],[
 CXXFLAGS="${safe_CXXFLAGS}"
