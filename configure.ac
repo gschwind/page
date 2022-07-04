@@ -130,7 +130,6 @@ unset safe_CXXFLAGS
 unset safe_LDFLAGS
 
 AC_CONFIG_FILES([
-  build_package_sources.sh
   page.conf
   page.desktop
   Makefile
