@@ -1,5 +1,5 @@
 AC_PREREQ([2.71])
-AC_INIT([page],[1.9.9])
+AC_INIT([page],[1.9.10])
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
