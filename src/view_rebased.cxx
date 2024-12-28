@@ -44,8 +44,8 @@ view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual
 	 * Create the base window, window that will content managed window
 	 **/
 
-	xcb_visualid_t root_visual = _dpy->root_visual()->visual_id;
-	int root_depth = _dpy->find_visual_depth(_dpy->root_visual()->visual_id);
+	auto root_visual_id = _dpy->root_visual()->visual_id;
+	auto root_depth = _dpy->find_visual_depth(_dpy->root_visual()->visual_id);
 
 	/**
 	 * If window visual is 32 bit (have alpha channel, and root do not
@@ -56,8 +56,8 @@ view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual
 		_visual = visual;
 		_depth = depth;
 	} else {
-		_visual = _dpy->default_visual_rgba()->visual_id;
-		_depth = 32;
+		_visual = root_visual_id;
+		_depth  = root_depth;
 	}
 
 	/** if visual is 32 bits, this values are mandatory **/
