@@ -544,6 +544,8 @@ xcb_screen_t * display_t::screen_of_display (xcb_connection_t *c, int screen)
 
 void display_t::update_default_visual() {
 
+	_xcb_default_visual_type = nullptr;
+
 	/* you init the connection and screen_nbr */
 	_screen = screen_of_display(xcb(), _default_screen);
 
@@ -571,6 +573,11 @@ void display_t::update_default_visual() {
 				}
 			}
 		}
+
+		if (_xcb_default_visual_type == nullptr) {
+			_xcb_default_visual_type = _xcb_root_visual_type;
+		}
+
 	}
 }
 
