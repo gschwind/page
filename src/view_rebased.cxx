@@ -81,10 +81,18 @@ view_rebased_t::_base_frame_t::_base_frame_t(page_t * ctx, xcb_visualid_t visual
 
 	xcb_window_t base = xcb_generate_id(_dpy->xcb());
 	_ctx->_page_windows.insert(base);
-	xcb_create_window(_dpy->xcb(), _depth, base, _dpy->root(), -10, -10,
+	auto ck = xcb_create_window_checked(_dpy->xcb(), _depth, base, _dpy->root(), -10, -10,
 			1, 1, 0, XCB_WINDOW_CLASS_INPUT_OUTPUT, _visual, value_mask,
 			value);
+	auto err = xcb_request_check(_dpy->xcb(), ck);
+	if (err != 0) {
+		_dpy->print_error(err);
+		throw exception_t("Cannot create base window");
+	}
 	_window = _dpy->ensure_client_proxy(base);
+	if (_window == nullptr) {
+		throw exception_t("Cannot create client proxy");
+	}
 }
 
 
