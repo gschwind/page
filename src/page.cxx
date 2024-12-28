@@ -300,7 +300,8 @@ void page_t::run() {
 	/**
 	 * listen RRCrtcChangeNotifyMask for possible change in screen layout.
 	 **/
-	xcb_randr_select_input(_dpy->xcb(), _dpy->root(), XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE);
+	if (_dpy->has_randr)
+		xcb_randr_select_input(_dpy->xcb(), _dpy->root(), XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE);
 
 	update_viewport_layout();
 
@@ -1883,60 +1884,69 @@ void page_t::update_viewport_layout() {
 	_top_most_border = std::numeric_limits<int>::max();
 
 	/** update root size infos **/
+	
 	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _dpy->root());
-	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_dpy->xcb(), _dpy->root());
-
-	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_dpy->xcb(), ck0, nullptr);
-	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(_dpy->xcb(), ck1, 0);
-
-	if(geometry == nullptr or randr_resources == nullptr) {
+	unique_free_ptr<xcb_get_geometry_reply_t> geometry(xcb_get_geometry_reply(_dpy->xcb(), ck0, nullptr));
+	if(geometry == nullptr) {
 		throw exception_t("FATAL: cannot read root window attributes");
 	}
-
 	_root_position = rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	set_workspace_geometry(_root_position.w, _root_position.h);
+	
+	// List of rectangle that can be used as viewport, by default try to
+	// compte them from randr data, or fallback to size of root window.
+	vector<rect> viewport_allocation;
 
-	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
+	if (_dpy->has_randr) {
 
-	vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
-	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
-	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		ckx[k] = xcb_randr_get_crtc_info(_dpy->xcb(), crtc_list[k], XCB_CURRENT_TIME);
-	}
+		xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_dpy->xcb(), _dpy->root());
+		unique_free_ptr<xcb_randr_get_screen_resources_reply_t> randr_resources(xcb_randr_get_screen_resources_reply(_dpy->xcb(), ck1, 0));
 
-	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0);
-		if(r != nullptr) {
-			crtc_info[crtc_list[k]] = r;
+		if(randr_resources == nullptr) {
+			throw exception_t("FATAL: cannot randr data");
 		}
 
-		// keep left more screen to move iconnified window there
-		if(r->x < _left_most_border) {
-			_left_most_border = r->x;
+		map<xcb_randr_crtc_t, unique_free_ptr<xcb_randr_get_crtc_info_reply_t>> crtc_info;
+
+		vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()));
+		xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources.get());
+		for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()); ++k) {
+			ckx[k] = xcb_randr_get_crtc_info(_dpy->xcb(), crtc_list[k], XCB_CURRENT_TIME);
 		}
 
-		if(r->y < _top_most_border) {
-			_top_most_border = r->y;
+		for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()); ++k) {
+			unique_free_ptr<xcb_randr_get_crtc_info_reply_t> r(xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0));
+			if(r != nullptr) {
+				crtc_info[crtc_list[k]] = std::move(r);
+			}
+
+			// keep left more screen to move iconnified window there
+			if(r->x < _left_most_border) {
+				_left_most_border = r->x;
+			}
+
+			if(r->y < _top_most_border) {
+				_top_most_border = r->y;
+			}
+
 		}
 
-	}
+		// compute all viewport that does not overlap and cover the full area of
+		// crts
+		region already_allocated;
+		for (auto & crtc: crtc_info) {
+			if (crtc.second->num_outputs <= 0)
+				continue;
 
-	// compute all viewport that does not overlap and cover the full area of
-	// crts
-	vector<rect> viewport_allocation; // the list of _viewport locations.
-	region already_allocated;
-	for (auto crtc: crtc_info) {
-		if (crtc.second->num_outputs <= 0)
-			continue;
-
-		/* the location of crts */
-		region location{crtc.second->x, crtc.second->y, crtc.second->width,
-			crtc.second->height};
-		location -= already_allocated;
-		for (auto & b: location.rects()) {
-			viewport_allocation.push_back(b);
+			/* the location of crts */
+			region location{crtc.second->x, crtc.second->y, crtc.second->width,
+				crtc.second->height};
+			location -= already_allocated;
+			for (auto & b: location.rects()) {
+				viewport_allocation.push_back(b);
+			}
+			already_allocated += location;
 		}
-		already_allocated += location;
 	}
 
 	if (viewport_allocation.size() < 1) {
@@ -1945,19 +1955,6 @@ void page_t::update_viewport_layout() {
 
 	for(auto d: _workspace_list) {
 		d->update_viewports_layout(viewport_allocation);
-	}
-
-	for(auto i: crtc_info) {
-		if(i.second != nullptr)
-			free(i.second);
-	}
-
-	if(geometry != nullptr) {
-		free(geometry);
-	}
-
-	if(randr_resources != nullptr) {
-		free(randr_resources);
 	}
 
 	update_workspace_visibility(XCB_CURRENT_TIME);

@@ -18,6 +18,7 @@
 #include <xcb/sync.h>
 #include <xcb/xcb_util.h>
 
+#include <cstdlib>
 #include <cstring>
 #include <cairo.h>
 
@@ -882,6 +883,15 @@ inline xcb_sync_int64_t make_xcb_sync_int64(uint64_t value) {
 bool exists(char const * name);
 
 }
+
+struct deleter_free {
+	void operator() (void * v) const {
+		std::free(v);
+	}
+};
+
+template <typename T>
+using unique_free_ptr = std::unique_ptr<T, deleter_free>;
 
 
 #endif /* UTILS_HXX_ */

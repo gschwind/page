@@ -466,20 +466,19 @@ bool display_t::check_shape_extension() {
 }
 
 bool display_t::check_randr_extension() {
-	if (not query_extension("RANDR", &randr_opcode, &randr_event, &randr_error)) {
+	if (not query_extension("RANDR", &randr_opcode, &randr_event, &randr_error))
 		return false;
-	} else {
-		xcb_generic_error_t * err;
-		xcb_randr_query_version_cookie_t ck = xcb_randr_query_version(_xcb, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
-		xcb_randr_query_version_reply_t * r = xcb_randr_query_version_reply(_xcb, ck, &err);
 
-		if(r == nullptr or err != nullptr)
-			throw exception_t("ERROR: fail to get RANDR version");
+	xcb_generic_error_t * err = nullptr;
+	xcb_randr_query_version_cookie_t ck = xcb_randr_query_version(_xcb, XCB_RANDR_MAJOR_VERSION, XCB_RANDR_MINOR_VERSION);
+	unique_free_ptr<xcb_randr_query_version_reply_t> r(xcb_randr_query_version_reply(_xcb, ck, &err));
 
-		printf("RANDR Extension version %d.%d found\n", r->major_version, r->minor_version);
-		free(r);
-		return true;
-	}
+	if(r == nullptr or err != nullptr)
+		return false;
+
+	printf("RANDR Extension version %d.%d found\n", r->major_version, r->minor_version);
+	return true;
+
 }
 
 bool display_t::check_sync_extension() {
@@ -840,9 +839,7 @@ void display_t::check_x11_extension() {
 		throw std::runtime_error(SHAPENAME " extension is not supported");
 	}
 
-	if (not check_randr_extension()) {
-		throw std::runtime_error("RANDR extension is not supported");
-	}
+	has_randr = check_randr_extension();
 
 	if (not check_sync_extension()) {
 		throw std::runtime_error("SYNC extension is not supported");

@@ -219,38 +219,45 @@ void compositor_t::update_layout() {
 		composite_back_buffer = XCB_NONE;
 	}
 
-	/** update root size infos **/
-
-	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _dpy->root());
-	xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_dpy->xcb(), _dpy->root());
-
-	xcb_get_geometry_reply_t * geometry = xcb_get_geometry_reply(_dpy->xcb(), ck0, nullptr);
-	xcb_randr_get_screen_resources_reply_t * randr_resources = xcb_randr_get_screen_resources_reply(_dpy->xcb(), ck1, 0);
-
-	if(geometry == nullptr or randr_resources == nullptr) {
-		throw exception_t("FATAL: cannot read root window attributes");
-	}
-
-	map<xcb_randr_crtc_t, xcb_randr_get_crtc_info_reply_t *> crtc_info;
-
-	vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources));
-	xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources);
-	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		ckx[k] = xcb_randr_get_crtc_info(_dpy->xcb(), crtc_list[k], XCB_CURRENT_TIME);
-	}
-
-	for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources); ++k) {
-		xcb_randr_get_crtc_info_reply_t * r = xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0);
-		if(r != nullptr) {
-			crtc_info[crtc_list[k]] = r;
-		}
-	}
-
 	_workspace_region.clear();
 
-	for(auto i: crtc_info) {
-		rect area{i.second->x, i.second->y, i.second->width, i.second->height};
-		_workspace_region += area;
+	xcb_get_geometry_cookie_t ck0 = xcb_get_geometry(_dpy->xcb(), _dpy->root());
+	unique_free_ptr<xcb_get_geometry_reply_t> geometry(xcb_get_geometry_reply(_dpy->xcb(), ck0, nullptr));
+	
+	if(geometry == nullptr) {
+		throw exception_t("FATAL: cannot read root window geometry");
+	}
+
+	if (_dpy->has_randr) {
+		xcb_randr_get_screen_resources_cookie_t ck1 = xcb_randr_get_screen_resources(_dpy->xcb(), _dpy->root());
+		unique_free_ptr<xcb_randr_get_screen_resources_reply_t> randr_resources(xcb_randr_get_screen_resources_reply(_dpy->xcb(), ck1, 0));
+
+		if(randr_resources == nullptr) {
+			throw exception_t("FATAL: cannot get randr");
+		}
+
+		map<xcb_randr_crtc_t, unique_free_ptr<xcb_randr_get_crtc_info_reply_t>> crtc_info;
+
+		vector<xcb_randr_get_crtc_info_cookie_t> ckx(xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()));
+		xcb_randr_crtc_t * crtc_list = xcb_randr_get_screen_resources_crtcs(randr_resources.get());
+		for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()); ++k) {
+			ckx[k] = xcb_randr_get_crtc_info(_dpy->xcb(), crtc_list[k], XCB_CURRENT_TIME);
+		}
+
+		for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()); ++k) {
+			unique_free_ptr<xcb_randr_get_crtc_info_reply_t> r(xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0));
+			if(r != nullptr) {
+				crtc_info[crtc_list[k]] = std::move(r);
+			}
+		}
+
+		for(auto & i: crtc_info) {
+			rect area{i.second->x, i.second->y, i.second->width, i.second->height};
+			_workspace_region += area;
+		}
+
+	} else {
+		_workspace_region += rect{geometry->x, geometry->y, geometry->width, geometry->height};
 	}
 
 	_workspace_region_area = _workspace_region.area();
@@ -265,19 +272,6 @@ void compositor_t::update_layout() {
 
 	width = geometry->width;
 	height = geometry->height;
-
-	for(auto i: crtc_info) {
-		if(i.second != nullptr)
-			free(i.second);
-	}
-
-	if(geometry != nullptr) {
-		free(geometry);
-	}
-
-	if(randr_resources != nullptr) {
-		free(randr_resources);
-	}
 
 }
 

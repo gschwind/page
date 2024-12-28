@@ -97,6 +97,7 @@ public:
 
 	/* xrandr extension handler */
 	int randr_opcode, randr_event, randr_error;
+	bool has_randr;
 
 	int dbe_opcode, dbe_event, dbe_error;
 
