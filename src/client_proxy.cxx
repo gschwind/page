@@ -152,15 +152,19 @@ client_proxy_t::client_proxy_t(display_t * dpy, xcb_window_t id) :
 
 	xcb_get_geometry_reply_t * geometry = nullptr;
 	xcb_get_window_attributes_reply_t * wa = nullptr;
-	xcb_generic_error_t * err;
+	xcb_generic_error_t * err = nullptr;
 
 	try {
 		wa = xcb_get_window_attributes_reply(_dpy->xcb(), ck1, &err);
-		if(err != nullptr)
+		if(err != nullptr) {
+			_dpy->print_error(err);
 			throw invalid_client_t{};
+		}
 		geometry = xcb_get_geometry_reply(_dpy->xcb(), ck2, &err);
-		if(err != nullptr)
+		if(err != nullptr) {
+			_dpy->print_error(err);
 			throw invalid_client_t{};
+		}
 
 		_wa = *wa;
 		_geometry = *geometry;
