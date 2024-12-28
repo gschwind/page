@@ -1915,9 +1915,11 @@ void page_t::update_viewport_layout() {
 		}
 
 		for (unsigned k = 0; k < xcb_randr_get_screen_resources_crtcs_length(randr_resources.get()); ++k) {
-			unique_free_ptr<xcb_randr_get_crtc_info_reply_t> r(xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], 0));
-			if(r != nullptr) {
-				crtc_info[crtc_list[k]] = std::move(r);
+			xcb_generic_error_t * err = nullptr;
+			unique_free_ptr<xcb_randr_get_crtc_info_reply_t> r(xcb_randr_get_crtc_info_reply(_dpy->xcb(), ckx[k], &err));
+			if (r == nullptr) {
+				_dpy->print_error(err);
+				continue;
 			}
 
 			// keep left more screen to move iconnified window there
@@ -1928,6 +1930,8 @@ void page_t::update_viewport_layout() {
 			if(r->y < _top_most_border) {
 				_top_most_border = r->y;
 			}
+
+			crtc_info[crtc_list[k]] = std::move(r);
 
 		}
 
