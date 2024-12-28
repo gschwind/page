@@ -274,6 +274,10 @@ xcb_window_t viewport_t::get_toplevel_xid() const {
 void viewport_t::paint_expose() {
 	if(not _is_visible)
 		return;
+	if(_back_surf == nullptr)
+		return;
+	if(_back_surf->get_cairo_surface() == nullptr)
+		return;
 
 	cairo_surface_t * surf = cairo_xcb_surface_create(_root->_ctx->dpy()->xcb(), _win, _root->_ctx->dpy()->root_visual(), _effective_area.w, _effective_area.h);
 	cairo_t * cr = cairo_create(surf);
