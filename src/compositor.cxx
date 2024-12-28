@@ -147,7 +147,11 @@ void compositor_t::render(tree_t * t) {
 		_damaged_area.pop_back();
 	}
 
+	// Never return nullptr
 	cairo_surface_t * _back_buffer = cairo_xcb_surface_create(_dpy->xcb(), composite_back_buffer, _dpy->root_visual(), width, height);
+	if (cairo_surface_status(_back_buffer) != CAIRO_STATUS_SUCCESS) {
+		throw exception_t("Fail to create back buffer with status = %ul", cairo_surface_status(_back_buffer));
+	}
 
 	cairo_t * cr = cairo_create(_back_buffer);
 
