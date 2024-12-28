@@ -379,20 +379,36 @@ xcb_connection_t * display_t::xcb() {
 	return _xcb;
 }
 
+// Note: 'name' should be encoded in ISO Latin-1
 bool display_t::query_extension(char const * name, int * opcode, int * event, int * error) {
-	xcb_generic_error_t * err;
+	xcb_generic_error_t * err = nullptr;
 	xcb_query_extension_cookie_t ck = xcb_query_extension(_xcb, strlen(name), name);
-	xcb_query_extension_reply_t * r = xcb_query_extension_reply(_xcb, ck, &err);
-	if (err != nullptr or r == nullptr) {
+	unique_free_ptr<xcb_query_extension_reply_t> r(xcb_query_extension_reply(_xcb, ck, &err));
+	
+	if (err != nullptr) {
+		print_error(err);
 		return false;
-	} else {
-		*opcode = r->major_opcode;
-		*event = r->first_event;
-		*error = r->first_error;
-		std::cout << "Extension " << name << " found opcode=" << static_cast<int>(r->major_opcode) << " event=" << static_cast<int>(r->first_event) << " error=" << static_cast<int>(r->first_error) << std::endl;
-		free(r);
-		return true;
 	}
+
+	if (r == nullptr) {
+		return false;
+	}
+	
+	if (r->present == 0) {
+		return false;
+	}
+
+	*opcode = r->major_opcode;
+	*event = r->first_event;
+	*error = r->first_error;
+	std::cout << "Extension " << name << " found"
+			<< " present=" << int(r->present)
+			<< " opcode=" << int(r->major_opcode)
+			<< " event=" << int(r->first_event)
+			<< " error=" << int(r->first_error)
+			<< std::endl;
+	return true;
+
 }
 
 
